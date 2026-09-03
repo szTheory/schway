@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 02
 current_phase_name: Owned Values and Abilities
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-09-03T20:29:58.405Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-09-03T20:42:24.461Z"
 last_activity: 2026-09-03
 last_activity_desc: Phase 02 execution started
-state_head: 7ae24f02827ad0fc35b108d64876f42606839e7e
+state_head: 652bbe86d53e7ccbec3d2d55aaca2181a0bb7ae7
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 9
-  completed_plans: 4
+  completed_plans: 5
   percent: 17
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 02 (Owned Values and Abilities) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 02 execution started
 
@@ -56,6 +56,7 @@ Progress: ██████████ [██░░░░░░░░] 17%
 | Phase 01 P02 | 4 min | 3 tasks | 9 files |
 | Phase 01 P03 | 16 min | 3 tasks | 14 files |
 | Phase 02 P01 | 10 min | 2 tasks | 14 files |
+| Phase 02 P02 | 9 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 02]: Linear type, place, operation, and point IDs use function-local semantic ordinals, never source offsets.
 - [Phase 02]: Phase 1 match artifacts retain lang.core/0 and lang.execution/0 while owned linear artifacts use /1.
 - [Phase 02]: Ownership token normalization lives at the parser boundary so the Phase 1 lexer remains unchanged.
+- [Phase 02]: Box and Pair use a request-local package-private structural conjunction with no arbitrary production masks.
+- [Phase 02]: Generic parser limits are depth 64 and 4,096 type nodes with declaration-bounded recovery.
 
 ### Pending Todos
 
@@ -93,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-03T20:29:58.371Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-09-03T20:42:24.427Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
