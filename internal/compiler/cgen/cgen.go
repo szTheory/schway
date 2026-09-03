@@ -120,14 +120,6 @@ func emitLinear(function core.Function) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	document, err := linearExecution(function, input)
-	if err != nil {
-		return "", err
-	}
-	encoded, err := json.Marshal(document)
-	if err != nil {
-		return "", err
-	}
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
 		places[place.ID] = place
@@ -144,6 +136,7 @@ func emitLinear(function core.Function) (string, error) {
 	if function.Parameter.Type == "Buffer" {
 		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
 	}
+	emitLinearOutputSupport(&out, function, typeName)
 	out.WriteString("int main(int argc, char **argv) {\n")
 	out.WriteString("  if (argc != 2) return 64;\n")
 	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
@@ -164,16 +157,95 @@ func emitLinear(function core.Function) (string, error) {
 				label = "shared borrow representation"
 			}
 			fmt.Fprintf(&out, "  %s %s = %s; /* %s: %s */\n", typeName, cLocal(target.Name), cLocal(source.Name), label, operation.ID)
+			eventKind := "value.copied"
+			if operation.Kind == core.OpMove {
+				eventKind = "value.transferred"
+			} else if operation.Kind == core.OpBorrowShared {
+				eventKind = "value.borrowed"
+			}
+			fmt.Fprintf(&out, "  if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
+				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
+				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 			declared[operation.TargetID] = true
 		case core.OpReturn:
-			fmt.Fprintf(&out, "  (void)%s; /* returned place: %s */\n", cLocal(source.Name), operation.ID)
+			fmt.Fprintf(&out, "  if (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74; /* returned place: %s */\n",
+				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
+				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
+			out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
+			if function.Parameter.Type == "Buffer" {
+				fmt.Fprintf(&out, "  if (!lang_write_buffer_hex(&%s)) return 74;\n", cLocal(source.Name))
+			} else {
+				fmt.Fprintf(&out, "  if (!lang_write_byte(%s)) return 74;\n", cLocal(source.Name))
+			}
+			out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
+			out.WriteString("  if (!lang_write_events()) return 74;\n")
+			out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
 		default:
 			return "", fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
 	}
-	fmt.Fprintf(&out, "  puts(%s);\n", strconv.Quote(string(encoded)))
 	out.WriteString("  return 0;\n}\n")
 	return out.String(), nil
+}
+
+func emitLinearOutputSupport(out *strings.Builder, function core.Function, typeName string) {
+	fmt.Fprintf(out, "#define LANG_OUTPUT_LIMIT 65536u\n#define LANG_EVENT_CAPACITY %du\n\n", len(function.Linear.Operations))
+	out.WriteString("typedef struct LANG_EVENT {\n")
+	out.WriteString("  const char *kind;\n  const char *id;\n  const char *function_id;\n")
+	out.WriteString("  const char *source_place;\n  const char *target_place;\n  const char *type_id;\n} LANG_EVENT;\n\n")
+	out.WriteString("static LANG_EVENT lang_events[LANG_EVENT_CAPACITY];\n")
+	out.WriteString("static size_t lang_event_count = 0u;\nstatic size_t lang_output_count = 0u;\n\n")
+	out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n")
+	out.WriteString("  if (length > LANG_OUTPUT_LIMIT - lang_output_count) return 0;\n")
+	out.WriteString("  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n")
+	out.WriteString("  lang_output_count += length;\n  return 1;\n}\n\n")
+	out.WriteString("static int lang_write_literal(const char *value) {\n  return lang_write_bytes(value, strlen(value));\n}\n\n")
+	out.WriteString("static int lang_write_json_string(const char *value) {\n")
+	out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n")
+	out.WriteString("  if (!lang_write_bytes(\"\\\"\", 1u)) return 0;\n")
+	out.WriteString("  for (; *value != '\\0'; value++) {\n")
+	out.WriteString("    unsigned char byte = (unsigned char)*value;\n")
+	out.WriteString("    const char *escape = NULL;\n")
+	out.WriteString("    if (byte == '\"') escape = \"\\\\\\\"\";\n")
+	out.WriteString("    else if (byte == '\\\\') escape = \"\\\\\\\\\";\n")
+	out.WriteString("    else if (byte == '\\b') escape = \"\\\\b\";\n")
+	out.WriteString("    else if (byte == '\\f') escape = \"\\\\f\";\n")
+	out.WriteString("    else if (byte == '\\n') escape = \"\\\\n\";\n")
+	out.WriteString("    else if (byte == '\\r') escape = \"\\\\r\";\n")
+	out.WriteString("    else if (byte == '\\t') escape = \"\\\\t\";\n")
+	out.WriteString("    if (escape != NULL) { if (!lang_write_literal(escape)) return 0; }\n")
+	out.WriteString("    else if (byte < 0x20u) {\n")
+	out.WriteString("      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n")
+	out.WriteString("      if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n")
+	out.WriteString("    } else if (!lang_write_bytes(value, 1u)) return 0;\n")
+	out.WriteString("  }\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
+	out.WriteString("static int lang_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id) {\n")
+	out.WriteString("  if (lang_event_count >= LANG_EVENT_CAPACITY) return 0;\n")
+	out.WriteString("  lang_events[lang_event_count++] = (LANG_EVENT){kind, id, function_id, source_place, target_place, type_id};\n")
+	out.WriteString("  return 1;\n}\n\n")
+	out.WriteString("static int lang_write_events(void) {\n")
+	out.WriteString("  size_t index;\n  for (index = 0u; index < lang_event_count; index++) {\n")
+	out.WriteString("    const LANG_EVENT *event = &lang_events[index];\n")
+	out.WriteString("    if (index != 0u && !lang_write_bytes(\",\", 1u)) return 0;\n")
+	out.WriteString("    if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\") || !lang_write_json_string(event->id)) return 0;\n")
+	out.WriteString("    if (!lang_write_literal(\",\\\"kind\\\":\") || !lang_write_json_string(event->kind)) return 0;\n")
+	out.WriteString("    if (!lang_write_literal(\",\\\"function_id\\\":\") || !lang_write_json_string(event->function_id)) return 0;\n")
+	out.WriteString("    if (event->source_place != NULL && (!lang_write_literal(\",\\\"source_place\\\":\") || !lang_write_json_string(event->source_place))) return 0;\n")
+	out.WriteString("    if (event->target_place != NULL && (!lang_write_literal(\",\\\"target_place\\\":\") || !lang_write_json_string(event->target_place))) return 0;\n")
+	out.WriteString("    if (event->type_id != NULL && (!lang_write_literal(\",\\\"type_id\\\":\") || !lang_write_json_string(event->type_id))) return 0;\n")
+	out.WriteString("    if (!lang_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
+	if function.Parameter.Type == "Buffer" {
+		fmt.Fprintf(out, "static int lang_write_buffer_hex(const %s *value) {\n", typeName)
+		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  size_t index;\n")
+		out.WriteString("  if (value->length > sizeof value->bytes) return 0;\n")
+		out.WriteString("  for (index = 0u; index < value->length; index++) {\n")
+		out.WriteString("    char encoded[2] = {hex[value->bytes[index] >> 4u], hex[value->bytes[index] & 0x0fu]};\n")
+		out.WriteString("    if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n  }\n  return 1;\n}\n\n")
+	} else {
+		out.WriteString("static int lang_write_byte(unsigned char value) {\n")
+		out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
+		out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
+	}
 }
 
 func linearInput(function core.Function) (input, initializer, typeName string, err error) {
@@ -184,46 +256,6 @@ func linearInput(function core.Function) (input, initializer, typeName string, e
 		return "7", "7u", "unsigned char", nil
 	default:
 		return "", "", "", fmt.Errorf("unsupported linear C type %q", function.Parameter.Type)
-	}
-}
-
-func linearExecution(function core.Function, input string) (execution.Execution, error) {
-	values := map[string]string{function.Parameter.ID: input}
-	events := make([]execution.Event, 0, len(function.Linear.Operations))
-	for _, operation := range function.Linear.Operations {
-		value, ok := values[operation.SourceID]
-		if !ok {
-			return execution.Execution{}, fmt.Errorf("operation %q reads unavailable place", operation.ID)
-		}
-		switch operation.Kind {
-		case core.OpCopy:
-			values[operation.TargetID] = value
-			events = append(events, linearEvent(function, operation, "value.copied"))
-		case core.OpMove:
-			delete(values, operation.SourceID)
-			values[operation.TargetID] = value
-			events = append(events, linearEvent(function, operation, "value.transferred"))
-		case core.OpBorrowShared:
-			values[operation.TargetID] = value
-			events = append(events, linearEvent(function, operation, "value.borrowed"))
-		case core.OpReturn:
-			events = append(events, execution.Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
-				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
-			})
-			return execution.Execution{
-				Schema: execution.Schema1, Outcome: execution.Outcome{Kind: "returned", Value: value},
-				Events: events, LiveResources: []string{},
-			}, nil
-		}
-	}
-	return execution.Execution{}, fmt.Errorf("linear body has no return")
-}
-
-func linearEvent(function core.Function, operation core.LinearOperation, kind string) execution.Event {
-	return execution.Event{
-		Schema: execution.Schema1, ID: operation.ID + ":event", Kind: kind,
-		FunctionID: function.ID, SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
 	}
 }
 
