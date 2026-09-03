@@ -260,6 +260,55 @@ func TestVerifyPhase2CLI(t *testing.T) {
 	}
 }
 
+func TestVerifyCorpusSourceByteLimitBoundary(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	for _, test := range []struct {
+		name  string
+		phase string
+		file  string
+		size  int
+		exit  int
+	}{
+		{name: "base exact", phase: "phase1", file: "toggle.lang", size: 1 << 20, exit: 0},
+		{name: "base over", phase: "phase1", file: "toggle.lang", size: 1<<20 + 1, exit: 2},
+		{name: "owned exact", phase: "phase2", file: "owned_transfer.lang", size: 1 << 20, exit: 0},
+		{name: "owned over", phase: "phase2", file: "owned_transfer.lang", size: 1<<20 + 1, exit: 2},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			corpus := t.TempDir()
+			sourceCorpus := testsupport.ProjectPath("testdata", test.phase)
+			entries, err := os.ReadDir(sourceCorpus)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, entry := range entries {
+				if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+					continue
+				}
+				data, readErr := os.ReadFile(filepath.Join(sourceCorpus, entry.Name()))
+				if readErr != nil {
+					t.Fatal(readErr)
+				}
+				if entry.Name() == test.file {
+					data = append(data, '/', '/')
+					data = append(data, bytes.Repeat([]byte{'x'}, test.size-len(data)-1)...)
+					data = append(data, '\n')
+				}
+				if writeErr := os.WriteFile(filepath.Join(corpus, entry.Name()), data, 0o600); writeErr != nil {
+					t.Fatal(writeErr)
+				}
+			}
+			result := testsupport.RunCLI(t, binary, nil, "--json", "verify", corpus)
+			if result.Exit != test.exit {
+				t.Fatalf("exit=%d want=%d stdout=%s", result.Exit, test.exit, result.Stdout)
+			}
+			if test.exit != 0 && !bytes.Contains(result.Stdout, []byte("verify.fixture_input_limit")) {
+				t.Fatalf("missing bounded fixture diagnostic: %s", result.Stdout)
+			}
+		})
+	}
+}
+
 func TestPhase2VerifierScriptContract(t *testing.T) {
 	script, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase2.sh"))
 	if err != nil {

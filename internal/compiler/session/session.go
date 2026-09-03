@@ -445,9 +445,12 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 	}
 
 	validPath := filepath.Join(corpus, "toggle.lang")
-	validSource, err := os.ReadFile(validPath)
+	validSource, err := readBoundedFile(validPath, syntax.MaxSourceBytes)
 	if err != nil {
 		return fail(protocol.StatusOperational, "verify.fixture_missing", "required positive fixture is unavailable")
+	}
+	if len(validSource) > syntax.MaxSourceBytes {
+		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "required positive fixture exceeds the source byte limit")
 	}
 
 	laneStarted := time.Now()
@@ -465,10 +468,13 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 	syntaxWork := 0
 	syntaxBytes := 0
 	for _, name := range []string{"toggle.lang", "comments.lang", "malformed.lang"} {
-		source, readErr := os.ReadFile(filepath.Join(corpus, name))
+		source, readErr := readBoundedFile(filepath.Join(corpus, name), syntax.MaxSourceBytes)
 		if readErr != nil {
 			addLane("lane:syntax-properties", "fail", nil, syntaxWork, syntaxBytes, laneStarted)
 			return fail(protocol.StatusOperational, "verify.fixture_missing", "required syntax fixture is unavailable")
+		}
+		if len(source) > syntax.MaxSourceBytes {
+			return fail(protocol.StatusInvalid, "verify.fixture_input_limit", name)
 		}
 		parsed := syntax.Parse(source)
 		syntaxWork++
@@ -491,10 +497,13 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 	addLane("lane:syntax-properties", "pass", nil, syntaxWork, syntaxBytes, laneStarted)
 
 	laneStarted = time.Now()
-	negativeSource, err := os.ReadFile(filepath.Join(corpus, "non_exhaustive.lang"))
+	negativeSource, err := readBoundedFile(filepath.Join(corpus, "non_exhaustive.lang"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:negative-controls", "fail", nil, 0, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.fixture_missing", "required negative fixture is unavailable")
+	}
+	if len(negativeSource) > syntax.MaxSourceBytes {
+		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "non_exhaustive.lang")
 	}
 	negative := Check(negativeSource)
 	if !hasDiagnostic(negative.Diagnostics, "match.non_exhaustive") {
@@ -591,9 +600,12 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 	}
 	ownershipBytes := 0
 	for _, control := range ownershipControls {
-		source, err := os.ReadFile(filepath.Join(corpus, control.file))
+		source, err := readBoundedFile(filepath.Join(corpus, control.file), syntax.MaxSourceBytes)
 		if err != nil {
 			return fail(protocol.StatusOperational, "verify.fixture_missing", control.file)
+		}
+		if len(source) > syntax.MaxSourceBytes {
+			return fail(protocol.StatusInvalid, "verify.fixture_input_limit", control.file)
 		}
 		ownershipBytes += len(source)
 		checked := Check(source)
@@ -603,9 +615,12 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 	}
 	addLane("lane:owned-negative-controls", []string{ownershipControls[0].control, ownershipControls[1].control, ownershipControls[2].control}, 3, ownershipBytes, laneStarted)
 
-	validSource, err := os.ReadFile(filepath.Join(corpus, "owned_transfer.lang"))
+	validSource, err := readBoundedFile(filepath.Join(corpus, "owned_transfer.lang"), syntax.MaxSourceBytes)
 	if err != nil {
 		return fail(protocol.StatusOperational, "verify.fixture_missing", "owned_transfer.lang")
+	}
+	if len(validSource) > syntax.MaxSourceBytes {
+		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "owned_transfer.lang")
 	}
 	checked := Check(validSource)
 	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
