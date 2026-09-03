@@ -1,0 +1,43 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": null,
+  "phases": [
+    {
+      "number": "1",
+      "name": "Canonical Pure Spine",
+      "status": "pending"
+    },
+    {
+      "number": "2",
+      "name": "Owned Values and Abilities",
+      "status": "pending"
+    },
+    {
+      "number": "3",
+      "name": "Borrowed Views and CFG Lifetimes",
+      "status": "pending"
+    },
+    {
+      "number": "4",
+      "name": "Fallible Resources and C Boundary",
+      "status": "pending"
+    },
+    {
+      "number": "5",
+      "name": "Native Equivalence and Adversarial Evidence",
+      "status": "pending"
+    },
+    {
+      "number": "6",
+      "name": "Agent Feedback and Performance Ratification",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 1 of 6 · 33% · executing"
+  },
+  "updated_at": "2026-09-03T18:57:54.026Z"
+}

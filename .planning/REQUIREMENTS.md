@@ -9,7 +9,7 @@ hiding runtime costs.
 
 ### Foundation and contracts
 
-- [ ] **FND-01**: A contributor can build and run the Stage 0 compiler from a
+- [x] **FND-01**: A contributor can build and run the Stage 0 compiler from a
   clean checkout offline using Go 1.24 and its standard library.
 - [ ] **FND-02**: Compiler artifacts expose versioned, deterministic identities
   for schemas, nodes, symbols, CFG points/edges, diagnostics, and semantic events.
@@ -21,7 +21,7 @@ hiding runtime costs.
 
 ### Canonical source and frontend
 
-- [ ] **SYN-01**: A contributor can parse and canonically format the Phase 1
+- [x] **SYN-01**: A contributor can parse and canonically format the Phase 1
   subset: a module, explicit export block, closed nominal variants, functions
   with named parameters, immutable bindings, calls, blocks, and exhaustive
   `match`; later phases add only the syntax demanded by their vertical slice.
@@ -34,10 +34,10 @@ hiding runtime costs.
 
 ### Typed semantic core
 
-- [ ] **SEM-01**: The frontend lowers source into an immutable, serializable core
+- [x] **SEM-01**: The frontend lowers source into an immutable, serializable core
   with explicit nominal types, ADTs, fields, functions, places, operations,
   source spans, and stable semantic identities.
-- [ ] **SEM-02**: Closed variant matches are exhaustive and deterministic;
+- [x] **SEM-02**: Closed variant matches are exhaustive and deterministic;
   missing, unreachable, or subsumed alternatives are rejected before execution.
 - [ ] **SEM-03**: `Result` propagation and ignored-result rules produce explicit
   typed control flow; panic and cancellation cannot be erased as ordinary errors.
@@ -56,12 +56,12 @@ hiding runtime costs.
 
 ### Execution and native equivalence
 
-- [ ] **INT-01**: A deterministic interpreter executes valid core programs and
+- [x] **INT-01**: A deterministic interpreter executes valid core programs and
   emits ordered semantic events for values, moves, loans, initialization,
   release, failure, and simulated foreign operations.
 - [ ] **INT-02**: Interpreter mismatches report the smallest known source/core
   case, causal facts, and addressable event trace.
-- [ ] **NAT-01**: The compiler emits readable C17 and interface declarations for
+- [x] **NAT-01**: The compiler emits readable C17 and interface declarations for
   the portable milestone subset, then builds and runs them with Clang.
 - [ ] **NAT-02**: Interpreter, native `-O0`, and native `-O3` agree on terminal
   outcome, semantic-event order, and live-resource state for valid probes.
@@ -128,16 +128,16 @@ hiding runtime costs.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
+| FND-01 | Phase 1 | Complete |
 | FND-02 | Phase 1 | Pending |
 | FND-03 | Phase 1 | Pending |
 | FND-04 | Phase 6 | Pending |
-| SYN-01 | Phase 1 | Pending |
+| SYN-01 | Phase 1 | Complete |
 | SYN-02 | Phase 1 | Pending |
 | SYN-03 | Phase 1 | Pending |
 | SYN-04 | Phase 1 | Pending |
-| SEM-01 | Phase 1 | Pending |
-| SEM-02 | Phase 1 | Pending |
+| SEM-01 | Phase 1 | Complete |
+| SEM-02 | Phase 1 | Complete |
 | SEM-03 | Phase 4 | Pending |
 | OWN-01 | Phase 2 | Pending |
 | OWN-02 | Phase 2 | Pending |
@@ -145,9 +145,9 @@ hiding runtime costs.
 | OWN-04 | Phase 3 | Pending |
 | RES-01 | Phase 4 | Pending |
 | FFI-01 | Phase 4 | Pending |
-| INT-01 | Phase 1 | Pending |
+| INT-01 | Phase 1 | Complete |
 | INT-02 | Phase 5 | Pending |
-| NAT-01 | Phase 1 | Pending |
+| NAT-01 | Phase 1 | Complete |
 | NAT-02 | Phase 5 | Pending |
 | NAT-03 | Phase 5 | Pending |
 | DX-01 | Phase 1 | Pending |
@@ -158,6 +158,7 @@ hiding runtime costs.
 | QLT-02 | Phase 6 | Pending |
 
 **Coverage:**
+
 - M001 requirements: 28 total
 - Mapped to phases: 28
 - Unmapped: 0 ✓
