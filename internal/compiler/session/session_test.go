@@ -18,6 +18,7 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
@@ -352,6 +353,35 @@ func TestNativeToggleO0O3(t *testing.T) {
 	}
 	if !strings.Contains(result.CSource, "typedef enum LANG_SWITCH") || !strings.Contains(result.CSource, "switch (LANG_STATE)") {
 		t.Fatalf("generated C is not reviewable S1 lowering:\n%s", result.CSource)
+	}
+}
+
+func TestOwnedTransferInterpreterNative(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("owned native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	if len(result.Interpreter) != 1 || len(result.O0.Pairs) != 1 || len(result.O3.Pairs) != 1 {
+		t.Fatalf("unexpected owned executions: %+v", result)
+	}
+	want := result.Interpreter[0]
+	for _, actual := range []execution.Execution{result.O0.Pairs[0].Execution, result.O3.Pairs[0].Execution} {
+		if !execution.Equal(want, actual) {
+			t.Fatalf("owned semantic execution mismatch:\nwant=%+v\ngot =%+v", want, actual)
+		}
+	}
+	golden, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.golden.c"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal([]byte(result.CSource), golden) {
+		t.Fatalf("owned C golden changed:\n%s", result.CSource)
+	}
+	for _, forbidden := range []string{"restrict", "noalias", "malloc", "free("} {
+		if strings.Contains(result.CSource, forbidden) {
+			t.Fatalf("owned C makes forbidden %q claim:\n%s", forbidden, result.CSource)
+		}
 	}
 }
 
