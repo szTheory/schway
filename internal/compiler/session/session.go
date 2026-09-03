@@ -356,7 +356,9 @@ func completeCommand(result protocol.Result, started time.Time, work int) protoc
 	// Bounded commands keep their default projection reproducible. The verify
 	// orchestrator records wall-time observations explicitly; later telemetry
 	// modes can opt into per-command timing without making ordinary output churn.
-	_ = started
+	if os.Getenv("LANG_OBSERVE_TIMING") == "1" {
+		result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+	}
 	result.Metrics.RecomputedWork = work
 	return result.Finalize()
 }
@@ -367,6 +369,9 @@ type VerifyOptions struct {
 }
 
 func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, options VerifyOptions) protocol.Result {
+	if _, err := os.Stat(filepath.Join(corpus, "owned_transfer.lang")); err == nil {
+		return verifyOwnedCorpus(ctx, corpus, runner)
+	}
 	started := time.Now()
 	result := protocol.New("verify", protocol.StatusPass)
 	addLane := func(id, status string, controls []string, work, outputBytes int, laneStarted time.Time) {
@@ -502,6 +507,96 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 	for _, lane := range result.Lanes {
 		if lane.RecomputedWork == 0 {
 			return fail(protocol.StatusInvalid, "verify.zero_work", "a verification lane performed no work")
+		}
+	}
+	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+	return result.Finalize()
+}
+
+func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
+	started := time.Now()
+	result := protocol.New("verify", protocol.StatusPass)
+	result.ExpectedEscapes = []string{corevalidate.KnownEscape}
+	addLane := func(id string, controls []string, work, outputBytes int, laneStarted time.Time) {
+		result.Lanes = append(result.Lanes, protocol.Lane{Schema: "lang.verify-lane/0", ID: id, Status: "pass", Controls: append([]string(nil), controls...), RecomputedWork: work, ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable", OutputBytes: outputBytes})
+		result.Metrics.RecomputedWork += work
+		result.Metrics.OutputBytes += outputBytes
+	}
+	fail := func(status, code, message string) protocol.Result {
+		result.Status = status
+		result.Diagnostics = append(result.Diagnostics, diagnostic.Error(code, diagnostic.Span{}, message))
+		result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+		return result.Finalize()
+	}
+
+	laneStarted := time.Now()
+	ownershipControls := []struct{ file, code, control string }{
+		{"use_after_move.lang", "ownership.use_after_move", "control:ownership.use_after_move"},
+		{"move_while_borrowed.lang", "ownership.move_while_borrowed", "control:ownership.move_while_borrowed"},
+		{"implicit_noncopy.lang", "ownership.transfer_requires_take", "control:ownership.transfer_requires_take"},
+	}
+	ownershipBytes := 0
+	for _, control := range ownershipControls {
+		source, err := os.ReadFile(filepath.Join(corpus, control.file))
+		if err != nil {
+			return fail(protocol.StatusOperational, "verify.fixture_missing", control.file)
+		}
+		ownershipBytes += len(source)
+		checked := Check(source)
+		if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != control.code {
+			return fail(protocol.StatusInvalid, "verify.control_missing", control.control)
+		}
+	}
+	addLane("lane:owned-negative-controls", []string{ownershipControls[0].control, ownershipControls[1].control, ownershipControls[2].control}, 3, ownershipBytes, laneStarted)
+
+	validSource, err := os.ReadFile(filepath.Join(corpus, "owned_transfer.lang"))
+	if err != nil {
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "owned_transfer.lang")
+	}
+	checked := Check(validSource)
+	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
+		return fail(protocol.StatusInvalid, "verify.owned_invalid", "owned transfer fixture is invalid")
+	}
+
+	laneStarted = time.Now()
+	forged := corevalidate.Validate(checked.Program).Program()
+	forged.Functions[0].Linear.Types[0].Abilities = append([]core.Ability{core.AbilityCopy}, forged.Functions[0].Linear.Types[0].Abilities...)
+	forgedResult := corevalidate.Validate(forged)
+	duplicate := corevalidate.Validate(checked.Program).Program()
+	duplicate.Functions[0].Linear.Operations[1].ID = duplicate.Functions[0].Linear.Operations[0].ID
+	duplicateResult := corevalidate.Validate(duplicate)
+	if forgedResult.Valid || len(forgedResult.Problems) == 0 || forgedResult.Problems[0].Code != "core.ability_mismatch" || duplicateResult.Valid || len(duplicateResult.Problems) == 0 || duplicateResult.Problems[0].Code != "core.duplicate_operation_id" {
+		return fail(protocol.StatusInvalid, "verify.control_missing", "owned core mutation survived")
+	}
+	addLane("lane:owned-core-controls", []string{"control:ability.forged_copy", "control:core.duplicate_operation_id"}, forgedResult.Checks+duplicateResult.Checks, len(validSource), laneStarted)
+
+	laneStarted = time.Now()
+	nativeResult, diagnostics, err := RunNative(ctx, validSource, runner)
+	if err != nil || len(diagnostics) != 0 || len(nativeResult.Interpreter) == 0 {
+		return fail(protocol.StatusOperational, "verify.native_failed", "owned native differential did not complete")
+	}
+	addLane("lane:owned-native-differential", []string{"control:interpreter-o0-o3-owned"}, len(nativeResult.Interpreter)*3, nativeResult.O0.OutputBytes+nativeResult.O3.OutputBytes, laneStarted)
+
+	laneStarted = time.Now()
+	facts, err := evidence.DefaultFacts(ctx, runner.ClangPath)
+	if err != nil {
+		return fail(protocol.StatusOperational, "evidence.tool_failure", "unable to inspect native toolchain")
+	}
+	product, evidenceDiagnostics, err := evidence.Build(validSource, facts)
+	if err != nil || len(evidenceDiagnostics) != 0 {
+		return fail(protocol.StatusInvalid, "verify.evidence_build_failed", "unable to build owned evidence")
+	}
+	mutated := product.Manifest
+	mutated.CoreDigest = "sha256:deliberately-stale-owned-core"
+	if err := evidence.Validate(mutated, validSource, facts); evidence.ErrorCode(err) != "evidence.core_mismatch" {
+		return fail(protocol.StatusInvalid, "verify.control_missing", "owned core evidence mutation survived")
+	}
+	addLane("lane:owned-evidence-bindings", []string{"control:evidence.core_mismatch"}, 2, len(product.ManifestBytes), laneStarted)
+	result.Evidence = &protocol.EvidenceSummary{Schema: product.Manifest.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
+
+	for _, lane := range result.Lanes {
+		if lane.RecomputedWork == 0 {
+			return fail(protocol.StatusInvalid, "verify.zero_work", lane.ID)
 		}
 	}
 	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()

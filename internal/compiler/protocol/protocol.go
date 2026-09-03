@@ -48,17 +48,18 @@ type Lane struct {
 }
 
 type Result struct {
-	Schema      string                  `json:"schema"`
-	Command     string                  `json:"command"`
-	Status      string                  `json:"status"`
-	ID          string                  `json:"id"`
-	ModuleID    string                  `json:"module_id,omitempty"`
-	Formatted   string                  `json:"formatted,omitempty"`
-	Diagnostics []diagnostic.Diagnostic `json:"diagnostics"`
-	Executions  []interp.Execution      `json:"executions"`
-	Evidence    *EvidenceSummary        `json:"evidence,omitempty"`
-	Lanes       []Lane                  `json:"lanes"`
-	Metrics     Metrics                 `json:"metrics"`
+	Schema          string                  `json:"schema"`
+	Command         string                  `json:"command"`
+	Status          string                  `json:"status"`
+	ID              string                  `json:"id"`
+	ModuleID        string                  `json:"module_id,omitempty"`
+	Formatted       string                  `json:"formatted,omitempty"`
+	Diagnostics     []diagnostic.Diagnostic `json:"diagnostics"`
+	Executions      []interp.Execution      `json:"executions"`
+	Evidence        *EvidenceSummary        `json:"evidence,omitempty"`
+	Lanes           []Lane                  `json:"lanes"`
+	ExpectedEscapes []string                `json:"expected_escapes,omitempty"`
+	Metrics         Metrics                 `json:"metrics"`
 }
 
 func New(command, status string) Result {
@@ -80,11 +81,13 @@ func (result Result) Finalize() Result {
 		ExecutionDigests []string
 		EvidenceID       string
 		LaneIDs          []string
+		ExpectedEscapes  []string `json:",omitempty"`
 	}{
 		Schema: result.Schema, Command: result.Command, Status: result.Status,
 		ModuleID:         result.ModuleID,
 		DiagnosticIDs:    make([]string, 0, len(result.Diagnostics)),
 		ExecutionDigests: make([]string, 0, len(result.Executions)), LaneIDs: make([]string, 0, len(result.Lanes)),
+		ExpectedEscapes: append([]string(nil), result.ExpectedEscapes...),
 	}
 	if result.Formatted != "" {
 		sum := sha256.Sum256([]byte(result.Formatted))
@@ -171,6 +174,9 @@ func human(result Result) string {
 	}
 	for _, lane := range result.Lanes {
 		fmt.Fprintf(&output, "%s %s %s work=%d\n", lane.ID, lane.Schema, lane.Status, lane.RecomputedWork)
+	}
+	for _, expected := range result.ExpectedEscapes {
+		fmt.Fprintf(&output, "%s expected_escape\n", expected)
 	}
 	fmt.Fprintf(&output, "metrics elapsed_ns=%d peak_rss=%s output_bytes=%d recomputed_work=%d\n", result.Metrics.ElapsedNS, result.Metrics.PeakRSSStatus, result.Metrics.OutputBytes, result.Metrics.RecomputedWork)
 	return output.String()

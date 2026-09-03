@@ -192,7 +192,7 @@ func TestPhase2VerifierScriptContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(script)
-	if strings.Contains(text, "verify-phase1.sh") || strings.Count(text, "go test ./...") != 1 || strings.Count(text, "go test -race ./...") != 1 || strings.Count(text, "go vet ./...") != 1 {
+	if strings.Contains(text, "verify-phase1.sh") || strings.Count(text, "\ngo test ./...\n") != 1 || strings.Count(text, "\ngo test -race ./...\n") != 1 || strings.Count(text, "\ngo vet ./...\n") != 1 {
 		t.Fatalf("Phase 2 gate duplicates or nests shared verification:\n%s", text)
 	}
 	for _, required := range []string{"assert-go-tests.sh --self-test", "verify testdata/phase1", "verify testdata/phase2", "warm_samples=20", "peak_rss=unavailable", "p50_ns=", "p95_ns=", "min_ns=", "max_ns=", "output_bytes=", "work="} {
