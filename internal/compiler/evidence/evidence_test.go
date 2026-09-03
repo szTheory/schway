@@ -8,14 +8,17 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
 func TestOwnedEvidenceBindings(t *testing.T) {
 	product := ownedProduct(t)
+	if golden := readPhase2(t, "evidence.golden.json"); !bytes.Equal(product.ManifestBytes, golden) {
+		t.Fatalf("owned evidence golden differs:\n--- got ---\n%s\n--- want ---\n%s", product.ManifestBytes, golden)
+	}
 	manifest := product.Manifest
 	if manifest.Schema != "lang.evidence/1" || manifest.CoreSchema != "lang.core/1" || manifest.ExecutionSchema != "lang.execution/1" || manifest.DiagnosticSchema != "lang.diagnostic/1" {
 		t.Fatalf("owned evidence omitted concrete schemas: %+v", manifest)
@@ -114,32 +117,44 @@ func ownedFacts() evidence.Facts {
 func readPhase2(t testing.TB, name string) []byte {
 	t.Helper()
 	value, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", name))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	return value
 }
 
 func mustCanonical(t testing.TB, manifest evidence.Manifest) []byte {
 	t.Helper()
 	value, err := evidence.CanonicalBytes(manifest)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	return value
 }
 
 func cloneManifest(t testing.TB, value evidence.Manifest) evidence.Manifest {
 	t.Helper()
 	encoded, err := json.Marshal(value)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	var cloned evidence.Manifest
-	if err := json.Unmarshal(encoded, &cloned); err != nil { t.Fatal(err) }
+	if err := json.Unmarshal(encoded, &cloned); err != nil {
+		t.Fatal(err)
+	}
 	return cloned
 }
 
 func cloneExecution(t testing.TB, value execution.Execution) execution.Execution {
 	t.Helper()
 	encoded, err := json.Marshal(value)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	var cloned execution.Execution
-	if err := json.Unmarshal(encoded, &cloned); err != nil { t.Fatal(err) }
+	if err := json.Unmarshal(encoded, &cloned); err != nil {
+		t.Fatal(err)
+	}
 	return cloned
 }
 

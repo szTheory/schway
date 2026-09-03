@@ -20,7 +20,9 @@ func TestOwnershipProjectionIdentityParity(t *testing.T) {
 		t.Fatalf("human/JSON ownership identities diverged: result=%+v human=%q", machine, human)
 	}
 	for _, want := range []string{"source_place=owned:p0", "target_place=owned:p1", "type_id=owned:t0"} {
-		if !strings.Contains(human, want) { t.Fatalf("human ownership event omitted %q: %q", want, human) }
+		if !strings.Contains(human, want) {
+			t.Fatalf("human ownership event omitted %q: %q", want, human)
+		}
 	}
 }
 

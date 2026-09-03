@@ -317,7 +317,7 @@ func EvidenceCommandFile(ctx context.Context, path string) (evidence.Product, pr
 		result.Diagnostics = diagnostics
 		return evidence.Product{}, completeCommand(result, started, 1), nil
 	}
-	result.Evidence = &protocol.EvidenceSummary{Schema: evidence.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
+	result.Evidence = &protocol.EvidenceSummary{Schema: product.Manifest.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
 	return product, completeCommand(result, started, 3), nil
 }
 
@@ -342,7 +342,7 @@ func ValidateEvidenceCommandFile(ctx context.Context, manifestPath, sourcePath s
 		return commandProblem("evidence", protocol.StatusInvalid, evidence.ErrorCode(err), "evidence manifest does not match recomputed facts")
 	}
 	result := protocol.New("evidence", protocol.StatusPass)
-	result.Evidence = &protocol.EvidenceSummary{Schema: evidence.Schema, ID: manifest.ID, Digest: evidence.ContentDigest(manifestBytes)}
+	result.Evidence = &protocol.EvidenceSummary{Schema: manifest.Schema, ID: manifest.ID, Digest: evidence.ContentDigest(manifestBytes)}
 	return result.Finalize()
 }
 
@@ -470,7 +470,7 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 		return fail(protocol.StatusInvalid, "verify.control_missing", "stale evidence control did not fail as expected")
 	}
 	addLane("lane:evidence-bindings", "pass", []string{"control:evidence.source_mismatch"}, 3, len(product.ManifestBytes), laneStarted)
-	result.Evidence = &protocol.EvidenceSummary{Schema: evidence.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
+	result.Evidence = &protocol.EvidenceSummary{Schema: product.Manifest.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
 
 	laneStarted = time.Now()
 	nativeResult, nativeDiagnostics, err := RunNative(ctx, validSource, runner)

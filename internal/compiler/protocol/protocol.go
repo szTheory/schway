@@ -150,7 +150,20 @@ func human(result Result) string {
 	}
 	for _, execution := range result.Executions {
 		for _, event := range execution.Events {
-			fmt.Fprintf(&output, "%s %s input=%s output=%s\n", event.ID, event.Kind, event.Input, event.Output)
+			fmt.Fprintf(&output, "%s %s", event.ID, event.Kind)
+			if event.Input != "" || event.Output != "" {
+				fmt.Fprintf(&output, " input=%s output=%s", event.Input, event.Output)
+			}
+			if event.SourcePlace != "" {
+				fmt.Fprintf(&output, " source_place=%s", event.SourcePlace)
+			}
+			if event.TargetPlace != "" {
+				fmt.Fprintf(&output, " target_place=%s", event.TargetPlace)
+			}
+			if event.TypeID != "" {
+				fmt.Fprintf(&output, " type_id=%s", event.TypeID)
+			}
+			output.WriteByte('\n')
 		}
 	}
 	if result.Evidence != nil {

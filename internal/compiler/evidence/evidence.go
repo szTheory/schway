@@ -18,15 +18,20 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
 
 const (
-	Schema       = "lang.evidence/0"
+	Schema0      = "lang.evidence/0"
+	Schema1      = "lang.evidence/1"
+	Schema       = Schema0
 	IDAlgorithm  = "sha256-v1"
 	SourceSchema = "lang.source/s1"
+	DigestClaim  = "content-identity-only"
 )
 
 var DefaultFlags = []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-O0", "-O3"}
@@ -46,6 +51,7 @@ type Manifest struct {
 	SourceSchema     string   `json:"source_schema"`
 	CoreSchema       string   `json:"core_schema"`
 	ExecutionSchema  string   `json:"execution_schema"`
+	DiagnosticSchema string   `json:"diagnostic_schema,omitempty"`
 	CompilerIdentity string   `json:"compiler_identity"`
 	ClangIdentity    string   `json:"clang_identity"`
 	Target           string   `json:"target"`
@@ -54,6 +60,9 @@ type Manifest struct {
 	SourceDigest     string   `json:"source_digest"`
 	CoreDigest       string   `json:"core_digest"`
 	CDigest          string   `json:"c_digest"`
+	ExecutionDigests []string `json:"execution_digests,omitempty"`
+	DigestClaim      string   `json:"digest_claim,omitempty"`
+	KnownEscape      string   `json:"known_escape,omitempty"`
 }
 
 type Product struct {
@@ -62,6 +71,7 @@ type Product struct {
 	CoreBytes       []byte
 	CSource         []byte
 	ManifestBytes   []byte
+	Executions      []execution.Execution
 }
 
 type ValidationError struct {
@@ -109,6 +119,11 @@ func Build(source []byte, facts Facts) (Product, []diagnostic.Diagnostic, error)
 	if len(checked.Diagnostics) > 0 {
 		return Product{}, checked.Diagnostics, nil
 	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return Product{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	checked.Program = validated.Program()
 	coreBytes, err := json.Marshal(checked.Program)
 	if err != nil {
 		return Product{}, nil, err
@@ -118,18 +133,76 @@ func Build(source []byte, facts Facts) (Product, []diagnostic.Diagnostic, error)
 		return Product{}, nil, err
 	}
 	manifest := Manifest{
-		Schema: Schema, IDAlgorithm: IDAlgorithm,
+		Schema: Schema0, IDAlgorithm: IDAlgorithm,
 		SourceSchema: SourceSchema, CoreSchema: core.Schema, ExecutionSchema: interp.Schema,
 		CompilerIdentity: facts.CompilerIdentity, ClangIdentity: facts.ClangIdentity,
 		Target: facts.Target, Flags: append([]string(nil), facts.Flags...), Policy: facts.Policy,
 		SourceDigest: digest(canonicalSource), CoreDigest: digest(coreBytes), CDigest: digest([]byte(cSource)),
+	}
+	executions := []execution.Execution{}
+	if checked.Program.Schema == core.Schema1 {
+		manifest.Schema = Schema1
+		manifest.CoreSchema = core.Schema1
+		manifest.ExecutionSchema = execution.Schema1
+		manifest.DiagnosticSchema = diagnostic.Schema1
+		manifest.DigestClaim = DigestClaim
+		manifest.KnownEscape = corevalidate.KnownEscape
+		if manifest.Policy == "phase1-pure-c17-v1" {
+			manifest.Policy = "phase2-owned-c17-v1"
+		}
+		for _, function := range checked.Program.Functions {
+			input, ok := evidenceInput(function)
+			if !ok {
+				continue
+			}
+			value, runErr := interp.Run(checked.Program, function.Name, input)
+			if runErr != nil {
+				return Product{}, nil, runErr
+			}
+			owned, cloneErr := cloneExecution(value)
+			if cloneErr != nil {
+				return Product{}, nil, cloneErr
+			}
+			executions = append(executions, owned)
+			encoded, encodeErr := execution.CanonicalBytes(owned)
+			if encodeErr != nil {
+				return Product{}, nil, encodeErr
+			}
+			manifest.ExecutionDigests = append(manifest.ExecutionDigests, digest(encoded))
+		}
 	}
 	manifest.ID = manifestID(manifest)
 	manifestBytes, err := CanonicalBytes(manifest)
 	if err != nil {
 		return Product{}, nil, err
 	}
-	return Product{Manifest: manifest, CanonicalSource: canonicalSource, CoreBytes: coreBytes, CSource: []byte(cSource), ManifestBytes: manifestBytes}, nil, nil
+	return Product{Manifest: manifest, CanonicalSource: canonicalSource, CoreBytes: coreBytes, CSource: []byte(cSource), ManifestBytes: manifestBytes, Executions: executions}, nil, nil
+}
+
+func evidenceInput(function core.Function) (string, bool) {
+	if function.Linear == nil || function.Match != nil {
+		return "", false
+	}
+	switch function.Parameter.Type {
+	case "Byte":
+		return "7", true
+	case "Buffer":
+		return "01020304", true
+	default:
+		return "", false
+	}
+}
+
+func cloneExecution(value execution.Execution) (execution.Execution, error) {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return execution.Execution{}, err
+	}
+	var cloned execution.Execution
+	if err := json.Unmarshal(encoded, &cloned); err != nil {
+		return execution.Execution{}, err
+	}
+	return cloned, nil
 }
 
 func CanonicalBytes(manifest Manifest) ([]byte, error) {
@@ -178,6 +251,13 @@ func Validate(manifest Manifest, source []byte, facts Facts) error {
 		{"evidence.target_mismatch", manifest.Target, expected.Manifest.Target},
 		{"evidence.policy_mismatch", manifest.Policy, expected.Manifest.Policy},
 	}
+	if expected.Manifest.Schema == Schema1 {
+		checks = append(checks,
+			struct{ code, got, want string }{"evidence.diagnostic_schema_mismatch", manifest.DiagnosticSchema, expected.Manifest.DiagnosticSchema},
+			struct{ code, got, want string }{"evidence.digest_claim_mismatch", manifest.DigestClaim, expected.Manifest.DigestClaim},
+			struct{ code, got, want string }{"evidence.escape_mismatch", manifest.KnownEscape, expected.Manifest.KnownEscape},
+		)
+	}
 	for _, check := range checks {
 		if check.got != check.want {
 			return &ValidationError{Code: check.code}
@@ -185,6 +265,9 @@ func Validate(manifest Manifest, source []byte, facts Facts) error {
 	}
 	if !equalStrings(manifest.Flags, expected.Manifest.Flags) {
 		return &ValidationError{Code: "evidence.flags_mismatch"}
+	}
+	if expected.Manifest.Schema == Schema1 && !equalStrings(manifest.ExecutionDigests, expected.Manifest.ExecutionDigests) {
+		return &ValidationError{Code: "evidence.execution_mismatch"}
 	}
 	for _, check := range []struct {
 		code string
@@ -211,6 +294,21 @@ func digest(data []byte) string {
 }
 
 func manifestID(manifest Manifest) string {
+	if manifest.Schema == Schema1 {
+		identity := struct {
+			Schema, IDAlgorithm, SourceSchema, CoreSchema, ExecutionSchema, DiagnosticSchema string
+			CompilerIdentity, ClangIdentity, Target                                          string
+			Flags                                                                            []string
+			Policy, SourceDigest, CoreDigest, CDigest                                        string
+			ExecutionDigests                                                                 []string
+			DigestClaim, KnownEscape                                                         string
+		}{manifest.Schema, manifest.IDAlgorithm, manifest.SourceSchema, manifest.CoreSchema, manifest.ExecutionSchema, manifest.DiagnosticSchema,
+			manifest.CompilerIdentity, manifest.ClangIdentity, manifest.Target, manifest.Flags, manifest.Policy, manifest.SourceDigest, manifest.CoreDigest, manifest.CDigest,
+			manifest.ExecutionDigests, manifest.DigestClaim, manifest.KnownEscape}
+		encoded, _ := json.Marshal(identity)
+		sum := sha256.Sum256(encoded)
+		return "evidence:" + hex.EncodeToString(sum[:12])
+	}
 	identity := struct {
 		Schema           string
 		IDAlgorithm      string
