@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 )
 
@@ -14,6 +15,11 @@ type Event = execution.Event
 type Execution = execution.Execution
 
 func Run(program core.Program, functionName, input string) (Execution, error) {
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return Execution{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program = validated.Program()
 	function, ok := findFunction(program, functionName)
 	if !ok {
 		return Execution{}, fmt.Errorf("function %q is absent from checked core", functionName)

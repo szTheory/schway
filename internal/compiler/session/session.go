@@ -13,6 +13,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/interp"
@@ -131,6 +132,11 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	if len(checked.Program.Functions) != 1 {
 		return nil, nil, os.ErrInvalid
 	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return nil, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	checked.Program = validated.Program()
 	inputs, ok := interpreterInputs(checked.Program)
 	if !ok {
 		return nil, nil, os.ErrInvalid
@@ -201,6 +207,11 @@ func RunNative(ctx context.Context, source []byte, runner native.Runner) (Native
 	if len(checked.Program.DataTypes) != 1 || len(checked.Program.Functions) != 1 {
 		return NativeResult{}, nil, os.ErrInvalid
 	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return NativeResult{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	checked.Program = validated.Program()
 	inputs := checked.Program.DataTypes[0].Alternatives
 	interpreted := make([]interp.Execution, 0, len(inputs))
 	for _, input := range inputs {

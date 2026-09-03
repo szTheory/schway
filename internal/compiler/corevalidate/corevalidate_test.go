@@ -44,7 +44,7 @@ func TestOwnershipMutationMatrix(t *testing.T) {
 			*program = borrow
 			program.Functions[0].Linear.Operations[0].LoanID = ""
 		}},
-		{"omitted move", "core.final_claim_mismatch", func(program *core.Program) {
+		{"omitted move", "core.operation_order", func(program *core.Program) {
 			operations := program.Functions[0].Linear.Operations
 			program.Functions[0].Linear.Operations = append([]core.LinearOperation(nil), operations[1:]...)
 		}},
@@ -52,7 +52,11 @@ func TestOwnershipMutationMatrix(t *testing.T) {
 			borrow := borrowedProgram()
 			*program = borrow
 			operations := program.Functions[0].Linear.Operations
+			firstID, firstPoint := operations[1].ID, operations[1].PointID
+			secondID, secondPoint := operations[2].ID, operations[2].PointID
 			operations[1], operations[2] = operations[2], operations[1]
+			operations[1].ID, operations[1].PointID = firstID, firstPoint
+			operations[2].ID, operations[2].PointID = secondID, secondPoint
 		}},
 		{"inconsistent final claim", "core.final_claim_mismatch", func(program *core.Program) {
 			program.Functions[0].Linear.Operations[1].SourceID = program.Functions[0].Parameter.ID
@@ -132,7 +136,7 @@ func ownedProgram() core.Program {
 				ID: functionID + ":linear",
 				Types: []core.TypeFact{{
 					ID: typeID, Shape: core.TypeRef{Constructor: "Buffer", Arguments: []core.TypeRef{}},
-					Abilities: []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
+					Abilities:         []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
 					NegativeWitnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Buffer"}}, {Ability: core.AbilityShare, Path: []string{"Buffer"}}},
 				}},
 				Places: []core.Place{{ID: parameterID, Name: "buffer", TypeID: typeID}, {ID: targetID, Name: "delivered", TypeID: typeID}},
@@ -149,6 +153,13 @@ func borrowedProgram() core.Program {
 	program := ownedProgram()
 	function := &program.Functions[0]
 	linear := function.Linear
+	function.Parameter.Type = "Byte"
+	function.ReturnType = "Byte"
+	linear.Types[0] = core.TypeFact{
+		ID: linear.Types[0].ID, Shape: core.TypeRef{Constructor: "Byte", Arguments: []core.TypeRef{}},
+		Abilities:         []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+		NegativeWitnesses: []core.AbilityWitness{},
+	}
 	owner := function.Parameter.ID
 	view := function.ID + ":place:1"
 	observed := function.ID + ":place:2"
