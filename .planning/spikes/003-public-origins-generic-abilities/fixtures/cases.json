@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "types": [
+    {"name": "Byte", "parameters": 0, "base": ["copy", "drop", "share", "send", "escape"]},
+    {"name": "Int", "parameters": 0, "base": ["copy", "drop", "share", "send", "escape"]},
+    {"name": "Buffer", "parameters": 0, "base": ["drop", "share", "send", "escape"]},
+    {"name": "PairBuffer", "parameters": 0, "base": ["drop", "share", "send", "escape"]},
+    {"name": "File", "parameters": 0, "base": ["drop", "send", "escape"]},
+    {"name": "Guard", "parameters": 0, "base": ["drop"]},
+    {"name": "View", "parameters": 1, "base": ["copy", "drop"], "conditional": {"share": [0], "send": [0]}},
+    {"name": "AnyView", "parameters": 0, "base": ["copy", "drop"]},
+    {"name": "BorrowIter", "parameters": 1, "base": ["drop"], "conditional": {"share": [0]}},
+    {"name": "Option", "parameters": 1, "conditional": {"copy": [0], "drop": [0], "share": [0], "send": [0], "escape": [0]}},
+    {"name": "Result", "parameters": 2, "conditional": {"copy": [0, 1], "drop": [0, 1], "share": [0, 1], "send": [0, 1], "escape": [0, 1]}},
+    {"name": "List", "parameters": 1, "conditional": {"copy": [0], "drop": [0], "share": [0], "send": [0], "escape": [0]}},
+    {"name": "UniqueBox", "parameters": 1, "conditional": {"drop": [0], "send": [0], "escape": [0]}}
+  ],
+  "functions": [
+    {
+      "id": "make_buffer",
+      "returns": [{"kind": "owned", "type": {"name": "Buffer"}}],
+      "body": {"returns": [{"kind": "owned", "type": {"name": "Buffer"}}]}
+    },
+    {
+      "id": "head",
+      "params": [{"name": "input", "mode": "borrow", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["input"]}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["input"]}]}
+    },
+    {
+      "id": "head_mut",
+      "params": [{"name": "input", "mode": "borrow_mut", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "borrowed", "access": "exclusive", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["input"]}],
+      "body": {"returns": [{"kind": "borrowed", "access": "exclusive", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["input"]}]}
+    },
+    {
+      "id": "choose",
+      "params": [
+        {"name": "left", "mode": "borrow", "type": {"name": "Buffer"}},
+        {"name": "right", "mode": "borrow", "type": {"name": "Buffer"}}
+      ],
+      "returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["left", "right"]}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["left", "right"]}]}
+    },
+    {
+      "id": "choose_tagged",
+      "params": [
+        {"name": "left", "mode": "borrow", "type": {"name": "Buffer"}},
+        {"name": "right", "mode": "borrow", "type": {"name": "Buffer"}}
+      ],
+      "returns": [
+        {"tag": "Left", "kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["left"]},
+        {"tag": "Right", "kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["right"]}
+      ],
+      "body": {"returns": [
+        {"tag": "Left", "kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["left"]},
+        {"tag": "Right", "kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["right"]}
+      ]}
+    },
+    {
+      "id": "left_field",
+      "params": [{"name": "pair", "mode": "borrow", "type": {"name": "PairBuffer"}}],
+      "returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["pair.left"]}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["pair.left"]}]}
+    },
+    {
+      "id": "as_option",
+      "params": [{"name": "input", "mode": "borrow", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "borrowed", "type": {"name": "Option", "args": [{"name": "View", "args": [{"name": "Byte"}]}]}, "origins": ["input"]}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "Option", "args": [{"name": "View", "args": [{"name": "Byte"}]}]}, "origins": ["input"]}]}
+    },
+    {
+      "id": "make_optional",
+      "type_params": ["T"],
+      "params": [{"name": "value", "mode": "take", "type": {"name": "T"}}],
+      "returns": [{"kind": "owned", "type": {"name": "Option", "args": [{"name": "T"}]}}],
+      "body": {"returns": [{"kind": "owned", "type": {"name": "Option", "args": [{"name": "T"}]}}]}
+    },
+    {
+      "id": "identity",
+      "type_params": ["T"],
+      "params": [{"name": "value", "mode": "take", "type": {"name": "T"}}],
+      "returns": [{"kind": "owned", "type": {"name": "T"}}],
+      "body": {"returns": [{"kind": "owned", "type": {"name": "T"}}]}
+    },
+    {
+      "id": "erase_view",
+      "params": [{"name": "input", "mode": "borrow", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "borrowed", "type": {"name": "AnyView"}, "origins": ["input"]}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "AnyView"}, "origins": ["input"]}]}
+    },
+    {
+      "id": "borrow_iter",
+      "params": [{"name": "input", "mode": "borrow", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "borrowed", "type": {"name": "BorrowIter", "args": [{"name": "Byte"}]}, "origins": ["input"]}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "BorrowIter", "args": [{"name": "Byte"}]}, "origins": ["input"]}]}
+    },
+    {
+      "id": "make_guard",
+      "returns": [{"kind": "owned", "type": {"name": "Guard"}}],
+      "body": {"returns": [{"kind": "owned", "type": {"name": "Guard"}}]}
+    },
+    {
+      "id": "with_view",
+      "type_params": ["R"],
+      "params": [{"name": "input", "mode": "borrow", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "owned", "type": {"name": "R"}}],
+      "callbacks": [{"parameter": "use", "fresh_origin": "access", "borrowed_from": ["input"], "result_type": {"name": "R"}, "result_requires": ["escape"]}],
+      "body": {"returns": [{"kind": "owned", "type": {"name": "R"}}]}
+    }
+  ],
+  "dishonest_functions": [
+    {
+      "id": "dishonest_union",
+      "params": [
+        {"name": "left", "mode": "borrow", "type": {"name": "Buffer"}},
+        {"name": "right", "mode": "borrow", "type": {"name": "Buffer"}}
+      ],
+      "returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["left"]}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["left", "right"]}]}
+    },
+    {
+      "id": "dishonest_owned",
+      "params": [{"name": "input", "mode": "borrow", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "owned", "type": {"name": "Buffer"}}],
+      "body": {"returns": [{"kind": "borrowed", "type": {"name": "Buffer"}, "origins": ["input"]}]}
+    },
+    {
+      "id": "dishonest_callback",
+      "type_params": ["R"],
+      "params": [{"name": "input", "mode": "borrow", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "owned", "type": {"name": "R"}}],
+      "callbacks": [{"parameter": "use", "fresh_origin": "access", "borrowed_from": ["input"], "result_type": {"name": "R"}, "result_requires": ["escape"]}],
+      "body": {"returns": [{"kind": "owned", "type": {"name": "R"}}], "retained_fresh_origin": "access"}
+    },
+    {
+      "id": "dishonest_access",
+      "params": [{"name": "input", "mode": "borrow_mut", "type": {"name": "Buffer"}}],
+      "returns": [{"kind": "borrowed", "access": "shared", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["input"]}],
+      "body": {"returns": [{"kind": "borrowed", "access": "exclusive", "type": {"name": "View", "args": [{"name": "Byte"}]}, "origins": ["input"]}]}
+    }
+  ],
+  "cases": [
+    {"id": "CALL-OWNED-001", "function": "make_buffer", "steps": [{"kind": "use_result"}], "expect_valid": true},
+    {"id": "CALL-HEAD-001", "function": "head", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "use_result"}], "expect_valid": true},
+    {"id": "CALL-HEAD-002", "function": "head", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "mutate_binding", "binding": "source"}, {"kind": "use_result"}], "expect_valid": false, "expect_code": "ownership.borrow_conflict"},
+    {"id": "CALL-HEAD-003", "function": "head", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "drop_result"}, {"kind": "mutate_binding", "binding": "source"}], "expect_valid": true},
+    {"id": "CALL-HEAD-004", "function": "head", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "escape_result"}], "expect_valid": false, "expect_code": "ability.escape_required"},
+    {"id": "CALL-HEAD-MUT-001", "function": "head_mut", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "read_binding", "binding": "source"}, {"kind": "use_result"}], "expect_valid": false, "expect_code": "ownership.borrow_conflict"},
+    {"id": "CALL-HEAD-MUT-002", "function": "head_mut", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "drop_result"}, {"kind": "read_binding", "binding": "source"}], "expect_valid": true},
+    {"id": "CALL-CHOOSE-001", "function": "choose", "arguments": {"left": "a", "right": "b"}, "bindings": [{"id": "a", "type": {"name": "Buffer"}}, {"id": "b", "type": {"name": "Buffer"}}], "steps": [{"kind": "drop_binding", "binding": "b"}, {"kind": "use_result"}], "expect_valid": false, "expect_code": "ownership.borrow_conflict"},
+    {"id": "CALL-TAGGED-001", "function": "choose_tagged", "return_tag": "Left", "arguments": {"left": "a", "right": "b"}, "bindings": [{"id": "a", "type": {"name": "Buffer"}}, {"id": "b", "type": {"name": "Buffer"}}], "steps": [{"kind": "drop_binding", "binding": "b"}, {"kind": "use_result"}], "expect_valid": true},
+    {"id": "CALL-TAGGED-002", "function": "choose_tagged", "return_tag": "Right", "arguments": {"left": "a", "right": "b"}, "bindings": [{"id": "a", "type": {"name": "Buffer"}}, {"id": "b", "type": {"name": "Buffer"}}], "steps": [{"kind": "drop_binding", "binding": "b"}, {"kind": "use_result"}], "expect_valid": false, "expect_code": "ownership.borrow_conflict"},
+    {"id": "CALL-FIELD-001", "function": "left_field", "arguments": {"pair": "pair_value"}, "bindings": [{"id": "pair_value", "type": {"name": "PairBuffer"}}], "steps": [{"kind": "mutate_binding", "binding": "pair_value"}, {"kind": "use_result"}], "expect_valid": false, "expect_code": "ownership.borrow_conflict"},
+    {"id": "CALL-OPTION-VIEW-001", "function": "as_option", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "copy_result"}], "expect_valid": true},
+    {"id": "CALL-OPTION-VIEW-002", "function": "as_option", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "escape_result"}], "expect_valid": false, "expect_code": "ability.escape_required"},
+    {"id": "CALL-GENERIC-001", "function": "make_optional", "type_args": {"T": {"name": "File"}}, "arguments": {"value": "file"}, "bindings": [{"id": "file", "type": {"name": "File"}}], "steps": [{"kind": "copy_result"}], "expect_valid": false, "expect_code": "ability.copy_required"},
+    {"id": "CALL-GENERIC-002", "function": "make_optional", "type_args": {"T": {"name": "Byte"}}, "arguments": {"value": "byte"}, "bindings": [{"id": "byte", "type": {"name": "Byte"}}], "steps": [{"kind": "copy_result"}], "expect_valid": true},
+    {"id": "CALL-GENERIC-003", "function": "identity", "type_args": {"T": {"name": "File"}}, "arguments": {"value": "file"}, "bindings": [{"id": "file", "type": {"name": "File"}}], "steps": [{"kind": "send_result"}], "expect_valid": true},
+    {"id": "CALL-ERASE-001", "function": "erase_view", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "escape_result"}], "expect_valid": false, "expect_code": "ability.escape_required"},
+    {"id": "CALL-ITER-001", "function": "borrow_iter", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "copy_result"}], "expect_valid": false, "expect_code": "ability.copy_required"},
+    {"id": "CALL-ITER-002", "function": "borrow_iter", "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "steps": [{"kind": "mutate_binding", "binding": "source"}, {"kind": "use_result"}], "expect_valid": false, "expect_code": "ownership.borrow_conflict"},
+    {"id": "CALL-GUARD-001", "function": "make_guard", "steps": [{"kind": "drop_result"}], "expect_valid": true},
+    {"id": "CALL-GUARD-002", "function": "make_guard", "steps": [{"kind": "copy_result"}], "expect_valid": false, "expect_code": "ability.copy_required"},
+    {"id": "CALL-GUARD-003", "function": "make_guard", "steps": [{"kind": "escape_result"}], "expect_valid": false, "expect_code": "ability.escape_required"},
+    {"id": "CALL-CALLBACK-001", "function": "with_view", "type_args": {"R": {"name": "Int"}}, "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "callback": {"parameter": "use", "result_type": {"name": "Int"}}, "steps": [{"kind": "use_result"}], "expect_valid": true},
+    {"id": "CALL-CALLBACK-002", "function": "with_view", "type_args": {"R": {"name": "View", "args": [{"name": "Byte"}]}}, "arguments": {"input": "source"}, "bindings": [{"id": "source", "type": {"name": "Buffer"}}], "callback": {"parameter": "use", "result_type": {"name": "View", "args": [{"name": "Byte"}]}, "result_origins": ["access"]}, "steps": [{"kind": "use_result"}], "expect_valid": false, "expect_code": "lifetime.scoped_callback_escape"}
+  ]
+}
