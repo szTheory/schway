@@ -75,6 +75,7 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		data []byte
 		code string
 	}{
+		{name: "missing document fields", data: []byte(`{}`), code: "native.invalid_execution"},
 		{name: "unknown field", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[],"unknown":true}`), code: "native.invalid_execution"},
 		{name: "duplicate document", data: append(append([]byte{}, valid...), valid...), code: "native.trailing_execution"},
 		{name: "trailing value", data: append(append([]byte{}, valid...), []byte(` true`)...), code: "native.trailing_execution"},

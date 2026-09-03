@@ -409,6 +409,11 @@ func TestOwnedEventReorderIsMismatch(t *testing.T) {
 
 func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
 	expected := ownedInterpreterExecution(t)
+	operationalRunner := &fakeNativeRunner{err: &native.ToolError{Code: "native.invalid_execution", Err: errors.New("malformed child stdout")}}
+	operational, err := session.RunNativeCommandFile(context.Background(), testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"), operationalRunner)
+	if err != nil || operational.Status != protocol.StatusOperational || protocol.ExitCode(operational.Status) != 3 || operational.Diagnostics[0].Code != "native.invalid_execution" {
+		t.Fatalf("malformed native output classification changed: result=%+v err=%v", operational, err)
+	}
 	tests := []struct {
 		name   string
 		mutate func(*execution.Execution)

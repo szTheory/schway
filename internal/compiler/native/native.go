@@ -166,6 +166,9 @@ func withStderr(err error, stderr []byte) error {
 }
 
 func decodeExecution(stdout []byte) (execution.Execution, error) {
+	if len(stdout) > MaxStreamBytes {
+		return execution.Execution{}, streamError("native.run_stdout_truncated")
+	}
 	var value execution.Execution
 	decoder := json.NewDecoder(bytes.NewReader(stdout))
 	decoder.DisallowUnknownFields()
@@ -178,6 +181,14 @@ func decodeExecution(stdout []byte) (execution.Execution, error) {
 			err = errors.New("trailing execution document")
 		}
 		return execution.Execution{}, &ToolError{Code: "native.trailing_execution", Err: err}
+	}
+	if value.Schema == "" || value.Outcome.Kind == "" || value.Events == nil || value.LiveResources == nil {
+		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: errors.New("execution document omits required fields")}
+	}
+	for _, event := range value.Events {
+		if event.Schema == "" || event.ID == "" || event.Kind == "" || event.FunctionID == "" {
+			return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: errors.New("execution event omits required fields")}
+		}
 	}
 	return value, nil
 }

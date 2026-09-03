@@ -49,6 +49,10 @@ type EngineMismatch struct {
 	Actual       string
 }
 
+type NativeRunner interface {
+	Run(context.Context, string, string, []string) (native.Result, error)
+}
+
 func (e *EngineMismatch) Error() string {
 	return fmt.Sprintf("native %s mismatch for %s: expected %s, got %s", e.Optimization, e.Input, e.Expected, e.Actual)
 }
@@ -200,7 +204,7 @@ func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	return completeCommand(result, started, len(executions)), nil
 }
 
-func RunNative(ctx context.Context, source []byte, runner native.Runner) (NativeResult, []diagnostic.Diagnostic, error) {
+func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
 	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
 		return NativeResult{}, checked.Diagnostics, nil
@@ -237,6 +241,12 @@ func RunNative(ctx context.Context, source []byte, runner native.Runner) (Native
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
+	if len(o0.Pairs) != len(inputs) || len(o3.Pairs) != len(inputs) {
+		return NativeResult{}, nil, &EngineMismatch{
+			Optimization: "-O0/-O3", Expected: fmt.Sprintf("%d executions", len(inputs)),
+			Actual: fmt.Sprintf("%d/%d executions", len(o0.Pairs), len(o3.Pairs)),
+		}
+	}
 	for index, expected := range interpreted {
 		for _, actual := range []native.Result{o0, o3} {
 			if !execution.Equal(expected, actual.Pairs[index].Execution) {
@@ -249,7 +259,7 @@ func RunNative(ctx context.Context, source []byte, runner native.Runner) (Native
 	return NativeResult{CSource: cSource, Interpreter: interpreted, O0: o0, O3: o3}, nil, nil
 }
 
-func RunNativeFile(ctx context.Context, path string, runner native.Runner) (NativeResult, []diagnostic.Diagnostic, error) {
+func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
 	source, err := os.ReadFile(path)
 	if err != nil {
 		return NativeResult{}, nil, err
@@ -257,7 +267,7 @@ func RunNativeFile(ctx context.Context, path string, runner native.Runner) (Nati
 	return RunNative(ctx, source, runner)
 }
 
-func RunNativeCommandFile(ctx context.Context, path string, runner native.Runner) (protocol.Result, error) {
+func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner) (protocol.Result, error) {
 	started := time.Now()
 	nativeResult, diagnostics, err := RunNativeFile(ctx, path, runner)
 	result := protocol.New("run", protocol.StatusPass)
