@@ -14,6 +14,7 @@ import (
 type Result struct {
 	Program     core.Program
 	Diagnostics []diagnostic.Diagnostic
+	Work        int
 }
 
 func Program(program ast.Program) Result {
@@ -36,7 +37,8 @@ func Program(program ast.Program) Result {
 			continue
 		}
 		if function.Body.Linear != nil {
-			checked, diagnostics := checkLinear(program.Module, functionID, function)
+			checked, diagnostics, work := checkLinear(program.Module, functionID, function)
+			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
 				result.Program.Schema = core.Schema1
@@ -105,14 +107,14 @@ func Program(program ast.Program) Result {
 	return result
 }
 
-func checkLinear(module, functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic) {
+func checkLinear(module, functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	if !sameType(function.ReturnType, function.Parameter.Type) {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType)
 	}
 	derived, err := ability.Derive(parameterType)
 	if err != nil {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
 	}
 	typeID := functionID + ":type:0"
 	parameterID := functionID + ":place:0"
@@ -122,31 +124,83 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
-	type placeState struct {
-		place        core.Place
-		declared     diagnostic.Span
-		initialized  bool
-		movedAt      *diagnostic.Span
-		moveTargetID string
-		loan         *loanState
+	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear)
+	if support.Diagnostic != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work
 	}
-	typeFacts := linear.Types[0]
-	loanUses := discoverLoanLastUses(function.Body.Linear)
+	linear.Places = support.Places
+	linear.Operations = support.Operations
+	return core.Function{
+		ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter: core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor}, ReturnType: function.ReturnType.Constructor,
+		Linear: linear, Span: function.Span,
+	}, nil, support.Work
+}
+
+type loanFinalUseFact struct {
+	LoanID         string
+	Binding        string
+	OperationIndex int
+}
+
+type ownershipStateFact struct {
+	OperationIndex    int
+	InitializedPlaces []string
+	ActiveLoans       []string
+}
+
+type ownershipSupport struct {
+	Places         []core.Place
+	Operations     []core.LinearOperation
+	LoanFinalUses  []loanFinalUseFact
+	States         []ownershipStateFact
+	Work           int
+	DiagnosticCode string
+	Diagnostic     *diagnostic.Diagnostic
+}
+
+type placeState struct {
+	place        core.Place
+	declared     diagnostic.Span
+	initialized  bool
+	movedAt      *diagnostic.Span
+	moveTargetID string
+}
+
+func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+	parameterID := functionID + ":place:0"
+	result := ownershipSupport{
+		Places:     []core.Place{{ID: parameterID, Name: parameterName, TypeID: typeFact.ID}},
+		Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
+		Work: typeNodeCount(typeFact.Shape) + len(body.Bindings) + 1,
+	}
+	loanUses := discoverLoanLastUses(body)
+	for index, binding := range body.Bindings {
+		if binding.RHS.Kind == "borrow" {
+			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{
+				LoanID: fmt.Sprintf("%s:loan:%d", functionID, index), Binding: binding.Name, OperationIndex: loanUses[binding.Name].index,
+			})
+		}
+	}
 	places := map[string]*placeState{
-		function.Parameter.Name: {place: linear.Places[0], declared: function.Parameter.Span, initialized: true},
+		parameterName: {place: result.Places[0], declared: parameterSpan, initialized: true},
 	}
 	activeLoans := make(map[string]map[string]*loanState)
+	expiringLoans := make(map[int][]*loanState)
 	endLoans := func(index int) {
-		for ownerID, loans := range activeLoans {
-			for loanID, loan := range loans {
-				if loan.lastUse <= index {
-					delete(loans, loanID)
+		for _, loan := range expiringLoans[index] {
+			if loans := activeLoans[loan.ownerID]; loans != nil {
+				delete(loans, loan.id)
+				if len(loans) == 0 {
+					delete(activeLoans, loan.ownerID)
 				}
 			}
-			if len(loans) == 0 {
-				delete(activeLoans, ownerID)
-			}
 		}
+	}
+	fail := func(problem diagnostic.Diagnostic) ownershipSupport {
+		result.DiagnosticCode = problem.Code
+		result.Diagnostic = &problem
+		return result
 	}
 	useAfterMove := func(span diagnostic.Span, state *placeState) diagnostic.Diagnostic {
 		causes := []diagnostic.Cause{
@@ -162,13 +216,14 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 			diagnostic.Repair{Kind: "move_use_before_transfer"},
 		)
 	}
-	for index, binding := range function.Body.Linear.Bindings {
+	for index, binding := range body.Bindings {
+		result.Work++
 		source, ok := places[binding.RHS.Source]
 		if !ok {
-			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown", binding.RHS.Span, "binding source is unknown")}
+			return fail(diagnostic.Error("name.unknown", binding.RHS.Span, "binding source is unknown"))
 		}
 		if !source.initialized {
-			return core.Function{}, []diagnostic.Diagnostic{useAfterMove(binding.RHS.Span, source)}
+			return fail(useAfterMove(binding.RHS.Span, source))
 		}
 		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, index+1), Name: binding.Name, TypeID: source.place.TypeID}
 		kind := core.OpCopy
@@ -189,10 +244,10 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 					{Kind: "owner", Detail: source.place.ID},
 					{Kind: "type", Detail: source.place.TypeID},
 				}
-				return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
+				return fail(diagnostic.ErrorWithRepairs(
 					"ownership.move_while_borrowed", binding.RHS.Span, "cannot transfer ownership while a future-used shared loan is live", causes,
 					diagnostic.Repair{Kind: "move_after_last_borrow_use"},
-				)}
+				))
 			}
 			kind = core.OpMove
 			source.initialized = false
@@ -209,45 +264,46 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 				activeLoans[source.place.ID] = make(map[string]*loanState)
 			}
 			activeLoans[source.place.ID][loan.id] = loan
+			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
 		default:
-			if !ability.Has(derived, core.AbilityCopy) {
+			if !hasTypeAbility(typeFact, core.AbilityCopy) {
 				causes := []diagnostic.Cause{
 					{Kind: "declared_here", Span: spanPointer(source.declared)},
-					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFacts, core.AbilityCopy)},
+					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFact, core.AbilityCopy)},
 					{Kind: "place", Detail: source.place.ID},
 					{Kind: "type", Detail: source.place.TypeID},
 				}
-				return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
+				return fail(diagnostic.ErrorWithRepairs(
 					"ownership.transfer_requires_take", binding.RHS.Span, "noncopyable binding requires explicit take", causes,
 					diagnostic.Repair{Kind: "insert_take"},
-				)}
+				))
 			}
 		}
-		linear.Places = append(linear.Places, target)
-		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true, loan: loan}
-		linear.Operations = append(linear.Operations, core.LinearOperation{
+		result.Places = append(result.Places, target)
+		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
+		result.Operations = append(result.Operations, core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index),
 			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanID(loan), TypeID: source.place.TypeID,
 		})
 		endLoans(index)
+		result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 	}
-	returned, ok := places[function.Body.Linear.Result]
+	result.Work++
+	returned, ok := places[body.Result]
 	if !ok {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown", function.Body.Linear.Span, "linear result is unknown")}
+		return fail(diagnostic.Error("name.unknown", body.Span, "linear result is unknown"))
 	}
 	if !returned.initialized {
-		return core.Function{}, []diagnostic.Diagnostic{useAfterMove(function.Body.Linear.Span, returned)}
+		return fail(useAfterMove(body.Span, returned))
 	}
-	ordinal := len(linear.Operations)
-	linear.Operations = append(linear.Operations, core.LinearOperation{
+	ordinal := len(body.Bindings)
+	result.Operations = append(result.Operations, core.LinearOperation{
 		ID: fmt.Sprintf("%s:op:%d", functionID, ordinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, ordinal),
 		Kind: core.OpReturn, SourceID: returned.place.ID, TypeID: returned.place.TypeID,
 	})
-	return core.Function{
-		ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
-		Parameter: core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor}, ReturnType: function.ReturnType.Constructor,
-		Linear: linear, Span: function.Span,
-	}, nil
+	endLoans(ordinal)
+	result.States = append(result.States, ownershipSnapshot(ordinal, places, activeLoans))
+	return result
 }
 
 type loanUse struct {
@@ -281,6 +337,41 @@ func discoverLoanLastUses(body *ast.LinearBody) map[string]loanUse {
 		uses[body.Result] = use
 	}
 	return uses
+}
+
+func ownershipSnapshot(index int, places map[string]*placeState, activeLoans map[string]map[string]*loanState) ownershipStateFact {
+	initialized := make([]string, 0, len(places))
+	for _, place := range places {
+		if place.initialized {
+			initialized = append(initialized, place.place.ID)
+		}
+	}
+	sort.Strings(initialized)
+	loans := make([]string, 0)
+	for _, ownerLoans := range activeLoans {
+		for loanID := range ownerLoans {
+			loans = append(loans, loanID)
+		}
+	}
+	sort.Strings(loans)
+	return ownershipStateFact{OperationIndex: index, InitializedPlaces: initialized, ActiveLoans: loans}
+}
+
+func hasTypeAbility(fact core.TypeFact, wanted core.Ability) bool {
+	for _, candidate := range fact.Abilities {
+		if candidate == wanted {
+			return true
+		}
+	}
+	return false
+}
+
+func typeNodeCount(value core.TypeRef) int {
+	count := 1
+	for _, argument := range value.Arguments {
+		count += typeNodeCount(argument)
+	}
+	return count
 }
 
 func missingAbilityDetail(fact core.TypeFact, requested core.Ability) string {

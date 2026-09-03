@@ -167,7 +167,7 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 		loanOrder = append(loanOrder, candidate.Name)
 	}
 
-	result := ownershipSupport{LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: typeNodeCountOracle(typeFact.Shape) + len(body.Bindings) + 1}
+	result := ownershipSupport{Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: typeNodeCountOracle(typeFact.Shape) + len(body.Bindings) + 1}
 	for _, name := range loanOrder {
 		index := -1
 		for candidateIndex, candidate := range body.Bindings {
