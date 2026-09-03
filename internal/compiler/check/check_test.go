@@ -75,6 +75,23 @@ func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
 		Span:     diagnostic.Span{End: 12},
 	}
 	assertSupportEqual(t, "shadowed binding", analyzeStraightLine("test:shadow", "owner", diagnostic.Span{}, byteTypeFact(), &shadowed), oracleStraightLine("test:shadow", "owner", byteTypeFact(), &shadowed))
+
+	shadowedLoan := ast.LinearBody{
+		Bindings: []ast.Binding{
+			binding("view", "borrow", "owner", 0),
+			binding("view", "read", "owner", 4),
+			binding("moved", "take", "owner", 8),
+			binding("observed", "read", "view", 12),
+		},
+		Result: "moved",
+		Span:   diagnostic.Span{End: 20},
+	}
+	got = analyzeStraightLine("test:shadow-loan", "owner", diagnostic.Span{}, byteTypeFact(), &shadowedLoan)
+	want = oracleStraightLine("test:shadow-loan", "owner", byteTypeFact(), &shadowedLoan)
+	assertSupportEqual(t, "shadowed loan identity", got, want)
+	if got.DiagnosticCode != "" {
+		t.Fatalf("obsolete shadowed loan blocked move: %+v", got)
+	}
 }
 
 func TestOwnershipWorkSeries(t *testing.T) {
@@ -179,35 +196,33 @@ type testOracleLoan struct {
 }
 
 func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
-	lastUses := make(map[string]int)
-	loanOrder := make([]string, 0)
+	lastUses := make(map[int]int)
+	loanOrder := make([]int, 0)
+	visible := map[string]int{parameterName: -1}
+	loanForBinding := make(map[int]int)
 	for index, candidate := range body.Bindings {
+		if sourceBinding, ok := visible[candidate.RHS.Source]; ok {
+			if loanIndex, isLoan := loanForBinding[sourceBinding]; isLoan {
+				lastUses[loanIndex] = index
+			}
+		}
+		visible[candidate.Name] = index
 		if candidate.RHS.Kind != "borrow" {
 			continue
 		}
-		last := index
-		for later := index + 1; later < len(body.Bindings); later++ {
-			if body.Bindings[later].RHS.Source == candidate.Name {
-				last = later
-			}
+		lastUses[index] = index
+		loanForBinding[index] = index
+		loanOrder = append(loanOrder, index)
+	}
+	if resultBinding, ok := visible[body.Result]; ok {
+		if loanIndex, isLoan := loanForBinding[resultBinding]; isLoan {
+			lastUses[loanIndex] = len(body.Bindings)
 		}
-		if body.Result == candidate.Name {
-			last = len(body.Bindings)
-		}
-		lastUses[candidate.Name] = last
-		loanOrder = append(loanOrder, candidate.Name)
 	}
 
 	result := ownershipSupport{Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: typeNodeCountOracle(typeFact.Shape) + len(body.Bindings) + 1}
-	for _, name := range loanOrder {
-		index := -1
-		for candidateIndex, candidate := range body.Bindings {
-			if candidate.Name == name {
-				index = candidateIndex
-				break
-			}
-		}
-		result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{LoanID: fmt.Sprintf("%s:loan:%d", functionID, index), Binding: name, OperationIndex: lastUses[name]})
+	for _, index := range loanOrder {
+		result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{LoanID: fmt.Sprintf("%s:loan:%d", functionID, index), Binding: body.Bindings[index].Name, OperationIndex: lastUses[index]})
 	}
 
 	parameterID := functionID + ":place:0"
@@ -237,7 +252,7 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 		case "borrow":
 			kind = core.OpBorrowShared
 			loanID = fmt.Sprintf("%s:loan:%d", functionID, index)
-			activeLoans[loanID] = testOracleLoan{ownerID: source.id, lastUse: lastUses[candidate.Name]}
+			activeLoans[loanID] = testOracleLoan{ownerID: source.id, lastUse: lastUses[index]}
 		default:
 			if !oracleHasAbility(typeFact.Abilities, core.AbilityCopy) {
 				result.DiagnosticCode = "ownership.transfer_requires_take"

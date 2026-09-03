@@ -194,11 +194,11 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 		Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: typeNodeCount(typeFact.Shape) + len(body.Bindings) + 1,
 	}
-	loanUses := discoverLoanLastUses(body)
+	loanUses := discoverLoanLastUses(parameterName, body)
 	for index, binding := range body.Bindings {
 		if binding.RHS.Kind == "borrow" {
 			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{
-				LoanID: fmt.Sprintf("%s:loan:%d", functionID, index), Binding: binding.Name, OperationIndex: loanUses[binding.Name].index,
+				LoanID: fmt.Sprintf("%s:loan:%d", functionID, index), Binding: binding.Name, OperationIndex: loanUses[index].index,
 			})
 		}
 	}
@@ -275,7 +275,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 			source.moveTargetID = target.ID
 		case "borrow":
 			kind = core.OpBorrowShared
-			use := loanUses[binding.Name]
+			use := loanUses[index]
 			loan = &loanState{
 				id: fmt.Sprintf("%s:loan:%d", functionID, index), ownerID: source.place.ID,
 				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
@@ -339,22 +339,33 @@ type loanState struct {
 	lastUseSpan diagnostic.Span
 }
 
-func discoverLoanLastUses(body *ast.LinearBody) map[string]loanUse {
-	uses := make(map[string]loanUse)
+func discoverLoanLastUses(parameterName string, body *ast.LinearBody) map[int]loanUse {
+	uses := make(map[int]loanUse)
+	visible := map[string]int{parameterName: -1}
+	loanForBinding := make(map[int]int)
 	for index, binding := range body.Bindings {
-		if binding.RHS.Kind == "borrow" {
-			uses[binding.Name] = loanUse{index: index, span: binding.RHS.Span}
+		if sourceBinding, ok := visible[binding.RHS.Source]; ok {
+			loanIndex, isLoan := loanForBinding[sourceBinding]
+			use, tracked := uses[loanIndex]
+			if isLoan && tracked {
+				use.index = index
+				use.span = binding.RHS.Span
+				uses[loanIndex] = use
+			}
 		}
-		if use, ok := uses[binding.RHS.Source]; ok {
-			use.index = index
-			use.span = binding.RHS.Span
-			uses[binding.RHS.Source] = use
+		visible[binding.Name] = index
+		if binding.RHS.Kind == "borrow" {
+			uses[index] = loanUse{index: index, span: binding.RHS.Span}
+			loanForBinding[index] = index
 		}
 	}
-	if use, ok := uses[body.Result]; ok {
-		use.index = len(body.Bindings)
-		use.span = body.Span
-		uses[body.Result] = use
+	if resultBinding, ok := visible[body.Result]; ok {
+		loanIndex, isLoan := loanForBinding[resultBinding]
+		if use, tracked := uses[loanIndex]; isLoan && tracked {
+			use.index = len(body.Bindings)
+			use.span = body.Span
+			uses[loanIndex] = use
+		}
 	}
 	return uses
 }
