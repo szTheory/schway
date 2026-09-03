@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -161,6 +162,42 @@ func TestVerifyCLI(t *testing.T) {
 	for _, required := range []string{"control:match.non_exhaustive", "control:evidence.source_mismatch", "control:interpreter-o0-o3"} {
 		if !bytes.Contains(machine.Stdout, []byte(required)) {
 			t.Fatalf("verify JSON omitted %s: %s", required, machine.Stdout)
+		}
+	}
+}
+
+func TestVerifyPhase2CLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	machine := testsupport.RunCLI(t, binary, nil, "--json", "verify", testsupport.ProjectPath("testdata", "phase2"))
+	if machine.Exit != 0 || len(machine.Stderr) != 0 {
+		t.Fatalf("Phase 2 verify CLI failed: %+v", machine)
+	}
+	var result protocol.Result
+	if err := json.Unmarshal(machine.Stdout, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != protocol.StatusPass || !reflect.DeepEqual(result.ExpectedEscapes, []string{"escape:coordinated-source-core-lie"}) {
+		t.Fatalf("Phase 2 verify result omitted expected escape: %+v", result)
+	}
+	for _, required := range []string{"control:ownership.use_after_move", "control:ownership.move_while_borrowed", "control:ownership.transfer_requires_take", "control:ability.forged_copy", "control:core.duplicate_operation_id", "control:interpreter-o0-o3-owned", "control:evidence.core_mismatch"} {
+		if !bytes.Contains(machine.Stdout, []byte(required)) {
+			t.Fatalf("verify JSON omitted %s", required)
+		}
+	}
+}
+
+func TestPhase2VerifierScriptContract(t *testing.T) {
+	script, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase2.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(script)
+	if strings.Contains(text, "verify-phase1.sh") || strings.Count(text, "go test ./...") != 1 || strings.Count(text, "go test -race ./...") != 1 || strings.Count(text, "go vet ./...") != 1 {
+		t.Fatalf("Phase 2 gate duplicates or nests shared verification:\n%s", text)
+	}
+	for _, required := range []string{"assert-go-tests.sh --self-test", "verify testdata/phase1", "verify testdata/phase2", "warm_samples=20", "peak_rss=unavailable", "p50_ns=", "p95_ns=", "min_ns=", "max_ns=", "output_bytes=", "work="} {
+		if !strings.Contains(text, required) {
+			t.Fatalf("Phase 2 gate omitted %q", required)
 		}
 	}
 }

@@ -623,3 +623,39 @@ func TestVerifyMutationControls(t *testing.T) {
 		t.Fatalf("forced stale manifest escaped: status=%s diagnostics=%+v", stale.Status, stale.Diagnostics)
 	}
 }
+
+func TestVerifyPhase2ControlsAndWork(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase2"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 2 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	required := []string{
+		"control:ownership.use_after_move",
+		"control:ownership.move_while_borrowed",
+		"control:ownership.transfer_requires_take",
+		"control:ability.forged_copy",
+		"control:core.duplicate_operation_id",
+		"control:interpreter-o0-o3-owned",
+		"control:evidence.core_mismatch",
+	}
+	seen := map[string]bool{}
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 || lane.PeakRSSStatus != "unavailable" {
+			t.Fatalf("incomplete Phase 2 lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			seen[control] = true
+		}
+	}
+	for _, control := range required {
+		if !seen[control] {
+			t.Fatalf("Phase 2 verify omitted %s: %+v", control, result.Lanes)
+		}
+	}
+	if !reflect.DeepEqual(result.ExpectedEscapes, []string{"escape:coordinated-source-core-lie"}) {
+		t.Fatalf("expected escape was counted or omitted: %+v", result.ExpectedEscapes)
+	}
+	if seen[result.ExpectedEscapes[0]] {
+		t.Fatalf("expected escape was counted as detected: %+v", result.Lanes)
+	}
+}
