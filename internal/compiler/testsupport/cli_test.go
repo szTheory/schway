@@ -3,6 +3,7 @@ package testsupport_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -95,6 +96,50 @@ func TestCLISourceByteLimitBoundary(t *testing.T) {
 				t.Fatalf("missing %s: %s", test.code, result.Stdout)
 			}
 		})
+	}
+}
+
+func TestCLICheckWorkScalesWithSource(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	work := make([]int, 0, 3)
+	for _, count := range []int{1, 10, 100} {
+		var source strings.Builder
+		source.WriteString("module work.scale\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n")
+		for index := 0; index < count; index++ {
+			fmt.Fprintf(&source, "  let value%d = code\n", index)
+		}
+		source.WriteString("  code\n}\n")
+		path := filepath.Join(t.TempDir(), fmt.Sprintf("scale-%d.lang", count))
+		if err := os.WriteFile(path, []byte(source.String()), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		result := testsupport.RunCLI(t, binary, nil, "--json", "check", path)
+		var decoded protocol.Result
+		if result.Exit != 0 || json.Unmarshal(result.Stdout, &decoded) != nil {
+			t.Fatalf("count=%d result=%+v", count, result)
+		}
+		work = append(work, decoded.Metrics.RecomputedWork)
+	}
+	if !(work[0] < work[1] && work[1] < work[2]) {
+		t.Fatalf("check work does not scale: %v", work)
+	}
+}
+
+func TestCLICheckRejectsWorkBeyondLimit(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	var source strings.Builder
+	source.WriteString("module work.limit\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n")
+	for index := 0; index < 12_000; index++ {
+		fmt.Fprintf(&source, "  let value%d = code\n", index)
+	}
+	source.WriteString("  code\n}\n")
+	path := filepath.Join(t.TempDir(), "over-work.lang")
+	if err := os.WriteFile(path, []byte(source.String()), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	result := testsupport.RunCLI(t, binary, nil, "--json", "check", path)
+	if result.Exit != 2 || !bytes.Contains(result.Stdout, []byte("check.work_limit")) {
+		t.Fatalf("work limit result=%+v", result)
 	}
 }
 

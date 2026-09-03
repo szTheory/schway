@@ -30,7 +30,10 @@ type CheckResult struct {
 	Tree        syntax.Tree
 	Program     core.Program
 	Diagnostics []diagnostic.Diagnostic
+	Work        int
 }
+
+const MaxCheckWork = 100_000
 
 type FormatResult struct {
 	Source      []byte
@@ -94,11 +97,18 @@ func (e *EngineMismatch) Error() string {
 
 func Check(source []byte) CheckResult {
 	parsed := syntax.Parse(source)
-	result := CheckResult{Tree: parsed.Tree, Diagnostics: append([]diagnostic.Diagnostic(nil), parsed.Diagnostics...)}
+	// Work is one unit per bounded lexer token plus the checker's explicit
+	// ownership/type traversal count. It is deterministic and source-scaled.
+	result := CheckResult{Tree: parsed.Tree, Diagnostics: append([]diagnostic.Diagnostic(nil), parsed.Diagnostics...), Work: len(parsed.Tree.Tokens)}
 	if len(result.Diagnostics) > 0 {
 		return result
 	}
 	checked := check.Program(parsed.Program)
+	result.Work += checked.Work
+	if result.Work > MaxCheckWork {
+		result.Diagnostics = append(result.Diagnostics, diagnostic.Error("check.work_limit", diagnostic.Span{}, "checking exceeds the declared work limit"))
+		return result
+	}
 	result.Program = checked.Program
 	result.Diagnostics = append(result.Diagnostics, checked.Diagnostics...)
 	return result
@@ -161,7 +171,7 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 	} else {
 		result.ModuleID = checked.Program.ModuleID
 	}
-	return completeCommand(result, started, 1), nil
+	return completeCommand(result, started, checked.Work), nil
 }
 
 func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic, error) {
