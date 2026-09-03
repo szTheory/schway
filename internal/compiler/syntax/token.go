@@ -15,6 +15,9 @@ const (
 	TokenData       Kind = "data"
 	TokenFn         Kind = "fn"
 	TokenMatch      Kind = "match"
+	TokenLet        Kind = "let"
+	TokenTake       Kind = "take"
+	TokenBorrow     Kind = "borrow"
 	TokenLBrace     Kind = "{"
 	TokenRBrace     Kind = "}"
 	TokenLParen     Kind = "("
@@ -25,6 +28,9 @@ const (
 	TokenEqual      Kind = "="
 	TokenArrow      Kind = "->"
 	TokenFatArrow   Kind = "=>"
+	TokenLAngle     Kind = "<"
+	TokenRAngle     Kind = ">"
+	TokenComma      Kind = ","
 	TokenUnknown    Kind = "unknown"
 )
 

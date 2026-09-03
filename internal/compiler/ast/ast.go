@@ -29,16 +29,30 @@ type Alternative struct {
 type FuncDecl struct {
 	Name       string
 	Parameter  Parameter
-	ReturnType string
-	Body       MatchExpr
+	ReturnType TypeRef
+	Body       Body
 	Span       diagnostic.Span
 }
 
 type Parameter struct {
 	Name string
-	Type string
+	Type TypeRef
 	Span diagnostic.Span
 }
+
+type TypeRef struct {
+	Constructor string
+	Arguments   []TypeRef
+}
+
+type Body struct {
+	MatchExpr
+	Linear *LinearBody
+}
+
+func (b Body) HasMatch() bool { return b.MatchExpr.Scrutinee != "" }
+
+func (b Body) HasClosedVariant() bool { return b.HasMatch() != (b.Linear != nil) }
 
 type MatchExpr struct {
 	Scrutinee string
@@ -50,4 +64,22 @@ type MatchArm struct {
 	Pattern string
 	Value   string
 	Span    diagnostic.Span
+}
+
+type LinearBody struct {
+	Bindings []Binding
+	Result   string
+	Span     diagnostic.Span
+}
+
+type Binding struct {
+	Name string
+	RHS  RHS
+	Span diagnostic.Span
+}
+
+type RHS struct {
+	Kind   string
+	Source string
+	Span   diagnostic.Span
 }

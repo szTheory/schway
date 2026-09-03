@@ -20,7 +20,14 @@ type parser struct {
 	position    int
 	diagnostics []diagnostic.Diagnostic
 	truncated   bool
+	typeDepth   int
+	typeNodes   int
 }
+
+const (
+	maxTypeDepth = 64
+	maxTypeNodes = 4096
+)
 
 func Parse(source []byte) ParseResult {
 	tokens, diagnostics, truncated := lex(source)
@@ -103,20 +110,77 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	p.expect(TokenLParen, "syntax.expected_lparen")
 	parameterName := p.identifier("syntax.expected_parameter_name")
 	p.expect(TokenColon, "syntax.expected_colon")
-	parameterType := p.identifier("syntax.expected_parameter_type")
+	parameterType := p.typeRef()
 	p.expect(TokenRParen, "syntax.expected_rparen")
 	p.expect(TokenArrow, "syntax.expected_arrow")
-	returnType := p.identifier("syntax.expected_return_type")
+	returnType := p.typeRef()
 	p.expect(TokenLBrace, "syntax.expected_lbrace")
-	body := p.matchExpr()
+	var body ast.Body
+	if p.peek().Kind == TokenMatch {
+		match := p.matchExpr()
+		body.MatchExpr = match
+	} else {
+		linear := p.linearBody()
+		body.Linear = &linear
+	}
 	end := p.expect(TokenRBrace, "syntax.expected_rbrace")
 	return ast.FuncDecl{
 		Name:       name.Text,
-		Parameter:  ast.Parameter{Name: parameterName.Text, Type: parameterType.Text, Span: spanFrom(parameterName, parameterType)},
-		ReturnType: returnType.Text,
+		Parameter:  ast.Parameter{Name: parameterName.Text, Type: parameterType, Span: parameterName.Span},
+		ReturnType: returnType,
 		Body:       body,
 		Span:       spanFrom(start, end),
 	}
+}
+
+func (p *parser) typeRef() ast.TypeRef {
+	start := p.identifier("syntax.expected_type")
+	p.typeDepth++
+	p.typeNodes++
+	defer func() { p.typeDepth-- }()
+	result := ast.TypeRef{Constructor: start.Text}
+	if p.typeDepth > maxTypeDepth || p.typeNodes > maxTypeNodes {
+		p.problem("syntax.type_limit", start, "type expression exceeds parser limits")
+		return result
+	}
+	if !p.accept(TokenLAngle) {
+		return result
+	}
+	for !p.atAny(TokenRAngle, TokenRParen, TokenEOF) {
+		before := p.position
+		result.Arguments = append(result.Arguments, p.typeRef())
+		if !p.accept(TokenComma) {
+			break
+		}
+		p.assertProgressOrBoundary(before, TokenRAngle, TokenRParen, TokenEOF)
+	}
+	p.expect(TokenRAngle, "syntax.expected_type_close")
+	return result
+}
+
+func (p *parser) linearBody() ast.LinearBody {
+	start := p.peek()
+	body := ast.LinearBody{Span: start.Span}
+	for p.peek().Kind == TokenLet {
+		bindingStart := p.advance()
+		name := p.identifier("syntax.expected_binding_name")
+		p.expect(TokenEqual, "syntax.expected_equal")
+		kind := "read"
+		if p.accept(TokenTake) {
+			kind = "take"
+		} else if p.accept(TokenBorrow) {
+			kind = "borrow"
+		}
+		source := p.identifier("syntax.expected_binding_source")
+		body.Bindings = append(body.Bindings, ast.Binding{
+			Name: name.Text, RHS: ast.RHS{Kind: kind, Source: source.Text, Span: source.Span}, Span: spanFrom(bindingStart, source),
+		})
+		body.Span.End = source.Span.End
+	}
+	result := p.identifier("syntax.expected_linear_result")
+	body.Result = result.Text
+	body.Span.End = result.Span.End
+	return body
 }
 
 func (p *parser) matchExpr() ast.MatchExpr {

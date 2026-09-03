@@ -128,11 +128,15 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	if len(checked.Diagnostics) > 0 {
 		return nil, checked.Diagnostics, nil
 	}
-	if len(checked.Program.DataTypes) != 1 || len(checked.Program.Functions) != 1 {
+	if len(checked.Program.Functions) != 1 {
 		return nil, nil, os.ErrInvalid
 	}
-	executions := make([]interp.Execution, 0, len(checked.Program.DataTypes[0].Alternatives))
-	for _, input := range checked.Program.DataTypes[0].Alternatives {
+	inputs, ok := interpreterInputs(checked.Program)
+	if !ok {
+		return nil, nil, os.ErrInvalid
+	}
+	executions := make([]interp.Execution, 0, len(inputs))
+	for _, input := range inputs {
 		execution, err := interp.Run(checked.Program, checked.Program.Functions[0].Name, input)
 		if err != nil {
 			return nil, nil, err
@@ -140,6 +144,27 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 		executions = append(executions, execution)
 	}
 	return executions, nil, nil
+}
+
+func interpreterInputs(program core.Program) ([]string, bool) {
+	if len(program.Functions) != 1 {
+		return nil, false
+	}
+	function := program.Functions[0]
+	if function.Linear != nil && function.Match == nil {
+		switch function.Parameter.Type {
+		case "Byte":
+			return []string{"7"}, true
+		case "Buffer":
+			return []string{"01020304"}, true
+		default:
+			return nil, false
+		}
+	}
+	if function.Match != nil && function.Linear == nil && len(program.DataTypes) == 1 {
+		return append([]string(nil), program.DataTypes[0].Alternatives...), true
+	}
+	return nil, false
 }
 
 func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnostic, error) {

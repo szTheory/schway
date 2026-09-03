@@ -19,11 +19,12 @@ func Format(tree Tree) []byte {
 }
 
 type formatter struct {
-	out      strings.Builder
-	indent   int
-	lineOpen bool
-	previous Kind
-	contexts []string
+	out           strings.Builder
+	indent        int
+	lineOpen      bool
+	previous      Kind
+	contexts      []string
+	linearBinding bool
 }
 
 func (f *formatter) token(token Token) {
@@ -58,6 +59,16 @@ func (f *formatter) token(token Token) {
 	case TokenMatch:
 		f.ensureLine()
 		f.write("match ")
+	case TokenLet:
+		if f.lineOpen {
+			f.newline()
+		}
+		f.write("let ")
+		f.linearBinding = true
+	case TokenTake:
+		f.write("take ")
+	case TokenBorrow:
+		f.write("borrow ")
 	case TokenIdentifier:
 		f.ensureLine()
 		f.out.WriteString(token.Text)
@@ -66,6 +77,9 @@ func (f *formatter) token(token Token) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
+		} else if f.context() == "function" && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow) {
+			f.newline()
+			f.linearBinding = false
 		}
 	case TokenDot:
 		f.out.WriteByte('.')
@@ -118,10 +132,15 @@ func (f *formatter) token(token Token) {
 		f.lineOpen = true
 	case TokenEqual:
 		f.trimSpace()
-		f.out.WriteString(" =")
-		f.newline()
-		f.indent++
-		f.contexts = append(f.contexts, "data")
+		if f.context() == "function" {
+			f.out.WriteString(" = ")
+			f.lineOpen = true
+		} else {
+			f.out.WriteString(" =")
+			f.newline()
+			f.indent++
+			f.contexts = append(f.contexts, "data")
+		}
 	case TokenPipe:
 		f.ensureLine()
 		f.write("| ")
@@ -132,6 +151,18 @@ func (f *formatter) token(token Token) {
 	case TokenFatArrow:
 		f.trimSpace()
 		f.out.WriteString(" => ")
+		f.lineOpen = true
+	case TokenLAngle:
+		f.trimSpace()
+		f.out.WriteByte('<')
+		f.lineOpen = true
+	case TokenRAngle:
+		f.trimSpace()
+		f.out.WriteByte('>')
+		f.lineOpen = true
+	case TokenComma:
+		f.trimSpace()
+		f.out.WriteString(", ")
 		f.lineOpen = true
 	default:
 		f.ensureLine()
