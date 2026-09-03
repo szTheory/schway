@@ -1,6 +1,11 @@
 package diagnostic
 
-import "fmt"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+)
 
 const Schema = "lang.diagnostic/0"
 
@@ -17,6 +22,7 @@ type Cause struct {
 
 type Diagnostic struct {
 	Schema   string  `json:"schema"`
+	ID       string  `json:"id"`
 	Code     string  `json:"code"`
 	Severity string  `json:"severity"`
 	Primary  Span    `json:"primary_span"`
@@ -25,7 +31,15 @@ type Diagnostic struct {
 }
 
 func Error(code string, span Span, message string, causes ...Cause) Diagnostic {
-	return Diagnostic{Schema: Schema, Code: code, Severity: "error", Primary: span, Message: message, Causes: causes}
+	identity := struct {
+		Schema string
+		Code   string
+		Span   Span
+		Causes []Cause
+	}{Schema: Schema, Code: code, Span: span, Causes: causes}
+	encoded, _ := json.Marshal(identity)
+	sum := sha256.Sum256(encoded)
+	return Diagnostic{Schema: Schema, ID: "diagnostic:" + hex.EncodeToString(sum[:12]), Code: code, Severity: "error", Primary: span, Message: message, Causes: causes}
 }
 
 func (d Diagnostic) String() string {

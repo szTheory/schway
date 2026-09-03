@@ -1,15 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
+	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/native"
+	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
 )
 
@@ -23,116 +23,116 @@ const (
 func main() { os.Exit(run(os.Args[1:])) }
 
 func run(args []string) int {
+	args, jsonMode, ok := extractJSON(args)
+	if !ok {
+		return emit(usageResult(), true, false)
+	}
 	if len(args) == 2 && args[0] == "format" {
-		return runFormat(args[1], false)
+		return runFormat(args[1], false, jsonMode)
 	}
 	if len(args) == 3 && args[0] == "format" && args[1] == "--check" {
-		return runFormat(args[2], true)
+		return runFormat(args[2], true, jsonMode)
 	}
 	if len(args) == 2 && args[0] == "check" {
-		return runCheck(args[1])
+		return runCheck(args[1], jsonMode)
 	}
 	if len(args) == 3 && args[0] == "run" && strings.HasPrefix(args[1], "--engine=") {
 		engine := strings.TrimPrefix(args[1], "--engine=")
 		switch engine {
 		case "interpreter":
-			return runInterpreter(args[2])
+			return runInterpreter(args[2], jsonMode)
 		case "native":
-			return runNative(args[2])
+			return runNative(args[2], jsonMode)
 		default:
-			fmt.Fprintln(os.Stderr, "tool.unsupported_engine: expected interpreter or native")
-			return exitUsage
+			return emit(problemResult("run", protocol.StatusUsage, "tool.unsupported_engine", "expected interpreter or native"), jsonMode, false)
 		}
 	}
-	fmt.Fprintln(os.Stderr, "usage: lang format [--check] FILE | lang check FILE | lang run --engine=interpreter|native FILE")
-	return exitUsage
+	return emit(usageResult(), jsonMode, false)
 }
 
-func runFormat(path string, checkOnly bool) int {
-	result, err := session.FormatFile(path)
+func runFormat(path string, checkOnly, jsonMode bool) int {
+	result, err := session.FormatCommandFile(path, checkOnly)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "tool.read_failed: %v\n", err)
-		return exitOperational
+		return emit(problemResult("format", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
 	}
-	if len(result.Diagnostics) > 0 {
-		for _, problem := range result.Diagnostics {
-			fmt.Fprintln(os.Stderr, problem.String())
-		}
-		return exitInvalidSource
-	}
-	if checkOnly {
-		if !bytes.Equal(result.Source, result.Canonical) {
-			fmt.Fprintln(os.Stderr, "format.non_canonical: source differs from canonical projection")
-			return exitInvalidSource
+	if !checkOnly && !jsonMode && result.Status == protocol.StatusPass {
+		if _, err := os.Stdout.Write([]byte(result.Formatted)); err != nil {
+			return emit(problemResult("format", protocol.StatusOperational, "tool.write_failed", "unable to write output"), false, false)
 		}
 		return exitSuccess
 	}
-	if _, err := os.Stdout.Write(result.Canonical); err != nil {
-		fmt.Fprintf(os.Stderr, "tool.write_failed: %v\n", err)
-		return exitOperational
-	}
-	return exitSuccess
+	return emit(result, jsonMode, false)
 }
 
-func runNative(path string) int {
-	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
-	if len(diagnostics) > 0 {
-		for _, problem := range diagnostics {
-			fmt.Fprintln(os.Stderr, problem.String())
-		}
-		return exitInvalidSource
-	}
+func runNative(path string, jsonMode bool) int {
+	result, err := session.RunNativeCommandFile(context.Background(), path, native.DefaultRunner())
 	if err != nil {
-		var mismatch *session.EngineMismatch
-		if errors.As(err, &mismatch) {
-			fmt.Fprintf(os.Stderr, "native.engine_mismatch: %v\n", err)
-			return 4
-		}
-		fmt.Fprintf(os.Stderr, "native.tool_failure: %v\n", err)
-		return exitOperational
+		return emit(problemResult("run", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
 	}
-	encoded, err := json.Marshal(result.Interpreter)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "tool.encode_failed: %v\n", err)
-		return exitOperational
-	}
-	fmt.Fprintln(os.Stdout, string(encoded))
-	return exitSuccess
+	return emit(result, jsonMode, false)
 }
 
-func runCheck(path string) int {
-	result, err := session.CheckFile(path)
+func runCheck(path string, jsonMode bool) int {
+	result, err := session.CheckCommandFile(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "tool.read_failed: %v\n", err)
-		return exitOperational
+		return emit(problemResult("check", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
 	}
-	if len(result.Diagnostics) > 0 {
-		for _, problem := range result.Diagnostics {
-			fmt.Fprintln(os.Stderr, problem.String())
-		}
-		return exitInvalidSource
-	}
-	fmt.Fprintf(os.Stdout, "checked %s\n", result.Program.ModuleID)
-	return exitSuccess
+	return emit(result, jsonMode, false)
 }
 
-func runInterpreter(path string) int {
-	executions, diagnostics, err := session.RunInterpreterFile(path)
+func runInterpreter(path string, jsonMode bool) int {
+	result, err := session.RunInterpreterCommandFile(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "tool.run_failed: %v\n", err)
-		return exitOperational
+		return emit(problemResult("run", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
 	}
-	if len(diagnostics) > 0 {
-		for _, problem := range diagnostics {
-			fmt.Fprintln(os.Stderr, problem.String())
+	return emit(result, jsonMode, false)
+}
+
+func extractJSON(args []string) ([]string, bool, bool) {
+	filtered := make([]string, 0, len(args))
+	jsonMode := false
+	for _, argument := range args {
+		if argument == "--json" {
+			if jsonMode {
+				return nil, true, false
+			}
+			jsonMode = true
+			continue
 		}
-		return exitInvalidSource
+		filtered = append(filtered, argument)
 	}
-	encoded, err := json.Marshal(executions)
+	return filtered, jsonMode, true
+}
+
+func emit(result protocol.Result, jsonMode, forceStderr bool) int {
+	result = result.Finalize()
+	var encoded []byte
+	var err error
+	if jsonMode {
+		encoded, err = protocol.JSON(result)
+	} else {
+		encoded = []byte(protocol.Human(result))
+	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "tool.encode_failed: %v\n", err)
+		fmt.Fprintln(os.Stderr, "tool.encode_failed: unable to encode command result")
 		return exitOperational
 	}
-	fmt.Fprintln(os.Stdout, string(encoded))
-	return exitSuccess
+	destination := io.Writer(os.Stdout)
+	if !jsonMode && (result.Status != protocol.StatusPass || forceStderr) {
+		destination = os.Stderr
+	}
+	if _, err := destination.Write(encoded); err != nil {
+		return exitOperational
+	}
+	return protocol.ExitCode(result.Status)
+}
+
+func problemResult(command, status, code, message string) protocol.Result {
+	result := protocol.New(command, status)
+	result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(code, diagnostic.Span{}, message)}
+	return result
+}
+
+func usageResult() protocol.Result {
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE")
 }

@@ -1,7 +1,9 @@
 package session
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
+	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
 
@@ -69,12 +72,49 @@ func FormatFile(path string) (FormatResult, error) {
 	return Format(source), nil
 }
 
+func FormatCommandFile(path string, checkOnly bool) (protocol.Result, error) {
+	formatted, err := FormatFile(path)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	result := protocol.New("format", protocol.StatusPass)
+	if len(formatted.Diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = formatted.Diagnostics
+		return result.Finalize(), nil
+	}
+	if checkOnly && !bytes.Equal(formatted.Source, formatted.Canonical) {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("format.non_canonical", diagnostic.Span{}, "source differs from canonical projection")}
+		return result.Finalize(), nil
+	}
+	if !checkOnly {
+		result.Formatted = string(formatted.Canonical)
+	}
+	return result.Finalize(), nil
+}
+
 func CheckFile(path string) (CheckResult, error) {
 	source, err := os.ReadFile(path)
 	if err != nil {
 		return CheckResult{}, err
 	}
 	return Check(source), nil
+}
+
+func CheckCommandFile(path string) (protocol.Result, error) {
+	checked, err := CheckFile(path)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	result := protocol.New("check", protocol.StatusPass)
+	if len(checked.Diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = checked.Diagnostics
+	} else {
+		result.ModuleID = checked.Program.ModuleID
+	}
+	return result.Finalize(), nil
 }
 
 func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic, error) {
@@ -102,6 +142,23 @@ func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnosti
 		return nil, nil, err
 	}
 	return RunInterpreter(source)
+}
+
+func RunInterpreterCommandFile(path string) (protocol.Result, error) {
+	executions, diagnostics, err := RunInterpreterFile(path)
+	if err != nil {
+		result := protocol.New("run", protocol.StatusOperational)
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("tool.run_failed", diagnostic.Span{}, "interpreter operation failed")}
+		return result.Finalize(), nil
+	}
+	result := protocol.New("run", protocol.StatusPass)
+	if len(diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = diagnostics
+	} else {
+		result.Executions = executions
+	}
+	return result.Finalize(), nil
 }
 
 func RunNative(ctx context.Context, source []byte, runner native.Runner) (NativeResult, []diagnostic.Diagnostic, error) {
@@ -149,4 +206,31 @@ func RunNativeFile(ctx context.Context, path string, runner native.Runner) (Nati
 		return NativeResult{}, nil, err
 	}
 	return RunNative(ctx, source, runner)
+}
+
+func RunNativeCommandFile(ctx context.Context, path string, runner native.Runner) (protocol.Result, error) {
+	nativeResult, diagnostics, err := RunNativeFile(ctx, path, runner)
+	result := protocol.New("run", protocol.StatusPass)
+	if len(diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = diagnostics
+		return result.Finalize(), nil
+	}
+	if err != nil {
+		result.Status = protocol.StatusOperational
+		code := "native.tool_failure"
+		var mismatch *EngineMismatch
+		if errors.As(err, &mismatch) {
+			result.Status = protocol.StatusMismatch
+			code = "native.engine_mismatch"
+		}
+		var toolError *native.ToolError
+		if errors.As(err, &toolError) {
+			code = toolError.Code
+		}
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(code, diagnostic.Span{}, "native execution did not complete successfully")}
+		return result.Finalize(), nil
+	}
+	result.Executions = nativeResult.Interpreter
+	return result.Finalize(), nil
 }
