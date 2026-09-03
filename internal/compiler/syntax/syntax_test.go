@@ -2,6 +2,7 @@ package syntax_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -91,6 +92,85 @@ func TestFormatCheck(t *testing.T) {
 	if !bytes.Equal(result.Source, result.Canonical) {
 		t.Fatalf("committed toggle fixture is not canonical:\n%s", result.Canonical)
 	}
+}
+
+func TestRecovery(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "malformed.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first := syntax.Parse(source)
+	second := syntax.Parse(source)
+	if !bytes.Equal(first.Tree.Bytes(), source) {
+		t.Fatal("malformed CST did not preserve every input byte")
+	}
+	if got := diagnosticIdentity(first.Diagnostics); !reflect.DeepEqual(got, diagnosticIdentity(second.Diagnostics)) {
+		t.Fatalf("recovery diagnostics are not deterministic:\nfirst=%v\nsecond=%v", got, diagnosticIdentity(second.Diagnostics))
+	}
+	if len(first.Diagnostics) == 0 || len(first.Diagnostics) > 21 {
+		t.Fatalf("expected 1..21 diagnostics, got %d", len(first.Diagnostics))
+	}
+	if len(first.Program.Funcs) != 2 || first.Program.Funcs[1].Name != "preserved" {
+		t.Fatalf("recovery crossed the broken declaration: funcs=%+v", first.Program.Funcs)
+	}
+
+	overflow := syntax.Parse(bytes.Repeat([]byte{'@'}, 100))
+	if len(overflow.Diagnostics) != 21 || overflow.Diagnostics[20].Code != "syntax.too_many_errors" {
+		t.Fatalf("diagnostic cap is not 20 + terminal truncation fact: %+v", diagnosticIdentity(overflow.Diagnostics))
+	}
+}
+
+func TestInvalidUTF8(t *testing.T) {
+	source := append([]byte("module invalid\nexport {}\n"), 0xff, 0xfe)
+	parsed := syntax.Parse(source)
+	if !bytes.Equal(parsed.Tree.Bytes(), source) {
+		t.Fatal("invalid UTF-8 was not preserved losslessly")
+	}
+	if len(parsed.Diagnostics) < 2 || parsed.Diagnostics[0].Code != "syntax.invalid_utf8" || parsed.Diagnostics[1].Code != "syntax.invalid_utf8" {
+		t.Fatalf("invalid UTF-8 diagnostics are missing or unstable: %+v", diagnosticIdentity(parsed.Diagnostics))
+	}
+}
+
+func FuzzParseFormat(f *testing.F) {
+	for _, name := range []string{"toggle.lang", "comments.lang", "malformed.lang"} {
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", name))
+		if err != nil {
+			f.Fatal(err)
+		}
+		f.Add(source)
+	}
+	f.Add([]byte{0xff, 0xfe, '{', '}'})
+
+	f.Fuzz(func(t *testing.T, source []byte) {
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			t.Fatal("CST round trip changed fuzz input")
+		}
+		if len(parsed.Diagnostics) > 21 {
+			t.Fatalf("unbounded diagnostics: %d", len(parsed.Diagnostics))
+		}
+		if len(parsed.Diagnostics) != 0 {
+			return
+		}
+		first := syntax.Format(parsed.Tree)
+		formatted := syntax.Parse(first)
+		if len(formatted.Diagnostics) != 0 {
+			t.Fatalf("formatter produced invalid source: %q diagnostics=%v", first, diagnosticIdentity(formatted.Diagnostics))
+		}
+		second := syntax.Format(formatted.Tree)
+		if !bytes.Equal(first, second) {
+			t.Fatalf("formatter is not idempotent:\nfirst=%q\nsecond=%q", first, second)
+		}
+	})
+}
+
+func diagnosticIdentity(diagnostics []diagnostic.Diagnostic) []string {
+	result := make([]string, len(diagnostics))
+	for index, problem := range diagnostics {
+		result[index] = fmt.Sprintf("%s:%d:%d", problem.Code, problem.Primary.Start, problem.Primary.End)
+	}
+	return result
 }
 
 func comments(tree syntax.Tree) []string {

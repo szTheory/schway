@@ -7,6 +7,8 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 )
 
+const maxPrimaryDiagnostics = 20
+
 type ParseResult struct {
 	Tree        Tree
 	Program     ast.Program
@@ -17,12 +19,16 @@ type parser struct {
 	tokens      []Token
 	position    int
 	diagnostics []diagnostic.Diagnostic
+	truncated   bool
 }
 
 func Parse(source []byte) ParseResult {
-	tokens, diagnostics := Lex(source)
-	p := parser{tokens: tokens, diagnostics: diagnostics}
+	tokens, diagnostics, truncated := lex(source)
+	p := parser{tokens: tokens, diagnostics: diagnostics, truncated: truncated}
 	program := p.parseProgram()
+	if p.truncated {
+		p.diagnostics = append(p.diagnostics, tooManyErrors(len(source)))
+	}
 	return ParseResult{Tree: Tree{Source: append([]byte(nil), source...), Tokens: tokens}, Program: program, Diagnostics: p.diagnostics}
 }
 
@@ -31,14 +37,16 @@ func (p *parser) parseProgram() ast.Program {
 	p.expect(TokenModule, "syntax.expected_module")
 	program.Module = p.modulePath()
 	program.Exports = p.exports()
-	for p.peek().Kind == TokenData {
-		program.Data = append(program.Data, p.dataDecl())
-	}
-	for p.peek().Kind == TokenFn {
-		program.Funcs = append(program.Funcs, p.funcDecl())
-	}
-	if p.peek().Kind != TokenEOF {
-		p.problem("syntax.trailing_tokens", p.peek(), "unexpected tokens after declarations")
+	for p.peek().Kind != TokenEOF {
+		switch p.peek().Kind {
+		case TokenData:
+			program.Data = append(program.Data, p.dataDecl())
+		case TokenFn:
+			program.Funcs = append(program.Funcs, p.funcDecl())
+		default:
+			p.problem("syntax.expected_declaration", p.peek(), "expected `data` or `fn` declaration")
+			p.recoverUntil(TokenData, TokenFn, TokenEOF)
+		}
 	}
 	return program
 }
@@ -55,7 +63,10 @@ func (p *parser) exports() []ast.Export {
 	p.expect(TokenExport, "syntax.expected_export")
 	p.expect(TokenLBrace, "syntax.expected_lbrace")
 	var exports []ast.Export
-	for p.peek().Kind != TokenRBrace && p.peek().Kind != TokenEOF {
+	for !p.atAny(TokenRBrace, TokenData, TokenEOF) {
+		if p.peek().Kind == TokenFn && p.looksLikeFunctionDecl() {
+			break
+		}
 		kind := p.peek()
 		if kind.Kind != TokenType && kind.Kind != TokenFn {
 			p.problem("syntax.expected_export_kind", kind, "expected `type` or `fn` in export block")
@@ -113,12 +124,21 @@ func (p *parser) matchExpr() ast.MatchExpr {
 	scrutinee := p.identifier("syntax.expected_scrutinee")
 	p.expect(TokenLBrace, "syntax.expected_lbrace")
 	expression := ast.MatchExpr{Scrutinee: scrutinee.Text, Span: spanFrom(start, scrutinee)}
-	for p.peek().Kind != TokenRBrace && p.peek().Kind != TokenEOF {
+	for !p.atAny(TokenRBrace, TokenData, TokenFn, TokenEOF) {
+		startPosition := p.position
 		pattern := p.identifier("syntax.expected_pattern")
-		p.expect(TokenFatArrow, "syntax.expected_fat_arrow")
+		if !p.accept(TokenFatArrow) {
+			p.problem("syntax.expected_fat_arrow", p.peek(), "expected `=>`")
+			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF)
+			p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
+			continue
+		}
 		value := p.identifier("syntax.expected_value")
-		expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Span: spanFrom(pattern, value)})
-		expression.Span.End = value.Span.End
+		if pattern.Kind == TokenIdentifier && value.Kind == TokenIdentifier {
+			expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Span: spanFrom(pattern, value)})
+			expression.Span.End = value.Span.End
+		}
+		p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
 	}
 	p.expect(TokenRBrace, "syntax.expected_rbrace")
 	return expression
@@ -156,7 +176,7 @@ func (p *parser) expect(kind Kind, code string) Token {
 		return p.advance()
 	}
 	p.problem(code, token, "expected `"+string(kind)+"`")
-	if token.Kind != TokenEOF {
+	if token.Kind != TokenEOF && !isDeclarationBoundary(token.Kind) && token.Kind != TokenRBrace {
 		return p.advance()
 	}
 	return token
@@ -167,10 +187,75 @@ func (p *parser) identifier(code string) Token {
 }
 
 func (p *parser) problem(code string, token Token, message string) {
-	if len(p.diagnostics) >= 20 {
+	if len(p.diagnostics) >= maxPrimaryDiagnostics {
+		p.truncated = true
 		return
 	}
 	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message))
+}
+
+func (p *parser) atAny(kinds ...Kind) bool {
+	current := p.peek().Kind
+	for _, kind := range kinds {
+		if current == kind {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *parser) looksLikeFunctionDecl() bool {
+	return p.peekNonTrivia(0).Kind == TokenFn &&
+		p.peekNonTrivia(1).Kind == TokenIdentifier &&
+		p.peekNonTrivia(2).Kind == TokenLParen
+}
+
+func (p *parser) peekNonTrivia(ordinal int) Token {
+	seen := 0
+	for index := p.position; index < len(p.tokens); index++ {
+		if p.tokens[index].Trivia() {
+			continue
+		}
+		if seen == ordinal {
+			return p.tokens[index]
+		}
+		seen++
+	}
+	return p.tokens[len(p.tokens)-1]
+}
+
+// recoverUntil is the only token-skipping recovery primitive. If it is not
+// already at a caller-owned boundary, it must consume at least one token.
+func (p *parser) recoverUntil(boundaries ...Kind) {
+	if p.atAny(boundaries...) {
+		return
+	}
+	start := p.position
+	for !p.atAny(boundaries...) {
+		p.advance()
+	}
+	if p.position <= start {
+		panic("parser recovery made no progress")
+	}
+}
+
+func (p *parser) assertProgressOrBoundary(start int, boundaries ...Kind) {
+	if p.position > start || p.atAny(boundaries...) {
+		return
+	}
+	panic("parser branch made no progress")
+}
+
+func isDeclarationBoundary(kind Kind) bool {
+	return kind == TokenData || kind == TokenFn
+}
+
+func tooManyErrors(offset int) diagnostic.Diagnostic {
+	return diagnostic.Error(
+		"syntax.too_many_errors",
+		diagnostic.Span{Start: offset, End: offset},
+		"additional syntax diagnostics were suppressed",
+	)
 }
 
 func spanFrom(first, last Token) diagnostic.Span {

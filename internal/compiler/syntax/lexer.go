@@ -17,8 +17,24 @@ var keywords = map[string]Kind{
 }
 
 func Lex(source []byte) ([]Token, []diagnostic.Diagnostic) {
+	tokens, diagnostics, truncated := lex(source)
+	if truncated {
+		diagnostics = append(diagnostics, tooManyErrors(len(source)))
+	}
+	return tokens, diagnostics
+}
+
+func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 	tokens := make([]Token, 0, len(source)/3)
 	diagnostics := make([]diagnostic.Diagnostic, 0)
+	truncated := false
+	problem := func(value diagnostic.Diagnostic) {
+		if len(diagnostics) < maxPrimaryDiagnostics {
+			diagnostics = append(diagnostics, value)
+		} else {
+			truncated = true
+		}
+	}
 	for offset := 0; offset < len(source); {
 		start := offset
 		if source[offset] == '/' && offset+1 < len(source) && source[offset+1] == '/' {
@@ -34,7 +50,7 @@ func Lex(source []byte) ([]Token, []diagnostic.Diagnostic) {
 		if r == utf8.RuneError && size == 1 {
 			offset++
 			tokens = append(tokens, Token{Kind: TokenUnknown, Text: string(source[start:offset]), Span: diagnostic.Span{Start: start, End: offset}})
-			diagnostics = append(diagnostics, diagnostic.Error("syntax.invalid_utf8", diagnostic.Span{Start: start, End: offset}, "source is not valid UTF-8"))
+			problem(diagnostic.Error("syntax.invalid_utf8", diagnostic.Span{Start: start, End: offset}, "source is not valid UTF-8"))
 			continue
 		}
 		if unicode.IsSpace(r) {
@@ -71,13 +87,13 @@ func Lex(source []byte) ([]Token, []diagnostic.Diagnostic) {
 		if width == 0 {
 			width = size
 			kind = TokenUnknown
-			diagnostics = append(diagnostics, diagnostic.Error("syntax.unexpected_byte", diagnostic.Span{Start: start, End: start + width}, "unexpected source character"))
+			problem(diagnostic.Error("syntax.unexpected_byte", diagnostic.Span{Start: start, End: start + width}, "unexpected source character"))
 		}
 		offset += width
 		tokens = append(tokens, Token{Kind: kind, Text: string(source[start:offset]), Span: diagnostic.Span{Start: start, End: offset}})
 	}
 	tokens = append(tokens, Token{Kind: TokenEOF, Span: diagnostic.Span{Start: len(source), End: len(source)}})
-	return tokens, diagnostics
+	return tokens, diagnostics, truncated
 }
 
 func punctuation(source []byte) (Kind, int) {

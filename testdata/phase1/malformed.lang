@@ -1,0 +1,22 @@
+module examples.broken
+
+export {
+  type Switch
+  fn broken
+
+data Switch =
+  | Off
+  | On
+
+fn broken(state Switch) -> Switch {
+  match state {
+    Off On
+    @ @ @
+    On => Off
+
+fn preserved(state: Switch) -> Switch {
+  match state {
+    Off => On
+    On => Off
+  }
+}
