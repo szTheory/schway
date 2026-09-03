@@ -42,6 +42,9 @@ func run(args []string) int {
 	if len(args) == 4 && args[0] == "evidence" && args[1] == "--validate" {
 		return runEvidenceValidation(args[2], args[3], jsonMode)
 	}
+	if len(args) == 2 && args[0] == "verify" {
+		return runVerify(args[1], jsonMode)
+	}
 	if len(args) == 3 && args[0] == "run" && strings.HasPrefix(args[1], "--engine=") {
 		engine := strings.TrimPrefix(args[1], "--engine=")
 		switch engine {
@@ -113,6 +116,11 @@ func runEvidenceValidation(manifestPath, sourcePath string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
+func runVerify(corpus string, jsonMode bool) int {
+	result := session.VerifyCorpusFile(context.Background(), corpus, native.DefaultRunner())
+	return emit(result, jsonMode, false)
+}
+
 func extractJSON(args []string) ([]string, bool, bool) {
 	filtered := make([]string, 0, len(args))
 	jsonMode := false
@@ -159,5 +167,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS")
 }

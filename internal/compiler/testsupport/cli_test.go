@@ -28,6 +28,9 @@ func TestCLIOutputContract(t *testing.T) {
 		if err := json.Unmarshal(result.Stdout, &decoded); err != nil {
 			t.Fatalf("invalid JSON for %v: %v\n%s", arguments, err, result.Stdout)
 		}
+		if decoded.Metrics.OutputBytes != len(result.Stdout) || decoded.Metrics.RecomputedWork == 0 {
+			t.Fatalf("missing command observations for %v: metrics=%+v actual_bytes=%d", arguments, decoded.Metrics, len(result.Stdout))
+		}
 		canonical, err := protocol.JSON(decoded)
 		if err != nil || !bytes.Equal(canonical, result.Stdout) {
 			t.Fatalf("noncanonical JSON for %v:\ngot=%q\nwant=%q err=%v", arguments, result.Stdout, canonical, err)
@@ -114,5 +117,26 @@ func TestHumanJSONIdentityParity(t *testing.T) {
 	jsonFailure := testsupport.RunCLI(t, binary, os.Environ(), "--json", "check", testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"))
 	if jsonFailure.Exit != 2 || len(jsonFailure.Stderr) != 0 || len(jsonFailure.Stdout) == 0 {
 		t.Fatalf("JSON failure stream contract: %+v", jsonFailure)
+	}
+}
+
+func TestVerifyCLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	corpus := testsupport.ProjectPath("testdata", "phase1")
+	machine := testsupport.RunCLI(t, binary, nil, "--json", "verify", corpus)
+	if machine.Exit != 0 || len(machine.Stderr) != 0 {
+		t.Fatalf("verify CLI failed: %+v", machine)
+	}
+	var result protocol.Result
+	if err := json.Unmarshal(machine.Stdout, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != protocol.StatusPass || len(result.Lanes) != 5 {
+		t.Fatalf("verify result omitted lanes: %+v", result)
+	}
+	for _, required := range []string{"control:match.non_exhaustive", "control:evidence.source_mismatch", "control:interpreter-o0-o3"} {
+		if !bytes.Contains(machine.Stdout, []byte(required)) {
+			t.Fatalf("verify JSON omitted %s: %s", required, machine.Stdout)
+		}
 	}
 }

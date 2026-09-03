@@ -112,15 +112,33 @@ func (result Result) Finalize() Result {
 
 func JSON(result Result) ([]byte, error) {
 	result = result.Finalize()
-	encoded, err := json.Marshal(result)
-	if err != nil {
-		return nil, err
+	for attempts := 0; attempts < 4; attempts++ {
+		encoded, err := json.Marshal(result)
+		if err != nil {
+			return nil, err
+		}
+		outputBytes := len(encoded) + 1
+		if result.Metrics.OutputBytes == outputBytes {
+			return append(encoded, '\n'), nil
+		}
+		result.Metrics.OutputBytes = outputBytes
 	}
-	return append(encoded, '\n'), nil
+	return nil, fmt.Errorf("command output size did not converge")
 }
 
 func Human(result Result) string {
 	result = result.Finalize()
+	for attempts := 0; attempts < 4; attempts++ {
+		output := human(result)
+		if result.Metrics.OutputBytes == len(output) {
+			return output
+		}
+		result.Metrics.OutputBytes = len(output)
+	}
+	return human(result)
+}
+
+func human(result Result) string {
 	var output strings.Builder
 	fmt.Fprintf(&output, "%s %s %s", result.ID, result.Command, result.Status)
 	if result.ModuleID != "" {
@@ -138,6 +156,7 @@ func Human(result Result) string {
 	for _, lane := range result.Lanes {
 		fmt.Fprintf(&output, "%s %s %s work=%d\n", lane.ID, lane.Schema, lane.Status, lane.RecomputedWork)
 	}
+	fmt.Fprintf(&output, "metrics elapsed_ns=%d peak_rss=%s output_bytes=%d recomputed_work=%d\n", result.Metrics.ElapsedNS, result.Metrics.PeakRSSStatus, result.Metrics.OutputBytes, result.Metrics.RecomputedWork)
 	return output.String()
 }
 
