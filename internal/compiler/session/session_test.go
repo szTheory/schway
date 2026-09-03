@@ -2,9 +2,13 @@ package session_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -19,6 +23,32 @@ func TestTogglePipeline(t *testing.T) {
 	}
 	if result.Program.Schema != "lang.core/0" || len(result.Program.Functions) != 1 {
 		t.Fatalf("unexpected core: %+v", result.Program)
+	}
+}
+
+func TestNativeToggleO0O3(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	if len(result.O0.Pairs) != 2 || len(result.O3.Pairs) != 2 {
+		t.Fatalf("unexpected native results: O0=%+v O3=%+v", result.O0, result.O3)
+	}
+	if !strings.Contains(result.CSource, "typedef enum LANG_SWITCH") || !strings.Contains(result.CSource, "switch (LANG_STATE)") {
+		t.Fatalf("generated C is not reviewable S1 lowering:\n%s", result.CSource)
+	}
+}
+
+func TestNativeToolFailureIsOperational(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	_, diagnostics, err := session.RunNativeFile(context.Background(), path, native.Runner{ClangPath: testsupport.ProjectPath("missing-clang")})
+	if len(diagnostics) != 0 {
+		t.Fatalf("tool absence became source diagnostics: %+v", diagnostics)
+	}
+	var toolError *native.ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.tool_missing" {
+		t.Fatalf("expected native.tool_missing, got %T %v", err, err)
 	}
 }
 
