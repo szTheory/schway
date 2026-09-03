@@ -132,8 +132,8 @@ func TestCoreValidationWorkSeries(t *testing.T) {
 			t.Fatalf("facts=%d rejected: %+v", facts, result)
 		}
 		want := corevalidate.LinearWorkLimit(facts)
-		if result.Checks <= 0 || result.Checks > want {
-			t.Fatalf("facts=%d checks=%d want 0 < checks <= %d", facts, result.Checks, want)
+		if result.Checks != want {
+			t.Fatalf("facts=%d checks=%d want exact linear formula %d", facts, result.Checks, want)
 		}
 	}
 }

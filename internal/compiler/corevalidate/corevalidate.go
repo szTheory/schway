@@ -13,6 +13,16 @@ import (
 
 const maxTypeDepth = 64
 
+// KnownEscape names the exact boundary this validator cannot prove. A producer
+// that coordinates a false source claim with internally consistent core facts
+// remains outside source-blind validation.
+const KnownEscape = "escape:coordinated-source-core-lie"
+
+// LinearWorkLimit is the exact declared count for the canonical scale shape:
+// one sealed Byte fact, one parameter plus one target per copy, and facts-1
+// copies followed by one final return claim.
+func LinearWorkLimit(facts int) int { return 16*facts + 13 }
+
 type Problem struct {
 	Code   string `json:"code"`
 	Detail string `json:"detail,omitempty"`
@@ -63,6 +73,26 @@ func (v *validator) run() {
 	if !v.check(v.program.Module != "" && v.program.ModuleID != "", "core.module", "missing module identity") {
 		return
 	}
+	if !v.check(len(v.program.Functions) > 0, "core.function_missing", v.program.ModuleID) {
+		return
+	}
+	dataNames := make(map[string]core.DataType, len(v.program.DataTypes))
+	dataIDs := make(map[string]struct{}, len(v.program.DataTypes))
+	for _, dataType := range v.program.DataTypes {
+		if !v.unique(dataIDs, dataType.ID, "core.duplicate_type_id") || !v.check(dataType.Name != "", "core.unknown_type", dataType.ID) {
+			return
+		}
+		if _, exists := dataNames[dataType.Name]; !v.check(!exists, "core.duplicate_type_name", dataType.Name) {
+			return
+		}
+		alternatives := make(map[string]struct{}, len(dataType.Alternatives))
+		for _, alternative := range dataType.Alternatives {
+			if !v.unique(alternatives, alternative, "core.duplicate_alternative") {
+				return
+			}
+		}
+		dataNames[dataType.Name] = dataType
+	}
 	functionIDs := make(map[string]struct{}, len(v.program.Functions))
 	for index := range v.program.Functions {
 		function := &v.program.Functions[index]
@@ -76,25 +106,43 @@ func (v *validator) run() {
 			if !v.check(v.program.Schema == core.Schema1, "core.schema", "linear body requires lang.core/1") || !v.linear(function) {
 				return
 			}
-		} else if !v.check(v.program.Schema == core.Schema, "core.schema", "match body requires lang.core/0") || !v.match(function) {
+		} else if !v.check(v.program.Schema == core.Schema, "core.schema", "match body requires lang.core/0") || !v.match(function, dataNames) {
 			return
 		}
 	}
 }
 
-func (v *validator) match(function *core.Function) bool {
+func (v *validator) match(function *core.Function, dataNames map[string]core.DataType) bool {
 	match := function.Match
 	if !v.check(match.ID != "" && match.PointID != "" && function.EntryPointID != "" && function.ReturnPointID != "", "core.invalid_id", function.ID) {
 		return false
 	}
 	armIDs := make(map[string]struct{}, len(match.Arms))
 	edgeIDs := make(map[string]struct{}, len(match.Arms))
+	dataType, knownType := dataNames[function.Parameter.Type]
+	if !v.check(knownType && function.ReturnType == function.Parameter.Type, "core.unknown_type", function.Parameter.Type) ||
+		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
+		return false
+	}
+	alternatives := make(map[string]struct{}, len(dataType.Alternatives))
+	for _, alternative := range dataType.Alternatives {
+		alternatives[alternative] = struct{}{}
+	}
+	patterns := make(map[string]struct{}, len(match.Arms))
 	for _, arm := range match.Arms {
 		if !v.unique(armIDs, arm.ID, "core.duplicate_arm_id") || !v.unique(edgeIDs, arm.EdgeID, "core.duplicate_edge_id") {
 			return false
 		}
+		if !v.unique(patterns, arm.Pattern, "core.duplicate_pattern") {
+			return false
+		}
+		_, patternKnown := alternatives[arm.Pattern]
+		_, valueKnown := alternatives[arm.Value]
+		if !v.check(patternKnown && valueKnown, "core.unknown_alternative", arm.ID) {
+			return false
+		}
 	}
-	return true
+	return v.check(len(patterns) == len(alternatives), "core.final_claim_mismatch", match.ID)
 }
 
 func (v *validator) linear(function *core.Function) bool {
@@ -179,18 +227,24 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 	operations := function.Linear.Operations
 	initialized := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
-	loanTarget := make(map[string]string)
+	loanForTarget := make(map[string]string)
 	loanLastUse := make(map[string]int)
 	for index, operation := range operations {
-		for loanID, targetID := range loanTarget {
-			if operation.SourceID == targetID {
-				loanLastUse[loanID] = index
-			}
+		v.checks++ // inspect each operation once while finding final loan uses
+		if loanID, ok := loanForTarget[operation.SourceID]; ok {
+			loanLastUse[loanID] = index
 		}
 		if operation.Kind == core.OpBorrowShared {
 			loanOwner[operation.LoanID] = operation.SourceID
-			loanTarget[operation.LoanID] = operation.TargetID
+			loanForTarget[operation.TargetID] = operation.LoanID
 			loanLastUse[operation.LoanID] = index
+		}
+	}
+	ownerBlockedUntil := make(map[string]int)
+	for loanID, ownerID := range loanOwner {
+		v.checks++ // consolidate each declared loan exactly once
+		if loanLastUse[loanID] > ownerBlockedUntil[ownerID] {
+			ownerBlockedUntil[ownerID] = loanLastUse[loanID]
 		}
 	}
 
@@ -200,35 +254,31 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 		if !v.check(source.TypeID == operation.TypeID, "core.type_mismatch", operation.ID) {
 			return false
 		}
-		if !initialized[operation.SourceID] {
-			code := "core.place_uninitialized"
-			if operation.Kind == core.OpReturn {
-				code = "core.final_claim_mismatch"
-			}
-			return v.check(false, code, operation.SourceID)
+		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+			return false
 		}
+		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
 		case core.OpCopy:
-			if !hasAbility(types[operation.TypeID], core.AbilityCopy) {
-				return v.check(false, "core.ability.copy_denied", operation.TypeID)
+			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
+				return false
 			}
 			if !v.targetMatches(operation, places) {
 				return false
 			}
 			initialized[operation.TargetID] = true
 		case core.OpBorrowShared:
-			if !hasAbility(types[operation.TypeID], core.AbilityShare) {
-				return v.check(false, "core.ability.share_denied", operation.TypeID)
+			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
+				return false
 			}
 			if !v.targetMatches(operation, places) {
 				return false
 			}
 			initialized[operation.TargetID] = true
 		case core.OpMove:
-			for loanID, ownerID := range loanOwner {
-				if ownerID == operation.SourceID && loanLastUse[loanID] >= index {
-					return v.check(false, "core.move_while_borrowed", operation.ID)
-				}
+			blockedUntil, hasLoan := ownerBlockedUntil[operation.SourceID]
+			if !v.check(!hasLoan || blockedUntil < index, "core.move_while_borrowed", operation.ID) {
+				return false
 			}
 			if !v.targetMatches(operation, places) {
 				return false
@@ -252,8 +302,9 @@ func (v *validator) targetMatches(operation core.LinearOperation, places map[str
 }
 
 func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []core.AbilityWitness, bool) {
-	v.checks++
-	if depth > maxTypeDepth {
+	nodes, bounded := boundedTypeNodes(shape)
+	v.checks += nodes
+	if depth > maxTypeDepth || !bounded {
 		v.problems = append(v.problems, Problem{Code: "core.type_limit", Detail: shape.Constructor})
 		return nil, nil, false
 	}
@@ -273,6 +324,35 @@ func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []cor
 		}
 	}
 	return granted, witnesses, true
+}
+
+func boundedTypeNodes(shape core.TypeRef) (int, bool) {
+	type item struct {
+		shape core.TypeRef
+		depth int
+	}
+	stack := []item{{shape: shape}}
+	count := 0
+	for len(stack) > 0 {
+		last := len(stack) - 1
+		current := stack[last]
+		stack = stack[:last]
+		count++
+		if count > 4096 || current.depth > maxTypeDepth {
+			return count, false
+		}
+		for _, argument := range current.shape.Arguments {
+			stack = append(stack, item{shape: argument, depth: current.depth + 1})
+		}
+	}
+	return count, true
+}
+
+func finalOrTransitionCode(kind core.OperationKind) string {
+	if kind == core.OpReturn {
+		return "core.final_claim_mismatch"
+	}
+	return "core.place_uninitialized"
 }
 
 func deriveAbility(shape core.TypeRef, requested core.Ability, depth int) (bool, []string, bool) {
