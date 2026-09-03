@@ -371,6 +371,20 @@ func TestNativeToggleO0O3(t *testing.T) {
 	}
 }
 
+func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
+	tests := []string{
+		"module collision.locals\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let α = code\n  let β = code\n  β\n}\n",
+		"module collision.shadow\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let value = code\n  let value = code\n  value\n}\n",
+		"module collision.variants\nexport { type Thing fn thing }\ndata Thing = | a | A\nfn thing(value: Thing) -> Thing {\n  match value {\n    a => A\n    A => a\n  }\n}\n",
+	}
+	for _, source := range tests {
+		result, diagnostics, err := session.RunNative(context.Background(), []byte(source), native.DefaultRunner())
+		if err != nil || len(diagnostics) != 0 || len(result.O0.Pairs) == 0 || len(result.O3.Pairs) == 0 {
+			t.Fatalf("collision-safe native path failed: err=%v diagnostics=%+v result=%+v", err, diagnostics, result)
+		}
+	}
+}
+
 func TestOwnedTransferInterpreterNative(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
