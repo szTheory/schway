@@ -1,0 +1,17 @@
+module examples.switch
+
+export {
+  type Switch
+  fn toggle
+}
+
+data Switch =
+  | Off
+  | On
+
+fn toggle(state: Switch) -> Switch {
+  match state {
+    Off => On
+    On => Off
+  }
+}
