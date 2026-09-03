@@ -12,13 +12,17 @@ import (
 )
 
 func TestOwnershipSequenceExhaustive(t *testing.T) {
-	for length := 0; length <= 4; length++ {
+	// Thirty-six symbols span three declaration names, three operation kinds,
+	// and four source selectors: every visible place (at this depth) plus an
+	// out-of-scope boundary. This exhausts shadowing and multi-owner shapes.
+	const alphabet = 36
+	for length := 0; length <= 3; length++ {
 		cases := 1
 		for index := 0; index < length; index++ {
-			cases *= 4
+			cases *= alphabet
 		}
 		for encoded := 0; encoded < cases; encoded++ {
-			body := generatedOwnershipBody(encoded, length)
+			body := generatedOwnershipBody(encoded, length, alphabet)
 			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &body)
 			want := oracleStraightLine("test:fn", "owner", byteTypeFact(), &body)
 			assertSupportEqual(t, fmt.Sprintf("length=%d case=%d", length, encoded), got, want)
@@ -127,32 +131,34 @@ func FuzzOwnershipLinear(f *testing.F) {
 	})
 }
 
-func generatedOwnershipBody(encoded, length int) ast.LinearBody {
+func generatedOwnershipBody(encoded, length, alphabet int) ast.LinearBody {
 	input := make([]byte, length)
 	for index := range input {
-		input[index] = byte(encoded % 4)
-		encoded /= 4
+		input[index] = byte(encoded % alphabet)
+		encoded /= alphabet
 	}
 	return generatedOwnershipBodyBytes(input)
 }
 
 func generatedOwnershipBodyBytes(input []byte) ast.LinearBody {
 	body := ast.LinearBody{Result: "owner"}
-	latestLoan := "missing"
+	visibleNames := []string{"owner"}
+	knownName := map[string]bool{"owner": true}
+	names := []string{"value0", "value1", "value2"}
 	for index, raw := range input {
-		name := fmt.Sprintf("value%d", index)
-		kind := "read"
-		source := "owner"
-		switch raw % 4 {
-		case 1:
-			kind = "take"
-		case 2:
-			kind = "borrow"
-			latestLoan = name
-		case 3:
-			source = latestLoan
-		}
+		name := names[int(raw)%len(names)]
+		kinds := []string{"read", "take", "borrow"}
+		kind := kinds[(int(raw)/len(names))%len(kinds)]
+		sources := append(append([]string(nil), visibleNames...), "out_of_scope")
+		source := sources[(int(raw)/(len(names)*len(kinds)))%len(sources)]
 		body.Bindings = append(body.Bindings, binding(name, kind, source, index*4))
+		if !knownName[name] {
+			knownName[name] = true
+			visibleNames = append(visibleNames, name)
+		}
+	}
+	if len(input) > 0 {
+		body.Result = visibleNames[int(input[len(input)-1])%len(visibleNames)]
 	}
 	body.Span = diagnostic.Span{End: len(input)*4 + 1}
 	return body
@@ -198,25 +204,21 @@ type testOracleLoan struct {
 func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
 	lastUses := make(map[int]int)
 	loanOrder := make([]int, 0)
-	visible := map[string]int{parameterName: -1}
-	loanForBinding := make(map[int]int)
 	for index, candidate := range body.Bindings {
-		if sourceBinding, ok := visible[candidate.RHS.Source]; ok {
-			if loanIndex, isLoan := loanForBinding[sourceBinding]; isLoan {
-				lastUses[loanIndex] = index
+		if candidate.RHS.Kind == "borrow" {
+			loanOrder = append(loanOrder, index)
+		}
+	}
+	for _, index := range loanOrder {
+		lastUses[index] = index
+		for useIndex := index + 1; useIndex < len(body.Bindings); useIndex++ {
+			resolved, ok := oracleResolveBinding(parameterName, body, body.Bindings[useIndex].RHS.Source, useIndex)
+			if ok && resolved == index {
+				lastUses[index] = useIndex
 			}
 		}
-		visible[candidate.Name] = index
-		if candidate.RHS.Kind != "borrow" {
-			continue
-		}
-		lastUses[index] = index
-		loanForBinding[index] = index
-		loanOrder = append(loanOrder, index)
-	}
-	if resultBinding, ok := visible[body.Result]; ok {
-		if loanIndex, isLoan := loanForBinding[resultBinding]; isLoan {
-			lastUses[loanIndex] = len(body.Bindings)
+		if resolved, ok := oracleResolveBinding(parameterName, body, body.Result, len(body.Bindings)); ok && resolved == index {
+			lastUses[index] = len(body.Bindings)
 		}
 	}
 
@@ -226,11 +228,17 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 	}
 
 	parameterID := functionID + ":place:0"
-	places := map[string]*testOraclePlace{parameterName: {id: parameterID, initialized: true}}
+	states := map[string]*testOraclePlace{parameterID: {id: parameterID, initialized: true}}
+	visiblePlaces := map[string]*testOraclePlace{parameterName: states[parameterID]}
 	activeLoans := make(map[string]testOracleLoan)
 	for index, candidate := range body.Bindings {
 		result.Work++
-		source, ok := places[candidate.RHS.Source]
+		sourceBinding, ok := oracleResolveBinding(parameterName, body, candidate.RHS.Source, index)
+		sourceID := parameterID
+		if sourceBinding >= 0 {
+			sourceID = fmt.Sprintf("%s:place:%d", functionID, sourceBinding+1)
+		}
+		source := states[sourceID]
 		if !ok {
 			result.DiagnosticCode = "name.unknown"
 			return result
@@ -260,7 +268,9 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 			}
 		}
 		targetID := fmt.Sprintf("%s:place:%d", functionID, index+1)
-		places[candidate.Name] = &testOraclePlace{id: targetID, initialized: true}
+		target := &testOraclePlace{id: targetID, initialized: true}
+		states[targetID] = target
+		visiblePlaces[candidate.Name] = target
 		result.Operations = append(result.Operations, core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index),
 			Kind: kind, SourceID: source.id, TargetID: targetID, LoanID: loanID, TypeID: typeFact.ID,
@@ -270,10 +280,15 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 				delete(activeLoans, id)
 			}
 		}
-		result.States = append(result.States, oracleSnapshot(index, places, activeLoans))
+		result.States = append(result.States, oracleSnapshot(index, visiblePlaces, activeLoans))
 	}
 	result.Work++
-	returned, ok := places[body.Result]
+	resultBinding, ok := oracleResolveBinding(parameterName, body, body.Result, len(body.Bindings))
+	resultID := parameterID
+	if resultBinding >= 0 {
+		resultID = fmt.Sprintf("%s:place:%d", functionID, resultBinding+1)
+	}
+	returned := states[resultID]
 	if !ok {
 		result.DiagnosticCode = "name.unknown"
 		return result
@@ -287,8 +302,28 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 		ID: fmt.Sprintf("%s:op:%d", functionID, ordinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, ordinal),
 		Kind: core.OpReturn, SourceID: returned.id, TypeID: typeFact.ID,
 	})
-	result.States = append(result.States, oracleSnapshot(ordinal, places, activeLoans))
+	for id, loan := range activeLoans {
+		if loan.lastUse <= ordinal {
+			delete(activeLoans, id)
+		}
+	}
+	result.States = append(result.States, oracleSnapshot(ordinal, visiblePlaces, activeLoans))
 	return result
+}
+
+// oracleResolveBinding is intentionally a different implementation from the
+// production forward environment: each use scans declarations backward and
+// selects the nearest prior binding, with -1 denoting the parameter.
+func oracleResolveBinding(parameterName string, body *ast.LinearBody, name string, before int) (int, bool) {
+	for index := before - 1; index >= 0; index-- {
+		if body.Bindings[index].Name == name {
+			return index, true
+		}
+	}
+	if name == parameterName {
+		return -1, true
+	}
+	return -1, false
 }
 
 func oracleSnapshot(index int, places map[string]*testOraclePlace, activeLoans map[string]testOracleLoan) ownershipStateFact {
