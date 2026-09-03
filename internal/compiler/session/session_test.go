@@ -378,6 +378,14 @@ func TestOwnedTransferInterpreterNative(t *testing.T) {
 	if !bytes.Equal([]byte(result.CSource), golden) {
 		t.Fatalf("owned C golden changed:\n%s", result.CSource)
 	}
+	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_value_delivered)"} {
+		if !strings.Contains(result.CSource, required) {
+			t.Fatalf("owned C does not derive execution from runtime state at %q:\n%s", required, result.CSource)
+		}
+	}
+	if strings.Contains(result.CSource, `puts("{\"schema\":\"lang.execution/1\"`) {
+		t.Fatalf("owned C still embeds a precomputed execution document:\n%s", result.CSource)
+	}
 	for _, forbidden := range []string{"restrict", "noalias", "malloc", "free("} {
 		if strings.Contains(result.CSource, forbidden) {
 			t.Fatalf("owned C makes forbidden %q claim:\n%s", forbidden, result.CSource)
