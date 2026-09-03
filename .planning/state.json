@@ -6,7 +6,7 @@
     {
       "number": "1",
       "name": "Canonical Pure Spine",
-      "status": "pending"
+      "status": "executing"
     },
     {
       "number": "2",
@@ -37,7 +37,7 @@
   "next": {
     "command": "/gsd:progress --next",
     "label": "Advance to the next step",
-    "reason": "Phase 1 of 6 · 33% · executing"
+    "reason": "Phase 1 of 6 · 67% · executing"
   },
-  "updated_at": "2026-09-03T18:57:54.026Z"
+  "updated_at": "2026-09-03T19:07:55Z"
 }

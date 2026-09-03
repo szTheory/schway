@@ -25,11 +25,11 @@ hiding runtime costs.
   subset: a module, explicit export block, closed nominal variants, functions
   with named parameters, immutable bindings, calls, blocks, and exhaustive
   `match`; later phases add only the syntax demanded by their vertical slice.
-- [ ] **SYN-02**: Parse → format → parse preserves the semantic tree, formatting
+- [x] **SYN-02**: Parse → format → parse preserves the semantic tree, formatting
   is idempotent, and comments remain stably attached.
-- [ ] **SYN-03**: Malformed delimiters, matches, signatures, and ownership forms
+- [x] **SYN-03**: Malformed delimiters, matches, signatures, and ownership forms
   recover within a bounded region and emit stable structured diagnostics.
-- [ ] **SYN-04**: The formatter owns one conventional source form and does not
+- [x] **SYN-04**: The formatter owns one conventional source form and does not
   reorder named-argument evaluation or create whitespace-only choice churn.
 
 ### Typed semantic core
@@ -133,9 +133,9 @@ hiding runtime costs.
 | FND-03 | Phase 1 | Pending |
 | FND-04 | Phase 6 | Pending |
 | SYN-01 | Phase 1 | Complete |
-| SYN-02 | Phase 1 | Pending |
-| SYN-03 | Phase 1 | Pending |
-| SYN-04 | Phase 1 | Pending |
+| SYN-02 | Phase 1 | Complete |
+| SYN-03 | Phase 1 | Complete |
+| SYN-04 | Phase 1 | Complete |
 | SEM-01 | Phase 1 | Complete |
 | SEM-02 | Phase 1 | Complete |
 | SEM-03 | Phase 4 | Pending |
