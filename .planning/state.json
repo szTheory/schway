@@ -35,9 +35,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:plan-phase 2",
-    "label": "Plan Owned Values and Abilities",
-    "reason": "Phase 1 of 6 complete; Phase 2 is the next semantic-risk slice"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 2 of 6 · 17% · executing"
   },
-  "updated_at": "2026-09-03T19:29:31Z"
+  "updated_at": "2026-09-03T20:16:50.274Z"
 }
