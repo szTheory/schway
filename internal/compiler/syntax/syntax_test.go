@@ -135,9 +135,110 @@ func TestInvalidUTF8(t *testing.T) {
 	}
 }
 
+func TestOwnershipRoundTrip(t *testing.T) {
+	for _, name := range []string{"owned_transfer.lang", "implicit_copy.lang", "ability_shapes.lang"} {
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			t.Fatalf("%s: ownership CST lost bytes", name)
+		}
+		if len(parsed.Diagnostics) != 0 {
+			t.Fatalf("%s: unexpected diagnostics: %v", name, diagnosticIdentity(parsed.Diagnostics))
+		}
+		canonical := syntax.Format(parsed.Tree)
+		if !bytes.Equal(canonical, source) {
+			t.Fatalf("%s is not canonical:\n%s", name, canonical)
+		}
+		reparsed := syntax.Parse(canonical)
+		if len(reparsed.Diagnostics) != 0 || !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+			t.Fatalf("%s did not reach a formatting fixed point: %v", name, diagnosticIdentity(reparsed.Diagnostics))
+		}
+		if !reflect.DeepEqual(withoutSpans(parsed.Program), withoutSpans(reparsed.Program)) {
+			t.Fatalf("%s changed the closed-body semantic projection", name)
+		}
+		if !reflect.DeepEqual(comments(parsed.Tree), comments(reparsed.Tree)) {
+			t.Fatalf("%s changed comments", name)
+		}
+	}
+}
+
+func TestOwnershipRecovery(t *testing.T) {
+	source := []byte(`module owned.recovery
+export { fn broken fn preserved }
+
+fn broken(value: Pair<Byte, Box<Buffer) -> Byte {
+  let copy = value
+  copy
+}
+
+fn preserved(value: Byte) -> Byte {
+  value
+}
+`)
+	first := syntax.Parse(source)
+	second := syntax.Parse(source)
+	if !bytes.Equal(first.Tree.Bytes(), source) {
+		t.Fatal("malformed ownership CST did not preserve every byte")
+	}
+	if len(first.Diagnostics) == 0 || len(first.Diagnostics) > 21 {
+		t.Fatalf("expected bounded recovery diagnostics, got %d", len(first.Diagnostics))
+	}
+	if !reflect.DeepEqual(diagnosticIdentity(first.Diagnostics), diagnosticIdentity(second.Diagnostics)) {
+		t.Fatalf("ownership recovery is nondeterministic: first=%v second=%v", diagnosticIdentity(first.Diagnostics), diagnosticIdentity(second.Diagnostics))
+	}
+	if len(first.Program.Funcs) != 2 || first.Program.Funcs[1].Name != "preserved" {
+		t.Fatalf("generic recovery crossed its enclosing declaration: %+v", first.Program.Funcs)
+	}
+}
+
+func TestTypeApplicationLimits(t *testing.T) {
+	nested := func(boxes int) string {
+		return strings.Repeat("Box<", boxes) + "Byte" + strings.Repeat(">", boxes)
+	}
+	program := func(parameterType string) []byte {
+		return []byte("module owned.limits\nexport { fn bounded }\nfn bounded(value: " + parameterType + ") -> Byte { value }\n")
+	}
+	if result := syntax.Parse(program(nested(63))); len(result.Diagnostics) != 0 {
+		t.Fatalf("depth 64 was rejected: %v", diagnosticIdentity(result.Diagnostics))
+	}
+	tooDeep := syntax.Parse(program(nested(64)))
+	if !containsDiagnostic(tooDeep.Diagnostics, "syntax.type_limit") || len(tooDeep.Diagnostics) > 21 {
+		t.Fatalf("depth 65 did not terminate at the stable cap: %v", diagnosticIdentity(tooDeep.Diagnostics))
+	}
+
+	wide := func(arguments int) string {
+		values := make([]string, arguments)
+		for index := range values {
+			values[index] = "Byte"
+		}
+		return "Pair<" + strings.Join(values, ",") + ">"
+	}
+	if result := syntax.Parse(program(wide(4094))); len(result.Diagnostics) != 0 {
+		t.Fatalf("4,096 type nodes were rejected: %v", diagnosticIdentity(result.Diagnostics))
+	}
+	first := syntax.Parse(program(wide(4095)))
+	second := syntax.Parse(program(wide(4095)))
+	if !containsDiagnostic(first.Diagnostics, "syntax.type_limit") || len(first.Diagnostics) > 21 {
+		t.Fatalf("4,097 type nodes did not terminate at the stable cap: %v", diagnosticIdentity(first.Diagnostics))
+	}
+	if !reflect.DeepEqual(diagnosticIdentity(first.Diagnostics), diagnosticIdentity(second.Diagnostics)) {
+		t.Fatalf("type-node limit diagnostics are nondeterministic: first=%v second=%v", diagnosticIdentity(first.Diagnostics), diagnosticIdentity(second.Diagnostics))
+	}
+}
+
 func FuzzParseFormat(f *testing.F) {
 	for _, name := range []string{"toggle.lang", "comments.lang", "malformed.lang"} {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", name))
+		if err != nil {
+			f.Fatal(err)
+		}
+		f.Add(source)
+	}
+	for _, name := range []string{"owned_transfer.lang", "implicit_copy.lang", "ability_shapes.lang"} {
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", name))
 		if err != nil {
 			f.Fatal(err)
 		}
