@@ -31,12 +31,65 @@ const (
 
 func Parse(source []byte) ParseResult {
 	tokens, diagnostics, truncated := lex(source)
+	normalizeOwnershipTokens(tokens)
+	diagnostics = filterNormalizedTokenDiagnostics(diagnostics, tokens)
 	p := parser{tokens: tokens, diagnostics: diagnostics, truncated: truncated}
 	program := p.parseProgram()
 	if p.truncated {
 		p.diagnostics = append(p.diagnostics, tooManyErrors(len(source)))
 	}
 	return ParseResult{Tree: Tree{Source: append([]byte(nil), source...), Tokens: tokens}, Program: program, Diagnostics: p.diagnostics}
+}
+
+func filterNormalizedTokenDiagnostics(diagnostics []diagnostic.Diagnostic, tokens []Token) []diagnostic.Diagnostic {
+	kept := diagnostics[:0]
+	for _, problem := range diagnostics {
+		if problem.Code == "syntax.unexpected_byte" {
+			normalized := false
+			for _, token := range tokens {
+				if token.Span == problem.Primary && (token.Kind == TokenLAngle || token.Kind == TokenRAngle || token.Kind == TokenComma) {
+					normalized = true
+					break
+				}
+			}
+			if normalized {
+				continue
+			}
+		}
+		kept = append(kept, problem)
+	}
+	return kept
+}
+
+func normalizeOwnershipTokens(tokens []Token) {
+	for index := range tokens {
+		switch tokens[index].Text {
+		case "let":
+			if tokens[index].Kind == TokenIdentifier {
+				tokens[index].Kind = TokenLet
+			}
+		case "take":
+			if tokens[index].Kind == TokenIdentifier {
+				tokens[index].Kind = TokenTake
+			}
+		case "borrow":
+			if tokens[index].Kind == TokenIdentifier {
+				tokens[index].Kind = TokenBorrow
+			}
+		case "<":
+			if tokens[index].Kind == TokenUnknown {
+				tokens[index].Kind = TokenLAngle
+			}
+		case ">":
+			if tokens[index].Kind == TokenUnknown {
+				tokens[index].Kind = TokenRAngle
+			}
+		case ",":
+			if tokens[index].Kind == TokenUnknown {
+				tokens[index].Kind = TokenComma
+			}
+		}
+	}
 }
 
 func (p *parser) parseProgram() ast.Program {

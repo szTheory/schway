@@ -14,9 +14,6 @@ var keywords = map[string]Kind{
 	"data":   TokenData,
 	"fn":     TokenFn,
 	"match":  TokenMatch,
-	"let":    TokenLet,
-	"take":   TokenTake,
-	"borrow": TokenBorrow,
 }
 
 func Lex(source []byte) ([]Token, []diagnostic.Diagnostic) {
@@ -125,12 +122,6 @@ func punctuation(source []byte) (Kind, int) {
 		return TokenPipe, 1
 	case '=':
 		return TokenEqual, 1
-	case '<':
-		return TokenLAngle, 1
-	case '>':
-		return TokenRAngle, 1
-	case ',':
-		return TokenComma, 1
 	default:
 		return TokenUnknown, 0
 	}
