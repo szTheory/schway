@@ -74,8 +74,8 @@ func NewOwnedBackendMutationRunner(runner native.Runner) *OwnedBackendMutationRu
 }
 
 func (r *OwnedBackendMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
-	const site = "  LANG_BUFFER lang_place_1 = lang_place_0; /* authority transfer: s1:owned.transfer:fn:relay:op:0 */\n"
-	const mutation = site + "  lang_place_1.bytes[0] ^= 0xffu; /* control: backend runtime causality */\n"
+	const site = "  LANG_BUFFER lang_value_delivered = lang_value_buffer; /* authority transfer: s1:owned.transfer:fn:relay:op:0 */\n"
+	const mutation = site + "  lang_value_delivered.bytes[0] ^= 0xffu; /* control: backend runtime causality */\n"
 	if strings.Count(cSource, site) != 1 {
 		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("owned transfer mutation site count is %d, want 1", strings.Count(cSource, site))}
 	}

@@ -367,7 +367,7 @@ func TestNativeToggleO0O3(t *testing.T) {
 	if len(result.O0.Pairs) != 2 || len(result.O3.Pairs) != 2 {
 		t.Fatalf("unexpected native results: O0=%+v O3=%+v", result.O0, result.O3)
 	}
-	if !strings.Contains(result.CSource, "typedef enum LANG_TYPE_0") || !strings.Contains(result.CSource, "switch (lang_place_0)") {
+	if !strings.Contains(result.CSource, "typedef enum LANG_SWITCH") || !strings.Contains(result.CSource, "switch (LANG_STATE)") {
 		t.Fatalf("generated C is not reviewable S1 lowering:\n%s", result.CSource)
 	}
 }
@@ -409,7 +409,7 @@ func TestOwnedTransferInterpreterNative(t *testing.T) {
 	if !bytes.Equal([]byte(result.CSource), golden) {
 		t.Fatalf("owned C golden changed:\n%s", result.CSource)
 	}
-	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_place_1)"} {
+	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_value_delivered)"} {
 		if !strings.Contains(result.CSource, required) {
 			t.Fatalf("owned C does not derive execution from runtime state at %q:\n%s", required, result.CSource)
 		}

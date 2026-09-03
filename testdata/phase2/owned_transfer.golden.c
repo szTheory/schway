@@ -94,13 +94,13 @@ static int lang_write_buffer_hex(const LANG_BUFFER *value) {
 int main(int argc, char **argv) {
   if (argc != 2) return 64;
   if (strcmp(argv[1], "01020304") != 0) return 65;
-  LANG_BUFFER lang_place_0 = {{1u, 2u, 3u, 4u}, 4u};
-  LANG_BUFFER lang_place_1 = lang_place_0; /* authority transfer: s1:owned.transfer:fn:relay:op:0 */
-  (void)lang_place_1;
+  LANG_BUFFER lang_value_buffer = {{1u, 2u, 3u, 4u}, 4u};
+  LANG_BUFFER lang_value_delivered = lang_value_buffer; /* authority transfer: s1:owned.transfer:fn:relay:op:0 */
+  (void)lang_value_delivered;
   if (!lang_record_event("value.transferred", "s1:owned.transfer:fn:relay:op:0:event", "s1:owned.transfer:fn:relay", "s1:owned.transfer:fn:relay:place:0", "s1:owned.transfer:fn:relay:place:1", "s1:owned.transfer:fn:relay:type:0")) return 74;
   if (!lang_record_event("function.returned", "s1:owned.transfer:fn:relay:op:1:event:returned", "s1:owned.transfer:fn:relay", "s1:owned.transfer:fn:relay:place:1", NULL, "s1:owned.transfer:fn:relay:type:0")) return 74; /* returned place: s1:owned.transfer:fn:relay:op:1 */
   if (!lang_write_literal("{\"schema\":\"lang.execution/1\",\"outcome\":{\"kind\":\"returned\",\"value\":\"")) return 74;
-  if (!lang_write_buffer_hex(&lang_place_1)) return 74;
+  if (!lang_write_buffer_hex(&lang_value_delivered)) return 74;
   if (!lang_write_literal("\"},\"events\":[")) return 74;
   if (!lang_write_events()) return 74;
   if (!lang_write_literal("],\"live_resources\":[]}\n")) return 74;
