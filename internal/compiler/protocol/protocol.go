@@ -71,20 +71,20 @@ func New(command, status string) Result {
 
 func (result Result) Finalize() Result {
 	identity := struct {
-		Schema          string
-		Command         string
-		Status          string
-		ModuleID        string
-		FormattedDigest string
-		DiagnosticIDs   []string
-		ExecutionIDs    []string
-		EvidenceID      string
-		LaneIDs         []string
+		Schema           string
+		Command          string
+		Status           string
+		ModuleID         string
+		FormattedDigest  string
+		DiagnosticIDs    []string
+		ExecutionDigests []string
+		EvidenceID       string
+		LaneIDs          []string
 	}{
 		Schema: result.Schema, Command: result.Command, Status: result.Status,
-		ModuleID:      result.ModuleID,
-		DiagnosticIDs: make([]string, 0, len(result.Diagnostics)),
-		ExecutionIDs:  make([]string, 0), LaneIDs: make([]string, 0, len(result.Lanes)),
+		ModuleID:         result.ModuleID,
+		DiagnosticIDs:    make([]string, 0, len(result.Diagnostics)),
+		ExecutionDigests: make([]string, 0, len(result.Executions)), LaneIDs: make([]string, 0, len(result.Lanes)),
 	}
 	if result.Formatted != "" {
 		sum := sha256.Sum256([]byte(result.Formatted))
@@ -94,9 +94,9 @@ func (result Result) Finalize() Result {
 		identity.DiagnosticIDs = append(identity.DiagnosticIDs, problem.ID)
 	}
 	for _, execution := range result.Executions {
-		for _, event := range execution.Events {
-			identity.ExecutionIDs = append(identity.ExecutionIDs, event.ID)
-		}
+		encodedExecution, _ := json.Marshal(execution)
+		executionSum := sha256.Sum256(encodedExecution)
+		identity.ExecutionDigests = append(identity.ExecutionDigests, hex.EncodeToString(executionSum[:]))
 	}
 	if result.Evidence != nil {
 		identity.EvidenceID = result.Evidence.ID
@@ -152,6 +152,9 @@ func human(result Result) string {
 		for _, event := range execution.Events {
 			fmt.Fprintf(&output, "%s %s input=%s output=%s\n", event.ID, event.Kind, event.Input, event.Output)
 		}
+	}
+	if result.Evidence != nil {
+		fmt.Fprintf(&output, "%s %s digest=%s\n", result.Evidence.ID, result.Evidence.Schema, result.Evidence.Digest)
 	}
 	for _, lane := range result.Lanes {
 		fmt.Fprintf(&output, "%s %s %s work=%d\n", lane.ID, lane.Schema, lane.Status, lane.RecomputedWork)
