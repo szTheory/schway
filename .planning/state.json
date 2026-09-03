@@ -6,7 +6,7 @@
     {
       "number": "1",
       "name": "Canonical Pure Spine",
-      "status": "executing"
+      "status": "complete"
     },
     {
       "number": "2",
@@ -35,9 +35,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 1 of 6 · 67% · executing"
+    "command": "/gsd:plan-phase 2",
+    "label": "Plan Owned Values and Abilities",
+    "reason": "Phase 1 of 6 complete; Phase 2 is the next semantic-risk slice"
   },
-  "updated_at": "2026-09-03T19:07:55Z"
+  "updated_at": "2026-09-03T19:29:31Z"
 }

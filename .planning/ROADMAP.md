@@ -14,7 +14,7 @@ native evidence, and finally the bounded agent/human feedback service.
 
 ## Phases
 
-- [ ] **Phase 1: Canonical Pure Spine** - Format, check, interpret, and natively run one nominal ADT transformation end to end.
+- [x] **Phase 1: Canonical Pure Spine** - Format, check, interpret, and natively run one nominal ADT transformation end to end.
 - [ ] **Phase 2: Owned Values and Abilities** - Add affine transfer and independently derived type abilities across the same spine.
 - [ ] **Phase 3: Borrowed Views and CFG Lifetimes** - Add shared/exclusive loans, edge-specific last use, and public borrow origins.
 - [ ] **Phase 4: Fallible Resources and C Boundary** - Prove partial cleanup and typed foreign obligations through a real C call.
@@ -36,11 +36,11 @@ native evidence, and finally the bounded agent/human feedback service.
   3. The interpreter and Clang-built C17 path emit the same versioned semantic outcome for the fixture at `-O0` and `-O3`.
   4. A stale or mismatched compact manifest is rejected, while human and JSON command projections identify the same diagnostic/event IDs.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 - [x] `01-01-PLAN.md` — source → typed core → interpreter/C17 tracer
 - [x] `01-02-PLAN.md` — lossless canonical frontend and recovery pressure
-- [ ] `01-03-PLAN.md` — structured evidence, mutation controls, and phase gate
+- [x] `01-03-PLAN.md` — structured evidence, mutation controls, and phase gate
 
 ### Phase 2: Owned Values and Abilities
 
@@ -122,7 +122,7 @@ native evidence, and finally the bounded agent/human feedback service.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Canonical Pure Spine | 2/3 | In Progress | - |
+| 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
 | 2. Owned Values and Abilities | 0/TBD | Not started | - |
 | 3. Borrowed Views and CFG Lifetimes | 0/TBD | Not started | - |
 | 4. Fallible Resources and C Boundary | 0/TBD | Not started | - |

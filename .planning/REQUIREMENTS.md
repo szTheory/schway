@@ -11,9 +11,9 @@ hiding runtime costs.
 
 - [x] **FND-01**: A contributor can build and run the Stage 0 compiler from a
   clean checkout offline using Go 1.24 and its standard library.
-- [ ] **FND-02**: Compiler artifacts expose versioned, deterministic identities
+- [x] **FND-02**: Compiler artifacts expose versioned, deterministic identities
   for schemas, nodes, symbols, CFG points/edges, diagnostics, and semantic events.
-- [ ] **FND-03**: A compact evidence manifest binds source/core digests,
+- [x] **FND-03**: A compact evidence manifest binds source/core digests,
   toolchain, target, flags, and policy, and rejects any deliberately stale input.
 - [ ] **FND-04**: Every compiler command can report wall time, peak memory,
   output bytes, cache status, and affected/recomputed work without changing
@@ -22,9 +22,9 @@ hiding runtime costs.
 ### Canonical source and frontend
 
 - [x] **SYN-01**: A contributor can parse and canonically format the Phase 1
-  subset: a module, explicit export block, closed nominal variants, functions
-  with named parameters, immutable bindings, calls, blocks, and exhaustive
-  `match`; later phases add only the syntax demanded by their vertical slice.
+  subset: a module, explicit export block, closed nominal variants, and one
+  function with a named parameter, block, and exhaustive `match`; later phases
+  add bindings, calls, and only the syntax demanded by their vertical slice.
 - [x] **SYN-02**: Parse → format → parse preserves the semantic tree, formatting
   is idempotent, and comments remain stably attached.
 - [x] **SYN-03**: Malformed delimiters, matches, signatures, and ownership forms
@@ -71,7 +71,7 @@ hiding runtime costs.
 
 ### Agent and human feedback
 
-- [ ] **DX-01**: One root command provides `format`, `check`, and
+- [x] **DX-01**: One root command provides `format`, `check`, and
   `run --engine=interpreter|native` with concise human output and versioned JSON.
 - [ ] **DX-02**: `explain` and `query` expose diagnostic cause graphs, symbols,
   types, ownership, dependencies, and affected tests by stable identity.
@@ -129,8 +129,8 @@ hiding runtime costs.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FND-01 | Phase 1 | Complete |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
 | FND-04 | Phase 6 | Pending |
 | SYN-01 | Phase 1 | Complete |
 | SYN-02 | Phase 1 | Complete |
@@ -150,7 +150,7 @@ hiding runtime costs.
 | NAT-01 | Phase 1 | Complete |
 | NAT-02 | Phase 5 | Pending |
 | NAT-03 | Phase 5 | Pending |
-| DX-01 | Phase 1 | Pending |
+| DX-01 | Phase 1 | Complete |
 | DX-02 | Phase 6 | Pending |
 | DX-03 | Phase 6 | Pending |
 | DX-04 | Phase 6 | Pending |
