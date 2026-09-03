@@ -1,7 +1,9 @@
 package corevalidate_test
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -122,6 +124,61 @@ func TestUnvalidatedCoreCannotExecute(t *testing.T) {
 	}
 }
 
+func TestCoreValidationWorkSeries(t *testing.T) {
+	for _, facts := range []int{101, 1001, 10001} {
+		program := scaleProgram(facts)
+		result := corevalidate.Validate(program)
+		if !result.Valid {
+			t.Fatalf("facts=%d rejected: %+v", facts, result)
+		}
+		want := corevalidate.LinearWorkLimit(facts)
+		if result.Checks <= 0 || result.Checks > want {
+			t.Fatalf("facts=%d checks=%d want 0 < checks <= %d", facts, result.Checks, want)
+		}
+	}
+}
+
+func TestOwnedClaimReorderRejected(t *testing.T) {
+	program := ownedProgram()
+	before, err := json.Marshal(program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	operations := program.Functions[0].Linear.Operations
+	operations[0], operations[1] = operations[1], operations[0]
+	after, err := json.Marshal(program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sha256.Sum256(before) == sha256.Sum256(after) {
+		t.Fatal("semantic operation/final-claim reorder did not change identity")
+	}
+	result := corevalidate.Validate(program)
+	if result.Valid || len(result.Problems) == 0 || result.Problems[0].Code != "core.operation_order" {
+		t.Fatalf("reordered final claim survived: %+v", result)
+	}
+}
+
+func TestCoordinatedSourceCoreEscapeIsNamed(t *testing.T) {
+	falseClaim := ownedProgram()
+	function := &falseClaim.Functions[0]
+	function.Parameter.Type = "Byte"
+	function.ReturnType = "Byte"
+	fact := &function.Linear.Types[0]
+	fact.Shape = core.TypeRef{Constructor: "Byte", Arguments: []core.TypeRef{}}
+	fact.Abilities = []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape}
+	fact.NegativeWitnesses = []core.AbilityWitness{}
+	function.Linear.Operations[0].Kind = core.OpCopy
+
+	result := corevalidate.Validate(falseClaim)
+	if !result.Valid {
+		t.Fatalf("internally consistent coordinated false claim was incorrectly reported as detected: %+v", result)
+	}
+	if corevalidate.KnownEscape != "escape:coordinated-source-core-lie" {
+		t.Fatalf("unexpected proof-boundary name %q", corevalidate.KnownEscape)
+	}
+}
+
 func ownedProgram() core.Program {
 	functionID := "s1:test:fn:relay"
 	typeID := functionID + ":type:0"
@@ -177,6 +234,46 @@ func borrowedProgram() core.Program {
 		{ID: function.ID + ":op:3", PointID: function.ID + ":point:linear:3", Kind: core.OpReturn, SourceID: delivered, TypeID: linear.Types[0].ID},
 	}
 	return program
+}
+
+func scaleProgram(facts int) core.Program {
+	if facts < 1 {
+		panic("scale facts must include the final claim")
+	}
+	functionID := "s1:scale:fn:copy"
+	typeID := functionID + ":type:0"
+	parameterID := functionID + ":place:0"
+	linear := &core.LinearBody{
+		ID: functionID + ":linear",
+		Types: []core.TypeFact{{
+			ID: typeID, Shape: core.TypeRef{Constructor: "Byte", Arguments: []core.TypeRef{}},
+			Abilities:         []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+			NegativeWitnesses: []core.AbilityWitness{},
+		}},
+		Places:     make([]core.Place, 0, facts),
+		Operations: make([]core.LinearOperation, 0, facts),
+	}
+	linear.Places = append(linear.Places, core.Place{ID: parameterID, Name: "source", TypeID: typeID})
+	for index := 0; index < facts-1; index++ {
+		targetID := fmt.Sprintf("%s:place:%d", functionID, index+1)
+		linear.Places = append(linear.Places, core.Place{ID: targetID, Name: fmt.Sprintf("copy%d", index), TypeID: typeID})
+		linear.Operations = append(linear.Operations, core.LinearOperation{
+			ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index),
+			Kind: core.OpCopy, SourceID: parameterID, TargetID: targetID, TypeID: typeID,
+		})
+	}
+	last := facts - 1
+	linear.Operations = append(linear.Operations, core.LinearOperation{
+		ID: fmt.Sprintf("%s:op:%d", functionID, last), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, last),
+		Kind: core.OpReturn, SourceID: parameterID, TypeID: typeID,
+	})
+	return core.Program{
+		Schema: core.Schema1, Module: "scale", ModuleID: "s1:scale:module:scale",
+		Functions: []core.Function{{
+			ID: functionID, Name: "copy", EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+			Parameter: core.Parameter{ID: parameterID, Name: "source", Type: "Byte"}, ReturnType: "Byte", Linear: linear,
+		}},
+	}
 }
 
 func cloneProgram(t *testing.T, program core.Program) core.Program {
