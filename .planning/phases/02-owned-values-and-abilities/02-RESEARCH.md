@@ -131,7 +131,10 @@ fn relay(buffer: Buffer) -> Buffer {
 module owned.copy
 
 export {
-  fn retain(code: Byte) -> Byte {
+  fn retain
+}
+
+fn retain(code: Byte) -> Byte {
   let duplicate = code
   code
 }
@@ -255,7 +258,7 @@ The pass must count inspected operations and type nodes. Verify linear work over
 
 ### 5. Diagnostics and repairs
 
-Extend diagnostics with a sorted `repairs` array and bump the diagnostic schema deliberately. Current diagnostics have exactly the fields `"schema"`, `"id"`, `"code"`, `"severity"`, `"primary_span"`, `"message"`, and optional `"causes"`; IDs hash schema, code, span, and causes. [VERIFIED: internal/compiler/diagnostic/diagnostic.go:10-42]
+Extend ownership diagnostics with a sorted `repairs` array under `lang.diagnostic/1`; unchanged Phase 1 diagnostics remain `lang.diagnostic/0`. Current diagnostics have exactly the fields `"schema"`, `"id"`, `"code"`, `"severity"`, `"primary_span"`, `"message"`, and optional `"causes"`; IDs hash schema, code, span, and causes. [VERIFIED: internal/compiler/diagnostic/diagnostic.go:10-42]
 
 Each ownership diagnostic should carry:
 
@@ -327,7 +330,7 @@ Keep that limitation explicit in comments, diagnostics, research, and phase veri
 Versioning recommendation:
 
 - keep `lang.command/0` because the envelope fields and exit taxonomy remain compatible;
-- bump diagnostics to `lang.diagnostic/1` when repairs are added;
+- emit ownership diagnostics carrying repairs as `lang.diagnostic/1`, while unchanged Phase 1 diagnostics remain `lang.diagnostic/0`;
 - emit `lang.core/1` and `lang.execution/1` for linear owned bodies;
 - retain `lang.core/0` and `lang.execution/0` for the Phase 1 pure fixture during the milestone;
 - let evidence record the concrete source/core/execution schema selected for each artifact; do not rewrite the Phase 1 golden merely because the compiler learned S2.
@@ -571,21 +574,21 @@ The existing evidence decoder already uses `DisallowUnknownFields` and rejects a
 | A1 | [ASSUMED] A fixed inline four-byte `Buffer` is enough to expose authority transfer without allocation. | C17 lowering | If real representation pressure changes event/alias behavior, Phase 2 may need a small owned heap block and would pull cleanup forward. |
 | A2 | [ASSUMED] `take`, `borrow`, `let`, and angle-bracket type applications will remain readable enough through this phase. | Source tracer | Syntax may change later; lossless CST/core operation separation keeps it reversible. |
 | A3 | [ASSUMED] A 64-level/4,096-node type-expression cap is ample for the bounded corpus. | Parser safety | Too small rejects generated stress cases; too large risks stack/work spikes. Measure and adjust without freezing as a language limit. |
-| A4 | [ASSUMED] Per-feature core/execution schema selection is less disruptive than a global milestone-wide schema bump. | Evidence evolution | If implementation complexity is disproportionate, bump globally and regenerate Phase 1 evidence explicitly. |
+| A4 | [ASSUMED] Per-feature diagnostic/core/execution schema selection is less disruptive than a global milestone-wide schema bump. | Evidence evolution | If implementation complexity is disproportionate, require an explicit migration decision and regenerate affected Phase 1 golden evidence. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-These do not require user input before planning; each has a default and an executable decision rule.
+These decisions are selected for planning; each retains an executable rule for reopening it if evidence changes.
 
 1. **Should the returned local require a second `take`?**
-   - Default: no; final expression is an explicit ownership sink in typed core.
+   - Selected: no; final expression is an explicit ownership sink in typed core.
    - Reopen if source-only audits confuse return transfer or if adding a later statement creates ambiguous behavior.
 2. **Should native output be JSON or a simpler line protocol?**
-   - Default: strict single-document JSON because the repository already standardizes canonical JSON and strict decoding.
+   - Selected: strict single-document JSON because the repository already standardizes canonical JSON and strict decoding.
    - Reopen only if measured native output/escaping complexity dominates the small C emitter.
 3. **Should the diagnostic schema bump globally or per feature?**
-   - Default: bump diagnostic schema globally when `repairs` is introduced; keep core/execution versions per admitted feature.
-   - Reopen if protocol tests show human/JSON identity churn for empty repairs.
+   - Selected: version diagnostics per feature; unchanged Phase 1 diagnostics remain `lang.diagnostic/0`, while ownership diagnostics carrying `repairs` use `lang.diagnostic/1`.
+   - Reopen only if implementation complexity proves disproportionate, and then require an explicit migration decision with regenerated golden evidence.
 
 ## Environment Availability
 
