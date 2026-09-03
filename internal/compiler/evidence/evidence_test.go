@@ -2,14 +2,146 @@ package evidence_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/evidence"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+func TestOwnedEvidenceBindings(t *testing.T) {
+	product := ownedProduct(t)
+	manifest := product.Manifest
+	if manifest.Schema != "lang.evidence/1" || manifest.CoreSchema != "lang.core/1" || manifest.ExecutionSchema != "lang.execution/1" || manifest.DiagnosticSchema != "lang.diagnostic/1" {
+		t.Fatalf("owned evidence omitted concrete schemas: %+v", manifest)
+	}
+	if manifest.DigestClaim != "content-identity-only" || manifest.KnownEscape != corevalidate.KnownEscape {
+		t.Fatalf("owned evidence overclaimed authority: %+v", manifest)
+	}
+	if len(manifest.ExecutionDigests) != 1 || len(product.Executions) != 1 {
+		t.Fatalf("owned evidence omitted ordered execution binding: manifest=%+v executions=%+v", manifest, product.Executions)
+	}
+	encoded, err := execution.CanonicalBytes(product.Executions[0])
+	if err != nil || manifest.ExecutionDigests[0] != evidence.ContentDigest(encoded) {
+		t.Fatalf("execution digest mismatch: err=%v manifest=%+v execution=%s", err, manifest, encoded)
+	}
+	if err := evidence.Validate(manifest, readPhase2(t, "owned_transfer.lang"), ownedFacts()); err != nil {
+		t.Fatalf("owned evidence did not validate: %v", err)
+	}
+
+	// Trust-boundary products must own ordered slices instead of aliasing caller
+	// facts or the returned execution records.
+	before := append([]byte(nil), product.ManifestBytes...)
+	product.Manifest.Flags[0] = "-mutated"
+	product.Executions[0].Events[0].ID = "event:mutated"
+	if bytes.Equal(mustCanonical(t, product.Manifest), before) {
+		t.Fatal("manifest mutation did not alter canonical bytes")
+	}
+	fresh := ownedProduct(t)
+	if !bytes.Equal(fresh.ManifestBytes, before) {
+		t.Fatal("returned owned slices aliased later evidence builds")
+	}
+}
+
+func TestOwnedEvidenceMutationMatrix(t *testing.T) {
+	product := ownedProduct(t)
+	source := readPhase2(t, "owned_transfer.lang")
+	tests := []struct {
+		name string
+		code string
+		edit func(*evidence.Manifest)
+	}{
+		{"diagnostic schema", "evidence.diagnostic_schema_mismatch", func(v *evidence.Manifest) { v.DiagnosticSchema = "lang.diagnostic/0" }},
+		{"execution digest", "evidence.execution_mismatch", func(v *evidence.Manifest) { v.ExecutionDigests[0] = staleDigest() }},
+		{"escape", "evidence.escape_mismatch", func(v *evidence.Manifest) { v.KnownEscape = "detected:coordinated-source-core-lie" }},
+		{"digest claim", "evidence.digest_claim_mismatch", func(v *evidence.Manifest) { v.DigestClaim = "translation-proof" }},
+		{"core", "evidence.core_mismatch", func(v *evidence.Manifest) { v.CoreDigest = staleDigest() }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mutated := cloneManifest(t, product.Manifest)
+			test.edit(&mutated)
+			if err := evidence.Validate(mutated, source, ownedFacts()); evidence.ErrorCode(err) != test.code {
+				t.Fatalf("mutation code=%s want=%s", evidence.ErrorCode(err), test.code)
+			}
+		})
+	}
+
+	reordered := cloneManifest(t, product.Manifest)
+	canonical := cloneExecution(t, product.Executions[0])
+	canonical.Events[0], canonical.Events[1] = canonical.Events[1], canonical.Events[0]
+	encoded, _ := execution.CanonicalBytes(canonical)
+	reordered.ExecutionDigests[0] = evidence.ContentDigest(encoded)
+	if err := evidence.Validate(reordered, source, ownedFacts()); evidence.ErrorCode(err) != "evidence.execution_mismatch" {
+		t.Fatalf("event reorder code=%s", evidence.ErrorCode(err))
+	}
+
+	unknown := bytes.Replace(product.ManifestBytes, []byte(`"schema":`), []byte(`"unknown":true,"schema":`), 1)
+	if _, err := evidence.DecodeStrict(unknown); evidence.ErrorCode(err) != "evidence.invalid_json" {
+		t.Fatalf("unknown field code=%s", evidence.ErrorCode(err))
+	}
+	trailing := append(append([]byte(nil), product.ManifestBytes...), []byte("{}")...)
+	if _, err := evidence.DecodeStrict(trailing); evidence.ErrorCode(err) != "evidence.trailing_json" {
+		t.Fatalf("trailing code=%s", evidence.ErrorCode(err))
+	}
+}
+
+func TestPhase1EvidenceGoldenUnchanged(t *testing.T) {
+	product := goldenProduct(t)
+	if got, want := product.ManifestBytes, readGolden(t, "evidence.golden.json"); !bytes.Equal(got, want) {
+		t.Fatalf("Phase 1 evidence golden changed:\ngot  %s\nwant %s", got, want)
+	}
+}
+
+func ownedProduct(t testing.TB) evidence.Product {
+	t.Helper()
+	product, diagnostics, err := evidence.Build(readPhase2(t, "owned_transfer.lang"), ownedFacts())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("build owned evidence: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	return product
+}
+
+func ownedFacts() evidence.Facts {
+	return evidence.Facts{CompilerIdentity: "codename-lang-stage0/go1.24-fixture", ClangIdentity: "clang-fixture 21.0.0", Target: "arm64-apple-darwin-fixture", Flags: append([]string(nil), evidence.DefaultFlags...), Policy: "phase2-owned-c17-v1"}
+}
+
+func readPhase2(t testing.TB, name string) []byte {
+	t.Helper()
+	value, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", name))
+	if err != nil { t.Fatal(err) }
+	return value
+}
+
+func mustCanonical(t testing.TB, manifest evidence.Manifest) []byte {
+	t.Helper()
+	value, err := evidence.CanonicalBytes(manifest)
+	if err != nil { t.Fatal(err) }
+	return value
+}
+
+func cloneManifest(t testing.TB, value evidence.Manifest) evidence.Manifest {
+	t.Helper()
+	encoded, err := json.Marshal(value)
+	if err != nil { t.Fatal(err) }
+	var cloned evidence.Manifest
+	if err := json.Unmarshal(encoded, &cloned); err != nil { t.Fatal(err) }
+	return cloned
+}
+
+func cloneExecution(t testing.TB, value execution.Execution) execution.Execution {
+	t.Helper()
+	encoded, err := json.Marshal(value)
+	if err != nil { t.Fatal(err) }
+	var cloned execution.Execution
+	if err := json.Unmarshal(encoded, &cloned); err != nil { t.Fatal(err) }
+	return cloned
+}
 
 func TestCanonicalEvidence(t *testing.T) {
 	product := goldenProduct(t)
