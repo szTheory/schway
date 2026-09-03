@@ -114,8 +114,8 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}
 	}
-	typeID := semanticID(module, "sealed-type", typeKey(parameterType))
-	parameterID := semanticID(module, "parameter", function.Name+"."+function.Parameter.Name)
+	typeID := functionID + ":type:0"
+	parameterID := functionID + ":place:0"
 	linear := &core.LinearBody{
 		ID:         functionID + ":linear",
 		Types:      []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}},
@@ -129,7 +129,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 		if !ok || !initialized[source.ID] {
 			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("ownership.use_after_move", binding.RHS.Span, "binding source is not initialized")}
 		}
-		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, index), Name: binding.Name, TypeID: source.TypeID}
+		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, index+1), Name: binding.Name, TypeID: source.TypeID}
 		kind := core.OpCopy
 		switch binding.RHS.Kind {
 		case "take":
