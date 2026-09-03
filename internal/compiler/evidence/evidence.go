@@ -26,13 +26,14 @@ import (
 )
 
 const (
-	Schema0          = "lang.evidence/0"
-	Schema1          = "lang.evidence/1"
-	Schema           = Schema0
-	IDAlgorithm      = "sha256-v1"
-	SourceSchema     = "lang.source/s1"
-	DigestClaim      = "content-identity-only"
-	MaxManifestBytes = 1 << 20
+	Schema0           = "lang.evidence/0"
+	Schema1           = "lang.evidence/1"
+	Schema            = Schema0
+	IDAlgorithm       = "sha256-v1"
+	SourceSchema      = "lang.source/s1"
+	DigestClaim       = "content-identity-only"
+	MaxManifestBytes  = 1 << 20
+	MaxToolProbeBytes = 64 * 1024
 )
 
 var DefaultFlags = []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-O0", "-O3"}
@@ -79,19 +80,31 @@ type ValidationError struct {
 	Code string
 }
 
+type ToolProbeError struct {
+	Code string
+	Err  error
+}
+
+func (e *ToolProbeError) Error() string { return e.Code + ": " + e.Err.Error() }
+func (e *ToolProbeError) Unwrap() error { return e.Err }
+
+type commandFactory func(context.Context, string, ...string) *exec.Cmd
+
 func (e *ValidationError) Error() string { return e.Code }
 
 func DefaultFacts(ctx context.Context, clangPath string) (Facts, error) {
+	return defaultFacts(ctx, clangPath, exec.CommandContext)
+}
+
+func defaultFacts(ctx context.Context, clangPath string, command commandFactory) (Facts, error) {
 	if clangPath == "" {
 		clangPath = "clang"
 	}
-	toolCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	versionOutput, err := exec.CommandContext(toolCtx, clangPath, "--version").Output()
+	versionOutput, err := runToolProbe(ctx, command, clangPath, "--version")
 	if err != nil {
 		return Facts{}, err
 	}
-	targetOutput, err := exec.CommandContext(toolCtx, clangPath, "-dumpmachine").Output()
+	targetOutput, err := runToolProbe(ctx, command, clangPath, "-dumpmachine")
 	if err != nil {
 		return Facts{}, err
 	}
@@ -103,6 +116,46 @@ func DefaultFacts(ctx context.Context, clangPath string) (Facts, error) {
 		Flags:            append([]string(nil), DefaultFlags...),
 		Policy:           "phase1-pure-c17-v1",
 	}, nil
+}
+
+type boundedProbeWriter struct {
+	buffer bytes.Buffer
+	total  int
+}
+
+func (w *boundedProbeWriter) Write(data []byte) (int, error) {
+	w.total += len(data)
+	remaining := MaxToolProbeBytes + 1 - w.buffer.Len()
+	if remaining > len(data) {
+		remaining = len(data)
+	}
+	if remaining > 0 {
+		_, _ = w.buffer.Write(data[:remaining])
+	}
+	return len(data), nil
+}
+
+func runToolProbe(parent context.Context, command commandFactory, name string, arguments ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+	cmd := command(ctx, name, arguments...)
+	var stdout, stderr boundedProbeWriter
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return nil, &ToolProbeError{Code: "evidence.tool_timeout", Err: ctx.Err()}
+	}
+	if stdout.total > MaxToolProbeBytes {
+		return nil, &ToolProbeError{Code: "evidence.tool_stdout_truncated", Err: fmt.Errorf("tool stdout exceeded %d bytes", MaxToolProbeBytes)}
+	}
+	if stderr.total > MaxToolProbeBytes {
+		return nil, &ToolProbeError{Code: "evidence.tool_stderr_truncated", Err: fmt.Errorf("tool stderr exceeded %d bytes", MaxToolProbeBytes)}
+	}
+	if err != nil {
+		return nil, &ToolProbeError{Code: "evidence.tool_failed", Err: err}
+	}
+	return append([]byte(nil), stdout.buffer.Bytes()...), nil
 }
 
 func Build(source []byte, facts Facts) (Product, []diagnostic.Diagnostic, error) {
