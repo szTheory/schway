@@ -93,6 +93,88 @@ func TestImplicitByteCopy(t *testing.T) {
 	}
 }
 
+func TestSourceBoxPairAbilityFacts(t *testing.T) {
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "ability_shapes.lang"))
+	if err != nil || len(checked.Diagnostics) != 0 {
+		t.Fatalf("ability shape check failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
+	}
+	if checked.Program.Schema != core.Schema1 || len(checked.Program.Functions) != 3 {
+		t.Fatalf("unexpected ability core: %+v", checked.Program)
+	}
+
+	type expectedFact struct {
+		shape     core.TypeRef
+		granted   []core.Ability
+		witnesses []core.AbilityWitness
+	}
+	want := map[string]expectedFact{
+		"keep_boxed_byte": {
+			shape:     core.TypeRef{Constructor: "Box", Arguments: []core.TypeRef{{Constructor: "Byte", Arguments: []core.TypeRef{}}}},
+			granted:   []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+			witnesses: []core.AbilityWitness{},
+		},
+		"keep_boxed_buffer": {
+			shape:   core.TypeRef{Constructor: "Box", Arguments: []core.TypeRef{{Constructor: "Buffer", Arguments: []core.TypeRef{}}}},
+			granted: []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
+			witnesses: []core.AbilityWitness{
+				{Ability: core.AbilityCopy, Path: []string{"Box.value", "Buffer"}},
+				{Ability: core.AbilityShare, Path: []string{"Box.value", "Buffer"}},
+			},
+		},
+		"keep_pair": {
+			shape: core.TypeRef{Constructor: "Pair", Arguments: []core.TypeRef{
+				{Constructor: "Byte", Arguments: []core.TypeRef{}},
+				{Constructor: "Buffer", Arguments: []core.TypeRef{}},
+			}},
+			granted: []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
+			witnesses: []core.AbilityWitness{
+				{Ability: core.AbilityCopy, Path: []string{"Pair.right", "Buffer"}},
+				{Ability: core.AbilityShare, Path: []string{"Pair.right", "Buffer"}},
+			},
+		},
+	}
+	for _, function := range checked.Program.Functions {
+		expected, ok := want[function.Name]
+		if !ok {
+			t.Fatalf("unexpected function %q", function.Name)
+		}
+		if function.Linear == nil || len(function.Linear.Types) != 1 {
+			t.Fatalf("%s omitted its materialized type fact: %+v", function.Name, function.Linear)
+		}
+		fact := function.Linear.Types[0]
+		if !reflect.DeepEqual(fact.Shape, expected.shape) || !reflect.DeepEqual(fact.Abilities, expected.granted) || !reflect.DeepEqual(fact.NegativeWitnesses, expected.witnesses) {
+			t.Fatalf("%s ability fact mismatch:\ngot=%+v\nwant shape=%+v abilities=%+v witnesses=%+v", function.Name, fact, expected.shape, expected.granted, expected.witnesses)
+		}
+		encoded, err := json.Marshal(fact)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, abilityName := range []string{"copy", "drop", "share", "send", "escape"} {
+			if bytes.Count(encoded, []byte(`"`+abilityName+`"`)) > 1 {
+				t.Fatalf("%s serialized duplicate %s fact: %s", function.Name, abilityName, encoded)
+			}
+		}
+	}
+}
+
+func TestSourceCannotGrantAbilityRoots(t *testing.T) {
+	source := []byte("module forged.abilities\nexport { fn forge }\nfn forge(value: Buffer abilities { copy share }) -> Buffer { value }\n")
+	checked := session.Check(source)
+	if len(checked.Diagnostics) == 0 {
+		t.Fatalf("source-written positive abilities reached checking: %+v", checked.Program)
+	}
+	if len(checked.Program.Functions) != 0 {
+		t.Fatalf("malformed ability declaration manufactured core authority: %+v", checked.Program.Functions)
+	}
+	encoded, err := json.Marshal(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(encoded, []byte(`"copy"`)) || bytes.Contains(encoded, []byte(`"share"`)) {
+		t.Fatalf("source-written abilities entered serialized core: %s", encoded)
+	}
+}
+
 func TestClosedBodyUnion(t *testing.T) {
 	phase1, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
 	if err != nil || len(phase1.Diagnostics) != 0 {
