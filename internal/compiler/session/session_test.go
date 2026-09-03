@@ -6,13 +6,17 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -86,6 +90,76 @@ func TestImplicitByteCopy(t *testing.T) {
 	}
 	if executions[0].Schema != "lang.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.copied" {
 		t.Fatalf("unexpected copy execution: %+v", executions[0])
+	}
+}
+
+func TestClosedBodyUnion(t *testing.T) {
+	phase1, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	if err != nil || len(phase1.Diagnostics) != 0 {
+		t.Fatalf("phase 1 setup failed: err=%v diagnostics=%+v", err, phase1.Diagnostics)
+	}
+	zero := phase1.Program
+	zero.Functions[0].Match = nil
+	if _, err := interp.Run(zero, "toggle", "Off"); err == nil {
+		t.Fatal("zero body variant reached execution")
+	}
+	dual := phase1.Program
+	dual.Functions[0].Linear = &core.LinearBody{ID: dual.Functions[0].ID + ":linear"}
+	if _, err := interp.Run(dual, "toggle", "Off"); err == nil {
+		t.Fatal("dual body variants reached execution")
+	}
+}
+
+func TestLinearIdentityStability(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := session.Check(source)
+	second := session.Check(append([]byte("// unrelated offset-changing comment\n"), source...))
+	if len(first.Diagnostics) != 0 || len(second.Diagnostics) != 0 {
+		t.Fatalf("identity setup failed: first=%+v second=%+v", first.Diagnostics, second.Diagnostics)
+	}
+	left := first.Program.Functions[0]
+	right := second.Program.Functions[0]
+	if !reflect.DeepEqual(left.Linear, right.Linear) {
+		t.Fatalf("linear identities depend on byte offsets or trivia:\nleft=%+v\nright=%+v", left.Linear, right.Linear)
+	}
+	wantPlaces := []string{left.ID + ":place:0", left.ID + ":place:1"}
+	for index, want := range wantPlaces {
+		if left.Linear.Places[index].ID != want {
+			t.Fatalf("place %d uses incidental identity %q, want %q", index, left.Linear.Places[index].ID, want)
+		}
+	}
+	if left.Linear.Types[0].ID != left.ID+":type:0" {
+		t.Fatalf("type uses incidental identity %q", left.Linear.Types[0].ID)
+	}
+	for index, operation := range left.Linear.Operations {
+		if operation.ID != fmt.Sprintf("%s:op:%d", left.ID, index) || operation.PointID != fmt.Sprintf("%s:point:linear:%d", left.ID, index) {
+			t.Fatalf("operation %d lacks ordinal identities: %+v", index, operation)
+		}
+	}
+}
+
+func TestFeatureSpecificCoreExecutionSchemas(t *testing.T) {
+	phase1Path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	phase2Path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	phase1, err := session.CheckFile(phase1Path)
+	if err != nil || len(phase1.Diagnostics) != 0 || phase1.Program.Schema != "lang.core/0" {
+		t.Fatalf("phase 1 core schema changed: err=%v result=%+v", err, phase1)
+	}
+	phase2, err := session.CheckFile(phase2Path)
+	if err != nil || len(phase2.Diagnostics) != 0 || phase2.Program.Schema != "lang.core/1" {
+		t.Fatalf("phase 2 core schema missing: err=%v result=%+v", err, phase2)
+	}
+	oldExecution, diagnostics, err := session.RunInterpreterFile(phase1Path)
+	if err != nil || len(diagnostics) != 0 || len(oldExecution) == 0 || oldExecution[0].Schema != "lang.execution/0" {
+		t.Fatalf("phase 1 execution schema changed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, oldExecution)
+	}
+	ownedExecution, diagnostics, err := session.RunInterpreterFile(phase2Path)
+	if err != nil || len(diagnostics) != 0 || len(ownedExecution) != 1 || ownedExecution[0].Schema != "lang.execution/1" {
+		t.Fatalf("phase 2 execution schema missing: err=%v diagnostics=%+v executions=%+v", err, diagnostics, ownedExecution)
 	}
 }
 
