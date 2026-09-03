@@ -1,0 +1,19 @@
+module owned.ability_shapes
+
+export {
+  fn keep_boxed_byte
+  fn keep_boxed_buffer
+  fn keep_pair
+}
+
+fn keep_boxed_byte(value: Box<Byte>) -> Box<Byte> {
+  value
+}
+
+fn keep_boxed_buffer(value: Box<Buffer>) -> Box<Buffer> {
+  value
+}
+
+fn keep_pair(value: Pair<Byte, Buffer>) -> Pair<Byte, Buffer> {
+  value
+}
