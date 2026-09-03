@@ -122,48 +122,186 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
-	places := map[string]core.Place{function.Parameter.Name: linear.Places[0]}
-	initialized := map[string]bool{parameterID: true}
+	type placeState struct {
+		place        core.Place
+		declared     diagnostic.Span
+		initialized  bool
+		movedAt      *diagnostic.Span
+		moveTargetID string
+		loan         *loanState
+	}
+	typeFacts := linear.Types[0]
+	loanUses := discoverLoanLastUses(function.Body.Linear)
+	places := map[string]*placeState{
+		function.Parameter.Name: {place: linear.Places[0], declared: function.Parameter.Span, initialized: true},
+	}
+	activeLoans := make(map[string]map[string]*loanState)
+	endLoans := func(index int) {
+		for ownerID, loans := range activeLoans {
+			for loanID, loan := range loans {
+				if loan.lastUse <= index {
+					delete(loans, loanID)
+				}
+			}
+			if len(loans) == 0 {
+				delete(activeLoans, ownerID)
+			}
+		}
+	}
+	useAfterMove := func(span diagnostic.Span, state *placeState) diagnostic.Diagnostic {
+		causes := []diagnostic.Cause{
+			{Kind: "declared_here", Span: spanPointer(state.declared)},
+			{Kind: "moved_here", Span: state.movedAt},
+			{Kind: "place", Detail: state.place.ID},
+			{Kind: "transfer_target", Detail: state.moveTargetID},
+			{Kind: "type", Detail: state.place.TypeID},
+		}
+		return diagnostic.ErrorWithRepairs(
+			"ownership.use_after_move", span, "value was used after ownership transferred", causes,
+			diagnostic.Repair{Kind: "use_transfer_target", Detail: state.moveTargetID},
+			diagnostic.Repair{Kind: "move_use_before_transfer"},
+		)
+	}
 	for index, binding := range function.Body.Linear.Bindings {
 		source, ok := places[binding.RHS.Source]
-		if !ok || !initialized[source.ID] {
-			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("ownership.use_after_move", binding.RHS.Span, "binding source is not initialized")}
+		if !ok {
+			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown", binding.RHS.Span, "binding source is unknown")}
 		}
-		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, index+1), Name: binding.Name, TypeID: source.TypeID}
+		if !source.initialized {
+			return core.Function{}, []diagnostic.Diagnostic{useAfterMove(binding.RHS.Span, source)}
+		}
+		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, index+1), Name: binding.Name, TypeID: source.place.TypeID}
 		kind := core.OpCopy
+		var loan *loanState
 		switch binding.RHS.Kind {
 		case "take":
+			if loans := activeLoans[source.place.ID]; len(loans) > 0 {
+				loanIDs := make([]string, 0, len(loans))
+				for loanID := range loans {
+					loanIDs = append(loanIDs, loanID)
+				}
+				sort.Strings(loanIDs)
+				blocking := loans[loanIDs[0]]
+				causes := []diagnostic.Cause{
+					{Kind: "borrow_created_here", Span: spanPointer(blocking.borrowedAt)},
+					{Kind: "borrow_used_later", Span: spanPointer(blocking.lastUseSpan)},
+					{Kind: "loan", Detail: blocking.id},
+					{Kind: "owner", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
+					"ownership.move_while_borrowed", binding.RHS.Span, "cannot transfer ownership while a future-used shared loan is live", causes,
+					diagnostic.Repair{Kind: "move_after_last_borrow_use"},
+				)}
+			}
 			kind = core.OpMove
-			initialized[source.ID] = false
+			source.initialized = false
+			source.movedAt = spanPointer(binding.RHS.Span)
+			source.moveTargetID = target.ID
 		case "borrow":
 			kind = core.OpBorrowShared
+			use := loanUses[binding.Name]
+			loan = &loanState{
+				id: fmt.Sprintf("%s:loan:%d", functionID, index), ownerID: source.place.ID,
+				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
+			}
+			if activeLoans[source.place.ID] == nil {
+				activeLoans[source.place.ID] = make(map[string]*loanState)
+			}
+			activeLoans[source.place.ID][loan.id] = loan
 		default:
 			if !ability.Has(derived, core.AbilityCopy) {
-				return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("ownership.transfer_requires_take", binding.RHS.Span, "noncopyable binding requires explicit take")}
+				causes := []diagnostic.Cause{
+					{Kind: "declared_here", Span: spanPointer(source.declared)},
+					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFacts, core.AbilityCopy)},
+					{Kind: "place", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
+					"ownership.transfer_requires_take", binding.RHS.Span, "noncopyable binding requires explicit take", causes,
+					diagnostic.Repair{Kind: "insert_take"},
+				)}
 			}
 		}
 		linear.Places = append(linear.Places, target)
-		places[binding.Name] = target
-		initialized[target.ID] = true
+		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true, loan: loan}
 		linear.Operations = append(linear.Operations, core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index),
-			Kind: kind, SourceID: source.ID, TargetID: target.ID, TypeID: source.TypeID,
+			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanID(loan), TypeID: source.place.TypeID,
 		})
+		endLoans(index)
 	}
 	returned, ok := places[function.Body.Linear.Result]
-	if !ok || !initialized[returned.ID] {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("ownership.use_after_move", function.Body.Linear.Span, "linear result is not initialized")}
+	if !ok {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown", function.Body.Linear.Span, "linear result is unknown")}
+	}
+	if !returned.initialized {
+		return core.Function{}, []diagnostic.Diagnostic{useAfterMove(function.Body.Linear.Span, returned)}
 	}
 	ordinal := len(linear.Operations)
 	linear.Operations = append(linear.Operations, core.LinearOperation{
 		ID: fmt.Sprintf("%s:op:%d", functionID, ordinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, ordinal),
-		Kind: core.OpReturn, SourceID: returned.ID, TypeID: returned.TypeID,
+		Kind: core.OpReturn, SourceID: returned.place.ID, TypeID: returned.place.TypeID,
 	})
 	return core.Function{
 		ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
 		Parameter: core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor}, ReturnType: function.ReturnType.Constructor,
 		Linear: linear, Span: function.Span,
 	}, nil
+}
+
+type loanUse struct {
+	index int
+	span  diagnostic.Span
+}
+
+type loanState struct {
+	id          string
+	ownerID     string
+	borrowedAt  diagnostic.Span
+	lastUse     int
+	lastUseSpan diagnostic.Span
+}
+
+func discoverLoanLastUses(body *ast.LinearBody) map[string]loanUse {
+	uses := make(map[string]loanUse)
+	for index, binding := range body.Bindings {
+		if binding.RHS.Kind == "borrow" {
+			uses[binding.Name] = loanUse{index: index, span: binding.RHS.Span}
+		}
+		if use, ok := uses[binding.RHS.Source]; ok {
+			use.index = index
+			use.span = binding.RHS.Span
+			uses[binding.RHS.Source] = use
+		}
+	}
+	if use, ok := uses[body.Result]; ok {
+		use.index = len(body.Bindings)
+		use.span = body.Span
+		uses[body.Result] = use
+	}
+	return uses
+}
+
+func missingAbilityDetail(fact core.TypeFact, requested core.Ability) string {
+	for _, witness := range fact.NegativeWitnesses {
+		if witness.Ability == requested {
+			return string(requested) + ":" + strings.Join(witness.Path, ".")
+		}
+	}
+	return string(requested)
+}
+
+func loanID(loan *loanState) string {
+	if loan == nil {
+		return ""
+	}
+	return loan.id
+}
+
+func spanPointer(span diagnostic.Span) *diagnostic.Span {
+	copy := span
+	return &copy
 }
 
 func coreType(value ast.TypeRef) core.TypeRef {
