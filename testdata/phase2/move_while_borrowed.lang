@@ -1,0 +1,12 @@
+module owned.move_while_borrowed
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let view = borrow buffer
+  let delivered = take buffer
+  let observed = view
+  delivered
+}

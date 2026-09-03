@@ -11,17 +11,113 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+func TestTransferRequiresTake(t *testing.T) {
+	problem := ownershipDiagnostic(t, "implicit_noncopy.lang", "ownership.transfer_requires_take")
+	assertCauseKinds(t, problem, "declared_here", "missing_ability", "place", "type")
+	assertRepairKinds(t, problem, "insert_take")
+}
+
+func TestUseAfterMoveDiagnostic(t *testing.T) {
+	problem := ownershipDiagnostic(t, "use_after_move.lang", "ownership.use_after_move")
+	assertCauseKinds(t, problem, "declared_here", "moved_here", "place", "transfer_target", "type")
+	assertRepairKinds(t, problem, "move_use_before_transfer", "use_transfer_target")
+}
+
+func TestMoveWhileBorrowedDiagnostic(t *testing.T) {
+	problem := ownershipDiagnostic(t, "move_while_borrowed.lang", "ownership.move_while_borrowed")
+	assertCauseKinds(t, problem, "borrow_created_here", "borrow_used_later", "loan", "owner", "type")
+	assertRepairKinds(t, problem, "move_after_last_borrow_use")
+
+	unused := []byte("module owned.unused_borrow\nexport { fn relay }\nfn relay(buffer: Buffer) -> Buffer {\n  let view = borrow buffer\n  let delivered = take buffer\n  delivered\n}\n")
+	checked := session.Check(unused)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unused borrow did not end before move: %+v", checked.Diagnostics)
+	}
+}
+
+func TestDiagnosticSchemaCompatibility(t *testing.T) {
+	legacy := diagnostic.Error("syntax.example", diagnostic.Span{Start: 2, End: 3}, "legacy prose")
+	if legacy.Schema != "lang.diagnostic/0" || len(legacy.Repairs) != 0 {
+		t.Fatalf("legacy diagnostic changed schema: %+v", legacy)
+	}
+	for _, name := range []string{"implicit_noncopy.lang", "use_after_move.lang", "move_while_borrowed.lang"} {
+		problem := ownershipDiagnostic(t, name, "")
+		if problem.Schema != "lang.diagnostic/1" || len(problem.Repairs) == 0 {
+			t.Fatalf("ownership diagnostic did not select /1 with repairs: %+v", problem)
+		}
+	}
+}
+
+func TestPhase1DiagnosticGoldenUnchanged(t *testing.T) {
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"))
+	if err != nil || len(checked.Diagnostics) != 1 {
+		t.Fatalf("phase 1 diagnostic setup failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
+	}
+	encoded, err := json.Marshal(checked.Diagnostics[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"schema":"lang.diagnostic/0","id":"diagnostic:f9582fb8c4ad9f90fbe75fa8","code":"match.non_exhaustive","severity":"error","primary_span":{"start":131,"end":158},"message":"match does not cover every alternative","causes":[{"kind":"missing_alternative","detail":"On"}]}`
+	if string(encoded) != want {
+		t.Fatalf("Phase 1 diagnostic golden changed:\ngot  %s\nwant %s", encoded, want)
+	}
+}
+
+func ownershipDiagnostic(t *testing.T, fixture, code string) diagnostic.Diagnostic {
+	t.Helper()
+	path := testsupport.ProjectPath("testdata", "phase2", fixture)
+	checked, err := session.CheckFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(checked.Diagnostics) != 1 || (code != "" && checked.Diagnostics[0].Code != code) {
+		t.Fatalf("%s: got diagnostics %+v, want one %q", fixture, checked.Diagnostics, code)
+	}
+	executions, runDiagnostics, err := session.RunInterpreterFile(path)
+	if err != nil || len(executions) != 0 || len(runDiagnostics) != 1 || runDiagnostics[0].ID != checked.Diagnostics[0].ID {
+		t.Fatalf("invalid source reached execution or changed diagnostic: executions=%+v diagnostics=%+v err=%v", executions, runDiagnostics, err)
+	}
+	return checked.Diagnostics[0]
+}
+
+func assertCauseKinds(t *testing.T, problem diagnostic.Diagnostic, want ...string) {
+	t.Helper()
+	got := make([]string, len(problem.Causes))
+	for index, cause := range problem.Causes {
+		got[index] = cause.Kind
+		if (strings.HasSuffix(cause.Kind, "_here") || cause.Kind == "borrow_used_later") && cause.Span == nil {
+			t.Fatalf("cause %q omitted its source span: %+v", cause.Kind, problem)
+		}
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("cause kinds=%v want=%v in %+v", got, want, problem)
+	}
+}
+
+func assertRepairKinds(t *testing.T, problem diagnostic.Diagnostic, want ...string) {
+	t.Helper()
+	got := make([]string, len(problem.Repairs))
+	for index, repair := range problem.Repairs {
+		got[index] = repair.Kind
+	}
+	if !sort.StringsAreSorted(got) || !reflect.DeepEqual(got, want) {
+		t.Fatalf("repair kinds=%v want sorted %v in %+v", got, want, problem)
+	}
+}
 
 func TestTogglePipeline(t *testing.T) {
 	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))

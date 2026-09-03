@@ -120,6 +120,30 @@ func TestHumanJSONIdentityParity(t *testing.T) {
 	}
 }
 
+func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	for _, fixture := range []string{
+		testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"),
+		testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang"),
+	} {
+		human := testsupport.RunCLI(t, binary, nil, "check", fixture)
+		machine := testsupport.RunCLI(t, binary, nil, "--json", "check", fixture)
+		if human.Exit != 2 || machine.Exit != 2 || len(human.Stdout) != 0 || len(machine.Stderr) != 0 {
+			t.Fatalf("projection stream/exit mismatch for %s: human=%+v machine=%+v", fixture, human, machine)
+		}
+		var decoded protocol.Result
+		if err := json.Unmarshal(machine.Stdout, &decoded); err != nil {
+			t.Fatal(err)
+		}
+		if decoded.Schema != "lang.command/0" || len(decoded.Diagnostics) != 1 {
+			t.Fatalf("command envelope or diagnostic missing: %+v", decoded)
+		}
+		if !strings.Contains(string(human.Stderr), decoded.ID) || !strings.Contains(string(human.Stderr), decoded.Diagnostics[0].ID) {
+			t.Fatalf("human projection lost machine identities: human=%q machine=%+v", human.Stderr, decoded)
+		}
+	}
+}
+
 func TestVerifyCLI(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
 	corpus := testsupport.ProjectPath("testdata", "phase1")

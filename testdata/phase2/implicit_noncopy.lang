@@ -1,0 +1,10 @@
+module owned.implicit_noncopy
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let delivered = buffer
+  delivered
+}

@@ -1,0 +1,11 @@
+module owned.use_after_move
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let delivered = take buffer
+  let duplicate = take buffer
+  delivered
+}
