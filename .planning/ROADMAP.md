@@ -54,7 +54,7 @@ native evidence, and finally the bounded agent/human feedback service.
   2. Use after move and move during an active loan are rejected with stable cause chains and smallest repair choices.
   3. Copy, drop, share, send, and escape abilities derive independently through representative aggregate and generic shapes.
 
-**Plans**: 6/6 plans executed; independent phase verification pending
+**Plans**: 7/7 plans executed; independent phase re-verification pending
 
 - [x] 02-01-PLAN.md
 - [x] 02-02-PLAN.md
@@ -62,6 +62,7 @@ native evidence, and finally the bounded agent/human feedback service.
 - [x] 02-04-PLAN.md
 - [x] 02-05-PLAN.md
 - [x] 02-06-PLAN.md
+- [x] 02-07-PLAN.md — runtime-derived owned C facts and real backend causality control
 
 ### Phase 3: Borrowed Views and CFG Lifetimes
 
@@ -130,7 +131,7 @@ native evidence, and finally the bounded agent/human feedback service.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
-| 2. Owned Values and Abilities | 6/6 | Awaiting verification |  |
+| 2. Owned Values and Abilities | 7/7 | Awaiting re-verification |  |
 | 3. Borrowed Views and CFG Lifetimes | 0/TBD | Not started | - |
 | 4. Fallible Resources and C Boundary | 0/TBD | Not started | - |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |
