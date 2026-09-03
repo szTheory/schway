@@ -449,6 +449,24 @@ func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
 	}
 }
 
+func TestOwnedBackendMutationIsMismatch(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	runner := session.NewOwnedBackendMutationRunner(native.DefaultRunner())
+	result, err := session.RunNativeCommandFile(context.Background(), path, runner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != protocol.StatusMismatch || protocol.ExitCode(result.Status) != 4 {
+		t.Fatalf("causal backend mutation status=%s exit=%d result=%+v", result.Status, protocol.ExitCode(result.Status), result)
+	}
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "native.engine_mismatch" {
+		t.Fatalf("causal backend mutation diagnostic=%+v", result.Diagnostics)
+	}
+	if got, want := runner.Optimizations(), []string{"-O0", "-O3"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("causal backend mutation optimizations=%v want=%v", got, want)
+	}
+}
+
 func ownedInterpreterExecution(t *testing.T) execution.Execution {
 	t.Helper()
 	values, diagnostics, err := session.RunInterpreterFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
@@ -645,6 +663,7 @@ func TestVerifyPhase2ControlsAndWork(t *testing.T) {
 		"control:core.duplicate_operation_id",
 		"control:interpreter-o0-o3-owned",
 		"control:evidence.core_mismatch",
+		"control:backend.runtime_causality",
 	}
 	seen := map[string]bool{}
 	for _, lane := range result.Lanes {

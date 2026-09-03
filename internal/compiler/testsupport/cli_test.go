@@ -179,7 +179,7 @@ func TestVerifyPhase2CLI(t *testing.T) {
 	if result.Status != protocol.StatusPass || !reflect.DeepEqual(result.ExpectedEscapes, []string{"escape:coordinated-source-core-lie"}) {
 		t.Fatalf("Phase 2 verify result omitted expected escape: %+v", result)
 	}
-	for _, required := range []string{"control:ownership.use_after_move", "control:ownership.move_while_borrowed", "control:ownership.transfer_requires_take", "control:ability.forged_copy", "control:core.duplicate_operation_id", "control:interpreter-o0-o3-owned", "control:evidence.core_mismatch"} {
+	for _, required := range []string{"control:ownership.use_after_move", "control:ownership.move_while_borrowed", "control:ownership.transfer_requires_take", "control:ability.forged_copy", "control:core.duplicate_operation_id", "control:interpreter-o0-o3-owned", "control:evidence.core_mismatch", "control:backend.runtime_causality"} {
 		if !bytes.Contains(machine.Stdout, []byte(required)) {
 			t.Fatalf("verify JSON omitted %s", required)
 		}
@@ -195,7 +195,7 @@ func TestPhase2VerifierScriptContract(t *testing.T) {
 	if strings.Contains(text, "verify-phase1.sh") || strings.Count(text, "\ngo test ./...\n") != 1 || strings.Count(text, "\ngo test -race ./...\n") != 1 || strings.Count(text, "\ngo vet ./...\n") != 1 {
 		t.Fatalf("Phase 2 gate duplicates or nests shared verification:\n%s", text)
 	}
-	for _, required := range []string{"assert-go-tests.sh --self-test", "verify testdata/phase1", "verify testdata/phase2", "warm_samples=20", "peak_rss=unavailable", "p50_ns=", "p95_ns=", "min_ns=", "max_ns=", "output_bytes=", "work="} {
+	for _, required := range []string{"assert-go-tests.sh --self-test", "TestOwnedBackendMutationIsMismatch", "control:backend.runtime_causality", "verify testdata/phase1", "verify testdata/phase2", "warm_samples=20", "peak_rss=unavailable", "p50_ns=", "p95_ns=", "min_ns=", "max_ns=", "output_bytes=", "work="} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("Phase 2 gate omitted %q", required)
 		}
