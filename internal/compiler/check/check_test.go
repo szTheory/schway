@@ -51,6 +51,32 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 	}
 }
 
+func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
+	body := ast.LinearBody{
+		Bindings: []ast.Binding{
+			binding("view", "borrow", "owner", 0),
+			binding("other", "read", "owner", 4),
+			binding("moved", "take", "other", 8),
+			binding("observed", "read", "view", 12),
+		},
+		Result: "moved",
+		Span:   diagnostic.Span{End: 20},
+	}
+	got := analyzeStraightLine("test:multi", "owner", diagnostic.Span{}, byteTypeFact(), &body)
+	want := oracleStraightLine("test:multi", "owner", byteTypeFact(), &body)
+	assertSupportEqual(t, "borrow one owner while moving another", got, want)
+	if got.DiagnosticCode != "" {
+		t.Fatalf("unrelated owner move was blocked: %+v", got)
+	}
+
+	shadowed := ast.LinearBody{
+		Bindings: []ast.Binding{binding("value", "read", "owner", 0), binding("value", "read", "owner", 4)},
+		Result:   "value",
+		Span:     diagnostic.Span{End: 12},
+	}
+	assertSupportEqual(t, "shadowed binding", analyzeStraightLine("test:shadow", "owner", diagnostic.Span{}, byteTypeFact(), &shadowed), oracleStraightLine("test:shadow", "owner", byteTypeFact(), &shadowed))
+}
+
 func TestOwnershipWorkSeries(t *testing.T) {
 	for _, operations := range []int{10, 100, 1_000, 10_000} {
 		bindings := make([]ast.Binding, operations)
@@ -147,6 +173,11 @@ type testOraclePlace struct {
 	initialized bool
 }
 
+type testOracleLoan struct {
+	ownerID string
+	lastUse int
+}
+
 func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
 	lastUses := make(map[string]int)
 	loanOrder := make([]string, 0)
@@ -181,7 +212,7 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 
 	parameterID := functionID + ":place:0"
 	places := map[string]*testOraclePlace{parameterName: {id: parameterID, initialized: true}}
-	activeLoans := make(map[string]int)
+	activeLoans := make(map[string]testOracleLoan)
 	for index, candidate := range body.Bindings {
 		result.Work++
 		source, ok := places[candidate.RHS.Source]
@@ -193,7 +224,7 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 			result.DiagnosticCode = "ownership.use_after_move"
 			return result
 		}
-		if candidate.RHS.Kind == "take" && hasFutureLoanOracle(activeLoans, index) {
+		if candidate.RHS.Kind == "take" && hasFutureLoanOracle(activeLoans, source.id, index) {
 			result.DiagnosticCode = "ownership.move_while_borrowed"
 			return result
 		}
@@ -206,7 +237,7 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 		case "borrow":
 			kind = core.OpBorrowShared
 			loanID = fmt.Sprintf("%s:loan:%d", functionID, index)
-			activeLoans[loanID] = lastUses[candidate.Name]
+			activeLoans[loanID] = testOracleLoan{ownerID: source.id, lastUse: lastUses[candidate.Name]}
 		default:
 			if !oracleHasAbility(typeFact.Abilities, core.AbilityCopy) {
 				result.DiagnosticCode = "ownership.transfer_requires_take"
@@ -219,8 +250,8 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 			ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index),
 			Kind: kind, SourceID: source.id, TargetID: targetID, LoanID: loanID, TypeID: typeFact.ID,
 		})
-		for id, finalUse := range activeLoans {
-			if finalUse <= index {
+		for id, loan := range activeLoans {
+			if loan.lastUse <= index {
 				delete(activeLoans, id)
 			}
 		}
@@ -245,7 +276,7 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 	return result
 }
 
-func oracleSnapshot(index int, places map[string]*testOraclePlace, activeLoans map[string]int) ownershipStateFact {
+func oracleSnapshot(index int, places map[string]*testOraclePlace, activeLoans map[string]testOracleLoan) ownershipStateFact {
 	initialized := make([]string, 0)
 	for _, place := range places {
 		if place.initialized {
@@ -261,9 +292,9 @@ func oracleSnapshot(index int, places map[string]*testOraclePlace, activeLoans m
 	return ownershipStateFact{OperationIndex: index, InitializedPlaces: initialized, ActiveLoans: loans}
 }
 
-func hasFutureLoanOracle(active map[string]int, index int) bool {
-	for _, last := range active {
-		if last > index {
+func hasFutureLoanOracle(active map[string]testOracleLoan, ownerID string, index int) bool {
+	for _, loan := range active {
+		if loan.ownerID == ownerID && loan.lastUse > index {
 			return true
 		}
 	}
