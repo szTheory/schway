@@ -33,12 +33,27 @@ func Parse(source []byte) ParseResult {
 	tokens, diagnostics, truncated := lex(source)
 	normalizeOwnershipTokens(tokens)
 	diagnostics = filterNormalizedTokenDiagnostics(diagnostics, tokens)
+	if truncated && !hasUnknownToken(tokens) {
+		// The Phase 1 lexer intentionally does not know provisional generic
+		// punctuation. If every unknown token normalized at this parser boundary,
+		// its pre-normalization diagnostic cap is not a real truncation.
+		truncated = false
+	}
 	p := parser{tokens: tokens, diagnostics: diagnostics, truncated: truncated}
 	program := p.parseProgram()
 	if p.truncated {
 		p.diagnostics = append(p.diagnostics, tooManyErrors(len(source)))
 	}
 	return ParseResult{Tree: Tree{Source: append([]byte(nil), source...), Tokens: tokens}, Program: program, Diagnostics: p.diagnostics}
+}
+
+func hasUnknownToken(tokens []Token) bool {
+	for _, token := range tokens {
+		if token.Kind == TokenUnknown {
+			return true
+		}
+	}
+	return false
 }
 
 func filterNormalizedTokenDiagnostics(diagnostics []diagnostic.Diagnostic, tokens []Token) []diagnostic.Diagnostic {
@@ -199,15 +214,20 @@ func (p *parser) typeRef() ast.TypeRef {
 	if !p.accept(TokenLAngle) {
 		return result
 	}
-	for !p.atAny(TokenRAngle, TokenRParen, TokenEOF) {
+	for !p.atAny(TokenRAngle, TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF) {
 		before := p.position
 		result.Arguments = append(result.Arguments, p.typeRef())
 		if !p.accept(TokenComma) {
 			break
 		}
-		p.assertProgressOrBoundary(before, TokenRAngle, TokenRParen, TokenEOF)
+		p.assertProgressOrBoundary(before, TokenRAngle, TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF)
 	}
-	p.expect(TokenRAngle, "syntax.expected_type_close")
+	if !p.accept(TokenRAngle) {
+		p.problem("syntax.expected_type_close", p.peek(), "expected `>`")
+		if !p.atAny(TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF) {
+			p.advance()
+		}
+	}
 	return result
 }
 

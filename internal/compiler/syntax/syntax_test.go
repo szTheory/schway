@@ -63,6 +63,13 @@ func withoutSpans(program ast.Program) ast.Program {
 		function.Span = noSpan
 		function.Parameter.Span = noSpan
 		function.Body.Span = noSpan
+		if function.Body.Linear != nil {
+			function.Body.Linear.Span = noSpan
+			for bindingIndex := range function.Body.Linear.Bindings {
+				function.Body.Linear.Bindings[bindingIndex].Span = noSpan
+				function.Body.Linear.Bindings[bindingIndex].RHS.Span = noSpan
+			}
+		}
 		for armIndex := range function.Body.Arms {
 			function.Body.Arms[armIndex].Span = noSpan
 		}
