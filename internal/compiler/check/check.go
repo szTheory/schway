@@ -19,6 +19,26 @@ type Result struct {
 
 func Program(program ast.Program) Result {
 	result := Result{Program: core.Program{Schema: core.Schema, Module: program.Module, ModuleID: semanticID(program.Module, "module", program.Module)}}
+	hasMatch, hasLinear := false, false
+	for _, function := range program.Funcs {
+		if function.Body.Linear != nil {
+			hasLinear = true
+		} else {
+			hasMatch = true
+		}
+	}
+	if hasMatch && hasLinear {
+		span := diagnostic.Span{}
+		if len(program.Funcs) > 0 {
+			span = program.Funcs[0].Span
+		}
+		result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
+			"core.mixed_body_versions",
+			span,
+			"a module cannot mix match and linear function bodies until function-level core versioning is defined",
+		))
+		return result
+	}
 	types := make(map[string]core.DataType)
 	for _, declaration := range program.Data {
 		alternatives := make([]string, 0, len(declaration.Alternatives))

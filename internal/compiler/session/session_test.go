@@ -342,6 +342,21 @@ func TestFeatureSpecificCoreExecutionSchemas(t *testing.T) {
 	}
 }
 
+func TestMixedBodyVersionsFailAtCheckInEitherOrder(t *testing.T) {
+	match := "fn toggle(state: Switch) -> Switch {\n  match state {\n    Off => On\n    On => Off\n  }\n}\n"
+	linear := "fn retain(code: Byte) -> Byte {\n  let kept = code\n  kept\n}\n"
+	prefix := "module mixed.bodies\nexport { type Switch fn toggle fn retain }\ndata Switch = | Off | On\n"
+	for _, source := range []string{prefix + match + linear, prefix + linear + match} {
+		checked := session.Check([]byte(source))
+		if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != "core.mixed_body_versions" {
+			t.Fatalf("mixed module diagnostics=%+v", checked.Diagnostics)
+		}
+		if len(checked.Program.Functions) != 0 {
+			t.Fatalf("mixed module emitted downstream core: %+v", checked.Program.Functions)
+		}
+	}
+}
+
 func TestNativeToggleO0O3(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
