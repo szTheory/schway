@@ -36,6 +36,59 @@ func TestTogglePipeline(t *testing.T) {
 	}
 }
 
+func TestOwnedTransferInterpreter(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	checked, err := session.CheckFile(path)
+	if err != nil || len(checked.Diagnostics) != 0 {
+		t.Fatalf("owned check failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
+	}
+	if checked.Program.Schema != "lang.core/1" || len(checked.Program.Functions) != 1 {
+		t.Fatalf("unexpected owned core: %+v", checked.Program)
+	}
+	linear := checked.Program.Functions[0].Linear
+	if linear == nil || checked.Program.Functions[0].Match != nil {
+		t.Fatalf("owned function did not select exactly one linear body: %+v", checked.Program.Functions[0])
+	}
+	moves := 0
+	for _, operation := range linear.Operations {
+		if operation.Kind == "move" {
+			moves++
+		}
+	}
+	if moves != 1 {
+		t.Fatalf("expected one explicit move, got %d in %+v", moves, linear.Operations)
+	}
+	executions, diagnostics, err := session.RunInterpreterFile(path)
+	if err != nil || len(diagnostics) != 0 || len(executions) != 1 {
+		t.Fatalf("owned interpreter failed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, executions)
+	}
+	if executions[0].Schema != "lang.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.transferred" || executions[0].Events[1].Kind != "function.returned" {
+		t.Fatalf("unexpected owned execution: %+v", executions[0])
+	}
+}
+
+func TestImplicitByteCopy(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase2", "implicit_copy.lang")
+	checked, err := session.CheckFile(path)
+	if err != nil || len(checked.Diagnostics) != 0 {
+		t.Fatalf("copy check failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
+	}
+	linear := checked.Program.Functions[0].Linear
+	if linear == nil || len(linear.Operations) != 2 || linear.Operations[0].Kind != "copy" {
+		t.Fatalf("bare Byte binding did not lower to copy: %+v", linear)
+	}
+	if linear.Operations[1].SourceID != checked.Program.Functions[0].Parameter.ID {
+		t.Fatalf("implicit copy consumed its source: operations=%+v parameter=%+v", linear.Operations, checked.Program.Functions[0].Parameter)
+	}
+	executions, diagnostics, err := session.RunInterpreterFile(path)
+	if err != nil || len(diagnostics) != 0 || len(executions) != 1 {
+		t.Fatalf("copy interpreter failed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, executions)
+	}
+	if executions[0].Schema != "lang.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.copied" {
+		t.Fatalf("unexpected copy execution: %+v", executions[0])
+	}
+}
+
 func TestNativeToggleO0O3(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())

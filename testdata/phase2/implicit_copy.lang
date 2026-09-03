@@ -1,0 +1,10 @@
+module owned.copy
+
+export {
+  fn retain
+}
+
+fn retain(code: Byte) -> Byte {
+  let duplicate = code
+  code
+}

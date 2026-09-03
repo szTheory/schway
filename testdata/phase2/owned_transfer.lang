@@ -1,0 +1,10 @@
+module owned.transfer
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let delivered = take buffer
+  delivered
+}
