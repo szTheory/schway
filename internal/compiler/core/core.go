@@ -20,12 +20,14 @@ type DataType struct {
 }
 
 type Function struct {
-	ID         string          `json:"id"`
-	Name       string          `json:"name"`
-	Parameter  Parameter       `json:"parameter"`
-	ReturnType string          `json:"return_type"`
-	Match      Match           `json:"match"`
-	Span       diagnostic.Span `json:"span"`
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	EntryPointID  string          `json:"entry_point_id"`
+	ReturnPointID string          `json:"return_point_id"`
+	Parameter     Parameter       `json:"parameter"`
+	ReturnType    string          `json:"return_type"`
+	Match         Match           `json:"match"`
+	Span          diagnostic.Span `json:"span"`
 }
 
 type Parameter struct {
@@ -36,12 +38,14 @@ type Parameter struct {
 
 type Match struct {
 	ID        string     `json:"id"`
+	PointID   string     `json:"point_id"`
 	Scrutinee string     `json:"scrutinee"`
 	Arms      []MatchArm `json:"arms"`
 }
 
 type MatchArm struct {
 	ID      string `json:"id"`
+	EdgeID  string `json:"edge_id"`
 	Pattern string `json:"pattern"`
 	Value   string `json:"value"`
 }

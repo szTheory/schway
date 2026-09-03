@@ -28,6 +28,8 @@ func Program(program ast.Program) Result {
 	}
 
 	for _, function := range program.Funcs {
+		functionID := semanticID(program.Module, "fn", function.Name)
+		matchID := semanticID(program.Module, "match", function.Name)
 		dataType, ok := types[function.Parameter.Type]
 		if !ok {
 			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.unknown", function.Parameter.Span, "unknown parameter type"))
@@ -57,7 +59,10 @@ func Program(program ast.Program) Result {
 				continue
 			}
 			seen[arm.Pattern] = true
-			arms = append(arms, core.MatchArm{ID: fmt.Sprintf("%s:arm:%d", semanticID(program.Module, "fn", function.Name), index), Pattern: arm.Pattern, Value: arm.Value})
+			arms = append(arms, core.MatchArm{
+				ID: fmt.Sprintf("%s:arm:%d", functionID, index), EdgeID: fmt.Sprintf("%s:edge:%s", matchID, arm.Pattern),
+				Pattern: arm.Pattern, Value: arm.Value,
+			})
 		}
 		missing := make([]string, 0)
 		for _, alternative := range dataType.Alternatives {
@@ -74,10 +79,11 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("match.non_exhaustive", function.Body.Span, "match does not cover every alternative", causes...))
 		}
 		result.Program.Functions = append(result.Program.Functions, core.Function{
-			ID: semanticID(program.Module, "fn", function.Name), Name: function.Name,
+			ID: functionID, Name: function.Name,
+			EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
 			Parameter:  core.Parameter{ID: semanticID(program.Module, "parameter", function.Name+"."+function.Parameter.Name), Name: function.Parameter.Name, Type: function.Parameter.Type},
 			ReturnType: function.ReturnType,
-			Match:      core.Match{ID: semanticID(program.Module, "match", function.Name), Scrutinee: function.Body.Scrutinee, Arms: arms},
+			Match:      core.Match{ID: matchID, PointID: functionID + ":point:match", Scrutinee: function.Body.Scrutinee, Arms: arms},
 			Span:       function.Span,
 		})
 	}

@@ -30,6 +30,10 @@ func TestTogglePipeline(t *testing.T) {
 	if result.Program.Schema != "lang.core/0" || len(result.Program.Functions) != 1 {
 		t.Fatalf("unexpected core: %+v", result.Program)
 	}
+	function := result.Program.Functions[0]
+	if function.EntryPointID == "" || function.ReturnPointID == "" || function.Match.PointID == "" || len(function.Match.Arms) == 0 || function.Match.Arms[0].EdgeID == "" {
+		t.Fatalf("typed core omitted stable point/edge identities: %+v", function)
+	}
 }
 
 func TestNativeToggleO0O3(t *testing.T) {
