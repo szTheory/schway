@@ -1,0 +1,263 @@
+package evidence
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os/exec"
+	"runtime"
+	"strings"
+	"time"
+
+	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/check"
+	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/interp"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
+)
+
+const (
+	Schema       = "lang.evidence/0"
+	IDAlgorithm  = "sha256-v1"
+	SourceSchema = "lang.source/s1"
+)
+
+var DefaultFlags = []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-O0", "-O3"}
+
+type Facts struct {
+	CompilerIdentity string
+	ClangIdentity    string
+	Target           string
+	Flags            []string
+	Policy           string
+}
+
+type Manifest struct {
+	Schema           string   `json:"schema"`
+	ID               string   `json:"id"`
+	IDAlgorithm      string   `json:"id_algorithm"`
+	SourceSchema     string   `json:"source_schema"`
+	CoreSchema       string   `json:"core_schema"`
+	ExecutionSchema  string   `json:"execution_schema"`
+	CompilerIdentity string   `json:"compiler_identity"`
+	ClangIdentity    string   `json:"clang_identity"`
+	Target           string   `json:"target"`
+	Flags            []string `json:"flags"`
+	Policy           string   `json:"policy"`
+	SourceDigest     string   `json:"source_digest"`
+	CoreDigest       string   `json:"core_digest"`
+	CDigest          string   `json:"c_digest"`
+}
+
+type Product struct {
+	Manifest        Manifest
+	CanonicalSource []byte
+	CoreBytes       []byte
+	CSource         []byte
+	ManifestBytes   []byte
+}
+
+type ValidationError struct {
+	Code string
+}
+
+func (e *ValidationError) Error() string { return e.Code }
+
+func DefaultFacts(ctx context.Context, clangPath string) (Facts, error) {
+	if clangPath == "" {
+		clangPath = "clang"
+	}
+	toolCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	versionOutput, err := exec.CommandContext(toolCtx, clangPath, "--version").Output()
+	if err != nil {
+		return Facts{}, err
+	}
+	targetOutput, err := exec.CommandContext(toolCtx, clangPath, "-dumpmachine").Output()
+	if err != nil {
+		return Facts{}, err
+	}
+	version := strings.TrimSpace(strings.SplitN(string(versionOutput), "\n", 2)[0])
+	return Facts{
+		CompilerIdentity: "codename-lang-stage0/" + runtime.Version(),
+		ClangIdentity:    version,
+		Target:           strings.TrimSpace(string(targetOutput)),
+		Flags:            append([]string(nil), DefaultFlags...),
+		Policy:           "phase1-pure-c17-v1",
+	}, nil
+}
+
+func Build(source []byte, facts Facts) (Product, []diagnostic.Diagnostic, error) {
+	// This manifest proves that these compiler products are mutually bound. It
+	// does not independently prove that a coordinated frontend translated user
+	// intent into the correct core; later certificate checks retain that named
+	// trust boundary rather than overstating this artifact as a proof.
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		return Product{}, parsed.Diagnostics, nil
+	}
+	canonicalSource := syntax.Format(parsed.Tree)
+	canonicalParsed := syntax.Parse(canonicalSource)
+	checked := check.Program(canonicalParsed.Program)
+	if len(checked.Diagnostics) > 0 {
+		return Product{}, checked.Diagnostics, nil
+	}
+	coreBytes, err := json.Marshal(checked.Program)
+	if err != nil {
+		return Product{}, nil, err
+	}
+	cSource, err := cgen.Emit(checked.Program)
+	if err != nil {
+		return Product{}, nil, err
+	}
+	manifest := Manifest{
+		Schema: Schema, IDAlgorithm: IDAlgorithm,
+		SourceSchema: SourceSchema, CoreSchema: core.Schema, ExecutionSchema: interp.Schema,
+		CompilerIdentity: facts.CompilerIdentity, ClangIdentity: facts.ClangIdentity,
+		Target: facts.Target, Flags: append([]string(nil), facts.Flags...), Policy: facts.Policy,
+		SourceDigest: digest(canonicalSource), CoreDigest: digest(coreBytes), CDigest: digest([]byte(cSource)),
+	}
+	manifest.ID = manifestID(manifest)
+	manifestBytes, err := CanonicalBytes(manifest)
+	if err != nil {
+		return Product{}, nil, err
+	}
+	return Product{Manifest: manifest, CanonicalSource: canonicalSource, CoreBytes: coreBytes, CSource: []byte(cSource), ManifestBytes: manifestBytes}, nil, nil
+}
+
+func CanonicalBytes(manifest Manifest) ([]byte, error) {
+	manifest.ID = manifestID(manifest)
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		return nil, err
+	}
+	return append(encoded, '\n'), nil
+}
+
+func DecodeStrict(data []byte) (Manifest, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	var manifest Manifest
+	if err := decoder.Decode(&manifest); err != nil {
+		return Manifest{}, &ValidationError{Code: "evidence.invalid_json"}
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		return Manifest{}, &ValidationError{Code: "evidence.trailing_json"}
+	}
+	return manifest, nil
+}
+
+func Validate(manifest Manifest, source []byte, facts Facts) error {
+	expected, diagnostics, err := Build(source, facts)
+	if err != nil {
+		return err
+	}
+	if len(diagnostics) > 0 {
+		return &ValidationError{Code: "evidence.source_invalid"}
+	}
+	checks := []struct {
+		code string
+		got  string
+		want string
+	}{
+		{"evidence.schema_mismatch", manifest.Schema, expected.Manifest.Schema},
+		{"evidence.id_algorithm_mismatch", manifest.IDAlgorithm, expected.Manifest.IDAlgorithm},
+		{"evidence.source_schema_mismatch", manifest.SourceSchema, expected.Manifest.SourceSchema},
+		{"evidence.core_schema_mismatch", manifest.CoreSchema, expected.Manifest.CoreSchema},
+		{"evidence.execution_schema_mismatch", manifest.ExecutionSchema, expected.Manifest.ExecutionSchema},
+		{"evidence.compiler_mismatch", manifest.CompilerIdentity, expected.Manifest.CompilerIdentity},
+		{"evidence.clang_mismatch", manifest.ClangIdentity, expected.Manifest.ClangIdentity},
+		{"evidence.target_mismatch", manifest.Target, expected.Manifest.Target},
+		{"evidence.policy_mismatch", manifest.Policy, expected.Manifest.Policy},
+	}
+	for _, check := range checks {
+		if check.got != check.want {
+			return &ValidationError{Code: check.code}
+		}
+	}
+	if !equalStrings(manifest.Flags, expected.Manifest.Flags) {
+		return &ValidationError{Code: "evidence.flags_mismatch"}
+	}
+	for _, check := range []struct {
+		code string
+		got  string
+		want string
+	}{
+		{"evidence.source_mismatch", manifest.SourceDigest, expected.Manifest.SourceDigest},
+		{"evidence.core_mismatch", manifest.CoreDigest, expected.Manifest.CoreDigest},
+		{"evidence.c_mismatch", manifest.CDigest, expected.Manifest.CDigest},
+	} {
+		if subtle.ConstantTimeCompare([]byte(check.got), []byte(check.want)) != 1 {
+			return &ValidationError{Code: check.code}
+		}
+	}
+	if subtle.ConstantTimeCompare([]byte(manifest.ID), []byte(expected.Manifest.ID)) != 1 {
+		return &ValidationError{Code: "evidence.id_mismatch"}
+	}
+	return nil
+}
+
+func digest(data []byte) string {
+	sum := sha256.Sum256(data)
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
+func manifestID(manifest Manifest) string {
+	identity := struct {
+		Schema           string
+		IDAlgorithm      string
+		SourceSchema     string
+		CoreSchema       string
+		ExecutionSchema  string
+		CompilerIdentity string
+		ClangIdentity    string
+		Target           string
+		Flags            []string
+		Policy           string
+		SourceDigest     string
+		CoreDigest       string
+		CDigest          string
+	}{
+		manifest.Schema, manifest.IDAlgorithm, manifest.SourceSchema, manifest.CoreSchema,
+		manifest.ExecutionSchema, manifest.CompilerIdentity, manifest.ClangIdentity,
+		manifest.Target, manifest.Flags, manifest.Policy, manifest.SourceDigest,
+		manifest.CoreDigest, manifest.CDigest,
+	}
+	encoded, _ := json.Marshal(identity)
+	sum := sha256.Sum256(encoded)
+	return "evidence:" + hex.EncodeToString(sum[:12])
+}
+
+func equalStrings(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func ErrorCode(err error) string {
+	var validation *ValidationError
+	if errors.As(err, &validation) {
+		return validation.Code
+	}
+	return "evidence.operation_failed"
+}
+
+func Summary(product Product) string {
+	return fmt.Sprintf("%s %s", product.Manifest.ID, digest(product.ManifestBytes))
+}
+
+func ContentDigest(data []byte) string { return digest(data) }

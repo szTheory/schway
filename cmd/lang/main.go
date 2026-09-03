@@ -36,6 +36,12 @@ func run(args []string) int {
 	if len(args) == 2 && args[0] == "check" {
 		return runCheck(args[1], jsonMode)
 	}
+	if len(args) == 2 && args[0] == "evidence" {
+		return runEvidence(args[1], jsonMode)
+	}
+	if len(args) == 4 && args[0] == "evidence" && args[1] == "--validate" {
+		return runEvidenceValidation(args[2], args[3], jsonMode)
+	}
 	if len(args) == 3 && args[0] == "run" && strings.HasPrefix(args[1], "--engine=") {
 		engine := strings.TrimPrefix(args[1], "--engine=")
 		switch engine {
@@ -88,6 +94,25 @@ func runInterpreter(path string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
+func runEvidence(path string, jsonMode bool) int {
+	product, result, err := session.EvidenceCommandFile(context.Background(), path)
+	if err != nil {
+		return emit(problemResult("evidence", protocol.StatusOperational, "evidence.operation_failed", "unable to construct evidence"), jsonMode, false)
+	}
+	if !jsonMode && result.Status == protocol.StatusPass {
+		if _, err := os.Stdout.Write(product.ManifestBytes); err != nil {
+			return emit(problemResult("evidence", protocol.StatusOperational, "tool.write_failed", "unable to write output"), false, false)
+		}
+		return exitSuccess
+	}
+	return emit(result, jsonMode, false)
+}
+
+func runEvidenceValidation(manifestPath, sourcePath string, jsonMode bool) int {
+	result := session.ValidateEvidenceCommandFile(context.Background(), manifestPath, sourcePath)
+	return emit(result, jsonMode, false)
+}
+
 func extractJSON(args []string) ([]string, bool, bool) {
 	filtered := make([]string, 0, len(args))
 	jsonMode := false
@@ -134,5 +159,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE")
 }

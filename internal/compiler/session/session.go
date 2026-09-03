@@ -11,6 +11,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
@@ -233,4 +234,60 @@ func RunNativeCommandFile(ctx context.Context, path string, runner native.Runner
 	}
 	result.Executions = nativeResult.Interpreter
 	return result.Finalize(), nil
+}
+
+func EvidenceCommandFile(ctx context.Context, path string) (evidence.Product, protocol.Result, error) {
+	source, err := os.ReadFile(path)
+	if err != nil {
+		return evidence.Product{}, protocol.Result{}, err
+	}
+	facts, err := evidence.DefaultFacts(ctx, "clang")
+	if err != nil {
+		result := protocol.New("evidence", protocol.StatusOperational)
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("evidence.tool_failure", diagnostic.Span{}, "unable to inspect native toolchain")}
+		return evidence.Product{}, result.Finalize(), nil
+	}
+	product, diagnostics, err := evidence.Build(source, facts)
+	if err != nil {
+		return evidence.Product{}, protocol.Result{}, err
+	}
+	result := protocol.New("evidence", protocol.StatusPass)
+	if len(diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = diagnostics
+		return evidence.Product{}, result.Finalize(), nil
+	}
+	result.Evidence = &protocol.EvidenceSummary{Schema: evidence.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
+	return product, result.Finalize(), nil
+}
+
+func ValidateEvidenceCommandFile(ctx context.Context, manifestPath, sourcePath string) protocol.Result {
+	manifestBytes, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return commandProblem("evidence", protocol.StatusOperational, "tool.read_failed", "unable to read evidence manifest")
+	}
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return commandProblem("evidence", protocol.StatusOperational, "tool.read_failed", "unable to read source")
+	}
+	manifest, err := evidence.DecodeStrict(manifestBytes)
+	if err != nil {
+		return commandProblem("evidence", protocol.StatusInvalid, evidence.ErrorCode(err), "evidence manifest is not valid")
+	}
+	facts, err := evidence.DefaultFacts(ctx, "clang")
+	if err != nil {
+		return commandProblem("evidence", protocol.StatusOperational, "evidence.tool_failure", "unable to inspect native toolchain")
+	}
+	if err := evidence.Validate(manifest, source, facts); err != nil {
+		return commandProblem("evidence", protocol.StatusInvalid, evidence.ErrorCode(err), "evidence manifest does not match recomputed facts")
+	}
+	result := protocol.New("evidence", protocol.StatusPass)
+	result.Evidence = &protocol.EvidenceSummary{Schema: evidence.Schema, ID: manifest.ID, Digest: evidence.ContentDigest(manifestBytes)}
+	return result.Finalize()
+}
+
+func commandProblem(command, status, code, message string) protocol.Result {
+	result := protocol.New(command, status)
+	result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(code, diagnostic.Span{}, message)}
+	return result.Finalize()
 }
