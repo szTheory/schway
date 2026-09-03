@@ -63,6 +63,26 @@ func TestOwnershipMutationMatrix(t *testing.T) {
 		{"inconsistent final claim", "core.final_claim_mismatch", func(program *core.Program) {
 			program.Functions[0].Linear.Operations[1].SourceID = program.Functions[0].Parameter.ID
 		}},
+		{"self move target", "core.invalid_target", func(program *core.Program) {
+			program.Functions[0].Linear.Operations[0].TargetID = program.Functions[0].Linear.Operations[0].SourceID
+		}},
+		{"target overwrite", "core.invalid_target", func(program *core.Program) {
+			borrow := borrowedProgram()
+			*program = borrow
+			program.Functions[0].Linear.Operations[1].TargetID = program.Functions[0].Linear.Operations[0].TargetID
+		}},
+		{"skipped target ordinal", "core.invalid_target", func(program *core.Program) {
+			borrow := borrowedProgram()
+			*program = borrow
+			program.Functions[0].Linear.Operations[0].TargetID = program.Functions[0].Linear.Places[2].ID
+		}},
+		{"reused borrow target", "core.invalid_target", func(program *core.Program) {
+			borrow := borrowedProgram()
+			*program = borrow
+			program.Functions[0].Linear.Operations[1].Kind = core.OpBorrowShared
+			program.Functions[0].Linear.Operations[1].LoanID = program.Functions[0].ID + ":loan:1"
+			program.Functions[0].Linear.Operations[1].TargetID = program.Functions[0].Linear.Operations[0].TargetID
+		}},
 	}
 
 	for _, test := range tests {

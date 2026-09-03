@@ -226,6 +226,7 @@ func (v *validator) linear(function *core.Function) bool {
 func (v *validator) replay(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
 	operations := function.Linear.Operations
 	initialized := map[string]bool{function.Parameter.ID: true}
+	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
 	loanForTarget := make(map[string]string)
 	loanLastUse := make(map[string]int)
@@ -263,28 +264,31 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
 				return false
 			}
-			if !v.targetMatches(operation, places) {
+			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
 			}
 			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
 		case core.OpBorrowShared:
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
 				return false
 			}
-			if !v.targetMatches(operation, places) {
+			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
 			}
 			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
 		case core.OpMove:
 			blockedUntil, hasLoan := ownerBlockedUntil[operation.SourceID]
 			if !v.check(!hasLoan || blockedUntil < index, "core.move_while_borrowed", operation.ID) {
 				return false
 			}
-			if !v.targetMatches(operation, places) {
+			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
 			}
 			initialized[operation.SourceID] = false
 			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
 		case core.OpReturn:
 			if index != len(operations)-1 || returned || operation.TargetID != "" || operation.TypeID != source.TypeID || types[source.TypeID].Shape.Constructor != function.ReturnType {
 				return v.check(false, "core.final_claim_mismatch", operation.ID)
@@ -297,8 +301,14 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 	return v.check(returned, "core.final_claim_mismatch", function.ID)
 }
 
-func (v *validator) targetMatches(operation core.LinearOperation, places map[string]core.Place) bool {
-	return v.check(places[operation.TargetID].TypeID == operation.TypeID, "core.type_mismatch", operation.TargetID)
+func (v *validator) targetMatches(function *core.Function, operationIndex int, operation core.LinearOperation, places map[string]core.Place, produced map[string]bool) bool {
+	target := places[operation.TargetID]
+	expected := fmt.Sprintf("%s:place:%d", function.ID, operationIndex+1)
+	return v.check(
+		operation.TargetID == expected && operation.TargetID != operation.SourceID && !produced[operation.TargetID] && target.TypeID == operation.TypeID,
+		"core.invalid_target",
+		operation.TargetID,
+	)
 }
 
 func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []core.AbilityWitness, bool) {
