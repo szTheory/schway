@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 02
 current_phase_name: Owned Values and Abilities
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-09-03T20:42:24.461Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-09-03T20:58:09.361Z"
 last_activity: 2026-09-03
 last_activity_desc: Phase 02 execution started
-state_head: 652bbe86d53e7ccbec3d2d55aaca2181a0bb7ae7
+state_head: d51e5f81233b5b34cda7a673251c47ac980d5b44
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 9
-  completed_plans: 5
+  completed_plans: 6
   percent: 17
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 02 (Owned Values and Abilities) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 02 execution started
 
@@ -57,6 +57,7 @@ Progress: ██████████ [██░░░░░░░░] 17%
 | Phase 01 P03 | 16 min | 3 tasks | 14 files |
 | Phase 02 P01 | 10 min | 2 tasks | 14 files |
 | Phase 02 P02 | 9 min | 3 tasks | 6 files |
+| Phase 02 P03 | 12 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 02]: Ownership token normalization lives at the parser boundary so the Phase 1 lexer remains unchanged.
 - [Phase 02]: Box and Pair use a request-local package-private structural conjunction with no arbitrary production masks.
 - [Phase 02]: Generic parser limits are depth 64 and 4,096 type nodes with declaration-bounded recovery.
+- [Phase 02]: Legacy Error construction remains diagnostic/0; only repair-bearing ownership diagnostics select diagnostic/1.
+- [Phase 02]: Straight-line shared loans expire immediately after their precomputed final use through a linear indexed schedule.
+- [Phase 02]: Ownership checker work counts type nodes, the complete last-use scan, and the inspected forward prefix.
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-03T20:42:24.427Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-09-03T20:58:09.311Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
