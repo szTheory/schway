@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -103,7 +104,7 @@ func Format(source []byte) FormatResult {
 }
 
 func FormatFile(path string) (FormatResult, error) {
-	source, err := os.ReadFile(path)
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
 		return FormatResult{}, err
 	}
@@ -134,7 +135,7 @@ func FormatCommandFile(path string, checkOnly bool) (protocol.Result, error) {
 }
 
 func CheckFile(path string) (CheckResult, error) {
-	source, err := os.ReadFile(path)
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -207,7 +208,7 @@ func interpreterInputs(program core.Program) ([]string, bool) {
 }
 
 func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnostic, error) {
-	source, err := os.ReadFile(path)
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -288,7 +289,7 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 }
 
 func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
-	source, err := os.ReadFile(path)
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
@@ -325,7 +326,7 @@ func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner)
 
 func EvidenceCommandFile(ctx context.Context, path string) (evidence.Product, protocol.Result, error) {
 	started := time.Now()
-	source, err := os.ReadFile(path)
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
 		return evidence.Product{}, protocol.Result{}, err
 	}
@@ -350,11 +351,11 @@ func EvidenceCommandFile(ctx context.Context, path string) (evidence.Product, pr
 }
 
 func ValidateEvidenceCommandFile(ctx context.Context, manifestPath, sourcePath string) protocol.Result {
-	manifestBytes, err := os.ReadFile(manifestPath)
+	manifestBytes, err := readBoundedFile(manifestPath, evidence.MaxManifestBytes)
 	if err != nil {
 		return commandProblem("evidence", protocol.StatusOperational, "tool.read_failed", "unable to read evidence manifest")
 	}
-	source, err := os.ReadFile(sourcePath)
+	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
 	if err != nil {
 		return commandProblem("evidence", protocol.StatusOperational, "tool.read_failed", "unable to read source")
 	}
@@ -372,6 +373,15 @@ func ValidateEvidenceCommandFile(ctx context.Context, manifestPath, sourcePath s
 	result := protocol.New("evidence", protocol.StatusPass)
 	result.Evidence = &protocol.EvidenceSummary{Schema: manifest.Schema, ID: manifest.ID, Digest: evidence.ContentDigest(manifestBytes)}
 	return result.Finalize()
+}
+
+func readBoundedFile(path string, limit int) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return io.ReadAll(io.LimitReader(file, int64(limit)+1))
 }
 
 func commandProblem(command, status, code, message string) protocol.Result {

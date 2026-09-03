@@ -30,6 +30,16 @@ func TestCSTRoundTrip(t *testing.T) {
 	}
 }
 
+func TestTokenBudgetStopsWithOneStableDiagnostic(t *testing.T) {
+	result := syntax.Parse([]byte(strings.Repeat("x ", syntax.MaxTokens+1)))
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "syntax.input_limit" {
+		t.Fatalf("token limit diagnostics=%+v", result.Diagnostics)
+	}
+	if len(result.Tree.Tokens) != syntax.MaxTokens+1 { // bounded tokens plus EOF
+		t.Fatalf("token count=%d want=%d", len(result.Tree.Tokens), syntax.MaxTokens+1)
+	}
+}
+
 func TestFormatIdempotent(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
 	if err != nil {

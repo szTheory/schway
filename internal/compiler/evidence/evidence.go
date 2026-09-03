@@ -26,12 +26,13 @@ import (
 )
 
 const (
-	Schema0      = "lang.evidence/0"
-	Schema1      = "lang.evidence/1"
-	Schema       = Schema0
-	IDAlgorithm  = "sha256-v1"
-	SourceSchema = "lang.source/s1"
-	DigestClaim  = "content-identity-only"
+	Schema0          = "lang.evidence/0"
+	Schema1          = "lang.evidence/1"
+	Schema           = Schema0
+	IDAlgorithm      = "sha256-v1"
+	SourceSchema     = "lang.source/s1"
+	DigestClaim      = "content-identity-only"
+	MaxManifestBytes = 1 << 20
 )
 
 var DefaultFlags = []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-O0", "-O3"}
@@ -215,6 +216,9 @@ func CanonicalBytes(manifest Manifest) ([]byte, error) {
 }
 
 func DecodeStrict(data []byte) (Manifest, error) {
+	if len(data) > MaxManifestBytes {
+		return Manifest{}, &ValidationError{Code: "evidence.input_limit"}
+	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	var manifest Manifest

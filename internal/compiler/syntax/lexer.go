@@ -36,6 +36,10 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 		}
 	}
 	for offset := 0; offset < len(source); {
+		if len(tokens) >= MaxTokens {
+			tokens = append(tokens, Token{Kind: TokenEOF, Span: diagnostic.Span{Start: offset, End: offset}})
+			return tokens, []diagnostic.Diagnostic{inputLimit(offset)}, false
+		}
 		start := offset
 		if source[offset] == '/' && offset+1 < len(source) && source[offset+1] == '/' {
 			offset += 2

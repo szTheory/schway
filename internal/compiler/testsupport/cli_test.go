@@ -69,6 +69,35 @@ func TestCLIExitTaxonomy(t *testing.T) {
 	}
 }
 
+func TestCLISourceByteLimitBoundary(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	prefix := []byte("module limits.source\nexport { fn keep }\nfn keep(code: Byte) -> Byte { code }\n//")
+	for _, test := range []struct {
+		name string
+		size int
+		exit int
+		code string
+	}{
+		{name: "exact", size: 1 << 20, exit: 0},
+		{name: "one over", size: 1<<20 + 1, exit: 2, code: "syntax.input_limit"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "input.lang")
+			source := append(append([]byte(nil), prefix...), bytes.Repeat([]byte{'x'}, test.size-len(prefix))...)
+			if err := os.WriteFile(path, source, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			result := testsupport.RunCLI(t, binary, nil, "--json", "check", path)
+			if result.Exit != test.exit {
+				t.Fatalf("exit=%d want=%d stdout=%s", result.Exit, test.exit, result.Stdout)
+			}
+			if test.code != "" && !bytes.Contains(result.Stdout, []byte(test.code)) {
+				t.Fatalf("missing %s: %s", test.code, result.Stdout)
+			}
+		})
+	}
+}
+
 func TestHumanJSONIdentityParity(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
 	for _, test := range []struct {

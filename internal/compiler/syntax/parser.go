@@ -7,7 +7,16 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 )
 
-const maxPrimaryDiagnostics = 20
+const (
+	maxPrimaryDiagnostics = 20
+	// MaxSourceBytes and MaxTokens bound every untrusted source entry point.
+	MaxSourceBytes    = 1 << 20
+	MaxTokens         = 1 << 17
+	maxDeclarations   = 4096
+	maxFunctions      = 1024
+	maxAlternatives   = 4096
+	maxLinearBindings = 1 << 16
+)
 
 type ParseResult struct {
 	Tree        Tree
@@ -30,7 +39,13 @@ const (
 )
 
 func Parse(source []byte) ParseResult {
+	if len(source) > MaxSourceBytes {
+		return ParseResult{Diagnostics: []diagnostic.Diagnostic{inputLimit(MaxSourceBytes)}}
+	}
 	tokens, diagnostics, truncated := lex(source)
+	if len(diagnostics) == 1 && diagnostics[0].Code == "syntax.input_limit" {
+		return ParseResult{Tree: Tree{Source: append([]byte(nil), source...), Tokens: tokens}, Diagnostics: diagnostics}
+	}
 	normalizeOwnershipTokens(tokens)
 	diagnostics = filterNormalizedTokenDiagnostics(diagnostics, tokens)
 	if truncated && !hasUnknownToken(tokens) {
@@ -41,10 +56,37 @@ func Parse(source []byte) ParseResult {
 	}
 	p := parser{tokens: tokens, diagnostics: diagnostics, truncated: truncated}
 	program := p.parseProgram()
+	if limit := programLimit(program); limit != "" {
+		p.diagnostics = []diagnostic.Diagnostic{inputLimit(len(source))}
+		p.truncated = false
+	}
 	if p.truncated {
 		p.diagnostics = append(p.diagnostics, tooManyErrors(len(source)))
 	}
 	return ParseResult{Tree: Tree{Source: append([]byte(nil), source...), Tokens: tokens}, Program: program, Diagnostics: p.diagnostics}
+}
+
+func programLimit(program ast.Program) string {
+	if len(program.Data)+len(program.Funcs) > maxDeclarations || len(program.Funcs) > maxFunctions {
+		return "declarations"
+	}
+	alternatives, bindings := 0, 0
+	for _, declaration := range program.Data {
+		alternatives += len(declaration.Alternatives)
+	}
+	for _, function := range program.Funcs {
+		if function.Body.Linear != nil {
+			bindings += len(function.Body.Linear.Bindings)
+		}
+	}
+	if alternatives > maxAlternatives || bindings > maxLinearBindings {
+		return "body facts"
+	}
+	return ""
+}
+
+func inputLimit(offset int) diagnostic.Diagnostic {
+	return diagnostic.Error("syntax.input_limit", diagnostic.Span{Start: offset, End: offset}, "source exceeds a compiler input limit")
 }
 
 func hasUnknownToken(tokens []Token) bool {
