@@ -3,9 +3,14 @@ package session_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/native"
@@ -89,5 +94,62 @@ func TestInterpreterDeterministic(t *testing.T) {
 	}
 	if len(first) != 2 || first[0].Outcome.Value != "On" || first[1].Outcome.Value != "Off" {
 		t.Fatalf("unexpected toggle executions: %+v", first)
+	}
+}
+
+func TestConcurrentReadOnlyCommands(t *testing.T) {
+	projectRoot := testsupport.ProjectPath()
+	fixture := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	before, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeDigest := sha256.Sum256(before)
+
+	binary := filepath.Join(t.TempDir(), "lang")
+	build := exec.Command("go", "build", "-o", binary, "./cmd/lang")
+	build.Dir = projectRoot
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build CLI: %v\n%s", err, output)
+	}
+
+	type commandResult struct {
+		output []byte
+		err    error
+	}
+	formatResults := make([]commandResult, 2)
+	checkResults := make([]commandResult, 2)
+	var group sync.WaitGroup
+	for index := 0; index < 2; index++ {
+		index := index
+		group.Add(2)
+		go func() {
+			defer group.Done()
+			formatResults[index].output, formatResults[index].err = exec.Command(binary, "format", fixture).CombinedOutput()
+		}()
+		go func() {
+			defer group.Done()
+			checkResults[index].output, checkResults[index].err = exec.Command(binary, "format", "--check", fixture).CombinedOutput()
+		}()
+	}
+	group.Wait()
+
+	for index, result := range append(formatResults, checkResults...) {
+		if result.err != nil {
+			t.Fatalf("concurrent command %d failed: %v\n%s", index, result.err, result.output)
+		}
+	}
+	if !bytes.Equal(formatResults[0].output, formatResults[1].output) || !bytes.Equal(formatResults[0].output, before) {
+		t.Fatalf("concurrent format output drifted:\nfirst=%q\nsecond=%q", formatResults[0].output, formatResults[1].output)
+	}
+	if !bytes.Equal(checkResults[0].output, checkResults[1].output) {
+		t.Fatalf("concurrent check output drifted:\nfirst=%q\nsecond=%q", checkResults[0].output, checkResults[1].output)
+	}
+	after, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if afterDigest := sha256.Sum256(after); afterDigest != beforeDigest {
+		t.Fatalf("read-only commands changed fixture digest: before=%x after=%x", beforeDigest, afterDigest)
 	}
 }

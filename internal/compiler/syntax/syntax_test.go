@@ -3,9 +3,12 @@ package syntax_test
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"testing/quick"
 
 	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
@@ -163,6 +166,108 @@ func FuzzParseFormat(f *testing.F) {
 			t.Fatalf("formatter is not idempotent:\nfirst=%q\nsecond=%q", first, second)
 		}
 	})
+}
+
+func TestGeneratedRoundTrips(t *testing.T) {
+	const generationSeed int64 = 0x51a6e
+	count := 0
+	lastFailure := ""
+	property := func(caseID uint64) bool {
+		count++
+		source := generatedProgram(caseID, true)
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			lastFailure = fmt.Sprintf("case=%d lost CST bytes\nsource=%q", caseID, source)
+			return false
+		}
+		if len(parsed.Diagnostics) != 0 {
+			lastFailure = fmt.Sprintf("case=%d did not parse\nsource=%q\ndiagnostics=%v", caseID, source, diagnosticIdentity(parsed.Diagnostics))
+			return false
+		}
+
+		canonical := syntax.Format(parsed.Tree)
+		reparsed := syntax.Parse(canonical)
+		if len(reparsed.Diagnostics) != 0 || !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d did not reach a fixed point\nsource=%q\ncanonical=%q\ndiagnostics=%v", caseID, source, canonical, diagnosticIdentity(reparsed.Diagnostics))
+			return false
+		}
+		if !reflect.DeepEqual(withoutSpans(parsed.Program), withoutSpans(reparsed.Program)) {
+			lastFailure = fmt.Sprintf("case=%d changed semantic order\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
+		if !reflect.DeepEqual(comments(parsed.Tree), comments(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d changed comments\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
+
+		invalid := generatedProgram(caseID, false)
+		first := session.Check(invalid).Diagnostics
+		second := session.Check(invalid).Diagnostics
+		if !reflect.DeepEqual(diagnosticIdentity(first), diagnosticIdentity(second)) || !containsDiagnostic(first, "match.non_exhaustive") {
+			lastFailure = fmt.Sprintf("case=%d invalid mutation was not deterministic\nsource=%q\nfirst=%v\nsecond=%v", caseID, invalid, diagnosticIdentity(first), diagnosticIdentity(second))
+			return false
+		}
+		return true
+	}
+
+	config := &quick.Config{MaxCount: 1000, Rand: rand.New(rand.NewSource(generationSeed))}
+	if err := quick.Check(property, config); err != nil {
+		t.Fatalf("generated property failed (seed=%d): %v\n%s", generationSeed, err, lastFailure)
+	}
+	if count != config.MaxCount {
+		t.Fatalf("generated property ran %d cases, want %d (seed=%d)", count, config.MaxCount, generationSeed)
+	}
+}
+
+func generatedProgram(caseID uint64, exhaustive bool) []byte {
+	separator := " "
+	if caseID%2 == 1 {
+		separator = "\t"
+	}
+	typeName := fmt.Sprintf("Mode%d", caseID%997)
+	functionName := fmt.Sprintf("rotate%d", caseID%991)
+	alternativeCount := int(caseID%4) + 2
+	alternatives := make([]string, alternativeCount)
+	for index := range alternatives {
+		alternatives[index] = fmt.Sprintf("A%d_%d", caseID%983, index)
+	}
+
+	var source strings.Builder
+	if caseID%3 == 0 {
+		fmt.Fprintf(&source, "// generated case %d\n", caseID)
+	}
+	fmt.Fprintf(&source, "module%sgenerated.case%d\n\n", separator, caseID%977)
+	fmt.Fprintf(&source, "export%s{%s type%s%s%s fn%s%s%s}\n\n", separator, separator, separator, typeName, separator, separator, functionName, separator)
+	fmt.Fprintf(&source, "data%s%s%s=%s\n", separator, typeName, separator, separator)
+	for _, alternative := range alternatives {
+		fmt.Fprintf(&source, "%s|%s%s\n", separator, separator, alternative)
+	}
+	fmt.Fprintf(&source, "\nfn%s%s(state:%s%s)%s->%s%s%s{\n", separator, functionName, separator, typeName, separator, separator, typeName, separator)
+	fmt.Fprintf(&source, "%smatch%sstate%s{\n", separator, separator, separator)
+	limit := alternativeCount
+	if !exhaustive {
+		limit--
+	}
+	offset := int(caseID % uint64(alternativeCount))
+	for index := 0; index < limit; index++ {
+		position := (index + offset) % alternativeCount
+		next := (position + 1) % alternativeCount
+		if caseID%5 == 0 && index == 0 {
+			source.WriteString("// generated arm\n")
+		}
+		fmt.Fprintf(&source, "%s%s%s=>%s%s\n", separator, alternatives[position], separator, separator, alternatives[next])
+	}
+	source.WriteString("}\n}\n")
+	return []byte(source.String())
+}
+
+func containsDiagnostic(diagnostics []diagnostic.Diagnostic, code string) bool {
+	for _, problem := range diagnostics {
+		if problem.Code == code {
+			return true
+		}
+	}
+	return false
 }
 
 func diagnosticIdentity(diagnostics []diagnostic.Diagnostic) []string {
