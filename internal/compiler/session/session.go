@@ -16,6 +16,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
@@ -204,7 +205,7 @@ func RunNative(ctx context.Context, source []byte, runner native.Runner) (Native
 	if len(checked.Diagnostics) > 0 {
 		return NativeResult{}, checked.Diagnostics, nil
 	}
-	if len(checked.Program.DataTypes) != 1 || len(checked.Program.Functions) != 1 {
+	if len(checked.Program.Functions) != 1 {
 		return NativeResult{}, nil, os.ErrInvalid
 	}
 	validated := corevalidate.Validate(checked.Program)
@@ -212,7 +213,10 @@ func RunNative(ctx context.Context, source []byte, runner native.Runner) (Native
 		return NativeResult{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
 	}
 	checked.Program = validated.Program()
-	inputs := checked.Program.DataTypes[0].Alternatives
+	inputs, ok := interpreterInputs(checked.Program)
+	if !ok {
+		return NativeResult{}, nil, os.ErrInvalid
+	}
 	interpreted := make([]interp.Execution, 0, len(inputs))
 	for _, input := range inputs {
 		execution, err := interp.Run(checked.Program, checked.Program.Functions[0].Name, input)
@@ -221,7 +225,7 @@ func RunNative(ctx context.Context, source []byte, runner native.Runner) (Native
 		}
 		interpreted = append(interpreted, execution)
 	}
-	cSource, err := cgen.Emit(checked.Program)
+	cSource, err := cgen.EmitNative(checked.Program)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
@@ -235,8 +239,10 @@ func RunNative(ctx context.Context, source []byte, runner native.Runner) (Native
 	}
 	for index, expected := range interpreted {
 		for _, actual := range []native.Result{o0, o3} {
-			if actual.Pairs[index].Output != expected.Outcome.Value {
-				return NativeResult{}, nil, &EngineMismatch{Optimization: actual.Optimization, Input: inputs[index], Expected: expected.Outcome.Value, Actual: actual.Pairs[index].Output}
+			if !execution.Equal(expected, actual.Pairs[index].Execution) {
+				expectedBytes, _ := execution.CanonicalBytes(expected)
+				actualBytes, _ := execution.CanonicalBytes(actual.Pairs[index].Execution)
+				return NativeResult{}, nil, &EngineMismatch{Optimization: actual.Optimization, Input: inputs[index], Expected: string(expectedBytes), Actual: string(actualBytes)}
 			}
 		}
 	}
@@ -467,10 +473,10 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 		return fail(protocol.StatusOperational, "verify.native_failed", "native differential lane did not complete")
 	}
 	if options.ForceEngineMismatch && len(nativeResult.O3.Pairs) > 0 {
-		nativeResult.O3.Pairs[0].Output += "-forced-mismatch"
+		nativeResult.O3.Pairs[0].Execution.Outcome.Value += "-forced-mismatch"
 	}
 	for index, execution := range nativeResult.Interpreter {
-		if nativeResult.O0.Pairs[index].Output != execution.Outcome.Value || nativeResult.O3.Pairs[index].Output != execution.Outcome.Value {
+		if !executionpkgEqual(execution, nativeResult.O0.Pairs[index].Execution) || !executionpkgEqual(execution, nativeResult.O3.Pairs[index].Execution) {
 			addLane("lane:native-differential", "fail", []string{"control:interpreter-o0-o3"}, len(nativeResult.Interpreter)*3, nativeResult.O0.OutputBytes+nativeResult.O3.OutputBytes, laneStarted)
 			return fail(protocol.StatusMismatch, "native.engine_mismatch", "interpreter, O0, and O3 outcomes disagree")
 		}
@@ -491,6 +497,8 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
 	return result.Finalize()
 }
+
+func executionpkgEqual(left, right interp.Execution) bool { return execution.Equal(left, right) }
 
 func VerifyCorpusFile(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
 	return VerifyCorpus(ctx, corpus, runner, VerifyOptions{})

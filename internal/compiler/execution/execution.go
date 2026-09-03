@@ -1,6 +1,9 @@
 package execution
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+)
 
 const (
 	Schema0 = "lang.execution/0"
@@ -32,3 +35,9 @@ type Execution struct {
 }
 
 func CanonicalBytes(value Execution) ([]byte, error) { return json.Marshal(value) }
+
+func Equal(left, right Execution) bool {
+	leftBytes, leftErr := CanonicalBytes(left)
+	rightBytes, rightErr := CanonicalBytes(right)
+	return leftErr == nil && rightErr == nil && bytes.Equal(leftBytes, rightBytes)
+}

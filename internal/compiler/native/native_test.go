@@ -87,9 +87,9 @@ func TestNativeHelperProcess(t *testing.T) {
 		return
 	}
 	valid, _ := execution.CanonicalBytes(execution.Execution{
-		Schema: execution.Schema0,
+		Schema:  execution.Schema0,
 		Outcome: execution.Outcome{Kind: "returned", Value: "input"},
-		Events: []execution.Event{}, LiveResources: []string{},
+		Events:  []execution.Event{}, LiveResources: []string{},
 	})
 	switch mode {
 	case "run-stdout-flood":
