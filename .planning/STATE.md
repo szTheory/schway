@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 02
 current_phase_name: Owned Values and Abilities
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-09-03T20:58:09.361Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-09-03T21:15:39.035Z"
 last_activity: 2026-09-03
 last_activity_desc: Phase 02 execution started
-state_head: d51e5f81233b5b34cda7a673251c47ac980d5b44
+state_head: e603534f30c85633131698816f65c08d04e50c27
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 17
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 02 (Owned Values and Abilities) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 02 execution started
 
@@ -58,6 +58,7 @@ Progress: ██████████ [██░░░░░░░░] 17%
 | Phase 02 P01 | 10 min | 2 tasks | 14 files |
 | Phase 02 P02 | 9 min | 3 tasks | 6 files |
 | Phase 02 P03 | 12 min | 2 tasks | 8 files |
+| Phase 02 P04 | 13 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 02]: Legacy Error construction remains diagnostic/0; only repair-bearing ownership diagnostics select diagnostic/1.
 - [Phase 02]: Straight-line shared loans expire immediately after their precomputed final use through a linear indexed schedule.
 - [Phase 02]: Ownership checker work counts type nodes, the complete last-use scan, and the inspected forward prefix.
+- [Phase 02]: Validator ability and transition authorization is independently implemented from checker and interpreter behavior, sharing only inert core records.
+- [Phase 02]: The owned final return operation is the explicit final claim, and canonical validation work is exactly 16n+13.
 
 ### Pending Todos
 
@@ -100,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-03T20:58:09.311Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-09-03T21:15:28.855Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
