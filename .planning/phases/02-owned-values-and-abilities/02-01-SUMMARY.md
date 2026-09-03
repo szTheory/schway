@@ -48,7 +48,7 @@ patterns-established:
   - "Engine-neutral execution facts: interpreter behavior emits records owned by the execution package."
   - "Sealed abilities: Byte and Buffer facts come only from compiler-owned structural rules."
 
-requirements-completed: [OWN-01, OWN-02]
+requirements-progressed: [OWN-01, OWN-02]
 
 coverage:
   - id: D1

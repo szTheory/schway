@@ -41,9 +41,9 @@ hiding runtime costs.
   missing, unreachable, or subsumed alternatives are rejected before execution.
 - [ ] **SEM-03**: `Result` propagation and ignored-result rules produce explicit
   typed control flow; panic and cancellation cannot be erased as ordinary errors.
-- [x] **OWN-01**: Noncopyable values transfer exactly once, and use-after-move or
+- [ ] **OWN-01**: Noncopyable values transfer exactly once, and use-after-move or
   move-during-loan programs are rejected with the transfer and conflict causes.
-- [x] **OWN-02**: Copy, drop, share, send, and escape abilities are derived
+- [ ] **OWN-02**: Copy, drop, share, send, and escape abilities are derived
   independently, including through generic and aggregate types.
 - [ ] **OWN-03**: Shared and exclusive loans obey conflict rules and ordinary
   local loans end at proven CFG point/edge-specific last use.
@@ -139,8 +139,8 @@ hiding runtime costs.
 | SEM-01 | Phase 1 | Complete |
 | SEM-02 | Phase 1 | Complete |
 | SEM-03 | Phase 4 | Pending |
-| OWN-01 | Phase 2 | Complete |
-| OWN-02 | Phase 2 | Complete |
+| OWN-01 | Phase 2 | Pending |
+| OWN-02 | Phase 2 | Pending |
 | OWN-03 | Phase 3 | Pending |
 | OWN-04 | Phase 3 | Pending |
 | RES-01 | Phase 4 | Pending |
