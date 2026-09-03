@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -22,6 +23,12 @@ const (
 func main() { os.Exit(run(os.Args[1:])) }
 
 func run(args []string) int {
+	if len(args) == 2 && args[0] == "format" {
+		return runFormat(args[1], false)
+	}
+	if len(args) == 3 && args[0] == "format" && args[1] == "--check" {
+		return runFormat(args[2], true)
+	}
 	if len(args) == 2 && args[0] == "check" {
 		return runCheck(args[1])
 	}
@@ -37,8 +44,34 @@ func run(args []string) int {
 			return exitUsage
 		}
 	}
-	fmt.Fprintln(os.Stderr, "usage: lang check FILE | lang run --engine=interpreter|native FILE")
+	fmt.Fprintln(os.Stderr, "usage: lang format [--check] FILE | lang check FILE | lang run --engine=interpreter|native FILE")
 	return exitUsage
+}
+
+func runFormat(path string, checkOnly bool) int {
+	result, err := session.FormatFile(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "tool.read_failed: %v\n", err)
+		return exitOperational
+	}
+	if len(result.Diagnostics) > 0 {
+		for _, problem := range result.Diagnostics {
+			fmt.Fprintln(os.Stderr, problem.String())
+		}
+		return exitInvalidSource
+	}
+	if checkOnly {
+		if !bytes.Equal(result.Source, result.Canonical) {
+			fmt.Fprintln(os.Stderr, "format.non_canonical: source differs from canonical projection")
+			return exitInvalidSource
+		}
+		return exitSuccess
+	}
+	if _, err := os.Stdout.Write(result.Canonical); err != nil {
+		fmt.Fprintf(os.Stderr, "tool.write_failed: %v\n", err)
+		return exitOperational
+	}
+	return exitSuccess
 }
 
 func runNative(path string) int {

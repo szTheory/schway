@@ -1,0 +1,20 @@
+// Toggle the closed switch value.
+module examples.switch
+
+export {
+  type Switch
+  fn toggle
+}
+
+// No hidden default: adding a variant must break this match.
+data Switch =
+  | Off
+  | On
+
+fn toggle(state: Switch) -> Switch {
+  match state {
+    // Each arm is explicit evidence.
+    Off => On
+    On => Off
+  }
+}

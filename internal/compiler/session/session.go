@@ -20,6 +20,12 @@ type CheckResult struct {
 	Diagnostics []diagnostic.Diagnostic
 }
 
+type FormatResult struct {
+	Source      []byte
+	Canonical   []byte
+	Diagnostics []diagnostic.Diagnostic
+}
+
 type NativeResult struct {
 	CSource     string
 	Interpreter []interp.Execution
@@ -48,6 +54,19 @@ func Check(source []byte) CheckResult {
 	result.Program = checked.Program
 	result.Diagnostics = append(result.Diagnostics, checked.Diagnostics...)
 	return result
+}
+
+func Format(source []byte) FormatResult {
+	parsed := syntax.Parse(source)
+	return FormatResult{Source: append([]byte(nil), source...), Canonical: syntax.Format(parsed.Tree), Diagnostics: parsed.Diagnostics}
+}
+
+func FormatFile(path string) (FormatResult, error) {
+	source, err := os.ReadFile(path)
+	if err != nil {
+		return FormatResult{}, err
+	}
+	return Format(source), nil
 }
 
 func CheckFile(path string) (CheckResult, error) {
