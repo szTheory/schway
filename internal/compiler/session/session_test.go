@@ -367,7 +367,7 @@ func TestNativeToggleO0O3(t *testing.T) {
 	if len(result.O0.Pairs) != 2 || len(result.O3.Pairs) != 2 {
 		t.Fatalf("unexpected native results: O0=%+v O3=%+v", result.O0, result.O3)
 	}
-	if !strings.Contains(result.CSource, "typedef enum LANG_SWITCH") || !strings.Contains(result.CSource, "switch (LANG_STATE)") {
+	if !strings.Contains(result.CSource, "typedef enum LANG_TYPE_0") || !strings.Contains(result.CSource, "switch (lang_place_0)") {
 		t.Fatalf("generated C is not reviewable S1 lowering:\n%s", result.CSource)
 	}
 }
@@ -377,6 +377,7 @@ func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
 		"module collision.locals\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let α = code\n  let β = code\n  let __1 = code\n  __1\n}\n",
 		"module collision.shadow\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let value = code\n  let value = code\n  value\n}\n",
 		"module collision.variants\nexport { type Thing fn thing }\ndata Thing = | a | A | A_1\nfn thing(value: Thing) -> Thing {\n  match value {\n    a => A\n    A => A_1\n    A_1 => a\n  }\n}\n",
+		"module collision.cross_category\nexport { type Thing fn thing_LANG_THING }\ndata Thing = | thing | other\nfn thing_LANG_THING(value: Thing) -> Thing {\n  match value {\n    thing => other\n    other => thing\n  }\n}\n",
 	}
 	for _, source := range tests {
 		result, diagnostics, err := session.RunNative(context.Background(), []byte(source), native.DefaultRunner())
@@ -408,7 +409,7 @@ func TestOwnedTransferInterpreterNative(t *testing.T) {
 	if !bytes.Equal([]byte(result.CSource), golden) {
 		t.Fatalf("owned C golden changed:\n%s", result.CSource)
 	}
-	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_value_delivered)"} {
+	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_place_1)"} {
 		if !strings.Contains(result.CSource, required) {
 			t.Fatalf("owned C does not derive execution from runtime state at %q:\n%s", required, result.CSource)
 		}

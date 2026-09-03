@@ -18,13 +18,13 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 		{
 			name:     "Buffer move",
 			source:   "module owned.transfer\nexport { fn relay }\nfn relay(buffer: Buffer) -> Buffer {\n  let delivered = take buffer\n  delivered\n}\n",
-			outcome:  "lang_write_buffer_hex(&lang_value_delivered)",
+			outcome:  "lang_write_buffer_hex(&lang_place_1)",
 			transfer: "lang_record_event(\"value.transferred\"",
 		},
 		{
 			name:     "Byte copy",
 			source:   "module owned.copy\nexport { fn retain }\nfn retain(code: Byte) -> Byte {\n  let kept = code\n  kept\n}\n",
-			outcome:  "lang_write_byte(lang_value_kept)",
+			outcome:  "lang_write_byte(lang_place_1)",
 			transfer: "lang_record_event(\"value.copied\"",
 		},
 	}

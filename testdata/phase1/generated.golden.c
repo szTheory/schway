@@ -2,35 +2,35 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef enum LANG_SWITCH {
-  LANG_SWITCH_LANG_OFF = 0,
-  LANG_SWITCH_LANG_ON = 1,
-} LANG_SWITCH;
+typedef enum LANG_TYPE_0 {
+  LANG_ALTERNATIVE_0 = 0,
+  LANG_ALTERNATIVE_1 = 1,
+} LANG_TYPE_0;
 
-static LANG_SWITCH LANG_TOGGLE(LANG_SWITCH LANG_STATE) {
-  switch (LANG_STATE) {
-    case LANG_SWITCH_LANG_OFF: return LANG_SWITCH_LANG_ON;
-    case LANG_SWITCH_LANG_ON: return LANG_SWITCH_LANG_OFF;
+static LANG_TYPE_0 lang_function_0(LANG_TYPE_0 lang_place_0) {
+  switch (lang_place_0) {
+    case LANG_ALTERNATIVE_0: return LANG_ALTERNATIVE_1;
+    case LANG_ALTERNATIVE_1: return LANG_ALTERNATIVE_0;
   }
   return (int)255; /* invalid safe-language tag: fail in main */
 }
 
-static const char *LANG_SWITCH_name(LANG_SWITCH value) {
+static const char *lang_type_0_name(LANG_TYPE_0 value) {
   switch (value) {
-    case LANG_SWITCH_LANG_OFF: return "Off";
-    case LANG_SWITCH_LANG_ON: return "On";
+    case LANG_ALTERNATIVE_0: return "Off";
+    case LANG_ALTERNATIVE_1: return "On";
   }
   return NULL;
 }
 
 int main(int argc, char **argv) {
   if (argc != 2) return 64;
-  LANG_SWITCH input;
-  if (strcmp(argv[1], "Off") == 0) input = LANG_SWITCH_LANG_OFF;
-  else if (strcmp(argv[1], "On") == 0) input = LANG_SWITCH_LANG_ON;
+  LANG_TYPE_0 input;
+  if (strcmp(argv[1], "Off") == 0) input = LANG_ALTERNATIVE_0;
+  else if (strcmp(argv[1], "On") == 0) input = LANG_ALTERNATIVE_1;
   else return 65;
-  LANG_SWITCH output = LANG_TOGGLE(input);
-  const char *name = LANG_SWITCH_name(output);
+  LANG_TYPE_0 output = lang_function_0(input);
+  const char *name = lang_type_0_name(output);
   if (name == NULL) return 70;
   printf("%s\n", name);
   return 0;
