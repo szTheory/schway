@@ -311,11 +311,30 @@ func uniqueCNames(sourceNames []string, base func(string) string) []string {
 	for _, name := range sourceNames {
 		counts[base(name)]++
 	}
+	used := make(map[string]struct{}, len(sourceNames))
+	// Reserve every already-unique spelling first so collision suffixes can
+	// never steal a name that a later source identifier owns.
+	for _, name := range sourceNames {
+		candidate := base(name)
+		if counts[candidate] == 1 {
+			used[candidate] = struct{}{}
+		}
+	}
 	result := make([]string, len(sourceNames))
 	for index, name := range sourceNames {
-		result[index] = base(name)
-		if counts[result[index]] > 1 {
-			result[index] += "_" + strconv.Itoa(index)
+		candidate := base(name)
+		if counts[candidate] == 1 {
+			result[index] = candidate
+			continue
+		}
+		candidate += "_" + strconv.Itoa(index)
+		for suffix := 0; ; suffix++ {
+			if _, exists := used[candidate]; !exists {
+				used[candidate] = struct{}{}
+				result[index] = candidate
+				break
+			}
+			candidate = base(name) + "_" + strconv.Itoa(index) + "_" + strconv.Itoa(suffix)
 		}
 	}
 	return result

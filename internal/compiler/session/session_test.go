@@ -374,9 +374,9 @@ func TestNativeToggleO0O3(t *testing.T) {
 
 func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
 	tests := []string{
-		"module collision.locals\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let α = code\n  let β = code\n  β\n}\n",
+		"module collision.locals\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let α = code\n  let β = code\n  let __1 = code\n  __1\n}\n",
 		"module collision.shadow\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let value = code\n  let value = code\n  value\n}\n",
-		"module collision.variants\nexport { type Thing fn thing }\ndata Thing = | a | A\nfn thing(value: Thing) -> Thing {\n  match value {\n    a => A\n    A => a\n  }\n}\n",
+		"module collision.variants\nexport { type Thing fn thing }\ndata Thing = | a | A | A_1\nfn thing(value: Thing) -> Thing {\n  match value {\n    a => A\n    A => A_1\n    A_1 => a\n  }\n}\n",
 	}
 	for _, source := range tests {
 		result, diagnostics, err := session.RunNative(context.Background(), []byte(source), native.DefaultRunner())
