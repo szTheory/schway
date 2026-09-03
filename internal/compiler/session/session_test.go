@@ -1,6 +1,8 @@
 package session_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -37,5 +39,25 @@ func TestCLIToggleTracer(t *testing.T) {
 	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
 	if err != nil || len(result.Diagnostics) != 0 {
 		t.Fatalf("check tracer failed: err=%v diagnostics=%+v", err, result.Diagnostics)
+	}
+}
+
+func TestInterpreterDeterministic(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	first, diagnostics, err := session.RunInterpreterFile(path)
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("first run failed: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	second, diagnostics, err := session.RunInterpreterFile(path)
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("second run failed: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	firstBytes, _ := json.Marshal(first)
+	secondBytes, _ := json.Marshal(second)
+	if !bytes.Equal(firstBytes, secondBytes) {
+		t.Fatalf("nondeterministic executions:\n%s\n%s", firstBytes, secondBytes)
+	}
+	if len(first) != 2 || first[0].Outcome.Value != "On" || first[1].Outcome.Value != "Off" {
+		t.Fatalf("unexpected toggle executions: %+v", first)
 	}
 }
