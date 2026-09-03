@@ -70,12 +70,23 @@ func TestPairAllAbilityMasks(t *testing.T) {
 			}
 		}
 	}
+	firstChildLaw := true
+	unionLaw := true
+	forwardImplicationLaw := true
+	reverseImplicationLaw := true
 	for _, pair := range [][2]int{{1, 0}, {0, 1}, {5, 18}, {18, 5}} {
 		got := observedMask(combineStructural([]abilitySet{fabricatedSet(pair[0]), fabricatedSet(pair[1])}))
 		want := pair[0] & pair[1]
-		if got != want || got == pair[0] || got == pair[0]|pair[1] {
-			t.Fatalf("asymmetric masks failed to exclude first-child/union: left=%05b right=%05b got=%05b", pair[0], pair[1], got)
+		if got != want {
+			t.Fatalf("asymmetric conjunction mismatch: left=%05b right=%05b got=%05b want=%05b", pair[0], pair[1], got, want)
 		}
+		firstChildLaw = firstChildLaw && got == pair[0]
+		unionLaw = unionLaw && got == pair[0]|pair[1]
+		forwardImplicationLaw = forwardImplicationLaw && got == (^pair[0]|pair[1])&31
+		reverseImplicationLaw = reverseImplicationLaw && got == (^pair[1]|pair[0])&31
+	}
+	if firstChildLaw || unionLaw || forwardImplicationLaw || reverseImplicationLaw {
+		t.Fatalf("asymmetric cases did not distinguish structural conjunction: first=%t union=%t forward-implication=%t reverse-implication=%t", firstChildLaw, unionLaw, forwardImplicationLaw, reverseImplicationLaw)
 	}
 }
 
