@@ -21,10 +21,10 @@ hiding runtime costs.
 
 ### Canonical source and frontend
 
-- [ ] **SYN-01**: A contributor can parse and canonically format modules,
-  explicit exports/imports, nominal records/variants, functions with named
-  parameters, immutable/mutable bindings, calls, blocks, `if`, exhaustive
-  `match`, and `Result` propagation used by the milestone corpus.
+- [ ] **SYN-01**: A contributor can parse and canonically format the Phase 1
+  subset: a module, explicit export block, closed nominal variants, functions
+  with named parameters, immutable bindings, calls, blocks, and exhaustive
+  `match`; later phases add only the syntax demanded by their vertical slice.
 - [ ] **SYN-02**: Parse → format → parse preserves the semantic tree, formatting
   is idempotent, and comments remain stably attached.
 - [ ] **SYN-03**: Malformed delimiters, matches, signatures, and ownership forms
