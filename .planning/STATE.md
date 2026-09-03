@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 current_phase: 02
 current_phase_name: Owned Values and Abilities
-status: verifying
-stopped_at: Completed 02-07-PLAN.md; awaiting independent phase re-verification
-last_updated: "2026-09-03T22:14:53Z"
+status: paused
+stopped_at: Compatibility fix cbba405 is locally green; rerun independent Phase 02 review/verification/security before completion
+last_updated: "2026-09-03T23:36:27Z"
 last_activity: 2026-09-03
-last_activity_desc: Closed Phase 02 native-causality gap in Plan 07; awaiting independent re-verification
-state_head: 0cf3565
+last_activity_desc: Preserved frozen goldens while retaining collision-safe C naming; prepared cross-session handoff
+state_head: cbba405
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,8 +31,8 @@ hiding runtime costs.
 
 Phase: 02 (Owned Values and Abilities) — VERIFYING
 Plan: 7 of 7
-Status: Gap-closure plan executed; awaiting independent phase re-verification
-Last activity: 2026-09-03 — Closed native runtime-causality gap with real O0/O3 mutation evidence
+Status: Paused after post-review compatibility closure; final independent gates remain
+Last activity: 2026-09-03 — Restored byte-identical Phase 1/2 goldens while retaining collision-only C-name disambiguation
 
 Progress: ██████████ [██░░░░░░░░] 17%
 
@@ -93,6 +93,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 02]: The bounded phase gate runs shared test/race/vet work once and reports five 20-sample warm distributions without ratifying an SLO.
 - [Phase 02]: Generated linear C records executed operation events and serializes the returned runtime place through one counted 64 KiB output layer.
 - [Phase 02]: The exact-one owned backend mutation must run at O0 and O3 and produce semantic mismatch exit 4 before control:backend.runtime_causality is admitted.
+- [Phase 02]: Generated C uses one global ordinary-identifier allocator that preserves legacy source-derived names when unique and adds deterministic category/ordinal suffixes only for actual collisions.
+- [Phase 02]: Compiler-spawned tool identity probes have independent 64 KiB-plus-one stdout/stderr bounds and five-second deadlines.
 
 ### Pending Todos
 
@@ -100,6 +102,7 @@ None yet.
 
 ### Blockers/Concerns
 
+- Phase 02's last independent verification report predates `cbba405` and intentionally remains `gaps_found`; rerun all final gates before marking the phase complete.
 - Baseline machines for ratified feedback budgets remain to be chosen before Phase 6.
 
 ### Roadmap Evolution
@@ -115,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-03T22:14:53Z
-Stopped at: Completed 02-07-PLAN.md; awaiting independent phase re-verification
-Resume file: None
+Last session: 2026-09-03T23:36:27Z
+Stopped at: `cbba405` passes all local gates; final independent gates and artifact commit remain
+Resume file: .planning/phases/02-owned-values-and-abilities/.continue-here.md
