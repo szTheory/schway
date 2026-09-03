@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
@@ -61,6 +62,7 @@ type NativeRunner interface {
 // the execution document is causally derived from the C runtime state.
 type OwnedBackendMutationRunner struct {
 	runner        native.Runner
+	mu            sync.Mutex
 	optimizations []string
 }
 
@@ -74,11 +76,15 @@ func (r *OwnedBackendMutationRunner) Run(ctx context.Context, cSource, optimizat
 	if strings.Count(cSource, site) != 1 {
 		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("owned transfer mutation site count is %d, want 1", strings.Count(cSource, site))}
 	}
+	r.mu.Lock()
 	r.optimizations = append(r.optimizations, optimization)
+	r.mu.Unlock()
 	return r.runner.Run(ctx, strings.Replace(cSource, site, mutation, 1), optimization, inputs)
 }
 
 func (r *OwnedBackendMutationRunner) Optimizations() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	return append([]string(nil), r.optimizations...)
 }
 

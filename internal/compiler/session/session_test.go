@@ -16,6 +16,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/execution"
@@ -493,6 +494,32 @@ func TestOwnedBackendMutationIsMismatch(t *testing.T) {
 	}
 	if got, want := runner.Optimizations(), []string{"-O0", "-O3"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("causal backend mutation optimizations=%v want=%v", got, want)
+	}
+}
+
+func TestOwnedBackendMutationRunnerConcurrentUse(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := session.NewOwnedBackendMutationRunner(native.DefaultRunner())
+	var group sync.WaitGroup
+	for index := 0; index < 4; index++ {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			_, _ = runner.Run(context.Background(), generated, "-O0", []string{"01020304"})
+			_ = runner.Optimizations()
+		}()
+	}
+	group.Wait()
+	if len(runner.Optimizations()) != 4 {
+		t.Fatalf("recorded optimizations=%v", runner.Optimizations())
 	}
 }
 
