@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
@@ -51,6 +52,33 @@ type EngineMismatch struct {
 
 type NativeRunner interface {
 	Run(context.Context, string, string, []string) (native.Result, error)
+}
+
+// OwnedBackendMutationRunner is a fail-closed verification seam around the
+// production native runner. It corrupts exactly one generated owned-transfer
+// value site before compiling the program, so a passing differential proves
+// the execution document is causally derived from the C runtime state.
+type OwnedBackendMutationRunner struct {
+	runner        native.Runner
+	optimizations []string
+}
+
+func NewOwnedBackendMutationRunner(runner native.Runner) *OwnedBackendMutationRunner {
+	return &OwnedBackendMutationRunner{runner: runner}
+}
+
+func (r *OwnedBackendMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
+	const site = "  LANG_BUFFER lang_value_delivered = lang_value_buffer; /* authority transfer: s1:owned.transfer:fn:relay:op:0 */\n"
+	const mutation = site + "  lang_value_delivered.bytes[0] ^= 0xffu; /* control: backend runtime causality */\n"
+	if strings.Count(cSource, site) != 1 {
+		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("owned transfer mutation site count is %d, want 1", strings.Count(cSource, site))}
+	}
+	r.optimizations = append(r.optimizations, optimization)
+	return r.runner.Run(ctx, strings.Replace(cSource, site, mutation, 1), optimization, inputs)
+}
+
+func (r *OwnedBackendMutationRunner) Optimizations() []string {
+	return append([]string(nil), r.optimizations...)
 }
 
 func (e *EngineMismatch) Error() string {
@@ -578,6 +606,25 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 	addLane("lane:owned-native-differential", []string{"control:interpreter-o0-o3-owned"}, len(nativeResult.Interpreter)*3, nativeResult.O0.OutputBytes+nativeResult.O3.OutputBytes, laneStarted)
 
 	laneStarted = time.Now()
+	mutationRunner := NewOwnedBackendMutationRunner(runner)
+	_, mutationDiagnostics, mutationErr := RunNative(ctx, validSource, mutationRunner)
+	var mutationMismatch *EngineMismatch
+	if len(mutationDiagnostics) != 0 {
+		return fail(protocol.StatusInvalid, "verify.control_invalid", "backend causality control produced source diagnostics")
+	}
+	if !errors.As(mutationErr, &mutationMismatch) {
+		var toolError *native.ToolError
+		if errors.As(mutationErr, &toolError) {
+			return fail(protocol.StatusOperational, toolError.Code, "backend causality control could not execute")
+		}
+		return fail(protocol.StatusMismatch, "verify.control_missing", "backend value mutation did not cause an engine mismatch")
+	}
+	if !reflect.DeepEqual(mutationRunner.Optimizations(), []string{"-O0", "-O3"}) {
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "backend causality control did not execute both optimization modes")
+	}
+	addLane("lane:owned-backend-causality", []string{"control:backend.runtime_causality"}, len(mutationRunner.Optimizations()), 0, laneStarted)
+
+	laneStarted = time.Now()
 	facts, err := evidence.DefaultFacts(ctx, runner.ClangPath)
 	if err != nil {
 		return fail(protocol.StatusOperational, "evidence.tool_failure", "unable to inspect native toolchain")
@@ -594,6 +641,21 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 	addLane("lane:owned-evidence-bindings", []string{"control:evidence.core_mismatch"}, 2, len(product.ManifestBytes), laneStarted)
 	result.Evidence = &protocol.EvidenceSummary{Schema: product.Manifest.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
 
+	requiredControls := []string{
+		"control:ownership.use_after_move",
+		"control:ownership.move_while_borrowed",
+		"control:ownership.transfer_requires_take",
+		"control:ability.forged_copy",
+		"control:core.duplicate_operation_id",
+		"control:interpreter-o0-o3-owned",
+		"control:evidence.core_mismatch",
+		"control:backend.runtime_causality",
+	}
+	for _, required := range requiredControls {
+		if !hasControl(result.Lanes, required) {
+			return fail(protocol.StatusInvalid, "verify.control_missing", required)
+		}
+	}
 	for _, lane := range result.Lanes {
 		if lane.RecomputedWork == 0 {
 			return fail(protocol.StatusInvalid, "verify.zero_work", lane.ID)

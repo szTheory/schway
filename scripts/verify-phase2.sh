@@ -5,13 +5,14 @@ verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/codename-lang-phase2.XXXXXX")
 trap 'rm -rf "$verify_tmp"' EXIT HUP INT TERM
 export GOCACHE="$verify_tmp/go-cache"
 
-sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestTogglePipeline TestVerifyPhase2ControlsAndWork
+sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestTogglePipeline TestOwnedBackendMutationIsMismatch TestVerifyPhase2ControlsAndWork
 go test ./...
 go test -race ./...
 go vet ./...
 go build -o "$verify_tmp/lang" ./cmd/lang
 "$verify_tmp/lang" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
 "$verify_tmp/lang" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
+grep -q 'control:backend.runtime_causality' "$verify_tmp/phase2.json" || { echo "phase2 verify: backend runtime causality control missing" >&2; exit 1; }
 
 observe() {
 	name=$1
