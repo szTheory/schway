@@ -61,6 +61,38 @@ func TestNativeNeverUsesCombinedOutput(t *testing.T) {
 	}
 }
 
+func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
+	valid, err := execution.CanonicalBytes(execution.Execution{
+		Schema:  execution.Schema1,
+		Outcome: execution.Outcome{Kind: "returned", Value: "01020304"},
+		Events:  []execution.Event{}, LiveResources: []string{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name string
+		data []byte
+		code string
+	}{
+		{name: "unknown field", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[],"unknown":true}`), code: "native.invalid_execution"},
+		{name: "duplicate document", data: append(append([]byte{}, valid...), valid...), code: "native.trailing_execution"},
+		{name: "trailing value", data: append(append([]byte{}, valid...), []byte(` true`)...), code: "native.trailing_execution"},
+		{name: "malformed", data: []byte(`{"schema":`), code: "native.invalid_execution"},
+		{name: "truncated", data: append([]byte{}, valid[:len(valid)-1]...), code: "native.invalid_execution"},
+		{name: "oversized", data: append(append([]byte{}, valid...), []byte(strings.Repeat(" ", MaxStreamBytes))...), code: "native.run_stdout_truncated"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, decodeErr := decodeExecution(test.data)
+			var toolError *ToolError
+			if !errors.As(decodeErr, &toolError) || toolError.Code != test.code {
+				t.Fatalf("code=%v want=%s err=%v", toolError, test.code, decodeErr)
+			}
+		})
+	}
+}
+
 func TestNativeToolFailureIsOperational(t *testing.T) {
 	_, err := Runner{ClangPath: filepath.Join(t.TempDir(), "missing-clang")}.Run(
 		context.Background(), "int main(void) { return 0; }", "-O0", []string{"input"},

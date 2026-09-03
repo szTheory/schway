@@ -385,6 +385,104 @@ func TestOwnedTransferInterpreterNative(t *testing.T) {
 	}
 }
 
+type fakeNativeRunner struct {
+	results []native.Result
+	err     error
+	calls   int
+}
+
+func (runner *fakeNativeRunner) Run(_ context.Context, _ string, _ string, _ []string) (native.Result, error) {
+	if runner.err != nil {
+		return native.Result{}, runner.err
+	}
+	result := runner.results[runner.calls]
+	runner.calls++
+	return result, nil
+}
+
+func TestOwnedEventReorderIsMismatch(t *testing.T) {
+	expected := ownedInterpreterExecution(t)
+	mutated := cloneExecution(t, expected)
+	mutated.Events[0], mutated.Events[1] = mutated.Events[1], mutated.Events[0]
+	assertOwnedMismatch(t, expected, mutated)
+}
+
+func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
+	expected := ownedInterpreterExecution(t)
+	tests := []struct {
+		name   string
+		mutate func(*execution.Execution)
+	}{
+		{name: "schema", mutate: func(value *execution.Execution) { value.Schema = execution.Schema0 }},
+		{name: "outcome kind", mutate: func(value *execution.Execution) { value.Outcome.Kind = "other" }},
+		{name: "outcome value", mutate: func(value *execution.Execution) { value.Outcome.Value = "other" }},
+		{name: "event schema", mutate: func(value *execution.Execution) { value.Events[0].Schema = execution.Schema0 }},
+		{name: "event id", mutate: func(value *execution.Execution) { value.Events[0].ID = "other" }},
+		{name: "event kind", mutate: func(value *execution.Execution) { value.Events[0].Kind = "other" }},
+		{name: "function id", mutate: func(value *execution.Execution) { value.Events[0].FunctionID = "other" }},
+		{name: "input", mutate: func(value *execution.Execution) { value.Events[0].Input = "physical-input" }},
+		{name: "output", mutate: func(value *execution.Execution) { value.Events[0].Output = "physical-output" }},
+		{name: "source place", mutate: func(value *execution.Execution) { value.Events[0].SourcePlace = "other" }},
+		{name: "target place", mutate: func(value *execution.Execution) { value.Events[0].TargetPlace = "other" }},
+		{name: "type id", mutate: func(value *execution.Execution) { value.Events[0].TypeID = "other" }},
+		{name: "live resources", mutate: func(value *execution.Execution) { value.LiveResources = []string{"resource:other"} }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mutated := cloneExecution(t, expected)
+			test.mutate(&mutated)
+			assertOwnedMismatch(t, expected, mutated)
+		})
+	}
+}
+
+func ownedInterpreterExecution(t *testing.T) execution.Execution {
+	t.Helper()
+	values, diagnostics, err := session.RunInterpreterFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	if err != nil || len(diagnostics) != 0 || len(values) != 1 {
+		t.Fatalf("owned interpreter setup failed: values=%+v diagnostics=%+v err=%v", values, diagnostics, err)
+	}
+	return values[0]
+}
+
+func cloneExecution(t *testing.T, value execution.Execution) execution.Execution {
+	t.Helper()
+	encoded, err := execution.CanonicalBytes(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cloned execution.Execution
+	if err := json.Unmarshal(encoded, &cloned); err != nil {
+		t.Fatal(err)
+	}
+	return cloned
+}
+
+func assertOwnedMismatch(t *testing.T, expected, mutated execution.Execution) {
+	t.Helper()
+	runner := &fakeNativeRunner{results: []native.Result{
+		{Optimization: "-O0", Pairs: []native.Pair{{Input: "01020304", Execution: expected}}},
+		{Optimization: "-O3", Pairs: []native.Pair{{Input: "01020304", Execution: mutated}}},
+	}}
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	_, diagnostics, err := session.RunNativeFile(context.Background(), path, runner)
+	if len(diagnostics) != 0 {
+		t.Fatalf("semantic drift became source diagnostics: %+v", diagnostics)
+	}
+	var mismatch *session.EngineMismatch
+	if !errors.As(err, &mismatch) {
+		t.Fatalf("semantic drift was not an engine mismatch: %T %v", err, err)
+	}
+	commandRunner := &fakeNativeRunner{results: []native.Result{
+		{Optimization: "-O0", Pairs: []native.Pair{{Input: "01020304", Execution: expected}}},
+		{Optimization: "-O3", Pairs: []native.Pair{{Input: "01020304", Execution: mutated}}},
+	}}
+	result, commandErr := session.RunNativeCommandFile(context.Background(), path, commandRunner)
+	if commandErr != nil || result.Status != protocol.StatusMismatch || protocol.ExitCode(result.Status) != 4 || result.Diagnostics[0].Code != "native.engine_mismatch" {
+		t.Fatalf("semantic mismatch classification changed: result=%+v err=%v", result, commandErr)
+	}
+}
+
 func TestNativeToolFailureIsOperational(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
 	_, diagnostics, err := session.RunNativeFile(context.Background(), path, native.Runner{ClangPath: testsupport.ProjectPath("missing-clang")})
