@@ -82,6 +82,13 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		{name: "malformed", data: []byte(`{"schema":`), code: "native.invalid_execution"},
 		{name: "truncated", data: append([]byte{}, valid[:len(valid)-1]...), code: "native.invalid_execution"},
 		{name: "oversized", data: append(append([]byte{}, valid...), []byte(strings.Repeat(" ", MaxStreamBytes))...), code: "native.run_stdout_truncated"},
+		{name: "duplicate key", data: []byte(`{"schema":"lang.execution/1","schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown schema", data: []byte(`{"schema":"lang.execution/9","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown outcome", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"mystery","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "empty outcome", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":""},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown event", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"e","kind":"mystery","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "missing transition fields", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"e","kind":"value.copied","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "return before transition", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"r","kind":"function.returned","function_id":"f","source_place":"p","type_id":"t"},{"schema":"lang.execution/1","id":"e","kind":"value.copied","function_id":"f","source_place":"p","target_place":"q","type_id":"t"}],"live_resources":[]}`), code: "native.invalid_execution"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

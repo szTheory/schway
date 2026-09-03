@@ -169,6 +169,9 @@ func decodeExecution(stdout []byte) (execution.Execution, error) {
 	if len(stdout) > MaxStreamBytes {
 		return execution.Execution{}, streamError("native.run_stdout_truncated")
 	}
+	if err := rejectDuplicateJSONKeys(stdout); err != nil {
+		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: err}
+	}
 	var value execution.Execution
 	decoder := json.NewDecoder(bytes.NewReader(stdout))
 	decoder.DisallowUnknownFields()
@@ -182,15 +185,100 @@ func decodeExecution(stdout []byte) (execution.Execution, error) {
 		}
 		return execution.Execution{}, &ToolError{Code: "native.trailing_execution", Err: err}
 	}
-	if value.Schema == "" || value.Outcome.Kind == "" || value.Events == nil || value.LiveResources == nil {
-		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: errors.New("execution document omits required fields")}
-	}
-	for _, event := range value.Events {
-		if event.Schema == "" || event.ID == "" || event.Kind == "" || event.FunctionID == "" {
-			return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: errors.New("execution event omits required fields")}
-		}
+	if err := validateExecution(value); err != nil {
+		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: err}
 	}
 	return value, nil
+}
+
+func rejectDuplicateJSONKeys(data []byte) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var scan func() error
+	scan = func() error {
+		token, err := decoder.Token()
+		if err != nil {
+			return err
+		}
+		delimiter, ok := token.(json.Delim)
+		if !ok {
+			return nil
+		}
+		switch delimiter {
+		case '{':
+			seen := make(map[string]struct{})
+			for decoder.More() {
+				keyToken, keyErr := decoder.Token()
+				if keyErr != nil {
+					return keyErr
+				}
+				key, ok := keyToken.(string)
+				if !ok {
+					return errors.New("object key is not a string")
+				}
+				if _, duplicate := seen[key]; duplicate {
+					return fmt.Errorf("duplicate JSON key %q", key)
+				}
+				seen[key] = struct{}{}
+				if err := scan(); err != nil {
+					return err
+				}
+			}
+			_, err = decoder.Token()
+			return err
+		case '[':
+			for decoder.More() {
+				if err := scan(); err != nil {
+					return err
+				}
+			}
+			_, err = decoder.Token()
+			return err
+		default:
+			return errors.New("unexpected JSON delimiter")
+		}
+	}
+	return scan()
+}
+
+func validateExecution(value execution.Execution) error {
+	if value.Schema != execution.Schema0 && value.Schema != execution.Schema1 {
+		return errors.New("unsupported execution schema")
+	}
+	if value.Outcome.Kind != "returned" || value.Outcome.Value == "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 || len(value.LiveResources) != 0 {
+		return errors.New("execution document violates required contract")
+	}
+	seenIDs := make(map[string]struct{}, len(value.Events))
+	functionID := value.Events[0].FunctionID
+	for index, event := range value.Events {
+		if event.Schema != value.Schema || event.ID == "" || event.FunctionID == "" || event.FunctionID != functionID {
+			return errors.New("execution event identity or schema mismatch")
+		}
+		if _, duplicate := seenIDs[event.ID]; duplicate {
+			return errors.New("duplicate execution event id")
+		}
+		seenIDs[event.ID] = struct{}{}
+		isLast := index == len(value.Events)-1
+		switch event.Kind {
+		case "function.returned":
+			if !isLast || event.TargetPlace != "" {
+				return errors.New("return event must be last and have no target")
+			}
+			if value.Schema == execution.Schema0 {
+				if event.Input == "" || event.Output == "" || event.SourcePlace != "" || event.TypeID != "" {
+					return errors.New("match return event fields are invalid")
+				}
+			} else if event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+				return errors.New("linear return event fields are invalid")
+			}
+		case "value.copied", "value.transferred", "value.borrowed":
+			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+				return errors.New("linear transition event fields are invalid")
+			}
+		default:
+			return errors.New("unknown execution event kind")
+		}
+	}
+	return nil
 }
 
 func bounded(value string, limit int) string {
