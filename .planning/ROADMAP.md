@@ -60,7 +60,7 @@ native evidence, and finally the bounded agent/human feedback service.
 - [x] 02-02-PLAN.md
 - [x] 02-03-PLAN.md
 - [x] 02-04-PLAN.md
-- [ ] 02-05-PLAN.md
+- [x] 02-05-PLAN.md
 - [ ] 02-06-PLAN.md
 
 ### Phase 3: Borrowed Views and CFG Lifetimes
@@ -130,7 +130,7 @@ native evidence, and finally the bounded agent/human feedback service.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
-| 2. Owned Values and Abilities | 4/6 | In Progress|  |
+| 2. Owned Values and Abilities | 5/6 | In Progress|  |
 | 3. Borrowed Views and CFG Lifetimes | 0/TBD | Not started | - |
 | 4. Fallible Resources and C Boundary | 0/TBD | Not started | - |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |
