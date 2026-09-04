@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-current_phase: 02
-current_phase_name: Owned Values and Abilities
-status: paused
-stopped_at: Compatibility fix cbba405 is locally green; rerun independent Phase 02 review/verification/security before completion
-last_updated: "2026-09-03T23:36:27Z"
-last_activity: 2026-09-03
-last_activity_desc: Preserved frozen goldens while retaining collision-safe C naming; prepared cross-session handoff
-state_head: cbba405
+current_phase: 03
+current_phase_name: Borrowed Views and CFG Lifetimes
+status: phase_complete
+stopped_at: Phase 02 closed at 3399ddc with all gates green and nine debt items recorded; Phase 03 not yet planned
+last_updated: "2026-09-04T00:00:00Z"
+last_activity: 2026-09-04
+last_activity_desc: Closed Phase 02 after two further review waves fixed a formatter regression, a borrow ability gate, and non-transitive loan liveness
+state_head: 3399ddc
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
   completed_plans: 10
-  percent: 17
+  percent: 33
 ---
 
 # Project State
@@ -29,12 +29,12 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 02 (Owned Values and Abilities) — VERIFYING
+Phase: 02 (Owned Values and Abilities) — COMPLETE
 Plan: 7 of 7
-Status: Paused after post-review compatibility closure; final independent gates remain
-Last activity: 2026-09-03 — Restored byte-identical Phase 1/2 goldens while retaining collision-only C-name disambiguation
+Status: Closed 2026-09-04 at `3399ddc`; verified 14/14, SECURED, nyquist_compliant
+Last activity: 2026-09-04 — Fixed a formatter regression introduced by the previous fix wave and recorded nine accepted debt items
 
-Progress: ██████████ [██░░░░░░░░] 17%
+Progress: ██████████ [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -95,6 +95,10 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 02]: The exact-one owned backend mutation must run at O0 and O3 and produce semantic mismatch exit 4 before control:backend.runtime_causality is admitted.
 - [Phase 02]: Generated C uses one global ordinary-identifier allocator that preserves legacy source-derived names when unique and adds deterministic category/ordinal suffixes only for actual collisions.
 - [Phase 02]: Compiler-spawned tool identity probes have independent 64 KiB-plus-one stdout/stderr bounds and five-second deadlines.
+- [Phase 02]: `Buffer` grants `share` (OV-02-01), resolving a self-contradiction between the ability table and the shipped move-while-borrowed control fixture; `Buffer` remains noncopyable.
+- [Phase 02]: `borrow` is gated on `AbilityShare` in the checker as defence in depth; the gate is unreachable from source today and guarded by a self-invalidating enumeration test.
+- [Phase 02]: Loan liveness is transitive across reborrows and copies-of-loans in both admission layers, with the test oracle re-derived by fixed-point closure so it cannot mirror the production law.
+- [Phase 02]: The formatter classifies an opening brace by the declaration keyword that opened the line, and that classification survives a trailing comment.
 
 ### Pending Todos
 
@@ -102,8 +106,9 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 02's last independent verification report predates `cbba405` and intentionally remains `gaps_found`; rerun all final gates before marking the phase complete.
 - Baseline machines for ratified feedback budgets remain to be chosen before Phase 6.
+- Nine Phase 02 debt items are carried into Phase 3; see `.planning/phases/02-owned-values-and-abilities/02-DEBT.md`. Two are deadline-bearing: D-02-05 (`__LANG_` → `_LANG_` before any further C artifact is frozen) and D-02-03 (the Θ(N²) checker cost, which OWN-03's CFG liveness should remove anyway).
+- Process debt adopted as standing rules after three gate failures shared one shape — a green test whose reachable input space omitted the hard case: mutation-kill every differential, interrogate what inputs a property test actually reaches, and drive the shipped binary on hand-written programs rather than only the gate's own corpus.
 
 ### Roadmap Evolution
 
@@ -118,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-03T23:36:27Z
-Stopped at: `cbba405` passes all local gates; final independent gates and artifact commit remain
-Resume file: .planning/phases/02-owned-values-and-abilities/.continue-here.md
+Last session: 2026-09-04
+Stopped at: Phase 02 complete at `3399ddc`; Phase 03 discussion/planning not yet started
+Resume file: none — start Phase 03 with `/gsd-plan-phase 03`

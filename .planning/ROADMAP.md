@@ -15,7 +15,7 @@ native evidence, and finally the bounded agent/human feedback service.
 ## Phases
 
 - [x] **Phase 1: Canonical Pure Spine** - Format, check, interpret, and natively run one nominal ADT transformation end to end.
-- [ ] **Phase 2: Owned Values and Abilities** - Add affine transfer and independently derived type abilities across the same spine.
+- [x] **Phase 2: Owned Values and Abilities** - Add affine transfer and independently derived type abilities across the same spine.
 - [ ] **Phase 3: Borrowed Views and CFG Lifetimes** - Add shared/exclusive loans, edge-specific last use, and public borrow origins.
 - [ ] **Phase 4: Fallible Resources and C Boundary** - Prove partial cleanup and typed foreign obligations through a real C call.
 - [ ] **Phase 5: Native Equivalence and Adversarial Evidence** - Preserve semantics under optimization, sanitizers, and hostile mutations.
@@ -54,7 +54,7 @@ native evidence, and finally the bounded agent/human feedback service.
   2. Use after move and move during an active loan are rejected with stable cause chains and smallest repair choices.
   3. Copy, drop, share, send, and escape abilities derive independently through representative aggregate and generic shapes.
 
-**Plans**: 7/7 plans executed; independent phase re-verification pending
+**Plans**: 7/7 plans executed; verified 14/14 at `3399ddc` after seven review waves. Nine fail-closed controls; Phase 1 goldens byte-frozen. One accepted override (`02-OVERRIDES.md` OV-02-01: `Buffer` grants `share`); nine accepted debt items carried to Phase 3 (`02-DEBT.md`).
 
 - [x] 02-01-PLAN.md
 - [x] 02-02-PLAN.md
