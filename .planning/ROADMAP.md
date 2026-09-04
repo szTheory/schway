@@ -89,6 +89,45 @@ native evidence, and finally the bounded agent/human feedback service.
 - [ ] `03-06-PLAN.md` — public borrow origins, body-blind summary verification, and separate compilation
 - [ ] `03-07-PLAN.md` — bounded debug-lineage experiment, Phase 3 gate, and carried debt closure
 
+**Wave structure** (7 plans, 6 waves — two parallel tracks joining at the gate):
+
+| Wave | Plans | Track |
+|---|---|---|
+| 1 | 03-01 | shared groundwork: `_LANG_` rename, arm bodies, first CFG |
+| 2 | 03-02, **03-06** | OWN-03 chain starts; OWN-04 runs in parallel |
+| 3 | 03-03 | OWN-03 |
+| 4 | 03-04 | OWN-03 |
+| 5 | 03-05 | OWN-03 terminal — **mid-phase gate here** |
+| 6 | 03-07 | joins both tracks; carries the phase gate |
+
+**Decision (2026-09-04): one phase, with a mandatory mid-phase gate at wave 5.**
+The plan-checker recommended splitting at 03-01..05 (OWN-03) / 03-06..07 (OWN-04)
+to obtain an intermediate verify gate, citing Phase 2's compounding-wave-defect
+history. The split is not applied: 03-07 carries the gate for *both* tracks, so a
+clean split would require replanning 03-07, not relabeling it. The checker's actual
+concern — no verification between wave 1 and wave 7 — is closed instead by two
+changes that cost nothing structurally:
+
+1. **03-06 was re-pinned** from `depends_on: ["03-05"]` to `["03-01"]`, the
+   checker's own minimum remedy. OWN-04 touches none of the CFG/liveness/oracle
+   code, so it now runs as a parallel wave-2 track instead of serializing behind it.
+2. **A mid-phase gate is required after 03-05** — the OWN-03 terminal plan — and
+   before 03-07 assembles: run an independent code review and goal-backward
+   verification scoped to OWN-03 (criteria 1 and 2) on the wave-5 tree. Wave 6 does
+   not start until that gate is clean or its findings are recorded as dated debt.
+   This is the intermediate ship/verify point the split would have bought.
+
+**Cross-cutting constraints for every Phase 3 plan:**
+
+- OWN-03 is acyclic (branch-only) this phase; loop-carried liveness is Phase 4+.
+- `__LANG_` → `_LANG_` (D-02-05) lands as 03-01's first standalone commit, **before**
+  any new C artifact is frozen.
+- No `lang.core/2`. New core fields are additive and `omitempty`; Phase 1 and Phase 2
+  goldens stay byte-identical.
+- Any new `OperationKind` must be updated at **four** sites — `check`, `corevalidate`,
+  `interp`, `cgen` (D-12a). A missed site silently drops the operation from the trace
+  the O0/O3 differential compares.
+
 ### Phase 4: Fallible Resources and C Boundary
 
 **Goal**: A noncopyable resource crosses one audited C boundary while partial initialization, failure propagation, and cleanup remain defined.

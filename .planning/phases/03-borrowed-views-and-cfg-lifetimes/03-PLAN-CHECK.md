@@ -297,3 +297,19 @@ BLOCKER). The one finding worth the user's attention before executing all seven 
 structural: this phase is large enough, and its own dependency chain serializes enough
 independent work, that a two-phase split at the planner's own named cut is the safer path given
 Phase 2's documented compounding-wave-defect history.
+
+---
+
+## Resolution — 2026-09-04 (post-check, before execution)
+
+All three issues above are **closed in the plans**. This section is authoritative over the
+`issues` block; do not re-raise them.
+
+| Issue | Severity | Resolution |
+|---|---|---|
+| `scope_sanity` — 7-wave sequential chain, no intermediate gate | warning | **Not split.** 03-07 carries the gate for both tracks, so a clean split needs replanning, not relabeling. Answered instead by the checker's own minimum remedy plus one addition: 03-06 re-pinned `depends_on: ["03-05"] → ["03-01"]` (parallel wave-2 track), and a **mandatory mid-phase gate after 03-05** — independent review and goal-backward verification scoped to OWN-03, criteria 1 and 2, before wave 6 starts. Recorded in ROADMAP §Phase 3 and in 03-05's `<verification>`. |
+| `key_links_planned` — 03-06 Task 1 under-specifies the return discriminant and omits the S1 case | warning | 03-06 Task 1's action now names the discriminant explicitly (a `TypeRef` carrying a `borrow(path)` / `borrow mut(path)` origin annotation, resolved before `sameType` runs) and fences the S1 case: the `check.go:75` gate stays unconditional, a match-bodied borrowed return is out of scope this phase and is rejected with a named span-bearing cause rather than a bare `type.return_mismatch`. Added as a `must_haves` prohibition, a behavior line, a new required test (`TestMatchBodyBorrowedReturnRejectedWithCause`), and two `fails_when` clauses. |
+| `verification_derivation` — no exhaustive test for the new nominal-leaf ability mask | info | 03-01 Task 2 now requires `TestNominalLeafAbilityMaskIsExhaustive`, enumerating declared field-less nominal types across alternative counts and namings and asserting the five-of-five mask, with a `fails_when` clause that rejects a single-shape assertion. |
+
+Wave structure after the re-pin: 1 → `03-01`; 2 → `03-02` and `03-06` in parallel;
+3 → `03-03`; 4 → `03-04`; 5 → `03-05` (**mid-phase gate**); 6 → `03-07`.

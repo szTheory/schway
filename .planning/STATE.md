@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 current_phase: 3
 current_phase_name: Borrowed Views and CFG Lifetimes
 status: planned
-stopped_at: Phase 03 planned (7 plans, 6 waves), plan-check PASS_WITH_CONCERNS; ready to execute
+stopped_at: Phase 03 planned and reconciled (7 plans, 6 waves); plan-check gaps closed; ready to execute
 last_updated: "2026-09-04T01:50:25.190Z"
 last_activity: 2026-09-04
-last_activity_desc: Planned Phase 03 with research, pattern map, 7 plans and a validation strategy; re-pinned OWN-04 to a parallel track on the plan-checker's finding
+last_activity_desc: Planned Phase 03 (research, pattern map, 7 plans, validation strategy); re-pinned OWN-04 to a parallel wave-2 track, closed both plan-check gaps in the plans, resolved the phase-split recommendation as one phase plus a mandatory mid-phase gate at wave 5, and wrote the Phase 03 .continue-here.md
 state_head: 6e3ef81d84b7b1311b452eca5dd17c4acf302710
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 10
+  total_plans: 17
   completed_plans: 10
   percent: 33
 ---
@@ -25,14 +25,14 @@ See: .planning/PROJECT.md (updated 2026-09-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 02 — Owned Values and Abilities
+**Current focus:** Phase 03 — Borrowed Views and CFG Lifetimes
 
 ## Current Position
 
 Phase: 3 — Borrowed Views and CFG Lifetimes
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-03 — Phase 02 complete, transitioned to Phase 3
+Plan: 03-01 (wave 1) — not started
+Status: Planned; ready to execute
+Last activity: 2026-09-04 — Phase 03 planned and reconciled; start with `.planning/phases/03-borrowed-views-and-cfg-lifetimes/.continue-here.md`
 
 Progress: ██████████ [███░░░░░░░] 33%
 
@@ -40,7 +40,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 10
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -109,6 +109,9 @@ None yet.
 
 - Baseline machines for ratified feedback budgets remain to be chosen before Phase 6.
 - Nine Phase 02 debt items are carried into Phase 3; see `.planning/phases/02-owned-values-and-abilities/02-DEBT.md`. Two are deadline-bearing: D-02-05 (`__LANG_` → `_LANG_` before any further C artifact is frozen) and D-02-03 (the Θ(N²) checker cost, which OWN-03's CFG liveness should remove anyway).
+- Phase 3 stays one phase. The plan-checker's split recommendation is answered by a mandatory
+  mid-phase gate after wave 5 (03-05, the OWN-03 terminal) plus 03-06's re-pin to a parallel
+  wave-2 track. See ROADMAP §Phase 3, "Decision (2026-09-04)".
 - Process debt adopted as standing rules after three gate failures shared one shape — a green test whose reachable input space omitted the hard case: mutation-kill every differential, interrogate what inputs a property test actually reaches, and drive the shipped binary on hand-written programs rather than only the gate's own corpus.
 
 ### Roadmap Evolution
@@ -125,5 +128,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-09-04
-Stopped at: Phase 02 complete, ready to plan Phase 3
-Resume file: none — start Phase 03 with `/gsd-plan-phase 03`
+Stopped at: Phase 03 planned; no Phase 03 code written
+Resume file: `.planning/phases/03-borrowed-views-and-cfg-lifetimes/.continue-here.md` — then `/gsd-execute-phase 03`
