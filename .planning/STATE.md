@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Borrowed Views and CFG Lifetimes
 status: executing
-stopped_at: Completed 03-04-PLAN.md
-last_updated: "2026-09-04T05:18:30.521Z"
+stopped_at: Completed 03-05-PLAN.md (mid-phase gate)
+last_updated: "2026-09-04T05:48:52.732Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: 2a7230b681883088365a84e33bd703d93cb88723
+state_head: 68ed4f7d17a4f94ad397ef11262c9039548400cd
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 17
-  completed_plans: 15
+  completed_plans: 16
   percent: 33
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 03 execution started
 
@@ -68,6 +68,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 03 P06 | 70 min | 3 tasks | 17 files |
 | Phase 03 P03 | 100 min | 3 tasks | 6 files |
 | Phase 03 P04 | 95 min | 3 tasks | 7 files |
+| Phase 03 P05 | 95 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: [Phase 03-03]: The uniform-join fixture pair is built on 03-01's per-arm alias isolation, not a shared pre-branch loan; only ONE fixture flips under the seeded uniform-join fault, matching the plan frontmatter's must_haves claim over the task prose's stronger 'both flip' claim.
 - [Phase 03]: [Phase 03-04]: corevalidate.recomputeLoanEndpoints independently re-derives loan endpoints via a reachability closure + reduction, never check.go's iterative worklist fixpoint.
 - [Phase 03]: [Phase 03-04]: loanChainIndex replaces both replayStraightLine and replayBlocks' O(n)-per-operation loansForPlace copy-and-rescan with a memoized, cycle-safe parent-pointer chain; LinearWorkLimit moves to 16*facts+14.
+- [Phase 03]: [Phase 03-05]: discoverLoanLastUses (Phase 2, unchanged) is the sole law deciding admission in both checkLinear and checkBranch; loanLivenessFixpoint only produces the decorative LoanEndpoint facts checkBranch reports, never gating accept/reject.
+- [Phase 03]: [Phase 03-05]: Mid-phase gate closed clean with two non-blocking debt items recorded in 03-DEBT.md (D-03-01: discoverLoanLastUses' own quadratic work stays uncounted; D-03-02: an exported borrow-derived return with no declared origin exports as if fully owned).
 
 ### Pending Todos
 
@@ -132,6 +135,7 @@ None yet.
 - Process debt adopted as standing rules after three gate failures shared one shape — a green test whose reachable input space omitted the hard case: mutation-kill every differential, interrogate what inputs a property test actually reaches, and drive the shipped binary on hand-written programs rather than only the gate's own corpus.
 - 03-03 flagged three documented deviations (straight-line scope, fixture-pair interpretation, single-fixture-flip) for human review before 03-04/03-05 build further on core.LoanEndpoint's current arm-block-only population.
 - [Phase 03-04] carried forward from 03-03, unresolved: checkLinear/analyzeStraightLine still use the old discoverLoanLastUses liveness law, not checkBranch's new backward worklist -- two liveness derivations coexist in the checker; 03-05 is the phase's designated gate for adjudicating this.
+- [Phase 03-05] Two mid-phase-gate debt items recorded in 03-DEBT.md, non-blocking: D-03-01 (D-05/D-02-03's quadratic-cost fix never reached the admission-deciding code path) and D-03-02 (an exported borrow-derived return with no declared origin exports indistinguishable from a fully-owned return). Both should be closed before Phase 4 introduces cross-function calls.
 
 ### Roadmap Evolution
 
@@ -146,6 +150,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T05:18:18.015Z
-Stopped at: Completed 03-04-PLAN.md
+Last session: 2026-09-04T05:48:46.923Z
+Stopped at: Completed 03-05-PLAN.md (mid-phase gate)
 Resume file: None
