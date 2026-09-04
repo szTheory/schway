@@ -224,6 +224,17 @@ func ValidatePublished(program core.Program) []Problem {
 			}
 			continue
 		}
+		// Declared-access domain check (Task 03-10-02): a declared Access
+		// outside {"shared", "exclusive"} is refused BEFORE any comparison
+		// with the recomputed answer, so a mutated summary cannot declare
+		// AccessConflicting and have it match a genuinely conflicting
+		// recomputation.
+		if function.PublicOrigin.Access != "shared" && function.PublicOrigin.Access != "exclusive" {
+			return []Problem{{
+				Code:   "core.origin_access_mismatch",
+				Detail: fmt.Sprintf("%s: declared access %q is not a declarable mode", function.ID, function.PublicOrigin.Access),
+			}}
+		}
 		if !ok || !containsAll(function.PublicOrigin.Paths, recomputedPaths) {
 			return []Problem{{
 				Code:   "core.origin_understated",
