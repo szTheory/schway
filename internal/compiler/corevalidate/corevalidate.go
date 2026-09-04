@@ -379,7 +379,10 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int) (bool,
 		if len(shape.Arguments) != 0 {
 			return false, nil, false
 		}
-		if requested == core.AbilityCopy || requested == core.AbilityShare {
+		// Buffer denies only copy: a shared loan observes without duplicating
+		// ownership, so share is granted. Derived independently of the
+		// ability package's structural combiner.
+		if requested == core.AbilityCopy {
 			return false, []string{"Buffer"}, true
 		}
 		return true, nil, true

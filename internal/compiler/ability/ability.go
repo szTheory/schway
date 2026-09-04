@@ -117,11 +117,13 @@ func (d *deriver) deriveAt(shape core.TypeRef, depth int) (derivedShape, error) 
 		if len(shape.Arguments) != 0 {
 			return derivedShape{}, fmt.Errorf("Buffer takes no type arguments")
 		}
+		// Buffer is a shareable, noncopyable resource: an immutable shared
+		// loan observes the buffer without duplicating ownership, so `share`
+		// is granted while `copy` remains denied with its witness intact.
 		return derivedShape{
-			set: abilitySet{drop: true, send: true, escape: true},
+			set: abilitySet{drop: true, share: true, send: true, escape: true},
 			witnesses: map[core.Ability][]string{
-				core.AbilityCopy:  {"Buffer"},
-				core.AbilityShare: {"Buffer"},
+				core.AbilityCopy: {"Buffer"},
 			},
 		}, nil
 	case "Box":

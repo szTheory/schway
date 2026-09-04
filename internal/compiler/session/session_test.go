@@ -210,23 +210,17 @@ func TestSourceBoxPairAbilityFacts(t *testing.T) {
 			witnesses: []core.AbilityWitness{},
 		},
 		"keep_boxed_buffer": {
-			shape:   core.TypeRef{Constructor: "Box", Arguments: []core.TypeRef{{Constructor: "Buffer", Arguments: []core.TypeRef{}}}},
-			granted: []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
-			witnesses: []core.AbilityWitness{
-				{Ability: core.AbilityCopy, Path: []string{"Box.value", "Buffer"}},
-				{Ability: core.AbilityShare, Path: []string{"Box.value", "Buffer"}},
-			},
+			shape:     core.TypeRef{Constructor: "Box", Arguments: []core.TypeRef{{Constructor: "Buffer", Arguments: []core.TypeRef{}}}},
+			granted:   []core.Ability{core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+			witnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Box.value", "Buffer"}}},
 		},
 		"keep_pair": {
 			shape: core.TypeRef{Constructor: "Pair", Arguments: []core.TypeRef{
 				{Constructor: "Byte", Arguments: []core.TypeRef{}},
 				{Constructor: "Buffer", Arguments: []core.TypeRef{}},
 			}},
-			granted: []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
-			witnesses: []core.AbilityWitness{
-				{Ability: core.AbilityCopy, Path: []string{"Pair.right", "Buffer"}},
-				{Ability: core.AbilityShare, Path: []string{"Pair.right", "Buffer"}},
-			},
+			granted:   []core.Ability{core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+			witnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Pair.right", "Buffer"}}},
 		},
 	}
 	for _, function := range checked.Program.Functions {

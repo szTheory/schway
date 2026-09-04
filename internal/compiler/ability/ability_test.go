@@ -110,10 +110,12 @@ func TestTypeRefDerivationUsesStructuralCombiner(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.set.copy || result.set.share || !result.set.drop || !result.set.send || !result.set.escape {
+	// Buffer denies only copy, so Box<Buffer> observes as 11110b = 30 and the
+	// Pair conjunction with Byte (31) keeps every bit except copy.
+	if result.set.copy || !result.set.share || !result.set.drop || !result.set.send || !result.set.escape {
 		t.Fatalf("sealed derivation returned wrong independent set: %+v", result.set)
 	}
-	if len(calls) != 2 || !reflect.DeepEqual(calls[0].masks, []int{26}) || !reflect.DeepEqual(calls[1].masks, []int{26, 31}) {
+	if len(calls) != 2 || !reflect.DeepEqual(calls[0].masks, []int{30}) || !reflect.DeepEqual(calls[1].masks, []int{30, 31}) {
 		t.Fatalf("Box/Pair path bypassed request-local combiner: %+v", calls)
 	}
 	if d.nodes != 4 {
@@ -121,7 +123,7 @@ func TestTypeRefDerivationUsesStructuralCombiner(t *testing.T) {
 	}
 
 	reverse, err := Derive(core.TypeRef{Constructor: "Pair", Arguments: []core.TypeRef{{Constructor: "Buffer"}, {Constructor: "Byte"}}})
-	if err != nil || Has(reverse, core.AbilityCopy) || Has(reverse, core.AbilityShare) {
+	if err != nil || Has(reverse, core.AbilityCopy) || !Has(reverse, core.AbilityShare) {
 		t.Fatalf("reverse asymmetric Pair admitted first-child/union/implication behavior: result=%+v err=%v", reverse, err)
 	}
 }
@@ -136,12 +138,19 @@ func TestNegativeWitnessPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []string{"Box.value", "Pair.right", "Box.value", "Buffer"}
+	sawCopy := false
 	for _, witness := range result.NegativeWitnesses {
-		if witness.Ability == core.AbilityCopy || witness.Ability == core.AbilityShare {
+		if witness.Ability == core.AbilityCopy {
+			sawCopy = true
 			if !reflect.DeepEqual(witness.Path, want) {
 				t.Fatalf("%s witness=%v want smallest stable path %v", witness.Ability, witness.Path, want)
 			}
+			continue
 		}
+		t.Fatalf("Buffer denies only copy, but %s was withheld with witness %v", witness.Ability, witness.Path)
+	}
+	if !sawCopy {
+		t.Fatal("nested Buffer did not withhold copy")
 	}
 	if _, err := Derive(core.TypeRef{Constructor: "Unknown"}); err == nil {
 		t.Fatal("unknown constructor was accepted")
@@ -152,6 +161,40 @@ func TestNegativeWitnessPath(t *testing.T) {
 	}
 	if _, err := Derive(tooDeep); err == nil || !strings.Contains(err.Error(), "limits") {
 		t.Fatalf("recursive-depth input was not rejected by a stable limit: %v", err)
+	}
+}
+
+// TestShareIsUniversallyGrantedAfterBufferShare records, as an executable
+// fact, that no source-reachable type withholds share once Buffer grants it.
+// The four constructors are enumerated exhaustively to depth 4: Byte and
+// Buffer both grant share, and Box/Pair only conjoin their children. The
+// checker's ownership.borrow_requires_share gate is therefore unreachable
+// from source today and stands as defence in depth against the source-blind
+// validator's core.ability.share_denied; if a future constructor withholds
+// share, this test fails and the gate becomes reachable.
+func TestShareIsUniversallyGrantedAfterBufferShare(t *testing.T) {
+	shapes := []core.TypeRef{{Constructor: "Byte"}, {Constructor: "Buffer"}}
+	for depth := 0; depth < 3; depth++ {
+		next := append([]core.TypeRef(nil), shapes...)
+		for _, left := range shapes {
+			next = append(next, core.TypeRef{Constructor: "Box", Arguments: []core.TypeRef{left}})
+			for _, right := range shapes {
+				next = append(next, core.TypeRef{Constructor: "Pair", Arguments: []core.TypeRef{left, right}})
+			}
+		}
+		shapes = next
+	}
+	for _, shape := range shapes {
+		result, err := Derive(shape)
+		if err != nil {
+			t.Fatalf("%+v: %v", shape, err)
+		}
+		if !Has(result, core.AbilityShare) {
+			t.Fatalf("%+v withholds share: the borrow gate is now source-reachable and needs a negative fixture", shape)
+		}
+	}
+	if len(shapes) < 100 {
+		t.Fatalf("enumeration collapsed to %d shapes", len(shapes))
 	}
 }
 

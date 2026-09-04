@@ -274,6 +274,23 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 			source.movedAt = spanPointer(binding.RHS.Span)
 			source.moveTargetID = target.ID
 		case "borrow":
+			// A shared loan requires the share ability, exactly as the
+			// implicit-copy path below requires copy. Without this gate the
+			// checker emits core.OpBorrowShared that the source-blind
+			// validator rejects as core.ability.share_denied, turning an
+			// invalid program into a spanless operational failure.
+			if !hasTypeAbility(typeFact, core.AbilityShare) {
+				causes := []diagnostic.Cause{
+					{Kind: "declared_here", Span: spanPointer(source.declared)},
+					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFact, core.AbilityShare)},
+					{Kind: "place", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return fail(diagnostic.ErrorWithRepairs(
+					"ownership.borrow_requires_share", binding.RHS.Span, "type does not grant the share ability required to borrow", causes,
+					diagnostic.Repair{Kind: "use_take_instead"},
+				))
+			}
 			kind = core.OpBorrowShared
 			use := loanUses[index]
 			loan = &loanState{

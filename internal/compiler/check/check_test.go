@@ -29,6 +29,47 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		}
 	}
 
+	// The same exhaustive alphabet under a type that withholds share: every
+	// borrow must be refused at check time, and production must agree with the
+	// oracle on which one is refused first.
+	for length := 0; length <= 3; length++ {
+		cases := 1
+		for index := 0; index < length; index++ {
+			cases *= alphabet
+		}
+		for encoded := 0; encoded < cases; encoded++ {
+			body := generatedOwnershipBody(encoded, length, alphabet)
+			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &body)
+			want := oracleStraightLine("test:fn", "owner", nonShareableTypeFact(), &body)
+			assertSupportEqual(t, fmt.Sprintf("no-share length=%d case=%d", length, encoded), got, want)
+		}
+	}
+	denied := ast.LinearBody{
+		Bindings: []ast.Binding{binding("view", "borrow", "owner", 10)},
+		Result:   "view",
+		Span:     diagnostic.Span{Start: 10, End: 20},
+	}
+	refused := analyzeStraightLine("test:no-share", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &denied)
+	if refused.DiagnosticCode != "ownership.borrow_requires_share" || refused.Diagnostic == nil {
+		t.Fatalf("borrow of a type without share was admitted: %+v", refused)
+	}
+	if refused.Diagnostic.Schema != "lang.diagnostic/1" || len(refused.Diagnostic.Repairs) != 1 {
+		t.Fatalf("borrow gate did not select the repair-bearing schema: %+v", refused.Diagnostic)
+	}
+	if got, want := refused.Diagnostic.Primary, (diagnostic.Span{Start: 10, End: 13}); got != want {
+		t.Fatalf("borrow gate reported span %+v, want the borrow site %+v", got, want)
+	}
+	if len(refused.Operations) != 0 {
+		t.Fatalf("borrow gate emitted core it cannot authorize: %+v", refused.Operations)
+	}
+	causeKinds := make([]string, 0, len(refused.Diagnostic.Causes))
+	for _, cause := range refused.Diagnostic.Causes {
+		causeKinds = append(causeKinds, cause.Kind)
+	}
+	if !reflect.DeepEqual(causeKinds, []string{"declared_here", "missing_ability", "place", "type"}) {
+		t.Fatalf("borrow gate causes diverged from the copy gate shape: %v", causeKinds)
+	}
+
 	witness := ast.LinearBody{
 		Bindings: []ast.Binding{
 			binding("view", "borrow", "owner", 10),
@@ -177,14 +218,23 @@ func byteTypeFact() core.TypeFact {
 	}
 }
 
+// nonShareableTypeFact is deliberately synthetic. Every source-reachable type
+// constructor (Byte, Buffer, Box, Pair) grants share, so no fixture can reach
+// the borrow gate; this fact exercises the law itself. It grants copy so the
+// implicit-copy gate cannot mask a missing share gate.
+func nonShareableTypeFact() core.TypeFact {
+	return core.TypeFact{
+		ID: "test:fn:type:0", Shape: core.TypeRef{Constructor: "Buffer", Arguments: []core.TypeRef{}},
+		Abilities:         []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
+		NegativeWitnesses: []core.AbilityWitness{{Ability: core.AbilityShare, Path: []string{"Buffer"}}},
+	}
+}
+
 func bufferTypeFact() core.TypeFact {
 	return core.TypeFact{
 		ID: "test:fn:type:0", Shape: core.TypeRef{Constructor: "Buffer", Arguments: []core.TypeRef{}},
-		Abilities: []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
-		NegativeWitnesses: []core.AbilityWitness{
-			{Ability: core.AbilityCopy, Path: []string{"Buffer"}},
-			{Ability: core.AbilityShare, Path: []string{"Buffer"}},
-		},
+		Abilities:         []core.Ability{core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+		NegativeWitnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Buffer"}}},
 	}
 }
 
@@ -258,6 +308,10 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 			kind = core.OpMove
 			source.initialized = false
 		case "borrow":
+			if !oracleHasAbility(typeFact.Abilities, core.AbilityShare) {
+				result.DiagnosticCode = "ownership.borrow_requires_share"
+				return result
+			}
 			kind = core.OpBorrowShared
 			loanID = fmt.Sprintf("%s:loan:%d", functionID, index)
 			activeLoans[loanID] = testOracleLoan{ownerID: source.id, lastUse: lastUses[index]}

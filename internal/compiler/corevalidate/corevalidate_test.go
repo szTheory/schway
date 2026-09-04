@@ -213,8 +213,8 @@ func ownedProgram() core.Program {
 				ID: functionID + ":linear",
 				Types: []core.TypeFact{{
 					ID: typeID, Shape: core.TypeRef{Constructor: "Buffer", Arguments: []core.TypeRef{}},
-					Abilities:         []core.Ability{core.AbilityDrop, core.AbilitySend, core.AbilityEscape},
-					NegativeWitnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Buffer"}}, {Ability: core.AbilityShare, Path: []string{"Buffer"}}},
+					Abilities:         []core.Ability{core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+					NegativeWitnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Buffer"}}},
 				}},
 				Places: []core.Place{{ID: parameterID, Name: "buffer", TypeID: typeID}, {ID: targetID, Name: "delivered", TypeID: typeID}},
 				Operations: []core.LinearOperation{
