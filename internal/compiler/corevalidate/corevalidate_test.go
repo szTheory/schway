@@ -256,6 +256,70 @@ func borrowedProgram() core.Program {
 	return program
 }
 
+// reborrowProgram derives a second place from the loan target (a reborrow when
+// derivation is OpBorrowShared, a copy of the loan when it is OpCopy) and then
+// observes that derived place after the owner is moved. Loan liveness must be
+// transitive for this to be refused: associating loan:0 only with its
+// immediate target expires it at op:1 and admits the move at op:2.
+func reborrowProgram(derivation core.OperationKind, observeAfterMove bool) core.Program {
+	program := borrowedProgram()
+	function := &program.Functions[0]
+	linear := function.Linear
+	owner := function.Parameter.ID
+	view := function.ID + ":place:1"
+	review := function.ID + ":place:2"
+	delivered := function.ID + ":place:3"
+	observed := function.ID + ":place:4"
+	typeID := linear.Types[0].ID
+	linear.Places = []core.Place{
+		{ID: owner, Name: "buffer", TypeID: typeID},
+		{ID: view, Name: "view", TypeID: typeID},
+		{ID: review, Name: "review", TypeID: typeID},
+		{ID: delivered, Name: "delivered", TypeID: typeID},
+		{ID: observed, Name: "observed", TypeID: typeID},
+	}
+	derivedLoan := ""
+	if derivation == core.OpBorrowShared {
+		derivedLoan = function.ID + ":loan:1"
+	}
+	linear.Operations = []core.LinearOperation{
+		{ID: function.ID + ":op:0", PointID: function.ID + ":point:linear:0", Kind: core.OpBorrowShared, SourceID: owner, TargetID: view, LoanID: function.ID + ":loan:0", TypeID: typeID},
+		{ID: function.ID + ":op:1", PointID: function.ID + ":point:linear:1", Kind: derivation, SourceID: view, TargetID: review, LoanID: derivedLoan, TypeID: typeID},
+		{ID: function.ID + ":op:2", PointID: function.ID + ":point:linear:2", Kind: core.OpMove, SourceID: owner, TargetID: delivered, TypeID: typeID},
+	}
+	if observeAfterMove {
+		linear.Operations = append(linear.Operations,
+			core.LinearOperation{ID: function.ID + ":op:3", PointID: function.ID + ":point:linear:3", Kind: core.OpCopy, SourceID: review, TargetID: observed, TypeID: typeID},
+			core.LinearOperation{ID: function.ID + ":op:4", PointID: function.ID + ":point:linear:4", Kind: core.OpReturn, SourceID: delivered, TypeID: typeID},
+		)
+	} else {
+		linear.Places = linear.Places[:4]
+		linear.Operations = append(linear.Operations,
+			core.LinearOperation{ID: function.ID + ":op:3", PointID: function.ID + ":point:linear:3", Kind: core.OpReturn, SourceID: delivered, TypeID: typeID},
+		)
+	}
+	return program
+}
+
+func TestTransitiveLoanBlocksMove(t *testing.T) {
+	for _, testCase := range []struct {
+		name       string
+		derivation core.OperationKind
+	}{
+		{name: "reborrow of a loan", derivation: core.OpBorrowShared},
+		{name: "copy of a loan", derivation: core.OpCopy},
+	} {
+		blocked := corevalidate.Validate(reborrowProgram(testCase.derivation, true))
+		if blocked.Valid || len(blocked.Problems) == 0 || blocked.Problems[0].Code != "core.move_while_borrowed" {
+			t.Fatalf("%s: owner moved while a transitively derived loan was still observed: %+v", testCase.name, blocked)
+		}
+		unused := corevalidate.Validate(reborrowProgram(testCase.derivation, false))
+		if !unused.Valid {
+			t.Fatalf("%s: transitive loan liveness over-blocked a loan with no later use: %+v", testCase.name, unused)
+		}
+	}
+}
+
 func scaleProgram(facts int) core.Program {
 	if facts < 1 {
 		panic("scale facts must include the final claim")

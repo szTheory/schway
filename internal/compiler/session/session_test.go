@@ -49,6 +49,29 @@ func TestMoveWhileBorrowedDiagnostic(t *testing.T) {
 	}
 }
 
+// TestLoanLivenessIsTransitive pins the source-level law that one hop of
+// indirection does not expire a loan. Both shapes previously checked clean and
+// ran to completion, so the shipped move_while_borrowed control was weaker
+// than the gate implied.
+func TestLoanLivenessIsTransitive(t *testing.T) {
+	problem := ownershipDiagnostic(t, "reborrow_while_moved.lang", "ownership.move_while_borrowed")
+	assertCauseKinds(t, problem, "borrow_created_here", "borrow_used_later", "loan", "owner", "type")
+	assertRepairKinds(t, problem, "move_after_last_borrow_use")
+
+	copyOfLoan := []byte("module owned.copy_of_loan\nexport { fn relay }\nfn relay(code: Byte) -> Byte {\n  let view = borrow code\n  let alias = view\n  let delivered = take code\n  let observed = alias\n  delivered\n}\n")
+	checked := session.Check(copyOfLoan)
+	if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != "ownership.move_while_borrowed" {
+		t.Fatalf("copy of a loan expired the loan early: %+v", checked.Diagnostics)
+	}
+
+	// The dual: a transitively derived loan with no use after the move must
+	// still end, so transitivity does not degrade into blocking every move.
+	expired := []byte("module owned.expired_reborrow\nexport { fn relay }\nfn relay(code: Byte) -> Byte {\n  let view = borrow code\n  let review = borrow view\n  let observed = review\n  let delivered = take code\n  delivered\n}\n")
+	if checked := session.Check(expired); len(checked.Diagnostics) != 0 {
+		t.Fatalf("transitive loan over-blocked a move after its last use: %+v", checked.Diagnostics)
+	}
+}
+
 func TestDiagnosticSchemaCompatibility(t *testing.T) {
 	legacy := diagnostic.Error("syntax.example", diagnostic.Span{Start: 2, End: 3}, "legacy prose")
 	if legacy.Schema != "lang.diagnostic/0" || len(legacy.Repairs) != 0 {
@@ -714,6 +737,7 @@ func TestVerifyPhase2ControlsAndWork(t *testing.T) {
 		"control:ownership.use_after_move",
 		"control:ownership.move_while_borrowed",
 		"control:ownership.transfer_requires_take",
+		"control:ownership.move_while_reborrowed",
 		"control:ability.forged_copy",
 		"control:core.duplicate_operation_id",
 		"control:interpreter-o0-o3-owned",

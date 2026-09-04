@@ -356,32 +356,43 @@ type loanState struct {
 	lastUseSpan diagnostic.Span
 }
 
+// discoverLoanLastUses extends every loan to its last transitively derived
+// use. Association is inherited: a binding derived from a loan-derived
+// binding stays associated with the same loans, so a reborrow
+// (`let c = borrow b`) or a copy of a loan (`let c = b`) keeps extending the
+// original owner's blocked window. Associating only the immediate borrow
+// target expires the loan one hop early and admits a move while the loan is
+// still observable.
 func discoverLoanLastUses(parameterName string, body *ast.LinearBody) map[int]loanUse {
 	uses := make(map[int]loanUse)
 	visible := map[string]int{parameterName: -1}
-	loanForBinding := make(map[int]int)
+	loansForBinding := make(map[int][]int)
 	for index, binding := range body.Bindings {
+		var inherited []int
 		if sourceBinding, ok := visible[binding.RHS.Source]; ok {
-			loanIndex, isLoan := loanForBinding[sourceBinding]
-			use, tracked := uses[loanIndex]
-			if isLoan && tracked {
-				use.index = index
-				use.span = binding.RHS.Span
-				uses[loanIndex] = use
+			for _, loanIndex := range loansForBinding[sourceBinding] {
+				if use, tracked := uses[loanIndex]; tracked {
+					use.index = index
+					use.span = binding.RHS.Span
+					uses[loanIndex] = use
+				}
+				inherited = append(inherited, loanIndex)
 			}
 		}
 		visible[binding.Name] = index
 		if binding.RHS.Kind == "borrow" {
 			uses[index] = loanUse{index: index, span: binding.RHS.Span}
-			loanForBinding[index] = index
+			inherited = append(inherited, index)
 		}
+		loansForBinding[index] = inherited
 	}
 	if resultBinding, ok := visible[body.Result]; ok {
-		loanIndex, isLoan := loanForBinding[resultBinding]
-		if use, tracked := uses[loanIndex]; isLoan && tracked {
-			use.index = len(body.Bindings)
-			use.span = body.Span
-			uses[loanIndex] = use
+		for _, loanIndex := range loansForBinding[resultBinding] {
+			if use, tracked := uses[loanIndex]; tracked {
+				use.index = len(body.Bindings)
+				use.span = body.Span
+				uses[loanIndex] = use
+			}
 		}
 	}
 	return uses

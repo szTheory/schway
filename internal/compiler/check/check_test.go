@@ -251,24 +251,66 @@ type testOracleLoan struct {
 	lastUse int
 }
 
-func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+// oracleLoanLastUses derives loan liveness by a method the production pass
+// never uses. Production streams forward over the bindings once, carrying an
+// inherited loan association from each source binding to the binding it
+// produces, and never materializes the derivation relation. The oracle does
+// the reverse: it first materializes the whole derivation relation as an
+// explicit edge set, then closes each loan under that relation by
+// order-independent fixed-point iteration (repeat until nothing new becomes
+// reachable), and only afterwards reduces the reachable set to its maximum
+// ordinal. Neither derivation can be obtained from the other by renaming, so
+// a transitivity error in one cannot be mirrored by the other.
+func oracleLoanLastUses(parameterName string, body *ast.LinearBody) map[int]int {
+	edges := make(map[int][]int)
+	for index := range body.Bindings {
+		from, ok := oracleResolveBinding(parameterName, body, body.Bindings[index].RHS.Source, index)
+		if ok && from >= 0 {
+			edges[from] = append(edges[from], index)
+		}
+	}
+	resultBinding, resultKnown := oracleResolveBinding(parameterName, body, body.Result, len(body.Bindings))
+
 	lastUses := make(map[int]int)
+	for loan, candidate := range body.Bindings {
+		if candidate.RHS.Kind != "borrow" {
+			continue
+		}
+		reachable := map[int]bool{loan: true}
+		for changed := true; changed; {
+			changed = false
+			for from, targets := range edges {
+				if !reachable[from] {
+					continue
+				}
+				for _, to := range targets {
+					if !reachable[to] {
+						reachable[to] = true
+						changed = true
+					}
+				}
+			}
+		}
+		last := loan
+		for index := range reachable {
+			if index > last {
+				last = index
+			}
+		}
+		if resultKnown && resultBinding >= 0 && reachable[resultBinding] {
+			last = len(body.Bindings)
+		}
+		lastUses[loan] = last
+	}
+	return lastUses
+}
+
+func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+	lastUses := oracleLoanLastUses(parameterName, body)
 	loanOrder := make([]int, 0)
 	for index, candidate := range body.Bindings {
 		if candidate.RHS.Kind == "borrow" {
 			loanOrder = append(loanOrder, index)
-		}
-	}
-	for _, index := range loanOrder {
-		lastUses[index] = index
-		for useIndex := index + 1; useIndex < len(body.Bindings); useIndex++ {
-			resolved, ok := oracleResolveBinding(parameterName, body, body.Bindings[useIndex].RHS.Source, useIndex)
-			if ok && resolved == index {
-				lastUses[index] = useIndex
-			}
-		}
-		if resolved, ok := oracleResolveBinding(parameterName, body, body.Result, len(body.Bindings)); ok && resolved == index {
-			lastUses[index] = len(body.Bindings)
 		}
 	}
 

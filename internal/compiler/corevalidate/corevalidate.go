@@ -228,17 +228,25 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 	initialized := map[string]bool{function.Parameter.ID: true}
 	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
-	loanForTarget := make(map[string]string)
+	// loansForPlace is transitive: a place produced from a loan-derived place
+	// carries every loan its source carried. Recording only the immediate
+	// borrow target lets a reborrow or a copy of a loan expire the original
+	// loan one operation early and admit a move while it is still observable.
+	loansForPlace := make(map[string][]string)
 	loanLastUse := make(map[string]int)
 	for index, operation := range operations {
 		v.checks++ // inspect each operation once while finding final loan uses
-		if loanID, ok := loanForTarget[operation.SourceID]; ok {
+		carried := append([]string(nil), loansForPlace[operation.SourceID]...)
+		for _, loanID := range carried {
 			loanLastUse[loanID] = index
 		}
 		if operation.Kind == core.OpBorrowShared {
 			loanOwner[operation.LoanID] = operation.SourceID
-			loanForTarget[operation.TargetID] = operation.LoanID
 			loanLastUse[operation.LoanID] = index
+			carried = append(carried, operation.LoanID)
+		}
+		if operation.Kind != core.OpReturn && len(carried) > 0 {
+			loansForPlace[operation.TargetID] = carried
 		}
 	}
 	ownerBlockedUntil := make(map[string]int)

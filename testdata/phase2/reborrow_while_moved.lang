@@ -1,0 +1,15 @@
+// A reborrow keeps the original loan live: loan liveness is transitive.
+
+module owned.reborrow_while_moved
+
+export {
+  fn relay
+}
+
+fn relay(code: Byte) -> Byte {
+  let view = borrow code
+  let review = borrow view
+  let delivered = take code
+  let observed = review
+  delivered
+}

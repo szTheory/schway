@@ -597,6 +597,11 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 		{"use_after_move.lang", "ownership.use_after_move", "control:ownership.use_after_move"},
 		{"move_while_borrowed.lang", "ownership.move_while_borrowed", "control:ownership.move_while_borrowed"},
 		{"implicit_noncopy.lang", "ownership.transfer_requires_take", "control:ownership.transfer_requires_take"},
+		{"reborrow_while_moved.lang", "ownership.move_while_borrowed", "control:ownership.move_while_reborrowed"},
+	}
+	ownershipControlNames := make([]string, 0, len(ownershipControls))
+	for _, control := range ownershipControls {
+		ownershipControlNames = append(ownershipControlNames, control.control)
 	}
 	ownershipBytes := 0
 	for _, control := range ownershipControls {
@@ -613,7 +618,7 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 			return fail(protocol.StatusInvalid, "verify.control_missing", control.control)
 		}
 	}
-	addLane("lane:owned-negative-controls", []string{ownershipControls[0].control, ownershipControls[1].control, ownershipControls[2].control}, 3, ownershipBytes, laneStarted)
+	addLane("lane:owned-negative-controls", ownershipControlNames, len(ownershipControls), ownershipBytes, laneStarted)
 
 	validSource, err := readBoundedFile(filepath.Join(corpus, "owned_transfer.lang"), syntax.MaxSourceBytes)
 	if err != nil {
@@ -686,6 +691,7 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 		"control:ownership.use_after_move",
 		"control:ownership.move_while_borrowed",
 		"control:ownership.transfer_requires_take",
+		"control:ownership.move_while_reborrowed",
 		"control:ability.forged_copy",
 		"control:core.duplicate_operation_id",
 		"control:interpreter-o0-o3-owned",
