@@ -87,7 +87,7 @@ native evidence, and finally the bounded agent/human feedback service.
 - [x] 03-04-PLAN.md
 - [x] 03-05-PLAN.md
 - [x] 03-06-PLAN.md
-- [ ] 03-07-PLAN.md
+- [x] 03-07-PLAN.md
 
 - [ ] `03-01-PLAN.md` — reserved-identifier rename, match-arm bodies, and the first real CFG
 - [ ] `03-02-PLAN.md` — exclusive loans and the shared/exclusive conflict matrix across all four operation-kind sites
