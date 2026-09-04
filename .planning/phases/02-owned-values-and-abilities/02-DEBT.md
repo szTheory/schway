@@ -24,7 +24,7 @@ rather than run a seventh review wave (2026-09-04).
 |---|---|---|---|---|
 | D-02-01 | 02-REVIEW WR-01 | T-02-06 | warning | The repo-wide unbounded-spawn guard is a two-needle substring scan and is defeatable |
 | D-02-02 | 02-REVIEW WR-02 | T-02-08 | warning | `evidence.canonical_unstable` never reaches a user; `evidence.ErrorCode` has no production call site |
-| D-02-03 | 02-REVIEW WR-04 | T-02-01 | warning | Transitive loan sets made `check` Θ(N²) in body size |
+| D-02-03 | 02-REVIEW WR-04 | T-02-01 | warning | Transitive loan sets made `check` **and `corevalidate`** Θ(N²) in body size |
 | D-02-04 | 02-SECURITY SEC-02-B | T-02-06 | warning | `native.timeout` has no in-tree falsifier |
 | D-02-05 | 02-SECURITY SEC-02-D | T-02-03 | info | Collision suffix `__LANG_` is a reserved identifier under C17 §7.1.3 |
 | D-02-06 | 02-SECURITY SEC-02-E | T-02-06 | info | `MaxCLIStreamBytes` is 8 MiB against a measured 1,756 B high-water mark |
@@ -67,12 +67,23 @@ and covered. Only the diagnostic specificity is missing.
 **Phase 03 fix:** route `evidence.ErrorCode` through the CLI error taxonomy so the
 code surfaces, and add a CLI-level assertion.
 
-### D-02-03 — checker cost is quadratic in body size
+### D-02-03 — liveness cost is quadratic in body size, in BOTH admission layers
 
 Making loan liveness transitive (`3d9493a`) propagates loan sets per binding, so
 `check` is Θ(N²) in operation count. A 358 KB source burns ~19s (was ~7s) before
 `check.work_limit` fires, while `recomputed_work` still reports linearly — so the
 counted-work signal understates real cost.
+
+**Correction, 2026-09-04 (Phase 03 research).** As first written this entry named
+only `check.go`. That was incomplete: `corevalidate.go:237-251` carries the *same*
+quadratic shape — `loansForPlace` accumulates into `carried`, which is copied and
+rescanned on every operation. Verified by direct read. Both layers need the fix, and
+per D-12 they need it by two independent derivations, not one shared helper.
+
+A second asymmetry sits underneath it: `corevalidate.replay` counts its loan scan
+(`:238`, `:254`) while `check.discoverLoanLastUses` counts nothing. That asymmetry
+*is* why the checker's `recomputed_work` understates. Fix the checker's accounting;
+do not propagate its convention into the replacement pass.
 
 **Why not blocking:** bounded by `MaxTokens` and the work limit; it fails closed,
 it is slow. No unbounded path.
