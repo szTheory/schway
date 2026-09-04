@@ -77,7 +77,17 @@ native evidence, and finally the bounded agent/human feedback service.
   3. A public borrowed view names all verified field/alternative origins and access modes without downstream body inspection.
   4. Separate compilation rejects stale, omitted, or impossible public-origin summaries while retaining the coordinated-frontend-lie limitation explicitly.
 
-**Plans**: TBD
+**Scope note**: OWN-03 is scoped to **acyclic** (branch-only) CFG edges this phase. The language has no loop or recursion construct and this phase adds neither; loop-carried loan liveness is an explicit Phase 4+ follow-on.
+
+**Plans**: 7 plans
+
+- [ ] `03-01-PLAN.md` — reserved-identifier rename, match-arm bodies, and the first real CFG
+- [ ] `03-02-PLAN.md` — exclusive loans and the shared/exclusive conflict matrix across all four operation-kind sites
+- [ ] `03-03-PLAN.md` — backward worklist loan liveness with edge-specific endpoints and honest counted work
+- [ ] `03-04-PLAN.md` — the independent validator's own CFG liveness derivation and endpoint mutation control
+- [ ] `03-05-PLAN.md` — bounded path oracle, mutation kill, and generators that reach branching shapes
+- [ ] `03-06-PLAN.md` — public borrow origins, body-blind summary verification, and separate compilation
+- [ ] `03-07-PLAN.md` — bounded debug-lineage experiment, Phase 3 gate, and carried debt closure
 
 ### Phase 4: Fallible Resources and C Boundary
 
@@ -132,7 +142,7 @@ native evidence, and finally the bounded agent/human feedback service.
 |-------|----------------|--------|-----------|
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
-| 3. Borrowed Views and CFG Lifetimes | 0/TBD | Not started | - |
+| 3. Borrowed Views and CFG Lifetimes | 0/7 | Planned | - |
 | 4. Fallible Resources and C Boundary | 0/TBD | Not started | - |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |

@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 current_phase: 3
 current_phase_name: Borrowed Views and CFG Lifetimes
-status: planning
-stopped_at: Phase 02 complete, ready to plan Phase 3
+status: planned
+stopped_at: Phase 03 planned (7 plans, 6 waves), plan-check PASS_WITH_CONCERNS; ready to execute
 last_updated: "2026-09-04T01:50:25.190Z"
 last_activity: 2026-09-04
-last_activity_desc: Phase 02 complete, transitioned to Phase 3
+last_activity_desc: Planned Phase 03 with research, pattern map, 7 plans and a validation strategy; re-pinned OWN-04 to a parallel track on the plan-checker's finding
 state_head: 6e3ef81d84b7b1311b452eca5dd17c4acf302710
 progress:
   total_phases: 6
