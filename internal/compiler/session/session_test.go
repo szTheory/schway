@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -624,7 +622,6 @@ func TestInterpreterDeterministic(t *testing.T) {
 }
 
 func TestConcurrentReadOnlyCommands(t *testing.T) {
-	projectRoot := testsupport.ProjectPath()
 	fixture := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
 	before, err := os.ReadFile(fixture)
 	if err != nil {
@@ -632,16 +629,20 @@ func TestConcurrentReadOnlyCommands(t *testing.T) {
 	}
 	beforeDigest := sha256.Sum256(before)
 
-	binary := filepath.Join(t.TempDir(), "lang")
-	build := exec.Command("go", "build", "-o", binary, "./cmd/lang")
-	build.Dir = projectRoot
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build CLI: %v\n%s", err, output)
-	}
+	binary := testsupport.BuildCLI(t)
 
 	type commandResult struct {
 		output []byte
+		stderr []byte
+		exit   int
 		err    error
+	}
+	// RunCLIErr rather than RunCLI: t.Fatalf may only be called from the
+	// goroutine running the test, so the spawns report typed errors that the
+	// test goroutine inspects after the WaitGroup drains.
+	run := func(target *commandResult, arguments ...string) {
+		result, err := testsupport.RunCLIErr(context.Background(), binary, nil, arguments...)
+		target.output, target.stderr, target.exit, target.err = result.Stdout, result.Stderr, result.Exit, err
 	}
 	formatResults := make([]commandResult, 2)
 	checkResults := make([]commandResult, 2)
@@ -651,18 +652,21 @@ func TestConcurrentReadOnlyCommands(t *testing.T) {
 		group.Add(2)
 		go func() {
 			defer group.Done()
-			formatResults[index].output, formatResults[index].err = exec.Command(binary, "format", fixture).CombinedOutput()
+			run(&formatResults[index], "format", fixture)
 		}()
 		go func() {
 			defer group.Done()
-			checkResults[index].output, checkResults[index].err = exec.Command(binary, "format", "--check", fixture).CombinedOutput()
+			run(&checkResults[index], "format", "--check", fixture)
 		}()
 	}
 	group.Wait()
 
-	for index, result := range append(formatResults, checkResults...) {
+	for index, result := range append(append([]commandResult(nil), formatResults...), checkResults...) {
 		if result.err != nil {
-			t.Fatalf("concurrent command %d failed: %v\n%s", index, result.err, result.output)
+			t.Fatalf("concurrent command %d failed: %v", index, result.err)
+		}
+		if result.exit != 0 {
+			t.Fatalf("concurrent command %d exited %d\n%s%s", index, result.exit, result.output, result.stderr)
 		}
 	}
 	if !bytes.Equal(formatResults[0].output, formatResults[1].output) || !bytes.Equal(formatResults[0].output, before) {
