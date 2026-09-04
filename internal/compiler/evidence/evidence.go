@@ -159,16 +159,34 @@ func runToolProbe(parent context.Context, command commandFactory, name string, a
 }
 
 func Build(source []byte, facts Facts) (Product, []diagnostic.Diagnostic, error) {
+	return build(source, facts, syntax.Format, syntax.Parse)
+}
+
+// build carries the canonical projection behind an explicit seam so the
+// fail-closed round-trip check below can be exercised without depending on a
+// live formatter defect.
+func build(source []byte, facts Facts, format func(syntax.Tree) []byte, parse func([]byte) syntax.ParseResult) (Product, []diagnostic.Diagnostic, error) {
 	// This manifest proves that these compiler products are mutually bound. It
 	// does not independently prove that a coordinated frontend translated user
 	// intent into the correct core; later certificate checks retain that named
 	// trust boundary rather than overstating this artifact as a proof.
-	parsed := syntax.Parse(source)
+	parsed := parse(source)
 	if len(parsed.Diagnostics) > 0 {
 		return Product{}, parsed.Diagnostics, nil
 	}
-	canonicalSource := syntax.Format(parsed.Tree)
-	canonicalParsed := syntax.Parse(canonicalSource)
+	// SourceDigest binds the canonical projection, not the bytes the user wrote,
+	// so the round trip is asserted here rather than assumed. A canonical form
+	// that fails to reparse, or that is not a fixed point of the formatter, is
+	// rejected outright instead of being laundered into a source diagnostic
+	// naming offsets in text nobody authored.
+	canonicalSource := format(parsed.Tree)
+	canonicalParsed := parse(canonicalSource)
+	if len(canonicalParsed.Diagnostics) > 0 {
+		return Product{}, nil, &ValidationError{Code: "evidence.canonical_unstable"}
+	}
+	if !bytes.Equal(canonicalSource, format(canonicalParsed.Tree)) {
+		return Product{}, nil, &ValidationError{Code: "evidence.canonical_unstable"}
+	}
 	checked := check.Program(canonicalParsed.Program)
 	if len(checked.Diagnostics) > 0 {
 		return Product{}, checked.Diagnostics, nil
