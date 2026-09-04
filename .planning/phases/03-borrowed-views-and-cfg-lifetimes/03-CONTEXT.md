@@ -84,8 +84,12 @@ server, no DWARF pipeline.
 - **D-13:** Phase 1 goldens and schemas stay byte-identical. A Phase 2/3 golden may
   move only as a *causal* consequence of a deliberate semantic change, and the diff
   must be explained field-by-field.
-- **D-14:** One global generated-C ordinary-identifier namespace; preferred
-  source-derived names when unique, deterministic suffix only on real collision.
+- **D-14 [informational]:** One global generated-C ordinary-identifier namespace;
+  preferred source-derived names when unique, deterministic suffix only on real
+  collision. Inherited from Phase 1/2 and still binding on the C backend, but no
+  Phase 3 plan (01-09) touches generated-C identifier naming, so it is not a
+  trackable decision for this phase — marked informational at the Phase 3
+  gap-closure planning gate rather than cited as padding.
 - **D-15:** Every input read and every spawned process stays bounded: deadline,
   independent stdout/stderr caps at max-plus-one, no `CombinedOutput`.
 
