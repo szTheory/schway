@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Borrowed Views and CFG Lifetimes
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-09-04T03:46:38.636Z"
+stopped_at: Completed 03-06-PLAN.md
+last_updated: "2026-09-04T04:15:43.767Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: 0ad2a94a35dff8707ca3184b8b9b84ec41df7437
+state_head: c9709abf1ea1d5972b601e893da7040735f907ab
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 17
-  completed_plans: 12
+  completed_plans: 13
   percent: 33
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 03 execution started
 
@@ -65,6 +65,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 02 P07 | 9 min | 2 tasks | 8 files |
 | Phase 03 P01 | 95 min | 3 tasks | 19 files |
 | Phase 03 P02 | 70 min | 3 tasks | 26 files |
+| Phase 03 P06 | 70 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: [Phase 03-02]: An exclusive loan is gated on the same AbilityShare requirement a shared loan is gated on, not a new ability.
 - [Phase 03]: [Phase 03-02]: corevalidate independently re-derives the five-row loan conflict matrix via running per-owner high-water-mark maps, a materially different mechanism from check.go's active-loan-set (D-12).
 - [Phase 03]: [Phase 03-02]: D-02-09/D-07 closed — checkLinear refuses a straight-line linear function whose parameter shape has no native execution lowering (only Byte/Buffer) at check time, with ability derivation still running first.
+- [Phase 03]: [Phase 03-06]: Origin paths are scoped to a function's own single parameter name — this reduced language has one parameter per function and no field-path-bearing executable shape. — Box/Pair are rejected at check.go's execution-admission gate before a body is ever analyzed, so a richer field-path grammar would have no honest source input to exercise this phase.
+- [Phase 03]: [Phase 03-06]: A borrowed-view function's ability set is not separately re-derived with an explicit escape:false witness; PublicOrigin carries only Paths and Access. — corevalidate's existing type-fact loop recomputes abilities for every fact in linear.Types and requires an exact match for the same shape; a synthetic view TypeFact would desync from that independent recomputation.
 
 ### Pending Todos
 
@@ -135,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T03:46:29.786Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-09-04T04:15:43.719Z
+Stopped at: Completed 03-06-PLAN.md
 Resume file: None
