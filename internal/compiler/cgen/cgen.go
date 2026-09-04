@@ -45,6 +45,62 @@ func EmitNative(program core.Program) (string, error) {
 	return emitMatch(program, true)
 }
 
+// The generated-C ordinary-identifier namespace is closed by two cooperating
+// properties, not by the reserved lists alone. Both are load-bearing and both
+// are enforced by tests (see cgen_names_test.go and names_internal_test.go):
+//
+//  1. PREFIX CONFINEMENT. Every identifier the allocator can ever hand out is
+//     confined to one of exactly two namespaces: cName always returns
+//     "LANG_" + <[A-Z0-9_]* tail> and cLocal always returns
+//     "lang_value_" + <[A-Za-z0-9_]* tail>. The derived preferred names built
+//     on top of them (alternative names, the "<Type>_name" helper) keep the
+//     "LANG_" prefix, and cNames.allocate only ever appends to a preferred
+//     name, so every allocated identifier stays inside those two namespaces.
+//
+//  2. HONEST RESERVATION. matchFixedNames and linearFixedNames are supersets of
+//     every ordinary identifier the emitters write out themselves. A fixed
+//     identifier that falls inside the "LANG_"/"lang_value_" namespaces is
+//     therefore also reserved, so the allocator can never re-issue it.
+//
+// Property 1 alone would make most of the reservations unreachable, and
+// property 2 alone would be enough only if it were maintained perfectly. Keeping
+// both — and testing both — means a future emitter change breaks a test rather
+// than silently aliasing two distinct core identities onto one C identifier.
+//
+// The lists are deliberately supersets: a name is kept even when no current
+// emitter path writes it (for example "input" in the linear emitter, or
+// LANG_BUFFER in the non-Buffer lowering). Over-reservation is inert, because
+// property 1 guarantees no preferred name can equal a lowercase or
+// non-"LANG_"-prefixed reserved entry; under-reservation is the dangerous
+// direction, so the tests only forbid that one.
+
+// matchFixedNames is every ordinary identifier emitMatch writes itself,
+// excluding C keywords and the libc names it calls.
+var matchFixedNames = []string{
+	"main", "argc", "argv", "input", "output", "name", "value",
+}
+
+// linearFixedNames is every ordinary identifier emitLinear and
+// emitLinearOutputSupport write themselves, excluding C keywords and the libc
+// names they call. It covers the macros, typedefs, struct members, globals,
+// helper functions, and every helper parameter and local.
+var linearFixedNames = []string{
+	// macros and typedefs
+	"LANG_BUFFER", "LANG_EVENT", "LANG_OUTPUT_LIMIT", "LANG_EVENT_CAPACITY",
+	// LANG_BUFFER and LANG_EVENT struct members
+	"bytes", "length",
+	"kind", "id", "function_id", "source_place", "target_place", "type_id",
+	// file-scope globals
+	"lang_events", "lang_event_count", "lang_output_count",
+	// helper functions
+	"lang_write_bytes", "lang_write_literal", "lang_write_json_string",
+	"lang_record_event", "lang_write_events", "lang_write_buffer_hex", "lang_write_byte",
+	// helper parameters and locals
+	"data", "value", "hex", "byte", "escape", "encoded", "event", "index",
+	// main
+	"main", "argc", "argv", "input",
+}
+
 func emitMatch(program core.Program, executionJSON bool) (string, error) {
 	if len(program.DataTypes) != 1 {
 		return "", fmt.Errorf("match C emitter expects one data type")
@@ -55,7 +111,7 @@ func emitMatch(program core.Program, executionJSON bool) (string, error) {
 		return "", fmt.Errorf("S1 C emitter requires alternatives")
 	}
 
-	names := newCNames("main", "argc", "argv", "input", "output", "name")
+	names := newCNames(matchFixedNames...)
 	typeName := names.allocate(cName(dataType.Name), "type", 0)
 	alternativeNames := make([]string, len(dataType.Alternatives))
 	alternativeBySource := make(map[string]string, len(dataType.Alternatives))
@@ -140,12 +196,7 @@ func emitLinear(function core.Function) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("linear parameter place is absent")
 	}
-	names := newCNames(
-		"LANG_BUFFER", "LANG_EVENT", "LANG_OUTPUT_LIMIT", "LANG_EVENT_CAPACITY",
-		"lang_events", "lang_event_count", "lang_output_count", "lang_write_bytes",
-		"lang_write_literal", "lang_write_json_string", "lang_record_event", "lang_write_events",
-		"lang_write_buffer_hex", "lang_write_byte", "main", "argc", "argv", "input", "index",
-	)
+	names := newCNames(linearFixedNames...)
 	placeIDs := make([]string, len(function.Linear.Places))
 	for index, place := range function.Linear.Places {
 		placeIDs[index] = place.ID
@@ -288,6 +339,11 @@ func linearInput(function core.Function) (input, initializer, typeName string, e
 
 type cNames struct{ used map[string]struct{} }
 
+// newCNames builds the single global identifier allocator for one emitted
+// translation unit. The reserved argument must be a superset of every fixed
+// ordinary identifier the caller emits (see matchFixedNames /
+// linearFixedNames); combined with the prefix confinement of cName and cLocal
+// this is what makes the generated-C ordinary-identifier namespace closed.
 func newCNames(reserved ...string) *cNames {
 	result := &cNames{used: make(map[string]struct{}, len(reserved))}
 	for _, name := range reserved {
@@ -310,6 +366,12 @@ func (n *cNames) allocate(preferred, category string, ordinal int) string {
 	}
 }
 
+// cName maps a source type, alternative, function, or parameter name into the
+// uppercase "LANG_" namespace. INVARIANT (enforced by
+// TestGeneratedIdentifierNamespacesStayConfined): the result always matches
+// ^LANG_[A-Z0-9_]*$. Do not relax the uppercasing or the prefix — the closure
+// argument for the generated-C namespace depends on every allocated identifier
+// living in the "LANG_" or "lang_value_" namespace and nowhere else.
 func cName(name string) string {
 	var out strings.Builder
 	for _, r := range name {
@@ -324,6 +386,10 @@ func cName(name string) string {
 	return "LANG_" + out.String()
 }
 
+// cLocal maps a source place name into the "lang_value_" namespace. INVARIANT
+// (enforced by TestGeneratedIdentifierNamespacesStayConfined): the result
+// always matches ^lang_value_[A-Za-z0-9_]*$. No fixed identifier emitted by any
+// emitter may be placed in this namespace unless it is also reserved.
 func cLocal(name string) string {
 	var out strings.Builder
 	out.WriteString("lang_value_")
