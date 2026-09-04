@@ -86,7 +86,9 @@ func RecomputeOrigin(function core.Function) (paths []string, access string, ok 
 		}
 		switch operation.Kind {
 		case core.OpBorrowExclusive:
-			derivedAccess = "exclusive"
+			if derivedAccess == "" {
+				derivedAccess = "exclusive"
+			}
 		case core.OpBorrowShared:
 			if derivedAccess == "" {
 				derivedAccess = "shared"
