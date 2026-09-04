@@ -1,18 +1,18 @@
 ---
 gsd_state_version: 1.0
-current_phase: 3
+current_phase: 03
 current_phase_name: Borrowed Views and CFG Lifetimes
-status: planned
-stopped_at: Phase 03 planned and reconciled (7 plans, 6 waves); plan-check gaps closed; ready to execute
-last_updated: "2026-09-04T01:50:25.190Z"
+status: executing
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-09-04T03:18:10.706Z"
 last_activity: 2026-09-04
-last_activity_desc: Planned Phase 03 (research, pattern map, 7 plans, validation strategy); re-pinned OWN-04 to a parallel wave-2 track, closed both plan-check gaps in the plans, resolved the phase-split recommendation as one phase plus a mandatory mid-phase gate at wave 5, and wrote the Phase 03 .continue-here.md
-state_head: 6e3ef81d84b7b1311b452eca5dd17c4acf302710
+last_activity_desc: Phase 03 execution started
+state_head: 3da142a4886e2491deec3c732ede3cd97bf15edd
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 17
-  completed_plans: 10
+  completed_plans: 11
   percent: 33
 ---
 
@@ -29,10 +29,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 3 — Borrowed Views and CFG Lifetimes
-Plan: 03-01 (wave 1) — not started
-Status: Planned; ready to execute
-Last activity: 2026-09-04 — Phase 03 planned and reconciled; start with `.planning/phases/03-borrowed-views-and-cfg-lifetimes/.continue-here.md`
+Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
+Plan: 2 of 7
+Status: Ready to execute
+Last activity: 2026-09-03 — Phase 03 execution started
 
 Progress: ██████████ [███░░░░░░░] 33%
 
@@ -63,6 +63,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 02 P05 | 12min | 2 tasks | 8 files |
 | Phase 02 P06 | 10 min | 2 tasks | 9 files |
 | Phase 02 P07 | 9 min | 2 tasks | 8 files |
+| Phase 03 P01 | 95 min | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 02]: `borrow` is gated on `AbilityShare` in the checker as defence in depth; the gate is unreachable from source today and guarded by a self-invalidating enumeration test.
 - [Phase 02]: Loan liveness is transitive across reborrows and copies-of-loans in both admission layers, with the test oracle re-derived by fixed-point closure so it cannot mirror the production law.
 - [Phase 02]: The formatter classifies an opening brace by the declaration keyword that opened the line, and that classification survives a trailing comment.
+- [Phase 03]: [Phase 03-01]: A match with any arm body requires every arm to carry one; bare-arm-only matches remain the fully separate, untouched Phase 1 code path.
+- [Phase 03]: [Phase 03-01]: A match function whose arms carry linear bodies now legitimately carries both core.Match and core.Linear at once — the third case Function.HasClosedBody/Match.HasBlocks had to learn.
+- [Phase 03]: [Phase 03-01]: analyzeArmBody is a deliberate duplicate of analyzeStraightLine (not a shared helper), so the Phase 1/2 straight-line path carries zero risk from the CFG addition.
 
 ### Pending Todos
 
@@ -127,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04
-Stopped at: Phase 03 planned; no Phase 03 code written
-Resume file: `.planning/phases/03-borrowed-views-and-cfg-lifetimes/.continue-here.md` — then `/gsd-execute-phase 03`
+Last session: 2026-09-04T03:18:04.205Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
