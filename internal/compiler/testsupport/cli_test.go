@@ -446,6 +446,40 @@ func TestInterfaceCheckIsBodyBlindCLI(t *testing.T) {
 	}
 }
 
+// TestBranchFixturesThroughCLI is 03-03-02's D-11 shipped-binary proof: the
+// edge-specific accept/reject fixture pair is driven through the real
+// `./cmd/lang` binary's JSON projection (not only the in-process harness),
+// asserting the exact exit codes and diagnostic codes the CLI reports.
+func TestBranchFixturesThroughCLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	accept := testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_accept.lang")
+	reject := testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_reject.lang")
+
+	acceptResult := testsupport.RunCLI(t, binary, nil, "--json", "check", accept)
+	if acceptResult.Exit != 0 {
+		t.Fatalf("accept fixture: exit=%d stdout=%s stderr=%s", acceptResult.Exit, acceptResult.Stdout, acceptResult.Stderr)
+	}
+	var acceptDecoded protocol.Result
+	if err := json.Unmarshal(acceptResult.Stdout, &acceptDecoded); err != nil {
+		t.Fatalf("accept fixture: invalid JSON: %v\n%s", err, acceptResult.Stdout)
+	}
+	if len(acceptDecoded.Diagnostics) != 0 {
+		t.Fatalf("accept fixture: unexpected diagnostics via CLI: %+v", acceptDecoded.Diagnostics)
+	}
+
+	rejectResult := testsupport.RunCLI(t, binary, nil, "--json", "check", reject)
+	if rejectResult.Exit != 2 {
+		t.Fatalf("reject fixture: exit=%d want=2 stdout=%s stderr=%s", rejectResult.Exit, rejectResult.Stdout, rejectResult.Stderr)
+	}
+	var rejectDecoded protocol.Result
+	if err := json.Unmarshal(rejectResult.Stdout, &rejectDecoded); err != nil {
+		t.Fatalf("reject fixture: invalid JSON: %v\n%s", err, rejectResult.Stdout)
+	}
+	if len(rejectDecoded.Diagnostics) != 1 || rejectDecoded.Diagnostics[0].Code != "ownership.move_while_borrowed" {
+		t.Fatalf("reject fixture: diagnostics via CLI diverged: %+v", rejectDecoded.Diagnostics)
+	}
+}
+
 func TestPhase2VerifierScriptContract(t *testing.T) {
 	script, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase2.sh"))
 	if err != nil {

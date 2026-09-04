@@ -11,6 +11,24 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 )
 
+// testOnlyForceUniformLoanJoin is a fault-injection seam for
+// TestUniformJoinPlacementFlipsBothVerdicts (03-03-02): when true, every
+// arm-body loan's computed last use is forced to len(body.Bindings) -- as
+// if edge-specific placement had been deleted and every loan ended
+// uniformly at the join regardless of which edge actually needs it --
+// instead of whatever discoverLoanLastUses would otherwise compute. It is
+// read only by analyzeArmBody, never by analyzeStraightLine, so the
+// straight-line exhaustive differential (TestOwnershipSequenceExhaustive)
+// is untouched by its existence. This is a test-only seam, not a
+// production code path: a test that ships its own seam cannot be
+// falsified by reverting a production hunk (the seam would simply never
+// engage), so this specific claim is falsified by direct mutation instead
+// -- flipping this variable and observing a verdict change IS the
+// falsifying action, recorded verbatim in the owning plan's summary
+// (D-09, mirroring 02-VALIDATION.md's recorded residual-weakness
+// precedent for fault-injection seams).
+var testOnlyForceUniformLoanJoin = false
+
 type Result struct {
 	Program     core.Program
 	Diagnostics []diagnostic.Diagnostic
@@ -656,6 +674,19 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 		Work: len(body.Bindings) + 1,
 	}
 	loanUses := discoverLoanLastUses(parameterName, body)
+	if testOnlyForceUniformLoanJoin {
+		// Fault-injection seam for TestUniformJoinPlacementFlipsBothVerdicts
+		// (03-03-02): force every loan's computed last use to the arm's own
+		// join point (len(body.Bindings)), exactly as if edge-specific
+		// placement had been deleted and every loan ended uniformly at the
+		// join regardless of which edge actually needs it. See the doc
+		// comment on testOnlyForceUniformLoanJoin for why this is falsified
+		// by direct mutation rather than a production revert.
+		for index, use := range loanUses {
+			use.index = len(body.Bindings)
+			loanUses[index] = use
+		}
+	}
 	for index, binding := range body.Bindings {
 		if binding.RHS.Kind == "borrow" || binding.RHS.Kind == "borrow_mut" {
 			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{

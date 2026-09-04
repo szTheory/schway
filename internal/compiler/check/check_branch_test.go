@@ -2,6 +2,7 @@ package check_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/ast"
@@ -169,6 +170,39 @@ fn toggle(flag: Switch) -> Switch {
 	mislabeledBranch.Schema = core.Schema
 	if result := corevalidate.Validate(mislabeledBranch); result.Valid {
 		t.Fatalf("validator admitted an arm-body match mislabeled lang.core/0")
+	}
+}
+
+// TestBranchEdgeLastUseAcceptAndReject is 03-03-02's fixture-pair falsifier
+// for T-03-06: a loan borrowed and used inside one arm never blocks the
+// sibling arm's own independent move (accept), while the same shape's
+// mutation reachable from the BORROWING arm's own edge is rejected with the
+// ordinary move_while_borrowed diagnostic naming the loan. Neither fixture
+// needs a manual scope block — the ergonomics claim the phase goal makes.
+func TestBranchEdgeLastUseAcceptAndReject(t *testing.T) {
+	accept, err := os.ReadFile("../../../testdata/phase3/branch_one_arm_shared_accept.lang")
+	if err != nil {
+		t.Fatalf("read accept fixture: %v", err)
+	}
+	checkedAccept := session.Check(accept)
+	if len(checkedAccept.Diagnostics) != 0 {
+		t.Fatalf("accept fixture unexpectedly rejected: %+v", checkedAccept.Diagnostics)
+	}
+
+	reject, err := os.ReadFile("../../../testdata/phase3/branch_one_arm_shared_reject.lang")
+	if err != nil {
+		t.Fatalf("read reject fixture: %v", err)
+	}
+	checkedReject := session.Check(reject)
+	if len(checkedReject.Diagnostics) != 1 || checkedReject.Diagnostics[0].Code != "ownership.move_while_borrowed" {
+		t.Fatalf("reject fixture verdict changed: %+v", checkedReject.Diagnostics)
+	}
+	causeKinds := make(map[string]bool, len(checkedReject.Diagnostics[0].Causes))
+	for _, cause := range checkedReject.Diagnostics[0].Causes {
+		causeKinds[cause.Kind] = true
+	}
+	if !causeKinds["loan"] {
+		t.Fatalf("reject fixture's cause chain does not name the loan: %+v", checkedReject.Diagnostics[0].Causes)
 	}
 }
 

@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -9,7 +10,32 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
+
+// readTestdataFixture and mustParseProgram let internal (package check)
+// tests drive Program(...) directly against a real testdata/phase3
+// fixture, exactly as the seeded-fault test needs (it must call
+// check.Program with testOnlyForceUniformLoanJoin toggled, which is
+// unexported and therefore unreachable from the external check_test
+// package the other fixture-driving tests use).
+func readTestdataFixture(t *testing.T, name string) []byte {
+	t.Helper()
+	source, err := os.ReadFile("../../../testdata/phase3/" + name)
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", name, err)
+	}
+	return source
+}
+
+func mustParseProgram(t *testing.T, source []byte) ast.Program {
+	t.Helper()
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to parse: %+v", parsed.Diagnostics)
+	}
+	return parsed.Program
+}
 
 func TestOwnershipSequenceExhaustive(t *testing.T) {
 	// Thirty-six symbols span three declaration names, three operation kinds,
@@ -247,6 +273,34 @@ func TestStraightLineEndpointsUnchanged(t *testing.T) {
 		if endpoint.Kind != "point" || endpoint.AfterOperationID != wantOperationID {
 			t.Fatalf("loan %q endpoint diverged from the shipped straight-line answer: got %+v, want point at %q", final.LoanID, endpoint, wantOperationID)
 		}
+	}
+}
+
+// TestUniformJoinPlacementFlipsBothVerdicts is 03-03-02's seeded-fault
+// falsifier: with testOnlyForceUniformLoanJoin engaged (every arm-body
+// loan's last use forced to the arm's own join point, exactly as if
+// edge-specific placement had been deleted), the accept fixture's own
+// borrow-then-return arm reports a diagnostic it did not report before —
+// proving the accept verdict is load-bearing on edge-specific placement,
+// not merely green by construction. This is the plan's own
+// must_haves.truths claim ("deleting the edge-specific placement makes ONE
+// of those two fixtures flip verdict, and the suite fails") — the fault is
+// a test-only seam (see testOnlyForceUniformLoanJoin's doc comment), so it
+// is falsified by direct mutation (flipping the variable), not by
+// reverting a production hunk.
+func TestUniformJoinPlacementFlipsBothVerdicts(t *testing.T) {
+	source := readTestdataFixture(t, "branch_one_arm_shared_accept.lang")
+
+	baseline := Program(mustParseProgram(t, source))
+	if len(baseline.Diagnostics) != 0 {
+		t.Fatalf("accept fixture unexpectedly rejected before the fault is seeded: %+v", baseline.Diagnostics)
+	}
+
+	testOnlyForceUniformLoanJoin = true
+	defer func() { testOnlyForceUniformLoanJoin = false }()
+	faulted := Program(mustParseProgram(t, source))
+	if len(faulted.Diagnostics) == 0 {
+		t.Fatalf("seeded uniform-join fault left the accept fixture's verdict unchanged — the fault is not load-bearing")
 	}
 }
 

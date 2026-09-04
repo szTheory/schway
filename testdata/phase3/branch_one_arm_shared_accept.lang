@@ -1,0 +1,31 @@
+// A loan borrowed and used early in one arm ends before that arm's own
+// later move (proven by the seeded uniform-join fault: forcing it to
+// survive to the arm's own join wrongly rejects this fixture). Its sibling
+// arm's independent move is safe on its own, isolated by its own implicit
+// alias. Both arms check clean with no manual scope block.
+
+module owned.branch_one_arm_shared_accept
+
+export {
+  type Switch
+  fn choose
+}
+
+data Switch =
+  | On
+  | Off
+
+fn choose(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let view = borrow flag
+      let noted = view
+      let moved = take flag
+      moved
+    }
+    Off => {
+      let held = take flag
+      held
+    }
+  }
+}
