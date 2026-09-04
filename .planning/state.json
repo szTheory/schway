@@ -16,7 +16,7 @@
     {
       "number": "3",
       "name": "Borrowed Views and CFG Lifetimes",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "4",
@@ -39,5 +39,5 @@
     "label": "Advance to the next step",
     "reason": "Phase 3 of 6 · 33% · executing"
   },
-  "updated_at": "2026-09-04T03:17:59.959Z"
+  "updated_at": "2026-09-04T03:46:29.242Z"
 }
