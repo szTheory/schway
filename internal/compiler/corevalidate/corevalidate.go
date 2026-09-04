@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
@@ -21,7 +22,17 @@ const KnownEscape = "escape:coordinated-source-core-lie"
 // LinearWorkLimit is the exact declared count for the canonical scale shape:
 // one sealed Byte fact, one parameter plus one target per copy, and facts-1
 // copies followed by one final return claim.
-func LinearWorkLimit(facts int) int { return 16*facts + 13 }
+//
+// The +1 over the pre-03-04 formula (16*facts+13) is loanChainIndex's own
+// honest, once-per-place counted work (D-05): every operation in this scale
+// shape reads from the SAME parameter place (never a derived one), so
+// carriedLoans visits exactly one NEW place — the parameter itself — no
+// matter how large facts grows, and memoizes it after that single visit.
+// The constant is therefore facts-independent by construction, not an
+// unaccounted bump: TestValidatorReborrowChainIsLinear separately proves the
+// chain-walk's own cost scales with chain depth when the scale shape
+// actually has one to walk.
+func LinearWorkLimit(facts int) int { return 16*facts + 14 }
 
 type Problem struct {
 	Code   string `json:"code"`
@@ -170,6 +181,8 @@ func (v *validator) matchBranch(function *core.Function, dataNames map[string]co
 	if !v.check(len(patterns) == len(alternatives), "core.final_claim_mismatch", match.ID) {
 		return false
 	}
+	// v.linear itself independently re-derives and compares LoanEndpoints
+	// (T-03-13/D-12) once Blocks are present — see its own doc comment.
 	return v.linear(function)
 }
 
@@ -286,7 +299,21 @@ func (v *validator) linear(function *core.Function) bool {
 			return false
 		}
 	}
-	return v.replay(function, types, places)
+	if !v.replay(function, types, places) {
+		return false
+	}
+	if len(linear.Blocks) > 0 {
+		// T-03-13/D-12: independently re-derive the declared loan-endpoint
+		// set (recomputeLoanEndpoints) and require whole-value equality
+		// against what the producer declared. A moved, dropped, or invented
+		// endpoint is caught here, not by trusting the checker's own
+		// dataflow. Gated on Blocks (never populated for a straight-line
+		// body this phase) rather than on the match/linear dispatch shape,
+		// so this runs for any branch-shaped function regardless of which
+		// run() case dispatched here.
+		return v.loanEndpointsMatch(function)
+	}
+	return true
 }
 
 // blocksAndEdges independently validates the Phase 3 CFG facts: every block
@@ -342,6 +369,307 @@ func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[str
 	return true
 }
 
+// loanChainIndex is corevalidate's own place-provenance bookkeeping: for
+// every place produced by an operation, parent records the place it derived
+// from (its SourceID) and bornAt records the loan a place was freshly
+// created FOR, if the producing operation was a borrow. This is basic
+// data-flow bookkeeping intrinsic to the core artifact itself (any correct
+// reader has to know which loans a place carries), not the liveness
+// algorithm under test — replayStraightLine/replayBlocks still decide
+// conflicts and endpoints their own way once carriedLoans answers "what does
+// this place currently carry".
+//
+// carriedLoans replaces the O(n)-per-operation append-and-copy this file
+// used to do (D-02-03/Q2(b), validator half): instead of materializing a
+// fresh copy of a place's whole loan ancestry on every reference, it walks
+// the parent chain once per place, recursively, and memoizes the result —
+// so a place already visited (directly or as another place's ancestor)
+// answers in O(1) on every later reference, and the chain as a whole is
+// walked in full at most once per function.
+type loanChainIndex struct {
+	bornAt map[string]string
+	parent map[string]string
+	memo   map[string][]string
+	checks *int
+}
+
+func buildLoanChainIndex(operations []core.LinearOperation, checks *int) *loanChainIndex {
+	idx := &loanChainIndex{
+		bornAt: make(map[string]string, len(operations)),
+		parent: make(map[string]string, len(operations)),
+		memo:   make(map[string][]string, len(operations)),
+		checks: checks,
+	}
+	for _, operation := range operations {
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			idx.bornAt[operation.TargetID] = operation.LoanID
+		}
+		if operation.TargetID != "" {
+			idx.parent[operation.TargetID] = operation.SourceID
+		}
+	}
+	return idx
+}
+
+// carriedLoans walks the parent chain ITERATIVELY, not recursively, and
+// stops the moment it revisits a place already on the current walk. A
+// self-referencing or cyclic parent pointer can only arise from a corrupted
+// core artifact (e.g. a borrow target retargeted onto its own source) — this
+// package's ordinary place/target validation rejects that elsewhere in the
+// same pass — but this helper must never crash on one: a recursive walk
+// would recurse forever (or exhaust the goroutine stack) on exactly that
+// input, which is precisely the kind of adversarial input a source-blind
+// validator must stay defined against.
+func (idx *loanChainIndex) carriedLoans(placeID string) []string {
+	if placeID == "" {
+		return nil
+	}
+	if cached, ok := idx.memo[placeID]; ok {
+		return cached
+	}
+	var path []string
+	visited := make(map[string]bool, 1)
+	current := placeID
+	for current != "" {
+		if cached, ok := idx.memo[current]; ok {
+			return idx.foldChain(path, cached)
+		}
+		if visited[current] {
+			return idx.foldChain(path, nil) // cyclic parent pointer: stop, do not recurse
+		}
+		visited[current] = true
+		path = append(path, current)
+		current = idx.parent[current]
+	}
+	return idx.foldChain(path, nil)
+}
+
+// foldChain memoizes every place on path, walking from the outermost
+// (furthest from the original query) back to the innermost, each place's
+// loan list being its own birth loan (if any) prepended to whatever loans
+// the rest of the chain already carries.
+func (idx *loanChainIndex) foldChain(path []string, tail []string) []string {
+	loans := tail
+	for i := len(path) - 1; i >= 0; i-- {
+		place := path[i]
+		*idx.checks++ // one unit per NEWLY visited place while walking its ancestry, once ever
+		var here []string
+		if loanID, born := idx.bornAt[place]; born {
+			here = append(here, loanID)
+		}
+		here = append(here, loans...)
+		idx.memo[place] = here
+		loans = here
+	}
+	return loans
+}
+
+// blockReach computes, for every declared block, the set of OTHER blocks
+// reachable by following one or more successor edges — a one-shot
+// reachability closure, deliberately not the iterative worklist fixpoint
+// check.go's loanLivenessFixpoint uses. Each root's breadth-first search
+// visits a block at most once (a visited-once frontier, never re-enqueued),
+// so the computation terminates in bounded time even over an
+// (illegitimately) cyclic declared graph — unlike the checker, which
+// explicitly detects and rejects a cycle before analysis, this closure has
+// no need to: a cyclic declaration just makes every block in the cycle
+// mutually reachable, which can never make a dishonest core artifact pass
+// the endpoint comparison it would otherwise fail.
+func blockReach(blocks []core.Block, index map[string]int) []map[int]bool {
+	reach := make([]map[int]bool, len(blocks))
+	for i, block := range blocks {
+		visited := make(map[int]bool, len(blocks))
+		queue := append([]string(nil), block.Successors...)
+		for len(queue) > 0 {
+			id := queue[0]
+			queue = queue[1:]
+			successorIndex, known := index[id]
+			if !known || visited[successorIndex] {
+				continue
+			}
+			visited[successorIndex] = true
+			queue = append(queue, blocks[successorIndex].Successors...)
+		}
+		reach[i] = visited
+	}
+	return reach
+}
+
+// recomputeLoanEndpoints independently re-derives a branch-shaped function's
+// loan-endpoint set directly from the declared Blocks/Edges/Operations, by a
+// mechanism check.go's loanLivenessFixpoint does not use (T-03-13/D-12).
+// loanLivenessFixpoint iterates a worklist, re-evaluating each block's
+// transfer function against its successors' live-in sets until nothing
+// changes (a converging monotone dataflow). This pass never iterates to
+// convergence at all. Instead it:
+//
+//  1. Materializes the full "use relation" up front — every (loanID,
+//     blockIdx, ordinal) at which some operation actually references that
+//     loan (through its own place-provenance chain) — as an explicit list,
+//     not folded into a converging live-in/live-out set.
+//  2. Computes the reachability closure of the declared successor relation
+//     (blockReach) once.
+//  3. Reduces, per loan: a block's local last reference is a POINT endpoint
+//     exactly when no direct successor of that block, nor anything
+//     reachable from it, ever references the loan again (needsAt is a pure
+//     membership test against the materialized relation, not a value that
+//     converges). A block with more than one successor, where the loan is
+//     needed by at least one successor's reachable future but not by
+//     another, gets an EDGE endpoint on exactly the successor edge that
+//     does not need it. A loan with no reference anywhere past its own
+//     creation ends at its own birth operation (the same fallback
+//     materializeLoanEndpoints uses when nothing else claims a loan).
+//
+// Neither derivation is obtainable from the other by renaming: one converges
+// a set under repeated re-evaluation; the other computes one static closure
+// and one static reduction over an explicitly materialized relation, with no
+// shared helper, no import, and no worklist anywhere in this file. On any
+// acyclic graph (OWN-03's scope this phase) the two are mathematically
+// forced to agree, because both compute the same underlying partial order of
+// "happens before, reachably" — so an honest producer's declared endpoints
+// always match, while a corrupted endpoint set (moved, dropped, or invented)
+// is caught by a genuinely independent recomputation, not by an oracle that
+// could share a wrong law with the producer (WR-02).
+func (v *validator) recomputeLoanEndpoints(function *core.Function) []core.LoanEndpoint {
+	linear := function.Linear
+	if len(linear.Blocks) == 0 {
+		return nil
+	}
+
+	blockIndex := make(map[string]int, len(linear.Blocks))
+	for index, block := range linear.Blocks {
+		blockIndex[block.ID] = index
+	}
+	edgeIDByPair := make(map[[2]string]string, len(linear.Edges))
+	for _, edge := range linear.Edges {
+		edgeIDByPair[[2]string{edge.FromBlockID, edge.ToBlockID}] = edge.ID
+	}
+	reach := blockReach(linear.Blocks, blockIndex)
+
+	operationBlock := make(map[string]int, len(linear.Operations))
+	operationOrdinal := make(map[string]int, len(linear.Operations))
+	for _, block := range linear.Blocks {
+		for ordinal, opID := range block.OperationIDs {
+			operationBlock[opID] = blockIndex[block.ID]
+			operationOrdinal[opID] = ordinal
+		}
+	}
+
+	chain := buildLoanChainIndex(linear.Operations, &v.checks)
+
+	type birthFact struct {
+		blockIdx int
+		ordinal  int
+		opID     string
+	}
+	born := make(map[string]birthFact)
+	for _, operation := range linear.Operations {
+		v.checks++ // one inspection per operation while materializing loan births
+		if operation.Kind != core.OpBorrowShared && operation.Kind != core.OpBorrowExclusive {
+			continue
+		}
+		blockIdx, known := operationBlock[operation.ID]
+		if !known {
+			continue // referential-closure gaps are already rejected by blocksAndEdges
+		}
+		born[operation.LoanID] = birthFact{blockIdx: blockIdx, ordinal: operationOrdinal[operation.ID], opID: operation.ID}
+	}
+
+	type reference struct {
+		blockIdx int
+		ordinal  int
+		opID     string
+	}
+	referencesByLoan := make(map[string][]reference)
+	for _, operation := range linear.Operations {
+		blockIdx, known := operationBlock[operation.ID]
+		if !known {
+			continue
+		}
+		for _, loanID := range chain.carriedLoans(operation.SourceID) {
+			v.checks++ // one inspection per materialized (operation, referenced loan) pair
+			referencesByLoan[loanID] = append(referencesByLoan[loanID], reference{blockIdx: blockIdx, ordinal: operationOrdinal[operation.ID], opID: operation.ID})
+		}
+	}
+
+	var endpoints []core.LoanEndpoint
+	for loanID, birth := range born {
+		v.checks++ // one reduction pass per declared loan
+
+		referencedAt := make(map[int]bool, len(linear.Blocks))
+		lastOrdinalAt := make(map[int]int, len(linear.Blocks))
+		lastOpAt := make(map[int]string, len(linear.Blocks))
+		for _, ref := range referencesByLoan[loanID] {
+			if !referencedAt[ref.blockIdx] || ref.ordinal > lastOrdinalAt[ref.blockIdx] {
+				lastOrdinalAt[ref.blockIdx] = ref.ordinal
+				lastOpAt[ref.blockIdx] = ref.opID
+			}
+			referencedAt[ref.blockIdx] = true
+		}
+		needsAt := func(blockIdx int) bool {
+			if referencedAt[blockIdx] {
+				return true
+			}
+			for target := range referencedAt {
+				if reach[blockIdx][target] {
+					return true
+				}
+			}
+			return false
+		}
+
+		scope := []int{birth.blockIdx}
+		for target := range reach[birth.blockIdx] {
+			scope = append(scope, target)
+		}
+		for _, blockIdx := range scope {
+			v.checks++ // one classification decision per block in this loan's reachable scope
+			block := linear.Blocks[blockIdx]
+			liveOut := false
+			for _, successorID := range block.Successors {
+				if needsAt(blockIndex[successorID]) {
+					liveOut = true
+					break
+				}
+			}
+			if len(block.Successors) > 1 && liveOut {
+				for _, successorID := range block.Successors {
+					if needsAt(blockIndex[successorID]) {
+						continue
+					}
+					id := edgeIDByPair[[2]string{block.ID, successorID}]
+					endpoints = append(endpoints, core.LoanEndpoint{ID: id + ":" + loanID, LoanID: loanID, Kind: "edge", EdgeID: id})
+				}
+			}
+			if referencedAt[blockIdx] && !liveOut {
+				endpoints = append(endpoints, core.LoanEndpoint{
+					ID: fmt.Sprintf("%s:point:%s:%d:%s", function.ID, block.ID, lastOrdinalAt[blockIdx], loanID),
+					LoanID: loanID, Kind: "point", BlockID: block.ID, AfterOperationID: lastOpAt[blockIdx],
+				})
+			}
+		}
+
+		if len(referencesByLoan[loanID]) == 0 {
+			// Fallback: a loan never referenced after its own creation ends
+			// at its own birth operation — the same degenerate case
+			// materializeLoanEndpoints' `!recorded[operation.LoanID]` branch
+			// covers on the checker side.
+			block := linear.Blocks[birth.blockIdx]
+			endpoints = append(endpoints, core.LoanEndpoint{
+				ID: fmt.Sprintf("%s:point:%s:%d:%s", function.ID, block.ID, birth.ordinal, loanID),
+				LoanID: loanID, Kind: "point", BlockID: block.ID, AfterOperationID: birth.opID,
+			})
+		}
+	}
+	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].ID < endpoints[j].ID })
+	return endpoints
+}
+
+func (v *validator) loanEndpointsMatch(function *core.Function) bool {
+	recomputed := v.recomputeLoanEndpoints(function)
+	return v.check(reflect.DeepEqual(recomputed, function.Linear.LoanEndpoints), "core.loan_endpoint_mismatch", function.ID)
+}
+
 func (v *validator) replay(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
 	if len(function.Linear.Blocks) > 0 {
 		return v.replayBlocks(function, types, places)
@@ -354,25 +682,25 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	initialized := map[string]bool{function.Parameter.ID: true}
 	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
-	// loansForPlace is transitive: a place produced from a loan-derived place
+	// loanLastUse is transitive: a place produced from a loan-derived place
 	// carries every loan its source carried. Recording only the immediate
 	// borrow target lets a reborrow or a copy of a loan expire the original
 	// loan one operation early and admit a move while it is still observable.
-	loansForPlace := make(map[string][]string)
+	// D-02-03/Q2(b), validator half: this used to re-copy a place's whole
+	// loan-ancestry list on every operation (a per-operation append-and-copy
+	// that grows with chain depth). loanChainIndex.carriedLoans replaces
+	// that with a memoized parent-pointer chain walked at most once per
+	// place across the whole function.
 	loanLastUse := make(map[string]int)
+	chain := buildLoanChainIndex(operations, &v.checks)
 	for index, operation := range operations {
 		v.checks++ // inspect each operation once while finding final loan uses
-		carried := append([]string(nil), loansForPlace[operation.SourceID]...)
-		for _, loanID := range carried {
+		for _, loanID := range chain.carriedLoans(operation.SourceID) {
 			loanLastUse[loanID] = index
 		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			loanOwner[operation.LoanID] = operation.SourceID
 			loanLastUse[operation.LoanID] = index
-			carried = append(carried, operation.LoanID)
-		}
-		if operation.Kind != core.OpReturn && len(carried) > 0 {
-			loansForPlace[operation.TargetID] = carried
 		}
 	}
 	ownerBlockedUntil := make(map[string]int)
@@ -501,21 +829,19 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	initialized := map[string]bool{function.Parameter.ID: true}
 	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
-	loansForPlace := make(map[string][]string)
+	// See replayStraightLine's identical declaration for why a memoized
+	// parent-pointer chain (loanChainIndex), not a per-operation copy of the
+	// accumulated loan list, computes loanLastUse here (D-02-03/Q2(b)).
 	loanLastUse := make(map[string]int)
+	chain := buildLoanChainIndex(operations, &v.checks)
 	for index, operation := range operations {
 		v.checks++ // inspect each operation once while finding final loan uses
-		carried := append([]string(nil), loansForPlace[operation.SourceID]...)
-		for _, loanID := range carried {
+		for _, loanID := range chain.carriedLoans(operation.SourceID) {
 			loanLastUse[loanID] = index
 		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			loanOwner[operation.LoanID] = operation.SourceID
 			loanLastUse[operation.LoanID] = index
-			carried = append(carried, operation.LoanID)
-		}
-		if operation.Kind != core.OpReturn && len(carried) > 0 {
-			loansForPlace[operation.TargetID] = carried
 		}
 	}
 	ownerBlockedUntil := make(map[string]int)

@@ -151,12 +151,20 @@ func TestBlockEdgeValidationRules(t *testing.T) {
 	}
 }
 
-// TestLoanEndpointMutationMatrix (T-03-06/T-03-14 shipped-early) confirms a
-// branch-shaped function still requires exactly one OpReturn per block that
-// carries operations, keyed to that block rather than to the whole flat
-// operations list — the exact change replayBlocks makes to the pre-existing
-// straight-line return-uniqueness rule.
-func TestLoanEndpointMutationMatrix(t *testing.T) {
+// TestBranchReturnMustBeLastInBlock confirms a branch-shaped function still
+// requires exactly one OpReturn per block that carries operations, keyed to
+// that block rather than to the whole flat operations list — the exact
+// change replayBlocks makes to the pre-existing straight-line
+// return-uniqueness rule.
+//
+// Renamed from this test's original name (03-01's TestLoanEndpointMutationMatrix)
+// in 03-04 (deviation, see 03-04-SUMMARY.md): the name promised a loan-endpoint
+// mutation matrix, but the test never touched a LoanEndpoint at all — it is an
+// OpReturn-ordering falsifier. 03-04-03 needs the exact name
+// TestLoanEndpointMutationMatrix for the real endpoint mutation matrix
+// (moved/dropped/invented, T-03-06/T-03-14's actual required control), and Go
+// forbids two functions of the same name in one package.
+func TestBranchReturnMustBeLastInBlock(t *testing.T) {
 	program := validBranchProgram(t)
 	linear := program.Functions[0].Linear
 	// Move the return operation out of order within its own block: swap the
