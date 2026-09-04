@@ -3,6 +3,7 @@ package native
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,18 +47,75 @@ func TestNativeStreamsIndependentlyBounded(t *testing.T) {
 	}
 }
 
-func TestNativeNeverUsesCombinedOutput(t *testing.T) {
+// unboundedSpawnAllowlist is intentionally empty. Every Go file in this module
+// outside .planning/spikes/ must spawn processes through exec.CommandContext
+// with independently bounded stdout and stderr streams. Any entry added here
+// must carry an explicit written justification; an unjustified entry is a
+// review failure, not a waiver.
+var unboundedSpawnAllowlist = map[string]string{}
+
+// TestSourceNeverSpawnsUnboundedProcesses is the repo-wide successor to the
+// former native.go-only single-file grep. It scans every *.go file in the
+// module for the two patterns that defeat the Phase 02 bounded-stream +
+// deadline discipline: the merged-output helper (which reads both streams
+// into one unbounded buffer) and the context-free spawn constructor (which
+// starts a child with no deadline). Both needles are assembled at runtime so
+// this scanner never matches its own source.
+// Only .planning/spikes/ is excluded, because throwaway spike labs are not
+// part of the compiler or its test support.
+func TestSourceNeverSpawnsUnboundedProcesses(t *testing.T) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("caller path unavailable")
 	}
-	source, err := os.ReadFile(filepath.Join(filepath.Dir(file), "native.go"))
-	if err != nil {
-		t.Fatal(err)
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
+	// Assembled at runtime so this scanner does not match its own source.
+	forbidden := []struct{ needle, reason string }{
+		{"Combined" + "Output", "merges stdout and stderr into one unbounded buffer"},
+		{"exec." + "Command(", "spawns a process without a context deadline (use exec.CommandContext)"},
 	}
-	forbidden := "Combined" + "Output"
-	if strings.Contains(string(source), forbidden) {
-		t.Fatalf("native runner merges stdout and stderr through %s", forbidden)
+	spikes := filepath.Join(root, ".planning", "spikes") + string(filepath.Separator)
+	scanned := 0
+	walkErr := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			if entry.Name() == ".git" {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if filepath.Ext(path) != ".go" || strings.HasPrefix(path, spikes) {
+			return nil
+		}
+		relative, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return relErr
+		}
+		relative = filepath.ToSlash(relative)
+		source, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		scanned++
+		for _, pattern := range forbidden {
+			if !strings.Contains(string(source), pattern.needle) {
+				continue
+			}
+			if reason, allowed := unboundedSpawnAllowlist[relative]; allowed {
+				t.Logf("allowlisted %s (%s): %s", relative, pattern.needle, reason)
+				continue
+			}
+			t.Errorf("%s uses %s, which %s", relative, pattern.needle, pattern.reason)
+		}
+		return nil
+	})
+	if walkErr != nil {
+		t.Fatal(walkErr)
+	}
+	if scanned == 0 {
+		t.Fatal("scanner found no Go sources; the guard would pass vacuously")
 	}
 }
 
