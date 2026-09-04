@@ -45,8 +45,14 @@ type Runner struct {
 	// execution document to carry (D-04-08). The zero value behaves exactly
 	// as ExpectValue, so every pre-Phase-4 caller that never sets this field
 	// keeps the original "returned"-only contract unchanged.
-	Expect  TerminalOutcome
-	command func(context.Context, string, ...string) *exec.Cmd
+	Expect TerminalOutcome
+	// ForeignSources names additional C files (the frozen foreign
+	// translation unit, D-04-10) to compile as their own separate, bounded,
+	// timed invocations and link into the final binary. Empty for every
+	// pre-Phase-4 caller, which keeps the original single-file compile-and-
+	// link invocation byte-for-byte unchanged.
+	ForeignSources []string
+	command        func(context.Context, string, ...string) *exec.Cmd
 }
 
 func DefaultRunner() Runner { return Runner{ClangPath: "clang", Timeout: 5 * time.Second} }
@@ -70,10 +76,46 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 		return Result{}, &ToolError{Code: "native.temp_failed", Err: err}
 	}
 
+	// Per D-04-10, the frozen foreign translation unit is compiled as its
+	// own separate, bounded, timed invocation -- never merged into one
+	// clang invocation with program.c's own compile -- and only the
+	// resulting object is linked into the final binary below.
+	objectPaths := make([]string, 0, len(r.ForeignSources))
+	for index, foreignSource := range r.ForeignSources {
+		objectPath := filepath.Join(directory, fmt.Sprintf("foreign_%d.o", index))
+		foreignCtx, foreignCancel := context.WithTimeout(parent, r.Timeout)
+		foreignCommand := r.commandContext(foreignCtx, r.ClangPath, "-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization, "-c", foreignSource, "-o", objectPath)
+		var foreignStdout, foreignStderr boundedWriter
+		foreignCommand.Stdout = &foreignStdout
+		foreignCommand.Stderr = &foreignStderr
+		foreignErr := foreignCommand.Run()
+		deadlineExceeded := errors.Is(foreignCtx.Err(), context.DeadlineExceeded)
+		foreignCancel()
+		if deadlineExceeded {
+			return Result{}, &ToolError{Code: "native.timeout", Err: foreignCtx.Err()}
+		}
+		if foreignStdout.overflowed() {
+			return Result{}, streamError("native.compile_stdout_truncated")
+		}
+		if foreignStderr.overflowed() {
+			return Result{}, streamError("native.compile_stderr_truncated")
+		}
+		if foreignErr != nil {
+			code := "native.compile_failed"
+			if errors.Is(foreignErr, exec.ErrNotFound) || errors.Is(foreignErr, os.ErrNotExist) {
+				code = "native.tool_missing"
+			}
+			return Result{}, &ToolError{Code: code, Err: withStderr(foreignErr, foreignStderr.bytes())}
+		}
+		objectPaths = append(objectPaths, objectPath)
+	}
+
 	ctx, cancel := context.WithTimeout(parent, r.Timeout)
 	defer cancel()
 	started := time.Now()
-	command := r.commandContext(ctx, r.ClangPath, "-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization, sourcePath, "-o", binaryPath)
+	arguments := append([]string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization, sourcePath}, objectPaths...)
+	arguments = append(arguments, "-o", binaryPath)
+	command := r.commandContext(ctx, r.ClangPath, arguments...)
 	var compileStdout, compileStderr boundedWriter
 	command.Stdout = &compileStdout
 	command.Stderr = &compileStderr

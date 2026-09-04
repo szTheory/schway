@@ -37,8 +37,27 @@ type Function struct {
 	// field on TypeFact, because origin is a per-signature fact about which
 	// parameter a result derives from, not a property of the returned type
 	// itself (03-RESEARCH Q5).
-	PublicOrigin *PublicOrigin   `json:"public_origin,omitempty"`
-	Span         diagnostic.Span `json:"span"`
+	PublicOrigin *PublicOrigin `json:"public_origin,omitempty"`
+	// ForeignContract is the Phase 4 D-04-12 fact (additive, omitempty):
+	// present only when this function calls a declared `foreign C {}` symbol.
+	// Every pre-Phase-4 function, and every Phase 4 function that calls no
+	// foreign symbol, leaves this nil, so its serialized bytes are unchanged
+	// (D-04-23).
+	ForeignContract *ForeignContract `json:"foreign_contract,omitempty"`
+	Span            diagnostic.Span  `json:"span"`
+}
+
+// ForeignContract is the minimum obligation set this plan populates for one
+// declared foreign C symbol a function calls: its name, allocator identity,
+// the two mandatory admission policies (D-04-16), and the name of the
+// nullary ADT its err edge carries (D-04-05). The fuller three-layer
+// contract (target layout, capture/retention) lands in a later plan.
+type ForeignContract struct {
+	Symbol       string `json:"symbol"`
+	Allocator    string `json:"allocator"`
+	Unwind       string `json:"unwind,omitempty"`
+	NonlocalExit string `json:"nonlocal_exit,omitempty"`
+	Fails        string `json:"fails,omitempty"`
 }
 
 // PublicOrigin records the declared origin path(s) and access mode for a
@@ -131,6 +150,15 @@ const (
 	OpBorrowShared    OperationKind = "borrow_shared"
 	OpBorrowExclusive OperationKind = "borrow_exclusive"
 	OpReturn          OperationKind = "return"
+	// OpForeignCall is Phase 4's only call surface (D-04-01): a fallible call
+	// to a declared `foreign C {}` symbol. It produces two successor edges
+	// (OkEdgeID/ErrEdgeID below) rather than a single target place.
+	OpForeignCall OperationKind = "foreign_call"
+	// OpFail is a terminator (see TerminatorKinds) that ends a block on the
+	// err edge of an OpForeignCall, carrying a place of the declared failure
+	// ADT (D-04-04/D-04-09): the only producer of a "typed_failure" terminal
+	// outcome anywhere in the IR.
+	OpFail OperationKind = "fail"
 )
 
 // AllOperationKinds returns every declared OperationKind, in declaration
@@ -140,15 +168,15 @@ const (
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
-// always a subset of AllOperationKinds(). Phase 4 grows this set (OpFail,
-// and later a defect terminator); today only OpReturn ends a block, exactly
-// as every Phase 1-3 core artifact assumes.
+// always a subset of AllOperationKinds(). Phase 4 adds OpFail (a later plan
+// adds a defect terminator); every pre-Phase-4 core artifact only ever ends
+// a block with OpReturn.
 func TerminatorKinds() []OperationKind {
-	return []OperationKind{OpReturn}
+	return []OperationKind{OpReturn, OpFail}
 }
 
 type LinearOperation struct {
@@ -159,6 +187,15 @@ type LinearOperation struct {
 	TargetID string        `json:"target_id,omitempty"`
 	LoanID   string        `json:"loan_id,omitempty"`
 	TypeID   string        `json:"type_id"`
+	// OkEdgeID, ErrEdgeID, and ErrTargetID are Phase 4 additive omitempty
+	// facts populated only on an OpForeignCall operation (D-04-04): the ok
+	// edge continues at TargetID (an ordinary place, exactly like OpCopy's
+	// target), while the err edge's own synthesized failure-ADT place is
+	// ErrTargetID. Every pre-Phase-4 operation, and every operation kind
+	// other than OpForeignCall, leaves all three empty.
+	OkEdgeID    string `json:"ok_edge_id,omitempty"`
+	ErrEdgeID   string `json:"err_edge_id,omitempty"`
+	ErrTargetID string `json:"err_target_id,omitempty"`
 }
 
 type LinearBody struct {

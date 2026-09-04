@@ -94,6 +94,23 @@ func runBranchArm(function core.Function, arm core.MatchArm, input string) (Exec
 		case core.OpBorrowExclusive:
 			values[operation.TargetID] = value
 			events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
+		case core.OpForeignCall:
+			// No match arm can produce a foreign call this phase (checkBranch
+			// does not admit `try` inside an arm body) -- this case exists
+			// solely so control:kind.exhaustive_dispatch's six-site table
+			// finds every kind handled at every site, per D-04-22.
+			values[operation.TargetID] = value
+			values[operation.ErrTargetID] = "err"
+			events = append(events, Event{
+				Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: function.ID,
+				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+			})
+		case core.OpFail:
+			events = append(events, Event{
+				Schema: execution.Schema1, ID: operation.ID + ":event:failed", Kind: "function.failed",
+				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
+			})
+			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "typed_failure", Value: value}, Events: events, LiveResources: []string{}}, nil
 		case core.OpReturn:
 			events = append(events, Event{
 				Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
@@ -107,6 +124,101 @@ func runBranchArm(function core.Function, arm core.MatchArm, input string) (Exec
 	return Execution{}, fmt.Errorf("branch arm %q has no return operation", arm.ID)
 }
 
+// runLinearBlocks walks a fallible-call function's Blocks/Edges (D-04-04),
+// starting at the entry block, executing each block's operations in order.
+// An OpForeignCall never terminates its block by itself -- per Claude's
+// Discretion (04-PATTERNS Pattern 3 note), the interpreter cannot actually
+// call C, so it models the call as a fixed literal-outcome stub that always
+// succeeds this phase, unconditionally following the ok edge. Proving
+// engine disagreement on a genuine failure path is deferred to a later
+// plan; this phase proves the dispatch shape exists and both engines agree
+// on the success path the shipped fixture actually exercises.
+func runLinearBlocks(function core.Function, input string) (Execution, error) {
+	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		operations[operation.ID] = operation
+	}
+	blocks := make(map[string]core.Block, len(function.Linear.Blocks))
+	for _, block := range function.Linear.Blocks {
+		blocks[block.ID] = block
+	}
+	edges := make(map[string]core.Edge, len(function.Linear.Edges))
+	for _, edge := range function.Linear.Edges {
+		edges[edge.ID] = edge
+	}
+	values := map[string]string{function.Parameter.ID: input}
+	events := make([]Event, 0, len(function.Linear.Operations))
+	currentID := function.ID + ":block:entry"
+	for {
+		block, known := blocks[currentID]
+		if !known {
+			return Execution{}, fmt.Errorf("block %q is unknown", currentID)
+		}
+		var forked *core.LinearOperation
+		for _, operationID := range block.OperationIDs {
+			operation, known := operations[operationID]
+			if !known {
+				return Execution{}, fmt.Errorf("block %q references unknown operation %q", block.ID, operationID)
+			}
+			value, initialized := values[operation.SourceID]
+			if !initialized {
+				return Execution{}, fmt.Errorf("operation %q reads uninitialized place %q", operation.ID, operation.SourceID)
+			}
+			switch operation.Kind {
+			case core.OpCopy:
+				values[operation.TargetID] = value
+				events = append(events, ownedEvent(function, operation, "value.copied"))
+			case core.OpMove:
+				delete(values, operation.SourceID)
+				values[operation.TargetID] = value
+				events = append(events, ownedEvent(function, operation, "value.transferred"))
+			case core.OpBorrowShared:
+				values[operation.TargetID] = value
+				events = append(events, ownedEvent(function, operation, "value.borrowed"))
+			case core.OpBorrowExclusive:
+				values[operation.TargetID] = value
+				events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
+			case core.OpForeignCall:
+				values[operation.TargetID] = value
+				values[operation.ErrTargetID] = "err"
+				events = append(events, Event{
+					Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: function.ID,
+					SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+				})
+				forkedOperation := operation
+				forked = &forkedOperation
+			case core.OpReturn:
+				events = append(events, Event{
+					Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
+					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
+				})
+				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: []string{}}, nil
+			case core.OpFail:
+				events = append(events, Event{
+					Schema: execution.Schema1, ID: operation.ID + ":event:failed", Kind: "function.failed",
+					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
+				})
+				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "typed_failure", Value: value}, Events: events, LiveResources: []string{}}, nil
+			default:
+				return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
+			}
+		}
+		if forked != nil {
+			edge, known := edges[forked.OkEdgeID]
+			if !known {
+				return Execution{}, fmt.Errorf("foreign call %q references unknown ok edge %q", forked.ID, forked.OkEdgeID)
+			}
+			currentID = edge.ToBlockID
+			continue
+		}
+		if len(block.Successors) == 1 {
+			currentID = block.Successors[0]
+			continue
+		}
+		return Execution{}, fmt.Errorf("block %q has no terminator and an ambiguous successor set", block.ID)
+	}
+}
+
 func CanonicalBytes(execution Execution) ([]byte, error) {
 	return execution2bytes(execution)
 }
@@ -114,6 +226,15 @@ func CanonicalBytes(execution Execution) ([]byte, error) {
 func execution2bytes(value Execution) ([]byte, error) { return execution.CanonicalBytes(value) }
 
 func runLinear(function core.Function, input string) (Execution, error) {
+	// A straight-line body that carries Blocks/Edges is Phase 4's fallible-
+	// call shape (D-04-04): the flat Operations list alone is not enough to
+	// know which edge to follow, so it is walked block-by-block instead.
+	// Every pre-Phase-4 linear (non-Match) function leaves Blocks empty --
+	// only checkFallibleLinear ever populates it for a Match-less function --
+	// so this branch changes nothing for any existing program.
+	if len(function.Linear.Blocks) > 0 {
+		return runLinearBlocks(function, input)
+	}
 	values := map[string]string{function.Parameter.ID: input}
 	events := make([]Event, 0, len(function.Linear.Operations))
 	for _, operation := range function.Linear.Operations {

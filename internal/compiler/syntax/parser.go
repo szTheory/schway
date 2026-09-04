@@ -164,12 +164,89 @@ func (p *parser) parseProgram() ast.Program {
 			program.Data = append(program.Data, p.dataDecl())
 		case TokenFn:
 			program.Funcs = append(program.Funcs, p.funcDecl())
+		case TokenForeign:
+			program.Foreign = append(program.Foreign, p.foreignBlock())
 		default:
 			p.problem("syntax.expected_declaration", p.peek(), "expected `data` or `fn` declaration")
-			p.recoverUntil(TokenData, TokenFn, TokenEOF)
+			p.recoverUntil(TokenData, TokenFn, TokenForeign, TokenEOF)
 		}
 	}
 	return program
+}
+
+// maxForeignSymbolsPerBlock and maxForeignPoliciesPerSymbol bound Phase 4's
+// foreign declaration surface (T-04-05), sized generously above anything
+// this phase's fixtures need, mirroring maxArmsPerMatch's fail-closed-above-
+// the-cap shape rather than truncating silently.
+const (
+	maxForeignSymbolsPerBlock   = 64
+	maxForeignPoliciesPerSymbol = 32
+)
+
+// foreignBlock parses one `foreign C { ... }` declaration (D-04-01). Each
+// declared symbol's admission (missing unwind/nonlocal_exit policy, a call
+// target that resolves to a Lang function) is check.go's job, not the
+// parser's -- the grammar accepts any number of `key: value` policy lines so
+// check.go can decide which keys are missing (D-04-16: no default value).
+func (p *parser) foreignBlock() ast.ForeignBlock {
+	start := p.expect(TokenForeign, "syntax.expected_foreign")
+	language := p.identifier("syntax.expected_foreign_language")
+	p.expect(TokenLBrace, "syntax.expected_lbrace")
+	block := ast.ForeignBlock{Language: language.Text, Span: spanFrom(start, language)}
+	for p.peek().Kind == TokenFn {
+		if len(block.Symbols) >= maxForeignSymbolsPerBlock {
+			p.problem("syntax.foreign_symbol_limit", p.peek(), "foreign block exceeds the declared symbol limit")
+			p.recoverUntil(TokenRBrace, TokenData, TokenFn, TokenForeign, TokenEOF)
+			break
+		}
+		block.Symbols = append(block.Symbols, p.foreignSymbol())
+	}
+	end := p.expect(TokenRBrace, "syntax.expected_rbrace")
+	block.Span.End = end.Span.End
+	return block
+}
+
+func (p *parser) foreignSymbol() ast.ForeignSymbol {
+	start := p.expect(TokenFn, "syntax.expected_fn")
+	name := p.identifier("syntax.expected_function_name")
+	p.expect(TokenLParen, "syntax.expected_lparen")
+	parameterName := p.identifier("syntax.expected_parameter_name")
+	p.expect(TokenColon, "syntax.expected_colon")
+	parameterType := p.typeRef()
+	p.expect(TokenRParen, "syntax.expected_rparen")
+	p.expect(TokenArrow, "syntax.expected_arrow")
+	returnType := p.typeRef()
+	p.expect(TokenLBrace, "syntax.expected_lbrace")
+	var policies []ast.ForeignPolicy
+	for p.peek().Kind == TokenIdentifier {
+		if len(policies) >= maxForeignPoliciesPerSymbol {
+			p.problem("syntax.foreign_policy_limit", p.peek(), "foreign symbol exceeds the declared policy limit")
+			p.recoverUntil(TokenRBrace, TokenData, TokenFn, TokenForeign, TokenEOF)
+			break
+		}
+		key := p.advance()
+		p.expect(TokenColon, "syntax.expected_colon")
+		value := p.peek()
+		isString := value.Kind == TokenString
+		if isString || value.Kind == TokenIdentifier {
+			p.advance()
+		} else {
+			p.problem("syntax.expected_foreign_policy_value", value, "expected an identifier or string policy value")
+		}
+		text := value.Text
+		if isString && len(text) >= 2 {
+			text = text[1 : len(text)-1]
+		}
+		policies = append(policies, ast.ForeignPolicy{Key: key.Text, Value: text, IsString: isString, Span: spanFrom(key, value)})
+	}
+	end := p.expect(TokenRBrace, "syntax.expected_rbrace")
+	return ast.ForeignSymbol{
+		Name:       name.Text,
+		Parameter:  ast.Parameter{Name: parameterName.Text, Type: parameterType, Span: parameterName.Span},
+		ReturnType: returnType,
+		Policies:   policies,
+		Span:       spanFrom(start, end),
+	}
 }
 
 func (p *parser) modulePath() string {
@@ -310,6 +387,12 @@ func (p *parser) linearBody() ast.LinearBody {
 		bindingStart := p.advance()
 		name := p.identifier("syntax.expected_binding_name")
 		p.expect(TokenEqual, "syntax.expected_equal")
+		if p.peek().Kind == TokenTry {
+			binding, end := p.tryCallBinding(bindingStart, name)
+			body.Bindings = append(body.Bindings, binding)
+			body.Span.End = end
+			continue
+		}
 		kind := "read"
 		if p.accept(TokenTake) {
 			kind = "take"
@@ -320,6 +403,22 @@ func (p *parser) linearBody() ast.LinearBody {
 			}
 		}
 		source := p.identifier("syntax.expected_binding_source")
+		if p.peek().Kind == TokenLParen {
+			// D-04-06: a fallible foreign call is admissible only as the
+			// operand of `try` (or `discard ... because`, not yet a parsed
+			// construct this phase). A bare call in a binding right-hand
+			// side is refused here, at parse time, so the core IR never has
+			// to encode a fallible operation without a failure successor --
+			// the parser diagnostic alone short-circuits before check.go
+			// (and therefore corevalidate/interp/cgen) ever run.
+			p.problem("syntax.fallible_call_not_consumed", source, "a fallible call must be the operand of `try`")
+			_, end := p.callArguments()
+			body.Bindings = append(body.Bindings, ast.Binding{
+				Name: name.Text, RHS: ast.RHS{Kind: "call_unconsumed", Source: source.Text, Span: source.Span}, Span: spanFrom(bindingStart, source),
+			})
+			body.Span.End = end
+			continue
+		}
 		body.Bindings = append(body.Bindings, ast.Binding{
 			Name: name.Text, RHS: ast.RHS{Kind: kind, Source: source.Text, Span: source.Span}, Span: spanFrom(bindingStart, source),
 		})
@@ -329,6 +428,35 @@ func (p *parser) linearBody() ast.LinearBody {
 	body.Result = result.Text
 	body.Span.End = result.Span.End
 	return body
+}
+
+// tryCallBinding parses `try <callee>(<arg>, ...)` following a binding's `=`
+// (D-04-06's sole admissible fallible-call consumer this phase).
+func (p *parser) tryCallBinding(bindingStart, name Token) (ast.Binding, int) {
+	tryToken := p.advance()
+	callee := p.identifier("syntax.expected_foreign_callee")
+	arguments, end := p.callArguments()
+	rhs := ast.RHS{Kind: "try_call", Callee: callee.Text, Arguments: arguments, Span: spanFrom(tryToken, callee)}
+	return ast.Binding{Name: name.Text, RHS: rhs, Span: diagnostic.Span{Start: bindingStart.Span.Start, End: end}}, end
+}
+
+// callArguments parses `(arg, arg, ...)`, where each argument is a bare
+// identifier naming an already-bound place, returning the argument names in
+// source order and the end offset of the closing paren.
+func (p *parser) callArguments() ([]string, int) {
+	p.expect(TokenLParen, "syntax.expected_lparen")
+	var arguments []string
+	if p.peek().Kind != TokenRParen {
+		for {
+			argument := p.identifier("syntax.expected_call_argument")
+			arguments = append(arguments, argument.Text)
+			if !p.accept(TokenComma) {
+				break
+			}
+		}
+	}
+	end := p.expect(TokenRParen, "syntax.expected_rparen")
+	return arguments, end.Span.End
 }
 
 // maxArmsPerMatch bounds T-03-01's CFG-shape denial-of-service surface at the

@@ -309,6 +309,17 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
+	// A foreign-shaped function (D-04-10) needs the frozen foreign
+	// translation unit linked in. This is additive wiring on a *native.Runner
+	// value specifically -- a caller-supplied NativeRunner of any other
+	// concrete type (e.g. a mutation runner) is passed through unmodified,
+	// since none of those exercise a foreign-call program today.
+	if checked.Program.Functions[0].ForeignContract != nil {
+		if concrete, ok := runner.(native.Runner); ok {
+			concrete.ForeignSources = append(append([]string(nil), concrete.ForeignSources...), native.ForeignResourceSourcePath())
+			runner = concrete
+		}
+	}
 	o0, err := runner.Run(ctx, cSource, "-O0", inputs)
 	if err != nil {
 		return NativeResult{}, nil, err

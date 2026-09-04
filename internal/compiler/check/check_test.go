@@ -1070,3 +1070,75 @@ func assertSupportEqual(t *testing.T, name string, got, want ownershipSupport) {
 		t.Fatalf("%s support mismatch:\ngot  %+v\nwant %+v", name, got, want)
 	}
 }
+
+// TestForeignCallLowersToOkAndErrEdges checks the Phase 4 tracer fixture
+// yields exactly one OpForeignCall with two successor edges, an ok block
+// terminated by OpReturn, an err block terminated by OpFail carrying the
+// declared failure ADT's place, and a populated Function.ForeignContract
+// (D-04-01/D-04-04/D-04-05). core.DataType.Alternatives must remain
+// unchanged ([]string, no payload) -- D-04-04's one-way door.
+func TestForeignCallLowersToOkAndErrEdges(t *testing.T) {
+	source := readPhase4Fixture(t, "foreign_acquire_one.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", result.Diagnostics)
+	}
+	if len(result.Program.Functions) != 1 {
+		t.Fatalf("expected exactly one function, got %d", len(result.Program.Functions))
+	}
+	function := result.Program.Functions[0]
+
+	if function.ForeignContract == nil || function.ForeignContract.Symbol != "lang_res_open" || function.ForeignContract.Allocator != "libc_malloc" {
+		t.Fatalf("ForeignContract = %+v", function.ForeignContract)
+	}
+	if function.Linear == nil || len(function.Linear.Operations) != 3 {
+		t.Fatalf("unexpected linear body: %+v", function.Linear)
+	}
+	callOp := function.Linear.Operations[0]
+	if callOp.Kind != core.OpForeignCall || callOp.OkEdgeID == "" || callOp.ErrEdgeID == "" || callOp.ErrTargetID == "" {
+		t.Fatalf("call operation = %+v", callOp)
+	}
+	returnOp := function.Linear.Operations[1]
+	if returnOp.Kind != core.OpReturn {
+		t.Fatalf("expected OpReturn, got %+v", returnOp)
+	}
+	failOp := function.Linear.Operations[2]
+	if failOp.Kind != core.OpFail || failOp.SourceID != callOp.ErrTargetID {
+		t.Fatalf("expected OpFail sourced from the call's err target, got %+v", failOp)
+	}
+
+	if len(function.Linear.Blocks) != 3 || len(function.Linear.Edges) != 2 {
+		t.Fatalf("expected 3 blocks and 2 edges, got %d blocks, %d edges", len(function.Linear.Blocks), len(function.Linear.Edges))
+	}
+	var entryBlock core.Block
+	for _, block := range function.Linear.Blocks {
+		if block.ID == function.ID+":block:entry" {
+			entryBlock = block
+		}
+	}
+	if len(entryBlock.Successors) != 2 {
+		t.Fatalf("entry block successors = %+v, want 2", entryBlock.Successors)
+	}
+
+	for _, dataType := range result.Program.DataTypes {
+		if dataType.Name == "AcquireError" && len(dataType.Alternatives) == 0 {
+			t.Fatalf("AcquireError has no alternatives")
+		}
+		// core.DataType.Alternatives is []string; a compile-time type change
+		// would fail this file to build at all, which is the strongest
+		// possible assertion that D-04-04's "no payload alternative" door
+		// stayed shut this task.
+		var alternatives []string = dataType.Alternatives
+		_ = alternatives
+	}
+}
+
+func readPhase4Fixture(t *testing.T, name string) []byte {
+	t.Helper()
+	source, err := os.ReadFile("../../../testdata/phase4/" + name)
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", name, err)
+	}
+	return source
+}

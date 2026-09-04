@@ -68,6 +68,21 @@ func Program(program ast.Program) Result {
 		result.Program.DataTypes = append(result.Program.DataTypes, dataType)
 	}
 
+	// Phase 4: the foreign symbol table and the Lang function-name set both
+	// exist purely so a fallible call's callee can be resolved against one or
+	// the other (D-04-01/D-04-02) -- a callee resolving into functionNames
+	// rather than foreignSymbols is core.call_target_not_foreign, never an
+	// ordinary unknown-name error.
+	foreignSymbols, foreignDiagnostics := collectForeignSymbols(program)
+	if len(foreignDiagnostics) > 0 {
+		result.Diagnostics = append(result.Diagnostics, foreignDiagnostics...)
+		return result
+	}
+	functionNames := make(map[string]bool, len(program.Funcs))
+	for _, function := range program.Funcs {
+		functionNames[function.Name] = true
+	}
+
 	for _, function := range program.Funcs {
 		functionID := semanticID(program.Module, "fn", function.Name)
 		if !function.Body.HasClosedVariant() {
@@ -88,7 +103,14 @@ func Program(program ast.Program) Result {
 			continue
 		}
 		if function.Body.Linear != nil {
-			checked, diagnostics, work := checkLinear(program.Module, functionID, function)
+			var checked core.Function
+			var diagnostics []diagnostic.Diagnostic
+			var work int
+			if hasTryCall(function.Body.Linear) {
+				checked, diagnostics, work = checkFallibleLinear(functionID, function, foreignSymbols, functionNames, types)
+			} else {
+				checked, diagnostics, work = checkLinear(program.Module, functionID, function)
+			}
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
@@ -977,6 +999,267 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 		Parameter: core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor}, ReturnType: function.ReturnType.Constructor,
 		Linear: linear, PublicOrigin: publicOrigin, Span: function.Span,
 	}, nil, support.Work
+}
+
+// ---------------------------------------------------------------------
+// Phase 4: fallible foreign call admission (D-04-01/D-04-02/D-04-04/D-04-05).
+//
+// This section is deliberately a separate, narrow path rather than a
+// generalization of checkLinear/analyzeStraightLine: it handles exactly the
+// one shape this plan's tracer proves -- a straight-line function whose sole
+// binding is `try <foreign symbol>(<parameter>)`, immediately returned. A
+// richer shape (ordinary bindings before or after the call, multiple calls)
+// is out of scope this plan and is refused with a named diagnostic rather
+// than silently mishandled. Keeping this fully separate from checkLinear
+// means the Phase 1-3 straight-line path carries zero risk from this
+// addition (D-04-23's byte-identity requirement), exactly as checkBranch
+// stayed separate from analyzeStraightLine in Phase 3.
+// ---------------------------------------------------------------------
+
+// maxForeignBlocksPerProgram, maxForeignSymbolsPerBlock, and
+// maxForeignParametersPerSymbol bound T-04-05's foreign declaration surface,
+// derived from the existing declaration/function caps (syntax.go's
+// maxDeclarations family) rather than an arbitrary round number: a program
+// already cannot declare more than a few thousand top-level items, so a
+// foreign surface bounded well below that is fail-closed, not merely
+// advisory.
+const (
+	maxForeignBlocksPerProgram     = 64
+	maxForeignSymbolsPerBlockCheck = 64
+	maxForeignParametersPerSymbol  = 1
+)
+
+// foreignSymbolInfo is check.go's own resolved view of one declared foreign
+// symbol: the policy keys collectForeignSymbols found, by name, so
+// checkFallibleLinear (and, in a later task, the admission gate refusing a
+// missing unwind/nonlocal_exit policy) can ask "was this key present"
+// without re-scanning ast.ForeignPolicy each time.
+type foreignSymbolInfo struct {
+	Name         string
+	Parameter    ast.Parameter
+	ReturnType   ast.TypeRef
+	Allocator    string
+	HasAllocator bool
+	Unwind       string
+	HasUnwind    bool
+	NonlocalExit string
+	HasNonlocal  bool
+	Fails        string
+	HasFails     bool
+	Span         diagnostic.Span
+}
+
+// collectForeignSymbols builds the module-wide foreign symbol table from
+// every declared `foreign C {}` block, applying T-04-05's caps fail-closed.
+// It does not refuse a symbol for a missing unwind/nonlocal_exit policy --
+// that admission gate is checkFallibleLinear's job (D-04-16), fired only for
+// a symbol an actual call resolves to, so a declared-but-never-called
+// under-specified symbol does not block an unrelated program.
+func collectForeignSymbols(program ast.Program) (map[string]foreignSymbolInfo, []diagnostic.Diagnostic) {
+	if len(program.Foreign) > maxForeignBlocksPerProgram {
+		return nil, []diagnostic.Diagnostic{diagnostic.Error("check.foreign_block_limit", program.Foreign[0].Span, "program exceeds the declared foreign block limit")}
+	}
+	symbols := make(map[string]foreignSymbolInfo)
+	for _, block := range program.Foreign {
+		if len(block.Symbols) > maxForeignSymbolsPerBlockCheck {
+			return nil, []diagnostic.Diagnostic{diagnostic.Error("check.foreign_symbol_limit", block.Span, "foreign block exceeds the declared symbol limit")}
+		}
+		for _, symbol := range block.Symbols {
+			if len(symbol.Policies) > maxForeignPoliciesPerSymbolCheck {
+				return nil, []diagnostic.Diagnostic{diagnostic.Error("check.foreign_policy_limit", symbol.Span, "foreign symbol exceeds the declared policy limit")}
+			}
+			info := foreignSymbolInfo{Name: symbol.Name, Parameter: symbol.Parameter, ReturnType: symbol.ReturnType, Span: symbol.Span}
+			for _, policy := range symbol.Policies {
+				switch policy.Key {
+				case "unwind":
+					info.Unwind, info.HasUnwind = policy.Value, true
+				case "nonlocal_exit":
+					info.NonlocalExit, info.HasNonlocal = policy.Value, true
+				case "allocator":
+					info.Allocator, info.HasAllocator = policy.Value, true
+				case "fails":
+					info.Fails, info.HasFails = policy.Value, true
+				}
+			}
+			symbols[symbol.Name] = info
+		}
+	}
+	return symbols, nil
+}
+
+// maxForeignPoliciesPerSymbolCheck mirrors the parser's own
+// maxForeignPoliciesPerSymbol cap (syntax package): declared again here,
+// independently, rather than imported, so check.go's own admission surface
+// is bounded even if a future caller constructs an ast.Program directly
+// (bypassing the parser).
+const maxForeignPoliciesPerSymbolCheck = 32
+
+// hasTryCall reports whether a linear body's bindings contain a fallible
+// foreign call (D-04-06's `try` form). A function with no such binding takes
+// the entirely unchanged checkLinear path.
+func hasTryCall(body *ast.LinearBody) bool {
+	for _, binding := range body.Bindings {
+		if binding.RHS.Kind == "try_call" {
+			return true
+		}
+	}
+	return false
+}
+
+// checkFallibleLinear lowers the one supported shape this plan's tracer
+// proves: a straight-line function whose sole binding is a fallible foreign
+// call, immediately returned on the ok edge. It produces a core.Function
+// whose Linear body carries three blocks (entry/ok/err) and two edges,
+// exactly mirroring checkBranch's block/edge shape but keyed on a fallible
+// call rather than a match arm.
+func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
+	parameterType := coreType(function.Parameter.Type)
+	if !sameType(function.ReturnType, function.Parameter.Type) {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType)
+	}
+	derived, err := ability.Derive(parameterType)
+	if err != nil {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
+	}
+	typeID := functionID + ":type:0"
+	work := typeNodeCount(parameterType) + 1
+	if !executableShape(parameterType) {
+		causes := []diagnostic.Cause{{Kind: "type", Detail: typeID}, {Kind: "constructor", Detail: parameterType.Constructor}}
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
+			"check.unexecutable_shape", function.Parameter.Span,
+			"parameter shape has no native execution lowering this phase", causes,
+			diagnostic.Repair{Kind: "use_executable_shape", Detail: "Byte or Buffer"},
+		)}, work
+	}
+
+	body := function.Body.Linear
+	if len(body.Bindings) != 1 || body.Bindings[0].RHS.Kind != "try_call" || body.Result != body.Bindings[0].Name {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
+			"check.foreign_call_shape_unsupported", body.Span,
+			"this phase supports only a function whose sole binding is a fallible foreign call immediately returned",
+		)}, work
+	}
+	tryBinding := body.Bindings[0]
+
+	if len(tryBinding.RHS.Arguments) != maxForeignParametersPerSymbol || tryBinding.RHS.Arguments[0] != function.Parameter.Name {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
+			"name.unknown", tryBinding.RHS.Span, "foreign call argument must be the function's own parameter",
+		)}, work
+	}
+
+	symbol, isForeign := foreignSymbols[tryBinding.RHS.Callee]
+	if !isForeign {
+		if functionNames[tryBinding.RHS.Callee] {
+			causes := []diagnostic.Cause{{Kind: "callee", Detail: tryBinding.RHS.Callee}}
+			return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
+				"core.call_target_not_foreign", tryBinding.RHS.Span,
+				"a fallible call's target must be a declared foreign symbol, not a Lang function", causes,
+				diagnostic.Repair{Kind: "declare_foreign_symbol"},
+			)}, work
+		}
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown", tryBinding.RHS.Span, "foreign call target is unknown")}, work
+	}
+
+	if problem := missingForeignPolicyDiagnostic(symbol); problem != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*problem}, work
+	}
+
+	errDataType, ok := dataTypes[symbol.Fails]
+	if !symbol.HasFails || !ok || len(errDataType.Alternatives) == 0 {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
+			"type.unknown", tryBinding.Span, "foreign symbol's declared failure type is unknown or has no alternatives",
+		)}, work
+	}
+	errShape := core.TypeRef{Constructor: errDataType.Name}
+	errDerived, err := ability.DeriveSealed(errShape, map[string]bool{errDataType.Name: true})
+	if err != nil {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", tryBinding.Span, err.Error())}, work
+	}
+
+	parameterID := functionID + ":place:0"
+	okPlaceID := functionID + ":place:1"
+	errPlaceID := functionID + ":place:2"
+	errTypeID := functionID + ":type:1"
+	entryBlockID := functionID + ":block:entry"
+	okBlockID := functionID + ":block:ok"
+	errBlockID := functionID + ":block:err"
+	okEdgeID := functionID + ":edge:entry:ok"
+	errEdgeID := functionID + ":edge:entry:err"
+	callOpID := functionID + ":op:0"
+	returnOpID := functionID + ":op:1"
+	failOpID := functionID + ":op:2"
+
+	linear := &core.LinearBody{
+		ID: functionID + ":linear",
+		Types: []core.TypeFact{
+			{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses},
+			{ID: errTypeID, Shape: errShape, Abilities: errDerived.Granted, NegativeWitnesses: errDerived.NegativeWitnesses},
+		},
+		Places: []core.Place{
+			{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID},
+			{ID: okPlaceID, Name: tryBinding.Name, TypeID: typeID},
+			{ID: errPlaceID, Name: "_err", TypeID: errTypeID},
+		},
+		Operations: []core.LinearOperation{
+			{
+				ID: callOpID, PointID: functionID + ":point:linear:0", Kind: core.OpForeignCall,
+				SourceID: parameterID, TargetID: okPlaceID, TypeID: typeID,
+				OkEdgeID: okEdgeID, ErrEdgeID: errEdgeID, ErrTargetID: errPlaceID,
+			},
+			{ID: returnOpID, PointID: functionID + ":point:linear:1", Kind: core.OpReturn, SourceID: okPlaceID, TypeID: typeID},
+			{ID: failOpID, PointID: functionID + ":point:linear:2", Kind: core.OpFail, SourceID: errPlaceID, TypeID: errTypeID},
+		},
+		Blocks: []core.Block{
+			{ID: entryBlockID, PointID: functionID + ":point:entry", OperationIDs: []string{callOpID}, Successors: []string{okBlockID, errBlockID}},
+			{ID: okBlockID, PointID: functionID + ":point:ok", OperationIDs: []string{returnOpID}},
+			{ID: errBlockID, PointID: functionID + ":point:err", OperationIDs: []string{failOpID}},
+		},
+		Edges: []core.Edge{
+			{ID: okEdgeID, FromBlockID: entryBlockID, ToBlockID: okBlockID, Pattern: "ok"},
+			{ID: errEdgeID, FromBlockID: entryBlockID, ToBlockID: errBlockID, Pattern: "err"},
+		},
+	}
+
+	contract := &core.ForeignContract{
+		Symbol: symbol.Name, Allocator: symbol.Allocator, Unwind: symbol.Unwind, NonlocalExit: symbol.NonlocalExit, Fails: symbol.Fails,
+	}
+
+	return core.Function{
+		ID: functionID, Name: function.Name,
+		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter:       core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor},
+		ReturnType:      function.ReturnType.Constructor,
+		Linear:          linear,
+		ForeignContract: contract,
+		Span:            function.Span,
+	}, nil, work
+}
+
+// missingForeignPolicyDiagnostic is Task 4's admission gate stub (D-04-16):
+// a foreign declaration missing its unwind or nonlocal_exit policy is
+// refused, independently, by both check and corevalidate, with no default
+// value. It is implemented in Task 4; this plan's tracer fixture always
+// supplies both policies, so this always returns nil today.
+func missingForeignPolicyDiagnostic(symbol foreignSymbolInfo) *diagnostic.Diagnostic {
+	missing := ""
+	switch {
+	case !symbol.HasUnwind:
+		missing = "unwind"
+	case !symbol.HasNonlocal:
+		missing = "nonlocal_exit"
+	default:
+		return nil
+	}
+	causes := []diagnostic.Cause{
+		{Kind: "foreign_symbol", Detail: symbol.Name},
+		{Kind: "missing_policy", Detail: missing},
+	}
+	problem := diagnostic.ErrorWithRepairs(
+		"foreign.unwind_policy_undeclared", symbol.Span,
+		"a foreign symbol must declare both an unwind and a nonlocal_exit policy, with no default", causes,
+		diagnostic.Repair{Kind: "declare_unwind_policy"},
+	)
+	return &problem
 }
 
 type loanFinalUseFact struct {

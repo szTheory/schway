@@ -25,6 +25,11 @@ type formatter struct {
 	previous      Kind
 	contexts      []string
 	linearBinding bool
+	// tryCall is true between a `try` keyword and its call's closing paren,
+	// so that closing paren (and only that one -- never a function's own
+	// parameter-list paren) breaks the line the same way a plain binding's
+	// source identifier does.
+	tryCall bool
 	// header records the declaration keyword that opened the line currently
 	// being written, so an opening brace is classified by the construct it
 	// belongs to rather than by whichever token happens to precede it. The
@@ -64,7 +69,18 @@ func (f *formatter) token(token Token) {
 			f.blankBeforeTopLevel()
 		}
 		f.write("fn ")
-		f.header = "function"
+		if f.context() == "foreign" {
+			f.header = "foreign_fn"
+		} else {
+			f.header = "function"
+		}
+	case TokenForeign:
+		f.blankBeforeTopLevel()
+		f.write("foreign ")
+		f.header = "foreign"
+	case TokenTry:
+		f.write("try ")
+		f.tryCall = true
 	case TokenType:
 		f.ensureLine()
 		f.write("type ")
@@ -85,12 +101,17 @@ func (f *formatter) token(token Token) {
 	case TokenMut:
 		f.write("mut ")
 	case TokenIdentifier:
+		wasOpen := f.lineOpen
 		f.ensureLine()
 		// A return type identifier immediately follows the borrow-origin
 		// annotation's closing paren (`borrow(path) Type`). The parameter-list
 		// RParen is always followed by TokenArrow, never an identifier
 		// directly, so this is an unambiguous signal for the annotation case.
-		if f.previous == TokenRParen {
+		// Guarded on wasOpen: a try-call's closing paren already broke the
+		// line (see TokenRParen above), so the next identifier -- the linear
+		// body's own Result -- starts a fresh, unindented-by-a-space line
+		// rather than continuing this one.
+		if f.previous == TokenRParen && wasOpen {
 			f.out.WriteByte(' ')
 		}
 		f.out.WriteString(token.Text)
@@ -102,6 +123,18 @@ func (f *formatter) token(token Token) {
 		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
 			f.newline()
 			f.linearBinding = false
+		} else if f.context() == "foreign_fn" && f.previous == TokenColon {
+			// A policy value (`unwind: forbidden`) ends its own line, the
+			// same "write value, then break" shape TokenPipe's alternative
+			// identifiers use above.
+			f.newline()
+		}
+	case TokenString:
+		f.ensureLine()
+		f.out.WriteString(token.Text)
+		f.lineOpen = true
+		if f.context() == "foreign_fn" && f.previous == TokenColon {
+			f.newline()
 		}
 	case TokenDot:
 		f.out.WriteByte('.')
@@ -158,6 +191,12 @@ func (f *formatter) token(token Token) {
 		f.trimSpace()
 		f.out.WriteByte(')')
 		f.lineOpen = true
+		if f.tryCall {
+			f.tryCall = false
+			if f.context() == "function" || f.context() == "arm" {
+				f.newline()
+			}
+		}
 	case TokenColon:
 		f.trimSpace()
 		f.out.WriteString(": ")

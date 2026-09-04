@@ -948,3 +948,76 @@ func comments(tree syntax.Tree) []string {
 	}
 	return result
 }
+
+// TestForeignCallRoundTrips proves the `foreign C { }` declaration block and
+// the `try <callee>(<args>)` fallible-call form parse losslessly, format to
+// a fixed point, and reparse to the same semantic token projection
+// (D-04-01/D-04-04/D-04-05/D-04-10's surface syntax).
+func TestForeignCallRoundTrips(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("unexpected diagnostics: %v", parsed.Diagnostics)
+	}
+	if len(parsed.Program.Foreign) != 1 || len(parsed.Program.Foreign[0].Symbols) != 1 {
+		t.Fatalf("foreign declaration did not parse: %+v", parsed.Program.Foreign)
+	}
+	symbol := parsed.Program.Foreign[0].Symbols[0]
+	if symbol.Name != "lang_res_open" {
+		t.Fatalf("symbol name = %q, want lang_res_open", symbol.Name)
+	}
+	policies := make(map[string]string, len(symbol.Policies))
+	for _, policy := range symbol.Policies {
+		policies[policy.Key] = policy.Value
+	}
+	if policies["unwind"] != "forbidden" || policies["nonlocal_exit"] != "forbidden" || policies["allocator"] != "libc_malloc" || policies["fails"] != "AcquireError" {
+		t.Fatalf("policies = %+v", policies)
+	}
+
+	if len(parsed.Program.Funcs) != 1 || len(parsed.Program.Funcs[0].Body.Linear.Bindings) != 1 {
+		t.Fatalf("unexpected function shape: %+v", parsed.Program.Funcs)
+	}
+	rhs := parsed.Program.Funcs[0].Body.Linear.Bindings[0].RHS
+	if rhs.Kind != "try_call" || rhs.Callee != "lang_res_open" || len(rhs.Arguments) != 1 || rhs.Arguments[0] != "request" {
+		t.Fatalf("try-call RHS = %+v", rhs)
+	}
+
+	formatted := syntax.Format(parsed.Tree)
+	reparsed := syntax.Parse(formatted)
+	if len(reparsed.Diagnostics) > 0 {
+		t.Fatalf("reparse diagnostics: %v", reparsed.Diagnostics)
+	}
+	if got, want := semanticTokens(reparsed.Tree), semanticTokens(parsed.Tree); !reflect.DeepEqual(got, want) {
+		t.Fatalf("semantic token projection changed:\ngot:  %v\nwant: %v", got, want)
+	}
+	reformatted := syntax.Format(reparsed.Tree)
+	if !bytes.Equal(formatted, reformatted) {
+		t.Fatalf("format is not a fixed point:\nfirst:  %s\nsecond: %s", formatted, reformatted)
+	}
+}
+
+// TestFallibleCallUnconsumedRejected pins D-04-06: a bare fallible call in a
+// binding right-hand side (no `try`) must not parse.
+func TestFallibleCallUnconsumedRejected(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "fallible_call_unconsumed.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	found := false
+	for _, problem := range parsed.Diagnostics {
+		if problem.Code == "syntax.fallible_call_not_consumed" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected syntax.fallible_call_not_consumed, got %v", parsed.Diagnostics)
+	}
+	checked := session.Check(source)
+	if len(checked.Program.Functions) != 0 {
+		t.Fatalf("a bare fallible call must never reach a checked core function, got %d", len(checked.Program.Functions))
+	}
+}

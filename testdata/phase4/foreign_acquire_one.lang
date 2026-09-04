@@ -1,0 +1,29 @@
+// Phase 4 tracer (D-04-01/D-04-04/D-04-05/D-04-10): one function declares a
+// foreign C symbol, calls it fallibly through `try`, and returns its ok
+// value. This proves the whole spine end to end -- checked, independently
+// validated, interpreted, lowered to C17, and linked against the
+// byte-frozen foreign translation unit -- identically at -O0 and -O3.
+
+module phase4.foreign_acquire_one
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try lang_res_open(request)
+  handle
+}

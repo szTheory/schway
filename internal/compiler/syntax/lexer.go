@@ -8,12 +8,14 @@ import (
 )
 
 var keywords = map[string]Kind{
-	"module": TokenModule,
-	"export": TokenExport,
-	"type":   TokenType,
-	"data":   TokenData,
-	"fn":     TokenFn,
-	"match":  TokenMatch,
+	"module":  TokenModule,
+	"export":  TokenExport,
+	"type":    TokenType,
+	"data":    TokenData,
+	"fn":      TokenFn,
+	"match":   TokenMatch,
+	"foreign": TokenForeign,
+	"try":     TokenTry,
 }
 
 func Lex(source []byte) ([]Token, []diagnostic.Diagnostic) {
@@ -47,6 +49,32 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 				offset++
 			}
 			tokens = append(tokens, Token{Kind: TokenComment, Text: string(source[start:offset]), Span: diagnostic.Span{Start: start, End: offset}})
+			continue
+		}
+
+		if source[offset] == '"' {
+			// Phase 4's only string-literal use is the allocator identity
+			// (`allocator: "libc_malloc"`); no escape sequences are
+			// supported this phase -- an unterminated or newline-crossing
+			// literal is a lexer-level rejection, not a parser recovery.
+			end := offset + 1
+			closed := false
+			for end < len(source) && source[end] != '\n' {
+				if source[end] == '"' {
+					end++
+					closed = true
+					break
+				}
+				end++
+			}
+			if !closed {
+				tokens = append(tokens, Token{Kind: TokenUnknown, Text: string(source[offset:end]), Span: diagnostic.Span{Start: offset, End: end}})
+				problem(diagnostic.Error("syntax.unterminated_string", diagnostic.Span{Start: offset, End: end}, "string literal is not terminated"))
+				offset = end
+				continue
+			}
+			tokens = append(tokens, Token{Kind: TokenString, Text: string(source[offset:end]), Span: diagnostic.Span{Start: offset, End: end}})
+			offset = end
 			continue
 		}
 

@@ -7,6 +7,41 @@ type Program struct {
 	Exports []Export
 	Data    []DataDecl
 	Funcs   []FuncDecl
+	// Foreign is the Phase 4 `foreign C { }` declaration surface (D-04-01):
+	// zero or more blocks, each declaring one or more foreign symbols a
+	// linear body may call fallibly through `try`.
+	Foreign []ForeignBlock
+}
+
+// ForeignBlock is one `foreign C { }` declaration. Language is the literal
+// text following `foreign` (this phase only admits "C").
+type ForeignBlock struct {
+	Language string
+	Symbols  []ForeignSymbol
+	Span     diagnostic.Span
+}
+
+// ForeignSymbol is one declared foreign C function this phase's linear
+// bodies may call through `try`. Policies carries every `key: value` line the
+// declaration wrote, in source order, so check.go — not the parser — decides
+// which keys are missing (D-04-16: absence is refusal, with no default).
+type ForeignSymbol struct {
+	Name       string
+	Parameter  Parameter
+	ReturnType TypeRef
+	Policies   []ForeignPolicy
+	Span       diagnostic.Span
+}
+
+// ForeignPolicy is one `key: value` line inside a foreign symbol's
+// declaration body (e.g. `unwind: forbidden`, `allocator: "libc_malloc"`).
+// IsString records whether Value was written as a quoted string literal
+// (allocator identity) or a bare identifier (policy names).
+type ForeignPolicy struct {
+	Key      string
+	Value    string
+	IsString bool
+	Span     diagnostic.Span
 }
 
 type Export struct {
@@ -104,4 +139,10 @@ type RHS struct {
 	Kind   string
 	Source string
 	Span   diagnostic.Span
+	// Callee and Arguments are populated only when Kind == "try_call"
+	// (D-04-06): a fallible foreign call, admissible only as the operand of
+	// `try`. Callee names the foreign symbol; Arguments is its argument
+	// place names in source order.
+	Callee    string
+	Arguments []string
 }

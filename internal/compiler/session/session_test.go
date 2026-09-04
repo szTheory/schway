@@ -378,6 +378,48 @@ func TestNativeToggleO0O3(t *testing.T) {
 	}
 }
 
+// TestForeignCallInterpreterNative proves the Phase 4 tracer fixture's
+// terminal outcome, ordered events, and live-resource state agree across
+// the interpreter and Clang-built native code at both -O0 and -O3
+// (D-04-01/D-04-04/D-04-05/D-04-10). RunNative already asserts this
+// agreement internally (an EngineMismatch is a returned error); this test
+// additionally inspects the shape directly so a future regression that
+// weakens RunNative's own comparison is still caught here.
+func TestForeignCallInterpreterNative(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang")
+	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	if len(result.Interpreter) != 1 || len(result.O0.Pairs) != 1 || len(result.O3.Pairs) != 1 {
+		t.Fatalf("unexpected pair counts: interpreter=%d O0=%d O3=%d", len(result.Interpreter), len(result.O0.Pairs), len(result.O3.Pairs))
+	}
+	interpreted := result.Interpreter[0]
+	if interpreted.Outcome.Kind != "returned" || interpreted.Outcome.Value != "7" {
+		t.Fatalf("interpreter outcome = %+v", interpreted.Outcome)
+	}
+	if len(interpreted.Events) != 2 || interpreted.Events[0].Kind != "foreign.called" || interpreted.Events[1].Kind != "function.returned" {
+		t.Fatalf("interpreter events = %+v", interpreted.Events)
+	}
+	if len(interpreted.LiveResources) != 0 {
+		t.Fatalf("interpreter live resources = %+v, want empty", interpreted.LiveResources)
+	}
+	for _, engineResult := range []struct {
+		name      string
+		execution execution.Execution
+	}{{"O0", result.O0.Pairs[0].Execution}, {"O3", result.O3.Pairs[0].Execution}} {
+		if !execution.Equal(interpreted, engineResult.execution) {
+			t.Fatalf("%s execution disagrees with interpreter:\ninterpreter: %+v\nnative:      %+v", engineResult.name, interpreted, engineResult.execution)
+		}
+	}
+	if !strings.Contains(result.CSource, "extern _LANG_lang_res_open_result _LANG_lang_res_open") {
+		t.Fatalf("generated C does not declare the frozen foreign symbol:\n%s", result.CSource)
+	}
+	if strings.Contains(result.CSource, "lang_foreign_resource_private") {
+		t.Fatalf("generated C must never reference the frozen TU's private header:\n%s", result.CSource)
+	}
+}
+
 func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
 	tests := []string{
 		"module collision.locals\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let α = code\n  let β = code\n  let __1 = code\n  __1\n}\n",

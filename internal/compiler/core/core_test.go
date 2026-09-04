@@ -124,7 +124,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 5 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn
+	const declaredCount = 7 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -188,6 +188,7 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 		"testdata/phase3/branch_one_arm_shared_accept.lang",
 		"testdata/phase3/sequential_shared_then_exclusive_accept.lang",
 		"testdata/phase3/shared_shared_accept.lang",
+		"testdata/phase4/foreign_acquire_one.lang",
 	}
 	encountered := make(map[core.OperationKind]bool)
 	for _, path := range fixtures {

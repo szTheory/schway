@@ -281,8 +281,22 @@ func (v *validator) linear(function *core.Function) bool {
 		if _, ok := types[operation.TypeID]; !v.check(ok, "core.unknown_type", operation.TypeID) {
 			return false
 		}
-		if operation.Kind != core.OpReturn {
+		// OpFail is a terminator alongside OpReturn (D-04-04): neither ever
+		// carries a TargetID, since neither produces an ordinary place --
+		// OpReturn ends the function, OpFail ends the err block.
+		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
+				return false
+			}
+		}
+		if operation.Kind == core.OpForeignCall {
+			if _, ok := places[operation.ErrTargetID]; !v.check(ok, "core.unknown_place", operation.ErrTargetID) {
+				return false
+			}
+			if !v.check(operation.OkEdgeID != "" && operation.ErrEdgeID != "", "core.foreign_call_edges_missing", operation.ID) {
+				return false
+			}
+			if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
 				return false
 			}
 		}
@@ -794,6 +808,23 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				return v.check(false, "core.final_claim_mismatch", operation.ID)
 			}
 			returned = true
+		case core.OpForeignCall:
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+			errTarget, errKnown := places[operation.ErrTargetID]
+			if !v.check(errKnown && operation.ErrTargetID != operation.TargetID && operation.ErrTargetID != operation.SourceID && !produced[operation.ErrTargetID] && errTarget.TypeID != "", "core.invalid_target", operation.ErrTargetID) {
+				return false
+			}
+			initialized[operation.ErrTargetID] = true
+			produced[operation.ErrTargetID] = true
+		case core.OpFail:
+			if !v.check(index == len(operations)-1 && !returned && operation.TargetID == "", "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			returned = true
 		default:
 			return v.check(false, "core.unknown_operation", string(operation.Kind))
 		}
@@ -817,6 +848,10 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	operations := linear.Operations
 	lastOperationOfBlock := make(map[string]string, len(linear.Blocks))
 	blockOfOperation := make(map[string]string, len(operations))
+	operationsByID := make(map[string]core.LinearOperation, len(operations))
+	for _, operation := range operations {
+		operationsByID[operation.ID] = operation
+	}
 	for _, block := range linear.Blocks {
 		for index, opID := range block.OperationIDs {
 			blockOfOperation[opID] = block.ID
@@ -930,12 +965,47 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 				return false
 			}
 			returnedBlocks[blockID] = true
+		case core.OpForeignCall:
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+			errTarget, errKnown := places[operation.ErrTargetID]
+			if !v.check(errKnown && operation.ErrTargetID != operation.TargetID && operation.ErrTargetID != operation.SourceID && !produced[operation.ErrTargetID] && errTarget.TypeID != "", "core.invalid_target", operation.ErrTargetID) {
+				return false
+			}
+			initialized[operation.ErrTargetID] = true
+			produced[operation.ErrTargetID] = true
+		case core.OpFail:
+			// OpFail is replayBlocks' err-edge terminator (D-04-04): unlike
+			// OpReturn it never carries the function's own ReturnType --
+			// the whole point of the edge is that its payload is a
+			// DIFFERENT, independently declared failure ADT. Every other
+			// per-block terminal requirement (last operation of its block,
+			// no target, exactly one terminal per block) still applies.
+			blockID, known := blockOfOperation[operation.ID]
+			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.TypeID == source.TypeID, "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			returnedBlocks[blockID] = true
 		default:
 			return v.check(false, "core.unknown_operation", string(operation.Kind))
 		}
 	}
 	for _, block := range linear.Blocks {
 		if len(block.OperationIDs) == 0 {
+			continue
+		}
+		lastOpID := block.OperationIDs[len(block.OperationIDs)-1]
+		if operationsByID[lastOpID].Kind == core.OpForeignCall {
+			// A block whose last operation is OpForeignCall forks into its
+			// two successor edges instead of terminating itself (D-04-04);
+			// only a block whose last operation is an actual terminator
+			// (OpReturn/OpFail) must appear in returnedBlocks.
 			continue
 		}
 		if !v.check(returnedBlocks[block.ID], "core.final_claim_mismatch", block.ID) {
