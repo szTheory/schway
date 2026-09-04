@@ -502,6 +502,36 @@ func TestOmittedOriginRejectedThroughCLI(t *testing.T) {
 	}
 }
 
+// TestMultiArmOmittedOriginRejectedThroughCLI is Task 03-10-01's D-11
+// shipped-binary falsifier for SC3/SC4's multi-arm gap: `interface export`
+// on a match-bodied fixture whose first arm returns owned and second arm
+// returns a live borrow, with no declared origin, must exit non-zero, name
+// core.origin_omitted, and write no summary file — modeled on
+// TestOmittedOriginRejectedThroughCLI's single-arm shape.
+func TestMultiArmOmittedOriginRejectedThroughCLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_multi_arm_omitted.lang")
+	summaryPath := filepath.Join(t.TempDir(), "summary.json")
+
+	result := testsupport.RunCLI(t, binary, nil, "--json", "interface", "export", fixture, summaryPath)
+	if result.Exit == 0 {
+		t.Fatalf("expected non-zero exit for a multi-arm omitted origin: %+v", result)
+	}
+	if !bytes.Contains(result.Stdout, []byte("core.origin_omitted")) {
+		t.Fatalf("expected core.origin_omitted in CLI output: %s", result.Stdout)
+	}
+	var decoded protocol.Result
+	if err := json.Unmarshal(result.Stdout, &decoded); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, result.Stdout)
+	}
+	if len(decoded.Diagnostics) != 1 || decoded.Diagnostics[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected exactly one core.origin_omitted diagnostic, got %+v", decoded.Diagnostics)
+	}
+	if _, err := os.Stat(summaryPath); !os.IsNotExist(err) {
+		t.Fatalf("expected no summary file to be written, stat err=%v", err)
+	}
+}
+
 // TestBranchFixturesThroughCLI is 03-03-02's D-11 shipped-binary proof: the
 // edge-specific accept/reject fixture pair is driven through the real
 // `./cmd/lang` binary's JSON projection (not only the in-process harness),

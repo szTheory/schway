@@ -244,6 +244,75 @@ func honestOmittedProgram(t testing.TB, fixture string) core.Program {
 	return checked.Program
 }
 
+// TestPerReturnOriginsCoverEveryArm is Task 03-10-01's falsifier for the
+// core defect: RecomputeOriginPerReturn must return one element per
+// core.OpReturn, not just the first. A straight-line function collapses to
+// exactly one element; the multi-arm fixture collapses to exactly two, one
+// per arm, and only the second (the borrow-returning arm) is borrow-derived.
+func TestPerReturnOriginsCoverEveryArm(t *testing.T) {
+	straightLine := honestProgram(t, "public_view.lang")
+	straightOrigins := originvalidate.RecomputeOriginPerReturn(straightLine.Functions[0])
+	if len(straightOrigins) != 1 {
+		t.Fatalf("expected exactly 1 per-return origin for a straight-line function, got %+v", straightOrigins)
+	}
+	if !straightOrigins[0].Derived || straightOrigins[0].Access != "shared" {
+		t.Fatalf("expected the straight-line origin to be shared-derived, got %+v", straightOrigins[0])
+	}
+
+	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.lang")
+	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	if len(origins) != 2 {
+		t.Fatalf("expected exactly 2 per-return origins (one per arm), got %+v", origins)
+	}
+	derivedCount := 0
+	for _, origin := range origins {
+		if origin.Derived {
+			derivedCount++
+			if origin.Access != "shared" {
+				t.Fatalf("expected the borrow-derived arm's access to be shared, got %+v", origin)
+			}
+		}
+	}
+	if derivedCount != 1 {
+		t.Fatalf("expected exactly 1 borrow-derived return among the 2 arms, got %d in %+v", derivedCount, origins)
+	}
+}
+
+// TestMultiArmOmittedOriginRejected is Task 03-10-01's falsifier for
+// SC3/SC4: a match-bodied function whose first arm returns owned and second
+// arm returns a live borrow, with no declared origin (match functions cannot
+// declare one), must be refused publication with core.origin_omitted — not
+// silently accepted because RecomputeOrigin only looked at the first arm.
+func TestMultiArmOmittedOriginRejected(t *testing.T) {
+	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.lang")
+	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	if !ok {
+		t.Fatalf("expected RecomputeOrigin to succeed on the multi-arm leak")
+	}
+	if access != "shared" {
+		t.Fatalf("expected combined access shared, got %q", access)
+	}
+	if len(paths) != 1 || paths[0] != "flag" {
+		t.Fatalf("expected origin path [flag], got %+v", paths)
+	}
+	problems := originvalidate.ValidatePublished(program)
+	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected exactly core.origin_omitted, got %+v", problems)
+	}
+}
+
+// TestOwnedArmsStillPublish is Task 03-10-01's non-over-firing falsifier:
+// the widened, every-OpReturn walk must not newly refuse a match-bodied
+// function whose every arm returns an owned value.
+func TestOwnedArmsStillPublish(t *testing.T) {
+	for _, fixture := range []string{"branch_view.lang", "borrowed_view.lang"} {
+		program := honestOmittedProgram(t, fixture)
+		if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
+			t.Fatalf("%s: expected no problems for every-arm-owned, got %+v", fixture, problems)
+		}
+	}
+}
+
 // TestStaleSummaryRejectedBeforeOtherChecks is 03-06-02's falsifier for
 // T-03-03: a summary whose recorded digest does not match the core artifact
 // it is checked against is rejected before any origin or access question is
