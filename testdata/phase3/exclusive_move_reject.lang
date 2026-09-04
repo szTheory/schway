@@ -1,0 +1,15 @@
+// A move of an owner while an exclusive loan is live is rejected exactly
+// like the existing shared-loan rule, mirroring move_while_borrowed.lang.
+
+module owned.exclusive_move_reject
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let view = borrow mut buffer
+  let delivered = take buffer
+  let observed = view
+  delivered
+}

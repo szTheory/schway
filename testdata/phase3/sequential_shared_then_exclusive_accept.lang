@@ -1,0 +1,18 @@
+// A shared loan whose last use precedes an exclusive borrow of the same
+// owner is accepted: conflict is decided by overlapping liveness, not by
+// lexical position.
+
+module owned.sequential_shared_then_exclusive_accept
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let first = borrow buffer
+  let reviewed = borrow first
+  let second = borrow mut buffer
+  let inspected = borrow second
+  let delivered = take buffer
+  delivered
+}

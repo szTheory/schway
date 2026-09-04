@@ -1,0 +1,15 @@
+// A shared loan still live when an exclusive loan of the same owner begins
+// conflicts: an exclusive loan promises no concurrent observer.
+
+module owned.shared_exclusive_reject
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let first = borrow buffer
+  let second = borrow mut buffer
+  let observed = first
+  second
+}

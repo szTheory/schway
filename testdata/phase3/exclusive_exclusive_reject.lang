@@ -1,0 +1,15 @@
+// Two overlapping exclusive loans on one owner conflict: two loans would
+// both promise sole access.
+
+module owned.exclusive_exclusive_reject
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let first = borrow mut buffer
+  let second = borrow mut buffer
+  let observed = first
+  second
+}

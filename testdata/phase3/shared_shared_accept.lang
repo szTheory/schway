@@ -1,0 +1,17 @@
+// Two overlapping shared loans on one owner are never a conflict: multiple
+// simultaneous readers observe without mutation.
+
+module owned.shared_shared_accept
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let first = borrow buffer
+  let second = borrow buffer
+  let reviewed_first = borrow first
+  let reviewed_second = borrow second
+  let delivered = take buffer
+  delivered
+}
