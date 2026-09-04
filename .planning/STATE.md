@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Borrowed Views and CFG Lifetimes
 status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-09-04T04:48:46.998Z"
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-09-04T05:18:30.521Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: a9733d0ed3bc3e24a728e1be711fabab212405a0
+state_head: 2a7230b681883088365a84e33bd703d93cb88723
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 15
   percent: 33
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 03 execution started
 
@@ -67,6 +67,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 03 P02 | 70 min | 3 tasks | 26 files |
 | Phase 03 P06 | 70 min | 3 tasks | 17 files |
 | Phase 03 P03 | 100 min | 3 tasks | 6 files |
+| Phase 03 P04 | 95 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: [Phase 03-06]: A borrowed-view function's ability set is not separately re-derived with an explicit escape:false witness; PublicOrigin carries only Paths and Access. — corevalidate's existing type-fact loop recomputes abilities for every fact in linear.Types and requires an exact match for the same shape; a synthetic view TypeFact would desync from that independent recomputation.
 - [Phase 03]: [Phase 03-03]: Backward worklist loan liveness is scoped to checkBranch's arm blocks only; checkLinear/analyzeStraightLine keep discoverLoanLastUses unchanged to protect two already-shipped regression suites.
 - [Phase 03]: [Phase 03-03]: The uniform-join fixture pair is built on 03-01's per-arm alias isolation, not a shared pre-branch loan; only ONE fixture flips under the seeded uniform-join fault, matching the plan frontmatter's must_haves claim over the task prose's stronger 'both flip' claim.
+- [Phase 03]: [Phase 03-04]: corevalidate.recomputeLoanEndpoints independently re-derives loan endpoints via a reachability closure + reduction, never check.go's iterative worklist fixpoint.
+- [Phase 03]: [Phase 03-04]: loanChainIndex replaces both replayStraightLine and replayBlocks' O(n)-per-operation loansForPlace copy-and-rescan with a memoized, cycle-safe parent-pointer chain; LinearWorkLimit moves to 16*facts+14.
 
 ### Pending Todos
 
@@ -128,6 +131,7 @@ None yet.
   wave-2 track. See ROADMAP §Phase 3, "Decision (2026-09-04)".
 - Process debt adopted as standing rules after three gate failures shared one shape — a green test whose reachable input space omitted the hard case: mutation-kill every differential, interrogate what inputs a property test actually reaches, and drive the shipped binary on hand-written programs rather than only the gate's own corpus.
 - 03-03 flagged three documented deviations (straight-line scope, fixture-pair interpretation, single-fixture-flip) for human review before 03-04/03-05 build further on core.LoanEndpoint's current arm-block-only population.
+- [Phase 03-04] carried forward from 03-03, unresolved: checkLinear/analyzeStraightLine still use the old discoverLoanLastUses liveness law, not checkBranch's new backward worklist -- two liveness derivations coexist in the checker; 03-05 is the phase's designated gate for adjudicating this.
 
 ### Roadmap Evolution
 
@@ -142,6 +146,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T04:48:46.937Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-09-04T05:18:18.015Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: None
