@@ -85,5 +85,39 @@ fn relay(buffer: Buffer) -> Buffer {
 **Fix, before Phase 4 introduces calls.** Restore an admission-time (or `ValidatePublished`-time) check that runs `RecomputeOrigin` unconditionally for every EXPORTED function — not gated on `PublicOrigin != nil` — and rejects (or requires an explicit, named "not part of the public surface" opt-out) when the recomputation finds a real origin the declaration omitted entirely. This is a narrower, better-scoped version of the gate 03-06 dropped: scoped to exported functions only (03-06's removed gate applied to every straight-line function, which is what broke `exclusive_borrow_clean`, a non-exported... actually `relay` in the fixture above IS exported, so scoping to "exported" alone does not by itself save `exclusive_borrow_clean`'s CHECK-time acceptance — the fix must live in `ValidatePublished`/`interface export`'s own admission path, not `check.go`'s, so `lang check` keeps accepting `exclusive_borrow_clean` exactly as today while `interface export` on the same source would newly refuse to publish it without an origin, which is the shape the ORIGINAL fixture never needed to satisfy since it never called `interface export`).
 
 ---
+
+## Closure — D-03-02 resolved by 03-09 (2026-09-04)
+
+**D-03-02 is CLOSED.** `originvalidate.ValidatePublished` now runs `RecomputeOrigin`
+unconditionally for every function, including one with no declared `PublicOrigin`.
+When recomputation succeeds for such a function (its body's only return is
+borrow-derived), publication is refused with the new `core.origin_omitted`
+problem code — exactly the fix this entry's own "Fix, before Phase 4 introduces
+calls" section prescribed, scoped to the publication path (`ValidatePublished` /
+`lang interface export`) only, never restored in `check.go`'s admission path.
+`lang check` on `exclusive_borrow_clean` / `relay` (`check_exclusive_test.go`)
+is unchanged and still returns zero diagnostics; `interface export` on the same
+shape now refuses to publish it.
+
+Two new fail-closed, nonzero-work Phase 3 gate controls require this fix stays
+load-bearing: `control:origin.omitted_summary` (`public_view_omitted.lang`) and
+`control:origin.mixed_access_chain` (`public_view_mixed_access.lang`, 03-08's
+CR-01 fixture, now also exercised as a required control here). Both join the
+seven pre-existing required control IDs in `scripts/verify-phase3.sh` and
+`verifyBorrowedCorpus`'s `requiredControls` slice (nine total).
+
+Proven load-bearing by mutation-kill (revert-and-fail in a throwaway detached
+worktree, see 03-09-SUMMARY.md) and by the shipped `./cmd/lang` binary on a
+hand-written, out-of-corpus program (`check` exits 0, `interface export` exits
+2 with `core.origin_omitted`, no summary file written).
+
+**D-03-01 remains OPEN, accepted, and non-blocking**, per 03-VERIFICATION.md's
+adjudication (OWN-03's observable truth is independently proven by the per-arm
+`discoverLoanLastUses` mechanism; the CFG dataflow's linear cost still never
+reaches the admission-deciding code path). This closure entry resolves D-03-02
+only — D-03-01's own row above is unedited and still tracked for a Phase 4+ fix.
+
+---
 *Phase: 03-borrowed-views-and-cfg-lifetimes*
 *Recorded: 2026-09-04 at `68ed4f7` (03-05, mid-phase gate)*
+*D-03-02 closed: 2026-09-04 by 03-09*
