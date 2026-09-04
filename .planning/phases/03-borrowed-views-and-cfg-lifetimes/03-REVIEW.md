@@ -1,349 +1,58 @@
 ---
 phase: 03-borrowed-views-and-cfg-lifetimes
-reviewed: 2026-09-04T00:00:00Z
+reviewed: 2026-09-04T17:07:33Z
 depth: standard
-files_reviewed: 60
+files_reviewed: 8
 files_reviewed_list:
-  - cmd/lang/main.go
-  - internal/compiler/ability/ability.go
-  - internal/compiler/ability/ability_test.go
-  - internal/compiler/ast/ast.go
-  - internal/compiler/cgen/cgen.go
-  - internal/compiler/cgen/cgen_names_test.go
-  - internal/compiler/check/check.go
-  - internal/compiler/check/check_branch_test.go
-  - internal/compiler/check/check_exclusive_test.go
-  - internal/compiler/check/check_origin_test.go
-  - internal/compiler/check/check_test.go
-  - internal/compiler/check/check_unexecutable_test.go
-  - internal/compiler/core/core.go
-  - internal/compiler/corevalidate/corevalidate.go
-  - internal/compiler/corevalidate/corevalidate_branch_test.go
-  - internal/compiler/corevalidate/corevalidate_endpoint_internal_test.go
-  - internal/compiler/corevalidate/corevalidate_endpoint_test.go
-  - internal/compiler/corevalidate/corevalidate_exclusive_test.go
-  - internal/compiler/corevalidate/corevalidate_quadratic_test.go
-  - internal/compiler/debugmap/debugmap.go
-  - internal/compiler/debugmap/debugmap_test.go
-  - internal/compiler/evidence/evidence_test.go
-  - internal/compiler/interp/interp.go
-  - internal/compiler/native/native.go
-  - internal/compiler/native/native_test.go
   - internal/compiler/originvalidate/originvalidate.go
   - internal/compiler/originvalidate/originvalidate_test.go
-  - internal/compiler/pathoracle/pathoracle.go
-  - internal/compiler/pathoracle/pathoracle_test.go
-  - internal/compiler/protocol/protocol.go
-  - internal/compiler/protocol/protocol_test.go
   - internal/compiler/session/session.go
-  - internal/compiler/session/session_borrow_conflict_test.go
-  - internal/compiler/session/session_branch_test.go
-  - internal/compiler/session/session_exclusive_test.go
   - internal/compiler/session/session_test.go
-  - internal/compiler/syntax/format.go
-  - internal/compiler/syntax/parser.go
-  - internal/compiler/syntax/syntax_test.go
-  - internal/compiler/syntax/token.go
   - internal/compiler/testsupport/cli_test.go
-  - internal/compiler/testsupport/testsupport.go
-  - internal/compiler/testsupport/testsupport_internal_test.go
   - scripts/verify-phase3.sh
-  - testdata/phase2/evidence.golden.json
-  - testdata/phase2/owned_transfer.golden.c
-  - testdata/phase3/borrowed_view.lang
-  - testdata/phase3/branch_one_arm_shared_accept.lang
-  - testdata/phase3/branch_one_arm_shared_reject.lang
-  - testdata/phase3/branch_view.lang
-  - testdata/phase3/exclusive_exclusive_reject.lang
-  - testdata/phase3/exclusive_move_reject.lang
-  - testdata/phase3/public_view.lang
-  - testdata/phase3/public_view_impossible.lang
-  - testdata/phase3/public_view_mixed_access.lang
-  - testdata/phase3/public_view_omitted.lang
-  - testdata/phase3/public_view_understated.lang
-  - testdata/phase3/sequential_shared_then_exclusive_accept.lang
-  - testdata/phase3/shared_exclusive_reject.lang
-  - testdata/phase3/shared_shared_accept.lang
+  - testdata/phase3/public_view_multi_arm_omitted.lang
+  - testdata/phase3/public_view_multi_arm_access_conflict.lang
 findings:
-  critical: 1
-  warning: 3
-  info: 2
-  total: 6
-status: issues_found
+  critical: 0
+  warning: 0
+  info: 1
+  total: 1
+status: clean
 ---
 
-# Phase 03: Code Review Report (re-review)
+# Phase 03: Code Review Report (03-10, third gap-closure round)
 
-**Reviewed:** 2026-09-04T00:00:00Z
+**Reviewed:** 2026-09-04T17:07:33Z
 **Depth:** standard
-**Files Reviewed:** 60 (42 Go/shell source+test files plus 18 `testdata/phase2`/`testdata/phase3` fixtures)
-**Status:** issues_found
+**Files Reviewed:** 8
+**Status:** clean
 
 ## Summary
 
-This is a re-review of a phase that already went through one review cycle
-(`03-REVIEW.md` at commit `acaa380`, one Critical finding — `CR-01`) and two
-gap-closure plans (`03-08`, `03-09`, commits `e049c11..HEAD`) that both
-touched `internal/compiler/originvalidate/originvalidate.go`. I first
-verified the prior review's disposition, then focused the deepest scrutiny
-on the newly changed code per the task's own instruction that it is "the
-least-reviewed part of the phase."
+This is the 03-10 change set that closes the multi-arm origin defect: `RecomputeOrigin` used to walk backward from only the FIRST `core.OpReturn` in a function's flat `Linear.Operations`, so a match-bodied function whose non-first arm returned a borrow-derived place could export with no `public_origin` at all. The fix introduces `RecomputeOriginPerReturn` as the sole backward-walk site, walking every `core.OpReturn` using one shared `TargetID -> SourceOperation` map, and makes `RecomputeOrigin` a conservative combiner over the per-return results (owned-if-none-derived, agreed-access-if-all-agree, `AccessConflicting` sentinel if they disagree). A declared-access domain check in `ValidatePublished` refuses any declared `Access` outside `{"shared","exclusive"}` before ever comparing against a recomputed answer, closing the path by which the sentinel could round-trip through a declaration.
 
-**The original `CR-01` is fixed correctly.** `RecomputeOrigin`'s
-`OpBorrowExclusive` branch is now guarded first-seen
-(`originvalidate.go:88-91`), symmetric with the pre-existing
-`OpBorrowShared` guard, and `public_view_mixed_access.lang` plus
-`TestMixedAccessChainDerivesShared` / `TestMixedAccessChainRejectedAsAccessMismatch`
-correctly pin the specific reborrow-chain shape the original finding
-described. `03-09`'s omitted-origin gate (`core.origin_omitted`) is also
-correctly wired for the single-arm, single-return shape it was built and
-tested against (`public_view_omitted.lang`).
+I traced the combination law against all the edge cases called out in the review brief (derived-empty, all-agree, disagree, one-arm-owned-one-derived, broken/cyclic chains, zero-`OpReturn` bodies) and found the logic correct in every case. I also traced the shared-`sourceOf`-map safety claim against `check.go`'s actual arm lowering (`checkBranch`/`analyzeArmBody`, outside the required-reading set but load-bearing for this claim): place/operation IDs are minted from a single monotonically increasing `nextIndex` counter that is never reset between arms, so `TargetID` collisions across arms are structurally impossible regardless of what identifier names source-level bindings reuse across arms — the doc comment's claim holds, not merely by convention. `walkReturnOrigin`'s `visited` map is allocated fresh per call (per return), so no per-arm walk can contaminate a sibling arm's cycle state either.
 
-**However, both fixes share an unexamined assumption that does not hold in
-general: `RecomputeOrigin` assumes a function's `core.LinearBody.Operations`
-contains exactly one `OpReturn`.** That assumption is true for every
-straight-line function (Linear-only, non-match) and for every fixture
-either gap-closure plan added, but it is false for a match-arm-bodied
-("branch-shaped") function — `check.go`'s own arm-body lowering appends one
-`OpReturn` per arm into the *same* flat `Operations` slice (confirmed by
-reading `check.go`'s branch-body constructor, lines ~200-365, and by
-`corevalidate.go:810`'s own comment: "a branch-shaped function has one
-return PER BLOCK"). `RecomputeOrigin` records only the *first* `OpReturn` it
-encounters while scanning `Operations` in order and silently ignores every
-other arm's return entirely. I confirmed this is not merely a theoretical
-gap in the algorithm but a live, reachable defect through the actual
-compiler pipeline and the shipped binary — see CR-01 (renumbered) below.
-None of the phase's match/branch fixtures (`borrowed_view.lang`,
-`branch_view.lang`, `branch_one_arm_shared_*.lang`) exercise this because
-none of them return a live borrow from a non-first arm, and none of the new
-origin fixtures (`public_view_mixed_access.lang`, `public_view_omitted.lang`)
-are match-bodied, because `check.go`'s scope fence
-(`ownership.match_borrowed_return_unsupported`) forbids a match function
-from *declaring* an origin — but nothing forbids a match arm's body from
-*returning a live borrow anyway*, which is exactly the shape `03-09`'s
-`core.origin_omitted` gate exists to catch and, for this shape, does not.
+I confirmed the sentinel (`AccessConflicting`) has no path to a written interface summary: `checkBranch` (the only producer of match-bodied `core.Function` values) never sets `PublicOrigin` at all, so a match function can never carry a declared sentinel from honest source; the domain check in `ValidatePublished` additionally refuses any declared access outside the two legal values before the declared-vs-recomputed comparison runs, so even a hand-mutated summary declaring the sentinel is caught (proven by `TestDeclaredConflictingAccessIsRefused`, which specifically targets the one fixture whose own recomputed answer IS the sentinel — the case that would slip through if the domain check ran after the comparison instead of before). `BuildInterface` is only ever called after `ValidatePublished` succeeds (`InterfaceExportCommandFile` in session.go), so no code path can package a body carrying the sentinel into a shipped summary.
 
-Everything else previously flagged (`WR-01`, `WR-02`, `WR-03`, `IN-01`,
-`IN-02`) is unchanged by the gap-closure plans and still applies as
-originally described; I re-verified each against the current tree rather
-than assuming carry-forward. D-03-01 and D-03-02 (D-03-02 now closed per
-`03-DEBT.md`) remain out of scope for this review as before.
+The two new fixtures are structurally distinct from each other (one owned-then-borrow arm pair triggering `core.origin_omitted`; one shared-then-exclusive arm pair triggering the `AccessConflicting` sentinel and, on injected declaration, `core.origin_access_mismatch`), and I confirmed `TestMultiArmOmittedOriginRejectedThroughCLI` and `TestMultiArmOmittedOriginRejected` would both fail against the pre-03-10 single-`OpReturn` code (the first arm in that fixture is owned, so the old code would report not-ok and publish cleanly).
 
-## Critical Issues
+`scripts/verify-phase3.sh`'s two new required controls are fail-closed: both are read via `readBoundedFile`, and a missing/renamed fixture returns `protocol.StatusOperational`/`verify.fixture_missing` from `verifyBorrowedCorpus`, which under the script's `set -eu` aborts the `lang --json verify testdata/phase3` invocation before the `grep -q` control checks even run — there is no silent-skip path. Both new control names are present in the required list in all three enforcement points (`session.go`'s `requiredControls`, `session_test.go`'s `TestVerifyPhase3ControlsAndWork`, and `verify-phase3.sh`'s `for control in` loop), and `TestPhase3VerifierScriptContract` pins the script's literal text so the two new `grep` lines cannot be silently dropped from the script without failing that test. The escape list (`escape:coordinated-frontend-summary-lie`, `escape:coordinated-source-core-lie`) is untouched by this diff — grepped every reference and confirmed neither constant nor `ExpectedEscapes()` was modified.
 
-### CR-01: `originvalidate.RecomputeOrigin` only inspects a function's first `OpReturn`, so a match-arm-bodied function that returns a live borrow from any arm other than the first silently escapes both the access-mismatch and omitted-origin gates
+Backward compatibility: no `lang.core` schema version bump, no new core field (this round adds no field to `core.Function`/`core.PublicOrigin` — `AccessConflicting` is a package-level Go string constant, never serialized as a schema addition), and `go build`/`go vet` are clean across the changed packages. Existing single-return fixtures and tests are unaffected — `RecomputeOrigin`'s cases 1 and 2 are documented and tested (via `TestPublishedOriginConsistentWithEveryReturn`, which loops over every `testdata/phase3/*.lang` fixture, not just the two new ones) as byte-identical to the pre-03-10 single-return behavior.
 
-**File:** `internal/compiler/originvalidate/originvalidate.go:59-98` (the return-selection and backward-walk loop), consumed unconditionally by `ValidatePublished` (`originvalidate.go:119-144`)
-
-**Issue:** `RecomputeOrigin` builds `returnOp` from the first operation with
-`Kind == core.OpReturn` encountered while iterating `function.Linear.Operations`
-in index order, and every subsequent `OpReturn` is skipped (`continue`)
-without ever being considered:
-
-```go
-for index := range operations {
-    operation := operations[index]
-    if operation.Kind == core.OpReturn {
-        if returnOp == nil {
-            returnOp = &operations[index]
-        }
-        continue
-    }
-    sourceOf[operation.TargetID] = operation
-}
-```
-
-For a straight-line function this is correct — there is exactly one
-`OpReturn`. For a match-arm-bodied ("branch") function, `check.go`'s arm
-lowering (the constructor around lines 200-365, confirmed by
-`corevalidate.go:810`'s explicit comment "a branch-shaped function has one
-return PER BLOCK") appends one `OpReturn` per arm into the *same* flat
-`function.Linear.Operations` slice, in arm order. `RecomputeOrigin` derives
-its whole answer from arm 0's return chain alone and never looks at arm 1's
-(or any later arm's).
-
-`check.go` forbids a match-bodied function from *declaring* a
-`ReturnOrigin` (`ownership.match_borrowed_return_unsupported`,
-`check.go:83-87`), but this fence only blocks the declaration — it does not
-stop an arm's body from returning a place that is a live borrow of the
-parameter with no declaration at all. That is precisely the shape
-`03-09`'s `core.origin_omitted` gate was built to close (for the
-straight-line case). Because `RecomputeOrigin` only examines the first arm,
-a function whose first arm returns owned and whose *second* arm returns a
-live borrow evades the gate entirely, and a function whose first arm
-returns one access mode and second arm returns a different one similarly
-evades `core.origin_access_mismatch`-style detection (moot here since
-origin can never be declared on a match function, but it means the
-`origin_omitted` gate's "does this body actually leak a borrow" check is
-simply wrong for every branch-shaped function with more than one arm).
-
-I reproduced this end-to-end through the real pipeline and the shipped
-binary, using an honest, unmutated fixture — no falsifying mutation was
-needed, exactly the pattern that made the original `CR-01` and `D-03-02`
-findings serious:
-
-```
-module owned.branch_origin_leak
-
-export {
-  type Switch
-  fn choose
-}
-
-data Switch =
-  | On
-  | Off
-
-fn choose(flag: Switch) -> Switch {
-  match flag {
-    On => {
-      let moved = take flag
-      moved
-    }
-    Off => {
-      let view = borrow flag
-      view
-    }
-  }
-}
-```
-
-- `lang --json check` on this source: `"status":"pass"`, zero diagnostics.
-- `lang --json interface export` on this source: `"status":"pass"`, exit 0,
-  and the written summary's `choose` function carries **no** `public_origin`
-  field at all — it is indistinguishable from a fully-owned function, even
-  though the `Off` arm hands the caller a live, unreleased borrow of `flag`.
-- Calling `originvalidate.ValidatePublished` directly on the validated
-  `core.Program` for this exact source returns an **empty** problem slice.
-
-This is a live escape of the publication guarantee `03-09` was written to
-establish (ROADMAP SC4's "omitted" clause), reachable by an honest producer
-writing ordinary match-arm code, not requiring any adversarial mutation —
-the same severity class as the original `CR-01`, and specifically located
-in the code both gap-closure plans touched without anyone tracing what
-"first `OpReturn`" means once a function has more than one.
-
-No fixture under `testdata/phase3/` exercises this: the phase's only
-match/branch fixtures (`borrowed_view.lang`, `branch_view.lang`,
-`branch_one_arm_shared_accept.lang`, `branch_one_arm_shared_reject.lang`)
-all return an owned (`take`d) value from every arm, and the phase's only
-origin fixtures (`public_view.lang`, `public_view_understated.lang`,
-`public_view_impossible.lang`, `public_view_mixed_access.lang`,
-`public_view_omitted.lang`) are all single-arm straight-line functions.
-`scripts/verify-phase3.sh`'s nine required controls do not cover this shape
-either.
-
-**Fix:** `RecomputeOrigin` needs to reason over *every* `OpReturn` in the
-function, not just the first, and combine the per-return answers
-conservatively (e.g., if any return derives a borrow with no matching
-declared origin, that is enough to trigger `core.origin_omitted`; if
-returns disagree on access mode, that's at least as bad as a single
-mismatching one and must not silently resolve to whichever arm happened to
-be checked). A minimal fix:
-
-```go
-var returnOps []*core.LinearOperation
-for index := range operations {
-    operation := operations[index]
-    if operation.Kind == core.OpReturn {
-        returnOps = append(returnOps, &operations[index])
-        continue
-    }
-    sourceOf[operation.TargetID] = operation
-}
-if len(returnOps) == 0 {
-    return nil, "", false
-}
-// walk backward from EVERY returnOp, not just the first, and require
-// derivedAccess (and the derived path set) to agree across all of them;
-// disagreement or a mix of "owned" and "borrowed" arms must not resolve
-// to a single confident answer that hides the disagreement.
-```
-
-Add a regression fixture pairing an owned-returning arm with a
-borrow-returning arm (the `branch_origin_leak` shape demonstrated above,
-or the mixed-access variant with two arms disagreeing on access mode), and
-wire a new required control into `scripts/verify-phase3.sh` mirroring
-`control:origin.omitted_summary` for the branch-bodied case specifically —
-the existing `control:origin.omitted_summary` control only exercises the
-single-arm shape and would not have caught this.
-
-## Warnings
-
-_(Carried forward from the prior review at `acaa380`; re-verified against
-the current tree — none were touched by the `03-08`/`03-09` gap-closure
-plans, and all still apply as originally described.)_
-
-### WR-01: `check`-time programs carry an unverified `PublicOrigin` claim; only `interface export` verifies it
-
-**File:** `internal/compiler/check/check.go:971-974`, `internal/compiler/session/session.go` (`Check`, `RunNative`, `RunInterpreter`)
-
-**Issue:** `checkLinear` builds `core.PublicOrigin` directly from the AST's
-parsed `ReturnOrigin` declaration with no body verification. `session.Check`,
-`RunInterpreter`, and `RunNative` (the paths behind `lang check` and
-`lang run`) never call `originvalidate.ValidatePublished`; only
-`InterfaceExportCommandFile` does. A source file can declare a fictitious
-origin and `lang check` / `lang run` will accept and execute it without
-complaint until someone separately runs `lang interface export`. Still true
-on the current tree — `PublicOrigin` remains unread by `corevalidate.go`,
-`cgen.go`, and `interp.go`.
-
-**Fix:** As previously suggested — add a doc comment on `core.PublicOrigin`
-(or `check.Program`/`session.Check`) stating explicitly that the field is
-unverified until `originvalidate.ValidatePublished` runs.
-
-### WR-02: `corevalidate.cloneProgram` panics instead of returning an error
-
-**File:** `internal/compiler/corevalidate/corevalidate.go:1140-1150` (confirmed unchanged: `panic(fmt.Sprintf("core validation clone: %v", err))` appears twice, lines 1143 and 1147)
-
-**Issue:** `cloneProgram` (used by `Validate` on every call, including every
-`check`/`run`/`interface`/`debug-map`/`verify` invocation) panics if
-`json.Marshal`/`json.Unmarshal` fails, unlike the rest of the package which
-is built entirely around "return a `Problem`, never crash." Not currently
-reachable from adversarial input given today's callers, but the exported
-function carries no documented precondition ruling it out for a future
-caller.
-
-**Fix:** Return an error / `core.validation_clone_failed` problem instead of
-panicking.
-
-### WR-03: `blockLoanLiveness`'s `uses` slice is recomputed and discarded on every worklist re-evaluation
-
-**File:** `internal/compiler/check/check.go:475-501`, `593`
-
-**Issue:** Not a correctness bug (unchanged assessment from the prior
-review) — `blockLoanLiveness`'s `uses` return value is discarded inside
-`loanLivenessFixpoint`'s worklist loop and is independently re-derived by
-`materializeLoanEndpoints`. Purely a readability/maintenance note.
-
-**Fix:** No functional change required; consider a comment at the call site
-noting `uses` is intentionally discarded there.
+I did not find a bug in this round. The last two rounds each shipped believing they were done and were not; I looked hard for the same failure mode here (a second, still-uncovered multi-valued iteration, e.g. a `sourceOf` map keyed in a way that could alias across arms, or a comparison ordering that could let the sentinel slip through) and did not find one.
 
 ## Info
 
-### IN-01: `discoverLoanLastUses`'s admission logic is duplicated verbatim between `analyzeStraightLine` and `analyzeArmBody`
+### IN-01: Shared-map safety proof lives outside required_reading, undocumented as a cross-file dependency
 
-**File:** `internal/compiler/check/check.go:700, 1019` (and the ~140-line bodies that follow each)
-
-**Issue:** Deliberate, documented scope decision (D-03-01), not an
-oversight. Still worth flagging because the duplication is large enough
-that a future fix to one admission rule has a real chance of being applied
-to only one copy — unchanged from the prior review.
-
-**Fix:** None required this phase.
-
-### IN-02: `native.Runner.Run`'s stderr-nonempty rejection is the only signal distinguishing informational stderr from failure
-
-**File:** `internal/compiler/native/native.go:118-120`
-
-**Issue:** Deliberate and reasonable given today's generated C never writes
-to stderr; a forward-compatibility note only, unchanged from the prior
-review.
-
-**Fix:** None required now.
+**File:** `internal/compiler/originvalidate/originvalidate.go:88-93` (doc comment on `RecomputeOriginPerReturn`)
+**Issue:** The comment's central safety claim — that reusing one flat `sourceOf` map across all arms cannot let one arm's walk cross into a sibling arm's operations — depends entirely on `check.go`'s arm lowering (`checkBranch`'s `nextIndex` counter, `analyzeArmBody`'s `startIndex`-offset IDs) minting globally unique place/operation IDs across arms. That invariant is real (I traced it) but lives in a different package this file explicitly must never import, and nothing in `originvalidate` or its tests would fail loudly if a future `check.go` change broke it in a way that produced a colliding `TargetID` across two arms (the map write would just silently overwrite the earlier arm's operation with the later one's, corrupting one arm's walk with a splice from the other). `TestPublishedOriginConsistentWithEveryReturn`'s cross-check only re-derives the same combination from the same `RecomputeOriginPerReturn` output, so it cannot catch a `check.go`-side ID-collision regression either — it would just be consistently wrong on both sides of the comparison.
+**Fix:** Not a defect to fix in this round (the invariant currently holds and is out of this package's control by design), but worth a light defensive addition: `RecomputeOriginPerReturn` could assert (or a dedicated test in `originvalidate_test.go` could assert) that every non-return operation's `TargetID` is unique across the whole function before building `sourceOf`, and treat a violation as a hard error/problem rather than a silent overwrite. That converts a currently-implicit cross-package invariant into a locally-enforced one, consistent with this package's stated source-blind, trust-nothing posture.
 
 ---
 
-_Reviewed: 2026-09-04T00:00:00Z_
+_Reviewed: 2026-09-04T17:07:33Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
