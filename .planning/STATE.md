@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Borrowed Views and CFG Lifetimes
 status: executing
-stopped_at: Completed 03-08-PLAN.md
-last_updated: "2026-09-04T15:40:01.825Z"
+stopped_at: Completed 03-09-PLAN.md
+last_updated: "2026-09-04T15:52:39.281Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: 410c5a7a4a7a329d957c08f7a2c01364f23729a0
+state_head: 3fd0379ba8a37b2afce9c751d02d8ed9db69bba9
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 19
-  completed_plans: 18
+  completed_plans: 19
   percent: 33
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-09-04 — Phase 03 execution started
 
@@ -71,6 +71,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 03 P05 | 95 min | 3 tasks | 7 files |
 | Phase 03-borrowed-views-and-cfg-lifetimes P07 | 130min | 3 tasks | 13 files |
 | Phase 03 P08 | 11 min | 2 tasks | 4 files |
+| Phase 03 P09 | 22 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: [Phase 03-05]: Mid-phase gate closed clean with two non-blocking debt items recorded in 03-DEBT.md (D-03-01: discoverLoanLastUses' own quadratic work stays uncounted; D-03-02: an exported borrow-derived return with no declared origin exports as if fully owned).
 - [Phase 03]: verifyBorrowedCorpus reuses 03-04/03-05's existing lane constructors unmodified rather than duplicating mutation logic — keeps the Phase 3 gate an assembly of already-proven parts and avoids breaking already-shipped regression tests
 - [Phase 03]: Guarded RecomputeOrigin's OpBorrowExclusive branch first-seen (symmetric with OpBorrowShared), closing CR-01/OWN-04's impossible-half gap — The hop nearest the returned place must decide the derived access mode; an earlier hop further from the return overwriting it was the exact defect 03-VERIFICATION.md found reachable through the shipped binary
+- [Phase 03]: ValidatePublished recomputes an origin unconditionally for every function, refusing publication of an undeclared borrow-derived return with core.origin_omitted; the gate lives entirely on the publication path (ValidatePublished/interface export), never restored in check.go's admission path.
 
 ### Pending Todos
 
@@ -154,6 +156,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T15:40:01.758Z
-Stopped at: Completed 03-08-PLAN.md
+Last session: 2026-09-04T15:52:39.218Z
+Stopped at: Completed 03-09-PLAN.md
 Resume file: None
