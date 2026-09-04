@@ -42,7 +42,12 @@ func (f *formatter) token(token Token) {
 			f.writeIndent()
 		}
 		f.out.WriteString(token.Text)
+		// A comment is the one token that breaks a line without ending the
+		// construct that opened it, so a header interrupted by a trailing
+		// comment continues on the next line and must keep its classification.
+		header := f.header
 		f.newline()
+		f.header = header
 	case TokenModule:
 		f.blankBeforeTopLevel()
 		f.write("module ")
@@ -99,8 +104,15 @@ func (f *formatter) token(token Token) {
 		} else if f.header != "" {
 			context = f.header
 		}
-		f.trimSpace()
-		f.out.WriteString(" {\n")
+		if f.lineOpen {
+			f.trimSpace()
+			f.out.WriteString(" {\n")
+		} else {
+			// The header was broken by a trailing comment, so the brace opens
+			// its own line and must not inherit a separator space.
+			f.writeIndent()
+			f.out.WriteString("{\n")
+		}
 		f.lineOpen = false
 		f.header = ""
 		f.indent++
@@ -230,8 +242,9 @@ func (f *formatter) write(value string) {
 }
 
 func (f *formatter) newline() {
-	// A declaration header never spans a line in the canonical projection, so
-	// the pending header classification dies with the line that carried it.
+	// Ending a line ordinarily ends the declaration header it carried. The one
+	// exception is a trailing comment, which breaks the line mid-header and
+	// restores the classification itself.
 	f.header = ""
 	value := f.out.String()
 	if strings.HasSuffix(value, "\n") {

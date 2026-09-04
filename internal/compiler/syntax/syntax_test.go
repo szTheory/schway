@@ -437,7 +437,14 @@ func generatedLinearProgram(caseID uint64) []byte {
 	}
 	fmt.Fprintf(&source, "module%slinear.case%d\n\n", separator, caseID%971)
 	fmt.Fprintf(&source, "export%s{%s fn%s%s%s}\n\n", separator, separator, separator, functionName, separator)
-	fmt.Fprintf(&source, "fn%s%s(subject:%s%s)%s->%s%s%s{\n", separator, functionName, separator, declaredType, separator, separator, declaredType, separator)
+	// A comment trailing the declaration header breaks the line without ending
+	// the header, which is the one placement that can defeat brace
+	// classification; cover it alongside the uninterrupted spelling.
+	if caseID%11 == 0 {
+		fmt.Fprintf(&source, "fn%s%s(subject:%s%s)%s->%s%s// header tail %d\n{\n", separator, functionName, separator, declaredType, separator, separator, declaredType, caseID)
+	} else {
+		fmt.Fprintf(&source, "fn%s%s(subject:%s%s)%s->%s%s%s{\n", separator, functionName, separator, declaredType, separator, separator, declaredType, separator)
+	}
 	result := "subject"
 	for index := 0; index < bindingCount; index++ {
 		name := fmt.Sprintf("hold%d", index)
@@ -474,8 +481,16 @@ func generatedProgram(caseID uint64, exhaustive bool) []byte {
 	for _, alternative := range alternatives {
 		fmt.Fprintf(&source, "%s|%s%s\n", separator, separator, alternative)
 	}
-	fmt.Fprintf(&source, "\nfn%s%s(state:%s%s)%s->%s%s%s{\n", separator, functionName, separator, typeName, separator, separator, typeName, separator)
-	fmt.Fprintf(&source, "%smatch%sstate%s{\n", separator, separator, separator)
+	if caseID%11 == 0 {
+		fmt.Fprintf(&source, "\nfn%s%s(state:%s%s)%s->%s%s// header tail %d\n{\n", separator, functionName, separator, typeName, separator, separator, typeName, caseID)
+	} else {
+		fmt.Fprintf(&source, "\nfn%s%s(state:%s%s)%s->%s%s%s{\n", separator, functionName, separator, typeName, separator, separator, typeName, separator)
+	}
+	if caseID%13 == 0 {
+		fmt.Fprintf(&source, "%smatch%sstate%s// match tail %d\n%s{\n", separator, separator, separator, caseID, separator)
+	} else {
+		fmt.Fprintf(&source, "%smatch%sstate%s{\n", separator, separator, separator)
+	}
 	limit := alternativeCount
 	if !exhaustive {
 		limit--
