@@ -92,6 +92,79 @@ func TestOriginAccessMismatchRejected(t *testing.T) {
 	}
 }
 
+// TestMixedAccessChainDerivesShared is 03-08-01's falsifier for CR-01: a
+// reborrow chain whose closest-to-return hop is a shared reborrow of an
+// exclusively-borrowed place must derive access "shared" — the hop nearest
+// the returned place decides, not an earlier hop further up the chain. This
+// is the honest recomputation (no mutation): check.go's own producer
+// constructs the mismatching *declaration* on this fixture, but
+// RecomputeOrigin's own body-derived answer must still be correct in
+// isolation.
+func TestMixedAccessChainDerivesShared(t *testing.T) {
+	program := honestProgram(t, "public_view_mixed_access.lang")
+	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	if !ok {
+		t.Fatalf("expected RecomputeOrigin to succeed")
+	}
+	if access != "shared" {
+		t.Fatalf("expected access shared (closest-to-return hop), got %q", access)
+	}
+	if len(paths) != 1 || paths[0] != "buffer" {
+		t.Fatalf("expected origin path [buffer], got %+v", paths)
+	}
+}
+
+// TestMixedAccessChainRejectedAsAccessMismatch is 03-08-01's falsifier for
+// CR-01's downstream effect: ValidatePublished must reject the fixture's
+// declared borrow mut(buffer) (exclusive) against a body that only ever
+// derives shared, naming both modes in the detail. Unlike
+// TestOriginAccessMismatchRejected, no mutation is needed here — check.go's
+// honest producer already constructs this exact mismatching declaration
+// from the source's own `borrow mut(buffer)` return-type annotation.
+//
+// The reverse hop ordering (an exclusive reborrow of a shared loan) is
+// exercised here too: it must be derived correctly (shared decides nothing
+// once overridden by a closer exclusive hop) or rejected with a named code —
+// never silently accepted as matching a declaration it does not support.
+func TestMixedAccessChainRejectedAsAccessMismatch(t *testing.T) {
+	program := honestProgram(t, "public_view_mixed_access.lang")
+	problems := originvalidate.ValidatePublished(program)
+	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		t.Fatalf("expected exactly core.origin_access_mismatch, got %+v", problems)
+	}
+	if !strings.Contains(problems[0].Detail, `"exclusive"`) || !strings.Contains(problems[0].Detail, `"shared"`) {
+		t.Fatalf("expected detail to name both declared and body-derived modes, got %q", problems[0].Detail)
+	}
+
+	// Reverse ordering: an exclusive reborrow of a shared loan. The closest
+	// hop to the return is exclusive, so the recomputed answer must be
+	// exclusive — matching a correctly-declared borrow mut(buffer) — proving
+	// the guard is symmetric rather than one-sided.
+	reverseSource := `module owned.public_view_mixed_access_reverse
+
+export {
+  fn view
+}
+
+fn view(buffer: Buffer) -> borrow mut(buffer) Buffer {
+  let shared = borrow buffer
+  let exclusive = borrow mut shared
+  exclusive
+}
+`
+	checkedReverse := session.Check([]byte(reverseSource))
+	if len(checkedReverse.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics on reverse-ordering fixture: %+v", checkedReverse.Diagnostics)
+	}
+	if paths, access, ok := originvalidate.RecomputeOrigin(checkedReverse.Program.Functions[0]); !ok || access != "exclusive" || len(paths) != 1 || paths[0] != "buffer" {
+		t.Fatalf("expected reverse-ordering chain to derive exclusive, got paths=%+v access=%q ok=%v", paths, access, ok)
+	}
+	reverseProblems := originvalidate.ValidatePublished(checkedReverse.Program)
+	if len(reverseProblems) != 0 {
+		t.Fatalf("expected the correctly-declared reverse-ordering fixture to have no problems, got %+v", reverseProblems)
+	}
+}
+
 // TestStaleSummaryRejectedBeforeOtherChecks is 03-06-02's falsifier for
 // T-03-03: a summary whose recorded digest does not match the core artifact
 // it is checked against is rejected before any origin or access question is

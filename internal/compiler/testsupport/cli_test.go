@@ -446,6 +446,33 @@ func TestInterfaceCheckIsBodyBlindCLI(t *testing.T) {
 	}
 }
 
+// TestMixedAccessChainRejectedThroughCLI is 03-08-01's D-11 shipped-binary
+// falsifier for CR-01: `interface export` on a hand-written mixed-access
+// reborrow-chain fixture — whose declared `borrow mut(buffer)` the body only
+// ever grants shared access to — must exit non-zero and name
+// core.origin_access_mismatch in its JSON diagnostics, proving the guard is
+// observable through the real binary, not only the in-process package tests.
+func TestMixedAccessChainRejectedThroughCLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_mixed_access.lang")
+	summaryPath := filepath.Join(t.TempDir(), "summary.json")
+
+	result := testsupport.RunCLI(t, binary, nil, "--json", "interface", "export", fixture, summaryPath)
+	if result.Exit == 0 {
+		t.Fatalf("expected non-zero exit for a mismatched access declaration: %+v", result)
+	}
+	if !bytes.Contains(result.Stdout, []byte("core.origin_access_mismatch")) {
+		t.Fatalf("expected core.origin_access_mismatch in CLI output: %s", result.Stdout)
+	}
+	var decoded protocol.Result
+	if err := json.Unmarshal(result.Stdout, &decoded); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, result.Stdout)
+	}
+	if len(decoded.Diagnostics) != 1 || decoded.Diagnostics[0].Code != "core.origin_access_mismatch" {
+		t.Fatalf("expected exactly one core.origin_access_mismatch diagnostic, got %+v", decoded.Diagnostics)
+	}
+}
+
 // TestBranchFixturesThroughCLI is 03-03-02's D-11 shipped-binary proof: the
 // edge-specific accept/reject fixture pair is driven through the real
 // `./cmd/lang` binary's JSON projection (not only the in-process harness),

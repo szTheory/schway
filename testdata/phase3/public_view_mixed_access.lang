@@ -1,0 +1,20 @@
+// Mixed-access reborrow-chain regression fixture (03-REVIEW.md CR-01): the
+// declared origin claims exclusive access, but the body's only return is a
+// shared reborrow of an exclusively-borrowed place. RecomputeOrigin's
+// exclusive branch must not let a hop further from the return (the initial
+// `borrow mut buffer`) overwrite the closer, correct shared answer produced
+// by the final `borrow` hop. check.go's honest producer constructs this
+// mismatching declaration itself — no mutation is required to reach it,
+// which is exactly why the defect was reachable through the shipped binary.
+
+module owned.public_view_mixed_access
+
+export {
+  fn view
+}
+
+fn view(buffer: Buffer) -> borrow mut(buffer) Buffer {
+  let exclusive = borrow mut buffer
+  let shared = borrow exclusive
+  shared
+}
