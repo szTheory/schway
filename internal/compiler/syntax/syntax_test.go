@@ -233,6 +233,42 @@ func TestArmBodyRoundTrips(t *testing.T) {
 	}
 }
 
+// TestExclusiveBorrowRoundTrips is 03-02-01's syntax falsifier: `borrow mut`
+// parses losslessly, formats to a fixed point, and preserves token identity
+// across canonicalisation — the D-12a slice's frontend half. Plain `borrow`
+// stays legal and unchanged alongside it (TestOwnershipRoundTrip already
+// covers that).
+func TestExclusiveBorrowRoundTrips(t *testing.T) {
+	source := []byte("module owned.exclusive_borrow\n\nexport {\n  fn relay\n}\n\nfn relay(buffer: Buffer) -> Buffer {\n  let view = borrow mut buffer\n  let delivered = take buffer\n  delivered\n}\n")
+	parsed := syntax.Parse(source)
+	if !bytes.Equal(parsed.Tree.Bytes(), source) {
+		t.Fatal("exclusive borrow CST lost bytes")
+	}
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %v", diagnosticIdentity(parsed.Diagnostics))
+	}
+	if len(parsed.Program.Funcs) != 1 || parsed.Program.Funcs[0].Body.Linear == nil || len(parsed.Program.Funcs[0].Body.Linear.Bindings) != 2 {
+		t.Fatalf("expected one function with two bindings: %+v", parsed.Program.Funcs)
+	}
+	if got := parsed.Program.Funcs[0].Body.Linear.Bindings[0].RHS.Kind; got != "borrow_mut" {
+		t.Fatalf("expected the first binding's RHS kind to be borrow_mut, got %q: %+v", got, parsed.Program.Funcs[0].Body.Linear.Bindings[0])
+	}
+	canonical := syntax.Format(parsed.Tree)
+	if !bytes.Equal(canonical, source) {
+		t.Fatalf("exclusive borrow fixture is not canonical:\n%s", canonical)
+	}
+	reparsed := syntax.Parse(canonical)
+	if len(reparsed.Diagnostics) != 0 || !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+		t.Fatalf("exclusive borrow fixture did not reach a formatting fixed point: %v", diagnosticIdentity(reparsed.Diagnostics))
+	}
+	if !reflect.DeepEqual(withoutSpans(parsed.Program), withoutSpans(reparsed.Program)) {
+		t.Fatal("exclusive borrow fixture changed the closed-body semantic projection across reparse")
+	}
+	if !reflect.DeepEqual(semanticTokens(parsed.Tree), semanticTokens(reparsed.Tree)) {
+		t.Fatal("exclusive borrow fixture changed its semantic token projection across reparse")
+	}
+}
+
 // TestArmBodyLimits is 03-01-03's syntax falsifier for T-03-01: a match
 // exceeding the declared arm limit is rejected fail-closed with a bounded,
 // stable diagnostic rather than accepted or run to exhaustion.

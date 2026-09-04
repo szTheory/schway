@@ -235,7 +235,7 @@ func emitLinear(function core.Function) (string, error) {
 	for _, operation := range function.Linear.Operations {
 		source := places[operation.SourceID]
 		switch operation.Kind {
-		case core.OpCopy, core.OpMove, core.OpBorrowShared:
+		case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
 			target, exists := places[operation.TargetID]
 			if !exists || declared[operation.TargetID] {
 				return "", fmt.Errorf("operation %q has invalid target", operation.ID)
@@ -253,6 +253,8 @@ func emitLinear(function core.Function) (string, error) {
 				marker = " /* lang:mutation-site */"
 			} else if operation.Kind == core.OpBorrowShared {
 				label = "shared borrow representation"
+			} else if operation.Kind == core.OpBorrowExclusive {
+				label = "exclusive borrow representation"
 			}
 			fmt.Fprintf(&out, "  %s %s = %s; /* %s: %s */%s\n", typeName, locals[target.ID], locals[source.ID], label, operation.ID, marker)
 			fmt.Fprintf(&out, "  (void)%s;\n", locals[target.ID])
@@ -261,6 +263,8 @@ func emitLinear(function core.Function) (string, error) {
 				eventKind = "value.transferred"
 			} else if operation.Kind == core.OpBorrowShared {
 				eventKind = "value.borrowed"
+			} else if operation.Kind == core.OpBorrowExclusive {
+				eventKind = "value.borrowed_exclusive"
 			}
 			fmt.Fprintf(&out, "  if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
 				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
@@ -464,7 +468,7 @@ func emitBranchOperations(out *strings.Builder, function core.Function, places m
 			return fmt.Errorf("operation %q has invalid source", operation.ID)
 		}
 		switch operation.Kind {
-		case core.OpCopy, core.OpMove, core.OpBorrowShared:
+		case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
 			target, exists := places[operation.TargetID]
 			if !exists {
 				return fmt.Errorf("operation %q has invalid target", operation.ID)
@@ -474,6 +478,8 @@ func emitBranchOperations(out *strings.Builder, function core.Function, places m
 				label = "authority transfer"
 			} else if operation.Kind == core.OpBorrowShared {
 				label = "shared borrow representation"
+			} else if operation.Kind == core.OpBorrowExclusive {
+				label = "exclusive borrow representation"
 			}
 			fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n", typeName, locals[target.ID], locals[source.ID], label, operation.ID)
 			fmt.Fprintf(out, "      (void)%s;\n", locals[target.ID])
@@ -482,6 +488,8 @@ func emitBranchOperations(out *strings.Builder, function core.Function, places m
 				eventKind = "value.transferred"
 			} else if operation.Kind == core.OpBorrowShared {
 				eventKind = "value.borrowed"
+			} else if operation.Kind == core.OpBorrowExclusive {
+				eventKind = "value.borrowed_exclusive"
 			}
 			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
 				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),

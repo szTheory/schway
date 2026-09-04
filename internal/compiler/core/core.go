@@ -76,10 +76,11 @@ type Place struct {
 type OperationKind string
 
 const (
-	OpCopy         OperationKind = "copy"
-	OpMove         OperationKind = "move"
-	OpBorrowShared OperationKind = "borrow_shared"
-	OpReturn       OperationKind = "return"
+	OpCopy            OperationKind = "copy"
+	OpMove            OperationKind = "move"
+	OpBorrowShared    OperationKind = "borrow_shared"
+	OpBorrowExclusive OperationKind = "borrow_exclusive"
+	OpReturn          OperationKind = "return"
 )
 
 type LinearOperation struct {

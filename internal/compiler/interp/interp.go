@@ -91,6 +91,9 @@ func runBranchArm(function core.Function, arm core.MatchArm, input string) (Exec
 		case core.OpBorrowShared:
 			values[operation.TargetID] = value
 			events = append(events, ownedEvent(function, operation, "value.borrowed"))
+		case core.OpBorrowExclusive:
+			values[operation.TargetID] = value
+			events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
 		case core.OpReturn:
 			events = append(events, Event{
 				Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
@@ -129,6 +132,9 @@ func runLinear(function core.Function, input string) (Execution, error) {
 		case core.OpBorrowShared:
 			values[operation.TargetID] = value
 			events = append(events, ownedEvent(function, operation, "value.borrowed"))
+		case core.OpBorrowExclusive:
+			values[operation.TargetID] = value
+			events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
 		case core.OpReturn:
 			events = append(events, Event{
 				Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",

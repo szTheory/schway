@@ -18,6 +18,7 @@ const (
 	TokenLet        Kind = "let"
 	TokenTake       Kind = "take"
 	TokenBorrow     Kind = "borrow"
+	TokenMut        Kind = "mut"
 	TokenLBrace     Kind = "{"
 	TokenRBrace     Kind = "}"
 	TokenLParen     Kind = "("

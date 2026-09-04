@@ -133,6 +133,10 @@ func normalizeOwnershipTokens(tokens []Token) {
 			if tokens[index].Kind == TokenIdentifier {
 				tokens[index].Kind = TokenBorrow
 			}
+		case "mut":
+			if tokens[index].Kind == TokenIdentifier {
+				tokens[index].Kind = TokenMut
+			}
 		case "<":
 			if tokens[index].Kind == TokenUnknown {
 				tokens[index].Kind = TokenLAngle
@@ -285,6 +289,9 @@ func (p *parser) linearBody() ast.LinearBody {
 			kind = "take"
 		} else if p.accept(TokenBorrow) {
 			kind = "borrow"
+			if p.accept(TokenMut) {
+				kind = "borrow_mut"
+			}
 		}
 		source := p.identifier("syntax.expected_binding_source")
 		body.Bindings = append(body.Bindings, ast.Binding{

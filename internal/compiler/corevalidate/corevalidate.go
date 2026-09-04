@@ -273,7 +273,7 @@ func (v *validator) linear(function *core.Function) bool {
 				return false
 			}
 		}
-		if operation.Kind == core.OpBorrowShared {
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			if !v.unique(loanIDs, operation.LoanID, "core.unknown_loan") {
 				return false
 			}
@@ -366,7 +366,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 		for _, loanID := range carried {
 			loanLastUse[loanID] = index
 		}
-		if operation.Kind == core.OpBorrowShared {
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			loanOwner[operation.LoanID] = operation.SourceID
 			loanLastUse[operation.LoanID] = index
 			carried = append(carried, operation.LoanID)
@@ -382,6 +382,20 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			ownerBlockedUntil[ownerID] = loanLastUse[loanID]
 		}
 	}
+	// ownerLiveSharedUntil/ownerLiveExclusiveUntil independently re-derive
+	// the five-row conflict matrix (T-03-07): unlike ownerBlockedUntil (a
+	// single whole-function aggregate, used only for the move-while-
+	// borrowed law, which is safe because a place can never be re-borrowed
+	// after it is moved), these two maps are updated incrementally in
+	// program order as pass 2 below encounters each new loan, so a loan
+	// created later in the function can never appear to "block" an earlier
+	// one. This is a materially different mechanism from check.go's
+	// per-owner active-loan set with immediate per-index expiry (D-12): it
+	// derives conflict from an aggregated running high-water mark per
+	// access mode, not from a checker-shaped set of currently-live loan
+	// objects.
+	ownerLiveSharedUntil := make(map[string]int)
+	ownerLiveExclusiveUntil := make(map[string]int)
 
 	returned := false
 	for index, operation := range operations {
@@ -407,11 +421,35 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
 				return false
 			}
+			if until, blocked := ownerLiveExclusiveUntil[operation.SourceID]; !v.check(!blocked || until < index, "core.borrow_conflict", operation.ID) {
+				return false
+			}
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
+			if lastUse := loanLastUse[operation.LoanID]; lastUse > ownerLiveSharedUntil[operation.SourceID] {
+				ownerLiveSharedUntil[operation.SourceID] = lastUse
+			}
+		case core.OpBorrowExclusive:
+			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
+				return false
+			}
+			sharedUntil, sharedBlocked := ownerLiveSharedUntil[operation.SourceID]
+			exclusiveUntil, exclusiveBlocked := ownerLiveExclusiveUntil[operation.SourceID]
+			conflict := (sharedBlocked && sharedUntil >= index) || (exclusiveBlocked && exclusiveUntil >= index)
+			if !v.check(!conflict, "core.borrow_conflict", operation.ID) {
+				return false
+			}
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+			if lastUse := loanLastUse[operation.LoanID]; lastUse > ownerLiveExclusiveUntil[operation.SourceID] {
+				ownerLiveExclusiveUntil[operation.SourceID] = lastUse
+			}
 		case core.OpMove:
 			blockedUntil, hasLoan := ownerBlockedUntil[operation.SourceID]
 			if !v.check(!hasLoan || blockedUntil < index, "core.move_while_borrowed", operation.ID) {
@@ -471,7 +509,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		for _, loanID := range carried {
 			loanLastUse[loanID] = index
 		}
-		if operation.Kind == core.OpBorrowShared {
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			loanOwner[operation.LoanID] = operation.SourceID
 			loanLastUse[operation.LoanID] = index
 			carried = append(carried, operation.LoanID)
@@ -487,6 +525,11 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			ownerBlockedUntil[ownerID] = loanLastUse[loanID]
 		}
 	}
+	// See replayStraightLine's identical declaration for why these two maps
+	// (rather than a single whole-function aggregate) independently
+	// re-derive the five-row conflict matrix.
+	ownerLiveSharedUntil := make(map[string]int)
+	ownerLiveExclusiveUntil := make(map[string]int)
 
 	returnedBlocks := make(map[string]bool, len(linear.Blocks))
 	for index, operation := range operations {
@@ -512,11 +555,35 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
 				return false
 			}
+			if until, blocked := ownerLiveExclusiveUntil[operation.SourceID]; !v.check(!blocked || until < index, "core.borrow_conflict", operation.ID) {
+				return false
+			}
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
+			if lastUse := loanLastUse[operation.LoanID]; lastUse > ownerLiveSharedUntil[operation.SourceID] {
+				ownerLiveSharedUntil[operation.SourceID] = lastUse
+			}
+		case core.OpBorrowExclusive:
+			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
+				return false
+			}
+			sharedUntil, sharedBlocked := ownerLiveSharedUntil[operation.SourceID]
+			exclusiveUntil, exclusiveBlocked := ownerLiveExclusiveUntil[operation.SourceID]
+			conflict := (sharedBlocked && sharedUntil >= index) || (exclusiveBlocked && exclusiveUntil >= index)
+			if !v.check(!conflict, "core.borrow_conflict", operation.ID) {
+				return false
+			}
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+			if lastUse := loanLastUse[operation.LoanID]; lastUse > ownerLiveExclusiveUntil[operation.SourceID] {
+				ownerLiveExclusiveUntil[operation.SourceID] = lastUse
+			}
 		case core.OpMove:
 			blockedUntil, hasLoan := ownerBlockedUntil[operation.SourceID]
 			if !v.check(!hasLoan || blockedUntil < index, "core.move_while_borrowed", operation.ID) {

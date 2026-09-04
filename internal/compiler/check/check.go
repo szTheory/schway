@@ -328,7 +328,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	}
 	loanUses := discoverLoanLastUses(parameterName, body)
 	for index, binding := range body.Bindings {
-		if binding.RHS.Kind == "borrow" {
+		if binding.RHS.Kind == "borrow" || binding.RHS.Kind == "borrow_mut" {
 			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{
 				LoanID: fmt.Sprintf("%s:loan:%d", functionID, startIndex+index), Binding: binding.Name, OperationIndex: startIndex + loanUses[index].index,
 			})
@@ -419,10 +419,47 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 					diagnostic.Repair{Kind: "use_take_instead"},
 				))
 			}
+			if blocking := conflictingLoan(activeLoans[source.place.ID], "shared"); blocking != nil {
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+			}
 			kind = core.OpBorrowShared
 			use := loanUses[index]
 			loan = &loanState{
-				id: fmt.Sprintf("%s:loan:%d", functionID, global), ownerID: source.place.ID,
+				id: fmt.Sprintf("%s:loan:%d", functionID, global), ownerID: source.place.ID, access: "shared",
+				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
+			}
+			if activeLoans[source.place.ID] == nil {
+				activeLoans[source.place.ID] = make(map[string]*loanState)
+			}
+			activeLoans[source.place.ID][loan.id] = loan
+			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+		case "borrow_mut":
+			// An exclusive loan is gated on the same share-ability requirement
+			// as a shared loan: the ability that permits observation without
+			// duplicating ownership is exactly what an exclusive loan also
+			// needs. No source-reachable Phase 1/2/3 type withholds share
+			// (see nonShareableTypeFact, check_test.go), so this gate — like
+			// the identical one immediately above for shared borrows — is
+			// exercised only synthetically today (D-10).
+			if !hasTypeAbility(typeFact, core.AbilityShare) {
+				causes := []diagnostic.Cause{
+					{Kind: "declared_here", Span: spanPointer(source.declared)},
+					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFact, core.AbilityShare)},
+					{Kind: "place", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return fail(diagnostic.ErrorWithRepairs(
+					"ownership.borrow_requires_share", binding.RHS.Span, "type does not grant the share ability required to borrow", causes,
+					diagnostic.Repair{Kind: "use_take_instead"},
+				))
+			}
+			if blocking := conflictingLoan(activeLoans[source.place.ID], "exclusive"); blocking != nil {
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+			}
+			kind = core.OpBorrowExclusive
+			use := loanUses[index]
+			loan = &loanState{
+				id: fmt.Sprintf("%s:loan:%d", functionID, global), ownerID: source.place.ID, access: "exclusive",
 				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
 			}
 			if activeLoans[source.place.ID] == nil {
@@ -494,6 +531,28 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
 	}
 	typeID := functionID + ":type:0"
+	if !executableShape(parameterType) {
+		// Ability derivation above already ran and produced facts for this
+		// shape (derived.Granted/derived.NegativeWitnesses) — this gate
+		// closes D-02-09 by refusing EXECUTION admission, not by
+		// withholding ability derivation, so the shape stays available for
+		// ability evidence (see TestAbilityFactsSurviveExecutionRejection).
+		// Only Byte and Buffer have a native lowering this phase
+		// (cgen.linearInput); every other shape (Box, Pair, or a nominal
+		// data type used in a straight-line body) type-checks and derives
+		// abilities cleanly but cannot be run by any engine, so it must be
+		// refused here with a causal span rather than dying spanless
+		// downstream on every engine (D-07).
+		causes := []diagnostic.Cause{
+			{Kind: "type", Detail: typeID},
+			{Kind: "constructor", Detail: parameterType.Constructor},
+		}
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
+			"check.unexecutable_shape", function.Parameter.Span,
+			"parameter shape has no native execution lowering this phase", causes,
+			diagnostic.Repair{Kind: "use_executable_shape", Detail: "Byte or Buffer"},
+		)}, typeNodeCount(parameterType)
+	}
 	parameterID := functionID + ":place:0"
 	linear := &core.LinearBody{
 		ID:         functionID + ":linear",
@@ -553,7 +612,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	}
 	loanUses := discoverLoanLastUses(parameterName, body)
 	for index, binding := range body.Bindings {
-		if binding.RHS.Kind == "borrow" {
+		if binding.RHS.Kind == "borrow" || binding.RHS.Kind == "borrow_mut" {
 			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{
 				LoanID: fmt.Sprintf("%s:loan:%d", functionID, index), Binding: binding.Name, OperationIndex: loanUses[index].index,
 			})
@@ -648,10 +707,42 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 					diagnostic.Repair{Kind: "use_take_instead"},
 				))
 			}
+			if blocking := conflictingLoan(activeLoans[source.place.ID], "shared"); blocking != nil {
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+			}
 			kind = core.OpBorrowShared
 			use := loanUses[index]
 			loan = &loanState{
-				id: fmt.Sprintf("%s:loan:%d", functionID, index), ownerID: source.place.ID,
+				id: fmt.Sprintf("%s:loan:%d", functionID, index), ownerID: source.place.ID, access: "shared",
+				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
+			}
+			if activeLoans[source.place.ID] == nil {
+				activeLoans[source.place.ID] = make(map[string]*loanState)
+			}
+			activeLoans[source.place.ID][loan.id] = loan
+			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+		case "borrow_mut":
+			// An exclusive loan is gated on the same share-ability requirement
+			// as a shared loan (see the comment on the identical gate above).
+			if !hasTypeAbility(typeFact, core.AbilityShare) {
+				causes := []diagnostic.Cause{
+					{Kind: "declared_here", Span: spanPointer(source.declared)},
+					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFact, core.AbilityShare)},
+					{Kind: "place", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return fail(diagnostic.ErrorWithRepairs(
+					"ownership.borrow_requires_share", binding.RHS.Span, "type does not grant the share ability required to borrow", causes,
+					diagnostic.Repair{Kind: "use_take_instead"},
+				))
+			}
+			if blocking := conflictingLoan(activeLoans[source.place.ID], "exclusive"); blocking != nil {
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+			}
+			kind = core.OpBorrowExclusive
+			use := loanUses[index]
+			loan = &loanState{
+				id: fmt.Sprintf("%s:loan:%d", functionID, index), ownerID: source.place.ID, access: "exclusive",
 				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
 			}
 			if activeLoans[source.place.ID] == nil {
@@ -706,11 +797,58 @@ type loanUse struct {
 }
 
 type loanState struct {
-	id          string
-	ownerID     string
+	id      string
+	ownerID string
+	// access is "shared" or "exclusive" (Phase 3). It decides which rows of
+	// the five-row conflict matrix apply when a new loan is created on the
+	// same owner: shared-vs-shared never conflicts, every other combination
+	// does. See conflictingLoan.
+	access      string
 	borrowedAt  diagnostic.Span
 	lastUse     int
 	lastUseSpan diagnostic.Span
+}
+
+// conflictingLoan selects the loan (if any) among an owner's currently active
+// loans that conflicts with a newly-created loan of newAccess, using the same
+// deterministic-first-by-sorted-ID selection the existing move_while_borrowed
+// gate already uses (so two runs never disagree on which loan a diagnostic
+// blames). Shared-plus-shared overlap is never a conflict; every other
+// combination (shared+exclusive, exclusive+shared, exclusive+exclusive) is.
+func conflictingLoan(candidates map[string]*loanState, newAccess string) *loanState {
+	if len(candidates) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(candidates))
+	for id, loan := range candidates {
+		if newAccess == "shared" && loan.access == "shared" {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	sort.Strings(ids)
+	return candidates[ids[0]]
+}
+
+// borrowConflictDiagnostic builds the ownership.borrow_conflict rejection:
+// span-bearing causes first (mirroring move_while_borrowed's construction),
+// then ID-bearing detail causes (loan/owner/type), then a repair — the exact
+// shape check.go's other ownership diagnostics already use.
+func borrowConflictDiagnostic(span diagnostic.Span, blocking *loanState, ownerID, ownerTypeID string) diagnostic.Diagnostic {
+	causes := []diagnostic.Cause{
+		{Kind: "borrow_created_here", Span: spanPointer(blocking.borrowedAt)},
+		{Kind: "borrow_used_later", Span: spanPointer(blocking.lastUseSpan)},
+		{Kind: "loan", Detail: blocking.id},
+		{Kind: "owner", Detail: ownerID},
+		{Kind: "type", Detail: ownerTypeID},
+	}
+	return diagnostic.ErrorWithRepairs(
+		"ownership.borrow_conflict", span, "cannot create a loan while a conflicting loan is live", causes,
+		diagnostic.Repair{Kind: "create_loan_after_conflicting_loan_ends"},
+	)
 }
 
 // discoverLoanLastUses extends every loan to its last transitively derived
@@ -737,7 +875,7 @@ func discoverLoanLastUses(parameterName string, body *ast.LinearBody) map[int]lo
 			}
 		}
 		visible[binding.Name] = index
-		if binding.RHS.Kind == "borrow" {
+		if binding.RHS.Kind == "borrow" || binding.RHS.Kind == "borrow_mut" {
 			uses[index] = loanUse{index: index, span: binding.RHS.Span}
 			inherited = append(inherited, index)
 		}
@@ -780,6 +918,19 @@ func hasTypeAbility(fact core.TypeFact, wanted core.Ability) bool {
 		}
 	}
 	return false
+}
+
+// executableShape reports whether a linear (non-match) function's parameter
+// type has a native execution lowering this phase. cgen.linearInput only
+// maps Byte and Buffer; every other shape (Box, Pair, or a nominal data type
+// used in a straight-line body) type-checks and derives abilities cleanly
+// but has no engine that can run it (D-02-09/D-07). Match-based functions
+// (checkBranch included) are unaffected: their parameter is always a
+// declared nominal alternative type, always executable via emitMatch/
+// emitBranch's enum-based lowering, so this gate is only consulted from
+// checkLinear.
+func executableShape(value core.TypeRef) bool {
+	return value.Constructor == "Byte" || value.Constructor == "Buffer"
 }
 
 func typeNodeCount(value core.TypeRef) int {

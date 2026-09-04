@@ -270,7 +270,7 @@ func validateExecution(value execution.Execution) error {
 			} else if event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear return event fields are invalid")
 			}
-		case "value.copied", "value.transferred", "value.borrowed":
+		case "value.copied", "value.transferred", "value.borrowed", "value.borrowed_exclusive":
 			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear transition event fields are invalid")
 			}

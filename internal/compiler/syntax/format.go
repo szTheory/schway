@@ -82,6 +82,8 @@ func (f *formatter) token(token Token) {
 		f.write("take ")
 	case TokenBorrow:
 		f.write("borrow ")
+	case TokenMut:
+		f.write("mut ")
 	case TokenIdentifier:
 		f.ensureLine()
 		f.out.WriteString(token.Text)
@@ -90,7 +92,7 @@ func (f *formatter) token(token Token) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
-		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow) {
+		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
 			f.newline()
 			f.linearBinding = false
 		}
