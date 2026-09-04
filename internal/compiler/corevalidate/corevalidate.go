@@ -102,14 +102,75 @@ func (v *validator) run() {
 		if !v.check(function.HasClosedBody(), "core.invalid_body", function.ID) {
 			return
 		}
-		if function.Linear != nil {
+		switch {
+		case function.Match != nil && function.Linear != nil:
+			// A match function whose arms carry linear bodies (Phase 3): the
+			// arm-body facts are additive on lang.core/1, exactly like a
+			// straight-line linear body, so the same schema requirement
+			// applies. This is the third branch of the body/schema
+			// cross-lock (03-PATTERNS I-7): linear-only requires /1,
+			// match-only requires /0, match-with-arm-bodies also requires
+			// /1.
+			if !v.check(v.program.Schema == core.Schema1, "core.schema", "a match with an arm body requires lang.core/1") || !v.matchBranch(function, dataNames) {
+				return
+			}
+		case function.Linear != nil:
 			if !v.check(v.program.Schema == core.Schema1, "core.schema", "linear body requires lang.core/1") || !v.linear(function) {
 				return
 			}
-		} else if !v.check(v.program.Schema == core.Schema, "core.schema", "match body requires lang.core/0") || !v.match(function, dataNames) {
-			return
+		default:
+			if !v.check(v.program.Schema == core.Schema, "core.schema", "match body requires lang.core/0") || !v.match(function, dataNames) {
+				return
+			}
 		}
 	}
+}
+
+// matchBranch validates a match function whose arms carry linear bodies. It
+// validates the match-shaped facts (arm/edge identity, pattern coverage,
+// exhaustiveness) independently of the checker exactly as match() does, then
+// falls through to linear() for the flattened operations, places, types, and
+// the new Block/Edge facts the arms lowered into.
+func (v *validator) matchBranch(function *core.Function, dataNames map[string]core.DataType) bool {
+	match := function.Match
+	if !v.check(match.ID != "" && match.PointID != "" && function.EntryPointID != "" && function.ReturnPointID != "", "core.invalid_id", function.ID) {
+		return false
+	}
+	dataType, knownType := dataNames[function.Parameter.Type]
+	if !v.check(knownType && function.ReturnType == function.Parameter.Type, "core.unknown_type", function.Parameter.Type) ||
+		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
+		return false
+	}
+	alternatives := make(map[string]struct{}, len(dataType.Alternatives))
+	for _, alternative := range dataType.Alternatives {
+		alternatives[alternative] = struct{}{}
+	}
+	armIDs := make(map[string]struct{}, len(match.Arms))
+	edgeIDs := make(map[string]struct{}, len(match.Arms))
+	patterns := make(map[string]struct{}, len(match.Arms))
+	for _, arm := range match.Arms {
+		if !v.unique(armIDs, arm.ID, "core.duplicate_arm_id") || !v.unique(edgeIDs, arm.EdgeID, "core.duplicate_edge_id") {
+			return false
+		}
+		if !v.unique(patterns, arm.Pattern, "core.duplicate_pattern") {
+			return false
+		}
+		if _, known := alternatives[arm.Pattern]; !v.check(known, "core.unknown_alternative", arm.ID) {
+			return false
+		}
+		// This phase's scope decision (checkBranch): a match that carries
+		// any arm body requires every arm to carry one. Value and BlockID
+		// are therefore mutually exclusive per arm, and BlockID must be
+		// present here — a bare Value in a branch-shaped function is
+		// rejected rather than silently tolerated.
+		if !v.check(arm.Value == "" && arm.BlockID != "", "core.invalid_body", arm.ID) {
+			return false
+		}
+	}
+	if !v.check(len(patterns) == len(alternatives), "core.final_claim_mismatch", match.ID) {
+		return false
+	}
+	return v.linear(function)
 }
 
 func (v *validator) match(function *core.Function, dataNames map[string]core.DataType) bool {
@@ -224,6 +285,13 @@ func (v *validator) linear(function *core.Function) bool {
 }
 
 func (v *validator) replay(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	if len(function.Linear.Blocks) > 0 {
+		return v.replayBlocks(function, types, places)
+	}
+	return v.replayStraightLine(function, types, places)
+}
+
+func (v *validator) replayStraightLine(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
 	operations := function.Linear.Operations
 	initialized := map[string]bool{function.Parameter.ID: true}
 	produced := map[string]bool{function.Parameter.ID: true}
@@ -309,6 +377,123 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 	return v.check(returned, "core.final_claim_mismatch", function.ID)
 }
 
+// replayBlocks is replayStraightLine's counterpart for a branch-shaped
+// function (T-03-04's independent re-derivation of the arm-body case). The
+// initialized/produced/loan bookkeeping is identical and safe to run exactly
+// the same way over the whole flat Operations list, because every arm's
+// places are distinct global ordinals — one arm's move can never be observed
+// by a sibling arm that never executes at the same time. The one law that
+// must change is OpReturn: a branch-shaped function has one return PER BLOCK
+// (the block the mutually-exclusive selected arm executes), not one return
+// for the whole function, so "last operation in the whole slice" becomes
+// "last operation in its own block", and "returned" becomes a per-block set
+// rather than one flag.
+func (v *validator) replayBlocks(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	linear := function.Linear
+	operations := linear.Operations
+	lastOperationOfBlock := make(map[string]string, len(linear.Blocks))
+	blockOfOperation := make(map[string]string, len(operations))
+	for _, block := range linear.Blocks {
+		for index, opID := range block.OperationIDs {
+			blockOfOperation[opID] = block.ID
+			if index == len(block.OperationIDs)-1 {
+				lastOperationOfBlock[block.ID] = opID
+			}
+		}
+	}
+
+	initialized := map[string]bool{function.Parameter.ID: true}
+	produced := map[string]bool{function.Parameter.ID: true}
+	loanOwner := make(map[string]string)
+	loansForPlace := make(map[string][]string)
+	loanLastUse := make(map[string]int)
+	for index, operation := range operations {
+		v.checks++ // inspect each operation once while finding final loan uses
+		carried := append([]string(nil), loansForPlace[operation.SourceID]...)
+		for _, loanID := range carried {
+			loanLastUse[loanID] = index
+		}
+		if operation.Kind == core.OpBorrowShared {
+			loanOwner[operation.LoanID] = operation.SourceID
+			loanLastUse[operation.LoanID] = index
+			carried = append(carried, operation.LoanID)
+		}
+		if operation.Kind != core.OpReturn && len(carried) > 0 {
+			loansForPlace[operation.TargetID] = carried
+		}
+	}
+	ownerBlockedUntil := make(map[string]int)
+	for loanID, ownerID := range loanOwner {
+		v.checks++ // consolidate each declared loan exactly once
+		if loanLastUse[loanID] > ownerBlockedUntil[ownerID] {
+			ownerBlockedUntil[ownerID] = loanLastUse[loanID]
+		}
+	}
+
+	returnedBlocks := make(map[string]bool, len(linear.Blocks))
+	for index, operation := range operations {
+		source := places[operation.SourceID]
+		if !v.check(source.TypeID == operation.TypeID, "core.type_mismatch", operation.ID) {
+			return false
+		}
+		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+			return false
+		}
+		v.checks++ // dispatch one independently authorized transition
+		switch operation.Kind {
+		case core.OpCopy:
+			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
+				return false
+			}
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+		case core.OpBorrowShared:
+			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
+				return false
+			}
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+		case core.OpMove:
+			blockedUntil, hasLoan := ownerBlockedUntil[operation.SourceID]
+			if !v.check(!hasLoan || blockedUntil < index, "core.move_while_borrowed", operation.ID) {
+				return false
+			}
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.SourceID] = false
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+		case core.OpReturn:
+			blockID, known := blockOfOperation[operation.ID]
+			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.TypeID == source.TypeID && types[source.TypeID].Shape.Constructor == function.ReturnType, "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			returnedBlocks[blockID] = true
+		default:
+			return v.check(false, "core.unknown_operation", string(operation.Kind))
+		}
+	}
+	for _, block := range linear.Blocks {
+		if len(block.OperationIDs) == 0 {
+			continue
+		}
+		if !v.check(returnedBlocks[block.ID], "core.final_claim_mismatch", block.ID) {
+			return false
+		}
+	}
+	return true
+}
+
 func (v *validator) targetMatches(function *core.Function, operationIndex int, operation core.LinearOperation, places map[string]core.Place, produced map[string]bool) bool {
 	target := places[operation.TargetID]
 	expected := fmt.Sprintf("%s:place:%d", function.ID, operationIndex+1)
@@ -329,8 +514,9 @@ func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []cor
 	order := []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape}
 	granted := make([]core.Ability, 0, len(order))
 	witnesses := make([]core.AbilityWitness, 0)
+	sealed := v.sealedLeaves()
 	for _, requested := range order {
-		ok, path, known := deriveAbility(shape, requested, depth)
+		ok, path, known := deriveAbility(shape, requested, depth, sealed)
 		if !known {
 			v.problems = append(v.problems, Problem{Code: "core.unknown_type_constructor", Detail: shape.Constructor})
 			return nil, nil, false
@@ -342,6 +528,19 @@ func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []cor
 		}
 	}
 	return granted, witnesses, true
+}
+
+// sealedLeaves names every declared data type in this program (Phase 3): a
+// field-less nominal alternative type (e.g. a match scrutinee's own type) is
+// trivially copy/drop/share/send/escape-safe, so it is re-derived here as a
+// sealed structural leaf, exactly as check.go's ability.DeriveSealed does on
+// the checker side — an independent implementation of the same law, per D-12.
+func (v *validator) sealedLeaves() map[string]bool {
+	names := make(map[string]bool, len(v.program.DataTypes))
+	for _, dataType := range v.program.DataTypes {
+		names[dataType.Name] = true
+	}
+	return names
 }
 
 func boundedTypeNodes(shape core.TypeRef) (int, bool) {
@@ -373,9 +572,15 @@ func finalOrTransitionCode(kind core.OperationKind) string {
 	return "core.place_uninitialized"
 }
 
-func deriveAbility(shape core.TypeRef, requested core.Ability, depth int) (bool, []string, bool) {
+func deriveAbility(shape core.TypeRef, requested core.Ability, depth int, sealed map[string]bool) (bool, []string, bool) {
 	if depth > maxTypeDepth {
 		return false, nil, false
+	}
+	if sealed[shape.Constructor] {
+		if len(shape.Arguments) != 0 {
+			return false, nil, false
+		}
+		return true, nil, true
 	}
 	switch shape.Constructor {
 	case "Byte":
@@ -398,7 +603,7 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int) (bool,
 		if len(shape.Arguments) != 1 {
 			return false, nil, false
 		}
-		ok, path, known := deriveAbility(shape.Arguments[0], requested, depth+1)
+		ok, path, known := deriveAbility(shape.Arguments[0], requested, depth+1, sealed)
 		if !ok && known {
 			path = append([]string{"Box.value"}, path...)
 		}
@@ -408,7 +613,7 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int) (bool,
 			return false, nil, false
 		}
 		for index, argument := range shape.Arguments {
-			ok, path, known := deriveAbility(argument, requested, depth+1)
+			ok, path, known := deriveAbility(argument, requested, depth+1, sealed)
 			if !known {
 				return false, nil, false
 			}

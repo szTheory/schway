@@ -80,6 +80,29 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("name.unknown_scrutinee", function.Body.Span, "match scrutinee is not the function parameter"))
 			continue
 		}
+		for _, arm := range function.Body.Arms {
+			if !arm.HasClosedVariant() {
+				result.Diagnostics = append(result.Diagnostics, diagnostic.Error("core.invalid_body", arm.Span, "match arm must have exactly one value form"))
+				continue
+			}
+		}
+		hasArmBody := false
+		for _, arm := range function.Body.Arms {
+			if arm.Body != nil {
+				hasArmBody = true
+				break
+			}
+		}
+		if hasArmBody {
+			checked, diagnostics, work := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types))
+			result.Work += work
+			result.Diagnostics = append(result.Diagnostics, diagnostics...)
+			if len(diagnostics) == 0 {
+				result.Program.Schema = core.Schema1
+				result.Program.Functions = append(result.Program.Functions, checked)
+			}
+			continue
+		}
 		seen := make(map[string]bool)
 		arms := make([]core.MatchArm, 0, len(function.Body.Arms))
 		for index, arm := range function.Body.Arms {
@@ -124,6 +147,340 @@ func Program(program ast.Program) Result {
 			Span:       function.Span,
 		})
 	}
+	return result
+}
+
+func sealedNames(types map[string]core.DataType) map[string]bool {
+	names := make(map[string]bool, len(types))
+	for name := range types {
+		names[name] = true
+	}
+	return names
+}
+
+// maxBlocksPerFunction bounds T-03-01's CFG-shape denial-of-service surface
+// at the lowering layer: entry block, one block per body arm, and the join
+// block. Sized generously above anything this phase's fixtures need.
+//
+// Deliberately unreachable from real source today, exactly like
+// ownership.borrow_requires_share (check_test.go's nonShareableTypeFact):
+// the parser's own maxArmsPerMatch (64) caps arm count below this bound
+// (2+64 = 66 < 128), so no real `.lang` program can ever trigger this arm
+// of checkBranch through syntax.Parse. It exists as defense-in-depth for a
+// future relaxation of the parser cap, and is exercised directly by a
+// synthetic ast.Program in TestArmBodyLimits (check_branch_test.go), per
+// D-10: an unreachable gate must be named as such, not assumed correct.
+const maxBlocksPerFunction = 128
+
+// checkBranch lowers a match function whose arms hold full linear bodies
+// into a single core.Function that carries BOTH Match (arm identity and
+// pattern/edge bookkeeping) and Linear (the flattened operations plus the
+// Blocks/Edges the arms lower into). Per this phase's scope decision, a
+// match that carries any arm body requires every arm to carry one — bare and
+// body arms are never interleaved in the same function — so the native
+// switch/case lowering never needs a bare-alternative fallback case inside a
+// block-shaped function, and the interpreter/validator dispatch stays a
+// simple "every arm has a BlockID" invariant rather than a per-arm union.
+func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool) (core.Function, []diagnostic.Diagnostic, int) {
+	parameterType := coreType(function.Parameter.Type)
+	derived, err := ability.DeriveSealed(parameterType, sealed)
+	if err != nil {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
+	}
+	typeID := functionID + ":type:0"
+	parameterID := functionID + ":place:0"
+	typeFact := core.TypeFact{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}
+	linear := &core.LinearBody{
+		ID:         functionID + ":linear",
+		Types:      []core.TypeFact{typeFact},
+		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
+		Operations: []core.LinearOperation{},
+	}
+
+	work := typeNodeCount(parameterType)
+	nextIndex := 0
+	seen := make(map[string]bool)
+	arms := make([]core.MatchArm, 0, len(function.Body.Arms))
+	blocks := make([]core.Block, 0, len(function.Body.Arms)+2)
+	edges := make([]core.Edge, 0, len(function.Body.Arms)*2)
+	var diagnostics []diagnostic.Diagnostic
+	entryBlockID := functionID + ":block:entry"
+	joinBlockID := functionID + ":block:join"
+	armBlockIDs := make([]string, 0, len(function.Body.Arms))
+
+	for index, arm := range function.Body.Arms {
+		if seen[arm.Pattern] {
+			diagnostics = append(diagnostics, diagnostic.Error("match.subsumed", arm.Span, "alternative is already matched"))
+			continue
+		}
+		if !contains(dataType.Alternatives, arm.Pattern) {
+			diagnostics = append(diagnostics, diagnostic.Error("match.unreachable", arm.Span, "pattern is not an alternative of the scrutinee type"))
+			continue
+		}
+		if arm.Body == nil {
+			diagnostics = append(diagnostics, diagnostic.Error(
+				"core.mixed_arm_forms", arm.Span,
+				"a match with any arm body requires every arm to carry a body this phase",
+			))
+			continue
+		}
+		seen[arm.Pattern] = true
+		if len(blocks)+2 > maxBlocksPerFunction {
+			diagnostics = append(diagnostics, diagnostic.Error("check.arm_body_limit", arm.Span, "function exceeds the declared block limit"))
+			continue
+		}
+
+		armBlockID := fmt.Sprintf("%s:block:arm:%d", functionID, index)
+		aliasOpID := fmt.Sprintf("%s:op:%d", functionID, nextIndex)
+		aliasPointID := fmt.Sprintf("%s:point:linear:%d", functionID, nextIndex)
+		aliasPlaceID := fmt.Sprintf("%s:place:%d", functionID, nextIndex+1)
+		linear.Places = append(linear.Places, core.Place{ID: aliasPlaceID, Name: function.Parameter.Name, TypeID: typeID})
+		linear.Operations = append(linear.Operations, core.LinearOperation{
+			ID: aliasOpID, PointID: aliasPointID, Kind: core.OpCopy, SourceID: parameterID, TargetID: aliasPlaceID, TypeID: typeID,
+		})
+		armOperationIDs := []string{aliasOpID}
+		nextIndex++
+		work++
+
+		support := analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body)
+		if support.Diagnostic != nil {
+			diagnostics = append(diagnostics, *support.Diagnostic)
+			continue
+		}
+		linear.Places = append(linear.Places, support.Places...)
+		linear.Operations = append(linear.Operations, support.Operations...)
+		for _, operation := range support.Operations {
+			armOperationIDs = append(armOperationIDs, operation.ID)
+		}
+		nextIndex += len(support.Operations)
+		work += support.Work
+
+		blocks = append(blocks, core.Block{
+			ID: armBlockID, PointID: fmt.Sprintf("%s:point:arm:%d", functionID, index),
+			OperationIDs: armOperationIDs, Successors: []string{joinBlockID},
+		})
+		armBlockIDs = append(armBlockIDs, armBlockID)
+		edges = append(edges,
+			core.Edge{ID: fmt.Sprintf("%s:edge:entry:arm:%d", functionID, index), FromBlockID: entryBlockID, ToBlockID: armBlockID, Pattern: arm.Pattern},
+			core.Edge{ID: fmt.Sprintf("%s:edge:arm:%d:join", functionID, index), FromBlockID: armBlockID, ToBlockID: joinBlockID, Pattern: arm.Pattern},
+		)
+		arms = append(arms, core.MatchArm{
+			ID: fmt.Sprintf("%s:arm:%d", functionID, index), EdgeID: fmt.Sprintf("%s:edge:%s", matchID, arm.Pattern),
+			Pattern: arm.Pattern, BlockID: armBlockID,
+		})
+	}
+
+	missing := make([]string, 0)
+	for _, alternative := range dataType.Alternatives {
+		if !seen[alternative] {
+			missing = append(missing, alternative)
+		}
+	}
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		causes := make([]diagnostic.Cause, 0, len(missing))
+		for _, name := range missing {
+			causes = append(causes, diagnostic.Cause{Kind: "missing_alternative", Detail: name})
+		}
+		diagnostics = append(diagnostics, diagnostic.Error("match.non_exhaustive", function.Body.Span, "match does not cover every alternative", causes...))
+	}
+	if len(diagnostics) > 0 {
+		return core.Function{}, diagnostics, work
+	}
+
+	blocks = append([]core.Block{{ID: entryBlockID, PointID: functionID + ":point:entry", OperationIDs: []string{}, Successors: armBlockIDs}}, blocks...)
+	blocks = append(blocks, core.Block{ID: joinBlockID, PointID: functionID + ":point:return", OperationIDs: []string{}, Successors: []string{}})
+	linear.Blocks = blocks
+	linear.Edges = edges
+	linear.LoanEndpoints = []core.LoanEndpoint{}
+
+	return core.Function{
+		ID: functionID, Name: function.Name,
+		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter:  core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor},
+		ReturnType: function.ReturnType.Constructor,
+		Match:      &core.Match{ID: matchID, PointID: functionID + ":point:match", Scrutinee: function.Body.Scrutinee, Arms: arms},
+		Linear:     linear,
+		Span:       function.Span,
+	}, nil, work
+}
+
+// analyzeArmBody analyzes one match arm's linear body using the same
+// straight-line ownership machinery as analyzeStraightLine, but numbers
+// every place/operation/point/loan id starting at startIndex within the
+// function's single flat Operations list rather than restarting at zero.
+// This keeps every arm's operations, once concatenated in arm order,
+// satisfying the exact same global ordinal invariant corevalidate already
+// enforces for a non-branching linear body (place N is produced by
+// operation N-1). The scrutinee is not re-declared here: parameterPlaceID
+// names the place the caller already seeded (the implicit per-arm alias
+// copy), so every arm's bindings are checked against an alias that only that
+// arm can move, and one arm's move can never be observed as a false
+// use-after-move by a sibling arm that never runs at the same time (mutually
+// exclusive control flow — the two arms' places never collide because their
+// IDs are distinct global ordinals). Deliberately a separate function from
+// analyzeStraightLine, duplicating rather than reusing it, so the Phase 1/2
+// straight-line path (checkLinear) carries zero risk from this addition.
+func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+	result := ownershipSupport{
+		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
+		Work: len(body.Bindings) + 1,
+	}
+	loanUses := discoverLoanLastUses(parameterName, body)
+	for index, binding := range body.Bindings {
+		if binding.RHS.Kind == "borrow" {
+			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{
+				LoanID: fmt.Sprintf("%s:loan:%d", functionID, startIndex+index), Binding: binding.Name, OperationIndex: startIndex + loanUses[index].index,
+			})
+		}
+	}
+	places := map[string]*placeState{
+		parameterName: {place: core.Place{ID: parameterPlaceID, Name: parameterName, TypeID: typeFact.ID}, declared: parameterSpan, initialized: true},
+	}
+	activeLoans := make(map[string]map[string]*loanState)
+	expiringLoans := make(map[int][]*loanState)
+	endLoans := func(index int) {
+		for _, loan := range expiringLoans[index] {
+			if loans := activeLoans[loan.ownerID]; loans != nil {
+				delete(loans, loan.id)
+				if len(loans) == 0 {
+					delete(activeLoans, loan.ownerID)
+				}
+			}
+		}
+	}
+	fail := func(problem diagnostic.Diagnostic) ownershipSupport {
+		result.DiagnosticCode = problem.Code
+		result.Diagnostic = &problem
+		return result
+	}
+	useAfterMove := func(span diagnostic.Span, state *placeState) diagnostic.Diagnostic {
+		causes := []diagnostic.Cause{
+			{Kind: "declared_here", Span: spanPointer(state.declared)},
+			{Kind: "moved_here", Span: state.movedAt},
+			{Kind: "place", Detail: state.place.ID},
+			{Kind: "transfer_target", Detail: state.moveTargetID},
+			{Kind: "type", Detail: state.place.TypeID},
+		}
+		return diagnostic.ErrorWithRepairs(
+			"ownership.use_after_move", span, "value was used after ownership transferred", causes,
+			diagnostic.Repair{Kind: "use_transfer_target", Detail: state.moveTargetID},
+			diagnostic.Repair{Kind: "move_use_before_transfer"},
+		)
+	}
+	for index, binding := range body.Bindings {
+		result.Work++
+		global := startIndex + index
+		source, ok := places[binding.RHS.Source]
+		if !ok {
+			return fail(diagnostic.Error("name.unknown", binding.RHS.Span, "binding source is unknown"))
+		}
+		if !source.initialized {
+			return fail(useAfterMove(binding.RHS.Span, source))
+		}
+		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: binding.Name, TypeID: source.place.TypeID}
+		kind := core.OpCopy
+		var loan *loanState
+		switch binding.RHS.Kind {
+		case "take":
+			if loans := activeLoans[source.place.ID]; len(loans) > 0 {
+				loanIDs := make([]string, 0, len(loans))
+				for loanID := range loans {
+					loanIDs = append(loanIDs, loanID)
+				}
+				sort.Strings(loanIDs)
+				blocking := loans[loanIDs[0]]
+				causes := []diagnostic.Cause{
+					{Kind: "borrow_created_here", Span: spanPointer(blocking.borrowedAt)},
+					{Kind: "borrow_used_later", Span: spanPointer(blocking.lastUseSpan)},
+					{Kind: "loan", Detail: blocking.id},
+					{Kind: "owner", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return fail(diagnostic.ErrorWithRepairs(
+					"ownership.move_while_borrowed", binding.RHS.Span, "cannot transfer ownership while a future-used shared loan is live", causes,
+					diagnostic.Repair{Kind: "move_after_last_borrow_use"},
+				))
+			}
+			kind = core.OpMove
+			source.initialized = false
+			source.movedAt = spanPointer(binding.RHS.Span)
+			source.moveTargetID = target.ID
+		case "borrow":
+			if !hasTypeAbility(typeFact, core.AbilityShare) {
+				causes := []diagnostic.Cause{
+					{Kind: "declared_here", Span: spanPointer(source.declared)},
+					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFact, core.AbilityShare)},
+					{Kind: "place", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return fail(diagnostic.ErrorWithRepairs(
+					"ownership.borrow_requires_share", binding.RHS.Span, "type does not grant the share ability required to borrow", causes,
+					diagnostic.Repair{Kind: "use_take_instead"},
+				))
+			}
+			kind = core.OpBorrowShared
+			use := loanUses[index]
+			loan = &loanState{
+				id: fmt.Sprintf("%s:loan:%d", functionID, global), ownerID: source.place.ID,
+				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
+			}
+			if activeLoans[source.place.ID] == nil {
+				activeLoans[source.place.ID] = make(map[string]*loanState)
+			}
+			activeLoans[source.place.ID][loan.id] = loan
+			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+		default:
+			if !hasTypeAbility(typeFact, core.AbilityCopy) {
+				causes := []diagnostic.Cause{
+					{Kind: "declared_here", Span: spanPointer(source.declared)},
+					{Kind: "missing_ability", Detail: missingAbilityDetail(typeFact, core.AbilityCopy)},
+					{Kind: "place", Detail: source.place.ID},
+					{Kind: "type", Detail: source.place.TypeID},
+				}
+				return fail(diagnostic.ErrorWithRepairs(
+					"ownership.transfer_requires_take", binding.RHS.Span, "noncopyable binding requires explicit take", causes,
+					diagnostic.Repair{Kind: "insert_take"},
+				))
+			}
+		}
+		result.Places = append(result.Places, target)
+		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
+		result.Operations = append(result.Operations, core.LinearOperation{
+			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
+			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanID(loan), TypeID: source.place.TypeID,
+		})
+		endLoans(index)
+		result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
+	}
+	result.Work++
+	returned, ok := places[body.Result]
+	if !ok {
+		return fail(diagnostic.Error("name.unknown", body.Span, "linear result is unknown"))
+	}
+	if !returned.initialized {
+		return fail(useAfterMove(body.Span, returned))
+	}
+	global := startIndex + len(body.Bindings)
+	result.Operations = append(result.Operations, core.LinearOperation{
+		ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
+		Kind: core.OpReturn, SourceID: returned.place.ID, TypeID: returned.place.TypeID,
+	})
+	// A straight-line body's Return is always the last operation, so its
+	// missing target never leaves a gap in the flat Places array (nothing
+	// after it needs a place index). A branch's Return is NOT the last
+	// operation in the whole function's flat list — the next arm's own
+	// operations follow it — so corevalidate's place-order invariant
+	// (place N is produced by operation N-1) would otherwise desync at
+	// exactly this point. Padding with one unreferenced place per arm's
+	// Return keeps every operation, including Return, consuming exactly
+	// one place-index slot, restoring the same array-position coupling
+	// analyzeStraightLine's callers already rely on.
+	result.Places = append(result.Places, core.Place{
+		ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: "_", TypeID: returned.place.TypeID,
+	})
+	endLoans(len(body.Bindings))
+	result.States = append(result.States, ownershipSnapshot(len(body.Bindings), places, activeLoans))
 	return result
 }
 

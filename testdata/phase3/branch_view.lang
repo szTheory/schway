@@ -1,0 +1,29 @@
+// OWN-03 success criterion 2 needs a second CFG block and a real join: a
+// match arm's value position may hold a full linear body, so this program's
+// core carries more than one block. Both arms take the scrutinee and hand it
+// straight back, proving the branch/join executes identically through the
+// interpreter and Clang-built C17 at -O0 and -O3 (D-11/D-12a).
+
+module owned.branch_view
+
+export {
+  type Switch
+  fn direction
+}
+
+data Switch =
+  | On
+  | Off
+
+fn direction(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let held = take flag
+      held
+    }
+    Off => {
+      let held = take flag
+      held
+    }
+  }
+}

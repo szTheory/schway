@@ -22,8 +22,12 @@ func Emit(program core.Program) (string, error) {
 	if len(program.Functions) != 1 {
 		return "", fmt.Errorf("C emitter expects one function")
 	}
-	if program.Functions[0].Linear != nil {
-		return emitLinear(program.Functions[0])
+	function := program.Functions[0]
+	if function.Match != nil && function.Linear != nil {
+		return emitBranch(program, function)
+	}
+	if function.Linear != nil {
+		return emitLinear(function)
 	}
 	return emitMatch(program, false)
 }
@@ -39,8 +43,17 @@ func EmitNative(program core.Program) (string, error) {
 	if len(program.Functions) != 1 {
 		return "", fmt.Errorf("C emitter expects one function")
 	}
-	if program.Functions[0].Linear != nil {
-		return emitLinear(program.Functions[0])
+	function := program.Functions[0]
+	if function.Match != nil && function.Linear != nil {
+		// A branch-shaped function always emits the single-document
+		// lang.execution/1 JSON protocol, exactly like emitLinear — there is
+		// no separate "portable" text mode for it, matching emitLinear's own
+		// unconditional JSON behavior (Emit and EmitNative call it the same
+		// way).
+		return emitBranch(program, function)
+	}
+	if function.Linear != nil {
+		return emitLinear(function)
 	}
 	return emitMatch(program, true)
 }
@@ -267,7 +280,30 @@ func emitLinear(function core.Function) (string, error) {
 }
 
 func emitLinearOutputSupport(out *strings.Builder, function core.Function, typeName string) {
-	fmt.Fprintf(out, "#define LANG_OUTPUT_LIMIT 65536u\n#define LANG_EVENT_CAPACITY %du\n\n", len(function.Linear.Operations))
+	emitEventSupport(out, len(function.Linear.Operations))
+	if function.Parameter.Type == "Buffer" {
+		fmt.Fprintf(out, "static int lang_write_buffer_hex(const %s *value) {\n", typeName)
+		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  size_t index;\n")
+		out.WriteString("  if (value->length > sizeof value->bytes) return 0;\n")
+		out.WriteString("  for (index = 0u; index < value->length; index++) {\n")
+		out.WriteString("    char encoded[2] = {hex[value->bytes[index] >> 4u], hex[value->bytes[index] & 0x0fu]};\n")
+		out.WriteString("    if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n  }\n  return 1;\n}\n\n")
+	} else {
+		out.WriteString("static int lang_write_byte(unsigned char value) {\n")
+		out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
+		out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
+	}
+}
+
+// emitEventSupport writes the LANG_EVENT macros, struct, bounded output
+// writer, JSON-string escaper, and event recorder shared by every linear-
+// shaped emitter (emitLinear and, from Phase 3, emitBranch). It deliberately
+// excludes the scalar value writer (lang_write_buffer_hex / lang_write_byte)
+// because a branch-shaped function never needs one: its returned value is a
+// compile-time-known alternative name per case, written as a JSON string
+// literal, not a dynamically-encoded scalar (see emitBranchOperations).
+func emitEventSupport(out *strings.Builder, capacity int) {
+	fmt.Fprintf(out, "#define LANG_OUTPUT_LIMIT 65536u\n#define LANG_EVENT_CAPACITY %du\n\n", capacity)
 	out.WriteString("typedef struct LANG_EVENT {\n")
 	out.WriteString("  const char *kind;\n  const char *id;\n  const char *function_id;\n")
 	out.WriteString("  const char *source_place;\n  const char *target_place;\n  const char *type_id;\n} LANG_EVENT;\n\n")
@@ -312,18 +348,151 @@ func emitLinearOutputSupport(out *strings.Builder, function core.Function, typeN
 	out.WriteString("    if (event->target_place != NULL && (!lang_write_literal(\",\\\"target_place\\\":\") || !lang_write_json_string(event->target_place))) return 0;\n")
 	out.WriteString("    if (event->type_id != NULL && (!lang_write_literal(\",\\\"type_id\\\":\") || !lang_write_json_string(event->type_id))) return 0;\n")
 	out.WriteString("    if (!lang_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
-	if function.Parameter.Type == "Buffer" {
-		fmt.Fprintf(out, "static int lang_write_buffer_hex(const %s *value) {\n", typeName)
-		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  size_t index;\n")
-		out.WriteString("  if (value->length > sizeof value->bytes) return 0;\n")
-		out.WriteString("  for (index = 0u; index < value->length; index++) {\n")
-		out.WriteString("    char encoded[2] = {hex[value->bytes[index] >> 4u], hex[value->bytes[index] & 0x0fu]};\n")
-		out.WriteString("    if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n  }\n  return 1;\n}\n\n")
-	} else {
-		out.WriteString("static int lang_write_byte(unsigned char value) {\n")
-		out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
-		out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
+}
+
+// emitBranch is the native lowering for a match function whose arms carry
+// linear bodies (D-12a's fourth OperationKind consumer, alongside check,
+// corevalidate, and interp). The scrutinee is a nominal alternative type
+// with no payload, so no operation in an arm's body can ever produce a
+// DIFFERENT alternative than the one that selected it — copy/move/borrow all
+// preserve the runtime value. The returned value for any given arm is
+// therefore always exactly that arm's matched pattern, a compile-time-known
+// literal, written directly as a JSON string rather than encoded dynamically
+// (contrast emitLinear's Byte/Buffer scalar writer, which emitBranch has no
+// analog of and does not need).
+func emitBranch(program core.Program, function core.Function) (string, error) {
+	if len(program.DataTypes) != 1 {
+		return "", fmt.Errorf("branch C emitter expects one data type")
 	}
+	dataType := program.DataTypes[0]
+	if len(dataType.Alternatives) == 0 {
+		return "", fmt.Errorf("branch C emitter requires alternatives")
+	}
+	if function.Match == nil || function.Linear == nil {
+		return "", fmt.Errorf("branch C emitter expects a match function carrying linear blocks")
+	}
+
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	operationsByID := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		operationsByID[operation.ID] = operation
+	}
+	blocksByID := make(map[string]core.Block, len(function.Linear.Blocks))
+	for _, block := range function.Linear.Blocks {
+		blocksByID[block.ID] = block
+	}
+
+	names := newCNames(linearFixedNames...)
+	typeName := names.allocate(cName(dataType.Name), "type", 0)
+	alternativeNames := make([]string, len(dataType.Alternatives))
+	alternativeBySource := make(map[string]string, len(dataType.Alternatives))
+	for index, alternative := range dataType.Alternatives {
+		alternativeNames[index] = names.allocate(typeName+"_"+cName(alternative), "alternative", index)
+		alternativeBySource[alternative] = alternativeNames[index]
+	}
+
+	locals := make(map[string]string, len(function.Linear.Places))
+	for index, place := range function.Linear.Places {
+		locals[place.ID] = names.allocate(cLocal(place.Name), "place", index)
+	}
+	parameter, ok := places[function.Parameter.ID]
+	if !ok {
+		return "", fmt.Errorf("branch parameter place is absent")
+	}
+
+	var out strings.Builder
+	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 */\n")
+	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")
+	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n\n")
+	fmt.Fprintf(&out, "typedef enum %s {\n", typeName)
+	for index := range dataType.Alternatives {
+		fmt.Fprintf(&out, "  %s = %d,\n", alternativeNames[index], index)
+	}
+	fmt.Fprintf(&out, "} %s;\n\n", typeName)
+	emitEventSupport(&out, len(function.Linear.Operations))
+
+	out.WriteString("int main(int argc, char **argv) {\n")
+	out.WriteString("  if (argc != 2) return 64;\n")
+	fmt.Fprintf(&out, "  %s %s;\n", typeName, locals[parameter.ID])
+	for index, alternative := range dataType.Alternatives {
+		prefix := "if"
+		if index > 0 {
+			prefix = "else if"
+		}
+		fmt.Fprintf(&out, "  %s (strcmp(argv[1], %s) == 0) %s = %s;\n", prefix, strconv.Quote(alternative), locals[parameter.ID], alternativeNames[index])
+	}
+	out.WriteString("  else return 65;\n")
+	fmt.Fprintf(&out, "  switch (%s) {\n", locals[parameter.ID])
+	for _, arm := range function.Match.Arms {
+		block, known := blocksByID[arm.BlockID]
+		if !known {
+			return "", fmt.Errorf("arm %q references unknown block %q", arm.ID, arm.BlockID)
+		}
+		fmt.Fprintf(&out, "    case %s: {\n", alternativeBySource[arm.Pattern])
+		if err := emitBranchOperations(&out, function, places, locals, operationsByID, block.OperationIDs, typeName, arm.Pattern); err != nil {
+			return "", err
+		}
+		out.WriteString("    }\n")
+	}
+	out.WriteString("  }\n  return 70; /* invalid safe-language tag: fail in main */\n}\n")
+	return out.String(), nil
+}
+
+// emitBranchOperations writes one arm block's straight-line C, in core
+// order, ending with the lang.execution/1 JSON document for that arm's
+// return. returnLiteral is the compile-time-known alternative name this
+// block always returns (see emitBranch's doc comment).
+func emitBranchOperations(out *strings.Builder, function core.Function, places map[string]core.Place, locals map[string]string, operationsByID map[string]core.LinearOperation, operationIDs []string, typeName, returnLiteral string) error {
+	for _, operationID := range operationIDs {
+		operation, known := operationsByID[operationID]
+		if !known {
+			return fmt.Errorf("block references unknown operation %q", operationID)
+		}
+		source, sourceKnown := places[operation.SourceID]
+		if !sourceKnown {
+			return fmt.Errorf("operation %q has invalid source", operation.ID)
+		}
+		switch operation.Kind {
+		case core.OpCopy, core.OpMove, core.OpBorrowShared:
+			target, exists := places[operation.TargetID]
+			if !exists {
+				return fmt.Errorf("operation %q has invalid target", operation.ID)
+			}
+			label := "copy"
+			if operation.Kind == core.OpMove {
+				label = "authority transfer"
+			} else if operation.Kind == core.OpBorrowShared {
+				label = "shared borrow representation"
+			}
+			fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n", typeName, locals[target.ID], locals[source.ID], label, operation.ID)
+			fmt.Fprintf(out, "      (void)%s;\n", locals[target.ID])
+			eventKind := "value.copied"
+			if operation.Kind == core.OpMove {
+				eventKind = "value.transferred"
+			} else if operation.Kind == core.OpBorrowShared {
+				eventKind = "value.borrowed"
+			}
+			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
+				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
+				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
+		case core.OpReturn:
+			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74; /* returned place: %s */\n",
+				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
+				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
+			out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(returnLiteral))
+			out.WriteString("      if (!lang_write_literal(\"},\\\"events\\\":[\")) return 74;\n")
+			out.WriteString("      if (!lang_write_events()) return 74;\n")
+			out.WriteString("      if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
+			out.WriteString("      return 0;\n")
+		default:
+			return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
+		}
+	}
+	return nil
 }
 
 func linearInput(function core.Function) (input, initializer, typeName string, err error) {

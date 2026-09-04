@@ -232,3 +232,43 @@ func TestArbitraryMasksRemainTestPrivate(t *testing.T) {
 		}
 	}
 }
+
+// TestNominalLeafAbilityMaskIsExhaustive is the falsifiable claim that
+// alternative count and naming cannot affect the derived mask for a
+// declared field-less nominal data type (Phase 3's sealed leaf, D-10). The
+// existing TestBoxAllAbilityMasks/TestPairAllAbilityMasks enumerate
+// structural COMBINATORS; a nominal leaf has no combinator and, before this
+// test, had no input-varying coverage at all — the claim "any declared
+// field-less type grants all five abilities regardless of shape" was
+// assumed, not exercised.
+func TestNominalLeafAbilityMaskIsExhaustive(t *testing.T) {
+	names := []string{"Switch", "Signal", "X", "VeryLongAlternativeTypeName", "A1", "switch_"}
+	alternativeCounts := []int{1, 2, 3, 5, 16}
+	for _, name := range names {
+		for _, count := range alternativeCounts {
+			sealed := map[string]bool{name: true}
+			result, err := DeriveSealed(core.TypeRef{Constructor: name}, sealed)
+			if err != nil {
+				t.Fatalf("name=%q alternatives=%d: unexpected error: %v", name, count, err)
+			}
+			for _, wanted := range []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape} {
+				if !Has(result, wanted) {
+					t.Fatalf("name=%q alternatives=%d: sealed leaf denied %s, want all five granted: %+v", name, count, wanted, result)
+				}
+			}
+			if len(result.NegativeWitnesses) != 0 {
+				t.Fatalf("name=%q alternatives=%d: sealed leaf carries witnesses: %+v", name, count, result.NegativeWitnesses)
+			}
+		}
+	}
+	// A constructor NOT in the sealed set stays unknown — the leaf
+	// treatment is opt-in per name, never a blanket fallback.
+	if _, err := DeriveSealed(core.TypeRef{Constructor: "Unsealed"}, map[string]bool{"Switch": true}); err == nil {
+		t.Fatal("an unsealed, unknown constructor was silently accepted")
+	}
+	// A sealed name with type arguments is rejected: a field-less nominal
+	// type takes none, exactly like Byte.
+	if _, err := DeriveSealed(core.TypeRef{Constructor: "Switch", Arguments: []core.TypeRef{{Constructor: "Byte"}}}, map[string]bool{"Switch": true}); err == nil {
+		t.Fatal("a sealed leaf with type arguments was silently accepted")
+	}
+}

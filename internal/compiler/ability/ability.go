@@ -64,6 +64,12 @@ type deriver struct {
 	combine func([]abilitySet) abilitySet
 	depth   int
 	nodes   int
+	// sealedLeaves names declared field-less nominal data types (Phase 3):
+	// a constructor present here is treated as a sealed structural leaf
+	// granting all five abilities, exactly like Byte, rather than falling
+	// through to the unknown-constructor error. Nil for every Phase 1/2
+	// caller, which only ever derives Byte/Buffer/Box/Pair shapes.
+	sealedLeaves map[string]bool
 }
 
 type Result struct {
@@ -74,7 +80,19 @@ type Result struct {
 // Derive applies the sealed primitive and constructor rules. There is no
 // production API for supplying or combining arbitrary ability masks.
 func Derive(shape core.TypeRef) (Result, error) {
-	d := deriver{combine: combineStructural}
+	return DeriveSealed(shape, nil)
+}
+
+// DeriveSealed is Derive extended with a set of declared field-less nominal
+// data type names (Phase 3). A match scrutinee's own type (e.g. an
+// alternative-only data type with no payload) is not one of the built-in
+// primitive/constructor shapes ability.go already understands, but its
+// alternatives carry no data, so it is trivially copy/drop/share/send/
+// escape-safe — exactly as sealed as Byte. sealedLeaves lets callers name
+// which constructors qualify without ability.go importing the checker's
+// declared-type table.
+func DeriveSealed(shape core.TypeRef, sealedLeaves map[string]bool) (Result, error) {
+	d := deriver{combine: combineStructural, sealedLeaves: sealedLeaves}
 	derived, err := d.derive(shape)
 	if err != nil {
 		return Result{}, err
@@ -102,6 +120,16 @@ func (d *deriver) deriveAt(shape core.TypeRef, depth int) (derivedShape, error) 
 	d.nodes++
 	if depth > maxAbilityDepth || d.nodes > maxAbilityNodes {
 		return derivedShape{}, fmt.Errorf("type expression exceeds ability limits")
+	}
+
+	if d.sealedLeaves[shape.Constructor] {
+		if len(shape.Arguments) != 0 {
+			return derivedShape{}, fmt.Errorf("%s takes no type arguments", shape.Constructor)
+		}
+		return derivedShape{
+			set:       abilitySet{copy: true, drop: true, share: true, send: true, escape: true},
+			witnesses: map[core.Ability][]string{},
+		}, nil
 	}
 
 	switch shape.Constructor {

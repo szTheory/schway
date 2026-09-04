@@ -63,8 +63,17 @@ type MatchExpr struct {
 type MatchArm struct {
 	Pattern string
 	Value   string
-	Span    diagnostic.Span
+	// Body is the Phase 3 extension: an arm's value position may hold a full
+	// linear body instead of a bare alternative name. Exactly one of Value
+	// and Body is populated — see HasClosedVariant, the arm-level analog of
+	// Body.HasClosedVariant (03-PATTERNS inconsistency I-7).
+	Body *LinearBody
+	Span diagnostic.Span
 }
+
+// HasClosedVariant reports whether exactly one of the arm's two value forms
+// (a bare alternative name, or a full linear body) is populated.
+func (a MatchArm) HasClosedVariant() bool { return (a.Value != "") != (a.Body != nil) }
 
 type LinearBody struct {
 	Bindings []Binding

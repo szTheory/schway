@@ -82,6 +82,13 @@ func withoutSpans(program ast.Program) ast.Program {
 		}
 		for armIndex := range function.Body.Arms {
 			function.Body.Arms[armIndex].Span = noSpan
+			if body := function.Body.Arms[armIndex].Body; body != nil {
+				body.Span = noSpan
+				for bindingIndex := range body.Bindings {
+					body.Bindings[bindingIndex].Span = noSpan
+					body.Bindings[bindingIndex].RHS.Span = noSpan
+				}
+			}
 		}
 	}
 	return program
@@ -179,6 +186,50 @@ func TestOwnershipRoundTrip(t *testing.T) {
 		if !reflect.DeepEqual(comments(parsed.Tree), comments(reparsed.Tree)) {
 			t.Fatalf("%s changed comments", name)
 		}
+	}
+}
+
+// TestArmBodyRoundTrips is 03-01-02's syntax falsifier: a match arm's value
+// position may hold a full linear body, parses losslessly, formats to a
+// fixed point, and reparses to the same semantic token projection — and the
+// bare-name arm form (exercised by the Phase 1 fixtures TestOwnershipRoundTrip
+// already covers) remains legal and unchanged alongside it.
+func TestArmBodyRoundTrips(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "branch_view.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if !bytes.Equal(parsed.Tree.Bytes(), source) {
+		t.Fatal("branch CST lost bytes")
+	}
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %v", diagnosticIdentity(parsed.Diagnostics))
+	}
+	if len(parsed.Program.Funcs) != 1 || len(parsed.Program.Funcs[0].Body.Arms) != 2 {
+		t.Fatalf("expected one function with two arms: %+v", parsed.Program.Funcs)
+	}
+	for _, arm := range parsed.Program.Funcs[0].Body.Arms {
+		if !arm.HasClosedVariant() {
+			t.Fatalf("arm %+v does not have exactly one value form", arm)
+		}
+		if arm.Body == nil {
+			t.Fatalf("arm %+v expected a linear body", arm)
+		}
+	}
+	canonical := syntax.Format(parsed.Tree)
+	if !bytes.Equal(canonical, source) {
+		t.Fatalf("branch fixture is not canonical:\n%s", canonical)
+	}
+	reparsed := syntax.Parse(canonical)
+	if len(reparsed.Diagnostics) != 0 || !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+		t.Fatalf("branch fixture did not reach a formatting fixed point: %v", diagnosticIdentity(reparsed.Diagnostics))
+	}
+	if !reflect.DeepEqual(withoutSpans(parsed.Program), withoutSpans(reparsed.Program)) {
+		t.Fatal("branch fixture changed the closed-body semantic projection across reparse")
+	}
+	if !reflect.DeepEqual(comments(parsed.Tree), comments(reparsed.Tree)) {
+		t.Fatal("branch fixture changed comments across reparse")
 	}
 }
 

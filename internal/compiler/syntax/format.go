@@ -90,7 +90,7 @@ func (f *formatter) token(token Token) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
-		} else if f.context() == "function" && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow) {
+		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow) {
 			f.newline()
 			f.linearBinding = false
 		}
@@ -148,7 +148,7 @@ func (f *formatter) token(token Token) {
 		f.lineOpen = true
 	case TokenEqual:
 		f.trimSpace()
-		if f.context() == "function" {
+		if f.context() == "function" || f.context() == "arm" {
 			f.out.WriteString(" = ")
 			f.lineOpen = true
 		} else {
@@ -168,6 +168,12 @@ func (f *formatter) token(token Token) {
 		f.trimSpace()
 		f.out.WriteString(" => ")
 		f.lineOpen = true
+		// A brace directly following => opens an arm body, not a bare
+		// generic block: classify it the same way a function or match
+		// header does, so its bindings format on their own lines. A bare
+		// arm value (an identifier) clears this via the FatArrow branch
+		// in the TokenIdentifier case above before any brace is seen.
+		f.header = "arm"
 	case TokenLAngle:
 		f.trimSpace()
 		f.out.WriteByte('<')

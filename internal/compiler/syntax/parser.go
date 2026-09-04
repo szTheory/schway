@@ -298,6 +298,12 @@ func (p *parser) linearBody() ast.LinearBody {
 	return body
 }
 
+// maxArmsPerMatch bounds T-03-01's CFG-shape denial-of-service surface at the
+// syntax layer, sized generously above any fixture this phase ships (single
+// digits of alternatives) while still rejecting fail-closed rather than
+// admitting an unbounded arm list.
+const maxArmsPerMatch = 64
+
 func (p *parser) matchExpr() ast.MatchExpr {
 	start := p.expect(TokenMatch, "syntax.expected_match")
 	scrutinee := p.identifier("syntax.expected_scrutinee")
@@ -312,10 +318,26 @@ func (p *parser) matchExpr() ast.MatchExpr {
 			p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
 			continue
 		}
-		value := p.identifier("syntax.expected_value")
-		if pattern.Kind == TokenIdentifier && value.Kind == TokenIdentifier {
-			expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Span: spanFrom(pattern, value)})
-			expression.Span.End = value.Span.End
+		if len(expression.Arms) >= maxArmsPerMatch {
+			p.problem("syntax.arm_limit", pattern, "match exceeds the declared arm limit")
+			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF)
+			p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
+			continue
+		}
+		if p.peek().Kind == TokenLBrace {
+			p.advance()
+			body := p.linearBody()
+			end := p.expect(TokenRBrace, "syntax.expected_rbrace")
+			if pattern.Kind == TokenIdentifier {
+				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Body: &body, Span: spanFrom(pattern, end)})
+				expression.Span.End = end.Span.End
+			}
+		} else {
+			value := p.identifier("syntax.expected_value")
+			if pattern.Kind == TokenIdentifier && value.Kind == TokenIdentifier {
+				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Span: spanFrom(pattern, value)})
+				expression.Span.End = value.Span.End
+			}
 		}
 		p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
 	}

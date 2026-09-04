@@ -217,7 +217,11 @@ func interpreterInputs(program core.Program) ([]string, bool) {
 			return nil, false
 		}
 	}
-	if function.Match != nil && function.Linear == nil && len(program.DataTypes) == 1 {
+	if function.Match != nil && len(program.DataTypes) == 1 {
+		// Covers both the Phase 1 bare-arm match (Linear == nil) and the
+		// Phase 3 branch-shaped match whose arms carry linear bodies
+		// (Linear != nil) — both dispatch on every alternative of the
+		// scrutinee's declared type.
 		return append([]string(nil), program.DataTypes[0].Alternatives...), true
 	}
 	return nil, false
