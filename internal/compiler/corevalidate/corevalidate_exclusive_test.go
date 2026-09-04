@@ -63,6 +63,36 @@ func TestExclusiveBorrowAuthorizedIndependently(t *testing.T) {
 	}
 }
 
+// TestCorevalidateIndependentlyRejectsBorrowConflict is corevalidate's own
+// D-12 falsifier for the five-row conflict matrix (T-03-07): the checker
+// never emits a core artifact that violates the matrix (it rejects at the
+// frontend first), so to exercise the validator's OWN conflict re-derivation
+// in isolation this test takes a checker-approved baseline and mutates it at
+// the CORE level — retargeting the second borrow's SourceID from the
+// exclusive loan's own target place back to the shared owner place, without
+// touching any ID/ordinal — so both loans now originate from the same
+// owner and genuinely overlap (the Return operation's later read of the
+// exclusive loan's target already extends its lastUse across the second
+// borrow). This must be rejected by replay's own ownerLiveSharedUntil/
+// ownerLiveExclusiveUntil bookkeeping, not by anything the checker decided.
+func TestCorevalidateIndependentlyRejectsBorrowConflict(t *testing.T) {
+	baseline := validExclusiveBorrowProgram(t)
+	linear := baseline.Functions[0].Linear
+	if len(linear.Operations) < 2 || linear.Operations[0].Kind != core.OpBorrowExclusive || linear.Operations[1].Kind != core.OpBorrowShared {
+		t.Fatalf("unexpected baseline operation shape: %+v", linear.Operations)
+	}
+	ownerPlaceID := linear.Operations[0].SourceID // the exclusive loan's owner (buffer)
+	mutated := cloneCoreProgram(t, baseline)
+	mutated.Functions[0].Linear.Operations[1].SourceID = ownerPlaceID
+	result := corevalidate.Validate(mutated)
+	if result.Valid {
+		t.Fatal("validator admitted an exclusive loan overlapping a shared loan on the same owner")
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != "core.borrow_conflict" {
+		t.Fatalf("code=%v want=core.borrow_conflict", result.Problems)
+	}
+}
+
 // TestUnknownOperationStillRejected confirms replay's fail-closed default
 // arm is still intact after this phase's new core.OpBorrowExclusive case is
 // added: an operation kind the validator has not been explicitly taught is
