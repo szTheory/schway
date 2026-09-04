@@ -1166,9 +1166,64 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.mixed_access_chain")
 	}
 
+	// control:origin.multi_arm_omitted (Task 03-10-03, closing
+	// 03-VERIFICATION.md's SC3/SC4 multi-arm gap): like
+	// control:origin.mixed_access_chain, no mutation injection is needed —
+	// check.go's honest producer constructs this shape itself. A match-bodied
+	// function whose first arm returns owned and whose second arm returns a
+	// live shared borrow, with no declared origin (match functions cannot
+	// declare one), must be refused publication with core.origin_omitted.
+	multiArmOmitted, err := readBoundedFile(filepath.Join(corpus, "public_view_multi_arm_omitted.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_multi_arm_omitted.lang")
+	}
+	originBytes += len(multiArmOmitted)
+	multiArmOmittedChecked := Check(multiArmOmitted)
+	if len(multiArmOmittedChecked.Diagnostics) != 0 || len(multiArmOmittedChecked.Program.Functions) != 1 {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "multi-arm omitted origin fixture is invalid")
+	}
+	originWork++
+	if problems := originvalidate.ValidatePublished(multiArmOmittedChecked.Program); len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.multi_arm_omitted")
+	}
+
+	// control:origin.multi_arm_access_conflict (Task 03-10-03): the
+	// two-disagreeing-arms shape. The frontend has no spelling for a per-arm
+	// origin declaration on a match-bodied function, so this control injects
+	// a declared origin onto the checked function the same way the
+	// understated and impossible controls above inject their mutations, to
+	// exercise the DECLARED-and-conflicting path specifically; the
+	// undeclared form of the same fixture is already covered by
+	// TestMultiArmAccessConflictRejectedWhenDeclaredShared/... in
+	// originvalidate_test.go (unit tests, not this gate).
+	multiArmConflict, err := readBoundedFile(filepath.Join(corpus, "public_view_multi_arm_access_conflict.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_multi_arm_access_conflict.lang")
+	}
+	originBytes += len(multiArmConflict)
+	multiArmConflictChecked := Check(multiArmConflict)
+	if len(multiArmConflictChecked.Diagnostics) != 0 || len(multiArmConflictChecked.Program.Functions) != 1 {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "multi-arm access conflict fixture is invalid")
+	}
+	multiArmConflictProgram := multiArmConflictChecked.Program
+	multiArmConflictProgram.Functions[0].PublicOrigin = &core.PublicOrigin{
+		Paths: []string{multiArmConflictProgram.Functions[0].Parameter.Name}, Access: "shared",
+	}
+	originWork++
+	if problems := originvalidate.ValidatePublished(multiArmConflictProgram); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.multi_arm_access_conflict")
+	}
+
 	addLane("lane:borrowed-origin-controls", "pass", []string{
 		"control:origin.understated_summary", "control:origin.impossible_summary", "control:origin.stale_summary",
 		"control:origin.omitted_summary", "control:origin.mixed_access_chain",
+		"control:origin.multi_arm_omitted", "control:origin.multi_arm_access_conflict",
 	}, originWork, originBytes, laneStarted)
 
 	requiredControls := []string{
@@ -1181,6 +1236,8 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		"control:origin.stale_summary",
 		"control:origin.omitted_summary",
 		"control:origin.mixed_access_chain",
+		"control:origin.multi_arm_omitted",
+		"control:origin.multi_arm_access_conflict",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {

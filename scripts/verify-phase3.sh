@@ -23,7 +23,9 @@ for control in \
 	control:origin.impossible_summary \
 	control:origin.stale_summary \
 	control:origin.omitted_summary \
-	control:origin.mixed_access_chain
+	control:origin.mixed_access_chain \
+	control:origin.multi_arm_omitted \
+	control:origin.multi_arm_access_conflict
 do
 	grep -q "$control" "$verify_tmp/phase3.json" || { echo "phase3 verify: required Phase 3 control missing: $control" >&2; exit 1; }
 done

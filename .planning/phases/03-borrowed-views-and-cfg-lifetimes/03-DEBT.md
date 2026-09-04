@@ -118,6 +118,52 @@ reaches the admission-deciding code path). This closure entry resolves D-03-02
 only — D-03-01's own row above is unedited and still tracked for a Phase 4+ fix.
 
 ---
+
+## Closure — the multi-arm instance of the origin-recomputation defect class resolved by 03-10 (2026-09-04)
+
+**The multi-arm origin leak (03-VERIFICATION.md's third-round regression,
+03-REVIEW.md's renumbered `CR-01`) is CLOSED.** `RecomputeOriginPerReturn`
+(`internal/compiler/originvalidate/originvalidate.go`) is now the package's
+sole backward-walk site: it walks backward from EVERY `core.OpReturn` in a
+function's `Linear.Operations`, not just the first, so a match-bodied
+function whose first arm returns owned and whose later arm returns a live,
+unreleased borrow is no longer invisible to origin recomputation.
+`RecomputeOrigin` is reimplemented as a conservative combiner over that
+per-return slice: an undeclared origin among disagreeing or borrow-derived
+arms is refused with `core.origin_omitted`; two arms disagreeing on access
+mode combine to the `AccessConflicting` sentinel rather than resolving to
+either arm's answer, refused with `core.origin_access_mismatch` whichever
+mode is declared, and the sentinel itself is refused as an undeclarable
+value by a new domain check in `ValidatePublished`.
+
+Two new fail-closed, nonzero-work Phase 3 gate controls require this fix
+stays load-bearing: `control:origin.multi_arm_omitted`
+(`testdata/phase3/public_view_multi_arm_omitted.lang`) and
+`control:origin.multi_arm_access_conflict`
+(`testdata/phase3/public_view_multi_arm_access_conflict.lang`). Both join
+the nine pre-existing required control IDs in `scripts/verify-phase3.sh` and
+`verifyBorrowedCorpus`'s `requiredControls` slice (eleven total).
+
+Proven load-bearing by mutation-kill (revert-and-fail in a throwaway
+detached worktree — reverting `RecomputeOriginPerReturn` to capture only the
+first `OpReturn` made `TestMultiArmOmittedOriginRejected`,
+`TestMultiArmAccessConflictDerivesNeitherArm`, and
+`TestMultiArmOmittedOriginRejectedThroughCLI` fail, see 03-10-SUMMARY.md for
+verbatim output) and by the shipped `./cmd/lang` binary on a hand-written,
+out-of-corpus program (`lens_peek.lang`, module `owned.lens_peek`, a
+different type/alternative/parameter naming than any corpus fixture):
+`check` exits 0 with zero diagnostics, `interface export` exits 2 with
+`core.origin_omitted`, no summary file written.
+
+**D-03-01 remains OPEN, accepted, and non-blocking**, unchanged by this
+entry — this closure resolves only the multi-arm instance of the origin
+defect class; D-03-01's own row above is unedited and still tracked for a
+Phase 4+ fix. **WR-01** (`originvalidate.ValidatePublished` not wired into
+`lang check`/`lang run`) also remains open, accepted, and non-blocking,
+untouched by this plan.
+
+---
 *Phase: 03-borrowed-views-and-cfg-lifetimes*
 *Recorded: 2026-09-04 at `68ed4f7` (03-05, mid-phase gate)*
 *D-03-02 closed: 2026-09-04 by 03-09*
+*Multi-arm origin leak closed: 2026-09-04 by 03-10*

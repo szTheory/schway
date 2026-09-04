@@ -670,6 +670,7 @@ func TestPhase3VerifierScriptContract(t *testing.T) {
 		"assert-go-tests.sh --self-test", "TestVerifyPhase3ControlsAndWork", "TestVerifyPhase2ControlsAndWork",
 		"control:ownership.exclusive_conflict", "control:ownership.exclusive_move", "control:core.loan_endpoint_mismatch",
 		"control:cfg.path_oracle_disagreement", "control:origin.understated_summary", "control:origin.impossible_summary", "control:origin.stale_summary",
+		"control:origin.multi_arm_omitted", "control:origin.multi_arm_access_conflict",
 		"verify testdata/phase1", "verify testdata/phase2", "verify testdata/phase3",
 		"warm_samples=20", "peak_rss=unavailable", "p50_ns=", "p95_ns=", "min_ns=", "max_ns=", "output_bytes=", "work=",
 	} {
