@@ -253,7 +253,7 @@ func TestVerifyPhase2CLI(t *testing.T) {
 	if result.Status != protocol.StatusPass || !reflect.DeepEqual(result.ExpectedEscapes, []string{"escape:coordinated-source-core-lie"}) {
 		t.Fatalf("Phase 2 verify result omitted expected escape: %+v", result)
 	}
-	for _, required := range []string{"control:ownership.use_after_move", "control:ownership.move_while_borrowed", "control:ownership.transfer_requires_take", "control:ability.forged_copy", "control:core.duplicate_operation_id", "control:interpreter-o0-o3-owned", "control:evidence.core_mismatch", "control:backend.runtime_causality"} {
+	for _, required := range []string{"control:ownership.use_after_move", "control:ownership.move_while_borrowed", "control:ownership.move_while_reborrowed", "control:ownership.transfer_requires_take", "control:ability.forged_copy", "control:core.duplicate_operation_id", "control:interpreter-o0-o3-owned", "control:evidence.core_mismatch", "control:backend.runtime_causality"} {
 		if !bytes.Contains(machine.Stdout, []byte(required)) {
 			t.Fatalf("verify JSON omitted %s", required)
 		}
