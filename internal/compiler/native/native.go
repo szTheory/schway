@@ -41,7 +41,12 @@ type Result struct {
 type Runner struct {
 	ClangPath string
 	Timeout   time.Duration
-	command   func(context.Context, string, ...string) *exec.Cmd
+	// Expect names the terminal outcome this runner's caller expects every
+	// execution document to carry (D-04-08). The zero value behaves exactly
+	// as ExpectValue, so every pre-Phase-4 caller that never sets this field
+	// keeps the original "returned"-only contract unchanged.
+	Expect  TerminalOutcome
+	command func(context.Context, string, ...string) *exec.Cmd
 }
 
 func DefaultRunner() Runner { return Runner{ClangPath: "clang", Timeout: 5 * time.Second} }
@@ -118,7 +123,11 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 		if len(runStderr.bytes()) != 0 {
 			return Result{}, &ToolError{Code: "native.run_stderr", Err: fmt.Errorf("native process wrote stderr: %s", bounded(string(runStderr.bytes()), 2048))}
 		}
-		decoded, decodeErr := decodeExecution(runStdout.bytes())
+		expect := r.Expect
+		if expect == "" {
+			expect = ExpectValue
+		}
+		decoded, decodeErr := decodeExecution(runStdout.bytes(), expect)
 		if decodeErr != nil {
 			return Result{}, decodeErr
 		}
@@ -165,7 +174,7 @@ func withStderr(err error, stderr []byte) error {
 	return fmt.Errorf("%w: %s", err, bounded(string(stderr), 2048))
 }
 
-func decodeExecution(stdout []byte) (execution.Execution, error) {
+func decodeExecution(stdout []byte, expect TerminalOutcome) (execution.Execution, error) {
 	if len(stdout) > MaxStreamBytes {
 		return execution.Execution{}, streamError("native.run_stdout_truncated")
 	}
@@ -185,11 +194,25 @@ func decodeExecution(stdout []byte) (execution.Execution, error) {
 		}
 		return execution.Execution{}, &ToolError{Code: "native.trailing_execution", Err: err}
 	}
-	if err := validateExecution(value); err != nil {
+	if err := validateExecution(value, ExpectValue); err != nil {
 		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: err}
 	}
 	return value, nil
 }
+
+// TerminalOutcome names the closed axis validateExecution accepts (D-04-08:
+// value | typed_failure | defect, with "defect" reserved for a later plan --
+// see Pitfall 3, 04-RESEARCH.md). It exists so a caller states in advance
+// which terminal shape it expects, rather than validateExecution silently
+// discovering the shape from the document -- an execution document is
+// validated AGAINST an expectation, never used to infer one, matching the
+// project's general "never trust the producer" posture.
+type TerminalOutcome string
+
+const (
+	ExpectValue        TerminalOutcome = "value"
+	ExpectTypedFailure TerminalOutcome = "typed_failure"
+)
 
 func rejectDuplicateJSONKeys(data []byte) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
@@ -240,12 +263,29 @@ func rejectDuplicateJSONKeys(data []byte) error {
 	return scan()
 }
 
-func validateExecution(value execution.Execution) error {
+// validateExecution asserts the execution document against the caller's
+// declared expectation (D-04-08's closed value|typed_failure|defect axis;
+// "defect" is not yet constructible and is intentionally absent from this
+// switch -- a document claiming it is rejected by the default case below).
+// Per Pitfall 3 (04-RESEARCH.md), the pre-Phase-4 "value" contract is kept
+// byte-for-byte: every one of its five original rejection grounds still
+// rejects (TestValidateExecutionStillRejectsOldGrounds), this function
+// simply no longer treats every OTHER expectation as automatically invalid.
+func validateExecution(value execution.Execution, expect TerminalOutcome) error {
 	if value.Schema != execution.Schema0 && value.Schema != execution.Schema1 {
 		return errors.New("unsupported execution schema")
 	}
-	if value.Outcome.Kind != "returned" || value.Outcome.Value == "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 || len(value.LiveResources) != 0 {
-		return errors.New("execution document violates required contract")
+	switch expect {
+	case ExpectValue, "":
+		if value.Outcome.Kind != "returned" || value.Outcome.Value == "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 || len(value.LiveResources) != 0 {
+			return errors.New("execution document violates required contract")
+		}
+	case ExpectTypedFailure:
+		if value.Outcome.Kind != "typed_failure" || value.Outcome.Value == "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 {
+			return errors.New("execution document violates required contract")
+		}
+	default:
+		return fmt.Errorf("unsupported expected terminal outcome %q", expect)
 	}
 	seenIDs := make(map[string]struct{}, len(value.Events))
 	functionID := value.Events[0].FunctionID
@@ -270,9 +310,13 @@ func validateExecution(value execution.Execution) error {
 			} else if event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear return event fields are invalid")
 			}
-		case "value.copied", "value.transferred", "value.borrowed", "value.borrowed_exclusive":
+		case "value.copied", "value.transferred", "value.borrowed", "value.borrowed_exclusive", "foreign.called":
 			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear transition event fields are invalid")
+			}
+		case "function.failed":
+			if !isLast || value.Schema != execution.Schema1 || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+				return errors.New("typed-failure event fields are invalid")
 			}
 		default:
 			return errors.New("unknown execution event kind")

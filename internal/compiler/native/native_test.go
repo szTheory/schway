@@ -448,7 +448,7 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, decodeErr := decodeExecution(test.data)
+			_, decodeErr := decodeExecution(test.data, ExpectValue)
 			var toolError *ToolError
 			if !errors.As(decodeErr, &toolError) || toolError.Code != test.code {
 				t.Fatalf("code=%v want=%s err=%v", toolError, test.code, decodeErr)
@@ -504,5 +504,78 @@ func TestNativeHelperProcess(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	default:
 		_, _ = os.Stdout.Write(valid)
+	}
+}
+
+// TestValidateExecutionStillRejectsOldGrounds is Pitfall 3's regression test
+// (04-RESEARCH.md): widening validateExecution to accept an expected-outcome
+// axis must not loosen the pre-Phase-4 "value" contract. Every one of the
+// original hard-reject conditions must still reject under ExpectValue.
+func TestValidateExecutionStillRejectsOldGrounds(t *testing.T) {
+	valid := func() execution.Execution {
+		return execution.Execution{
+			Schema:  execution.Schema1,
+			Outcome: execution.Outcome{Kind: "returned", Value: "7"},
+			Events: []execution.Event{
+				{Schema: execution.Schema1, ID: "op0:event:returned", Kind: "function.returned", FunctionID: "f1", SourcePlace: "p0", TypeID: "t0"},
+			},
+			LiveResources: []string{},
+		}
+	}
+	if err := validateExecution(valid(), ExpectValue); err != nil {
+		t.Fatalf("valid returned document rejected: %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(execution.Execution) execution.Execution
+	}{
+		{"wrong outcome kind", func(v execution.Execution) execution.Execution { v.Outcome.Kind = "typed_failure"; return v }},
+		{"empty outcome value", func(v execution.Execution) execution.Execution { v.Outcome.Value = ""; return v }},
+		{"nil events", func(v execution.Execution) execution.Execution { v.Events = nil; return v }},
+		{"empty events", func(v execution.Execution) execution.Execution { v.Events = []execution.Event{}; return v }},
+		{"nil live resources", func(v execution.Execution) execution.Execution { v.LiveResources = nil; return v }},
+		{"nonempty live resources", func(v execution.Execution) execution.Execution { v.LiveResources = []string{"r1"}; return v }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mutated := test.mutate(valid())
+			if err := validateExecution(mutated, ExpectValue); err == nil {
+				t.Fatalf("expected rejection under ExpectValue, got nil error")
+			}
+		})
+	}
+}
+
+// TestValidateExecutionTypedFailureDiscriminates proves the new axis
+// discriminates in both directions rather than merely widening: a
+// typed_failure-expecting call accepts a typed_failure document and rejects
+// a returned one, and vice versa.
+func TestValidateExecutionTypedFailureDiscriminates(t *testing.T) {
+	typedFailure := execution.Execution{
+		Schema:  execution.Schema1,
+		Outcome: execution.Outcome{Kind: "typed_failure", Value: "OpenFailed"},
+		Events: []execution.Event{
+			{Schema: execution.Schema1, ID: "op0:event:failed", Kind: "function.failed", FunctionID: "f1", SourcePlace: "p2", TypeID: "t1"},
+		},
+		LiveResources: []string{},
+	}
+	if err := validateExecution(typedFailure, ExpectTypedFailure); err != nil {
+		t.Fatalf("valid typed_failure document rejected under ExpectTypedFailure: %v", err)
+	}
+	if err := validateExecution(typedFailure, ExpectValue); err == nil {
+		t.Fatalf("typed_failure document accepted under ExpectValue")
+	}
+
+	returned := execution.Execution{
+		Schema:  execution.Schema1,
+		Outcome: execution.Outcome{Kind: "returned", Value: "7"},
+		Events: []execution.Event{
+			{Schema: execution.Schema1, ID: "op0:event:returned", Kind: "function.returned", FunctionID: "f1", SourcePlace: "p0", TypeID: "t0"},
+		},
+		LiveResources: []string{},
+	}
+	if err := validateExecution(returned, ExpectTypedFailure); err == nil {
+		t.Fatalf("returned document accepted under ExpectTypedFailure")
 	}
 }

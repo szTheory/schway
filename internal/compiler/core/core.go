@@ -133,6 +133,24 @@ const (
 	OpReturn          OperationKind = "return"
 )
 
+// AllOperationKinds returns every declared OperationKind, in declaration
+// order. This is the single table every dispatch site (check, corevalidate,
+// interp, cgen, pathoracle, originvalidate) is tested against (D-04-22): a
+// constant added to the block above without also being added to this literal
+// slice is exactly the defect this registry exists to catch --
+// TestAllOperationKindsRegistered fails the moment the two counts diverge.
+func AllOperationKinds() []OperationKind {
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn}
+}
+
+// TerminatorKinds returns exactly the operation kinds that end a block --
+// always a subset of AllOperationKinds(). Phase 4 grows this set (OpFail,
+// and later a defect terminator); today only OpReturn ends a block, exactly
+// as every Phase 1-3 core artifact assumes.
+func TerminatorKinds() []OperationKind {
+	return []OperationKind{OpReturn}
+}
+
 type LinearOperation struct {
 	ID       string        `json:"id"`
 	PointID  string        `json:"point_id"`
