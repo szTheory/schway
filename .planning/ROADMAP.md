@@ -177,7 +177,19 @@ changes that cost nothing structurally:
   3. Panic cannot cross the ordinary non-unwinding C boundary, and a foreign nonlocal exit cannot silently bypass Lang cleanup.
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
-**Plans**: TBD
+**Plans**: 7 plans
+
+- [ ] `04-01-PLAN.md` — byte-identity pins, the operation-kind registry and six-site dispatch control, and the end-to-end fallible foreign call across the frozen C boundary
+- [ ] `04-02-PLAN.md` — three-stage partial acquisition with materialized reverse-order release, an independent rederivation, and two mutations attacking different artifacts
+- [ ] `04-03-PLAN.md` — the authoritative foreign contract, its three inspectable layers, the layout compile-time refusal, and zero optimizer-visible attributes
+- [ ] `04-04-PLAN.md` — the reachable abort-only defect, the closed terminal-outcome axis, and the additive streaming event emitter
+- [ ] `04-05-PLAN.md` — the process-root landing pad and static ledger, the undefined-symbol allowlist, and mutation-killed nonlocal-exit detection
+- [ ] `04-06-PLAN.md` — every terminator walked by both independent analyses, foreign-return origin facts, and honest counted work
+- [ ] `04-07-PLAN.md` — the Phase 4 gate and its contract test, three-engine agreement across every path, and the shipped-binary out-of-corpus exercise
+
+**Waves**: 1→7, strictly sequential. Every plan touches the checker, the independent
+validator, the code generator, or the session gate, so no two plans have disjoint
+`files_modified`; parallelism is not available and is not claimed.
 
 ### Phase 5: Native Equivalence and Adversarial Evidence
 
