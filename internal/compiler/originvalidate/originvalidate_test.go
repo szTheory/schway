@@ -313,6 +313,208 @@ func TestOwnedArmsStillPublish(t *testing.T) {
 	}
 }
 
+// TestMultiArmAccessConflictDerivesNeitherArm is Task 03-10-02's falsifier
+// for the combination law's case 3: two arms deriving different access
+// modes must combine to the AccessConflicting sentinel, with paths unioned
+// (not duplicated) — neither arm's own answer wins.
+func TestMultiArmAccessConflictDerivesNeitherArm(t *testing.T) {
+	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	if len(origins) != 2 {
+		t.Fatalf("expected exactly 2 per-return origins, got %+v", origins)
+	}
+	seenShared, seenExclusive := false, false
+	for _, origin := range origins {
+		if !origin.Derived {
+			t.Fatalf("expected both arms borrow-derived, got %+v", origin)
+		}
+		switch origin.Access {
+		case "shared":
+			seenShared = true
+		case "exclusive":
+			seenExclusive = true
+		}
+	}
+	if !seenShared || !seenExclusive {
+		t.Fatalf("expected one shared and one exclusive arm, got %+v", origins)
+	}
+	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	if !ok || access != originvalidate.AccessConflicting {
+		t.Fatalf("expected AccessConflicting, got access=%q ok=%v", access, ok)
+	}
+	if len(paths) != 1 || paths[0] != "flag" {
+		t.Fatalf("expected exactly one unioned path [flag], got %+v", paths)
+	}
+}
+
+// TestUnionPathsAreNotDuplicated pins the same non-duplication requirement
+// directly, independent of the access-mode assertions above.
+func TestUnionPathsAreNotDuplicated(t *testing.T) {
+	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	paths, _, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	if !ok {
+		t.Fatalf("expected RecomputeOrigin to succeed")
+	}
+	seen := make(map[string]int)
+	for _, path := range paths {
+		seen[path]++
+	}
+	for path, count := range seen {
+		if count != 1 {
+			t.Fatalf("path %q duplicated %d times in %+v", path, count, paths)
+		}
+	}
+}
+
+// TestMultiArmAccessConflictRejectedWhenDeclaredShared is Task 03-10-02's
+// falsifier: an undeclared conflicting-arms function is refused with
+// core.origin_omitted (the same code single-arm omission uses); a
+// conflicting-arms function DECLARING "shared" is refused with
+// core.origin_access_mismatch, whose Detail names the sentinel.
+func TestMultiArmAccessConflictRejectedWhenDeclaredShared(t *testing.T) {
+	undeclared := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	problems := originvalidate.ValidatePublished(undeclared)
+	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected exactly core.origin_omitted for the undeclared conflicting-arms function, got %+v", problems)
+	}
+
+	declaredShared := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	declaredShared.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"flag"}, Access: "shared"}
+	problems = originvalidate.ValidatePublished(declaredShared)
+	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		t.Fatalf("expected exactly core.origin_access_mismatch, got %+v", problems)
+	}
+	if !strings.Contains(problems[0].Detail, originvalidate.AccessConflicting) {
+		t.Fatalf("expected detail to name the conflicting sentinel, got %q", problems[0].Detail)
+	}
+}
+
+// TestMultiArmAccessConflictRejectedWhenDeclaredExclusive mirrors the shared
+// case with the other declarable access mode.
+func TestMultiArmAccessConflictRejectedWhenDeclaredExclusive(t *testing.T) {
+	declaredExclusive := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	declaredExclusive.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"flag"}, Access: "exclusive"}
+	problems := originvalidate.ValidatePublished(declaredExclusive)
+	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		t.Fatalf("expected exactly core.origin_access_mismatch, got %+v", problems)
+	}
+	if !strings.Contains(problems[0].Detail, originvalidate.AccessConflicting) {
+		t.Fatalf("expected detail to name the conflicting sentinel, got %q", problems[0].Detail)
+	}
+}
+
+// TestDeclaredConflictingAccessIsRefused is Task 03-10-02's falsifier for
+// the declared-access domain check: a declared PublicOrigin.Access equal to
+// the sentinel string itself is refused with core.origin_access_mismatch
+// BEFORE any comparison with the recomputed answer — the sentinel is never
+// a declarable mode, so a mutated summary cannot declare it and match a
+// conflicting recomputation.
+func TestDeclaredConflictingAccessIsRefused(t *testing.T) {
+	// public_view.lang's recomputed access is "shared", not the sentinel, so
+	// declaring the sentinel there is caught by the ordinary
+	// declared-vs-recomputed mismatch comparison regardless of whether a
+	// dedicated domain check exists. To actually falsify the domain check,
+	// declare the sentinel on the ONE fixture whose own recomputed answer IS
+	// the sentinel (public_view_multi_arm_access_conflict.lang) — without a
+	// domain check running BEFORE the comparison, declared == recomputed and
+	// this would incorrectly report no problems at all.
+	conflicting := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	conflicting.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"flag"}, Access: originvalidate.AccessConflicting}
+	problems := originvalidate.ValidatePublished(conflicting)
+	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		t.Fatalf("expected exactly core.origin_access_mismatch for a declared sentinel access, got %+v", problems)
+	}
+
+	program := honestProgram(t, "public_view.lang")
+	program.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"buffer"}, Access: originvalidate.AccessConflicting}
+	problems = originvalidate.ValidatePublished(program)
+	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		t.Fatalf("expected exactly core.origin_access_mismatch for a declared sentinel access, got %+v", problems)
+	}
+}
+
+// TestPublishedOriginConsistentWithEveryReturn is Task 03-10-02's
+// generalized every-return invariant (the tripwire against a future
+// regression back to a single-return assumption): for every function in
+// every testdata/phase3 fixture, RecomputeOrigin's combined triple must be
+// exactly the conservative combination of RecomputeOriginPerReturn's
+// elements.
+func TestPublishedOriginConsistentWithEveryReturn(t *testing.T) {
+	dir := testsupport.ProjectPath("testdata", "phase3")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkedAny := false
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			continue
+		}
+		source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		checked := session.Check(source)
+		if len(checked.Diagnostics) != 0 {
+			continue
+		}
+		for _, function := range checked.Program.Functions {
+			checkedAny = true
+			perReturn := originvalidate.RecomputeOriginPerReturn(function)
+			var wantPaths []string
+			pathSeen := make(map[string]bool)
+			wantAccess := ""
+			derivedCount := 0
+			conflict := false
+			for _, origin := range perReturn {
+				if !origin.Derived {
+					continue
+				}
+				derivedCount++
+				if wantAccess == "" {
+					wantAccess = origin.Access
+				} else if origin.Access != wantAccess {
+					conflict = true
+				}
+				for _, path := range origin.Paths {
+					if !pathSeen[path] {
+						pathSeen[path] = true
+						wantPaths = append(wantPaths, path)
+					}
+				}
+			}
+			gotPaths, gotAccess, gotOK := originvalidate.RecomputeOrigin(function)
+			if derivedCount == 0 {
+				if gotOK {
+					t.Fatalf("%s/%s: expected not-ok for an owned function, got paths=%+v access=%q", entry.Name(), function.ID, gotPaths, gotAccess)
+				}
+				continue
+			}
+			if !gotOK {
+				t.Fatalf("%s/%s: expected ok=true for a borrow-derived function, got not-ok", entry.Name(), function.ID)
+			}
+			expectedAccess := wantAccess
+			if conflict {
+				expectedAccess = originvalidate.AccessConflicting
+			}
+			if gotAccess != expectedAccess {
+				t.Fatalf("%s/%s: expected combined access %q, got %q", entry.Name(), function.ID, expectedAccess, gotAccess)
+			}
+			if len(gotPaths) != len(wantPaths) {
+				t.Fatalf("%s/%s: expected paths %+v, got %+v", entry.Name(), function.ID, wantPaths, gotPaths)
+			}
+			for index, path := range wantPaths {
+				if gotPaths[index] != path {
+					t.Fatalf("%s/%s: expected paths %+v, got %+v", entry.Name(), function.ID, wantPaths, gotPaths)
+				}
+			}
+		}
+	}
+	if !checkedAny {
+		t.Fatal("expected at least one function from testdata/phase3 to be checked")
+	}
+}
+
 // TestStaleSummaryRejectedBeforeOtherChecks is 03-06-02's falsifier for
 // T-03-03: a summary whose recorded digest does not match the core artifact
 // it is checked against is rejected before any origin or access question is
