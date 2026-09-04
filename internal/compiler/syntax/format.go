@@ -25,6 +25,12 @@ type formatter struct {
 	previous      Kind
 	contexts      []string
 	linearBinding bool
+	// header records the declaration keyword that opened the line currently
+	// being written, so an opening brace is classified by the construct it
+	// belongs to rather than by whichever token happens to precede it. The
+	// preceding token is not a sound classifier: a generic return type ends
+	// the header with `>` (TokenRAngle), not an identifier.
+	header string
 }
 
 func (f *formatter) token(token Token) {
@@ -53,12 +59,14 @@ func (f *formatter) token(token Token) {
 			f.blankBeforeTopLevel()
 		}
 		f.write("fn ")
+		f.header = "function"
 	case TokenType:
 		f.ensureLine()
 		f.write("type ")
 	case TokenMatch:
 		f.ensureLine()
 		f.write("match ")
+		f.header = "match"
 	case TokenLet:
 		if f.lineOpen {
 			f.newline()
@@ -86,19 +94,15 @@ func (f *formatter) token(token Token) {
 		f.lineOpen = true
 	case TokenLBrace:
 		context := "block"
-		switch f.previous {
-		case TokenExport:
+		if f.previous == TokenExport {
 			context = "export"
-		case TokenIdentifier:
-			if strings.Contains(f.currentLine(), "match ") {
-				context = "match"
-			} else {
-				context = "function"
-			}
+		} else if f.header != "" {
+			context = f.header
 		}
 		f.trimSpace()
 		f.out.WriteString(" {\n")
 		f.lineOpen = false
+		f.header = ""
 		f.indent++
 		f.contexts = append(f.contexts, context)
 	case TokenRBrace:
@@ -226,6 +230,9 @@ func (f *formatter) write(value string) {
 }
 
 func (f *formatter) newline() {
+	// A declaration header never spans a line in the canonical projection, so
+	// the pending header classification dies with the line that carried it.
+	f.header = ""
 	value := f.out.String()
 	if strings.HasSuffix(value, "\n") {
 		f.lineOpen = false
