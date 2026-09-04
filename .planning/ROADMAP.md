@@ -79,7 +79,7 @@ native evidence, and finally the bounded agent/human feedback service.
 
 **Scope note**: OWN-03 is scoped to **acyclic** (branch-only) CFG edges this phase. The language has no loop or recursion construct and this phase adds neither; loop-carried loan liveness is an explicit Phase 4+ follow-on.
 
-**Plans**: 9/9 plans executed (03-01..03-07 executed; verification found gaps in OWN-04 — 03-08 and 03-09 are gap-closure plans)
+**Plans**: 10 plans (03-01..03-07 executed; 03-08 and 03-09 are executed gap-closure plans; re-verification found a new multi-arm instance of the same origin-recomputation defect class — 03-10 is the third-round gap-closure plan)
 
 - [x] 03-08-PLAN.md
 - [x] 03-09-PLAN.md
@@ -96,6 +96,7 @@ native evidence, and finally the bounded agent/human feedback service.
 - [ ] `03-07-PLAN.md` — bounded debug-lineage experiment, Phase 3 gate, and carried debt closure
 - [ ] `03-08-PLAN.md` — gap closure (GAP 1 / CR-01): first-seen access guard in `RecomputeOrigin` plus the mixed-access reborrow-chain regression fixture
 - [ ] `03-09-PLAN.md` — gap closure (GAP 2 / D-03-02): reject an omitted public origin on the publication path, wired as two new fail-closed controls
+- [ ] `03-10-PLAN.md` — gap closure (SC3/SC4, multi-arm): walk every `OpReturn`, combine per-arm origins conservatively, two new fixtures and two new fail-closed controls
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
