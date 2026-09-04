@@ -45,7 +45,7 @@ hiding runtime costs.
   move-during-loan programs are rejected with the transfer and conflict causes.
 - [x] **OWN-02**: Copy, drop, share, send, and escape abilities are derived
   independently, including through generic and aggregate types.
-- [x] **OWN-03**: Shared and exclusive loans obey conflict rules and ordinary
+- [ ] **OWN-03**: Shared and exclusive loans obey conflict rules and ordinary
   local loans end at proven CFG point/edge-specific last use.
 - [ ] **OWN-04**: Public borrowed results record verified field/alternative
   origins and access mode without inspecting provider bodies downstream.
@@ -141,7 +141,7 @@ hiding runtime costs.
 | SEM-03 | Phase 4 | Pending |
 | OWN-01 | Phase 2 | Complete |
 | OWN-02 | Phase 2 | Complete |
-| OWN-03 | Phase 3 | Complete |
+| OWN-03 | Phase 3 | Pending |
 | OWN-04 | Phase 3 | Pending |
 | RES-01 | Phase 4 | Pending |
 | FFI-01 | Phase 4 | Pending |
