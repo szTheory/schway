@@ -261,6 +261,11 @@ func FuzzParseFormat(f *testing.F) {
 		}
 		f.Add(source)
 	}
+	// A generic type combined with a binding: the combination the shipped
+	// fixtures never reach (ability_shapes.lang is generic but has no `let`,
+	// owned_transfer.lang binds but is not generic).
+	f.Add([]byte("module generic.binding\n\nexport {\n  fn relay\n}\n\nfn relay(subject: Box<Byte>) -> Box<Byte> {\n  let held = take subject\n  held\n}\n"))
+	f.Add([]byte("module generic.pair\n\nexport {\n  fn relay\n}\n\nfn relay(subject: Pair<Byte, Buffer>) -> Pair<Byte, Buffer> {\n  let held = borrow subject\n  held\n}\n"))
 	f.Add([]byte{0xff, 0xfe, '{', '}'})
 
 	f.Fuzz(func(t *testing.T, source []byte) {
@@ -317,6 +322,10 @@ func TestGeneratedRoundTrips(t *testing.T) {
 			lastFailure = fmt.Sprintf("case=%d changed comments\nsource=%q\ncanonical=%q", caseID, source, canonical)
 			return false
 		}
+		if !reflect.DeepEqual(semanticTokens(parsed.Tree), semanticTokens(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d changed token identity\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
 
 		invalid := generatedProgram(caseID, false)
 		first := session.Check(invalid).Diagnostics
@@ -335,6 +344,111 @@ func TestGeneratedRoundTrips(t *testing.T) {
 	if count != config.MaxCount {
 		t.Fatalf("generated property ran %d cases, want %d (seed=%d)", count, config.MaxCount, generationSeed)
 	}
+}
+
+// TestGeneratedLinearRoundTrips is the linear-surface counterpart of
+// TestGeneratedRoundTrips. A linear body cannot share a module with a match
+// body (core.mixed_body_versions), so the linear generator is a separate
+// module shape rather than an extra function inside generatedProgram.
+func TestGeneratedLinearRoundTrips(t *testing.T) {
+	const generationSeed int64 = 0x11ea40
+	count := 0
+	lastFailure := ""
+	property := func(caseID uint64) bool {
+		count++
+		source := generatedLinearProgram(caseID)
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			lastFailure = fmt.Sprintf("case=%d lost CST bytes\nsource=%q", caseID, source)
+			return false
+		}
+		if len(parsed.Diagnostics) != 0 {
+			lastFailure = fmt.Sprintf("case=%d did not parse\nsource=%q\ndiagnostics=%v", caseID, source, diagnosticIdentity(parsed.Diagnostics))
+			return false
+		}
+
+		canonical := syntax.Format(parsed.Tree)
+		reparsed := syntax.Parse(canonical)
+		if len(reparsed.Diagnostics) != 0 {
+			lastFailure = fmt.Sprintf("case=%d canonical form does not reparse\nsource=%q\ncanonical=%q\ndiagnostics=%v", caseID, source, canonical, diagnosticIdentity(reparsed.Diagnostics))
+			return false
+		}
+		if !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d is not a formatting fixed point\nsource=%q\ncanonical=%q\nsecond=%q", caseID, source, canonical, syntax.Format(reparsed.Tree))
+			return false
+		}
+		if !reflect.DeepEqual(semanticTokens(parsed.Tree), semanticTokens(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d changed token identity\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
+		if !reflect.DeepEqual(withoutSpans(parsed.Program), withoutSpans(reparsed.Program)) {
+			lastFailure = fmt.Sprintf("case=%d changed semantic order\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
+		if !reflect.DeepEqual(comments(parsed.Tree), comments(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d changed comments\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
+
+		// Spans legitimately move when source is reindented, so the invariant
+		// canonicalisation must preserve is the diagnostic code sequence.
+		first := diagnosticCodes(session.Check(source).Diagnostics)
+		second := diagnosticCodes(session.Check(canonical).Diagnostics)
+		if !reflect.DeepEqual(first, second) {
+			lastFailure = fmt.Sprintf("case=%d canonicalisation changed checking\nsource=%q\ncanonical=%q\nfirst=%v\nsecond=%v", caseID, source, canonical, first, second)
+			return false
+		}
+		return true
+	}
+
+	config := &quick.Config{MaxCount: 1000, Rand: rand.New(rand.NewSource(generationSeed))}
+	if err := quick.Check(property, config); err != nil {
+		t.Fatalf("generated linear property failed (seed=%d): %v\n%s", generationSeed, err, lastFailure)
+	}
+	if count != config.MaxCount {
+		t.Fatalf("generated linear property ran %d cases, want %d (seed=%d)", count, config.MaxCount, generationSeed)
+	}
+}
+
+// linearGeneratedTypes and linearGeneratedKinds span the Phase 02 linear
+// surface: every declared type shape the phase admits (leaf, generic, nested
+// generic, aggregate) crossed with every binding kind.
+var (
+	linearGeneratedTypes = []string{"Byte", "Buffer", "Box<Byte>", "Box<Box<Byte>>", "Pair<Byte, Buffer>"}
+	linearGeneratedKinds = []string{"", "take ", "borrow "}
+)
+
+// generatedLinearProgram emits a single-function linear module parameterised
+// over {declared type} x {binding kind} x {0,1,2,3 bindings}, with the same
+// separator and comment variation generatedProgram uses.
+func generatedLinearProgram(caseID uint64) []byte {
+	separator := " "
+	if caseID%2 == 1 {
+		separator = "\t"
+	}
+	declaredType := linearGeneratedTypes[caseID%uint64(len(linearGeneratedTypes))]
+	bindingKind := linearGeneratedKinds[(caseID/5)%uint64(len(linearGeneratedKinds))]
+	bindingCount := int((caseID / 15) % 4)
+	functionName := fmt.Sprintf("carry%d", caseID%967)
+
+	var source strings.Builder
+	if caseID%3 == 0 {
+		fmt.Fprintf(&source, "// generated linear case %d\n", caseID)
+	}
+	fmt.Fprintf(&source, "module%slinear.case%d\n\n", separator, caseID%971)
+	fmt.Fprintf(&source, "export%s{%s fn%s%s%s}\n\n", separator, separator, separator, functionName, separator)
+	fmt.Fprintf(&source, "fn%s%s(subject:%s%s)%s->%s%s%s{\n", separator, functionName, separator, declaredType, separator, separator, declaredType, separator)
+	result := "subject"
+	for index := 0; index < bindingCount; index++ {
+		name := fmt.Sprintf("hold%d", index)
+		if caseID%7 == 0 && index == 0 {
+			source.WriteString("// generated binding\n")
+		}
+		fmt.Fprintf(&source, "%slet%s%s%s=%s%s%s\n", separator, separator, name, separator, separator, bindingKind, result)
+		result = name
+	}
+	fmt.Fprintf(&source, "%s%s\n}\n", separator, result)
+	return []byte(source.String())
 }
 
 func generatedProgram(caseID uint64, exhaustive bool) []byte {
@@ -392,6 +506,29 @@ func diagnosticIdentity(diagnostics []diagnostic.Diagnostic) []string {
 	result := make([]string, len(diagnostics))
 	for index, problem := range diagnostics {
 		result[index] = fmt.Sprintf("%s:%d:%d", problem.Code, problem.Primary.Start, problem.Primary.End)
+	}
+	return result
+}
+
+func diagnosticCodes(diagnostics []diagnostic.Diagnostic) []string {
+	result := make([]string, len(diagnostics))
+	for index, problem := range diagnostics {
+		result[index] = problem.Code
+	}
+	return result
+}
+
+// semanticTokens projects the token identity the formatter must preserve:
+// every non-whitespace, non-EOF token in order. Fusing two identifiers into
+// one, or dropping one, changes this projection even when the result still
+// parses.
+func semanticTokens(tree syntax.Tree) []string {
+	var result []string
+	for _, token := range tree.Tokens {
+		if token.Kind == syntax.TokenWhitespace || token.Kind == syntax.TokenEOF {
+			continue
+		}
+		result = append(result, fmt.Sprintf("%v:%s", token.Kind, token.Text))
 	}
 	return result
 }
