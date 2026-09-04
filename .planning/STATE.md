@@ -1,18 +1,18 @@
 ---
 gsd_state_version: 1.0
 current_phase: 03
-current_phase_name: borrowed-views-and-cfg-lifetimes
+current_phase_name: Borrowed Views and CFG Lifetimes
 status: executing
-stopped_at: Completed 03-09-PLAN.md
-last_updated: "2026-09-04T16:43:57.098Z"
+stopped_at: Completed 03-10-PLAN.md
+last_updated: "2026-09-04T17:00:46.537Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: 2bde056ecb676a5956ca7eb31122bb1c326e2793
+state_head: a057063bb9a9a02846c65f5252ecaaa664c0c226
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 20
-  completed_plans: 19
+  completed_plans: 20
   percent: 33
 ---
 
@@ -29,8 +29,8 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 03 (borrowed-views-and-cfg-lifetimes) — READY TO EXECUTE
-Plan: 3 of 9
+Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
 Last activity: 2026-09-04 — Phase 03 execution started
 
@@ -72,6 +72,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 03-borrowed-views-and-cfg-lifetimes P07 | 130min | 3 tasks | 13 files |
 | Phase 03 P08 | 11 min | 2 tasks | 4 files |
 | Phase 03 P09 | 22 min | 3 tasks | 8 files |
+| Phase 03 P10 | 45 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: verifyBorrowedCorpus reuses 03-04/03-05's existing lane constructors unmodified rather than duplicating mutation logic — keeps the Phase 3 gate an assembly of already-proven parts and avoids breaking already-shipped regression tests
 - [Phase 03]: Guarded RecomputeOrigin's OpBorrowExclusive branch first-seen (symmetric with OpBorrowShared), closing CR-01/OWN-04's impossible-half gap — The hop nearest the returned place must decide the derived access mode; an earlier hop further from the return overwriting it was the exact defect 03-VERIFICATION.md found reachable through the shipped binary
 - [Phase 03]: ValidatePublished recomputes an origin unconditionally for every function, refusing publication of an undeclared borrow-derived return with core.origin_omitted; the gate lives entirely on the publication path (ValidatePublished/interface export), never restored in check.go's admission path.
+- [Phase 03]: Promoted RecomputeOriginPerReturn to the package's sole backward-walk site; RecomputeOrigin is now a pure conservative combiner over it, with AccessConflicting as an undeclarable sentinel for disagreeing arms.
 
 ### Pending Todos
 
@@ -156,6 +158,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T15:52:39.218Z
-Stopped at: Completed 03-09-PLAN.md
+Last session: 2026-09-04T17:00:46.475Z
+Stopped at: Completed 03-10-PLAN.md
 Resume file: None

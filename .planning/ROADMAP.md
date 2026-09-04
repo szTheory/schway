@@ -79,7 +79,9 @@ native evidence, and finally the bounded agent/human feedback service.
 
 **Scope note**: OWN-03 is scoped to **acyclic** (branch-only) CFG edges this phase. The language has no loop or recursion construct and this phase adds neither; loop-carried loan liveness is an explicit Phase 4+ follow-on.
 
-**Plans**: 10 plans (03-01..03-07 executed; 03-08 and 03-09 are executed gap-closure plans; re-verification found a new multi-arm instance of the same origin-recomputation defect class — 03-10 is the third-round gap-closure plan)
+**Plans**: 10/10 plans executed (03-01..03-07 executed; 03-08 and 03-09 are executed gap-closure plans; re-verification found a new multi-arm instance of the same origin-recomputation defect class — 03-10 is the third-round gap-closure plan)
+
+- [x] 03-10-PLAN.md
 
 - [x] 03-08-PLAN.md
 - [x] 03-09-PLAN.md
@@ -215,7 +217,7 @@ changes that cost nothing structurally:
 |-------|----------------|--------|-----------|
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
-| 3. Borrowed Views and CFG Lifetimes | 9/9 | In Progress|  |
+| 3. Borrowed Views and CFG Lifetimes | 10/10 | In Progress|  |
 | 4. Fallible Resources and C Boundary | 0/TBD | Not started | - |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |
