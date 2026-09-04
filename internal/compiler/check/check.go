@@ -403,33 +403,47 @@ type loanLivenessResult struct {
 	work   int
 }
 
-// derivePlaceLoans builds, once per function in a single forward pass over
-// every block's operations concatenated in a stable order, the place ID of
-// every loan's own view and every place transitively copied or reborrowed
-// from it. Built once globally (not rebuilt per block) so a block-local
-// backward scan can look up whether a place it references is a live view of
-// some loan without reconstructing the whole derivation chain per block --
-// this single linear pass is the bounded cost that replaces the old scan's
-// per-binding growing-list copy (the actual Θ(N²) source, per 03-RESEARCH
-// Q2(b)).
-// A place is kept as a list, not a single loan ID, because a reborrow
-// (`let review = borrow view`) is simultaneously a live view of its OWN new
-// loan AND every loan its source place already carried — the same
-// transitive-liveness law discoverLoanLastUses' inheritance encodes, here
-// expressed over place IDs instead of binding names.
-func derivePlaceLoans(operations []core.LinearOperation) map[string][]string {
-	placeLoans := make(map[string][]string, len(operations))
+// placeLoanChain is the O(1)-per-operation derivation this pass builds once
+// per function, in a single forward pass over every block's operations
+// concatenated in a stable order. A reborrow (`let review = borrow view`)
+// is simultaneously a live view of its OWN new loan AND every loan its
+// source place already carried -- the same transitive-liveness law
+// discoverLoanLastUses' inheritance encodes, here expressed over place IDs
+// instead of binding names. Rather than materializing that full ancestry as
+// a list per place (an append-copy per operation that reintroduces exactly
+// the Θ(N²) blowup this pass replaces, D-02-03/Q2(b)), it is kept as a
+// linked chain: latestLoan[placeID] names only the FRESHEST loan a place is
+// a view of, and parentLoan[loanID] names the loan immediately BEFORE it in
+// the reborrow chain (absent for a loan with no reborrow ancestor). Walking
+// the chain is deferred to blockLoanLiveness's own backward scan, which
+// short-circuits the moment it reaches an already-recorded loan -- so the
+// chain is walked in full at most ONCE per function (each loan visited and
+// recorded exactly once across the whole block), bounding total per-block
+// work to O(operations), not O(operations × chain depth).
+type placeLoanChain struct {
+	latestLoan map[string]string
+	parentLoan map[string]string
+}
+
+func derivePlaceLoans(operations []core.LinearOperation) placeLoanChain {
+	chain := placeLoanChain{
+		latestLoan: make(map[string]string, len(operations)),
+		parentLoan: make(map[string]string, len(operations)),
+	}
 	for _, operation := range operations {
-		var loans []string
-		loans = append(loans, placeLoans[operation.SourceID]...)
+		inherited := chain.latestLoan[operation.SourceID]
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
-			loans = append(loans, operation.LoanID)
+			chain.parentLoan[operation.LoanID] = inherited
+			if operation.TargetID != "" {
+				chain.latestLoan[operation.TargetID] = operation.LoanID
+			}
+			continue
 		}
-		if len(loans) > 0 && operation.TargetID != "" {
-			placeLoans[operation.TargetID] = loans
+		if inherited != "" && operation.TargetID != "" {
+			chain.latestLoan[operation.TargetID] = inherited
 		}
 	}
-	return placeLoans
+	return chain
 }
 
 // loanBlockUse is one loan's last reference found within a single block by
@@ -441,30 +455,39 @@ type loanBlockUse struct {
 }
 
 // blockLoanLiveness is the per-block transfer function: given a block's
-// operations in program order, the function-global place->loan derivation
+// operations in program order, the function-global place->loan chain
 // (derivePlaceLoans), and the set of loans already known live on exit
 // (liveOut, the union of every successor's live-in set), it walks the
-// operations BACKWARD. A reference to a place that resolves to a loan marks
-// that loan live and records the reference as its most-recent (first found,
-// walking backward) use; reaching the loan's own birth operation
-// (OpBorrowShared/OpBorrowExclusive) removes it from the live set, since
-// nothing earlier in program order can be "after" the loan's creation. The
-// returned live set is what must be live entering the block.
-func blockLoanLiveness(operations []core.LinearOperation, placeLoan map[string][]string, liveOut map[string]bool) ([]loanBlockUse, map[string]bool) {
+// operations BACKWARD. A reference to a place walks that place's loan chain
+// from its freshest loan upward, marking each unrecorded ancestor live and
+// recording the reference as its most-recent (first found, walking
+// backward) use, stopping as soon as an already-recorded loan is reached
+// (the amortized-linear short-circuit). Reaching a loan's own birth
+// operation (OpBorrowShared/OpBorrowExclusive) removes it from the live
+// set, since nothing earlier in program order can be "after" its creation.
+// The returned live set is what must be live entering the block. The
+// returned work count is one unit per operation inspected PLUS one unit per
+// chain-ancestor step actually walked -- honest per-operation counting
+// (D-05), not a flat per-block unit: a reintroduced unbounded chain walk
+// (the Θ(N²) shape this pass replaces) would show up here as work growing
+// faster than operation count, which TestReborrowChainWorkIsLinear asserts
+// directly against.
+func blockLoanLiveness(operations []core.LinearOperation, chain placeLoanChain, liveOut map[string]bool) ([]loanBlockUse, map[string]bool, int) {
 	live := make(map[string]bool, len(liveOut))
 	for loan := range liveOut {
 		live[loan] = true
 	}
 	recorded := make(map[string]bool, len(live))
 	var uses []loanBlockUse
+	work := 0
 	for index := len(operations) - 1; index >= 0; index-- {
+		work++ // one unit per operation inspected
 		operation := operations[index]
-		for _, loan := range placeLoan[operation.SourceID] {
+		for loan := chain.latestLoan[operation.SourceID]; loan != "" && !recorded[loan]; loan = chain.parentLoan[loan] {
+			work++ // one unit per chain-ancestor step walked
 			live[loan] = true
-			if !recorded[loan] {
-				recorded[loan] = true
-				uses = append(uses, loanBlockUse{loanID: loan, operationIndex: index, operationID: operation.ID})
-			}
+			recorded[loan] = true
+			uses = append(uses, loanBlockUse{loanID: loan, operationIndex: index, operationID: operation.ID})
 		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			if !recorded[operation.LoanID] {
@@ -474,7 +497,7 @@ func blockLoanLiveness(operations []core.LinearOperation, placeLoan map[string][
 			delete(live, operation.LoanID)
 		}
 	}
-	return uses, live
+	return uses, live, work
 }
 
 func loanSetsEqual(a, b map[string]bool) bool {
@@ -567,7 +590,8 @@ func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec) (loanLivenes
 				liveOut[loan] = true
 			}
 		}
-		_, newLiveIn := blockLoanLiveness(block.operations, placeLoan, liveOut)
+		_, newLiveIn, transferWork := blockLoanLiveness(block.operations, placeLoan, liveOut)
+		work += transferWork
 		if !loanSetsEqual(liveIn[id], newLiveIn) {
 			liveIn[id] = newLiveIn
 			for _, predecessor := range predecessors[id] {
@@ -637,7 +661,7 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 			}
 		}
 
-		uses, _ := blockLoanLiveness(block.operations, placeLoan, liveOut)
+		uses, _, _ := blockLoanLiveness(block.operations, placeLoan, liveOut)
 		for _, use := range uses {
 			if liveOut[use.loanID] {
 				continue // survives past this block; its endpoint lives elsewhere

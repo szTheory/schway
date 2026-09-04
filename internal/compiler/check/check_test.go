@@ -347,6 +347,78 @@ func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
 	}
 }
 
+// reborrowChainOperations builds a single block's worth of operations
+// forming a chain of n reborrows-of-reborrows (op[i] reborrows op[i-1]'s
+// own target), the exact shape that produced D-02-03's recorded quadratic
+// regression: each successive loan's chain ancestry grows by one, so a
+// derivation that copies its ancestor list per operation is Θ(N²) in n.
+func reborrowChainOperations(n int) []core.LinearOperation {
+	operations := make([]core.LinearOperation, n)
+	source := "chain:place:0"
+	for index := 0; index < n; index++ {
+		target := fmt.Sprintf("chain:place:%d", index+1)
+		operations[index] = core.LinearOperation{
+			ID: fmt.Sprintf("chain:op:%d", index), Kind: core.OpBorrowShared,
+			SourceID: source, TargetID: target, LoanID: fmt.Sprintf("chain:loan:%d", index),
+		}
+		source = target
+	}
+	return operations
+}
+
+// TestLivenessWorkScale is 03-03-03's honest-work series (D-05/D-02-03):
+// the fixpoint's counted work over a reborrow chain of 10, 100, 1,000, and
+// 10,000 operations must grow within a linear factor of operation count,
+// not quadratically. The bound (4*n+4) is re-derived here, not bumped: one
+// unit per transfer-function evaluation (one per block, here always one
+// block so a constant), plus at most one unit per operation for the
+// backward scan's own loan-chain walk -- amortized O(1) per operation since
+// blockLoanLiveness's recorded-guard stops each chain walk the instant it
+// reaches an already-recorded loan (see derivePlaceLoans' doc comment), so
+// the total chain-walk work across the whole block is bounded by the
+// number of distinct loans, not by chain depth times operation count.
+func TestLivenessWorkScale(t *testing.T) {
+	for _, n := range []int{10, 100, 1_000, 10_000} {
+		block := cfgBlockSpec{id: "chain:block:straight", operations: reborrowChainOperations(n), successors: nil}
+		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block})
+		if err != nil {
+			t.Fatalf("n=%d: unexpected acyclicity error: %v", n, err)
+		}
+		if result.work == 0 {
+			t.Fatalf("n=%d: zero counted work", n)
+		}
+		if bound := 4*n + 4; result.work > bound {
+			t.Fatalf("n=%d: work=%d exceeded the re-derived linear bound %d", n, result.work, bound)
+		}
+	}
+}
+
+// TestReborrowChainWorkIsLinear asserts the growth RATIO directly (not just
+// a fixed bound): doubling-and-more operation counts must not multiply
+// counted work by more than a small constant, which a reintroduced
+// quadratic scan would violate (10x operations would cost ~100x work, not
+// ~10x).
+func TestReborrowChainWorkIsLinear(t *testing.T) {
+	series := []int{10, 100, 1_000, 10_000}
+	work := make([]int, len(series))
+	for index, n := range series {
+		block := cfgBlockSpec{id: "chain:block:ratio", operations: reborrowChainOperations(n), successors: nil}
+		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block})
+		if err != nil {
+			t.Fatalf("n=%d: unexpected acyclicity error: %v", n, err)
+		}
+		work[index] = result.work
+	}
+	for index := 1; index < len(series); index++ {
+		operationRatio := float64(series[index]) / float64(series[index-1])
+		workRatio := float64(work[index]) / float64(work[index-1])
+		if workRatio > operationRatio*2 {
+			t.Fatalf("n=%d->%d: operation count grew %.1fx but counted work grew %.1fx (%d->%d) -- looks quadratic",
+				series[index-1], series[index], operationRatio, workRatio, work[index-1], work[index])
+		}
+	}
+}
+
 func TestOwnershipWorkSeries(t *testing.T) {
 	for _, operations := range []int{10, 100, 1_000, 10_000} {
 		bindings := make([]ast.Binding, operations)
