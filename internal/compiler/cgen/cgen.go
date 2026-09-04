@@ -241,12 +241,20 @@ func emitLinear(function core.Function) (string, error) {
 				return "", fmt.Errorf("operation %q has invalid target", operation.ID)
 			}
 			label := "copy"
+			marker := ""
 			if operation.Kind == core.OpMove {
 				label = "authority transfer"
+				// The backend causality control (D-02-07) locates its
+				// mutation site by this stable generated marker instead of
+				// an exact source-derived line, so renaming a fixture
+				// binding or reindenting the emitter can no longer turn the
+				// control into an opaque operational failure. See
+				// session.OwnedBackendMutationRunner.
+				marker = " /* lang:mutation-site */"
 			} else if operation.Kind == core.OpBorrowShared {
 				label = "shared borrow representation"
 			}
-			fmt.Fprintf(&out, "  %s %s = %s; /* %s: %s */\n", typeName, locals[target.ID], locals[source.ID], label, operation.ID)
+			fmt.Fprintf(&out, "  %s %s = %s; /* %s: %s */%s\n", typeName, locals[target.ID], locals[source.ID], label, operation.ID, marker)
 			fmt.Fprintf(&out, "  (void)%s;\n", locals[target.ID])
 			eventKind := "value.copied"
 			if operation.Kind == core.OpMove {

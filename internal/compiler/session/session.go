@@ -73,16 +73,38 @@ func NewOwnedBackendMutationRunner(runner native.Runner) *OwnedBackendMutationRu
 	return &OwnedBackendMutationRunner{runner: runner}
 }
 
+// mutationMarker is the stable generated seam cgen emits at the single
+// owned-transfer value site (D-02-07). Locating the mutation by this marker,
+// rather than the previous exact source-derived line
+// ("LANG_BUFFER lang_value_delivered = ... op:0"), means renaming a fixture
+// binding or reindenting the emitter cannot silently turn this control into
+// an opaque operational failure — the seam survives both. The fail-closed
+// exact-one requirement is unchanged: the marker must appear on exactly one
+// line, or the control refuses to run rather than mutating an ambiguous or
+// absent site.
+const mutationMarker = "/* lang:mutation-site */"
+
 func (r *OwnedBackendMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
-	const site = "  LANG_BUFFER lang_value_delivered = lang_value_buffer; /* authority transfer: s1:owned.transfer:fn:relay:op:0 */\n"
-	const mutation = site + "  lang_value_delivered.bytes[0] ^= 0xffu; /* control: backend runtime causality */\n"
-	if strings.Count(cSource, site) != 1 {
-		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("owned transfer mutation site count is %d, want 1", strings.Count(cSource, site))}
+	lines := strings.Split(cSource, "\n")
+	matched := -1
+	for index, line := range lines {
+		if strings.Contains(line, mutationMarker) {
+			if matched != -1 {
+				return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("owned transfer mutation marker count is >1, want 1")}
+			}
+			matched = index
+		}
 	}
+	if matched == -1 {
+		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("owned transfer mutation marker count is 0, want 1")}
+	}
+	mutatedLine := lines[matched] + "\n  lang_value_delivered.bytes[0] ^= 0xffu; /* control: backend runtime causality */"
+	lines[matched] = mutatedLine
+	mutated := strings.Join(lines, "\n")
 	r.mu.Lock()
 	r.optimizations = append(r.optimizations, optimization)
 	r.mu.Unlock()
-	return r.runner.Run(ctx, strings.Replace(cSource, site, mutation, 1), optimization, inputs)
+	return r.runner.Run(ctx, mutated, optimization, inputs)
 }
 
 func (r *OwnedBackendMutationRunner) Optimizations() []string {

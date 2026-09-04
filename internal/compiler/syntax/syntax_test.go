@@ -233,6 +233,36 @@ func TestArmBodyRoundTrips(t *testing.T) {
 	}
 }
 
+// TestArmBodyLimits is 03-01-03's syntax falsifier for T-03-01: a match
+// exceeding the declared arm limit is rejected fail-closed with a bounded,
+// stable diagnostic rather than accepted or run to exhaustion.
+func TestArmBodyLimits(t *testing.T) {
+	var arms strings.Builder
+	const overCap = 100
+	for i := 0; i < overCap; i++ {
+		fmt.Fprintf(&arms, "  Alt%d => { let held = take flag\n  held\n  }\n", i)
+	}
+	var alternatives strings.Builder
+	for i := 0; i < overCap; i++ {
+		fmt.Fprintf(&alternatives, "  | Alt%d\n", i)
+	}
+	source := []byte("module owned.arm_limit\n\nexport {\n  type Wide\n  fn pick\n}\n\ndata Wide =\n" +
+		alternatives.String() + "\nfn pick(flag: Wide) -> Wide {\n  match flag {\n" + arms.String() + "  }\n}\n")
+	parsed := syntax.Parse(source)
+	found := false
+	for _, d := range parsed.Diagnostics {
+		if d.Code == "syntax.arm_limit" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected syntax.arm_limit among diagnostics, got %v", diagnosticIdentity(parsed.Diagnostics))
+	}
+	if len(parsed.Program.Funcs) != 1 || len(parsed.Program.Funcs[0].Body.Arms) > overCap {
+		t.Fatalf("arm cap did not bound the parsed arm count: got %d", len(parsed.Program.Funcs[0].Body.Arms))
+	}
+}
+
 func TestOwnershipRecovery(t *testing.T) {
 	source := []byte(`module owned.recovery
 export { fn broken fn preserved }

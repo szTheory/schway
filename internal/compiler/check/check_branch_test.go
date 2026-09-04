@@ -1,8 +1,11 @@
 package check_test
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/ast"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -169,3 +172,48 @@ fn toggle(flag: Switch) -> Switch {
 	}
 }
 
+// TestArmBodyLimits exercises check.go's maxBlocksPerFunction cap directly
+// via a synthetic ast.Program that bypasses the parser's own maxArmsPerMatch
+// cap (the two caps compose so that maxBlocksPerFunction is unreachable
+// from real source today — see its doc comment in check.go, D-10). Rejected
+// fail-closed with check.arm_body_limit, not truncated or accepted.
+func TestArmBodyLimits(t *testing.T) {
+	const overCap = 130
+	alternatives := make([]ast.Alternative, overCap)
+	arms := make([]ast.MatchArm, overCap)
+	for index := 0; index < overCap; index++ {
+		name := fmt.Sprintf("Alt%d", index)
+		alternatives[index] = ast.Alternative{Name: name}
+		arms[index] = ast.MatchArm{
+			Pattern: name,
+			Body: &ast.LinearBody{
+				Bindings: []ast.Binding{{Name: "held", RHS: ast.RHS{Kind: "take", Source: "flag"}}},
+				Result:   "held",
+			},
+		}
+	}
+	program := ast.Program{
+		Module:  "owned.arm_limit",
+		Exports: []ast.Export{{Kind: "type", Name: "Wide"}, {Kind: "fn", Name: "pick"}},
+		Data:    []ast.DataDecl{{Name: "Wide", Alternatives: alternatives}},
+		Funcs: []ast.FuncDecl{{
+			Name:       "pick",
+			Parameter:  ast.Parameter{Name: "flag", Type: ast.TypeRef{Constructor: "Wide"}},
+			ReturnType: ast.TypeRef{Constructor: "Wide"},
+			Body:       ast.Body{MatchExpr: ast.MatchExpr{Scrutinee: "flag", Arms: arms}},
+		}},
+	}
+	result := check.Program(program)
+	found := false
+	for _, diagnostic := range result.Diagnostics {
+		if diagnostic.Code == "check.arm_body_limit" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected check.arm_body_limit among diagnostics, got %+v", result.Diagnostics)
+	}
+	if len(result.Program.Functions) != 0 {
+		t.Fatalf("a capped function must not admit into the program: %+v", result.Program.Functions)
+	}
+}

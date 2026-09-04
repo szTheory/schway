@@ -281,7 +281,65 @@ func (v *validator) linear(function *core.Function) bool {
 			return false
 		}
 	}
+	if len(linear.Blocks) > 0 || len(linear.Edges) > 0 {
+		if !v.blocksAndEdges(function, operationIDs) {
+			return false
+		}
+	}
 	return v.replay(function, types, places)
+}
+
+// blocksAndEdges independently validates the Phase 3 CFG facts: every block
+// and edge ID is unique and non-empty, every block's OperationIDs and every
+// edge's endpoints resolve into facts this function already declared, and
+// every operation ID is claimed by exactly one block (an operation that
+// belongs to no block, or to two, is rejected rather than silently ignored).
+// This is deliberately the same "unique + referential closure" shape as
+// every other ordinal-bearing slice in this file (types/places/operations),
+// applied to the two new slices T-03-01/T-03-04 introduce.
+func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[string]struct{}) bool {
+	linear := function.Linear
+	blockIDs := make(map[string]struct{}, len(linear.Blocks))
+	claimedOperations := make(map[string]struct{}, len(linear.Operations))
+	for _, block := range linear.Blocks {
+		if !v.unique(blockIDs, block.ID, "core.duplicate_block_id") {
+			return false
+		}
+		for _, opID := range block.OperationIDs {
+			if _, ok := operationIDs[opID]; !v.check(ok, "core.unknown_operation_reference", opID) {
+				return false
+			}
+			if _, already := claimedOperations[opID]; !v.check(!already, "core.duplicate_operation_id", opID) {
+				return false
+			}
+			claimedOperations[opID] = struct{}{}
+		}
+	}
+	for _, operation := range linear.Operations {
+		if _, claimed := claimedOperations[operation.ID]; !v.check(claimed, "core.unknown_block", operation.ID) {
+			return false
+		}
+	}
+	edgeIDs := make(map[string]struct{}, len(linear.Edges))
+	for _, edge := range linear.Edges {
+		if !v.unique(edgeIDs, edge.ID, "core.duplicate_edge_id") {
+			return false
+		}
+		if _, ok := blockIDs[edge.FromBlockID]; !v.check(ok, "core.unknown_block", edge.FromBlockID) {
+			return false
+		}
+		if _, ok := blockIDs[edge.ToBlockID]; !v.check(ok, "core.unknown_block", edge.ToBlockID) {
+			return false
+		}
+	}
+	for _, block := range linear.Blocks {
+		for _, successor := range block.Successors {
+			if _, ok := blockIDs[successor]; !v.check(ok, "core.unknown_block", successor) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (v *validator) replay(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
