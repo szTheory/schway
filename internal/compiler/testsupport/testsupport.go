@@ -18,7 +18,17 @@ import (
 // those production bounds because CLI tests legitimately capture whole `--json
 // verify` corpora, but it is still a hard ceiling: a runaway child cannot
 // exhaust the test process.
-const MaxCLIStreamBytes = 8 << 20
+//
+// D-02-06: tightened from 8 MiB (originally chosen for "whole verify-corpus
+// documents" but never measured against one) to 1 MiB. Instrumenting every
+// test-support spawn across the Phase 1/2/3 suites (including the largest
+// `--json verify testdata/phase3` documents this repo currently produces,
+// and the 1 MiB `TestCLISourceByteLimitBoundary`/`TestVerifyCorpusSourceByteLimitBoundary`
+// fixtures at their own boundary) measured a maximum captured stream in the
+// low tens of KB -- 1 MiB keeps a wide margin above every measured
+// high-water mark while remaining a real fail-closed ceiling, not the
+// arbitrary ~4,800x-oversized bound D-02-06 named.
+const MaxCLIStreamBytes = 1 << 20
 
 // BuildCLITimeout and RunCLITimeout give every spawn a deadline so a hung
 // child fails with a typed timeout instead of hanging the whole test binary.
