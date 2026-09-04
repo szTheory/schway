@@ -254,6 +254,34 @@ func TestReservedSetsCoverTheirOwnNamespace(t *testing.T) {
 	}
 }
 
+// TestNativeIdentifiersRemainCollisionFree is the direct falsifier for D-06 /
+// D-02-05. C17 section 7.1.3 reserves to the implementation every ordinary
+// identifier that contains a double underscore anywhere, not only ones that
+// begin with one. A collision suffix spelled "__LANG_" would therefore hand
+// out a reserved identifier on every actual collision. This test forces a
+// real collision (the preferred name is pre-registered as already used, and
+// is also present in the reserved set alongside every fixed name) and
+// asserts that no allocated candidate — across every category the two
+// emitters use and both confined namespaces (cName and cLocal) — ever
+// contains "__".
+func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
+	doubleUnderscore := regexp.MustCompile(`__`)
+	reserved := append(append([]string{}, cgen.MatchFixedNames...), cgen.LinearFixedNames...)
+	categories := []string{"type", "alternative", "function", "parameter", "type_name", "place"}
+	for _, preferred := range []string{cgen.CName("thing"), cgen.CLocal("thing")} {
+		for _, category := range categories {
+			forcedCollision := append(append([]string{}, reserved...), preferred)
+			got := cgen.AllocateFrom(forcedCollision, preferred, category, 0)
+			if got == preferred {
+				t.Fatalf("allocate(%q, %q) did not detect the forced collision", preferred, category)
+			}
+			if doubleUnderscore.MatchString(got) {
+				t.Errorf("allocate(%q, %q) = %q contains a reserved double underscore (C17 7.1.3)", preferred, category, got)
+			}
+		}
+	}
+}
+
 // TestIdentifierPrefixInvariance is the direct falsifier for property 1. It
 // fails if cName stops uppercasing or loses its prefix, or if cLocal loses its
 // prefix, or if the collision suffix moves an identifier out of its namespace.

@@ -352,12 +352,25 @@ func newCNames(reserved ...string) *cNames {
 	return result
 }
 
+// allocate returns preferred unchanged when it is not already taken, or a
+// deterministic collision-suffixed candidate otherwise. INVARIANT (D-06 /
+// D-02-05, enforced by TestNativeIdentifiersRemainCollisionFree): the suffix
+// spelling must never introduce two adjacent underscores anywhere in the
+// result. C17 section 7.1.3 reserves to the implementation every identifier
+// that contains a double underscore, in any position, in the ordinary
+// identifier namespace — not only identifiers that begin with one. A suffix
+// built as "__LANG_" would therefore hand out reserved names on every actual
+// collision, in generated code a conforming implementation is permitted to
+// treat specially. "_LANG_" (a single leading underscore) has no double
+// underscore and stays inside the confined "LANG_"/"lang_value_" namespaces
+// documented above, so it is never reserved and never re-issues a reserved
+// name.
 func (n *cNames) allocate(preferred, category string, ordinal int) string {
 	if _, exists := n.used[preferred]; !exists {
 		n.used[preferred] = struct{}{}
 		return preferred
 	}
-	base := preferred + "__LANG_" + strings.ToUpper(category) + "_" + strconv.Itoa(ordinal)
+	base := preferred + "_LANG_" + strings.ToUpper(category) + "_" + strconv.Itoa(ordinal)
 	for attempt, candidate := 0, base; ; attempt, candidate = attempt+1, base+"_"+strconv.Itoa(attempt) {
 		if _, exists := n.used[candidate]; !exists {
 			n.used[candidate] = struct{}{}
