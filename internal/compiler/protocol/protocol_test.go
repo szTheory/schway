@@ -1,6 +1,7 @@
 package protocol_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -15,7 +16,10 @@ func TestOwnershipProjectionIdentityParity(t *testing.T) {
 	result.Diagnostics = []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs("ownership.use_after_move", diagnostic.Span{Start: 1, End: 2}, "moved value", nil, diagnostic.Repair{Kind: "use_transfer_target"})}
 	result.Executions = []execution.Execution{{Schema: execution.Schema1, Outcome: execution.Outcome{Kind: "returned", Value: "01020304"}, Events: []execution.Event{{Schema: execution.Schema1, ID: "owned:event:0", Kind: "value.transferred", FunctionID: "owned:fn", SourcePlace: "owned:p0", TargetPlace: "owned:p1", TypeID: "owned:t0"}}, LiveResources: []string{}}}
 	machine := result.Finalize()
-	human := protocol.Human(result)
+	human, err := protocol.Human(result)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if machine.Schema != "lang.command/0" || !strings.Contains(human, machine.ID) || !strings.Contains(human, machine.Diagnostics[0].ID) || !strings.Contains(human, machine.Executions[0].Events[0].ID) {
 		t.Fatalf("human/JSON ownership identities diverged: result=%+v human=%q", machine, human)
 	}
@@ -47,5 +51,39 @@ func TestResultIdentitySemanticSensitivity(t *testing.T) {
 	outcomeChanged.Executions[0].Outcome.Value = "Off"
 	if got := outcomeChanged.Finalize().ID; got == first.ID {
 		t.Fatalf("semantic outcome change retained result ID %s", got)
+	}
+}
+
+// TestHumanJSONProjectionParity is D-02-08's falsifier: Human and JSON share
+// the identical self-consistency guarantee. Both converge their own
+// output_bytes metric against the actual rendered length before returning,
+// and both fail the same way (an error, not a silently unconverged output)
+// when that convergence loop cannot stabilize. Before this fix, Human's
+// loop fell through to an unconditional return on its fourth attempt even
+// if length had not stabilized, while JSON's identical loop returned an
+// error in that same case -- a caller comparing the two projections'
+// self-reported sizes against reality could see JSON refuse to serve a
+// broken result while Human silently served one.
+func TestHumanJSONProjectionParity(t *testing.T) {
+	for _, count := range []int{0, 1, 5, 20, 200} {
+		result := protocol.New("check", protocol.StatusInvalid)
+		for index := 0; index < count; index++ {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("ownership.use_after_move", diagnostic.Span{Start: index, End: index + 1}, "moved value"))
+		}
+		human, err := protocol.Human(result)
+		if err != nil {
+			t.Fatalf("count=%d: Human failed to converge: %v", count, err)
+		}
+		if !strings.Contains(human, fmt.Sprintf("output_bytes=%d", len(human))) {
+			t.Fatalf("count=%d: Human's self-reported output_bytes does not match its own rendered length: %q", count, human)
+		}
+
+		encoded, err := protocol.JSON(result)
+		if err != nil {
+			t.Fatalf("count=%d: JSON failed to converge: %v", count, err)
+		}
+		if !strings.Contains(string(encoded), fmt.Sprintf(`"output_bytes":%d`, len(encoded))) {
+			t.Fatalf("count=%d: JSON's self-reported output_bytes does not match its own rendered length: %s", count, encoded)
+		}
 	}
 }

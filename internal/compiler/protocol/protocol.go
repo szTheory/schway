@@ -54,6 +54,25 @@ type InterfaceSummary struct {
 	Functions  []InterfaceFunctionAnswer `json:"functions"`
 }
 
+// DebugMapEntry is one joined lineage fact from the debugmap package's
+// bounded debug-lineage experiment (D-01..D-04): a source span joined to a
+// core ID and an operation/point identity, or an honest not_captured /
+// optimized_out report when the compiler genuinely has no value.
+type DebugMapEntry struct {
+	ID           string `json:"id"`
+	CoreID       string `json:"core_id,omitempty"`
+	OperationID  string `json:"operation_id,omitempty"`
+	PointID      string `json:"point_id,omitempty"`
+	Kind         string `json:"kind,omitempty"`
+	Availability string `json:"availability"`
+}
+
+// DebugMapSummary is the `debug-map` command projection.
+type DebugMapSummary struct {
+	Schema  string          `json:"schema"`
+	Entries []DebugMapEntry `json:"entries"`
+}
+
 type Lane struct {
 	Schema         string   `json:"schema"`
 	ID             string   `json:"id"`
@@ -77,6 +96,7 @@ type Result struct {
 	Executions      []interp.Execution      `json:"executions"`
 	Evidence        *EvidenceSummary        `json:"evidence,omitempty"`
 	Interface       *InterfaceSummary       `json:"interface,omitempty"`
+	DebugMap        *DebugMapSummary        `json:"debug_map,omitempty"`
 	Lanes           []Lane                  `json:"lanes"`
 	ExpectedEscapes []string                `json:"expected_escapes,omitempty"`
 	Metrics         Metrics                 `json:"metrics"`
@@ -101,6 +121,7 @@ func (result Result) Finalize() Result {
 		ExecutionDigests []string
 		EvidenceID       string
 		InterfaceID      string
+		DebugMapID       string
 		LaneIDs          []string
 		ExpectedEscapes  []string `json:",omitempty"`
 	}{
@@ -130,6 +151,11 @@ func (result Result) Finalize() Result {
 		interfaceSum := sha256.Sum256(encodedInterface)
 		identity.InterfaceID = hex.EncodeToString(interfaceSum[:12])
 	}
+	if result.DebugMap != nil {
+		encodedDebugMap, _ := json.Marshal(result.DebugMap)
+		debugMapSum := sha256.Sum256(encodedDebugMap)
+		identity.DebugMapID = hex.EncodeToString(debugMapSum[:12])
+	}
 	for _, lane := range result.Lanes {
 		identity.LaneIDs = append(identity.LaneIDs, lane.ID+":"+lane.Status)
 	}
@@ -155,16 +181,27 @@ func JSON(result Result) ([]byte, error) {
 	return nil, fmt.Errorf("command output size did not converge")
 }
 
-func Human(result Result) string {
+// Human renders result's human-readable projection, converging OutputBytes
+// against the rendered length exactly like JSON does (D-02-08): both loops
+// share the same shape (up to 4 attempts, OutputBytes fed back in), and
+// both fail the same way -- an error, never a silently unconverged output
+// bytes count -- when a result's projected size does not stabilize within
+// that budget. Before this fix, Human unconditionally returned whatever the
+// fourth attempt produced even if it had not converged, while JSON reported
+// the same condition as an error; a caller comparing the two projections'
+// self-reported output_bytes against their own actual lengths could
+// silently observe a mismatch from the human side that the JSON side would
+// have refused to serve.
+func Human(result Result) (string, error) {
 	result = result.Finalize()
 	for attempts := 0; attempts < 4; attempts++ {
 		output := human(result)
 		if result.Metrics.OutputBytes == len(output) {
-			return output
+			return output, nil
 		}
 		result.Metrics.OutputBytes = len(output)
 	}
-	return human(result)
+	return "", fmt.Errorf("command output size did not converge")
 }
 
 func human(result Result) string {
@@ -202,6 +239,12 @@ func human(result Result) string {
 		fmt.Fprintf(&output, "%s module=%s core_digest=%s\n", result.Interface.Schema, result.Interface.ModuleID, result.Interface.CoreDigest)
 		for _, function := range result.Interface.Functions {
 			fmt.Fprintf(&output, "  %s %s paths=%v access=%s\n", function.ID, function.Name, function.Paths, function.Access)
+		}
+	}
+	if result.DebugMap != nil {
+		fmt.Fprintf(&output, "%s entries=%d\n", result.DebugMap.Schema, len(result.DebugMap.Entries))
+		for _, entry := range result.DebugMap.Entries {
+			fmt.Fprintf(&output, "  %s kind=%s availability=%s\n", entry.ID, entry.Kind, entry.Availability)
 		}
 	}
 	for _, lane := range result.Lanes {

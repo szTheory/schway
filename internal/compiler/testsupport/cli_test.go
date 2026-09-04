@@ -480,6 +480,73 @@ func TestBranchFixturesThroughCLI(t *testing.T) {
 	}
 }
 
+// TestVerifyPhase3CLI is Task 03-07-02's shipped-binary falsifier (D-11):
+// `--json verify testdata/phase3` through the built binary reports every
+// Phase 3 control ID and status pass, matching the in-process
+// TestVerifyPhase3ControlsAndWork assertion.
+func TestVerifyPhase3CLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	machine := testsupport.RunCLI(t, binary, nil, "--json", "verify", testsupport.ProjectPath("testdata", "phase3"))
+	if machine.Exit != 0 || len(machine.Stderr) != 0 {
+		t.Fatalf("Phase 3 verify CLI failed: %+v", machine)
+	}
+	var result protocol.Result
+	if err := json.Unmarshal(machine.Stdout, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != protocol.StatusPass {
+		t.Fatalf("Phase 3 verify status=%s: %+v", result.Status, result)
+	}
+	for _, required := range []string{
+		"control:ownership.exclusive_conflict", "control:ownership.exclusive_move",
+		"control:core.loan_endpoint_mismatch", "control:cfg.path_oracle_disagreement",
+		"control:origin.understated_summary", "control:origin.impossible_summary", "control:origin.stale_summary",
+	} {
+		if !bytes.Contains(machine.Stdout, []byte(required)) {
+			t.Fatalf("Phase 3 verify JSON omitted %s", required)
+		}
+	}
+}
+
+// TestDebugMapCLIAvailability is Task 03-07-01's shipped-binary falsifier:
+// `debug-map` without a query dumps a joined, available-only map for the
+// Phase 3 branch fixture; with a query for an operation ID the map never
+// produced, it reports the honest not_captured availability rather than a
+// guess.
+func TestDebugMapCLIAvailability(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	fixture := testsupport.ProjectPath("testdata", "phase3", "borrowed_view.lang")
+
+	full := testsupport.RunCLI(t, binary, nil, "--json", "debug-map", fixture)
+	if full.Exit != 0 || len(full.Stderr) != 0 {
+		t.Fatalf("debug-map failed: %+v", full)
+	}
+	var decoded protocol.Result
+	if err := json.Unmarshal(full.Stdout, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.DebugMap == nil || len(decoded.DebugMap.Entries) == 0 {
+		t.Fatalf("debug-map produced no entries: %+v", decoded)
+	}
+	for _, entry := range decoded.DebugMap.Entries {
+		if entry.Availability != "available" {
+			t.Fatalf("expected every real entry to report available, got %+v", entry)
+		}
+	}
+
+	absent := testsupport.RunCLI(t, binary, nil, "--json", "debug-map", fixture, "this-operation-id-was-never-produced")
+	if absent.Exit != 0 {
+		t.Fatalf("debug-map resolve failed: %+v", absent)
+	}
+	var absentDecoded protocol.Result
+	if err := json.Unmarshal(absent.Stdout, &absentDecoded); err != nil {
+		t.Fatal(err)
+	}
+	if absentDecoded.DebugMap == nil || len(absentDecoded.DebugMap.Entries) != 1 || absentDecoded.DebugMap.Entries[0].Availability != "not_captured" {
+		t.Fatalf("expected exactly one not_captured entry for an absent query, got %+v", absentDecoded.DebugMap)
+	}
+}
+
 func TestPhase2VerifierScriptContract(t *testing.T) {
 	script, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase2.sh"))
 	if err != nil {
@@ -492,6 +559,36 @@ func TestPhase2VerifierScriptContract(t *testing.T) {
 	for _, required := range []string{"assert-go-tests.sh --self-test", "TestOwnedBackendMutationIsMismatch", "control:backend.runtime_causality", "verify testdata/phase1", "verify testdata/phase2", "warm_samples=20", "peak_rss=unavailable", "p50_ns=", "p95_ns=", "min_ns=", "max_ns=", "output_bytes=", "work="} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("Phase 2 gate omitted %q", required)
+		}
+	}
+}
+
+// TestPhase3VerifierScriptContract is Task 03-07-02's contract test on the
+// Phase 3 gate's own text: it must not reference the Phase 2 script, must
+// not duplicate any shared Go suite invocation, and must require every
+// Phase 3 control ID and the same warm-observation reporting shape the
+// Phase 2 script established.
+func TestPhase3VerifierScriptContract(t *testing.T) {
+	script, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase3.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(script)
+	if strings.Contains(text, "verify-phase2.sh") || strings.Contains(text, "verify-phase1.sh") {
+		t.Fatalf("Phase 3 gate invokes a previous phase's script instead of proving non-regression with its own binary:\n%s", text)
+	}
+	if strings.Count(text, "\ngo test ./...\n") != 1 || strings.Count(text, "\ngo test -race ./...\n") != 1 || strings.Count(text, "\ngo vet ./...\n") != 1 {
+		t.Fatalf("Phase 3 gate duplicates the shared suite invocations:\n%s", text)
+	}
+	for _, required := range []string{
+		"assert-go-tests.sh --self-test", "TestVerifyPhase3ControlsAndWork", "TestVerifyPhase2ControlsAndWork",
+		"control:ownership.exclusive_conflict", "control:ownership.exclusive_move", "control:core.loan_endpoint_mismatch",
+		"control:cfg.path_oracle_disagreement", "control:origin.understated_summary", "control:origin.impossible_summary", "control:origin.stale_summary",
+		"verify testdata/phase1", "verify testdata/phase2", "verify testdata/phase3",
+		"warm_samples=20", "peak_rss=unavailable", "p50_ns=", "p95_ns=", "min_ns=", "max_ns=", "output_bytes=", "work=",
+	} {
+		if !strings.Contains(text, required) {
+			t.Fatalf("Phase 3 gate omitted %q", required)
 		}
 	}
 }

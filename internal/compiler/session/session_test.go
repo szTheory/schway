@@ -943,3 +943,45 @@ func TestPathOracleLaneRecordsControl(t *testing.T) {
 		t.Fatalf("passing lane did not claim control:cfg.path_oracle_disagreement: %+v", passLane)
 	}
 }
+
+// TestVerifyPhase3ControlsAndWork is Task 03-07-02's falsifier for the Phase
+// 3 verify path: dispatching on borrowed_view.lang, verifyBorrowedCorpus
+// requires every named Phase 3 control fail-closed, with nonzero work on
+// every lane and both expected escapes (corevalidate's and originvalidate's)
+// surfaced, never reported as detected controls.
+func TestVerifyPhase3ControlsAndWork(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase3"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 3 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	required := []string{
+		"control:ownership.exclusive_conflict",
+		"control:ownership.exclusive_move",
+		"control:core.loan_endpoint_mismatch",
+		"control:cfg.path_oracle_disagreement",
+		"control:origin.understated_summary",
+		"control:origin.impossible_summary",
+		"control:origin.stale_summary",
+	}
+	found := make(map[string]bool)
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			found[control] = true
+		}
+	}
+	for _, control := range required {
+		if !found[control] {
+			t.Fatalf("missing required Phase 3 control %s: lanes=%+v", control, result.Lanes)
+		}
+	}
+	expected := map[string]bool{}
+	for _, escape := range result.ExpectedEscapes {
+		expected[escape] = true
+	}
+	if !expected["escape:coordinated-source-core-lie"] || !expected["escape:coordinated-frontend-summary-lie"] {
+		t.Fatalf("Phase 3 verify omitted an expected escape: %+v", result.ExpectedEscapes)
+	}
+}

@@ -19,6 +19,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/debugmap"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/execution"
@@ -553,6 +554,67 @@ func InterfaceCheckCommandFile(summaryPath, coreBytesPath string) (protocol.Resu
 	return completeCommand(result, started, len(answers)), nil
 }
 
+// DebugMapCommandFile is the CLI seam for the bounded debug-lineage
+// experiment (D-01..D-04, Task 03-07-01): it checks and validates sourcePath
+// exactly like `check`, then joins the honestly-checked source and core
+// artifacts via debugmap.Build. When query is non-empty, the result contains
+// only the single resolved entry for that operation ID (debugmap.Resolve),
+// proving the honest-absence report through the shipped binary rather than
+// only in-process; an empty query returns the full joined map.
+func DebugMapCommandFile(path, query string) (protocol.Result, error) {
+	started := time.Now()
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	parsed := syntax.Parse(source)
+	result := protocol.New("debug-map", protocol.StatusPass)
+	if len(parsed.Diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = parsed.Diagnostics
+		return completeCommand(result, started, 1), nil
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = checked.Diagnostics
+		return completeCommand(result, started, checked.Work), nil
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return protocol.Result{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program := validated.Program()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	built, work, buildErr := debugmap.Build(ctx, parsed.Program, program)
+	if buildErr != nil {
+		code := "debugmap.build_failed"
+		var debugErr *debugmap.Error
+		if errors.As(buildErr, &debugErr) {
+			code = debugErr.Code
+		}
+		result.Status = protocol.StatusOperational
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(code, diagnostic.Span{}, "debug map construction failed")}
+		return completeCommand(result, started, work), nil
+	}
+
+	entries := built.Entries
+	if query != "" {
+		entries = []debugmap.Entry{debugmap.Resolve(built, query)}
+	}
+	protocolEntries := make([]protocol.DebugMapEntry, 0, len(entries))
+	for _, entry := range entries {
+		protocolEntries = append(protocolEntries, protocol.DebugMapEntry{
+			ID: entry.ID, CoreID: entry.CoreID, OperationID: entry.OperationID, PointID: entry.PointID,
+			Kind: entry.Kind, Availability: string(entry.Availability),
+		})
+	}
+	result.DebugMap = &protocol.DebugMapSummary{Schema: built.Schema, Entries: protocolEntries}
+	return completeCommand(result, started, work), nil
+}
+
 func interfaceProjection(schema, moduleID, coreDigest string, functions []core.FunctionSignature) *protocol.InterfaceSummary {
 	summary := &protocol.InterfaceSummary{Schema: schema, ModuleID: moduleID, CoreDigest: coreDigest, Functions: make([]protocol.InterfaceFunctionAnswer, 0, len(functions))}
 	for _, function := range functions {
@@ -598,6 +660,9 @@ type VerifyOptions struct {
 }
 
 func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, options VerifyOptions) protocol.Result {
+	if _, err := os.Stat(filepath.Join(corpus, "borrowed_view.lang")); err == nil {
+		return verifyBorrowedCorpus(ctx, corpus, runner)
+	}
 	if _, err := os.Stat(filepath.Join(corpus, "owned_transfer.lang")); err == nil {
 		return verifyOwnedCorpus(ctx, corpus, runner)
 	}
@@ -872,6 +937,207 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 		"control:interpreter-o0-o3-owned",
 		"control:evidence.core_mismatch",
 		"control:backend.runtime_causality",
+	}
+	for _, required := range requiredControls {
+		if !hasControl(result.Lanes, required) {
+			return fail(protocol.StatusInvalid, "verify.control_missing", required)
+		}
+	}
+	for _, lane := range result.Lanes {
+		if lane.RecomputedWork == 0 {
+			return fail(protocol.StatusInvalid, "verify.zero_work", lane.ID)
+		}
+	}
+	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+	return result.Finalize()
+}
+
+// verifyBorrowedCorpus is the Phase 3 verify path (Task 03-07-02): it
+// dispatches when borrowed_view.lang is present, before the Phase 2 probe is
+// considered (VerifyCorpus checks this corpus's own dispatch file first).
+// Every lane uses the Phase 1 addLane shape (an explicit status on every
+// path, PATTERNS I-1), so a failing lane is still returned rather than
+// silently dropped the way Phase 2's verifyOwnedCorpus would drop one.
+func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
+	started := time.Now()
+	result := protocol.New("verify", protocol.StatusPass)
+	result.ExpectedEscapes = append([]string{corevalidate.KnownEscape}, originvalidate.ExpectedEscapes()...)
+	addLane := func(id, status string, controls []string, work, outputBytes int, laneStarted time.Time) {
+		result.Lanes = append(result.Lanes, protocol.Lane{
+			Schema: "lang.verify-lane/0", ID: id, Status: status,
+			Controls: append([]string{}, controls...), RecomputedWork: work,
+			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable", OutputBytes: outputBytes,
+		})
+		result.Metrics.RecomputedWork += work
+		result.Metrics.OutputBytes += outputBytes
+	}
+	fail := func(status, code, message string) protocol.Result {
+		result.Status = status
+		result.Diagnostics = append(result.Diagnostics, diagnostic.Error(code, diagnostic.Span{}, message))
+		result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+		return result.Finalize()
+	}
+
+	// Lane 1: exclusive-conflict, exclusive-move negative controls.
+	laneStarted := time.Now()
+	exclusiveControls := []struct{ file, code, control string }{
+		{"exclusive_exclusive_reject.lang", "ownership.borrow_conflict", "control:ownership.exclusive_conflict"},
+		{"exclusive_move_reject.lang", "ownership.move_while_borrowed", "control:ownership.exclusive_move"},
+	}
+	exclusiveControlNames := make([]string, 0, len(exclusiveControls))
+	for _, control := range exclusiveControls {
+		exclusiveControlNames = append(exclusiveControlNames, control.control)
+	}
+	exclusiveBytes := 0
+	for _, control := range exclusiveControls {
+		source, err := readBoundedFile(filepath.Join(corpus, control.file), syntax.MaxSourceBytes)
+		if err != nil {
+			addLane("lane:borrowed-negative-controls", "fail", nil, exclusiveBytes+1, exclusiveBytes, laneStarted)
+			return fail(protocol.StatusOperational, "verify.fixture_missing", control.file)
+		}
+		if len(source) > syntax.MaxSourceBytes {
+			return fail(protocol.StatusInvalid, "verify.fixture_input_limit", control.file)
+		}
+		exclusiveBytes += len(source)
+		checked := Check(source)
+		if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != control.code {
+			addLane("lane:borrowed-negative-controls", "fail", nil, exclusiveBytes, exclusiveBytes, laneStarted)
+			return fail(protocol.StatusInvalid, "verify.control_missing", control.control)
+		}
+	}
+	addLane("lane:borrowed-negative-controls", "pass", exclusiveControlNames, len(exclusiveControls), exclusiveBytes, laneStarted)
+
+	// Lane 2 + 3: CFG-liveness controls, reusing the already-proven,
+	// independently-tested lane constructors (03-04, 03-05) rather than
+	// duplicating their mutation logic here.
+	branchSource, err := readBoundedFile(filepath.Join(corpus, "borrowed_view.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "borrowed_view.lang")
+	}
+	if len(branchSource) > syntax.MaxSourceBytes {
+		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "borrowed_view.lang")
+	}
+	branchChecked := Check(branchSource)
+	if len(branchChecked.Diagnostics) != 0 || len(branchChecked.Program.Functions) != 1 {
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "borrowed view fixture is invalid")
+	}
+	branchValidated := corevalidate.Validate(branchChecked.Program)
+	if !branchValidated.Valid {
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "borrowed view fixture failed independent validation")
+	}
+	honestBranch := branchValidated.Program()
+
+	endpointLane := BorrowedLoanEndpointControlLane(honestBranch)
+	result.Lanes = append(result.Lanes, endpointLane)
+	result.Metrics.RecomputedWork += endpointLane.RecomputedWork
+	result.Metrics.OutputBytes += endpointLane.OutputBytes
+	if endpointLane.Status != "pass" {
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:core.loan_endpoint_mismatch")
+	}
+
+	oracleLane := PathOracleDisagreementLane(honestBranch)
+	result.Lanes = append(result.Lanes, oracleLane)
+	result.Metrics.RecomputedWork += oracleLane.RecomputedWork
+	result.Metrics.OutputBytes += oracleLane.OutputBytes
+	if oracleLane.Status != "pass" {
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:cfg.path_oracle_disagreement")
+	}
+
+	// Lane 4: the three OWN-04 origin controls (understated, impossible,
+	// stale-summary), mutating honestly-checked public_view* fixtures the
+	// same way originvalidate's own falsifiers do (check.go's honest
+	// producer can never construct any of the three dishonest shapes
+	// itself, per D-09's mutation-kill precedent).
+	laneStarted = time.Now()
+	originWork := 0
+	originBytes := 0
+
+	understated, err := readBoundedFile(filepath.Join(corpus, "public_view_understated.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_understated.lang")
+	}
+	originBytes += len(understated)
+	understatedChecked := Check(understated)
+	if len(understatedChecked.Diagnostics) != 0 || len(understatedChecked.Program.Functions) != 1 || understatedChecked.Program.Functions[0].PublicOrigin == nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "understated origin fixture is invalid")
+	}
+	understatedProgram := understatedChecked.Program
+	understatedProgram.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{}, Access: understatedProgram.Functions[0].PublicOrigin.Access}
+	originWork++
+	if problems := originvalidate.ValidatePublished(understatedProgram); len(problems) != 1 || problems[0].Code != "core.origin_understated" {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.understated_summary")
+	}
+
+	impossible, err := readBoundedFile(filepath.Join(corpus, "public_view_impossible.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_impossible.lang")
+	}
+	originBytes += len(impossible)
+	impossibleChecked := Check(impossible)
+	if len(impossibleChecked.Diagnostics) != 0 || len(impossibleChecked.Program.Functions) != 1 || impossibleChecked.Program.Functions[0].PublicOrigin == nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "impossible access fixture is invalid")
+	}
+	impossibleProgram := impossibleChecked.Program
+	impossibleProgram.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: impossibleProgram.Functions[0].PublicOrigin.Paths, Access: "exclusive"}
+	originWork++
+	if problems := originvalidate.ValidatePublished(impossibleProgram); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.impossible_summary")
+	}
+
+	honestView, err := readBoundedFile(filepath.Join(corpus, "public_view.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view.lang")
+	}
+	originBytes += len(honestView)
+	honestViewChecked := Check(honestView)
+	if len(honestViewChecked.Diagnostics) != 0 || len(honestViewChecked.Program.Functions) != 1 {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "public view fixture is invalid")
+	}
+	summary, err := originvalidate.BuildInterface(honestViewChecked.Program)
+	if err != nil {
+		return fail(protocol.StatusOperational, "verify.evidence_build_failed", "unable to build interface summary")
+	}
+	summaryBytes, err := json.Marshal(summary)
+	if err != nil {
+		return fail(protocol.StatusOperational, "verify.evidence_build_failed", "unable to marshal interface summary")
+	}
+	realCoreBytes, err := json.Marshal(honestViewChecked.Program)
+	if err != nil {
+		return fail(protocol.StatusOperational, "verify.evidence_build_failed", "unable to marshal core artifact")
+	}
+	staleCoreBytes := append(append([]byte(nil), realCoreBytes...), '/', '/', 's', 't', 'a', 'l', 'e')
+	originWork++
+	if _, checkErr := originvalidate.CheckSummary(summaryBytes, staleCoreBytes); checkErr == nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.stale_summary")
+	} else {
+		var originError *originvalidate.Error
+		if !errors.As(checkErr, &originError) || originError.Code != "origin.stale_summary" {
+			addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+			return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.stale_summary")
+		}
+	}
+
+	addLane("lane:borrowed-origin-controls", "pass", []string{
+		"control:origin.understated_summary", "control:origin.impossible_summary", "control:origin.stale_summary",
+	}, originWork, originBytes, laneStarted)
+
+	requiredControls := []string{
+		"control:ownership.exclusive_conflict",
+		"control:ownership.exclusive_move",
+		"control:core.loan_endpoint_mismatch",
+		"control:cfg.path_oracle_disagreement",
+		"control:origin.understated_summary",
+		"control:origin.impossible_summary",
+		"control:origin.stale_summary",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {

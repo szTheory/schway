@@ -55,6 +55,12 @@ func run(args []string) int {
 	if len(args) == 4 && args[0] == "interface" && args[1] == "check" {
 		return runInterfaceCheck(args[2], args[3], jsonMode)
 	}
+	if len(args) == 2 && args[0] == "debug-map" {
+		return runDebugMap(args[1], "", jsonMode)
+	}
+	if len(args) == 3 && args[0] == "debug-map" {
+		return runDebugMap(args[1], args[2], jsonMode)
+	}
 	if len(args) == 3 && args[0] == "run" && strings.HasPrefix(args[1], "--engine=") {
 		engine := strings.TrimPrefix(args[1], "--engine=")
 		switch engine {
@@ -172,6 +178,19 @@ func runInterfaceCheck(summary, core string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
+// runDebugMap is the bounded debug-lineage experiment's CLI seam
+// (D-01..D-04, Task 03-07-01): with no query it dumps the full joined
+// source/core/operation map for SRC; with a query it resolves a single
+// operation ID, proving the honest not_captured report through the shipped
+// binary for an ID the map never produced.
+func runDebugMap(source, query string, jsonMode bool) int {
+	result, err := session.DebugMapCommandFile(source, query)
+	if err != nil {
+		return emit(problemResult("debug-map", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
+	}
+	return emit(result, jsonMode, false)
+}
+
 func extractJSON(args []string) ([]string, bool, bool) {
 	filtered := make([]string, 0, len(args))
 	jsonMode := false
@@ -195,7 +214,9 @@ func emit(result protocol.Result, jsonMode, forceStderr bool) int {
 	if jsonMode {
 		encoded, err = protocol.JSON(result)
 	} else {
-		encoded = []byte(protocol.Human(result))
+		var humanOutput string
+		humanOutput, err = protocol.Human(result)
+		encoded = []byte(humanOutput)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "tool.encode_failed: unable to encode command result")

@@ -1,0 +1,45 @@
+// The Phase 3 verify-corpus dispatch probe and positive fixture
+// (Task 03-07-02): a single branch function exercising a shared loan that
+// ends before its own arm's later move (the "borrowing arm's own edge"
+// reading 03-03-SUMMARY.md establishes and 03-05's mid-phase gate confirms
+// is the correct one under checkBranch's current per-arm-alias topology),
+// and a sequential exclusive loan in the sibling arm (borrow mut, use, then
+// move, all after the loan's own last use). Both arms check clean.
+//
+// Scope note (discovered this session, not a plan deviation to widen): a
+// module cannot mix a match-bodied function with a straight-line function
+// in the same core.Program (check.Program's own `core.mixed_body_versions`
+// gate, verified by reading check.go directly) — so a public borrowed
+// return (a plain linear function, `-> borrow(path) Type`) cannot live in
+// this same file alongside this branch function. verifyBorrowedCorpus
+// exercises the public-borrowed-return controls (understated/impossible/
+// stale-summary) against the existing testdata/phase3/public_view*.lang
+// fixtures instead, in the same verify lane.
+
+module owned.borrowed_view
+
+export {
+  type Switch
+  fn choose
+}
+
+data Switch =
+  | On
+  | Off
+
+fn choose(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let view = borrow flag
+      let noted = view
+      let moved = take flag
+      moved
+    }
+    Off => {
+      let guarded = borrow mut flag
+      let released = guarded
+      let moved = take flag
+      moved
+    }
+  }
+}
