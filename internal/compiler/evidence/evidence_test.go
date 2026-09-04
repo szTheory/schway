@@ -6,11 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -98,6 +100,104 @@ func TestPhase1EvidenceGoldenUnchanged(t *testing.T) {
 	product := goldenProduct(t)
 	if got, want := product.ManifestBytes, readGolden(t, "evidence.golden.json"); !bytes.Equal(got, want) {
 		t.Fatalf("Phase 1 evidence golden changed:\ngot  %s\nwant %s", got, want)
+	}
+}
+
+// TestPhase3FieldsAreOmittedWhenAbsent is 03-06-03's key-by-key falsifier for
+// D-13: every field this phase (and 03-01/03-02) introduced is omitted
+// entirely — not present with a zero value — from the serialized core of a
+// Phase 1 program and a Phase 2 program, verified as parsed JSON rather than
+// assumed from struct tags, exactly as OV-02-01 was verified.
+func TestPhase3FieldsAreOmittedWhenAbsent(t *testing.T) {
+	forbidden := []string{"public_origin", "blocks", "edges", "loan_endpoints", "block_id"}
+
+	phase1 := goldenProduct(t)
+	assertKeysAbsent(t, "Phase 1", phase1.CoreBytes, forbidden)
+
+	phase2Source := readPhase2(t, "owned_transfer.lang")
+	phase2Product, diagnostics, err := evidence.Build(phase2Source, ownedFacts())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("build phase 2 evidence: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	assertKeysAbsent(t, "Phase 2", phase2Product.CoreBytes, forbidden)
+}
+
+// assertKeysAbsent walks the parsed JSON tree (not the raw bytes, so a key
+// name appearing only inside an unrelated string value is not a false
+// positive) and fails if any forbidden key is present anywhere in the
+// structure.
+func assertKeysAbsent(t testing.TB, label string, encoded []byte, forbidden []string) {
+	t.Helper()
+	var decoded any
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatalf("%s: invalid JSON: %v", label, err)
+	}
+	found := map[string]bool{}
+	walkKeys(decoded, func(key string) {
+		for _, name := range forbidden {
+			if key == name {
+				found[name] = true
+			}
+		}
+	})
+	if len(found) > 0 {
+		t.Fatalf("%s core leaked Phase 3 keys that must stay absent when unpopulated: %+v\n%s", label, found, encoded)
+	}
+}
+
+func walkKeys(value any, visit func(string)) {
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, nested := range typed {
+			visit(key)
+			walkKeys(nested, visit)
+		}
+	case []any:
+		for _, item := range typed {
+			walkKeys(item, visit)
+		}
+	}
+}
+
+// TestEvidenceErrorCodeReachesCLI is 03-06-03's falsifier for closing D-02-02:
+// evidence.ErrorCode's specific code (e.g. evidence.canonical_unstable) must
+// reach the CLI's diagnostic instead of being collapsed into the generic
+// evidence.operation_failed code every session.EvidenceCommandFile error
+// previously received unconditionally. evidence.canonical_unstable itself is
+// only reachable by injecting a broken formatter into build()'s internal
+// seam (evidence.go's own unit tests exercise that seam directly) — no real
+// `.lang` file reaches it through the CLI — so this asserts the actual fix at
+// the boundary that changed: cmd/lang/main.go's evidence command must route
+// through evidence.ErrorCode(err) rather than a hardcoded fallback string, so
+// whatever code Build ever returns is preserved end to end.
+func TestEvidenceErrorCodeReachesCLI(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("cmd", "lang", "main.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(source)
+	if !strings.Contains(text, `evidence.ErrorCode(err)`) {
+		t.Fatal("cmd/lang/main.go's evidence command must route through evidence.ErrorCode(err), not a hardcoded fallback")
+	}
+	if strings.Contains(text, `problemResult("evidence", protocol.StatusOperational, "evidence.operation_failed"`) {
+		t.Fatal("cmd/lang/main.go still hardcodes evidence.operation_failed instead of the recomputed error code")
+	}
+
+	// The CLI-observable half of the same fix: a genuinely invalid source
+	// still yields a real diagnostic (not silently empty) through the exact
+	// command path that used to collapse every failure into one code.
+	binary := testsupport.BuildCLI(t)
+	invalid := testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang")
+	result := testsupport.RunCLI(t, binary, nil, "--json", "evidence", invalid)
+	if result.Exit != 2 {
+		t.Fatalf("expected an invalid-source exit, got %+v", result)
+	}
+	var decoded protocol.Result
+	if err := json.Unmarshal(result.Stdout, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if len(decoded.Diagnostics) == 0 {
+		t.Fatalf("expected a diagnostic for invalid source: %+v", decoded)
 	}
 }
 

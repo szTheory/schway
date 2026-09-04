@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -109,7 +110,11 @@ func runInterpreter(path string, jsonMode bool) int {
 func runEvidence(path string, jsonMode bool) int {
 	product, result, err := session.EvidenceCommandFile(context.Background(), path)
 	if err != nil {
-		return emit(problemResult("evidence", protocol.StatusOperational, "evidence.operation_failed", "unable to construct evidence"), jsonMode, false)
+		// D-02-02: route the specific ValidationError code (e.g.
+		// evidence.canonical_unstable) through to the CLI instead of
+		// collapsing every build failure into the generic
+		// evidence.operation_failed code that only tests could previously see.
+		return emit(problemResult("evidence", protocol.StatusOperational, evidence.ErrorCode(err), "unable to construct evidence"), jsonMode, false)
 	}
 	if !jsonMode && result.Status == protocol.StatusPass {
 		if _, err := os.Stdout.Write(product.ManifestBytes); err != nil {
