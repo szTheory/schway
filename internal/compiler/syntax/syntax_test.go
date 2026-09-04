@@ -578,12 +578,235 @@ func TestGeneratedLinearRoundTrips(t *testing.T) {
 	}
 }
 
+// TestGeneratedKindsIncludeExclusiveBorrow proves the generator's reachable
+// operation alphabet actually includes the exclusive-borrow spelling
+// (03-05-03/D-10's must_haves.truths), not merely that linearGeneratedKinds
+// lists the string: a case selected to land on "borrow mut " must parse,
+// round-trip to a canonical fixed point, and the resulting AST binding must
+// carry RHS.Kind == "borrow_mut".
+func TestGeneratedKindsIncludeExclusiveBorrow(t *testing.T) {
+	found := false
+	for caseID := uint64(0); caseID < 200; caseID++ {
+		kind := linearGeneratedKinds[(caseID/5)%uint64(len(linearGeneratedKinds))]
+		if kind != "borrow mut " {
+			continue
+		}
+		bindingCount := int((caseID / 15) % 4)
+		if bindingCount == 0 {
+			continue // no binding to inspect
+		}
+		found = true
+		source := generatedLinearProgram(caseID)
+		parsed := syntax.Parse(source)
+		if len(parsed.Diagnostics) != 0 {
+			t.Fatalf("case=%d exclusive-borrow generation did not parse: %v\n%s", caseID, diagnosticIdentity(parsed.Diagnostics), source)
+		}
+		canonical := syntax.Format(parsed.Tree)
+		reparsed := syntax.Parse(canonical)
+		if len(reparsed.Diagnostics) != 0 || !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+			t.Fatalf("case=%d exclusive-borrow generation is not a formatting fixed point\nsource=%q\ncanonical=%q", caseID, source, canonical)
+		}
+		bindings := parsed.Program.Funcs[0].Body.Linear.Bindings
+		if len(bindings) == 0 || bindings[0].RHS.Kind != "borrow_mut" {
+			t.Fatalf("case=%d did not produce an RHS.Kind==borrow_mut binding: %+v", caseID, bindings)
+		}
+	}
+	if !found {
+		t.Fatalf("no generated case in the probed range selected the exclusive-borrow kind — the alphabet or its selection changed")
+	}
+}
+
+// linearBranchKinds spans the arm-body binding-kind alphabet: implicit
+// copy, take, shared borrow, and (03-05-03/D-10) the exclusive spelling.
+var linearBranchKinds = []string{"", "take ", "borrow ", "borrow mut "}
+
+// generatedBranchProgram emits a 2-arm match function whose arms hold full
+// linear bodies (03-01's arm-body extension), parameterised over
+// {arm-0 binding kind} x {0, 1, or 2 bindings in arm 0} x {header-comment
+// placement on the arm's own opening line} x {separator/leading-comment
+// variation generatedProgram already uses}.
+//
+// Reachable shapes, stated explicitly per D-10 (the standing rule adopted
+// after three Phase 02 gate failures were each a green test whose reachable
+// input space omitted the hard case):
+//   - match bodies whose arms carry full linear bodies (branch bodies), not
+//     bare alternative names;
+//   - an arm with ZERO bindings (Result is the arm's own aliased parameter,
+//     referenced directly);
+//   - an arm with a REBORROW whose original is the arm's own leading
+//     binding: `let view = borrow subject` (or `borrow mut`) followed by
+//     `let reviewed = borrow view`. This is read as "before the branch" per
+//     D-10's own required interpretation, since 03-01's per-arm aliasing
+//     gives every arm its own fresh copy of the scrutinee and there is no
+//     region literally preceding the match in this grammar at all — the
+//     earliest a loan can exist within an arm's own control-flow path is
+//     its leading binding, exactly analogous to how 03-03's own fixture
+//     pair reads "the borrowing arm's own edge" (see 03-03-SUMMARY.md,
+//     key-decisions).
+//   - the exclusive borrow spelling ("borrow mut ") alongside implicit
+//     copy, take, and shared borrow, inside an arm body;
+//   - a comment trailing an arm's own opening header line
+//     (`Pattern => {  // arm tail N`), the CR-02 brace-classifier
+//     placement (02-DEBT.md "Process debt") relocated inside a branch arm
+//     rather than only a function declaration header.
+//
+// Explicitly UNREACHABLE by this generator, and by this language:
+//   - any loop or back edge — the language has neither a loop construct nor
+//     recursion (OWN-03 is acyclic-scoped this phase; see ROADMAP §Phase 3
+//     "Scope note");
+//   - a mixed bare/body match — 03-01 requires every arm to carry a body
+//     once any arm does (checkBranch's core.mixed_arm_forms gate);
+//   - "a generic type combined with a binding inside an arm body" — a match
+//     scrutinee must be a declared nominal sum type by grammar
+//     (checkBranch's DataType.Alternatives lookup), which can never be a
+//     generic application like Box<Byte>, so this shape cannot exist in an
+//     arm body at all. The historically-missed generic-type/header-comment
+//     interaction (02-DEBT.md's CR-02 precedent) is instead pinned on the
+//     STRAIGHT-LINE surface, where it is reachable: generatedLinearProgram's
+//     own linearGeneratedTypes already crosses every generic shape with the
+//     identical header-tail-comment placement (see its caseID%11==0 branch),
+//     and TestGeneratedKindsIncludeExclusiveBorrow now additionally proves
+//     that surface reaches the exclusive-borrow spelling too.
+func generatedBranchProgram(caseID uint64) []byte {
+	separator := " "
+	if caseID%2 == 1 {
+		separator = "\t"
+	}
+	typeName := fmt.Sprintf("Branch%d", caseID%991)
+	functionName := fmt.Sprintf("choose%d", caseID%983)
+	first := fmt.Sprintf("A%d", caseID%977)
+	second := fmt.Sprintf("B%d", caseID%977)
+	bindingKind := linearBranchKinds[(caseID/5)%uint64(len(linearBranchKinds))]
+	bindingCount := int((caseID / 15) % 3) // 0, 1, or 2 bindings in arm 0
+
+	var source strings.Builder
+	if caseID%3 == 0 {
+		fmt.Fprintf(&source, "// generated branch case %d\n", caseID)
+	}
+	fmt.Fprintf(&source, "module%sbranch.case%d\n\n", separator, caseID%971)
+	fmt.Fprintf(&source, "export%s{%s type%s%s%s fn%s%s%s}\n\n", separator, separator, separator, typeName, separator, separator, functionName, separator)
+	fmt.Fprintf(&source, "data%s%s%s=%s\n", separator, typeName, separator, separator)
+	fmt.Fprintf(&source, "%s|%s%s\n", separator, separator, first)
+	fmt.Fprintf(&source, "%s|%s%s\n\n", separator, separator, second)
+	if caseID%11 == 0 {
+		fmt.Fprintf(&source, "fn%s%s(subject:%s%s)%s->%s%s// header tail %d\n{\n", separator, functionName, separator, typeName, separator, separator, typeName, caseID)
+	} else {
+		fmt.Fprintf(&source, "fn%s%s(subject:%s%s)%s->%s%s%s{\n", separator, functionName, separator, typeName, separator, separator, typeName, separator)
+	}
+	fmt.Fprintf(&source, "%smatch%ssubject%s{\n", separator, separator, separator)
+
+	// Arm 0: the varied arm -- 0, 1, or 2 bindings, an optional
+	// header-trailing comment, and the full kind alphabet including the
+	// exclusive spelling. A second binding is always a reborrow of the
+	// first (the only way to legally extend a loan's lifetime without an
+	// implicit copy, since a borrowed place shares its owner's TypeID and a
+	// noncopyable owner denies copy — see 03-02-SUMMARY.md's "Issues
+	// Encountered").
+	if caseID%13 == 0 {
+		fmt.Fprintf(&source, "%s%s%s=>%s{%s// arm tail %d\n", separator, first, separator, separator, separator, caseID)
+	} else {
+		fmt.Fprintf(&source, "%s%s%s=>%s{\n", separator, first, separator, separator)
+	}
+	result := "subject"
+	for index := 0; index < bindingCount; index++ {
+		name := fmt.Sprintf("hold%d", index)
+		kind := bindingKind
+		if index > 0 {
+			kind = "borrow "
+		}
+		if caseID%7 == 0 && index == 0 {
+			fmt.Fprintf(&source, "%s%s// generated arm binding\n", separator, separator)
+		}
+		fmt.Fprintf(&source, "%s%slet%s%s%s=%s%s%s\n", separator, separator, separator, name, separator, separator, kind, result)
+		result = name
+	}
+	fmt.Fprintf(&source, "%s%s%s\n", separator, separator, result)
+	fmt.Fprintf(&source, "%s}\n", separator)
+
+	// Arm 1: a zero-binding arm — the aliased parameter is the arm's own
+	// Result directly, with no bindings at all.
+	fmt.Fprintf(&source, "%s%s%s=>%s{\n", separator, second, separator, separator)
+	fmt.Fprintf(&source, "%s%ssubject\n", separator, separator)
+	fmt.Fprintf(&source, "%s}\n", separator)
+
+	source.WriteString("}\n}\n")
+	return []byte(source.String())
+}
+
+// TestGeneratedBranchBodiesRoundTrip proves the arm-body generator's
+// canonicalization is lossless and its checking is stable across
+// canonicalization, mirroring TestGeneratedLinearRoundTrips exactly but for
+// the branch surface (03-05-03).
+func TestGeneratedBranchBodiesRoundTrip(t *testing.T) {
+	const generationSeed int64 = 0x8ea3011
+	count := 0
+	lastFailure := ""
+	property := func(caseID uint64) bool {
+		count++
+		source := generatedBranchProgram(caseID)
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			lastFailure = fmt.Sprintf("case=%d lost CST bytes\nsource=%q", caseID, source)
+			return false
+		}
+		if len(parsed.Diagnostics) != 0 {
+			lastFailure = fmt.Sprintf("case=%d did not parse\nsource=%q\ndiagnostics=%v", caseID, source, diagnosticIdentity(parsed.Diagnostics))
+			return false
+		}
+
+		canonical := syntax.Format(parsed.Tree)
+		reparsed := syntax.Parse(canonical)
+		if len(reparsed.Diagnostics) != 0 {
+			lastFailure = fmt.Sprintf("case=%d canonical form does not reparse\nsource=%q\ncanonical=%q\ndiagnostics=%v", caseID, source, canonical, diagnosticIdentity(reparsed.Diagnostics))
+			return false
+		}
+		if !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d is not a formatting fixed point\nsource=%q\ncanonical=%q\nsecond=%q", caseID, source, canonical, syntax.Format(reparsed.Tree))
+			return false
+		}
+		if !reflect.DeepEqual(withoutSpans(parsed.Program), withoutSpans(reparsed.Program)) {
+			lastFailure = fmt.Sprintf("case=%d changed semantic order\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
+		if !reflect.DeepEqual(comments(parsed.Tree), comments(reparsed.Tree)) {
+			lastFailure = fmt.Sprintf("case=%d changed comments\nsource=%q\ncanonical=%q", caseID, source, canonical)
+			return false
+		}
+
+		// Spans legitimately move when source is reindented; the invariant
+		// canonicalisation must preserve is the diagnostic code sequence
+		// through the FULL checker (not just the parser), exactly as
+		// TestGeneratedLinearRoundTrips already requires for the
+		// straight-line surface.
+		first := diagnosticCodes(session.Check(source).Diagnostics)
+		second := diagnosticCodes(session.Check(canonical).Diagnostics)
+		if !reflect.DeepEqual(first, second) {
+			lastFailure = fmt.Sprintf("case=%d canonicalisation changed checking\nsource=%q\ncanonical=%q\nfirst=%v\nsecond=%v", caseID, source, canonical, first, second)
+			return false
+		}
+		return true
+	}
+
+	config := &quick.Config{MaxCount: 500, Rand: rand.New(rand.NewSource(generationSeed))}
+	if err := quick.Check(property, config); err != nil {
+		t.Fatalf("generated branch property failed (seed=%d): %v\n%s", generationSeed, err, lastFailure)
+	}
+	if count != config.MaxCount {
+		t.Fatalf("generated branch property ran %d cases, want %d (seed=%d)", count, config.MaxCount, generationSeed)
+	}
+}
+
 // linearGeneratedTypes and linearGeneratedKinds span the Phase 02 linear
 // surface: every declared type shape the phase admits (leaf, generic, nested
 // generic, aggregate) crossed with every binding kind.
 var (
 	linearGeneratedTypes = []string{"Byte", "Buffer", "Box<Byte>", "Box<Box<Byte>>", "Pair<Byte, Buffer>"}
-	linearGeneratedKinds = []string{"", "take ", "borrow "}
+	// linearGeneratedKinds spans the linear binding-kind alphabet. 03-05-03
+	// (D-10) extends the original three-kind set (implicit copy, take,
+	// shared borrow) with the exclusive spelling ("borrow mut ") so the
+	// generator's reachable operation alphabet matches every kind the
+	// checker actually admits, not just the pre-03-02 subset.
+	linearGeneratedKinds = []string{"", "take ", "borrow ", "borrow mut "}
 )
 
 // generatedLinearProgram emits a single-function linear module parameterised

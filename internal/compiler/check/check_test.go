@@ -563,6 +563,90 @@ func reborrowChainOperations(n int) []core.LinearOperation {
 	return operations
 }
 
+// branchSequenceProgram builds a synthetic 2-arm branch function directly
+// against the ast (bypassing the parser/source text entirely, unlike the
+// syntax-package generator) whose two arms hold armA/armB as their full
+// linear bodies. Both arms reference the function's own aliased parameter
+// by the name "owner", matching generatedOwnershipBody's own convention.
+func branchSequenceProgram(armA, armB ast.LinearBody) ast.Program {
+	return ast.Program{
+		Module: "owned.branch_sequence",
+		Data:   []ast.DataDecl{{Name: "Switch", Alternatives: []ast.Alternative{{Name: "On"}, {Name: "Off"}}}},
+		Funcs: []ast.FuncDecl{{
+			Name:       "choose",
+			Parameter:  ast.Parameter{Name: "owner", Type: ast.TypeRef{Constructor: "Switch"}},
+			ReturnType: ast.TypeRef{Constructor: "Switch"},
+			Body: ast.Body{
+				MatchExpr: ast.MatchExpr{
+					Scrutinee: "owner",
+					Arms: []ast.MatchArm{
+						{Pattern: "On", Body: &armA},
+						{Pattern: "Off", Body: &armB},
+					},
+				},
+			},
+		}},
+	}
+}
+
+// TestBranchSequenceExhaustive extends TestOwnershipSequenceExhaustive's
+// exhaustive ownership-sequence enumeration from a single (straight-line)
+// block to a TWO-block branch at bounded length (03-05-03/D-10): every
+// combination of {0 or 1 binding} x {the 48-symbol alphabet} for EACH of
+// two independent arms is checked against production's real checkBranch
+// path (via Program(...), never a synthetic cfgBlockSpec) and compared
+// against an independently-computed verdict built from the SAME
+// oracleStraightLine differential TestOwnershipSequenceExhaustive already
+// trusts, applied once per arm — legitimate because 03-01's per-arm
+// aliasing makes every arm's own admission decision fully independent of
+// its sibling (a fact 03-03/03-04's own summaries document explicitly): the
+// two-block program's overall verdict is REJECT if and only if at least one
+// arm's own straight-line verdict is REJECT. The batch stays deterministic
+// and bounded (2 lengths x 48^0..48^1 per arm = 49*49 = 2,401 total
+// two-block programs) and asserts its own case count, matching the
+// fixed-seed batches elsewhere in this file.
+func TestBranchSequenceExhaustive(t *testing.T) {
+	const alphabet = 48
+	const maxLength = 1
+
+	cases := func(length int) int {
+		count := 1
+		for index := 0; index < length; index++ {
+			count *= alphabet
+		}
+		return count
+	}
+
+	total := 0
+	for lengthA := 0; lengthA <= maxLength; lengthA++ {
+		for encodedA := 0; encodedA < cases(lengthA); encodedA++ {
+			bodyA := generatedOwnershipBody(encodedA, lengthA, alphabet)
+			wantA := oracleStraightLine("s1:owned.branch_sequence:fn:choose", "owner", byteTypeFact(), &bodyA)
+			for lengthB := 0; lengthB <= maxLength; lengthB++ {
+				for encodedB := 0; encodedB < cases(lengthB); encodedB++ {
+					bodyB := generatedOwnershipBody(encodedB, lengthB, alphabet)
+					wantB := oracleStraightLine("s1:owned.branch_sequence:fn:choose", "owner", byteTypeFact(), &bodyB)
+					total++
+
+					program := branchSequenceProgram(bodyA, bodyB)
+					got := Program(program)
+					wantReject := wantA.DiagnosticCode != "" || wantB.DiagnosticCode != ""
+					gotReject := len(got.Diagnostics) != 0
+					if gotReject != wantReject {
+						t.Fatalf(
+							"lengthA=%d encodedA=%d lengthB=%d encodedB=%d: production reject=%v oracle reject=%v (production diags=%+v, oracleA=%q, oracleB=%q)",
+							lengthA, encodedA, lengthB, encodedB, gotReject, wantReject, got.Diagnostics, wantA.DiagnosticCode, wantB.DiagnosticCode,
+						)
+					}
+				}
+			}
+		}
+	}
+	if total != (cases(0)+cases(1))*(cases(0)+cases(1)) {
+		t.Fatalf("exhaustive two-block batch ran %d cases, want %d — a generator that silently stops early must fail this assertion", total, (cases(0)+cases(1))*(cases(0)+cases(1)))
+	}
+}
+
 // TestLivenessWorkScale is 03-03-03's honest-work series (D-05/D-02-03):
 // the fixpoint's counted work over a reborrow chain of 10, 100, 1,000, and
 // 10,000 operations must grow within a linear factor of operation count,
