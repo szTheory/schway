@@ -10,6 +10,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
 
@@ -38,10 +39,14 @@ func mustParseProgram(t *testing.T, source []byte) ast.Program {
 }
 
 func TestOwnershipSequenceExhaustive(t *testing.T) {
-	// Thirty-six symbols span three declaration names, three operation kinds,
-	// and four source selectors: every visible place (at this depth) plus an
-	// out-of-scope boundary. This exhausts shadowing and multi-owner shapes.
-	const alphabet = 36
+	// Forty-eight symbols span three declaration names, FOUR operation kinds
+	// (implicit copy, take, shared borrow, exclusive borrow -- 03-05-03/D-10
+	// extends the original three-kind alphabet to reach the conflict matrix
+	// exhaustively too), and four source selectors: every visible place (at
+	// this depth) plus an out-of-scope boundary. This exhausts shadowing,
+	// multi-owner shapes, AND every shared/exclusive overlap combination the
+	// five-row conflict matrix distinguishes.
+	const alphabet = 48
 	for length := 0; length <= 3; length++ {
 		cases := 1
 		for index := 0; index < length; index++ {
@@ -304,6 +309,198 @@ func TestUniformJoinPlacementFlipsBothVerdicts(t *testing.T) {
 	}
 }
 
+// TestOracleDisagreesWithUniformJoinFault is the 03-05-02 mutation kill for
+// the uniform-join fault, at the ENDPOINT level rather than the admission
+// level TestUniformJoinPlacementFlipsBothVerdicts already proves.
+//
+// testOnlyForceUniformLoanJoin (03-03's seam) only touches
+// discoverLoanLastUses' consumer inside analyzeArmBody -- the admission
+// decision (conflict/expiry) -- and never touches loanLivenessFixpoint /
+// materializeLoanEndpoints, which is checkBranch's SOLE producer of the
+// observable core.LoanEndpoint records this oracle recomputes. Seeding the
+// fault therefore does not change the honestly-checked function's
+// LoanEndpoints at all (proven first, below) — which is exactly why a
+// SEPARATE, endpoint-level corruption is required to exercise the oracle's
+// own disagreement path: this test constructs the endpoint set "uniform
+// join placement" would have produced had it also corrupted
+// materializeLoanEndpoints (every loan's endpoint forced to an EDGE on its
+// arm's own edge-to-join, instead of the real POINT where it is actually
+// last referenced) and confirms the independently recomputed oracle answer
+// disagrees with it, naming the specific loan and edge.
+func TestOracleDisagreesWithUniformJoinFault(t *testing.T) {
+	source := readTestdataFixture(t, "branch_one_arm_shared_accept.lang")
+
+	honest := Program(mustParseProgram(t, source))
+	if len(honest.Diagnostics) != 0 {
+		t.Fatalf("accept fixture unexpectedly rejected: %+v", honest.Diagnostics)
+	}
+	function := honest.Program.Functions[0]
+	if len(function.Linear.LoanEndpoints) == 0 {
+		t.Fatalf("fixture carries no LoanEndpoints to corrupt: %+v", function.Linear)
+	}
+
+	// Reconfirm (independently of TestUniformJoinPlacementFlipsBothVerdicts)
+	// that seeding the ADMISSION-level fault does not perturb the
+	// endpoint-materializing pass at all: the fault only ever engages inside
+	// analyzeArmBody, which checkBranch calls BEFORE loanLivenessFixpoint /
+	// materializeLoanEndpoints run on the same, already-lowered operations.
+	testOnlyForceUniformLoanJoin = true
+	faultedAdmission := Program(mustParseProgram(t, source))
+	testOnlyForceUniformLoanJoin = false
+	if len(faultedAdmission.Diagnostics) == 0 {
+		t.Fatalf("uniform-join admission fault did not reject the fixture as TestUniformJoinPlacementFlipsBothVerdicts requires")
+	}
+
+	// Build "what uniform join placement would have produced" at the
+	// endpoint level: every loan the fixture actually carries a POINT
+	// endpoint for, replaced by an EDGE endpoint on its own arm's
+	// edge-to-join -- the literal meaning of "every loan ends uniformly at
+	// the join" applied to materializeLoanEndpoints's own output shape.
+	edgeToJoin := map[string]string{}
+	for _, edge := range function.Linear.Edges {
+		if edge.ToBlockID == function.ID+":block:join" {
+			edgeToJoin[edge.FromBlockID] = edge.ID
+		}
+	}
+	corrupted := make([]core.LoanEndpoint, 0, len(function.Linear.LoanEndpoints))
+	for _, endpoint := range function.Linear.LoanEndpoints {
+		edgeID, ok := edgeToJoin[endpoint.BlockID]
+		if endpoint.Kind != "point" || !ok {
+			corrupted = append(corrupted, endpoint)
+			continue
+		}
+		corrupted = append(corrupted, core.LoanEndpoint{
+			ID: edgeID + ":" + endpoint.LoanID, LoanID: endpoint.LoanID, Kind: "edge", EdgeID: edgeID,
+		})
+	}
+
+	oracleEndpoints, work, err := pathoracle.RecomputeEndpoints(function)
+	if err != nil {
+		t.Fatalf("unexpected oracle error: %v", err)
+	}
+	if work == 0 {
+		t.Fatalf("oracle reported zero work")
+	}
+	if reflect.DeepEqual(oracleEndpoints, corrupted) {
+		t.Fatalf("oracle agreed with the uniform-join-corrupted endpoint set -- the differential is not load-bearing")
+	}
+
+	// The disagreement must name the specific loan and edge: the oracle's
+	// own answer for the loan the fixture actually carries a loan for must
+	// be a POINT endpoint (not the corrupted EDGE endpoint).
+	var loanID string
+	for _, endpoint := range function.Linear.LoanEndpoints {
+		if endpoint.Kind == "point" {
+			loanID = endpoint.LoanID
+			break
+		}
+	}
+	if loanID == "" {
+		t.Fatalf("fixture carries no point endpoint to name in the disagreement: %+v", function.Linear.LoanEndpoints)
+	}
+	foundPoint, foundCorruptedEdge := false, false
+	for _, endpoint := range oracleEndpoints {
+		if endpoint.LoanID == loanID && endpoint.Kind == "point" {
+			foundPoint = true
+		}
+	}
+	for _, endpoint := range corrupted {
+		if endpoint.LoanID == loanID && endpoint.Kind == "edge" {
+			foundCorruptedEdge = true
+		}
+	}
+	if !foundPoint || !foundCorruptedEdge {
+		t.Fatalf("disagreement did not name loan %q by both its real point endpoint (%v) and the corrupted edge claim (%v)", loanID, oracleEndpoints, corrupted)
+	}
+}
+
+// metamorphicArmSource builds a 2-arm branch module whose "On" arm holds two
+// STRUCTURALLY INDEPENDENT shared-loan pairs (a/observedA and b/observedB —
+// neither pair reads the other, and both loans are on the same owner, which
+// is legal since shared+shared never conflicts) followed by a move that
+// comes after both loans' last use. order swaps which pair is bound first
+// (a genuine reordering of independent bindings); suffix alpha-renames both
+// pairs' identifiers (a genuine alpha-rename) — together the metamorphic
+// transformation 03-05-02 requires. The transformed program still checks
+// clean and still carries exactly the same NUMBER of loans/endpoints; only
+// their names and the operation ordinals they land on move.
+func metamorphicArmSource(order int, suffix string) []byte {
+	nameA, nameB := "a"+suffix, "b"+suffix
+	obsA, obsB := "observedA"+suffix, "observedB"+suffix
+	first, second := nameA, nameB
+	firstObs, secondObs := obsA, obsB
+	if order%2 == 1 {
+		first, second = nameB, nameA
+		firstObs, secondObs = obsB, obsA
+	}
+	body := fmt.Sprintf("      let %s = borrow flag\n      let %s = %s\n      let %s = borrow flag\n      let %s = %s\n      let moved%s = take flag\n      moved%s\n",
+		first, firstObs, first, second, secondObs, second, suffix, suffix)
+	return []byte(fmt.Sprintf(`module owned.branch_metamorphic
+
+export {
+  type Switch
+  fn choose
+}
+
+data Switch =
+  | On
+  | Off
+
+fn choose(flag: Switch) -> Switch {
+  match flag {
+    On => {
+%s    }
+    Off => {
+      let held = take flag
+      held
+    }
+  }
+}
+`, body))
+}
+
+// TestOracleMetamorphicTrials proves the oracle-vs-production differential
+// holds across a fixed-seed batch of syntactic reorderings of independent
+// bindings within an arm body (order-independent bindings commute: neither
+// reads the other) combined with alpha-renaming of the places involved, and
+// that the batch itself did not silently run fewer trials than requested
+// (D-10's own "ask what a green property test actually reaches" standard,
+// applied to trial COUNT, not just pass/fail).
+func TestOracleMetamorphicTrials(t *testing.T) {
+	const trials = 64
+	ran := 0
+	for seed := 0; seed < trials; seed++ {
+		ran++
+		source := metamorphicArmSource(seed, fmt.Sprintf("%d", seed))
+		parsed := syntax.Parse(source)
+		if len(parsed.Diagnostics) != 0 {
+			t.Fatalf("seed=%d: generated source failed to parse: %+v\n%s", seed, parsed.Diagnostics, source)
+		}
+		result := Program(parsed.Program)
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("seed=%d: generated fixture unexpectedly rejected: %+v\n%s", seed, result.Diagnostics, source)
+		}
+		function := result.Program.Functions[0]
+		if len(function.Linear.LoanEndpoints) != 2 {
+			t.Fatalf("seed=%d: want exactly 2 loan endpoints (both independent shared loans), got %+v", seed, function.Linear.LoanEndpoints)
+		}
+		want := append([]core.LoanEndpoint(nil), function.Linear.LoanEndpoints...)
+		got, work, err := pathoracle.RecomputeEndpoints(function)
+		if err != nil {
+			t.Fatalf("seed=%d: unexpected oracle error: %v", seed, err)
+		}
+		if work == 0 {
+			t.Fatalf("seed=%d: oracle reported zero work", seed)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("seed=%d: oracle disagreed with production: got %+v want %+v", seed, got, want)
+		}
+	}
+	if ran != trials {
+		t.Fatalf("metamorphic batch ran %d trials, want %d — a generator that silently stops early must fail this assertion", ran, trials)
+	}
+}
+
 func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
 	body := ast.LinearBody{
 		Bindings: []ast.Binding{
@@ -468,7 +665,7 @@ func generatedOwnershipBodyBytes(input []byte) ast.LinearBody {
 	names := []string{"value0", "value1", "value2"}
 	for index, raw := range input {
 		name := names[int(raw)%len(names)]
-		kinds := []string{"read", "take", "borrow"}
+		kinds := []string{"read", "take", "borrow", "borrow_mut"}
 		kind := kinds[(int(raw)/len(names))%len(kinds)]
 		sources := append(append([]string(nil), visibleNames...), "out_of_scope")
 		source := sources[(int(raw)/(len(names)*len(kinds)))%len(sources)]
@@ -528,7 +725,27 @@ type testOraclePlace struct {
 
 type testOracleLoan struct {
 	ownerID string
+	access  string
 	lastUse int
+}
+
+// oracleConflictingLoan independently re-derives the five-row conflict
+// matrix (03-02): shared+shared never conflicts; every other overlapping
+// combination (shared+exclusive, exclusive+shared, exclusive+exclusive)
+// does. This is a direct, deliberately duplicated restatement of the same
+// LAW check.go's conflictingLoan encodes, not a call into it -- the oracle
+// must never import or call production conflict logic.
+func oracleConflictingLoan(active map[string]testOracleLoan, ownerID, newAccess string) bool {
+	for _, loan := range active {
+		if loan.ownerID != ownerID {
+			continue
+		}
+		if newAccess == "shared" && loan.access == "shared" {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // oracleLoanLastUses derives loan liveness by a method the production pass
@@ -553,7 +770,7 @@ func oracleLoanLastUses(parameterName string, body *ast.LinearBody) map[int]int 
 
 	lastUses := make(map[int]int)
 	for loan, candidate := range body.Bindings {
-		if candidate.RHS.Kind != "borrow" {
+		if candidate.RHS.Kind != "borrow" && candidate.RHS.Kind != "borrow_mut" {
 			continue
 		}
 		reachable := map[int]bool{loan: true}
@@ -589,7 +806,7 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 	lastUses := oracleLoanLastUses(parameterName, body)
 	loanOrder := make([]int, 0)
 	for index, candidate := range body.Bindings {
-		if candidate.RHS.Kind == "borrow" {
+		if candidate.RHS.Kind == "borrow" || candidate.RHS.Kind == "borrow_mut" {
 			loanOrder = append(loanOrder, index)
 		}
 	}
@@ -634,9 +851,25 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 				result.DiagnosticCode = "ownership.borrow_requires_share"
 				return result
 			}
+			if oracleConflictingLoan(activeLoans, source.id, "shared") {
+				result.DiagnosticCode = "ownership.borrow_conflict"
+				return result
+			}
 			kind = core.OpBorrowShared
 			loanID = fmt.Sprintf("%s:loan:%d", functionID, index)
-			activeLoans[loanID] = testOracleLoan{ownerID: source.id, lastUse: lastUses[index]}
+			activeLoans[loanID] = testOracleLoan{ownerID: source.id, access: "shared", lastUse: lastUses[index]}
+		case "borrow_mut":
+			if !oracleHasAbility(typeFact.Abilities, core.AbilityShare) {
+				result.DiagnosticCode = "ownership.borrow_requires_share"
+				return result
+			}
+			if oracleConflictingLoan(activeLoans, source.id, "exclusive") {
+				result.DiagnosticCode = "ownership.borrow_conflict"
+				return result
+			}
+			kind = core.OpBorrowExclusive
+			loanID = fmt.Sprintf("%s:loan:%d", functionID, index)
+			activeLoans[loanID] = testOracleLoan{ownerID: source.id, access: "exclusive", lastUse: lastUses[index]}
 		default:
 			if !oracleHasAbility(typeFact.Abilities, core.AbilityCopy) {
 				result.DiagnosticCode = "ownership.transfer_requires_take"

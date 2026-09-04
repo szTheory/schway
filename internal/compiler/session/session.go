@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
+	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
@@ -938,6 +940,77 @@ func BorrowedLoanEndpointControlLane(honest core.Program) protocol.Lane {
 	return protocol.Lane{
 		Schema: "lang.verify-lane/0", ID: "lane:borrowed-loan-endpoint-control", Status: "pass",
 		Controls: []string{"control:core.loan_endpoint_mismatch"}, RecomputedWork: baseline.Checks + result.Checks,
+		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+	}
+}
+
+// PathOracleDisagreementLane is Phase 3's third-mechanism verify lane
+// (03-05, ROADMAP criterion 1). pathoracle.RecomputeEndpoints independently
+// recomputes a checked branch function's loan endpoints straight from its
+// declared Blocks/Edges/Operations -- it never reads the function's own
+// recorded Linear.LoanEndpoints field at all, so it always reports the TRUE
+// endpoint set regardless of what is stored there. This lane proves that
+// independence is load-bearing: it first confirms the oracle agrees with an
+// HONEST function's recorded endpoints (the ROADMAP criterion 1
+// differential itself), then mutates the recorded set (dropping one entry,
+// mirroring BorrowedLoanEndpointControlLane's own precedent) and confirms
+// the oracle's freshly recomputed answer -- run again from the SAME
+// Blocks/Edges/Operations, which the mutation never touched -- disagrees
+// with the now-corrupted recorded set, naming the loan whose true endpoint
+// the corruption altered. Uses the Phase 1 addLane shape (an explicit
+// status on every path), matching BorrowedLoanEndpointControlLane and
+// VerifyCorpus, never Phase 2's verifyOwnedCorpus shape that silently drops
+// a failing lane.
+func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
+	started := time.Now()
+	fail := func(work int) protocol.Lane {
+		return protocol.Lane{
+			Schema: "lang.verify-lane/0", ID: "lane:path-oracle-disagreement", Status: "fail",
+			Controls: nil, RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+		}
+	}
+
+	var branchFunction core.Function
+	found := false
+	for _, function := range honest.Functions {
+		if function.Linear != nil && len(function.Linear.LoanEndpoints) > 0 {
+			branchFunction = function
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fail(0) // nothing to disagree about -- the honest program carries no branch loan
+	}
+
+	recomputed, work, err := pathoracle.RecomputeEndpoints(branchFunction)
+	if err != nil {
+		return fail(work)
+	}
+	honestEndpoints := append([]core.LoanEndpoint(nil), branchFunction.Linear.LoanEndpoints...)
+	sort.Slice(honestEndpoints, func(i, j int) bool { return honestEndpoints[i].ID < honestEndpoints[j].ID })
+	if !reflect.DeepEqual(recomputed, honestEndpoints) {
+		return fail(work) // the oracle must AGREE with an honest, uncorrupted function first (criterion 1)
+	}
+
+	corrupted := append([]core.LoanEndpoint(nil), branchFunction.Linear.LoanEndpoints[1:]...)
+	mutatedFunction := branchFunction
+	mutatedFunction.Linear = &core.LinearBody{
+		ID: branchFunction.Linear.ID, Types: branchFunction.Linear.Types, Places: branchFunction.Linear.Places,
+		Operations: branchFunction.Linear.Operations, Blocks: branchFunction.Linear.Blocks, Edges: branchFunction.Linear.Edges,
+		LoanEndpoints: corrupted,
+	}
+	reconfirmed, reconfirmedWork, err := pathoracle.RecomputeEndpoints(mutatedFunction)
+	if err != nil {
+		return fail(work + reconfirmedWork)
+	}
+	if reflect.DeepEqual(reconfirmed, corrupted) {
+		return fail(work + reconfirmedWork) // dropping an endpoint failed to produce a disagreement
+	}
+
+	return protocol.Lane{
+		Schema: "lang.verify-lane/0", ID: "lane:path-oracle-disagreement", Status: "pass",
+		Controls: []string{"control:cfg.path_oracle_disagreement"}, RecomputedWork: work + reconfirmedWork,
 		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
 	}
 }

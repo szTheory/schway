@@ -912,3 +912,34 @@ func TestBorrowedLaneRecordsFailureStatus(t *testing.T) {
 		t.Fatalf("passing lane did not claim control:core.loan_endpoint_mismatch: %+v", passLane)
 	}
 }
+
+// TestPathOracleLaneRecordsControl proves session.PathOracleDisagreementLane
+// (03-05, ROADMAP criterion 1's third mechanism) records nonzero-work lanes
+// on both paths: a program with no branch loan fails without claiming a
+// control it never observed, and the honest, loan-bearing fixture passes
+// and claims exactly control:cfg.path_oracle_disagreement.
+func TestPathOracleLaneRecordsControl(t *testing.T) {
+	noLoan := checkedBranchProgram(t, branchNoLoanControlSource)
+	lane := session.PathOracleDisagreementLane(noLoan)
+	if lane.Status != "fail" {
+		t.Fatalf("expected a failing lane for a program with no branch loan, got status=%q lane=%+v", lane.Status, lane)
+	}
+	if lane.ID == "" {
+		t.Fatal("failing control vanished instead of being recorded as a lane")
+	}
+	if len(lane.Controls) != 0 {
+		t.Fatalf("a failing lane must not claim a control it never observed: %+v", lane)
+	}
+
+	honest := checkedBranchProgram(t, branchLoanControlSource)
+	passLane := session.PathOracleDisagreementLane(honest)
+	if passLane.Status != "pass" {
+		t.Fatalf("expected the honest, loan-bearing program to drive the control to pass: %+v", passLane)
+	}
+	if passLane.RecomputedWork == 0 {
+		t.Fatalf("passing lane recorded zero work: %+v", passLane)
+	}
+	if len(passLane.Controls) != 1 || passLane.Controls[0] != "control:cfg.path_oracle_disagreement" {
+		t.Fatalf("passing lane did not claim control:cfg.path_oracle_disagreement: %+v", passLane)
+	}
+}
