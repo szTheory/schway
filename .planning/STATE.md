@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Borrowed Views and CFG Lifetimes
 status: executing
-stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-09-04T04:15:43.767Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-09-04T04:48:46.998Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: c9709abf1ea1d5972b601e893da7040735f907ab
+state_head: a9733d0ed3bc3e24a728e1be711fabab212405a0
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 17
-  completed_plans: 13
+  completed_plans: 14
   percent: 33
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 03 execution started
 
@@ -66,6 +66,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 03 P01 | 95 min | 3 tasks | 19 files |
 | Phase 03 P02 | 70 min | 3 tasks | 26 files |
 | Phase 03 P06 | 70 min | 3 tasks | 17 files |
+| Phase 03 P03 | 100 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: [Phase 03-02]: D-02-09/D-07 closed — checkLinear refuses a straight-line linear function whose parameter shape has no native execution lowering (only Byte/Buffer) at check time, with ability derivation still running first.
 - [Phase 03]: [Phase 03-06]: Origin paths are scoped to a function's own single parameter name — this reduced language has one parameter per function and no field-path-bearing executable shape. — Box/Pair are rejected at check.go's execution-admission gate before a body is ever analyzed, so a richer field-path grammar would have no honest source input to exercise this phase.
 - [Phase 03]: [Phase 03-06]: A borrowed-view function's ability set is not separately re-derived with an explicit escape:false witness; PublicOrigin carries only Paths and Access. — corevalidate's existing type-fact loop recomputes abilities for every fact in linear.Types and requires an exact match for the same shape; a synthetic view TypeFact would desync from that independent recomputation.
+- [Phase 03]: [Phase 03-03]: Backward worklist loan liveness is scoped to checkBranch's arm blocks only; checkLinear/analyzeStraightLine keep discoverLoanLastUses unchanged to protect two already-shipped regression suites.
+- [Phase 03]: [Phase 03-03]: The uniform-join fixture pair is built on 03-01's per-arm alias isolation, not a shared pre-branch loan; only ONE fixture flips under the seeded uniform-join fault, matching the plan frontmatter's must_haves claim over the task prose's stronger 'both flip' claim.
 
 ### Pending Todos
 
@@ -124,6 +127,7 @@ None yet.
   mid-phase gate after wave 5 (03-05, the OWN-03 terminal) plus 03-06's re-pin to a parallel
   wave-2 track. See ROADMAP §Phase 3, "Decision (2026-09-04)".
 - Process debt adopted as standing rules after three gate failures shared one shape — a green test whose reachable input space omitted the hard case: mutation-kill every differential, interrogate what inputs a property test actually reaches, and drive the shipped binary on hand-written programs rather than only the gate's own corpus.
+- 03-03 flagged three documented deviations (straight-line scope, fixture-pair interpretation, single-fixture-flip) for human review before 03-04/03-05 build further on core.LoanEndpoint's current arm-block-only population.
 
 ### Roadmap Evolution
 
@@ -138,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T04:15:43.719Z
-Stopped at: Completed 03-06-PLAN.md
+Last session: 2026-09-04T04:48:46.937Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
