@@ -165,6 +165,85 @@ fn view(buffer: Buffer) -> borrow mut(buffer) Buffer {
 	}
 }
 
+// TestOmittedOriginRejected is 03-09-01's falsifier for D-03-02/GAP 2: a
+// function with NO declared origin, whose body's only return is a
+// borrow-derived place, must be refused publication with
+// core.origin_omitted — the category ValidatePublished's old
+// PublicOrigin == nil short-circuit made definitionally unreachable.
+func TestOmittedOriginRejected(t *testing.T) {
+	program := honestOmittedProgram(t, "public_view_omitted.lang")
+	problems := originvalidate.ValidatePublished(program)
+	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected exactly core.origin_omitted, got %+v", problems)
+	}
+	if !strings.Contains(problems[0].Detail, "buffer") || !strings.Contains(problems[0].Detail, `"exclusive"`) {
+		t.Fatalf("expected detail to name the derived paths and access, got %q", problems[0].Detail)
+	}
+}
+
+// TestOwnedReturnWithNoOriginStillPublishes is 03-09-01's falsifier for the
+// non-over-firing half of the same behavior: a function with no declared
+// origin whose return is NOT borrow-derived (RecomputeOrigin reports
+// not-ok) must still publish with no problems, whether the function is
+// straight-line (shared_shared_accept.lang, an owned take/return) or
+// match-bodied (borrowed_view.lang, a branch function whose every arm
+// returns an owned take).
+func TestOwnedReturnWithNoOriginStillPublishes(t *testing.T) {
+	for _, fixture := range []string{"shared_shared_accept.lang", "borrowed_view.lang"} {
+		program := honestOmittedProgram(t, fixture)
+		if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
+			t.Fatalf("%s: expected no problems for an owned return with no declared origin, got %+v", fixture, problems)
+		}
+	}
+}
+
+// TestExclusiveBorrowCleanShapeChecksButCannotPublish is 03-09-01's
+// falsifier for the fixture_disposition: session.Check on the exact
+// exclusive_borrow_clean / relay source (embedded verbatim from
+// check_exclusive_test.go, so the disposition is machine-checked rather
+// than asserted in prose) still returns zero diagnostics, while
+// ValidatePublished on that same checked program now returns
+// core.origin_omitted — the gate lives on the publication path only.
+func TestExclusiveBorrowCleanShapeChecksButCannotPublish(t *testing.T) {
+	const cleanSource = `module owned.exclusive_borrow_clean
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let view = borrow mut buffer
+  let reviewed = borrow view
+  view
+}
+`
+	checked := session.Check([]byte(cleanSource))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("expected session.Check to still accept the exclusive_borrow_clean shape unchanged, got %+v", checked.Diagnostics)
+	}
+	problems := originvalidate.ValidatePublished(checked.Program)
+	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected exactly core.origin_omitted on the publication path, got %+v", problems)
+	}
+}
+
+// honestOmittedProgram is like honestProgram but does NOT assert a non-nil
+// PublicOrigin — it is used for fixtures that deliberately declare none
+// (public_view_omitted.lang) or whose shape never carries one
+// (match-bodied borrowed_view.lang).
+func honestOmittedProgram(t testing.TB, fixture string) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
 // TestStaleSummaryRejectedBeforeOtherChecks is 03-06-02's falsifier for
 // T-03-03: a summary whose recorded digest does not match the core artifact
 // it is checked against is rejected before any origin or access question is

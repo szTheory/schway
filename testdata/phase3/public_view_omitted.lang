@@ -1,0 +1,21 @@
+// Omitted-origin control fixture (03-DEBT.md D-03-02, 03-VERIFICATION.md
+// GAP 2): the same borrow-derived-return shape as the already-shipped
+// exclusive_borrow_clean / relay fixture (internal/compiler/check/
+// check_exclusive_test.go), but exported here — this fixture pins the
+// publication-path law under test: a function whose declared return type
+// carries no `borrow`/`borrow mut` annotation, yet whose body's only
+// return is a borrow-derived place, must be refused publication by
+// `lang interface export` even though `lang check` still accepts it
+// unchanged.
+
+module owned.public_view_omitted
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let view = borrow mut buffer
+  let reviewed = borrow view
+  view
+}
