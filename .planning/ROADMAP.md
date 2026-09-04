@@ -131,7 +131,7 @@ native evidence, and finally the bounded agent/human feedback service.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
-| 2. Owned Values and Abilities | 7/7 | Awaiting re-verification |  |
+| 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 0/TBD | Not started | - |
 | 4. Fallible Resources and C Boundary | 0/TBD | Not started | - |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |

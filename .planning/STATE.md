@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-current_phase: 03
+current_phase: 3
 current_phase_name: Borrowed Views and CFG Lifetimes
-status: phase_complete
-stopped_at: Phase 02 closed at 3399ddc with all gates green and nine debt items recorded; Phase 03 not yet planned
-last_updated: "2026-09-04T00:00:00Z"
+status: planning
+stopped_at: Phase 02 complete, ready to plan Phase 3
+last_updated: "2026-09-04T01:50:25.190Z"
 last_activity: 2026-09-04
-last_activity_desc: Closed Phase 02 after two further review waves fixed a formatter regression, a borrow ability gate, and non-transitive loan liveness
-state_head: 3399ddc
+last_activity_desc: Phase 02 complete, transitioned to Phase 3
+state_head: 6e3ef81d84b7b1311b452eca5dd17c4acf302710
 progress:
   total_phases: 6
   completed_phases: 2
@@ -29,10 +29,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 02 (Owned Values and Abilities) — COMPLETE
-Plan: 7 of 7
-Status: Closed 2026-09-04 at `3399ddc`; verified 14/14, SECURED, nyquist_compliant
-Last activity: 2026-09-04 — Fixed a formatter regression introduced by the previous fix wave and recorded nine accepted debt items
+Phase: 3 — Borrowed Views and CFG Lifetimes
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-03 — Phase 02 complete, transitioned to Phase 3
 
 Progress: ██████████ [███░░░░░░░] 33%
 
@@ -40,7 +40,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 
 **Velocity:**
 
-- Total plans completed: 10
+- Total plans completed: 7
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -48,6 +48,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
+| 02 | 7 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -124,5 +125,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-09-04
-Stopped at: Phase 02 complete at `3399ddc`; Phase 03 discussion/planning not yet started
+Stopped at: Phase 02 complete, ready to plan Phase 3
 Resume file: none — start Phase 03 with `/gsd-plan-phase 03`

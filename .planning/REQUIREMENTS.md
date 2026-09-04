@@ -163,6 +163,13 @@ hiding runtime costs.
 - Mapped to phases: 28
 - Unmapped: 0 ✓
 
+> **Traceability linter note.** `gsd-tools phase complete` reports EFF-01, CON-01,
+> MEM-01, TRU-01, PKG-01, KIT-01, AI-01 and APP-01 as "found in body but missing
+> from Traceability table". That is expected and must not be actioned: those eight
+> live under **Later Milestones** and are deliberately outside M001. Adding them
+> here would falsify the coverage counts above. The linter scans the whole document
+> without respecting the milestone boundary.
+
 ## Definition of Done
 
 M001 is complete only when every requirement is implemented, independently
