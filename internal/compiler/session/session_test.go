@@ -962,6 +962,8 @@ func TestVerifyPhase3ControlsAndWork(t *testing.T) {
 		"control:origin.understated_summary",
 		"control:origin.impossible_summary",
 		"control:origin.stale_summary",
+		"control:origin.omitted_summary",
+		"control:origin.mixed_access_chain",
 	}
 	found := make(map[string]bool)
 	for _, lane := range result.Lanes {

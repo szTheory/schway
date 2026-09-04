@@ -1126,8 +1126,49 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		}
 	}
 
+	omitted, err := readBoundedFile(filepath.Join(corpus, "public_view_omitted.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_omitted.lang")
+	}
+	originBytes += len(omitted)
+	omittedChecked := Check(omitted)
+	if len(omittedChecked.Diagnostics) != 0 || len(omittedChecked.Program.Functions) != 1 {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "omitted origin fixture is invalid")
+	}
+	originWork++
+	if problems := originvalidate.ValidatePublished(omittedChecked.Program); len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.omitted_summary")
+	}
+
+	// control:origin.mixed_access_chain needs no mutation injection, unlike
+	// the understated and impossible controls above: check.go's honest
+	// producer constructs the mismatching declaration itself (a mixed
+	// shared/exclusive reborrow chain whose declared access the body cannot
+	// support), which is precisely why the defect reached the shipped
+	// binary (03-REVIEW.md CR-01, closed by 03-08).
+	mixedAccess, err := readBoundedFile(filepath.Join(corpus, "public_view_mixed_access.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_mixed_access.lang")
+	}
+	originBytes += len(mixedAccess)
+	mixedAccessChecked := Check(mixedAccess)
+	if len(mixedAccessChecked.Diagnostics) != 0 || len(mixedAccessChecked.Program.Functions) != 1 {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.borrowed_invalid", "mixed access chain fixture is invalid")
+	}
+	originWork++
+	if problems := originvalidate.ValidatePublished(mixedAccessChecked.Program); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		addLane("lane:borrowed-origin-controls", "fail", nil, originWork, originBytes, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.mixed_access_chain")
+	}
+
 	addLane("lane:borrowed-origin-controls", "pass", []string{
 		"control:origin.understated_summary", "control:origin.impossible_summary", "control:origin.stale_summary",
+		"control:origin.omitted_summary", "control:origin.mixed_access_chain",
 	}, originWork, originBytes, laneStarted)
 
 	requiredControls := []string{
@@ -1138,6 +1179,8 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		"control:origin.understated_summary",
 		"control:origin.impossible_summary",
 		"control:origin.stale_summary",
+		"control:origin.omitted_summary",
+		"control:origin.mixed_access_chain",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {

@@ -21,7 +21,9 @@ for control in \
 	control:cfg.path_oracle_disagreement \
 	control:origin.understated_summary \
 	control:origin.impossible_summary \
-	control:origin.stale_summary
+	control:origin.stale_summary \
+	control:origin.omitted_summary \
+	control:origin.mixed_access_chain
 do
 	grep -q "$control" "$verify_tmp/phase3.json" || { echo "phase3 verify: required Phase 3 control missing: $control" >&2; exit 1; }
 done
