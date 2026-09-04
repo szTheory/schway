@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Borrowed Views and CFG Lifetimes
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-09-04T03:18:10.706Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-09-04T03:46:38.636Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: 3da142a4886e2491deec3c732ede3cd97bf15edd
+state_head: 0ad2a94a35dff8707ca3184b8b9b84ec41df7437
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 17
-  completed_plans: 11
+  completed_plans: 12
   percent: 33
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 03 (Borrowed Views and CFG Lifetimes) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-09-03 — Phase 03 execution started
 
@@ -64,6 +64,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 02 P06 | 10 min | 2 tasks | 9 files |
 | Phase 02 P07 | 9 min | 2 tasks | 8 files |
 | Phase 03 P01 | 95 min | 3 tasks | 19 files |
+| Phase 03 P02 | 70 min | 3 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,9 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: [Phase 03-01]: A match with any arm body requires every arm to carry one; bare-arm-only matches remain the fully separate, untouched Phase 1 code path.
 - [Phase 03]: [Phase 03-01]: A match function whose arms carry linear bodies now legitimately carries both core.Match and core.Linear at once — the third case Function.HasClosedBody/Match.HasBlocks had to learn.
 - [Phase 03]: [Phase 03-01]: analyzeArmBody is a deliberate duplicate of analyzeStraightLine (not a shared helper), so the Phase 1/2 straight-line path carries zero risk from the CFG addition.
+- [Phase 03]: [Phase 03-02]: An exclusive loan is gated on the same AbilityShare requirement a shared loan is gated on, not a new ability.
+- [Phase 03]: [Phase 03-02]: corevalidate independently re-derives the five-row loan conflict matrix via running per-owner high-water-mark maps, a materially different mechanism from check.go's active-loan-set (D-12).
+- [Phase 03]: [Phase 03-02]: D-02-09/D-07 closed — checkLinear refuses a straight-line linear function whose parameter shape has no native execution lowering (only Byte/Buffer) at check time, with ability derivation still running first.
 
 ### Pending Todos
 
@@ -131,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T03:18:04.205Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-09-04T03:46:29.786Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
