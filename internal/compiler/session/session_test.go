@@ -212,60 +212,50 @@ func TestImplicitByteCopy(t *testing.T) {
 	}
 }
 
+// TestSourceBoxPairAbilityFacts closes D-02-09/D-07 (03-02-03): Box/Pair
+// shapes type-check but have no native execution lowering this phase, so
+// `check` now refuses them at check time with a causal, repair-bearing
+// diagnostic per function rather than admitting them into the checked core
+// (where every downstream engine used to die spanless at exit 3). This test
+// used to assert the OPPOSITE — that these three functions checked clean and
+// their derived ability facts landed in the returned core.Program — because
+// closing this gap is exactly what 03-02-03 changes. See
+// TestAbilityFactsSurviveExecutionRejection for proof that the underlying
+// ability derivation these functions exercise is unaffected by the new
+// execution-admission gate.
 func TestSourceBoxPairAbilityFacts(t *testing.T) {
 	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "ability_shapes.lang"))
-	if err != nil || len(checked.Diagnostics) != 0 {
-		t.Fatalf("ability shape check failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if checked.Program.Schema != core.Schema1 || len(checked.Program.Functions) != 3 {
-		t.Fatalf("unexpected ability core: %+v", checked.Program)
+	if len(checked.Diagnostics) != 3 {
+		t.Fatalf("want 3 unexecutable-shape diagnostics (one per function), got %+v", checked.Diagnostics)
 	}
-
-	type expectedFact struct {
-		shape     core.TypeRef
-		granted   []core.Ability
-		witnesses []core.AbilityWitness
+	if len(checked.Program.Functions) != 0 {
+		t.Fatalf("a rejected function must not be admitted into the checked core: %+v", checked.Program.Functions)
 	}
-	want := map[string]expectedFact{
-		"keep_boxed_byte": {
-			shape:     core.TypeRef{Constructor: "Box", Arguments: []core.TypeRef{{Constructor: "Byte", Arguments: []core.TypeRef{}}}},
-			granted:   []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
-			witnesses: []core.AbilityWitness{},
-		},
-		"keep_boxed_buffer": {
-			shape:     core.TypeRef{Constructor: "Box", Arguments: []core.TypeRef{{Constructor: "Buffer", Arguments: []core.TypeRef{}}}},
-			granted:   []core.Ability{core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
-			witnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Box.value", "Buffer"}}},
-		},
-		"keep_pair": {
-			shape: core.TypeRef{Constructor: "Pair", Arguments: []core.TypeRef{
-				{Constructor: "Byte", Arguments: []core.TypeRef{}},
-				{Constructor: "Buffer", Arguments: []core.TypeRef{}},
-			}},
-			granted:   []core.Ability{core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
-			witnesses: []core.AbilityWitness{{Ability: core.AbilityCopy, Path: []string{"Pair.right", "Buffer"}}},
-		},
-	}
-	for _, function := range checked.Program.Functions {
-		expected, ok := want[function.Name]
-		if !ok {
-			t.Fatalf("unexpected function %q", function.Name)
+	wantConstructors := map[string]bool{"Box": false, "Pair": false}
+	for _, problem := range checked.Diagnostics {
+		if problem.Code != "check.unexecutable_shape" {
+			t.Fatalf("unexpected diagnostic code %q: %+v", problem.Code, problem)
 		}
-		if function.Linear == nil || len(function.Linear.Types) != 1 {
-			t.Fatalf("%s omitted its materialized type fact: %+v", function.Name, function.Linear)
+		if problem.Primary == (diagnostic.Span{}) {
+			t.Fatalf("unexecutable-shape diagnostic carries no span: %+v", problem)
 		}
-		fact := function.Linear.Types[0]
-		if !reflect.DeepEqual(fact.Shape, expected.shape) || !reflect.DeepEqual(fact.Abilities, expected.granted) || !reflect.DeepEqual(fact.NegativeWitnesses, expected.witnesses) {
-			t.Fatalf("%s ability fact mismatch:\ngot=%+v\nwant shape=%+v abilities=%+v witnesses=%+v", function.Name, fact, expected.shape, expected.granted, expected.witnesses)
+		if len(problem.Repairs) == 0 {
+			t.Fatalf("unexecutable-shape diagnostic carries no repair: %+v", problem)
 		}
-		encoded, err := json.Marshal(fact)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, abilityName := range []string{"copy", "drop", "share", "send", "escape"} {
-			if bytes.Count(encoded, []byte(`"`+abilityName+`"`)) > 1 {
-				t.Fatalf("%s serialized duplicate %s fact: %s", function.Name, abilityName, encoded)
+		for _, cause := range problem.Causes {
+			if cause.Kind == "constructor" {
+				if _, known := wantConstructors[cause.Detail]; known {
+					wantConstructors[cause.Detail] = true
+				}
 			}
+		}
+	}
+	for constructor, seen := range wantConstructors {
+		if !seen {
+			t.Fatalf("expected a diagnostic naming constructor %q among %+v", constructor, checked.Diagnostics)
 		}
 	}
 }

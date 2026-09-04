@@ -217,6 +217,36 @@ func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
 			t.Fatalf("human projection lost machine identities: human=%q machine=%+v", human.Stderr, decoded)
 		}
 	}
+
+	// 03-02-03 (D-02-09/D-07): testdata/phase2/ability_shapes.lang now
+	// carries one check.unexecutable_shape diagnostic per function (three
+	// total, not one), so it is verified separately from the single-
+	// diagnostic loop above — but the same human/JSON identity-parity
+	// contract must hold for every one of them.
+	fixture := testsupport.ProjectPath("testdata", "phase2", "ability_shapes.lang")
+	human := testsupport.RunCLI(t, binary, nil, "check", fixture)
+	machine := testsupport.RunCLI(t, binary, nil, "--json", "check", fixture)
+	if human.Exit != 2 || machine.Exit != 2 || len(human.Stdout) != 0 || len(machine.Stderr) != 0 {
+		t.Fatalf("projection stream/exit mismatch for %s: human=%+v machine=%+v", fixture, human, machine)
+	}
+	var decoded protocol.Result
+	if err := json.Unmarshal(machine.Stdout, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Schema != "lang.command/0" || len(decoded.Diagnostics) != 3 {
+		t.Fatalf("command envelope or diagnostics missing: %+v", decoded)
+	}
+	if !strings.Contains(string(human.Stderr), decoded.ID) {
+		t.Fatalf("human projection lost machine result identity: human=%q machine=%+v", human.Stderr, decoded)
+	}
+	for _, problem := range decoded.Diagnostics {
+		if problem.Code != "check.unexecutable_shape" {
+			t.Fatalf("unexpected diagnostic code %q: %+v", problem.Code, problem)
+		}
+		if !strings.Contains(string(human.Stderr), problem.ID) {
+			t.Fatalf("human projection lost machine diagnostic identity %q: human=%q", problem.ID, human.Stderr)
+		}
+	}
 }
 
 func TestVerifyCLI(t *testing.T) {
