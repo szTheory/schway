@@ -102,19 +102,32 @@ func RecomputeOrigin(function core.Function) (paths []string, access string, ok 
 	return []string{function.Parameter.Name}, derivedAccess, true
 }
 
-// ValidatePublished recomputes every function's PublicOrigin fact from its
-// body and compares it against the declaration, following Spike 003's
+// ValidatePublished recomputes every function's origin from its body and
+// compares it against the declaration, following Spike 003's
 // producer-verification gates. It returns the first problem only, matching
 // corevalidate's first-problem-only accumulation, so the stable assertion
-// target is always the first defect. A function with no PublicOrigin is
-// untouched — this package only ever judges a fact that was actually
-// declared.
+// target is always the first defect. Recomputation now runs unconditionally
+// for every function, including one with no declared PublicOrigin at all
+// (D-03-02/GAP 2, ROADMAP SC4's "omitted" category): when recomputation
+// succeeds for such a function, its body actually returns a borrow-derived
+// place that publication would otherwise expose indistinguishably from a
+// fully-owned return, and that is refused with core.origin_omitted. When
+// recomputation instead reports not-ok (an owned return, or a match-bodied
+// function with no linear return chain), the function is left untouched
+// exactly as before — the new check does not over-fire on an honest,
+// declaration-free owned value.
 func ValidatePublished(program core.Program) []Problem {
 	for _, function := range program.Functions {
+		recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function)
 		if function.PublicOrigin == nil {
+			if ok {
+				return []Problem{{
+					Code:   "core.origin_omitted",
+					Detail: fmt.Sprintf("%s: no declared origin, but body derives origin %v with access %q", function.ID, recomputedPaths, recomputedAccess),
+				}}
+			}
 			continue
 		}
-		recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function)
 		if !ok || !containsAll(function.PublicOrigin.Paths, recomputedPaths) {
 			return []Problem{{
 				Code:   "core.origin_understated",

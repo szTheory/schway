@@ -473,6 +473,35 @@ func TestMixedAccessChainRejectedThroughCLI(t *testing.T) {
 	}
 }
 
+// TestOmittedOriginRejectedThroughCLI is 03-09-01's D-11 shipped-binary
+// falsifier for D-03-02/GAP 2: `interface export` on a hand-written
+// borrow-derived-return fixture that carries NO declared origin annotation
+// must exit non-zero, name core.origin_omitted in its JSON diagnostics, and
+// must not write the output summary file at all.
+func TestOmittedOriginRejectedThroughCLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_omitted.lang")
+	summaryPath := filepath.Join(t.TempDir(), "summary.json")
+
+	result := testsupport.RunCLI(t, binary, nil, "--json", "interface", "export", fixture, summaryPath)
+	if result.Exit == 0 {
+		t.Fatalf("expected non-zero exit for an omitted origin declaration: %+v", result)
+	}
+	if !bytes.Contains(result.Stdout, []byte("core.origin_omitted")) {
+		t.Fatalf("expected core.origin_omitted in CLI output: %s", result.Stdout)
+	}
+	var decoded protocol.Result
+	if err := json.Unmarshal(result.Stdout, &decoded); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, result.Stdout)
+	}
+	if len(decoded.Diagnostics) != 1 || decoded.Diagnostics[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected exactly one core.origin_omitted diagnostic, got %+v", decoded.Diagnostics)
+	}
+	if _, err := os.Stat(summaryPath); !os.IsNotExist(err) {
+		t.Fatalf("expected no summary file to be written, stat err=%v", err)
+	}
+}
+
 // TestBranchFixturesThroughCLI is 03-03-02's D-11 shipped-binary proof: the
 // edge-specific accept/reject fixture pair is driven through the real
 // `./cmd/lang` binary's JSON projection (not only the in-process harness),
