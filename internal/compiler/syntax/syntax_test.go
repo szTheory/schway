@@ -269,6 +269,57 @@ func TestExclusiveBorrowRoundTrips(t *testing.T) {
 	}
 }
 
+// TestPublicViewRoundTrips is 03-06-01's syntax falsifier for OWN-04: the
+// borrow(path)/borrow mut(path) return-type annotation parses losslessly,
+// formats to a fixed point, and preserves token identity across reparse.
+func TestPublicViewRoundTrips(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if !bytes.Equal(parsed.Tree.Bytes(), source) {
+		t.Fatal("public view fixture CST lost bytes")
+	}
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %v", diagnosticIdentity(parsed.Diagnostics))
+	}
+	if len(parsed.Program.Funcs) != 1 {
+		t.Fatalf("expected one function: %+v", parsed.Program.Funcs)
+	}
+	origin := parsed.Program.Funcs[0].ReturnOrigin
+	if origin == nil || origin.Path != "buffer" || origin.Access != "shared" {
+		t.Fatalf("expected a shared origin naming buffer, got %+v", origin)
+	}
+	canonical := syntax.Format(parsed.Tree)
+	if !bytes.Equal(canonical, source) {
+		t.Fatalf("public view fixture is not canonical:\n%s", canonical)
+	}
+	reparsed := syntax.Parse(canonical)
+	if len(reparsed.Diagnostics) != 0 || !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+		t.Fatalf("public view fixture did not reach a formatting fixed point: %v", diagnosticIdentity(reparsed.Diagnostics))
+	}
+	if !reflect.DeepEqual(withoutSpans(parsed.Program), withoutSpans(reparsed.Program)) {
+		t.Fatal("public view fixture changed the closed-body semantic projection across reparse")
+	}
+	if !reflect.DeepEqual(semanticTokens(parsed.Tree), semanticTokens(reparsed.Tree)) {
+		t.Fatal("public view fixture changed its semantic token projection across reparse")
+	}
+
+	exclusive := []byte("module owned.public_view_exclusive\n\nexport {\n  fn view\n}\n\nfn view(buffer: Buffer) -> borrow mut(buffer) Buffer {\n  let observed = borrow mut buffer\n  observed\n}\n")
+	exclusiveParsed := syntax.Parse(exclusive)
+	if len(exclusiveParsed.Diagnostics) != 0 {
+		t.Fatalf("unexpected exclusive-origin diagnostics: %v", diagnosticIdentity(exclusiveParsed.Diagnostics))
+	}
+	exclusiveOrigin := exclusiveParsed.Program.Funcs[0].ReturnOrigin
+	if exclusiveOrigin == nil || exclusiveOrigin.Access != "exclusive" {
+		t.Fatalf("expected an exclusive origin, got %+v", exclusiveOrigin)
+	}
+	if canonicalExclusive := syntax.Format(exclusiveParsed.Tree); !bytes.Equal(canonicalExclusive, exclusive) {
+		t.Fatalf("exclusive public view fixture is not canonical:\n%s", canonicalExclusive)
+	}
+}
+
 // TestArmBodyLimits is 03-01-03's syntax falsifier for T-03-01: a match
 // exceeding the declared arm limit is rejected fail-closed with a bounded,
 // stable diagnostic rather than accepted or run to exhaustion.

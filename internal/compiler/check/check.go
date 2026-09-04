@@ -56,6 +56,19 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("core.invalid_body", function.Span, "function must have exactly one body variant"))
 			continue
 		}
+		// OWN-04 scope fence: a match-bodied (S1) function — bare-arm or
+		// arm-body/branch alike — must not return a borrowed view this phase.
+		// This is deliberately checked before either match path below so the
+		// rejection carries a named, span-bearing cause instead of falling
+		// through to the generic type.return_mismatch the bare-match path
+		// would otherwise produce for a return type it does not recognize.
+		if function.Body.Linear == nil && function.ReturnOrigin != nil {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
+				"ownership.match_borrowed_return_unsupported", function.ReturnOrigin.Span,
+				"a match-bodied function cannot declare a borrowed return origin this phase",
+			))
+			continue
+		}
 		if function.Body.Linear != nil {
 			checked, diagnostics, work := checkLinear(program.Module, functionID, function)
 			result.Work += work
@@ -526,6 +539,24 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 	if !sameType(function.ReturnType, function.Parameter.Type) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType)
 	}
+	// OWN-04: the borrowed-view return case relaxes nothing about type
+	// identity above (the underlying type must still match the parameter
+	// type) — it adds a new legal declaration alongside the unchanged
+	// ordinary case, resolved on the syntactic discriminant
+	// (function.ReturnOrigin != nil) rather than on the return type's shape.
+	// A borrowed return with a path other than the function's own single
+	// parameter is a causal, span-bearing rejection: this reduced language
+	// has one parameter per function and no field-path-bearing executable
+	// shape, so any other path can never be honest.
+	if function.ReturnOrigin != nil && function.ReturnOrigin.Path != function.Parameter.Name {
+		causes := []diagnostic.Cause{
+			{Kind: "declared_path", Detail: function.ReturnOrigin.Path},
+			{Kind: "only_legal_path", Detail: function.Parameter.Name},
+		}
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
+			"origin.unknown_path", function.ReturnOrigin.Span, "borrowed-view origin path must name the function's own parameter", causes...,
+		)}, typeNodeCount(parameterType)
+	}
 	derived, err := ability.Derive(parameterType)
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
@@ -566,10 +597,14 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 	}
 	linear.Places = support.Places
 	linear.Operations = support.Operations
+	var publicOrigin *core.PublicOrigin
+	if function.ReturnOrigin != nil {
+		publicOrigin = &core.PublicOrigin{Paths: []string{function.ReturnOrigin.Path}, Access: function.ReturnOrigin.Access}
+	}
 	return core.Function{
 		ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
 		Parameter: core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor}, ReturnType: function.ReturnType.Constructor,
-		Linear: linear, Span: function.Span,
+		Linear: linear, PublicOrigin: publicOrigin, Span: function.Span,
 	}, nil, support.Work
 }
 

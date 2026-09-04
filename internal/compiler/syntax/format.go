@@ -86,6 +86,13 @@ func (f *formatter) token(token Token) {
 		f.write("mut ")
 	case TokenIdentifier:
 		f.ensureLine()
+		// A return type identifier immediately follows the borrow-origin
+		// annotation's closing paren (`borrow(path) Type`). The parameter-list
+		// RParen is always followed by TokenArrow, never an identifier
+		// directly, so this is an unambiguous signal for the annotation case.
+		if f.previous == TokenRParen {
+			f.out.WriteByte(' ')
+		}
 		f.out.WriteString(token.Text)
 		f.lineOpen = true
 		if f.context() == "export" && (f.previous == TokenType || f.previous == TokenFn) {
@@ -138,6 +145,13 @@ func (f *formatter) token(token Token) {
 			f.newline()
 		}
 	case TokenLParen:
+		// A borrow-origin annotation's opening paren immediately follows
+		// `borrow`/`mut` with no space (`borrow(path)`, `borrow mut(path)`).
+		// The parameter-list `(` always follows an identifier (the function
+		// name), never TokenBorrow/TokenMut, so this is unambiguous.
+		if f.previous == TokenBorrow || f.previous == TokenMut {
+			f.trimSpace()
+		}
 		f.out.WriteByte('(')
 		f.lineOpen = true
 	case TokenRParen:

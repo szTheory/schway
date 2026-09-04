@@ -27,11 +27,24 @@ type Alternative struct {
 }
 
 type FuncDecl struct {
-	Name       string
-	Parameter  Parameter
-	ReturnType TypeRef
-	Body       Body
-	Span       diagnostic.Span
+	Name         string
+	Parameter    Parameter
+	ReturnOrigin *BorrowOrigin
+	ReturnType   TypeRef
+	Body         Body
+	Span         diagnostic.Span
+}
+
+// BorrowOrigin is the Phase 3 return-type annotation `borrow(path)` /
+// `borrow mut(path)` preceding an ordinary return TypeRef. Its presence is
+// the syntactic discriminant for the borrowed-view return case (OWN-04):
+// exactly one path is supported this phase (the function's own parameter
+// name — the language has a single parameter and no field-path-bearing
+// executable shape), and Access names the declared access mode.
+type BorrowOrigin struct {
+	Path   string
+	Access string // "shared" | "exclusive"
+	Span   diagnostic.Span
 }
 
 type Parameter struct {

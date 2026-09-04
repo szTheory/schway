@@ -23,15 +23,65 @@ type DataType struct {
 }
 
 type Function struct {
-	ID            string          `json:"id"`
-	Name          string          `json:"name"`
-	EntryPointID  string          `json:"entry_point_id"`
-	ReturnPointID string          `json:"return_point_id"`
-	Parameter     Parameter       `json:"parameter"`
-	ReturnType    string          `json:"return_type"`
-	Match         *Match          `json:"match,omitempty"`
-	Linear        *LinearBody     `json:"linear,omitempty"`
-	Span          diagnostic.Span `json:"span"`
+	ID            string      `json:"id"`
+	Name          string      `json:"name"`
+	EntryPointID  string      `json:"entry_point_id"`
+	ReturnPointID string      `json:"return_point_id"`
+	Parameter     Parameter   `json:"parameter"`
+	ReturnType    string      `json:"return_type"`
+	Match         *Match      `json:"match,omitempty"`
+	Linear        *LinearBody `json:"linear,omitempty"`
+	// PublicOrigin is the Phase 3 OWN-04 fact (additive, omitempty): present
+	// only when the function's return type carried a `borrow(path)` /
+	// `borrow mut(path)` annotation. It is a sibling of Match/Linear, not a
+	// field on TypeFact, because origin is a per-signature fact about which
+	// parameter a result derives from, not a property of the returned type
+	// itself (03-RESEARCH Q5).
+	PublicOrigin *PublicOrigin   `json:"public_origin,omitempty"`
+	Span         diagnostic.Span `json:"span"`
+}
+
+// PublicOrigin records the declared origin path(s) and access mode for a
+// function whose return type is a borrowed view. Paths is one or more
+// `parameter[.field]` strings; this phase's executable shapes (Byte, Buffer)
+// carry no fields and every function has exactly one parameter, so the only
+// legal path is the parameter's own name — the slice shape is kept plural so
+// a future field-path or per-alternative extension is additive, not a schema
+// change. Access is "shared" or "exclusive", carried independently of Paths.
+type PublicOrigin struct {
+	Paths  []string `json:"paths"`
+	Access string   `json:"access"`
+}
+
+// Interface is the Phase 3 OWN-04 body-stripped separate-compilation
+// artifact (03-RESEARCH Q6): a subset of Program containing only module
+// identity, a digest binding it to the exact core.Program it was derived
+// from, and per-function signatures — explicitly no Linear or Match body.
+// A consuming process decodes only this shape and can never reconstruct a
+// provider body from it.
+type Interface struct {
+	Schema     string              `json:"schema"`
+	ModuleID   string              `json:"module_id"`
+	CoreDigest string              `json:"core_digest"`
+	Functions  []FunctionSignature `json:"functions"`
+}
+
+// InterfaceSchema versions the Interface artifact independently of the core
+// schema it summarizes: adding a field here never moves a core.Program byte.
+const InterfaceSchema = "lang.interface/0"
+
+// FunctionSignature is one function's body-stripped public surface: identity,
+// parameter/return shape, its declared origin (if any), and its granted
+// abilities. It deliberately has no Linear/Match field at all — not merely an
+// omitted one — so a consumer decoding this type structurally cannot reach a
+// body even by accident.
+type FunctionSignature struct {
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	Parameter    Parameter     `json:"parameter"`
+	ReturnType   string        `json:"return_type"`
+	PublicOrigin *PublicOrigin `json:"public_origin,omitempty"`
+	Abilities    []Ability     `json:"abilities"`
 }
 
 type Parameter struct {

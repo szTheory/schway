@@ -1,0 +1,19 @@
+// Impossible-access control fixture: this program is an honest borrowed
+// view declaring shared access. The dishonesty this fixture is used to
+// falsify — a declared access mode the body cannot produce (e.g. claiming
+// exclusive when the body only ever borrows shared) — is injected by
+// mutating the checked core.Program's own PublicOrigin fact in
+// TestOriginAccessMismatchRejected, not by this source, for the same reason
+// public_view_understated.lang documents: check.go's honest producer can
+// never construct the impossible declaration itself.
+
+module owned.public_view_impossible
+
+export {
+  fn view
+}
+
+fn view(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}

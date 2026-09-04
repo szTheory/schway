@@ -45,6 +45,15 @@ func run(args []string) int {
 	if len(args) == 2 && args[0] == "verify" {
 		return runVerify(args[1], jsonMode)
 	}
+	if len(args) == 4 && args[0] == "interface" && args[1] == "export" {
+		return runInterfaceExport(args[2], args[3], jsonMode)
+	}
+	if len(args) == 4 && args[0] == "interface" && args[1] == "core" {
+		return runInterfaceCore(args[2], args[3], jsonMode)
+	}
+	if len(args) == 4 && args[0] == "interface" && args[1] == "check" {
+		return runInterfaceCheck(args[2], args[3], jsonMode)
+	}
 	if len(args) == 3 && args[0] == "run" && strings.HasPrefix(args[1], "--engine=") {
 		engine := strings.TrimPrefix(args[1], "--engine=")
 		switch engine {
@@ -121,6 +130,43 @@ func runVerify(corpus string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
+// runInterfaceExport is OWN-04's producer-side CLI seam: it checks SRC,
+// independently recomputes every declared public origin from the typed core
+// alone, and — only on success — writes a body-stripped, digest-bound
+// interface summary to OUT.
+func runInterfaceExport(source, out string, jsonMode bool) int {
+	result, err := session.InterfaceExportCommandFile(source, out)
+	if err != nil {
+		return emit(problemResult("interface", protocol.StatusOperational, "tool.operation_failed", "unable to export interface"), jsonMode, false)
+	}
+	return emit(result, jsonMode, false)
+}
+
+// runInterfaceCore writes the checked-and-validated core artifact for SRC to
+// OUT — a standalone way to obtain the exact bytes an interface summary's
+// digest is bound to (a real pipeline already retains this from `lang
+// check`).
+func runInterfaceCore(source, out string, jsonMode bool) int {
+	result, err := session.InterfaceCoreCommandFile(source, out)
+	if err != nil {
+		return emit(problemResult("interface", protocol.StatusOperational, "tool.operation_failed", "unable to write core artifact"), jsonMode, false)
+	}
+	return emit(result, jsonMode, false)
+}
+
+// runInterfaceCheck is OWN-04's consumer-side CLI seam: a genuinely separate
+// process invocation that decides origin/access questions from SUMMARY alone.
+// CORE's bytes are hashed and compared against SUMMARY's recorded digest but
+// are never decoded into a core.Program — this is the real second invocation
+// success criterion 4 requires, not an in-process simulation.
+func runInterfaceCheck(summary, core string, jsonMode bool) int {
+	result, err := session.InterfaceCheckCommandFile(summary, core)
+	if err != nil {
+		return emit(problemResult("interface", protocol.StatusOperational, "tool.read_failed", "unable to read interface inputs"), jsonMode, false)
+	}
+	return emit(result, jsonMode, false)
+}
+
 func extractJSON(args []string) ([]string, bool, bool) {
 	filtered := make([]string, 0, len(args))
 	jsonMode := false
@@ -167,5 +213,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE")
 }

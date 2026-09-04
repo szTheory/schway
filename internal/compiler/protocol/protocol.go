@@ -35,6 +35,25 @@ type EvidenceSummary struct {
 	Digest string `json:"digest"`
 }
 
+// InterfaceFunctionAnswer is one function's body-blind origin answer, read
+// directly from a core.Interface summary — never from a body field.
+type InterfaceFunctionAnswer struct {
+	ID     string   `json:"id"`
+	Name   string   `json:"name"`
+	Paths  []string `json:"paths,omitempty"`
+	Access string   `json:"access,omitempty"`
+}
+
+// InterfaceSummary is the `interface export`/`interface check` command
+// projection: module identity, the digest binding the summary to its
+// producing core artifact, and each function's body-blind origin answer.
+type InterfaceSummary struct {
+	Schema     string                    `json:"schema"`
+	ModuleID   string                    `json:"module_id"`
+	CoreDigest string                    `json:"core_digest"`
+	Functions  []InterfaceFunctionAnswer `json:"functions"`
+}
+
 type Lane struct {
 	Schema         string   `json:"schema"`
 	ID             string   `json:"id"`
@@ -57,6 +76,7 @@ type Result struct {
 	Diagnostics     []diagnostic.Diagnostic `json:"diagnostics"`
 	Executions      []interp.Execution      `json:"executions"`
 	Evidence        *EvidenceSummary        `json:"evidence,omitempty"`
+	Interface       *InterfaceSummary       `json:"interface,omitempty"`
 	Lanes           []Lane                  `json:"lanes"`
 	ExpectedEscapes []string                `json:"expected_escapes,omitempty"`
 	Metrics         Metrics                 `json:"metrics"`
@@ -80,6 +100,7 @@ func (result Result) Finalize() Result {
 		DiagnosticIDs    []string
 		ExecutionDigests []string
 		EvidenceID       string
+		InterfaceID      string
 		LaneIDs          []string
 		ExpectedEscapes  []string `json:",omitempty"`
 	}{
@@ -103,6 +124,11 @@ func (result Result) Finalize() Result {
 	}
 	if result.Evidence != nil {
 		identity.EvidenceID = result.Evidence.ID
+	}
+	if result.Interface != nil {
+		encodedInterface, _ := json.Marshal(result.Interface)
+		interfaceSum := sha256.Sum256(encodedInterface)
+		identity.InterfaceID = hex.EncodeToString(interfaceSum[:12])
 	}
 	for _, lane := range result.Lanes {
 		identity.LaneIDs = append(identity.LaneIDs, lane.ID+":"+lane.Status)
@@ -171,6 +197,12 @@ func human(result Result) string {
 	}
 	if result.Evidence != nil {
 		fmt.Fprintf(&output, "%s %s digest=%s\n", result.Evidence.ID, result.Evidence.Schema, result.Evidence.Digest)
+	}
+	if result.Interface != nil {
+		fmt.Fprintf(&output, "%s module=%s core_digest=%s\n", result.Interface.Schema, result.Interface.ModuleID, result.Interface.CoreDigest)
+		for _, function := range result.Interface.Functions {
+			fmt.Fprintf(&output, "  %s %s paths=%v access=%s\n", function.ID, function.Name, function.Paths, function.Access)
+		}
 	}
 	for _, lane := range result.Lanes {
 		fmt.Fprintf(&output, "%s %s %s work=%d\n", lane.ID, lane.Schema, lane.Status, lane.RecomputedWork)

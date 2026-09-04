@@ -1,0 +1,13 @@
+// A public borrowed view declares its origin and access mode in the return
+// type; the checker records a PublicOrigin fact independent of the body.
+
+module owned.public_view
+
+export {
+  fn view
+}
+
+fn view(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}

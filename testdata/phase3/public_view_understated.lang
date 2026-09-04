@@ -1,0 +1,19 @@
+// Understated-origin control fixture: this program is an honest borrowed
+// view. The dishonesty this fixture is used to falsify — a declared origin
+// set that omits a path the body actually derives from — is injected by
+// mutating the checked core.Program's own PublicOrigin fact in
+// TestOriginUnderstatedRejected, not by this source: check.go's honest
+// producer can never construct an understated declaration itself, so the
+// dishonest artifact must be assembled the same way OV-02-01's mutation-kill
+// precedent assembles its own falsifying inputs.
+
+module owned.public_view_understated
+
+export {
+  fn view
+}
+
+fn view(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}

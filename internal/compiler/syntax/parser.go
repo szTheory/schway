@@ -227,6 +227,7 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	parameterType := p.typeRef()
 	p.expect(TokenRParen, "syntax.expected_rparen")
 	p.expect(TokenArrow, "syntax.expected_arrow")
+	returnOrigin := p.borrowOrigin()
 	returnType := p.typeRef()
 	p.expect(TokenLBrace, "syntax.expected_lbrace")
 	var body ast.Body
@@ -239,12 +240,37 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	}
 	end := p.expect(TokenRBrace, "syntax.expected_rbrace")
 	return ast.FuncDecl{
-		Name:       name.Text,
-		Parameter:  ast.Parameter{Name: parameterName.Text, Type: parameterType, Span: parameterName.Span},
-		ReturnType: returnType,
-		Body:       body,
-		Span:       spanFrom(start, end),
+		Name:         name.Text,
+		Parameter:    ast.Parameter{Name: parameterName.Text, Type: parameterType, Span: parameterName.Span},
+		ReturnOrigin: returnOrigin,
+		ReturnType:   returnType,
+		Body:         body,
+		Span:         spanFrom(start, end),
 	}
+}
+
+// borrowOrigin parses the optional Phase 3 return-type annotation preceding
+// an ordinary return TypeRef: `borrow(path)` (shared access) or
+// `borrow mut(path)` (exclusive access). Its presence is the syntactic
+// discriminant for the borrowed-view return case (OWN-04) — resolved here,
+// before sameType ever runs, so every other return-type spelling takes the
+// unchanged identity path. A `borrow` token with no following `(path)` is a
+// parse-level rejection (syntax.expected_lparen / syntax.expected_origin_path),
+// not an inference: a borrowed return with no declared origin never reaches
+// check.go as a legal program.
+func (p *parser) borrowOrigin() *ast.BorrowOrigin {
+	if p.peek().Kind != TokenBorrow {
+		return nil
+	}
+	start := p.advance()
+	access := "shared"
+	if p.accept(TokenMut) {
+		access = "exclusive"
+	}
+	p.expect(TokenLParen, "syntax.expected_lparen")
+	path := p.identifier("syntax.expected_origin_path")
+	end := p.expect(TokenRParen, "syntax.expected_rparen")
+	return &ast.BorrowOrigin{Path: path.Text, Access: access, Span: spanFrom(start, end)}
 }
 
 func (p *parser) typeRef() ast.TypeRef {

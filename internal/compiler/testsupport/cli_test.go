@@ -2,6 +2,8 @@ package testsupport_test
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -336,6 +338,111 @@ func TestVerifyCorpusSourceByteLimitBoundary(t *testing.T) {
 				t.Fatalf("missing bounded fixture diagnostic: %s", result.Stdout)
 			}
 		})
+	}
+}
+
+// TestInterfaceCheckIsBodyBlindCLI is 03-06-01's CLI falsifier for OWN-04
+// success criterion 4: separate compilation is demonstrated as two real
+// invocations of the built binary, and the consuming (`interface check`)
+// invocation never touches a body field. It proves the second claim
+// structurally rather than by inspection: the "core artifact" file handed to
+// `interface check` is deliberately NOT valid core.Program JSON at all (it
+// cannot be unmarshaled into a struct carrying a Linear/Match field), yet the
+// command still answers correctly once its digest matches — which is only
+// possible if the consuming path never attempts to decode it as anything
+// other than a byte string to hash.
+func TestInterfaceCheckIsBodyBlindCLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view.lang")
+	dir := t.TempDir()
+	summaryPath := filepath.Join(dir, "summary.json")
+	corePath := filepath.Join(dir, "core.json")
+
+	exportResult := testsupport.RunCLI(t, binary, nil, "--json", "interface", "export", fixture, summaryPath)
+	if exportResult.Exit != 0 {
+		t.Fatalf("interface export failed: %+v", exportResult)
+	}
+	var exported protocol.Result
+	if err := json.Unmarshal(exportResult.Stdout, &exported); err != nil {
+		t.Fatal(err)
+	}
+	if exported.Interface == nil || len(exported.Interface.Functions) != 1 || exported.Interface.Functions[0].Access != "shared" {
+		t.Fatalf("interface export omitted the origin answer: %+v", exported.Interface)
+	}
+	summaryBytes, err := os.ReadFile(summaryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{`"linear"`, `"match"`} {
+		if bytes.Contains(summaryBytes, []byte(forbidden)) {
+			t.Fatalf("exported summary leaked a body field %s: %s", forbidden, summaryBytes)
+		}
+	}
+
+	// The "core artifact" this invocation binds against is deliberately not
+	// decodable as core.Program at all — a real core artifact never looks
+	// like this. The digest is computed over these exact bytes by
+	// `interface core`, so we compute the digest the same way (SHA-256 over
+	// the raw file bytes) and write a summary bound to it, proving the check
+	// path only ever hashes the bytes rather than parsing them.
+	notACoreProgram := []byte(`this is deliberately not JSON and has no "linear" or "match" body field, only bytes to hash`)
+	if err := os.WriteFile(corePath, notACoreProgram, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(notACoreProgram)
+	digest := "sha256:" + hex.EncodeToString(sum[:])
+	var summary map[string]any
+	if err := json.Unmarshal(summaryBytes, &summary); err != nil {
+		t.Fatal(err)
+	}
+	summary["core_digest"] = digest
+	rebound, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(summaryPath, rebound, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	checkResult := testsupport.RunCLI(t, binary, nil, "--json", "interface", "check", summaryPath, corePath)
+	if checkResult.Exit != 0 {
+		t.Fatalf("interface check rejected a summary bound to non-core bytes it should never have parsed: %+v", checkResult)
+	}
+	var checked protocol.Result
+	if err := json.Unmarshal(checkResult.Stdout, &checked); err != nil {
+		t.Fatal(err)
+	}
+	if checked.Interface == nil || len(checked.Interface.Functions) != 1 || checked.Interface.Functions[0].Paths[0] != "buffer" || checked.Interface.Functions[0].Access != "shared" {
+		t.Fatalf("interface check did not decide from the summary alone: %+v", checked.Interface)
+	}
+	found := false
+	for _, escape := range checked.ExpectedEscapes {
+		if escape == "escape:coordinated-frontend-summary-lie" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("interface check omitted the named origin escape: %+v", checked.ExpectedEscapes)
+	}
+
+	// A digest mismatch is still rejected before anything else, using the
+	// genuine two-invocation flow end to end.
+	corePathReal := filepath.Join(dir, "core-real.json")
+	coreResult := testsupport.RunCLI(t, binary, nil, "interface", "core", fixture, corePathReal)
+	if coreResult.Exit != 0 {
+		t.Fatalf("interface core failed: %+v", coreResult)
+	}
+	freshExport := testsupport.RunCLI(t, binary, nil, "interface", "export", fixture, summaryPath)
+	if freshExport.Exit != 0 {
+		t.Fatalf("interface export failed: %+v", freshExport)
+	}
+	staleResult := testsupport.RunCLI(t, binary, nil, "--json", "interface", "check", summaryPath, corePath)
+	if staleResult.Exit != 2 || !bytes.Contains(staleResult.Stdout, []byte("origin.stale_summary")) {
+		t.Fatalf("expected origin.stale_summary for a mismatched core artifact: %+v", staleResult)
+	}
+	freshCheck := testsupport.RunCLI(t, binary, nil, "--json", "interface", "check", summaryPath, corePathReal)
+	if freshCheck.Exit != 0 {
+		t.Fatalf("interface check against the real core artifact failed: %+v", freshCheck)
 	}
 }
 

@@ -3,6 +3,7 @@ package session
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -22,6 +23,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
+	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
@@ -415,6 +417,151 @@ func ValidateEvidenceCommandFile(ctx context.Context, manifestPath, sourcePath s
 	result := protocol.New("evidence", protocol.StatusPass)
 	result.Evidence = &protocol.EvidenceSummary{Schema: manifest.Schema, ID: manifest.ID, Digest: evidence.ContentDigest(manifestBytes)}
 	return result.Finalize()
+}
+
+// MaxInterfaceBytes bounds the two new Phase 3 (OWN-04) untrusted input
+// surfaces this command family reads: a published interface summary and the
+// raw core artifact bytes a `interface check` invocation binds it against.
+// Sized like evidence.MaxManifestBytes — both are small, bounded JSON
+// artifacts, not source.
+const MaxInterfaceBytes = 1 << 21
+
+// InterfaceExportCommandFile is the producer side of OWN-04's separate
+// compilation demonstration: it checks sourcePath, independently recomputes
+// every declared PublicOrigin fact from the typed core alone
+// (originvalidate.ValidatePublished — T-03-02/T-03-16), and only on success
+// writes a body-stripped, digest-bound core.Interface summary to outPath.
+func InterfaceExportCommandFile(sourcePath, outPath string) (protocol.Result, error) {
+	started := time.Now()
+	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	checked := Check(source)
+	result := protocol.New("interface", protocol.StatusPass)
+	if len(checked.Diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = checked.Diagnostics
+		return completeCommand(result, started, checked.Work), nil
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return protocol.Result{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	checked.Program = validated.Program()
+	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(problems[0].Code, diagnostic.Span{}, problems[0].Detail)}
+		return completeCommand(result, started, checked.Work), nil
+	}
+	summary, err := originvalidate.BuildInterface(checked.Program)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	summaryBytes, err := json.Marshal(summary)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	if err := os.WriteFile(outPath, append(summaryBytes, '\n'), 0o600); err != nil {
+		return protocol.Result{}, err
+	}
+	result.Interface = interfaceProjection(summary.Schema, summary.ModuleID, summary.CoreDigest, summary.Functions)
+	result.ExpectedEscapes = originvalidate.ExpectedEscapes()
+	return completeCommand(result, started, len(summary.Functions)), nil
+}
+
+// InterfaceCoreCommandFile writes the exact checked-and-validated core.Program
+// bytes for sourcePath to outPath — the same bytes InterfaceExportCommandFile
+// digests into a summary's CoreDigest. A real build pipeline already retains
+// this artifact from `lang check`; this command exists so the two-invocation
+// separate-compilation demonstration (export, then check) has a standalone
+// way to obtain the core artifact a summary is bound to, without requiring
+// `interface check` itself to reconstruct or re-derive it.
+func InterfaceCoreCommandFile(sourcePath, outPath string) (protocol.Result, error) {
+	started := time.Now()
+	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	checked := Check(source)
+	result := protocol.New("interface", protocol.StatusPass)
+	if len(checked.Diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = checked.Diagnostics
+		return completeCommand(result, started, checked.Work), nil
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return protocol.Result{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program := validated.Program()
+	coreBytes, err := json.Marshal(program)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	// Written byte-for-byte with no appended newline: this is exactly the
+	// digest preimage originvalidate.BuildInterface hashes into a summary's
+	// CoreDigest, so a byte a consumer reads back here must match precisely.
+	if err := os.WriteFile(outPath, coreBytes, 0o600); err != nil {
+		return protocol.Result{}, err
+	}
+	result.ModuleID = program.ModuleID
+	return completeCommand(result, started, len(program.Functions)), nil
+}
+
+// InterfaceCheckCommandFile is the consumer side of OWN-04's separate
+// compilation demonstration: a genuinely separate CLI invocation that
+// answers origin/access questions from summaryPath alone. coreBytesPath's
+// content is hashed (via originvalidate.CheckSummary) and compared against
+// the summary's recorded digest and is NEVER decoded as a core.Program — the
+// consuming path never touches a body field, by construction, not by
+// discipline.
+func InterfaceCheckCommandFile(summaryPath, coreBytesPath string) (protocol.Result, error) {
+	started := time.Now()
+	summaryBytes, err := readBoundedFile(summaryPath, MaxInterfaceBytes)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	coreBytes, err := readBoundedFile(coreBytesPath, MaxInterfaceBytes)
+	if err != nil {
+		return protocol.Result{}, err
+	}
+	answers, checkErr := originvalidate.CheckSummary(summaryBytes, coreBytes)
+	result := protocol.New("interface", protocol.StatusPass)
+	if checkErr != nil {
+		result.Status = protocol.StatusInvalid
+		code := "origin.invalid_summary"
+		var originError *originvalidate.Error
+		if errors.As(checkErr, &originError) {
+			code = originError.Code
+		}
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(code, diagnostic.Span{}, "interface summary rejected")}
+		return completeCommand(result, started, 1), nil
+	}
+	var summary core.Interface
+	if err := json.Unmarshal(summaryBytes, &summary); err != nil {
+		return protocol.Result{}, err
+	}
+	functions := make([]protocol.InterfaceFunctionAnswer, 0, len(answers))
+	for _, answer := range answers {
+		functions = append(functions, protocol.InterfaceFunctionAnswer{ID: answer.ID, Name: answer.Name, Paths: answer.Paths, Access: answer.Access})
+	}
+	result.Interface = &protocol.InterfaceSummary{Schema: summary.Schema, ModuleID: summary.ModuleID, CoreDigest: summary.CoreDigest, Functions: functions}
+	result.ExpectedEscapes = originvalidate.ExpectedEscapes()
+	return completeCommand(result, started, len(answers)), nil
+}
+
+func interfaceProjection(schema, moduleID, coreDigest string, functions []core.FunctionSignature) *protocol.InterfaceSummary {
+	summary := &protocol.InterfaceSummary{Schema: schema, ModuleID: moduleID, CoreDigest: coreDigest, Functions: make([]protocol.InterfaceFunctionAnswer, 0, len(functions))}
+	for _, function := range functions {
+		answer := protocol.InterfaceFunctionAnswer{ID: function.ID, Name: function.Name}
+		if function.PublicOrigin != nil {
+			answer.Paths = function.PublicOrigin.Paths
+			answer.Access = function.PublicOrigin.Access
+		}
+		summary.Functions = append(summary.Functions, answer)
+	}
+	return summary
 }
 
 func readBoundedFile(path string, limit int) ([]byte, error) {
