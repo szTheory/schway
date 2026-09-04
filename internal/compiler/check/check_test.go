@@ -96,6 +96,160 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 	}
 }
 
+// TestLoanLivenessFixpoint proves the backward worklist dataflow correctly
+// propagates a loan's liveness across a block boundary: a loan born in b1
+// and referenced only by b2 (its successor) must be reported live entering
+// b2, must not be reported live entering b1 (b1 itself births it), and the
+// worklist must report nonzero counted work (D-05) — the propagation this
+// pass exists to make honest.
+func TestLoanLivenessFixpoint(t *testing.T) {
+	loanOp := core.LinearOperation{ID: "fn:op:0", Kind: core.OpBorrowShared, SourceID: "fn:place:0", TargetID: "fn:place:1", LoanID: "fn:loan:0"}
+	b1 := cfgBlockSpec{id: "fn:block:b1", operations: []core.LinearOperation{loanOp}, successors: []string{"fn:block:b2"}}
+	useOp := core.LinearOperation{ID: "fn:op:1", Kind: core.OpReturn, SourceID: "fn:place:1"}
+	b2 := cfgBlockSpec{id: "fn:block:b2", operations: []core.LinearOperation{useOp}, successors: nil}
+
+	result, err := loanLivenessFixpoint("fn", []cfgBlockSpec{b1, b2})
+	if err != nil {
+		t.Fatalf("unexpected acyclicity error: %v", err)
+	}
+	if result.work == 0 {
+		t.Fatalf("fixpoint reported zero counted work")
+	}
+	if len(result.liveIn["fn:block:b1"]) != 0 {
+		t.Fatalf("loan born in b1 must not be live entering b1: %+v", result.liveIn)
+	}
+	if !result.liveIn["fn:block:b2"]["fn:loan:0"] {
+		t.Fatalf("loan used in b2 must be live entering b2: %+v", result.liveIn)
+	}
+
+	// b1 has exactly one successor: no divergence exists to place an edge
+	// endpoint on, so the loan flows through b1 unremarked and is finally
+	// consumed as a POINT endpoint in b2, where it is actually referenced.
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints("fn", []cfgBlockSpec{b1, b2}, edgeID, result)
+	if len(endpoints) != 1 || endpoints[0].Kind != "point" || endpoints[0].LoanID != "fn:loan:0" {
+		t.Fatalf("loan consumed in b2 must materialize as exactly one point endpoint there: %+v", endpoints)
+	}
+	if endpoints[0].BlockID != "fn:block:b2" || endpoints[0].AfterOperationID != "fn:op:1" {
+		t.Fatalf("point endpoint named the wrong block/operation: %+v", endpoints[0])
+	}
+}
+
+// TestEdgeSpecificLiveOut is the general, genuinely multi-successor proof of
+// OWN-03's success criterion 2: a block with TWO successors, where only ONE
+// successor references the loan, must materialize exactly one edge endpoint
+// (on the successor that needs it), not two, and not a point endpoint. This
+// is the property checkBranch's own topology (every arm has exactly one
+// successor) cannot yet exercise from real source — proven here directly
+// against the algorithm, per D-10.
+func TestEdgeSpecificLiveOut(t *testing.T) {
+	loanOp := core.LinearOperation{ID: "fn:op:0", Kind: core.OpBorrowShared, SourceID: "fn:place:0", TargetID: "fn:place:1", LoanID: "fn:loan:0"}
+	entry := cfgBlockSpec{id: "fn:block:entry", operations: []core.LinearOperation{loanOp}, successors: []string{"fn:block:used", "fn:block:unused"}}
+	usedOp := core.LinearOperation{ID: "fn:op:1", Kind: core.OpReturn, SourceID: "fn:place:1"}
+	used := cfgBlockSpec{id: "fn:block:used", operations: []core.LinearOperation{usedOp}, successors: nil}
+	unusedOp := core.LinearOperation{ID: "fn:op:2", Kind: core.OpReturn, SourceID: "fn:place:0"}
+	unused := cfgBlockSpec{id: "fn:block:unused", operations: []core.LinearOperation{unusedOp}, successors: nil}
+
+	blocks := []cfgBlockSpec{entry, used, unused}
+	result, err := loanLivenessFixpoint("fn", blocks)
+	if err != nil {
+		t.Fatalf("unexpected acyclicity error: %v", err)
+	}
+	if !result.liveIn["fn:block:used"]["fn:loan:0"] {
+		t.Fatalf("loan must be live entering the block that references it: %+v", result.liveIn)
+	}
+	if len(result.liveIn["fn:block:unused"]) != 0 {
+		t.Fatalf("loan must NOT be live entering the block that never references it: %+v", result.liveIn)
+	}
+
+	// The loan is needed along "used" (it keeps propagating, and is finally
+	// consumed there as its own point endpoint) but NOT along "unused" --
+	// exactly one edge endpoint must land on the DIVERGING edge
+	// (entry->unused, where the omission is), not on the edge that still
+	// carries it forward.
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints("fn", blocks, edgeID, result)
+	var edgeEndpoints, pointEndpoints []core.LoanEndpoint
+	for _, endpoint := range endpoints {
+		if endpoint.LoanID != "fn:loan:0" {
+			continue
+		}
+		if endpoint.Kind == "edge" {
+			edgeEndpoints = append(edgeEndpoints, endpoint)
+		} else {
+			pointEndpoints = append(pointEndpoints, endpoint)
+		}
+	}
+	if len(edgeEndpoints) != 1 || edgeEndpoints[0].EdgeID != "fn:block:entry->fn:block:unused" {
+		t.Fatalf("want exactly one edge endpoint on the diverging (unused) edge, got %+v", edgeEndpoints)
+	}
+	if len(pointEndpoints) != 1 || pointEndpoints[0].BlockID != "fn:block:used" {
+		t.Fatalf("want exactly one point endpoint where the loan is actually consumed, got %+v", pointEndpoints)
+	}
+}
+
+// TestBackEdgeRejected proves the fixpoint fails closed on a cyclic CFG
+// rather than iterating forever (T-03-11) — a real back edge, if one is ever
+// present, is rejected, not silently accepted.
+func TestBackEdgeRejected(t *testing.T) {
+	a := cfgBlockSpec{id: "fn:block:a", operations: nil, successors: []string{"fn:block:b"}}
+	b := cfgBlockSpec{id: "fn:block:b", operations: nil, successors: []string{"fn:block:a"}}
+	if _, err := loanLivenessFixpoint("fn", []cfgBlockSpec{a, b}); err == nil {
+		t.Fatalf("expected a back-edge rejection, got none")
+	}
+}
+
+// TestStraightLineEndpointsUnchanged pins the shipped straight-line
+// reborrow-while-moved fixture's answer against the NEW backward dataflow,
+// run here as a single synthetic block (a straight-line body IS one block —
+// checkLinear itself is not rewired onto this pass, see the deviation note
+// in check.go, but the algorithm's own answer for this shape must still
+// agree with the pre-existing, shipped straight-line analysis before it is
+// trusted for checkBranch's arm blocks).
+func TestStraightLineEndpointsUnchanged(t *testing.T) {
+	// A reborrow chain that never moves the owner: both loans stay live all
+	// the way to the returned "review" name, matching the shipped
+	// reborrow-transitivity law (testdata/phase2/reborrow_while_moved.lang's
+	// ACCEPT half; that fixture itself is a reject control, so this test
+	// uses the accepted variant with the trailing move removed).
+	body := ast.LinearBody{
+		Bindings: []ast.Binding{
+			binding("view", "borrow", "code", 0),
+			binding("review", "borrow", "view", 8),
+		},
+		Result: "review",
+		Span:   diagnostic.Span{End: 16},
+	}
+	support := analyzeStraightLine("test:reborrow", "code", diagnostic.Span{}, bufferTypeFact(), &body)
+	if support.DiagnosticCode != "" {
+		t.Fatalf("shipped reborrow fixture unexpectedly rejected: %+v", support)
+	}
+	if len(support.LoanFinalUses) != 2 {
+		t.Fatalf("want 2 tracked loans, got %+v", support.LoanFinalUses)
+	}
+	block := cfgBlockSpec{id: "test:reborrow:block:straight", operations: support.Operations, successors: nil}
+	result, err := loanLivenessFixpoint("test:reborrow", []cfgBlockSpec{block})
+	if err != nil {
+		t.Fatalf("unexpected acyclicity error: %v", err)
+	}
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints("test:reborrow", []cfgBlockSpec{block}, edgeID, result)
+	byLoan := make(map[string]core.LoanEndpoint, len(endpoints))
+	for _, endpoint := range endpoints {
+		byLoan[endpoint.LoanID] = endpoint
+	}
+	for _, final := range support.LoanFinalUses {
+		endpoint, ok := byLoan[final.LoanID]
+		if !ok {
+			t.Fatalf("no endpoint materialized for loan %q: %+v", final.LoanID, endpoints)
+		}
+		wantOperationID := fmt.Sprintf("test:reborrow:op:%d", final.OperationIndex)
+		if endpoint.Kind != "point" || endpoint.AfterOperationID != wantOperationID {
+			t.Fatalf("loan %q endpoint diverged from the shipped straight-line answer: got %+v, want point at %q", final.LoanID, endpoint, wantOperationID)
+		}
+	}
+}
+
 func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
 	body := ast.LinearBody{
 		Bindings: []ast.Binding{

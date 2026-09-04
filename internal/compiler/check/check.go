@@ -220,6 +220,8 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	entryBlockID := functionID + ":block:entry"
 	joinBlockID := functionID + ":block:join"
 	armBlockIDs := make([]string, 0, len(function.Body.Arms))
+	armCFGBlocks := make([]cfgBlockSpec, 0, len(function.Body.Arms))
+	armEdgeIDs := make(map[string]string, len(function.Body.Arms))
 
 	for index, arm := range function.Body.Arms {
 		if seen[arm.Pattern] {
@@ -247,11 +249,13 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		aliasOpID := fmt.Sprintf("%s:op:%d", functionID, nextIndex)
 		aliasPointID := fmt.Sprintf("%s:point:linear:%d", functionID, nextIndex)
 		aliasPlaceID := fmt.Sprintf("%s:place:%d", functionID, nextIndex+1)
-		linear.Places = append(linear.Places, core.Place{ID: aliasPlaceID, Name: function.Parameter.Name, TypeID: typeID})
-		linear.Operations = append(linear.Operations, core.LinearOperation{
+		aliasOp := core.LinearOperation{
 			ID: aliasOpID, PointID: aliasPointID, Kind: core.OpCopy, SourceID: parameterID, TargetID: aliasPlaceID, TypeID: typeID,
-		})
+		}
+		linear.Places = append(linear.Places, core.Place{ID: aliasPlaceID, Name: function.Parameter.Name, TypeID: typeID})
+		linear.Operations = append(linear.Operations, aliasOp)
 		armOperationIDs := []string{aliasOpID}
+		armOps := []core.LinearOperation{aliasOp}
 		nextIndex++
 		work++
 
@@ -265,6 +269,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		for _, operation := range support.Operations {
 			armOperationIDs = append(armOperationIDs, operation.ID)
 		}
+		armOps = append(armOps, support.Operations...)
 		nextIndex += len(support.Operations)
 		work += support.Work
 
@@ -273,10 +278,13 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 			OperationIDs: armOperationIDs, Successors: []string{joinBlockID},
 		})
 		armBlockIDs = append(armBlockIDs, armBlockID)
+		armEdgeToJoinID := fmt.Sprintf("%s:edge:arm:%d:join", functionID, index)
 		edges = append(edges,
 			core.Edge{ID: fmt.Sprintf("%s:edge:entry:arm:%d", functionID, index), FromBlockID: entryBlockID, ToBlockID: armBlockID, Pattern: arm.Pattern},
-			core.Edge{ID: fmt.Sprintf("%s:edge:arm:%d:join", functionID, index), FromBlockID: armBlockID, ToBlockID: joinBlockID, Pattern: arm.Pattern},
+			core.Edge{ID: armEdgeToJoinID, FromBlockID: armBlockID, ToBlockID: joinBlockID, Pattern: arm.Pattern},
 		)
+		armEdgeIDs[armBlockID+"->"+joinBlockID] = armEdgeToJoinID
+		armCFGBlocks = append(armCFGBlocks, cfgBlockSpec{id: armBlockID, operations: armOps, successors: []string{joinBlockID}})
 		arms = append(arms, core.MatchArm{
 			ID: fmt.Sprintf("%s:arm:%d", functionID, index), EdgeID: fmt.Sprintf("%s:edge:%s", matchID, arm.Pattern),
 			Pattern: arm.Pattern, BlockID: armBlockID,
@@ -305,7 +313,26 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	blocks = append(blocks, core.Block{ID: joinBlockID, PointID: functionID + ":point:return", OperationIDs: []string{}, Successors: []string{}})
 	linear.Blocks = blocks
 	linear.Edges = edges
-	linear.LoanEndpoints = []core.LoanEndpoint{}
+
+	// Backward worklist loan-liveness dataflow (03-03, Q2): the join block
+	// carries no operations, so this always converges to a per-arm-block
+	// local answer under this phase's topology, but the fixpoint machinery
+	// itself is general (see materializeLoanEndpoints's own multi-successor
+	// test coverage in check_test.go).
+	cfgBlocks := append(append([]cfgBlockSpec(nil), armCFGBlocks...), cfgBlockSpec{id: joinBlockID, successors: nil})
+	fixpoint, err := loanLivenessFixpoint(functionID, cfgBlocks)
+	if err != nil {
+		diagnostics = append(diagnostics, diagnostic.Error("check.cfg_back_edge", function.Body.Span, err.Error()))
+		return core.Function{}, diagnostics, work
+	}
+	edgeIDLookup := func(fromBlockID, toBlockID string) string {
+		if id, ok := armEdgeIDs[fromBlockID+"->"+toBlockID]; ok {
+			return id
+		}
+		return fmt.Sprintf("%s:edge:%s:%s", functionID, fromBlockID, toBlockID)
+	}
+	linear.LoanEndpoints = materializeLoanEndpoints(functionID, cfgBlocks, edgeIDLookup, fixpoint)
+	work += fixpoint.work
 
 	return core.Function{
 		ID: functionID, Name: function.Name,
@@ -316,6 +343,295 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		Linear:     linear,
 		Span:       function.Span,
 	}, nil, work
+}
+
+// ---------------------------------------------------------------------
+// 03-03: backward worklist loan liveness over the per-function CFG.
+//
+// This gives checkBranch's arm blocks their LoanEndpoint records (point vs
+// edge) via a genuinely backward, block-local-transfer, worklist-to-a-
+// fixpoint mechanism (Q2), independent of discoverLoanLastUses (kept only
+// as 03-05's future path-oracle building block, per this plan's own
+// prohibition against deleting it). Scope note (documented deviation): the
+// straight-line path (checkLinear/analyzeStraightLine) is NOT rewired onto
+// this pass -- 03-06's already-shipped TestPhase3FieldsAreOmittedWhenAbsent
+// requires loan_endpoints stay absent from every Phase 1/2 program's
+// serialized core, and every Phase 2 fixture is a straight-line body, so
+// populating LoanEndpoints there would move those already-verified bytes.
+// discoverLoanLastUses therefore still drives conflict/expiry decisions in
+// both analyzeStraightLine and analyzeArmBody (verdicts provably unchanged,
+// since neither of those functions is touched by this section); this
+// dataflow is the sole producer of the observable core.LoanEndpoint records,
+// wired only into checkBranch's arm blocks, where new (not previously
+// shipped) fixtures exercise it.
+// ---------------------------------------------------------------------
+
+// cfgBlockSpec is the minimal per-block shape the backward worklist
+// dataflow consumes: a stable ID, the block's own operations in program
+// order, and its successor block IDs (edges out, unlabeled here -- the
+// caller reattaches the real edge identity when materializing
+// core.LoanEndpoint records).
+type cfgBlockSpec struct {
+	id         string
+	operations []core.LinearOperation
+	successors []string
+}
+
+// loanLivenessResult is the fixpoint's output: per-block live-in loan sets
+// and the total counted work (one unit per transfer-function evaluation,
+// one further unit per worklist reinsertion -- D-05/03-03-03).
+type loanLivenessResult struct {
+	liveIn map[string]map[string]bool
+	work   int
+}
+
+// derivePlaceLoans builds, once per function in a single forward pass over
+// every block's operations concatenated in a stable order, the place ID of
+// every loan's own view and every place transitively copied or reborrowed
+// from it. Built once globally (not rebuilt per block) so a block-local
+// backward scan can look up whether a place it references is a live view of
+// some loan without reconstructing the whole derivation chain per block --
+// this single linear pass is the bounded cost that replaces the old scan's
+// per-binding growing-list copy (the actual Θ(N²) source, per 03-RESEARCH
+// Q2(b)).
+// A place is kept as a list, not a single loan ID, because a reborrow
+// (`let review = borrow view`) is simultaneously a live view of its OWN new
+// loan AND every loan its source place already carried — the same
+// transitive-liveness law discoverLoanLastUses' inheritance encodes, here
+// expressed over place IDs instead of binding names.
+func derivePlaceLoans(operations []core.LinearOperation) map[string][]string {
+	placeLoans := make(map[string][]string, len(operations))
+	for _, operation := range operations {
+		var loans []string
+		loans = append(loans, placeLoans[operation.SourceID]...)
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			loans = append(loans, operation.LoanID)
+		}
+		if len(loans) > 0 && operation.TargetID != "" {
+			placeLoans[operation.TargetID] = loans
+		}
+	}
+	return placeLoans
+}
+
+// loanBlockUse is one loan's last reference found within a single block by
+// blockLoanLiveness's backward scan.
+type loanBlockUse struct {
+	loanID         string
+	operationIndex int
+	operationID    string
+}
+
+// blockLoanLiveness is the per-block transfer function: given a block's
+// operations in program order, the function-global place->loan derivation
+// (derivePlaceLoans), and the set of loans already known live on exit
+// (liveOut, the union of every successor's live-in set), it walks the
+// operations BACKWARD. A reference to a place that resolves to a loan marks
+// that loan live and records the reference as its most-recent (first found,
+// walking backward) use; reaching the loan's own birth operation
+// (OpBorrowShared/OpBorrowExclusive) removes it from the live set, since
+// nothing earlier in program order can be "after" the loan's creation. The
+// returned live set is what must be live entering the block.
+func blockLoanLiveness(operations []core.LinearOperation, placeLoan map[string][]string, liveOut map[string]bool) ([]loanBlockUse, map[string]bool) {
+	live := make(map[string]bool, len(liveOut))
+	for loan := range liveOut {
+		live[loan] = true
+	}
+	recorded := make(map[string]bool, len(live))
+	var uses []loanBlockUse
+	for index := len(operations) - 1; index >= 0; index-- {
+		operation := operations[index]
+		for _, loan := range placeLoan[operation.SourceID] {
+			live[loan] = true
+			if !recorded[loan] {
+				recorded[loan] = true
+				uses = append(uses, loanBlockUse{loanID: loan, operationIndex: index, operationID: operation.ID})
+			}
+		}
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			if !recorded[operation.LoanID] {
+				recorded[operation.LoanID] = true
+				uses = append(uses, loanBlockUse{loanID: operation.LoanID, operationIndex: index, operationID: operation.ID})
+			}
+			delete(live, operation.LoanID)
+		}
+	}
+	return uses, live
+}
+
+func loanSetsEqual(a, b map[string]bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for loan := range a {
+		if !b[loan] {
+			return false
+		}
+	}
+	return true
+}
+
+// loanLivenessFixpoint computes backward monotone dataflow over the finite
+// lattice of live loan IDs per block boundary (Q2), iterated with a
+// worklist to a fixpoint. blocks must be given in a stable order; every
+// successor ID must resolve to a block in the same slice. A cycle (a block
+// reachable from itself by following successors) is rejected fail-closed --
+// OWN-03 is scoped to acyclic CFGs this phase (T-03-11).
+func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec) (loanLivenessResult, error) {
+	byID := make(map[string]cfgBlockSpec, len(blocks))
+	order := make([]string, 0, len(blocks))
+	var allOps []core.LinearOperation
+	for _, block := range blocks {
+		byID[block.id] = block
+		order = append(order, block.id)
+		allOps = append(allOps, block.operations...)
+	}
+	placeLoan := derivePlaceLoans(allOps)
+
+	const (
+		unvisited = 0
+		inWork    = 1
+		done      = 2
+	)
+	state := make(map[string]int, len(blocks))
+	var walk func(id string) error
+	walk = func(id string) error {
+		switch state[id] {
+		case inWork:
+			return fmt.Errorf("check.cfg_back_edge: block %q participates in a cycle", id)
+		case done:
+			return nil
+		}
+		state[id] = inWork
+		for _, successor := range byID[id].successors {
+			if err := walk(successor); err != nil {
+				return err
+			}
+		}
+		state[id] = done
+		return nil
+	}
+	for _, id := range order {
+		if err := walk(id); err != nil {
+			return loanLivenessResult{}, err
+		}
+	}
+
+	predecessors := make(map[string][]string, len(blocks))
+	for _, block := range blocks {
+		for _, successor := range block.successors {
+			predecessors[successor] = append(predecessors[successor], block.id)
+		}
+	}
+
+	liveIn := make(map[string]map[string]bool, len(blocks))
+	for _, id := range order {
+		liveIn[id] = map[string]bool{}
+	}
+
+	queue := append([]string(nil), order...)
+	queued := make(map[string]bool, len(blocks))
+	for _, id := range order {
+		queued[id] = true
+	}
+
+	work := 0
+	for len(queue) > 0 {
+		id := queue[0]
+		queue = queue[1:]
+		queued[id] = false
+		work++ // one transfer-function evaluation
+
+		block := byID[id]
+		liveOut := map[string]bool{}
+		for _, successor := range block.successors {
+			for loan := range liveIn[successor] {
+				liveOut[loan] = true
+			}
+		}
+		_, newLiveIn := blockLoanLiveness(block.operations, placeLoan, liveOut)
+		if !loanSetsEqual(liveIn[id], newLiveIn) {
+			liveIn[id] = newLiveIn
+			for _, predecessor := range predecessors[id] {
+				if !queued[predecessor] {
+					queue = append(queue, predecessor)
+					queued[predecessor] = true
+					work++ // one worklist reinsertion
+				}
+			}
+		}
+	}
+	return loanLivenessResult{liveIn: liveIn, work: work}, nil
+}
+
+// materializeLoanEndpoints turns the fixpoint's converged live-in sets into
+// core.LoanEndpoint records. Two, mutually exclusive, kinds are produced per
+// loan per block:
+//
+//   - A POINT endpoint where the loan is referenced inside a block and does
+//     NOT survive to that block's own live-out (liveOut, the union of every
+//     successor's live-in) -- its last reference is genuinely inside this
+//     block, so it ends at a point.
+//   - An EDGE endpoint only at a genuine successor DIVERGENCE: a block with
+//     more than one successor, where the loan is needed by at least one
+//     successor (present in liveOut) but NOT by a specific other successor
+//     (absent from that successor's own live-in). That is exactly the edge
+//     the loan ends on -- the loan is still tracked along the successor(s)
+//     that need it (and will receive its own point/edge endpoint further
+//     downstream, wherever it is finally consumed), while the diverging
+//     edge is where a program on THAT path may safely mutate/move the owner
+//     (T-03-06's literal claim, and 03-03-02's fixture-pair falsifier).
+//
+// A single-successor block therefore never produces an edge endpoint for a
+// loan flowing through it unremarked -- there is no divergence to record --
+// matching checkBranch's current topology (every arm block has exactly one
+// successor, the join), where genuine edge endpoints require a loan born
+// before a real fan-out, which today's arm-body lowering does not yet
+// produce from real source (D-10; proven possible in the general case by
+// TestEdgeSpecificLiveOut).
+func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID func(fromBlockID, toBlockID string) string, result loanLivenessResult) []core.LoanEndpoint {
+	var placeLoanAll []core.LinearOperation
+	for _, block := range blocks {
+		placeLoanAll = append(placeLoanAll, block.operations...)
+	}
+	placeLoan := derivePlaceLoans(placeLoanAll)
+
+	var endpoints []core.LoanEndpoint
+	for _, block := range blocks {
+		liveOut := map[string]bool{}
+		for _, successor := range block.successors {
+			for loan := range result.liveIn[successor] {
+				liveOut[loan] = true
+			}
+		}
+
+		if len(block.successors) > 1 {
+			for loan := range liveOut {
+				for _, successor := range block.successors {
+					if result.liveIn[successor][loan] {
+						continue
+					}
+					endpoints = append(endpoints, core.LoanEndpoint{
+						ID:     edgeID(block.id, successor) + ":" + loan,
+						LoanID: loan, Kind: "edge", EdgeID: edgeID(block.id, successor),
+					})
+				}
+			}
+		}
+
+		uses, _ := blockLoanLiveness(block.operations, placeLoan, liveOut)
+		for _, use := range uses {
+			if liveOut[use.loanID] {
+				continue // survives past this block; its endpoint lives elsewhere
+			}
+			endpoints = append(endpoints, core.LoanEndpoint{
+				ID:               fmt.Sprintf("%s:point:%s:%d:%s", functionID, block.id, use.operationIndex, use.loanID),
+				LoanID:           use.loanID, Kind: "point", BlockID: block.id, AfterOperationID: use.operationID,
+			})
+		}
+	}
+	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].ID < endpoints[j].ID })
+	return endpoints
 }
 
 // analyzeArmBody analyzes one match arm's linear body using the same
