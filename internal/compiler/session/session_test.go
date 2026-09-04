@@ -16,6 +16,7 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
@@ -753,5 +754,161 @@ func TestVerifyPhase2ControlsAndWork(t *testing.T) {
 	}
 	if seen[result.ExpectedEscapes[0]] {
 		t.Fatalf("expected escape was counted as detected: %+v", result.Lanes)
+	}
+}
+
+const branchLoanControlSource = `module owned.branch_loan_control
+
+export {
+  type Switch
+  fn choose
+}
+
+data Switch =
+  | On
+  | Off
+
+fn choose(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let view = borrow flag
+      let noted = view
+      let moved = take flag
+      moved
+    }
+    Off => {
+      let held = take flag
+      held
+    }
+  }
+}
+`
+
+const branchNoLoanControlSource = `module owned.branch_no_loan_control
+
+export {
+  type Switch
+  fn choose
+}
+
+data Switch =
+  | On
+  | Off
+
+fn choose(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let held = take flag
+      held
+    }
+    Off => {
+      let held = take flag
+      held
+    }
+  }
+}
+`
+
+func checkedBranchProgram(t *testing.T, source string) core.Program {
+	t.Helper()
+	checked := session.Check([]byte(source))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("diagnostics: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+// TestLoanEndpointMutationMatrix (T-03-06/T-03-14) is the endpoint mutation
+// matrix the plan's own must-have requires: a validated branch program's
+// declared loan endpoint moved to a different block, dropped entirely, or
+// invented for a loan that does not exist, is rejected in all three
+// variants by exactly core.loan_endpoint_mismatch. This is the SAME
+// matrix corevalidate_endpoint_test.go's TestLoanEndpointMismatchRejected
+// proves at the corevalidate package boundary; asserted again here, against
+// the session-level Check(...) entry point, as the control this package's
+// own verify lane (BorrowedLoanEndpointControlLane) relies on.
+func TestLoanEndpointMutationMatrix(t *testing.T) {
+	baseline := checkedBranchProgram(t, branchLoanControlSource)
+	if result := corevalidate.Validate(baseline); !result.Valid {
+		t.Fatalf("baseline branch-loan program rejected: %+v", result.Problems)
+	}
+	linear := baseline.Functions[0].Linear
+	if len(linear.LoanEndpoints) == 0 {
+		t.Fatalf("expected the control fixture to declare at least one loan endpoint: %+v", linear)
+	}
+
+	tests := []struct {
+		name string
+		edit func(*core.Program)
+	}{
+		{name: "moved to the join block", edit: func(program *core.Program) {
+			endpoints := program.Functions[0].Linear.LoanEndpoints
+			endpoints[0].BlockID = program.Functions[0].Linear.Blocks[len(program.Functions[0].Linear.Blocks)-1].ID
+		}},
+		{name: "dropped entirely", edit: func(program *core.Program) {
+			program.Functions[0].Linear.LoanEndpoints = program.Functions[0].Linear.LoanEndpoints[1:]
+		}},
+		{name: "invented for a loan that does not exist", edit: func(program *core.Program) {
+			linear := program.Functions[0].Linear
+			linear.LoanEndpoints = append(append([]core.LoanEndpoint(nil), linear.LoanEndpoints...), core.LoanEndpoint{
+				ID: linear.LoanEndpoints[0].ID + ":invented", LoanID: program.Functions[0].ID + ":loan:invented",
+				Kind: "point", BlockID: linear.LoanEndpoints[0].BlockID, AfterOperationID: linear.LoanEndpoints[0].AfterOperationID,
+			})
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			encoded, err := json.Marshal(baseline)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var mutated core.Program
+			if err := json.Unmarshal(encoded, &mutated); err != nil {
+				t.Fatal(err)
+			}
+			test.edit(&mutated)
+			result := corevalidate.Validate(mutated)
+			if result.Valid {
+				t.Fatalf("mutation %q was accepted", test.name)
+			}
+			if len(result.Problems) == 0 || result.Problems[0].Code != "core.loan_endpoint_mismatch" {
+				t.Fatalf("mutation %q code=%v want=core.loan_endpoint_mismatch", test.name, result.Problems)
+			}
+		})
+	}
+}
+
+// TestBorrowedLaneRecordsFailureStatus proves BorrowedLoanEndpointControlLane
+// uses the Phase 1 addLane shape (PATTERNS I-1): a control that cannot fire
+// (here, a program with no loan endpoint to mutate against) still returns a
+// real lane with status "fail" and a nonzero work count, rather than
+// vanishing the way Phase 2's verifyOwnedCorpus addLane would on any
+// failure path.
+func TestBorrowedLaneRecordsFailureStatus(t *testing.T) {
+	noLoan := checkedBranchProgram(t, branchNoLoanControlSource)
+	lane := session.BorrowedLoanEndpointControlLane(noLoan)
+	if lane.Status != "fail" {
+		t.Fatalf("expected a failing lane for a program with no loan endpoint, got status=%q lane=%+v", lane.Status, lane)
+	}
+	if lane.ID == "" {
+		t.Fatal("failing control vanished instead of being recorded as a lane")
+	}
+	if lane.RecomputedWork == 0 {
+		t.Fatalf("failing lane recorded zero work, losing partial-work evidence: %+v", lane)
+	}
+	if len(lane.Controls) != 0 {
+		t.Fatalf("a failing lane must not claim a control it never observed: %+v", lane)
+	}
+
+	honest := checkedBranchProgram(t, branchLoanControlSource)
+	passLane := session.BorrowedLoanEndpointControlLane(honest)
+	if passLane.Status != "pass" {
+		t.Fatalf("expected the honest, loan-bearing program to drive the control to pass: %+v", passLane)
+	}
+	if passLane.RecomputedWork == 0 {
+		t.Fatalf("passing lane recorded zero work: %+v", passLane)
+	}
+	if len(passLane.Controls) != 1 || passLane.Controls[0] != "control:core.loan_endpoint_mismatch" {
+		t.Fatalf("passing lane did not claim control:core.loan_endpoint_mismatch: %+v", passLane)
 	}
 }

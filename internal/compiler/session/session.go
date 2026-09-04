@@ -891,6 +891,57 @@ func VerifyCorpusFile(ctx context.Context, corpus string, runner native.Runner) 
 	return VerifyCorpus(ctx, corpus, runner, VerifyOptions{})
 }
 
+// BorrowedLoanEndpointControlLane is Phase 3's required negative control for
+// T-03-06/T-03-14: a validated branch program's own declared LoanEndpoints
+// is mutated by dropping one entry (the strongest of the three variants
+// TestLoanEndpointMutationMatrix proves independently — an omitted endpoint
+// is caught by corevalidate.recomputeLoanEndpoints with no other structural
+// invariant available to catch it first, unlike a moved or invented
+// endpoint, which a referential-closure check could plausibly also reject)
+// and re-validated; the control passes only when that mutation is rejected
+// with exactly core.loan_endpoint_mismatch.
+//
+// This uses the Phase 1 VerifyCorpus addLane shape (an explicit status on
+// every path) rather than Phase 2 verifyOwnedCorpus's shape (a hardcoded
+// "pass" status that drops the lane entirely on any failure path —
+// PATTERNS' inconsistency I-1): a failing control here is still returned as
+// a lane with status "fail" and nonzero work, never silently absent.
+//
+// Of the five control-wiring points the repo requires (fixture/in-process
+// mutation, control table row, lane with nonzero work, required-controls
+// entry, CLI assertion through the shipped binary), this function and its
+// tests cover the first three in-process. The Phase 3 corpus's
+// required-controls entry and the shipped-CLI assertion are completed in
+// 03-07, where the Phase 3 verify path and gate script are assembled.
+func BorrowedLoanEndpointControlLane(honest core.Program) protocol.Lane {
+	started := time.Now()
+	fail := func(work int) protocol.Lane {
+		return protocol.Lane{
+			Schema: "lang.verify-lane/0", ID: "lane:borrowed-loan-endpoint-control", Status: "fail",
+			Controls: nil, RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+		}
+	}
+
+	baseline := corevalidate.Validate(honest)
+	if !baseline.Valid {
+		return fail(baseline.Checks)
+	}
+	mutated := baseline.Program()
+	if len(mutated.Functions) == 0 || mutated.Functions[0].Linear == nil || len(mutated.Functions[0].Linear.LoanEndpoints) == 0 {
+		return fail(baseline.Checks) // nothing to drop -- the honest program carries no loan to control against
+	}
+	mutated.Functions[0].Linear.LoanEndpoints = mutated.Functions[0].Linear.LoanEndpoints[1:]
+	result := corevalidate.Validate(mutated)
+	if result.Valid || len(result.Problems) == 0 || result.Problems[0].Code != "core.loan_endpoint_mismatch" {
+		return fail(baseline.Checks + result.Checks)
+	}
+	return protocol.Lane{
+		Schema: "lang.verify-lane/0", ID: "lane:borrowed-loan-endpoint-control", Status: "pass",
+		Controls: []string{"control:core.loan_endpoint_mismatch"}, RecomputedWork: baseline.Checks + result.Checks,
+		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+	}
+}
+
 func hasDiagnostic(diagnostics []diagnostic.Diagnostic, code string) bool {
 	for _, problem := range diagnostics {
 		if problem.Code == code {
