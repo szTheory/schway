@@ -43,46 +43,94 @@ type Error struct{ Code string }
 
 func (e *Error) Error() string { return e.Code }
 
-// RecomputeOrigin derives the origin path(s) and access mode a function's
-// body actually returns, by tracing the OpReturn operation's SourceID
-// backward through the function's flat Operations list (via a
-// TargetID->SourceID chain built from core.LinearOperation facts alone)
-// until it reaches the function's own parameter place or the chain breaks.
-// This is a materially different mechanism from check.go's derivation, which
-// builds the PublicOrigin fact forward from the declaration while lowering
-// the body (D-12): this walks backward from the returned place using only
-// core facts, and never consults function.PublicOrigin itself.
-func RecomputeOrigin(function core.Function) (paths []string, access string, ok bool) {
+// ReturnOrigin is the origin derivation for exactly ONE core.OpReturn within
+// a function's body: which paths and access mode that single return's
+// SourceID traces back to the function's own parameter, if it traces at
+// all. A straight-line function's Operations carries exactly one
+// core.OpReturn; a match-bodied function carries one per arm (check.go's
+// arm lowering appends every arm's Return into the same flat Operations
+// slice, per corevalidate.replayBlocks' own "one return per block" note) —
+// so a function's full origin picture is the SET of these, never any one of
+// them alone.
+type ReturnOrigin struct {
+	// OperationID is the originating core.OpReturn's own ID.
+	OperationID string
+	// Paths names the parameter path(s) this return traces back to, when
+	// Derived is true. Empty when Derived is false.
+	Paths []string
+	// Access is the derived access mode ("shared" or "exclusive") when
+	// Derived is true. Empty when Derived is false.
+	Access string
+	// Derived reports whether the backward walk from this return reached
+	// function.Parameter.ID through at least one borrow hop. false means an
+	// owned return, or a chain that broke/cycled before reaching the
+	// parameter.
+	Derived bool
+}
+
+// AccessConflicting is the conservative-combination sentinel RecomputeOrigin
+// reports when a function's arms derive different access modes for their
+// respective returns: neither arm's answer is the true answer, so the
+// sentinel names the disagreement itself rather than silently resolving to
+// whichever arm happened to be walked. It is never a declarable
+// core.PublicOrigin.Access value — ValidatePublished refuses any declared
+// Access outside {"shared", "exclusive"} before ever comparing it against a
+// recomputed answer, so a mutated summary cannot declare the sentinel and
+// match a conflicting recomputation.
+const AccessConflicting = "conflicting"
+
+// RecomputeOriginPerReturn is the package's SOLE backward-walk site (Task
+// 03-10-01's binding decision: exactly one such loop may exist in this
+// file). It walks backward from EVERY core.OpReturn in
+// function.Linear.Operations, in operation order, using one TargetID->
+// SourceOperation map built once over the whole flat operations list. That
+// single shared map is safe to reuse across arms because check.go's arm
+// lowering pads one unreferenced place per arm's Return, keeping every
+// operation's place ordinal globally distinct across the whole function
+// (corevalidate.replayBlocks' own place-order invariant) — so no arm's walk
+// can ever cross into a sibling arm's operations. Each walk independently
+// preserves 03-08's first-seen-hop-wins rule: the hop nearest the returned
+// place decides that return's derived access mode, per return.
+func RecomputeOriginPerReturn(function core.Function) []ReturnOrigin {
 	if function.Linear == nil || len(function.Linear.Operations) == 0 {
-		return nil, "", false
+		return nil
 	}
 	operations := function.Linear.Operations
 	sourceOf := make(map[string]core.LinearOperation, len(operations))
-	var returnOp *core.LinearOperation
+	var returnOps []*core.LinearOperation
 	for index := range operations {
 		operation := operations[index]
 		if operation.Kind == core.OpReturn {
-			if returnOp == nil {
-				returnOp = &operations[index]
-			}
+			returnOps = append(returnOps, &operations[index])
 			continue
 		}
 		sourceOf[operation.TargetID] = operation
 	}
-	if returnOp == nil {
-		return nil, "", false
+	if len(returnOps) == 0 {
+		return nil
 	}
+	results := make([]ReturnOrigin, 0, len(returnOps))
+	for _, returnOp := range returnOps {
+		results = append(results, walkReturnOrigin(function, sourceOf, returnOp))
+	}
+	return results
+}
+
+// walkReturnOrigin performs exactly one backward walk, from one return
+// operation, using the shared sourceOf map RecomputeOriginPerReturn built
+// once for the whole function.
+func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOperation, returnOp *core.LinearOperation) ReturnOrigin {
 	current := returnOp.SourceID
 	visited := make(map[string]bool)
 	derivedAccess := ""
 	for current != function.Parameter.ID {
 		if visited[current] {
-			return nil, "", false
+			return ReturnOrigin{OperationID: returnOp.ID}
 		}
 		visited[current] = true
 		operation, exists := sourceOf[current]
 		if !exists {
-			return nil, "", false
+			return ReturnOrigin{OperationID: returnOp.ID}
 		}
 		switch operation.Kind {
 		case core.OpBorrowExclusive:
@@ -97,9 +145,57 @@ func RecomputeOrigin(function core.Function) (paths []string, access string, ok 
 		current = operation.SourceID
 	}
 	if derivedAccess == "" {
+		return ReturnOrigin{OperationID: returnOp.ID}
+	}
+	return ReturnOrigin{OperationID: returnOp.ID, Paths: []string{function.Parameter.Name}, Access: derivedAccess, Derived: true}
+}
+
+// RecomputeOrigin derives the origin path(s) and access mode a function's
+// body actually returns, as the conservative combination of every
+// RecomputeOriginPerReturn element (the "combination law", 03-10-PLAN.md):
+//
+//  1. No return is borrow-derived (every arm owned, or every chain broke) →
+//     (nil, "", false). Byte-identical to today for an owned straight-line
+//     function or an every-arm-owned match function.
+//  2. Every borrow-derived return agrees on access mode → the ordered union
+//     of their paths, that agreed access, ok=true. Byte-identical to today
+//     for a one-return function.
+//  3. Borrow-derived returns DISAGREE on access mode → the ordered union of
+//     their paths, access=AccessConflicting, ok=true — neither arm's answer
+//     wins.
+//
+// This function performs no backward walk itself; RecomputeOriginPerReturn
+// is the only place that does.
+func RecomputeOrigin(function core.Function) (paths []string, access string, ok bool) {
+	perReturn := RecomputeOriginPerReturn(function)
+	var derived []ReturnOrigin
+	for _, origin := range perReturn {
+		if origin.Derived {
+			derived = append(derived, origin)
+		}
+	}
+	if len(derived) == 0 {
 		return nil, "", false
 	}
-	return []string{function.Parameter.Name}, derivedAccess, true
+	pathSeen := make(map[string]bool, len(derived))
+	var orderedPaths []string
+	combinedAccess := derived[0].Access
+	conflict := false
+	for _, origin := range derived {
+		if origin.Access != combinedAccess {
+			conflict = true
+		}
+		for _, path := range origin.Paths {
+			if !pathSeen[path] {
+				pathSeen[path] = true
+				orderedPaths = append(orderedPaths, path)
+			}
+		}
+	}
+	if conflict {
+		return orderedPaths, AccessConflicting, true
+	}
+	return orderedPaths, combinedAccess, true
 }
 
 // ValidatePublished recomputes every function's origin from its body and
