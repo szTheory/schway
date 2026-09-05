@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Completed 04-09-PLAN.md - conformance falsifier + attribute-scan artifact-count pin
-last_updated: "2026-09-05T20:09:33.905Z"
+stopped_at: Completed 04-10-PLAN.md - rederivation cycle guard (CR-01 gap closure)
+last_updated: "2026-09-05T20:45:11.543Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 04 execution started
-state_head: 12f801cfdd4dad1e655f83e1a0f3a30dc254c0d0
+state_head: 7f3509d8eb6a759759e8964d4d4feb70efed6839
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 30
-  completed_plans: 29
+  completed_plans: 30
   percent: 50
 ---
 
@@ -29,8 +29,8 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 04 (Fallible Resources and C Boundary) — READY TO EXECUTE
-Plan: 3 of 9
+Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 04 execution started
 
@@ -83,6 +83,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04 P07 | 55 min | 3 tasks | 7 files |
 | Phase 04 P08 | 30 min | 3 tasks | 3 files |
 | Phase 04 P09 | 25 min | 2 tasks | 2 files |
+| Phase 04 P10 | 20min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -160,6 +161,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: corevalidate's terminal-block structural check ships as at-least-one/non-entry (core.terminal_block_unreachable), not the literal exactly-one form 04-VERIFICATION.md asked for, to keep discard_because.lang's legitimate ok/err merge valid
 - [Phase 04]: Both new tests consume cgen.BannedOptimizerAttributes rather than a hard-coded literal, matching the existing header-only test's stated reason
 - [Phase 04]: TestAttributeScanLaneCoversEveryInspectableLayer pins lane:foreign-no-unproven-attributes RecomputedWork at exactly 8, closing 04-VERIFICATION.md gap 2's artifact-count blind spot
+- [Phase 04]: Used in-tree revert/run/restore for the mutation-kill demonstration instead of a detached git worktree, per this session's no-worktree constraint
+- [Phase 04]: Pinned TestAcyclicChainsStillValidateUnderCycleGuard's accepting-path Checks constant to 403, measured from the actual pre-guard build
 
 ### Pending Todos
 
@@ -190,6 +193,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T18:06:00.690Z
-Stopped at: Completed 04-09-PLAN.md - conformance falsifier + attribute-scan artifact-count pin
+Last session: 2026-09-05T20:45:11.452Z
+Stopped at: Completed 04-10-PLAN.md - rederivation cycle guard (CR-01 gap closure)
 Resume file: None
