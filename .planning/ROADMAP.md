@@ -178,18 +178,11 @@ changes that cost nothing structurally:
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
 **Plans**: 9 plans (7/7 executed; 04-08 and 04-09 are gap-closure plans from 04-VERIFICATION.md's two confirmed gaps)
+**Wave 1**
 
 - [ ] `04-08-PLAN.md` — gap closure: make the merge-terminal release-order rederivation falsifiable and add its structural peer check
 - [ ] `04-09-PLAN.md` — gap closure: the conformance-layer attribute falsifier and a pin on the scan's artifact count
-
 - [x] 04-01-PLAN.md
-- [x] 04-02-PLAN.md
-- [x] 04-03-PLAN.md
-- [x] 04-04-PLAN.md
-- [x] 04-05-PLAN.md
-- [x] 04-06-PLAN.md
-- [x] 04-07-PLAN.md
-
 - [ ] `04-01-PLAN.md` — byte-identity pins, the operation-kind registry and six-site dispatch control, and the end-to-end fallible foreign call across the frozen C boundary
 - [ ] `04-02-PLAN.md` — three-stage partial acquisition with materialized reverse-order release, an independent rederivation, and two mutations attacking different artifacts
 - [ ] `04-03-PLAN.md` — the authoritative foreign contract, its three inspectable layers, the layout compile-time refusal, and zero optimizer-visible attributes
@@ -197,6 +190,34 @@ changes that cost nothing structurally:
 - [ ] `04-05-PLAN.md` — the process-root landing pad and static ledger, the undefined-symbol allowlist, and mutation-killed nonlocal-exit detection
 - [ ] `04-06-PLAN.md` — every terminator walked by both independent analyses, foreign-return origin facts, and honest counted work
 - [ ] `04-07-PLAN.md` — the Phase 4 gate and its contract test, three-engine agreement across every path, and the shipped-binary out-of-corpus exercise
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 04-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 04-03-PLAN.md
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 04-04-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 04-05-PLAN.md
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [x] 04-06-PLAN.md
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [x] 04-07-PLAN.md
+
+**Cross-cutting constraints:**
+
+- One authoritative `core.ForeignContract` carries target layout, initialized state, allocator identity, capture and retention, aliasing, and unwind obligations, and all three inspectable layers are derived from it so no layer can invent a fact the contract does not carry (FFI-01, D-04-12, ROADMAP SC2).
 
 **Waves**: 1→7, strictly sequential. Every plan touches the checker, the independent
 validator, the code generator, or the session gate, so no two plans have disjoint
