@@ -2,66 +2,59 @@
 phase: 04-fallible-resources-and-c-boundary
 verified: 2026-09-05T00:00:00Z
 status: gaps_found
-score: 5/7 must-haves verified
+score: 6/7 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: gaps_found
+  previous_score: 5/7
+  gaps_closed:
+    - "`corevalidate` independently rederives the expected release order by walking backward from each failure edge over the block and edge graph, and compares — it never reads what `check` wrote and shares no helper with it (D-04-07, D-12a)."
+    - "One authoritative `core.ForeignContract` carries target layout, initialized state, allocator identity, capture and retention, aliasing, and unwind obligations, and all three inspectable layers are derived from it so no layer can invent a fact the contract does not carry (FFI-01, D-04-12, ROADMAP SC2)."
+  gaps_remaining: []
+  regressions: []
 gaps:
-  - truth: "`corevalidate` independently rederives the expected release order by walking backward from each failure edge over the block and edge graph, and compares — it never reads what `check` wrote and shares no helper with it (D-04-07, D-12a)." # 04-02 must_haves; underlies ROADMAP SC1
+  - truth: "corevalidate's independent rederivation walks (in particular checkReleaseOrder's rederive backward walk) are source-blind and must stay defined against a corrupted/adversarial core.Program, matching the guard already applied to every other backward/forward graph walk in the same file (blockReach, loanChainIndex.carriedLoans)."
     status: failed
     reason: >
-      Confirmed in code (not just per code review): `corevalidate.checkReleaseOrder`
-      (internal/compiler/corevalidate/corevalidate.go:1232-1244) silently `continue`s
-      past any terminal block (OpReturn- or OpFail-terminated) whose incoming-edge
-      count is not exactly 1, instead of refusing the shape. Nothing else in
-      `corevalidate` requires a terminal block to have exactly one incoming edge —
-      `blocksAndEdges` (corevalidate.go:416-447) only requires an OpFail-terminated
-      block to have "at least one" incoming edge and that every such edge carry
-      Pattern "err"; it does not bound the count, and it does not apply to
-      OpReturn-terminated blocks at all. So a merge-point terminal block (reachable
-      from two acquisition chains with different completed-acquisition sets) would
-      have its release order entirely unchecked by the one control D-04-07
-      specifically requires to be an *independent* rederivation, while the checker's
-      own generic per-operation replay would still pass. `check.go`'s own emission
-      never happens to produce such a block today, so no shipped fixture exercises
-      this path and no currently-compilable program is unsound — but the must_have
-      as written ("independently rederives... and compares") is not true of the
-      implementation without an unstated carve-out, and this is exactly the "control
-      that could pass vacuously" failure mode this project's own commentary elsewhere
-      (the `core.fail_reached_without_err_edge` comment, corevalidate.go:418-424)
-      is written to guard against.
+      Newly surfaced by this run's fresh code review (04-REVIEW.md CR-01) and independently
+      confirmed here by direct code read, not accepted on the review's word alone.
+      `checkReleaseOrder`'s `rederive` closure (internal/compiler/corevalidate/corevalidate.go,
+      the `for { ... }` loop around lines 1230-1250, walking `okEdgeInto[currentBlockID]`
+      backward) has no visited-set / cycle guard. `okEdgeInto` is built directly from
+      `linear.Edges` with no acyclicity check performed anywhere earlier in `Validate` or
+      `blocksAndEdges` (confirmed by direct read: `blocksAndEdges`, corevalidate.go:376-476,
+      checks edge/block ID uniqueness and referential closure but never checks the block
+      graph is acyclic). A hand-corrupted `core.Program` with a cyclic chain of "ok"-pattern
+      edges feeding into a terminal block's incoming edge causes `rederive`'s loop to never
+      hit its only `break` (the map lookup `okEdgeInto[currentBlockID]` keeps succeeding
+      forever around the cycle), hanging validation indefinitely. This is precisely the
+      adversarial-input class the same file explicitly defends against in its sibling walks:
+      `loanChainIndex.carriedLoans` (corevalidate.go ~525-545) and `blockReach`
+      (corevalidate.go ~584-596) both carry visited-set guards with doc comments stating in
+      nearly identical language that "a source-blind validator must stay defined against"
+      exactly this shape of cyclic/corrupted input. `rederive` is the one backward-graph
+      traversal in the file that lacks the equivalent guard, and it is reachable from
+      `Validate` on any branch-shaped function (via `replayBlocks` → `checkReleaseOrder`),
+      not gated behind any earlier acyclicity check. Confirmed absent: a repo-wide grep of
+      `corevalidate_test.go` for "cyclic"/"Cyclic" returns zero matches — no falsifier
+      constructs a cyclic ok-edge chain, so this gap is untested. 04-08's gap-closure plan
+      (which added the merge-terminal-block falsifiers and the core.terminal_block_unreachable
+      peer check) did not touch `rederive` itself and did not add cycle protection; its own
+      SUMMARY confirms `checkReleaseOrder itself was NOT modified by this plan`.
+      corevalidate's entire reason for existing — per its own documented design and the
+      RES-01/D-04-07 must_have's own wording ("independently rederives... and compares") —
+      is to stay defined against a corrupted or adversarially hand-constructed core.Program,
+      not merely one honestly produced by check.go today. An unbounded hang is a real
+      denial-of-service against any caller (fuzzing, future untrusted-core-artifact path)
+      that runs an adversarial program through validation, and it undermines the soundness
+      claim the independent rederivation exists to provide.
     artifacts:
       - path: internal/compiler/corevalidate/corevalidate.go
-        issue: "checkReleaseOrder (line ~1242) skips validation for any terminal block whose incoming-edge count != 1, rather than refusing the shape; no other check bounds OpReturn-terminated (or OpFail-terminated) blocks to exactly one incoming edge"
+        issue: "rederive (the backward-walk closure inside checkReleaseOrder, ~lines 1230-1250) has no visited-set guard against a cyclic \"ok\"-edge chain, unlike blockReach and loanChainIndex.carriedLoans in the same file"
     missing:
-      - "Treat an unexpected incoming-edge count on a terminal block as a hard refusal in checkReleaseOrder, not a skip"
-      - "Add a structural check (peer of the existing OpFail incoming-edge check in blocksAndEdges) that every OpReturn/OpFail-terminated block has exactly one incoming edge, independent of checkReleaseOrder itself"
-  - truth: "One authoritative `core.ForeignContract` carries target layout, initialized state, allocator identity, capture and retention, aliasing, and unwind obligations, and all three inspectable layers are derived from it so no layer can invent a fact the contract does not carry (FFI-01, D-04-12, ROADMAP SC2)." # 04-03 must_haves; D-04-13's zero-attribute control is the enforcement mechanism for this inspectability claim
-    status: failed
-    reason: >
-      Confirmed in code: `control:foreign.no_unproven_attributes` (D-04-13: "cgen
-      emits zero optimizer-visible attributes... scanning all emitted C") is wired
-      in session.go (lines 2183-2212) to call `cgen.ScanForBannedAttributes` on only
-      four arguments: `cgen.Emit(positiveChecked.Program)`, its manifest,
-      `cgen.Emit(releaseChecked.Program)`, and its manifest. `cgen.EmitForeignHeader`
-      and `cgen.EmitForeignConformance` — two of D-04-12's three named inspectable
-      layers, and the ones a human reviewer is most likely to actually read — are
-      never passed to `ScanForBannedAttributes` anywhere in the repository (grep for
-      `ScanForBannedAttributes` finds only the three session_test.go call sites,
-      session.go:2204, none touching EmitForeignHeader/EmitForeignConformance
-      output). A banned attribute injected into the generated header or the
-      conformance unit's own added text would go undetected by the required
-      control, even though the control's own required identifier
-      (`control:foreign.no_unproven_attributes`) is asserted "pass" in every gate
-      run. This is a control that names full coverage but does not scan the
-      artifact it names.
-    artifacts:
-      - path: internal/compiler/session/session.go
-        issue: "lane:foreign-no-unproven-attributes (line ~2178-2212) only scans cgen.Emit() and cgen.EmitForeignManifest() output, never cgen.EmitForeignHeader or cgen.EmitForeignConformance"
-      - path: internal/compiler/cgen/cgen.go
-        issue: "EmitForeignHeader (line ~1270) and EmitForeignConformance (line ~1327) are two of the three D-04-12 inspectable layers but are never fed into ScanForBannedAttributes in production or test code"
-    missing:
-      - "Add cgen.EmitForeignHeader(...) and cgen.EmitForeignConformance(...) output to the lane:foreign-no-unproven-attributes scan in session.go"
-      - "Add a dedicated mutation-kill test injecting a banned token into EmitForeignHeader only (leaving emitLinearForeign's own extern line untouched) to prove the two artifacts are independently covered, since the existing 04-03 revert-and-fail demo happened to pass only because EmitForeignHeader's extern-declaration format string is byte-identical to emitLinearForeign's"
+      - "Add a visited-set to rederive (the same shape carriedLoans and blockReach already use) and treat a re-visited block during the backward walk as a hard refusal (e.g. a new core.release_order_cyclic code), not a silent truncation or infinite loop"
+      - "Add a falsifier test constructing a two-block \"ok\"-edge cycle feeding into a terminal block's incoming edge, asserting the validator returns promptly (does not hang) and refuses with the new code"
 deferred: []
 human_verification: []
 ---
@@ -72,90 +65,103 @@ human_verification: []
 initialization, failure propagation, and cleanup remain defined.
 **Verified:** 2026-09-05
 **Status:** gaps_found
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — after gap closure (plans 04-08, 04-09)
 
 ## Goal Achievement
 
 ### Observable Truths
 
-Derived from ROADMAP.md success criteria and merged with PLAN frontmatter `must_haves` across all 7 plans (04-01 through 04-07).
+Re-verified against the previous VERIFICATION.md's 7 merged must-haves. The two
+previously-FAILED items were checked at full depth (exists, substantive, wired, plus
+direct code/test re-derivation); the five previously-VERIFIED items were spot-checked
+for regression. One new truth (source-blind robustness of the independent rederivation)
+is added because this run's fresh code review surfaced a confirmed, unaddressed critical
+finding directly bearing on RES-01/D-04-07's own wording.
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | SC1: A fallible two-step (in practice three-step) acquisition releases only initialized resources, exactly once, in reverse order on success and typed failure | ✓ VERIFIED (with a caveat, see #1a) | `check.go` materializes `OpRelease` into each failure block reverse of completed-acquisition order (D-04-07); `TestThreeAcquisitionReleaseOrder`, `TestPartialAcquisitionReleasesOnlyCompleted`, and the three-engine differential (`TestPhase4CorpusThreeEngineAgreement`) all pass on the shipped three-acquisition fixture family (`acquire_three_success.lang`, `acquire_three_fail_second.lang`, `acquire_three_fail_third.lang`). `sh scripts/verify-phase4.sh` reports `control:resource.release_order_transposed` and `control:resource.release_omitted` both pass with nonzero recomputed work (513 and 151 respectively). Mutation-kill register (04-VALIDATION.md) records both release mutations independently reverting production hunks and reproducing red. |
-| 1a | The *independent* rederivation (`corevalidate.checkReleaseOrder`) proves release order without relying on `check`'s own bookkeeping, for every reachable terminal-block shape | ✗ FAILED | See gap 1 above. Confirmed by direct code read: the guard `if len(incoming) != 1 { continue }` (corevalidate.go:1242) silently skips validation for any terminal block that isn't a simple single-incoming-edge shape, and no other structural check bounds a return/fail-terminated block to exactly one incoming edge. Not reachable via any shipped fixture today (check.go never emits such a block), so no currently-compilable program is unsound, but the must_have as stated in 04-02's own frontmatter is not true of the implementation. |
-| 2 | SC2: Generated C declarations and adapters make target layout, allocator identity, alias/capture, callback retention, and unwind policy inspectable | ✓ VERIFIED (existence/generation), see #2a for enforcement gap | `core.ForeignContract` (core.go) carries every named obligation; `EmitForeignHeader` generates the `_LANG_`-namespaced extern declaration, obligation comment block (generated from the same JSON, `TestObligationCommentsAreGeneratedFromJSON`), and self-layout `_Static_assert`s; `EmitForeignConformance` generates the separate, compiled-but-not-linked conformance TU with paired sizeof/_Alignof/offsetof assertions (`TestConformanceUnitAssertsEveryField`, `TestConformanceUnitCompilesSeparately`); `lang.foreign/0` sidecar manifest is digest-bound into `evidence.Manifest` via `foreign_digest` (omitempty). `control:foreign.layout_mismatch` passes with recomputed_work=1 (the layout-mutation mutation-kill row is green). |
-| 2a | Zero optimizer-visible attributes are emitted, and the control scans all emitted C (D-04-13's own wording) | ✗ FAILED | See gap 2 above. Confirmed by direct code read: `lane:foreign-no-unproven-attributes` in session.go scans only `cgen.Emit()` (the compiled program) and `cgen.EmitForeignManifest()` output — never `cgen.EmitForeignHeader` or `cgen.EmitForeignConformance`, two of D-04-12's three named inspectable layers. `grep -rn ScanForBannedAttributes` across the repo confirms no call site anywhere passes header or conformance output to the scanner. A banned attribute injected into the generated header (the artifact a human reviewer is most likely to read) would not be caught by this required control despite the gate reporting `control:foreign.no_unproven_attributes: pass`. |
-| 3 | SC3 first half: Panic cannot cross the ordinary non-unwinding C boundary | ✓ VERIFIED | `-fno-exceptions -fno-asynchronous-unwind-tables -fno-unwind-tables` compiled clean under `-Werror -pedantic`; `control:foreign.unwind_forbidden` (nm -u undefined-symbol allowlist, underscore-normalized) passes in `verify-phase4.sh` output with `expected_escapes` correctly excluding it from detected controls. `TestUndefinedSymbolAllowlistRejectsNewSymbol`, `TestMissingSymbolToolReportsOperational` both present. A foreign declaration lacking `unwind`/`nonlocal_exit` policy is refused independently by `check` and `corevalidate` with no default (`TestUnwindPolicyUndeclaredRejected`, verified by direct grep of both packages' independent refusal code). |
-| 4 | SC3 second half: A foreign nonlocal exit cannot silently bypass Lang cleanup | ✓ VERIFIED | `native/lang_foreign_nonlocal.c` performs a real `longjmp`; `cgen.go` emits exactly one process-root `setjmp` landing pad plus a `static`-storage cleanup ledger (confirmed by direct grep: `setjmp.h`/`stdlib.h` includes, `lang_nonlocal_landing` jmp_buf). The pad emits `foreign.nonlocal_exit` plus one `resource.leaked` per still-live acquisition and terminates as a defect, running no release (`control:defect.no_release_on_defect` passes with recomputed_work=128; `DefectHasNoReleaseAfter` in session.go). D-04-18's "must not run releases" is honored — leaks are reported, not released, which is the deliberately PARTIAL disposition of RES-01 recorded plainly in 04-DEBT.md item 2 and in 04-DEBT.md's closing "Status of carried Phase 3 debt" section, not overstated anywhere as full release-on-nonlocal-exit. Two named, fenced blind spots (landing point below the pad; foreign process-exit) are recorded as `escape:nonlocal-exit-below-the-pad` and `escape:foreign-process-exit`, present in the gate's `expected_escapes` and never as a detected control — confirmed in the `verify-phase4.sh` JSON output captured above. |
-| 5 | SC4: Interpreter and native executions agree on primary failure and cleanup events | ✓ VERIFIED | `TestPhase4CorpusThreeEngineAgreement` exists and is asserted in the Per-Task Verification Map (04-07-02) and the required-controls run; `sh scripts/verify-phase4.sh` (already run per "already established" and independently re-run here) exits 0 and reports every required control passing across all four lanes, including `lane:release-omitted`/`lane:release-order-transposed` (RES-01/SC1 path), `lane:nonlocal-exit-undetected` (SC3/SC4 path), and `lane:defect-signal-adjudicated`. `git diff <start>..HEAD -- testdata/phase1..3` empty, confirming no cross-engine regression was masked by a golden move. |
+| 1 | SC1: A fallible two-step (in practice three-step) acquisition releases only initialized resources, exactly once, in reverse order on success and typed failure | ✓ VERIFIED | Unchanged since prior verification. `check.go` materializes `OpRelease` reverse of completed-acquisition order; `TestThreeAcquisitionReleaseOrder`, `TestPartialAcquisitionReleasesOnlyCompleted`, `TestPhase4CorpusThreeEngineAgreement` all re-run and pass. `scripts/verify-phase4.sh` re-run directly this session: `lane:release-order-transposed` and `lane:release-omitted` both `pass` with recomputed_work 525 and 151. |
+| 1a | The *independent* rederivation (`corevalidate.checkReleaseOrder`) proves release order without relying on `check`'s own bookkeeping, for every reachable terminal-block shape (gap 1 closed by plan 04-08) | ✓ VERIFIED | Direct code read confirms `checkReleaseOrder` (corevalidate.go ~1252-1298) no longer skips a terminal block whose incoming-edge count != 1: the guard is now `len(incoming) > 0` (refusal, not skip) and the walk iterates `for _, edge := range incoming { expected := rederive(edge); ... }`, comparing every incoming edge's independently-rederived expectation against the single fixed `actual` release list — closing item 1 of the prior gap. Item 2 (a structural peer check independent of checkReleaseOrder) is closed in an adapted, human-decision-recorded form: `core.terminal_block_unreachable` in `blocksAndEdges` (corevalidate.go ~416-447) refuses any non-entry OpReturn/OpFail-terminated block with zero incoming edges — an at-least-one/non-entry check, not the literal "exactly one" the prior gap's `missing:` list first suggested. That literal form was tried (04-REVIEW-FIX.md's CR-01 pass) and broke `discard_because.lang`'s legitimate two-incoming-edge merge; the auto-selected weaker check still closes the independence gap without narrowing the language. Falsifier tests re-run directly this session and pass: `TestMergeTerminalBlockDivergentReleaseSetsRefused` (constructs a hand-corrupted divergent merge, refused with `core.release_order_mismatch`), `TestMergeTerminalBlockAgreeingChainsAccepted`, `TestTerminalBlockUnreachableRefused`, `TestLegitimateDiscardMergeStillValidates`. Mutation-kill reverts recorded in 04-08-SUMMARY.md reproduce red on both hunks. **Judgment on the decision:** the auto-selected weaker check satisfies the prior gap's *substance* (an independent structural check now exists, and the merge-point vacuous-skip is closed by the per-edge walk) even though it does not literally implement missing-item 2's "exactly one" wording — that literal wording was infeasible against the language's own legitimate `discard...because` merge shape, so the substitution is judged sound, not a scope reduction. |
+| 2 | SC2: Generated C declarations and adapters make target layout, allocator identity, alias/capture, callback retention, and unwind policy inspectable | ✓ VERIFIED | Unchanged since prior verification. `core.ForeignContract` carries every named obligation; `EmitForeignHeader`/`EmitForeignConformance` re-confirmed present and correct; `control:foreign.layout_mismatch` re-run, passes with recomputed_work=1. |
+| 2a | Zero optimizer-visible attributes are emitted, and the control scans all emitted C (D-04-13's own wording) — gap 2 closed by plan 04-09 | ✓ VERIFIED | Direct code read of session.go confirms `ScanForBannedAttributes` is now called with all eight arguments: `tracerCSource, tracerManifest, tracerHeader, tracerConformance, releaseCSource, releaseManifest, releaseHeader, releaseConformance` (session.go ~2230) — `EmitForeignHeader` and `EmitForeignConformance` output for both fixtures is included, closing the coverage gap. `addLane` records `recomputed_work=8` (two fixtures × four artifacts), matching `TestAttributeScanLaneCoversEveryInspectableLayer`'s pin, re-run and passing. `TestAttributeInjectionIntoConformanceOnlyMakesControlFail` (constructs the previously-untested conformance-only-region injection, isolating the region after the embedded header via `strings.Index`) re-run and passes. `scripts/verify-phase4.sh` re-run directly this session: `lane:foreign-no-unproven-attributes` reports `"status":"pass","recomputed_work":8`. |
+| 3 | SC3 first half: Panic cannot cross the ordinary non-unwinding C boundary | ✓ VERIFIED | Unchanged since prior verification; not re-derived at full depth (no code in this path was touched by 04-08/04-09), spot-checked via the re-run gate: `lane:foreign-unwind-forbidden` passes. |
+| 4 | SC3 second half: A foreign nonlocal exit cannot silently bypass Lang cleanup | ✓ VERIFIED | Unchanged since prior verification; spot-checked via re-run gate: `lane:defect-no-release`, `lane:nonlocal-exit-undetected` both pass. |
+| 5 | SC4: Interpreter and native executions agree on primary failure and cleanup events | ✓ VERIFIED | Unchanged since prior verification; `sh scripts/verify-phase4.sh` re-run directly this session, exits 0, all 14 lanes `"status":"pass"`, all required control identifiers present, `go test ./...` and `go vet ./...` both clean. |
+| 6 | corevalidate's independent rederivation walks are source-blind and must stay defined (never hang) against a corrupted/adversarial core.Program, matching the cycle-guard discipline already applied to every other backward/forward graph walk in the same file | ✗ FAILED | New finding this run, surfaced by 04-REVIEW.md's CR-01 and independently confirmed by direct code read (not accepted on the review's word alone): `checkReleaseOrder`'s `rederive` closure has no visited-set guard against a cyclic "ok"-edge chain among non-terminal blocks, unlike `blockReach` and `loanChainIndex.carriedLoans` in the same file, both of which carry near-identical doc comments stating a source-blind validator "must stay defined against" exactly this adversarial shape. Confirmed absent from `blocksAndEdges`: no earlier acyclicity check on the declared block/edge graph. Confirmed untested: zero "cyclic"/"Cyclic" matches in `corevalidate_test.go`. Not introduced by 04-08 (which added a different check, `core.terminal_block_unreachable`, and did not modify `rederive`) — this is a pre-existing gap in code central to RES-01's own "independently rederives... and compares" wording, now surfaced by review and not yet closed by any gap-closure plan. |
 
-**Score:** 5/7 truths verified (2 of the 7 merged must-haves — the independent-rederivation half of SC1/RES-01, and the full-coverage half of SC2/FFI-01 — FAILED on direct code inspection, not merely per the code review's own claim).
+**Score:** 6/7 truths verified (both originally-reported gaps genuinely closed on direct code inspection and passing named tests; one new gap surfaced by this run's fresh code review and independently confirmed).
 
 ### Deferred Items
 
-None — both findings bear directly on this phase's own success criteria and are not deferred to a later phase in ROADMAP.md.
+None — the new finding (truth 6) bears directly on RES-01's own must-have wording (an independent, source-blind rederivation) and is not deferred to a later phase in ROADMAP.md.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `internal/compiler/core/core.go` | `AllOperationKinds()`, `TerminatorKinds()`, `ForeignContract`, `OpForeignCall`/`OpRelease`/`OpFail`/`OpDefect` | ✓ VERIFIED | Present; six-site dispatch control (`control:kind.exhaustive_dispatch`) passes with recomputed_work=1524 |
-| `internal/compiler/check/check.go` | foreign admission, reverse-order OpRelease materialization, discard-because | ✓ VERIFIED | Present; three-acquisition differential and discard fixture both green |
-| `internal/compiler/corevalidate/corevalidate.go` | independent rederivation of release order and foreign refusals | ⚠️ PARTIAL | Foreign-call/unwind refusals independently derived and verified; release-order rederivation has the incoming-edge-count gap (gap 1) |
-| `internal/compiler/cgen/cgen.go` | streaming emitter, landing pad, static ledger, zero-attribute emission, EmitForeignHeader/EmitForeignConformance | ⚠️ PARTIAL | All generation present and correct; the *scan* that is supposed to prove zero attributes across all three layers only covers one (gap 2) |
-| `native/lang_foreign_resource.c`, `native/lang_foreign_resource_private.h`, `native/lang_foreign_nonlocal.c` | frozen, byte-identical foreign TUs | ✓ VERIFIED | `04-VALIDATION.md` sign-off confirms byte-identity; not independently re-hashed here since already covered by the "already established" pinning tests |
-| `scripts/verify-phase4.sh` | bounded gate requiring every control by exact identifier | ✓ VERIFIED | Ran directly; exits 0; all 12 required negative controls present in output; 3 expected escapes present and never detected |
+| `internal/compiler/corevalidate/corevalidate.go` | independent rederivation of release order and foreign refusals, source-blind against corrupted input | ⚠️ PARTIAL | The vacuous-skip gap (prior gap 1) is closed: `checkReleaseOrder` now refuses (not skips) any terminal block with zero incoming edges and walks every incoming edge independently; `core.terminal_block_unreachable` adds a structural peer check. New gap: `rederive`'s backward walk has no cycle guard, unlike its siblings `blockReach`/`carriedLoans` — see truth 6. |
+| `internal/compiler/session/session.go` | zero-attribute scan over all emitted C, including EmitForeignHeader/EmitForeignConformance | ✓ VERIFIED | `lane:foreign-no-unproven-attributes` now scans 8 arguments (both fixtures × compiled program, manifest, header, conformance); `TestAttributeScanLaneCoversEveryInspectableLayer` pins the count so a dropped argument turns a named test red. |
+| `internal/compiler/corevalidate/corevalidate_test.go` | falsifiers proving the merge-terminal-block rederivation and structural peer check are load-bearing | ✓ VERIFIED | `TestMergeTerminalBlockDivergentReleaseSetsRefused`, `TestMergeTerminalBlockAgreeingChainsAccepted`, `TestTerminalBlockWithNoIncomingEdgeRefused`, `TestLegitimateDiscardMergeStillValidates`, `TestTerminalBlockUnreachableRefused` all present and passing; mutation-kill reverts recorded. No falsifier for the cycle gap (truth 6) exists. |
+| `internal/compiler/session/session_test.go` | falsifiers proving the conformance-layer scan and artifact-count pin are load-bearing | ✓ VERIFIED | `TestAttributeInjectionIntoConformanceOnlyMakesControlFail`, `TestAttributeScanLaneCoversEveryInspectableLayer` both present and passing; mutation-kill reverts recorded in 04-09-SUMMARY.md. |
+| `.planning/phases/04-fallible-resources-and-c-boundary/04-VALIDATION.md` | Mutation-Kill Register rows for both gap-closure plans | ✓ VERIFIED | Four new rows present (two per plan), each recording verbatim revert-and-fail output. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|----|--------|---------|
-| `check.go` | `core.go` | ok/err edges, no stored Result value | ✓ WIRED | `OpFail` producer is the only route; grep confirms no `OpMakeErr`/`Err(...)` construct exists |
-| `core.go` | `corevalidate.go` | independent release-order rederivation | ⚠️ PARTIAL | Wired for the single-incoming-edge case; unwired (skipped) for any other shape, per gap 1 |
-| `cgen.go` | `session.go` | zero-attribute scan over "all emitted C" | ⚠️ PARTIAL | Wired for `Emit`/`EmitForeignManifest`; not wired for `EmitForeignHeader`/`EmitForeignConformance`, per gap 2 |
-| `cgen.go` | `native.go` | streaming terminal record, last write, absence is hard failure | ✓ WIRED | `TestTerminalRecordAbsenceIsHardFailure`, `TestTruncationAndAbsenceReportDistinctCodes` present |
-| `originvalidate`/`pathoracle` | `core.TerminatorKinds()` | walk every terminator, not just OpReturn | ✓ WIRED | `control:terminator.walk_incomplete` passes; D-04-29's registry-driven membership test confirmed present in session.go |
+| `core.go` | `corevalidate.go` | independent release-order rederivation, refusal not skip, for every reachable terminal-block shape | ✓ WIRED | Confirmed by direct code read: `len(incoming) > 0` refusal replaces the prior `!= 1` skip; every incoming edge is walked via `for _, edge := range incoming`. |
+| `corevalidate.go` (rederive) | itself, recursively via `okEdgeInto` | acyclicity of the "ok"-edge chain | ✗ NOT_WIRED | No guard prevents infinite recursion/looping on a cyclic chain; see truth 6/gap. |
+| `cgen.go` (EmitForeignHeader/EmitForeignConformance) | `session.go` (ScanForBannedAttributes) | zero-attribute scan over "all emitted C" | ✓ WIRED | Confirmed 8-argument call site; `recomputed_work=8` in the live gate run. |
+
+### Data-Flow Trace (Level 4)
+
+Not applicable — this phase's must-haves concern compiler-internal validation and code generation, not rendered UI data.
+
+### Behavioral Spot-Checks
+
+| Behavior | Command | Result | Status |
+|----------|---------|--------|--------|
+| Gap-1 falsifier tests pass | `go test ./internal/compiler/corevalidate/... -run 'TestMergeTerminalBlockDivergentReleaseSetsRefused\|TestTerminalBlockUnreachableRefused\|TestLegitimateDiscardMergeStillValidates' -v` | All 3 named tests PASS | ✓ PASS |
+| Full corevalidate + session suites pass | `go test ./internal/compiler/corevalidate/... ./internal/compiler/session/...` | both `ok` | ✓ PASS |
+| Full workspace suite | `go test ./...` (run once, via background gate script) | all packages `ok` | ✓ PASS |
+
+### Probe Execution
+
+| Probe | Command | Result | Status |
+|-------|---------|--------|--------|
+| Phase 4 gate | `sh scripts/verify-phase4.sh` | exit 0; all 14 lanes `"status":"pass"`; `lane:foreign-no-unproven-attributes` recomputed_work=8; all required control IDs present; 3 expected escapes present and never detected | PASS |
 
 ### Requirements Coverage
 
 | Requirement | Source Plans | Description | Status | Evidence |
 |---|---|---|---|---|
-| SEM-03 | 04-01, 04-04, 04-06, 04-07 | Result propagation/ignored-result rules produce explicit typed control flow; panic/cancellation cannot be erased as ordinary errors | ✓ SATISFIED | OpFail-only typed-failure producer, defect terminator, cancelled reserved-unconstructible, all confirmed in code; REQUIREMENTS.md marks Complete, consistent with evidence found |
-| RES-01 | 04-02, 04-05, 04-07 | Partially initialized noncopyable resources release exactly once in reverse completed-acquisition order on return and typed failure | ⚠️ PARTIALLY SATISFIED | Materialization, differential, and mutation-kill are correct and verified for the reachable shape; the *independent* validator half of this guarantee (D-04-07/D-04-12's explicit requirement) has the gap-1 hole. The nonlocal-exit path's deliberate non-release (reports leaks, D-04-18) is correctly scoped outside SC1/RES-01's own wording ("on return and typed failure") and is honestly recorded in 04-DEBT.md, not overstated. REQUIREMENTS.md's "Complete" marking is accurate for the requirement's literal text (return/typed-failure paths) but the phase's own must_have language for the independent proof is not fully met. |
-| FFI-01 | 04-01, 04-03, 04-05, 04-06, 04-07 | Foreign contracts carry target layout, initialized state, allocator identity, capture/retention, aliasing, unwind obligations | ⚠️ PARTIALLY SATISFIED | Contract and all three generated layers exist and carry every obligation; the D-04-13 zero-attribute *enforcement* control (part of making obligations "inspectable" in a way that's actually checked) only covers 1 of 3 layers, per gap 2. |
+| SEM-03 | 04-01, 04-04, 04-06, 04-07, 04-08 | Result propagation/ignored-result rules produce explicit typed control flow; panic/cancellation cannot be erased as ordinary errors | ✓ SATISFIED | OpFail-only typed-failure producer, defect terminator, cancelled reserved-unconstructible, all confirmed in code; REQUIREMENTS.md marks Complete, consistent with evidence found. Not affected by the new gap. |
+| RES-01 | 04-02, 04-05, 04-07, 04-08 | Partially initialized noncopyable resources release exactly once in reverse completed-acquisition order on return and typed failure | ⚠️ PARTIALLY SATISFIED | The vacuous-skip gap (prior gap 1) is closed. The requirement's literal text (release order on return/typed-failure) holds for every reachable shape today. But the *independent, source-blind* rederivation this requirement's own decisions (D-04-07/D-12a) require is not robust against a corrupted core.Program — `rederive`'s unguarded cycle can hang the validator, which is exactly the adversarial-input class independent validation exists to defend against, per the file's own documented design principle. REQUIREMENTS.md's "Complete" marking is accurate for the requirement's literal text on honestly-produced programs, but the phase's own independence/robustness intent is not fully met. |
+| FFI-01 | 04-01, 04-03, 04-05, 04-06, 04-07, 04-09 | Foreign contracts carry target layout, initialized state, allocator identity, capture/retention, aliasing, unwind obligations | ✓ SATISFIED | Contract and all three generated layers exist and carry every obligation; the D-04-13 zero-attribute enforcement control now covers all three inspectable layers (prior gap 2 closed), pinned at recomputed_work=8 so a future regression cannot silently shrink coverage. |
 
-No orphaned requirement IDs found — SEM-03, RES-01, FFI-01 all appear in at least one plan's `requirements` field and all three appear in REQUIREMENTS.md mapped to Phase 4.
+No orphaned requirement IDs found — SEM-03, RES-01, FFI-01 all appear in at least one plan's `requirements` field (04-08 and 04-09 added to their respective owning requirements) and all three appear in REQUIREMENTS.md mapped to Phase 4.
 
 ### Anti-Patterns Found
 
-None of TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER found in the 24 files the code review already scanned (internal/compiler/{ast,cgen,check,core,corevalidate,evidence,execution,interp,native,originvalidate,pathoracle,session,syntax}, the two frozen C TUs, and verify-phase4.sh). No blocker-severity debt markers found.
-
-### Behavioral Spot-Checks
-
-Not re-run independently — `sh scripts/verify-phase4.sh` (Step 7c-equivalent probe) was re-executed directly in this verification session and confirmed exit 0 with every required control identifier present, matching the "already established" claim. This is the phase's own probe/gate script; running it directly (rather than trusting SUMMARY.md's narration of an earlier run) is the evidence basis for every ✓ VERIFIED item above that cites a `control:` identifier.
-
-### Probe Execution
-
-| Probe | Command | Result | Status |
-|---|---|---|---|
-| Phase 4 gate | `sh scripts/verify-phase4.sh` | exit 0; all lanes `"status":"pass"`; all 12 required control IDs present; 3 expected escapes present and never detected as controls | PASS |
+None of TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER found in the files touched by 04-08/04-09 (`corevalidate.go`, `corevalidate_test.go`, `session_test.go`) or elsewhere in the phase's file set per 04-REVIEW.md's own scan (48 files). No blocker-severity debt markers found. CR-01 (the cycle-guard gap) is a correctness/robustness defect, not a debt marker — recorded as a gap above, not an anti-pattern.
 
 ### Human Verification Required
 
-None. Both findings below are resolvable by direct code inspection (confirmed, not merely suspected) and do not require human judgment to adjudicate.
+None. The one remaining gap (CR-01, the missing cycle guard in `rederive`) is resolvable by direct code inspection and does not require human judgment to adjudicate — it is a concrete, well-scoped fix (add a visited-set, refuse on re-visit, add a falsifier) with a precedent pattern already present twice in the same file.
 
 ### Gaps Summary
 
-Both critical findings from `04-REVIEW.md` (CR-01 and WR-01/CR-02) were independently confirmed against the current codebase, not accepted on the review's word alone:
+Both previously-reported gaps are genuinely closed, confirmed by direct code inspection (not the summaries' claims alone):
 
-1. **CR-01 confirmed.** `corevalidate.checkReleaseOrder` (corevalidate.go:1232-1260) silently skips its own independent release-order rederivation for any terminal block whose incoming-edge count isn't exactly 1. Direct read of `blocksAndEdges` (corevalidate.go:395-447) confirms no other structural check in the file bounds a return- or fail-terminated block to exactly one incoming edge — the existing check only requires "at least one" `err`-patterned edge into an `OpFail` block, and says nothing about `OpReturn`-terminated blocks or about upper-bounding the count. This is a genuine soundness gap in the control D-04-07/D-04-12 designed specifically to be independent of `check`'s own bookkeeping. It is not reachable through any program `check.go` currently emits (no fixture, corpus program, or the shipped binary's own compiler produces a merge-point terminal block today), so no currently-compilable Lang program has an actually-unverified release order — but the must_have as stated in 04-02-PLAN.md's own frontmatter ("independently rederives... and compares... never reads what check wrote") is not accurate to the implementation without noting this carve-out, and the gap is exactly the "control that could pass vacuously" class this project has repeatedly paid to close (03-08/03-09/03-10).
+1. **Prior gap 1 (RES-01/D-04-07) — CLOSED.** `checkReleaseOrder` no longer skips validation for a terminal block with an unexpected incoming-edge count; it now refuses (`core.release_order_indeterminate`) any terminal block with zero incoming edges and walks every incoming edge independently, comparing each rederived expectation against the fixed actual release list. The prior gap's second missing item (a structural peer check) is closed in an adapted form — `core.terminal_block_unreachable` (at-least-one/non-entry) rather than the literally-worded "exactly one" — a substitution judged sound because the literal form was tried and broke a legitimate language construct (`discard...because`'s two-incoming-edge merge), and the adapted form still closes the independence gap the missing item was about. This decision was auto-selected under auto-mode (recorded in 04-08-SUMMARY.md) rather than confirmed by a human; it is judged here as satisfying the gap's substance, but is flagged for awareness since it was not a human-reviewed decision.
 
-2. **WR-01/CR-02 confirmed.** `control:foreign.no_unproven_attributes` (session.go:2178-2212) is wired to scan only `cgen.Emit()` and `cgen.EmitForeignManifest()` output. A repo-wide grep for `ScanForBannedAttributes` confirms it is never called with `cgen.EmitForeignHeader` or `cgen.EmitForeignConformance` output anywhere — not in production code, not in `cgen_test.go`, not in `session_test.go`. Two of D-04-12's three named "inspectable layers" are therefore unscanned by the control whose entire job is to prove zero optimizer-visible attributes across "all emitted C." A banned attribute injected into the generated header (the artifact D-04-12 itself calls out as most likely to be read by a human reviewer) would pass this required control undetected, even though the gate reports it "pass."
+2. **Prior gap 2 (FFI-01/D-04-12/D-04-13) — CLOSED.** `ScanForBannedAttributes` is now called with all eight arguments across both fixtures, including `EmitForeignHeader` and `EmitForeignConformance` output for each. A dedicated falsifier (`TestAttributeInjectionIntoConformanceOnlyMakesControlFail`) proves the conformance unit's own added text (not just its embedded header) is independently scanned, and a count-pin test (`TestAttributeScanLaneCoversEveryInspectableLayer`) ensures a future dropped argument cannot silently shrink coverage back down.
 
-Neither finding is a defect a currently-shipped Lang program can trigger — both are architectural gaps in the *independence* and *completeness* of validation machinery the phase's own decisions (D-04-07, D-04-12, D-04-13) explicitly required. Given that independence and completeness are the entire point of these two controls (the phase's own review brief and decisions repeatedly emphasize "a control that could pass vacuously" as the specific failure class to avoid), these are treated as gaps against the phase's own must_haves rather than passed on the strength of green tests that don't exercise the uncovered shape.
+One new gap was found and confirmed independently this run:
 
-**This looks intentional in neither case** — both read as an oversight (a boundary condition not defended, and two of three generated artifacts not wired into an existing scanner call), not a deliberate scope decision recorded anywhere in 04-CONTEXT.md, 04-DEBT.md, or 04-VALIDATION.md. No override is suggested; recommend a small gap-closure plan addressing both (each is a narrowly-scoped fix: one added structural check plus a refusal-on-skip in corevalidate.go, and two additional scan arguments plus one new mutation-kill test in session.go/cgen.go).
+3. **New finding (CR-01) — NOT CLOSED.** `corevalidate.checkReleaseOrder`'s backward-walk closure `rederive` has no cycle/visited-set guard, unlike the file's two other backward/forward graph walks (`blockReach`, `loanChainIndex.carriedLoans`), which both explicitly defend against cyclic/corrupted input with documented rationale ("a source-blind validator must stay defined against" adversarial input). A hand-corrupted `core.Program` with a cyclic "ok"-edge chain feeding a terminal block's incoming edge would hang `rederive`'s loop forever — an unbounded denial-of-service in the exact mechanism RES-01/D-04-07 requires to be independently sound. This gap pre-dates 04-08 (which added a different, unrelated check and did not touch `rederive`) and is untested (no cyclic-edge falsifier exists). It was not addressed by either gap-closure plan (04-08, 04-09), since neither plan's scope included it — it was only surfaced by this run's fresh code review pass.
+
+**This looks like a genuine oversight, not a deliberate scope decision** — no record of it in 04-CONTEXT.md, 04-DEBT.md, or 04-VALIDATION.md, and the fix pattern (a visited-set, exactly matching two sibling walks already in the same file) is narrow and well-precedented. No override is suggested; recommend a small, targeted gap-closure plan: add the visited-set to `rederive`, propagate a `core.release_order_cyclic` refusal at both call sites, and add one falsifier constructing a two-block cyclic "ok"-edge chain.
 
 ---
 
