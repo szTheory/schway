@@ -365,13 +365,24 @@ func emitLinearForeign(program core.Program, function core.Function) (string, er
 	// the frozen foreign translation unit's private header.
 	fmt.Fprintf(&out, "typedef struct %s {\n  unsigned char ok;\n  unsigned char value;\n} %s;\n\n", resultType, resultType)
 	fmt.Fprintf(&out, "extern %s %s(unsigned char argument);\n\n", resultType, symbolC)
-	emitLinearOutputSupport(&out, function, typeName)
+	// D-04-20: every function this emitter handles declares a foreign
+	// acquisition (checked at this function's own entry above), so it always
+	// takes the STREAMING event path -- the one selection site for D-04-20's
+	// additive emitter, never the buffered emitEventSupport plain emitLinear
+	// still uses byte-for-byte (D-04-23).
+	emitLinearForeignOutputSupport(&out, function, typeName)
 	ledger.emitDeclarations(&out)
 
 	out.WriteString("int main(int argc, char **argv) {\n")
 	out.WriteString("  if (argc != 2) return 64;\n")
 	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
 	fmt.Fprintf(&out, "  %s %s = %s;\n", typeName, locals[parameter.ID], initializer)
+	// The events array opens FIRST, before any operation executes, so a
+	// streamed lang_record_event call always lands inside a syntactically
+	// valid (if not yet terminated) JSON array -- every terminal writer below
+	// closes it with "]" plus the outcome/live_resources tail, never the
+	// other order.
+	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"events\\\":[\")) return 74;\n")
 
 	currentBlockID := function.ID + ":block:entry"
 	visited := make(map[string]bool, len(function.Linear.Blocks))
@@ -536,14 +547,15 @@ func emitForeignReleasesAndReturn(out *strings.Builder, function core.Function, 
 			fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74; /* returned place: %s */\n",
 				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
-			out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
+			// D-04-20: the events array was opened at the top of main(); this
+			// terminal writer closes it, then writes outcome/live_resources --
+			// the terminal record is the LAST write on this path.
+			out.WriteString("  if (!lang_write_literal(\"],\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 			fmt.Fprintf(out, "  if (!lang_write_byte(%s)) return 74;\n", locals[source.ID])
-			out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
-			out.WriteString("  if (!lang_write_events()) return 74;\n")
 			if len(ledger.ids) == 0 {
-				out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
+				out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"live_resources\\\":[]}\\n\")) return 74;\n")
 			} else {
-				out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[\")) return 74;\n")
+				out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"live_resources\\\":[\")) return 74;\n")
 				out.WriteString("  if (!lang_write_live_resources()) return 74;\n")
 				out.WriteString("  if (!lang_write_literal(\"]}\\n\")) return 74;\n")
 			}
@@ -575,14 +587,15 @@ func emitForeignReleasesAndFail(out *strings.Builder, program core.Program, func
 			fmt.Fprintf(out, "%sif (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74;\n",
 				indent, strconv.Quote("function.failed"), strconv.Quote(operation.ID+":event:failed"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID))
-			fmt.Fprintf(out, "%sif (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"typed_failure\\\",\\\"value\\\":\")) return 74;\n", indent)
+			// D-04-20: close the events array opened at the top of main(),
+			// then write outcome/live_resources -- the terminal record is the
+			// LAST write on this path too.
+			fmt.Fprintf(out, "%sif (!lang_write_literal(\"],\\\"outcome\\\":{\\\"kind\\\":\\\"typed_failure\\\",\\\"value\\\":\")) return 74;\n", indent)
 			fmt.Fprintf(out, "%sif (!lang_write_json_string(%s)) return 74;\n", indent, strconv.Quote(errorLiteral))
-			fmt.Fprintf(out, "%sif (!lang_write_literal(\"},\\\"events\\\":[\")) return 74;\n", indent)
-			fmt.Fprintf(out, "%sif (!lang_write_events()) return 74;\n", indent)
 			if len(ledger.ids) == 0 {
-				fmt.Fprintf(out, "%sif (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n", indent)
+				fmt.Fprintf(out, "%sif (!lang_write_literal(\"},\\\"live_resources\\\":[]}\\n\")) return 74;\n", indent)
 			} else {
-				fmt.Fprintf(out, "%sif (!lang_write_literal(\"],\\\"live_resources\\\":[\")) return 74;\n", indent)
+				fmt.Fprintf(out, "%sif (!lang_write_literal(\"},\\\"live_resources\\\":[\")) return 74;\n", indent)
 				fmt.Fprintf(out, "%sif (!lang_write_live_resources()) return 74;\n", indent)
 				fmt.Fprintf(out, "%sif (!lang_write_literal(\"]}\\n\")) return 74;\n", indent)
 			}
@@ -646,6 +659,86 @@ func emitLinearOutputSupport(out *strings.Builder, function core.Function, typeN
 // because a branch-shaped function never needs one: its returned value is a
 // compile-time-known alternative name per case, written as a JSON string
 // literal, not a dynamically-encoded scalar (see emitBranchOperations).
+// emitLinearForeignOutputSupport is D-04-20's selection site: every function
+// emitLinearForeign handles carries a core.ForeignContract (checked at that
+// function's own entry), so it always takes the STREAMING event path
+// (emitStreamingEventSupport) instead of the buffered one
+// emitLinearOutputSupport/emitEventSupport give every other linear emitter.
+// The buffered lang_write_events() writes nothing until the function's own
+// terminal statement, so an aborting foreign-acquiring process would emit
+// zero events -- exactly the gap that would make SC4's interpreter/native
+// agreement unfalsifiable on the paths SC3 is about. This is a NEW sibling
+// of emitLinearOutputSupport, never called from emitLinear/emitBranch, so
+// every existing committed generated-C golden (Phase 1/2/3, and the frozen
+// foreign layout fixture) is untouched (D-04-23).
+func emitLinearForeignOutputSupport(out *strings.Builder, function core.Function, typeName string) {
+	emitStreamingEventSupport(out)
+	if function.Parameter.Type == "Buffer" {
+		fmt.Fprintf(out, "static int lang_write_buffer_hex(const %s *value) {\n", typeName)
+		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  size_t index;\n")
+		out.WriteString("  if (value->length > sizeof value->bytes) return 0;\n")
+		out.WriteString("  for (index = 0u; index < value->length; index++) {\n")
+		out.WriteString("    char encoded[2] = {hex[value->bytes[index] >> 4u], hex[value->bytes[index] & 0x0fu]};\n")
+		out.WriteString("    if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n  }\n  return 1;\n}\n\n")
+	} else {
+		out.WriteString("static int lang_write_byte(unsigned char value) {\n")
+		out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
+		out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
+	}
+}
+
+// emitStreamingEventSupport is D-04-20's additive streaming event emitter:
+// unlike emitEventSupport's lang_record_event (which appends to a fixed-size
+// array replayed once by lang_write_events at the very end), this variant's
+// lang_record_event writes the event's own JSON object to stdout the MOMENT
+// it is called, so every event recorded before an abort()/nonlocal exit
+// partway through a function has already reached the file descriptor. The
+// caller writes the "events":[ opening literal FIRST, before any operation
+// executes, and every terminal writer closes it with "]" plus the
+// outcome/live_resources tail -- never the other order -- which is why this
+// cannot simply replace emitEventSupport's lang_write_events in place.
+// emitEventSupport itself is completely unmodified by this function's
+// existence (D-04-23): every Phase 1/2/3 program, and every Phase 4 program
+// with no foreign acquisition, still uses it byte-for-byte.
+func emitStreamingEventSupport(out *strings.Builder) {
+	out.WriteString("#define LANG_OUTPUT_LIMIT 65536u\n\n")
+	out.WriteString("static size_t lang_event_count = 0u;\nstatic size_t lang_output_count = 0u;\n\n")
+	out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n")
+	out.WriteString("  if (length > LANG_OUTPUT_LIMIT - lang_output_count) return 0;\n")
+	out.WriteString("  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n")
+	out.WriteString("  lang_output_count += length;\n  return 1;\n}\n\n")
+	out.WriteString("static int lang_write_literal(const char *value) {\n  return lang_write_bytes(value, strlen(value));\n}\n\n")
+	out.WriteString("static int lang_write_json_string(const char *value) {\n")
+	out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n")
+	out.WriteString("  if (!lang_write_bytes(\"\\\"\", 1u)) return 0;\n")
+	out.WriteString("  for (; *value != '\\0'; value++) {\n")
+	out.WriteString("    unsigned char byte = (unsigned char)*value;\n")
+	out.WriteString("    const char *escape = NULL;\n")
+	out.WriteString("    if (byte == '\"') escape = \"\\\\\\\"\";\n")
+	out.WriteString("    else if (byte == '\\\\') escape = \"\\\\\\\\\";\n")
+	out.WriteString("    else if (byte == '\\b') escape = \"\\\\b\";\n")
+	out.WriteString("    else if (byte == '\\f') escape = \"\\\\f\";\n")
+	out.WriteString("    else if (byte == '\\n') escape = \"\\\\n\";\n")
+	out.WriteString("    else if (byte == '\\r') escape = \"\\\\r\";\n")
+	out.WriteString("    else if (byte == '\\t') escape = \"\\\\t\";\n")
+	out.WriteString("    if (escape != NULL) { if (!lang_write_literal(escape)) return 0; }\n")
+	out.WriteString("    else if (byte < 0x20u) {\n")
+	out.WriteString("      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n")
+	out.WriteString("      if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n")
+	out.WriteString("    } else if (!lang_write_bytes(value, 1u)) return 0;\n")
+	out.WriteString("  }\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
+	out.WriteString("static int lang_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id) {\n")
+	out.WriteString("  if (lang_event_count != 0u && !lang_write_bytes(\",\", 1u)) return 0;\n")
+	out.WriteString("  lang_event_count++;\n")
+	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\") || !lang_write_json_string(id)) return 0;\n")
+	out.WriteString("  if (!lang_write_literal(\",\\\"kind\\\":\") || !lang_write_json_string(kind)) return 0;\n")
+	out.WriteString("  if (!lang_write_literal(\",\\\"function_id\\\":\") || !lang_write_json_string(function_id)) return 0;\n")
+	out.WriteString("  if (source_place != NULL && (!lang_write_literal(\",\\\"source_place\\\":\") || !lang_write_json_string(source_place))) return 0;\n")
+	out.WriteString("  if (target_place != NULL && (!lang_write_literal(\",\\\"target_place\\\":\") || !lang_write_json_string(target_place))) return 0;\n")
+	out.WriteString("  if (type_id != NULL && (!lang_write_literal(\",\\\"type_id\\\":\") || !lang_write_json_string(type_id))) return 0;\n")
+	out.WriteString("  return lang_write_bytes(\"}\", 1u);\n}\n\n")
+}
+
 func emitEventSupport(out *strings.Builder, capacity int) {
 	fmt.Fprintf(out, "#define LANG_OUTPUT_LIMIT 65536u\n#define LANG_EVENT_CAPACITY %du\n\n", capacity)
 	out.WriteString("typedef struct LANG_EVENT {\n")
@@ -692,6 +785,38 @@ func emitEventSupport(out *strings.Builder, capacity int) {
 	out.WriteString("    if (event->target_place != NULL && (!lang_write_literal(\",\\\"target_place\\\":\") || !lang_write_json_string(event->target_place))) return 0;\n")
 	out.WriteString("    if (event->type_id != NULL && (!lang_write_literal(\",\\\"type_id\\\":\") || !lang_write_json_string(event->type_id))) return 0;\n")
 	out.WriteString("    if (!lang_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
+}
+
+// functionHasDefect reports whether any operation in function's Linear body
+// is an OpDefect -- the selection gate deciding whether emitBranch also
+// emits the generated lang_defect support function (D-04-15). Every
+// defect-free program's generated C is completely unaffected.
+func functionHasDefect(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpDefect {
+			return true
+		}
+	}
+	return false
+}
+
+// emitDefectSupport writes the generated _Noreturn lang_defect function
+// (D-04-14/D-04-15): the one generated-code exemption from the zero-
+// attribute control (D-04-13), because _Noreturn here is a property of a
+// function cgen itself emits and every path of which provably ends in
+// abort() -- not an unproven claim about a foreign callee. Called only from
+// an emitter whose function actually contains an OpDefect operation, so
+// every defect-free program's generated C is byte-for-byte unaffected
+// (D-04-23).
+func emitDefectSupport(out *strings.Builder) {
+	out.WriteString("#include <stdlib.h>\n\n")
+	out.WriteString("_Noreturn static void lang_defect(const char *reason) {\n")
+	out.WriteString("  (void)reason; /* D-04-15: no catch, no containment, no unwinding, no cleanup -- abort-only at the process root */\n")
+	out.WriteString("  abort();\n")
+	out.WriteString("}\n\n")
 }
 
 // emitBranch is the native lowering for a match function whose arms carry
@@ -757,6 +882,9 @@ func emitBranch(program core.Program, function core.Function) (string, error) {
 	}
 	fmt.Fprintf(&out, "} %s;\n\n", typeName)
 	emitEventSupport(&out, len(function.Linear.Operations))
+	if functionHasDefect(function) {
+		emitDefectSupport(&out)
+	}
 
 	out.WriteString("int main(int argc, char **argv) {\n")
 	out.WriteString("  if (argc != 2) return 64;\n")
@@ -836,6 +964,41 @@ func emitBranchOperations(out *strings.Builder, function core.Function, places m
 			out.WriteString("      if (!lang_write_events()) return 74;\n")
 			out.WriteString("      if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
 			out.WriteString("      return 0;\n")
+		case core.OpDefect:
+			// D-04-15: lower to a call to the generated _Noreturn lang_defect
+			// function, every path of which ends in abort(). The terminal
+			// record (outcome kind "defect", no value, its own
+			// function.defected event carrying the required reason string in
+			// "output", empty live_resources -- no arm can carry a foreign
+			// acquisition this phase) is written FIRST, so it is captured
+			// even though the process then aborts; lang_defect's own
+			// _Noreturn marker is the one and only exemption from the
+			// zero-attribute control (D-04-13/D-04-14), because it is a
+			// property of a function cgen itself emits, not an unproven
+			// claim about a foreign callee.
+			//
+			// This event is assembled directly rather than through
+			// lang_record_event/lang_write_events: the shared LANG_EVENT
+			// struct those helpers use (emitEventSupport, frozen for every
+			// other emitter, D-04-23) has no "output" field, and adding one
+			// there would move every existing committed generated-C golden.
+			out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"defect\\\",\\\"value\\\":\\\"\\\"},\\\"events\\\":[\")) return 74;\n")
+			out.WriteString("      if (!lang_write_events()) return 74;\n")
+			out.WriteString("      if (lang_event_count != 0u && !lang_write_bytes(\",\", 1u)) return 74;\n")
+			out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.ID+":event:defected"))
+			out.WriteString("      if (!lang_write_literal(\",\\\"kind\\\":\\\"function.defected\\\",\\\"function_id\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(function.ID))
+			out.WriteString("      if (!lang_write_literal(\",\\\"source_place\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.SourceID))
+			out.WriteString("      if (!lang_write_literal(\",\\\"type_id\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.TypeID))
+			out.WriteString("      if (!lang_write_literal(\",\\\"output\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.Reason))
+			out.WriteString("      if (!lang_write_literal(\"}\")) return 74;\n")
+			out.WriteString("      if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
+			fmt.Fprintf(out, "      lang_defect(%s);\n", strconv.Quote(operation.Reason))
+			out.WriteString("      return 71; /* unreachable: lang_defect never returns */\n")
 		case core.OpForeignCall, core.OpFail:
 			// checkBranch never emits either kind inside a match arm body
 			// this phase (no `try` support inside an arm) -- named here,

@@ -10,6 +10,89 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
+// foreignReleaseCheckedProgram checks the three-acquisition resource
+// fixture, reused by the D-04-20 streaming-emitter tests below.
+func foreignReleaseCheckedProgram(t *testing.T) session.CheckResult {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+	}
+	return checked
+}
+
+// TestStreamingEmitterWritesAtPointOfOccurrence proves D-04-20's additive
+// streaming emitter is selected for a foreign-acquiring function: the
+// buffered lang_write_events replay is absent, and the events array opens
+// BEFORE the first event is recorded, so a lang_record_event call always
+// lands inside an already-open JSON array rather than one materialized only
+// at the very end.
+func TestStreamingEmitterWritesAtPointOfOccurrence(t *testing.T) {
+	checked := foreignReleaseCheckedProgram(t)
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(generated, "lang_write_events") {
+		t.Fatalf("a foreign-acquiring function must not use the buffered event replay:\n%s", generated)
+	}
+	if !strings.Contains(generated, `\"events\":[`) {
+		t.Fatalf("expected the streamed events array literal, got:\n%s", generated)
+	}
+	openIndex := strings.Index(generated, `\"events\":[`)
+	firstRecord := strings.Index(generated, `lang_record_event("`) // a CALL site, not the definition
+	if openIndex < 0 || firstRecord < 0 || openIndex > firstRecord {
+		t.Fatalf("events array must open before the first event is recorded: open=%d first=%d\n%s", openIndex, firstRecord, generated)
+	}
+}
+
+// TestExistingEmittersAreByteIdentical is D-04-23's regression proof: adding
+// the streaming emitter must not move a single byte of any Phase 1/2/3
+// generated-C golden, since the buffered emitEventSupport those emitters
+// use is completely unmodified by this plan.
+func TestExistingEmittersAreByteIdentical(t *testing.T) {
+	tests := []struct {
+		source []string
+		golden []string
+		native bool // Emit (false, Phase 1's plain non-JSON mode) vs EmitNative (true)
+	}{
+		{[]string{"testdata", "phase1", "toggle.lang"}, []string{"testdata", "phase1", "generated.golden.c"}, false},
+		{[]string{"testdata", "phase2", "owned_transfer.lang"}, []string{"testdata", "phase2", "owned_transfer.golden.c"}, true},
+	}
+	for _, test := range tests {
+		t.Run(strings.Join(test.golden, "/"), func(t *testing.T) {
+			source, err := os.ReadFile(testsupport.ProjectPath(test.source...))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+			}
+			var generated string
+			if test.native {
+				generated, err = cgen.EmitNative(checked.Program)
+			} else {
+				generated, err = cgen.Emit(checked.Program)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			golden, err := os.ReadFile(testsupport.ProjectPath(test.golden...))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if generated != string(golden) {
+				t.Fatalf("existing emitter output moved after adding the streaming emitter:\n--- got ---\n%s\n--- want ---\n%s", generated, golden)
+			}
+		})
+	}
+}
+
 func foreignAcquireCheckedProgram(t *testing.T) session.CheckResult {
 	t.Helper()
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
