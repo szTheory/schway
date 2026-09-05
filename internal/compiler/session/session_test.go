@@ -1399,6 +1399,81 @@ func TestAttributeInjectionIntoHeaderOnlyMakesControlFail(t *testing.T) {
 	}
 }
 
+// TestAttributeInjectionIntoConformanceOnlyMakesControlFail is 04-09's
+// dedicated mutation-kill test for the third D-04-12 inspectable layer.
+// EmitForeignConformance embeds EmitForeignHeader's full output verbatim
+// before writing its own added text (the private-header #include line and
+// the per-field _Static_assert triples), so injecting anywhere in the
+// shared prefix would prove only what
+// TestAttributeInjectionIntoHeaderOnlyMakesControlFail already proves. This
+// test isolates the conformance unit's OWN added text -- everything after
+// the embedded header -- and injects there alone, proving the conformance
+// layer is independently scanned rather than only incidentally covered by
+// the header's coverage. This is the same coincidental-overlap trap
+// 04-VERIFICATION.md gap 2 named, one layer further in.
+func TestAttributeInjectionIntoConformanceOnlyMakesControlFail(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	cSource, err := cgen.Emit(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	header, err := cgen.EmitForeignHeader(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conformance, err := cgen.EmitForeignConformance(checked.Program, native.ForeignResourcePrivateHeaderPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The real emitted artifacts are all clean first -- a fixture that
+	// already contains a banned token would make the whole test vacuous.
+	if found := cgen.ScanForBannedAttributes(cSource, header, conformance); len(found) != 0 {
+		t.Fatalf("real emitted C/header/conformance already contains a banned token: %v", found)
+	}
+	// Isolate the conformance unit's own added text: everything after the
+	// embedded header. Fail loudly if the header is not found inside the
+	// conformance output -- that would mean the embedding assumption this
+	// test is built on no longer holds and the test must be re-derived,
+	// not silently weakened.
+	headerIndex := strings.Index(conformance, header)
+	if headerIndex < 0 {
+		t.Fatal("expected the conformance unit to embed the header's full output verbatim")
+	}
+	conformanceOnly := conformance[headerIndex+len(header):]
+	// Consume cgen.BannedOptimizerAttributes rather than a hard-coded token
+	// literal, matching the existing tests' stated reason: widening the
+	// banned set must not silently bypass the mutation-kill.
+	if len(cgen.BannedOptimizerAttributes) == 0 {
+		t.Fatal("cgen.BannedOptimizerAttributes is empty; cannot construct an injection")
+	}
+	injectionToken := " " + strings.Join(cgen.BannedOptimizerAttributes, " ") + " "
+	injectedConformanceOnly := strings.Replace(conformanceOnly, "_Static_assert", "_Static_assert"+injectionToken, 1)
+	if injectedConformanceOnly == conformanceOnly {
+		t.Fatal("injection site not found in the conformance unit's own added text")
+	}
+	injectedConformance := conformance[:headerIndex+len(header)] + injectedConformanceOnly
+	// The untouched header and untouched compiled-program C still scan
+	// clean -- proving the injection did not leak into either.
+	if found := cgen.ScanForBannedAttributes(cSource); len(found) != 0 {
+		t.Fatalf("untouched compiled-program C unexpectedly flagged: %v", found)
+	}
+	if found := cgen.ScanForBannedAttributes(header); len(found) != 0 {
+		t.Fatalf("untouched header unexpectedly flagged: %v", found)
+	}
+	// But scanning the reassembled injected conformance unit (as the
+	// production lane now does) must catch the injected tokens.
+	if found := cgen.ScanForBannedAttributes(injectedConformance); len(found) == 0 {
+		t.Fatal("expected the conformance-only injected banned tokens to be detected")
+	}
+}
+
 // TestAttributeInjectionMakesControlFail demonstrates D-04-13's
 // mutation-kill by injection (rather than by isolated assertion): a banned
 // token injected into a COPY of the REAL corpus-emitted C (as if the emitter
