@@ -1,18 +1,18 @@
 ---
 gsd_state_version: 1.0
 current_phase: 04
-current_phase_name: fallible-resources-and-c-boundary
+current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Completed 04-12-PLAN.md - foreign symbol identifier audit at the C boundary (04-VERIFICATION.md gap 2 closure)
-last_updated: "2026-09-05T22:30:25.041Z"
+stopped_at: Completed 04-13-PLAN.md - foreign contract field audit at the C boundary, source-reachable path (04-VERIFICATION.md gap 2b closure)
+last_updated: "2026-09-05T22:58:46.552Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 04 execution started
-state_head: d31df1f00d16799cca9c507db16b7c4d940d23ad
+state_head: ae62ae83d7948a1f1caf4a8cc09b9e27542a444c
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 33
-  completed_plans: 32
+  completed_plans: 33
   percent: 50
 ---
 
@@ -29,8 +29,8 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 04 (fallible-resources-and-c-boundary) — READY TO EXECUTE
-Plan: 3 of 12
+Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
+Plan: 2 of 13
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 04 execution started
 
@@ -86,6 +86,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04 P10 | 20min | 2 tasks | 3 files |
 | Phase 04 P11 | 35 min | 2 tasks | 3 files |
 | Phase 04 P12 | 45min | 3 tasks | 5 files |
+| Phase 04 P13 | 30 min | 4 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: Pinned TestAcyclicChainsStillValidateUnderCycleGuard's accepting-path Checks constant to 403, measured from the actual pre-guard build
 - [Phase 04]: Promoted okEdgeInto's plural map to the primary representation (assumption-delta promote): the single-edge case is the len==1 degenerate branch, not a separate side table — Keeps exactly one source of truth for which ok edge(s) target a block; an add-alongside side table would reintroduce the last-writer-wins collapse this plan closes
 - [Phase 04]: corevalidate audits ForeignContract.Symbol's identifier shape (foreign.symbol_not_identifier) and cgen independently refuses the same hostile input on its three Validate-bypassing EmitForeign* entry points, closing 04-VERIFICATION.md gap 2's C-injection hole
+- [Phase 04]: [Phase 04] 04-13: full C-identifier shape for allocator/unwind/nonlocal_exit (DD-04-13-01), a third independent predicate at check.go's source-admission layer, plus comment-safety/C-type-expression audits in corevalidate and cgen for every remaining spliced ForeignContract field -- closing 04-VERIFICATION.md gap 2b's code-injection hole at the C boundary.
 
 ### Pending Todos
 
@@ -197,6 +199,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T21:55:29.167Z
-Stopped at: Completed 04-12-PLAN.md - foreign symbol identifier audit at the C boundary (04-VERIFICATION.md gap 2 closure)
+Last session: 2026-09-05T22:58:46.458Z
+Stopped at: Completed 04-13-PLAN.md - foreign contract field audit at the C boundary, source-reachable path (04-VERIFICATION.md gap 2b closure)
 Resume file: None
