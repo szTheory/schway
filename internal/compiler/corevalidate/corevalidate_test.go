@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
@@ -904,5 +905,86 @@ func TestTerminalBlockUnreachableRefused(t *testing.T) {
 	result := corevalidate.Validate(mutated)
 	if result.Valid || result.Problems[0].Code != "core.terminal_block_unreachable" {
 		t.Fatalf("expected core.terminal_block_unreachable, got %+v", result)
+	}
+}
+
+// TestCyclicOkEdgeChainRefusedNotHung is the 04-VERIFICATION.md gap-3 /
+// 04-REVIEW.md CR-01 falsifier: checkReleaseOrder's rederive backward walk is
+// the one graph walk in this file without a visited-set guard matching
+// loanChainIndex.carriedLoans and blockReach. It hand-corrupts
+// acquire_three_success.lang's declared ok-edge chain into a two-block cycle
+// (step:1 <-> step:2) reaching the success block's incoming edge, so the
+// backward walk started from that edge would loop forever without the guard.
+// The test asserts BOTH observable properties the guard exists to provide:
+// Validate RETURNS within a bounded wall-clock deadline (it does not hang),
+// and the returned result carries the core.release_order_cyclic refusal
+// rather than some other code or a silently truncated comparison.
+func TestCyclicOkEdgeChainRefusedNotHung(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	functionID := valid.Functions[0].ID
+	blockA := functionID + ":block:step:1"
+	blockB := functionID + ":block:step:2"
+
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	edgesBefore := len(function.Linear.Edges)
+
+	function.Linear.Edges = append(function.Linear.Edges,
+		core.Edge{ID: functionID + ":edge:corrupt:cycle:b:a", FromBlockID: blockB, ToBlockID: blockA, Pattern: "ok"},
+		core.Edge{ID: functionID + ":edge:corrupt:cycle:a:b", FromBlockID: blockA, ToBlockID: blockB, Pattern: "ok"},
+	)
+	for index := range function.Linear.Blocks {
+		switch function.Linear.Blocks[index].ID {
+		case blockA:
+			function.Linear.Blocks[index].Successors = append(function.Linear.Blocks[index].Successors, blockB)
+		case blockB:
+			function.Linear.Blocks[index].Successors = append(function.Linear.Blocks[index].Successors, blockA)
+		}
+	}
+
+	if got := len(function.Linear.Edges); got != edgesBefore+2 {
+		t.Fatalf("expected edge count to grow by exactly 2, got %d -> %d", edgesBefore, got)
+	}
+
+	type outcome struct {
+		result corevalidate.Result
+	}
+	done := make(chan outcome, 1)
+	go func() {
+		done <- outcome{result: corevalidate.Validate(mutated)}
+	}()
+
+	select {
+	case got := <-done:
+		if got.result.Valid || got.result.Problems[0].Code != "core.release_order_cyclic" {
+			t.Fatalf("expected core.release_order_cyclic, got %+v", got.result)
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("corevalidate.Validate hung on a cyclic ok-edge chain instead of refusing it")
+	}
+}
+
+// TestAcyclicChainsStillValidateUnderCycleGuard is the accepting-path
+// regression guard for the cycle guard above: every acyclic Phase 4 fixture,
+// including discard_because.lang's legitimate two-incoming-edge merge, must
+// keep validating with UNCHANGED counted work -- proving the guard costs
+// nothing on the path it is not meant to refuse.
+func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
+	const acquireThreeSuccessChecks = 403
+
+	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
+	if !result.Valid {
+		t.Fatalf("expected acquire_three_success.lang to validate, got %+v", result)
+	}
+	if result.Checks != acquireThreeSuccessChecks {
+		t.Fatalf("expected unchanged counted work %d, got %d", acquireThreeSuccessChecks, result.Checks)
+	}
+
+	discardResult := corevalidate.Validate(resourceLifecycleProgram(t, "discard_because.lang"))
+	if !discardResult.Valid {
+		t.Fatalf("expected discard_because.lang to validate, got %+v", discardResult)
 	}
 }

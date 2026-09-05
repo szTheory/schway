@@ -1233,11 +1233,29 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 		}
 	}
 
-	rederive := func(startEdge core.Edge) []core.LinearOperation {
+	// rederive walks BACKWARD over okEdgeInto, a map built directly from
+	// linear.Edges with no acyclicity precheck anywhere earlier in Validate
+	// (blocksAndEdges, above, checks ID uniqueness and referential closure
+	// only). A cyclic ok-edge chain can only arise from a corrupted core
+	// artifact -- exactly the adversarial input a source-blind validator
+	// must stay defined against, the same rationale loanChainIndex.carriedLoans
+	// and blockReach already state for their own walks. The visited set below
+	// matches their idiom: a re-visited block is a HARD REFUSAL
+	// (core.release_order_cyclic), never a silent truncation of expected --
+	// a truncated expected would still be compared against actual and could
+	// ACCEPT a corrupted program, which is worse than the hang this guard
+	// replaces. The boolean return propagates the refusal to every call site.
+	rederive := func(startEdge core.Edge) ([]core.LinearOperation, bool) {
 		var expected []core.LinearOperation
 		includeThis := startEdge.Pattern == "ok"
 		currentBlockID := startEdge.FromBlockID
+		visited := make(map[string]bool, len(linear.Blocks))
 		for {
+			if visited[currentBlockID] {
+				v.check(false, "core.release_order_cyclic", currentBlockID)
+				return nil, false
+			}
+			visited[currentBlockID] = true
 			v.checks++ // one inspection per block visited while walking backward
 			if includeThis {
 				if op, ok := callInBlock[currentBlockID]; ok {
@@ -1251,7 +1269,7 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			currentBlockID = edge.FromBlockID
 			includeThis = true
 		}
-		return expected
+		return expected, true
 	}
 
 	for _, block := range linear.Blocks {
@@ -1286,7 +1304,10 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			}
 		}
 		for _, edge := range incoming {
-			expected := rederive(edge)
+			expected, ok := rederive(edge)
+			if !ok {
+				return false
+			}
 			if !v.check(len(expected) == len(actual), "core.release_order_mismatch", block.ID) {
 				return false
 			}
