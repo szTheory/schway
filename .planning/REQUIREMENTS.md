@@ -51,7 +51,7 @@ hiding runtime costs.
   origins and access mode without inspecting provider bodies downstream.
 - [x] **RES-01**: Partially initialized noncopyable resources release exactly
   once in reverse completed-acquisition order on return and typed failure.
-- [ ] **FFI-01**: Foreign contracts carry target layout, initialized state,
+- [x] **FFI-01**: Foreign contracts carry target layout, initialized state,
   allocator identity, capture/retention, aliasing, and unwind obligations.
 
 ### Execution and native equivalence
@@ -144,7 +144,7 @@ hiding runtime costs.
 | OWN-03 | Phase 3 | Complete |
 | OWN-04 | Phase 3 | Complete |
 | RES-01 | Phase 4 | Complete |
-| FFI-01 | Phase 4 | Gaps Found |
+| FFI-01 | Phase 4 | Complete |
 | INT-01 | Phase 1 | Complete |
 | INT-02 | Phase 5 | Pending |
 | NAT-01 | Phase 1 | Complete |

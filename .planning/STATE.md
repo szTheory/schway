@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Completed 04-11-PLAN.md - interior ok-edge merge rederivation (04-VERIFICATION.md gap 1 closure)
-last_updated: "2026-09-05T21:34:55.980Z"
+stopped_at: Completed 04-12-PLAN.md - foreign symbol identifier audit at the C boundary (04-VERIFICATION.md gap 2 closure)
+last_updated: "2026-09-05T21:55:29.262Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 04 execution started
-state_head: 6fcd897eb53472e089c54c7b7aa0fccf34bf38e4
+state_head: 55d47a1cb506eb4785dd38cbe8bdb190f3437bc8
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 32
-  completed_plans: 31
+  completed_plans: 32
   percent: 50
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
-Plan: 2 of 12
+Plan: 3 of 12
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 04 execution started
 
@@ -85,6 +85,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04 P09 | 25 min | 2 tasks | 2 files |
 | Phase 04 P10 | 20min | 2 tasks | 3 files |
 | Phase 04 P11 | 35 min | 2 tasks | 3 files |
+| Phase 04 P12 | 45min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -165,6 +166,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: Used in-tree revert/run/restore for the mutation-kill demonstration instead of a detached git worktree, per this session's no-worktree constraint
 - [Phase 04]: Pinned TestAcyclicChainsStillValidateUnderCycleGuard's accepting-path Checks constant to 403, measured from the actual pre-guard build
 - [Phase 04]: Promoted okEdgeInto's plural map to the primary representation (assumption-delta promote): the single-edge case is the len==1 degenerate branch, not a separate side table — Keeps exactly one source of truth for which ok edge(s) target a block; an add-alongside side table would reintroduce the last-writer-wins collapse this plan closes
+- [Phase 04]: corevalidate audits ForeignContract.Symbol's identifier shape (foreign.symbol_not_identifier) and cgen independently refuses the same hostile input on its three Validate-bypassing EmitForeign* entry points, closing 04-VERIFICATION.md gap 2's C-injection hole
 
 ### Pending Todos
 
@@ -195,6 +197,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T21:34:55.887Z
-Stopped at: Completed 04-11-PLAN.md - interior ok-edge merge rederivation (04-VERIFICATION.md gap 1 closure)
+Last session: 2026-09-05T21:55:29.167Z
+Stopped at: Completed 04-12-PLAN.md - foreign symbol identifier audit at the C boundary (04-VERIFICATION.md gap 2 closure)
 Resume file: None
