@@ -429,11 +429,36 @@ func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[str
 	for _, edge := range linear.Edges {
 		incoming[edge.ToBlockID] = append(incoming[edge.ToBlockID], edge)
 	}
+	// core.terminal_block_unreachable (04-VERIFICATION.md gap 1, Task 1
+	// option A): a structural peer of the OpFail incoming-edge check below,
+	// independent of checkReleaseOrder itself. Every OpReturn- or
+	// OpFail-terminated block that is NOT the function's own entry block
+	// must have at least one incoming edge -- a terminal block with zero
+	// incoming edges is unreachable by construction, and unreachable code
+	// is exactly the shape whose release order checkReleaseOrder cannot
+	// rederive (it has no incoming edge to walk backward from). This does
+	// NOT bound the count from above: an upper bound of "exactly one" was
+	// tried and refused a legitimate program (`discard <call> because
+	// "..."` merges its ok/err edges into one successor block, which is
+	// terminal and has TWO incoming edges) -- see 04-REVIEW-FIX.md's CR-01
+	// entry. The function's entry block is identified by PointID, matching
+	// EntryPointID exactly, the same convention check.go's own producers
+	// (checkBranch, checkForeignTracer, checkResourceLifecycle) already use
+	// for the entry block -- not by position in the Blocks slice.
 	for _, block := range linear.Blocks {
 		if len(block.OperationIDs) == 0 {
 			continue
 		}
 		last := operationsByID[block.OperationIDs[len(block.OperationIDs)-1]]
+		if last.Kind != core.OpFail && last.Kind != core.OpReturn {
+			continue
+		}
+		v.checks++ // one inspection per terminal block, independent of checkReleaseOrder's own per-terminal-block reduction
+		if block.PointID != function.EntryPointID {
+			if !v.check(len(incoming[block.ID]) > 0, "core.terminal_block_unreachable", block.ID) {
+				return false
+			}
+		}
 		if last.Kind != core.OpFail {
 			continue
 		}

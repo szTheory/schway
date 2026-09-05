@@ -866,3 +866,43 @@ func TestLegitimateDiscardMergeStillValidates(t *testing.T) {
 		t.Fatalf("expected discard_because.lang to validate, got %+v", result)
 	}
 }
+
+// TestTerminalBlockUnreachableRefused proves the Task 3 structural peer check
+// in blocksAndEdges: a non-entry block terminated by core.OpReturn with zero
+// incoming edges is refused with core.terminal_block_unreachable, independent
+// of checkReleaseOrder (which never even runs, since blocksAndEdges executes
+// first in Validate and returns false immediately).
+func TestTerminalBlockUnreachableRefused(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	functionID := valid.Functions[0].ID
+	successBlockID := functionID + ":block:success"
+
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	var edges []core.Edge
+	for _, edge := range function.Linear.Edges {
+		if edge.ToBlockID == successBlockID {
+			continue
+		}
+		edges = append(edges, edge)
+	}
+	function.Linear.Edges = edges
+	for index := range function.Linear.Blocks {
+		var successors []string
+		for _, successor := range function.Linear.Blocks[index].Successors {
+			if successor == successBlockID {
+				continue
+			}
+			successors = append(successors, successor)
+		}
+		function.Linear.Blocks[index].Successors = successors
+	}
+
+	result := corevalidate.Validate(mutated)
+	if result.Valid || result.Problems[0].Code != "core.terminal_block_unreachable" {
+		t.Fatalf("expected core.terminal_block_unreachable, got %+v", result)
+	}
+}

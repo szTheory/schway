@@ -143,6 +143,8 @@ Per D-04-21, a differential is not evidence until reverting the production hunk 
 | Terminator walk, origin analysis | the origin walker | the typed-failure member of the recognised terminator set | the control names the missing member and one fixture's origin fact goes unchecked | 04-06 | ✅ green |
 | Terminator walk, path oracle | the path oracle | the typed-failure member of the recognised terminator set | the control names the missing member and one fixture's path fact goes unchecked | 04-06 | ✅ green |
 | Counted-work honesty | the transitive last-use scan | the new per-operation work increments | the chain series stops growing and the assertion no longer distinguishes | 04-06 | ✅ green |
+| Validator merge-terminal rederivation | the core artifact's merge terminal block | the per-incoming-edge rederivation in checkReleaseOrder (16fb0c9) | a hand-corrupted merge of two acquisition chains with divergent completed-acquisition sets is silently accepted instead of refused | 04-08 | ✅ green |
+| Terminal block reachability | the core artifact's block/edge graph | the core.terminal_block_unreachable refusal in blocksAndEdges | a non-entry terminal block with zero incoming edges is silently accepted (falls back to a different, non-structural refusal) instead of refused by the peer check | 04-08 | ✅ green |
 
 The two release mutations and the layout mutation attack **three different artifacts** — the checker's materialized order, the emitter's own output, and the frozen fixture. An author keeping any two aligned cannot satisfy all three.
 
