@@ -803,6 +803,114 @@ func validForeignSymbol(symbol string) bool {
 	return true
 }
 
+// commentSafeForeignField is cgen's OWN, deliberate second implementation of
+// corevalidate.commentSafe (04-13 Task 3, 04-VERIFICATION.md gap 2b,
+// FFI-01): cgen must be able to refuse a hostile core.ForeignContract field
+// without depending on corevalidate.Validate having run first, matching the
+// independence posture validForeignSymbol already established for Symbol.
+// An EMPTY string is comment-safe. Refuses "*/", "/*", any byte below 0x20,
+// 0x7F, or any byte at or above 0x80 -- see corevalidate.commentSafe's doc
+// comment for why "/*" is refused alongside "*/" (warnings-as-errors).
+func commentSafeForeignField(value string) bool {
+	if value == "" {
+		return true
+	}
+	for index := 0; index < len(value); index++ {
+		b := value[index]
+		if b < 0x20 || b == 0x7F || b >= 0x80 {
+			return false
+		}
+		if index+1 < len(value) {
+			pair := value[index : index+2]
+			if pair == "*/" || pair == "/*" {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// validForeignCType is cgen's own second implementation of
+// corevalidate.validCTypeExpression: Layout.Fields[].CType is spliced into a
+// _Static_assert operand as a real C token sequence by EmitForeignConformance
+// (below), not into a comment, so comment-safety alone is insufficient. An
+// EMPTY string is valid (this file's own emission defaults it to
+// "unsigned char"). Otherwise the value must be one or more C identifiers
+// separated by exactly one single space.
+func validForeignCType(value string) bool {
+	if value == "" {
+		return true
+	}
+	start := 0
+	for index := 0; index <= len(value); index++ {
+		if index == len(value) || value[index] == ' ' {
+			if !validForeignSymbol(value[start:index]) {
+				return false
+			}
+			start = index + 1
+		}
+	}
+	return true
+}
+
+// unsafeForeignContractField is cgen's own independent audit of every
+// core.ForeignContract string field EmitForeignHeader or
+// EmitForeignConformance splices into generated C -- BOTH the three policy
+// values (allocator, unwind, nonlocal_exit, each required to satisfy
+// validForeignSymbol, matching corevalidate's identifier-shape audit) AND
+// every remaining field corevalidate.foreignContractFieldsCSafe covers
+// (cgen.go's own comment-block splice sites at what is now the block below,
+// plus EmitForeignConformance's _Static_assert operands over
+// Layout.ForeignTypeName/Fields[].Name/Fields[].CType). This is the SAME
+// independence posture 04-12 established for Symbol and corevalidate takes
+// toward check.go throughout this phase: cgen must be able to refuse the
+// whole hostile contract without corevalidate.Validate having run, because
+// EmitForeignManifest, EmitForeignHeader and EmitForeignConformance are
+// exported entry points that never call it. Returns the empty string when
+// every field is safe, otherwise the NAME of the first offending field --
+// the name only, never the value, so no attacker-controlled byte reaches the
+// caller.
+func unsafeForeignContractField(contract *core.ForeignContract) string {
+	if !validForeignSymbol(contract.Allocator) {
+		return "allocator"
+	}
+	if !validForeignSymbol(contract.Unwind) {
+		return "unwind"
+	}
+	if !validForeignSymbol(contract.NonlocalExit) {
+		return "nonlocal_exit"
+	}
+	if !commentSafeForeignField(contract.Fails) {
+		return "fails"
+	}
+	if !commentSafeForeignField(contract.InitializedState) {
+		return "initialized_state"
+	}
+	if !commentSafeForeignField(contract.Capture) {
+		return "capture"
+	}
+	if !commentSafeForeignField(contract.Retention) {
+		return "retention"
+	}
+	if !commentSafeForeignField(contract.Aliasing) {
+		return "aliasing"
+	}
+	if contract.Layout != nil {
+		if !validForeignSymbol(contract.Layout.ForeignTypeName) {
+			return "layout.foreign_type_name"
+		}
+		for _, field := range contract.Layout.Fields {
+			if !validForeignSymbol(field.Name) {
+				return "layout.field.name"
+			}
+			if !validForeignCType(field.CType) {
+				return "layout.field.ctype"
+			}
+		}
+	}
+	return ""
+}
+
 // foreignExternName derives the linkage name a generated foreign call site
 // declares `extern`. This deliberately does NOT go through cName/cLocal's
 // ordinary-identifier allocator (cgen.go's namespace-closure invariant,
@@ -1260,6 +1368,19 @@ func singleForeignFunction(program core.Program) (core.Function, error) {
 			// refuse a hostile Symbol before any of the three splices it.
 			if !validForeignSymbol(function.ForeignContract.Symbol) {
 				return core.Function{}, fmt.Errorf("foreign symbol %q is not a C identifier", function.ForeignContract.Symbol)
+			}
+			// 04-13 (04-VERIFICATION.md gap 2b, FFI-01): the SAME
+			// independent-refusal reasoning as the Symbol guard above, now
+			// extended to every OTHER core.ForeignContract string field
+			// EmitForeignHeader's and EmitForeignConformance's splice sites
+			// reach. The field NAME unsafeForeignContractField returns is a
+			// fixed vocabulary of literals, so no attacker-controlled byte
+			// reaches the error string at all -- a stronger guarantee than
+			// %q escaping, and the right one here because the payload's
+			// whole point is a comment terminator that %q does not
+			// neutralize.
+			if offendingField := unsafeForeignContractField(function.ForeignContract); offendingField != "" {
+				return core.Function{}, fmt.Errorf("foreign contract field %s is not safe to splice into generated C", offendingField)
 			}
 			return function, nil
 		}

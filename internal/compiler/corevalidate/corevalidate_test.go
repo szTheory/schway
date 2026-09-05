@@ -677,6 +677,139 @@ func TestForeignPolicyValueNotIdentifierRefused(t *testing.T) {
 	})
 }
 
+// TestForeignContractCommentSafetyRefused is 04-13 Task 3's corevalidate
+// falsifier (04-VERIFICATION.md gap 2b, FFI-01): every REMAINING
+// core.ForeignContract string field cgen splices into generated C --
+// Fails, InitializedState, Capture, Retention, Aliasing,
+// Layout.ForeignTypeName, and each Layout.Fields[].Name / .CType -- is
+// refused when it carries a comment terminator, control byte, non-ASCII
+// byte, or (for the two name fields) is not identifier-shaped, or (for
+// CType) is not a space-separated C type expression.
+func TestForeignContractCommentSafetyRefused(t *testing.T) {
+	valid := foreignAcquireProgram(t)
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid foreign-call core rejected: %+v", result)
+	}
+
+	commentFields := []string{"Fails", "InitializedState", "Capture", "Retention", "Aliasing"}
+	commentPayloads := []struct {
+		name  string
+		value string
+	}{
+		{"comment-terminator payload", "*/ int injected(void){return 1;} /*"},
+		{"comment-opener payload", "/* injected"},
+		{"embedded newline", "fully\ninjected"},
+		{"embedded control byte", "fully\x01injected"},
+		{"non-ASCII byte", "fully\xc3\xa9"},
+	}
+	setCommentField := func(mutated *core.Program, field, value string) {
+		contract := mutated.Functions[0].ForeignContract
+		switch field {
+		case "Fails":
+			contract.Fails = value
+		case "InitializedState":
+			contract.InitializedState = value
+		case "Capture":
+			contract.Capture = value
+		case "Retention":
+			contract.Retention = value
+		case "Aliasing":
+			contract.Aliasing = value
+		}
+	}
+	for _, field := range commentFields {
+		for _, payload := range commentPayloads {
+			t.Run(field+": "+payload.name, func(t *testing.T) {
+				mutated := cloneProgram(t, valid)
+				setCommentField(&mutated, field, payload.value)
+				result := corevalidate.Validate(mutated)
+				if result.Valid || result.Problems[0].Code != "foreign.contract_field_not_c_safe" {
+					t.Fatalf("expected foreign.contract_field_not_c_safe, got %+v", result)
+				}
+			})
+		}
+	}
+
+	tokenFields := []string{"ForeignTypeName", "Fields[0].Name"}
+	for _, field := range tokenFields {
+		for _, payload := range commentPayloads {
+			t.Run(field+": "+payload.name, func(t *testing.T) {
+				mutated := cloneProgram(t, valid)
+				layout := mutated.Functions[0].ForeignContract.Layout
+				if field == "ForeignTypeName" {
+					layout.ForeignTypeName = payload.value
+				} else {
+					layout.Fields[0].Name = payload.value
+				}
+				result := corevalidate.Validate(mutated)
+				if result.Valid || result.Problems[0].Code != "foreign.contract_field_not_c_safe" {
+					t.Fatalf("expected foreign.contract_field_not_c_safe, got %+v", result)
+				}
+			})
+		}
+		t.Run(field+": embedded space", func(t *testing.T) {
+			mutated := cloneProgram(t, valid)
+			layout := mutated.Functions[0].ForeignContract.Layout
+			if field == "ForeignTypeName" {
+				layout.ForeignTypeName = "lang foreign resource block"
+			} else {
+				layout.Fields[0].Name = "lang payload"
+			}
+			result := corevalidate.Validate(mutated)
+			if result.Valid || result.Problems[0].Code != "foreign.contract_field_not_c_safe" {
+				t.Fatalf("expected foreign.contract_field_not_c_safe, got %+v", result)
+			}
+		})
+		t.Run(field+": leading digit", func(t *testing.T) {
+			mutated := cloneProgram(t, valid)
+			layout := mutated.Functions[0].ForeignContract.Layout
+			if field == "ForeignTypeName" {
+				layout.ForeignTypeName = "1lang_foreign_resource_block"
+			} else {
+				layout.Fields[0].Name = "1payload"
+			}
+			result := corevalidate.Validate(mutated)
+			if result.Valid || result.Problems[0].Code != "foreign.contract_field_not_c_safe" {
+				t.Fatalf("expected foreign.contract_field_not_c_safe, got %+v", result)
+			}
+		})
+	}
+
+	t.Run("CType: unsigned char is accepted", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Layout.Fields[0].CType = "unsigned char"
+		if result := corevalidate.Validate(mutated); !result.Valid {
+			t.Fatalf("expected unsigned char to be accepted, got %+v", result)
+		}
+	})
+	for _, hostileCType := range []string{"unsigned  char", " unsigned char", "unsigned char*", "1char"} {
+		t.Run("CType: "+hostileCType+" refuses", func(t *testing.T) {
+			mutated := cloneProgram(t, valid)
+			mutated.Functions[0].ForeignContract.Layout.Fields[0].CType = hostileCType
+			result := corevalidate.Validate(mutated)
+			if result.Valid || result.Problems[0].Code != "foreign.contract_field_not_c_safe" {
+				t.Fatalf("expected foreign.contract_field_not_c_safe, got %+v", result)
+			}
+		})
+	}
+
+	t.Run("negative: empty Capture still refuses with foreign.obligation_undeclared", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Capture = ""
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.obligation_undeclared" {
+			t.Fatalf("expected foreign.obligation_undeclared, got %+v", result)
+		}
+	})
+	t.Run("negative: empty Layout.Fields[0].CType is accepted (cgen defaults it)", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Layout.Fields[0].CType = ""
+		if result := corevalidate.Validate(mutated); !result.Valid {
+			t.Fatalf("expected an empty CType to be accepted, got %+v", result)
+		}
+	})
+}
+
 // TestAllocatorIdentityMismatchRejected proves T-04-14's allocator-identity
 // requirement is refused independently by corevalidate: a release whose
 // Allocator differs from its own acquisition's is rejected purely from the
@@ -1240,11 +1373,14 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// declares three foreign calls, so the pinned count moved from 403 to
 	// 403+3=406. 04-13 Task 2 adds a second new accepting-path v.check per
 	// core.OpForeignCall (foreign.policy_value_not_identifier), moving the
-	// pin again to 406+3=409 (measured from the built code, not assumed).
-	// This is a mechanical, expected update, not a work-formula change:
-	// LinearWorkLimit and the exact-formula TestCoreValidationWorkSeries are
-	// unaffected because scaleProgram declares no OpForeignCall.
-	const acquireThreeSuccessChecks = 409
+	// pin again to 406+3=409. 04-13 Task 3 adds a THIRD and last new
+	// accepting-path v.check per core.OpForeignCall
+	// (foreign.contract_field_not_c_safe), moving the pin a final time to
+	// 409+3=412 (measured from the built code, not assumed). This is a
+	// mechanical, expected update, not a work-formula change: LinearWorkLimit
+	// and the exact-formula TestCoreValidationWorkSeries are unaffected
+	// because scaleProgram declares no OpForeignCall.
+	const acquireThreeSuccessChecks = 412
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {

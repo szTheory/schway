@@ -369,6 +369,23 @@ func (v *validator) linear(function *core.Function) bool {
 			if !v.check(function.ForeignContract.InitializedState != "" && function.ForeignContract.Capture != "" && function.ForeignContract.Retention != "" && function.ForeignContract.Aliasing != "", "foreign.obligation_undeclared", operation.ID) {
 				return false
 			}
+			// 04-13 Task 3 (04-VERIFICATION.md gap 2b, FFI-01): audit every
+			// REMAINING core.ForeignContract string field cgen splices into
+			// generated C -- Fails, InitializedState, Capture, Retention,
+			// Aliasing (cgen.go:1336-1348's comment block) and, when a
+			// Layout is declared, Layout.ForeignTypeName and each
+			// Layout.Fields[].Name / .CType (spliced as REAL C tokens into
+			// EmitForeignConformance's _Static_assert operands, not merely
+			// into a comment). Placed immediately after
+			// foreign.obligation_undeclared so an OMITTED obligation keeps
+			// reporting that existing code; this is the SHAPE/safety claim
+			// for the fields the presence check above does not inspect.
+			// Passes operation.ID, never a field value, for the same
+			// diagnostic-JSON-echo reason as every sibling check in this
+			// block.
+			if !v.check(foreignContractFieldsCSafe(function.ForeignContract), "foreign.contract_field_not_c_safe", operation.ID) {
+				return false
+			}
 			if !v.foreignLayoutConsistent(function.ForeignContract.Layout, operation.ID) {
 				return false
 			}
@@ -1669,6 +1686,94 @@ func validCIdentifier(name string) bool {
 	for index := 1; index < len(name); index++ {
 		b := name[index]
 		if !(b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= '0' && b <= '9' || b == '_') {
+			return false
+		}
+	}
+	return true
+}
+
+// commentSafe audits the shape 04-13 Task 3 requires of a
+// core.ForeignContract string field cgen.EmitForeignHeader splices raw into
+// a C COMMENT (cgen.go:1336-1348: fails, initialized_state, capture,
+// retention, aliasing). An EMPTY string is comment-safe -- emptiness is a
+// separate concern, already covered by foreign.obligation_undeclared and
+// foreign.layout_invalid, and Layout.Fields[].CType is legitimately empty
+// (cgen substitutes "unsigned char"). Refuses the two-byte sequence "*/" or
+// "/*", any byte below 0x20, 0x7F, or any byte at or above 0x80. "/*" is
+// refused alongside "*/" (not merely the closing sequence) because this
+// project compiles generated C with warnings-as-errors, and a "/*" nested
+// inside an already-open comment is a diagnosed condition on most
+// compilers -- admitting it would turn a hostile value into a build break
+// rather than a clean refusal.
+func commentSafe(value string) bool {
+	if value == "" {
+		return true
+	}
+	for index := 0; index < len(value); index++ {
+		b := value[index]
+		if b < 0x20 || b == 0x7F || b >= 0x80 {
+			return false
+		}
+		if index+1 < len(value) {
+			pair := value[index : index+2]
+			if pair == "*/" || pair == "/*" {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// validCTypeExpression audits Layout.Fields[].CType, which
+// EmitForeignConformance splices into a _Static_assert operand as a REAL C
+// TOKEN sequence (cgen.go: the sizeof(%s)/_Alignof(%s) operands), not into
+// a comment -- comment-safety alone is insufficient here. An EMPTY string is
+// valid (cgen substitutes "unsigned char" at emission). Otherwise the value
+// must be one or more C identifiers separated by exactly one single space,
+// with no leading or trailing space and no double space: a hand-rolled byte
+// scan splits on a single 0x20 byte and requires every part to satisfy
+// validCIdentifier (no strings.Split import, matching this package's
+// existing hand-rolled-byte-loop idiom). This exists because the sole
+// honest value, "unsigned char" (check.go's standardForeignLayout), itself
+// contains a space, so the plain identifier rule used for the three policy
+// values would wrongly refuse it.
+func validCTypeExpression(value string) bool {
+	if value == "" {
+		return true
+	}
+	start := 0
+	for index := 0; index <= len(value); index++ {
+		if index == len(value) || value[index] == ' ' {
+			if !validCIdentifier(value[start:index]) {
+				return false
+			}
+			start = index + 1
+		}
+	}
+	return true
+}
+
+// foreignContractFieldsCSafe is the single predicate covering every
+// core.ForeignContract string field EmitForeignHeader's and
+// EmitForeignConformance's remaining splice sites reach (cgen.go:1336-1348's
+// comment block, plus EmitForeignConformance's _Static_assert operands over
+// Layout.ForeignTypeName/Fields[].Name/Fields[].CType) that Task 2's
+// identifier audit does not already cover (Symbol, Allocator, Unwind and
+// NonlocalExit are audited separately). A future emitter adding a new
+// splice site over one of these fields has this doc comment and this
+// function as its named place to extend.
+func foreignContractFieldsCSafe(contract *core.ForeignContract) bool {
+	if !commentSafe(contract.Fails) || !commentSafe(contract.InitializedState) || !commentSafe(contract.Capture) || !commentSafe(contract.Retention) || !commentSafe(contract.Aliasing) {
+		return false
+	}
+	if contract.Layout == nil {
+		return true
+	}
+	if !validCIdentifier(contract.Layout.ForeignTypeName) {
+		return false
+	}
+	for _, field := range contract.Layout.Fields {
+		if !validCIdentifier(field.Name) || !validCTypeExpression(field.CType) {
 			return false
 		}
 	}

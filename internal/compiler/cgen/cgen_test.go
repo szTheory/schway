@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -335,6 +336,135 @@ func TestForeignEmittersRefuseNonIdentifierSymbolIndependently(t *testing.T) {
 			}
 			if strings.Contains(conformance, "injected") {
 				t.Fatalf("EmitForeignConformance: injected fragment leaked into output:\n%s", conformance)
+			}
+		})
+	}
+}
+
+// hostileForeignContractFields is 04-13 Task 3's shared table of hostile
+// values used to falsify corevalidate's foreign.contract_field_not_c_safe
+// audit and cgen's own independent unsafeForeignContractField guard against
+// the SAME inputs (04-VERIFICATION.md gap 2b, FFI-01).
+var hostileForeignContractFields = []struct {
+	name  string
+	field string
+	value string
+}{
+	{"Allocator: comment-terminator payload", "Allocator", "*/ int injected(void){return 1;} /*"},
+	{"Unwind: comment-terminator payload", "Unwind", "*/ int injected(void){return 1;} /*"},
+	{"NonlocalExit: comment-terminator payload", "NonlocalExit", "*/ int injected(void){return 1;} /*"},
+	{"Fails: comment-terminator payload", "Fails", "*/ int injected(void){return 1;} /*"},
+	{"InitializedState: comment-terminator payload", "InitializedState", "*/ int injected(void){return 1;} /*"},
+	{"Capture: comment-terminator payload", "Capture", "*/ int injected(void){return 1;} /*"},
+	{"Retention: comment-terminator payload", "Retention", "*/ int injected(void){return 1;} /*"},
+	{"Aliasing: comment-terminator payload", "Aliasing", "*/ int injected(void){return 1;} /*"},
+	{"ForeignTypeName: comment-terminator payload", "ForeignTypeName", "*/ int injected(void){return 1;} /*"},
+	{"FieldName: comment-terminator payload", "FieldName", "*/ int injected(void){return 1;} /*"},
+	{"CType: comment-terminator payload", "CType", "*/ int injected(void){return 1;} /*"},
+}
+
+func mutateForeignContractField(contract *core.ForeignContract, field, value string) {
+	switch field {
+	case "Allocator":
+		contract.Allocator = value
+	case "Unwind":
+		contract.Unwind = value
+	case "NonlocalExit":
+		contract.NonlocalExit = value
+	case "Fails":
+		contract.Fails = value
+	case "InitializedState":
+		contract.InitializedState = value
+	case "Capture":
+		contract.Capture = value
+	case "Retention":
+		contract.Retention = value
+	case "Aliasing":
+		contract.Aliasing = value
+	case "ForeignTypeName":
+		contract.Layout.ForeignTypeName = value
+	case "FieldName":
+		contract.Layout.Fields[0].Name = value
+	case "CType":
+		contract.Layout.Fields[0].CType = value
+	}
+}
+
+// TestForeignPolicyValueInjectionNeverReachesGeneratedC is 04-13 Task 3's
+// cgen falsifier (04-VERIFICATION.md gap 2b, FFI-01): EmitForeignHeader,
+// EmitForeignConformance and EmitForeignManifest each refuse a hostile
+// core.ForeignContract field with a non-nil error and an EMPTY returned
+// string, WITHOUT any help from corevalidate.Validate (none of the three
+// calls it) -- cgen's own independent unsafeForeignContractField guard in
+// singleForeignFunction is what refuses.
+func TestForeignPolicyValueInjectionNeverReachesGeneratedC(t *testing.T) {
+	privateHeaderPath := testsupport.ProjectPath("native", "lang_foreign_resource_private.h")
+
+	positiveControl := foreignAcquireCheckedProgram(t)
+	if _, err := cgen.EmitForeignManifest(positiveControl.Program); err != nil {
+		t.Fatalf("positive control: unmutated program failed EmitForeignManifest: %v", err)
+	}
+	header, err := cgen.EmitForeignHeader(positiveControl.Program)
+	if err != nil {
+		t.Fatalf("positive control: unmutated program failed EmitForeignHeader: %v", err)
+	}
+	if !strings.Contains(header, "/* allocator: libc_malloc */") {
+		t.Fatalf("positive control: expected the original allocator comment line, got:\n%s", header)
+	}
+	if _, err := cgen.EmitForeignConformance(positiveControl.Program, privateHeaderPath); err != nil {
+		t.Fatalf("positive control: unmutated program failed EmitForeignConformance: %v", err)
+	}
+
+	for _, hostileCase := range hostileForeignContractFields {
+		t.Run(hostileCase.name, func(t *testing.T) {
+			// Fresh session.CheckResult per subtest -- see the identical note
+			// in TestForeignSymbolInjectionNeverReachesGeneratedC.
+			checked := foreignAcquireCheckedProgram(t)
+			mutated := checked.Program
+			contract := *mutated.Functions[0].ForeignContract
+			layout := *contract.Layout
+			layout.Fields = append([]core.LayoutField{}, contract.Layout.Fields...)
+			contract.Layout = &layout
+			mutateForeignContractField(&contract, hostileCase.field, hostileCase.value)
+			mutated.Functions[0].ForeignContract = &contract
+
+			manifest, err := cgen.EmitForeignManifest(mutated)
+			if err == nil {
+				t.Fatalf("EmitForeignManifest: expected an error, got:\n%s", manifest)
+			}
+			if manifest != "" {
+				t.Fatalf("EmitForeignManifest: expected empty string, got:\n%s", manifest)
+			}
+			if strings.Contains(err.Error(), "int injected(") {
+				t.Fatalf("EmitForeignManifest: error echoed the injected payload: %v", err)
+			}
+
+			generatedHeader, err := cgen.EmitForeignHeader(mutated)
+			if err == nil {
+				t.Fatalf("EmitForeignHeader: expected an error, got:\n%s", generatedHeader)
+			}
+			if generatedHeader != "" {
+				t.Fatalf("EmitForeignHeader: expected empty string, got:\n%s", generatedHeader)
+			}
+			if strings.Contains(generatedHeader, "int injected(") {
+				t.Fatalf("EmitForeignHeader: injected fragment leaked into output:\n%s", generatedHeader)
+			}
+			if strings.Contains(err.Error(), "int injected(") {
+				t.Fatalf("EmitForeignHeader: error echoed the injected payload: %v", err)
+			}
+
+			conformance, err := cgen.EmitForeignConformance(mutated, privateHeaderPath)
+			if err == nil {
+				t.Fatalf("EmitForeignConformance: expected an error, got:\n%s", conformance)
+			}
+			if conformance != "" {
+				t.Fatalf("EmitForeignConformance: expected empty string, got:\n%s", conformance)
+			}
+			if strings.Contains(conformance, "int injected(") {
+				t.Fatalf("EmitForeignConformance: injected fragment leaked into output:\n%s", conformance)
+			}
+			if strings.Contains(err.Error(), "int injected(") {
+				t.Fatalf("EmitForeignConformance: error echoed the injected payload: %v", err)
 			}
 		})
 	}
