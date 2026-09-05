@@ -319,6 +319,13 @@ func emitLinearForeign(program core.Program, function core.Function) (string, er
 	if function.ForeignContract == nil || function.ForeignContract.Symbol == "" {
 		return "", fmt.Errorf("foreign-shaped function %q has no foreign contract", function.ID)
 	}
+	// Independent refusal (04-VERIFICATION.md gap 2, FFI-01/D-04-12):
+	// Emit/EmitNative already call corevalidate.Validate first, but this
+	// guard does not rely on that having happened -- see validForeignSymbol's
+	// doc comment for why a second implementation is deliberate here.
+	if !validForeignSymbol(function.ForeignContract.Symbol) {
+		return "", fmt.Errorf("foreign symbol %q is not a C identifier", function.ForeignContract.Symbol)
+	}
 	input, initializer, typeName, err := linearInput(function)
 	if err != nil {
 		return "", err
@@ -766,6 +773,34 @@ func foreignFailureLiteral(program core.Program, function core.Function) (string
 		}
 	}
 	return "", fmt.Errorf("foreign failure type %q is not declared", function.ForeignContract.Fails)
+}
+
+// validForeignSymbol is a DELIBERATE second implementation of the exact
+// predicate corevalidate.validCIdentifier applies (^[A-Za-z_][A-Za-z0-9_]*$,
+// checked byte-by-byte). It is not an accidental duplicate: corevalidate's
+// validCIdentifier is unexported, and cgen must be able to refuse a hostile
+// Symbol without depending on corevalidate.Validate having run first -- the
+// same independence posture corevalidate itself takes toward check.go
+// throughout this phase. This guard protects the four sites that splice a
+// Symbol raw into generated C: the extern declaration built around
+// symbolC/resultType (below, ~line 352-373), the call-expression callee that
+// reuses the same symbolC (~line 441), foreignExternName itself (below), and
+// the generated header's `/* symbol: ... */` comment (EmitForeignHeader).
+func validForeignSymbol(symbol string) bool {
+	if symbol == "" {
+		return false
+	}
+	first := symbol[0]
+	if !(first >= 'A' && first <= 'Z' || first >= 'a' && first <= 'z' || first == '_') {
+		return false
+	}
+	for index := 1; index < len(symbol); index++ {
+		b := symbol[index]
+		if !(b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= '0' && b <= '9' || b == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 // foreignExternName derives the linkage name a generated foreign call site
@@ -1218,6 +1253,14 @@ func uncheckedForeignObligations() []string {
 func singleForeignFunction(program core.Program) (core.Function, error) {
 	for _, function := range program.Functions {
 		if function.ForeignContract != nil {
+			// Independent refusal (04-VERIFICATION.md gap 2, FFI-01/D-04-12):
+			// EmitForeignManifest, EmitForeignHeader and EmitForeignConformance
+			// all resolve their function through this call and NONE of them
+			// calls corevalidate.Validate, so this is the one place that can
+			// refuse a hostile Symbol before any of the three splices it.
+			if !validForeignSymbol(function.ForeignContract.Symbol) {
+				return core.Function{}, fmt.Errorf("foreign symbol %q is not a C identifier", function.ForeignContract.Symbol)
+			}
 			return function, nil
 		}
 	}

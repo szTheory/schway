@@ -205,6 +205,141 @@ func TestPrivateHeaderIsIncludedOnlyByConformanceUnit(t *testing.T) {
 	}
 }
 
+// hostileForeignSymbols is the shared table of hostile Symbol values used to
+// falsify both corevalidate's foreign.symbol_not_identifier audit and cgen's
+// own independent validForeignSymbol guard against the SAME inputs
+// (04-VERIFICATION.md gap 2, FFI-01/D-04-12).
+var hostileForeignSymbols = []struct {
+	name   string
+	symbol string
+}{
+	{"semicolon and brace closing the extern and opening a new definition", "lang_res_open;}\nint injected(void){return 0;}//"},
+	{"parenthesis-bearing fragment", "lang_res_open(int x)"},
+	{"embedded newline", "lang_res_open\ninjected"},
+	{"leading digit", "1lang_res_open"},
+	{"embedded space", "lang_res_open injected"},
+	{"comment terminator escaping the header comment", "lang_res_open*/int injected(void){return 0;}/*"},
+	{"non-ASCII rune", "lang_res_open\u00e9"},
+}
+
+// TestForeignSymbolInjectionNeverReachesGeneratedC proves cgen.Emit and
+// cgen.EmitNative are never reached with a non-identifier Symbol: both call
+// corevalidate.Validate first, so a hostile Symbol is refused with an error
+// naming foreign.symbol_not_identifier and an EMPTY generated string -- the
+// emptiness is load-bearing, proving no C source containing the injected
+// fragment was ever produced.
+func TestForeignSymbolInjectionNeverReachesGeneratedC(t *testing.T) {
+	positiveControl := foreignAcquireCheckedProgram(t)
+	if _, err := cgen.Emit(positiveControl.Program); err != nil {
+		t.Fatalf("positive control: unmutated program failed to Emit: %v", err)
+	}
+	if _, err := cgen.EmitNative(positiveControl.Program); err != nil {
+		t.Fatalf("positive control: unmutated program failed to EmitNative: %v", err)
+	}
+
+	for _, hostileCase := range hostileForeignSymbols {
+		t.Run(hostileCase.name, func(t *testing.T) {
+			// Fresh session.CheckResult per subtest (each call to
+			// foreignAcquireCheckedProgram re-checks the fixture from
+			// source), so mutating this subtest's contract cannot leak
+			// into the positive control or any sibling subtest via a
+			// shared Functions slice backing array.
+			checked := foreignAcquireCheckedProgram(t)
+			mutated := checked.Program
+			contract := *mutated.Functions[0].ForeignContract
+			contract.Symbol = hostileCase.symbol
+			mutated.Functions[0].ForeignContract = &contract
+
+			generated, err := cgen.Emit(mutated)
+			if err == nil {
+				t.Fatalf("Emit: expected an error, got generated C:\n%s", generated)
+			}
+			if !strings.Contains(err.Error(), "foreign.symbol_not_identifier") {
+				t.Fatalf("Emit: expected error to name foreign.symbol_not_identifier, got %v", err)
+			}
+			if generated != "" {
+				t.Fatalf("Emit: expected empty generated string, got:\n%s", generated)
+			}
+
+			generatedNative, err := cgen.EmitNative(mutated)
+			if err == nil {
+				t.Fatalf("EmitNative: expected an error, got generated C:\n%s", generatedNative)
+			}
+			if !strings.Contains(err.Error(), "foreign.symbol_not_identifier") {
+				t.Fatalf("EmitNative: expected error to name foreign.symbol_not_identifier, got %v", err)
+			}
+			if generatedNative != "" {
+				t.Fatalf("EmitNative: expected empty generated string, got:\n%s", generatedNative)
+			}
+		})
+	}
+}
+
+// TestForeignEmittersRefuseNonIdentifierSymbolIndependently proves the three
+// exported entry points that never call corevalidate.Validate --
+// EmitForeignManifest, EmitForeignHeader, EmitForeignConformance -- refuse a
+// hostile Symbol on their own terms via singleForeignFunction's independent
+// validForeignSymbol guard.
+func TestForeignEmittersRefuseNonIdentifierSymbolIndependently(t *testing.T) {
+	privateHeaderPath := testsupport.ProjectPath("native", "lang_foreign_resource_private.h")
+
+	positiveControl := foreignAcquireCheckedProgram(t)
+	if _, err := cgen.EmitForeignManifest(positiveControl.Program); err != nil {
+		t.Fatalf("positive control: unmutated program failed EmitForeignManifest: %v", err)
+	}
+	if _, err := cgen.EmitForeignHeader(positiveControl.Program); err != nil {
+		t.Fatalf("positive control: unmutated program failed EmitForeignHeader: %v", err)
+	}
+	if _, err := cgen.EmitForeignConformance(positiveControl.Program, privateHeaderPath); err != nil {
+		t.Fatalf("positive control: unmutated program failed EmitForeignConformance: %v", err)
+	}
+
+	for _, hostileCase := range hostileForeignSymbols {
+		t.Run(hostileCase.name, func(t *testing.T) {
+			// Fresh session.CheckResult per subtest -- see the identical
+			// note in TestForeignSymbolInjectionNeverReachesGeneratedC.
+			checked := foreignAcquireCheckedProgram(t)
+			mutated := checked.Program
+			contract := *mutated.Functions[0].ForeignContract
+			contract.Symbol = hostileCase.symbol
+			mutated.Functions[0].ForeignContract = &contract
+
+			manifest, err := cgen.EmitForeignManifest(mutated)
+			if err == nil {
+				t.Fatalf("EmitForeignManifest: expected an error, got:\n%s", manifest)
+			}
+			if manifest != "" {
+				t.Fatalf("EmitForeignManifest: expected empty string, got:\n%s", manifest)
+			}
+			if strings.Contains(manifest, "injected") {
+				t.Fatalf("EmitForeignManifest: injected fragment leaked into output:\n%s", manifest)
+			}
+
+			header, err := cgen.EmitForeignHeader(mutated)
+			if err == nil {
+				t.Fatalf("EmitForeignHeader: expected an error, got:\n%s", header)
+			}
+			if header != "" {
+				t.Fatalf("EmitForeignHeader: expected empty string, got:\n%s", header)
+			}
+			if strings.Contains(header, "injected") {
+				t.Fatalf("EmitForeignHeader: injected fragment leaked into output:\n%s", header)
+			}
+
+			conformance, err := cgen.EmitForeignConformance(mutated, privateHeaderPath)
+			if err == nil {
+				t.Fatalf("EmitForeignConformance: expected an error, got:\n%s", conformance)
+			}
+			if conformance != "" {
+				t.Fatalf("EmitForeignConformance: expected empty string, got:\n%s", conformance)
+			}
+			if strings.Contains(conformance, "injected") {
+				t.Fatalf("EmitForeignConformance: injected fragment leaked into output:\n%s", conformance)
+			}
+		})
+	}
+}
+
 func TestLinearCSerializesRuntimeState(t *testing.T) {
 	tests := []struct {
 		name     string
