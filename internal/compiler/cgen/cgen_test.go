@@ -323,3 +323,68 @@ func nonlocalPadCheckedProgram(t *testing.T, fixture string) session.CheckResult
 	}
 	return checked
 }
+
+// TestNonlocalExitReachabilityIsRecorded proves D-04-21's reachability
+// register requirement: the nonlocal-exit probe fixture itself carries an
+// in-code comment naming both what it reaches and, per D-10, at least one
+// shape it does NOT reach -- following the Phase 3 generator-reachability
+// convention (03-VALIDATION.md's Generator Reachability Register: "each
+// generator must carry a comment stating what it reaches and what it does
+// not").
+func TestNonlocalExitReachabilityIsRecorded(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "nonlocal_exit_probe.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(source)
+	for _, required := range []string{
+		"REACHABILITY",
+		"REACHES:",
+		"DOES NOT REACH",
+		"foreign-invoked callback",
+		"terminates the process directly",
+	} {
+		if !strings.Contains(text, required) {
+			t.Fatalf("expected the fixture's reachability comment to mention %q, got:\n%s", required, text)
+		}
+	}
+}
+
+// TestBlindSpotsAreNamedNotClaimed scans the fixture, this package's own
+// source, and the frozen foreign TU for the two accepted residual
+// blind-spot phrases (D-04-21/T-04-33) and asserts none of them is ever
+// claimed as COVERED, DETECTED, or PROVEN anywhere near a blind-spot
+// mention -- named, never quietly implied handled.
+func TestBlindSpotsAreNamedNotClaimed(t *testing.T) {
+	paths := [][]string{
+		{"testdata", "phase4", "nonlocal_exit_probe.lang"},
+		{"internal", "compiler", "cgen", "cgen.go"},
+		{"native", "lang_foreign_nonlocal.c"},
+	}
+	blindSpots := []string{"foreign-invoked callback", "terminates the process directly"}
+	forbidden := []string{"covers all nonlocal exits", "detects every nonlocal exit", "proven to catch every"}
+	found := make(map[string]bool, len(blindSpots))
+	for _, path := range paths {
+		source, err := os.ReadFile(testsupport.ProjectPath(path...))
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(source)
+		for _, blindSpot := range blindSpots {
+			if strings.Contains(text, blindSpot) {
+				found[blindSpot] = true
+			}
+		}
+		lower := strings.ToLower(text)
+		for _, claim := range forbidden {
+			if strings.Contains(lower, claim) {
+				t.Fatalf("%s claims coverage (%q) of a named blind spot -- this must never be claimed", strings.Join(path, "/"), claim)
+			}
+		}
+	}
+	for _, blindSpot := range blindSpots {
+		if !found[blindSpot] {
+			t.Fatalf("blind spot %q is never named in any scanned source", blindSpot)
+		}
+	}
+}

@@ -494,6 +494,15 @@ const nonlocalExitDefectReason = "foreign nonlocal exit detected at process-root
 // ledger the resourceLedger type already declares. Called exactly once per
 // emitLinearForeign invocation, so "exactly one pad" is a structural
 // property of this call site, not a runtime count.
+//
+// REACHABILITY (D-04-21/D-10 -- accepted residual limitations, T-04-33,
+// named in uncheckedForeignObligations' sidecar list too, never claimed as
+// covered): a landing point established BELOW this pad by a foreign-invoked callback
+// that itself calls setjmp deeper in the call stack is invisible
+// to this single process-root pad, as is a foreign call that terminates the
+// process directly (exit()/_exit()) rather than performing a nonlocal exit
+// back into Lang-controlled code. Neither is claimed detected anywhere in
+// this project.
 func emitNonlocalPad(out *strings.Builder, function core.Function, ledger *resourceLedger) {
 	parameterTypeID := ""
 	for _, place := range function.Linear.Places {
@@ -1191,7 +1200,15 @@ type foreignManifestDocument struct {
 // call site to change, and so EmitForeignManifest and any test asserting on
 // this list read the exact same values.
 func uncheckedForeignObligations() []string {
-	return []string{"capture", "retention", "aliasing", "callback_retention"}
+	return []string{
+		"capture", "retention", "aliasing", "callback_retention",
+		// D-04-21/T-04-33: the process-root nonlocal-exit landing pad
+		// (D-04-17) has two accepted residual blind spots, named here rather
+		// than silently implied covered -- neither is observable by a single
+		// process-root pad. See emitNonlocalPad's own doc comment and
+		// testdata/phase4/nonlocal_exit_probe.lang's REACHABILITY comment.
+		"nonlocal_exit_below_pad", "nonlocal_exit_process_termination",
+	}
 }
 
 // singleForeignFunction returns the one function in program that declares a

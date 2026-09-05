@@ -1474,6 +1474,33 @@ func TestVerifyPhase4UnwindControl(t *testing.T) {
 	}
 }
 
+// TestVerifyPhase4NonlocalExitControl proves control:foreign.
+// nonlocal_exit_undetected (D-04-17/D-04-21, task 04-05-03) is a required
+// control the Phase 4 gate observes with nonzero recomputed work, backing
+// the two mutation-kill demonstrations already exercised inline inside
+// verifyForeignCorpus (pad omission, and ledger-population omission
+// surfacing specifically as a leak-count disagreement).
+func TestVerifyPhase4NonlocalExitControl(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	found := false
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			if control == "control:foreign.nonlocal_exit_undetected" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("missing required Phase 4 control control:foreign.nonlocal_exit_undetected: lanes=%+v", result.Lanes)
+	}
+}
+
 // TestVerifyPhase4DefectControls proves the Phase 4 gate observes both new
 // task-04 required controls with nonzero recomputed work.
 func TestVerifyPhase4DefectControls(t *testing.T) {
@@ -1642,5 +1669,78 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 		interpretedBytes, _ := execution.CanonicalBytes(interpreted)
 		nativeBytes, _ := execution.CanonicalBytes(result.Pairs[0].Execution)
 		t.Fatalf("interpreter and native disagree on the nonlocal-exit probe:\ninterpreter: %s\nnative:      %s", interpretedBytes, nativeBytes)
+	}
+}
+
+// TestNonlocalExitDetectionIsMutationKilled is control:foreign.
+// nonlocal_exit_undetected's FIRST mutation-kill demonstration (D-04-21/
+// D-09/D-10), standing alone from the session-level lane: removing the
+// process-root pad's entire generated span (setjmp installation through its
+// matching end marker) from the probe's own generated C must make the
+// probe's own defect terminal record and its foreign.nonlocal_exit/
+// resource.leaked events disappear -- proving detection by mutation rather
+// than by assertion alone.
+func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
+	checked := nonlocalProbeChecked(t)
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectDefect
+	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	mutationRunner := session.NewNonlocalPadOmissionMutationRunner(runner)
+	result, runErr := mutationRunner.Run(context.Background(), generated, "-O0", []string{"7"})
+	if runErr == nil && len(result.Pairs) == 1 && result.Pairs[0].Execution.Outcome.Kind == "defect" {
+		t.Fatalf("removing the pad installation must make detection disappear, but the mutated run still produced a clean defect outcome: %+v", result.Pairs[0].Execution)
+	}
+	if len(mutationRunner.Optimizations()) == 0 {
+		t.Fatal("expected the pad-omission mutation runner to record at least one optimization pass")
+	}
+}
+
+// TestLeakCountMatchesLiveAcquisitions proves the golden probe's leak count
+// equals its true live-acquisition count (the positive case), then
+// mutation-kills control:foreign.nonlocal_exit_undetected a SECOND, DIFFERENT
+// way (D-09/D-10/D-21): dropping one ledger-population site must make the
+// mutated run's own leak count disagree with the golden run's -- checked
+// SPECIFICALLY as a leak-count disagreement, not merely "some difference."
+func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
+	checked := nonlocalProbeChecked(t)
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectDefect
+	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	goldenResult, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
+	if err != nil || len(goldenResult.Pairs) != 1 {
+		t.Fatalf("golden run failed: err=%v result=%+v", err, goldenResult)
+	}
+	golden := goldenResult.Pairs[0].Execution
+	goldenLeaks := 0
+	for _, event := range golden.Events {
+		if event.Kind == "resource.leaked" {
+			goldenLeaks++
+		}
+	}
+	if goldenLeaks == 0 || goldenLeaks != len(golden.LiveResources) {
+		t.Fatalf("golden run's leak count (%d) must equal its live-acquisition count (%+v)", goldenLeaks, golden.LiveResources)
+	}
+
+	mutationRunner := session.NewNonlocalLedgerOmissionMutationRunner(runner)
+	mutatedResult, mutatedErr := mutationRunner.Run(context.Background(), generated, "-O0", []string{"7"})
+	mutatedLeaks := -1
+	if mutatedErr == nil && len(mutatedResult.Pairs) == 1 {
+		mutatedLeaks = 0
+		for _, event := range mutatedResult.Pairs[0].Execution.Events {
+			if event.Kind == "resource.leaked" {
+				mutatedLeaks++
+			}
+		}
+	}
+	if mutatedLeaks == goldenLeaks {
+		t.Fatalf("dropping a ledger-population site must make the leak count disagree with the golden run's (%d), but the mutated run reported the SAME count", goldenLeaks)
 	}
 }

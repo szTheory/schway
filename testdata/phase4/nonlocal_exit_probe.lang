@@ -8,6 +8,22 @@
 // runtime -- the second call never returns locally, ok or err -- but they
 // still exist statically so the first acquisition is tracked for release
 // exactly like any other resource-lifecycle function (D-04-07).
+//
+// REACHABILITY (D-04-21/D-10 -- this is a record, not a claim of coverage):
+// REACHES: a single declared foreign symbol whose SECOND call within one
+// function execution performs a real longjmp back into the process-root
+// landing pad, with exactly one prior acquisition genuinely live at that
+// moment.
+// DOES NOT REACH (accepted residual limitations, T-04-33 -- named here and
+// never claimed as covered by any test, comment, fixture, or report in this
+// project):
+//   1. a landing point established BELOW this pad by a foreign-invoked callback
+//      that itself calls setjmp deeper in the call stack;
+//   2. a foreign call that terminates the process directly (e.g. exit() /
+//      _exit()) rather than performing a nonlocal exit back into
+//      Lang-controlled code.
+// Neither shape is observable by a single process-root pad; both remain
+// accepted residual limitations of this detection mechanism.
 
 module phase4.nonlocal_exit_probe
 

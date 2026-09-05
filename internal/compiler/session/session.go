@@ -178,6 +178,119 @@ func (r *ReleaseOmissionMutationRunner) Optimizations() []string {
 	return append([]string(nil), r.optimizations...)
 }
 
+// padInstallMarker/padEndMarker are duplicated, verbatim, from cgen.go's own
+// constants of the same name (the same duplication pattern releaseMarker
+// above already establishes for lang:release-site): they bracket the
+// process-root nonlocal-exit landing pad's ENTIRE emitted span (D-04-17).
+const padInstallMarker = "/* lang:nonlocal-pad-site */"
+const padEndMarker = "/* lang:nonlocal-pad-end */"
+
+// ledgerPopulateMarker is duplicated, verbatim, from cgen.go's own constant
+// of the same name: it marks the single generated line that flips one
+// acquisition's ledger slot live (D-04-07/D-04-17).
+const ledgerPopulateMarker = "/* lang:ledger-populate-site */"
+
+// NonlocalPadOmissionMutationRunner is control:foreign.nonlocal_exit_undetected's
+// FIRST mutation-kill demonstration (D-04-21/D-10): it deletes the ENTIRE
+// generated span from padInstallMarker through padEndMarker inclusive --
+// not just the installation line, since a line-only deletion would leave an
+// unmatched brace and fail to compile -- so the resulting program still
+// declares lang_nonlocal_landing and still links against a foreign symbol
+// that may longjmp into it, but the setjmp call that would have established
+// the landing point never runs. A refusal to construct the mutation (the
+// markers are absent) is itself a control-invalid tool error, matching the
+// project's established fail-closed mutation-runner shape.
+type NonlocalPadOmissionMutationRunner struct {
+	runner        native.Runner
+	mu            sync.Mutex
+	optimizations []string
+}
+
+func NewNonlocalPadOmissionMutationRunner(runner native.Runner) *NonlocalPadOmissionMutationRunner {
+	return &NonlocalPadOmissionMutationRunner{runner: runner}
+}
+
+func (r *NonlocalPadOmissionMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
+	lines := strings.Split(cSource, "\n")
+	start, end := -1, -1
+	for index, line := range lines {
+		if strings.Contains(line, padInstallMarker) {
+			start = index
+		}
+		if strings.Contains(line, padEndMarker) {
+			end = index
+		}
+	}
+	if start == -1 || end == -1 || end < start {
+		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("nonlocal pad marker span not found (start=%d end=%d)", start, end)}
+	}
+	mutated := strings.Join(append(append([]string(nil), lines[:start]...), lines[end+1:]...), "\n")
+	r.mu.Lock()
+	r.optimizations = append(r.optimizations, optimization)
+	r.mu.Unlock()
+	return r.runner.Run(ctx, mutated, optimization, inputs)
+}
+
+func (r *NonlocalPadOmissionMutationRunner) Optimizations() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.optimizations...)
+}
+
+// NonlocalLedgerOmissionMutationRunner is control:foreign.
+// nonlocal_exit_undetected's SECOND, DIFFERENT mutation-kill demonstration
+// (D-04-21/D-10): it deletes only the FIRST line bearing ledgerPopulateMarker
+// -- the population site for the acquisition every fixture actually reaches
+// at runtime, mirroring ReleaseOmissionMutationRunner's own "first
+// reachable site" precedent -- so the pad's own leak count silently
+// UNDERSTATES the true live set instead of the pad being skipped entirely
+// (a different failure shape than NonlocalPadOmissionMutationRunner above).
+type NonlocalLedgerOmissionMutationRunner struct {
+	runner        native.Runner
+	mu            sync.Mutex
+	optimizations []string
+}
+
+func NewNonlocalLedgerOmissionMutationRunner(runner native.Runner) *NonlocalLedgerOmissionMutationRunner {
+	return &NonlocalLedgerOmissionMutationRunner{runner: runner}
+}
+
+func (r *NonlocalLedgerOmissionMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
+	lines := strings.Split(cSource, "\n")
+	matched := -1
+	for index, line := range lines {
+		if strings.Contains(line, ledgerPopulateMarker) {
+			matched = index
+			break
+		}
+	}
+	if matched == -1 {
+		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("ledger populate marker count is 0, want at least 1")}
+	}
+	mutated := strings.Join(append(append([]string(nil), lines[:matched]...), lines[matched+1:]...), "\n")
+	r.mu.Lock()
+	r.optimizations = append(r.optimizations, optimization)
+	r.mu.Unlock()
+	return r.runner.Run(ctx, mutated, optimization, inputs)
+}
+
+func (r *NonlocalLedgerOmissionMutationRunner) Optimizations() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.optimizations...)
+}
+
+// countEventKind counts how many events of the given kind appear in events.
+func countEventKind(events []execution.Event, kind string) int {
+	count := 0
+	for _, event := range events {
+		if event.Kind == kind {
+			count++
+		}
+	}
+	return count
+}
+
 // TransposeReleaseOrder is the core-artifact mutation for
 // control:resource.release_order_transposed: it exchanges the ReleasesOperationID
 // of the first two OpRelease operations found in the given function's
@@ -507,10 +620,16 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 	// value specifically -- a caller-supplied NativeRunner of any other
 	// concrete type (e.g. a mutation runner) is passed through unmodified,
 	// since none of those exercise a foreign-call program today.
-	if checked.Program.Functions[0].ForeignContract != nil {
+	if contract := checked.Program.Functions[0].ForeignContract; contract != nil {
 		if concrete, ok := runner.(native.Runner); ok {
-			concrete.ForeignSources = append(append([]string(nil), concrete.ForeignSources...), native.ForeignResourceSourcePath())
-			runner = concrete
+			// D-04-17 added a second frozen foreign TU: resolve by the
+			// function's OWN declared symbol (native.ForeignSourcePathForSymbol)
+			// rather than hardcoding the first TU, so a program declaring the
+			// newer symbol links against the TU that actually defines it.
+			if sourcePath, known := native.ForeignSourcePathForSymbol(contract.Symbol); known {
+				concrete.ForeignSources = append(append([]string(nil), concrete.ForeignSources...), sourcePath)
+				runner = concrete
+			}
 		}
 	}
 	o0, err := runner.Run(ctx, cSource, "-O0", inputs)
@@ -1901,6 +2020,72 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	}
 	addLane("lane:defect-signal-adjudicated", "pass", []string{"control:defect.signal_adjudicated"}, 3, len(defectCSource), laneStarted)
 
+	// Lane: control:foreign.nonlocal_exit_undetected (D-04-17/D-04-21, task
+	// 04-05-03). First proves the POSITIVE case through the real generated
+	// pipeline: the shipped nonlocal-exit probe, compiled and linked against
+	// its own frozen foreign TU, reaches the process-root pad and reports
+	// exactly its one live acquisition as leaked. Then mutation-kills the
+	// control TWICE, attacking the emitter's own generated C (a different
+	// artifact than any execution document) in the same family as
+	// ReleaseOmissionMutationRunner: once by removing the pad installation
+	// entirely, and once by dropping one ledger-population site so the leak
+	// count understates the true live set -- the second failure is checked
+	// SPECIFICALLY for a leak-count disagreement, not merely "some
+	// difference," per D-09/D-04-21.
+	laneStarted = time.Now()
+	nonlocalSource, err := readBoundedFile(filepath.Join(corpus, "nonlocal_exit_probe.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:nonlocal-exit-undetected", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "nonlocal_exit_probe.lang")
+	}
+	nonlocalChecked := Check(nonlocalSource)
+	if len(nonlocalChecked.Diagnostics) != 0 {
+		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+1, len(nonlocalSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "nonlocal_exit_probe.lang")
+	}
+	nonlocalCSource, nonlocalCSourceErr := cgen.EmitNative(nonlocalChecked.Program)
+	if nonlocalCSourceErr != nil {
+		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+2, len(nonlocalSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit nonlocal-exit probe C")
+	}
+	nonlocalRunner := runner
+	nonlocalRunner.Expect = native.ExpectDefect
+	nonlocalRunner.ForeignSources = append(append([]string(nil), nonlocalRunner.ForeignSources...), native.ForeignNonlocalSourcePath())
+	goldenResult, goldenErr := nonlocalRunner.Run(ctx, nonlocalCSource, "-O0", []string{"7"})
+	if goldenErr != nil || len(goldenResult.Pairs) != 1 {
+		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+3, len(nonlocalCSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "golden nonlocal-exit probe run failed")
+	}
+	golden := goldenResult.Pairs[0].Execution
+	goldenLeaks := countEventKind(golden.Events, "resource.leaked")
+	if golden.Outcome.Kind != "defect" || goldenLeaks == 0 || len(golden.LiveResources) != goldenLeaks {
+		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+4, len(nonlocalCSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:foreign.nonlocal_exit_undetected")
+	}
+	padMutationRunner := NewNonlocalPadOmissionMutationRunner(nonlocalRunner)
+	_, padMutationErr := padMutationRunner.Run(ctx, nonlocalCSource, "-O0", []string{"7"})
+	if padMutationErr == nil {
+		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+5, len(nonlocalCSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_not_falsified", "control:foreign.nonlocal_exit_undetected (pad omission not detected)")
+	}
+	ledgerMutationRunner := NewNonlocalLedgerOmissionMutationRunner(nonlocalRunner)
+	mutatedResult, ledgerMutationErr := ledgerMutationRunner.Run(ctx, nonlocalCSource, "-O0", []string{"7"})
+	leakCountDisagrees := false
+	if ledgerMutationErr == nil && len(mutatedResult.Pairs) == 1 {
+		mutatedLeaks := countEventKind(mutatedResult.Pairs[0].Execution.Events, "resource.leaked")
+		leakCountDisagrees = mutatedLeaks != goldenLeaks || len(mutatedResult.Pairs[0].Execution.LiveResources) != len(golden.LiveResources)
+	} else {
+		// Losing the run entirely (rather than merely under-reporting) is
+		// also a valid falsification -- the control's own required-behavior
+		// is "an omitted population site must never be silently accepted."
+		leakCountDisagrees = true
+	}
+	if !leakCountDisagrees {
+		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+6, len(nonlocalCSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_not_falsified", "control:foreign.nonlocal_exit_undetected (ledger population omission did not surface as a leak-count disagreement)")
+	}
+	addLane("lane:nonlocal-exit-undetected", "pass", []string{"control:foreign.nonlocal_exit_undetected"}, nonlocalChecked.Work+6, len(nonlocalCSource), laneStarted)
+
 	requiredControls := []string{
 		"control:foreign.unwind_policy_undeclared",
 		"control:foreign.call_target_not_foreign",
@@ -1911,6 +2096,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		"control:foreign.unwind_forbidden",
 		"control:defect.no_release_on_defect",
 		"control:defect.signal_adjudicated",
+		"control:foreign.nonlocal_exit_undetected",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {
