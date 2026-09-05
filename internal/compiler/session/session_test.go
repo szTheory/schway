@@ -1313,9 +1313,14 @@ typedef struct lang_foreign_layout_probe_block {
 
 // TestNoUnprovenAttributesEmitted proves control:foreign.no_unproven_attributes
 // (D-04-13): every emitted C artifact for the tracer and release-lifecycle
-// fixtures, plus their lang.foreign/0 sidecar manifests, carries no banned
-// optimizer-visible attribute token, and each manifest's emitted_attributes
-// field is present and empty (not omitted).
+// fixtures -- the compiled program, the generated header, and the generated
+// conformance unit (D-04-12's three named inspectable layers) -- plus their
+// lang.foreign/0 sidecar manifests, carries no banned optimizer-visible
+// attribute token, and each manifest's emitted_attributes field is present
+// and empty (not omitted). EmitForeignHeader/EmitForeignConformance are
+// scanned here too (WR-01): the header is the artifact a human reviewer is
+// most likely to actually read, and skipping it would let a banned token
+// injected there go completely undetected.
 func TestNoUnprovenAttributesEmitted(t *testing.T) {
 	for _, fixture := range []string{"foreign_acquire_one.lang", "acquire_three_success.lang"} {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", fixture))
@@ -1334,12 +1339,62 @@ func TestNoUnprovenAttributesEmitted(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", fixture, err)
 		}
-		if found := cgen.ScanForBannedAttributes(cSource, manifest); len(found) != 0 {
+		header, err := cgen.EmitForeignHeader(checked.Program)
+		if err != nil {
+			t.Fatalf("%s: %v", fixture, err)
+		}
+		conformance, err := cgen.EmitForeignConformance(checked.Program, native.ForeignResourcePrivateHeaderPath())
+		if err != nil {
+			t.Fatalf("%s: %v", fixture, err)
+		}
+		if found := cgen.ScanForBannedAttributes(cSource, manifest, header, conformance); len(found) != 0 {
 			t.Fatalf("%s: found banned attribute tokens %v", fixture, found)
 		}
 		if !strings.Contains(manifest, `"emitted_attributes":[]`) {
 			t.Fatalf("%s: emitted_attributes is not a present, empty array:\n%s", fixture, manifest)
 		}
+	}
+}
+
+// TestAttributeInjectionIntoHeaderOnlyMakesControlFail is WR-01's dedicated
+// mutation-kill test: it injects a banned token into EmitForeignHeader's
+// output ALONE, leaving emitLinearForeign's own extern declaration (the
+// compiled-program C that TestAttributeInjectionMakesControlFail already
+// covers) untouched, proving the header artifact is independently scanned
+// rather than only incidentally covered because the two extern-declaration
+// format strings happen to collide.
+func TestAttributeInjectionIntoHeaderOnlyMakesControlFail(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	cSource, err := cgen.Emit(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	header, err := cgen.EmitForeignHeader(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found := cgen.ScanForBannedAttributes(cSource, header); len(found) != 0 {
+		t.Fatalf("real emitted C/header already contains a banned token: %v", found)
+	}
+	injectedHeader := strings.Replace(header, "extern", "extern __attribute__((malloc)) restrict ", 1)
+	if injectedHeader == header {
+		t.Fatal("injection site not found in emitted header")
+	}
+	// The compiled program's own extern declaration is untouched.
+	if found := cgen.ScanForBannedAttributes(cSource); len(found) != 0 {
+		t.Fatalf("untouched compiled-program C unexpectedly flagged: %v", found)
+	}
+	// But scanning header output alone (as the production lane now does)
+	// must catch the injected tokens.
+	if found := cgen.ScanForBannedAttributes(injectedHeader); len(found) == 0 {
+		t.Fatal("expected the header-only injected banned tokens to be detected")
 	}
 }
 

@@ -2176,10 +2176,16 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	addLane("lane:foreign-layout-mismatch", "pass", []string{"control:foreign.layout_mismatch"}, 1, 0, laneStarted)
 
 	// Lane: control:foreign.no_unproven_attributes (D-04-13, task 04-03-03).
-	// Scans every emitted C artifact for the tracer and release fixtures,
-	// plus their lang.foreign/0 sidecar manifests, for a banned
-	// optimizer-visible attribute token, and requires the manifest's
-	// emitted_attributes field to be present and empty.
+	// Scans every emitted C artifact for the tracer and release fixtures --
+	// the compiled program, the generated header, and the generated
+	// conformance unit (D-04-12's three named inspectable layers) -- plus
+	// their lang.foreign/0 sidecar manifests, for a banned optimizer-visible
+	// attribute token, and requires the manifest's emitted_attributes field
+	// to be present and empty. EmitForeignHeader/EmitForeignConformance are
+	// scanned here too (not just cgen.Emit's compiled-program output): a
+	// banned token injected into the generated header -- the artifact a
+	// human reviewer is most likely to actually read -- would otherwise go
+	// completely undetected (WR-01).
 	laneStarted = time.Now()
 	tracerCSource, tracerErr := cgen.Emit(positiveChecked.Program)
 	if tracerErr != nil {
@@ -2191,25 +2197,45 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 2, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer sidecar manifest for attribute scan")
 	}
+	tracerHeader, tracerHeaderErr := cgen.EmitForeignHeader(positiveChecked.Program)
+	if tracerHeaderErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 3, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer header for attribute scan")
+	}
+	tracerConformance, tracerConformanceErr := cgen.EmitForeignConformance(positiveChecked.Program, native.ForeignResourcePrivateHeaderPath())
+	if tracerConformanceErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer conformance unit for attribute scan")
+	}
 	releaseCSource, releaseCSourceErr := cgen.Emit(releaseChecked.Program)
 	if releaseCSourceErr != nil {
-		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 3, 0, laneStarted)
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 5, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release C for attribute scan")
 	}
 	releaseManifest, releaseManifestErr := cgen.EmitForeignManifest(releaseChecked.Program)
 	if releaseManifestErr != nil {
-		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 6, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release sidecar manifest for attribute scan")
 	}
-	if len(cgen.ScanForBannedAttributes(tracerCSource, tracerManifest, releaseCSource, releaseManifest)) != 0 {
-		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
+	releaseHeader, releaseHeaderErr := cgen.EmitForeignHeader(releaseChecked.Program)
+	if releaseHeaderErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 7, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release header for attribute scan")
+	}
+	releaseConformance, releaseConformanceErr := cgen.EmitForeignConformance(releaseChecked.Program, native.ForeignResourcePrivateHeaderPath())
+	if releaseConformanceErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 8, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release conformance unit for attribute scan")
+	}
+	if len(cgen.ScanForBannedAttributes(tracerCSource, tracerManifest, tracerHeader, tracerConformance, releaseCSource, releaseManifest, releaseHeader, releaseConformance)) != 0 {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 8, 0, laneStarted)
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:foreign.no_unproven_attributes")
 	}
 	if !strings.Contains(tracerManifest, `"emitted_attributes":[]`) {
-		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 8, 0, laneStarted)
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:foreign.no_unproven_attributes")
 	}
-	addLane("lane:foreign-no-unproven-attributes", "pass", []string{"control:foreign.no_unproven_attributes"}, 4, len(tracerCSource)+len(releaseCSource), laneStarted)
+	addLane("lane:foreign-no-unproven-attributes", "pass", []string{"control:foreign.no_unproven_attributes"}, 8, len(tracerCSource)+len(tracerHeader)+len(tracerConformance)+len(releaseCSource)+len(releaseHeader)+len(releaseConformance), laneStarted)
 
 	// Lane: control:foreign.unwind_forbidden (D-04-19, task 04-05-02).
 	// Compiles the tracer program (linked against the frozen foreign TU
