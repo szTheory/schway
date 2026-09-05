@@ -225,3 +225,10 @@ None — no external service configuration required.
 ---
 *Phase: 04-fallible-resources-and-c-boundary*
 *Completed: 2026-09-05*
+
+## Self-Check: PASSED
+
+- FOUND: .planning/phases/04-fallible-resources-and-c-boundary/04-11-SUMMARY.md
+- FOUND commit ff7634b (Task 1: feat)
+- FOUND commit 7c7e05b (Task 2: docs)
+- FOUND commit 531d077 (plan metadata: docs)
