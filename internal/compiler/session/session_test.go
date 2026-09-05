@@ -2246,3 +2246,114 @@ func TestPhase4DifferentialNamesFirstDisagreement(t *testing.T) {
 		t.Fatalf("an honest, identical triple must not be reported as a disagreement: %v", err)
 	}
 }
+
+// TestNoCoverageClaimedForNamedResiduals is task 04-07-03's own scan
+// (D-04-31): none of Phase 4's declared expected escapes may be presented,
+// anywhere in a Go comment or a fixture's own comment, as covered, closed,
+// resolved, or otherwise no longer a limitation. It scans every .go and
+// .lang file under internal/compiler and testdata/phase4 for a line naming
+// one of the three declared Phase 4 escapes, and fails if that same line
+// also contains a claim-of-coverage phrase.
+func TestNoCoverageClaimedForNamedResiduals(t *testing.T) {
+	namedResiduals := []string{
+		session.EscapeCoordinatedForeignBoundaryLie,
+		session.EscapeNonlocalExitBelowThePad,
+		session.EscapeForeignProcessExit,
+	}
+	forbiddenPhrases := []string{
+		"is covered", "fully covered", "now covered", "closes this residual",
+		"resolves this residual", "no longer a limitation", "proven to close",
+		"is solved", "is resolved", "is closed",
+	}
+	roots := []string{
+		testsupport.ProjectPath("internal", "compiler"),
+		testsupport.ProjectPath("testdata", "phase4"),
+	}
+	for _, root := range roots {
+		err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if info.IsDir() {
+				return nil
+			}
+			if !strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, ".lang") {
+				return nil
+			}
+			data, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+			for lineNumber, line := range strings.Split(string(data), "\n") {
+				lower := strings.ToLower(line)
+				for _, residual := range namedResiduals {
+					if !strings.Contains(line, residual) {
+						continue
+					}
+					for _, phrase := range forbiddenPhrases {
+						if strings.Contains(lower, phrase) {
+							t.Fatalf("%s:%d claims coverage of named residual %s: %q", path, lineNumber+1, residual, line)
+						}
+					}
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// TestPhase4ReachabilityRecordIsComplete is task 04-07-03's own closure of
+// the Generator and Probe Reachability Register (D-04-21): every row of
+// that register in 04-VALIDATION.md must be completed from an in-code
+// comment, each naming at least one shape the generator or probe does not
+// reach -- coverage is not the question, per D-04-21; reachability is.
+func TestPhase4ReachabilityRecordIsComplete(t *testing.T) {
+	path := testsupport.ProjectPath(".planning", "phases", "04-fallible-resources-and-c-boundary", "04-VALIDATION.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	anchor := "## Generator and Probe Reachability Register"
+	anchorIndex := strings.Index(text, anchor)
+	if anchorIndex == -1 {
+		t.Fatalf("04-VALIDATION.md is missing its Generator and Probe Reachability Register")
+	}
+	rest := text[anchorIndex:]
+	nextSectionIndex := strings.Index(rest[len(anchor):], "\n## ")
+	var section string
+	if nextSectionIndex == -1 {
+		section = rest
+	} else {
+		section = rest[:len(anchor)+nextSectionIndex]
+	}
+	rows := 0
+	for _, line := range strings.Split(section, "\n") {
+		if !strings.HasPrefix(line, "|") {
+			continue
+		}
+		columns := strings.Split(strings.Trim(line, "|"), "|")
+		if len(columns) < 4 {
+			continue
+		}
+		header := strings.TrimSpace(columns[0])
+		if header == "Generator / probe" || strings.HasPrefix(header, "---") {
+			continue
+		}
+		rows++
+		mustReach := strings.TrimSpace(columns[1])
+		knownNotToReach := strings.TrimSpace(columns[2])
+		if mustReach == "" {
+			t.Fatalf("register row %q has no 'Must reach' entry", header)
+		}
+		if knownNotToReach == "" || knownNotToReach == "-" {
+			t.Fatalf("register row %q names no unreached shape in 'Known not to reach'", header)
+		}
+	}
+	if rows == 0 {
+		t.Fatal("Generator and Probe Reachability Register has no data rows")
+	}
+}

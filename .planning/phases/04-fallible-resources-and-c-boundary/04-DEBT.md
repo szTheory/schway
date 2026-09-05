@@ -1,10 +1,11 @@
 ---
 phase: 04-fallible-resources-and-c-boundary
 recorded: 2026-09-05
+updated: 2026-09-05
 code_head: df75205
 status: accepted
 disposition: carried-forward-by-design
-items: 3
+items: 4
 blocking: 0
 ---
 
@@ -18,7 +19,9 @@ residual limitations this phase inherits from its own decisions (D-04-CONTEXT
 defects a program can observe executing today — each is recorded here, dated,
 with an identifier, a severity, a source, and a landing phase, per the
 standing rule that a deferred item is re-recorded rather than silently
-dropped.
+dropped. Item D-04-32 was added by plan 04-07 (Task 3), the phase's closing
+plan, recording a roadmap gap surfaced for Phase 5's own planning rather than
+debt against this phase.
 
 ## Items
 
@@ -27,6 +30,7 @@ dropped.
 | D-04-26 | 03-DEBT.md D-03-01 (carried), D-04-CONTEXT | D-05/D-02-03 | warning | Phase 5 | Retiring `discoverLoanLastUses` in favour of driving both admission and endpoint materialization from `loanLivenessFixpoint` is deliberately deferred |
 | D-04-30 | D-04-CONTEXT `<deferred>`, D-04-04 | M002/Phase 6 | info | M002 or Phase 6 | A storable, matchable `Result` value and payload-carrying alternatives are deferred; the additive move is a sibling `alternative_details []Alternative omitempty` field, never a shape change to `Alternatives []string` |
 | D-04-31 | D-04-CONTEXT `<deferred>` "Accepted residual limitations" | QLT-01, FFI-01 | warning | inherited, not scheduled | Four accepted residual limitations this phase inherits without engineering around: the coordinated three-way lie, two nonlocal-exit blind spots, the single-host single-record-shape fence, and the permanence of quarantine |
+| D-04-32 | 04-CONTEXT.md `<specifics>` "Roadmap gap surfaced by this discussion", recorded 2026-09-05 by plan 04-07 (Task 3) | NAT-03, ROADMAP §Phase 5 | info | Phase 5 (planning) | NAT-03's "false no-alias facts" hostile mutation has no subject until Phase 5 itself first adds a proven alias-fact emission path, because D-04-13 means Phase 4 emits no optimizer-visible attributes to falsify. This is not a defect of Phase 4; it is a planning dependency for whoever plans Phase 5, recorded here per D-04-CONTEXT's own instruction that this gap "is not currently stated in ROADMAP.md §Phase 5 and should be added when Phase 5 is planned." |
 
 ## Detail
 
@@ -159,6 +163,27 @@ consistently drawn (D-04-CONTEXT, spike 005, spike 004) between an
 *unproven* claim (acceptable, if named) and a *false* one (never acceptable).
 No test, fixture, or control in this phase claims to close any of the four.
 
+### D-04-32 — the Phase 5 roadmap gap this phase surfaces
+
+**Disposition.** D-04-13 (04-CONTEXT.md) means Phase 4 emits zero
+optimizer-visible attributes — there is nothing for NAT-03's "false no-alias
+facts" hostile mutation (ROADMAP §Phase 5) to falsify, because Phase 4 never
+emits a true alias fact for that mutation to corrupt. This was surfaced
+during Phase 4's own discussion (04-CONTEXT.md `<specifics>`) as a gap not
+yet reflected in ROADMAP.md §Phase 5, with an explicit instruction that it
+"should be added when Phase 5 is planned."
+
+**Why not blocking.** This is not a defect in Phase 4 — Phase 4 makes no
+claim about alias-fact emission and its own required controls (control:
+foreign.no_unproven_attributes) are satisfied precisely by emitting nothing
+to falsify. It is a forward planning dependency: whoever plans Phase 5 must
+first add a proven alias-fact emission path before NAT-03's mutation has a
+subject to attack.
+
+**Future fix.** Phase 5's own planning (`/gsd-plan-phase 5`) must read this
+item and ROADMAP.md §Phase 5 together and sequence "add a proven alias-fact
+emission path" before or alongside NAT-03's hostile-mutation work, not after.
+
 ---
 
 ## Status of carried Phase 3 debt
@@ -170,9 +195,17 @@ re-recorded here as D-04-26, carried to Phase 5. D-03-01's own row in
 not rewritten retroactively; this file is the authoritative carry-forward
 for Phase 4+.
 
-**RES-01 and FFI-01 remain open in REQUIREMENTS.md**, both also declared by
-plan 04-07, per phase-state guidance — this plan does not force either
-closed.
+**RES-01 and FFI-01 are dispositioned by plan 04-07.** Per D-04-CONTEXT's
+`<flagged_assumptions>`, both were left `unresolved` by the edge probe;
+04-07 closes them on the assumed reading recorded there — RES-01 as
+cleanup-event agreement across three engines on the three-stage fixture
+(falsified by the two release mutations, and now also by a genuinely
+executed second-/third-stage typed-failure differential, task 04-07-02),
+FFI-01 as the gate making foreign obligations inspectable and their
+violations detectable, never as a proof the foreign implementation obeys
+them (permanent, non-discharging quarantine, D-04-31 item 4). SEM-03 closes
+on the same basis: all five Phase 4 path shapes, named explicitly, agree
+across three engines. See `04-07-SUMMARY.md` for the full closure record.
 
 ---
 *Phase: 04-fallible-resources-and-c-boundary*

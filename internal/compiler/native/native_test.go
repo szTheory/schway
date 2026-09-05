@@ -19,7 +19,329 @@ import (
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// phase4OutOfCorpusCase is one hand-written, out-of-corpus program (task
+// 04-07-03, D-04-21) and the subcommands to exercise against it through the
+// SHIPPED binary. None of these sources is read from testdata/ -- each is
+// written fresh to t.TempDir() -- so TestShippedBinaryExercisesEveryPhase4Behavior
+// can assert none of them lives under a corpus directory.
+type phase4OutOfCorpusCase struct {
+	behavior string
+	source   string
+	steps    []phase4OutOfCorpusStep
+}
+
+// phase4OutOfCorpusStep is one subcommand invocation and its expected,
+// VERBATIM-recorded outcome: an exit code, and (when non-empty) a
+// diagnostic code the JSON output must contain.
+type phase4OutOfCorpusStep struct {
+	args           []string // "{path}" is substituted with the source file's path
+	wantExit       int
+	wantDiagnostic string
+}
+
+func phase4OutOfCorpusCases() []phase4OutOfCorpusCase {
+	return []phase4OutOfCorpusCase{
+		{
+			behavior: "Fallible foreign call through try",
+			source: `module outofcorpus.tracer_probe
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try lang_res_open(request)
+  handle
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"format", "--check", "{path}"}, wantExit: 0},
+				{args: []string{"check", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
+			},
+		},
+		{
+			behavior: "Three-stage acquisition with reverse-order release",
+			source: `module outofcorpus.triple_acquire
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let first = try lang_res_open(request)
+  let second = try lang_res_open(request)
+  let third = try lang_res_open(request)
+  request
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"check", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
+			},
+		},
+		{
+			behavior: `discard ... because consumer`,
+			source: `module outofcorpus.discard_probe
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  discard lang_res_open(request) because "out-of-corpus probe never inspects this acquisition"
+  request
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"format", "--check", "{path}"}, wantExit: 0},
+				{args: []string{"check", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
+			},
+		},
+		{
+			behavior: "Defect terminator",
+			source: `module outofcorpus.defect_probe
+
+export {
+  type Signal
+  fn triage
+}
+
+data Signal =
+  | Go
+  | Halt
+
+fn triage(flag: Signal) -> Signal {
+  match flag {
+    Go => {
+      let held = take flag
+      held
+    }
+    Halt => {
+      defect "out-of-corpus halt"
+    }
+  }
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"check", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
+			},
+		},
+		{
+			behavior: "Nonlocal-exit probe",
+			source: `module outofcorpus.nonlocal_probe
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_nonlocal_probe(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: possible
+    allocator: "libc_malloc"
+    fails: ProbeError
+  }
+}
+
+data ProbeError =
+  | ProbeFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try lang_nonlocal_probe(request)
+  let trigger = try lang_nonlocal_probe(request)
+  request
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"check", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
+				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
+			},
+		},
+		{
+			behavior: "Foreign-origin refusal",
+			source: `module outofcorpus.origin_probe
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+    alias: "borrow"
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try lang_res_open(request)
+  handle
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: "core.foreign_origin_omitted"},
+			},
+		},
+		{
+			behavior: "Policy-less foreign declaration refusal",
+			source: `module outofcorpus.unwind_undeclared_probe
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try lang_res_open(request)
+  handle
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: "foreign.unwind_policy_undeclared"},
+			},
+		},
+		{
+			behavior: "Lang-targeted call refusal",
+			source: `module outofcorpus.call_target_probe
+
+export {
+  fn main
+  fn helper
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn helper(value: Byte) -> Byte {
+  value
+}
+
+fn main(request: Byte) -> Byte {
+  let handle = try helper(request)
+  handle
+}
+`,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: "core.call_target_not_foreign"},
+			},
+		},
+	}
+}
+
+// TestShippedBinaryExercisesEveryPhase4Behavior is task 04-07-03's own
+// shipped-binary register closure (D-04-21): every Phase 4 behavior named
+// in the plan's behavior list is driven against a freshly built ./cmd/lang
+// on a hand-written program that is in NO corpus, with subcommands, exit
+// codes, and diagnostic codes recorded so the exercise is repeatable
+// rather than a one-time manual act.
+func TestShippedBinaryExercisesEveryPhase4Behavior(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	for _, testCase := range phase4OutOfCorpusCases() {
+		t.Run(testCase.behavior, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "probe.lang")
+			if err := os.WriteFile(path, []byte(testCase.source), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(path, "testdata") {
+				t.Fatalf("out-of-corpus source must never live under a corpus directory, got %s", path)
+			}
+			for _, step := range testCase.steps {
+				arguments := make([]string, len(step.args))
+				for index, argument := range step.args {
+					if argument == "{path}" {
+						argument = path
+					}
+					arguments[index] = argument
+				}
+				result := testsupport.RunCLI(t, binary, nil, arguments...)
+				t.Logf("subcommand=%v exit=%d stdout=%s", arguments, result.Exit, result.Stdout)
+				if result.Exit != step.wantExit {
+					t.Fatalf("subcommand %v: exit=%d, want %d (stdout=%s stderr=%s)", arguments, result.Exit, step.wantExit, result.Stdout, result.Stderr)
+				}
+				if step.wantDiagnostic != "" && !strings.Contains(string(result.Stdout), `"code":"`+step.wantDiagnostic+`"`) {
+					t.Fatalf("subcommand %v: expected diagnostic code %s, got stdout=%s", arguments, step.wantDiagnostic, result.Stdout)
+				}
+			}
+		})
+	}
+}
 
 func TestNativeStreamsIndependentlyBounded(t *testing.T) {
 	tests := []struct {

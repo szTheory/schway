@@ -829,11 +829,11 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 			}
 		}
 	}
-	o0, err := runner.Run(ctx, cSource, "-O0", inputs)
+	o0, err := runNativeInputs(ctx, runner, cSource, "-O0", inputs, interpreted)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
-	o3, err := runner.Run(ctx, cSource, "-O3", inputs)
+	o3, err := runNativeInputs(ctx, runner, cSource, "-O3", inputs, interpreted)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
@@ -853,6 +853,60 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 		}
 	}
 	return NativeResult{CSource: cSource, Interpreter: interpreted, O0: o0, O3: o3}, nil, nil
+}
+
+// runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
+// shipped binary on out-of-corpus programs per D-04-21: `lang run
+// --engine=native` previously ran every input through ONE shared,
+// zero-value native.Runner.Expect (silently defaulting to ExpectValue), so
+// ANY program whose real terminal outcome is a typed failure or a defect --
+// whether a single-input resource/nonlocal-exit probe or one arm of a
+// Match-shaped multi-arm function like defect_terminal.lang -- was
+// rejected as an operational `native.run_signaled` failure. This affected
+// EXISTING, already-committed Phase 4 corpus fixtures (nonlocal_exit_probe.lang),
+// not only new out-of-corpus programs -- exactly the class of gap this
+// closing plan exists to catch (Rule 1: a bug affecting a real, reachable
+// shipped-binary command). Every input is now run SEPARATELY against a
+// concrete native.Runner with its own Expect, derived from the SAME
+// interpreter verdict this function already computed as its own oracle for
+// that exact input -- never a new, independent guess. For a single-input,
+// ordinary-returning program this derivation always resolves to
+// ExpectValue, the prior default, so no currently-passing single-input
+// differential changes behavior. Any NativeRunner that is not a concrete
+// native.Runner (a mutation-runner wrapper) is untouched, calling through
+// unchanged.
+func runNativeInputs(ctx context.Context, runner NativeRunner, cSource, optimization string, inputs []string, interpreted []interp.Execution) (native.Result, error) {
+	concrete, ok := runner.(native.Runner)
+	if !ok {
+		return runner.Run(ctx, cSource, optimization, inputs)
+	}
+	merged := native.Result{Optimization: optimization, Pairs: make([]native.Pair, 0, len(inputs))}
+	for index, input := range inputs {
+		perInput := concrete
+		perInput.Expect = expectForOutcomeKind(interpreted[index].Outcome.Kind)
+		result, err := perInput.Run(ctx, cSource, optimization, []string{input})
+		if err != nil {
+			return native.Result{}, err
+		}
+		merged.Pairs = append(merged.Pairs, result.Pairs...)
+		merged.CompileTime += result.CompileTime
+		merged.RunTime += result.RunTime
+		merged.OutputBytes += result.OutputBytes
+	}
+	return merged, nil
+}
+
+// expectForOutcomeKind maps an interpreter-observed terminal outcome kind
+// to the matching native.TerminalOutcome expectation.
+func expectForOutcomeKind(kind string) native.TerminalOutcome {
+	switch kind {
+	case "typed_failure":
+		return native.ExpectTypedFailure
+	case execution.OutcomeDefect:
+		return native.ExpectDefect
+	default:
+		return native.ExpectValue
+	}
 }
 
 func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
