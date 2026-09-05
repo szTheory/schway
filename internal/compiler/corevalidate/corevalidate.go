@@ -327,6 +327,28 @@ func (v *validator) linear(function *core.Function) bool {
 			if !v.check(function.ForeignContract.Unwind != "" && function.ForeignContract.NonlocalExit != "", "foreign.unwind_policy_undeclared", operation.ID) {
 				return false
 			}
+			// 04-13 (04-VERIFICATION.md gap 2b, FFI-01): check.go now refuses
+			// a hostile policy value at source-admission time by inspecting
+			// ast.ForeignPolicy.Value's span-bearing AST node (Task 1), an
+			// AST-level fact this validator never sees. This validator
+			// re-derives an equivalent refusal purely from the three flat
+			// string fields core.ForeignContract itself carries, so a
+			// corrupted core artifact that skipped check.go's gate is still
+			// caught. The check immediately above is a PRESENCE claim
+			// (non-empty); this is the SHAPE claim (C-identifier), and it
+			// exists because cgen.EmitForeignHeader splices these exact three
+			// strings raw into C comments at cgen.go:1333-1335, in a unit
+			// session.go hands to native.Runner.CompileConformanceUnit for
+			// real compilation. Placed AFTER foreign.unwind_policy_undeclared
+			// so an OMITTED unwind/nonlocal_exit policy keeps reporting that
+			// existing code, and AFTER foreign.symbol_not_identifier so
+			// 04-12's audit still fires first for a hostile Symbol. Passes
+			// operation.ID, never a field value, for the same
+			// diagnostic-JSON-echo reason as every sibling check in this
+			// block.
+			if !v.check(validCIdentifier(function.ForeignContract.Allocator) && validCIdentifier(function.ForeignContract.Unwind) && validCIdentifier(function.ForeignContract.NonlocalExit), "foreign.policy_value_not_identifier", operation.ID) {
+				return false
+			}
 			// D-04-02, independently derived: check.go refuses a callee that
 			// resolves to a Lang function name at parse-resolution time (an
 			// AST-level, pre-core fact this validator never sees). This

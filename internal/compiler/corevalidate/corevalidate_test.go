@@ -599,6 +599,84 @@ func TestForeignSymbolNotIdentifierRefused(t *testing.T) {
 	})
 }
 
+// TestForeignPolicyValueNotIdentifierRefused is 04-13's corevalidate
+// falsifier (04-VERIFICATION.md gap 2b, FFI-01): a core.ForeignContract
+// whose Allocator, Unwind or NonlocalExit is not a C identifier is refused
+// with foreign.policy_value_not_identifier -- re-deriving, purely from the
+// three flat string fields the artifact itself carries, an equivalent
+// refusal to check.go's own AST-level admission gate (Task 1), so a
+// corrupted core artifact that skipped check.go's gate is still caught.
+func TestForeignPolicyValueNotIdentifierRefused(t *testing.T) {
+	valid := foreignAcquireProgram(t)
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid foreign-call core rejected: %+v", result)
+	}
+
+	hostile := []struct {
+		name  string
+		field string
+		value string
+	}{
+		{"Allocator: comment-terminator payload", "Allocator", "*/ int injected(void){return 1;} /*"},
+		{"Unwind: comment-terminator payload", "Unwind", "*/ int injected(void){return 1;} /*"},
+		{"NonlocalExit: comment-terminator payload", "NonlocalExit", "*/ int injected(void){return 1;} /*"},
+		{"Allocator: semicolon and brace fragment", "Allocator", "libc;}malloc{"},
+		{"Unwind: parenthesis-bearing fragment", "Unwind", "forbidden(void)"},
+		{"NonlocalExit: embedded newline", "NonlocalExit", "forbidden\ninjected"},
+		{"Allocator: embedded space", "Allocator", "libc malloc"},
+		{"Unwind: leading digit", "Unwind", "1forbidden"},
+		{"NonlocalExit: non-ASCII rune", "NonlocalExit", "forbiddené"},
+	}
+	for _, hostileCase := range hostile {
+		t.Run(hostileCase.name, func(t *testing.T) {
+			mutated := cloneProgram(t, valid)
+			switch hostileCase.field {
+			case "Allocator":
+				mutated.Functions[0].ForeignContract.Allocator = hostileCase.value
+			case "Unwind":
+				mutated.Functions[0].ForeignContract.Unwind = hostileCase.value
+			case "NonlocalExit":
+				mutated.Functions[0].ForeignContract.NonlocalExit = hostileCase.value
+			}
+			result := corevalidate.Validate(mutated)
+			if result.Valid || result.Problems[0].Code != "foreign.policy_value_not_identifier" {
+				t.Fatalf("expected foreign.policy_value_not_identifier, got %+v", result)
+			}
+		})
+	}
+
+	t.Run("empty Allocator refuses (DD-04-13-01's stated consequence)", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Allocator = ""
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.policy_value_not_identifier" {
+			t.Fatalf("expected foreign.policy_value_not_identifier, got %+v", result)
+		}
+	})
+
+	t.Run("ordering: omitted Unwind still reports foreign.unwind_policy_undeclared", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Unwind = ""
+		mutated.Functions[0].ForeignContract.Allocator = "*/ int injected(void){return 1;} /*"
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.unwind_policy_undeclared" {
+			t.Fatalf("expected foreign.unwind_policy_undeclared to win, got %+v", result)
+		}
+	})
+
+	t.Run("negative: identifier-shaped but unfamiliar allocator is not refused by this check", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Allocator = "a_different_allocator"
+		result := corevalidate.Validate(mutated)
+		if result.Valid {
+			return
+		}
+		if result.Problems[0].Code == "foreign.policy_value_not_identifier" {
+			t.Fatalf("an identifier-shaped unfamiliar allocator must not be refused by foreign.policy_value_not_identifier, got %+v", result)
+		}
+	})
+}
+
 // TestAllocatorIdentityMismatchRejected proves T-04-14's allocator-identity
 // requirement is refused independently by corevalidate: a release whose
 // Allocator differs from its own acquisition's is rejected purely from the
@@ -1159,11 +1237,14 @@ func TestCyclicOkEdgeChainRefusedNotHung(t *testing.T) {
 func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// 04-12 added one new accepting-path v.check per core.OpForeignCall (the
 	// foreign.symbol_not_identifier audit); acquire_three_success.lang
-	// declares three foreign calls, so the pinned count moves from 403 to
-	// 403+3=406. This is a mechanical, expected update, not a work-formula
-	// change: LinearWorkLimit and the exact-formula TestCoreValidationWorkSeries
-	// are unaffected because scaleProgram declares no OpForeignCall.
-	const acquireThreeSuccessChecks = 406
+	// declares three foreign calls, so the pinned count moved from 403 to
+	// 403+3=406. 04-13 Task 2 adds a second new accepting-path v.check per
+	// core.OpForeignCall (foreign.policy_value_not_identifier), moving the
+	// pin again to 406+3=409 (measured from the built code, not assumed).
+	// This is a mechanical, expected update, not a work-formula change:
+	// LinearWorkLimit and the exact-formula TestCoreValidationWorkSeries are
+	// unaffected because scaleProgram declares no OpForeignCall.
+	const acquireThreeSuccessChecks = 409
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {
