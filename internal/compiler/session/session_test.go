@@ -21,6 +21,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
+	"github.com/codename-lang/lang/internal/compiler/interp/interptestdirect"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -2142,7 +2143,7 @@ _LANG_lang_res_open_result _LANG_lang_res_open(unsigned char argument) {
 // assertion for the second-stage and third-stage typed-failure path
 // shapes. Both are genuinely EXECUTED, not hand-constructed: the
 // interpreter runs the exact err block directly via
-// interp.RunLinearBlockDirect (Run's own public entry point cannot reach
+// interptestdirect.RunLinearBlockDirect (Run's own public entry point cannot reach
 // it, since the interpreter's documented discretionary stub always
 // simulates success for every OpForeignCall, D-04-04/04-PATTERNS Pattern
 // 3), and both native optimization levels compile and run the REAL,
@@ -2170,9 +2171,9 @@ func assertTypedFailurePathAgrees(t *testing.T, fixture string, failOnCall int, 
 	failingCallID := fmt.Sprintf("%s:op:%d", functionID, len(liveOpIndexes))
 	blockID := functionID + errBlockSuffix
 
-	interpreted, err := interp.RunLinearBlockDirect(program, functionName, blockID, precedingCallIDs, failingCallID)
+	interpreted, err := interptestdirect.RunLinearBlockDirect(program, functionName, blockID, precedingCallIDs, failingCallID)
 	if err != nil {
-		t.Fatalf("interp.RunLinearBlockDirect: %v", err)
+		t.Fatalf("interptestdirect.RunLinearBlockDirect: %v", err)
 	}
 
 	cSource, err := cgen.EmitNative(program)
