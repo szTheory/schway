@@ -1203,11 +1203,11 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 func (v *validator) checkReleaseOrder(function *core.Function, operationsByID map[string]core.LinearOperation) bool {
 	linear := function.Linear
 	edgesByTo := make(map[string][]core.Edge, len(linear.Edges))
-	okEdgeInto := make(map[string]core.Edge, len(linear.Edges))
+	okEdgeInto := make(map[string][]core.Edge, len(linear.Edges))
 	for _, edge := range linear.Edges {
 		edgesByTo[edge.ToBlockID] = append(edgesByTo[edge.ToBlockID], edge)
 		if edge.Pattern == "ok" {
-			okEdgeInto[edge.ToBlockID] = edge
+			okEdgeInto[edge.ToBlockID] = append(okEdgeInto[edge.ToBlockID], edge)
 		}
 	}
 	// tracked names exactly the acquisitions SOME OpRelease in this function
@@ -1245,11 +1245,11 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 	// a truncated expected would still be compared against actual and could
 	// ACCEPT a corrupted program, which is worse than the hang this guard
 	// replaces. The boolean return propagates the refusal to every call site.
-	rederive := func(startEdge core.Edge) ([]core.LinearOperation, bool) {
+	var rederive func(startEdge core.Edge, visited map[string]bool) ([]core.LinearOperation, bool)
+	rederive = func(startEdge core.Edge, visited map[string]bool) ([]core.LinearOperation, bool) {
 		var expected []core.LinearOperation
 		includeThis := startEdge.Pattern == "ok"
 		currentBlockID := startEdge.FromBlockID
-		visited := make(map[string]bool, len(linear.Blocks))
 		for {
 			if visited[currentBlockID] {
 				v.check(false, "core.release_order_cyclic", currentBlockID)
@@ -1262,12 +1262,49 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 					expected = append(expected, op)
 				}
 			}
-			edge, ok := okEdgeInto[currentBlockID]
-			if !ok {
+			candidates := okEdgeInto[currentBlockID]
+			if len(candidates) == 0 {
 				break
 			}
-			currentBlockID = edge.FromBlockID
-			includeThis = true
+			if len(candidates) == 1 {
+				currentBlockID = candidates[0].FromBlockID
+				includeThis = true
+				continue
+			}
+			// Interior merge: okEdgeInto used to be a singular map whose
+			// last-writer-wins assignment discarded any but the final
+			// declared ok edge into this block, so a genuinely disagreeing
+			// history was never rederived or compared. The per-terminal-block
+			// loop below already applies the discipline of checking EVERY
+			// incoming edge rather than skipping or choosing one; this branch
+			// extends that same discipline one hop earlier, into the backward
+			// walk itself. check.go's honest lowering never produces two ok
+			// edges into one block, so this is defense against a
+			// hand-corrupted artifact -- exactly corevalidate's stated
+			// purpose. Each candidate walks with its own COPY of visited: a
+			// shared map would make a legitimate diamond that reconverges on
+			// a shared ancestor look like a cycle, while starting each branch
+			// from empty would let a two-block cycle recurse forever.
+			var agreed []core.LinearOperation
+			for index, candidate := range candidates {
+				branchVisited := make(map[string]bool, len(visited)+1)
+				for blockID, seen := range visited {
+					branchVisited[blockID] = seen
+				}
+				tail, ok := rederive(candidate, branchVisited)
+				if !ok {
+					return nil, false
+				}
+				if index == 0 {
+					agreed = tail
+					continue
+				}
+				if !v.check(sameReleaseHistory(agreed, tail), "core.release_order_merge_mismatch", currentBlockID) {
+					return nil, false
+				}
+			}
+			expected = append(expected, agreed...)
+			return expected, true
 		}
 		return expected, true
 	}
@@ -1304,7 +1341,7 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			}
 		}
 		for _, edge := range incoming {
-			expected, ok := rederive(edge)
+			expected, ok := rederive(edge, make(map[string]bool, len(linear.Blocks)))
 			if !ok {
 				return false
 			}
@@ -1316,6 +1353,24 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 					return false
 				}
 			}
+		}
+	}
+	return true
+}
+
+// sameReleaseHistory compares two independently rederived release histories
+// at an interior merge. Two histories agree only when they have the same
+// length and, at every index, the same operation ID -- the same discipline
+// the per-terminal-block loop above already applies to its own comparison,
+// extended one hop earlier. It performs no counted work of its own; all
+// counted work for checkReleaseOrder stays inside checkReleaseOrder.
+func sameReleaseHistory(left, right []core.LinearOperation) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index].ID != right[index].ID {
+			return false
 		}
 	}
 	return true

@@ -809,6 +809,124 @@ func TestMergeTerminalBlockAgreeingChainsAccepted(t *testing.T) {
 	}
 }
 
+// TestInteriorMergeDivergentHistoriesRefused is the 04-VERIFICATION.md gap-1
+// falsifier one hop earlier than TestMergeTerminalBlockDivergentReleaseSetsRefused:
+// it hand-corrupts an INTERIOR (non-terminal) block's incoming ok edges, not
+// a terminal one. Before this plan's fix, okEdgeInto was a singular
+// map[string]core.Edge populated by last-writer-wins assignment, so when two
+// ok edges targeted the same interior block only the LAST one written was
+// ever rederived -- the other declared history was silently discarded by map
+// iteration order rather than examined. The two subtests differ only in
+// where the corrupt edge is placed in linear.Edges, because the singular map
+// keeps whichever edge is written LAST: "before" keeps the honest edge (so
+// the unfixed validator ACCEPTS the corrupted program outright), while
+// "after" keeps the corrupt edge (so the unfixed validator refuses, but with
+// core.release_order_mismatch from the outer length comparison, never having
+// examined the interior merge at all). Both orderings must refuse with the
+// new core.release_order_merge_mismatch code once the fix lands, proving the
+// interior comparison actually ran.
+func TestInteriorMergeDivergentHistoriesRefused(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	functionID := valid.Functions[0].ID
+	entryBlockID := functionID + ":block:entry"
+	interiorBlockID := functionID + ":block:step:2"
+
+	honestEdgeIndex := -1
+	for index, edge := range valid.Functions[0].Linear.Edges {
+		if edge.Pattern == "ok" && edge.ToBlockID == interiorBlockID {
+			honestEdgeIndex = index
+		}
+	}
+	if honestEdgeIndex == -1 {
+		t.Fatalf("expected an existing ok edge into %s", interiorBlockID)
+	}
+
+	construct := func(t *testing.T, insertBeforeHonest bool) core.Program {
+		t.Helper()
+		mutated := cloneProgram(t, valid)
+		function := &mutated.Functions[0]
+		edgesBefore := len(function.Linear.Edges)
+		corrupt := core.Edge{
+			ID: functionID + ":edge:corrupt:entry:step2", FromBlockID: entryBlockID, ToBlockID: interiorBlockID, Pattern: "ok",
+		}
+		if insertBeforeHonest {
+			edges := make([]core.Edge, 0, len(function.Linear.Edges)+1)
+			edges = append(edges, function.Linear.Edges[:honestEdgeIndex]...)
+			edges = append(edges, corrupt)
+			edges = append(edges, function.Linear.Edges[honestEdgeIndex:]...)
+			function.Linear.Edges = edges
+		} else {
+			function.Linear.Edges = append(function.Linear.Edges, corrupt)
+		}
+		for index := range function.Linear.Blocks {
+			if function.Linear.Blocks[index].ID == entryBlockID {
+				function.Linear.Blocks[index].Successors = append(function.Linear.Blocks[index].Successors, interiorBlockID)
+			}
+		}
+		if got := len(function.Linear.Edges); got != edgesBefore+1 {
+			t.Fatalf("expected edge count to grow by exactly 1, got %d -> %d", edgesBefore, got)
+		}
+		return mutated
+	}
+
+	t.Run("corrupt edge before the honest edge", func(t *testing.T) {
+		mutated := construct(t, true)
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "core.release_order_merge_mismatch" {
+			t.Fatalf("expected core.release_order_merge_mismatch, got %+v", result)
+		}
+	})
+
+	t.Run("corrupt edge after the honest edge", func(t *testing.T) {
+		mutated := construct(t, false)
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "core.release_order_merge_mismatch" {
+			t.Fatalf("expected core.release_order_merge_mismatch, got %+v", result)
+		}
+	})
+}
+
+// TestInteriorMergeAgreeingHistoriesAccepted is the sibling negative-result
+// row for the falsifier above: a SECOND ok edge into the same interior block
+// from the SAME source the honest edge already comes from rederives an
+// identical history, so the program must still validate. Without this test,
+// the falsifier above could be passing merely because ANY second ok edge
+// into an interior block is refused -- an over-refusal that would narrow the
+// language exactly the way an "exactly one incoming edge" structural form
+// already declined at the terminal-block loop.
+func TestInteriorMergeAgreeingHistoriesAccepted(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	functionID := valid.Functions[0].ID
+	interiorBlockID := functionID + ":block:step:2"
+
+	var agreeingSourceBlockID string
+	for _, edge := range valid.Functions[0].Linear.Edges {
+		if edge.Pattern == "ok" && edge.ToBlockID == interiorBlockID {
+			agreeingSourceBlockID = edge.FromBlockID
+		}
+	}
+	if agreeingSourceBlockID == "" {
+		t.Fatalf("expected an existing ok edge into %s", interiorBlockID)
+	}
+
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	function.Linear.Edges = append(function.Linear.Edges, core.Edge{
+		ID: functionID + ":edge:corrupt:agreeing:step2", FromBlockID: agreeingSourceBlockID, ToBlockID: interiorBlockID, Pattern: "ok",
+	})
+
+	result := corevalidate.Validate(mutated)
+	if !result.Valid {
+		t.Fatalf("expected two agreeing incoming edges into an interior block to still validate, got %+v", result)
+	}
+}
+
 // TestTerminalBlockWithNoIncomingEdgeRefused removes every incoming edge into
 // a non-entry terminal block. Before Task 3's structural peer check exists,
 // checkReleaseOrder's own core.release_order_indeterminate refusal catches
