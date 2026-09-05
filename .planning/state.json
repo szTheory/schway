@@ -21,7 +21,7 @@
     {
       "number": "4",
       "name": "Fallible Resources and C Boundary",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "5",
@@ -36,8 +36,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 4 of 6 · 50% · executing"
+    "label": "Advance to the next step (plan phase 5)",
+    "reason": "Phase 5 of 6 — needs a plan"
   },
-  "updated_at": "2026-09-05T22:30:25.050Z"
+  "updated_at": "2026-09-05T23:10:35.802Z"
 }
