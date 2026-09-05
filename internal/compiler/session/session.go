@@ -230,6 +230,69 @@ func TransposeReleaseOrder(program core.Program) (core.Program, error) {
 	return mutated, nil
 }
 
+// LayoutProbeContract is the Lang-side declared layout the layout mutation
+// control (control:foreign.layout_mismatch, D-04-11/D-04-14) proves against
+// a frozen private header fixture: two one-byte fields, `first` then
+// `second`. testdata/phase4/foreign_layout_mismatch.golden.c deliberately
+// transposes them, so compiling the generated conformance unit against that
+// fixture must be refused under the project's existing -Werror flag set.
+// This is a purpose-built probe record, independent of the production
+// lang_res_open symbol's own (single-field) Layout, specifically so the
+// mutation-kill demonstration exercises a genuine field TRANSPOSITION (which
+// a one-field record cannot express) without touching the byte-frozen
+// production fixture at all.
+func LayoutProbeContract() *core.ForeignContract {
+	return &core.ForeignContract{
+		Symbol: "lang_layout_probe", Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden", Fails: "AcquireError",
+		InitializedState: "fully", Capture: "none", Retention: "none", Aliasing: "none",
+		Layout: &core.RecordLayout{
+			Size: 2, Alignment: 1, ForeignTypeName: "lang_foreign_layout_probe_block",
+			Fields: []core.LayoutField{
+				{Name: "first", Size: 1, Alignment: 1, Offset: 0, CType: "unsigned char"},
+				{Name: "second", Size: 1, Alignment: 1, Offset: 1, CType: "unsigned char"},
+			},
+		},
+	}
+}
+
+// LayoutMutationRunner is control:foreign.layout_mismatch's mutation runner
+// (D-04-11/Pitfall 2): it compiles a generated conformance unit against a
+// FROZEN FIXTURE file path -- never a generated source -- and expects the
+// compile to be refused. Per D-10 ("the two mutation directions attack
+// different artifacts"), this attacks the frozen boundary fixture, a
+// different artifact than ReleaseOmissionMutationRunner (the emitter's own
+// output) or TransposeReleaseOrder (the checker's materialized order). It
+// carries no field of a generated-source shape at all -- its only per-run
+// input is FixturePath -- so "never opens a generated source" is a
+// structural property of this type, not merely a runtime behavior.
+type LayoutMutationRunner struct {
+	Runner      native.Runner
+	Contract    *core.ForeignContract
+	FixturePath string
+}
+
+// Run assembles a minimal single-function core.Program carrying only
+// r.Contract, generates its conformance unit against r.FixturePath, and
+// compiles it as its own separate, bounded invocation. A nil error means the
+// fixture at FixturePath conforms to r.Contract's declared layout; a
+// *native.ToolError with code "native.conformance_failed" means it was
+// refused at compile time.
+func (r LayoutMutationRunner) Run(ctx context.Context) error {
+	program := core.Program{
+		Schema: core.Schema1, Module: "phase4.layout_probe", ModuleID: "phase4.layout_probe",
+		Functions: []core.Function{{
+			ID: "phase4.layout_probe:fn:probe", Name: "probe",
+			EntryPointID: "phase4.layout_probe:fn:probe:point:entry", ReturnPointID: "phase4.layout_probe:fn:probe:point:return",
+			ForeignContract: r.Contract,
+		}},
+	}
+	source, err := cgen.EmitForeignConformance(program, r.FixturePath)
+	if err != nil {
+		return err
+	}
+	return r.Runner.CompileConformanceUnit(ctx, source)
+}
+
 func (e *EngineMismatch) Error() string {
 	return fmt.Sprintf("native %s mismatch for %s: expected %s, got %s", e.Optimization, e.Input, e.Expected, e.Actual)
 }
@@ -1643,11 +1706,69 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	}
 	addLane("lane:release-omitted", "pass", []string{"control:resource.release_omitted"}, releaseChecked.Work+len(omissionRunner.Optimizations())+1, len(releaseSource), laneStarted)
 
+	// Lane: control:foreign.layout_mismatch (D-04-11/Pitfall 2, task
+	// 04-03-03). Attacks the FROZEN fixture (testdata/phase4/
+	// foreign_layout_mismatch.golden.c), a different artifact than either
+	// release-mutation lane above: the generated conformance unit compiled
+	// against it must be refused at compile time under the existing
+	// -Werror flag set.
+	laneStarted = time.Now()
+	layoutRunner := LayoutMutationRunner{
+		Runner: runner, Contract: LayoutProbeContract(),
+		FixturePath: filepath.Join(corpus, "foreign_layout_mismatch.golden.c"),
+	}
+	layoutErr := layoutRunner.Run(ctx)
+	var layoutToolError *native.ToolError
+	layoutRefused := errors.As(layoutErr, &layoutToolError) && layoutToolError.Code == "native.conformance_failed"
+	if !layoutRefused {
+		addLane("lane:foreign-layout-mismatch", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:foreign.layout_mismatch")
+	}
+	addLane("lane:foreign-layout-mismatch", "pass", []string{"control:foreign.layout_mismatch"}, 1, 0, laneStarted)
+
+	// Lane: control:foreign.no_unproven_attributes (D-04-13, task 04-03-03).
+	// Scans every emitted C artifact for the tracer and release fixtures,
+	// plus their lang.foreign/0 sidecar manifests, for a banned
+	// optimizer-visible attribute token, and requires the manifest's
+	// emitted_attributes field to be present and empty.
+	laneStarted = time.Now()
+	tracerCSource, tracerErr := cgen.Emit(positiveChecked.Program)
+	if tracerErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer C for attribute scan")
+	}
+	tracerManifest, tracerManifestErr := cgen.EmitForeignManifest(positiveChecked.Program)
+	if tracerManifestErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 2, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer sidecar manifest for attribute scan")
+	}
+	releaseCSource, releaseCSourceErr := cgen.Emit(releaseChecked.Program)
+	if releaseCSourceErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 3, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release C for attribute scan")
+	}
+	releaseManifest, releaseManifestErr := cgen.EmitForeignManifest(releaseChecked.Program)
+	if releaseManifestErr != nil {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release sidecar manifest for attribute scan")
+	}
+	if len(cgen.ScanForBannedAttributes(tracerCSource, tracerManifest, releaseCSource, releaseManifest)) != 0 {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:foreign.no_unproven_attributes")
+	}
+	if !strings.Contains(tracerManifest, `"emitted_attributes":[]`) {
+		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:foreign.no_unproven_attributes")
+	}
+	addLane("lane:foreign-no-unproven-attributes", "pass", []string{"control:foreign.no_unproven_attributes"}, 4, len(tracerCSource)+len(releaseCSource), laneStarted)
+
 	requiredControls := []string{
 		"control:foreign.unwind_policy_undeclared",
 		"control:foreign.call_target_not_foreign",
 		"control:resource.release_order_transposed",
 		"control:resource.release_omitted",
+		"control:foreign.layout_mismatch",
+		"control:foreign.no_unproven_attributes",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {

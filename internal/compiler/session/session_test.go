@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -1259,6 +1260,158 @@ func TestVerifyPhase3ControlsAndWork(t *testing.T) {
 // (D-04-16/D-04-02) are visible to the gate as required negative controls
 // with nonzero recomputed work, and that the tracer fixture itself still
 // admits cleanly.
+// TestLayoutMutationIsCompileTimeRefusal proves control:foreign.layout_mismatch
+// (D-04-11/D-11): compiling the generated conformance unit against the
+// transposed frozen fixture is refused at compile time under the existing
+// -Werror flag set, reporting the distinct "native.conformance_failed" code.
+func TestLayoutMutationIsCompileTimeRefusal(t *testing.T) {
+	runner := session.LayoutMutationRunner{
+		Runner:      native.DefaultRunner(),
+		Contract:    session.LayoutProbeContract(),
+		FixturePath: testsupport.ProjectPath("testdata", "phase4", "foreign_layout_mismatch.golden.c"),
+	}
+	err := runner.Run(context.Background())
+	if err == nil {
+		t.Fatal("expected the transposed fixture to be refused at compile time")
+	}
+	var toolErr *native.ToolError
+	if !errors.As(err, &toolErr) || toolErr.Code != "native.conformance_failed" {
+		t.Fatalf("expected native.conformance_failed, got %v", err)
+	}
+}
+
+// TestLayoutMutationAttacksFrozenFixtureOnly proves the layout mutation
+// runner's own input path is the fixture, and never a generated source:
+// pointing FixturePath at a correctly-ordered (untransposed) private header
+// compiles cleanly, proving the runner's verdict depends solely on
+// FixturePath's own content. The runner type itself carries no field of a
+// generated-source shape (Runner, Contract, FixturePath only), so "never
+// opens a generated source" is a structural property, not merely a runtime
+// behavior demonstrated here.
+func TestLayoutMutationAttacksFrozenFixtureOnly(t *testing.T) {
+	correctPath := filepath.Join(t.TempDir(), "lang_foreign_layout_probe_correct.h")
+	correctHeader := []byte(`#ifndef LANG_FOREIGN_LAYOUT_PROBE_PRIVATE_H
+#define LANG_FOREIGN_LAYOUT_PROBE_PRIVATE_H
+typedef struct lang_foreign_layout_probe_block {
+  unsigned char first;
+  unsigned char second;
+} lang_foreign_layout_probe_block;
+#endif
+`)
+	if err := os.WriteFile(correctPath, correctHeader, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runner := session.LayoutMutationRunner{Runner: native.DefaultRunner(), Contract: session.LayoutProbeContract(), FixturePath: correctPath}
+	if err := runner.Run(context.Background()); err != nil {
+		t.Fatalf("expected the untransposed fixture to conform, got %v", err)
+	}
+	value := reflect.ValueOf(runner)
+	if value.NumField() != 3 {
+		t.Fatalf("LayoutMutationRunner grew an unexpected field: %+v", runner)
+	}
+}
+
+// TestNoUnprovenAttributesEmitted proves control:foreign.no_unproven_attributes
+// (D-04-13): every emitted C artifact for the tracer and release-lifecycle
+// fixtures, plus their lang.foreign/0 sidecar manifests, carries no banned
+// optimizer-visible attribute token, and each manifest's emitted_attributes
+// field is present and empty (not omitted).
+func TestNoUnprovenAttributesEmitted(t *testing.T) {
+	for _, fixture := range []string{"foreign_acquire_one.lang", "acquire_three_success.lang"} {
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", fixture))
+		if err != nil {
+			t.Fatal(err)
+		}
+		checked := session.Check(source)
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("%s: unexpected diagnostics: %+v", fixture, checked.Diagnostics)
+		}
+		cSource, err := cgen.Emit(checked.Program)
+		if err != nil {
+			t.Fatalf("%s: %v", fixture, err)
+		}
+		manifest, err := cgen.EmitForeignManifest(checked.Program)
+		if err != nil {
+			t.Fatalf("%s: %v", fixture, err)
+		}
+		if found := cgen.ScanForBannedAttributes(cSource, manifest); len(found) != 0 {
+			t.Fatalf("%s: found banned attribute tokens %v", fixture, found)
+		}
+		if !strings.Contains(manifest, `"emitted_attributes":[]`) {
+			t.Fatalf("%s: emitted_attributes is not a present, empty array:\n%s", fixture, manifest)
+		}
+	}
+}
+
+// TestAttributeInjectionMakesControlFail demonstrates D-04-13's
+// mutation-kill by injection (rather than by isolated assertion): a banned
+// token injected into a COPY of the REAL corpus-emitted C (as if the emitter
+// had produced it) makes the scan report it, proving the control is not
+// vacuously green.
+func TestAttributeInjectionMakesControlFail(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	cSource, err := cgen.Emit(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found := cgen.ScanForBannedAttributes(cSource); len(found) != 0 {
+		t.Fatalf("real emitted C already contains a banned token: %v", found)
+	}
+	injected := strings.Replace(cSource, "extern", "extern __attribute__((malloc)) restrict ", 1)
+	if injected == cSource {
+		t.Fatal("injection site not found in emitted C")
+	}
+	found := cgen.ScanForBannedAttributes(injected)
+	if len(found) == 0 {
+		t.Fatal("expected the injected banned tokens to be detected")
+	}
+}
+
+// TestNoreturnExemptionIsNamed proves D-04-14's one named exemption: the
+// _Noreturn marker is explicitly named as an exemption and is not itself a
+// member of the banned-attribute set the zero-attribute scan enforces.
+func TestNoreturnExemptionIsNamed(t *testing.T) {
+	if cgen.NoreturnExemption != "_Noreturn" {
+		t.Fatalf("NoreturnExemption = %q, want _Noreturn", cgen.NoreturnExemption)
+	}
+	for _, token := range cgen.BannedOptimizerAttributes {
+		if token == cgen.NoreturnExemption {
+			t.Fatalf("NoreturnExemption must not be a member of BannedOptimizerAttributes: %v", cgen.BannedOptimizerAttributes)
+		}
+	}
+}
+
+// TestVerifyPhase4ForeignLayoutControls proves the Phase 4 gate observes
+// both new task-03 required controls with nonzero recomputed work.
+func TestVerifyPhase4ForeignLayoutControls(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	required := []string{"control:foreign.layout_mismatch", "control:foreign.no_unproven_attributes"}
+	found := make(map[string]bool)
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			found[control] = true
+		}
+	}
+	for _, control := range required {
+		if !found[control] {
+			t.Fatalf("missing required Phase 4 control %s: lanes=%+v", control, result.Lanes)
+		}
+	}
+}
+
 func TestVerifyPhase4ForeignControls(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
