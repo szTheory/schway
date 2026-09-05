@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Fallible Resources and C Boundary
-status: executing
-stopped_at: Completed 04-06-PLAN.md
-last_updated: "2026-09-05T03:09:47.775Z"
+status: verifying
+stopped_at: Completed 04-07-PLAN.md - Phase 4 complete
+last_updated: "2026-09-05T04:05:34.579Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 04 execution started
-state_head: 72ae7e394c7dda472f974fefd2eb7b3a734d7176
+state_head: d69c3e2a4ce9a0d2f83cc2c7d1e5e24581260e4a
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 27
-  completed_plans: 26
+  completed_plans: 27
   percent: 50
 ---
 
@@ -31,7 +31,7 @@ hiding runtime costs.
 
 Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-04 — Phase 04 execution started
 
 Progress: ██████████ [█████░░░░░] 50%
@@ -80,6 +80,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04 P04 | ~2h | 3 tasks | 19 files |
 | Phase 04-fallible-resources-and-c-boundary P05 | ~2h | 3 tasks | 11 files |
 | Phase 04 P06 | ~2h | 3 tasks | 9 files |
+| Phase 04 P07 | 55 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -152,6 +153,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: core.ForeignContract.Alias reuses the shared/exclusive access vocabulary; a foreign call declared to borrow/retain its argument is recognised as borrow-derived, refused with core.foreign_origin_omitted when undeclared (D-04-28 closed)
 - [Phase 04]: originvalidate.ValidatePublished wired into lang check/run at the CLI command-file layer (not into RunInterpreter/RunNative themselves) to avoid regressing non-publication tests that drive the engines directly (WR-01 closed)
 - [Phase 04]: discoverLoanLastUses now counts its own transitive-scan work (D-04-25 closed); retiring the quadratic derivation itself is re-recorded as dated debt D-04-26, carried to Phase 5
+- [Phase 04]: Second-/third-stage typed-failure differential proven via genuine execution (test-double foreign object + interp.RunLinearBlockDirect), not a hand-constructed document; a structural core-artifact mutation approach was tried and reverted after corevalidate's own core.fail_reached_without_err_edge correctly refused it
+- [Phase 04]: session.runNativeInputs derives lang run --engine=native's per-input Expect from the interpreter's own verdict, fixing two real bugs (multi-arm defect fixture, single-input nonlocal-exit fixture) discovered by driving the shipped binary on out-of-corpus programs
 
 ### Pending Todos
 
@@ -182,6 +185,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T03:09:47.684Z
-Stopped at: Completed 04-06-PLAN.md
+Last session: 2026-09-05T04:05:34.451Z
+Stopped at: Completed 04-07-PLAN.md - Phase 4 complete
 Resume file: None
