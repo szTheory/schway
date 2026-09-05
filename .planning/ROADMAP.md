@@ -177,7 +177,7 @@ changes that cost nothing structurally:
   3. Panic cannot cross the ordinary non-unwinding C boundary, and a foreign nonlocal exit cannot silently bypass Lang cleanup.
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
-**Plans**: 12/12 plans executed (04-01..04-07 executed; 04-08, 04-09 and 04-10 are executed gap-closure plans; the fourth-round re-verification confirmed two NEW gaps by direct code read — the interior-merge collapse in `checkReleaseOrder`'s `rederive` walk and the unsanitized `core.ForeignContract.Symbol` splice into generated C — so 04-11 and 04-12 are the fourth-round gap-closure plans, not yet executed)
+**Plans**: 12/13 plans executed (04-01..04-07 executed; 04-08, 04-09 and 04-10 are executed gap-closure plans; the fourth-round re-verification confirmed two NEW gaps by direct code read — the interior-merge collapse in `checkReleaseOrder`'s `rederive` walk and the unsanitized `core.ForeignContract.Symbol` splice into generated C — so 04-11 and 04-12 are the fourth-round gap-closure plans, not yet executed)
 
 - [x] 04-11-PLAN.md
 - [x] 04-12-PLAN.md
@@ -186,6 +186,7 @@ changes that cost nothing structurally:
 
 - [ ] `04-11-PLAN.md` — gap closure (RES-01): plural `okEdgeInto`, per-candidate independent rederivation and agreement at interior merges, refused with `core.release_order_merge_mismatch`, falsified in both edge orderings
 - [ ] `04-12-PLAN.md` — gap closure (FFI-01): audit `core.ForeignContract.Symbol` as a C identifier with `foreign.symbol_not_identifier` before any splice, plus cgen's own independent refusal on the three `EmitForeign*` entry points that never call `Validate`
+- [ ] `04-13-PLAN.md` — gap closure (FFI-01): refuse a source-reachable hostile `foreign C { }` policy value at admission with `check.foreign_policy_value_unsafe`, audit `Allocator`/`Unwind`/`NonlocalExit` and every remaining spliced contract string in corevalidate (`foreign.policy_value_not_identifier`, `foreign.contract_field_not_c_safe`), and give cgen its own independent field guard in `singleForeignFunction`
 
 - [x] 04-08-PLAN.md
 - [x] 04-09-PLAN.md
