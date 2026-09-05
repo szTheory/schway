@@ -177,7 +177,10 @@ changes that cost nothing structurally:
   3. Panic cannot cross the ordinary non-unwinding C boundary, and a foreign nonlocal exit cannot silently bypass Lang cleanup.
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
-**Plans**: 10/12 plans executed (04-01..04-07 executed; 04-08, 04-09 and 04-10 are executed gap-closure plans; the fourth-round re-verification confirmed two NEW gaps by direct code read — the interior-merge collapse in `checkReleaseOrder`'s `rederive` walk and the unsanitized `core.ForeignContract.Symbol` splice into generated C — so 04-11 and 04-12 are the fourth-round gap-closure plans, not yet executed)
+**Plans**: 11/12 plans executed (04-01..04-07 executed; 04-08, 04-09 and 04-10 are executed gap-closure plans; the fourth-round re-verification confirmed two NEW gaps by direct code read — the interior-merge collapse in `checkReleaseOrder`'s `rederive` walk and the unsanitized `core.ForeignContract.Symbol` splice into generated C — so 04-11 and 04-12 are the fourth-round gap-closure plans, not yet executed)
+
+- [x] 04-11-PLAN.md
+- [ ] 04-12-PLAN.md
 
 - [x] 04-10-PLAN.md
 
@@ -272,6 +275,6 @@ validator, the code generator, or the session gate, so no two plans have disjoin
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
-| 4. Fallible Resources and C Boundary | 10/10 | In Progress|  |
+| 4. Fallible Resources and C Boundary | 11/12 | In Progress|  |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |
