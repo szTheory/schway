@@ -49,9 +49,9 @@ hiding runtime costs.
   local loans end at proven CFG point/edge-specific last use.
 - [x] **OWN-04**: Public borrowed results record verified field/alternative
   origins and access mode without inspecting provider bodies downstream.
-- [x] **RES-01**: Partially initialized noncopyable resources release exactly
+- [ ] **RES-01**: Partially initialized noncopyable resources release exactly
   once in reverse completed-acquisition order on return and typed failure.
-- [x] **FFI-01**: Foreign contracts carry target layout, initialized state,
+- [ ] **FFI-01**: Foreign contracts carry target layout, initialized state,
   allocator identity, capture/retention, aliasing, and unwind obligations.
 
 ### Execution and native equivalence
@@ -143,8 +143,8 @@ hiding runtime costs.
 | OWN-02 | Phase 2 | Complete |
 | OWN-03 | Phase 3 | Complete |
 | OWN-04 | Phase 3 | Complete |
-| RES-01 | Phase 4 | Complete |
-| FFI-01 | Phase 4 | Complete |
+| RES-01 | Phase 4 | Gaps Found |
+| FFI-01 | Phase 4 | Gaps Found |
 | INT-01 | Phase 1 | Complete |
 | INT-02 | Phase 5 | Pending |
 | NAT-01 | Phase 1 | Complete |
