@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/execution"
@@ -159,15 +160,40 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 		if runStderr.overflowed() {
 			return Result{}, streamError("native.run_stderr_truncated")
 		}
-		if runErr != nil {
-			return Result{}, &ToolError{Code: "native.run_failed", Err: withStderr(runErr, runStderr.bytes())}
-		}
-		if len(runStderr.bytes()) != 0 {
-			return Result{}, &ToolError{Code: "native.run_stderr", Err: fmt.Errorf("native process wrote stderr: %s", bounded(string(runStderr.bytes()), 2048))}
-		}
 		expect := r.Expect
 		if expect == "" {
 			expect = ExpectValue
+		}
+		if runErr != nil {
+			// D-04-24: adjudicate a nonzero exit through
+			// ProcessState.Sys().(syscall.WaitStatus) -- never a hardcoded
+			// exit code, which is a shell's encoding and this codebase
+			// correctly uses no shell. A signalled SIGABRT termination while
+			// the caller expects a defect terminal outcome is D-04-15's
+			// expected abort-only shape, not a failure: fall through and
+			// decode whatever the aborting process wrote before it died.
+			adjudication, known := adjudicateExit(runErr)
+			expectedAbort := known && adjudication.Signaled && adjudication.Signal == syscall.SIGABRT && expect == ExpectDefect
+			if !expectedAbort {
+				if known && adjudication.Signaled {
+					return Result{}, &ToolError{Code: "native.run_signaled", Err: fmt.Errorf("process terminated by signal %v: %w", adjudication.Signal, withStderr(runErr, runStderr.bytes()))}
+				}
+				return Result{}, &ToolError{Code: "native.run_failed", Err: withStderr(runErr, runStderr.bytes())}
+			}
+			// An expected SIGABRT termination is not required to have
+			// written nothing to stderr the way an ordinary clean exit is --
+			// the stderr-must-be-empty gate below exists to catch a
+			// SUCCESSFUL-looking run that quietly also wrote diagnostics,
+			// which does not apply to a process that just died.
+			decoded, decodeErr := decodeExecution(runStdout.bytes(), expect)
+			if decodeErr != nil {
+				return Result{}, decodeErr
+			}
+			result.Pairs = append(result.Pairs, Pair{Input: input, Execution: decoded})
+			continue
+		}
+		if len(runStderr.bytes()) != 0 {
+			return Result{}, &ToolError{Code: "native.run_stderr", Err: fmt.Errorf("native process wrote stderr: %s", bounded(string(runStderr.bytes()), 2048))}
 		}
 		decoded, decodeErr := decodeExecution(runStdout.bytes(), expect)
 		if decodeErr != nil {
@@ -232,6 +258,37 @@ func (r Runner) CompileConformanceUnit(parent context.Context, source string) er
 	return nil
 }
 
+// exitAdjudication is D-04-24's signal-aware verdict: a clean exit, a
+// nonzero exit with no signal, and a signalled termination are three
+// distinct, mutually exclusive outcomes, decided ONLY through
+// ProcessState.Sys().(syscall.WaitStatus) -- never a hardcoded numeric exit
+// code, which is a shell's encoding and this codebase correctly uses no
+// shell.
+type exitAdjudication struct {
+	Signaled bool
+	Signal   syscall.Signal
+}
+
+// adjudicateExit inspects a *exec.ExitError's real wait status. known is
+// false only when err is not an *exec.ExitError, or the platform's
+// ProcessState.Sys() is not a syscall.WaitStatus (never true on this
+// project's supported hosts) -- callers must treat that as an ordinary
+// run failure, never as an adjudicated signal.
+func adjudicateExit(err error) (exitAdjudication, bool) {
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		return exitAdjudication{}, false
+	}
+	status, ok := exitErr.ProcessState.Sys().(syscall.WaitStatus)
+	if !ok {
+		return exitAdjudication{}, false
+	}
+	if status.Signaled() {
+		return exitAdjudication{Signaled: true, Signal: status.Signal()}, true
+	}
+	return exitAdjudication{}, true
+}
+
 func (r Runner) commandContext(ctx context.Context, name string, arguments ...string) *exec.Cmd {
 	if r.command != nil {
 		return r.command(ctx, name, arguments...)
@@ -275,12 +332,25 @@ func decodeExecution(stdout []byte, expect TerminalOutcome) (execution.Execution
 		return execution.Execution{}, streamError("native.run_stdout_truncated")
 	}
 	if err := rejectDuplicateJSONKeys(stdout); err != nil {
+		if isUnterminatedJSON(err) {
+			return execution.Execution{}, terminalRecordAbsentError(stdout, err)
+		}
 		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: err}
 	}
 	var value execution.Execution
 	decoder := json.NewDecoder(bytes.NewReader(stdout))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&value); err != nil {
+		if isUnterminatedJSON(err) {
+			// D-04-20: a run whose stdout stops before a terminal record was
+			// ever written (the process died mid-stream) is a HARD FAILURE,
+			// never a tolerated truncation -- distinct from
+			// native.run_stdout_truncated, which fires only when the
+			// existing output cap was actually exceeded above. Tolerating
+			// this as an ordinary truncation would make a missing release
+			// event on an aborting path indistinguishable from a capped one.
+			return execution.Execution{}, terminalRecordAbsentError(stdout, err)
+		}
 		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: err}
 	}
 	var trailing any
@@ -290,10 +360,25 @@ func decodeExecution(stdout []byte, expect TerminalOutcome) (execution.Execution
 		}
 		return execution.Execution{}, &ToolError{Code: "native.trailing_execution", Err: err}
 	}
-	if err := validateExecution(value, ExpectValue); err != nil {
+	if err := validateExecution(value, expect); err != nil {
 		return execution.Execution{}, &ToolError{Code: "native.invalid_execution", Err: err}
 	}
 	return value, nil
+}
+
+// isUnterminatedJSON reports whether err indicates the input ended before a
+// value finished decoding -- the shape a process that died mid-write leaves
+// behind -- as opposed to a complete-but-malformed document.
+func isUnterminatedJSON(err error) bool {
+	return errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF)
+}
+
+// terminalRecordAbsentError is D-04-20's distinct hard-failure code for a
+// stdout stream that ended before its terminal record was written. Embeds
+// the captured bytes (bounded) so a caller can confirm any events that DID
+// stream through before the process died are not silently lost.
+func terminalRecordAbsentError(stdout []byte, err error) error {
+	return &ToolError{Code: "native.terminal_record_absent", Err: fmt.Errorf("stdout ended before a terminal record was written (%d bytes captured: %s): %w", len(stdout), bounded(string(stdout), 512), err)}
 }
 
 // TerminalOutcome names the closed axis validateExecution accepts (D-04-08:
@@ -308,6 +393,11 @@ type TerminalOutcome string
 const (
 	ExpectValue        TerminalOutcome = "value"
 	ExpectTypedFailure TerminalOutcome = "typed_failure"
+	// ExpectDefect is Phase 4 plan 04's addition (D-04-15): a defect-
+	// expecting call's process is expected to terminate via SIGABRT, and its
+	// terminal record carries outcome kind "defect", no value, and every
+	// still-live acquisition at the moment of the defect.
+	ExpectDefect TerminalOutcome = "defect"
 )
 
 func rejectDuplicateJSONKeys(data []byte) error {
@@ -361,8 +451,8 @@ func rejectDuplicateJSONKeys(data []byte) error {
 
 // validateExecution asserts the execution document against the caller's
 // declared expectation (D-04-08's closed value|typed_failure|defect axis;
-// "defect" is not yet constructible and is intentionally absent from this
-// switch -- a document claiming it is rejected by the default case below).
+// "cancelled" is reserved and unconstructible -- no expectation ever admits
+// it, and a document claiming it is rejected by the default case below).
 // Per Pitfall 3 (04-RESEARCH.md), the pre-Phase-4 "value" contract is kept
 // byte-for-byte: every one of its five original rejection grounds still
 // rejects (TestValidateExecutionStillRejectsOldGrounds), this function
@@ -378,6 +468,10 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 		}
 	case ExpectTypedFailure:
 		if value.Outcome.Kind != "typed_failure" || value.Outcome.Value == "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 {
+			return errors.New("execution document violates required contract")
+		}
+	case ExpectDefect:
+		if value.Outcome.Kind != "defect" || value.Outcome.Value != "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 {
 			return errors.New("execution document violates required contract")
 		}
 	default:
@@ -413,6 +507,13 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 		case "function.failed":
 			if !isLast || value.Schema != execution.Schema1 || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("typed-failure event fields are invalid")
+			}
+		case "function.defected":
+			// D-04-15's terminal event: like function.failed it must be
+			// last, but it carries its required non-empty reason string in
+			// Output rather than leaving it empty.
+			if !isLast || value.Schema != execution.Schema1 || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output == "" {
+				return errors.New("defect event fields are invalid")
 			}
 		case "resource.released":
 			// D-04-07's non-terminal release transition: like the other

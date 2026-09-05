@@ -1436,3 +1436,60 @@ func TestVerifyPhase4ForeignControls(t *testing.T) {
 		}
 	}
 }
+
+// TestVerifyPhase4DefectControls proves the Phase 4 gate observes both new
+// task-04 required controls with nonzero recomputed work.
+func TestVerifyPhase4DefectControls(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 defect verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	required := []string{"control:defect.no_release_on_defect", "control:defect.signal_adjudicated"}
+	found := make(map[string]bool)
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			found[control] = true
+		}
+	}
+	for _, control := range required {
+		if !found[control] {
+			t.Fatalf("missing required Phase 4 control %s: lanes=%+v", control, result.Lanes)
+		}
+	}
+}
+
+// TestNoReleaseAfterDefect is control:defect.no_release_on_defect's own
+// falsifier: an honest defect execution (no release event anywhere) passes,
+// and a hand-constructed one with a release emitted on the defect path --
+// the document-level mutation-kill shape, in the same family as
+// LayoutMutationRunner attacking an artifact rather than the interpreter's
+// own source -- turns the control red.
+func TestNoReleaseAfterDefect(t *testing.T) {
+	honest := execution.Execution{
+		Outcome: execution.Outcome{Kind: "defect"},
+		Events:  []execution.Event{{Kind: "function.defected", Output: "halt requested"}},
+	}
+	if !session.DefectHasNoReleaseAfter(honest) {
+		t.Fatal("honest defect execution flagged as violating no-release-on-defect")
+	}
+	mutated := execution.Execution{
+		Outcome: execution.Outcome{Kind: "defect"},
+		Events: []execution.Event{
+			{Kind: "function.defected", Output: "halt requested"},
+			{Kind: "resource.released"},
+		},
+	}
+	if session.DefectHasNoReleaseAfter(mutated) {
+		t.Fatal("control did not catch a release emitted on the defect path")
+	}
+	nonDefect := execution.Execution{
+		Outcome: execution.Outcome{Kind: "returned"},
+		Events:  []execution.Event{{Kind: "resource.released"}},
+	}
+	if !session.DefectHasNoReleaseAfter(nonDefect) {
+		t.Fatal("a non-defect execution must be vacuously true")
+	}
+}

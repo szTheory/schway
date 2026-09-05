@@ -1,6 +1,7 @@
 package native
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"go/ast"
@@ -13,6 +14,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -435,8 +437,13 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		{name: "unknown field", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[],"unknown":true}`), code: "native.invalid_execution"},
 		{name: "duplicate document", data: append(append([]byte{}, valid...), valid...), code: "native.trailing_execution"},
 		{name: "trailing value", data: append(append([]byte{}, valid...), []byte(` true`)...), code: "native.trailing_execution"},
-		{name: "malformed", data: []byte(`{"schema":`), code: "native.invalid_execution"},
-		{name: "truncated", data: append([]byte{}, valid[:len(valid)-1]...), code: "native.invalid_execution"},
+		// D-04-20: an input that ends before a value finishes decoding (both
+		// of these) is now the distinct native.terminal_record_absent hard
+		// failure, never the generic native.invalid_execution a COMPLETE but
+		// malformed document still reports -- see
+		// TestTerminalRecordAbsenceIsHardFailure/TestTruncationAndAbsenceReportDistinctCodes.
+		{name: "malformed", data: []byte(`{"schema":`), code: "native.terminal_record_absent"},
+		{name: "truncated", data: append([]byte{}, valid[:len(valid)-1]...), code: "native.terminal_record_absent"},
 		{name: "oversized", data: append(append([]byte{}, valid...), []byte(strings.Repeat(" ", MaxStreamBytes))...), code: "native.run_stdout_truncated"},
 		{name: "duplicate key", data: []byte(`{"schema":"lang.execution/1","schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
 		{name: "unknown schema", data: []byte(`{"schema":"lang.execution/9","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
@@ -502,6 +509,34 @@ func TestNativeHelperProcess(t *testing.T) {
 		// D-02-04's run-deadline falsifier: block well past the runner's own
 		// deliberately short test Timeout, mirroring compile-hang above.
 		time.Sleep(10 * time.Second)
+	case "abort-mid-stream":
+		// D-04-20's abort falsifier: write a syntactically-open (never
+		// closed) JSON document containing one streamed event, flush it,
+		// then die by SIGABRT -- exactly the shape a real lang_defect()
+		// call leaves behind if fired mid-stream. Proves the parent's own
+		// stdout capture retains every byte written before the signal.
+		_, _ = os.Stdout.WriteString(`{"schema":"lang.execution/1","events":[{"schema":"lang.execution/1","id":"op:0:event","kind":"value.copied","function_id":"fn:probe","source_place":"place:0","target_place":"place:1","type_id":"type:0"}`)
+		_ = os.Stdout.Sync()
+		_ = syscall.Kill(os.Getpid(), syscall.SIGABRT)
+		time.Sleep(5 * time.Second) // should never be reached
+	case "abort-clean":
+		// A complete, valid defect terminal record, written in full before
+		// the process aborts -- the honest D-04-15 shape, as opposed to
+		// abort-mid-stream's deliberately partial one.
+		valid, _ := execution.CanonicalBytes(execution.Execution{
+			Schema: execution.Schema1, Outcome: execution.Outcome{Kind: "defect", Value: ""},
+			Events: []execution.Event{{
+				Schema: execution.Schema1, ID: "op:0:event:defected", Kind: "function.defected",
+				FunctionID: "fn:probe", SourcePlace: "place:0", TypeID: "type:0", Output: "reason",
+			}},
+			LiveResources: []string{},
+		})
+		_, _ = os.Stdout.Write(valid)
+		_ = os.Stdout.Sync()
+		_ = syscall.Kill(os.Getpid(), syscall.SIGABRT)
+		time.Sleep(5 * time.Second) // should never be reached
+	case "exit-nonzero":
+		os.Exit(3)
 	default:
 		_, _ = os.Stdout.Write(valid)
 	}
@@ -577,5 +612,185 @@ func TestValidateExecutionTypedFailureDiscriminates(t *testing.T) {
 	}
 	if err := validateExecution(returned, ExpectTypedFailure); err == nil {
 		t.Fatalf("returned document accepted under ExpectTypedFailure")
+	}
+}
+
+// TestDefectExpectationRejectsReturnedDocument is ExpectDefect's discriminant
+// sibling to TestValidateExecutionTypedFailureDiscriminates: a returned
+// document must never be accepted as a defect terminal outcome, and vice
+// versa.
+func TestDefectExpectationRejectsReturnedDocument(t *testing.T) {
+	defect := execution.Execution{
+		Schema:  execution.Schema1,
+		Outcome: execution.Outcome{Kind: "defect", Value: ""},
+		Events: []execution.Event{
+			{Schema: execution.Schema1, ID: "op0:event:defected", Kind: "function.defected", FunctionID: "f1", SourcePlace: "p0", TypeID: "t0", Output: "halt requested"},
+		},
+		LiveResources: []string{},
+	}
+	if err := validateExecution(defect, ExpectDefect); err != nil {
+		t.Fatalf("valid defect document rejected under ExpectDefect: %v", err)
+	}
+	returned := execution.Execution{
+		Schema:  execution.Schema1,
+		Outcome: execution.Outcome{Kind: "returned", Value: "7"},
+		Events: []execution.Event{
+			{Schema: execution.Schema1, ID: "op0:event:returned", Kind: "function.returned", FunctionID: "f1", SourcePlace: "p0", TypeID: "t0"},
+		},
+		LiveResources: []string{},
+	}
+	if err := validateExecution(returned, ExpectDefect); err == nil {
+		t.Fatalf("returned document accepted under ExpectDefect")
+	}
+	if err := validateExecution(defect, ExpectValue); err == nil {
+		t.Fatalf("defect document accepted under ExpectValue")
+	}
+}
+
+// TestTerminalRecordAbsenceIsHardFailure is D-04-20's own falsifier: stdout
+// that ends before a terminal record finishes decoding is a HARD FAILURE
+// with its own distinct code, never an ordinary "invalid_execution" parse
+// error and never tolerated as a passing run.
+func TestTerminalRecordAbsenceIsHardFailure(t *testing.T) {
+	_, err := decodeExecution([]byte(`{"schema":"lang.execution/1","events":[`), ExpectValue)
+	var toolError *ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.terminal_record_absent" {
+		t.Fatalf("code=%v want=native.terminal_record_absent err=%v", toolError, err)
+	}
+}
+
+// TestTruncationAndAbsenceReportDistinctCodes proves the two failure shapes
+// are distinguishable in the harness: output cut off by the existing byte
+// cap reports native.run_stdout_truncated, while output that ended because
+// the process died before a terminal record was written reports the
+// distinct native.terminal_record_absent -- never the same code.
+func TestTruncationAndAbsenceReportDistinctCodes(t *testing.T) {
+	_, truncErr := decodeExecution(bytes.Repeat([]byte("x"), MaxStreamBytes+2), ExpectValue)
+	var truncToolError *ToolError
+	if !errors.As(truncErr, &truncToolError) || truncToolError.Code != "native.run_stdout_truncated" {
+		t.Fatalf("truncation code=%v want=native.run_stdout_truncated err=%v", truncToolError, truncErr)
+	}
+	_, absentErr := decodeExecution([]byte(`{"schema":"lang.execution/1"`), ExpectValue)
+	var absentToolError *ToolError
+	if !errors.As(absentErr, &absentToolError) || absentToolError.Code != "native.terminal_record_absent" {
+		t.Fatalf("absence code=%v want=native.terminal_record_absent err=%v", absentToolError, absentErr)
+	}
+	if truncToolError.Code == absentToolError.Code {
+		t.Fatalf("truncation and absence must report distinct codes, both got %q", truncToolError.Code)
+	}
+}
+
+// TestAbortingProgramStreamsEventsBeforeDying proves the run-stdout capture
+// itself (native.go's own boundedWriter, reused unchanged for an aborting
+// child per D-04-24) retains every byte written before a child dies by
+// signal -- the underlying guarantee D-04-20's streaming emitter design
+// depends on: writes reaching the pipe before SIGABRT are never lost by the
+// parent's own capture layer, regardless of what the generated C itself
+// chooses to write. The captured (necessarily incomplete, since the process
+// died mid-write) document surfaces as native.terminal_record_absent, with
+// the streamed event bytes visible in the error for inspection.
+func TestAbortingProgramStreamsEventsBeforeDying(t *testing.T) {
+	calls := 0
+	runner := Runner{Expect: ExpectDefect, command: func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
+		calls++
+		stage := "compile"
+		if calls > 1 {
+			stage = "run"
+		}
+		command := exec.CommandContext(ctx, os.Args[0], "-test.run=TestNativeHelperProcess", "--", "abort-mid-stream", stage)
+		// GOTRACEBACK=crash: without it, Go's own runtime signal handler
+		// intercepts SIGABRT and calls os.Exit(2) instead of letting the raw
+		// signal terminate the process, which would make
+		// ProcessState.Sys().(syscall.WaitStatus).Signaled() false -- exactly
+		// the wrong shape for this falsifier. This only affects the
+		// synthetic Go test helper process; the REAL generated C's abort()
+		// call has no such interception.
+		command.Env = append(os.Environ(), "GO_WANT_NATIVE_HELPER=1", "GOTRACEBACK=crash")
+		return command
+	}}
+	_, err := runner.Run(context.Background(), "int main(void) { return 0; }", "-O0", []string{"input"})
+	var toolError *ToolError
+	if !errors.As(err, &toolError) {
+		t.Fatalf("expected a ToolError, got %v", err)
+	}
+	if toolError.Code != "native.terminal_record_absent" {
+		t.Fatalf("code=%s want=native.terminal_record_absent (partial stream captured, but no terminal record) err=%v", toolError.Code, err)
+	}
+	if !strings.Contains(toolError.Error(), "value.copied") {
+		t.Fatalf("streamed event bytes were lost when the child aborted: %v", err)
+	}
+}
+
+// TestAbortSignalAdjudicatedByWaitStatus proves D-04-24's adjudication: a
+// process that terminates via SIGABRT while the caller expects a defect
+// terminal outcome is the expected abort-only shape, decided ONLY through
+// ProcessState.Sys().(syscall.WaitStatus) -- its complete terminal record is
+// then decoded successfully as a genuine defect execution.
+func TestAbortSignalAdjudicatedByWaitStatus(t *testing.T) {
+	calls := 0
+	runner := Runner{Expect: ExpectDefect, command: func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
+		calls++
+		stage := "compile"
+		if calls > 1 {
+			stage = "run"
+		}
+		command := exec.CommandContext(ctx, os.Args[0], "-test.run=TestNativeHelperProcess", "--", "abort-clean", stage)
+		// GOTRACEBACK=crash: see TestAbortingProgramStreamsEventsBeforeDying's
+		// identical comment -- without it Go's own runtime intercepts SIGABRT
+		// with os.Exit(2) instead of a real signalled termination.
+		command.Env = append(os.Environ(), "GO_WANT_NATIVE_HELPER=1", "GOTRACEBACK=crash")
+		return command
+	}}
+	result, err := runner.Run(context.Background(), "int main(void) { return 0; }", "-O0", []string{"input"})
+	if err != nil {
+		t.Fatalf("expected the SIGABRT termination to be adjudicated as the expected defect shape, got %v", err)
+	}
+	if len(result.Pairs) != 1 || result.Pairs[0].Execution.Outcome.Kind != "defect" {
+		t.Fatalf("expected a decoded defect execution, got %+v", result)
+	}
+}
+
+// TestNonzeroExitIsDistinctFromSignal proves the three exit shapes (clean,
+// nonzero without a signal, and signalled) report three distinct codes: an
+// ordinary nonzero os.Exit is native.run_failed, while a SIGABRT the caller
+// did NOT expect (Expect stays ExpectValue) is the distinct
+// native.run_signaled -- never conflated with an ordinary run failure.
+func TestNonzeroExitIsDistinctFromSignal(t *testing.T) {
+	run := func(mode string) *ToolError {
+		calls := 0
+		runner := Runner{command: func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
+			calls++
+			stage := "compile"
+			if calls > 1 {
+				stage = "run"
+			}
+			command := exec.CommandContext(ctx, os.Args[0], "-test.run=TestNativeHelperProcess", "--", mode, stage)
+			// GOTRACEBACK=crash is inert for exit-nonzero and required for
+			// abort-clean to actually terminate by signal -- see
+			// TestAbortingProgramStreamsEventsBeforeDying's comment.
+			command.Env = append(os.Environ(), "GO_WANT_NATIVE_HELPER=1", "GOTRACEBACK=crash")
+			return command
+		}}
+		_, err := runner.Run(context.Background(), "int main(void) { return 0; }", "-O0", []string{"input"})
+		var toolError *ToolError
+		if !errors.As(err, &toolError) {
+			t.Fatalf("%s: expected a ToolError, got %v", mode, err)
+		}
+		return toolError
+	}
+	nonzero := run("exit-nonzero")
+	if nonzero.Code != "native.run_failed" {
+		t.Fatalf("nonzero exit code=%s want=native.run_failed", nonzero.Code)
+	}
+	// abort-clean SIGABRTs, but this runner's Expect stays the zero value
+	// (ExpectValue), so the signal is unexpected here -- distinct from both
+	// nonzero and (in TestAbortSignalAdjudicatedByWaitStatus) the expected
+	// case.
+	signaled := run("abort-clean")
+	if signaled.Code != "native.run_signaled" {
+		t.Fatalf("unexpected signal code=%s want=native.run_signaled", signaled.Code)
+	}
+	if nonzero.Code == signaled.Code {
+		t.Fatalf("nonzero exit and signalled termination must report distinct codes, both got %q", nonzero.Code)
 	}
 }

@@ -230,6 +230,24 @@ func TransposeReleaseOrder(program core.Program) (core.Program, error) {
 	return mutated, nil
 }
 
+// DefectHasNoReleaseAfter is control:defect.no_release_on_defect (D-04-18):
+// zero resource.released events occur after a defect terminal record. It
+// scans the WHOLE event list of a defect-outcome execution rather than
+// special-casing any known-good shape, so a release emitted anywhere in a
+// defect execution is caught regardless of position. A non-defect execution
+// is vacuously true (nothing to check).
+func DefectHasNoReleaseAfter(value execution.Execution) bool {
+	if value.Outcome.Kind != "defect" {
+		return true
+	}
+	for _, event := range value.Events {
+		if event.Kind == "resource.released" {
+			return false
+		}
+	}
+	return true
+}
+
 // LayoutProbeContract is the Lang-side declared layout the layout mutation
 // control (control:foreign.layout_mismatch, D-04-11/D-04-14) proves against
 // a frozen private header fixture: two one-byte fields, `first` then
@@ -1762,6 +1780,101 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	}
 	addLane("lane:foreign-no-unproven-attributes", "pass", []string{"control:foreign.no_unproven_attributes"}, 4, len(tracerCSource)+len(releaseCSource), laneStarted)
 
+	// Lane: control:defect.no_release_on_defect (D-04-18, task 04-04-03).
+	// Runs the real interpreter over the shipped defect witness and requires
+	// its own engine-produced event stream to carry zero resource.released
+	// events for a defect outcome, then mutation-kills the control with a
+	// hand-constructed execution document that DOES carry one -- an artifact
+	// mutation in the same family as LayoutMutationRunner (attacking the
+	// artifact this control inspects), never the interpreter's own source.
+	laneStarted = time.Now()
+	defectSource, err := readBoundedFile(filepath.Join(corpus, "defect_terminal.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:defect-no-release", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "defect_terminal.lang")
+	}
+	defectChecked := Check(defectSource)
+	if len(defectChecked.Diagnostics) != 0 {
+		addLane("lane:defect-no-release", "fail", nil, defectChecked.Work+1, len(defectSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "defect_terminal.lang")
+	}
+	if len(defectChecked.Program.Functions) != 1 || defectChecked.Program.Functions[0].Match == nil {
+		addLane("lane:defect-no-release", "fail", nil, defectChecked.Work+1, len(defectSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "defect fixture has an unsupported shape")
+	}
+	defectFunction := defectChecked.Program.Functions[0]
+	work := defectChecked.Work
+	defectVerdicts := 0
+	var abortPattern, cleanPattern string
+	for _, arm := range defectFunction.Match.Arms {
+		armExecution, armErr := interp.Run(defectChecked.Program, defectFunction.Name, arm.Pattern)
+		if armErr != nil {
+			addLane("lane:defect-no-release", "fail", nil, work+1, len(defectSource), laneStarted)
+			return fail(protocol.StatusOperational, "verify.control_incomplete", "interpreter run failed for defect fixture")
+		}
+		work++
+		if armExecution.Outcome.Kind == "defect" {
+			defectVerdicts++
+			abortPattern = arm.Pattern
+			if !DefectHasNoReleaseAfter(armExecution) {
+				addLane("lane:defect-no-release", "fail", nil, work, len(defectSource), laneStarted)
+				return fail(protocol.StatusInvalid, "verify.control_missing", "control:defect.no_release_on_defect")
+			}
+		} else {
+			cleanPattern = arm.Pattern
+		}
+	}
+	if defectVerdicts == 0 || abortPattern == "" || cleanPattern == "" {
+		addLane("lane:defect-no-release", "fail", nil, work, len(defectSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "defect fixture needs both a returning and a defecting arm")
+	}
+	mutatedDefect := execution.Execution{
+		Schema: execution.Schema1, Outcome: execution.Outcome{Kind: "defect"},
+		Events: []execution.Event{
+			{Schema: execution.Schema1, ID: "mutated:event:0", Kind: "function.defected", FunctionID: defectFunction.ID, SourcePlace: "place:0", TypeID: "type:0", Output: "mutated"},
+			{Schema: execution.Schema1, ID: "mutated:event:1", Kind: "resource.released", FunctionID: defectFunction.ID, SourcePlace: "place:0", TypeID: "type:0"},
+		},
+		LiveResources: []string{},
+	}
+	if DefectHasNoReleaseAfter(mutatedDefect) {
+		addLane("lane:defect-no-release", "fail", nil, work+1, len(defectSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_not_falsified", "control:defect.no_release_on_defect")
+	}
+	addLane("lane:defect-no-release", "pass", []string{"control:defect.no_release_on_defect"}, work+1, len(defectSource), laneStarted)
+
+	// Lane: control:defect.signal_adjudicated (D-04-24, task 04-04-03).
+	// Compiles and runs the shipped defect witness through the REAL
+	// clang/exec toolchain under both terminal shapes its two arms produce:
+	// the ordinary returning arm (Expect=ExpectValue, unaffected) and the
+	// aborting arm (Expect=ExpectDefect), requiring the aborting process's
+	// SIGABRT termination be adjudicated through
+	// ProcessState.Sys().(syscall.WaitStatus) rather than a hardcoded exit
+	// code, and its terminal record decode as a genuine defect outcome.
+	laneStarted = time.Now()
+	defectCSource, defectCSourceErr := cgen.EmitNative(defectChecked.Program)
+	if defectCSourceErr != nil {
+		addLane("lane:defect-signal-adjudicated", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit defect fixture C")
+	}
+	cleanRunner := runner
+	cleanRunner.Expect = native.ExpectValue
+	if _, cleanErr := cleanRunner.Run(ctx, defectCSource, "-O0", []string{cleanPattern}); cleanErr != nil {
+		addLane("lane:defect-signal-adjudicated", "fail", nil, 2, len(defectCSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "native run of the returning arm failed")
+	}
+	abortRunner := runner
+	abortRunner.Expect = native.ExpectDefect
+	abortResult, abortErr := abortRunner.Run(ctx, defectCSource, "-O0", []string{abortPattern})
+	if abortErr != nil {
+		addLane("lane:defect-signal-adjudicated", "fail", nil, 3, len(defectCSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:defect.signal_adjudicated")
+	}
+	if len(abortResult.Pairs) != 1 || abortResult.Pairs[0].Execution.Outcome.Kind != "defect" {
+		addLane("lane:defect-signal-adjudicated", "fail", nil, 3, len(defectCSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:defect.signal_adjudicated")
+	}
+	addLane("lane:defect-signal-adjudicated", "pass", []string{"control:defect.signal_adjudicated"}, 3, len(defectCSource), laneStarted)
+
 	requiredControls := []string{
 		"control:foreign.unwind_policy_undeclared",
 		"control:foreign.call_target_not_foreign",
@@ -1769,6 +1882,8 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		"control:resource.release_omitted",
 		"control:foreign.layout_mismatch",
 		"control:foreign.no_unproven_attributes",
+		"control:defect.no_release_on_defect",
+		"control:defect.signal_adjudicated",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {
