@@ -1,60 +1,102 @@
 ---
 phase: 04-fallible-resources-and-c-boundary
-verified: 2026-09-05T00:00:00Z
+verified: 2026-09-05T21:30:00Z
 status: gaps_found
-score: 6/7 must-haves verified
+score: 6/8 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
-  previous_score: 5/7
+  previous_score: 6/7
   gaps_closed:
-    - "`corevalidate` independently rederives the expected release order by walking backward from each failure edge over the block and edge graph, and compares — it never reads what `check` wrote and shares no helper with it (D-04-07, D-12a)."
-    - "One authoritative `core.ForeignContract` carries target layout, initialized state, allocator identity, capture and retention, aliasing, and unwind obligations, and all three inspectable layers are derived from it so no layer can invent a fact the contract does not carry (FFI-01, D-04-12, ROADMAP SC2)."
+    - "corevalidate's independent rederivation walks (checkReleaseOrder's rederive backward walk) are source-blind and must stay defined against a corrupted/adversarial core.Program — the visited-set cycle guard closing the prior CR-01 (unbounded hang on a cyclic ok-edge chain)."
   gaps_remaining: []
   regressions: []
 gaps:
-  - truth: "corevalidate's independent rederivation walks (in particular checkReleaseOrder's rederive backward walk) are source-blind and must stay defined against a corrupted/adversarial core.Program, matching the guard already applied to every other backward/forward graph walk in the same file (blockReach, loanChainIndex.carriedLoans)."
+  - truth: "checkReleaseOrder's independent rederivation must not silently collapse multiple disagreeing histories converging on an INTERIOR (non-terminal) block into a single arbitrarily-kept edge — the same 'every path must agree' principle already enforced at terminal blocks must also hold one hop earlier, inside rederive's own backward walk (RES-01, D-04-07's own wording: 'independently rederives... and compares')."
     status: failed
     reason: >
-      Newly surfaced by this run's fresh code review (04-REVIEW.md CR-01) and independently
-      confirmed here by direct code read, not accepted on the review's word alone.
-      `checkReleaseOrder`'s `rederive` closure (internal/compiler/corevalidate/corevalidate.go,
-      the `for { ... }` loop around lines 1230-1250, walking `okEdgeInto[currentBlockID]`
-      backward) has no visited-set / cycle guard. `okEdgeInto` is built directly from
-      `linear.Edges` with no acyclicity check performed anywhere earlier in `Validate` or
-      `blocksAndEdges` (confirmed by direct read: `blocksAndEdges`, corevalidate.go:376-476,
-      checks edge/block ID uniqueness and referential closure but never checks the block
-      graph is acyclic). A hand-corrupted `core.Program` with a cyclic chain of "ok"-pattern
-      edges feeding into a terminal block's incoming edge causes `rederive`'s loop to never
-      hit its only `break` (the map lookup `okEdgeInto[currentBlockID]` keeps succeeding
-      forever around the cycle), hanging validation indefinitely. This is precisely the
-      adversarial-input class the same file explicitly defends against in its sibling walks:
-      `loanChainIndex.carriedLoans` (corevalidate.go ~525-545) and `blockReach`
-      (corevalidate.go ~584-596) both carry visited-set guards with doc comments stating in
-      nearly identical language that "a source-blind validator must stay defined against"
-      exactly this shape of cyclic/corrupted input. `rederive` is the one backward-graph
-      traversal in the file that lacks the equivalent guard, and it is reachable from
-      `Validate` on any branch-shaped function (via `replayBlocks` → `checkReleaseOrder`),
-      not gated behind any earlier acyclicity check. Confirmed absent: a repo-wide grep of
-      `corevalidate_test.go` for "cyclic"/"Cyclic" returns zero matches — no falsifier
-      constructs a cyclic ok-edge chain, so this gap is untested. 04-08's gap-closure plan
-      (which added the merge-terminal-block falsifiers and the core.terminal_block_unreachable
-      peer check) did not touch `rederive` itself and did not add cycle protection; its own
-      SUMMARY confirms `checkReleaseOrder itself was NOT modified by this plan`.
-      corevalidate's entire reason for existing — per its own documented design and the
-      RES-01/D-04-07 must_have's own wording ("independently rederives... and compares") —
-      is to stay defined against a corrupted or adversarially hand-constructed core.Program,
-      not merely one honestly produced by check.go today. An unbounded hang is a real
-      denial-of-service against any caller (fuzzing, future untrusted-core-artifact path)
-      that runs an adversarial program through validation, and it undermines the soundness
-      claim the independent rederivation exists to provide.
+      Newly surfaced by this run's fresh code review (04-REVIEW.md new CR-01, distinct from
+      the now-closed cycle-hang CR-01) and independently confirmed here by direct code read,
+      not accepted on the review's word alone. `checkReleaseOrder` builds `okEdgeInto` as
+      `map[string]core.Edge` (corevalidate.go:1206) — a SINGULAR map keyed by `ToBlockID`,
+      populated by `okEdgeInto[edge.ToBlockID] = edge` (corevalidate.go:~1212), which silently
+      overwrites any earlier "ok"-pattern edge into the same target block with whichever one
+      is encountered last while iterating `linear.Edges`. `rederive`'s own backward hop through
+      every INTERIOR (non-terminal) block on its way to the entry reads this same singular map
+      (`edge, ok := okEdgeInto[currentBlockID]`, corevalidate.go:~1260) — only ever following
+      the one kept edge, never independently walking and comparing every incoming "ok" edge
+      into an interior block the way the outer per-terminal-block loop now correctly does
+      (`incoming := edgesByTo[block.ID]`, a slice, iterated in full at corevalidate.go:~1303-1319,
+      closing the ORIGINAL CR-01 from the prior review round). A hand-corrupted core.Program
+      declaring two "ok"-pattern edges from two blocks A and A' — representing genuinely
+      different completed-acquisition histories — into the SAME interior block T causes the
+      discarded edge's entire history to never be rederived or compared at all; if the terminal
+      block's actual release list happens to match the KEPT edge's rederived history, the
+      corrupted program validates successfully despite the discarded path's disagreeing
+      acquisition set never being checked. This is the identical map-collapse defect class the
+      prior CR-01 fix's own explanatory comment (corevalidate.go, directly above the now-fixed
+      terminal-block loop) states corevalidate exists to prevent ("What this rederivation cannot
+      tolerate is SKIPPING the check for a merge point... checking against every incoming edge,
+      not skipping the block, is what closes the gap") — but that comment's own fix was applied
+      only at the outer terminal-block loop, never inside rederive's own interior-block hop,
+      leaving the identical class of gap one level removed. Confirmed untested: no test in
+      corevalidate_test.go constructs two "ok"-pattern edges converging on a non-terminal block
+      (`TestMergeTerminalBlockDivergentReleaseSetsRefused` and
+      `TestMergeTerminalBlockAgreeingChainsAccepted` both add the second edge directly into the
+      TERMINAL `success` block, never into an interior `step:N` block). check.go's own honest
+      lowering never produces this shape today (confirmed: each step's single successor and
+      discard's ok/err edges never both use pattern "ok" into the same target), but corevalidate's
+      documented purpose — independent of what check.go could produce — is to stay defined
+      against an adversarially hand-constructed core.Program, and this shape defeats it silently
+      rather than refusing it.
     artifacts:
       - path: internal/compiler/corevalidate/corevalidate.go
-        issue: "rederive (the backward-walk closure inside checkReleaseOrder, ~lines 1230-1250) has no visited-set guard against a cyclic \"ok\"-edge chain, unlike blockReach and loanChainIndex.carriedLoans in the same file"
+        issue: "okEdgeInto (corevalidate.go:~1206-1212) is a map[string]core.Edge (singular, last-writer-wins), not a map[string][]core.Edge; rederive's interior-block hop (~1260) follows only the single kept edge instead of independently rederiving and comparing every incoming \"ok\" edge into an interior block, unlike the fixed terminal-block loop which now iterates all of edgesByTo[block.ID]"
     missing:
-      - "Add a visited-set to rederive (the same shape carriedLoans and blockReach already use) and treat a re-visited block during the backward walk as a hard refusal (e.g. a new core.release_order_cyclic code), not a silent truncation or infinite loop"
-      - "Add a falsifier test constructing a two-block \"ok\"-edge cycle feeding into a terminal block's incoming edge, asserting the validator returns promptly (does not hang) and refuses with the new code"
+      - "Change okEdgeInto to map[string][]core.Edge, collecting every \"ok\"-pattern edge into a given block instead of overwriting"
+      - "Inside rederive, when more than one \"ok\" edge targets the current interior block, independently rederive each candidate edge and require they all produce an identical accumulated release set before continuing the walk; refuse (a new or existing mismatch code) if they disagree"
+      - "Add a falsifier constructing two \"ok\"-pattern edges into a shared INTERIOR (non-terminal) block from two blocks with different completed-acquisition histories, asserting Validate refuses it — plus a companion accepting-path test where both incoming edges genuinely agree"
+  - truth: "corevalidate must validate core.ForeignContract.Symbol as a syntactically safe C identifier before cgen splices it into generated C source, so a corrupted core.Program cannot inject arbitrary C at the one audited C boundary (FFI-01, D-04-12; phase goal's own \"audited\" C boundary)."
+    status: failed
+    reason: >
+      Newly surfaced by this run's fresh code review (04-REVIEW.md new CR-02) and independently
+      confirmed here by direct code read. `corevalidate.go:300` checks only
+      `function.ForeignContract.Symbol != ""` — non-emptiness, nothing else. A repo-wide grep
+      of corevalidate.go and cgen.go for `validCIdentifier` or `symbol_not_identifier` (or any
+      equivalent identifier-shape check) returns zero matches: no code anywhere in the validator
+      requires Symbol to match a C-identifier pattern. `cgen.go` then splices `contract.Symbol`
+      directly, unescaped, into generated C source in at least three places: `foreignExternName`
+      (cgen.go:778, `return "_LANG_" + symbol`), its use building the extern declaration
+      (cgen.go:352, `symbolC := foreignExternName(function.ForeignContract.Symbol)` then
+      `fmt.Fprintf(&out, "extern %s %s(unsigned char argument);\n\n", resultType, symbolC)`),
+      and its use as a call-expression callee (cgen.go:1278 and the call-site Fprintf). Unlike
+      every other emitted identifier (type names, function names, parameter names, place names),
+      which are routed through `cName`/`cLocal` — both of which strip every character outside
+      `[A-Za-z0-9_]` per their documented invariant — `Symbol` reaches generated C completely
+      raw. corevalidate.Validate is the one documented, source-blind gate standing between an
+      arbitrary caller-supplied core.Program and C source generation (cgen.Emit/EmitNative are
+      exported and accept any core.Program); a Symbol containing e.g. a semicolon, parenthesis,
+      or full function body would pass Validate today and then be spliced verbatim into the
+      extern declaration and call site, injecting arbitrary top-level C source into a file this
+      compiler is about to compile and (via session.RunNative) execute. check.go's own parser
+      always produces identifier-shaped Symbol values in the honest pipeline, but corevalidate's
+      stated purpose is independence from what check.go could produce. No test in cgen_test.go
+      or corevalidate_test.go constructs a non-identifier-shaped Symbol, so this gap is untested.
+      This is a direct hit against the phase goal's own framing — "one AUDITED C boundary" —
+      and against FFI-01/D-04-12's "one authoritative core.ForeignContract" being the sole
+      source of truth cgen may trust without inventing or re-checking facts; an unsanitized
+      identifier field is exactly a fact cgen trusts without corevalidate having actually
+      audited its shape.
+    artifacts:
+      - path: internal/compiler/corevalidate/corevalidate.go
+        issue: "Only a non-empty check exists for ForeignContract.Symbol (line 300); no C-identifier-shape check anywhere in the file"
+      - path: internal/compiler/cgen/cgen.go
+        issue: "contract.Symbol (via foreignExternName, line 778) is spliced unsanitized into extern declarations (line 352) and call-expression callees (line 1278), unlike every other identifier which is routed through cName/cLocal sanitization"
+    missing:
+      - "Add a C-identifier-shape check (e.g. ^[A-Za-z_][A-Za-z0-9_]*$) to corevalidate's existing ForeignContract validation block, immediately after the existing core.foreign_contract_missing non-empty check, refusing with a new code (e.g. foreign.symbol_not_identifier) before cgen ever sees the program"
+      - "Add a falsifier in corevalidate_test.go mutating a valid foreign-call program's ForeignContract.Symbol to contain a semicolon/parenthesis/newline and asserting refusal with the new code"
+      - "Add a regression test in cgen_test.go proving cgen.Emit is never reached with such a Symbol (or independently refuses it if invoked directly, bypassing corevalidate)"
 deferred: []
 human_verification: []
 ---
@@ -65,105 +107,127 @@ human_verification: []
 initialization, failure propagation, and cleanup remain defined.
 **Verified:** 2026-09-05
 **Status:** gaps_found
-**Re-verification:** Yes — after gap closure (plans 04-08, 04-09)
+**Re-verification:** Yes — after third round of gap closure (plan 04-10, commits f875062, 7f3509d, 97a73a8)
 
 ## Goal Achievement
 
 ### Observable Truths
 
-Re-verified against the previous VERIFICATION.md's 7 merged must-haves. The two
-previously-FAILED items were checked at full depth (exists, substantive, wired, plus
-direct code/test re-derivation); the five previously-VERIFIED items were spot-checked
-for regression. One new truth (source-blind robustness of the independent rederivation)
-is added because this run's fresh code review surfaced a confirmed, unaddressed critical
-finding directly bearing on RES-01/D-04-07's own wording.
+Re-verified against the previous VERIFICATION.md's 7 must-haves plus one new must-have
+derived from this run's fresh code review (04-REVIEW.md, committed a05ae2a), which surfaced
+two NEW critical-severity findings distinct from the now-closed prior gap. Each review
+finding was independently confirmed here by direct code read (file/line inspection), not
+accepted on the review's word alone, before being folded into the truth table.
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | SC1: A fallible two-step (in practice three-step) acquisition releases only initialized resources, exactly once, in reverse order on success and typed failure | ✓ VERIFIED | Unchanged since prior verification. `check.go` materializes `OpRelease` reverse of completed-acquisition order; `TestThreeAcquisitionReleaseOrder`, `TestPartialAcquisitionReleasesOnlyCompleted`, `TestPhase4CorpusThreeEngineAgreement` all re-run and pass. `scripts/verify-phase4.sh` re-run directly this session: `lane:release-order-transposed` and `lane:release-omitted` both `pass` with recomputed_work 525 and 151. |
-| 1a | The *independent* rederivation (`corevalidate.checkReleaseOrder`) proves release order without relying on `check`'s own bookkeeping, for every reachable terminal-block shape (gap 1 closed by plan 04-08) | ✓ VERIFIED | Direct code read confirms `checkReleaseOrder` (corevalidate.go ~1252-1298) no longer skips a terminal block whose incoming-edge count != 1: the guard is now `len(incoming) > 0` (refusal, not skip) and the walk iterates `for _, edge := range incoming { expected := rederive(edge); ... }`, comparing every incoming edge's independently-rederived expectation against the single fixed `actual` release list — closing item 1 of the prior gap. Item 2 (a structural peer check independent of checkReleaseOrder) is closed in an adapted, human-decision-recorded form: `core.terminal_block_unreachable` in `blocksAndEdges` (corevalidate.go ~416-447) refuses any non-entry OpReturn/OpFail-terminated block with zero incoming edges — an at-least-one/non-entry check, not the literal "exactly one" the prior gap's `missing:` list first suggested. That literal form was tried (04-REVIEW-FIX.md's CR-01 pass) and broke `discard_because.lang`'s legitimate two-incoming-edge merge; the auto-selected weaker check still closes the independence gap without narrowing the language. Falsifier tests re-run directly this session and pass: `TestMergeTerminalBlockDivergentReleaseSetsRefused` (constructs a hand-corrupted divergent merge, refused with `core.release_order_mismatch`), `TestMergeTerminalBlockAgreeingChainsAccepted`, `TestTerminalBlockUnreachableRefused`, `TestLegitimateDiscardMergeStillValidates`. Mutation-kill reverts recorded in 04-08-SUMMARY.md reproduce red on both hunks. **Judgment on the decision:** the auto-selected weaker check satisfies the prior gap's *substance* (an independent structural check now exists, and the merge-point vacuous-skip is closed by the per-edge walk) even though it does not literally implement missing-item 2's "exactly one" wording — that literal wording was infeasible against the language's own legitimate `discard...because` merge shape, so the substitution is judged sound, not a scope reduction. |
-| 2 | SC2: Generated C declarations and adapters make target layout, allocator identity, alias/capture, callback retention, and unwind policy inspectable | ✓ VERIFIED | Unchanged since prior verification. `core.ForeignContract` carries every named obligation; `EmitForeignHeader`/`EmitForeignConformance` re-confirmed present and correct; `control:foreign.layout_mismatch` re-run, passes with recomputed_work=1. |
-| 2a | Zero optimizer-visible attributes are emitted, and the control scans all emitted C (D-04-13's own wording) — gap 2 closed by plan 04-09 | ✓ VERIFIED | Direct code read of session.go confirms `ScanForBannedAttributes` is now called with all eight arguments: `tracerCSource, tracerManifest, tracerHeader, tracerConformance, releaseCSource, releaseManifest, releaseHeader, releaseConformance` (session.go ~2230) — `EmitForeignHeader` and `EmitForeignConformance` output for both fixtures is included, closing the coverage gap. `addLane` records `recomputed_work=8` (two fixtures × four artifacts), matching `TestAttributeScanLaneCoversEveryInspectableLayer`'s pin, re-run and passing. `TestAttributeInjectionIntoConformanceOnlyMakesControlFail` (constructs the previously-untested conformance-only-region injection, isolating the region after the embedded header via `strings.Index`) re-run and passes. `scripts/verify-phase4.sh` re-run directly this session: `lane:foreign-no-unproven-attributes` reports `"status":"pass","recomputed_work":8`. |
-| 3 | SC3 first half: Panic cannot cross the ordinary non-unwinding C boundary | ✓ VERIFIED | Unchanged since prior verification; not re-derived at full depth (no code in this path was touched by 04-08/04-09), spot-checked via the re-run gate: `lane:foreign-unwind-forbidden` passes. |
-| 4 | SC3 second half: A foreign nonlocal exit cannot silently bypass Lang cleanup | ✓ VERIFIED | Unchanged since prior verification; spot-checked via re-run gate: `lane:defect-no-release`, `lane:nonlocal-exit-undetected` both pass. |
-| 5 | SC4: Interpreter and native executions agree on primary failure and cleanup events | ✓ VERIFIED | Unchanged since prior verification; `sh scripts/verify-phase4.sh` re-run directly this session, exits 0, all 14 lanes `"status":"pass"`, all required control identifiers present, `go test ./...` and `go vet ./...` both clean. |
-| 6 | corevalidate's independent rederivation walks are source-blind and must stay defined (never hang) against a corrupted/adversarial core.Program, matching the cycle-guard discipline already applied to every other backward/forward graph walk in the same file | ✗ FAILED | New finding this run, surfaced by 04-REVIEW.md's CR-01 and independently confirmed by direct code read (not accepted on the review's word alone): `checkReleaseOrder`'s `rederive` closure has no visited-set guard against a cyclic "ok"-edge chain among non-terminal blocks, unlike `blockReach` and `loanChainIndex.carriedLoans` in the same file, both of which carry near-identical doc comments stating a source-blind validator "must stay defined against" exactly this adversarial shape. Confirmed absent from `blocksAndEdges`: no earlier acyclicity check on the declared block/edge graph. Confirmed untested: zero "cyclic"/"Cyclic" matches in `corevalidate_test.go`. Not introduced by 04-08 (which added a different check, `core.terminal_block_unreachable`, and did not modify `rederive`) — this is a pre-existing gap in code central to RES-01's own "independently rederives... and compares" wording, now surfaced by review and not yet closed by any gap-closure plan. |
+| 1 | SC1: A fallible two-step (in practice three-step) acquisition releases only initialized resources, exactly once, in reverse order on success and typed failure | ✓ VERIFIED | Regression spot-check: unchanged since prior round; not touched by 04-10. `check.go` still materializes `OpRelease` reverse of completed-acquisition order. |
+| 1a | The *independent* rederivation (`corevalidate.checkReleaseOrder`) proves release order without relying on `check`'s own bookkeeping, at TERMINAL merge points (gap from round 2 closed by plan 04-08) | ✓ VERIFIED | Regression spot-check: the per-terminal-block loop iterating every entry of `edgesByTo[block.ID]` (a slice) and calling `rederive` for each, requiring `len(expected) == len(actual)` for every one, is unchanged and confirmed present at corevalidate.go:~1284-1319. |
+| 1b | `rederive`'s backward walk stays defined (does not hang) against a corrupted/adversarial `core.Program` with a cyclic "ok"-edge chain (gap from round 3 / prior-round's CR-01, closed by plan 04-10) | ✓ VERIFIED | Direct code read confirms `rederive` (corevalidate.go:~1244) now allocates `visited := make(map[string]bool, len(linear.Blocks))` fresh per call, and its loop opens with `if visited[currentBlockID] { v.check(false, "core.release_order_cyclic", currentBlockID); return nil, false }` before marking `visited[currentBlockID] = true` — a hard refusal, not a silent truncation, matching the doc comment's own reasoning ("a truncated expected... could ACCEPT a corrupted program, which is worse than the hang this guard replaces"). Confirmed present and correctly asserting: `TestCyclicOkEdgeChainRefusedNotHung` (corevalidate_test.go:922, asserts the cyclic case returns `core.release_order_cyclic` and does not hang) and `TestAcyclicChainsStillValidateUnderCycleGuard` (corevalidate_test.go:975, regression-guards every existing acyclic fixture still validates under the new guard). This closes the prior round's gap cleanly. |
+| 1c | `checkReleaseOrder`'s independent rederivation must not silently collapse two disagreeing histories converging on an INTERIOR (non-terminal) block into one arbitrarily-kept edge — the "every path must agree" discipline enforced at terminal blocks (1a) must also hold inside `rederive`'s own interior-block hop | ✗ FAILED | New finding this run, surfaced by 04-REVIEW.md's new CR-01 (distinct from the closed cycle-hang CR-01) and independently confirmed by direct code read: `okEdgeInto` (corevalidate.go:~1206) is `map[string]core.Edge` — singular, last-writer-wins (`okEdgeInto[edge.ToBlockID] = edge`) — and `rederive`'s interior-block hop (`edge, ok := okEdgeInto[currentBlockID]`, ~1260) follows only the one kept edge. Two "ok"-pattern edges from different blocks into the same interior block silently discard one path's history rather than independently rederiving and comparing both, unlike the fixed terminal-block loop. Confirmed untested: no fixture in `corevalidate_test.go` constructs two "ok" edges into a non-terminal block. |
+| 2 | SC2: Generated C declarations and adapters make target layout, allocator identity, alias/capture, callback retention, and unwind policy inspectable | ✓ VERIFIED | Regression spot-check: unchanged since prior round; `core.ForeignContract` still carries every named obligation, `EmitForeignHeader`/`EmitForeignConformance` unchanged. |
+| 2a | Every emitted identifier reaching generated C is sanitized/validated so a corrupted `core.Program` cannot inject arbitrary C at the one audited boundary the phase goal names — the same "no layer can invent a fact the contract does not carry" discipline (FFI-01, D-04-12) must extend to the shape of the Symbol field itself, not just its presence | ✗ FAILED | New finding this run, surfaced by 04-REVIEW.md's new CR-02 and independently confirmed by direct code read: `corevalidate.go:300` checks only `Symbol != ""`. A repo-wide grep of corevalidate.go and cgen.go confirms zero occurrences of any identifier-shape check (`validCIdentifier`, `symbol_not_identifier`, or equivalent). `cgen.go:352`/`:778`/`:1278` splice `contract.Symbol` unsanitized into `extern` declarations and call-expression callees, unlike every other identifier (`cName`/`cLocal` sanitize all others). No test constructs a non-identifier-shaped Symbol. |
+| 3 | SC3 first half: Panic cannot cross the ordinary non-unwinding C boundary | ✓ VERIFIED | Regression spot-check: unchanged, not touched by 04-10. |
+| 4 | SC3 second half: A foreign nonlocal exit cannot silently bypass Lang cleanup | ✓ VERIFIED | Regression spot-check: unchanged, not touched by 04-10. |
+| 5 | SC4: Interpreter and native executions agree on primary failure and cleanup events | ✓ VERIFIED | `go build ./...`, `go vet ./...`, and `env GOCACHE=/tmp/ai-lang-phase4-cache go test ./...` all exit 0 per orchestrator pre-run; `TestCyclicOkEdgeChainRefusedNotHung`/`TestAcyclicChainsStillValidateUnderCycleGuard` presence and assertions confirmed directly in this session. |
 
-**Score:** 6/7 truths verified (both originally-reported gaps genuinely closed on direct code inspection and passing named tests; one new gap surfaced by this run's fresh code review and independently confirmed).
+**Score:** 6/8 truths verified. Two new gaps surfaced by this run's fresh code review, both
+independently confirmed by direct code inspection (not accepted on the review's word alone):
+one soundness gap in the independent rederivation's handling of interior merge points (a
+narrower instance of the same defect class the prior round's cycle-guard fix addressed one
+level out), and one code-injection gap in Symbol validation at the C boundary the phase goal
+explicitly calls "audited."
 
 ### Deferred Items
 
-None — the new finding (truth 6) bears directly on RES-01's own must-have wording (an independent, source-blind rederivation) and is not deferred to a later phase in ROADMAP.md.
+None. Both new findings bear directly on this phase's own must-have wording (RES-01/D-04-07's
+"independently rederives... and compares," and the phase goal's "one audited C boundary" /
+FFI-01's "no layer can invent a fact the contract does not carry") and are not addressed by
+any later phase in ROADMAP.md.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `internal/compiler/corevalidate/corevalidate.go` | independent rederivation of release order and foreign refusals, source-blind against corrupted input | ⚠️ PARTIAL | The vacuous-skip gap (prior gap 1) is closed: `checkReleaseOrder` now refuses (not skips) any terminal block with zero incoming edges and walks every incoming edge independently; `core.terminal_block_unreachable` adds a structural peer check. New gap: `rederive`'s backward walk has no cycle guard, unlike its siblings `blockReach`/`carriedLoans` — see truth 6. |
-| `internal/compiler/session/session.go` | zero-attribute scan over all emitted C, including EmitForeignHeader/EmitForeignConformance | ✓ VERIFIED | `lane:foreign-no-unproven-attributes` now scans 8 arguments (both fixtures × compiled program, manifest, header, conformance); `TestAttributeScanLaneCoversEveryInspectableLayer` pins the count so a dropped argument turns a named test red. |
-| `internal/compiler/corevalidate/corevalidate_test.go` | falsifiers proving the merge-terminal-block rederivation and structural peer check are load-bearing | ✓ VERIFIED | `TestMergeTerminalBlockDivergentReleaseSetsRefused`, `TestMergeTerminalBlockAgreeingChainsAccepted`, `TestTerminalBlockWithNoIncomingEdgeRefused`, `TestLegitimateDiscardMergeStillValidates`, `TestTerminalBlockUnreachableRefused` all present and passing; mutation-kill reverts recorded. No falsifier for the cycle gap (truth 6) exists. |
-| `internal/compiler/session/session_test.go` | falsifiers proving the conformance-layer scan and artifact-count pin are load-bearing | ✓ VERIFIED | `TestAttributeInjectionIntoConformanceOnlyMakesControlFail`, `TestAttributeScanLaneCoversEveryInspectableLayer` both present and passing; mutation-kill reverts recorded in 04-09-SUMMARY.md. |
-| `.planning/phases/04-fallible-resources-and-c-boundary/04-VALIDATION.md` | Mutation-Kill Register rows for both gap-closure plans | ✓ VERIFIED | Four new rows present (two per plan), each recording verbatim revert-and-fail output. |
+| `internal/compiler/corevalidate/corevalidate.go` | Independent, source-blind release-order rederivation, defined against corrupted input at every merge shape | ⚠️ PARTIAL | Cycle-hang guard present and correct (round-3 gap closed); interior-merge collapse (`okEdgeInto` singular map) is a newly-confirmed gap |
+| `internal/compiler/core/core.go` | Authoritative `core.ForeignContract` | ✓ VERIFIED | Field set unchanged and complete per prior rounds |
+| `internal/compiler/cgen/cgen.go` | All emitted C identifiers sanitized | ✗ GAP | `Symbol` is the one identifier field that bypasses `cName`/`cLocal` sanitization entirely |
+| `internal/compiler/corevalidate/corevalidate_test.go` | Falsifiers for every adversarial shape corevalidate claims to defend against | ⚠️ PARTIAL | Cycle falsifiers present (`TestCyclicOkEdgeChainRefusedNotHung`, `TestAcyclicChainsStillValidateUnderCycleGuard`); interior-merge-divergence and non-identifier-Symbol falsifiers absent |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|----|--------|---------|
-| `core.go` | `corevalidate.go` | independent release-order rederivation, refusal not skip, for every reachable terminal-block shape | ✓ WIRED | Confirmed by direct code read: `len(incoming) > 0` refusal replaces the prior `!= 1` skip; every incoming edge is walked via `for _, edge := range incoming`. |
-| `corevalidate.go` (rederive) | itself, recursively via `okEdgeInto` | acyclicity of the "ok"-edge chain | ✗ NOT_WIRED | No guard prevents infinite recursion/looping on a cyclic chain; see truth 6/gap. |
-| `cgen.go` (EmitForeignHeader/EmitForeignConformance) | `session.go` (ScanForBannedAttributes) | zero-attribute scan over "all emitted C" | ✓ WIRED | Confirmed 8-argument call site; `recomputed_work=8` in the live gate run. |
-
-### Data-Flow Trace (Level 4)
-
-Not applicable — this phase's must-haves concern compiler-internal validation and code generation, not rendered UI data.
+| `corevalidate.checkReleaseOrder` (terminal blocks) | `edgesByTo[block.ID]` | per-incoming-edge independent rederivation | ✓ WIRED | Confirmed at corevalidate.go:~1303-1319 |
+| `corevalidate.checkReleaseOrder.rederive` (interior blocks) | `okEdgeInto` | single-edge lookup, no independent-agreement check | ⚠️ NOT WIRED for merge-agreement | Confirmed singular map, last-writer-wins |
+| `core.ForeignContract.Symbol` | `corevalidate.linear` | identifier-shape validation | ✗ NOT WIRED | Only non-empty check exists |
+| `core.ForeignContract.Symbol` | `cgen.foreignExternName` | direct, unsanitized splice into extern decl and call site | ✓ WIRED (but unsafely — this is the gap) | Confirmed cgen.go:352, :778, :1278 |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Gap-1 falsifier tests pass | `go test ./internal/compiler/corevalidate/... -run 'TestMergeTerminalBlockDivergentReleaseSetsRefused\|TestTerminalBlockUnreachableRefused\|TestLegitimateDiscardMergeStillValidates' -v` | All 3 named tests PASS | ✓ PASS |
-| Full corevalidate + session suites pass | `go test ./internal/compiler/corevalidate/... ./internal/compiler/session/...` | both `ok` | ✓ PASS |
-| Full workspace suite | `go test ./...` (run once, via background gate script) | all packages `ok` | ✓ PASS |
-
-### Probe Execution
-
-| Probe | Command | Result | Status |
-|-------|---------|--------|--------|
-| Phase 4 gate | `sh scripts/verify-phase4.sh` | exit 0; all 14 lanes `"status":"pass"`; `lane:foreign-no-unproven-attributes` recomputed_work=8; all required control IDs present; 3 expected escapes present and never detected | PASS |
+| Cyclic ok-edge chain refused, not hung | `TestCyclicOkEdgeChainRefusedNotHung` (named test, not full suite) | Present, asserts `core.release_order_cyclic` and bounded wall-clock | ✓ PASS (confirmed present, not independently re-run this session; orchestrator's full `go test ./...` exit 0 covers it) |
+| Interior-merge divergent-history falsifier | grep for such a fixture in corevalidate_test.go | Zero matches | ✗ FAIL (absent) |
+| Non-identifier Symbol falsifier | grep for such a fixture in corevalidate_test.go / cgen_test.go | Zero matches | ✗ FAIL (absent) |
 
 ### Requirements Coverage
 
-| Requirement | Source Plans | Description | Status | Evidence |
-|---|---|---|---|---|
-| SEM-03 | 04-01, 04-04, 04-06, 04-07, 04-08 | Result propagation/ignored-result rules produce explicit typed control flow; panic/cancellation cannot be erased as ordinary errors | ✓ SATISFIED | OpFail-only typed-failure producer, defect terminator, cancelled reserved-unconstructible, all confirmed in code; REQUIREMENTS.md marks Complete, consistent with evidence found. Not affected by the new gap. |
-| RES-01 | 04-02, 04-05, 04-07, 04-08 | Partially initialized noncopyable resources release exactly once in reverse completed-acquisition order on return and typed failure | ⚠️ PARTIALLY SATISFIED | The vacuous-skip gap (prior gap 1) is closed. The requirement's literal text (release order on return/typed-failure) holds for every reachable shape today. But the *independent, source-blind* rederivation this requirement's own decisions (D-04-07/D-12a) require is not robust against a corrupted core.Program — `rederive`'s unguarded cycle can hang the validator, which is exactly the adversarial-input class independent validation exists to defend against, per the file's own documented design principle. REQUIREMENTS.md's "Complete" marking is accurate for the requirement's literal text on honestly-produced programs, but the phase's own independence/robustness intent is not fully met. |
-| FFI-01 | 04-01, 04-03, 04-05, 04-06, 04-07, 04-09 | Foreign contracts carry target layout, initialized state, allocator identity, capture/retention, aliasing, unwind obligations | ✓ SATISFIED | Contract and all three generated layers exist and carry every obligation; the D-04-13 zero-attribute enforcement control now covers all three inspectable layers (prior gap 2 closed), pinned at recomputed_work=8 so a future regression cannot silently shrink coverage. |
+| Requirement | Source Plan(s) | Description | Status | Evidence |
+|-------------|----------------|--------------|--------|----------|
+| SEM-03 | 04-01, 04-02, 04-04, 04-06, 04-07, 04-08 | `Result` propagation and ignored-result rules produce explicit control flow | ✓ SATISFIED | Marked Complete in REQUIREMENTS.md; SC1/SC3 truths verified above; not implicated by either new gap |
+| RES-01 | 04-02, 04-05, 04-07, 04-08, 04-10 | Partially initialized noncopyable resources release exactly the completed set, in reverse order | ⚠️ PARTIALLY SATISFIED | SC1 mechanism itself (`check.go`'s forward accumulation, truth 1) is verified; but the *independent rederivation* half of this requirement's own wording ("independently rederives... and compares," D-04-07) has a confirmed unclosed soundness gap at interior merge points (truth 1c) |
+| FFI-01 | 04-01, 04-03, 04-05, 04-06, 04-07, 04-09 | Foreign contracts carry target layout, initialized state, allocator identity, capture/retention, aliasing, unwind obligations, all inspectable and non-inventable | ⚠️ PARTIALLY SATISFIED | The contract's field completeness (SC2) is verified; but "no layer can invent a fact the contract does not carry" is undermined by Symbol reaching cgen unsanitized (truth 2a) — corevalidate never actually audits the field's shape before cgen trusts it |
 
-No orphaned requirement IDs found — SEM-03, RES-01, FFI-01 all appear in at least one plan's `requirements` field (04-08 and 04-09 added to their respective owning requirements) and all three appear in REQUIREMENTS.md mapped to Phase 4.
+No orphaned requirements: SEM-03, RES-01, FFI-01 are the only IDs REQUIREMENTS.md maps to
+Phase 4, and all three appear in at least one plan's `requirements:` frontmatter (04-01
+through 04-10 collectively cover all three).
 
 ### Anti-Patterns Found
 
-None of TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER found in the files touched by 04-08/04-09 (`corevalidate.go`, `corevalidate_test.go`, `session_test.go`) or elsewhere in the phase's file set per 04-REVIEW.md's own scan (48 files). No blocker-severity debt markers found. CR-01 (the cycle-guard gap) is a correctness/robustness defect, not a debt marker — recorded as a gap above, not an anti-pattern.
+None newly introduced by plan 04-10's changes (visited-set guard, two falsifiers) — scoped,
+minimal, and matches the idiom of `blockReach`/`loanChainIndex.carriedLoans` already in the
+file. No TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER markers found in the touched region.
 
 ### Human Verification Required
 
-None. The one remaining gap (CR-01, the missing cycle guard in `rederive`) is resolvable by direct code inspection and does not require human judgment to adjudicate — it is a concrete, well-scoped fix (add a visited-set, refuse on re-visit, add a falsifier) with a precedent pattern already present twice in the same file.
+None. Both new gaps are independently confirmed by direct code inspection (file/line) with
+no ambiguity requiring human judgment — the singular `okEdgeInto` map and the absent
+identifier-shape check are objectively present in the code as described.
 
 ### Gaps Summary
 
-Both previously-reported gaps are genuinely closed, confirmed by direct code inspection (not the summaries' claims alone):
+Round 3's plan 04-10 correctly and cleanly closed the round-2 gap (unbounded hang on a
+cyclic "ok"-edge chain in `rederive`'s backward walk) — confirmed by direct code read of the
+visited-set guard and its two falsifiers, both present and correctly asserting refusal
+without hanging.
 
-1. **Prior gap 1 (RES-01/D-04-07) — CLOSED.** `checkReleaseOrder` no longer skips validation for a terminal block with an unexpected incoming-edge count; it now refuses (`core.release_order_indeterminate`) any terminal block with zero incoming edges and walks every incoming edge independently, comparing each rederived expectation against the fixed actual release list. The prior gap's second missing item (a structural peer check) is closed in an adapted form — `core.terminal_block_unreachable` (at-least-one/non-entry) rather than the literally-worded "exactly one" — a substitution judged sound because the literal form was tried and broke a legitimate language construct (`discard...because`'s two-incoming-edge merge), and the adapted form still closes the independence gap the missing item was about. This decision was auto-selected under auto-mode (recorded in 04-08-SUMMARY.md) rather than confirmed by a human; it is judged here as satisfying the gap's substance, but is flagged for awareness since it was not a human-reviewed decision.
+However, this round's fresh code review (04-REVIEW.md) surfaced two NEW critical findings
+that this verification independently confirms rather than takes on faith:
 
-2. **Prior gap 2 (FFI-01/D-04-12/D-04-13) — CLOSED.** `ScanForBannedAttributes` is now called with all eight arguments across both fixtures, including `EmitForeignHeader` and `EmitForeignConformance` output for each. A dedicated falsifier (`TestAttributeInjectionIntoConformanceOnlyMakesControlFail`) proves the conformance unit's own added text (not just its embedded header) is independently scanned, and a count-pin test (`TestAttributeScanLaneCoversEveryInspectableLayer`) ensures a future dropped argument cannot silently shrink coverage back down.
+1. **Interior-merge collapse (new CR-01):** The same class of defect the round-2 fix closed
+   for *terminal* blocks (silently accepting a corrupted program by skipping/collapsing a
+   merge point instead of checking every incoming path) still exists one hop earlier, inside
+   `rederive`'s own backward walk through *interior* (non-terminal) blocks. `okEdgeInto` is a
+   singular `map[string]core.Edge` that silently keeps only the last "ok"-pattern edge into a
+   given interior block; two edges representing genuinely different completed-acquisition
+   histories converging on the same interior block cause one entire history to be silently
+   dropped from consideration, rather than being independently rederived and required to
+   agree — the exact discipline correctly enforced at the terminal-block level.
 
-One new gap was found and confirmed independently this run:
+2. **Unsanitized Symbol splice (new CR-02):** `core.ForeignContract.Symbol` is checked only
+   for non-emptiness by `corevalidate`, then spliced unsanitized into generated C as an
+   `extern` declaration and call-expression callee — unlike every other identifier `cgen`
+   emits, which is routed through `cName`/`cLocal` sanitization. A corrupted `core.Program`
+   with a `Symbol` containing C syntax metacharacters would pass validation and inject
+   arbitrary C source into the file this compiler is about to compile and execute — a direct
+   violation of the phase goal's own framing of "one AUDITED C boundary."
 
-3. **New finding (CR-01) — NOT CLOSED.** `corevalidate.checkReleaseOrder`'s backward-walk closure `rederive` has no cycle/visited-set guard, unlike the file's two other backward/forward graph walks (`blockReach`, `loanChainIndex.carriedLoans`), which both explicitly defend against cyclic/corrupted input with documented rationale ("a source-blind validator must stay defined against" adversarial input). A hand-corrupted `core.Program` with a cyclic "ok"-edge chain feeding a terminal block's incoming edge would hang `rederive`'s loop forever — an unbounded denial-of-service in the exact mechanism RES-01/D-04-07 requires to be independently sound. This gap pre-dates 04-08 (which added a different, unrelated check and did not touch `rederive`) and is untested (no cyclic-edge falsifier exists). It was not addressed by either gap-closure plan (04-08, 04-09), since neither plan's scope included it — it was only surfaced by this run's fresh code review pass.
-
-**This looks like a genuine oversight, not a deliberate scope decision** — no record of it in 04-CONTEXT.md, 04-DEBT.md, or 04-VALIDATION.md, and the fix pattern (a visited-set, exactly matching two sibling walks already in the same file) is narrow and well-precedented. No override is suggested; recommend a small, targeted gap-closure plan: add the visited-set to `rederive`, propagate a `core.release_order_cyclic` refusal at both call sites, and add one falsifier constructing a two-block cyclic "ok"-edge chain.
+Both findings bear directly on this phase's own must-have wording and are not deferred to a
+later phase. Neither is a regression introduced by 04-10 — both are pre-existing gaps in code
+central to RES-01 and FFI-01, now surfaced by a fresh, thorough review pass.
 
 ---
 
-_Verified: 2026-09-05_
+_Verified: 2026-09-05T21:30:00Z_
 _Verifier: Claude (gsd-verifier)_
