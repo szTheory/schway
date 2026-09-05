@@ -1754,6 +1754,61 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 	}
 }
 
+// Phase 4's three new expected escapes (04-CONTEXT.md <deferred> "Accepted
+// residual limitations", re-recorded in 04-DEBT.md D-04-31), surfaced next to
+// the two carried Phase 2/3 escapes (corevalidate.KnownEscape,
+// originvalidate.KnownEscape) exactly as those two packages already surface
+// their own escapes: named, declared, and asserted visible under expected
+// escapes -- never claimed solved, and never permitted to appear as a
+// detected control (task 04-07-01).
+const (
+	// EscapeCoordinatedForeignBoundaryLie is T-04-07/D-04-31 item 1: a
+	// coordinated edit across the frozen foreign unit, the Lang declaration,
+	// and the conformance unit's own expectations passes the gate on a wrong
+	// boundary. No control in this repository closes a coordinated
+	// multi-artifact lie, matching corevalidate.KnownEscape's own shape one
+	// layer down.
+	EscapeCoordinatedForeignBoundaryLie = "escape:coordinated-foreign-boundary-lie"
+	// EscapeNonlocalExitBelowThePad is T-04-33/D-04-31 item 2, first half:
+	// the process-root setjmp pad cannot see a longjmp to a foreign-owned
+	// jmp_buf established below it (reachable only through foreign-invoked
+	// callbacks, a shape this phase's language cannot construct).
+	EscapeNonlocalExitBelowThePad = "escape:nonlocal-exit-below-the-pad"
+	// EscapeForeignProcessExit is T-04-33/D-04-31 item 2, second half:
+	// foreign exit()/_Exit()/raise() is not observable at all -- no pad seam
+	// exists for either.
+	EscapeForeignProcessExit = "escape:foreign-process-exit"
+)
+
+// Phase4RequiredControls is the complete Phase 4 required-control list
+// (D-04-22, task 04-07-01): every control identifier this phase introduced
+// across plans 01 through 06 -- the exhaustive dispatch control, both
+// foreign admission refusals, both release mutations, the layout mutation,
+// the zero-attribute control, the no-release-on-defect control, the unwind
+// allowlist, the nonlocal-exit detection, the terminator walk, and the
+// foreign-origin refusal. This is the single session-layer source of truth
+// TestPhase4RequiredControlsMatchScript compares against scripts/verify-phase4.sh's
+// own text -- a control added to one and forgotten in the other fails that
+// test. It deliberately excludes control:defect.signal_adjudicated, which
+// verifyForeignCorpus also enforces but which 04-VALIDATION.md's Required
+// Negative Controls register does not name as one of the twelve.
+func Phase4RequiredControls() []string {
+	return []string{
+		"control:kind.exhaustive_dispatch",
+		"control:foreign.call_target_not_foreign",
+		"control:foreign.unwind_policy_undeclared",
+		"control:resource.release_omitted",
+		"control:resource.release_order_transposed",
+		"control:foreign.layout_mismatch",
+		"control:foreign.no_unproven_attributes",
+		"control:defect.no_release_on_defect",
+		"control:foreign.unwind_forbidden",
+		"control:foreign.nonlocal_exit_undetected",
+		"control:terminator.walk_incomplete",
+		"control:origin.foreign_origin_omitted",
+	}
+}
+
 // verifyForeignCorpus is Phase 4's foreign-call gate dispatch, selected by
 // VerifyCorpus on the presence of foreign_acquire_one.lang, mirroring
 // verifyBorrowedCorpus's own dispatch precedent. It asserts the two
@@ -1765,6 +1820,7 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
 	started := time.Now()
 	result := protocol.New("verify", protocol.StatusPass)
+	result.ExpectedEscapes = []string{EscapeCoordinatedForeignBoundaryLie, EscapeNonlocalExitBelowThePad, EscapeForeignProcessExit}
 	addLane := func(id, status string, controls []string, work, outputBytes int, laneStarted time.Time) {
 		result.Lanes = append(result.Lanes, protocol.Lane{
 			Schema: "lang.verify-lane/0", ID: id, Status: status,
@@ -2184,20 +2240,82 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	}
 	addLane("lane:foreign-origin-omitted", "pass", []string{"control:origin.foreign_origin_omitted"}, foreignOriginChecked.Work+1, len(foreignOriginSource), laneStarted)
 
-	requiredControls := []string{
-		"control:foreign.unwind_policy_undeclared",
-		"control:foreign.call_target_not_foreign",
-		"control:resource.release_order_transposed",
-		"control:resource.release_omitted",
-		"control:foreign.layout_mismatch",
-		"control:foreign.no_unproven_attributes",
-		"control:foreign.unwind_forbidden",
-		"control:defect.no_release_on_defect",
-		"control:defect.signal_adjudicated",
-		"control:foreign.nonlocal_exit_undetected",
-		"control:terminator.walk_incomplete",
-		"control:origin.foreign_origin_omitted",
+	// Lane: control:kind.exhaustive_dispatch (D-04-22, task 04-07-01). This is
+	// the session-layer, CLI-observable sibling of core_test.go's
+	// TestAllOperationKindsHandledAtEverySite, which proves dispatch
+	// completeness in-process across all four phases' corpora combined; this
+	// lane proves the same claim is visible through `lang verify
+	// testdata/phase4` itself, scoped to the four operation kinds THIS phase
+	// introduced (OpForeignCall, OpRelease, OpFail, OpDefect) -- the kinds
+	// Phase 1-3's own corpora cannot exercise, so this corpus is the only
+	// place their dispatch completeness can be demonstrated through the
+	// shipped binary. It drives every dispatch-fixture already read above
+	// through corevalidate, pathoracle, originvalidate, interp, and cgen, and
+	// requires all four kinds to be encountered by at least one operation.
+	laneStarted = time.Now()
+	dispatchFixtures := []string{"foreign_acquire_one.lang", "acquire_three_success.lang", "defect_terminal.lang", "nonlocal_exit_probe.lang"}
+	encounteredKinds := make(map[core.OperationKind]bool)
+	dispatchWork := 0
+	for _, fixtureName := range dispatchFixtures {
+		fixtureSource, fixtureErr := readBoundedFile(filepath.Join(corpus, fixtureName), syntax.MaxSourceBytes)
+		if fixtureErr != nil {
+			addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, 0, laneStarted)
+			return fail(protocol.StatusOperational, "verify.fixture_missing", fixtureName)
+		}
+		fixtureChecked := Check(fixtureSource)
+		if len(fixtureChecked.Diagnostics) != 0 {
+			addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, len(fixtureSource), laneStarted)
+			return fail(protocol.StatusInvalid, "verify.fixture_rejected", fixtureName)
+		}
+		dispatchWork += fixtureChecked.Work
+		fixtureValidated := corevalidate.Validate(fixtureChecked.Program)
+		if !fixtureValidated.Valid {
+			addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+fixtureValidated.Checks, len(fixtureSource), laneStarted)
+			return fail(protocol.StatusInvalid, "verify.fixture_rejected", fixtureName)
+		}
+		dispatchWork += fixtureValidated.Checks
+		dispatchProgram := fixtureValidated.Program()
+		for _, function := range dispatchProgram.Functions {
+			if function.Linear != nil {
+				for _, operation := range function.Linear.Operations {
+					encounteredKinds[operation.Kind] = true
+				}
+				if function.Linear.ID != "" {
+					if _, _, oracleErr := pathoracle.RecomputeEndpoints(function); oracleErr != nil {
+						addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, len(fixtureSource), laneStarted)
+						return fail(protocol.StatusOperational, "verify.control_incomplete", "pathoracle dispatch error for "+fixtureName)
+					}
+				}
+			}
+			_ = originvalidate.RecomputeOriginPerReturn(function)
+			dispatchWork++
+			if function.Match != nil {
+				for _, arm := range function.Match.Arms {
+					if _, interpErr := interp.Run(dispatchProgram, function.Name, arm.Pattern); interpErr != nil {
+						addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, len(fixtureSource), laneStarted)
+						return fail(protocol.StatusOperational, "verify.control_incomplete", "interp dispatch error for "+fixtureName)
+					}
+					dispatchWork++
+				}
+			}
+		}
+		if len(dispatchProgram.Functions) == 1 {
+			if _, cgenErr := cgen.Emit(dispatchProgram); cgenErr != nil {
+				addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, len(fixtureSource), laneStarted)
+				return fail(protocol.StatusOperational, "verify.control_incomplete", "cgen dispatch error for "+fixtureName)
+			}
+			dispatchWork++
+		}
 	}
+	for _, kind := range []core.OperationKind{core.OpForeignCall, core.OpRelease, core.OpFail, core.OpDefect} {
+		if !encounteredKinds[kind] {
+			addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, 0, laneStarted)
+			return fail(protocol.StatusInvalid, "verify.control_missing", "control:kind.exhaustive_dispatch (kind "+string(kind)+" never encountered)")
+		}
+	}
+	addLane("lane:kind-exhaustive-dispatch", "pass", []string{"control:kind.exhaustive_dispatch"}, dispatchWork+1, 0, laneStarted)
+
+	requiredControls := append(append([]string(nil), Phase4RequiredControls()...), "control:defect.signal_adjudicated")
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {
 			return fail(protocol.StatusInvalid, "verify.control_missing", required)

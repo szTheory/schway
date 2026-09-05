@@ -1829,3 +1829,208 @@ func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
 		t.Fatalf("dropping a ledger-population site must make the leak count disagree with the golden run's (%d), but the mutated run reported the SAME count", goldenLeaks)
 	}
 }
+
+// TestVerifyPhase4ControlsAndWork is task 04-07-01's own control-and-work
+// pin, matching TestVerifyPhase2ControlsAndWork/TestVerifyPhase3ControlsAndWork's
+// established shape: every one of session.Phase4RequiredControls()'s twelve
+// identifiers must be observed by the in-process VerifyCorpus path with
+// nonzero recomputed work on every lane, and the phase's three new expected
+// escapes must be declared without ever appearing as a detected control.
+func TestVerifyPhase4ControlsAndWork(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	found := make(map[string]bool)
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			found[control] = true
+		}
+	}
+	for _, control := range session.Phase4RequiredControls() {
+		if !found[control] {
+			t.Fatalf("missing required Phase 4 control %s: lanes=%+v", control, result.Lanes)
+		}
+	}
+	expectedEscapes := map[string]bool{}
+	for _, escape := range result.ExpectedEscapes {
+		expectedEscapes[escape] = true
+	}
+	for _, escape := range []string{session.EscapeCoordinatedForeignBoundaryLie, session.EscapeNonlocalExitBelowThePad, session.EscapeForeignProcessExit} {
+		if !expectedEscapes[escape] {
+			t.Fatalf("Phase 4 verify omitted an expected escape: %s (got %+v)", escape, result.ExpectedEscapes)
+		}
+		if found[escape] {
+			t.Fatalf("expected escape %s must never appear as a detected control: lanes=%+v", escape, result.Lanes)
+		}
+	}
+}
+
+// TestVerifyPhase4CLI proves TestVerifyPhase4ControlsAndWork's claim holds
+// through the shipped binary, not only the in-process session layer
+// (D-04-21's "the gate only ever sees what ships with it"): `lang --json
+// verify testdata/phase4` must report every required Phase 4 control and
+// every expected escape.
+func TestVerifyPhase4CLI(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	corpus := testsupport.ProjectPath("testdata", "phase4")
+	run := testsupport.RunCLI(t, binary, nil, "--json", "verify", corpus)
+	if run.Exit != 0 || len(run.Stderr) != 0 {
+		t.Fatalf("verify testdata/phase4: %+v", run)
+	}
+	var decoded protocol.Result
+	if err := json.Unmarshal(run.Stdout, &decoded); err != nil {
+		t.Fatalf("decode verify output: %v (stdout=%s)", err, run.Stdout)
+	}
+	if decoded.Status != protocol.StatusPass {
+		t.Fatalf("verify status=%s stdout=%s", decoded.Status, run.Stdout)
+	}
+	found := make(map[string]bool)
+	for _, lane := range decoded.Lanes {
+		for _, control := range lane.Controls {
+			found[control] = true
+		}
+	}
+	for _, control := range session.Phase4RequiredControls() {
+		if !found[control] {
+			t.Fatalf("shipped binary omitted required Phase 4 control %s: stdout=%s", control, run.Stdout)
+		}
+	}
+	escapes := make(map[string]bool)
+	for _, escape := range decoded.ExpectedEscapes {
+		escapes[escape] = true
+	}
+	for _, escape := range []string{session.EscapeCoordinatedForeignBoundaryLie, session.EscapeNonlocalExitBelowThePad, session.EscapeForeignProcessExit} {
+		if !escapes[escape] {
+			t.Fatalf("shipped binary omitted expected escape %s: stdout=%s", escape, run.Stdout)
+		}
+	}
+}
+
+// phase4VerifierScriptText and phase4OwnControlBlock are shared helpers for
+// TestPhase4VerifierScriptContract and TestPhase4RequiredControlsMatchScript
+// below: both tests read scripts/verify-phase4.sh's own text, so the second
+// pulls its extraction into a helper rather than re-reading the file.
+func phase4VerifierScriptText(t testing.TB) string {
+	t.Helper()
+	data, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase4.sh"))
+	if err != nil {
+		t.Fatalf("read scripts/verify-phase4.sh: %v", err)
+	}
+	return string(data)
+}
+
+// phase4OwnControlIdentifiers extracts the exact set of `control:` tokens
+// from the script's OWN required-control block (the `for control in ...`
+// loop following the "Phase 4's own required-control set" comment), as
+// distinct from the earlier block re-asserting Phase 3's non-regression
+// controls against phase3.json -- conflating the two blocks would let a
+// Phase 3 control identifier masquerade as a Phase 4 one.
+func phase4OwnControlIdentifiers(t testing.TB, text string) []string {
+	t.Helper()
+	anchor := "Phase 4's own required-control set"
+	anchorIndex := strings.Index(text, anchor)
+	if anchorIndex == -1 {
+		t.Fatalf("scripts/verify-phase4.sh is missing its own required-control-set comment anchor")
+	}
+	rest := text[anchorIndex:]
+	doneIndex := strings.Index(rest, "\ndone")
+	if doneIndex == -1 {
+		t.Fatalf("scripts/verify-phase4.sh's own required-control block has no closing done")
+	}
+	block := rest[:doneIndex]
+	var identifiers []string
+	for _, line := range strings.Split(block, "\n") {
+		trimmed := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(line), "\\"))
+		if strings.HasPrefix(trimmed, "control:") {
+			identifiers = append(identifiers, trimmed)
+		}
+	}
+	return identifiers
+}
+
+// TestPhase4VerifierScriptContract is task 04-07-01's contract test over the
+// gate script's own text (T-04-41): it asserts the script never invokes a
+// previous-phase gate script (T-04-42), never touches scripts/verify-phase3.sh,
+// and names every one of the twelve required Phase 4 control identifiers.
+func TestPhase4VerifierScriptContract(t *testing.T) {
+	text := phase4VerifierScriptText(t)
+	for _, forbidden := range []string{"verify-phase1.sh", "verify-phase2.sh", "verify-phase3.sh"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("scripts/verify-phase4.sh must never invoke a previous-phase gate script, but its text contains %q", forbidden)
+		}
+	}
+	for _, control := range session.Phase4RequiredControls() {
+		if !strings.Contains(text, control) {
+			t.Fatalf("scripts/verify-phase4.sh's text is missing required control %s", control)
+		}
+	}
+	phase3Path := testsupport.ProjectPath("scripts", "verify-phase3.sh")
+	if _, err := os.Stat(phase3Path); err != nil {
+		t.Fatalf("scripts/verify-phase3.sh must still exist unchanged: %v", err)
+	}
+}
+
+// TestPhase4RequiredControlsMatchScript asserts set equality between
+// session.Phase4RequiredControls() and the identifiers named in the
+// script's own required-control block, so a control added to one and
+// forgotten in the other fails here rather than silently drifting apart.
+func TestPhase4RequiredControlsMatchScript(t *testing.T) {
+	text := phase4VerifierScriptText(t)
+	fromScript := phase4OwnControlIdentifiers(t, text)
+	scriptSet := make(map[string]bool, len(fromScript))
+	for _, control := range fromScript {
+		scriptSet[control] = true
+	}
+	sessionSet := make(map[string]bool, len(session.Phase4RequiredControls()))
+	for _, control := range session.Phase4RequiredControls() {
+		sessionSet[control] = true
+	}
+	for control := range sessionSet {
+		if !scriptSet[control] {
+			t.Fatalf("session.Phase4RequiredControls() names %s, which the script's own required-control block does not", control)
+		}
+	}
+	for control := range scriptSet {
+		if !sessionSet[control] {
+			t.Fatalf("the script's required-control block names %s, which session.Phase4RequiredControls() does not", control)
+		}
+	}
+	if len(scriptSet) != len(sessionSet) {
+		t.Fatalf("script control set (%d) and session control set (%d) differ in size: script=%v session=%v", len(scriptSet), len(sessionSet), fromScript, session.Phase4RequiredControls())
+	}
+}
+
+// TestExpectedEscapesAreVisibleNotSolved is task 04-07-01's expected-escape
+// visibility control: the three Phase 4 expected escapes must be declared
+// under the verify result's expected escapes, and none of the three may
+// ever appear as a detected lane control -- an accepted residual claimed
+// solved would be a false positive of exactly the kind this project has
+// never tolerated (D-04-31).
+func TestExpectedEscapesAreVisibleNotSolved(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v", result.Status, result.Diagnostics)
+	}
+	declared := make(map[string]bool, len(result.ExpectedEscapes))
+	for _, escape := range result.ExpectedEscapes {
+		declared[escape] = true
+	}
+	detected := make(map[string]bool)
+	for _, lane := range result.Lanes {
+		for _, control := range lane.Controls {
+			detected[control] = true
+		}
+	}
+	for _, escape := range []string{session.EscapeCoordinatedForeignBoundaryLie, session.EscapeNonlocalExitBelowThePad, session.EscapeForeignProcessExit} {
+		if !declared[escape] {
+			t.Fatalf("expected escape %s is not declared: %+v", escape, result.ExpectedEscapes)
+		}
+		if detected[escape] {
+			t.Fatalf("expected escape %s must never be presented as a detected control: lanes=%+v", escape, result.Lanes)
+		}
+	}
+}
