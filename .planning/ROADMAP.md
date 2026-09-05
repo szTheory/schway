@@ -177,7 +177,10 @@ changes that cost nothing structurally:
   3. Panic cannot cross the ordinary non-unwinding C boundary, and a foreign nonlocal exit cannot silently bypass Lang cleanup.
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
-**Plans**: 7/7 plans executed
+**Plans**: 9 plans (7/7 executed; 04-08 and 04-09 are gap-closure plans from 04-VERIFICATION.md's two confirmed gaps)
+
+- [ ] `04-08-PLAN.md` — gap closure: make the merge-terminal release-order rederivation falsifiable and add its structural peer check
+- [ ] `04-09-PLAN.md` — gap closure: the conformance-layer attribute falsifier and a pin on the scan's artifact count
 
 - [x] 04-01-PLAN.md
 - [x] 04-02-PLAN.md
