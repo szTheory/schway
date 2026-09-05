@@ -1,6 +1,6 @@
 ---
 phase: 04-fallible-resources-and-c-boundary
-reviewed: 2026-09-05T00:00:00Z
+reviewed: 2026-09-05T20:51:14Z
 depth: standard
 files_reviewed: 48
 files_reviewed_list:
@@ -17,6 +17,7 @@ files_reviewed_list:
   - internal/compiler/evidence/evidence_test.go
   - internal/compiler/execution/execution.go
   - internal/compiler/interp/interp.go
+  - internal/compiler/interp/interptestdirect/interptestdirect.go
   - internal/compiler/native/foreign_nonlocal.go
   - internal/compiler/native/foreign_resource.go
   - internal/compiler/native/native.go
@@ -39,6 +40,8 @@ files_reviewed_list:
   - native/lang_foreign_resource.c
   - native/lang_foreign_resource_private.h
   - scripts/verify-phase4.sh
+  - .github/workflows/ci.yml
+  - .gitignore
   - testdata/phase4/acquire_three_fail_second.lang
   - testdata/phase4/acquire_three_fail_third.lang
   - testdata/phase4/acquire_three_success.lang
@@ -52,10 +55,10 @@ files_reviewed_list:
   - testdata/phase4/foreign_unwind_undeclared.lang
   - testdata/phase4/nonlocal_exit_probe.lang
 findings:
-  critical: 1
+  critical: 2
   warning: 1
   info: 1
-  total: 3
+  total: 4
 status: issues_found
 ---
 
@@ -68,98 +71,141 @@ status: issues_found
 
 ## Summary
 
-This pass re-reviews the full Phase 4 file set with closest attention on the two newest gap-closure plans: 04-08 (`corevalidate.go`'s per-incoming-edge release-order rederivation and the new `core.terminal_block_unreachable` structural peer check in `blocksAndEdges`, plus `corevalidate_test.go`'s falsifiers) and 04-09 (`session_test.go`'s conformance-layer injection falsifier and the scanned-artifact-count pin). Both of those changes are sound and well-tested: `TestMergeTerminalBlockDivergentReleaseSetsRefused` / `TestMergeTerminalBlockAgreeingChainsAccepted` correctly falsify and confirm the fixed per-edge rederivation from CR-01 of the prior review pass, `TestTerminalBlockUnreachableRefused` correctly proves the new structural peer check, and `TestAttributeScanLaneCoversEveryInspectableLayer` correctly pins the production lane's scanned-artifact count to 8 so a dropped argument turns the test red rather than silently degrading coverage. The four findings recorded as fixed in `04-REVIEW-FIX.md` (CR-01, WR-01, WR-02, WR-03) all hold up against the current code; none are re-reported here.
+This is a re-review after the third round of gap closure (plan 04-10, commits f875062..97a73a8), which added a visited-set cycle guard to `checkReleaseOrder`'s `rederive` backward walk in `internal/compiler/corevalidate/corevalidate.go` and two falsifiers (`TestCyclicOkEdgeChainRefusedNotHung`, `TestAcyclicChainsStillValidateUnderCycleGuard`) in `corevalidate_test.go`.
 
-One new critical gap survived both this pass and the prior one: `corevalidate.checkReleaseOrder`'s own backward-walk helper (`rederive`, corevalidate.go:1236-1255) has no cycle protection, unlike every other backward/forward graph walk in the same file (`blockReach`, `loanChainIndex.carriedLoans`) which explicitly guard against a cyclic declared graph and document why they must. A hand-corrupted `core.Program` with a cyclic chain of `"ok"`-pattern edges among non-terminal blocks causes `rederive`'s `for { ... }` loop to run forever, hanging validation — precisely the class of adversarial input this package's own comments (e.g. the `carriedLoans` doc comment) say a source-blind validator "must stay defined against."
+The prior review's CR-01 (unbounded loop / DoS hang on a cyclic `"ok"`-edge chain) is verified fixed: the `visited` map at `corevalidate.go:1252-1258` correctly refuses re-entry into an already-visited block with `core.release_order_cyclic` rather than looping, the guard is allocated fresh per call to `rederive` (no cross-call state leakage), and the two new falsifiers correctly exercise both the refusal path (with a bounded-wall-clock assertion proving it does not hang) and the accepting path (proving the guard costs nothing on every existing acyclic fixture, pinned at an unchanged `Checks` count). This closes the gap cleanly.
 
-One warning and one info item round out the pass.
+However, this pass found two new critical issues that survived (or were newly exposed by) the full-scope review, plus one warning and one info item carried forward as still-open observations:
+
+1. `checkReleaseOrder`'s own fix for merge points only covers a terminal block's *own direct* incoming edges (the CR-01-from-the-prior-round fix, `blocksAndEdges`/the per-incoming-edge loop). The single-edge `okEdgeInto` map used to hop backward through *interior* (non-terminal) blocks still silently collapses to one arbitrary edge when more than one `"ok"`-pattern edge targets the same interior block — a distinct, untested soundness gap from the fixed hang.
+2. `corevalidate` never checks that `core.ForeignContract.Symbol` is a syntactically safe C identifier before `cgen.Emit`/`cgen.EmitNative` splice it, unsanitized, directly into generated C source as an `extern` declaration and as a call-expression callee — a code-injection gap in the one boundary explicitly designed to defend against a corrupted, non-source-derived `core.Program`.
 
 ## Critical Issues
 
-### CR-01: `corevalidate.checkReleaseOrder`'s backward rederivation walk has no cycle guard and can loop forever on a corrupted core.Program
+### CR-01: `checkReleaseOrder`'s backward walk silently collapses multiple incoming `"ok"` edges into the SAME interior block, unlike the already-fixed handling for a terminal block's own incoming edges
 
-**File:** `internal/compiler/corevalidate/corevalidate.go:1236-1255` (the loop is the `rederive` closure; the vulnerable step is line 1251, `currentBlockID = edge.FromBlockID`)
+**File:** `internal/compiler/corevalidate/corevalidate.go:1205-1213` (the `okEdgeInto` map construction) and `:1260-1271` (`rederive`'s use of it)
 **Issue:**
 
 ```go
-rederive := func(startEdge core.Edge) []core.LinearOperation {
-    var expected []core.LinearOperation
-    includeThis := startEdge.Pattern == "ok"
-    currentBlockID := startEdge.FromBlockID
-    for {
-        v.checks++
-        if includeThis {
-            if op, ok := callInBlock[currentBlockID]; ok {
-                expected = append(expected, op)
-            }
-        }
-        edge, ok := okEdgeInto[currentBlockID]
-        if !ok {
-            break
-        }
-        currentBlockID = edge.FromBlockID
-        includeThis = true
+edgesByTo := make(map[string][]core.Edge, len(linear.Edges))
+okEdgeInto := make(map[string]core.Edge, len(linear.Edges))
+for _, edge := range linear.Edges {
+    edgesByTo[edge.ToBlockID] = append(edgesByTo[edge.ToBlockID], edge)
+    if edge.Pattern == "ok" {
+        okEdgeInto[edge.ToBlockID] = edge   // last "ok" edge into this block wins; any earlier one is silently discarded
     }
-    return expected
 }
+...
+edge, ok := okEdgeInto[currentBlockID]   // rederive's backward hop through an INTERIOR block
+if !ok {
+    break
+}
+currentBlockID = edge.FromBlockID
 ```
 
-`okEdgeInto` is `map[string]core.Edge` keyed by `ToBlockID`, built directly from `linear.Edges` with no acyclicity requirement enforced anywhere earlier in `Validate`. `blocksAndEdges` (corevalidate.go:376-476) checks edge/block ID uniqueness and referential closure — every edge's endpoints resolve to a declared block — but never checks that the block graph is acyclic. If a hand-corrupted (or buggy-producer) `core.Program` declares two blocks A and B with `"ok"` edges A→(something)→...→B and B→...→A (i.e., `okEdgeInto[A]`'s `FromBlockID` chain eventually reaches B, and `okEdgeInto[B]`'s chain reaches back to A), then `rederive`'s `for { }` loop bounces between them forever: `ok` stays `true` on every iteration (a cyclic chain never returns `!ok` from the map lookup), so the loop never hits its only `break`.
+The 04-08/04-10 fix correctly closed the gap for a *terminal* block's own incoming edges: the outer loop in `checkReleaseOrder` (corevalidate.go:1284-1319) fetches `incoming := edgesByTo[block.ID]` — every edge, from `edgesByTo`, not just one — and walks `rederive` independently for each one, comparing every result against the block's single fixed release list (`TestMergeTerminalBlockDivergentReleaseSetsRefused` proves this). But `rederive`'s own backward hop through every *interior* block it passes through on the way back to the entry uses `okEdgeInto`, a `map[string]core.Edge` (singular, not a slice) keyed by `ToBlockID` that keeps only the last `"ok"`-pattern edge seen for a given target block during construction. If a hand-corrupted `core.Program` declares two `"ok"`-pattern edges from two different blocks A and A′ into the SAME interior (non-terminal) block T — where A and A′ represent genuinely different completed-acquisition histories — `okEdgeInto[T]` silently keeps only one of them (whichever appears last in `linear.Edges`' iteration order), and the backward walk from any terminal block reachable through T only ever rederives the history through the kept edge. The path through the discarded edge is never independently rederived or compared at all, so a corrupted program whose T-via-A′ path acquires/releases a different set of resources than T-via-A silently passes as long as the *kept* path happens to agree with the terminal block's declared release list.
 
-This is the same shape of adversarial input the file explicitly defends against elsewhere with visited-sets — `loanChainIndex.carriedLoans`'s doc comment states plainly: "A self-referencing or cyclic parent pointer can only arise from a corrupted core artifact... but this helper must never crash on one: a recursive walk would recurse forever... which is precisely the kind of adversarial input a source-blind validator must stay defined against"; `blockReach`'s doc comment makes the identical argument for its own BFS ("a visited-once frontier, never re-enqueued, so the computation terminates in bounded time even over an (illegitimately) cyclic declared graph"). `checkReleaseOrder`'s `rederive` walk is the one backward-graph-traversal in this file that lacks the equivalent guard, and it is reachable from `Validate` on any function whose `Linear.Blocks`/`Linear.Edges` are populated (any branch-shaped function, via `replayBlocks` → `checkReleaseOrder`) — not gated behind any earlier acyclicity check. `corevalidate_test.go` has extensive merge-terminal-block falsifiers (`TestMergeTerminalBlockDivergentReleaseSetsRefused`, `TestMergeTerminalBlockAgreeingChainsAccepted`) added by the 04-08 gap-closure plan, but no falsifier constructs a cyclic `"ok"`-edge chain, so this gap is untested and unfixed by that plan.
+This is materially the same class of gap CR-01 in the prior review closed for terminal blocks (silently skipping a merge point's disagreeing path instead of independently checking every path into it), just one level removed — it is the identical `okEdgeInto` map that motivated `blocksAndEdges`'/the CR-01 fix's own explanatory comment ("What this rederivation cannot tolerate is SKIPPING the check for a merge point... checking against every incoming edge, not skipping the block, is what closes the gap") but that fix was applied only at the outer per-terminal-block loop, never inside `rederive`'s own interior-block hop. No fixture or falsifier in `corevalidate_test.go` constructs two `"ok"` edges converging on a *non-terminal* block (`TestMergeTerminalBlockDivergentReleaseSetsRefused`/`TestMergeTerminalBlockAgreeingChainsAccepted` both add the second edge directly into the terminal `success` block, never into an interior `step:N` block), so this gap is untested and unfixed.
 
-Because `corevalidate.Validate` is documented as source-blind and independent-of-the-checker by design (its entire reason for existing is to stay defined against a corrupted or adversarially hand-constructed `core.Program`, not just one honestly produced by `check.go`), an infinite loop here is a real denial-of-service against any caller that runs untrusted or fuzzed core artifacts through validation — the compiler process simply hangs, consuming CPU forever, with no timeout or bound anywhere in the call chain.
+check.go's own honest lowering (`checkResourceLifecycle`) never produces two `"ok"`-pattern edges into the same block (each step's single successor is either the next step's block or the success block, and a `discard`'s two edges into the same target use patterns `"ok"` and `"err"`, never `"ok"`/`"ok"`), so this cannot be triggered by the compiler's own pipeline today. It is exactly the shape corevalidate's own stated purpose — defending against a corrupted or adversarially hand-constructed `core.Program`, independent of whether check.go could have produced it — exists to catch, and it does not.
 
-**Fix:** Add a visited-set to `rederive`, the same shape `carriedLoans` and `blockReach` already use, and treat re-visiting a block during the backward walk as a hard refusal (a cyclic release-order chain is itself evidence of a corrupted core artifact, not a shape to silently truncate):
+**Fix:** Change `okEdgeInto` to `map[string][]core.Edge` and, inside `rederive`, when more than one `"ok"` edge targets the current block, walk each one independently (recursively) and require they all rederive an identical accumulated release set before continuing — the same "every path must agree" principle already applied one level out for terminal blocks:
 
 ```go
-rederive := func(startEdge core.Edge) ([]core.LinearOperation, bool) {
-    var expected []core.LinearOperation
-    includeThis := startEdge.Pattern == "ok"
-    currentBlockID := startEdge.FromBlockID
-    visited := make(map[string]bool)
-    for {
-        if visited[currentBlockID] {
-            return nil, false // cyclic ok-edge chain: refuse, do not loop forever
-        }
-        visited[currentBlockID] = true
-        v.checks++
-        if includeThis {
-            if op, ok := callInBlock[currentBlockID]; ok {
-                expected = append(expected, op)
-            }
-        }
-        edge, ok := okEdgeInto[currentBlockID]
-        if !ok {
-            break
-        }
-        currentBlockID = edge.FromBlockID
-        includeThis = true
+okEdgesInto := make(map[string][]core.Edge, len(linear.Edges))
+for _, edge := range linear.Edges {
+    edgesByTo[edge.ToBlockID] = append(edgesByTo[edge.ToBlockID], edge)
+    if edge.Pattern == "ok" {
+        okEdgesInto[edge.ToBlockID] = append(okEdgesInto[edge.ToBlockID], edge)
     }
-    return expected, true
+}
+...
+candidates := okEdgesInto[currentBlockID]
+if len(candidates) == 0 {
+    break
+}
+if len(candidates) > 1 {
+    // every incoming "ok" edge into this interior block must independently
+    // rederive the SAME accumulated history before the walk can trust any one of them
+    var first []core.LinearOperation
+    for i, candidate := range candidates {
+        sub, ok := rederive(candidate) // requires refactoring rederive to be safely re-entrant / iterative-with-explicit-stack
+        if !ok {
+            return nil, false
+        }
+        if i == 0 {
+            first = sub
+        } else if !reflect.DeepEqual(first, sub) {
+            v.check(false, "core.release_order_ambiguous_merge", currentBlockID)
+            return nil, false
+        }
+    }
+    return append(expected, first...), true
+}
+edge := candidates[0]
+currentBlockID = edge.FromBlockID
+```
+
+Add a falsifier constructing two `"ok"`-pattern edges into a shared interior `step:N` block from two blocks with different completed-acquisition histories, asserting `Validate` refuses it (rather than silently accepting via the arbitrarily-kept edge), plus a companion accepting-path test where both incoming edges genuinely agree.
+
+### CR-02: `corevalidate` never validates `ForeignContract.Symbol` as a safe C identifier before `cgen` splices it unsanitized into generated C source — a code-injection gap in the validator's own stated adversarial threat model
+
+**File:** `internal/compiler/corevalidate/corevalidate.go:311` (the only check ever applied to `Symbol`); `internal/compiler/cgen/cgen.go:352-373`, `:441`, `:778`, `:1278-1308`
+**Issue:** `corevalidate.linear` requires only that `Symbol` is non-empty:
+
+```go
+if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
+    return false
 }
 ```
 
-and propagate the `false` result to `v.check(false, "core.release_order_cyclic", block.ID)` at each of the two call sites in `checkReleaseOrder`'s main loop (corevalidate.go:1288-1298). Add a falsifier constructing a two-block `"ok"`-edge cycle feeding into a terminal block's incoming edge, asserting the validator returns (does not hang) and refuses with the new code.
+No check anywhere in `corevalidate.go` requires `Symbol` to match a valid C identifier (e.g. `^[A-Za-z_][A-Za-z0-9_]*$`). `cgen.go` then splices this string directly, unescaped and unvalidated, into generated C source as an identifier in three places:
+
+```go
+func foreignExternName(symbol string) string { return "_LANG_" + symbol }
+...
+symbolC := foreignExternName(function.ForeignContract.Symbol)
+resultType := symbolC + "_result"
+fmt.Fprintf(&out, "extern %s %s(unsigned char argument);\n\n", resultType, symbolC)
+...
+fmt.Fprintf(&out, "  %s %s = %s(%s); /* %s */\n", resultType, resultLocal, symbolC, locals[lastOp.SourceID], lastOp.ID)
+```
+
+Unlike every other identifier `cgen.go` emits — type names, function names, parameter names, place names — which are routed through `cName`/`cLocal` (both of which strip every character outside `[A-Za-z0-9_]` and replace it with `_`, per their own documented invariant), `Symbol` reaches the output completely raw. A `core.Program` with `ForeignContract.Symbol` set to something like `"real_symbol); } int LANG_pwned(void) { system(\"id\"); return 0"` would pass `corevalidate.Validate` (the only gate `cgen.Emit`/`cgen.EmitNative` run before generating C text — see `cgen.go:16-20` and `:40-45`) and then have that entire string spliced verbatim into the `extern` declaration and the call-expression line, breaking out of the intended single declaration/call and injecting arbitrary top-level C source (including a full function definition with an arbitrary body) into the file this compiler is about to compile and, in `session.RunNative`, execute.
+
+`corevalidate.go`'s own package doc and inline comments repeatedly state its entire reason for existing is to stay defined against "a corrupted or adversarially hand-constructed `core.Program`" reaching `cgen`/`interp`, independent of whether `check.go`'s own parser-level identifier restrictions would ever produce such a `Symbol` (in the honest pipeline, `Symbol` originates from a lexer identifier token and is therefore always identifier-shaped — but `cgen.Emit`/`EmitNative` are exported functions that accept any `core.Program`, and `corevalidate.Validate` is the one documented, source-blind gate standing between an arbitrary caller-supplied `core.Program` and C source generation). No test in `cgen_test.go` or `corevalidate_test.go` constructs a `Symbol` containing a non-identifier character, so this gap is untested.
+
+**Fix:** Add an identifier-shape check to `corevalidate.linear`'s existing `ForeignContract` validation block, alongside the existing non-empty check:
+
+```go
+var validCIdentifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+...
+if !v.check(validCIdentifier.MatchString(function.ForeignContract.Symbol), "foreign.symbol_not_identifier", operation.ID) {
+    return false
+}
+```
+
+placed immediately after the existing `core.foreign_contract_missing` check at corevalidate.go:300-302, so a `Symbol` that is non-empty but not identifier-shaped is refused before `cgen` ever sees it. Add a falsifier in `corevalidate_test.go` that mutates a valid foreign-call program's `ForeignContract.Symbol` to contain a semicolon/parenthesis/newline and asserts refusal with the new code, alongside a regression test in `cgen_test.go` proving `cgen.Emit` is never reached (or, if reached directly bypassing corevalidate, that it independently refuses) with such a `Symbol`.
 
 ## Warnings
 
-### WR-01: `TestReleaseOrderValidationWorkSeries`'s monotonic-work assertion does not by itself prove linearity, and is loosely coupled to the new per-incoming-edge cost
+### WR-01: `TestReleaseOrderValidationWorkSeries`'s monotonic-work assertion does not by itself prove linearity, and does not model the per-incoming-edge cost the 04-08/04-10 fixes introduced
 
-**File:** `internal/compiler/corevalidate/corevalidate_test.go:703-731`
-**Issue:** The test's own doc comment claims it "proves the validator's release-order rederivation cost is linear in the number of blocks plus edges plus operations," but the test body only asserts the three-point `series` is strictly increasing (`series[index] <= series[index-1]` fails the test). A strictly-increasing series is consistent with linear, quadratic, or any other superlinear growth in the fixture sizes used — it does not distinguish "linear" from "quadratic in the number of incoming edges per terminal block," which is exactly the shape the 04-08 fix (walking every incoming edge into a terminal block, corevalidate.go:1288) newly introduces. This isn't a functional defect, but the doc comment overstates what the assertion actually establishes, and a future accidental quadratic blowup in `checkReleaseOrder` (e.g. from a terminal block with many incoming edges each triggering a full backward walk) would not be caught by this test.
-**Fix:** Either soften the doc comment to describe what is actually checked ("proves the counted work does not regress to a constant, i.e. it grows with fixture size") or strengthen the assertion to fit at least four points and check a ratio bound consistent with linear growth (e.g. `series[i+1]-series[i]` staying within a bounded multiple of the size delta).
+**File:** `internal/compiler/corevalidate/corevalidate_test.go:709-732`
+**Issue:** The test's doc comment claims it "proves the validator's release-order rederivation cost is linear in the number of blocks plus edges plus operations," but the test body only asserts the three-point `series` is strictly increasing. A strictly increasing series is consistent with linear, quadratic, or worse growth — it does not distinguish "linear" from "quadratic in incoming-edge-count per terminal block" (the per-edge `rederive` loop introduced by the 04-08 fix) or "quadratic in interior-merge fan-in" (were CR-01 above to be fixed with the recursive-per-edge approach sketched there). This was already flagged in the prior review pass and remains unaddressed.
+**Fix:** Either soften the doc comment to describe what is actually checked ("proves the counted work does not regress to a constant, i.e. it grows with fixture size") or strengthen the assertion to fit at least four points and check a ratio bound consistent with linear growth.
 
 ## Info
 
-### IN-01: `checkReleaseOrder`'s new per-incoming-edge loop recomputes `actual` once but calls `rederive` (a full backward graph walk) once per incoming edge, which is fine functionally but makes the big-O of a single terminal block's check proportional to `incoming-edge-count × chain-depth` rather than `chain-depth` alone
+### IN-01: `checkReleaseOrder`'s per-incoming-edge loop makes a single terminal block's check cost proportional to `incoming-edge-count × chain-depth`, not modeled by `LinearWorkLimit`
 
-**File:** `internal/compiler/corevalidate/corevalidate.go:1288-1298`
-**Issue:** This is a correctness-required cost (per the CR-01 fix rationale in `04-REVIEW-FIX.md`: every incoming edge must be independently walked and compared, since a merge point can only be safely accepted if every path agrees), not a defect — flagged only as a note for anyone reading the `LinearWorkLimit`/`TestReleaseOrderValidationWorkSeries` cost-accounting comments elsewhere in the file, since a terminal block with many incoming merge edges (not exercised by any current fixture) will visibly increase `v.checks` beyond what the existing scale-shape formula (`LinearWorkLimit`) accounts for. Performance is out of scope for this review; this is purely a note that the two cost-tracking mechanisms (`LinearWorkLimit`'s formula and `TestReleaseOrderValidationWorkSeries`'s monotonic check) do not currently model this dimension.
-**Fix:** None required; consider a fixture with a terminal block reached by 3+ incoming edges if `LinearWorkLimit`'s formula is ever asserted against a shape like this in the future.
+**File:** `internal/compiler/corevalidate/corevalidate.go:1284-1319`
+**Issue:** Carried forward from the prior review as a documentation-only note, not a defect: no current fixture exercises a terminal block reached by 3+ incoming edges, so `LinearWorkLimit`'s facts-based formula and `TestReleaseOrderValidationWorkSeries`'s monotonic check do not currently model this cost dimension. Performance is out of scope for this review.
+**Fix:** None required; consider a fixture with 3+ incoming edges into one terminal block if `LinearWorkLimit` is ever asserted against that shape in the future.
 
 ---
 
-_Reviewed: 2026-09-05_
+_Reviewed: 2026-09-05T20:51:14Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
