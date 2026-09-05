@@ -16,12 +16,12 @@
     {
       "number": "3",
       "name": "Borrowed Views and CFG Lifetimes",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "4",
       "name": "Fallible Resources and C Boundary",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "5",
@@ -36,8 +36,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 3 of 6 · 33% · executing"
+    "label": "Advance to the next step (verify)",
+    "reason": "Phase 4 of 6 · 50% · ready to verify"
   },
-  "updated_at": "2026-09-04T15:19:44.749Z"
+  "updated_at": "2026-09-05T04:05:20.816Z"
 }
