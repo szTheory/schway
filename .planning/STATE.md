@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-09-04T20:16:06.942Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-09-05T00:06:34.877Z"
 last_activity: 2026-09-04
-last_activity_desc: Phase 03 complete, transitioned to Phase 4
-state_head: ebe4acede1a018c2ecdb568e676dba63cc262550
+last_activity_desc: Phase 04 execution started
+state_head: 7df021163248754576ceaa14d4e497403c079b55
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 27
-  completed_plans: 20
+  completed_plans: 21
   percent: 50
 ---
 
@@ -25,16 +25,16 @@ See: .planning/PROJECT.md (updated 2026-09-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 03 — Borrowed Views and CFG Lifetimes
+**Current focus:** Phase 04 — Fallible Resources and C Boundary
 
 ## Current Position
 
-Phase: 04 (Fallible Resources and C Boundary) — READY TO EXECUTE
-Plan: Not started
+Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-09-04 — Phase 03 complete, transitioned to Phase 4
+Last activity: 2026-09-04 — Phase 04 execution started
 
-Progress: ██████████ [███░░░░░░░] 33%
+Progress: ██████████ [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: ██████████ [███░░░░░░░] 33%
 | Phase 03 P08 | 11 min | 2 tasks | 4 files |
 | Phase 03 P09 | 22 min | 3 tasks | 8 files |
 | Phase 03 P10 | 45 min | 3 tasks | 9 files |
+| Phase 04 P01 | ~5h | 4 tasks | 25 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,10 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 03]: Guarded RecomputeOrigin's OpBorrowExclusive branch first-seen (symmetric with OpBorrowShared), closing CR-01/OWN-04's impossible-half gap — The hop nearest the returned place must decide the derived access mode; an earlier hop further from the return overwriting it was the exact defect 03-VERIFICATION.md found reachable through the shipped binary
 - [Phase 03]: ValidatePublished recomputes an origin unconditionally for every function, refusing publication of an undeclared borrow-derived return with core.origin_omitted; the gate lives entirely on the publication path (ValidatePublished/interface export), never restored in check.go's admission path.
 - [Phase 03]: Promoted RecomputeOriginPerReturn to the package's sole backward-walk site; RecomputeOrigin is now a pure conservative combiner over it, with AccessConflicting as an undeclarable sentinel for disagreeing arms.
+- [Phase 04]: D-04-04 checkpoint resolved edge-based-now: typed failure is a two-successor control-flow edge in core, not a storable Result value; core.DataType.Alternatives is untouched.
+- [Phase 04]: The tracer's ok payload and function parameter are both typed Byte (not an opaque Handle) to avoid generalizing cgen/interp's scalar writer this plan.
+- [Phase 04]: The declared failure ADT's error value is always its first declared alternative in both engines, a documented narrowing pending real case-analysis syntax.
+- [Phase 04]: checkFallibleLinear supports exactly one shape this plan (sole binding is the try-call, immediately returned); richer shapes are refused with check.foreign_call_shape_unsupported.
 
 ### Pending Todos
 
@@ -159,6 +164,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-04T18:31:02.449Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-fallible-resources-and-c-boundary/04-CONTEXT.md
+Last session: 2026-09-05T00:06:34.793Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
