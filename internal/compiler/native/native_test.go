@@ -106,6 +106,7 @@ fn main(request: Byte) -> Byte {
 }
 `,
 			steps: []phase4OutOfCorpusStep{
+				{args: []string{"format", "--check", "{path}"}, wantExit: 0},
 				{args: []string{"check", "{path}"}, wantExit: 0},
 				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
 				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
@@ -170,6 +171,7 @@ fn triage(flag: Signal) -> Signal {
 }
 `,
 			steps: []phase4OutOfCorpusStep{
+				{args: []string{"format", "--check", "{path}"}, wantExit: 0},
 				{args: []string{"check", "{path}"}, wantExit: 0},
 				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
 				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
@@ -203,6 +205,7 @@ fn main(request: Byte) -> Byte {
 }
 `,
 			steps: []phase4OutOfCorpusStep{
+				{args: []string{"format", "--check", "{path}"}, wantExit: 0},
 				{args: []string{"check", "{path}"}, wantExit: 0},
 				{args: []string{"run", "--engine=interpreter", "{path}"}, wantExit: 0},
 				{args: []string{"run", "--engine=native", "{path}"}, wantExit: 0},
@@ -1114,5 +1117,176 @@ func TestNonzeroExitIsDistinctFromSignal(t *testing.T) {
 	}
 	if nonzero.Code == signaled.Code {
 		t.Fatalf("nonzero exit and signalled termination must report distinct codes, both got %q", nonzero.Code)
+	}
+}
+
+// phase4CorpusMatrix is the recorded, exhaustive four-subcommand outcome of
+// the SHIPPED ./cmd/lang binary against every Phase 4 corpus fixture. It is
+// the in-repo, re-runnable replacement for the hand-driven shipped-binary
+// tables that 04-01-SUMMARY.md and 04-02-SUMMARY.md recorded verbatim as a
+// one-time manual act (D-04-21): the same claim, asserted by CI on every
+// commit rather than re-typed by a human at UAT time.
+//
+// Every accepting fixture must be clean through all four subcommands, and
+// every refusing fixture must be refused by `check`, `run
+// --engine=interpreter`, and `run --engine=native` with the SAME diagnostic
+// code -- an entry point that accepts what a peer refuses is the exact
+// three-engine divergence Phase 4's differential lane exists to catch, and
+// two such divergences (both in `run --engine=native`) were real bugs found
+// and fixed during 04-07.
+func phase4CorpusMatrix() []phase4OutOfCorpusCase {
+	// clean is a fixture the whole toolchain accepts: exit 0 from all four
+	// subcommands.
+	clean := func(fixture string) phase4OutOfCorpusCase {
+		return phase4OutOfCorpusCase{
+			behavior: fixture,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
+				{args: []string{"--json", "check", "{path}"}, wantExit: 0},
+				{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 0},
+				{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 0},
+			},
+		}
+	}
+	// refused is a negative-control fixture: canonically formatted (unless
+	// formatExit says otherwise), then refused identically by check and both
+	// engines with one diagnostic code.
+	refused := func(fixture string, formatExit int, formatDiagnostic, diagnostic string) phase4OutOfCorpusCase {
+		return phase4OutOfCorpusCase{
+			behavior: fixture,
+			steps: []phase4OutOfCorpusStep{
+				{args: []string{"--json", "format", "--check", "{path}"}, wantExit: formatExit, wantDiagnostic: formatDiagnostic},
+				{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
+				{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
+				{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
+			},
+		}
+	}
+	return []phase4OutOfCorpusCase{
+		clean("acquire_three_fail_second.lang"),
+		clean("acquire_three_fail_third.lang"),
+		clean("acquire_three_success.lang"),
+		clean("defect_terminal.lang"),
+		clean("discard_because.lang"),
+		clean("foreign_acquire_one.lang"),
+		clean("nonlocal_exit_probe.lang"),
+		// The only fixture the FORMATTER itself refuses: an unconsumed
+		// fallible call is a syntax-level refusal, so it never reaches check.
+		refused("fallible_call_unconsumed.lang", 2, "syntax.fallible_call_not_consumed", "syntax.fallible_call_not_consumed"),
+		refused("foreign_call_target_not_foreign.lang", 0, "", "core.call_target_not_foreign"),
+		refused("foreign_origin_omitted.lang", 0, "", "core.foreign_origin_omitted"),
+		refused("foreign_unwind_undeclared.lang", 0, "", "foreign.unwind_policy_undeclared"),
+	}
+}
+
+// TestShippedBinaryFourSubcommandCorpusMatrix drives the shipped binary
+// through `format --check`, `check`, `run --engine=interpreter`, and `run
+// --engine=native` on every Phase 4 corpus fixture and compares against the
+// recorded matrix. The matrix must be exhaustive: a fixture added to
+// testdata/phase4 without an entry here fails the test rather than being
+// silently unexercised.
+func TestShippedBinaryFourSubcommandCorpusMatrix(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	corpus := testsupport.ProjectPath("testdata", "phase4")
+	entries, err := filepath.Glob(filepath.Join(corpus, "*.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("testdata/phase4 holds no .lang fixture")
+	}
+	matrix := phase4CorpusMatrix()
+	expected := make(map[string]phase4OutOfCorpusCase, len(matrix))
+	for _, testCase := range matrix {
+		if _, duplicate := expected[testCase.behavior]; duplicate {
+			t.Fatalf("phase4CorpusMatrix lists %s twice", testCase.behavior)
+		}
+		expected[testCase.behavior] = testCase
+	}
+	present := make(map[string]bool, len(entries))
+	for _, path := range entries {
+		present[filepath.Base(path)] = true
+	}
+	for fixture := range expected {
+		if !present[fixture] {
+			t.Fatalf("phase4CorpusMatrix names %s, which is not in testdata/phase4", fixture)
+		}
+	}
+	for _, path := range entries {
+		fixture := filepath.Base(path)
+		testCase, listed := expected[fixture]
+		if !listed {
+			t.Fatalf("testdata/phase4/%s has no phase4CorpusMatrix entry; add its recorded four-subcommand outcome", fixture)
+		}
+		t.Run(fixture, func(t *testing.T) {
+			runShippedBinarySteps(t, binary, path, testCase.steps)
+		})
+	}
+}
+
+// runShippedBinarySteps drives one source file through a recorded sequence of
+// shipped-binary subcommands, substituting "{path}" and asserting each step's
+// exit code and (when named) diagnostic code.
+func runShippedBinarySteps(t *testing.T, binary, path string, steps []phase4OutOfCorpusStep) {
+	t.Helper()
+	for _, step := range steps {
+		arguments := make([]string, len(step.args))
+		for index, argument := range step.args {
+			if argument == "{path}" {
+				argument = path
+			}
+			arguments[index] = argument
+		}
+		result := testsupport.RunCLI(t, binary, nil, arguments...)
+		t.Logf("subcommand=%v exit=%d", arguments, result.Exit)
+		if result.Exit != step.wantExit {
+			t.Fatalf("subcommand %v: exit=%d, want %d (stdout=%s stderr=%s)", arguments, result.Exit, step.wantExit, result.Stdout, result.Stderr)
+		}
+		if step.wantDiagnostic != "" && !strings.Contains(string(result.Stdout), `"code":"`+step.wantDiagnostic+`"`) {
+			t.Fatalf("subcommand %v: expected diagnostic code %s, got stdout=%s", arguments, step.wantDiagnostic, result.Stdout)
+		}
+	}
+}
+
+// TestOutOfCorpusSourcesAreGenuinelyNovel closes the automatable half of
+// 04-07's D3 human-judgment checkpoint ("the out-of-corpus fixtures' genuine
+// novelty relative to the corpus"). Every hand-written program driven by
+// TestShippedBinaryExercisesEveryPhase4Behavior must differ from every file
+// checked into testdata/ -- a "hand-written, out-of-corpus" program that had
+// drifted into a byte-copy of a corpus fixture would make the shipped-binary
+// register a restatement of the corpus rather than an independent exercise
+// of it.
+//
+// Byte-inequality is the mechanical half and is what this test asserts. The
+// remaining question -- whether a program is *interestingly* novel rather
+// than merely non-identical -- stays a review judgment and is deliberately
+// not claimed here.
+func TestOutOfCorpusSourcesAreGenuinelyNovel(t *testing.T) {
+	corpusRoot := testsupport.ProjectPath("testdata")
+	corpus := make(map[string]string)
+	err := filepath.Walk(corpusRoot, func(path string, info fs.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() || !strings.HasSuffix(path, ".lang") {
+			return nil
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		corpus[strings.TrimSpace(string(data))] = path
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(corpus) == 0 {
+		t.Fatal("testdata holds no .lang fixture to compare against")
+	}
+	for _, testCase := range phase4OutOfCorpusCases() {
+		if match, identical := corpus[strings.TrimSpace(testCase.source)]; identical {
+			t.Fatalf("out-of-corpus program %q is byte-identical to corpus fixture %s", testCase.behavior, match)
+		}
 	}
 }

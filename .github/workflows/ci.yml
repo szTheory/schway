@@ -1,0 +1,77 @@
+# Continuous integration for Codename Lang.
+#
+# This workflow is the shift-left half of the phase gates: every claim that a
+# phase SUMMARY used to record as a hand-driven, one-time act ("built
+# ./cmd/lang and ran the four subcommands") is now asserted here on every push
+# and pull request, on both initial host priorities (Linux and macOS).
+#
+# Two jobs, deliberately not one:
+#
+#   checks      Fast feedback -- vet, build, unit/integration tests, and the
+#               race detector. This is what a contributor waits on.
+#   phase-gate  The current phase's own bounded gate script, which is a
+#               superset of `checks` and additionally verifies all four
+#               corpora with one freshly built binary and requires every
+#               Phase 4 control identifier and expected escape by exact text.
+#
+# Only `scripts/verify-phase4.sh` is run, not all four gate scripts: that
+# script proves Phase 1, 2, and 3 non-regression by re-running THEIR OWN
+# corpora with THIS phase's binary (see its own comment), so invoking the
+# older gates as well would re-run the same suite three more times for no
+# additional signal. When a Phase 5 gate lands, this job moves to it.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      # The native backend shells out to clang; a runner without it turns
+      # every native-engine assertion into an operational skip rather than a
+      # verdict, so fail loudly here instead.
+      - name: Require clang
+        run: clang --version
+      - run: go vet ./...
+      - run: go build ./...
+      - run: go test ./...
+      - run: go test -race ./...
+
+  phase-gate:
+    name: phase-4 gate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Require clang
+        run: clang --version
+      - name: scripts/verify-phase4.sh
+        run: sh scripts/verify-phase4.sh

@@ -130,11 +130,17 @@ coverage:
   - id: D5
     description: "The shipped ./cmd/lang binary runs all four Phase 4 plan-02 fixtures and one hand-written, non-corpus three-acquisition program cleanly through format --check, check, run --engine=interpreter, and run --engine=native"
     verification:
-      - kind: manual_procedural
-        ref: "shipped-binary run recorded verbatim below"
+      - kind: integration
+        ref: "internal/compiler/native/native_test.go#TestShippedBinaryFourSubcommandCorpusMatrix"
         status: pass
-    human_judgment: true
-    rationale: "Driven manually against the built ./cmd/lang binary during this session (per D-04-21's 'drive the shipped binary' method) rather than as an in-repo CI assertion; every subcommand's exit code for all five programs is recorded verbatim in this summary as the evidence trail."
+      - kind: integration
+        ref: "internal/compiler/native/native_test.go#TestShippedBinaryExercisesEveryPhase4Behavior"
+        status: pass
+      - kind: other
+        ref: ".github/workflows/ci.yml (checks + phase-4 gate, ubuntu-latest and macos-latest)"
+        status: pass
+    human_judgment: false
+    rationale: "Originally driven manually against the built ./cmd/lang binary during this session (per D-04-21's 'drive the shipped binary' method), with every subcommand's exit code for all five programs recorded verbatim in this summary. That manual act was retired in favour of two in-repo assertions: the corpus matrix test drives all four subcommands over EVERY testdata/phase4 fixture (all four plan-02 fixtures included) against a freshly built binary and fails if a fixture has no recorded outcome, and the out-of-corpus test drives the hand-written three-acquisition program the same way. Both run in CI on Linux and macOS. The verbatim table below is kept as the historical evidence trail, not as the live control."
 
 duration: ~3h (single continuous session)
 completed: 2026-09-05

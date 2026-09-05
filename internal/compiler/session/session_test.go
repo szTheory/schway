@@ -2413,3 +2413,188 @@ func TestPhase4ReachabilityRecordIsComplete(t *testing.T) {
 		t.Fatal("Generator and Probe Reachability Register has no data rows")
 	}
 }
+
+// debtRegisterLandingPhaseExemptions names the registers written before the
+// "landing phase" column became part of the standing debt-register shape.
+// Each entry is an explicit, dated waiver for a frozen historical document,
+// never a licence for a new register to omit the column: any register not
+// listed here must carry it. Adding an entry is a review failure unless the
+// register is genuinely frozen prior art.
+var debtRegisterLandingPhaseExemptions = map[string]string{
+	"02-DEBT.md": "written 2026-09-04, before the landing-phase column existed; frozen prior art",
+	"03-DEBT.md": "written 2026-09-04, before the landing-phase column existed; frozen prior art",
+}
+
+// debtRegisterSeverities is the closed severity vocabulary. A register that
+// invents a severity outside this set is drifting rather than recording.
+var debtRegisterSeverities = map[string]bool{"blocker": true, "warning": true, "info": true}
+
+// TestDebtRegistersAreWellFormed is the mechanical half of the debt-register
+// checkpoint that phase 04-06 recorded as human judgment ("each dated with
+// identifier/severity/source/landing phase"). Register *honesty* -- whether
+// a deferral is truthfully described -- stays a human reading and is
+// deliberately not claimed here. Register *completeness and shape* is
+// checkable, recurs in every phase, and is what silently rots, so it is
+// asserted on every commit instead:
+//
+//   - the frontmatter's declared `items:` count matches the Items table,
+//   - every row names an identifier, a source, a threat/requirement, a
+//     severity from the closed vocabulary, and the item itself,
+//   - post-legacy registers additionally name a landing phase, and
+//   - every identifier in the table has a matching `### <ID>` detail
+//     section, and every detail section has a matching table row.
+//
+// The register is scanned for every phase, not only Phase 4: a register that
+// stops being maintained is exactly the failure this catches.
+func TestDebtRegistersAreWellFormed(t *testing.T) {
+	registers, err := filepath.Glob(testsupport.ProjectPath(".planning", "phases", "*", "*-DEBT.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(registers) == 0 {
+		t.Fatal("no *-DEBT.md register found under .planning/phases")
+	}
+	for _, path := range registers {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			checkDebtRegister(t, path)
+		})
+	}
+}
+
+func checkDebtRegister(t *testing.T, path string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := filepath.Base(path)
+	text := string(data)
+
+	if !strings.HasPrefix(text, "---\n") {
+		t.Fatalf("%s: has no frontmatter block", name)
+	}
+	frontmatterEnd := strings.Index(text[4:], "\n---")
+	if frontmatterEnd == -1 {
+		t.Fatalf("%s: frontmatter block is unterminated", name)
+	}
+	declared := -1
+	for _, line := range strings.Split(text[4:4+frontmatterEnd], "\n") {
+		if !strings.HasPrefix(line, "items:") {
+			continue
+		}
+		if _, scanErr := fmt.Sscanf(strings.TrimSpace(line), "items: %d", &declared); scanErr != nil {
+			t.Fatalf("%s: unreadable `items:` frontmatter line %q", name, line)
+		}
+		break
+	}
+	if declared < 0 {
+		t.Fatalf("%s: frontmatter declares no `items:` count", name)
+	}
+
+	columns, rows := debtRegisterTable(t, name, text)
+	if len(rows) != declared {
+		t.Fatalf("%s: frontmatter declares items: %d but the Items table holds %d rows", name, declared, len(rows))
+	}
+
+	required := []string{"ID", "Source", "Threat/Req", "Severity", "Item"}
+	if _, exempt := debtRegisterLandingPhaseExemptions[name]; !exempt {
+		required = append(required, "Landing phase")
+	}
+	for _, column := range required {
+		if _, present := columns[column]; !present {
+			t.Fatalf("%s: Items table has no %q column (columns: %v)", name, column, columns)
+		}
+	}
+
+	identifiers := make(map[string]bool, len(rows))
+	for _, row := range rows {
+		identifier := row[columns["ID"]]
+		if !strings.HasPrefix(identifier, "D-") || len(identifier) < len("D-00-0") {
+			t.Fatalf("%s: row %q does not name a D-XX-NN identifier", name, identifier)
+		}
+		if identifiers[identifier] {
+			t.Fatalf("%s: identifier %s appears in two rows", name, identifier)
+		}
+		identifiers[identifier] = true
+		for _, column := range required {
+			value := row[columns[column]]
+			if value == "" || value == "-" {
+				t.Fatalf("%s: row %s has an empty %q cell", name, identifier, column)
+			}
+		}
+		if severity := row[columns["Severity"]]; !debtRegisterSeverities[severity] {
+			t.Fatalf("%s: row %s has severity %q outside the closed vocabulary (blocker, warning, info)", name, identifier, severity)
+		}
+	}
+
+	details := make(map[string]bool, len(rows))
+	for _, line := range strings.Split(text, "\n") {
+		if !strings.HasPrefix(line, "### D-") {
+			continue
+		}
+		heading := strings.TrimSpace(strings.TrimPrefix(line, "###"))
+		identifier := heading
+		if cut := strings.IndexAny(heading, " \t"); cut != -1 {
+			identifier = heading[:cut]
+		}
+		identifier = strings.Trim(identifier, "`")
+		if !identifiers[identifier] {
+			t.Fatalf("%s: detail section %q has no row in the Items table", name, identifier)
+		}
+		details[identifier] = true
+	}
+	for identifier := range identifiers {
+		if !details[identifier] {
+			t.Fatalf("%s: row %s has no `### %s` detail section", name, identifier, identifier)
+		}
+	}
+}
+
+// debtRegisterTable returns the Items table's column index by header name and
+// its data rows, each row indexed the same way. Only the `## Items` section
+// is read: later sections (closures, process debt) hold their own tables and
+// are not the register.
+func debtRegisterTable(t *testing.T, name, text string) (map[string]int, [][]string) {
+	t.Helper()
+	anchor := "\n## Items\n"
+	start := strings.Index(text, anchor)
+	if start == -1 {
+		t.Fatalf("%s: has no `## Items` section", name)
+	}
+	section := text[start+len(anchor):]
+	if end := strings.Index(section, "\n## "); end != -1 {
+		section = section[:end]
+	}
+	var columns map[string]int
+	var rows [][]string
+	for _, line := range strings.Split(section, "\n") {
+		if !strings.HasPrefix(line, "|") {
+			continue
+		}
+		cells := strings.Split(strings.Trim(strings.TrimSpace(line), "|"), "|")
+		for index, cell := range cells {
+			cells[index] = strings.TrimSpace(cell)
+		}
+		if columns == nil {
+			columns = make(map[string]int, len(cells))
+			for index, cell := range cells {
+				columns[cell] = index
+			}
+			continue
+		}
+		if strings.HasPrefix(cells[0], "---") {
+			continue
+		}
+		if len(cells) != len(columns) {
+			t.Fatalf("%s: row %q has %d cells, want %d", name, cells[0], len(cells), len(columns))
+		}
+		rows = append(rows, cells)
+	}
+	if columns == nil {
+		t.Fatalf("%s: `## Items` section holds no table", name)
+	}
+	if len(rows) == 0 {
+		t.Fatalf("%s: `## Items` table holds no data row", name)
+	}
+	return columns, rows
+}

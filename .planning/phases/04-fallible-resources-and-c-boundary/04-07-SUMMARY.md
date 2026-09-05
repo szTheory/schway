@@ -56,32 +56,66 @@ coverage:
     description: "scripts/verify-phase4.sh: a bounded gate that builds the shipped binary once, verifies Phase 1-4 corpora with it, and requires every Phase 4 control identifier and expected escape by exact text, contract-tested against its own script text"
     requirement: "SEM-03"
     verification:
-      - {kind: integration, ref: "internal/compiler/session/session_test.go#TestVerifyPhase4ControlsAndWork", status: pass}
-      - {kind: integration, ref: "internal/compiler/session/session_test.go#TestVerifyPhase4CLI", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestPhase4VerifierScriptContract", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestPhase4RequiredControlsMatchScript", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestExpectedEscapesAreVisibleNotSolved", status: pass}
-      - {kind: other, ref: "sh scripts/verify-phase4.sh", status: pass}
+      - kind: integration
+        ref: "internal/compiler/session/session_test.go#TestVerifyPhase4ControlsAndWork"
+        status: pass
+      - kind: integration
+        ref: "internal/compiler/session/session_test.go#TestVerifyPhase4CLI"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestPhase4VerifierScriptContract"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestPhase4RequiredControlsMatchScript"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestExpectedEscapesAreVisibleNotSolved"
+        status: pass
+      - kind: other
+        ref: "sh scripts/verify-phase4.sh"
+        status: pass
     human_judgment: false
   - id: D2
     description: "All three engines (interpreter, -O0, -O3) genuinely agree on terminal outcome, ordered events, and live-resource state across all five Phase 4 path shapes: success, second-stage typed failure, third-stage typed failure, defect, and nonlocal exit"
     requirement: "RES-01"
     verification:
-      - {kind: integration, ref: "internal/compiler/session/session_test.go#TestPhase4CorpusThreeEngineAgreement", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestPhase4DifferentialNamesFirstDisagreement", status: pass}
-      - {kind: unit, ref: "internal/compiler/evidence/evidence_test.go#TestForeignDigestMismatchRefused", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestReleaseOmissionMutationIsMismatch", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestReleaseTranspositionMutationIsMismatch", status: pass}
+      - kind: integration
+        ref: "internal/compiler/session/session_test.go#TestPhase4CorpusThreeEngineAgreement"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestPhase4DifferentialNamesFirstDisagreement"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/evidence/evidence_test.go#TestForeignDigestMismatchRefused"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestReleaseOmissionMutationIsMismatch"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestReleaseTranspositionMutationIsMismatch"
+        status: pass
     human_judgment: false
   - id: D3
     description: "Every Phase 4 behavior is demonstrated on the shipped binary against a hand-written, out-of-corpus program; the debt and escape register is finalized and no test/comment/fixture claims coverage of a named residual"
     requirement: "FFI-01"
     verification:
-      - {kind: integration, ref: "internal/compiler/native/native_test.go#TestShippedBinaryExercisesEveryPhase4Behavior", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestNoCoverageClaimedForNamedResiduals", status: pass}
-      - {kind: unit, ref: "internal/compiler/session/session_test.go#TestPhase4ReachabilityRecordIsComplete", status: pass}
-    human_judgment: true
-    rationale: "The debt register's honesty (D-04-32's wording, RES-01's recorded partiality) and the out-of-corpus fixtures' genuine novelty relative to the corpus are best judged by a human reader, not solely by the mechanical checks that back them"
+      - kind: integration
+        ref: "internal/compiler/native/native_test.go#TestShippedBinaryExercisesEveryPhase4Behavior"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestNoCoverageClaimedForNamedResiduals"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestPhase4ReachabilityRecordIsComplete"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/native/native_test.go#TestOutOfCorpusSourcesAreGenuinelyNovel"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestDebtRegistersAreWellFormed"
+        status: pass
+    human_judgment: false
+    rationale: "Each of this deliverable's three clauses now has a mechanical control: the shipped-binary exercise and its novelty check (no hand-written program is byte-identical to any corpus fixture), the debt-register shape check, and the named-residual coverage-claim scan. What is NOT claimed by any of them, and stays a review reading: whether an out-of-corpus program is INTERESTINGLY novel rather than merely non-identical, and whether the register's prose (D-04-32's wording, RES-01's recorded partiality) is honestly phrased. Those are recorded here as un-mechanized rather than folded into the passing controls."
 
 duration: 55min
 completed: 2026-09-05

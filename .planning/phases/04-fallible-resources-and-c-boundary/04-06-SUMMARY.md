@@ -131,9 +131,12 @@ coverage:
     human_judgment: false
   - id: D5
     description: "04-DEBT.md records the deferred discoverLoanLastUses retirement, the deferred payload-carrying-alternative work, and the accepted residual limitations, each dated with identifier/severity/source/landing phase"
-    verification: []
-    human_judgment: true
-    rationale: "Debt-register completeness and accuracy is a documentation-quality judgment, not something a test asserts"
+    verification:
+      - kind: unit
+        ref: "internal/compiler/session/session_test.go#TestDebtRegistersAreWellFormed"
+        status: pass
+    human_judgment: false
+    rationale: "The structural claim -- that every register item carries an identifier, a source, a threat/requirement, a severity from a closed vocabulary, a landing phase, and a matching detail section, and that the frontmatter's declared count matches the table -- is now asserted on every commit for EVERY phase's register, not only this one, with the pre-landing-phase-column registers (02, 03) carried on an explicit, justified exemption list. What deliberately stays a human reading, and is NOT claimed by that test, is whether each item's prose honestly describes the deferral; the dangerous direction of that judgment (a residual being described as covered) is separately mechanized by TestNoCoverageClaimedForNamedResiduals."
 
 duration: ~2h
 completed: 2026-09-05
