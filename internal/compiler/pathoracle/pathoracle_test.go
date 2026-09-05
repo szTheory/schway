@@ -180,6 +180,120 @@ func TestOraclePathCountCapRejects(t *testing.T) {
 	}
 }
 
+// failOnlyTerminatedFunction builds a synthetic single-block function whose
+// only operation sequence is a borrow followed by a non-return terminator
+// (core.OpFail or core.OpDefect), with NO OpReturn anywhere -- the exact
+// shape D-04-29 requires pathoracle to recognise as validly terminated, not
+// as the late-terminal-guard's malformed-CFG rejection.
+func failOnlyTerminatedFunction(terminatorOpID string, terminatorKind core.OperationKind) core.Function {
+	return core.Function{
+		ID: "s1:fn:fail_only", EntryPointID: "s1:fn:fail_only:point:entry",
+		Parameter: core.Parameter{ID: "s1:fn:fail_only:place:0", Name: "value", Type: "Buffer"},
+		Linear: &core.LinearBody{
+			ID: "s1:fn:fail_only:linear",
+			Operations: []core.LinearOperation{
+				{ID: "op:0", Kind: core.OpBorrowShared, SourceID: "s1:fn:fail_only:place:0", TargetID: "place:1", LoanID: "loan:0"},
+				{ID: terminatorOpID, Kind: terminatorKind, SourceID: "place:1"},
+			},
+			Blocks: []core.Block{
+				{ID: "block:only", PointID: "s1:fn:fail_only:point:entry", OperationIDs: []string{"op:0", terminatorOpID}, Successors: nil},
+			},
+		},
+	}
+}
+
+// TestPathOracleClosesOnEveryTerminator is D-04-29's falsifier for
+// pathoracle: a path whose only exit is core.OpFail, and a sibling path
+// whose only exit is core.OpDefect, both carrying a live loan, must be
+// recognised as validly terminated (an endpoint is computed, no
+// unterminatedLoanError) -- before this widening, linearizePath's sawReturn
+// guard only recognised core.OpReturn, so either path was misclassified as
+// a malformed CFG the instant it carried a live loan.
+func TestPathOracleClosesOnEveryTerminator(t *testing.T) {
+	for _, terminator := range []core.OperationKind{core.OpFail, core.OpDefect} {
+		function := failOnlyTerminatedFunction("op:1", terminator)
+		endpoints, work, err := pathoracle.RecomputeEndpoints(function)
+		if err != nil {
+			t.Fatalf("terminator=%s: unexpected error (path incorrectly treated as malformed): %v", terminator, err)
+		}
+		if work == 0 {
+			t.Fatalf("terminator=%s: oracle performed zero work", terminator)
+		}
+		if len(endpoints) != 1 {
+			t.Fatalf("terminator=%s: expected exactly one recomputed loan endpoint, got %+v", terminator, endpoints)
+		}
+	}
+}
+
+// TestFailureOnlyPathIsChecked is the fixture-based sibling of
+// TestPathOracleClosesOnEveryTerminator: it exercises RecomputeEndpoints
+// directly on the shipped foreign_acquire_one.lang tracer, whose err block
+// exits ONLY through core.OpFail, confirming the oracle processes that path
+// without error at all (the tracer's err block itself carries no loan, so
+// this is the "the path is checked, not silently skipped" half of the
+// claim -- TestPathOracleClosesOnEveryTerminator above is the "and a live
+// loan crossing it is correctly endpointed" half).
+func TestFailureOnlyPathIsChecked(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to parse: %+v", parsed.Diagnostics)
+	}
+	result := check.Program(parsed.Program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("fixture unexpectedly rejected: %+v", result.Diagnostics)
+	}
+	if _, _, err := pathoracle.RecomputeEndpoints(result.Program.Functions[0]); err != nil {
+		t.Fatalf("expected the fail-only err path to be checked without error, got: %v", err)
+	}
+}
+
+// TestTerminatorSetReadFromRegistry asserts pathoracle.RecognizesTerminator
+// agrees with core.TerminatorKinds() exactly, mirroring originvalidate's own
+// falsifier of the same shape.
+func TestTerminatorSetReadFromRegistry(t *testing.T) {
+	for _, terminator := range core.TerminatorKinds() {
+		if !pathoracle.RecognizesTerminator(terminator) {
+			t.Fatalf("expected pathoracle to recognise registered terminator %q", terminator)
+		}
+	}
+	if pathoracle.RecognizesTerminator(core.OpCopy) {
+		t.Fatalf("expected pathoracle to NOT recognise core.OpCopy as a terminator")
+	}
+}
+
+// TestTerminatorWalkMutationKilled is D-09's automated mutation-kill
+// falsifier for D-04-29 in pathoracle: narrowing the recognised terminator
+// set (deleting core.OpFail, the exact mutation the throwaway-detached-
+// worktree demonstration performs on the source) must make the oracle
+// misclassify the fail-only fixture as an unterminated loan -- proving the
+// widening actually bites.
+func TestTerminatorWalkMutationKilled(t *testing.T) {
+	function := failOnlyTerminatedFunction("op:1", core.OpFail)
+	if _, _, err := pathoracle.RecomputeEndpoints(function); err != nil {
+		t.Fatalf("unexpected error before mutation: %v", err)
+	}
+
+	original := pathoracle.TerminatorKindsOverride
+	pathoracle.TerminatorKindsOverride = func() []core.OperationKind {
+		return []core.OperationKind{core.OpReturn, core.OpDefect} // OpFail deleted
+	}
+	defer func() { pathoracle.TerminatorKindsOverride = original }()
+
+	_, _, err := pathoracle.RecomputeEndpoints(function)
+	if err == nil {
+		t.Fatalf("mutation (deleting OpFail) had no observable effect: expected an unterminated-loan rejection")
+	}
+	type coded interface{ Code() string }
+	code, ok := err.(coded)
+	if !ok || code.Code() != "pathoracle.unterminated_loan" {
+		t.Fatalf("want pathoracle.unterminated_loan after mutation, got: %v", err)
+	}
+}
+
 func itoa(n int) string {
 	if n == 0 {
 		return "0"

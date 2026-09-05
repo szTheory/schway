@@ -48,6 +48,42 @@ import (
 // surface the moment that shape becomes reachable.
 const MaxPaths = 4096
 
+// TerminatorKindsOverride is a fault-injection seam for
+// TestTerminatorWalkMutationKilled (D-09/D-04-29): production always closes
+// a path on the full core.TerminatorKinds() set; the test temporarily
+// narrows it (the same "delete OpFail from the recognised set" mutation the
+// throwaway-detached-worktree demonstration performs on the source
+// directly) to prove that a walker recognising fewer terminators really
+// does misclassify a fixture path. nil (the always-true production default)
+// means "use core.TerminatorKinds() unmodified".
+var TerminatorKindsOverride func() []core.OperationKind
+
+func recognizedTerminatorKinds() []core.OperationKind {
+	if TerminatorKindsOverride != nil {
+		return TerminatorKindsOverride()
+	}
+	return core.TerminatorKinds()
+}
+
+// isTerminatorKind is pathoracle's own membership test against the
+// terminator registry (D-04-29): a set-membership test against
+// core.TerminatorKinds() rather than a literal restatement of it, so
+// widening the registry widens this walker automatically.
+func isTerminatorKind(kind core.OperationKind) bool {
+	for _, terminator := range recognizedTerminatorKinds() {
+		if kind == terminator {
+			return true
+		}
+	}
+	return false
+}
+
+// RecognizesTerminator is session.go's control:terminator.walk_incomplete
+// hook (D-04-29): it reports whether this package's own walker treats kind
+// as a terminator, reading the exact same isTerminatorKind this file's
+// production walk uses -- never a second, restated copy of the set.
+func RecognizesTerminator(kind core.OperationKind) bool { return isTerminatorKind(kind) }
+
 // pathCapError is returned when a function's acyclic entry-to-return path
 // count exceeds MaxPaths. It carries a stable Code(), matching the
 // diagnostic.Diagnostic convention used elsewhere in the repository, and
@@ -94,15 +130,21 @@ func (e *backEdgeError) Code() string { return "pathoracle.cfg_back_edge" }
 // repair:
 //
 //  1. A path that carries at least one loan (a borrow was replayed) but
-//     never reaches an OpReturn operation at all. Every real
-//     entry-to-return path this repository's checker produces terminates
-//     in exactly one Return (corevalidate's own replayBlocks invariant);
-//     a path with no Return anywhere is a structurally malformed CFG this
-//     oracle refuses to silently default-close (a per-path linearizer
-//     that quietly ended such a loan "at its own creation" would be
-//     EXACTLY the normalized repair this guard exists to reject, since
-//     that default is legitimate only when the path genuinely returns and
-//     the loan simply goes unreferenced afterward).
+//     never reaches ANY terminator operation (D-04-29: core.OpReturn,
+//     core.OpFail, or core.OpDefect) at all. Every real entry-to-return
+//     path this repository's checker produces ends in exactly one
+//     terminator (corevalidate's own replayBlocks invariant); a path with
+//     no terminator anywhere is a structurally malformed CFG this oracle
+//     refuses to silently default-close (a per-path linearizer that
+//     quietly ended such a loan "at its own creation" would be EXACTLY the
+//     normalized repair this guard exists to reject, since that default is
+//     legitimate only when the path genuinely terminates and the loan
+//     simply goes unreferenced afterward). Before D-04-29 widened this to
+//     every terminator, a path whose only real exit was core.OpFail or
+//     core.OpDefect was misclassified as malformed the moment it carried a
+//     live loan -- exactly the failure class 03-08/03-09/03-10 closed three
+//     times, reproduced here as a false rejection rather than a silent
+//     admission.
 //  2. A linearized path references a loan through the place-inheritance
 //     chain that was never recorded as born earlier on the SAME path — a
 //     bookkeeping inconsistency in the linearizer itself.
@@ -238,14 +280,19 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 	chain := map[string][]string{} // placeID -> ordered ancestor+own loan IDs, oldest first
 	states := map[string]loanState{}
 	work := 0
-	sawReturn := false
+	// sawTerminator tracks whether this path reached ANY terminator
+	// operation (D-04-29: core.OpReturn, core.OpFail, or core.OpDefect), not
+	// only a return -- renamed from sawReturn because the guard below now
+	// closes a path on every terminator kind the registry names, and the
+	// old name would have left this widened meaning actively misleading.
+	sawTerminator := false
 
 	for _, blockID := range blockIDs {
 		operations := idx.operations[blockID]
 		for opIndex, operation := range operations {
 			work++
-			if operation.Kind == core.OpReturn {
-				sawReturn = true
+			if isTerminatorKind(operation.Kind) {
+				sawTerminator = true
 			}
 			inherited := chain[operation.SourceID]
 			for _, loanID := range inherited {
@@ -268,9 +315,10 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 		}
 	}
 
-	if !sawReturn && len(states) > 0 {
-		// This path carries at least one loan but never reached a Return --
-		// a malformed CFG this oracle refuses to close by default. Name the
+	if !sawTerminator && len(states) > 0 {
+		// This path carries at least one loan but never reached ANY
+		// terminator (D-04-29: return, typed failure, or defect) -- a
+		// malformed CFG this oracle refuses to close by default. Name the
 		// smallest (deterministic) loan ID so the failure is reproducible.
 		loanIDs := make([]string, 0, len(states))
 		for id := range states {
