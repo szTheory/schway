@@ -437,6 +437,15 @@ func TestForeignRefusalsAreIndependentlyDerived(t *testing.T) {
 			t.Fatalf("expected core.call_target_not_foreign, got %+v", result)
 		}
 	})
+
+	t.Run("missing D-04-12 obligation", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Capture = ""
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.obligation_undeclared" {
+			t.Fatalf("expected foreign.obligation_undeclared, got %+v", result)
+		}
+	})
 }
 
 func resourceLifecycleProgram(t *testing.T, fixture string) core.Program {
@@ -470,6 +479,80 @@ func releaseOperations(function core.Function, blockID string) []core.LinearOper
 		}
 	}
 	return releases
+}
+
+// TestForeignContractInternallyValidated proves corevalidate independently
+// validates a declared core.RecordLayout's internal consistency -- offsets
+// ascending, offsets plus sizes within the declared record size, no
+// duplicate field name -- reading only the core artifact (Task 04-03-01).
+func TestForeignContractInternallyValidated(t *testing.T) {
+	valid := foreignAcquireProgram(t)
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid foreign-call core rejected: %+v", result)
+	}
+
+	t.Run("duplicate field name", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		layout := mutated.Functions[0].ForeignContract.Layout
+		layout.Fields = append(layout.Fields, layout.Fields[0])
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.layout_invalid" {
+			t.Fatalf("expected foreign.layout_invalid, got %+v", result)
+		}
+	})
+
+	t.Run("offset not ascending", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		layout := mutated.Functions[0].ForeignContract.Layout
+		layout.Fields = append(layout.Fields, core.LayoutField{Name: "extra", Size: 1, Alignment: 1, Offset: 0, CType: "unsigned char"})
+		layout.Size = 2
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.layout_invalid" {
+			t.Fatalf("expected foreign.layout_invalid, got %+v", result)
+		}
+	})
+
+	t.Run("field exceeds declared record size", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		layout := mutated.Functions[0].ForeignContract.Layout
+		layout.Fields[0].Size = layout.Size + 1
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.layout_invalid" {
+			t.Fatalf("expected foreign.layout_invalid, got %+v", result)
+		}
+	})
+
+	t.Run("layout omitted entirely", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Layout = nil
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.layout_invalid" {
+			t.Fatalf("expected foreign.layout_invalid, got %+v", result)
+		}
+	})
+}
+
+// TestAllocatorIdentityMismatchRejected proves T-04-14's allocator-identity
+// requirement is refused independently by corevalidate: a release whose
+// Allocator differs from its own acquisition's is rejected purely from the
+// core artifact, never trusting check's own bookkeeping (Task 04-03-01).
+func TestAllocatorIdentityMismatchRejected(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	for index := range function.Linear.Operations {
+		if function.Linear.Operations[index].Kind == core.OpRelease {
+			function.Linear.Operations[index].Allocator = "a_different_allocator"
+			break
+		}
+	}
+	result := corevalidate.Validate(mutated)
+	if result.Valid || result.Problems[0].Code != "foreign.release_allocator_mismatch" {
+		t.Fatalf("expected foreign.release_allocator_mismatch, got %+v", result)
+	}
 }
 
 // TestValidatorRederivesReleaseOrder proves corevalidate's independent

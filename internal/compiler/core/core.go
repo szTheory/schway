@@ -47,17 +47,72 @@ type Function struct {
 	Span            diagnostic.Span  `json:"span"`
 }
 
-// ForeignContract is the minimum obligation set this plan populates for one
+// ForeignContract is the complete obligation set FFI-01 names for one
 // declared foreign C symbol a function calls: its name, allocator identity,
-// the two mandatory admission policies (D-04-16), and the name of the
-// nullary ADT its err edge carries (D-04-05). The fuller three-layer
-// contract (target layout, capture/retention) lands in a later plan.
+// the two mandatory admission policies (D-04-16), the name of the nullary
+// ADT its err edge carries (D-04-05), and (from Phase 4 plan 03, D-04-12) the
+// target record Layout plus the InitializedState/Capture/Retention/Aliasing
+// obligation categories. Every field is either required (refused when
+// omitted, never defaulted) or, for the four obligations this phase's
+// language cannot yet exercise, a fixed structural fact the compiler itself
+// derives -- see check.go's standardForeignObligations for why that is not
+// an omission-tolerant default.
 type ForeignContract struct {
 	Symbol       string `json:"symbol"`
 	Allocator    string `json:"allocator"`
 	Unwind       string `json:"unwind,omitempty"`
 	NonlocalExit string `json:"nonlocal_exit,omitempty"`
 	Fails        string `json:"fails,omitempty"`
+	// InitializedState, Capture, Retention, and Aliasing are Phase 4 plan 03's
+	// remaining FFI-01 obligation categories (D-04-12). This phase's language
+	// has no partial-field initialization, no closures, no threads, and no
+	// calls into Lang, so all four are structurally fixed facts the compiler
+	// derives identically for every declared symbol (check.go's
+	// standardForeignObligations) rather than per-symbol declarations.
+	// Capture/Retention/Aliasing are additionally named in the lang.foreign/0
+	// sidecar manifest's unchecked_obligations list (D-04-12c), since nothing
+	// in this phase exercises them.
+	InitializedState string `json:"initialized_state,omitempty"`
+	Capture          string `json:"capture,omitempty"`
+	Retention        string `json:"retention,omitempty"`
+	Aliasing         string `json:"aliasing,omitempty"`
+	// Layout is the target record layout obligation (D-04-12/T-04-14): an
+	// ordered field list with declared size, alignment, and offset, plus the
+	// record's own declared size and alignment. This phase's foreign surface
+	// has exactly one declared record shape (the {ok, value} two-field
+	// by-value ABI result cgen's emitLinearForeign always generates), so
+	// every foreign symbol's Layout is currently checker-derived -- a fixed
+	// structural fact, not a per-symbol declaration (see check.go's
+	// standardForeignLayout).
+	Layout *RecordLayout `json:"layout,omitempty"`
+}
+
+// RecordLayout is one declared record's layout obligation: its own declared
+// size and alignment, plus an ordered field list. LayoutField carries a
+// field's name and its declared size, alignment, and offset within the
+// record. Both are additive (Phase 4 plan 03), referenced only from
+// ForeignContract.Layout.
+type RecordLayout struct {
+	Size      int           `json:"size"`
+	Alignment int           `json:"alignment"`
+	Fields    []LayoutField `json:"fields"`
+	// ForeignTypeName is the C struct name Lang's declaration expects to find
+	// on the foreign side (e.g. in the frozen translation unit's private
+	// header): the generated conformance TU asserts sizeof/_Alignof/offsetof
+	// pairs between this name and Lang's own generated declaration.
+	ForeignTypeName string `json:"foreign_type_name"`
+}
+
+type LayoutField struct {
+	Name      string `json:"name"`
+	Size      int    `json:"size"`
+	Alignment int    `json:"alignment"`
+	Offset    int    `json:"offset"`
+	// CType is the declared C type of this field (this phase's foreign
+	// surface only ever declares single-byte fields, so this is always
+	// "unsigned char" today; carried explicitly rather than hardcoded at the
+	// emission site so the field is self-describing).
+	CType string `json:"c_type"`
 }
 
 // PublicOrigin records the declared origin path(s) and access mode for a
@@ -209,6 +264,16 @@ type LinearOperation struct {
 	// pre-plan-02 operation, and every operation kind other than OpRelease,
 	// leaves this empty.
 	ReleasesOperationID string `json:"releases_operation_id,omitempty"`
+	// Allocator is Phase 4 plan 03's additive omitempty fact
+	// (T-04-14/allocator-identity requirement): populated on an OpForeignCall
+	// with that acquisition's own declared allocator identity, and copied
+	// verbatim onto the OpRelease that discharges it. A release whose
+	// Allocator differs from its own acquisition's is refused independently
+	// by check (at emission time) and by corevalidate (by re-fetching the
+	// acquisition and comparing, never trusting check's bookkeeping). Every
+	// pre-plan-03 operation, and every operation kind other than
+	// OpForeignCall/OpRelease, leaves this empty.
+	Allocator string `json:"allocator,omitempty"`
 }
 
 type LinearBody struct {

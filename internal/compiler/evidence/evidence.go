@@ -65,6 +65,14 @@ type Manifest struct {
 	ExecutionDigests []string `json:"execution_digests,omitempty"`
 	DigestClaim      string   `json:"digest_claim,omitempty"`
 	KnownEscape      string   `json:"known_escape,omitempty"`
+	// ForeignDigest is Phase 4 plan 03's additive omitempty field
+	// (D-04-12c/D-04-23): the content digest of the program's lang.foreign/0
+	// sidecar manifest, set only when the program declares a foreign block.
+	// It is a new trailing field on the /1 identity struct only (manifestID)
+	// -- never inserted into the /0 struct -- so a program with no foreign
+	// block produces the identical manifest identifier it produced before
+	// this phase.
+	ForeignDigest string `json:"foreign_digest,omitempty"`
 }
 
 type Product struct {
@@ -222,6 +230,13 @@ func build(source []byte, facts Facts, format func(syntax.Tree) []byte, parse fu
 		if manifest.Policy == "phase1-pure-c17-v1" {
 			manifest.Policy = "phase2-owned-c17-v1"
 		}
+		if hasForeignContract(checked.Program) {
+			foreignManifest, foreignErr := cgen.EmitForeignManifest(checked.Program)
+			if foreignErr != nil {
+				return Product{}, nil, foreignErr
+			}
+			manifest.ForeignDigest = digest([]byte(foreignManifest))
+		}
 		for _, function := range checked.Program.Functions {
 			input, ok := evidenceInput(function)
 			if !ok {
@@ -249,6 +264,19 @@ func build(source []byte, facts Facts, format func(syntax.Tree) []byte, parse fu
 		return Product{}, nil, err
 	}
 	return Product{Manifest: manifest, CanonicalSource: canonicalSource, CoreBytes: coreBytes, CSource: []byte(cSource), ManifestBytes: manifestBytes, Executions: executions}, nil, nil
+}
+
+// hasForeignContract reports whether any function in program declares a
+// foreign C symbol (D-04-12c): the ForeignDigest field is set only then, so
+// a program with no foreign block produces the identical manifest identifier
+// it produced before Phase 4 plan 03.
+func hasForeignContract(program core.Program) bool {
+	for _, function := range program.Functions {
+		if function.ForeignContract != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func evidenceInput(function core.Function) (string, bool) {
@@ -344,6 +372,9 @@ func Validate(manifest Manifest, source []byte, facts Facts) error {
 	if expected.Manifest.Schema == Schema1 && !equalStrings(manifest.ExecutionDigests, expected.Manifest.ExecutionDigests) {
 		return &ValidationError{Code: "evidence.execution_mismatch"}
 	}
+	if expected.Manifest.Schema == Schema1 && subtle.ConstantTimeCompare([]byte(manifest.ForeignDigest), []byte(expected.Manifest.ForeignDigest)) != 1 {
+		return &ValidationError{Code: "evidence.foreign_digest_mismatch"}
+	}
 	for _, check := range []struct {
 		code string
 		got  string
@@ -377,9 +408,17 @@ func manifestID(manifest Manifest) string {
 			Policy, SourceDigest, CoreDigest, CDigest                                        string
 			ExecutionDigests                                                                 []string
 			DigestClaim, KnownEscape                                                         string
+			// ForeignDigest is a new trailing field on the /1 identity struct
+			// only (D-04-12c/D-04-23): the identity function forks rather
+			// than grows, so this is never inserted into the /0 struct above.
+			// `omitempty` here is load-bearing, not decorative: a program
+			// with no foreign block must produce byte-identical identity
+			// JSON to what this struct produced before this field existed,
+			// so the manifest ID it produces stays unchanged (D-04-23).
+			ForeignDigest string `json:",omitempty"`
 		}{manifest.Schema, manifest.IDAlgorithm, manifest.SourceSchema, manifest.CoreSchema, manifest.ExecutionSchema, manifest.DiagnosticSchema,
 			manifest.CompilerIdentity, manifest.ClangIdentity, manifest.Target, manifest.Flags, manifest.Policy, manifest.SourceDigest, manifest.CoreDigest, manifest.CDigest,
-			manifest.ExecutionDigests, manifest.DigestClaim, manifest.KnownEscape}
+			manifest.ExecutionDigests, manifest.DigestClaim, manifest.KnownEscape, manifest.ForeignDigest}
 		encoded, _ := json.Marshal(identity)
 		sum := sha256.Sum256(encoded)
 		return "evidence:" + hex.EncodeToString(sum[:12])

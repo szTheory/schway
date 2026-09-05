@@ -1,10 +1,12 @@
 package check
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/ast"
@@ -1131,6 +1133,73 @@ func TestForeignCallLowersToOkAndErrEdges(t *testing.T) {
 		// stayed shut this task.
 		var alternatives []string = dataType.Alternatives
 		_ = alternatives
+	}
+}
+
+// TestForeignContractCarriesEveryObligation pins Task 04-03-01: the complete
+// core.ForeignContract for a real declared foreign symbol carries every
+// obligation FFI-01 names -- the four flat obligation strings plus a fully
+// populated Layout -- none of which has a default value that would let an
+// omission pass as a declaration.
+func TestForeignContractCarriesEveryObligation(t *testing.T) {
+	source := readPhase4Fixture(t, "foreign_acquire_one.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", result.Diagnostics)
+	}
+	contract := result.Program.Functions[0].ForeignContract
+	if contract == nil {
+		t.Fatal("expected a populated ForeignContract")
+	}
+	if contract.Symbol == "" || contract.Allocator == "" || contract.Unwind == "" || contract.NonlocalExit == "" || contract.Fails == "" {
+		t.Fatalf("missing D-04-01/02 obligation: %+v", contract)
+	}
+	if contract.InitializedState == "" || contract.Capture == "" || contract.Retention == "" || contract.Aliasing == "" {
+		t.Fatalf("missing D-04-12 obligation: %+v", contract)
+	}
+	if contract.Layout == nil || contract.Layout.ForeignTypeName == "" || contract.Layout.Size == 0 || contract.Layout.Alignment == 0 || len(contract.Layout.Fields) == 0 {
+		t.Fatalf("missing D-04-12 layout obligation: %+v", contract.Layout)
+	}
+	for _, field := range contract.Layout.Fields {
+		if field.Name == "" || field.Size == 0 || field.Alignment == 0 || field.CType == "" {
+			t.Fatalf("layout field missing an obligation: %+v", field)
+		}
+	}
+}
+
+// TestForeignFieldsAreOmittedWhenAbsent follows the Phase 3
+// TestPhase3FieldsAreOmittedWhenAbsent precedent: every Phase 1-3 fixture's
+// serialized core JSON must contain none of the new D-04-12 keys, checked
+// key by key rather than by whole-document comparison (which the existing
+// TestPreviousPhaseCoreBytesUnchanged golden hash pin already covers).
+func TestForeignFieldsAreOmittedWhenAbsent(t *testing.T) {
+	fixtures := []string{
+		"../../../testdata/phase1/toggle.lang",
+		"../../../testdata/phase2/owned_transfer.lang",
+		"../../../testdata/phase3/borrowed_view.lang",
+	}
+	newKeys := []string{`"initialized_state"`, `"capture"`, `"retention"`, `"aliasing"`, `"layout"`, `"foreign_type_name"`}
+	for _, path := range fixtures {
+		source, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		program := mustParseProgram(t, source)
+		result := Program(program)
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("%s: unexpected diagnostics: %+v", path, result.Diagnostics)
+		}
+		encoded, err := json.Marshal(result.Program)
+		if err != nil {
+			t.Fatalf("%s: marshal: %v", path, err)
+		}
+		text := string(encoded)
+		for _, key := range newKeys {
+			if strings.Contains(text, key) {
+				t.Fatalf("%s: serialized core unexpectedly contains new key %s:\n%s", path, key, text)
+			}
+		}
 	}
 }
 

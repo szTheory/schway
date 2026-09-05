@@ -320,6 +320,19 @@ func (v *validator) linear(function *core.Function) bool {
 			if !v.check(!isDeclaredFunctionName(v.program.Functions, function.ID, function.ForeignContract.Symbol), "core.call_target_not_foreign", operation.ID) {
 				return false
 			}
+			// Phase 4 plan 03 (D-04-12/FFI-01): every foreign obligation
+			// category must be present -- no default value that would let an
+			// omission pass as a declaration -- and the declared Layout must
+			// be internally consistent. This is independently derived from
+			// check's own admission gate: it reads only the four flat string
+			// fields and the Layout struct core.ForeignContract itself
+			// carries, never check's AST-level foreignSymbolInfo.
+			if !v.check(function.ForeignContract.InitializedState != "" && function.ForeignContract.Capture != "" && function.ForeignContract.Retention != "" && function.ForeignContract.Aliasing != "", "foreign.obligation_undeclared", operation.ID) {
+				return false
+			}
+			if !v.foreignLayoutConsistent(function.ForeignContract.Layout, operation.ID) {
+				return false
+			}
 		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			if !v.unique(loanIDs, operation.LoanID, "core.unknown_loan") {
@@ -714,6 +727,10 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 
 func (v *validator) replayStraightLine(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
 	operations := function.Linear.Operations
+	operationsByID := make(map[string]core.LinearOperation, len(operations))
+	for _, operation := range operations {
+		operationsByID[operation.ID] = operation
+	}
 	initialized := map[string]bool{function.Parameter.ID: true}
 	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
@@ -857,11 +874,32 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			if !v.check(operation.ReleasesOperationID != "", "core.release_target_unknown", operation.ID) {
 				return false
 			}
+			if !v.releaseAllocatorMatches(operation, operationsByID) {
+				return false
+			}
 		default:
 			return v.check(false, "core.unknown_operation", string(operation.Kind))
 		}
 	}
 	return v.check(returned, "core.final_claim_mismatch", function.ID)
+}
+
+// releaseAllocatorMatches independently re-derives T-04-14's
+// allocator-identity requirement: re-fetch the OpForeignCall this release
+// names (never trusting check's own bookkeeping) and require its Allocator
+// to match. A release naming an acquisition whose allocator differs is
+// refused with foreign.release_allocator_mismatch.
+func (v *validator) releaseAllocatorMatches(operation core.LinearOperation, operationsByID map[string]core.LinearOperation) bool {
+	acquisition, ok := operationsByID[operation.ReleasesOperationID]
+	if !ok {
+		// An unresolvable ReleasesOperationID (e.g. an "invented" release
+		// naming an operation that does not exist) is caught by
+		// checkReleaseOrder's own sequence comparison, not here -- this
+		// check's job is narrower: given a REAL acquisition, its allocator
+		// must match.
+		return true
+	}
+	return v.check(acquisition.Allocator == operation.Allocator, "foreign.release_allocator_mismatch", operation.ID)
 }
 
 // replayBlocks is replayStraightLine's counterpart for a branch-shaped
@@ -1033,6 +1071,9 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			// discharge target, and leave the reverse-order sequence itself
 			// to the independent rederivation in checkReleaseOrder.
 			if !v.check(operation.ReleasesOperationID != "", "core.release_target_unknown", operation.ID) {
+				return false
+			}
+			if !v.releaseAllocatorMatches(operation, operationsByID) {
 				return false
 			}
 		default:
@@ -1352,6 +1393,37 @@ func (v *validator) uniquePlace(set map[string]core.Place, place core.Place) boo
 // foreign contract's symbol in any honest artifact). D-04-01: OpForeignCall
 // is the only call surface -- a foreign contract naming a real Lang
 // function is exactly the inadmissible shape D-04-02 refuses.
+// foreignLayoutConsistent independently validates a declared core.RecordLayout's
+// internal consistency (D-04-12/task 04-03-01): the field list must be
+// non-empty, offsets must be strictly ascending in declaration order, no two
+// fields may share a name, and every field's offset+size must fit within the
+// record's own declared size. This reads only the core artifact's own
+// Layout struct -- never the AST, never check's own foreignSymbolInfo -- so
+// a hand-corrupted core.Program is caught exactly the same way a corrupted
+// checker output would be.
+func (v *validator) foreignLayoutConsistent(layout *core.RecordLayout, detail string) bool {
+	if !v.check(layout != nil && len(layout.Fields) > 0 && layout.ForeignTypeName != "", "foreign.layout_invalid", detail) {
+		return false
+	}
+	seenNames := make(map[string]struct{}, len(layout.Fields))
+	previousOffset := -1
+	for _, field := range layout.Fields {
+		v.checks++ // one inspection per declared layout field
+		if _, duplicate := seenNames[field.Name]; !v.check(field.Name != "" && !duplicate, "foreign.layout_invalid", detail) {
+			return false
+		}
+		seenNames[field.Name] = struct{}{}
+		if !v.check(field.Offset > previousOffset, "foreign.layout_invalid", detail) {
+			return false
+		}
+		previousOffset = field.Offset
+		if !v.check(field.Size > 0 && field.Alignment > 0 && field.Offset+field.Size <= layout.Size, "foreign.layout_invalid", detail) {
+			return false
+		}
+	}
+	return v.check(layout.Size > 0 && layout.Alignment > 0, "foreign.layout_invalid", detail)
+}
+
 func isDeclaredFunctionName(functions []core.Function, excludeFunctionID, name string) bool {
 	for _, candidate := range functions {
 		if candidate.ID == excludeFunctionID {

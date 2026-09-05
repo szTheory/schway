@@ -1251,9 +1251,8 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 		},
 	}
 
-	contract := &core.ForeignContract{
-		Symbol: symbol.Name, Allocator: symbol.Allocator, Unwind: symbol.Unwind, NonlocalExit: symbol.NonlocalExit, Fails: symbol.Fails,
-	}
+	linear.Operations[0].Allocator = symbol.Allocator
+	contract := buildForeignContract(symbol)
 
 	return core.Function{
 		ID: functionID, Name: function.Name,
@@ -1264,6 +1263,51 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 		ForeignContract: contract,
 		Span:            function.Span,
 	}, nil, work
+}
+
+// standardForeignLayout is this phase's fixed target-layout obligation
+// (D-04-12/T-04-14): every foreign symbol this phase declares acquires
+// exactly one malloc-backed record shaped like the frozen
+// native/lang_foreign_resource_private.h's own lang_foreign_resource_block
+// -- a single one-byte payload field -- so every declared foreign symbol
+// shares an identical Layout. This is not an omission-tolerant default -- it
+// never varies, and there is today nothing for a symbol to declare
+// differently -- but a future phase with richer foreign record shapes must
+// replace this with a real per-symbol declaration. The conformance unit
+// (cgen.EmitForeignConformance) proves this declared belief against the real
+// private header via paired sizeof/_Alignof/offsetof assertions.
+func standardForeignLayout() *core.RecordLayout {
+	return &core.RecordLayout{
+		Size: 1, Alignment: 1, ForeignTypeName: "lang_foreign_resource_block",
+		Fields: []core.LayoutField{
+			{Name: "payload", Size: 1, Alignment: 1, Offset: 0, CType: "unsigned char"},
+		},
+	}
+}
+
+// standardForeignObligations returns this phase's fixed values for the
+// InitializedState/Capture/Retention/Aliasing obligation categories
+// (D-04-12): "fully" because this phase's language has no partial-field
+// initialization shape at all; "none" for the other three because the
+// language has no closures, no threads, and no calls into Lang for a
+// foreign symbol to capture, retain, or alias anything through. These are
+// declared facts, not proven ones -- cgen's sidecar manifest emitter records
+// capture/retention/aliasing in unchecked_obligations precisely because
+// nothing in this phase exercises them (D-04-12c).
+func standardForeignObligations() (initializedState, capture, retention, aliasing string) {
+	return "fully", "none", "none", "none"
+}
+
+// buildForeignContract assembles the complete core.ForeignContract for one
+// resolved foreign symbol, sharing the standard obligations/layout every
+// declared symbol carries this phase.
+func buildForeignContract(symbol foreignSymbolInfo) *core.ForeignContract {
+	initializedState, capture, retention, aliasing := standardForeignObligations()
+	return &core.ForeignContract{
+		Symbol: symbol.Name, Allocator: symbol.Allocator, Unwind: symbol.Unwind, NonlocalExit: symbol.NonlocalExit, Fails: symbol.Fails,
+		InitializedState: initializedState, Capture: capture, Retention: retention, Aliasing: aliasing,
+		Layout: standardForeignLayout(),
+	}
 }
 
 // resourceStep is check.go's own resolved bookkeeping for one step of a
@@ -1379,6 +1423,7 @@ func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterT
 			ID: infos[i].callOpID, PointID: fmt.Sprintf("%s:point:linear:%d", functionID, i), Kind: core.OpForeignCall,
 			SourceID: parameterID, TargetID: infos[i].okPlaceID, TypeID: typeID,
 			OkEdgeID: infos[i].okEdgeID, ErrEdgeID: infos[i].errEdgeID, ErrTargetID: infos[i].errPlaceID,
+			Allocator: infos[i].symbol.Allocator,
 		}
 	}
 
@@ -1396,6 +1441,15 @@ func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterT
 			ops = append(ops, core.LinearOperation{
 				ID: opID, PointID: fmt.Sprintf("%s:point:linear:%d", functionID, len(operations)+len(ops)),
 				Kind: core.OpRelease, SourceID: acquired.okPlaceID, TypeID: typeID, ReleasesOperationID: acquired.callOpID,
+				// Allocator is copied verbatim from the acquisition this
+				// release discharges (T-04-14): check.go is the sole
+				// producer of both fields from the SAME acquired.symbol
+				// value, so this can never disagree with itself here --
+				// see releaseAllocatorMismatch below for check's own
+				// defensive re-assertion of that invariant, and
+				// corevalidate's independent re-derivation for a core
+				// artifact this admission gate never produced.
+				Allocator: acquired.symbol.Allocator,
 			})
 		}
 		return ops
@@ -1437,11 +1491,15 @@ func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterT
 	blocks = append(blocks, core.Block{ID: successBlockID, PointID: functionID + ":point:success", OperationIDs: successOpIDs})
 	operations = append(operations, successOps...)
 
+	if problem := releaseAllocatorMismatch(functionID, operations); problem != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*problem}, work
+	}
+
 	linear := &core.LinearBody{
 		ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges,
 	}
 	first := infos[0].symbol
-	contract := &core.ForeignContract{Symbol: first.Name, Allocator: first.Allocator, Unwind: first.Unwind, NonlocalExit: first.NonlocalExit, Fails: first.Fails}
+	contract := buildForeignContract(first)
 
 	return core.Function{
 		ID: functionID, Name: function.Name,
@@ -1452,6 +1510,43 @@ func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterT
 		ForeignContract: contract,
 		Span:            function.Span,
 	}, nil, work
+}
+
+// releaseAllocatorMismatch is check.go's own defensive re-assertion of
+// T-04-14's allocator-identity requirement: for every OpRelease this
+// admission gate just emitted, re-fetch the OpForeignCall it names
+// (ReleasesOperationID) and require its Allocator field to match. Since
+// check.go is the sole producer of both fields from the same acquired
+// resourceStep, this can never fire against an honestly-constructed core
+// artifact today -- it exists as defense-in-depth against a future bug in
+// this emission path, alongside corevalidate's independent re-derivation
+// against an artifact this gate never produced at all (a hand-mutated or
+// corrupted core.Program).
+func releaseAllocatorMismatch(functionID string, operations []core.LinearOperation) *diagnostic.Diagnostic {
+	byID := make(map[string]core.LinearOperation, len(operations))
+	for _, operation := range operations {
+		byID[operation.ID] = operation
+	}
+	for _, operation := range operations {
+		if operation.Kind != core.OpRelease {
+			continue
+		}
+		acquisition, ok := byID[operation.ReleasesOperationID]
+		if !ok || acquisition.Allocator == operation.Allocator {
+			continue
+		}
+		causes := []diagnostic.Cause{
+			{Kind: "release", Detail: operation.ID},
+			{Kind: "acquisition", Detail: acquisition.ID},
+		}
+		problem := diagnostic.ErrorWithRepairs(
+			"foreign.release_allocator_mismatch", diagnostic.Span{},
+			"a release's declared allocator differs from its acquisition's", causes,
+			diagnostic.Repair{Kind: "match_acquisition_allocator"},
+		)
+		return &problem
+	}
+	return nil
 }
 
 // missingForeignPolicyDiagnostic is Task 4's admission gate stub (D-04-16):
