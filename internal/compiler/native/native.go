@@ -360,6 +360,14 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			if !isLast || value.Schema != execution.Schema1 || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("typed-failure event fields are invalid")
 			}
+		case "resource.released":
+			// D-04-07's non-terminal release transition: like the other
+			// linear transitions it is never last (a terminator always
+			// follows), but unlike them it produces no new place, so
+			// TargetPlace must stay empty rather than required.
+			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace != "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+				return errors.New("resource release event fields are invalid")
+			}
 		default:
 			return errors.New("unknown execution event kind")
 		}

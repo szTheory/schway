@@ -1,0 +1,32 @@
+// Law under test (RES-01, D-04-07): three successive fallible acquisitions
+// A, B, C all succeed, and the success path releases them in the exact
+// reverse of completed-acquisition order -- C, then B, then A -- before the
+// function returns its own untouched parameter (never moved by any of the
+// three OpForeignCall operations, so it stays available to return once every
+// acquired resource has been released).
+
+module phase4.acquire_three_success
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let a = try lang_res_open(request)
+  let b = try lang_res_open(request)
+  let c = try lang_res_open(request)
+  request
+}

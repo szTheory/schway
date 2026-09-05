@@ -21,6 +21,8 @@ const (
 	TokenMut        Kind = "mut"
 	TokenForeign    Kind = "foreign"
 	TokenTry        Kind = "try"
+	TokenDiscard    Kind = "discard"
+	TokenBecause    Kind = "because"
 	TokenString     Kind = "string"
 	TokenLBrace     Kind = "{"
 	TokenRBrace     Kind = "}"

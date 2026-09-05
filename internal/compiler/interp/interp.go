@@ -117,6 +117,11 @@ func runBranchArm(function core.Function, arm core.MatchArm, input string) (Exec
 				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 			})
 			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: []string{}}, nil
+		case core.OpRelease:
+			// No match arm can produce a release this phase either -- named
+			// here for the same six-site exhaustive-dispatch reason as
+			// OpForeignCall above.
+			events = append(events, ownedEvent(function, operation, "resource.released"))
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
@@ -146,8 +151,28 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 	for _, edge := range function.Linear.Edges {
 		edges[edge.ID] = edge
 	}
+	// tracked names exactly the acquisitions this function's own OpRelease
+	// operations discharge somewhere (D-04-07): computed once, up front, so
+	// a function with no OpRelease at all (the 04-01 tracer shape, and a
+	// `discard`'s own untracked acquisition) never populates LiveResources,
+	// preserving that shape's pre-plan-02 empty-slice behavior exactly.
+	tracked := make(map[string]bool)
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpRelease && operation.ReleasesOperationID != "" {
+			tracked[operation.ReleasesOperationID] = true
+		}
+	}
+
 	values := map[string]string{function.Parameter.ID: input}
 	events := make([]Event, 0, len(function.Linear.Operations))
+	// live is Phase 4 plan 02's real resource accounting (D-04-07),
+	// replacing the hardcoded empty LiveResources slice: a resource is
+	// tracked live the moment its acquisition's ok edge is taken, and
+	// discharged when the OpRelease naming it (by ReleasesOperationID) runs.
+	// liveOrder preserves first-acquired order so a leaked-resource report
+	// is deterministic rather than a function of map iteration.
+	live := make(map[string]bool)
+	var liveOrder []string
 	currentID := function.ID + ":block:entry"
 	for {
 		block, known := blocks[currentID]
@@ -185,20 +210,32 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 					Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: function.ID,
 					SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
 				})
+				// The interpreter always simulates success this phase (a
+				// documented discretionary stub -- it cannot actually call
+				// C), so the acquisition unconditionally becomes live here,
+				// on the ok path, exactly mirroring D-04-07's rule that only
+				// a completed acquisition is ever tracked for release.
+				if tracked[operation.ID] && !live[operation.ID] {
+					live[operation.ID] = true
+					liveOrder = append(liveOrder, operation.ID)
+				}
 				forkedOperation := operation
 				forked = &forkedOperation
+			case core.OpRelease:
+				live[operation.ReleasesOperationID] = false
+				events = append(events, ownedEvent(function, operation, "resource.released"))
 			case core.OpReturn:
 				events = append(events, Event{
 					Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
 					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: []string{}}, nil
+				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
 			case core.OpFail:
 				events = append(events, Event{
 					Schema: execution.Schema1, ID: operation.ID + ":event:failed", Kind: "function.failed",
 					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "typed_failure", Value: value}, Events: events, LiveResources: []string{}}, nil
+				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "typed_failure", Value: value}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
 			default:
 				return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 			}
@@ -217,6 +254,20 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 		}
 		return Execution{}, fmt.Errorf("block %q has no terminator and an ambiguous successor set", block.ID)
 	}
+}
+
+// liveResourceList projects the live-tracking map into the deterministic
+// slice Execution.LiveResources carries: acquisition op IDs still marked
+// live, in first-acquired order. Returns an empty (never nil) slice when
+// nothing is live, matching every pre-plan-02 terminal record's shape.
+func liveResourceList(live map[string]bool, order []string) []string {
+	result := []string{}
+	for _, id := range order {
+		if live[id] {
+			result = append(result, id)
+		}
+	}
+	return result
 }
 
 func CanonicalBytes(execution Execution) ([]byte, error) {

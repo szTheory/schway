@@ -36,6 +36,12 @@ type formatter struct {
 	// preceding token is not a sound classifier: a generic return type ends
 	// the header with `>` (TokenRAngle), not an identifier.
 	header string
+	// discardRationale is true between a `discard ... because` statement's
+	// `because` keyword and its rationale string, so that string's closing
+	// quote breaks the line the same way a try-call's closing paren does --
+	// the next statement (another `discard`, a `let`, or the linear body's
+	// final bare Result identifier) starts fresh.
+	discardRationale bool
 }
 
 func (f *formatter) token(token Token) {
@@ -94,6 +100,16 @@ func (f *formatter) token(token Token) {
 		}
 		f.write("let ")
 		f.linearBinding = true
+	case TokenDiscard:
+		if f.lineOpen {
+			f.newline()
+		}
+		f.write("discard ")
+	case TokenBecause:
+		f.trimSpace()
+		f.out.WriteString(" because ")
+		f.lineOpen = true
+		f.discardRationale = true
 	case TokenTake:
 		f.write("take ")
 	case TokenBorrow:
@@ -134,6 +150,9 @@ func (f *formatter) token(token Token) {
 		f.out.WriteString(token.Text)
 		f.lineOpen = true
 		if f.context() == "foreign_fn" && f.previous == TokenColon {
+			f.newline()
+		} else if f.discardRationale && (f.context() == "function" || f.context() == "arm") {
+			f.discardRationale = false
 			f.newline()
 		}
 	case TokenDot:

@@ -159,6 +159,12 @@ const (
 	// ADT (D-04-04/D-04-09): the only producer of a "typed_failure" terminal
 	// outcome anywhere in the IR.
 	OpFail OperationKind = "fail"
+	// OpRelease is Phase 4 plan 02's resource-lifecycle operation (D-04-07):
+	// a non-terminal transition discharging exactly one completed
+	// OpForeignCall acquisition. It is never a terminator -- a block always
+	// ends in OpReturn or OpFail, with zero or more OpRelease operations
+	// immediately before that terminator.
+	OpRelease OperationKind = "release"
 )
 
 // AllOperationKinds returns every declared OperationKind, in declaration
@@ -168,7 +174,7 @@ const (
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
@@ -196,6 +202,13 @@ type LinearOperation struct {
 	OkEdgeID    string `json:"ok_edge_id,omitempty"`
 	ErrEdgeID   string `json:"err_edge_id,omitempty"`
 	ErrTargetID string `json:"err_target_id,omitempty"`
+	// ReleasesOperationID is Phase 4 plan 02's additive omitempty fact
+	// (D-04-07): populated only on an OpRelease operation, it names the
+	// OpForeignCall operation ID this release discharges, so a release is
+	// always traceable to exactly one completed acquisition. Every
+	// pre-plan-02 operation, and every operation kind other than OpRelease,
+	// leaves this empty.
+	ReleasesOperationID string `json:"releases_operation_id,omitempty"`
 }
 
 type LinearBody struct {

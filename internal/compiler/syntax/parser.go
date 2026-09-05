@@ -383,7 +383,13 @@ func (p *parser) typeRef() ast.TypeRef {
 func (p *parser) linearBody() ast.LinearBody {
 	start := p.peek()
 	body := ast.LinearBody{Span: start.Span}
-	for p.peek().Kind == TokenLet {
+	for p.peek().Kind == TokenLet || p.peek().Kind == TokenDiscard {
+		if p.peek().Kind == TokenDiscard {
+			binding, end := p.discardBecause()
+			body.Bindings = append(body.Bindings, binding)
+			body.Span.End = end
+			continue
+		}
 		bindingStart := p.advance()
 		name := p.identifier("syntax.expected_binding_name")
 		p.expect(TokenEqual, "syntax.expected_equal")
@@ -438,6 +444,32 @@ func (p *parser) tryCallBinding(bindingStart, name Token) (ast.Binding, int) {
 	arguments, end := p.callArguments()
 	rhs := ast.RHS{Kind: "try_call", Callee: callee.Text, Arguments: arguments, Span: spanFrom(tryToken, callee)}
 	return ast.Binding{Name: name.Text, RHS: rhs, Span: diagnostic.Span{Start: bindingStart.Span.Start, End: end}}, end
+}
+
+// discardBecause parses `discard <callee>(<arg>, ...) because "<rationale>"`
+// (D-04-06's second and only other admissible fallible-call consumer). The
+// rationale is a required non-empty string literal; an empty or absent
+// rationale is a parse-level rejection, so the core IR never has to encode a
+// discard whose rationale is missing.
+func (p *parser) discardBecause() (ast.Binding, int) {
+	start := p.expect(TokenDiscard, "syntax.expected_discard")
+	callee := p.identifier("syntax.expected_foreign_callee")
+	arguments, _ := p.callArguments()
+	because := p.expect(TokenBecause, "syntax.expected_because")
+	rationaleToken := p.expect(TokenString, "syntax.expected_discard_rationale")
+	rationale := rationaleToken.Text
+	if len(rationale) >= 2 && rationaleToken.Kind == TokenString {
+		rationale = rationale[1 : len(rationale)-1]
+	}
+	if rationale == "" {
+		p.problem("syntax.discard_rationale_empty", rationaleToken, "discard ... because requires a non-empty rationale string")
+	}
+	end := rationaleToken.Span.End
+	if because.Kind != TokenBecause {
+		end = because.Span.End
+	}
+	rhs := ast.RHS{Kind: "discard_call", Callee: callee.Text, Arguments: arguments, Rationale: rationale, Span: spanFrom(start, callee)}
+	return ast.Binding{Name: "", RHS: rhs, Span: diagnostic.Span{Start: start.Span.Start, End: end}}, end
 }
 
 // callArguments parses `(arg, arg, ...)`, where each argument is a bare

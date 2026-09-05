@@ -1095,23 +1095,24 @@ func collectForeignSymbols(program ast.Program) (map[string]foreignSymbolInfo, [
 const maxForeignPoliciesPerSymbolCheck = 32
 
 // hasTryCall reports whether a linear body's bindings contain a fallible
-// foreign call (D-04-06's `try` form). A function with no such binding takes
-// the entirely unchanged checkLinear path.
+// foreign call consumer (D-04-06's `try` or `discard ... because` forms). A
+// function with no such binding takes the entirely unchanged checkLinear
+// path.
 func hasTryCall(body *ast.LinearBody) bool {
 	for _, binding := range body.Bindings {
-		if binding.RHS.Kind == "try_call" {
+		if binding.RHS.Kind == "try_call" || binding.RHS.Kind == "discard_call" {
 			return true
 		}
 	}
 	return false
 }
 
-// checkFallibleLinear lowers the one supported shape this plan's tracer
-// proves: a straight-line function whose sole binding is a fallible foreign
-// call, immediately returned on the ok edge. It produces a core.Function
-// whose Linear body carries three blocks (entry/ok/err) and two edges,
-// exactly mirroring checkBranch's block/edge shape but keyed on a fallible
-// call rather than a match arm.
+// checkFallibleLinear dispatches between the two shapes this phase supports.
+// The tracer shape (04-01) is a single `try` binding immediately returned.
+// The resource-lifecycle shape (04-02, D-04-07) is a sequence of one or more
+// try/discard foreign-call bindings whose result is the function's own
+// parameter -- every acquired resource is released before return, so the
+// parameter (never moved by a foreign call) is always what comes back.
 func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	if !sameType(function.ReturnType, function.Parameter.Type) {
@@ -1133,47 +1134,77 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 	}
 
 	body := function.Body.Linear
-	if len(body.Bindings) != 1 || body.Bindings[0].RHS.Kind != "try_call" || body.Result != body.Bindings[0].Name {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
-			"check.foreign_call_shape_unsupported", body.Span,
-			"this phase supports only a function whose sole binding is a fallible foreign call immediately returned",
-		)}, work
+	if len(body.Bindings) == 1 && body.Bindings[0].RHS.Kind == "try_call" && body.Result == body.Bindings[0].Name {
+		return checkForeignTracer(functionID, function, parameterType, derived, typeID, work, body.Bindings[0], foreignSymbols, functionNames, dataTypes)
 	}
-	tryBinding := body.Bindings[0]
-
-	if len(tryBinding.RHS.Arguments) != maxForeignParametersPerSymbol || tryBinding.RHS.Arguments[0] != function.Parameter.Name {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
-			"name.unknown", tryBinding.RHS.Span, "foreign call argument must be the function's own parameter",
-		)}, work
+	if len(body.Bindings) > 0 && body.Result == function.Parameter.Name && everyBindingIsFallible(body.Bindings) {
+		return checkResourceLifecycle(functionID, function, parameterType, derived, typeID, work, foreignSymbols, functionNames, dataTypes)
 	}
+	return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
+		"check.foreign_call_shape_unsupported", body.Span,
+		"this phase supports only a single fallible foreign call immediately returned, or a sequence of try/discard foreign calls whose result is the function's own parameter",
+	)}, work
+}
 
-	symbol, isForeign := foreignSymbols[tryBinding.RHS.Callee]
+func everyBindingIsFallible(bindings []ast.Binding) bool {
+	for _, binding := range bindings {
+		if binding.RHS.Kind != "try_call" && binding.RHS.Kind != "discard_call" {
+			return false
+		}
+	}
+	return true
+}
+
+// resolveForeignStep independently resolves one step's declared foreign
+// symbol and its failure-ADT type fact, shared by both checkForeignTracer and
+// checkResourceLifecycle so the two admission gates (D-04-02/D-04-16) and the
+// argument-shape rule stay in exact lockstep between the tracer's single-call
+// shape and the resource-lifecycle chain.
+func resolveForeignStep(binding ast.Binding, functionParameterName string, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (foreignSymbolInfo, core.TypeRef, ability.Result, *diagnostic.Diagnostic) {
+	if len(binding.RHS.Arguments) != maxForeignParametersPerSymbol || binding.RHS.Arguments[0] != functionParameterName {
+		problem := diagnostic.Error("name.unknown", binding.RHS.Span, "foreign call argument must be the function's own parameter")
+		return foreignSymbolInfo{}, core.TypeRef{}, ability.Result{}, &problem
+	}
+	symbol, isForeign := foreignSymbols[binding.RHS.Callee]
 	if !isForeign {
-		if functionNames[tryBinding.RHS.Callee] {
-			causes := []diagnostic.Cause{{Kind: "callee", Detail: tryBinding.RHS.Callee}}
-			return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
-				"core.call_target_not_foreign", tryBinding.RHS.Span,
+		if functionNames[binding.RHS.Callee] {
+			causes := []diagnostic.Cause{{Kind: "callee", Detail: binding.RHS.Callee}}
+			problem := diagnostic.ErrorWithRepairs(
+				"core.call_target_not_foreign", binding.RHS.Span,
 				"a fallible call's target must be a declared foreign symbol, not a Lang function", causes,
 				diagnostic.Repair{Kind: "declare_foreign_symbol"},
-			)}, work
+			)
+			return foreignSymbolInfo{}, core.TypeRef{}, ability.Result{}, &problem
 		}
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown", tryBinding.RHS.Span, "foreign call target is unknown")}, work
+		problem := diagnostic.Error("name.unknown", binding.RHS.Span, "foreign call target is unknown")
+		return foreignSymbolInfo{}, core.TypeRef{}, ability.Result{}, &problem
 	}
-
 	if problem := missingForeignPolicyDiagnostic(symbol); problem != nil {
-		return core.Function{}, []diagnostic.Diagnostic{*problem}, work
+		return foreignSymbolInfo{}, core.TypeRef{}, ability.Result{}, problem
 	}
-
 	errDataType, ok := dataTypes[symbol.Fails]
 	if !symbol.HasFails || !ok || len(errDataType.Alternatives) == 0 {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
-			"type.unknown", tryBinding.Span, "foreign symbol's declared failure type is unknown or has no alternatives",
-		)}, work
+		problem := diagnostic.Error("type.unknown", binding.Span, "foreign symbol's declared failure type is unknown or has no alternatives")
+		return foreignSymbolInfo{}, core.TypeRef{}, ability.Result{}, &problem
 	}
 	errShape := core.TypeRef{Constructor: errDataType.Name}
-	errDerived, err := ability.DeriveSealed(errShape, map[string]bool{errDataType.Name: true})
-	if err != nil {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", tryBinding.Span, err.Error())}, work
+	errDerived, derr := ability.DeriveSealed(errShape, map[string]bool{errDataType.Name: true})
+	if derr != nil {
+		problem := diagnostic.Error("type.unknown", binding.Span, derr.Error())
+		return foreignSymbolInfo{}, core.TypeRef{}, ability.Result{}, &problem
+	}
+	return symbol, errShape, errDerived, nil
+}
+
+// checkForeignTracer lowers the 04-01 shape: a straight-line function whose
+// sole binding is a fallible foreign call, immediately returned on the ok
+// edge. It produces a core.Function whose Linear body carries three blocks
+// (entry/ok/err) and two edges, exactly mirroring checkBranch's block/edge
+// shape but keyed on a fallible call rather than a match arm.
+func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType core.TypeRef, derived ability.Result, typeID string, work int, tryBinding ast.Binding, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
+	symbol, errShape, errDerived, problem := resolveForeignStep(tryBinding, function.Parameter.Name, foreignSymbols, functionNames, dataTypes)
+	if problem != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*problem}, work
 	}
 
 	parameterID := functionID + ":place:0"
@@ -1223,6 +1254,194 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 	contract := &core.ForeignContract{
 		Symbol: symbol.Name, Allocator: symbol.Allocator, Unwind: symbol.Unwind, NonlocalExit: symbol.NonlocalExit, Fails: symbol.Fails,
 	}
+
+	return core.Function{
+		ID: functionID, Name: function.Name,
+		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter:       core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor},
+		ReturnType:      function.ReturnType.Constructor,
+		Linear:          linear,
+		ForeignContract: contract,
+		Span:            function.Span,
+	}, nil, work
+}
+
+// resourceStep is check.go's own resolved bookkeeping for one step of a
+// resource-lifecycle function: the block/place/type identity a step was
+// assigned, plus the information the (D-04-07) reverse-order release
+// materialization needs once the step completes.
+type resourceStep struct {
+	kind       string // "try_call" | "discard_call"
+	symbol     foreignSymbolInfo
+	callOpID   string
+	okPlaceID  string
+	errPlaceID string
+	errTypeID  string
+	blockID    string
+	okEdgeID   string
+	errEdgeID  string
+}
+
+// checkResourceLifecycle lowers a sequence of N try/discard foreign-call
+// bindings (D-04-07/D-04-06) into N single-operation call blocks, one
+// terminal err block per try_call step (releasing every completed try_call
+// acquisition that precedes it, reverse of completion order), and one
+// terminal success block (releasing every completed try_call acquisition, in
+// full reverse order, then returning the function's own parameter -- never
+// moved by any OpForeignCall, so it is always available to return once every
+// acquired resource has been released).
+//
+// Order is decided by this file's own forward accumulation over the step
+// sequence (mirroring the `expiringLoans[loan.lastUse] = append(...)` shape
+// already established for loans in this file), never by map iteration: a
+// release list derived from the emitter's own control-flow structure rather
+// than from this materialized list is exactly the defect the three-
+// acquisition fixture and the transposition mutation (Task 04-02-03) exist to
+// catch.
+func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterType core.TypeRef, derived ability.Result, typeID string, work int, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
+	steps := function.Body.Linear.Bindings
+	n := len(steps)
+	parameterID := functionID + ":place:0"
+
+	types := []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}}
+	places := make([]core.Place, 1+n, 1+2*n)
+	places[0] = core.Place{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}
+	infos := make([]resourceStep, n)
+	typeCounter := 1
+
+	// corevalidate's targetMatches requires an OpForeignCall at flat
+	// operation index i to produce place:(i+1) EXACTLY (the same
+	// index-plus-one invariant every other transition operation obeys) --
+	// so every step's ok place is assigned first, contiguously, in call
+	// order (place:1..place:n), and every step's err place (never
+	// index-checked -- only referenced by ErrTargetID) is appended
+	// afterward, in step order, at place:(n+1)..place:(2n).
+	for i, binding := range steps {
+		symbol, errShape, errDerived, problem := resolveForeignStep(binding, function.Parameter.Name, foreignSymbols, functionNames, dataTypes)
+		if problem != nil {
+			return core.Function{}, []diagnostic.Diagnostic{*problem}, work
+		}
+		errTypeID := fmt.Sprintf("%s:type:%d", functionID, typeCounter)
+		typeCounter++
+		types = append(types, core.TypeFact{ID: errTypeID, Shape: errShape, Abilities: errDerived.Granted, NegativeWitnesses: errDerived.NegativeWitnesses})
+
+		okPlaceID := fmt.Sprintf("%s:place:%d", functionID, i+1)
+		errPlaceID := fmt.Sprintf("%s:place:%d", functionID, n+1+i)
+		places[i+1] = core.Place{ID: okPlaceID, Name: binding.Name, TypeID: typeID}
+		places = append(places, core.Place{ID: errPlaceID, Name: fmt.Sprintf("_err%d", i), TypeID: errTypeID})
+
+		blockID := functionID + ":block:entry"
+		if i > 0 {
+			blockID = fmt.Sprintf("%s:block:step:%d", functionID, i)
+		}
+		infos[i] = resourceStep{
+			kind: binding.RHS.Kind, symbol: symbol, callOpID: fmt.Sprintf("%s:op:%d", functionID, i),
+			okPlaceID: okPlaceID, errPlaceID: errPlaceID, errTypeID: errTypeID, blockID: blockID,
+		}
+		work++
+	}
+
+	successBlockID := functionID + ":block:success"
+	var blocks []core.Block
+	var edges []core.Edge
+	operations := make([]core.LinearOperation, n)
+	for i := 0; i < n; i++ {
+		okTarget := successBlockID
+		if i+1 < n {
+			okTarget = infos[i+1].blockID
+		}
+		errTarget := okTarget
+		if infos[i].kind == "try_call" {
+			errTarget = fmt.Sprintf("%s:block:err:%d", functionID, i)
+		}
+		infos[i].okEdgeID = fmt.Sprintf("%s:edge:step:%d:ok", functionID, i)
+		infos[i].errEdgeID = fmt.Sprintf("%s:edge:step:%d:err", functionID, i)
+		successors := []string{okTarget}
+		if errTarget != okTarget {
+			successors = append(successors, errTarget)
+		}
+		pointID := fmt.Sprintf("%s:point:step:%d", functionID, i)
+		if i == 0 {
+			// pathoracle/originvalidate require the entry block's PointID to
+			// equal the function's own EntryPointID exactly (the same
+			// convention checkForeignTracer and checkBranch already use).
+			pointID = functionID + ":point:entry"
+		}
+		blocks = append(blocks, core.Block{
+			ID: infos[i].blockID, PointID: pointID,
+			OperationIDs: []string{infos[i].callOpID}, Successors: successors,
+		})
+		edges = append(edges,
+			core.Edge{ID: infos[i].okEdgeID, FromBlockID: infos[i].blockID, ToBlockID: okTarget, Pattern: "ok"},
+			core.Edge{ID: infos[i].errEdgeID, FromBlockID: infos[i].blockID, ToBlockID: errTarget, Pattern: "err"},
+		)
+		operations[i] = core.LinearOperation{
+			ID: infos[i].callOpID, PointID: fmt.Sprintf("%s:point:linear:%d", functionID, i), Kind: core.OpForeignCall,
+			SourceID: parameterID, TargetID: infos[i].okPlaceID, TypeID: typeID,
+			OkEdgeID: infos[i].okEdgeID, ErrEdgeID: infos[i].errEdgeID, ErrTargetID: infos[i].errPlaceID,
+		}
+	}
+
+	// completed accumulates try_call steps in completion order as the
+	// forward walk below reaches each one -- the single materialization
+	// point D-04-07 requires. discard_call steps are never appended: their
+	// acquired resource is not tracked for release this plan (a documented
+	// narrowing -- see the plan's flagged_assumptions).
+	var completed []resourceStep
+	releaseOps := func(from []resourceStep) []core.LinearOperation {
+		ops := make([]core.LinearOperation, 0, len(from))
+		for j := len(from) - 1; j >= 0; j-- {
+			acquired := from[j]
+			opID := fmt.Sprintf("%s:op:%d", functionID, len(operations)+len(ops))
+			ops = append(ops, core.LinearOperation{
+				ID: opID, PointID: fmt.Sprintf("%s:point:linear:%d", functionID, len(operations)+len(ops)),
+				Kind: core.OpRelease, SourceID: acquired.okPlaceID, TypeID: typeID, ReleasesOperationID: acquired.callOpID,
+			})
+		}
+		return ops
+	}
+
+	for i := 0; i < n; i++ {
+		if infos[i].kind != "try_call" {
+			continue
+		}
+		errOps := releaseOps(completed)
+		failOpIndex := len(operations) + len(errOps)
+		failOpID := fmt.Sprintf("%s:op:%d", functionID, failOpIndex)
+		errOps = append(errOps, core.LinearOperation{
+			ID: failOpID, PointID: fmt.Sprintf("%s:point:linear:%d", functionID, failOpIndex),
+			Kind: core.OpFail, SourceID: infos[i].errPlaceID, TypeID: infos[i].errTypeID,
+		})
+		errOpIDs := make([]string, len(errOps))
+		for idx, op := range errOps {
+			errOpIDs[idx] = op.ID
+		}
+		blocks = append(blocks, core.Block{
+			ID: fmt.Sprintf("%s:block:err:%d", functionID, i), PointID: fmt.Sprintf("%s:point:err:%d", functionID, i), OperationIDs: errOpIDs,
+		})
+		operations = append(operations, errOps...)
+		completed = append(completed, infos[i])
+	}
+
+	successOps := releaseOps(completed)
+	returnOpIndex := len(operations) + len(successOps)
+	returnOpID := fmt.Sprintf("%s:op:%d", functionID, returnOpIndex)
+	successOps = append(successOps, core.LinearOperation{
+		ID: returnOpID, PointID: fmt.Sprintf("%s:point:linear:%d", functionID, returnOpIndex),
+		Kind: core.OpReturn, SourceID: parameterID, TypeID: typeID,
+	})
+	successOpIDs := make([]string, len(successOps))
+	for idx, op := range successOps {
+		successOpIDs[idx] = op.ID
+	}
+	blocks = append(blocks, core.Block{ID: successBlockID, PointID: functionID + ":point:success", OperationIDs: successOpIDs})
+	operations = append(operations, successOps...)
+
+	linear := &core.LinearBody{
+		ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges,
+	}
+	first := infos[0].symbol
+	contract := &core.ForeignContract{Symbol: first.Name, Allocator: first.Allocator, Unwind: first.Unwind, NonlocalExit: first.NonlocalExit, Fails: first.Fails}
 
 	return core.Function{
 		ID: functionID, Name: function.Name,

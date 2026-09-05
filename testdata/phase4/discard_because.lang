@@ -1,0 +1,29 @@
+// Law under test (SEM-03, D-04-06): `discard <fallible call> because
+// "<rationale>"` is the second and only other admissible consumer of a
+// fallible operation. Its outcome (success or typed failure) is deliberately
+// ignored -- the rationale documents why -- and the function proceeds
+// regardless, returning its own untouched parameter.
+
+module phase4.discard_because
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: ProbeError
+  }
+}
+
+data ProbeError =
+  | ProbeFailed
+
+fn main(request: Byte) -> Byte {
+  discard lang_res_open(request) because "the probe result is advisory and its failure is not actionable here"
+  request
+}

@@ -1198,6 +1198,170 @@ func TestCallTargetNotForeignRejected(t *testing.T) {
 // TestForeignAdmissionCapsRejectFailClosed proves the declared foreign
 // symbol/policy caps (T-04-05) reject above the cap rather than truncating
 // silently.
+// blockByID and operationByID are small test-only lookup helpers shared by
+// the resource-lifecycle tests below.
+func blockByID(function core.Function, id string) core.Block {
+	for _, block := range function.Linear.Blocks {
+		if block.ID == id {
+			return block
+		}
+	}
+	return core.Block{}
+}
+
+func operationByID(function core.Function, id string) core.LinearOperation {
+	for _, operation := range function.Linear.Operations {
+		if operation.ID == id {
+			return operation
+		}
+	}
+	return core.LinearOperation{}
+}
+
+// releaseSequence returns the ReleasesOperationID of every OpRelease
+// operation in a block's own OperationIDs, in the block's own order.
+func releaseSequence(function core.Function, block core.Block) []string {
+	var sequence []string
+	for _, opID := range block.OperationIDs {
+		operation := operationByID(function, opID)
+		if operation.Kind == core.OpRelease {
+			sequence = append(sequence, operation.ReleasesOperationID)
+		}
+	}
+	return sequence
+}
+
+// TestThreeAcquisitionReleaseOrder pins RES-01/D-04-07: a three-stage
+// fallible acquisition's success block releases C then B then A -- the exact
+// reverse of completed-acquisition order -- and its own OpReturn is sourced
+// from the function's own parameter (never moved by any OpForeignCall).
+func TestThreeAcquisitionReleaseOrder(t *testing.T) {
+	source := readPhase4Fixture(t, "acquire_three_success.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", result.Diagnostics)
+	}
+	function := result.Program.Functions[0]
+	callA := operationByID(function, function.ID+":op:0")
+	callB := operationByID(function, function.ID+":op:1")
+	callC := operationByID(function, function.ID+":op:2")
+	if callA.Kind != core.OpForeignCall || callB.Kind != core.OpForeignCall || callC.Kind != core.OpForeignCall {
+		t.Fatalf("expected three OpForeignCall operations, got %+v %+v %+v", callA, callB, callC)
+	}
+	successBlock := blockByID(function, function.ID+":block:success")
+	got := releaseSequence(function, successBlock)
+	want := []string{callC.ID, callB.ID, callA.ID}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("success block release order = %v, want %v (C, B, A)", got, want)
+	}
+	lastOpID := successBlock.OperationIDs[len(successBlock.OperationIDs)-1]
+	returnOp := operationByID(function, lastOpID)
+	if returnOp.Kind != core.OpReturn || returnOp.SourceID != function.Parameter.ID {
+		t.Fatalf("success block terminator = %+v, want OpReturn sourced from the parameter", returnOp)
+	}
+}
+
+// TestPartialAcquisitionReleasesOnlyCompleted pins RES-01/D-04-07's partial-
+// failure requirement: the second-stage failure block releases only A (one
+// completed acquisition), the third-stage failure block releases B then A
+// (two, in reverse order), and no failure block ever releases the
+// acquisition whose own OpForeignCall triggered it.
+func TestPartialAcquisitionReleasesOnlyCompleted(t *testing.T) {
+	for _, tc := range []struct {
+		fixture string
+	}{{"acquire_three_fail_second.lang"}, {"acquire_three_fail_third.lang"}} {
+		source := readPhase4Fixture(t, tc.fixture)
+		program := mustParseProgram(t, source)
+		result := Program(program)
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("%s: unexpected diagnostics: %+v", tc.fixture, result.Diagnostics)
+		}
+		function := result.Program.Functions[0]
+		callA := function.ID + ":op:0"
+		callB := function.ID + ":op:1"
+		callC := function.ID + ":op:2"
+
+		err0 := releaseSequence(function, blockByID(function, function.ID+":block:err:0"))
+		if len(err0) != 0 {
+			t.Fatalf("%s: first-stage failure block released %v, want none", tc.fixture, err0)
+		}
+		err1 := releaseSequence(function, blockByID(function, function.ID+":block:err:1"))
+		if !reflect.DeepEqual(err1, []string{callA}) {
+			t.Fatalf("%s: second-stage failure block released %v, want [A]", tc.fixture, err1)
+		}
+		err2 := releaseSequence(function, blockByID(function, function.ID+":block:err:2"))
+		if !reflect.DeepEqual(err2, []string{callB, callA}) {
+			t.Fatalf("%s: third-stage failure block released %v, want [B, A]", tc.fixture, err2)
+		}
+		// No block ever releases the acquisition it fails on: err:0 never
+		// releases callA, err:1 never releases callB, err:2 never releases
+		// callC.
+		for _, forbidden := range []struct{ block, op string }{
+			{"block:err:0", callA}, {"block:err:1", callB}, {"block:err:2", callC},
+		} {
+			for _, released := range releaseSequence(function, blockByID(function, function.ID+":"+forbidden.block)) {
+				if released == forbidden.op {
+					t.Fatalf("%s: %s released its own triggering acquisition %s", tc.fixture, forbidden.block, forbidden.op)
+				}
+			}
+		}
+	}
+}
+
+// TestDiscardBecauseRoundTrips pins D-04-06: `discard <call> because
+// "<rationale>"` parses, formats to a fixed point, and carries the rationale
+// string into the core artifact as a required non-empty field.
+func TestDiscardBecauseRoundTrips(t *testing.T) {
+	source := readPhase4Fixture(t, "discard_because.lang")
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("unexpected parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	canonical := syntax.Format(parsed.Tree)
+	if string(canonical) != string(source) {
+		t.Fatalf("discard_because.lang is not at the formatter's fixed point:\n%s", canonical)
+	}
+	var found bool
+	for _, function := range parsed.Program.Funcs {
+		for _, binding := range function.Body.Linear.Bindings {
+			if binding.RHS.Kind != "discard_call" {
+				continue
+			}
+			found = true
+			if binding.RHS.Rationale == "" {
+				t.Fatalf("discard binding carries an empty rationale")
+			}
+		}
+	}
+	if !found {
+		t.Fatal("fixture carries no discard_call binding")
+	}
+	result := Program(parsed.Program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("unexpected check diagnostics: %+v", result.Diagnostics)
+	}
+}
+
+// TestDiscardRationaleRequired pins D-04-06: an empty or absent rationale
+// does not parse.
+func TestDiscardRationaleRequired(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		source string
+	}{
+		{"empty rationale", "module d.empty\nexport { fn main }\nforeign C {\n  fn probe(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: E\n  }\n}\ndata E = | F\nfn main(request: Byte) -> Byte {\n  discard probe(request) because \"\"\n  request\n}\n"},
+		{"absent rationale", "module d.absent\nexport { fn main }\nforeign C {\n  fn probe(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: E\n  }\n}\ndata E = | F\nfn main(request: Byte) -> Byte {\n  discard probe(request)\n  request\n}\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			parsed := syntax.Parse([]byte(tc.source))
+			if len(parsed.Diagnostics) == 0 {
+				t.Fatal("expected a parse diagnostic, got none")
+			}
+		})
+	}
+}
+
 func TestForeignAdmissionCapsRejectFailClosed(t *testing.T) {
 	block := ast.ForeignBlock{Language: "C"}
 	for index := 0; index <= maxForeignSymbolsPerBlockCheck; index++ {

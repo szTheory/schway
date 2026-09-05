@@ -139,10 +139,15 @@ type RHS struct {
 	Kind   string
 	Source string
 	Span   diagnostic.Span
-	// Callee and Arguments are populated only when Kind == "try_call"
-	// (D-04-06): a fallible foreign call, admissible only as the operand of
-	// `try`. Callee names the foreign symbol; Arguments is its argument
-	// place names in source order.
+	// Callee and Arguments are populated when Kind == "try_call" or
+	// Kind == "discard_call" (D-04-06): a fallible foreign call, admissible
+	// only as the operand of `try` or `discard ... because`. Callee names
+	// the foreign symbol; Arguments is its argument place names in source
+	// order.
 	Callee    string
 	Arguments []string
+	// Rationale is populated only when Kind == "discard_call": the required
+	// non-empty string literal explaining why the call's failure is not
+	// actionable here (D-04-06). Empty for every other Kind.
+	Rationale string
 }
