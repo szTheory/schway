@@ -177,7 +177,7 @@ changes that cost nothing structurally:
   3. Panic cannot cross the ordinary non-unwinding C boundary, and a foreign nonlocal exit cannot silently bypass Lang cleanup.
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
-**Plans**: 9/9 plans executed (7/7 executed; 04-08 and 04-09 are gap-closure plans from 04-VERIFICATION.md's two confirmed gaps)
+**Plans**: 10 plans (04-01..04-07 executed; 04-08 and 04-09 are executed gap-closure plans; re-verification surfaced a new confirmed gap — CR-01, the missing cycle guard in `checkReleaseOrder`'s `rederive` walk — so 04-10 is the third-round gap-closure plan)
 
 - [x] 04-08-PLAN.md
 - [x] 04-09-PLAN.md
@@ -186,6 +186,7 @@ changes that cost nothing structurally:
 
 - [ ] `04-08-PLAN.md` — gap closure: make the merge-terminal release-order rederivation falsifiable and add its structural peer check
 - [ ] `04-09-PLAN.md` — gap closure: the conformance-layer attribute falsifier and a pin on the scan's artifact count
+- [ ] `04-10-PLAN.md` — gap closure (CR-01): visited-set guard and `core.release_order_cyclic` refusal in `rederive`, with a cyclic-ok-edge falsifier asserting the validator returns rather than hangs
 - [x] 04-01-PLAN.md
 - [ ] `04-01-PLAN.md` — byte-identity pins, the operation-kind registry and six-site dispatch control, and the end-to-end fallible foreign call across the frozen C boundary
 - [ ] `04-02-PLAN.md` — three-stage partial acquisition with materialized reverse-order release, an independent rederivation, and two mutations attacking different artifacts
