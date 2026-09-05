@@ -1031,3 +1031,32 @@ func TestVerifyPhase3ControlsAndWork(t *testing.T) {
 		t.Fatalf("Phase 3 verify omitted an expected escape: %+v", result.ExpectedEscapes)
 	}
 }
+
+// TestVerifyPhase4ForeignControls proves both Phase 4 admission refusals
+// (D-04-16/D-04-02) are visible to the gate as required negative controls
+// with nonzero recomputed work, and that the tracer fixture itself still
+// admits cleanly.
+func TestVerifyPhase4ForeignControls(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	required := []string{
+		"control:foreign.unwind_policy_undeclared",
+		"control:foreign.call_target_not_foreign",
+	}
+	found := make(map[string]bool)
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			found[control] = true
+		}
+	}
+	for _, control := range required {
+		if !found[control] {
+			t.Fatalf("missing required Phase 4 control %s: lanes=%+v", control, result.Lanes)
+		}
+	}
+}

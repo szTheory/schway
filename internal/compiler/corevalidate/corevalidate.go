@@ -299,6 +299,27 @@ func (v *validator) linear(function *core.Function) bool {
 			if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
 				return false
 			}
+			// D-04-16, independently derived: check.go refuses a missing
+			// unwind/nonlocal_exit policy at admission time by inspecting
+			// ast.ForeignPolicy (never emitting a core artifact for such a
+			// symbol at all); this validator never reads that AST-level
+			// fact -- it re-derives the SAME refusal purely from the two
+			// policy string fields core.ForeignContract itself carries, so
+			// a corrupted core artifact that skipped check.go's gate is
+			// still caught here.
+			if !v.check(function.ForeignContract.Unwind != "" && function.ForeignContract.NonlocalExit != "", "foreign.unwind_policy_undeclared", operation.ID) {
+				return false
+			}
+			// D-04-02, independently derived: check.go refuses a callee that
+			// resolves to a Lang function name at parse-resolution time (an
+			// AST-level, pre-core fact this validator never sees). This
+			// validator re-derives the same refusal by a materially
+			// different mechanism -- a straight name collision scan against
+			// every OTHER function this core.Program itself declares --
+			// reading only the core artifact, never check's own name table.
+			if !v.check(!isDeclaredFunctionName(v.program.Functions, function.ID, function.ForeignContract.Symbol), "core.call_target_not_foreign", operation.ID) {
+				return false
+			}
 		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			if !v.unique(loanIDs, operation.LoanID, "core.unknown_loan") {
@@ -1196,6 +1217,24 @@ func (v *validator) uniquePlace(set map[string]core.Place, place core.Place) boo
 	}
 	set[place.ID] = place
 	return true
+}
+
+// isDeclaredFunctionName reports whether name matches the Name of any OTHER
+// function this core.Program declares (excludeFunctionID excludes the
+// caller's own function, since a Lang function's own name is never its own
+// foreign contract's symbol in any honest artifact). D-04-01: OpForeignCall
+// is the only call surface -- a foreign contract naming a real Lang
+// function is exactly the inadmissible shape D-04-02 refuses.
+func isDeclaredFunctionName(functions []core.Function, excludeFunctionID, name string) bool {
+	for _, candidate := range functions {
+		if candidate.ID == excludeFunctionID {
+			continue
+		}
+		if candidate.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 func hasAbility(fact core.TypeFact, requested core.Ability) bool {

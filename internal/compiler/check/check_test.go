@@ -1142,3 +1142,77 @@ func readPhase4Fixture(t *testing.T, name string) []byte {
 	}
 	return source
 }
+
+// TestUnwindPolicyUndeclaredRejected pins D-04-16: a foreign symbol declared
+// without an unwind policy is refused, with no default value, carrying a
+// span, causal detail, and a repair.
+func TestUnwindPolicyUndeclaredRejected(t *testing.T) {
+	source := readPhase4Fixture(t, "foreign_unwind_undeclared.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) == 0 {
+		t.Fatal("expected a rejection, got none")
+	}
+	found := false
+	for _, problem := range result.Diagnostics {
+		if problem.Code != "foreign.unwind_policy_undeclared" {
+			continue
+		}
+		found = true
+		if len(problem.Repairs) == 0 {
+			t.Fatalf("foreign.unwind_policy_undeclared carries no repair: %+v", problem)
+		}
+		hasMissingPolicyCause := false
+		for _, cause := range problem.Causes {
+			if cause.Kind == "missing_policy" {
+				hasMissingPolicyCause = true
+			}
+		}
+		if !hasMissingPolicyCause {
+			t.Fatalf("expected a missing_policy cause, got %+v", problem.Causes)
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign.unwind_policy_undeclared, got %+v", result.Diagnostics)
+	}
+}
+
+// TestCallTargetNotForeignRejected pins D-04-02: a fallible call whose
+// callee resolves to a declared Lang function is refused with
+// core.call_target_not_foreign.
+func TestCallTargetNotForeignRejected(t *testing.T) {
+	source := readPhase4Fixture(t, "foreign_call_target_not_foreign.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	found := false
+	for _, problem := range result.Diagnostics {
+		if problem.Code == "core.call_target_not_foreign" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected core.call_target_not_foreign, got %+v", result.Diagnostics)
+	}
+}
+
+// TestForeignAdmissionCapsRejectFailClosed proves the declared foreign
+// symbol/policy caps (T-04-05) reject above the cap rather than truncating
+// silently.
+func TestForeignAdmissionCapsRejectFailClosed(t *testing.T) {
+	block := ast.ForeignBlock{Language: "C"}
+	for index := 0; index <= maxForeignSymbolsPerBlockCheck; index++ {
+		block.Symbols = append(block.Symbols, ast.ForeignSymbol{
+			Name:      fmt.Sprintf("sym_%d", index),
+			Parameter: ast.Parameter{Name: "request", Type: ast.TypeRef{Constructor: "Byte"}},
+			ReturnType: ast.TypeRef{Constructor: "Byte"},
+			Policies: []ast.ForeignPolicy{
+				{Key: "unwind", Value: "forbidden"}, {Key: "nonlocal_exit", Value: "forbidden"}, {Key: "allocator", Value: "libc_malloc", IsString: true},
+			},
+		})
+	}
+	program := ast.Program{Module: "cap.test", Foreign: []ast.ForeignBlock{block}}
+	symbols, diagnostics := collectForeignSymbols(program)
+	if symbols != nil || len(diagnostics) == 0 || diagnostics[0].Code != "check.foreign_symbol_limit" {
+		t.Fatalf("expected check.foreign_symbol_limit, got symbols=%v diagnostics=%+v", symbols, diagnostics)
+	}
+}

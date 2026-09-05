@@ -12,6 +12,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/interp"
+	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -371,4 +372,69 @@ func cloneProgram(t *testing.T, program core.Program) core.Program {
 		t.Fatal(err)
 	}
 	return clone
+}
+
+func foreignAcquireProgram(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+// TestForeignRefusalsAreIndependentlyDerived proves corevalidate re-derives
+// D-04-16's missing-policy refusal and D-04-02's call-target refusal purely
+// from the core artifact, never from check's own AST-level facts: each
+// mutation below is fed DIRECTLY to corevalidate.Validate, bypassing
+// check.Program entirely, so the refusal cannot be riding on check's own
+// gate.
+func TestForeignRefusalsAreIndependentlyDerived(t *testing.T) {
+	valid := foreignAcquireProgram(t)
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid foreign-call core rejected: %+v", result)
+	}
+
+	t.Run("missing unwind policy", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Unwind = ""
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.unwind_policy_undeclared" {
+			t.Fatalf("expected foreign.unwind_policy_undeclared, got %+v", result)
+		}
+	})
+
+	t.Run("missing nonlocal_exit policy", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.NonlocalExit = ""
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "foreign.unwind_policy_undeclared" {
+			t.Fatalf("expected foreign.unwind_policy_undeclared, got %+v", result)
+		}
+	})
+
+	t.Run("call target resolves to a declared Lang function", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		// Introduce a second, otherwise-inert function whose name collides
+		// with the foreign contract's symbol -- the same shape check.go's
+		// own admission gate refuses at the AST level, re-derived here
+		// purely from core.Function.Name identity.
+		decoy := cloneProgram(t, valid).Functions[0]
+		decoy.ID = decoy.ID + ":decoy"
+		decoy.Name = mutated.Functions[0].ForeignContract.Symbol
+		decoy.ForeignContract = nil
+		decoy.Linear.ID = decoy.ID + ":linear"
+		for index := range decoy.Linear.Places {
+			decoy.Linear.Places[index].ID = decoy.ID + fmt.Sprintf(":place:%d", index)
+		}
+		mutated.Functions = append(mutated.Functions, decoy)
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "core.call_target_not_foreign" {
+			t.Fatalf("expected core.call_target_not_foreign, got %+v", result)
+		}
+	})
 }

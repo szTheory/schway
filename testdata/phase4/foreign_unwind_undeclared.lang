@@ -1,0 +1,24 @@
+// D-04-16: a foreign declaration missing its unwind policy is refused,
+// independently, by both check and corevalidate, with no default value.
+
+module phase4.foreign_unwind_undeclared
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try lang_res_open(request)
+  handle
+}

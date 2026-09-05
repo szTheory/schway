@@ -671,6 +671,9 @@ type VerifyOptions struct {
 }
 
 func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, options VerifyOptions) protocol.Result {
+	if _, err := os.Stat(filepath.Join(corpus, "foreign_acquire_one.lang")); err == nil {
+		return verifyForeignCorpus(corpus)
+	}
 	if _, err := os.Stat(filepath.Join(corpus, "borrowed_view.lang")); err == nil {
 		return verifyBorrowedCorpus(ctx, corpus, runner)
 	}
@@ -1390,6 +1393,96 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 		Controls: []string{"control:cfg.path_oracle_disagreement"}, RecomputedWork: work + reconfirmedWork,
 		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
 	}
+}
+
+// verifyForeignCorpus is Phase 4's foreign-call gate dispatch, selected by
+// VerifyCorpus on the presence of foreign_acquire_one.lang, mirroring
+// verifyBorrowedCorpus's own dispatch precedent. It asserts the two
+// admission refusals D-04-16/D-04-02 require are visible to the gate as
+// required negative controls with honest, nonzero recomputed work, using
+// the explicit-status addLane shape (Phase 1's VerifyCorpus.addLane form,
+// not the Phase 2 hardcoded-"pass" shape) so a lane's own failure still
+// carries partial-work evidence.
+func verifyForeignCorpus(corpus string) protocol.Result {
+	started := time.Now()
+	result := protocol.New("verify", protocol.StatusPass)
+	addLane := func(id, status string, controls []string, work, outputBytes int, laneStarted time.Time) {
+		result.Lanes = append(result.Lanes, protocol.Lane{
+			Schema: "lang.verify-lane/0", ID: id, Status: status,
+			Controls: append([]string{}, controls...), RecomputedWork: work,
+			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable", OutputBytes: outputBytes,
+		})
+		result.Metrics.RecomputedWork += work
+		result.Metrics.OutputBytes += outputBytes
+	}
+	fail := func(status, code, message string) protocol.Result {
+		result.Status = status
+		result.Diagnostics = append(result.Diagnostics, diagnostic.Error(code, diagnostic.Span{}, message))
+		result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+		return result.Finalize()
+	}
+
+	negativeControls := []struct {
+		file    string
+		code    string
+		control string
+		lane    string
+	}{
+		{"foreign_unwind_undeclared.lang", "foreign.unwind_policy_undeclared", "control:foreign.unwind_policy_undeclared", "lane:foreign-unwind-policy-undeclared"},
+		{"foreign_call_target_not_foreign.lang", "core.call_target_not_foreign", "control:foreign.call_target_not_foreign", "lane:foreign-call-target-not-foreign"},
+	}
+	for _, negative := range negativeControls {
+		laneStarted := time.Now()
+		source, err := readBoundedFile(filepath.Join(corpus, negative.file), syntax.MaxSourceBytes)
+		if err != nil {
+			addLane(negative.lane, "fail", nil, 1, 0, laneStarted)
+			return fail(protocol.StatusOperational, "verify.fixture_missing", negative.file)
+		}
+		checked := Check(source)
+		if !hasDiagnostic(checked.Diagnostics, negative.code) {
+			addLane(negative.lane, "fail", nil, checked.Work+1, len(source), laneStarted)
+			return fail(protocol.StatusInvalid, "verify.control_not_falsified", negative.control)
+		}
+		addLane(negative.lane, "pass", []string{negative.control}, checked.Work+1, len(source), laneStarted)
+	}
+
+	// Lane: the tracer fixture itself must still admit cleanly -- a
+	// required-control corpus that only ever exercises refusals would not
+	// prove the admission gate lets a genuinely well-formed program through.
+	laneStarted := time.Now()
+	positiveSource, err := readBoundedFile(filepath.Join(corpus, "foreign_acquire_one.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:foreign-acquire-admitted", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "foreign_acquire_one.lang")
+	}
+	positiveChecked := Check(positiveSource)
+	if len(positiveChecked.Diagnostics) != 0 {
+		addLane("lane:foreign-acquire-admitted", "fail", nil, positiveChecked.Work+1, len(positiveSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "foreign_acquire_one.lang")
+	}
+	validated := corevalidate.Validate(positiveChecked.Program)
+	if !validated.Valid {
+		addLane("lane:foreign-acquire-admitted", "fail", nil, positiveChecked.Work+validated.Checks, len(positiveSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:foreign.call_target_not_foreign")
+	}
+	addLane("lane:foreign-acquire-admitted", "pass", nil, positiveChecked.Work+validated.Checks, len(positiveSource), laneStarted)
+
+	requiredControls := []string{
+		"control:foreign.unwind_policy_undeclared",
+		"control:foreign.call_target_not_foreign",
+	}
+	for _, required := range requiredControls {
+		if !hasControl(result.Lanes, required) {
+			return fail(protocol.StatusInvalid, "verify.control_missing", required)
+		}
+	}
+	for _, lane := range result.Lanes {
+		if lane.RecomputedWork == 0 {
+			return fail(protocol.StatusInvalid, "verify.zero_work", lane.ID)
+		}
+	}
+	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+	return result.Finalize()
 }
 
 func hasDiagnostic(diagnostics []diagnostic.Diagnostic, code string) bool {
