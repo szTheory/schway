@@ -1066,7 +1066,14 @@ type foreignSymbolInfo struct {
 	HasNonlocal  bool
 	Fails        string
 	HasFails     bool
-	Span         diagnostic.Span
+	// Alias is Phase 4 plan 06's new optional policy key (D-04-28): "borrow"
+	// or "retain" when the symbol's ok-edge return is declared to alias its
+	// own argument, "" (the default) meaning fully owned. Unlike
+	// Unwind/NonlocalExit this key has no admission gate requiring its
+	// presence -- a symbol that genuinely returns an owned value simply
+	// never declares it.
+	Alias string
+	Span  diagnostic.Span
 }
 
 // collectForeignSymbols builds the module-wide foreign symbol table from
@@ -1099,6 +1106,8 @@ func collectForeignSymbols(program ast.Program) (map[string]foreignSymbolInfo, [
 					info.Allocator, info.HasAllocator = policy.Value, true
 				case "fails":
 					info.Fails, info.HasFails = policy.Value, true
+				case "alias":
+					info.Alias = policy.Value
 				}
 			}
 			symbols[symbol.Name] = info
@@ -1327,6 +1336,7 @@ func buildForeignContract(symbol foreignSymbolInfo) *core.ForeignContract {
 		Symbol: symbol.Name, Allocator: symbol.Allocator, Unwind: symbol.Unwind, NonlocalExit: symbol.NonlocalExit, Fails: symbol.Fails,
 		InitializedState: initializedState, Capture: capture, Retention: retention, Aliasing: aliasing,
 		Layout: standardForeignLayout(),
+		Alias:  symbol.Alias,
 	}
 }
 

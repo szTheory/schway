@@ -501,6 +501,14 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics
+	} else if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
+		// D-04-27/WR-01: originvalidate.ValidatePublished no longer runs only
+		// on the `interface export` path -- the foreign declaration surface
+		// is a second place an alias fact can be silently absent (D-04-28),
+		// so `lang check` must independently recompute every published
+		// origin too, not merely trust what the checker declared.
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(problems[0].Code, diagnostic.Span{}, problems[0].Detail)}
 	} else {
 		result.ModuleID = checked.Program.ModuleID
 	}
@@ -568,6 +576,35 @@ func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnosti
 	return RunInterpreter(source)
 }
 
+// publishedOriginProblemFile is D-04-27/WR-01's `lang check`/`lang run`
+// wiring point: it independently recomputes every function's published
+// origin from the typed core alone (originvalidate.ValidatePublished),
+// exactly as `interface export` already does, returning the first problem
+// as a diagnostic. This is deliberately a SEPARATE, narrow re-check at the
+// CLI command-file layer rather than folded into RunInterpreter/RunNative
+// themselves: those two functions are also the machinery every non-CLI test
+// and verify-corpus lane in this repository drives directly, several of
+// which intentionally exercise an undeclared-borrow-derived-return fixture
+// at the run/interpret layer (e.g. TestExclusiveBorrowInterpreterNative) --
+// only PUBLICATION (export, and now check/run's own command surface) was
+// ever meant to gate on a declared origin (D-03-02/WR-01), not every
+// internal call to the interpreter or native engine.
+func publishedOriginProblemFile(path string) []diagnostic.Diagnostic {
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	if err != nil {
+		return nil
+	}
+	checked := Check(source)
+	if len(checked.Diagnostics) > 0 {
+		return nil
+	}
+	problems := originvalidate.ValidatePublished(checked.Program)
+	if len(problems) == 0 {
+		return nil
+	}
+	return []diagnostic.Diagnostic{diagnostic.Error(problems[0].Code, diagnostic.Span{}, problems[0].Detail)}
+}
+
 func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	started := time.Now()
 	executions, diagnostics, err := RunInterpreterFile(path)
@@ -575,6 +612,11 @@ func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 		result := protocol.New("run", protocol.StatusOperational)
 		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("tool.run_failed", diagnostic.Span{}, "interpreter operation failed")}
 		return completeCommand(result, started, 1), nil
+	}
+	if len(diagnostics) == 0 {
+		if originProblems := publishedOriginProblemFile(path); len(originProblems) > 0 {
+			diagnostics = originProblems
+		}
 	}
 	result := protocol.New("run", protocol.StatusPass)
 	if len(diagnostics) > 0 {
@@ -669,6 +711,11 @@ func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (Nativ
 func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner) (protocol.Result, error) {
 	started := time.Now()
 	nativeResult, diagnostics, err := RunNativeFile(ctx, path, runner)
+	if len(diagnostics) == 0 && err == nil {
+		if originProblems := publishedOriginProblemFile(path); len(originProblems) > 0 {
+			diagnostics = originProblems
+		}
+	}
 	result := protocol.New("run", protocol.StatusPass)
 	if len(diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
@@ -2086,6 +2133,57 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	}
 	addLane("lane:nonlocal-exit-undetected", "pass", []string{"control:foreign.nonlocal_exit_undetected"}, nonlocalChecked.Work+6, len(nonlocalCSource), laneStarted)
 
+	// Lane: control:terminator.walk_incomplete (D-04-29, task 04-06-01). The
+	// single highest-risk item in the phase: asserts, per package, that the
+	// set of core.OperationKind values originvalidate/pathoracle each
+	// recognise as a terminator equals core.TerminatorKinds() exactly --
+	// naming the missing member when it does not, rather than inferring
+	// completeness from a differential that only compares paths the oracle
+	// itself enumerated.
+	laneStarted = time.Now()
+	terminatorWork := 0
+	terminatorMissing := ""
+	for _, terminator := range core.TerminatorKinds() {
+		terminatorWork++
+		if !originvalidate.RecognizesTerminator(terminator) {
+			terminatorMissing = fmt.Sprintf("originvalidate does not recognise terminator %q", terminator)
+			break
+		}
+		terminatorWork++
+		if !pathoracle.RecognizesTerminator(terminator) {
+			terminatorMissing = fmt.Sprintf("pathoracle does not recognise terminator %q", terminator)
+			break
+		}
+	}
+	if terminatorMissing != "" {
+		addLane("lane:terminator-walk-complete", "fail", nil, terminatorWork, 0, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:terminator.walk_incomplete ("+terminatorMissing+")")
+	}
+	addLane("lane:terminator-walk-complete", "pass", []string{"control:terminator.walk_incomplete"}, terminatorWork, 0, laneStarted)
+
+	// Lane: control:origin.foreign_origin_omitted (D-04-28, task 04-06-02).
+	// The shipped foreign_origin_omitted.lang fixture -- a foreign call
+	// declared to borrow its argument, returned with no declared public
+	// origin -- must be refused by originvalidate.ValidatePublished with
+	// exactly that code, derived from the core artifact alone.
+	laneStarted = time.Now()
+	foreignOriginSource, err := readBoundedFile(filepath.Join(corpus, "foreign_origin_omitted.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:foreign-origin-omitted", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "foreign_origin_omitted.lang")
+	}
+	foreignOriginChecked := Check(foreignOriginSource)
+	if len(foreignOriginChecked.Diagnostics) != 0 {
+		addLane("lane:foreign-origin-omitted", "fail", nil, foreignOriginChecked.Work+1, len(foreignOriginSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "foreign_origin_omitted.lang")
+	}
+	foreignOriginProblems := originvalidate.ValidatePublished(foreignOriginChecked.Program)
+	if len(foreignOriginProblems) != 1 || foreignOriginProblems[0].Code != "core.foreign_origin_omitted" {
+		addLane("lane:foreign-origin-omitted", "fail", nil, foreignOriginChecked.Work+1, len(foreignOriginSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.foreign_origin_omitted")
+	}
+	addLane("lane:foreign-origin-omitted", "pass", []string{"control:origin.foreign_origin_omitted"}, foreignOriginChecked.Work+1, len(foreignOriginSource), laneStarted)
+
 	requiredControls := []string{
 		"control:foreign.unwind_policy_undeclared",
 		"control:foreign.call_target_not_foreign",
@@ -2097,6 +2195,8 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		"control:defect.no_release_on_defect",
 		"control:defect.signal_adjudicated",
 		"control:foreign.nonlocal_exit_undetected",
+		"control:terminator.walk_incomplete",
+		"control:origin.foreign_origin_omitted",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {

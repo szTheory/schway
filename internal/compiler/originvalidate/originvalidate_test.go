@@ -23,6 +23,36 @@ import (
 // AST package. Reading the actual import lists (not trusting a doc comment)
 // is the same technique the codebase already applies to enforce boundaries
 // mechanically rather than by convention.
+// TestOriginValidatorImportsStayIndependent is Task 04-06-02's extension of
+// TestOriginValidateImportsNeitherCheckNorAst (T-04-37): the new
+// checkForeignOriginOmitted path (D-04-28) must derive its refusal from the
+// core artifact alone, exactly like every other check in this package --
+// this re-runs the identical file-scan so the new function is covered by
+// construction rather than by a second, drifting assertion.
+func TestOriginValidatorImportsStayIndependent(t *testing.T) {
+	dir := testsupport.ProjectPath("internal", "compiler", "originvalidate")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileSet := token.NewFileSet()
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fileSet, filepath.Join(dir, entry.Name()), nil, parser.ImportsOnly)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, imported := range file.Imports {
+			path := strings.Trim(imported.Path.Value, `"`)
+			if strings.HasSuffix(path, "/compiler/check") || strings.HasSuffix(path, "/compiler/ast") {
+				t.Fatalf("%s imports %s, which originvalidate (including the foreign-origin path) must never depend on", entry.Name(), path)
+			}
+		}
+	}
+}
+
 func TestOriginValidateImportsNeitherCheckNorAst(t *testing.T) {
 	dir := testsupport.ProjectPath("internal", "compiler", "originvalidate")
 	entries, err := os.ReadDir(dir)
@@ -605,4 +635,131 @@ func errorCode(err error) string {
 		return typed.Code
 	}
 	return ""
+}
+
+// phase4Program checks a testdata/phase4 fixture (rather than phase3's)
+// through session.Check and returns the resulting core.Program, failing the
+// test on any diagnostic.
+func phase4Program(t testing.TB, fixture string) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+// TestForeignBorrowDerivedReturnRecognised is D-04-28's positive falsifier:
+// a foreign call declared to borrow its argument produces a return
+// RecomputeOriginPerReturn recognises as Derived (access "shared"), and a
+// matching declared PublicOrigin publishes cleanly through ValidatePublished
+// -- proving the widening does not merely refuse the omitted case, it also
+// correctly validates the declared one. check.go's checkFallibleLinear does
+// not (this phase) wire a source-level `borrow(path)` return-type
+// annotation onto a foreign-tracer function, so the declared side of this
+// fixture is attached directly onto the checked core.Function -- exercising
+// exactly the same originvalidate entry points a real declaration would.
+func TestForeignBorrowDerivedReturnRecognised(t *testing.T) {
+	program := phase4Program(t, "foreign_acquire_one.lang")
+	if program.Functions[0].ForeignContract == nil {
+		t.Fatal("expected foreign_acquire_one.lang to carry a ForeignContract")
+	}
+	program.Functions[0].ForeignContract.Alias = "borrow"
+
+	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	found := false
+	for _, origin := range origins {
+		if origin.Derived {
+			found = true
+			if origin.Access != "shared" || len(origin.Paths) != 1 || origin.Paths[0] != "request" {
+				t.Fatalf("expected a shared derivation from %q, got %+v", "request", origin)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected at least one borrow-derived return, got %+v", origins)
+	}
+
+	program.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"request"}, Access: "shared"}
+	if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
+		t.Fatalf("expected a correctly declared foreign-borrow origin to publish cleanly, got %+v", problems)
+	}
+}
+
+// TestForeignOriginOmittedRejected is D-04-28's negative falsifier: the same
+// shape with NO declared PublicOrigin is refused with
+// core.foreign_origin_omitted, naming the offending function and the
+// argument the origin derives from.
+func TestForeignOriginOmittedRejected(t *testing.T) {
+	program := phase4Program(t, "foreign_origin_omitted.lang")
+	problems := originvalidate.ValidatePublished(program)
+	if len(problems) != 1 || problems[0].Code != "core.foreign_origin_omitted" {
+		t.Fatalf("expected exactly one core.foreign_origin_omitted problem, got %+v", problems)
+	}
+	if !strings.Contains(problems[0].Detail, "request") {
+		t.Fatalf("expected the detail to name the argument the origin derives from: %+v", problems[0])
+	}
+}
+
+// TestOriginWalksEveryTerminator is D-04-29's falsifier for originvalidate:
+// before this widening, RecomputeOriginPerReturn's backward-walk collection
+// loop recognised only core.OpReturn, so a function with a fail-only or
+// defect-only path contributed nothing to the per-terminator origin
+// picture. defect_terminal.lang's "Halt" arm exits ONLY through core.OpDefect
+// (no OpReturn in that arm at all) and foreign_acquire_one.lang's err block
+// exits ONLY through core.OpFail -- both are reachable inputs the old
+// single-terminator condition would have missed entirely.
+func TestOriginWalksEveryTerminator(t *testing.T) {
+	defectProgram := phase4Program(t, "defect_terminal.lang")
+	defectOrigins := originvalidate.RecomputeOriginPerReturn(defectProgram.Functions[0])
+	if len(defectOrigins) != 2 {
+		t.Fatalf("expected one origin entry per terminator (return + defect), got %d: %+v", len(defectOrigins), defectOrigins)
+	}
+
+	foreignProgram := phase4Program(t, "foreign_acquire_one.lang")
+	foreignOrigins := originvalidate.RecomputeOriginPerReturn(foreignProgram.Functions[0])
+	if len(foreignOrigins) != 2 {
+		t.Fatalf("expected one origin entry per terminator (return + fail), got %d: %+v", len(foreignOrigins), foreignOrigins)
+	}
+}
+
+// TestTerminatorSetReadFromRegistry asserts originvalidate.RecognizesTerminator
+// agrees with core.TerminatorKinds() exactly -- every registered terminator
+// is recognised, and a non-terminator kind (core.OpCopy) is not -- proving
+// the package reads the registry rather than restating a private copy of it.
+func TestTerminatorSetReadFromRegistry(t *testing.T) {
+	for _, terminator := range core.TerminatorKinds() {
+		if !originvalidate.RecognizesTerminator(terminator) {
+			t.Fatalf("expected originvalidate to recognise registered terminator %q", terminator)
+		}
+	}
+	if originvalidate.RecognizesTerminator(core.OpCopy) {
+		t.Fatalf("expected originvalidate to NOT recognise core.OpCopy as a terminator")
+	}
+}
+
+// TestTerminatorWalkMutationKilled is D-09's automated mutation-kill
+// falsifier for D-04-29: narrowing the recognised terminator set (deleting
+// core.OpFail, the exact mutation the throwaway-detached-worktree
+// demonstration performs on the source) must make originvalidate lose the
+// fail-only fixture's origin fact -- proving the widening actually bites,
+// not merely that a differential stays green.
+func TestTerminatorWalkMutationKilled(t *testing.T) {
+	program := phase4Program(t, "foreign_acquire_one.lang")
+	full := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+
+	original := originvalidate.TerminatorKindsOverride
+	originvalidate.TerminatorKindsOverride = func() []core.OperationKind {
+		return []core.OperationKind{core.OpReturn, core.OpDefect} // OpFail deleted
+	}
+	defer func() { originvalidate.TerminatorKindsOverride = original }()
+	mutated := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+
+	if len(mutated) >= len(full) {
+		t.Fatalf("mutation (deleting OpFail) had no observable effect: full=%d mutated=%d", len(full), len(mutated))
+	}
 }

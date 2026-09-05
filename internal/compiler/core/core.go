@@ -85,6 +85,18 @@ type ForeignContract struct {
 	// structural fact, not a per-symbol declaration (see check.go's
 	// standardForeignLayout).
 	Layout *RecordLayout `json:"layout,omitempty"`
+	// Alias is Phase 4 plan 06's additive omitempty fact (D-04-28/FFI-01): a
+	// declared foreign symbol's own aliasing obligation toward the return
+	// value it produces on its ok edge. "" (the default) means the returned
+	// value is fully owned -- no pre-Phase-4-plan-06 symbol declares this key,
+	// so every existing fixture's serialized bytes are unchanged (D-04-23).
+	// "borrow" means the ok-edge return is a shared-access alias of the
+	// call's own argument; "retain" means an exclusive-access alias -- the
+	// same two access modes core.PublicOrigin.Access already declares,
+	// reused rather than inventing a third vocabulary. originvalidate reads
+	// this field alone (never the checker) to recognise a foreign-call-
+	// derived return as borrow-derived (D-04-28).
+	Alias string `json:"alias,omitempty"`
 }
 
 // RecordLayout is one declared record's layout obligation: its own declared

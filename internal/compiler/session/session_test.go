@@ -1525,6 +1525,91 @@ func TestVerifyPhase4DefectControls(t *testing.T) {
 	}
 }
 
+// TestVerifyPhase4TerminatorControl proves control:terminator.walk_incomplete
+// (D-04-29, task 04-06-01) is a required Phase 4 control with nonzero
+// recomputed work -- the single highest-risk item in the phase, asserted
+// directly rather than inferred from a passing differential.
+func TestVerifyPhase4TerminatorControl(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	found := false
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			if control == "control:terminator.walk_incomplete" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("missing required Phase 4 control control:terminator.walk_incomplete: lanes=%+v", result.Lanes)
+	}
+}
+
+// TestVerifyPhase4ForeignOriginControl proves control:origin.foreign_origin_omitted
+// (D-04-28, task 04-06-02) is a required Phase 4 control with nonzero
+// recomputed work.
+func TestVerifyPhase4ForeignOriginControl(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	found := false
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			if control == "control:origin.foreign_origin_omitted" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("missing required Phase 4 control control:origin.foreign_origin_omitted: lanes=%+v", result.Lanes)
+	}
+}
+
+// TestPublishedOriginValidatedOnCheckAndRun is D-04-27/WR-01's falsifier:
+// originvalidate.ValidatePublished now runs on the `check` and `run`
+// command-file paths, not only `interface export`. testdata/phase3's
+// public_view_omitted.lang (the exclusive_borrow_clean/relay shape D-04-03
+// keeps checking clean on purpose) previously PASSED session.CheckCommandFile
+// unchanged; it must now be refused with core.origin_omitted there too. The
+// new foreign_origin_omitted.lang fixture demonstrates the same wiring
+// through session.RunInterpreterCommandFile/RunNativeCommandFile.
+func TestPublishedOriginValidatedOnCheckAndRun(t *testing.T) {
+	omittedPath := testsupport.ProjectPath("testdata", "phase3", "public_view_omitted.lang")
+	checkResult, err := session.CheckCommandFile(omittedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if checkResult.Status != protocol.StatusInvalid || len(checkResult.Diagnostics) != 1 || checkResult.Diagnostics[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected lang check to refuse public_view_omitted.lang with core.origin_omitted, got %+v", checkResult)
+	}
+
+	foreignOmittedPath := testsupport.ProjectPath("testdata", "phase4", "foreign_origin_omitted.lang")
+	interpResult, err := session.RunInterpreterCommandFile(foreignOmittedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if interpResult.Status != protocol.StatusInvalid || len(interpResult.Diagnostics) != 1 || interpResult.Diagnostics[0].Code != "core.foreign_origin_omitted" {
+		t.Fatalf("expected lang run --engine=interpreter to refuse foreign_origin_omitted.lang with core.foreign_origin_omitted, got %+v", interpResult)
+	}
+
+	nativeResult, err := session.RunNativeCommandFile(context.Background(), foreignOmittedPath, native.DefaultRunner())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if nativeResult.Status != protocol.StatusInvalid || len(nativeResult.Diagnostics) != 1 || nativeResult.Diagnostics[0].Code != "core.foreign_origin_omitted" {
+		t.Fatalf("expected lang run --engine=native to refuse foreign_origin_omitted.lang with core.foreign_origin_omitted, got %+v", nativeResult)
+	}
+}
+
 // TestNoReleaseAfterDefect is control:defect.no_release_on_defect's own
 // falsifier: an honest defect execution (no release event anywhere) passes,
 // and a hand-constructed one with a release emitted on the defect path --

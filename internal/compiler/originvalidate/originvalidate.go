@@ -25,6 +25,45 @@ import (
 // claimed as solved).
 const KnownEscape = "escape:coordinated-frontend-summary-lie"
 
+// TerminatorKindsOverride is a fault-injection seam for
+// TestTerminatorWalkMutationKilled (D-09/D-04-29): production always walks
+// the full core.TerminatorKinds() set; the test temporarily narrows it (the
+// same "delete OpFail from the recognised set" mutation the throwaway-
+// detached-worktree demonstration performs on the source directly) to prove
+// that a walker recognising fewer terminators really does lose a fixture's
+// origin fact. nil (the always-true production default) means "use
+// core.TerminatorKinds() unmodified".
+var TerminatorKindsOverride func() []core.OperationKind
+
+func recognizedTerminatorKinds() []core.OperationKind {
+	if TerminatorKindsOverride != nil {
+		return TerminatorKindsOverride()
+	}
+	return core.TerminatorKinds()
+}
+
+// isTerminatorKind is originvalidate's own membership test against the
+// terminator registry (D-04-29): a set-membership test against
+// core.TerminatorKinds() rather than a literal restatement of it, so
+// widening the registry widens this walker automatically. This is the
+// single site (RecomputeOriginPerReturn's collection loop, immediately
+// below) where the backward-walk collection discriminates a terminator
+// operation from an ordinary one.
+func isTerminatorKind(kind core.OperationKind) bool {
+	for _, terminator := range recognizedTerminatorKinds() {
+		if kind == terminator {
+			return true
+		}
+	}
+	return false
+}
+
+// RecognizesTerminator is session.go's control:terminator.walk_incomplete
+// hook (D-04-29): it reports whether this package's own walker treats kind
+// as a terminator, reading the exact same isTerminatorKind this file's
+// production walk uses -- never a second, restated copy of the set.
+func RecognizesTerminator(kind core.OperationKind) bool { return isTerminatorKind(kind) }
+
 // ExpectedEscapes is the origin package's contribution to a verify result's
 // expected-escapes list — surfaced next to corevalidate.KnownEscape, never
 // reported as a detected control.
@@ -100,7 +139,15 @@ func RecomputeOriginPerReturn(function core.Function) []ReturnOrigin {
 	var returnOps []*core.LinearOperation
 	for index := range operations {
 		operation := operations[index]
-		if operation.Kind == core.OpReturn {
+		// D-04-29: the discriminant is a membership test against the
+		// terminator registry, not an equality test against core.OpReturn
+		// alone -- Phase 4 introduces core.OpFail and core.OpDefect, and an
+		// analysis that recognises only a return is exactly the defect class
+		// 03-08/03-09/03-10 closed three times, now reproduced one layer up.
+		// walkReturnOrigin below is unchanged: it is already terminator-
+		// agnostic, walking backward from whichever operation this loop
+		// collects.
+		if isTerminatorKind(operation.Kind) {
 			returnOps = append(returnOps, &operations[index])
 			continue
 		}
@@ -140,6 +187,24 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 		case core.OpBorrowShared:
 			if derivedAccess == "" {
 				derivedAccess = "shared"
+			}
+		case core.OpForeignCall:
+			// D-04-28: a foreign declaration is itself a signature carrying
+			// origin and access facts -- declaring a call foreign-only does
+			// not escape origin reasoning, it moves the facts somewhere they
+			// are asserted (function.ForeignContract.Alias) rather than
+			// derived from a body the foreign symbol does not have. When the
+			// contract declares this call borrows/retains its argument, the
+			// hop counts exactly like an in-language borrow hop so a
+			// correctly DECLARED PublicOrigin for such a function is
+			// recognised as matching, not flagged as understated.
+			if derivedAccess == "" && function.ForeignContract != nil {
+				switch function.ForeignContract.Alias {
+				case "borrow":
+					derivedAccess = "shared"
+				case "retain":
+					derivedAccess = "exclusive"
+				}
 			}
 		}
 		current = operation.SourceID
@@ -212,8 +277,77 @@ func RecomputeOrigin(function core.Function) (paths []string, access string, ok 
 // function with no linear return chain), the function is left untouched
 // exactly as before — the new check does not over-fire on an honest,
 // declaration-free owned value.
+// checkForeignOriginOmitted independently re-derives, for one function,
+// whether its returned value traces back to a foreign call whose declared
+// contract says it borrows or retains its argument (D-04-28). It performs
+// its own backward walk over function.Linear.Operations rather than sharing
+// RecomputeOriginPerReturn's (T-04-37: two derivations must not agree merely
+// because they share a law) -- it reads only the core artifact, never the
+// checker: the foreign contract's declared Alias obligation and the
+// operation's own SourceID/TargetID places.
+func checkForeignOriginOmitted(function core.Function) *Problem {
+	if function.ForeignContract == nil {
+		return nil
+	}
+	alias := function.ForeignContract.Alias
+	if alias != "borrow" && alias != "retain" {
+		return nil
+	}
+	if function.Linear == nil || function.PublicOrigin != nil {
+		return nil
+	}
+	operations := function.Linear.Operations
+	sourceOf := make(map[string]core.LinearOperation, len(operations))
+	var foreignCallTarget string
+	for index := range operations {
+		operation := operations[index]
+		if operation.Kind == core.OpForeignCall {
+			foreignCallTarget = operation.TargetID
+		}
+		if isTerminatorKind(operation.Kind) {
+			continue
+		}
+		sourceOf[operation.TargetID] = operation
+	}
+	if foreignCallTarget == "" {
+		return nil
+	}
+	for index := range operations {
+		operation := operations[index]
+		if operation.Kind != core.OpReturn {
+			continue
+		}
+		current := operation.SourceID
+		visited := make(map[string]bool)
+		for current != function.Parameter.ID {
+			if current == foreignCallTarget {
+				return &Problem{
+					Code: "core.foreign_origin_omitted",
+					Detail: fmt.Sprintf(
+						"%s: return derives from a foreign call declared %q on argument %q, but no public origin is declared",
+						function.ID, alias, function.Parameter.Name,
+					),
+				}
+			}
+			if visited[current] {
+				break
+			}
+			visited[current] = true
+			source, exists := sourceOf[current]
+			if !exists {
+				break
+			}
+			current = source.SourceID
+		}
+	}
+	return nil
+}
+
 func ValidatePublished(program core.Program) []Problem {
 	for _, function := range program.Functions {
+		if problem := checkForeignOriginOmitted(function); problem != nil {
+			return []Problem{*problem}
+		}
 		recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function)
 		if function.PublicOrigin == nil {
 			if ok {
