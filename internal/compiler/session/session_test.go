@@ -2034,3 +2034,215 @@ func TestExpectedEscapesAreVisibleNotSolved(t *testing.T) {
 		}
 	}
 }
+
+// writeFailingForeignDouble writes a TEST-ONLY, throwaway foreign
+// translation unit implementing the SAME symbol and ABI shape as the
+// frozen native/lang_foreign_resource.c (_LANG_lang_res_open_result
+// _LANG_lang_res_open(unsigned char)) but that genuinely returns ok=0 on
+// its failOnCall'th invocation within one process, using a static call
+// counter -- the exact "Nth call" convention native/lang_foreign_nonlocal.c
+// already establishes for the nonlocal-exit probe (D-04-17). This is NOT a
+// change to any frozen, byte-committed file: it is written fresh to
+// t.TempDir() for this test alone, never touching
+// native/lang_foreign_resource.c, so D-04-10's freeze is untouched. It
+// exists because the shipped foreign TU always succeeds at real runtime (a
+// genuine allocation failure is unreachable in practice), so proving the
+// interpreter and BOTH native optimization levels genuinely agree on a
+// typed-failure path's terminal outcome, events, and live resources
+// requires a real ok=0 SOMEWHERE in the toolchain -- this double supplies
+// it without touching production code cgen.go emits or the frozen TU it
+// links against for every other Phase 4 fixture.
+func writeFailingForeignDouble(t *testing.T, failOnCall int) string {
+	t.Helper()
+	source := fmt.Sprintf(`#include <stdint.h>
+
+typedef struct _LANG_lang_res_open_result {
+  unsigned char ok;
+  unsigned char value;
+} _LANG_lang_res_open_result;
+
+static int lang_test_double_call_count = 0;
+
+_LANG_lang_res_open_result _LANG_lang_res_open(unsigned char argument) {
+  _LANG_lang_res_open_result result;
+  lang_test_double_call_count++;
+  if (lang_test_double_call_count == %d) {
+    result.ok = 0;
+    result.value = 0;
+    return result;
+  }
+  result.ok = 1;
+  result.value = argument;
+  return result;
+}
+`, failOnCall)
+	path := filepath.Join(t.TempDir(), "lang_test_double_resource.c")
+	if err := os.WriteFile(path, []byte(source), 0o600); err != nil {
+		t.Fatalf("write test-double foreign TU: %v", err)
+	}
+	return path
+}
+
+// assertTypedFailurePathAgrees is task 04-07-02's shared engine-agreement
+// assertion for the second-stage and third-stage typed-failure path
+// shapes. Both are genuinely EXECUTED, not hand-constructed: the
+// interpreter runs the exact err block directly via
+// interp.RunLinearBlockDirect (Run's own public entry point cannot reach
+// it, since the interpreter's documented discretionary stub always
+// simulates success for every OpForeignCall, D-04-04/04-PATTERNS Pattern
+// 3), and both native optimization levels compile and run the REAL,
+// UNMUTATED program's own generated C (already containing a compilable,
+// merely dead, "if (!result.ok) { <release*, fail> }" branch for every
+// call site) linked against writeFailingForeignDouble's test-only object
+// instead of the frozen production TU -- genuinely returning ok=0 on the
+// failing call, making that dead branch live. No engine is stubbed or fed
+// a constructed execution document; all three consume the SAME real
+// program through their ordinary machinery.
+func assertTypedFailurePathAgrees(t *testing.T, fixture string, failOnCall int, liveOpIndexes []int, errBlockSuffix string) {
+	t.Helper()
+	corpus := testsupport.ProjectPath("testdata", "phase4")
+	program, functionName, err := session.Phase4CheckedProgram(corpus, fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	functionID := program.Functions[0].ID
+	precedingCallIDs := make([]string, 0, len(liveOpIndexes))
+	for _, index := range liveOpIndexes {
+		precedingCallIDs = append(precedingCallIDs, fmt.Sprintf("%s:op:%d", functionID, index))
+	}
+	// The failing call is always the next OpForeignCall in declaration
+	// order after the preceding successful ones (0-indexed: A=0, B=1, C=2).
+	failingCallID := fmt.Sprintf("%s:op:%d", functionID, len(liveOpIndexes))
+	blockID := functionID + errBlockSuffix
+
+	interpreted, err := interp.RunLinearBlockDirect(program, functionName, blockID, precedingCallIDs, failingCallID)
+	if err != nil {
+		t.Fatalf("interp.RunLinearBlockDirect: %v", err)
+	}
+
+	cSource, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("cgen.EmitNative: %v", err)
+	}
+	doublePath := writeFailingForeignDouble(t, failOnCall)
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectTypedFailure
+	runner.ForeignSources = []string{doublePath}
+
+	o0, err := runner.Run(context.Background(), cSource, "-O0", []string{"7"})
+	if err != nil || len(o0.Pairs) != 1 {
+		t.Fatalf("-O0 run failed: err=%v result=%+v", err, o0)
+	}
+	o3, err := runner.Run(context.Background(), cSource, "-O3", []string{"7"})
+	if err != nil || len(o3.Pairs) != 1 {
+		t.Fatalf("-O3 run failed: err=%v result=%+v", err, o3)
+	}
+
+	if compareErr := session.Phase4CompareThreeEngines(fixture, interpreted, o0.Pairs[0].Execution, o3.Pairs[0].Execution); compareErr != nil {
+		t.Fatalf("typed-failure path disagreement: %v", compareErr)
+	}
+	if interpreted.Outcome.Kind != "typed_failure" {
+		t.Fatalf("expected typed_failure outcome, got %+v", interpreted.Outcome)
+	}
+}
+
+// TestPhase4CorpusThreeEngineAgreement is task 04-07-02's own differential
+// (ROADMAP SC4): the interpreter, the unoptimized native build, and the
+// optimized native build must agree on terminal outcome, ordered event
+// sequence, and live-resource state across all five Phase 4 path shapes --
+// success, second-stage typed failure, third-stage typed failure, defect,
+// and nonlocal exit -- named here explicitly so the coverage cannot
+// silently shrink to return-only paths.
+func TestPhase4CorpusThreeEngineAgreement(t *testing.T) {
+	corpus := testsupport.ProjectPath("testdata", "phase4")
+	runner := native.DefaultRunner()
+
+	t.Run("success", func(t *testing.T) {
+		program, functionName, err := session.Phase4CheckedProgram(corpus, "acquire_three_success.lang")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "acquire_three_success.lang", program, functionName, "7", runner, native.ExpectValue); err != nil {
+			t.Fatalf("success path disagreement: %v", err)
+		}
+	})
+
+	t.Run("second-stage-typed-failure", func(t *testing.T) {
+		// Second call (index 1, B) fails; only A (op:0) is live on entry to
+		// block:err:1, which releases A and never B (B never completed).
+		assertTypedFailurePathAgrees(t, "acquire_three_fail_second.lang", 2, []int{0}, ":block:err:1")
+	})
+
+	t.Run("third-stage-typed-failure", func(t *testing.T) {
+		// Third call (index 2, C) fails; A and B (op:0, op:1) are live on
+		// entry to block:err:2, which releases B then A in reverse order.
+		assertTypedFailurePathAgrees(t, "acquire_three_fail_third.lang", 3, []int{0, 1}, ":block:err:2")
+	})
+
+	t.Run("defect", func(t *testing.T) {
+		program, functionName, err := session.Phase4CheckedProgram(corpus, "defect_terminal.lang")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "defect_terminal.lang", program, functionName, "Halt", runner, native.ExpectDefect); err != nil {
+			t.Fatalf("defect path disagreement: %v", err)
+		}
+	})
+
+	t.Run("nonlocal-exit", func(t *testing.T) {
+		program, functionName, err := session.Phase4CheckedProgram(corpus, "nonlocal_exit_probe.lang")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "nonlocal_exit_probe.lang", program, functionName, "7", runner, native.ExpectDefect); err != nil {
+			t.Fatalf("nonlocal-exit path disagreement: %v", err)
+		}
+	})
+}
+
+// TestPhase4DifferentialNamesFirstDisagreement proves
+// Phase4CompareThreeEngines's own required-behavior (T-04-43): a
+// disagreement is reported with the fixture identifier, the specific
+// engine pair, and the first differing field, never merely "a mismatch
+// occurred." It hand-constructs three documents where the interpreter and
+// -O3 agree on "returned" but -O0 disagrees on outcome.kind alone, proving
+// the report names -O0 specifically (interpreter-vs-O0) rather than every
+// pair, and names outcome.kind as the first field the comparison checks --
+// matching the established hand-constructed-document technique this file
+// already uses for TestOwnedExecutionFieldMutationMatrix, so this
+// comparison is directly testable without a native toolchain invocation.
+func TestPhase4DifferentialNamesFirstDisagreement(t *testing.T) {
+	honest := execution.Execution{
+		Schema:  execution.Schema1,
+		Outcome: execution.Outcome{Kind: "returned", Value: "7"},
+		Events: []execution.Event{
+			{Schema: execution.Schema1, ID: "event:0", Kind: "function.returned", FunctionID: "fn:main"},
+		},
+		LiveResources: []string{},
+	}
+	disagreeing := honest
+	disagreeing.Outcome = execution.Outcome{Kind: "typed_failure", Value: "OpenFailed"}
+
+	diffErr := session.Phase4CompareThreeEngines("acquire_three_success.lang", honest, disagreeing, honest)
+	if diffErr == nil {
+		t.Fatal("expected a disagreement between the interpreter and -O0 documents, got none")
+	}
+	var disagreement *session.Phase4EngineDisagreement
+	if !errors.As(diffErr, &disagreement) {
+		t.Fatalf("expected a *session.Phase4EngineDisagreement, got %v (%T)", diffErr, diffErr)
+	}
+	if disagreement.Fixture != "acquire_three_success.lang" {
+		t.Fatalf("disagreement did not name the fixture: %+v", disagreement)
+	}
+	if disagreement.EnginePair != "interpreter-vs-O0" {
+		t.Fatalf("disagreement named the wrong engine pair, want interpreter-vs-O0: %+v", disagreement)
+	}
+	if !strings.Contains(disagreement.Detail, "outcome.kind") {
+		t.Fatalf("disagreement did not name outcome.kind as the first differing field: %+v", disagreement)
+	}
+
+	// The honest triple (no mutation) must be reported as agreement.
+	if err := session.Phase4CompareThreeEngines("acquire_three_success.lang", honest, honest, honest); err != nil {
+		t.Fatalf("an honest, identical triple must not be reported as a disagreement: %v", err)
+	}
+}

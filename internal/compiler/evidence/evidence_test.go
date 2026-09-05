@@ -262,6 +262,35 @@ func ownedFacts() evidence.Facts {
 	return evidence.Facts{CompilerIdentity: "codename-lang-stage0/go1.24-fixture", ClangIdentity: "clang-fixture 21.0.0", Target: "arm64-apple-darwin-fixture", Flags: append([]string(nil), evidence.DefaultFlags...), Policy: "phase2-owned-c17-v1"}
 }
 
+// TestForeignDigestMismatchRefused is task 04-07-02's own control
+// (T-04-46): a manifest whose ForeignDigest does not match its sidecar
+// (i.e. does not match the manifest's own recomputation over the SAME
+// source) is refused with evidence.foreign_digest_mismatch, mirroring
+// TestEvidenceMutationMatrix's established per-field mutation-and-refuse
+// shape for this new Phase 4 field specifically.
+func TestForeignDigestMismatchRefused(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	product, diagnostics, err := evidence.Build(source, ownedFacts())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("build foreign evidence: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	if product.Manifest.ForeignDigest == "" {
+		t.Fatal("expected a non-empty ForeignDigest for a program declaring a foreign block")
+	}
+	mutated := product.Manifest
+	mutated.ForeignDigest = staleDigest()
+	if err := evidence.Validate(mutated, source, ownedFacts()); evidence.ErrorCode(err) != "evidence.foreign_digest_mismatch" {
+		t.Fatalf("mutated ForeignDigest code=%s, want evidence.foreign_digest_mismatch", evidence.ErrorCode(err))
+	}
+	// The honest, unmutated manifest must still validate cleanly.
+	if err := evidence.Validate(product.Manifest, source, ownedFacts()); err != nil {
+		t.Fatalf("honest foreign manifest rejected: %v", err)
+	}
+}
+
 func readPhase2(t testing.TB, name string) []byte {
 	t.Helper()
 	value, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", name))

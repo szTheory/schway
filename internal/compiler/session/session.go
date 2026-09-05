@@ -343,6 +343,161 @@ func TransposeReleaseOrder(program core.Program) (core.Program, error) {
 	return mutated, nil
 }
 
+// Phase4EngineDisagreement is task 04-07-02's disagreement report (T-04-43):
+// unlike EngineMismatch's coarse canonical-bytes comparison, it names the
+// specific fixture, the specific engine pair, and the first differing
+// event index or outcome field, so a Phase 4 three-engine disagreement is
+// diagnosable without re-deriving the diff by hand.
+type Phase4EngineDisagreement struct {
+	Fixture    string
+	EnginePair string
+	Detail     string
+}
+
+func (d *Phase4EngineDisagreement) Error() string {
+	return fmt.Sprintf("phase4 three-engine disagreement: fixture=%s pair=%s detail=%s", d.Fixture, d.EnginePair, d.Detail)
+}
+
+// firstExecutionDisagreement returns an empty string when left and right
+// are identical (by the same canonical-bytes definition execution.Equal
+// uses), or else names the first differing field: the outcome kind, the
+// outcome value, the index and content of the first differing event (or a
+// length mismatch), or the live-resource set.
+func firstExecutionDisagreement(left, right execution.Execution) string {
+	if execution.Equal(left, right) {
+		return ""
+	}
+	if left.Outcome.Kind != right.Outcome.Kind {
+		return fmt.Sprintf("outcome.kind: %q vs %q", left.Outcome.Kind, right.Outcome.Kind)
+	}
+	if left.Outcome.Value != right.Outcome.Value {
+		return fmt.Sprintf("outcome.value: %q vs %q", left.Outcome.Value, right.Outcome.Value)
+	}
+	length := len(left.Events)
+	if len(right.Events) > length {
+		length = len(right.Events)
+	}
+	for index := 0; index < length; index++ {
+		switch {
+		case index >= len(left.Events):
+			return fmt.Sprintf("events[%d]: missing vs %+v", index, right.Events[index])
+		case index >= len(right.Events):
+			return fmt.Sprintf("events[%d]: %+v vs missing", index, left.Events[index])
+		case left.Events[index] != right.Events[index]:
+			return fmt.Sprintf("events[%d]: %+v vs %+v", index, left.Events[index], right.Events[index])
+		}
+	}
+	leftLive := append([]string(nil), left.LiveResources...)
+	rightLive := append([]string(nil), right.LiveResources...)
+	sort.Strings(leftLive)
+	sort.Strings(rightLive)
+	if !reflect.DeepEqual(leftLive, rightLive) {
+		return fmt.Sprintf("live_resources: %+v vs %+v", leftLive, rightLive)
+	}
+	return "byte-identical JSON differs only in field ordering or an unrecognised field"
+}
+
+// phase4RunThreeEngines drives program's named function through the
+// interpreter and both native optimization levels for a single input,
+// auto-wiring the frozen foreign source for any declared ForeignContract
+// symbol exactly as session.RunNative does, so a caller never has to
+// remember which frozen TU a given symbol needs linked.
+func phase4RunThreeEngines(ctx context.Context, program core.Program, functionName, input string, runner native.Runner, expect native.TerminalOutcome) (interpreted, o0, o3 execution.Execution, err error) {
+	interpreted, err = interp.Run(program, functionName, input)
+	if err != nil {
+		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("interpreter run failed: %w", err)
+	}
+	cSource, cgenErr := cgen.EmitNative(program)
+	if cgenErr != nil {
+		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("cgen failed: %w", cgenErr)
+	}
+	nativeRunner := runner
+	nativeRunner.Expect = expect
+	for _, function := range program.Functions {
+		if function.Name != functionName || function.ForeignContract == nil {
+			continue
+		}
+		if sourcePath, known := native.ForeignSourcePathForSymbol(function.ForeignContract.Symbol); known {
+			nativeRunner.ForeignSources = append(append([]string(nil), nativeRunner.ForeignSources...), sourcePath)
+		}
+	}
+	o0Result, o0Err := nativeRunner.Run(ctx, cSource, "-O0", []string{input})
+	if o0Err != nil || len(o0Result.Pairs) != 1 {
+		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("-O0 run failed: %w (pairs=%d)", o0Err, len(o0Result.Pairs))
+	}
+	o3Result, o3Err := nativeRunner.Run(ctx, cSource, "-O3", []string{input})
+	if o3Err != nil || len(o3Result.Pairs) != 1 {
+		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("-O3 run failed: %w (pairs=%d)", o3Err, len(o3Result.Pairs))
+	}
+	return interpreted, o0Result.Pairs[0].Execution, o3Result.Pairs[0].Execution, nil
+}
+
+// Phase4CompareThreeEngines is the pure comparison half of task 04-07-02's
+// differential: given three already-obtained execution documents, it
+// compares all three pairwise -- interpreter-vs-O0, interpreter-vs-O3,
+// O0-vs-O3 -- returning a *Phase4EngineDisagreement naming fixture, the
+// specific engine pair, and the first differing field on any disagreement
+// (T-04-43). Separated from Phase4ThreeEngineDifferential (which OBTAINS
+// the three documents via real interp/native runs) so the comparison logic
+// itself is directly testable against hand-constructed documents, without
+// requiring a native toolchain invocation for every test case.
+func Phase4CompareThreeEngines(fixture string, interpreted, o0, o3 execution.Execution) error {
+	for _, comparison := range []struct {
+		pair  string
+		left  execution.Execution
+		right execution.Execution
+	}{
+		{"interpreter-vs-O0", interpreted, o0},
+		{"interpreter-vs-O3", interpreted, o3},
+		{"O0-vs-O3", o0, o3},
+	} {
+		if detail := firstExecutionDisagreement(comparison.left, comparison.right); detail != "" {
+			return &Phase4EngineDisagreement{Fixture: fixture, EnginePair: comparison.pair, Detail: detail}
+		}
+	}
+	return nil
+}
+
+// Phase4ThreeEngineDifferential is task 04-07-02's own differential
+// (ROADMAP SC4): it drives program's named function through the
+// interpreter and both native optimization levels for input, then hands
+// all three documents to Phase4CompareThreeEngines. A differential must
+// never report only that a mismatch occurred.
+func Phase4ThreeEngineDifferential(ctx context.Context, fixture string, program core.Program, functionName, input string, runner native.Runner, expect native.TerminalOutcome) (execution.Execution, error) {
+	interpreted, o0, o3, err := phase4RunThreeEngines(ctx, program, functionName, input, runner, expect)
+	if err != nil {
+		return execution.Execution{}, fmt.Errorf("%s: %w", fixture, err)
+	}
+	if compareErr := Phase4CompareThreeEngines(fixture, interpreted, o0, o3); compareErr != nil {
+		return execution.Execution{}, compareErr
+	}
+	return interpreted, nil
+}
+
+// Phase4CheckedProgram reads, checks, and independently validates a Phase 4
+// corpus fixture, returning its single function's name alongside the
+// validated core.Program -- the common prelude every Phase4ThreeEngineDifferential
+// caller needs before it can drive the differential itself.
+func Phase4CheckedProgram(corpus, fixture string) (core.Program, string, error) {
+	source, err := readBoundedFile(filepath.Join(corpus, fixture), syntax.MaxSourceBytes)
+	if err != nil {
+		return core.Program{}, "", err
+	}
+	checked := Check(source)
+	if len(checked.Diagnostics) != 0 {
+		return core.Program{}, "", fmt.Errorf("%s: unexpected diagnostics: %+v", fixture, checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return core.Program{}, "", fmt.Errorf("%s: core validation failed: %+v", fixture, validated.Problems)
+	}
+	program := validated.Program()
+	if len(program.Functions) != 1 {
+		return core.Program{}, "", fmt.Errorf("%s: expected exactly one function", fixture)
+	}
+	return program, program.Functions[0].Name, nil
+}
+
 // DefectHasNoReleaseAfter is control:defect.no_release_on_defect (D-04-18):
 // zero resource.released events occur after a defect terminal record. It
 // scans the WHOLE event list of a defect-outcome execution rather than
