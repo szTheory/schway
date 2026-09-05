@@ -3,7 +3,7 @@ status: complete
 phase: 04-fallible-resources-and-c-boundary
 source: 04-01-SUMMARY.md, 04-02-SUMMARY.md, 04-03-SUMMARY.md, 04-04-SUMMARY.md, 04-05-SUMMARY.md, 04-06-SUMMARY.md, 04-07-SUMMARY.md
 started: 2026-09-05T14:26:54Z
-updated: 2026-09-05T14:26:54Z
+updated: 2026-09-05T14:42:56Z
 ---
 
 ## Current Test
@@ -247,6 +247,54 @@ blocked: 0
 
 **Deliberately left un-mechanized** (recorded, not claimed): whether an out-of-corpus program is *interestingly* novel rather than merely non-identical, and whether debt-register prose is honestly phrased. The dangerous direction of the latter — a named residual described as covered — is already mechanized by `TestNoCoverageClaimedForNamedResiduals`.
 
+## Re-Verification
+
+- **2026-09-05T14:42:56Z** — re-ran every covering control from a clean runtime state; no test, fixture, or
+  source file was changed by this session.
+  - `go test ./...` — all 16 test packages pass (`native` 13.7s, `session` 38.2s).
+  - `sh scripts/verify-phase4.sh` — exit 0. All four phase corpora verify `status: pass`
+    on the freshly built binary; Phase 4's lane set reports 14 lanes green, including
+    `lane:foreign-no-unproven-attributes`, `lane:release-omitted`,
+    `lane:release-order-transposed`, `lane:defect-signal-adjudicated`,
+    `lane:nonlocal-exit-undetected`, and `lane:kind-exhaustive-dispatch`.
+  - `uat classify-coverage` re-run on all seven SUMMARYs: `mode: coverage`,
+    30/30 `all_auto_covered: true`, zero human checkpoints, zero parse errors.
+  - `verify:pre` gate `api-coverage.verify-pre`: `block: false` (no external-API
+    integration detected).
+
+  UAT result is unchanged: 30 passed, 0 issues. Note that phase advancement remains
+  blocked by 04-VERIFICATION.md (`status: gaps_found`) — see Gaps below.
+
 ## Gaps
 
-[none]
+UAT found no gaps. Phase-goal verification did — these two are recorded in
+04-VERIFICATION.md, not discovered by this UAT session, and are reproduced here
+so `/gsd-plan-phase 04 --gaps` and the completion predicate agree on what is open.
+
+- gap_id: G-04-V1
+  truth: "`corevalidate` independently rederives the expected release order by walking backward from each failure edge over the block and edge graph, and compares (D-04-07, D-12a)."
+  status: failed
+  severity: major
+  source: 04-VERIFICATION.md
+  reason: "checkReleaseOrder silently skips any terminal block whose incoming-edge count != 1 instead of refusing the shape; no other check bounds terminal blocks to one incoming edge, so a merge-point terminal block would go entirely unchecked by the control D-04-07 requires to be an independent rederivation."
+  artifacts:
+    - path: internal/compiler/corevalidate/corevalidate.go
+      issue: "checkReleaseOrder (~line 1242) skips rather than refuses on unexpected terminal incoming-edge count"
+  missing:
+    - "Treat an unexpected incoming-edge count on a terminal block as a hard refusal in checkReleaseOrder"
+    - "Add a structural check that every OpReturn/OpFail-terminated block has exactly one incoming edge, independent of checkReleaseOrder"
+
+- gap_id: G-04-V2
+  truth: "One authoritative `core.ForeignContract` carries the boundary facts and all three inspectable layers derive from it, enforced by `control:foreign.no_unproven_attributes` scanning all emitted C (FFI-01, D-04-12, D-04-13)."
+  status: failed
+  severity: major
+  source: 04-VERIFICATION.md
+  reason: "lane:foreign-no-unproven-attributes scans only cgen.Emit and cgen.EmitForeignManifest output. EmitForeignHeader and EmitForeignConformance — two of the three named inspectable layers — are never passed to ScanForBannedAttributes anywhere in the repo, so the control asserts coverage it does not have."
+  artifacts:
+    - path: internal/compiler/session/session.go
+      issue: "lane:foreign-no-unproven-attributes (~lines 2178-2212) never scans EmitForeignHeader/EmitForeignConformance output"
+    - path: internal/compiler/cgen/cgen.go
+      issue: "EmitForeignHeader (~line 1270) and EmitForeignConformance (~line 1327) are unscanned inspectable layers"
+  missing:
+    - "Feed cgen.EmitForeignHeader and cgen.EmitForeignConformance output into the lane:foreign-no-unproven-attributes scan"
+    - "Add a mutation-kill test injecting a banned token into EmitForeignHeader only, to prove the two artifacts are independently covered"
