@@ -729,3 +729,140 @@ func TestReleaseOrderValidationWorkSeries(t *testing.T) {
 		}
 	}
 }
+
+// TestMergeTerminalBlockDivergentReleaseSetsRefused is the 04-VERIFICATION.md
+// gap-1 falsifier: it hand-constructs the exact shape checkReleaseOrder used
+// to SKIP before commit 16fb0c9 -- a terminal block reachable by more than
+// one incoming edge -- where the two chains genuinely disagree on what should
+// be released. The added edge runs from the function's entry block (which
+// completed only acquisition A) directly into the success block (whose fixed
+// release list expects all three of A, B, and C released). Walking backward
+// from the corrupted edge rederives a strictly shorter expected release list
+// than the block's actual one, so corevalidate must refuse it with
+// core.release_order_mismatch. This test is the mutation-kill falsifier for
+// the per-incoming-edge rederivation added by 16fb0c9: reverting that hunk
+// (restoring the pre-fix "len(incoming) != 1 { continue }" skip) turns this
+// test red, since the corrupted block would then be silently skipped instead
+// of refused -- see 04-08-SUMMARY.md for the recorded revert-and-fail output.
+func TestMergeTerminalBlockDivergentReleaseSetsRefused(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	functionID := valid.Functions[0].ID
+	entryBlockID := functionID + ":block:entry"
+	successBlockID := functionID + ":block:success"
+
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	for index := range function.Linear.Blocks {
+		if function.Linear.Blocks[index].ID == entryBlockID {
+			function.Linear.Blocks[index].Successors = append(function.Linear.Blocks[index].Successors, successBlockID)
+		}
+	}
+	function.Linear.Edges = append(function.Linear.Edges, core.Edge{
+		ID: functionID + ":edge:corrupt:entry:success", FromBlockID: entryBlockID, ToBlockID: successBlockID, Pattern: "ok",
+	})
+
+	result := corevalidate.Validate(mutated)
+	if result.Valid || result.Problems[0].Code != "core.release_order_mismatch" {
+		t.Fatalf("expected core.release_order_mismatch, got %+v", result)
+	}
+}
+
+// TestMergeTerminalBlockAgreeingChainsAccepted is the sibling negative-result
+// row for the falsifier above: a SECOND incoming edge into the same success
+// block, added from the SAME source (the last acquisition step) rather than
+// an earlier one, rederives the identical expected release list the block
+// already carries. Without this test, the previous test could be passing
+// merely because ANY second incoming edge is refused -- exactly the "exactly
+// one incoming edge" structural form Task 1 declined (it would also refuse
+// discard_because.lang's legitimate merge).
+func TestMergeTerminalBlockAgreeingChainsAccepted(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	functionID := valid.Functions[0].ID
+	successBlockID := functionID + ":block:success"
+
+	var agreeingSourceBlockID string
+	for _, edge := range valid.Functions[0].Linear.Edges {
+		if edge.ToBlockID == successBlockID && edge.Pattern == "ok" {
+			agreeingSourceBlockID = edge.FromBlockID
+		}
+	}
+	if agreeingSourceBlockID == "" {
+		t.Fatal("expected an existing ok edge into the success block")
+	}
+
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	function.Linear.Edges = append(function.Linear.Edges, core.Edge{
+		ID: functionID + ":edge:corrupt:agreeing", FromBlockID: agreeingSourceBlockID, ToBlockID: successBlockID, Pattern: "ok",
+	})
+
+	result := corevalidate.Validate(mutated)
+	if !result.Valid {
+		t.Fatalf("expected two agreeing incoming edges to still validate, got %+v", result)
+	}
+}
+
+// TestTerminalBlockWithNoIncomingEdgeRefused removes every incoming edge into
+// a non-entry terminal block. Before Task 3's structural peer check exists,
+// checkReleaseOrder's own core.release_order_indeterminate refusal catches
+// this; after Task 3 lands, blocksAndEdges' core.terminal_block_unreachable
+// fires first (it runs earlier in Validate). The test accepts either code so
+// it is green both before and after Task 3, rather than encoding which check
+// fires first.
+func TestTerminalBlockWithNoIncomingEdgeRefused(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	functionID := valid.Functions[0].ID
+	successBlockID := functionID + ":block:success"
+
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	var edges []core.Edge
+	for _, edge := range function.Linear.Edges {
+		if edge.ToBlockID == successBlockID {
+			continue
+		}
+		edges = append(edges, edge)
+	}
+	function.Linear.Edges = edges
+	for index := range function.Linear.Blocks {
+		var successors []string
+		for _, successor := range function.Linear.Blocks[index].Successors {
+			if successor == successBlockID {
+				continue
+			}
+			successors = append(successors, successor)
+		}
+		function.Linear.Blocks[index].Successors = successors
+	}
+
+	result := corevalidate.Validate(mutated)
+	if result.Valid {
+		t.Fatalf("expected terminal block with no incoming edge to be refused, got valid: %+v", result)
+	}
+	code := result.Problems[0].Code
+	if code != "core.release_order_indeterminate" && code != "core.terminal_block_unreachable" {
+		t.Fatalf("expected core.release_order_indeterminate or core.terminal_block_unreachable, got %+v", result.Problems)
+	}
+}
+
+// TestLegitimateDiscardMergeStillValidates is the regression guard for Task
+// 1's option A: discard_because.lang's core program is itself a merge
+// terminal block (entry's ok edge and err edge both target the same success
+// block, since `discard`'s outcome is deliberately ignored on both paths) and
+// must keep validating under the per-incoming-edge rederivation.
+func TestLegitimateDiscardMergeStillValidates(t *testing.T) {
+	program := resourceLifecycleProgram(t, "discard_because.lang")
+	result := corevalidate.Validate(program)
+	if !result.Valid {
+		t.Fatalf("expected discard_because.lang to validate, got %+v", result)
+	}
+}
