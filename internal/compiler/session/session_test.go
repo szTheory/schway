@@ -2000,6 +2000,40 @@ func TestVerifyPhase4ControlsAndWork(t *testing.T) {
 	}
 }
 
+// TestAttributeScanLaneCoversEveryInspectableLayer is 04-09's pin on
+// lane:foreign-no-unproven-attributes's own scanned-artifact count. The
+// number 8 is two fixture programs (tracer, release) times four artifacts
+// each (compiled program, sidecar manifest, generated header, generated
+// conformance unit). This assertion is what makes dropping an argument from
+// session.go's ScanForBannedAttributes call a red test rather than a silent
+// coverage regression -- the exact state 04-VERIFICATION.md gap 2 recorded:
+// nothing asserted how many artifacts the production lane scanned, so
+// deleting an argument turned no test red even though the lane still
+// reported "pass". The lane must also be present at all: an absent lane is
+// the strongest form of this regression, not a case to pass over.
+func TestAttributeScanLaneCoversEveryInspectableLayer(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	var lane *protocol.Lane
+	for i := range result.Lanes {
+		if result.Lanes[i].ID == "lane:foreign-no-unproven-attributes" {
+			lane = &result.Lanes[i]
+			break
+		}
+	}
+	if lane == nil {
+		t.Fatalf("lane:foreign-no-unproven-attributes not found in result.Lanes: %+v", result.Lanes)
+	}
+	if lane.Status != "pass" {
+		t.Fatalf("lane:foreign-no-unproven-attributes status = %q, want \"pass\": %+v", lane.Status, lane)
+	}
+	if lane.RecomputedWork != 8 {
+		t.Fatalf("lane:foreign-no-unproven-attributes work = %d, want 8 (two fixture programs x four artifacts each); a value below 8 means a scanned artifact was dropped from session.go's ScanForBannedAttributes argument list: %+v", lane.RecomputedWork, lane)
+	}
+	if lane.RecomputedWork <= 0 {
+		t.Fatalf("lane:foreign-no-unproven-attributes RecomputedWork must be strictly greater than zero, got %d", lane.RecomputedWork)
+	}
+}
+
 // TestVerifyPhase4CLI proves TestVerifyPhase4ControlsAndWork's claim holds
 // through the shipped binary, not only the in-process session layer
 // (D-04-21's "the gate only ever sees what ships with it"): `lang --json
