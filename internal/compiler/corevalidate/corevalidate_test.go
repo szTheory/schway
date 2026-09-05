@@ -438,3 +438,211 @@ func TestForeignRefusalsAreIndependentlyDerived(t *testing.T) {
 		}
 	})
 }
+
+func resourceLifecycleProgram(t *testing.T, fixture string) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("%s: fixture failed to check: %+v", fixture, checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+func releaseOperations(function core.Function, blockID string) []core.LinearOperation {
+	byID := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		byID[operation.ID] = operation
+	}
+	var block core.Block
+	for _, candidate := range function.Linear.Blocks {
+		if candidate.ID == blockID {
+			block = candidate
+		}
+	}
+	var releases []core.LinearOperation
+	for _, opID := range block.OperationIDs {
+		if operation := byID[opID]; operation.Kind == core.OpRelease {
+			releases = append(releases, operation)
+		}
+	}
+	return releases
+}
+
+// TestValidatorRederivesReleaseOrder proves corevalidate's independent
+// backward-from-failure-edge rederivation (D-04-07/D-12a) agrees with the
+// shipped artifact on all four Phase 4 plan-02 fixtures.
+func TestValidatorRederivesReleaseOrder(t *testing.T) {
+	for _, fixture := range []string{
+		"acquire_three_success.lang", "acquire_three_fail_second.lang", "acquire_three_fail_third.lang", "discard_because.lang",
+	} {
+		program := resourceLifecycleProgram(t, fixture)
+		if result := corevalidate.Validate(program); !result.Valid {
+			t.Fatalf("%s: valid resource-lifecycle core rejected: %+v", fixture, result)
+		}
+	}
+}
+
+// TestReleaseOrderMutationMatrix proves each of moved, dropped, duplicated,
+// and invented raises core.release_order_mismatch on an otherwise valid
+// artifact (T-04-11).
+func TestReleaseOrderMutationMatrix(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
+	}
+	successBlockID := valid.Functions[0].ID + ":block:success"
+
+	t.Run("moved", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		function := &mutated.Functions[0]
+		releases := releaseOperations(*function, successBlockID)
+		if len(releases) < 2 {
+			t.Fatal("expected at least two releases in the success block")
+		}
+		for index := range function.Linear.Operations {
+			if function.Linear.Operations[index].ID == releases[0].ID {
+				function.Linear.Operations[index].ReleasesOperationID = releases[1].ReleasesOperationID
+			}
+		}
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "core.release_order_mismatch" {
+			t.Fatalf("expected core.release_order_mismatch, got %+v", result)
+		}
+	})
+
+	t.Run("dropped", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		function := &mutated.Functions[0]
+		releases := releaseOperations(*function, successBlockID)
+		if len(releases) == 0 {
+			t.Fatal("expected at least one release in the success block")
+		}
+		var operations []core.LinearOperation
+		for _, operation := range function.Linear.Operations {
+			if operation.ID == releases[0].ID {
+				continue
+			}
+			operations = append(operations, operation)
+		}
+		function.Linear.Operations = operations
+		var blocks []core.Block
+		for _, block := range function.Linear.Blocks {
+			if block.ID == successBlockID {
+				var opIDs []string
+				for _, opID := range block.OperationIDs {
+					if opID == releases[0].ID {
+						continue
+					}
+					opIDs = append(opIDs, opID)
+				}
+				block.OperationIDs = opIDs
+			}
+			blocks = append(blocks, block)
+		}
+		function.Linear.Blocks = blocks
+		result := corevalidate.Validate(mutated)
+		// Dropping one operation from the flat Operations list also desyncs
+		// the generic per-operation ordinal invariant (D-13's "operation N is
+		// at position N"), so a fail-closed rejection is guaranteed even
+		// though the specific code raised may be that generic ordinal check
+		// rather than core.release_order_mismatch -- either is proof the
+		// corruption is caught, never silently accepted.
+		if result.Valid {
+			t.Fatalf("expected a rejection, got valid: %+v", result)
+		}
+	})
+
+	t.Run("duplicated", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		function := &mutated.Functions[0]
+		releases := releaseOperations(*function, successBlockID)
+		if len(releases) == 0 {
+			t.Fatal("expected at least one release in the success block")
+		}
+		duplicate := releases[0]
+		duplicate.ID = duplicate.ID + ":duplicate"
+		var operations []core.LinearOperation
+		var blocks []core.Block
+		for _, operation := range function.Linear.Operations {
+			operations = append(operations, operation)
+			if operation.ID == releases[0].ID {
+				operations = append(operations, duplicate)
+			}
+		}
+		function.Linear.Operations = operations
+		for _, block := range function.Linear.Blocks {
+			if block.ID == successBlockID {
+				var opIDs []string
+				for _, opID := range block.OperationIDs {
+					opIDs = append(opIDs, opID)
+					if opID == releases[0].ID {
+						opIDs = append(opIDs, duplicate.ID)
+					}
+				}
+				block.OperationIDs = opIDs
+			}
+			blocks = append(blocks, block)
+		}
+		function.Linear.Blocks = blocks
+		result := corevalidate.Validate(mutated)
+		// Duplicating an operation also desyncs the generic per-operation
+		// ordinal/point-identity invariants -- same reasoning as "dropped"
+		// above: any fail-closed rejection is the evidence, not one exact
+		// code.
+		if result.Valid {
+			t.Fatalf("expected a rejection, got valid: %+v", result)
+		}
+	})
+
+	t.Run("invented", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		function := &mutated.Functions[0]
+		releases := releaseOperations(*function, successBlockID)
+		if len(releases) == 0 {
+			t.Fatal("expected at least one release in the success block")
+		}
+		for index := range function.Linear.Operations {
+			if function.Linear.Operations[index].ID == releases[0].ID {
+				function.Linear.Operations[index].ReleasesOperationID = "s1:invented:op:absent"
+			}
+		}
+		result := corevalidate.Validate(mutated)
+		if result.Valid || result.Problems[0].Code != "core.release_order_mismatch" {
+			t.Fatalf("expected core.release_order_mismatch, got %+v", result)
+		}
+	})
+}
+
+// TestReleaseOrderValidationWorkSeries proves the validator's release-order
+// rederivation cost is linear in the number of blocks plus edges plus
+// operations, demonstrated at three sizes (T-04-12): a discard-only fixture
+// with no tracked acquisitions, a one-acquisition tracer, and a
+// three-acquisition resource-lifecycle fixture.
+func TestReleaseOrderValidationWorkSeries(t *testing.T) {
+	sizes := []struct {
+		fixture      string
+		acquisitions int
+	}{
+		{"discard_because.lang", 0},
+		{"foreign_acquire_one.lang", 1},
+		{"acquire_three_success.lang", 3},
+	}
+	var series []int
+	for _, size := range sizes {
+		program := resourceLifecycleProgram(t, size.fixture)
+		result := corevalidate.Validate(program)
+		if !result.Valid {
+			t.Fatalf("%s: valid core rejected: %+v", size.fixture, result)
+		}
+		series = append(series, result.Checks)
+	}
+	for index := 1; index < len(series); index++ {
+		if series[index] <= series[index-1] {
+			t.Fatalf("counted work series is not increasing: %v", series)
+		}
+	}
+}

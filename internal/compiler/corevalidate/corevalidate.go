@@ -284,7 +284,7 @@ func (v *validator) linear(function *core.Function) bool {
 		// OpFail is a terminator alongside OpReturn (D-04-04): neither ever
 		// carries a TargetID, since neither produces an ordinary place --
 		// OpReturn ends the function, OpFail ends the err block.
-		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail {
+		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
 				return false
 			}
@@ -846,6 +846,17 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				return false
 			}
 			returned = true
+		case core.OpRelease:
+			// A non-terminal transition (D-04-07): it discharges an
+			// already-produced acquisition and produces no new place. The
+			// reverse-order release sequence itself is independently
+			// rederived and compared in checkReleaseOrder, not here --
+			// replay only needs to confirm the discharged place is a real,
+			// already-initialized place, which the generic pre-switch
+			// checks above already established.
+			if !v.check(operation.ReleasesOperationID != "", "core.release_target_unknown", operation.ID) {
+				return false
+			}
 		default:
 			return v.check(false, "core.unknown_operation", string(operation.Kind))
 		}
@@ -1013,9 +1024,23 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 				return false
 			}
 			returnedBlocks[blockID] = true
+		case core.OpRelease:
+			// A non-terminal transition (D-04-07), never the last operation
+			// of a genuinely terminal block (an err/success block always
+			// ends in OpFail/OpReturn) -- see the exhaustive-dispatch note
+			// on replayStraightLine's identical case for why replay's own
+			// obligation here is narrow: confirm the release names a real
+			// discharge target, and leave the reverse-order sequence itself
+			// to the independent rederivation in checkReleaseOrder.
+			if !v.check(operation.ReleasesOperationID != "", "core.release_target_unknown", operation.ID) {
+				return false
+			}
 		default:
 			return v.check(false, "core.unknown_operation", string(operation.Kind))
 		}
+	}
+	if !v.checkReleaseOrder(function, operationsByID) {
+		return false
 	}
 	for _, block := range linear.Blocks {
 		if len(block.OperationIDs) == 0 {
@@ -1031,6 +1056,108 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		}
 		if !v.check(returnedBlocks[block.ID], "core.final_claim_mismatch", block.ID) {
 			return false
+		}
+	}
+	return true
+}
+
+// checkReleaseOrder independently rederives the reverse-order release
+// sequence D-04-07 requires. For every block ending in OpFail or OpReturn, it
+// walks BACKWARD over the declared block/edge graph starting from that
+// block's own incoming edge, collecting every completed (not-yet-discharged)
+// OpForeignCall acquisition it passes -- a discovery order that is already
+// reverse-of-completion order, because the walk moves from the fail/return
+// point back toward the entry. A failure block's own triggering acquisition
+// is excluded (its incoming edge has Pattern "err", so includeThis starts
+// false); a success block's immediate predecessor IS included (its incoming
+// edge has Pattern "ok", so it completed). This is materially different from
+// check.go's forward accumulation (D-12/D-12a): it never reads check's own
+// accumulated list or any field check uses to communicate it, only the
+// block/edge graph and the operations check.go already emitted. Only a call
+// whose ok and err edges target DIFFERENT blocks is tracked -- a `discard`'s
+// converging ok/err edges mark its resource as untracked for release this
+// plan, a documented narrowing shared with check.go's own accumulation.
+func (v *validator) checkReleaseOrder(function *core.Function, operationsByID map[string]core.LinearOperation) bool {
+	linear := function.Linear
+	edgesByTo := make(map[string][]core.Edge, len(linear.Edges))
+	okEdgeInto := make(map[string]core.Edge, len(linear.Edges))
+	for _, edge := range linear.Edges {
+		edgesByTo[edge.ToBlockID] = append(edgesByTo[edge.ToBlockID], edge)
+		if edge.Pattern == "ok" {
+			okEdgeInto[edge.ToBlockID] = edge
+		}
+	}
+	// tracked names exactly the acquisitions SOME OpRelease in this function
+	// discharges -- the same rule check.go's own materialization and cgen's
+	// runtime ledger both use, so a discard's untracked acquisition (no
+	// OpRelease ever names it) and the 04-01 tracer's acquisition (no
+	// OpRelease exists in that shape at all) are both correctly excluded,
+	// even though a tracer call's ok/err edges also diverge.
+	tracked := make(map[string]bool, len(linear.Operations))
+	for _, operation := range linear.Operations {
+		v.checks++ // one inspection per operation while locating tracked acquisitions
+		if operation.Kind == core.OpRelease && operation.ReleasesOperationID != "" {
+			tracked[operation.ReleasesOperationID] = true
+		}
+	}
+	callInBlock := make(map[string]core.LinearOperation, len(linear.Blocks))
+	for _, block := range linear.Blocks {
+		for _, opID := range block.OperationIDs {
+			operation := operationsByID[opID]
+			if operation.Kind == core.OpForeignCall && tracked[operation.ID] {
+				callInBlock[block.ID] = operation
+			}
+		}
+	}
+
+	rederive := func(startEdge core.Edge) []core.LinearOperation {
+		var expected []core.LinearOperation
+		includeThis := startEdge.Pattern == "ok"
+		currentBlockID := startEdge.FromBlockID
+		for {
+			v.checks++ // one inspection per block visited while walking backward
+			if includeThis {
+				if op, ok := callInBlock[currentBlockID]; ok {
+					expected = append(expected, op)
+				}
+			}
+			edge, ok := okEdgeInto[currentBlockID]
+			if !ok {
+				break
+			}
+			currentBlockID = edge.FromBlockID
+			includeThis = true
+		}
+		return expected
+	}
+
+	for _, block := range linear.Blocks {
+		if len(block.OperationIDs) == 0 {
+			continue
+		}
+		lastOp := operationsByID[block.OperationIDs[len(block.OperationIDs)-1]]
+		if lastOp.Kind != core.OpFail && lastOp.Kind != core.OpReturn {
+			continue
+		}
+		v.checks++ // one reduction pass per terminal block
+		incoming := edgesByTo[block.ID]
+		if len(incoming) != 1 {
+			continue
+		}
+		expected := rederive(incoming[0])
+		var actual []core.LinearOperation
+		for _, opID := range block.OperationIDs {
+			if operation := operationsByID[opID]; operation.Kind == core.OpRelease {
+				actual = append(actual, operation)
+			}
+		}
+		if !v.check(len(expected) == len(actual), "core.release_order_mismatch", block.ID) {
+			return false
+		}
+		for index, want := range expected {
+			if !v.check(actual[index].ReleasesOperationID == want.ID, "core.release_order_mismatch", actual[index].ID) {
+				return false
+			}
 		}
 	}
 	return true
