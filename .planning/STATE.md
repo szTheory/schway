@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-09-05T00:53:39.075Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-09-05T01:19:06.907Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 04 execution started
-state_head: 300ab6bc6058120885390fa027476fdf99655f37
+state_head: 17e8f3bd719a64c58d4e22e56668ae66e0969e1f
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 27
-  completed_plans: 22
+  completed_plans: 23
   percent: 50
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-09-04 — Phase 04 execution started
 
@@ -76,6 +76,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 03 P10 | 45 min | 3 tasks | 9 files |
 | Phase 04 P01 | ~5h | 4 tasks | 25 files |
 | Phase 04 P02 | 3h | 3 tasks | 16 files |
+| Phase 04 P03 | ~2h | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: corevalidate's release-order rederivation walks BACKWARD from every failure/return edge over the block/edge graph, independent of check's forward accumulation; tracked-acquisition membership uses the same 'named by some OpRelease' rule as check.go/cgen, not an edge-divergence heuristic.
 - [Phase 04]: cgen's live-resource accounting is a genuine runtime ledger in generated C (a static array), not a compile-time-only literal, so the release-omission mutation is observable at the native layer.
 - [Phase 04]: The release-omission mutation runner targets the LAST lang:release-site marker (the success block's own final release), since this project's fixtures always succeed at runtime and an earlier err-block release is unreachable.
+- [Phase 04]: [Phase 04]: core.ForeignContract's Layout obligation describes the frozen private header's real record (payload, one field), not the {ok,value} ABI result struct cgen already emits inline; the two are distinct declared C shapes.
+- [Phase 04]: [Phase 04]: InitializedState/Capture/Retention/Aliasing are compiler-derived fixed structural facts this phase (no new foreign C {} policy syntax), since the language has no closures/threads/partial-init; recorded in the sidecar manifest's unchecked_obligations list, not claimed proven.
 
 ### Pending Todos
 
@@ -170,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T00:53:38.993Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-09-05T01:19:06.814Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
