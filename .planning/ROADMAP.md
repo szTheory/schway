@@ -177,14 +177,14 @@ changes that cost nothing structurally:
   3. Panic cannot cross the ordinary non-unwinding C boundary, and a foreign nonlocal exit cannot silently bypass Lang cleanup.
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
-**Plans**: 4/7 plans executed
+**Plans**: 6/7 plans executed
 
 - [x] 04-01-PLAN.md
 - [x] 04-02-PLAN.md
 - [x] 04-03-PLAN.md
 - [x] 04-04-PLAN.md
 - [x] 04-05-PLAN.md
-- [ ] 04-06-PLAN.md
+- [x] 04-06-PLAN.md
 - [ ] 04-07-PLAN.md
 
 - [ ] `04-01-PLAN.md` — byte-identity pins, the operation-kind registry and six-site dispatch control, and the end-to-end fallible foreign call across the frozen C boundary
@@ -238,6 +238,6 @@ validator, the code generator, or the session gate, so no two plans have disjoin
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
-| 4. Fallible Resources and C Boundary | 4/7 | In Progress|  |
+| 4. Fallible Resources and C Boundary | 6/7 | In Progress|  |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |

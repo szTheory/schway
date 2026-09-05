@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-09-05T02:34:52.285Z"
+stopped_at: Completed 04-06-PLAN.md
+last_updated: "2026-09-05T03:09:47.775Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 04 execution started
-state_head: bcf8c0c5aa2b81afafaa4d8a8a3e8ef2d2644afd
+state_head: 72ae7e394c7dda472f974fefd2eb7b3a734d7176
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 27
-  completed_plans: 25
+  completed_plans: 26
   percent: 50
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-09-04 — Phase 04 execution started
 
@@ -79,6 +79,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04 P03 | ~2h | 3 tasks | 15 files |
 | Phase 04 P04 | ~2h | 3 tasks | 19 files |
 | Phase 04-fallible-resources-and-c-boundary P05 | ~2h | 3 tasks | 11 files |
+| Phase 04 P06 | ~2h | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,10 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: [Phase 04]: InitializedState/Capture/Retention/Aliasing are compiler-derived fixed structural facts this phase (no new foreign C {} policy syntax), since the language has no closures/threads/partial-init; recorded in the sidecar manifest's unchecked_obligations list, not claimed proven.
 - [Phase 04]: [Phase 04]: OpDefect (D-04-15) is scoped to a match arm's terminal position this plan (checkBranch/analyzeArmBody), never checkResourceLifecycle's straight-line resource shape -- the shipped witness needs no call surface at all, the stronger structural claim SC3 asks for.
 - [Phase 04]: RunNative's foreign-source auto-wiring now resolves by declared symbol (native.ForeignSourcePathForSymbol) instead of hardcoding the first frozen TU — A second frozen foreign TU exists as of plan 05; hardcoding the first one silently broke linking any program declaring the newer symbol
+- [Phase 04]: originvalidate/pathoracle now walk every terminator (return, typed failure, defect) via core.TerminatorKinds(), mutation-killed independently in both packages (D-04-29 closed)
+- [Phase 04]: core.ForeignContract.Alias reuses the shared/exclusive access vocabulary; a foreign call declared to borrow/retain its argument is recognised as borrow-derived, refused with core.foreign_origin_omitted when undeclared (D-04-28 closed)
+- [Phase 04]: originvalidate.ValidatePublished wired into lang check/run at the CLI command-file layer (not into RunInterpreter/RunNative themselves) to avoid regressing non-publication tests that drive the engines directly (WR-01 closed)
+- [Phase 04]: discoverLoanLastUses now counts its own transitive-scan work (D-04-25 closed); retiring the quadratic derivation itself is re-recorded as dated debt D-04-26, carried to Phase 5
 
 ### Pending Todos
 
@@ -177,6 +182,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T02:34:52.176Z
-Stopped at: Completed 04-05-PLAN.md
+Last session: 2026-09-05T03:09:47.684Z
+Stopped at: Completed 04-06-PLAN.md
 Resume file: None
