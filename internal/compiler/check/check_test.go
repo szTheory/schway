@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -702,6 +703,130 @@ func TestReborrowChainWorkIsLinear(t *testing.T) {
 	}
 }
 
+// checkerCorpusVerdicts is TestCheckerVerdictsUnchanged's pinned snapshot:
+// {phase-dir}/{fixture} -> {first diagnostic code, or "" for a clean
+// admission}, over the ENTIRE testdata/phase1..4 corpus, as check.Program
+// (not session/originvalidate -- that layer is a separate concern this
+// package cannot import) decided before D-04-25's work-counting change
+// landed in discoverLoanLastUses. D-04-25 must change ONLY the counted
+// work, never an accept/reject decision or a diagnostic code.
+var checkerCorpusVerdicts = map[string]string{
+	"phase1/comments.lang":        "",
+	"phase1/malformed.lang":       "syntax.unexpected_byte",
+	"phase1/non_exhaustive.lang":  "match.non_exhaustive",
+	"phase1/toggle.lang":          "",
+	"phase2/ability_shapes.lang":       "check.unexecutable_shape",
+	"phase2/implicit_copy.lang":        "",
+	"phase2/implicit_noncopy.lang":     "ownership.transfer_requires_take",
+	"phase2/move_while_borrowed.lang":  "ownership.move_while_borrowed",
+	"phase2/owned_transfer.lang":       "",
+	"phase2/reborrow_while_moved.lang": "ownership.move_while_borrowed",
+	"phase2/use_after_move.lang":       "ownership.use_after_move",
+	"phase3/borrowed_view.lang":                          "",
+	"phase3/branch_one_arm_shared_accept.lang":           "",
+	"phase3/branch_one_arm_shared_reject.lang":           "ownership.move_while_borrowed",
+	"phase3/branch_view.lang":                            "",
+	"phase3/exclusive_exclusive_reject.lang":              "ownership.borrow_conflict",
+	"phase3/exclusive_move_reject.lang":                   "ownership.move_while_borrowed",
+	"phase3/public_view.lang":                             "",
+	"phase3/public_view_impossible.lang":                  "",
+	"phase3/public_view_mixed_access.lang":                "",
+	"phase3/public_view_multi_arm_access_conflict.lang":   "",
+	"phase3/public_view_multi_arm_omitted.lang":           "",
+	"phase3/public_view_omitted.lang":                     "",
+	"phase3/public_view_understated.lang":                 "",
+	"phase3/sequential_shared_then_exclusive_accept.lang": "",
+	"phase3/shared_exclusive_reject.lang":                 "ownership.borrow_conflict",
+	"phase3/shared_shared_accept.lang":                    "",
+	"phase4/acquire_three_fail_second.lang":       "",
+	"phase4/acquire_three_fail_third.lang":        "",
+	"phase4/acquire_three_success.lang":           "",
+	"phase4/defect_terminal.lang":                 "",
+	"phase4/discard_because.lang":                 "",
+	"phase4/fallible_call_unconsumed.lang":        "syntax.fallible_call_not_consumed",
+	"phase4/foreign_acquire_one.lang":             "",
+	"phase4/foreign_call_target_not_foreign.lang": "core.call_target_not_foreign",
+	"phase4/foreign_origin_omitted.lang":          "",
+	"phase4/foreign_unwind_undeclared.lang":       "foreign.unwind_policy_undeclared",
+	"phase4/nonlocal_exit_probe.lang":             "",
+}
+
+// TestCheckerVerdictsUnchanged is D-04-25's verdict-pinning falsifier,
+// written and confirmed green BEFORE the discoverLoanLastUses work-counting
+// change landed: it walks the ENTIRE testdata/phase1..4 corpus and asserts
+// check.Program's first diagnostic code (or "" for a clean admission)
+// matches the pinned snapshot exactly. A verdict change during this task is
+// attributable to this test failing, not silently absorbed into the work
+// total.
+func TestCheckerVerdictsUnchanged(t *testing.T) {
+	for key, wantCode := range checkerCorpusVerdicts {
+		phaseAndName := strings.SplitN(key, "/", 2)
+		if len(phaseAndName) != 2 {
+			t.Fatalf("malformed snapshot key %q", key)
+		}
+		source, err := os.ReadFile(filepath.Join("../../../testdata", phaseAndName[0], phaseAndName[1]))
+		if err != nil {
+			t.Fatalf("%s: %v", key, err)
+		}
+		parsed := syntax.Parse(source)
+		gotCode := ""
+		if len(parsed.Diagnostics) > 0 {
+			gotCode = parsed.Diagnostics[0].Code
+		} else {
+			result := Program(parsed.Program)
+			if len(result.Diagnostics) > 0 {
+				gotCode = result.Diagnostics[0].Code
+			}
+		}
+		if gotCode != wantCode {
+			t.Fatalf("%s: verdict changed: want code %q, got %q", key, wantCode, gotCode)
+		}
+	}
+}
+
+// TestLastUseDiscoveryWorkIsCounted is D-04-25's basic falsifier:
+// discoverLoanLastUses must report nonzero work for a body with at least
+// one binding, closing the metric-honesty gap where its own transitive-scan
+// cost was invisible to every caller's Work total.
+func TestLastUseDiscoveryWorkIsCounted(t *testing.T) {
+	body := ast.LinearBody{
+		Bindings: []ast.Binding{binding("view", "borrow", "owner", -1)},
+		Result:   "view",
+	}
+	_, work := discoverLoanLastUses("owner", &body)
+	if work == 0 {
+		t.Fatalf("expected nonzero discovery work, got 0")
+	}
+}
+
+// TestLastUseDiscoveryWorkSeries is D-04-25's growth falsifier: reported
+// work over a chain of increasing length must grow with the real scan cost
+// rather than stay flat -- the exact metric-honesty gap this task closes.
+// The before/after values for chain length 100 are recorded in
+// 04-06-SUMMARY.md.
+func TestLastUseDiscoveryWorkSeries(t *testing.T) {
+	series := []int{10, 100, 1_000}
+	work := make([]int, len(series))
+	for index, length := range series {
+		bindings := make([]ast.Binding, length)
+		for i := range bindings {
+			source := "owner"
+			if i > 0 {
+				source = fmt.Sprintf("copy%d", i-1)
+			}
+			bindings[i] = binding(fmt.Sprintf("copy%d", i), "read", source, i*2)
+		}
+		body := ast.LinearBody{Bindings: bindings, Result: fmt.Sprintf("copy%d", length-1)}
+		_, w := discoverLoanLastUses("owner", &body)
+		work[index] = w
+	}
+	for index := 1; index < len(work); index++ {
+		if work[index] <= work[index-1] {
+			t.Fatalf("expected discovery work to grow with chain length: %v", work)
+		}
+	}
+}
+
 func TestOwnershipWorkSeries(t *testing.T) {
 	for _, operations := range []int{10, 100, 1_000, 10_000} {
 		bindings := make([]ast.Binding, operations)
@@ -710,11 +835,13 @@ func TestOwnershipWorkSeries(t *testing.T) {
 		}
 		body := ast.LinearBody{Bindings: bindings, Result: "owner", Span: diagnostic.Span{End: operations*2 + 1}}
 		got := analyzeStraightLine("test:scale", "owner", diagnostic.Span{}, byteTypeFact(), &body)
-		wantWork := 1 + 2*(operations+1)
+		// D-04-25: discoverLoanLastUses now counts its own transitive-scan
+		// work (operations+1), added on top of the pre-existing formula.
+		wantWork := 1 + 2*(operations+1) + (operations + 1)
 		if got.DiagnosticCode != "" || len(got.Operations) != operations+1 || got.Work != wantWork {
 			t.Fatalf("operations=%d result=%+v want work=%d", operations, got, wantWork)
 		}
-		if got.Work > 2*len(got.Operations)+1 {
+		if got.Work > 3*len(got.Operations)+2 {
 			t.Fatalf("operations=%d exceeded linear bound: work=%d core_ops=%d", operations, got.Work, len(got.Operations))
 		}
 	}
@@ -898,6 +1025,13 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 	}
 
 	result := ownershipSupport{Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: typeNodeCountOracle(typeFact.Shape) + len(body.Bindings) + 1}
+	// D-04-25: discoverLoanLastUses now counts its own transitive-scan work
+	// (one unit per binding it visits, plus one for the final result-position
+	// check) -- oracleLoanLastUses is a genuinely different mechanism (BFS
+	// reachability rather than chain inheritance) but must report the same
+	// SCALAR cost, so this oracle adds the identical len(body.Bindings)+1
+	// term rather than reproducing production's internal walk shape.
+	result.Work += len(body.Bindings) + 1
 	for _, index := range loanOrder {
 		result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{LoanID: fmt.Sprintf("%s:loan:%d", functionID, index), Binding: body.Bindings[index].Name, OperationIndex: lastUses[index]})
 	}
