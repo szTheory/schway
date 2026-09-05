@@ -183,7 +183,7 @@ changes that cost nothing structurally:
 - [x] 04-02-PLAN.md
 - [x] 04-03-PLAN.md
 - [x] 04-04-PLAN.md
-- [ ] 04-05-PLAN.md
+- [x] 04-05-PLAN.md
 - [ ] 04-06-PLAN.md
 - [ ] 04-07-PLAN.md
 
