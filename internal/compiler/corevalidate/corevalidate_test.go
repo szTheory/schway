@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/interp"
@@ -529,6 +530,71 @@ func TestForeignContractInternallyValidated(t *testing.T) {
 		result := corevalidate.Validate(mutated)
 		if result.Valid || result.Problems[0].Code != "foreign.layout_invalid" {
 			t.Fatalf("expected foreign.layout_invalid, got %+v", result)
+		}
+	})
+}
+
+// TestForeignSymbolNotIdentifierRefused is the 04-VERIFICATION.md gap-2
+// falsifier (FFI-01/D-04-12): corevalidate must audit the SHAPE of
+// core.ForeignContract.Symbol, not merely its presence, because cgen splices
+// this exact string unsanitized into generated C at the extern declaration,
+// the call-expression callee, foreignExternName, and the generated header's
+// symbol comment. Every hostile subtest asserts the EXACT code
+// foreign.symbol_not_identifier -- not merely "some refusal" -- so an
+// unrelated earlier check firing cannot masquerade as this audit working.
+func TestForeignSymbolNotIdentifierRefused(t *testing.T) {
+	valid := foreignAcquireProgram(t)
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid foreign-call core rejected: %+v", result)
+	}
+
+	hostile := []struct {
+		name   string
+		symbol string
+	}{
+		{"semicolon and brace closing the extern and opening a new definition", "lang_res_open;}\nint injected(void){return 0;}//"},
+		{"parenthesis-bearing fragment", "lang_res_open(int x)"},
+		{"embedded newline", "lang_res_open\ninjected"},
+		{"leading digit", "1lang_res_open"},
+		{"embedded space", "lang_res_open injected"},
+		{"comment terminator escaping the header comment", "lang_res_open*/int injected(void){return 0;}/*"},
+		{"non-ASCII rune", "lang_res_open\u00e9"},
+	}
+	for _, hostileCase := range hostile {
+		t.Run(hostileCase.name, func(t *testing.T) {
+			mutated := cloneProgram(t, valid)
+			mutated.Functions[0].ForeignContract.Symbol = hostileCase.symbol
+			result := corevalidate.Validate(mutated)
+			if result.Valid || result.Problems[0].Code != "foreign.symbol_not_identifier" {
+				t.Fatalf("expected foreign.symbol_not_identifier, got %+v", result)
+			}
+		})
+	}
+
+	t.Run("identifier-shaped but unknown symbol is not refused by this check", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Symbol = "lang_res_open_renamed_but_well_formed"
+		result := corevalidate.Validate(mutated)
+		if result.Valid {
+			return
+		}
+		if result.Problems[0].Code == "foreign.symbol_not_identifier" {
+			t.Fatalf("an identifier-shaped unknown symbol must not be refused by foreign.symbol_not_identifier, got %+v", result)
+		}
+	})
+
+	t.Run("end-to-end: cgen.Emit refuses before generating any C", func(t *testing.T) {
+		mutated := cloneProgram(t, valid)
+		mutated.Functions[0].ForeignContract.Symbol = "lang_res_open;}\nint injected(void){return 0;}//"
+		generated, err := cgen.Emit(mutated)
+		if err == nil {
+			t.Fatalf("expected an error from cgen.Emit, got generated C:\n%s", generated)
+		}
+		if !strings.Contains(err.Error(), "foreign.symbol_not_identifier") {
+			t.Fatalf("expected error to name foreign.symbol_not_identifier, got %v", err)
+		}
+		if generated != "" {
+			t.Fatalf("expected empty generated string, got:\n%s", generated)
 		}
 	})
 }
@@ -1091,7 +1157,13 @@ func TestCyclicOkEdgeChainRefusedNotHung(t *testing.T) {
 // keep validating with UNCHANGED counted work -- proving the guard costs
 // nothing on the path it is not meant to refuse.
 func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
-	const acquireThreeSuccessChecks = 403
+	// 04-12 added one new accepting-path v.check per core.OpForeignCall (the
+	// foreign.symbol_not_identifier audit); acquire_three_success.lang
+	// declares three foreign calls, so the pinned count moves from 403 to
+	// 403+3=406. This is a mechanical, expected update, not a work-formula
+	// change: LinearWorkLimit and the exact-formula TestCoreValidationWorkSeries
+	// are unaffected because scaleProgram declares no OpForeignCall.
+	const acquireThreeSuccessChecks = 406
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {

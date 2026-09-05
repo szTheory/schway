@@ -300,6 +300,22 @@ func (v *validator) linear(function *core.Function) bool {
 			if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
 				return false
 			}
+			// Phase 4 plan 12 (D-04-12/FFI-01, 04-VERIFICATION.md gap 2):
+			// check.go refuses a malformed symbol at parse-resolution time by
+			// inspecting the AST, an AST-level fact this validator never
+			// sees; this validator re-derives an equivalent refusal purely
+			// from the one flat string field core.ForeignContract itself
+			// carries. The refusal exists because cgen splices this exact
+			// string into generated C at three sites plus a header comment,
+			// so an unaudited value is arbitrary C source injection at the
+			// boundary the phase goal calls audited. Pass operation.ID, not
+			// the Symbol itself, as the detail: Problem.Detail is serialized
+			// into diagnostic JSON, and echoing an attacker-controlled
+			// string containing newlines or quotes into an output channel is
+			// the same class of defect this check exists to close.
+			if !v.check(validCIdentifier(function.ForeignContract.Symbol), "foreign.symbol_not_identifier", operation.ID) {
+				return false
+			}
 			// D-04-16, independently derived: check.go refuses a missing
 			// unwind/nonlocal_exit policy at admission time by inspecting
 			// ast.ForeignPolicy (never emitting a core artifact for such a
@@ -1606,6 +1622,35 @@ func isDeclaredFunctionName(functions []core.Function, excludeFunctionID, name s
 		}
 	}
 	return false
+}
+
+// validCIdentifier audits the exact shape `cgen` splices unsanitized into an
+// extern declaration and a call-expression callee (cgen.go:352, cgen.go:778,
+// and the call-expression callee that reuses foreignExternName's result).
+// Every other emitted identifier is routed through cName/cLocal, which
+// replace every character outside [A-Za-z0-9_]; Symbol deliberately cannot
+// take that route, because foreignExternName must match a real exported
+// symbol in the byte-frozen foreign translation unit verbatim (cgen.go:
+// 771-777) -- so the audit has to happen on the INPUT rather than on the
+// output. This is a hand-rolled byte loop, matching cName/cLocal's existing
+// idiom, rather than a regexp import: the predicate is exactly
+// ^[A-Za-z_][A-Za-z0-9_]*$, checked byte-by-byte (not rune-by-rune) so a
+// multibyte rune is rejected by its individual bytes.
+func validCIdentifier(name string) bool {
+	if name == "" {
+		return false
+	}
+	first := name[0]
+	if !(first >= 'A' && first <= 'Z' || first >= 'a' && first <= 'z' || first == '_') {
+		return false
+	}
+	for index := 1; index < len(name); index++ {
+		b := name[index]
+		if !(b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= '0' && b <= '9' || b == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 func hasAbility(fact core.TypeFact, requested core.Ability) bool {
