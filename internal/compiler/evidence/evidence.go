@@ -372,6 +372,18 @@ func Validate(manifest Manifest, source []byte, facts Facts) error {
 	if expected.Manifest.Schema == Schema1 && !equalStrings(manifest.ExecutionDigests, expected.Manifest.ExecutionDigests) {
 		return &ValidationError{Code: "evidence.execution_mismatch"}
 	}
+	// WR-03 (Phase 4 code review): ForeignDigest, SourceDigest, CoreDigest,
+	// CDigest, and ID below are all content digests of build artifacts, and
+	// are ALL deliberately compared with subtle.ConstantTimeCompare for
+	// uniformity across this one category of field -- there is no
+	// adversarial-timing threat model for this build-provenance manifest
+	// (it is compared locally, not a secret-bearing authentication check),
+	// so this is a consistency choice, not a security boundary. It is the
+	// schema/identity metadata fields ABOVE (Schema, IDAlgorithm,
+	// SourceSchema, CompilerIdentity, etc.) that are a genuinely different
+	// category -- fixed tags, not content hashes -- and are intentionally
+	// compared with ordinary !=/== instead. A future new digest field
+	// should join this constant-time group, not the plain-equality one.
 	if expected.Manifest.Schema == Schema1 && subtle.ConstantTimeCompare([]byte(manifest.ForeignDigest), []byte(expected.Manifest.ForeignDigest)) != 1 {
 		return &ValidationError{Code: "evidence.foreign_digest_mismatch"}
 	}
