@@ -1780,6 +1780,32 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	}
 	addLane("lane:foreign-no-unproven-attributes", "pass", []string{"control:foreign.no_unproven_attributes"}, 4, len(tracerCSource)+len(releaseCSource), laneStarted)
 
+	// Lane: control:foreign.unwind_forbidden (D-04-19, task 04-05-02).
+	// Compiles the tracer program (linked against the frozen foreign TU
+	// exactly as RunNative does) and runs the real `nm -u` allowlist control
+	// against the linked binary itself -- a different artifact than the
+	// attribute scan above (source text) or any execution document (runtime
+	// behavior): the LINKED BINARY's own undefined-symbol table.
+	laneStarted = time.Now()
+	symbolRunner := runner
+	symbolRunner.ForeignSources = append(append([]string(nil), symbolRunner.ForeignSources...), native.ForeignResourceSourcePath())
+	symbolBinaryPath, symbolCleanup, symbolCompileErr := symbolRunner.CompileOnly(ctx, tracerCSource, "-O0")
+	if symbolCompileErr != nil {
+		addLane("lane:foreign-unwind-forbidden", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to compile tracer binary for the undefined-symbol allowlist control")
+	}
+	symbolStatus, symbolRejected, symbolToolErr := native.CheckUndefinedSymbolAllowlist(ctx, "", symbolBinaryPath, 0)
+	symbolCleanup()
+	if symbolToolErr != nil {
+		addLane("lane:foreign-unwind-forbidden", "fail", nil, 2, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", fmt.Sprintf("undefined-symbol allowlist control could not run: %v", symbolToolErr))
+	}
+	if symbolStatus != native.SymbolsPass {
+		addLane("lane:foreign-unwind-forbidden", "fail", nil, 3, 0, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", fmt.Sprintf("control:foreign.unwind_forbidden (rejected symbols: %+v)", symbolRejected))
+	}
+	addLane("lane:foreign-unwind-forbidden", "pass", []string{"control:foreign.unwind_forbidden"}, 3, 0, laneStarted)
+
 	// Lane: control:defect.no_release_on_defect (D-04-18, task 04-04-03).
 	// Runs the real interpreter over the shipped defect witness and requires
 	// its own engine-produced event stream to carry zero resource.released
@@ -1882,6 +1908,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		"control:resource.release_omitted",
 		"control:foreign.layout_mismatch",
 		"control:foreign.no_unproven_attributes",
+		"control:foreign.unwind_forbidden",
 		"control:defect.no_release_on_defect",
 		"control:defect.signal_adjudicated",
 	}

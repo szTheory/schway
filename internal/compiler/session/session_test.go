@@ -1437,6 +1437,43 @@ func TestVerifyPhase4ForeignControls(t *testing.T) {
 	}
 }
 
+// TestVerifyPhase4UnwindControl proves control:foreign.unwind_forbidden
+// (D-04-19, task 04-05-02) is a required control the Phase 4 gate observes
+// with nonzero recomputed work, and mutation-kills it: temporarily emptying
+// the checked-in allowlist makes every real undefined symbol in the tracer
+// binary unlisted, which must turn the gate red.
+func TestVerifyPhase4UnwindControl(t *testing.T) {
+	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	found := false
+	for _, lane := range result.Lanes {
+		if lane.Status != "pass" || lane.RecomputedWork == 0 {
+			t.Fatalf("incomplete lane: %+v", lane)
+		}
+		for _, control := range lane.Controls {
+			if control == "control:foreign.unwind_forbidden" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("missing required Phase 4 control control:foreign.unwind_forbidden: lanes=%+v", result.Lanes)
+	}
+
+	original := native.AllowedUndefinedSymbols
+	native.AllowedUndefinedSymbols = nil
+	defer func() { native.AllowedUndefinedSymbols = original }()
+	mutated := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if mutated.Status == protocol.StatusPass {
+		t.Fatal("emptying the undefined-symbol allowlist must turn the gate red, but it stayed green")
+	}
+	if len(mutated.Diagnostics) == 0 || mutated.Diagnostics[0].Code != "verify.control_missing" {
+		t.Fatalf("expected verify.control_missing, got %+v", mutated.Diagnostics)
+	}
+}
+
 // TestVerifyPhase4DefectControls proves the Phase 4 gate observes both new
 // task-04 required controls with nonzero recomputed work.
 func TestVerifyPhase4DefectControls(t *testing.T) {
