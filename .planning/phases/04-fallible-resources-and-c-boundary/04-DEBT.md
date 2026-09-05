@@ -31,6 +31,7 @@ debt against this phase.
 | D-04-30 | D-04-CONTEXT `<deferred>`, D-04-04 | M002/Phase 6 | info | M002 or Phase 6 | A storable, matchable `Result` value and payload-carrying alternatives are deferred; the additive move is a sibling `alternative_details []Alternative omitempty` field, never a shape change to `Alternatives []string` |
 | D-04-31 | D-04-CONTEXT `<deferred>` "Accepted residual limitations" | QLT-01, FFI-01 | warning | inherited, not scheduled | Four accepted residual limitations this phase inherits without engineering around: the coordinated three-way lie, two nonlocal-exit blind spots, the single-host single-record-shape fence, and the permanence of quarantine |
 | D-04-32 | 04-CONTEXT.md `<specifics>` "Roadmap gap surfaced by this discussion", recorded 2026-09-05 by plan 04-07 (Task 3) | NAT-03, ROADMAP §Phase 5 | info | Phase 5 (planning) | NAT-03's "false no-alias facts" hostile mutation has no subject until Phase 5 itself first adds a proven alias-fact emission path, because D-04-13 means Phase 4 emits no optimizer-visible attributes to falsify. This is not a defect of Phase 4; it is a planning dependency for whoever plans Phase 5, recorded here per D-04-CONTEXT's own instruction that this gap "is not currently stated in ROADMAP.md §Phase 5 and should be added when Phase 5 is planned." |
+| D-04-33 | 04-REVIEW.md WR-01 (fifth-round code review), 04-VERIFICATION.md (fifth round) | FFI-01 | warning | unscheduled — before any emitter splices `Alias` | `core.ForeignContract.Alias` is the one contract string field excluded from all three of plan 04-13's audit layers and from every falsifier table. It is safe today only because no emitter splices it into generated C; nothing pins that invariant, so a future emitter could reintroduce the closed injection class silently |
 
 ## Detail
 
@@ -185,6 +186,43 @@ item and ROADMAP.md §Phase 5 together and sequence "add a proven alias-fact
 emission path" before or alongside NAT-03's hostile-mutation work, not after.
 
 ---
+
+### D-04-33 — `Alias` is outside the field audit, pinned by nothing
+
+Plan 04-13 closed the fifth-round gap by auditing every `core.ForeignContract`
+string field that reaches generated C, at three independent layers:
+`check.validForeignPolicyValue` at source admission,
+`corevalidate.foreignContractFieldsCSafe` / `validCIdentifier` on the core
+artifact, and cgen's own `commentSafeForeignField` / `validForeignCType` /
+`unsafeForeignContractField` peer guards on the exported `EmitForeign*` entry
+points that never call `Validate`.
+
+`Alias` is not in any of those predicates, and not in any falsifier table.
+
+This is **not** a live injection channel: the fifth-round verification
+confirmed by grep that `Alias` is referenced nowhere in `cgen.go` or
+`corevalidate.go` — no emitter splices it, so there is no path from an
+`Alias` value to emitted C text today. That is why it did not block the
+phase.
+
+What is missing is the *pin*. Every other field's safety is enforced by a
+predicate plus a falsifier that goes red if the guard is weakened. `Alias`'s
+safety rests only on the current absence of a splice site, and no test fails
+if a future change adds one. The closed injection class could therefore
+return silently through this single field.
+
+**The cheap discharge**, for whoever next touches foreign emission: either add
+`Alias` to `foreignContractFieldsCSafe` and `unsafeForeignContractField`
+alongside its siblings (it costs one line each and rejects nothing accepted
+today, since no honest `Alias` value exists yet), or add a test asserting that
+no `EmitForeign*` output ever contains an `Alias` value — so that introducing
+a splice site without an audit entry fails loudly.
+
+Two INFO items from the same review are deliberately not tracked here: a
+doc-comment/behavior mismatch in `validForeignPolicyValue`, and an
+undocumented-but-safe splice of ADT alternative names in
+`foreignFailureLiteral`. Neither bears on a security invariant.
+
 
 ## Status of carried Phase 3 debt
 
