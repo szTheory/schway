@@ -1,18 +1,18 @@
 ---
 gsd_state_version: 1.0
 current_phase: 04
-current_phase_name: fallible-resources-and-c-boundary
+current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Completed 04-07-PLAN.md - Phase 4 complete
-last_updated: "2026-09-05T15:04:59.603Z"
-last_activity: 2026-09-04
+stopped_at: Completed 04-08-PLAN.md - gap 1 falsifier + terminal-block peer check
+last_updated: "2026-09-05T17:55:23.904Z"
+last_activity: 2026-09-05
 last_activity_desc: Phase 04 execution started
-state_head: 88475e05b8c0e4efbc0b346ac2656963010813b8
+state_head: 40a5dc82ff6945001cbed5de9321bdc57dbb0ccd
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 29
-  completed_plans: 27
+  completed_plans: 28
   percent: 50
 ---
 
@@ -29,10 +29,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 04 (fallible-resources-and-c-boundary) — READY TO EXECUTE
-Plan: 7 of 7
+Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
+Plan: 2 of 9
 Status: Ready to execute
-Last activity: 2026-09-04 — Phase 04 execution started
+Last activity: 2026-09-05 — Phase 04 execution started
 
 Progress: ██████████ [█████░░░░░] 50%
 
@@ -81,6 +81,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04-fallible-resources-and-c-boundary P05 | ~2h | 3 tasks | 11 files |
 | Phase 04 P06 | ~2h | 3 tasks | 9 files |
 | Phase 04 P07 | 55 min | 3 tasks | 7 files |
+| Phase 04 P08 | 30 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -155,6 +156,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: discoverLoanLastUses now counts its own transitive-scan work (D-04-25 closed); retiring the quadratic derivation itself is re-recorded as dated debt D-04-26, carried to Phase 5
 - [Phase 04]: Second-/third-stage typed-failure differential proven via genuine execution (test-double foreign object + interp.RunLinearBlockDirect), not a hand-constructed document; a structural core-artifact mutation approach was tried and reverted after corevalidate's own core.fail_reached_without_err_edge correctly refused it
 - [Phase 04]: session.runNativeInputs derives lang run --engine=native's per-input Expect from the interpreter's own verdict, fixing two real bugs (multi-arm defect fixture, single-input nonlocal-exit fixture) discovered by driving the shipped binary on out-of-corpus programs
+- [Phase 04]: corevalidate's terminal-block structural check ships as at-least-one/non-entry (core.terminal_block_unreachable), not the literal exactly-one form 04-VERIFICATION.md asked for, to keep discard_because.lang's legitimate ok/err merge valid
 
 ### Pending Todos
 
@@ -185,6 +187,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T04:05:34.451Z
-Stopped at: Completed 04-07-PLAN.md - Phase 4 complete
+Last session: 2026-09-05T17:55:23.813Z
+Stopped at: Completed 04-08-PLAN.md - gap 1 falsifier + terminal-block peer check
 Resume file: None
