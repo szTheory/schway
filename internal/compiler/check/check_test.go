@@ -711,21 +711,21 @@ func TestReborrowChainWorkIsLinear(t *testing.T) {
 // landed in discoverLoanLastUses. D-04-25 must change ONLY the counted
 // work, never an accept/reject decision or a diagnostic code.
 var checkerCorpusVerdicts = map[string]string{
-	"phase1/comments.lang":        "",
-	"phase1/malformed.lang":       "syntax.unexpected_byte",
-	"phase1/non_exhaustive.lang":  "match.non_exhaustive",
-	"phase1/toggle.lang":          "",
-	"phase2/ability_shapes.lang":       "check.unexecutable_shape",
-	"phase2/implicit_copy.lang":        "",
-	"phase2/implicit_noncopy.lang":     "ownership.transfer_requires_take",
-	"phase2/move_while_borrowed.lang":  "ownership.move_while_borrowed",
-	"phase2/owned_transfer.lang":       "",
-	"phase2/reborrow_while_moved.lang": "ownership.move_while_borrowed",
-	"phase2/use_after_move.lang":       "ownership.use_after_move",
-	"phase3/borrowed_view.lang":                          "",
-	"phase3/branch_one_arm_shared_accept.lang":           "",
-	"phase3/branch_one_arm_shared_reject.lang":           "ownership.move_while_borrowed",
-	"phase3/branch_view.lang":                            "",
+	"phase1/comments.lang":                                "",
+	"phase1/malformed.lang":                               "syntax.unexpected_byte",
+	"phase1/non_exhaustive.lang":                          "match.non_exhaustive",
+	"phase1/toggle.lang":                                  "",
+	"phase2/ability_shapes.lang":                          "check.unexecutable_shape",
+	"phase2/implicit_copy.lang":                           "",
+	"phase2/implicit_noncopy.lang":                        "ownership.transfer_requires_take",
+	"phase2/move_while_borrowed.lang":                     "ownership.move_while_borrowed",
+	"phase2/owned_transfer.lang":                          "",
+	"phase2/reborrow_while_moved.lang":                    "ownership.move_while_borrowed",
+	"phase2/use_after_move.lang":                          "ownership.use_after_move",
+	"phase3/borrowed_view.lang":                           "",
+	"phase3/branch_one_arm_shared_accept.lang":            "",
+	"phase3/branch_one_arm_shared_reject.lang":            "ownership.move_while_borrowed",
+	"phase3/branch_view.lang":                             "",
 	"phase3/exclusive_exclusive_reject.lang":              "ownership.borrow_conflict",
 	"phase3/exclusive_move_reject.lang":                   "ownership.move_while_borrowed",
 	"phase3/public_view.lang":                             "",
@@ -738,17 +738,18 @@ var checkerCorpusVerdicts = map[string]string{
 	"phase3/sequential_shared_then_exclusive_accept.lang": "",
 	"phase3/shared_exclusive_reject.lang":                 "ownership.borrow_conflict",
 	"phase3/shared_shared_accept.lang":                    "",
-	"phase4/acquire_three_fail_second.lang":       "",
-	"phase4/acquire_three_fail_third.lang":        "",
-	"phase4/acquire_three_success.lang":           "",
-	"phase4/defect_terminal.lang":                 "",
-	"phase4/discard_because.lang":                 "",
-	"phase4/fallible_call_unconsumed.lang":        "syntax.fallible_call_not_consumed",
-	"phase4/foreign_acquire_one.lang":             "",
-	"phase4/foreign_call_target_not_foreign.lang": "core.call_target_not_foreign",
-	"phase4/foreign_origin_omitted.lang":          "",
-	"phase4/foreign_unwind_undeclared.lang":       "foreign.unwind_policy_undeclared",
-	"phase4/nonlocal_exit_probe.lang":             "",
+	"phase4/acquire_three_fail_second.lang":               "",
+	"phase4/acquire_three_fail_third.lang":                "",
+	"phase4/acquire_three_success.lang":                   "",
+	"phase4/defect_terminal.lang":                         "",
+	"phase4/discard_because.lang":                         "",
+	"phase4/fallible_call_unconsumed.lang":                "syntax.fallible_call_not_consumed",
+	"phase4/foreign_acquire_one.lang":                     "",
+	"phase4/foreign_call_target_not_foreign.lang":         "core.call_target_not_foreign",
+	"phase4/foreign_origin_omitted.lang":                  "",
+	"phase4/foreign_policy_value_injection.lang":          "check.foreign_policy_value_unsafe",
+	"phase4/foreign_unwind_undeclared.lang":               "foreign.unwind_policy_undeclared",
+	"phase4/nonlocal_exit_probe.lang":                     "",
 }
 
 // TestCheckerVerdictsUnchanged is D-04-25's verdict-pinning falsifier,
@@ -1449,6 +1450,69 @@ func TestCallTargetNotForeignRejected(t *testing.T) {
 	}
 }
 
+// TestForeignPolicyValueUnsafeRefusedAtAdmission is 04-13's source-admission
+// falsifier (04-VERIFICATION.md gap 2b, FFI-01): a foreign policy value that
+// is not a C identifier is refused with check.foreign_policy_value_unsafe at
+// declaration time, in collectForeignSymbols' policy loop -- regardless of
+// which policy key carries it, because every one of them flows unchanged
+// into core.ForeignContract and, from there, into a C comment
+// cgen.EmitForeignHeader splices raw.
+func TestForeignPolicyValueUnsafeRefusedAtAdmission(t *testing.T) {
+	// build renders a minimal foreign C {} source with all three policy
+	// values as quoted string literals (the parser accepts a string or a
+	// bare identifier for any policy value; quoting lets a hostile override
+	// carry bytes an identifier token could never lex), overriding exactly
+	// one field per case.
+	build := func(overrideKey, overrideValue string) []byte {
+		values := map[string]string{
+			"allocator":     "libc_malloc",
+			"unwind":        "forbidden",
+			"nonlocal_exit": "forbidden",
+		}
+		values[overrideKey] = overrideValue
+		return []byte(fmt.Sprintf(
+			"module p.probe\nexport { fn main }\nforeign C {\n  fn probe(request: Byte) -> Byte {\n    unwind: \"%s\"\n    nonlocal_exit: \"%s\"\n    allocator: \"%s\"\n    fails: E\n  }\n}\ndata E = | F\nfn main(request: Byte) -> Byte {\n  let handle = try probe(request)\n  handle\n}\n",
+			values["unwind"], values["nonlocal_exit"], values["allocator"],
+		))
+	}
+
+	hostile := []struct {
+		name  string
+		key   string
+		value string
+	}{
+		{"allocator carrying the comment-escaping payload", "allocator", "*/ int injected(void){return 1;} /*"},
+		{"unwind carrying the comment-escaping payload", "unwind", "*/ int injected(void){return 1;} /*"},
+		{"nonlocal_exit carrying the comment-escaping payload", "nonlocal_exit", "*/ int injected(void){return 1;} /*"},
+		{"value containing a semicolon and a brace", "allocator", "libc;}malloc{"},
+		{"value containing an embedded space", "allocator", "libc malloc"},
+		{"value beginning with a digit", "allocator", "1libc_malloc"},
+		{"value containing a non-ASCII rune", "allocator", "libc_mallocé"},
+		{"value that is an empty string literal", "allocator", ""},
+	}
+	for _, hostileCase := range hostile {
+		t.Run(hostileCase.name, func(t *testing.T) {
+			source := build(hostileCase.key, hostileCase.value)
+			program := mustParseProgram(t, source)
+			result := Program(program)
+			if len(result.Diagnostics) == 0 || result.Diagnostics[0].Code != "check.foreign_policy_value_unsafe" {
+				t.Fatalf("expected check.foreign_policy_value_unsafe, got %+v", result.Diagnostics)
+			}
+		})
+	}
+
+	t.Run("negative: identifier-shaped policy values are not refused", func(t *testing.T) {
+		source := build("allocator", "libc_malloc")
+		program := mustParseProgram(t, source)
+		result := Program(program)
+		for _, problem := range result.Diagnostics {
+			if problem.Code == "check.foreign_policy_value_unsafe" {
+				t.Fatalf("an honest program must not be refused by check.foreign_policy_value_unsafe, got %+v", result.Diagnostics)
+			}
+		}
+	})
+}
+
 // TestForeignAdmissionCapsRejectFailClosed proves the declared foreign
 // symbol/policy caps (T-04-05) reject above the cap rather than truncating
 // silently.
@@ -1620,8 +1684,8 @@ func TestForeignAdmissionCapsRejectFailClosed(t *testing.T) {
 	block := ast.ForeignBlock{Language: "C"}
 	for index := 0; index <= maxForeignSymbolsPerBlockCheck; index++ {
 		block.Symbols = append(block.Symbols, ast.ForeignSymbol{
-			Name:      fmt.Sprintf("sym_%d", index),
-			Parameter: ast.Parameter{Name: "request", Type: ast.TypeRef{Constructor: "Byte"}},
+			Name:       fmt.Sprintf("sym_%d", index),
+			Parameter:  ast.Parameter{Name: "request", Type: ast.TypeRef{Constructor: "Byte"}},
 			ReturnType: ast.TypeRef{Constructor: "Byte"},
 			Policies: []ast.ForeignPolicy{
 				{Key: "unwind", Value: "forbidden"}, {Key: "nonlocal_exit", Value: "forbidden"}, {Key: "allocator", Value: "libc_malloc", IsString: true},

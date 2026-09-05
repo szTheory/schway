@@ -422,6 +422,37 @@ func TestForeignCallInterpreterNative(t *testing.T) {
 	}
 }
 
+// TestForeignPolicyValueInjectionRefusedFromSource is 04-13's end-to-end
+// tracer (04-VERIFICATION.md gap 2b, FFI-01): an ordinary, honest .lang
+// source file whose sole `allocator:` policy value carries a
+// comment-terminator payload is refused at SOURCE ADMISSION by
+// session.Check, before any core artifact is ever produced -- so the
+// downstream emitters (cgen.EmitForeignHeader/EmitForeignConformance) are
+// unreachable for this source, not merely guarded once reached.
+func TestForeignPolicyValueInjectionRefusedFromSource(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_policy_value_injection.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) == 0 {
+		t.Fatalf("expected at least one diagnostic, got none (program: %+v)", checked.Program)
+	}
+	first := checked.Diagnostics[0]
+	if first.Code != "check.foreign_policy_value_unsafe" {
+		t.Fatalf("expected check.foreign_policy_value_unsafe, got %+v", checked.Diagnostics)
+	}
+	if first.Primary.Start == 0 && first.Primary.End == 0 {
+		t.Fatalf("expected a non-zero span locating the offending policy, got %+v", first.Primary)
+	}
+	if first.Primary.Start < 0 || first.Primary.End > len(source) {
+		t.Fatalf("expected the diagnostic span to lie within the fixture's byte length %d, got %+v", len(source), first.Primary)
+	}
+	if len(checked.Program.Functions) != 0 {
+		t.Fatalf("expected no checked function to be produced, got %+v", checked.Program.Functions)
+	}
+}
+
 // TestReleaseInterpreterNative proves RES-01/D-04-07's three-acquisition
 // success fixture agrees between the interpreter and Clang-built native code
 // at both -O0 and -O3 on terminal outcome, ordered events (including the

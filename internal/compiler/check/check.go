@@ -689,8 +689,8 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 				continue // survives past this block; its endpoint lives elsewhere
 			}
 			endpoints = append(endpoints, core.LoanEndpoint{
-				ID:               fmt.Sprintf("%s:point:%s:%d:%s", functionID, block.id, use.operationIndex, use.loanID),
-				LoanID:           use.loanID, Kind: "point", BlockID: block.id, AfterOperationID: use.operationID,
+				ID:     fmt.Sprintf("%s:point:%s:%d:%s", functionID, block.id, use.operationIndex, use.loanID),
+				LoanID: use.loanID, Kind: "point", BlockID: block.id, AfterOperationID: use.operationID,
 			})
 		}
 	}
@@ -1077,17 +1077,54 @@ type foreignSymbolInfo struct {
 	Span  diagnostic.Span
 }
 
+// validForeignPolicyValue is check.go's OWN, deliberate third implementation
+// of the C-identifier predicate `^[A-Za-z_][A-Za-z0-9_]*$` already carried by
+// corevalidate.validCIdentifier and cgen.validForeignSymbol (04-13,
+// 04-VERIFICATION.md gap 2b, FFI-01): this phase's standing independence
+// posture requires every layer to be able to refuse a hostile value without
+// depending on any other layer having run first, so this is not a shared
+// helper. cgen.EmitForeignHeader splices every foreign policy value raw into
+// a C comment at cgen.go:1332-1335 (allocator/unwind/nonlocal_exit) and the
+// same unsanitized-splice pattern continues for the remaining contract
+// fields (cgen.go:1336-1348); a value carrying a comment terminator (`*/`)
+// escapes that comment and exposes live, uncommented top-level C source to
+// the real C compiler session.go hands the generated unit to
+// (native.Runner.CompileConformanceUnit). Iterates BYTES, not runes, so a
+// multibyte rune is rejected by its individual bytes rather than accepted as
+// one "character".
+func validForeignPolicyValue(value string) bool {
+	if len(value) == 0 {
+		return false
+	}
+	first := value[0]
+	if !(first >= 'A' && first <= 'Z' || first >= 'a' && first <= 'z' || first == '_') {
+		return false
+	}
+	for index := 1; index < len(value); index++ {
+		b := value[index]
+		if !(b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= '0' && b <= '9' || b == '_') {
+			return false
+		}
+	}
+	return true
+}
+
 // collectForeignSymbols builds the module-wide foreign symbol table from
 // every declared `foreign C {}` block, applying T-04-05's caps fail-closed.
 // It does not refuse a symbol for a missing unwind/nonlocal_exit policy --
 // that admission gate is checkFallibleLinear's job (D-04-16), fired only for
 // a symbol an actual call resolves to, so a declared-but-never-called
-// under-specified symbol does not block an unrelated program.
+// under-specified symbol does not block an unrelated program. A hostile
+// POLICY VALUE is different: it is never legitimate for any symbol, called
+// or not, so refusing it at declaration time (04-13, below) is the earliest
+// honest point and is not in tension with that deferral, which is about an
+// ABSENT key, not a hostile one.
 func collectForeignSymbols(program ast.Program) (map[string]foreignSymbolInfo, []diagnostic.Diagnostic) {
 	if len(program.Foreign) > maxForeignBlocksPerProgram {
 		return nil, []diagnostic.Diagnostic{diagnostic.Error("check.foreign_block_limit", program.Foreign[0].Span, "program exceeds the declared foreign block limit")}
 	}
 	symbols := make(map[string]foreignSymbolInfo)
+	var policyDiagnostics []diagnostic.Diagnostic
 	for _, block := range program.Foreign {
 		if len(block.Symbols) > maxForeignSymbolsPerBlockCheck {
 			return nil, []diagnostic.Diagnostic{diagnostic.Error("check.foreign_symbol_limit", block.Span, "foreign block exceeds the declared symbol limit")}
@@ -1098,6 +1135,22 @@ func collectForeignSymbols(program ast.Program) (map[string]foreignSymbolInfo, [
 			}
 			info := foreignSymbolInfo{Name: symbol.Name, Parameter: symbol.Parameter, ReturnType: symbol.ReturnType, Span: symbol.Span}
 			for _, policy := range symbol.Policies {
+				// 04-13 (04-VERIFICATION.md gap 2b, FFI-01): refuse a
+				// hostile policy value BEFORE the key-specific switch below,
+				// for EVERY key -- an unrecognised key's value is still
+				// author-controlled text with no reason to admit a hostile
+				// value for it. The message is a fixed literal and never
+				// includes policy.Value: echoing an attacker-controlled
+				// string containing newlines or quotes into diagnostic JSON
+				// is the same class of defect this check exists to close;
+				// policy.Span already locates the offending policy.
+				if !validForeignPolicyValue(policy.Value) {
+					policyDiagnostics = append(policyDiagnostics, diagnostic.Error(
+						"check.foreign_policy_value_unsafe", policy.Span,
+						"foreign policy value must be a C identifier",
+					))
+					continue
+				}
 				switch policy.Key {
 				case "unwind":
 					info.Unwind, info.HasUnwind = policy.Value, true
@@ -1113,6 +1166,9 @@ func collectForeignSymbols(program ast.Program) (map[string]foreignSymbolInfo, [
 			}
 			symbols[symbol.Name] = info
 		}
+	}
+	if len(policyDiagnostics) > 0 {
+		return nil, policyDiagnostics
 	}
 	return symbols, nil
 }

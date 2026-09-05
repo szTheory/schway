@@ -1175,6 +1175,7 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		refused("fallible_call_unconsumed.lang", 2, "syntax.fallible_call_not_consumed", "syntax.fallible_call_not_consumed"),
 		refused("foreign_call_target_not_foreign.lang", 0, "", "core.call_target_not_foreign"),
 		refused("foreign_origin_omitted.lang", 0, "", "core.foreign_origin_omitted"),
+		refused("foreign_policy_value_injection.lang", 0, "", "check.foreign_policy_value_unsafe"),
 		refused("foreign_unwind_undeclared.lang", 0, "", "foreign.unwind_policy_undeclared"),
 	}
 }
