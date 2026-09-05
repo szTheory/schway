@@ -1,8 +1,8 @@
 ---
 phase: 04-fallible-resources-and-c-boundary
-reviewed: 2026-09-05T20:51:14Z
+reviewed: 2026-09-05T00:00:00Z
 depth: standard
-files_reviewed: 48
+files_reviewed: 37
 files_reviewed_list:
   - internal/compiler/ast/ast.go
   - internal/compiler/cgen/cgen.go
@@ -42,23 +42,11 @@ files_reviewed_list:
   - scripts/verify-phase4.sh
   - .github/workflows/ci.yml
   - .gitignore
-  - testdata/phase4/acquire_three_fail_second.lang
-  - testdata/phase4/acquire_three_fail_third.lang
-  - testdata/phase4/acquire_three_success.lang
-  - testdata/phase4/defect_terminal.lang
-  - testdata/phase4/discard_because.lang
-  - testdata/phase4/fallible_call_unconsumed.lang
-  - testdata/phase4/foreign_acquire_one.lang
-  - testdata/phase4/foreign_call_target_not_foreign.lang
-  - testdata/phase4/foreign_layout_mismatch.golden.c
-  - testdata/phase4/foreign_origin_omitted.lang
-  - testdata/phase4/foreign_unwind_undeclared.lang
-  - testdata/phase4/nonlocal_exit_probe.lang
 findings:
-  critical: 2
+  critical: 1
   warning: 1
   info: 1
-  total: 4
+  total: 3
 status: issues_found
 ---
 
@@ -66,146 +54,107 @@ status: issues_found
 
 **Reviewed:** 2026-09-05
 **Depth:** standard
-**Files Reviewed:** 48
+**Files Reviewed:** 37
 **Status:** issues_found
 
 ## Summary
 
-This is a re-review after the third round of gap closure (plan 04-10, commits f875062..97a73a8), which added a visited-set cycle guard to `checkReleaseOrder`'s `rederive` backward walk in `internal/compiler/corevalidate/corevalidate.go` and two falsifiers (`TestCyclicOkEdgeChainRefusedNotHung`, `TestAcyclicChainsStillValidateUnderCycleGuard`) in `corevalidate_test.go`.
+This is the fourth review round, following gap-closure plans 04-11 (interior-merge rederivation) and 04-12 (`ForeignContract.Symbol` C-identifier audit).
 
-The prior review's CR-01 (unbounded loop / DoS hang on a cyclic `"ok"`-edge chain) is verified fixed: the `visited` map at `corevalidate.go:1252-1258` correctly refuses re-entry into an already-visited block with `core.release_order_cyclic` rather than looping, the guard is allocated fresh per call to `rederive` (no cross-call state leakage), and the two new falsifiers correctly exercise both the refusal path (with a bounded-wall-clock assertion proving it does not hang) and the accepting path (proving the guard costs nothing on every existing acyclic fixture, pinned at an unchanged `Checks` count). This closes the gap cleanly.
+Both gaps the previous review round (`04-REVIEW.md`, round 3) identified are verified fixed:
 
-However, this pass found two new critical issues that survived (or were newly exposed by) the full-scope review, plus one warning and one info item carried forward as still-open observations:
+- **Prior CR-01** (`checkReleaseOrder`'s backward walk silently collapsing multiple `"ok"` edges into the same interior block): `okEdgeInto` is now `map[string][]core.Edge` (`corevalidate.go:1222,1226`), and `rederive` (`corevalidate.go:1264-1326`) independently walks every candidate edge into an interior merge with its own copy of `visited`, requiring `sameReleaseHistory` agreement across all of them before trusting any one (`core.release_order_merge_mismatch` on disagreement). `TestInteriorMergeDivergentHistoriesRefused` (both edge-ordering subtests) and `TestInteriorMergeAgreeingHistoriesAccepted` in `corevalidate_test.go:878-994` correctly falsify both the refusal and acceptance paths, including the specific "last-writer-wins map" failure mode the old code had. This closes the gap.
+- **Prior CR-02** (`ForeignContract.Symbol` reaching `cgen` unsanitized): `corevalidate.linear` now calls `validCIdentifier` (`corevalidate.go:316`, defined at `corevalidate.go:1639-1654`) immediately after the existing non-empty check, refusing with `foreign.symbol_not_identifier` before `cgen` ever sees a non-identifier `Symbol`. `cgen.go` additionally defines its own peer implementation `validForeignSymbol` (`cgen.go:789-804`) and applies it at `emitLinearForeign` (`cgen.go:326`) and inside `singleForeignFunction` (`cgen.go:1261`), which gates the three exported entry points (`EmitForeignManifest`, `EmitForeignHeader`, `EmitForeignConformance`) that never call `corevalidate.Validate`. The shared `hostileForeignSymbols` table (`cgen_test.go:212-223`) is exercised against both corevalidate's and cgen's independent guards, including the comment-terminator (`*/`) and semicolon-brace cases. This closes the gap for the `Symbol` field.
 
-1. `checkReleaseOrder`'s own fix for merge points only covers a terminal block's *own direct* incoming edges (the CR-01-from-the-prior-round fix, `blocksAndEdges`/the per-incoming-edge loop). The single-edge `okEdgeInto` map used to hop backward through *interior* (non-terminal) blocks still silently collapses to one arbitrary edge when more than one `"ok"`-pattern edge targets the same interior block — a distinct, untested soundness gap from the fixed hang.
-2. `corevalidate` never checks that `core.ForeignContract.Symbol` is a syntactically safe C identifier before `cgen.Emit`/`cgen.EmitNative` splice it, unsanitized, directly into generated C source as an `extern` declaration and as a call-expression callee — a code-injection gap in the one boundary explicitly designed to defend against a corrupted, non-source-derived `core.Program`.
+However, this round's full-scope pass surfaced a **new, more severe injection vector that the 04-12 fix does not cover**: `ForeignContract`'s *other* string-valued fields (`Allocator`, `Unwind`, `NonlocalExit`) are still spliced unsanitized into generated C **comments**, and unlike the already-fixed `Symbol` field, these fields are reachable directly from ordinary Lang source via a string-literal foreign policy value (`allocator: "..."`) — no corrupted `core.Program` is required to trigger it. This is classified as a new Critical finding below. One warning and one info item are carried forward from the prior review as still-unaddressed observations.
 
 ## Critical Issues
 
-### CR-01: `checkReleaseOrder`'s backward walk silently collapses multiple incoming `"ok"` edges into the SAME interior block, unlike the already-fixed handling for a terminal block's own incoming edges
+### CR-01: `ForeignContract.Allocator`/`Unwind`/`NonlocalExit` are never validated for C-comment safety, and are spliced unescaped into `EmitForeignHeader`'s generated comment block — a source-reachable code-injection vector, not merely a corrupted-`core.Program` one
 
-**File:** `internal/compiler/corevalidate/corevalidate.go:1205-1213` (the `okEdgeInto` map construction) and `:1260-1271` (`rederive`'s use of it)
-**Issue:**
+**File:** `internal/compiler/cgen/cgen.go:1332-1340` (the unescaped `Fprintf` splice sites); `internal/compiler/check/check.go:1100-1111` (the admission path that copies the raw policy value with no shape validation); `internal/compiler/syntax/parser.go:227-240` (the string-literal policy-value grammar that admits the payload); `internal/compiler/corevalidate/corevalidate.go:327` (the only check ever applied to these fields — presence only)
+
+**Issue:** The 04-12 fix (`validCIdentifier`/`validForeignSymbol`) closed the injection gap for `ForeignContract.Symbol` specifically, because `Symbol` is the field spliced into the `extern` declaration and call-expression callee. But `EmitForeignHeader` also splices four other flat string fields directly into C **comments**, with no validation anywhere in the pipeline beyond "non-empty":
 
 ```go
-edgesByTo := make(map[string][]core.Edge, len(linear.Edges))
-okEdgeInto := make(map[string]core.Edge, len(linear.Edges))
-for _, edge := range linear.Edges {
-    edgesByTo[edge.ToBlockID] = append(edgesByTo[edge.ToBlockID], edge)
-    if edge.Pattern == "ok" {
-        okEdgeInto[edge.ToBlockID] = edge   // last "ok" edge into this block wins; any earlier one is silently discarded
+fmt.Fprintf(&out, "/* symbol: %s */\n", contract.Symbol)          // now guarded (validForeignSymbol)
+fmt.Fprintf(&out, "/* allocator: %s */\n", contract.Allocator)    // UNGUARDED
+fmt.Fprintf(&out, "/* unwind: %s */\n", contract.Unwind)          // UNGUARDED
+fmt.Fprintf(&out, "/* nonlocal_exit: %s */\n", contract.NonlocalExit) // UNGUARDED
+```
+
+Unlike `Symbol` — which check.go always resolves from an identifier token (`p.identifier(...)` in `parser.go` for the symbol name) — `Allocator`, `Unwind`, and `NonlocalExit` are populated from an `ast.ForeignPolicy.Value`, which the parser (`parser.go:229-240`) accepts as *either* a bare identifier *or* a double-quoted string literal:
+
+```go
+value := p.peek()
+isString := value.Kind == TokenString
+if isString || value.Kind == TokenIdentifier {
+    p.advance()
+}
+...
+text := value.Text
+if isString && len(text) >= 2 {
+    text = text[1 : len(text)-1]
+}
+```
+
+The lexer's string-literal rule (`lexer.go:58-82`) forbids only a literal newline and an unescaped closing quote inside the literal — every other byte, including `*` and `/`, is accepted verbatim, with no escape processing at all. So ordinary, syntactically valid Lang source such as:
+
+```
+foreign C {
+    fn lang_res_open(x: Byte) -> Byte {
+        allocator: "*/ int injected(void){return 1;} /*"
+        unwind: forbidden
+        nonlocal_exit: forbidden
+        fails: SomeErr
     }
 }
-...
-edge, ok := okEdgeInto[currentBlockID]   // rederive's backward hop through an INTERIOR block
-if !ok {
-    break
-}
-currentBlockID = edge.FromBlockID
 ```
 
-The 04-08/04-10 fix correctly closed the gap for a *terminal* block's own incoming edges: the outer loop in `checkReleaseOrder` (corevalidate.go:1284-1319) fetches `incoming := edgesByTo[block.ID]` — every edge, from `edgesByTo`, not just one — and walks `rederive` independently for each one, comparing every result against the block's single fixed release list (`TestMergeTerminalBlockDivergentReleaseSetsRefused` proves this). But `rederive`'s own backward hop through every *interior* block it passes through on the way back to the entry uses `okEdgeInto`, a `map[string]core.Edge` (singular, not a slice) keyed by `ToBlockID` that keeps only the last `"ok"`-pattern edge seen for a given target block during construction. If a hand-corrupted `core.Program` declares two `"ok"`-pattern edges from two different blocks A and A′ into the SAME interior (non-terminal) block T — where A and A′ represent genuinely different completed-acquisition histories — `okEdgeInto[T]` silently keeps only one of them (whichever appears last in `linear.Edges`' iteration order), and the backward walk from any terminal block reachable through T only ever rederives the history through the kept edge. The path through the discarded edge is never independently rederived or compared at all, so a corrupted program whose T-via-A′ path acquires/releases a different set of resources than T-via-A silently passes as long as the *kept* path happens to agree with the terminal block's declared release list.
+lexes and parses without a single diagnostic, is copied verbatim into `foreignSymbolInfo.Allocator` (`check.go:1107`) and then into `core.ForeignContract.Allocator` (`check.go:1337`), and `corevalidate.linear`'s only check on it is `Allocator != ""` (via the `foreign.obligation_undeclared`-adjacent non-empty check, `corevalidate.go:327` covers `Unwind`/`NonlocalExit`; `Allocator` has no shape check anywhere). `EmitForeignHeader` (called directly, and also by `EmitForeignConformance`, `cgen.go:1379`) then produces:
 
-This is materially the same class of gap CR-01 in the prior review closed for terminal blocks (silently skipping a merge point's disagreeing path instead of independently checking every path into it), just one level removed — it is the identical `okEdgeInto` map that motivated `blocksAndEdges`'/the CR-01 fix's own explanatory comment ("What this rederivation cannot tolerate is SKIPPING the check for a merge point... checking against every incoming edge, not skipping the block, is what closes the gap") but that fix was applied only at the outer per-terminal-block loop, never inside `rederive`'s own interior-block hop. No fixture or falsifier in `corevalidate_test.go` constructs two `"ok"` edges converging on a *non-terminal* block (`TestMergeTerminalBlockDivergentReleaseSetsRefused`/`TestMergeTerminalBlockAgreeingChainsAccepted` both add the second edge directly into the terminal `success` block, never into an interior `step:N` block), so this gap is untested and unfixed.
+```c
+/* allocator: */ int injected(void){return 1;} /* */
+```
 
-check.go's own honest lowering (`checkResourceLifecycle`) never produces two `"ok"`-pattern edges into the same block (each step's single successor is either the next step's block or the success block, and a `discard`'s two edges into the same target use patterns `"ok"` and `"err"`, never `"ok"`/`"ok"`), so this cannot be triggered by the compiler's own pipeline today. It is exactly the shape corevalidate's own stated purpose — defending against a corrupted or adversarially hand-constructed `core.Program`, independent of whether check.go could have produced it — exists to catch, and it does not.
+— the `*/` in the payload closes the comment early, the injected fragment becomes live top-level C source, and the trailing `/*` reopens a new comment that silently swallows the rest of the intended obligation block. I confirmed this is exploitable end-to-end with a standalone reproduction: calling `cgen.EmitForeignHeader` on a `core.Program` whose `ForeignContract.Allocator` is `"*/ int injected(void){return 1;} /*"` produces a header containing a live `int injected(void){return 1;}` function definition outside any comment.
 
-**Fix:** Change `okEdgeInto` to `map[string][]core.Edge` and, inside `rederive`, when more than one `"ok"` edge targets the current block, walk each one independently (recursively) and require they all rederive an identical accumulated release set before continuing — the same "every path must agree" principle already applied one level out for terminal blocks:
+This header is not merely descriptive output — `session.go:575` (`LayoutMutationRunner.Run`) and `session.go:2200-2225` route `EmitForeignHeader`'s and `EmitForeignConformance`'s output directly into `native.Runner.CompileConformanceUnit`, which invokes a real C compiler on the generated source (`native.go:207-216`). `cgen.ScanForBannedAttributes` (the one post-generation content scan in the pipeline, `session.go:2230`) only searches for a fixed list of optimizer-attribute tokens (`restrict`, `noalias`, etc.) and does not detect an escaped comment or injected function definition.
 
+Critically, this does **not** require a hand-corrupted `core.Program` the way the fixed `Symbol` gap did — `Allocator`/`Unwind`/`NonlocalExit` reach this state through the ordinary, honest `check.Program` → `cgen.EmitForeignHeader`/`EmitForeignConformance` pipeline from source-level syntax the language already supports (a quoted foreign-policy value). Any Lang source file that declares a `foreign` block with a crafted `allocator`/`unwind`/`nonlocal_exit` string value can inject arbitrary top-level C source into a file this compiler then compiles.
+
+**Fix:** Require every `ForeignContract` string field that is ever spliced into generated C text (comment or code) to be validated before emission, not just `Symbol`. Two complementary fixes:
+
+1. At the source admission boundary (`check.go`), reject a policy value containing `*/`, or more conservatively require `allocator`/`unwind`/`nonlocal_exit` to always be identifier-shaped (matching the existing informal convention — `forbidden`, `libc_malloc`, etc. — none of the corpus fixtures actually need free-form string content for these three keys):
 ```go
-okEdgesInto := make(map[string][]core.Edge, len(linear.Edges))
-for _, edge := range linear.Edges {
-    edgesByTo[edge.ToBlockID] = append(edgesByTo[edge.ToBlockID], edge)
-    if edge.Pattern == "ok" {
-        okEdgesInto[edge.ToBlockID] = append(okEdgesInto[edge.ToBlockID], edge)
-    }
-}
-...
-candidates := okEdgesInto[currentBlockID]
-if len(candidates) == 0 {
-    break
-}
-if len(candidates) > 1 {
-    // every incoming "ok" edge into this interior block must independently
-    // rederive the SAME accumulated history before the walk can trust any one of them
-    var first []core.LinearOperation
-    for i, candidate := range candidates {
-        sub, ok := rederive(candidate) // requires refactoring rederive to be safely re-entrant / iterative-with-explicit-stack
-        if !ok {
-            return nil, false
-        }
-        if i == 0 {
-            first = sub
-        } else if !reflect.DeepEqual(first, sub) {
-            v.check(false, "core.release_order_ambiguous_merge", currentBlockID)
-            return nil, false
-        }
-    }
-    return append(expected, first...), true
-}
-edge := candidates[0]
-currentBlockID = edge.FromBlockID
-```
-
-Add a falsifier constructing two `"ok"`-pattern edges into a shared interior `step:N` block from two blocks with different completed-acquisition histories, asserting `Validate` refuses it (rather than silently accepting via the arbitrarily-kept edge), plus a companion accepting-path test where both incoming edges genuinely agree.
-
-### CR-02: `corevalidate` never validates `ForeignContract.Symbol` as a safe C identifier before `cgen` splices it unsanitized into generated C source — a code-injection gap in the validator's own stated adversarial threat model
-
-**File:** `internal/compiler/corevalidate/corevalidate.go:311` (the only check ever applied to `Symbol`); `internal/compiler/cgen/cgen.go:352-373`, `:441`, `:778`, `:1278-1308`
-**Issue:** `corevalidate.linear` requires only that `Symbol` is non-empty:
-
-```go
-if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
-    return false
+// in collectForeignSymbols, alongside the existing switch:
+if !validPolicyIdentifier(policy.Value) {
+    return nil, []diagnostic.Diagnostic{diagnostic.Error("check.foreign_policy_value_unsafe", policy.Span, "policy value must be a plain identifier")}
 }
 ```
+2. Defense-in-depth at `corevalidate.linear`, alongside the existing `Symbol` check, apply the same `validCIdentifier` (or a comment-safe equivalent that at minimum forbids `*/`) to `Allocator`, `Unwind`, and `NonlocalExit` before `cgen` ever sees them — the same posture already adopted for `Symbol`.
+3. As a last line of defense, `cgen.EmitForeignHeader` should itself refuse (or escape) any contract field it is about to splice into a comment if it contains `*/`, mirroring `validForeignSymbol`'s role as an independent peer guard for the entry points that skip `corevalidate.Validate`.
 
-No check anywhere in `corevalidate.go` requires `Symbol` to match a valid C identifier (e.g. `^[A-Za-z_][A-Za-z0-9_]*$`). `cgen.go` then splices this string directly, unescaped and unvalidated, into generated C source as an identifier in three places:
-
-```go
-func foreignExternName(symbol string) string { return "_LANG_" + symbol }
-...
-symbolC := foreignExternName(function.ForeignContract.Symbol)
-resultType := symbolC + "_result"
-fmt.Fprintf(&out, "extern %s %s(unsigned char argument);\n\n", resultType, symbolC)
-...
-fmt.Fprintf(&out, "  %s %s = %s(%s); /* %s */\n", resultType, resultLocal, symbolC, locals[lastOp.SourceID], lastOp.ID)
-```
-
-Unlike every other identifier `cgen.go` emits — type names, function names, parameter names, place names — which are routed through `cName`/`cLocal` (both of which strip every character outside `[A-Za-z0-9_]` and replace it with `_`, per their own documented invariant), `Symbol` reaches the output completely raw. A `core.Program` with `ForeignContract.Symbol` set to something like `"real_symbol); } int LANG_pwned(void) { system(\"id\"); return 0"` would pass `corevalidate.Validate` (the only gate `cgen.Emit`/`cgen.EmitNative` run before generating C text — see `cgen.go:16-20` and `:40-45`) and then have that entire string spliced verbatim into the `extern` declaration and the call-expression line, breaking out of the intended single declaration/call and injecting arbitrary top-level C source (including a full function definition with an arbitrary body) into the file this compiler is about to compile and, in `session.RunNative`, execute.
-
-`corevalidate.go`'s own package doc and inline comments repeatedly state its entire reason for existing is to stay defined against "a corrupted or adversarially hand-constructed `core.Program`" reaching `cgen`/`interp`, independent of whether `check.go`'s own parser-level identifier restrictions would ever produce such a `Symbol` (in the honest pipeline, `Symbol` originates from a lexer identifier token and is therefore always identifier-shaped — but `cgen.Emit`/`EmitNative` are exported functions that accept any `core.Program`, and `corevalidate.Validate` is the one documented, source-blind gate standing between an arbitrary caller-supplied `core.Program` and C source generation). No test in `cgen_test.go` or `corevalidate_test.go` constructs a `Symbol` containing a non-identifier character, so this gap is untested.
-
-**Fix:** Add an identifier-shape check to `corevalidate.linear`'s existing `ForeignContract` validation block, alongside the existing non-empty check:
-
-```go
-var validCIdentifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
-...
-if !v.check(validCIdentifier.MatchString(function.ForeignContract.Symbol), "foreign.symbol_not_identifier", operation.ID) {
-    return false
-}
-```
-
-placed immediately after the existing `core.foreign_contract_missing` check at corevalidate.go:300-302, so a `Symbol` that is non-empty but not identifier-shaped is refused before `cgen` ever sees it. Add a falsifier in `corevalidate_test.go` that mutates a valid foreign-call program's `ForeignContract.Symbol` to contain a semicolon/parenthesis/newline and asserts refusal with the new code, alongside a regression test in `cgen_test.go` proving `cgen.Emit` is never reached (or, if reached directly bypassing corevalidate, that it independently refuses) with such a `Symbol`.
+Add a falsifier alongside `hostileForeignSymbols` in `cgen_test.go`/`corevalidate_test.go` for each of `Allocator`, `Unwind`, and `NonlocalExit` containing a comment-terminator payload, asserting refusal (or, at minimum, that `EmitForeignHeader`'s output never contains the injected fragment) the same way `TestForeignSymbolInjectionNeverReachesGeneratedC` currently does for `Symbol` alone.
 
 ## Warnings
 
-### WR-01: `TestReleaseOrderValidationWorkSeries`'s monotonic-work assertion does not by itself prove linearity, and does not model the per-incoming-edge cost the 04-08/04-10 fixes introduced
+### WR-01: `TestReleaseOrderValidationWorkSeries`'s monotonic-work assertion still does not prove linearity, and does not model the new per-interior-merge recursive cost the 04-11 fix introduced
 
-**File:** `internal/compiler/corevalidate/corevalidate_test.go:709-732`
-**Issue:** The test's doc comment claims it "proves the validator's release-order rederivation cost is linear in the number of blocks plus edges plus operations," but the test body only asserts the three-point `series` is strictly increasing. A strictly increasing series is consistent with linear, quadratic, or worse growth — it does not distinguish "linear" from "quadratic in incoming-edge-count per terminal block" (the per-edge `rederive` loop introduced by the 04-08 fix) or "quadratic in interior-merge fan-in" (were CR-01 above to be fixed with the recursive-per-edge approach sketched there). This was already flagged in the prior review pass and remains unaddressed.
-**Fix:** Either soften the doc comment to describe what is actually checked ("proves the counted work does not regress to a constant, i.e. it grows with fixture size") or strengthen the assertion to fit at least four points and check a ratio bound consistent with linear growth.
+**File:** `internal/compiler/corevalidate/corevalidate_test.go:709-732` (carried forward; unchanged by 04-11/04-12)
+**Issue:** Flagged in the prior review round and still unaddressed. The test's doc comment claims the rederivation cost is proven linear, but the test body only asserts a three-point series is strictly increasing, which is consistent with worse-than-linear growth. This is now additionally relevant because 04-11's interior-merge fix adds a *recursive*, per-candidate-edge branch to `rederive` (`corevalidate.go:1290-1323`) whose cost is proportional to the number of interior merge points times the fan-in at each — a shape no current fixture exercises and the monotonic assertion cannot distinguish from linear growth.
+**Fix:** Either soften the doc comment to describe only what is actually checked, or strengthen the assertion to at least four points with a ratio bound consistent with linear growth, and add a fixture exercising a chain of interior merges to exercise the new recursive branch's cost.
 
 ## Info
 
-### IN-01: `checkReleaseOrder`'s per-incoming-edge loop makes a single terminal block's check cost proportional to `incoming-edge-count × chain-depth`, not modeled by `LinearWorkLimit`
+### IN-01: No fixture exercises 3+ incoming `"ok"` edges into a single interior block (only 2-edge merges are tested)
 
-**File:** `internal/compiler/corevalidate/corevalidate.go:1284-1319`
-**Issue:** Carried forward from the prior review as a documentation-only note, not a defect: no current fixture exercises a terminal block reached by 3+ incoming edges, so `LinearWorkLimit`'s facts-based formula and `TestReleaseOrderValidationWorkSeries`'s monotonic check do not currently model this cost dimension. Performance is out of scope for this review.
-**Fix:** None required; consider a fixture with 3+ incoming edges into one terminal block if `LinearWorkLimit` is ever asserted against that shape in the future.
+**File:** `internal/compiler/corevalidate/corevalidate_test.go:878-994`
+**Issue:** `TestInteriorMergeDivergentHistoriesRefused`/`TestInteriorMergeAgreeingHistoriesAccepted` both exercise exactly two incoming `"ok"` edges into the interior block. The 04-11 fix's pairwise-against-`candidates[0]` comparison (`corevalidate.go:1314-1320`) is transitively correct for a 3+-edge merge (if all agree with the first, all agree with each other), but this is not independently exercised by any fixture. Not a defect — carried forward as a coverage note, consistent with the "performance is out of scope" instruction for the analogous prior-round IN-01.
+**Fix:** None required; consider a 3-edge interior-merge fixture if this code path is ever refactored.
 
 ---
 
-_Reviewed: 2026-09-05T20:51:14Z_
+_Reviewed: 2026-09-05T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
