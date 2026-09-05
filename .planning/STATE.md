@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Fallible Resources and C Boundary
 status: executing
-stopped_at: Completed 04-08-PLAN.md - gap 1 falsifier + terminal-block peer check
-last_updated: "2026-09-05T17:55:23.904Z"
+stopped_at: Completed 04-09-PLAN.md - conformance falsifier + attribute-scan artifact-count pin
+last_updated: "2026-09-05T18:06:00.779Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 04 execution started
-state_head: 40a5dc82ff6945001cbed5de9321bdc57dbb0ccd
+state_head: 929241141cf8c7481af8e693926acd911520fe14
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 29
-  completed_plans: 28
+  completed_plans: 29
   percent: 50
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 04 (Fallible Resources and C Boundary) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 04 execution started
 
@@ -82,6 +82,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04 P06 | ~2h | 3 tasks | 9 files |
 | Phase 04 P07 | 55 min | 3 tasks | 7 files |
 | Phase 04 P08 | 30 min | 3 tasks | 3 files |
+| Phase 04 P09 | 25 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: Second-/third-stage typed-failure differential proven via genuine execution (test-double foreign object + interp.RunLinearBlockDirect), not a hand-constructed document; a structural core-artifact mutation approach was tried and reverted after corevalidate's own core.fail_reached_without_err_edge correctly refused it
 - [Phase 04]: session.runNativeInputs derives lang run --engine=native's per-input Expect from the interpreter's own verdict, fixing two real bugs (multi-arm defect fixture, single-input nonlocal-exit fixture) discovered by driving the shipped binary on out-of-corpus programs
 - [Phase 04]: corevalidate's terminal-block structural check ships as at-least-one/non-entry (core.terminal_block_unreachable), not the literal exactly-one form 04-VERIFICATION.md asked for, to keep discard_because.lang's legitimate ok/err merge valid
+- [Phase 04]: Both new tests consume cgen.BannedOptimizerAttributes rather than a hard-coded literal, matching the existing header-only test's stated reason
+- [Phase 04]: TestAttributeScanLaneCoversEveryInspectableLayer pins lane:foreign-no-unproven-attributes RecomputedWork at exactly 8, closing 04-VERIFICATION.md gap 2's artifact-count blind spot
 
 ### Pending Todos
 
@@ -187,6 +190,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-05T17:55:23.813Z
-Stopped at: Completed 04-08-PLAN.md - gap 1 falsifier + terminal-block peer check
+Last session: 2026-09-05T18:06:00.690Z
+Stopped at: Completed 04-09-PLAN.md - conformance falsifier + attribute-scan artifact-count pin
 Resume file: None

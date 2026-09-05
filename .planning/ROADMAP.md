@@ -177,7 +177,11 @@ changes that cost nothing structurally:
   3. Panic cannot cross the ordinary non-unwinding C boundary, and a foreign nonlocal exit cannot silently bypass Lang cleanup.
   4. Interpreter and native executions agree on primary failure and cleanup events.
 
-**Plans**: 9 plans (7/7 executed; 04-08 and 04-09 are gap-closure plans from 04-VERIFICATION.md's two confirmed gaps)
+**Plans**: 9/9 plans executed (7/7 executed; 04-08 and 04-09 are gap-closure plans from 04-VERIFICATION.md's two confirmed gaps)
+
+- [x] 04-08-PLAN.md
+- [x] 04-09-PLAN.md
+
 **Wave 1**
 
 - [ ] `04-08-PLAN.md` — gap closure: make the merge-terminal release-order rederivation falsifiable and add its structural peer check
@@ -262,6 +266,6 @@ validator, the code generator, or the session gate, so no two plans have disjoin
 | 1. Canonical Pure Spine | 3/3 | Complete | 2026-09-03 |
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
-| 4. Fallible Resources and C Boundary | 7/7 | In Progress|  |
+| 4. Fallible Resources and C Boundary | 9/9 | In Progress|  |
 | 5. Native Equivalence and Adversarial Evidence | 0/TBD | Not started | - |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |
