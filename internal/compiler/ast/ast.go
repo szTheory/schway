@@ -126,7 +126,12 @@ func (a MatchArm) HasClosedVariant() bool { return (a.Value != "") != (a.Body !=
 type LinearBody struct {
 	Bindings []Binding
 	Result   string
-	Span     diagnostic.Span
+	// DefectReason is populated instead of Result when this body's terminal
+	// position is `defect "<reason>"` (D-04-15): a real, reachable, abort-only
+	// terminal outcome. Exactly one of Result and DefectReason is ever
+	// populated for any given body.
+	DefectReason string
+	Span         diagnostic.Span
 }
 
 type Binding struct {

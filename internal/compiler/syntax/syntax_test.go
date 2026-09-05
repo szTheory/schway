@@ -1021,3 +1021,45 @@ func TestFallibleCallUnconsumedRejected(t *testing.T) {
 		t.Fatalf("a bare fallible call must never reach a checked core function, got %d", len(checked.Program.Functions))
 	}
 }
+
+// TestDefectTerminatorRoundTrips proves D-04-15's `defect "<reason>"`
+// terminator parses into ast.LinearBody.DefectReason and formats to a fixed
+// point, mirroring TestForeignCallRoundTrips' shape.
+func TestDefectTerminatorRoundTrips(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("unexpected diagnostics: %v", parsed.Diagnostics)
+	}
+	if len(parsed.Program.Funcs) != 1 {
+		t.Fatalf("unexpected function shape: %+v", parsed.Program.Funcs)
+	}
+	var defectArm *ast.MatchArm
+	for index, arm := range parsed.Program.Funcs[0].Body.Arms {
+		if arm.Pattern == "Halt" {
+			defectArm = &parsed.Program.Funcs[0].Body.Arms[index]
+		}
+	}
+	if defectArm == nil || defectArm.Body == nil || defectArm.Body.DefectReason != "halt requested" {
+		t.Fatalf("Halt arm did not parse a defect terminator: %+v", defectArm)
+	}
+	if defectArm.Body.Result != "" {
+		t.Fatalf("a defect body must not also carry a Result: %q", defectArm.Body.Result)
+	}
+
+	formatted := syntax.Format(parsed.Tree)
+	reparsed := syntax.Parse(formatted)
+	if len(reparsed.Diagnostics) > 0 {
+		t.Fatalf("reparse diagnostics: %v", reparsed.Diagnostics)
+	}
+	if got, want := semanticTokens(reparsed.Tree), semanticTokens(parsed.Tree); !reflect.DeepEqual(got, want) {
+		t.Fatalf("semantic token projection changed:\ngot:  %v\nwant: %v", got, want)
+	}
+	reformatted := syntax.Format(reparsed.Tree)
+	if !bytes.Equal(formatted, reformatted) {
+		t.Fatalf("format is not a fixed point:\nfirst:  %s\nsecond: %s", formatted, reformatted)
+	}
+}

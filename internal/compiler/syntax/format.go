@@ -42,6 +42,10 @@ type formatter struct {
 	// the next statement (another `discard`, a `let`, or the linear body's
 	// final bare Result identifier) starts fresh.
 	discardRationale bool
+	// pendingDefectReason is true between a `defect` keyword and its reason
+	// string, mirroring discardRationale's shape (no intervening keyword here,
+	// so this flag is set directly by the TokenDefect case).
+	pendingDefectReason bool
 }
 
 func (f *formatter) token(token Token) {
@@ -110,6 +114,12 @@ func (f *formatter) token(token Token) {
 		f.out.WriteString(" because ")
 		f.lineOpen = true
 		f.discardRationale = true
+	case TokenDefect:
+		if f.lineOpen {
+			f.newline()
+		}
+		f.write("defect ")
+		f.pendingDefectReason = true
 	case TokenTake:
 		f.write("take ")
 	case TokenBorrow:
@@ -153,6 +163,9 @@ func (f *formatter) token(token Token) {
 			f.newline()
 		} else if f.discardRationale && (f.context() == "function" || f.context() == "arm") {
 			f.discardRationale = false
+			f.newline()
+		} else if f.pendingDefectReason && (f.context() == "function" || f.context() == "arm") {
+			f.pendingDefectReason = false
 			f.newline()
 		}
 	case TokenDot:

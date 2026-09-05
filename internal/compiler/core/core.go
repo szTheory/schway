@@ -220,6 +220,13 @@ const (
 	// ends in OpReturn or OpFail, with zero or more OpRelease operations
 	// immediately before that terminator.
 	OpRelease OperationKind = "release"
+	// OpDefect is a terminator (see TerminatorKinds) admissible only in a
+	// match arm's terminal position (D-04-15): a real, reachable, abort-only
+	// terminal outcome carrying the required non-empty reason string on its
+	// own Reason field. It performs no release and reads no place value it
+	// returns -- its SourceID exists only so the "every operation reads an
+	// initialized place" invariant stays uniform across every OperationKind.
+	OpDefect OperationKind = "defect"
 )
 
 // AllOperationKinds returns every declared OperationKind, in declaration
@@ -229,15 +236,14 @@ const (
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
-// always a subset of AllOperationKinds(). Phase 4 adds OpFail (a later plan
-// adds a defect terminator); every pre-Phase-4 core artifact only ever ends
-// a block with OpReturn.
+// always a subset of AllOperationKinds(). Phase 4 adds OpFail and OpDefect;
+// every pre-Phase-4 core artifact only ever ends a block with OpReturn.
 func TerminatorKinds() []OperationKind {
-	return []OperationKind{OpReturn, OpFail}
+	return []OperationKind{OpReturn, OpFail, OpDefect}
 }
 
 type LinearOperation struct {
@@ -274,6 +280,12 @@ type LinearOperation struct {
 	// pre-plan-03 operation, and every operation kind other than
 	// OpForeignCall/OpRelease, leaves this empty.
 	Allocator string `json:"allocator,omitempty"`
+	// Reason is Phase 4 plan 04's additive omitempty fact (D-04-15):
+	// populated only on an OpDefect operation, it carries the required
+	// non-empty reason string the source `defect "<reason>"` terminator
+	// declared. Every pre-plan-04 operation, and every operation kind other
+	// than OpDefect, leaves this empty.
+	Reason string `json:"reason,omitempty"`
 }
 
 type LinearBody struct {

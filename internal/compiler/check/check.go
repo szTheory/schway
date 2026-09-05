@@ -897,6 +897,27 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 		result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 	}
 	result.Work++
+	global := startIndex + len(body.Bindings)
+	if body.DefectReason != "" {
+		// D-04-15: a defect terminator needs no bound value at all -- it
+		// carries the parameter's own alias place purely so every operation
+		// still resolves a real, initialized SourceID (this package's
+		// uniform "every operation reads an initialized place" invariant).
+		// No release runs on this path (D-04-18); this arm shape can never
+		// carry a foreign acquisition this phase, so there is nothing to
+		// leak, but the shape stays consistent with a future acquiring arm.
+		parameter := places[parameterName]
+		result.Operations = append(result.Operations, core.LinearOperation{
+			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
+			Kind: core.OpDefect, SourceID: parameter.place.ID, TypeID: parameter.place.TypeID, Reason: body.DefectReason,
+		})
+		result.Places = append(result.Places, core.Place{
+			ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: "_", TypeID: parameter.place.TypeID,
+		})
+		endLoans(len(body.Bindings))
+		result.States = append(result.States, ownershipSnapshot(len(body.Bindings), places, activeLoans))
+		return result
+	}
 	returned, ok := places[body.Result]
 	if !ok {
 		return fail(diagnostic.Error("name.unknown", body.Span, "linear result is unknown"))
@@ -904,7 +925,6 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	if !returned.initialized {
 		return fail(useAfterMove(body.Span, returned))
 	}
-	global := startIndex + len(body.Bindings)
 	result.Operations = append(result.Operations, core.LinearOperation{
 		ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
 		Kind: core.OpReturn, SourceID: returned.place.ID, TypeID: returned.place.TypeID,

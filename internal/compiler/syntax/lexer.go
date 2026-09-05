@@ -18,6 +18,7 @@ var keywords = map[string]Kind{
 	"try":     TokenTry,
 	"discard": TokenDiscard,
 	"because": TokenBecause,
+	"defect":  TokenDefect,
 }
 
 func Lex(source []byte) ([]Token, []diagnostic.Diagnostic) {

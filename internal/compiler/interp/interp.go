@@ -122,6 +122,17 @@ func runBranchArm(function core.Function, arm core.MatchArm, input string) (Exec
 			// here for the same six-site exhaustive-dispatch reason as
 			// OpForeignCall above.
 			events = append(events, ownedEvent(function, operation, "resource.released"))
+		case core.OpDefect:
+			// D-04-15: a real, reachable, abort-only terminal outcome. It
+			// performs no release and reads no live-resource accounting this
+			// phase (no arm can carry a foreign acquisition), so
+			// LiveResources stays the same empty-but-never-nil shape every
+			// other arm terminator here uses.
+			events = append(events, Event{
+				Schema: execution.Schema1, ID: operation.ID + ":event:defected", Kind: "function.defected",
+				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
+			})
+			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: []string{}}, nil
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
@@ -236,6 +247,16 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 				})
 				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "typed_failure", Value: value}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
+			case core.OpDefect:
+				// D-04-15/D-04-18: a defect path populates LiveResources with
+				// every still-live acquisition and performs no release -- the
+				// SAME liveResourceList accounting OpFail/OpReturn use, just
+				// never followed by a release call.
+				events = append(events, Event{
+					Schema: execution.Schema1, ID: operation.ID + ":event:defected", Kind: "function.defected",
+					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
+				})
+				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
 			default:
 				return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 			}

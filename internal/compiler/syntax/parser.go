@@ -430,6 +430,28 @@ func (p *parser) linearBody() ast.LinearBody {
 		})
 		body.Span.End = source.Span.End
 	}
+	if p.peek().Kind == TokenDefect {
+		// D-04-15: `defect "<reason>"` is the other admissible terminal form
+		// alongside a bare Result identifier -- a real, reachable, abort-only
+		// terminal outcome needing no call surface. The reason is a required
+		// non-empty string literal, exactly like discard's own rationale.
+		start := p.advance()
+		reasonToken := p.expect(TokenString, "syntax.expected_defect_reason")
+		reason := reasonToken.Text
+		if len(reason) >= 2 && reasonToken.Kind == TokenString {
+			reason = reason[1 : len(reason)-1]
+		}
+		if reason == "" {
+			p.problem("syntax.defect_reason_empty", reasonToken, "defect requires a non-empty reason string")
+		}
+		body.DefectReason = reason
+		end := reasonToken.Span.End
+		if start.Kind != TokenDefect {
+			end = start.Span.End
+		}
+		body.Span.End = end
+		return body
+	}
 	result := p.identifier("syntax.expected_linear_result")
 	body.Result = result.Text
 	body.Span.End = result.Span.End

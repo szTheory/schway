@@ -1136,6 +1136,57 @@ func TestForeignCallLowersToOkAndErrEdges(t *testing.T) {
 	}
 }
 
+// TestDefectLowersToTerminalOutcome pins D-04-15: `defect "<reason>"` lowers
+// to an OpDefect operation terminating its arm block, carrying the required
+// non-empty reason, no target, and no release anywhere in that block.
+func TestDefectLowersToTerminalOutcome(t *testing.T) {
+	source := readPhase4Fixture(t, "defect_terminal.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", result.Diagnostics)
+	}
+	if len(result.Program.Functions) != 1 {
+		t.Fatalf("expected exactly one function, got %d", len(result.Program.Functions))
+	}
+	function := result.Program.Functions[0]
+	if function.Match == nil || function.Linear == nil {
+		t.Fatalf("expected a branch-shaped function, got %+v", function)
+	}
+	var defectArmID string
+	for _, arm := range function.Match.Arms {
+		if arm.Pattern == "Halt" {
+			defectArmID = arm.BlockID
+		}
+	}
+	if defectArmID == "" {
+		t.Fatalf("no Halt arm block found: %+v", function.Match.Arms)
+	}
+	var defectBlock core.Block
+	found := false
+	for _, block := range function.Linear.Blocks {
+		if block.ID == defectArmID {
+			defectBlock, found = block, true
+		}
+	}
+	if !found || len(defectBlock.OperationIDs) == 0 {
+		t.Fatalf("Halt arm block not found or empty: %+v", function.Linear.Blocks)
+	}
+	operationsByID := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		operationsByID[operation.ID] = operation
+	}
+	lastOp := operationsByID[defectBlock.OperationIDs[len(defectBlock.OperationIDs)-1]]
+	if lastOp.Kind != core.OpDefect || lastOp.Reason != "halt requested" || lastOp.TargetID != "" {
+		t.Fatalf("expected a terminal OpDefect with reason, got %+v", lastOp)
+	}
+	for _, opID := range defectBlock.OperationIDs {
+		if operationsByID[opID].Kind == core.OpRelease {
+			t.Fatalf("no release may appear in a defect-terminated block, found %+v", operationsByID[opID])
+		}
+	}
+}
+
 // TestForeignContractCarriesEveryObligation pins Task 04-03-01: the complete
 // core.ForeignContract for a real declared foreign symbol carries every
 // obligation FFI-01 names -- the four flat obligation strings plus a fully

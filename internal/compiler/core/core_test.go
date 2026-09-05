@@ -3,7 +3,9 @@ package core_test
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
@@ -124,7 +126,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 8 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease
+	const declaredCount = 9 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -190,6 +192,7 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 		"testdata/phase3/shared_shared_accept.lang",
 		"testdata/phase4/foreign_acquire_one.lang",
 		"testdata/phase4/acquire_three_success.lang",
+		"testdata/phase4/defect_terminal.lang",
 	}
 	encountered := make(map[core.OperationKind]bool)
 	for _, path := range fixtures {
@@ -255,4 +258,104 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 			t.Fatalf("operation kind %q is never exercised by any corpus fixture in this control", kind)
 		}
 	}
+}
+
+// TestCancelledOutcomeIsUnconstructible is D-04-08's fail-closed control:
+// the terminal-outcome axis reserves "cancelled" as unconstructible, and
+// this asserts it over the REACHABLE CONSTRUCTORS in every engine's own
+// source -- not over observed test output, which would be exactly the
+// vacuous evidence shape this project has already paid for three times
+// (03-08/03-09/03-10, D-10). No engine (interp, cgen, native) may ever
+// contain the literal outcome-kind string "cancelled" as a value it
+// constructs.
+func TestCancelledOutcomeIsUnconstructible(t *testing.T) {
+	for _, relative := range [][]string{
+		{"internal", "compiler", "interp", "interp.go"},
+		{"internal", "compiler", "cgen", "cgen.go"},
+		{"internal", "compiler", "native", "native.go"},
+	} {
+		path := testsupport.ProjectPath(relative...)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			code := line
+			if index := strings.Index(code, "//"); index >= 0 {
+				code = code[:index]
+			}
+			if strings.Contains(code, `"cancelled"`) {
+				t.Fatalf("%s constructs the reserved, unconstructible cancelled outcome kind: %q", path, line)
+			}
+		}
+	}
+}
+
+// TestNoErrorValueConstructorExists is D-04-09's structural control: no
+// operation kind, expression form, or core field constructs an error value.
+// The only producer of typed_failure is an OpFail terminator, and the only
+// producer of an OpFail is an err edge. This asserts the second half by
+// hand-corrupting a real checked core.Program's sole err edge's Pattern and
+// confirming corevalidate's independent re-derivation refuses it -- an
+// OpFail reached from any predecessor other than a real err edge must never
+// be admitted, even by a producer other than check.go itself.
+func TestNoErrorValueConstructorExists(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) > 0 {
+		t.Fatalf("unexpected diagnostics: %v", checked.Diagnostics)
+	}
+	program := checked.Program
+	found := false
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpFail {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatal("fixture does not exercise OpFail")
+	}
+
+	corrupted := cloneCoreProgram(t, program)
+	mutated := false
+	for fi := range corrupted.Functions {
+		linear := corrupted.Functions[fi].Linear
+		if linear == nil {
+			continue
+		}
+		for ei := range linear.Edges {
+			if linear.Edges[ei].Pattern == "err" {
+				linear.Edges[ei].Pattern = "ok"
+				mutated = true
+			}
+		}
+	}
+	if !mutated {
+		t.Fatal("fixture has no err edge to corrupt")
+	}
+	validated := corevalidate.Validate(corrupted)
+	if validated.Valid {
+		t.Fatal("corevalidate admitted an OpFail reached from a non-err edge")
+	}
+}
+
+func cloneCoreProgram(t *testing.T, program core.Program) core.Program {
+	t.Helper()
+	data, err := json.Marshal(program)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var clone core.Program
+	if err := json.Unmarshal(data, &clone); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	return clone
 }

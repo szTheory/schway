@@ -10,6 +10,29 @@ const (
 	Schema1 = "lang.execution/1"
 )
 
+// Terminal outcome kinds (D-04-08): a closed named set carried as its own
+// axis, separate from the returned value. OutcomeCancelled is reserved but
+// deliberately unconstructible this phase -- async/cancellation is
+// Out-of-Scope (PROJECT.md), and no engine (interp, cgen, native) may ever
+// produce it. Adding real cancellation later is an enum member plus a
+// reviewed change, never a quiet retrofit as a typed_failure alternative.
+// core_test.go's TestCancelledOutcomeIsUnconstructible asserts this by
+// scanning every engine's own source for the literal, not by observing that
+// no test happened to produce one.
+const (
+	OutcomeReturned     = "returned"
+	OutcomeTypedFailure = "typed_failure"
+	OutcomeDefect       = "defect"
+	OutcomeCancelled    = "cancelled"
+)
+
+// TerminalOutcomeKinds returns the complete closed set, in declaration
+// order -- the single table a fail-closed control can assert every engine's
+// emitted Outcome.Kind is drawn from.
+func TerminalOutcomeKinds() []string {
+	return []string{OutcomeReturned, OutcomeTypedFailure, OutcomeDefect, OutcomeCancelled}
+}
+
 type Outcome struct {
 	Kind  string `json:"kind"`
 	Value string `json:"value"`

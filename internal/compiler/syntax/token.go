@@ -23,6 +23,10 @@ const (
 	TokenTry        Kind = "try"
 	TokenDiscard    Kind = "discard"
 	TokenBecause    Kind = "because"
+	// TokenDefect is Phase 4's terminal defect keyword (D-04-15): admissible
+	// only in a linear body's terminal position, as an alternative to a bare
+	// Result identifier.
+	TokenDefect Kind = "defect"
 	TokenString     Kind = "string"
 	TokenLBrace     Kind = "{"
 	TokenRBrace     Kind = "}"

@@ -1,0 +1,29 @@
+// D-04-15: a real, reachable, deliberately terminal defect. The "Halt" arm
+// needs no call surface at all -- it aborts the process directly from a
+// match arm, independent of every foreign/resource decision this phase adds
+// elsewhere, converting SC3's panic claim into one with a reachable
+// witness. The "Go" arm is an ordinary returning arm, proving the same
+// function's non-defect path is unaffected.
+
+module fallible.defect_terminal
+
+export {
+  type Signal
+  fn triage
+}
+
+data Signal =
+  | Go
+  | Halt
+
+fn triage(flag: Signal) -> Signal {
+  match flag {
+    Go => {
+      let held = take flag
+      held
+    }
+    Halt => {
+      defect "halt requested"
+    }
+  }
+}

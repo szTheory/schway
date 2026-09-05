@@ -281,10 +281,11 @@ func (v *validator) linear(function *core.Function) bool {
 		if _, ok := types[operation.TypeID]; !v.check(ok, "core.unknown_type", operation.TypeID) {
 			return false
 		}
-		// OpFail is a terminator alongside OpReturn (D-04-04): neither ever
-		// carries a TargetID, since neither produces an ordinary place --
-		// OpReturn ends the function, OpFail ends the err block.
-		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease {
+		// OpFail and OpDefect are terminators alongside OpReturn (D-04-04/
+		// D-04-15): none of the three ever carries a TargetID, since none
+		// produces an ordinary place -- OpReturn ends the function, OpFail
+		// ends the err block, OpDefect ends an arm block by aborting.
+		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
 				return false
 			}
@@ -410,6 +411,38 @@ func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[str
 	for _, block := range linear.Blocks {
 		for _, successor := range block.Successors {
 			if _, ok := blockIDs[successor]; !v.check(ok, "core.unknown_block", successor) {
+				return false
+			}
+		}
+	}
+	// D-04-09: the only producer of an OpFail is an err edge. check.go never
+	// emits one elsewhere, by construction, but a hand-corrupted core.Program
+	// routing any other edge into a fail-terminated block must still be
+	// refused here, independently -- exactly the same defense-in-depth
+	// posture releaseAllocatorMatches already applies to a release's declared
+	// allocator.
+	operationsByID := make(map[string]core.LinearOperation, len(linear.Operations))
+	for _, operation := range linear.Operations {
+		operationsByID[operation.ID] = operation
+	}
+	incoming := make(map[string][]core.Edge, len(linear.Edges))
+	for _, edge := range linear.Edges {
+		incoming[edge.ToBlockID] = append(incoming[edge.ToBlockID], edge)
+	}
+	for _, block := range linear.Blocks {
+		if len(block.OperationIDs) == 0 {
+			continue
+		}
+		last := operationsByID[block.OperationIDs[len(block.OperationIDs)-1]]
+		if last.Kind != core.OpFail {
+			continue
+		}
+		edges := incoming[block.ID]
+		if !v.check(len(edges) > 0, "core.fail_edge_missing", last.ID) {
+			return false
+		}
+		for _, edge := range edges {
+			if !v.check(edge.Pattern == "err", "core.fail_reached_without_err_edge", last.ID) {
 				return false
 			}
 		}
@@ -863,6 +896,16 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				return false
 			}
 			returned = true
+		case core.OpDefect:
+			// A terminator alongside OpReturn/OpFail (D-04-15): never the
+			// last operation of anything but its own straight-line body (this
+			// case exists only so control:kind.exhaustive_dispatch's table
+			// finds it handled here too -- a straight-line, block-less body
+			// can never actually carry a defect this phase).
+			if !v.check(index == len(operations)-1 && !returned && operation.TargetID == "" && operation.Reason != "", "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			returned = true
 		case core.OpRelease:
 			// A non-terminal transition (D-04-07): it discharges an
 			// already-produced acquisition and produces no new place. The
@@ -1059,6 +1102,20 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 				return false
 			}
 			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.TypeID == source.TypeID, "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			returnedBlocks[blockID] = true
+		case core.OpDefect:
+			// A per-block terminator alongside OpReturn/OpFail (D-04-15): the
+			// only route into a "defect" terminal outcome, admissible only in
+			// a match arm's terminal position this phase (checkBranch never
+			// produces it elsewhere). It carries a required non-empty Reason
+			// and never a TargetID.
+			blockID, known := blockOfOperation[operation.ID]
+			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {
+				return false
+			}
+			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.Reason != "", "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
 			returnedBlocks[blockID] = true
