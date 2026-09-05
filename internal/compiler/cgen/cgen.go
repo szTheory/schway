@@ -850,6 +850,238 @@ func emitBranchOperations(out *strings.Builder, function core.Function, places m
 	return nil
 }
 
+// ---------------------------------------------------------------------
+// Phase 4 plan 03: the three inspectable layers derived from one
+// authoritative core.ForeignContract (D-04-12), plus the zero-attribute
+// control (D-04-13). All three emitters below are new top-level functions,
+// siblings of Emit/EmitNative -- none is invoked from either, so a program's
+// ordinary Emit/EmitNative output is completely unaffected by this section.
+// ---------------------------------------------------------------------
+
+// ForeignManifestSchema identifies the lang.foreign/0 sidecar manifest
+// (D-04-12c): a separate schema/artifact from lang.core/*, digest-bound into
+// evidence.Manifest.ForeignDigest but never merged into the core artifact
+// itself.
+const ForeignManifestSchema = "lang.foreign/0"
+
+// foreignManifestDocument is the lang.foreign/0 sidecar's exact field
+// layout: the complete core.ForeignContract plus two fields no
+// ForeignContract itself carries. EmittedAttributes has no omitempty tag
+// (D-04-13): it is deliberately a present, empty JSON array this phase, not
+// an omission -- the distinction Phase 5 needs to assert on.
+// UncheckedObligations names every obligation this phase declares but never
+// exercises, so a quarantine reader never mistakes a declared fact for a
+// proven one (D-04-12/D-10).
+type foreignManifestDocument struct {
+	Schema               string             `json:"schema"`
+	Symbol               string             `json:"symbol"`
+	Allocator            string             `json:"allocator"`
+	Unwind               string             `json:"unwind"`
+	NonlocalExit         string             `json:"nonlocal_exit"`
+	Fails                string             `json:"fails"`
+	InitializedState     string             `json:"initialized_state"`
+	Capture              string             `json:"capture"`
+	Retention            string             `json:"retention"`
+	Aliasing             string             `json:"aliasing"`
+	Layout               *core.RecordLayout `json:"layout"`
+	EmittedAttributes    []string           `json:"emitted_attributes"`
+	UncheckedObligations []string           `json:"unchecked_obligations"`
+}
+
+// uncheckedForeignObligations names every obligation this phase declares but
+// never exercises (D-04-12c): the language has no closures, no threads, and
+// no calls into Lang, so capture, retention, aliasing, and callback
+// retention are declared facts, never proven ones. Kept as a function
+// (rather than a package var) so a future phase narrowing this list has one
+// call site to change, and so EmitForeignManifest and any test asserting on
+// this list read the exact same values.
+func uncheckedForeignObligations() []string {
+	return []string{"capture", "retention", "aliasing", "callback_retention"}
+}
+
+// singleForeignFunction returns the one function in program that declares a
+// foreign contract, or an error if none does. Every Phase 4 foreign-shaped
+// corpus fixture is single-function, matching Emit/EmitNative's own
+// single-function expectation.
+func singleForeignFunction(program core.Program) (core.Function, error) {
+	for _, function := range program.Functions {
+		if function.ForeignContract != nil {
+			return function, nil
+		}
+	}
+	return core.Function{}, fmt.Errorf("program declares no foreign contract")
+}
+
+// EmitForeignManifest serializes program's single foreign contract as a
+// lang.foreign/0 sidecar manifest document (D-04-12c): the JSON is
+// authoritative, and EmitForeignHeader's obligation comment block is
+// generated FROM the same contract value, so the two can never drift
+// (D-04-12).
+func EmitForeignManifest(program core.Program) (string, error) {
+	function, err := singleForeignFunction(program)
+	if err != nil {
+		return "", err
+	}
+	contract := function.ForeignContract
+	document := foreignManifestDocument{
+		Schema: ForeignManifestSchema, Symbol: contract.Symbol, Allocator: contract.Allocator,
+		Unwind: contract.Unwind, NonlocalExit: contract.NonlocalExit, Fails: contract.Fails,
+		InitializedState: contract.InitializedState, Capture: contract.Capture, Retention: contract.Retention, Aliasing: contract.Aliasing,
+		Layout: contract.Layout, EmittedAttributes: []string{}, UncheckedObligations: uncheckedForeignObligations(),
+	}
+	encoded, err := json.Marshal(document)
+	if err != nil {
+		return "", err
+	}
+	return string(encoded), nil
+}
+
+// foreignHeaderResultType is the generated header's own typedef name for the
+// symbol's by-value ABI result -- allocated through the existing cNames
+// deterministic-suffix-on-collision machinery (D-04-12a's "not a second ad
+// hoc namer" requirement), not a hand-built string.
+func foreignHeaderResultType(names *cNames, symbol string) string {
+	return names.allocate(cName(symbol)+"_RESULT", "foreign_result_type", 0)
+}
+
+// EmitForeignHeader generates the `_LANG_`-namespaced header for program's
+// single declared foreign symbol (D-04-12a): the extern declaration, a
+// generated obligation comment block reproducing every contract field, and
+// self-layout _Static_assert()s over Lang's own generated record. Every line
+// of the comment block is written directly from the SAME core.ForeignContract
+// value EmitForeignManifest serializes -- a test mutating one contract field
+// and re-running both must see the corresponding comment line move,
+// because there is exactly one source of truth for both (D-04-12: a
+// hand-written comment beside a generated JSON is a second source of truth
+// that will drift, which this shared-source construction forbids by
+// design).
+func EmitForeignHeader(program core.Program) (string, error) {
+	function, err := singleForeignFunction(program)
+	if err != nil {
+		return "", err
+	}
+	contract := function.ForeignContract
+	names := newCNames(linearFixedNames...)
+	resultType := foreignHeaderResultType(names, contract.Symbol)
+	symbolC := foreignExternName(contract.Symbol)
+	guard := "LANG_FOREIGN_" + strings.ToUpper(cName(contract.Symbol)) + "_H"
+
+	var out strings.Builder
+	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 (foreign header, D-04-12a) */\n")
+	fmt.Fprintf(&out, "#ifndef %s\n#define %s\n\n", guard, guard)
+	out.WriteString("#include <stddef.h>\n\n")
+	out.WriteString("/* lang.foreign/0 obligations -- generated from the sidecar manifest;\n")
+	out.WriteString(" * see EmitForeignManifest. Never hand-edit this block: a hand-written\n")
+	out.WriteString(" * comment beside a generated JSON is a second source of truth that will\n")
+	out.WriteString(" * drift, which is exactly what D-04-12 forbids. */\n")
+	fmt.Fprintf(&out, "/* symbol: %s */\n", contract.Symbol)
+	fmt.Fprintf(&out, "/* allocator: %s */\n", contract.Allocator)
+	fmt.Fprintf(&out, "/* unwind: %s */\n", contract.Unwind)
+	fmt.Fprintf(&out, "/* nonlocal_exit: %s */\n", contract.NonlocalExit)
+	fmt.Fprintf(&out, "/* fails: %s */\n", contract.Fails)
+	fmt.Fprintf(&out, "/* initialized_state: %s */\n", contract.InitializedState)
+	fmt.Fprintf(&out, "/* capture: %s (unchecked_obligation) */\n", contract.Capture)
+	fmt.Fprintf(&out, "/* retention: %s (unchecked_obligation) */\n", contract.Retention)
+	fmt.Fprintf(&out, "/* aliasing: %s (unchecked_obligation) */\n", contract.Aliasing)
+	if contract.Layout != nil {
+		fmt.Fprintf(&out, "/* layout.foreign_type_name: %s */\n", contract.Layout.ForeignTypeName)
+		fmt.Fprintf(&out, "/* layout.size: %d */\n", contract.Layout.Size)
+		fmt.Fprintf(&out, "/* layout.alignment: %d */\n", contract.Layout.Alignment)
+		for _, field := range contract.Layout.Fields {
+			fmt.Fprintf(&out, "/* layout.field: %s size=%d alignment=%d offset=%d */\n", field.Name, field.Size, field.Alignment, field.Offset)
+		}
+	}
+	out.WriteString("\n")
+	fmt.Fprintf(&out, "typedef struct %s {\n  unsigned char ok;\n  unsigned char value;\n} %s;\n\n", resultType, resultType)
+	fmt.Fprintf(&out, "extern %s %s(unsigned char argument);\n\n", resultType, symbolC)
+	fmt.Fprintf(&out, "_Static_assert(sizeof(%s) == 2, \"%s must be a two-byte by-value ABI result\");\n", resultType, resultType)
+	fmt.Fprintf(&out, "_Static_assert(_Alignof(%s) == 1, \"%s must have byte alignment\");\n", resultType, resultType)
+	fmt.Fprintf(&out, "_Static_assert(offsetof(%s, ok) == 0, \"%s.ok must be the first field\");\n", resultType, resultType)
+	fmt.Fprintf(&out, "_Static_assert(offsetof(%s, value) == 1, \"%s.value must follow ok\");\n", resultType, resultType)
+	out.WriteString("\n#endif\n")
+	return out.String(), nil
+}
+
+// EmitForeignConformance generates lang_foreign_conformance.c (D-04-11): the
+// single, explicit, auditable translation unit where Lang's own generated
+// declaration (EmitForeignHeader) and the foreign translation unit's private
+// header at privateHeaderPath are permitted to meet. It defines no symbol --
+// it exists only to be compiled, never linked -- and carries one
+// _Static_assert triple (sizeof/_Alignof/offsetof) per declared record field,
+// plus record-level size and alignment assertions, over
+// contract.Layout.ForeignTypeName as declared in the included private
+// header. Per D-04-10, no other compiler-produced artifact may include
+// privateHeaderPath.
+func EmitForeignConformance(program core.Program, privateHeaderPath string) (string, error) {
+	function, err := singleForeignFunction(program)
+	if err != nil {
+		return "", err
+	}
+	contract := function.ForeignContract
+	if contract.Layout == nil || contract.Layout.ForeignTypeName == "" {
+		return "", fmt.Errorf("foreign contract %q has no layout to prove", contract.Symbol)
+	}
+	header, err := EmitForeignHeader(program)
+	if err != nil {
+		return "", err
+	}
+	layout := contract.Layout
+
+	var out strings.Builder
+	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 (conformance TU, D-04-11).\n")
+	out.WriteString(" * This is the single explicit, auditable place Lang's own declaration and\n")
+	out.WriteString(" * the foreign translation unit's private header are permitted to meet. It\n")
+	out.WriteString(" * defines no symbol and is compiled but never linked. */\n")
+	out.WriteString(header)
+	fmt.Fprintf(&out, "#include %q\n\n", privateHeaderPath)
+	fmt.Fprintf(&out, "_Static_assert(sizeof(%s) == %d, \"%s size must match the declared layout\");\n", layout.ForeignTypeName, layout.Size, layout.ForeignTypeName)
+	fmt.Fprintf(&out, "_Static_assert(_Alignof(%s) == %d, \"%s alignment must match the declared layout\");\n", layout.ForeignTypeName, layout.Alignment, layout.ForeignTypeName)
+	for _, field := range layout.Fields {
+		cType := field.CType
+		if cType == "" {
+			cType = "unsigned char"
+		}
+		fmt.Fprintf(&out, "_Static_assert(sizeof(%s) == %d, \"%s.%s size must match the declared layout\");\n", cType, field.Size, layout.ForeignTypeName, field.Name)
+		fmt.Fprintf(&out, "_Static_assert(_Alignof(%s) == %d, \"%s.%s alignment must match the declared layout\");\n", cType, field.Alignment, layout.ForeignTypeName, field.Name)
+		fmt.Fprintf(&out, "_Static_assert(offsetof(%s, %s) == %d, \"%s.%s offset must match the declared layout\");\n", layout.ForeignTypeName, field.Name, field.Offset, layout.ForeignTypeName, field.Name)
+	}
+	return out.String(), nil
+}
+
+// BannedOptimizerAttributes is D-04-13's single Go constant enumerating
+// every optimizer-visible attribute token cgen must never emit this phase.
+// Both the emitted-C/manifest scan below and TestAttributeInjectionMakesControlFail's
+// own mutation-kill injection consume this SAME slice, so widening the set
+// cannot silently bypass the scan.
+var BannedOptimizerAttributes = []string{
+	"restrict", "noalias", "nothrow", "__attribute__((malloc))", "nonnull", "returns_nonnull",
+}
+
+// NoreturnExemption is D-04-14's one named exemption from the zero-attribute
+// control: `_Noreturn` on cgen's own generated defect function is a property
+// of a function cgen itself emits -- every path of which provably ends in
+// abort() -- not a claim about a foreign callee. It is not a member of
+// BannedOptimizerAttributes and ScanForBannedAttributes never scans for it;
+// named here so the exemption is explicit rather than an silent omission.
+const NoreturnExemption = "_Noreturn"
+
+// ScanForBannedAttributes scans every given emitted C artifact (and, by the
+// caller passing EmitForeignManifest's own output, the sidecar manifest's
+// emitted_attributes field) for any BannedOptimizerAttributes token,
+// returning every match found across all sources. Nil/empty when no banned
+// token appears anywhere -- the required-control state.
+func ScanForBannedAttributes(sources ...string) []string {
+	var found []string
+	for _, source := range sources {
+		for _, token := range BannedOptimizerAttributes {
+			if strings.Contains(source, token) {
+				found = append(found, token)
+			}
+		}
+	}
+	return found
+}
+
 func linearInput(function core.Function) (input, initializer, typeName string, err error) {
 	switch function.Parameter.Type {
 	case "Buffer":

@@ -20,3 +20,13 @@ func ForeignResourceSourcePath() string {
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
 	return filepath.Join(root, "native", "lang_foreign_resource.c")
 }
+
+// ForeignResourcePrivateHeaderPath resolves the repo-relative path to the
+// frozen private header (D-04-10/D-04-11): the one file the generated
+// conformance translation unit is permitted to #include, via the same
+// build-time source location convention as ForeignResourceSourcePath.
+func ForeignResourcePrivateHeaderPath() string {
+	_, file, _, _ := runtime.Caller(0)
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
+	return filepath.Join(root, "native", "lang_foreign_resource_private.h")
+}

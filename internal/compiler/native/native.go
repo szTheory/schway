@@ -178,6 +178,60 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 	return result, nil
 }
 
+// CompileConformanceUnit compiles source (a generated conformance
+// translation unit, D-04-11) as its own separate, bounded, timed
+// invocation -- its own command, its own boundedWriter pair, its own timeout
+// context, never merged with a program compile or the frozen foreign TU's
+// own compile. It compiles with "-c" (compile only, never link), since the
+// conformance unit defines no symbol and must never reach the linker. A
+// compile failure (including a _Static_assert refusal under -Werror)
+// reports the distinct "native.conformance_failed" code, so it is never
+// mistaken for an ordinary program compile failure ("native.compile_failed").
+func (r Runner) CompileConformanceUnit(parent context.Context, source string) error {
+	if r.ClangPath == "" {
+		r.ClangPath = "clang"
+	}
+	if r.Timeout <= 0 {
+		r.Timeout = 5 * time.Second
+	}
+	directory, err := os.MkdirTemp("", "lang-conformance-")
+	if err != nil {
+		return &ToolError{Code: "native.temp_failed", Err: err}
+	}
+	defer os.RemoveAll(directory)
+
+	sourcePath := filepath.Join(directory, "lang_foreign_conformance.c")
+	objectPath := filepath.Join(directory, "lang_foreign_conformance.o")
+	if err := os.WriteFile(sourcePath, []byte(source), 0o600); err != nil {
+		return &ToolError{Code: "native.temp_failed", Err: err}
+	}
+
+	ctx, cancel := context.WithTimeout(parent, r.Timeout)
+	defer cancel()
+	command := r.commandContext(ctx, r.ClangPath, "-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-c", sourcePath, "-o", objectPath)
+	var stdout, stderr boundedWriter
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	runErr := command.Run()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return &ToolError{Code: "native.timeout", Err: ctx.Err()}
+	}
+	if stdout.overflowed() {
+		return streamError("native.compile_stdout_truncated")
+	}
+	if stderr.overflowed() {
+		return streamError("native.compile_stderr_truncated")
+	}
+	if runErr != nil {
+		code := "native.conformance_failed"
+		if errors.Is(runErr, exec.ErrNotFound) || errors.Is(runErr, os.ErrNotExist) {
+			code = "native.tool_missing"
+		}
+		return &ToolError{Code: code, Err: withStderr(runErr, stderr.bytes())}
+	}
+	return nil
+}
+
 func (r Runner) commandContext(ctx context.Context, name string, arguments ...string) *exec.Cmd {
 	if r.command != nil {
 		return r.command(ctx, name, arguments...)
