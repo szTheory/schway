@@ -724,7 +724,7 @@ func (v *validator) recomputeLoanEndpoints(function *core.Function) []core.LoanE
 			}
 			if referencedAt[blockIdx] && !liveOut {
 				endpoints = append(endpoints, core.LoanEndpoint{
-					ID: fmt.Sprintf("%s:point:%s:%d:%s", function.ID, block.ID, lastOrdinalAt[blockIdx], loanID),
+					ID:     fmt.Sprintf("%s:point:%s:%d:%s", function.ID, block.ID, lastOrdinalAt[blockIdx], loanID),
 					LoanID: loanID, Kind: "point", BlockID: block.ID, AfterOperationID: lastOpAt[blockIdx],
 				})
 			}
@@ -737,7 +737,7 @@ func (v *validator) recomputeLoanEndpoints(function *core.Function) []core.LoanE
 			// covers on the checker side.
 			block := linear.Blocks[birth.blockIdx]
 			endpoints = append(endpoints, core.LoanEndpoint{
-				ID: fmt.Sprintf("%s:point:%s:%d:%s", function.ID, block.ID, birth.ordinal, loanID),
+				ID:     fmt.Sprintf("%s:point:%s:%d:%s", function.ID, block.ID, birth.ordinal, loanID),
 				LoanID: loanID, Kind: "point", BlockID: block.ID, AfterOperationID: birth.opID,
 			})
 		}
@@ -1239,22 +1239,36 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 		}
 		v.checks++ // one reduction pass per terminal block
 		incoming := edgesByTo[block.ID]
-		if len(incoming) != 1 {
-			continue
+		// A terminal block is not required to have exactly one incoming
+		// edge -- e.g. `discard ... because ...` legitimately merges its
+		// ok/err edges into the same successor block, and that is fine
+		// whenever neither path leaves a tracked acquisition needing
+		// release. What this rederivation cannot tolerate is SKIPPING the
+		// check for a merge point: every incoming edge must be walked
+		// backward independently and the block's single, fixed release
+		// list must match what each of them expects. If a hand-corrupted
+		// program merged two chains with genuinely different completed-
+		// acquisition sets, the actual release list can match at most one
+		// of them -- so checking against every incoming edge, not skipping
+		// the block, is what closes the gap CR-01 identified.
+		if !v.check(len(incoming) > 0, "core.release_order_indeterminate", block.ID) {
+			return false
 		}
-		expected := rederive(incoming[0])
 		var actual []core.LinearOperation
 		for _, opID := range block.OperationIDs {
 			if operation := operationsByID[opID]; operation.Kind == core.OpRelease {
 				actual = append(actual, operation)
 			}
 		}
-		if !v.check(len(expected) == len(actual), "core.release_order_mismatch", block.ID) {
-			return false
-		}
-		for index, want := range expected {
-			if !v.check(actual[index].ReleasesOperationID == want.ID, "core.release_order_mismatch", actual[index].ID) {
+		for _, edge := range incoming {
+			expected := rederive(edge)
+			if !v.check(len(expected) == len(actual), "core.release_order_mismatch", block.ID) {
 				return false
+			}
+			for index, want := range expected {
+				if !v.check(actual[index].ReleasesOperationID == want.ID, "core.release_order_mismatch", actual[index].ID) {
+					return false
+				}
 			}
 		}
 	}
