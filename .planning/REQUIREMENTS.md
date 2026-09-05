@@ -39,7 +39,7 @@ hiding runtime costs.
   source spans, and stable semantic identities.
 - [x] **SEM-02**: Closed variant matches are exhaustive and deterministic;
   missing, unreachable, or subsumed alternatives are rejected before execution.
-- [ ] **SEM-03**: `Result` propagation and ignored-result rules produce explicit
+- [x] **SEM-03**: `Result` propagation and ignored-result rules produce explicit
   typed control flow; panic and cancellation cannot be erased as ordinary errors.
 - [x] **OWN-01**: Noncopyable values transfer exactly once, and use-after-move or
   move-during-loan programs are rejected with the transfer and conflict causes.
@@ -49,7 +49,7 @@ hiding runtime costs.
   local loans end at proven CFG point/edge-specific last use.
 - [x] **OWN-04**: Public borrowed results record verified field/alternative
   origins and access mode without inspecting provider bodies downstream.
-- [ ] **RES-01**: Partially initialized noncopyable resources release exactly
+- [x] **RES-01**: Partially initialized noncopyable resources release exactly
   once in reverse completed-acquisition order on return and typed failure.
 - [x] **FFI-01**: Foreign contracts carry target layout, initialized state,
   allocator identity, capture/retention, aliasing, and unwind obligations.
@@ -138,12 +138,12 @@ hiding runtime costs.
 | SYN-04 | Phase 1 | Complete |
 | SEM-01 | Phase 1 | Complete |
 | SEM-02 | Phase 1 | Complete |
-| SEM-03 | Phase 4 | Gaps Found |
+| SEM-03 | Phase 4 | Complete |
 | OWN-01 | Phase 2 | Complete |
 | OWN-02 | Phase 2 | Complete |
 | OWN-03 | Phase 3 | Complete |
 | OWN-04 | Phase 3 | Complete |
-| RES-01 | Phase 4 | Gaps Found |
+| RES-01 | Phase 4 | Complete |
 | FFI-01 | Phase 4 | Complete |
 | INT-01 | Phase 1 | Complete |
 | INT-02 | Phase 5 | Pending |

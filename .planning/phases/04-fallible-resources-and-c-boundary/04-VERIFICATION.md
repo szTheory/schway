@@ -1,73 +1,17 @@
 ---
 phase: 04-fallible-resources-and-c-boundary
-verified: 2026-09-05T23:10:00Z
-status: gaps_found
-score: 7/8 must-haves verified
+verified: 2026-09-05T23:45:00Z
+status: passed
+score: 8/8 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
-  previous_score: 6/8
+  previous_score: 7/8
   gaps_closed:
-    - "checkReleaseOrder's independent rederivation must not silently collapse two disagreeing histories converging on an INTERIOR (non-terminal) block into one arbitrarily-kept edge (RES-01) — closed by plan 04-11."
-    - "corevalidate must validate core.ForeignContract.Symbol as a syntactically safe C identifier before cgen splices it into generated C source (FFI-01) — closed by plan 04-12."
+    - "Every core.ForeignContract string field cgen ever splices into generated C text — not just Symbol — must be validated or escaped before EmitForeignHeader/EmitForeignConformance emit it (FFI-01) — closed by plan 04-13."
   gaps_remaining: []
   regressions: []
-gaps:
-  - truth: "Every core.ForeignContract string field cgen ever splices into generated C text — not just Symbol — must be validated or escaped before EmitForeignHeader/EmitForeignConformance emit it, so a corrupted OR ordinary source-reachable foreign policy value cannot inject arbitrary top-level C source at the one audited C boundary the phase goal names (FFI-01, D-04-12's own 'no layer can invent a fact the contract does not carry')."
-    status: failed
-    reason: >
-      Newly surfaced by this round's fresh code review (04-REVIEW.md CR-01, distinct from
-      the three prior-round CR-01/CR-02 findings, both now closed) and independently
-      reproduced here end-to-end, not accepted on the review's word alone. The 04-12 fix
-      (`corevalidate.validCIdentifier` / `cgen.validForeignSymbol`) closed the injection gap
-      for `ForeignContract.Symbol` only. `cgen.go`'s `EmitForeignHeader` (cgen.go:1332-1335)
-      splices three OTHER flat string fields raw into C comments with no validation beyond
-      presence: `fmt.Fprintf(&out, "/* allocator: %s */\n", contract.Allocator)`,
-      `"/* unwind: %s */\n"`, `"/* nonlocal_exit: %s */\n"`. `corevalidate.go:327` checks only
-      `Unwind != "" && NonlocalExit != ""` (non-emptiness); no shape check exists anywhere for
-      `Allocator`, and none for comment-safety on any of the three. Unlike `Symbol` (always
-      resolved from an identifier token), these three are populated from
-      `ast.ForeignPolicy.Value`, which the parser (`parser.go:227-240`) accepts as either a
-      bare identifier or a double-quoted string literal, and the lexer's string rule
-      (`lexer.go:58-82`) forbids only a literal newline and an unescaped closing quote —
-      every other byte, including `*` and `/`, passes through with zero escaping. I
-      independently reproduced this twice in this session: (1) a direct `EmitForeignHeader`
-      call on a `core.Program` with `ForeignContract.Allocator` set to
-      `"*/ int injected(void){return 1;} /*"` produces
-      `/* allocator: */ int injected(void){return 1;} /* */` — a live top-level C function
-      definition outside any comment; (2) the SAME result reached from ordinary, honest Lang
-      source text (`allocator: "*/ int injected(void){return 1;} /*"` inside a `foreign C { }`
-      block) through `session.Check` with ZERO diagnostics, then `cgen.EmitForeignHeader` on
-      the resulting `checked.Program` — no gate anywhere in the honest pipeline rejects it.
-      This is strictly more severe than the now-fixed `Symbol` gap: it needs no corrupted
-      `core.Program`, only a `foreign` block any ordinary Lang author can write. This header
-      is not descriptive-only output — `session.go` routes `EmitForeignHeader`'s and
-      `EmitForeignConformance`'s output directly into `native.Runner.CompileConformanceUnit`,
-      which invokes a real C compiler on the generated source; `cgen.ScanForBannedAttributes`
-      only searches for a fixed optimizer-attribute token list and does not detect an escaped
-      comment or injected function definition. Directly hits FFI-01's own field list
-      ("allocator identity ... unwind obligations") and the phase goal's "one audited C
-      boundary" framing — corevalidate never actually audits these three fields' shape before
-      cgen trusts them. 04-12's own SUMMARY.md explicitly recorded this exact finding as "a
-      named, unfixed finding" and "explicitly out of scope" for that plan, but no later Phase
-      4 plan closed it, and no later ROADMAP phase (5: native equivalence/optimization/ASan; 6:
-      agent feedback protocols) addresses foreign-contract field sanitization — so it is not a
-      deferred item, it is an open gap in this phase's own scope.
-    artifacts:
-      - path: internal/compiler/cgen/cgen.go
-        issue: "EmitForeignHeader (cgen.go:1332-1335) splices contract.Allocator, contract.Unwind, and contract.NonlocalExit raw into C comments via fmt.Fprintf(\"%s\"), with no validation, unlike contract.Symbol which is now guarded"
-      - path: internal/compiler/corevalidate/corevalidate.go
-        issue: "corevalidate.go:327 checks only Unwind/NonlocalExit non-emptiness; no shape/comment-safety check exists for Allocator, Unwind, or NonlocalExit anywhere in the file"
-      - path: internal/compiler/syntax/parser.go
-        issue: "parser.go:227-240 admits a double-quoted string literal verbatim (minus surrounding quotes) as any foreign-policy value, including allocator/unwind/nonlocal_exit, with no character restriction"
-      - path: internal/compiler/syntax/lexer.go
-        issue: "lexer.go:58-82's string-literal rule forbids only a literal newline and an unescaped closing quote; every other byte including '*' and '/' passes through unescaped"
-    missing:
-      - "Add a C-identifier-shape (or minimally comment-terminator-forbidding) check for Allocator, Unwind, and NonlocalExit in corevalidate.linear's ForeignContract validation block, alongside the existing Symbol check, refusing with a new code before cgen ever sees the program"
-      - "Add the same check at the source admission boundary in check.go's collectForeignSymbols, so an ordinary Lang author seeing check.foreign_policy_value_unsafe catches this well before corevalidate or cgen"
-      - "As defense-in-depth, make cgen.EmitForeignHeader itself refuse (or escape) any of these fields it is about to splice into a comment if it contains '*/', mirroring validForeignSymbol's role as an independent peer guard for the entry points that skip corevalidate.Validate"
-      - "Add falsifiers in corevalidate_test.go and cgen_test.go for each of Allocator, Unwind, and NonlocalExit containing a comment-terminator payload, asserting refusal (or at minimum that EmitForeignHeader's output never contains the injected fragment), analogous to the now-passing Symbol falsifiers"
 deferred: []
 human_verification: []
 ---
@@ -77,155 +21,148 @@ human_verification: []
 **Phase Goal:** A noncopyable resource crosses one audited C boundary while partial
 initialization, failure propagation, and cleanup remain defined.
 **Verified:** 2026-09-05
-**Status:** gaps_found
-**Re-verification:** Yes — fourth round, after gap-closure plans 04-11 (RES-01 interior-merge
-rederivation) and 04-12 (FFI-01 Symbol C-identifier audit)
+**Status:** passed
+**Re-verification:** Yes — fifth round, after gap-closure plan 04-13 (FFI-01 sibling-field
+injection audit)
 
 ## Goal Achievement
 
 ### Observable Truths
 
-Re-verified against the third-round VERIFICATION.md's 8 must-haves. Both of that round's
-failed truths were independently re-confirmed fixed by direct code read plus running the
-specific named regression tests (not the full suite). This round's fresh code review
-(04-REVIEW.md, committed 15b71c1) surfaced one new critical finding, which this verification
-independently reproduced twice — via a direct `core.Program` mutation and via ordinary honest
-Lang source through `session.Check` with zero diagnostics — before accepting it as a truth
-failure, per this agent's standing rule not to take a review's word alone.
+The fourth round scored 7/8, with exactly one failed truth (2b): `Allocator`, `Unwind`, and
+`NonlocalExit` — and, as this round's fresh code review additionally surfaced, `Fails`,
+`InitializedState`, `Capture`, `Retention`, `Aliasing`, `Layout.ForeignTypeName`, and each
+`Layout.Fields[].Name`/`.CType` — were spliced into generated C with no shape validation, and
+the gap was reachable from ordinary, honest Lang source (a quoted foreign-policy value), not
+merely a corrupted `core.Program`. Plan 04-13 claims to close this with three independent audit
+layers. This verification did not accept that claim on the SUMMARY's word: it read the
+production code directly, ran every named falsifier itself, and independently reproduced the
+end-to-end injection scenario in its own throwaway test (removed after use, working tree left
+clean) to confirm the honest-source path is now refused.
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | SC1: A fallible acquisition releases only initialized resources, exactly once, in reverse order on success and typed failure | ✓ VERIFIED | Regression spot-check: unchanged since round 3; `check.go` still materializes `OpRelease` reverse of completed-acquisition order. |
-| 1a | Independent rederivation proves release order at TERMINAL merge points | ✓ VERIFIED | Regression spot-check: unchanged; per-terminal-block loop over `edgesByTo[block.ID]` confirmed present at corevalidate.go:~1284-1319. |
-| 1b | `rederive`'s backward walk stays defined (no hang) against a cyclic "ok"-edge chain | ✓ VERIFIED | Regression spot-check: unchanged; visited-set guard and `TestCyclicOkEdgeChainRefusedNotHung`/`TestAcyclicChainsStillValidateUnderCycleGuard` confirmed present. |
-| 1c | `checkReleaseOrder`'s rederivation must not silently collapse two disagreeing histories converging on an INTERIOR block (round-3 gap) | ✓ VERIFIED | Fixed by plan 04-11. Confirmed by direct code read: `okEdgeInto` is now `map[string][]core.Edge` (corevalidate.go:1222), and `rederive`'s interior hop (corevalidate.go:1281-1318) independently rederives every candidate edge and requires `sameReleaseHistory` agreement, refusing with `core.release_order_merge_mismatch` on disagreement. `TestInteriorMergeDivergentHistoriesRefused` (both edge-ordering subtests) and `TestInteriorMergeAgreeingHistoriesAccepted` run in this session and PASS. |
-| 2 | SC2: Generated C declarations and adapters make target layout, allocator identity, alias/capture, callback retention, and unwind policy inspectable | ✓ VERIFIED | Regression spot-check: unchanged; `core.ForeignContract` carries every named obligation, `EmitForeignHeader`/`EmitForeignConformance` unchanged in field coverage. |
-| 2a | `core.ForeignContract.Symbol` is validated as a syntactically safe C identifier before cgen splices it into generated C (round-3 gap) | ✓ VERIFIED | Fixed by plan 04-12. Confirmed by direct code read: `corevalidate.go:316` calls `validCIdentifier(function.ForeignContract.Symbol)`, refusing with `foreign.symbol_not_identifier`; `cgen.go` independently defines `validForeignSymbol` (cgen.go:789-804) applied in `emitLinearForeign` and `singleForeignFunction`, gating all three exported `EmitForeign*` entry points. `TestForeignSymbolNotIdentifierRefused`, `TestForeignSymbolInjectionNeverReachesGeneratedC`, and `TestForeignEmittersRefuseNonIdentifierSymbolIndependently` run in this session and PASS, including the comment-terminator (`*/`) and semicolon-brace subtests. |
-| 2b | Every OTHER `core.ForeignContract` string field spliced into generated C — `Allocator`, `Unwind`, `NonlocalExit` — must be validated the same way `Symbol` now is, closing the SAME injection class the phase goal's "audited C boundary" and FFI-01 require for `Symbol` specifically | ✗ FAILED | New finding this round, surfaced by 04-REVIEW.md's new CR-01 and independently reproduced twice in this session (see Gaps Summary). `cgen.go:1333-1335` splices `Allocator`/`Unwind`/`NonlocalExit` raw into C comments with no shape validation anywhere in the pipeline; this is reachable from ordinary Lang source (a quoted foreign-policy value), not only from a corrupted `core.Program`. |
-| 3 | SC3 first half: Panic cannot cross the ordinary non-unwinding C boundary | ✓ VERIFIED | Regression spot-check: unchanged, not touched by 04-11/04-12. |
-| 4 | SC3 second half: A foreign nonlocal exit cannot silently bypass Lang cleanup | ✓ VERIFIED | Regression spot-check: unchanged, not touched by 04-11/04-12. |
-| 5 | SC4: Interpreter and native executions agree on primary failure and cleanup events | ✓ VERIFIED | `go build ./...` and `go test ./...` both re-run in this session, exit 0, all 20 packages ok (native 9.078s, session 32.471s, rest cached/fast). |
+| 1 | SC1: A fallible acquisition releases only initialized resources, exactly once, in reverse order on success and typed failure | ✓ VERIFIED | Regression spot-check: unchanged since round 4; not touched by 04-13. |
+| 1a | Independent rederivation proves release order at TERMINAL merge points | ✓ VERIFIED | Regression spot-check: unchanged; not touched by 04-13. |
+| 1b | `rederive`'s backward walk stays defined (no hang) against a cyclic "ok"-edge chain | ✓ VERIFIED | Re-ran `TestCyclicOkEdgeChainRefusedNotHung` and `TestAcyclicChainsStillValidateUnderCycleGuard` in this session — both PASS. |
+| 1c | `checkReleaseOrder`'s rederivation must not silently collapse two disagreeing histories converging on an INTERIOR block | ✓ VERIFIED | Re-ran `TestInteriorMergeDivergentHistoriesRefused` (both subtests) and `TestInteriorMergeAgreeingHistoriesAccepted` in this session — PASS. Not touched by 04-13. |
+| 2 | SC2: Generated C declarations and adapters make target layout, allocator identity, alias/capture, callback retention, and unwind policy inspectable | ✓ VERIFIED | Regression spot-check: unchanged; `core.ForeignContract` field set unchanged, all fields still emitted. |
+| 2a | `core.ForeignContract.Symbol` is validated as a syntactically safe C identifier before cgen splices it into generated C | ✓ VERIFIED | Re-ran `TestForeignSymbolNotIdentifierRefused`, `TestForeignSymbolInjectionNeverReachesGeneratedC`, `TestForeignEmittersRefuseNonIdentifierSymbolIndependently` in this session — all PASS. |
+| 2b | Every OTHER `core.ForeignContract` string field spliced into generated C must be validated the same way `Symbol` now is, at the source-admission, corevalidate, and cgen layers, closing the injection class independently of any single layer | ✓ VERIFIED | **Fixed by plan 04-13.** Confirmed by direct code read: `check.validForeignPolicyValue` (check.go:1095-1110) plus the `check.foreign_policy_value_unsafe` refusal fired inside `collectForeignSymbols`'s policy loop (check.go:~1149) before the key-specific switch, applied to every declared policy value; `corevalidate.go:349` adds `foreign.policy_value_not_identifier` (Allocator/Unwind/NonlocalExit identifier-shape, positioned after the existing `foreign.unwind_policy_undeclared` non-empty check so an omitted policy keeps its own code) and `corevalidate.go:386` adds `foreign.contract_field_not_c_safe` via `foreignContractFieldsCSafe` (corevalidate.go:1765-1781, covering Fails/InitializedState/Capture/Retention/Aliasing/Layout.ForeignTypeName/Layout.Fields[].Name+CType); `cgen.go`'s `singleForeignFunction` independently calls `unsafeForeignContractField` (cgen.go:873-912) at cgen.go:1382, gating all three exported `EmitForeign*` entry points that never call `Validate`. I independently re-ran, myself, all four named falsifiers — `TestForeignPolicyValueUnsafeRefusedAtAdmission` (check, 8 hostile shapes + 1 negative), `TestForeignPolicyValueInjectionRefusedFromSource` (session, end-to-end tracer), `TestForeignPolicyValueNotIdentifierRefused` and `TestForeignContractCommentSafetyRefused` (corevalidate), `TestForeignPolicyValueInjectionNeverReachesGeneratedC` (cgen) — all PASS. I additionally reproduced the scenario independently in a throwaway test against `session.Check` on `testdata/phase4/foreign_policy_value_injection.lang` (the exact fixture and payload the prior round's reproduction used): result carries `Diagnostics[0].Code == "check.foreign_policy_value_unsafe"` and `len(result.Program.Functions) == 0` — the honest-source path that previously produced a live injected C function definition with zero diagnostics is now refused before a checked program is even produced. Test file removed after use; `git status --short` confirms a clean tree (only pre-existing unrelated `.planning/state.json`/`milestone.lock` changes). |
+| 3 | SC3 first half: Panic cannot cross the ordinary non-unwinding C boundary | ✓ VERIFIED | Regression spot-check: unchanged, not touched by 04-13. |
+| 4 | SC3 second half: A foreign nonlocal exit cannot silently bypass Lang cleanup | ✓ VERIFIED | Regression spot-check: unchanged, not touched by 04-13. |
+| 5 | SC4: Interpreter and native executions agree on primary failure and cleanup events | ✓ VERIFIED | Not touched by 04-13; established by orchestrator this round: `go test ./... -count=1` and `go vet ./...` both exit 0, and all 23 named prior-phase (01/02/03) regression targets pass. |
 
-**Score:** 7/8 truths verified. One new gap surfaced by this round's fresh code review,
-independently confirmed by two separate reproductions (direct `core.Program` mutation and
-end-to-end honest source-to-C pipeline) rather than accepted on the review's word alone.
-
-### Deferred Items
-
-None. The new finding (truth 2b) bears directly on this phase's own goal wording ("one
-audited C boundary") and FFI-01's field list, which explicitly names "allocator identity...
-and unwind obligations" — the exact fields at issue. No later ROADMAP phase addresses
-foreign-contract field sanitization: Phase 5 concerns native optimization equivalence and
-ASan/UBSan evidence; Phase 6 concerns agent feedback/query protocols. Neither is a plausible
-home for this gap, so it is not deferred.
+**Score:** 8/8 truths verified. The one remaining gap from round 4 is closed, independently
+confirmed by direct code read, by re-running every named falsifier, and by an independent
+end-to-end reproduction of the exact previously-successful injection scenario.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `internal/compiler/corevalidate/corevalidate.go` | Independent, source-blind rederivation and full ForeignContract field audit | ⚠️ PARTIAL | Interior-merge rederivation and `Symbol` identifier audit both now correct and tested; `Allocator`/`Unwind`/`NonlocalExit` shape audit still absent (only non-emptiness for Unwind/NonlocalExit; nothing for Allocator) |
-| `internal/compiler/core/core.go` | Authoritative `core.ForeignContract` | ✓ VERIFIED | Field set unchanged and complete |
-| `internal/compiler/cgen/cgen.go` | All emitted C text (declarations AND comments) sanitized | ✗ GAP | `Symbol` guarded via `validForeignSymbol`; `Allocator`/`Unwind`/`NonlocalExit` still spliced raw into comments at `EmitForeignHeader` (cgen.go:1332-1335) |
-| `internal/compiler/corevalidate/corevalidate_test.go` / `internal/compiler/cgen/cgen_test.go` | Falsifiers for every adversarial shape claimed defended | ⚠️ PARTIAL | Interior-merge and Symbol falsifiers present and passing; no falsifier exists for Allocator/Unwind/NonlocalExit comment-injection |
+| `internal/compiler/check/check.go` | Source-admission audit of every declared foreign policy value | ✓ VERIFIED | `validForeignPolicyValue` (byte-loop identifier predicate) and the `check.foreign_policy_value_unsafe` refusal confirmed present, applied uniformly to every policy key's value before the key-specific switch. |
+| `internal/compiler/corevalidate/corevalidate.go` | Independent, source-blind shape audit of every spliced `ForeignContract` field | ✓ VERIFIED | `foreign.policy_value_not_identifier` (Allocator/Unwind/NonlocalExit) and `foreign.contract_field_not_c_safe` (`foreignContractFieldsCSafe`, remaining fields) both confirmed present and correctly ordered relative to existing checks. |
+| `internal/compiler/cgen/cgen.go` | All emitted C text (declarations and comments) sanitized, independent of `corevalidate.Validate` having run | ✓ VERIFIED | `unsafeForeignContractField` (cgen.go:873-912) confirmed gating `singleForeignFunction` (cgen.go:1382), the single resolution point for `EmitForeignManifest`/`EmitForeignHeader`/`EmitForeignConformance`. |
+| `internal/compiler/corevalidate/corevalidate_test.go` / `internal/compiler/cgen/cgen_test.go` / `internal/compiler/check/check_test.go` / `internal/compiler/session/session_test.go` | Falsifiers for every adversarial shape claimed defended, plus an end-to-end tracer | ✓ VERIFIED | All five named tests re-run in this session, all PASS, including the comment-terminator payload across every field and the honest-source end-to-end tracer. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|----|--------|---------|
-| `corevalidate.checkReleaseOrder.rederive` (interior blocks) | `okEdgeInto` (now plural) | per-candidate independent rederivation + agreement | ✓ WIRED | Confirmed corevalidate.go:1222,1281-1318; tests pass |
-| `core.ForeignContract.Symbol` | `corevalidate.linear` | `validCIdentifier` | ✓ WIRED | Confirmed corevalidate.go:316; tests pass |
-| `core.ForeignContract.Symbol` | `cgen.emitLinearForeign`/`singleForeignFunction` | `validForeignSymbol` (independent peer guard) | ✓ WIRED | Confirmed cgen.go:326,789-804,1261; tests pass |
-| `core.ForeignContract.Allocator`/`Unwind`/`NonlocalExit` | `corevalidate.linear` | shape/comment-safety validation | ✗ NOT WIRED | Only non-empty check for Unwind/NonlocalExit (corevalidate.go:327); none for Allocator; none for comment-safety on any |
-| `core.ForeignContract.Allocator`/`Unwind`/`NonlocalExit` | `cgen.EmitForeignHeader` | direct, unsanitized `fmt.Fprintf` splice into C comment | ✓ WIRED (but unsafely — this is the gap) | Confirmed cgen.go:1332-1335; reproduced with a live injected C function definition escaping the comment |
-| Ordinary Lang source (`allocator: "..."` string-literal policy value) | `core.ForeignContract.Allocator` | `syntax.parser` → `check.collectForeignSymbols` | ✓ WIRED (source-reachable, no gate) | Reproduced end-to-end via `session.Check` with zero diagnostics on a crafted `.lang` fixture |
-
-### Data-Flow Trace (Level 4)
-
-| Artifact | Data Variable | Source | Produces Real Data | Status |
-|----------|---------------|--------|---------------------|--------|
-| `cgen.EmitForeignHeader` | `contract.Allocator`/`Unwind`/`NonlocalExit` | `core.ForeignContract` (from `check.Program`, itself from parsed source) | Yes — real, unvalidated, source-controllable string flows directly into generated C text | ⚠️ HOLLOW (validated only by omission — the value flows real but the audit step does not exist) |
+| `ast.ForeignPolicy.Value` (source text) | `check.collectForeignSymbols` | `validForeignPolicyValue`, span-bearing refusal | ✓ WIRED | Confirmed check.go:1095-1149; end-to-end tracer test passes. |
+| `core.ForeignContract.Allocator`/`Unwind`/`NonlocalExit` | `corevalidate.linear` | `foreign.policy_value_not_identifier`, after `foreign.unwind_policy_undeclared` | ✓ WIRED | Confirmed corevalidate.go:349; ordering case in `TestForeignPolicyValueNotIdentifierRefused` passes, proving the existing code is not displaced. |
+| `core.ForeignContract`'s remaining spliced fields | `corevalidate.linear` | `foreign.contract_field_not_c_safe` | ✓ WIRED | Confirmed corevalidate.go:386, `foreignContractFieldsCSafe` at corevalidate.go:1765; `TestForeignContractCommentSafetyRefused` passes, including the CType-specific negative case (`unsigned char` accepted). |
+| `cgen.singleForeignFunction` | `EmitForeignManifest`/`EmitForeignHeader`/`EmitForeignConformance` | `unsafeForeignContractField`, independent of `Validate` | ✓ WIRED | Confirmed cgen.go:1382; `TestForeignPolicyValueInjectionNeverReachesGeneratedC` passes for all 11 field cases. |
+| Ordinary Lang source (`allocator: "*/ ... /*"`) | `session.Check` | `check.foreign_policy_value_unsafe` refusal, zero checked functions | ✓ WIRED (now refused) | Independently reproduced in this session: `session.Check` on `testdata/phase4/foreign_policy_value_injection.lang` returns the expected diagnostic and zero functions — the honest-source path that previously escaped is now closed. |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Interior-merge divergent-history refusal | `go test ./internal/compiler/corevalidate/ -run TestInteriorMergeDivergentHistoriesRefused` (named test) | PASS, both subtests | ✓ PASS |
-| Interior-merge agreeing-history acceptance | `go test ./internal/compiler/corevalidate/ -run TestInteriorMergeAgreeingHistoriesAccepted` (named test) | PASS | ✓ PASS |
-| Non-identifier Symbol refused by corevalidate | `go test ./internal/compiler/corevalidate/ -run TestForeignSymbolNotIdentifierRefused` (named test) | PASS, all 9 subtests | ✓ PASS |
-| Symbol injection never reaches generated C (cgen independent guard) | `go test ./internal/compiler/cgen/ -run 'TestForeignSymbolInjectionNeverReachesGeneratedC\|TestForeignEmittersRefuseNonIdentifierSymbolIndependently'` (named tests) | PASS | ✓ PASS |
-| Allocator comment-terminator payload injects live C via `EmitForeignHeader` on a direct `core.Program` mutation | ad hoc test written and run in this session, then removed | Injected `int injected(void){return 1;}` fragment present, live, outside any comment | ✗ FAIL (confirms the gap) |
-| Same injection reachable from ordinary honest Lang source with zero `session.Check` diagnostics | ad hoc test written and run in this session, then removed | `session.Check` returned zero diagnostics; `cgen.EmitForeignHeader` on the resulting `checked.Program` produced the same live injected fragment | ✗ FAIL (confirms the gap is source-reachable, not merely a corrupted-`core.Program` concern) |
-| Full build and test suite | `go build ./...`; `go test ./...` | Exit 0; exit 0, all 20 packages ok | ✓ PASS |
+| Honest fixture refused at source admission (own reproduction, not SUMMARY's word) | ad hoc test against `session.Check` on `testdata/phase4/foreign_policy_value_injection.lang`, run and removed in this session | `Diagnostics[0].Code == "check.foreign_policy_value_unsafe"`, `len(Program.Functions) == 0` | ✓ PASS |
+| Source-admission falsifier (8 hostile shapes + 1 negative) | `go test ./internal/compiler/check -run '^TestForeignPolicyValueUnsafeRefusedAtAdmission$' -v` | PASS, all 9 subtests | ✓ PASS |
+| End-to-end tracer | `go test ./internal/compiler/session -run '^TestForeignPolicyValueInjectionRefusedFromSource$' -v` | PASS | ✓ PASS |
+| corevalidate identifier-shape and comment-safety audits | `go test ./internal/compiler/corevalidate -run '^(TestForeignPolicyValueNotIdentifierRefused|TestForeignContractCommentSafetyRefused)$' -v` | PASS, all subtests (52 total across both) | ✓ PASS |
+| cgen independent peer guard | `go test ./internal/compiler/cgen -run '^TestForeignPolicyValueInjectionNeverReachesGeneratedC$' -v` | PASS, all 11 field cases | ✓ PASS |
+| Round-4 regression: interior-merge and cyclic-guard | `go test ./internal/compiler/corevalidate -run '^(TestInteriorMergeDivergentHistoriesRefused|TestInteriorMergeAgreeingHistoriesAccepted|TestCyclicOkEdgeChainRefusedNotHung|TestAcyclicChainsStillValidateUnderCycleGuard)$' -v` | PASS | ✓ PASS |
+| Round-4 regression: Symbol audit | `go test ./internal/compiler/corevalidate -run '^TestForeignSymbolNotIdentifierRefused$' -v` and `go test ./internal/compiler/cgen -run '^(TestForeignSymbolInjectionNeverReachesGeneratedC|TestForeignEmittersRefuseNonIdentifierSymbolIndependently|TestExistingEmittersAreByteIdentical)$' -v` | PASS | ✓ PASS |
+| Accepting path unchanged | `git diff --stat -- testdata/` | Empty (no pre-existing fixture/golden byte moved) | ✓ PASS |
+| Full build/test/vet (already established this round by the orchestrator) | `go test ./... -count=1`; `go vet ./...`; 23 named prior-phase regression targets | Exit 0; exit 0; all pass | ✓ PASS |
 
 ### Requirements Coverage
 
 | Requirement | Source Plan(s) | Description | Status | Evidence |
 |-------------|----------------|--------------|--------|----------|
-| SEM-03 | 04-01, 04-02, 04-04, 04-06, 04-07, 04-08 | `Result` propagation and ignored-result rules produce explicit control flow | ✓ SATISFIED | Truths 1/3/4 verified above; not implicated by the new gap. Note: REQUIREMENTS.md itself already marks SEM-03 unchecked / "Gaps Found" in its status table, predating this round — not a new discrepancy introduced by this verification. |
-| RES-01 | 04-02, 04-05, 04-07, 04-08, 04-10, 04-11 | Partially initialized noncopyable resources release exactly once in reverse order | ✓ SATISFIED | The round-3 interior-merge gap (truth 1c) is now closed and independently confirmed with passing named tests; not implicated by the new gap (which concerns FFI-01's fields, not release ordering). |
-| FFI-01 | 04-01, 04-03, 04-05, 04-06, 04-07, 04-09, 04-12 | Foreign contracts carry target layout, initialized state, allocator identity, capture/retention, aliasing, unwind obligations, all inspectable and non-inventable | ⚠️ NOT YET SATISFIED | The contract's field completeness (SC2) and the `Symbol` injection gap are both fixed. But the SAME injection class remains open for `Allocator`/`Unwind`/`NonlocalExit` — three of the exact obligation fields FFI-01 itself enumerates ("allocator identity... and unwind obligations") — and is source-reachable, not merely a corrupted-artifact concern. **Note:** REQUIREMENTS.md's status table currently marks FFI-01 `[x] Complete` (set by plan 04-12's completion commit, before this round's review ran); this verification's finding contradicts that marking and it should be reverted to reflect the open gap, consistent with the project's own precedent of reverting premature "Complete" marks (see commit `fdd6bb0`). |
+| SEM-03 | 04-01, 04-02, 04-04, 04-06, 04-07, 04-08 | `Result` propagation and ignored-result rules produce explicit control flow | ✓ SATISFIED | Truths 1/3/4 verified above; not implicated by 04-13. **Note:** REQUIREMENTS.md's status table (line 141) and checkbox (line 42) still show `[ ]`/"Gaps Found" for SEM-03, a pre-existing tracking lag noted (but not caused) by the fourth round's verification and not updated since — this verification's own findings do not contradict SEM-03's satisfaction; the table entry should be reconciled but that is a documentation task, not an open code gap. |
+| RES-01 | 04-02, 04-05, 04-07, 04-08, 04-10, 04-11 | Partially initialized noncopyable resources release exactly once in reverse order | ✓ SATISFIED | Truths 1/1a/1b/1c verified above, closed by 04-11 and independently re-confirmed with passing named tests this round; not implicated by 04-13. **Note:** REQUIREMENTS.md's status table (line 146) and checkbox (line 52) still show `[ ]`/"Gaps Found" for RES-01, unreconciled since the `8a35f1f` revert (round 3) despite 04-11 closing it and round 4 confirming it — same documentation-lag observation as SEM-03, not an open code gap. |
+| FFI-01 | 04-01, 04-03, 04-05, 04-06, 04-07, 04-09, 04-12, 04-13 | Foreign contracts carry target layout, initialized state, allocator identity, capture/retention, aliasing, unwind obligations, all inspectable and non-inventable | ✓ SATISFIED | Truths 2/2a/2b all verified above. `Symbol` injection (04-12) and the sibling-field injection (04-13, this round) are both closed and independently confirmed. REQUIREMENTS.md's checkbox (line 54) and status table (line 147) already correctly show `[x]`/"Complete", set by 04-13's own completion commit `d38ba81` — consistent with this verification's finding. |
 
 No orphaned requirements: SEM-03, RES-01, FFI-01 are the only IDs REQUIREMENTS.md maps to
 Phase 4, and all three appear in at least one plan's `requirements:` frontmatter (04-01
-through 04-12 collectively cover all three).
+through 04-13 collectively cover all three).
 
 ### Anti-Patterns Found
 
-None newly introduced by plans 04-11/04-12's own changes (plural `okEdgeInto`, recursive
-`rederive` closure, `validCIdentifier`/`validForeignSymbol`) — scoped, minimal, matches
-existing file idiom. No TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER markers found in the
-touched region. The gap identified here (`Allocator`/`Unwind`/`NonlocalExit` unsanitized
-splice) is pre-existing code from earlier in the phase (04-01/04-03), not new debt
-introduced by 04-11/04-12 — both of those plans' own SUMMARY.md files correctly named
-it as a known, unfixed, out-of-scope-for-that-plan finding rather than silently omitting it.
+None newly introduced by plan 04-13's changes (`validForeignPolicyValue`, `foreign.policy_value_not_identifier`,
+`foreign.contract_field_not_c_safe`, `commentSafeForeignField`/`validForeignCType`/`unsafeForeignContractField`)
+— scoped, minimal, matches existing file idiom; no TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER markers in the touched
+region; no value is echoed into any diagnostic or error string (confirmed by direct read — refusals pass only
+`policy.Span`, `operation.ID`, or a fixed field-name string, never the field's value).
+
+One WARNING-level finding from this round's fresh code review (04-REVIEW.md WR-01), independently confirmed by
+this verification: `core.ForeignContract.Alias` (distinct from `Aliasing`, which is covered) is excluded from
+both `corevalidate.foreignContractFieldsCSafe` and `cgen.unsafeForeignContractField`, and from both packages'
+falsifier tables (`hostileForeignContractFields` in cgen_test.go and its corevalidate equivalent). I confirmed by
+grep that this is safe TODAY — `.Alias` (not `.Aliasing`) has zero references in either `cgen.go` or
+`corevalidate.go`; it is consumed only by `originvalidate.go` against a fixed `borrow`/`retain` vocabulary and is
+never spliced into generated C by any emitter. My own judgment, weighing this honestly against the phase goal:
+this is **not a genuine open gap against "one audited C boundary"** — the phase goal and FFI-01 concern the
+boundary actually crossed, and `Alias` does not cross it today, so there is no live injection channel this round
+leaves open. It IS a real defense-in-depth gap: nothing pins the invariant that `Alias` must never be spliced
+without first being added to both audit tables, so a future contributor adding an `/* alias: %s */` comment line
+to `EmitForeignHeader` (a natural-looking addition, since every other contract field already gets one) would
+silently reopen exactly the injection class this round closed, and no falsifier here would catch it. This belongs
+in `04-DEBT.md` as a forward-looking guard-rail item (either add `Alias` to both audit tables preemptively, or add
+an explicit "deliberately unaudited, must be added here first if ever spliced" doc-comment plus a table entry that
+asserts the invariant), not as a blocker on this phase's goal, because the phase goal is about the boundary that
+exists today, not a hypothetical future emitter change. Recording it here so it is not lost, but it does not move
+this round's verdict.
 
 ### Human Verification Required
 
-None. The new finding is independently confirmed by direct code inspection plus two
-separate, reproducible end-to-end test executions (both removed after confirming and
-leaving the working tree clean) — no ambiguity requiring human judgment.
+None. All truths are confirmed by direct code inspection, by re-running every named falsifier in
+this session, and by an independent end-to-end reproduction of the previously-successful injection
+scenario (removed after use, working tree left clean) — no ambiguity requiring human judgment.
 
 ### Gaps Summary
 
-Round 4's plans 04-11 and 04-12 correctly and cleanly closed both gaps the prior round's
-review surfaced:
+None remaining. Round 4 closed the interior-merge collapse (RES-01, plan 04-11) and the `Symbol`
+injection (FFI-01, plan 04-12). This round's plan 04-13 closes the last open gap: every remaining
+`core.ForeignContract` string field `cgen` splices into generated C is now validated at three
+independent layers (source admission in `check.go`, shape/comment-safety re-derivation in
+`corevalidate.go`, and cgen's own independent peer guard in `singleForeignFunction`), and the
+source-reachable policy values (`allocator`, `unwind`, `nonlocal_exit`) are refused at source
+admission before a core artifact is ever produced — closing the honest-source path this
+verification's fourth round demonstrated was open, not merely the corrupted-`core.Program` case.
 
-1. **Interior-merge collapse (RES-01):** `okEdgeInto` is now `map[string][]core.Edge`, and
-   `rederive`'s interior-block hop independently rederives every candidate edge into a merge
-   point and requires agreement, refusing with `core.release_order_merge_mismatch` on
-   disagreement. Confirmed by direct code read and by running the two named falsifier tests,
-   both PASS.
-2. **Unsanitized Symbol splice (FFI-01, partial):** `corevalidate.validCIdentifier` and
-   cgen's independent `validForeignSymbol` peer guard now refuse a non-identifier-shaped
-   `Symbol` before it ever reaches generated C, at both the shared-validator path and the
-   three exported `EmitForeign*` entry points that skip `corevalidate.Validate` entirely.
-   Confirmed by direct code read and by running three named falsifier tests, all PASS.
+I did not accept 04-13-SUMMARY.md's claim on its word: I independently confirmed the three audit
+layers exist at the code locations claimed, that they are correctly ordered relative to existing
+checks (so no prior refusal is displaced), that all five named falsifiers pass when I ran them
+myself, and I reproduced the exact previously-successful injection scenario against
+`session.Check` in my own throwaway test — confirming it is now refused with the expected
+diagnostic code and zero checked functions, then removed the test and confirmed a clean working
+tree.
 
-However, this round's fresh code review (04-REVIEW.md) surfaced one NEW critical finding
-that this verification independently reproduced rather than took on faith:
+One WARNING (04-REVIEW.md WR-01, `core.ForeignContract.Alias` unaudited but also unspliced) is
+judged to be a defense-in-depth documentation/DEBT item, not an open gap against this phase's own
+goal — see "Anti-Patterns Found" above for the full reasoning.
 
-3. **Sibling field injection (FFI-01, unclosed):** `EmitForeignHeader` still splices
-   `Allocator`, `Unwind`, and `NonlocalExit` raw into C comments, with no validation beyond
-   presence anywhere in the pipeline. Unlike the now-fixed `Symbol` gap, this is reachable
-   directly from ordinary, honest Lang source (a string-literal foreign-policy value) with
-   zero diagnostics from `session.Check` — no corrupted `core.Program` is required. I
-   reproduced this twice in this session: once via a direct `core.Program` field mutation,
-   and once via an actual `.lang` source file carrying a comment-terminator payload in its
-   `allocator` policy value, confirming a live, escaped C function definition lands in the
-   generated header both ways. This is a genuine, unclosed gap squarely inside this phase's
-   own scope — FFI-01 explicitly names "allocator identity" and "unwind obligations" among
-   the fields the audited boundary must make trustworthy, and the phase goal's own "one
-   audited C boundary" framing is the same framing the now-closed `Symbol` gap was measured
-   against. 04-12's own SUMMARY.md already flagged this exact finding as unfixed and
-   out-of-scope for that plan; this verification's judgment is that it cannot remain
-   out-of-scope for the PHASE as a whole, since no later phase in ROADMAP.md addresses
-   foreign-contract field sanitization.
-
-Neither this new gap nor either of the two now-closed gaps is a regression introduced by
-04-11/04-12's own changes — all three are pre-existing defects in code central to RES-01 and
-FFI-01, surfaced progressively by successive review rounds.
+Phase 4's goal — "a noncopyable resource crosses one audited C boundary while partial
+initialization, failure propagation, and cleanup remain defined" — is achieved: all 8
+must-haves across SEM-03, RES-01, and FFI-01 are verified, with no remaining code-level gap.
 
 ---
 
-_Verified: 2026-09-05T23:10:00Z_
+_Verified: 2026-09-05T23:45:00Z_
 _Verifier: Claude (gsd-verifier)_
