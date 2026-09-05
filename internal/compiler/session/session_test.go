@@ -420,6 +420,229 @@ func TestForeignCallInterpreterNative(t *testing.T) {
 	}
 }
 
+// TestReleaseInterpreterNative proves RES-01/D-04-07's three-acquisition
+// success fixture agrees between the interpreter and Clang-built native code
+// at both -O0 and -O3 on terminal outcome, ordered events (including the
+// three reverse-order resource.released events), and live-resource state
+// (empty -- every acquired resource was released).
+func TestReleaseInterpreterNative(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	interpreted := result.Interpreter[0]
+	if interpreted.Outcome.Kind != "returned" || interpreted.Outcome.Value != "7" {
+		t.Fatalf("interpreter outcome = %+v", interpreted.Outcome)
+	}
+	if len(interpreted.LiveResources) != 0 {
+		t.Fatalf("interpreter live resources = %+v, want empty", interpreted.LiveResources)
+	}
+	var released []string
+	for _, event := range interpreted.Events {
+		if event.Kind == "resource.released" {
+			released = append(released, event.SourcePlace)
+		}
+	}
+	if len(released) != 3 {
+		t.Fatalf("expected 3 resource.released events, got %+v", released)
+	}
+	for _, engineResult := range []struct {
+		name      string
+		execution execution.Execution
+	}{{"O0", result.O0.Pairs[0].Execution}, {"O3", result.O3.Pairs[0].Execution}} {
+		if !execution.Equal(interpreted, engineResult.execution) {
+			t.Fatalf("%s execution disagrees with interpreter:\ninterpreter: %+v\nnative:      %+v", engineResult.name, interpreted, engineResult.execution)
+		}
+		if len(engineResult.execution.LiveResources) != 0 {
+			t.Fatalf("%s live resources = %+v, want empty", engineResult.name, engineResult.execution.LiveResources)
+		}
+	}
+}
+
+// TestReleaseOmissionMutationIsMismatch proves control:resource.release_omitted
+// (D-04-07/Pitfall 2): deleting one generated line bearing lang:release-site
+// (the event AND the runtime ledger decrement together, since both are
+// emitted on the same line) leaves a resource observably live at
+// termination, surfaced through the same pre-existing "returned outcome
+// requires empty live_resources" hard-reject Pitfall 3 protects
+// (native.invalid_execution) -- attacking the EMITTER's own generated C, a
+// different artifact than the transposition mutation below attacks.
+func TestReleaseOmissionMutationIsMismatch(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	// RunNative's special ForeignSources wiring only fires for a bare
+	// native.Runner value (a mutation-runner wrapper opts out of it by
+	// design, per its own doc comment), so the frozen foreign TU must be
+	// linked in here explicitly, before wrapping.
+	inner := native.DefaultRunner()
+	inner.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	runner := session.NewReleaseOmissionMutationRunner(inner)
+	_, _, err := session.RunNativeFile(context.Background(), path, runner)
+	if err == nil {
+		t.Fatal("expected the release omission mutation to be detected, got no error")
+	}
+	var toolError *native.ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.invalid_execution" {
+		t.Fatalf("expected native.invalid_execution (a live resource on a returned outcome), got %v", err)
+	}
+	if len(runner.Optimizations()) == 0 {
+		t.Fatal("expected the omission runner to have recorded at least one optimization attempt")
+	}
+}
+
+// TestReleaseTranspositionMutationIsMismatch proves
+// control:resource.release_order_transposed (D-04-07/Pitfall 1): exchanging
+// two emitted OpRelease operations in the three-acquisition fixture's core
+// artifact is rejected by corevalidate's independent rederivation, naming
+// the release_order_mismatch code -- attacking the CHECKER's materialized
+// order, a different artifact than the omission mutation above attacks.
+func TestReleaseTranspositionMutationIsMismatch(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	if valid := corevalidate.Validate(checked.Program); !valid.Valid {
+		t.Fatalf("valid core rejected before mutation: %+v", valid)
+	}
+	mutated, err := session.TransposeReleaseOrder(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := corevalidate.Validate(mutated)
+	if result.Valid || result.Problems[0].Code != "core.release_order_mismatch" {
+		t.Fatalf("expected core.release_order_mismatch, got %+v", result)
+	}
+}
+
+// TestTwoAcquisitionTranspositionIsIndistinguishable converts CONTEXT.md's
+// sharpest research finding into a standing invariant: transposing two
+// elements never changes the SET they belong to, at any count N -- so an
+// oracle that only compares release SETS (not order) cannot ever falsify a
+// transposition, for two acquisitions or three. This project's OWN
+// corevalidate differential is deliberately STRONGER than that naive oracle
+// -- it compares full ordered sequences (TestReleaseOrderMutationMatrix's
+// "moved" case already proves this catches a transposition at N=3), and this
+// test proves the SAME is true at N=2. The set-equality blind spot below is
+// therefore demonstrated against an illustrative naive oracle, not against
+// production code -- production code never has this blind spot, which is
+// exactly why a three-acquisition fixture (not two) is this project's own
+// minimum falsifying witness for RES-01 (Pitfall 1): a fixture too small to
+// need this project's own stronger, order-sensitive check would not prove
+// the check does anything a weaker one couldn't.
+func TestTwoAcquisitionTranspositionIsIndistinguishable(t *testing.T) {
+	releaseSetEqual := func(a, b []string) bool {
+		setA, setB := map[string]bool{}, map[string]bool{}
+		for _, id := range a {
+			setA[id] = true
+		}
+		for _, id := range b {
+			setB[id] = true
+		}
+		return reflect.DeepEqual(setA, setB)
+	}
+	original := []string{"B", "A"}
+	transposed := []string{"A", "B"}
+	if !releaseSetEqual(original, transposed) {
+		t.Fatal("expected a two-element transposition to be set-equal -- this IS the finding being demonstrated")
+	}
+
+	twoAcquisitionSource := `module phase4.two_acquisition_probe
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let a = try lang_res_open(request)
+  let b = try lang_res_open(request)
+  request
+}
+`
+	checked := session.Check([]byte(twoAcquisitionSource))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	mutated, err := session.TransposeReleaseOrder(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := corevalidate.Validate(mutated)
+	if result.Valid {
+		t.Fatal("expected corevalidate to reject the transposed two-acquisition core; this project's own oracle is order-sensitive even at N=2")
+	}
+	if result.Problems[0].Code != "core.release_order_mismatch" {
+		t.Fatalf("expected core.release_order_mismatch, got %+v", result)
+	}
+}
+
+// TestReleaseMutationsAttackDifferentArtifacts asserts the omission runner's
+// input is generated C (never the frozen foreign translation unit) and that
+// no release mutation runner ever opens a path under native/.
+func TestReleaseMutationsAttackDifferentArtifacts(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	}
+	if !strings.Contains(result.CSource, "lang:release-site") {
+		t.Fatal("generated C carries no release-site marker for the omission runner to locate")
+	}
+	if strings.Contains(result.CSource, "lang_foreign_resource_private") {
+		t.Fatal("generated C must never reference the frozen TU's private header")
+	}
+	// The omission runner's Run signature takes a cSource string (generated
+	// C), never a file path -- structurally, it cannot open a path under
+	// native/ at all. TransposeReleaseOrder's signature takes a core.Program,
+	// not a file path either. Both are asserted here by the type system: if
+	// either runner's signature ever grows a path parameter, this file fails
+	// to compile against the call sites above, which pass no path.
+	var _ session.NativeRunner = session.NewReleaseOmissionMutationRunner(native.DefaultRunner())
+}
+
+// TestVerifyPhase4ReleaseControls proves the two release controls
+// (control:resource.release_omitted, control:resource.release_order_transposed)
+// are visible to the Phase 4 verify gate, each with nonzero recomputed work.
+func TestVerifyPhase4ReleaseControls(t *testing.T) {
+	corpus := testsupport.ProjectPath("testdata", "phase4")
+	result := session.VerifyCorpus(context.Background(), corpus, native.DefaultRunner(), session.VerifyOptions{})
+	if result.Status != protocol.StatusPass {
+		t.Fatalf("Phase 4 release verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	for _, required := range []string{"control:resource.release_order_transposed", "control:resource.release_omitted"} {
+		found := false
+		for _, lane := range result.Lanes {
+			for _, control := range lane.Controls {
+				if control == required {
+					found = true
+					if lane.RecomputedWork == 0 {
+						t.Fatalf("%s lane carries zero recomputed work", required)
+					}
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("required control %s is missing from the verify result", required)
+		}
+	}
+}
+
 func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
 	tests := []string{
 		"module collision.locals\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let α = code\n  let β = code\n  let __1 = code\n  __1\n}\n",

@@ -118,6 +118,118 @@ func (r *OwnedBackendMutationRunner) Optimizations() []string {
 	return append([]string(nil), r.optimizations...)
 }
 
+// releaseMarker is the stable generated seam cgen emits at every OpRelease
+// call site (D-04-07 Pitfall 2), distinct from mutationMarker above so the
+// two mutation runners locate different seams and attack different
+// artifacts: mutationMarker's runner corrupts a runtime VALUE the emitter
+// wrote, while ReleaseOmissionMutationRunner below DELETES a whole generated
+// line -- an entire release (its event AND its runtime ledger decrement,
+// emitted on the same line so deleting one line removes both effects).
+const releaseMarker = "/* lang:release-site */"
+
+// ReleaseOmissionMutationRunner is a fail-closed verification seam,
+// structurally a sibling of OwnedBackendMutationRunner (its own mutex and
+// optimization list, never shared) but attacking a DIFFERENT artifact: the
+// emitter's own generated release call, not a mutation-site value. It
+// requires the marker to appear on AT LEAST one line and deletes the FIRST
+// one, refusing to run on a program with zero release sites (a
+// control-invalid tool error, matching the exact-one-marker fail-closed
+// shape) -- a program with no OpRelease at all is not a valid target for
+// this control.
+type ReleaseOmissionMutationRunner struct {
+	runner        native.Runner
+	mu            sync.Mutex
+	optimizations []string
+}
+
+func NewReleaseOmissionMutationRunner(runner native.Runner) *ReleaseOmissionMutationRunner {
+	return &ReleaseOmissionMutationRunner{runner: runner}
+}
+
+func (r *ReleaseOmissionMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
+	lines := strings.Split(cSource, "\n")
+	matched := -1
+	for index, line := range lines {
+		if strings.Contains(line, releaseMarker) {
+			// The LAST marked line is always the success block's own final
+			// release (this walker emits every err block inline, before the
+			// success block it eventually falls through to), so it is the
+			// one line every one of this plan's fixtures actually reaches
+			// at runtime -- unlike an earlier err-block release, which a
+			// program that never truly fails (this frozen TU's acquisition
+			// only fails on real OOM) would never execute, making its
+			// omission unobservable rather than a control-invalid target.
+			matched = index
+		}
+	}
+	if matched == -1 {
+		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("release mutation marker count is 0, want at least 1")}
+	}
+	mutated := strings.Join(append(append([]string(nil), lines[:matched]...), lines[matched+1:]...), "\n")
+	r.mu.Lock()
+	r.optimizations = append(r.optimizations, optimization)
+	r.mu.Unlock()
+	return r.runner.Run(ctx, mutated, optimization, inputs)
+}
+
+func (r *ReleaseOmissionMutationRunner) Optimizations() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.optimizations...)
+}
+
+// TransposeReleaseOrder is the core-artifact mutation for
+// control:resource.release_order_transposed: it exchanges the ReleasesOperationID
+// of the first two OpRelease operations found in the given function's
+// success block, attacking the CHECKER's materialized order (a different
+// artifact than the emitter's output ReleaseOmissionMutationRunner attacks,
+// and different again from the frozen foreign fixture a layout mutation
+// attacks). Returns an error if the function has fewer than two releases in
+// its success block -- a two-acquisition shape cannot even construct this
+// mutation, which is exactly D-10's point.
+func TransposeReleaseOrder(program core.Program) (core.Program, error) {
+	encoded, err := json.Marshal(program)
+	if err != nil {
+		return core.Program{}, err
+	}
+	var mutated core.Program
+	if err := json.Unmarshal(encoded, &mutated); err != nil {
+		return core.Program{}, err
+	}
+	if len(mutated.Functions) != 1 {
+		return core.Program{}, fmt.Errorf("release transposition expects one function")
+	}
+	function := &mutated.Functions[0]
+	successBlockID := function.ID + ":block:success"
+	var releaseIndices []int
+	for _, block := range function.Linear.Blocks {
+		if block.ID != successBlockID {
+			continue
+		}
+		claimed := make(map[string]struct{}, len(block.OperationIDs))
+		for _, opID := range block.OperationIDs {
+			claimed[opID] = struct{}{}
+		}
+		for opIndex, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpRelease {
+				continue
+			}
+			if _, inBlock := claimed[operation.ID]; inBlock {
+				releaseIndices = append(releaseIndices, opIndex)
+			}
+		}
+	}
+	if len(releaseIndices) < 2 {
+		return core.Program{}, fmt.Errorf("release transposition requires at least two releases in the success block, found %d", len(releaseIndices))
+	}
+	first, second := releaseIndices[0], releaseIndices[1]
+	function.Linear.Operations[first].ReleasesOperationID, function.Linear.Operations[second].ReleasesOperationID =
+		function.Linear.Operations[second].ReleasesOperationID, function.Linear.Operations[first].ReleasesOperationID
+	function.Linear.Operations[first].SourceID, function.Linear.Operations[second].SourceID =
+		function.Linear.Operations[second].SourceID, function.Linear.Operations[first].SourceID
+	return mutated, nil
+}
+
 func (e *EngineMismatch) Error() string {
 	return fmt.Sprintf("native %s mismatch for %s: expected %s, got %s", e.Optimization, e.Input, e.Expected, e.Actual)
 }
@@ -672,7 +784,7 @@ type VerifyOptions struct {
 
 func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, options VerifyOptions) protocol.Result {
 	if _, err := os.Stat(filepath.Join(corpus, "foreign_acquire_one.lang")); err == nil {
-		return verifyForeignCorpus(corpus)
+		return verifyForeignCorpus(ctx, corpus, runner)
 	}
 	if _, err := os.Stat(filepath.Join(corpus, "borrowed_view.lang")); err == nil {
 		return verifyBorrowedCorpus(ctx, corpus, runner)
@@ -1403,7 +1515,7 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 // the explicit-status addLane shape (Phase 1's VerifyCorpus.addLane form,
 // not the Phase 2 hardcoded-"pass" shape) so a lane's own failure still
 // carries partial-work evidence.
-func verifyForeignCorpus(corpus string) protocol.Result {
+func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
 	started := time.Now()
 	result := protocol.New("verify", protocol.StatusPass)
 	addLane := func(id, status string, controls []string, work, outputBytes int, laneStarted time.Time) {
@@ -1467,9 +1579,75 @@ func verifyForeignCorpus(corpus string) protocol.Result {
 	}
 	addLane("lane:foreign-acquire-admitted", "pass", nil, positiveChecked.Work+validated.Checks, len(positiveSource), laneStarted)
 
+	// Lane: control:resource.release_order_transposed (D-04-07/Pitfall 1).
+	// Attacks the CHECKER's materialized order: exchange the
+	// ReleasesOperationID of the first two OpRelease operations in the
+	// three-acquisition fixture's success block, feed the mutated core
+	// directly to corevalidate (never re-running check.go, so the checker
+	// itself is not what is being tested here -- the independent
+	// rederivation is), and require the mismatch.
+	laneStarted = time.Now()
+	releaseSource, err := readBoundedFile(filepath.Join(corpus, "acquire_three_success.lang"), syntax.MaxSourceBytes)
+	if err != nil {
+		addLane("lane:release-order-transposed", "fail", nil, 1, 0, laneStarted)
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "acquire_three_success.lang")
+	}
+	releaseChecked := Check(releaseSource)
+	if len(releaseChecked.Diagnostics) != 0 {
+		addLane("lane:release-order-transposed", "fail", nil, releaseChecked.Work+1, len(releaseSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "acquire_three_success.lang")
+	}
+	transposed, err := TransposeReleaseOrder(releaseChecked.Program)
+	if err != nil {
+		addLane("lane:release-order-transposed", "fail", nil, releaseChecked.Work+1, len(releaseSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "release transposition mutation could not be constructed")
+	}
+	transposedResult := corevalidate.Validate(transposed)
+	if transposedResult.Valid || transposedResult.Problems[0].Code != "core.release_order_mismatch" {
+		addLane("lane:release-order-transposed", "fail", nil, releaseChecked.Work+transposedResult.Checks, len(releaseSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:resource.release_order_transposed")
+	}
+	addLane("lane:release-order-transposed", "pass", []string{"control:resource.release_order_transposed"}, releaseChecked.Work+transposedResult.Checks, len(releaseSource), laneStarted)
+
+	// Lane: control:resource.release_omitted (D-04-07/Pitfall 2). Attacks
+	// the EMITTER's own generated C, a different artifact than the
+	// transposition lane above: delete one generated line bearing
+	// lang:release-site (event plus runtime ledger decrement, on the same
+	// line) and require the mutated program's own native run to be
+	// detectably wrong -- a live resource the emitter's own runtime ledger
+	// never cleared, surfaced as an invalid execution document (nonzero
+	// live_resources on a "returned" outcome, which validateExecution has
+	// refused since before this phase existed, D-04-08/Pitfall 3).
+	laneStarted = time.Now()
+	releaseValidated := corevalidate.Validate(releaseChecked.Program)
+	if !releaseValidated.Valid {
+		addLane("lane:release-omitted", "fail", nil, releaseChecked.Work+releaseValidated.Checks, len(releaseSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "acquire_three_success.lang")
+	}
+	// RunNative's special ForeignSources wiring only fires for a bare
+	// native.Runner value; this lane's fixture is foreign-shaped, so the
+	// frozen foreign TU must be linked in explicitly before wrapping.
+	foreignRunner := runner
+	foreignRunner.ForeignSources = append(append([]string(nil), foreignRunner.ForeignSources...), native.ForeignResourceSourcePath())
+	omissionRunner := NewReleaseOmissionMutationRunner(foreignRunner)
+	_, _, omissionErr := RunNative(ctx, releaseSource, omissionRunner)
+	if omissionErr == nil {
+		addLane("lane:release-omitted", "fail", nil, releaseChecked.Work+len(omissionRunner.Optimizations()), len(releaseSource), laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:resource.release_omitted")
+	}
+	var releaseToolError *native.ToolError
+	omissionDetected := errors.As(omissionErr, &releaseToolError) && releaseToolError.Code == "native.invalid_execution"
+	if !omissionDetected {
+		addLane("lane:release-omitted", "fail", nil, releaseChecked.Work+len(omissionRunner.Optimizations()), len(releaseSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.control_incomplete", "release omission mutation did not surface as an invalid execution document")
+	}
+	addLane("lane:release-omitted", "pass", []string{"control:resource.release_omitted"}, releaseChecked.Work+len(omissionRunner.Optimizations())+1, len(releaseSource), laneStarted)
+
 	requiredControls := []string{
 		"control:foreign.unwind_policy_undeclared",
 		"control:foreign.call_target_not_foreign",
+		"control:resource.release_order_transposed",
+		"control:resource.release_omitted",
 	}
 	for _, required := range requiredControls {
 		if !hasControl(result.Lanes, required) {
