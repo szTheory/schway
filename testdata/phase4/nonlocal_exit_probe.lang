@@ -1,0 +1,35 @@
+// Law under test (D-04-17/D-04-18): the first acquisition of
+// lang_nonlocal_probe succeeds and becomes a genuinely live resource; the
+// second call to the SAME declared symbol performs a real foreign nonlocal
+// exit (native/lang_foreign_nonlocal.c's own frozen, byte-identical
+// behavior) instead of ever returning, so the process-root landing pad is
+// reached with exactly one still-live acquisition to report as leaked. The
+// success and this-step's-own err blocks below are never reached at
+// runtime -- the second call never returns locally, ok or err -- but they
+// still exist statically so the first acquisition is tracked for release
+// exactly like any other resource-lifecycle function (D-04-07).
+
+module phase4.nonlocal_exit_probe
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_nonlocal_probe(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: possible
+    allocator: "libc_malloc"
+    fails: ProbeError
+  }
+}
+
+data ProbeError =
+  | ProbeFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try lang_nonlocal_probe(request)
+  let trigger = try lang_nonlocal_probe(request)
+  request
+}

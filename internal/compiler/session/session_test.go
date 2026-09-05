@@ -1493,3 +1493,117 @@ func TestNoReleaseAfterDefect(t *testing.T) {
 		t.Fatal("a non-defect execution must be vacuously true")
 	}
 }
+
+// nonlocalProbeChecked checks the nonlocal-exit landing-pad fixture, reused
+// by every Task 04-05-01 test below.
+func nonlocalProbeChecked(t *testing.T) session.CheckResult {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "nonlocal_exit_probe.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+	}
+	return checked
+}
+
+// TestNonlocalExitEmitsLeakPerLiveAcquisition proves D-04-17 end to end
+// through the real generated pipeline: compiled and linked against the
+// second frozen foreign translation unit (native/lang_foreign_nonlocal.c),
+// the probe's second call performs a genuine longjmp back into the
+// process-root landing pad, which reports exactly the one still-live
+// acquisition as leaked, then terminates as a defect via a real SIGABRT --
+// never a hardcoded exit code (D-04-24, reused here).
+func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
+	checked := nonlocalProbeChecked(t)
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectDefect
+	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	result, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
+	if err != nil {
+		t.Fatalf("native run failed: %v", err)
+	}
+	if len(result.Pairs) != 1 {
+		t.Fatalf("expected one execution pair, got %d", len(result.Pairs))
+	}
+	got := result.Pairs[0].Execution
+	if got.Outcome.Kind != "defect" || got.Outcome.Value != "" {
+		t.Fatalf("expected a clean defect outcome with no value, got %+v", got.Outcome)
+	}
+	wantKinds := []string{"foreign.called", "foreign.nonlocal_exit", "resource.leaked", "function.defected"}
+	if len(got.Events) != len(wantKinds) {
+		t.Fatalf("event count = %d, want %d: %+v", len(got.Events), len(wantKinds), got.Events)
+	}
+	for i, kind := range wantKinds {
+		if got.Events[i].Kind != kind {
+			t.Fatalf("event %d kind = %q, want %q: %+v", i, got.Events[i].Kind, kind, got.Events)
+		}
+	}
+	if len(got.LiveResources) != 1 {
+		t.Fatalf("expected exactly one leaked resource recorded in live_resources, got %+v", got.LiveResources)
+	}
+}
+
+// TestPadRunsNoRelease proves D-04-18: the generated pad's own body (the
+// span between the setjmp-installation marker and its matching end marker)
+// never calls a release -- it emits no resource.released event and never
+// clears a ledger slot -- so an honest leak can never be converted into a
+// use-after-free by a stray release running from indeterminate state.
+func TestPadRunsNoRelease(t *testing.T) {
+	checked := nonlocalProbeChecked(t)
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := strings.Index(generated, "/* lang:nonlocal-pad-site */")
+	end := strings.Index(generated, "/* lang:nonlocal-pad-end */")
+	if start < 0 || end < 0 || end < start {
+		t.Fatalf("expected a well-formed pad span in generated C:\n%s", generated)
+	}
+	padBody := generated[start:end]
+	if strings.Contains(padBody, "resource.released") {
+		t.Fatalf("pad body must never emit resource.released:\n%s", padBody)
+	}
+	if strings.Contains(padBody, "= 0;") {
+		t.Fatalf("pad body must never clear a ledger slot (a release-shaped mutation):\n%s", padBody)
+	}
+}
+
+// TestNonlocalExitProbeInterpreterNative proves SC4 on exactly the path SC3
+// is about: the interpreter (which cannot actually call C, so it models the
+// same shared nonlocal-exit-on-second-call convention documented in both
+// cgen.go and interp.go) and the real compiled-and-linked native binary
+// agree, byte-for-byte, on the ordered event sequence and the defect
+// terminal record for this probe.
+func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
+	checked := nonlocalProbeChecked(t)
+	interpreted, err := interp.Run(checked.Program, "main", "7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectDefect
+	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	result, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
+	if err != nil {
+		t.Fatalf("native run failed: %v", err)
+	}
+	if len(result.Pairs) != 1 {
+		t.Fatalf("expected one execution pair, got %d", len(result.Pairs))
+	}
+	if !execution.Equal(interpreted, result.Pairs[0].Execution) {
+		interpretedBytes, _ := execution.CanonicalBytes(interpreted)
+		nativeBytes, _ := execution.CanonicalBytes(result.Pairs[0].Execution)
+		t.Fatalf("interpreter and native disagree on the nonlocal-exit probe:\ninterpreter: %s\nnative:      %s", interpretedBytes, nativeBytes)
+	}
+}

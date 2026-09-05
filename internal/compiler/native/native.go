@@ -515,6 +515,23 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			if !isLast || value.Schema != execution.Schema1 || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output == "" {
 				return errors.New("defect event fields are invalid")
 			}
+		case "foreign.nonlocal_exit":
+			// D-04-17: the process-root landing pad's own first event on the
+			// nonlocal-exit path. Never last (a function.defected terminator
+			// always follows) and carries no place/type facts of its own --
+			// it is a process-level event, not a per-value transition.
+			if value.Schema != execution.Schema1 || isLast || event.SourcePlace != "" || event.TargetPlace != "" || event.TypeID != "" || event.Input != "" || event.Output != "" {
+				return errors.New("nonlocal exit event fields are invalid")
+			}
+		case "resource.leaked":
+			// D-04-17: one per still-live acquisition the landing pad found
+			// undischarged. Never last (a function.defected terminator always
+			// follows) and carries the acquisition's own place in
+			// SourcePlace, mirroring resource.released's shape but naming a
+			// leak rather than a discharge.
+			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace != "" || event.Input != "" || event.Output != "" {
+				return errors.New("resource leaked event fields are invalid")
+			}
 		case "resource.released":
 			// D-04-07's non-terminal release transition: like the other
 			// linear transitions it is never last (a terminator always

@@ -259,3 +259,67 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 		})
 	}
 }
+
+// TestExactlyOneLandingPadIsInstalled proves D-04-17's cost constraint is
+// falsifiable, not merely stated: regardless of how many acquisitions or
+// foreign calls a function performs, emitLinearForeign installs the
+// process-root setjmp landing pad exactly once.
+func TestExactlyOneLandingPadIsInstalled(t *testing.T) {
+	tests := []struct {
+		fixture      string
+		acquisitions int
+	}{
+		{"foreign_acquire_one.lang", 1},
+		{"nonlocal_exit_probe.lang", 2},
+		{"acquire_three_success.lang", 3},
+	}
+	for _, test := range tests {
+		t.Run(test.fixture, func(t *testing.T) {
+			source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", test.fixture))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+			}
+			generated, err := cgen.EmitNative(checked.Program)
+			if err != nil {
+				t.Fatal(err)
+			}
+			count := strings.Count(generated, "setjmp(")
+			if count != 1 {
+				t.Fatalf("%s (%d acquisitions): setjmp( appears %d times, want exactly 1:\n%s", test.fixture, test.acquisitions, count, generated)
+			}
+		})
+	}
+}
+
+// TestLedgerIsStaticStorage proves D-04-17/D-04-18's ledger declaration
+// carries static storage duration -- never automatic -- since C17 leaves an
+// automatic object indeterminate after a longjmp crosses its setjmp call.
+func TestLedgerIsStaticStorage(t *testing.T) {
+	checked := nonlocalPadCheckedProgram(t, "nonlocal_exit_probe.lang")
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(generated, "static int lang_resource_live[") {
+		t.Fatalf("expected the resource ledger to be declared with static storage duration:\n%s", generated)
+	}
+}
+
+// nonlocalPadCheckedProgram checks a Task 04-05-01 fixture by name, reused
+// across this file's landing-pad tests.
+func nonlocalPadCheckedProgram(t *testing.T, fixture string) session.CheckResult {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+	}
+	return checked
+}

@@ -173,6 +173,23 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 			tracked[operation.ReleasesOperationID] = true
 		}
 	}
+	placeTypes := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		placeTypes[place.ID] = place.TypeID
+	}
+	// nonlocalExitPolicy/nonlocalExitCalls model D-04-17's process-root
+	// landing pad WITHOUT the interpreter ever calling real C (it cannot):
+	// a foreign contract whose declared nonlocal_exit policy is anything
+	// other than "forbidden" is, by this phase's own shared, documented
+	// convention with native/lang_foreign_nonlocal.c's static call counter,
+	// understood to perform a genuine nonlocal exit on its SECOND call
+	// within one function execution -- never its first, so at least one
+	// acquisition is already live when it fires. This is Claude's Discretion
+	// (04-PATTERNS Pattern 3 note: the interpreter cannot actually call C),
+	// kept in lockstep with the native TU by comment on both sides rather
+	// than by any real cross-engine mechanism.
+	nonlocalExitPolicy := function.ForeignContract != nil && function.ForeignContract.NonlocalExit != "" && function.ForeignContract.NonlocalExit != "forbidden"
+	nonlocalExitCalls := 0
 
 	values := map[string]string{function.Parameter.ID: input}
 	events := make([]Event, 0, len(function.Linear.Operations))
@@ -215,6 +232,47 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 				values[operation.TargetID] = value
 				events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
 			case core.OpForeignCall:
+				nonlocalExitCalls++
+				if nonlocalExitPolicy && nonlocalExitCalls == 2 {
+					// D-04-17/D-04-18: this call models a real foreign
+					// nonlocal exit reaching the process-root landing pad.
+					// No "foreign.called" event is produced for it -- the
+					// real native call never returns far enough to record
+					// one either (cgen.go's emitLinearForeign records that
+					// event only AFTER the call returns) -- and no release
+					// runs: every still-live acquisition is reported leaked
+					// instead, exactly mirroring the generated pad's own
+					// event sequence (foreign.nonlocal_exit, one
+					// resource.leaked per live acquisition in first-acquired
+					// order, then the function.defected terminator).
+					// Event IDs below are formed from function.ID, not
+					// operation.ID -- matching cgen.go's emitNonlocalPad
+					// convention EXACTLY, byte for byte, since it also has no
+					// per-call handle on which specific operation triggered
+					// the pad (the pad is a process-root construct, reachable
+					// identically regardless of which call transferred
+					// control to it) and execution.Equal is a literal,
+					// canonical-bytes comparison with no ID normalization.
+					events = append(events, Event{
+						Schema: execution.Schema1, ID: function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: function.ID,
+					})
+					leakIndex := 0
+					for _, liveID := range liveOrder {
+						if !live[liveID] {
+							continue
+						}
+						events = append(events, Event{
+							Schema: execution.Schema1, ID: fmt.Sprintf("%s:event:leaked:%d", function.ID, leakIndex), Kind: "resource.leaked", FunctionID: function.ID,
+							SourcePlace: operations[liveID].TargetID,
+						})
+						leakIndex++
+					}
+					events = append(events, Event{
+						Schema: execution.Schema1, ID: function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: function.ID,
+						SourcePlace: function.Parameter.ID, TypeID: placeTypes[function.Parameter.ID], Output: nonlocalExitDefectReason,
+					})
+					return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourcePlaces(operations, live, liveOrder)}, nil
+				}
 				values[operation.TargetID] = value
 				values[operation.ErrTargetID] = "err"
 				events = append(events, Event{
@@ -275,6 +333,31 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 		}
 		return Execution{}, fmt.Errorf("block %q has no terminator and an ambiguous successor set", block.ID)
 	}
+}
+
+// nonlocalExitDefectReason is duplicated VERBATIM from cgen.go's own
+// constant of the same name -- the two literal strings are kept in sync by
+// comment and convention on both sides, not by import, since interp and
+// cgen model the SAME shared probe convention through entirely different
+// mechanisms (a Go call counter here, a real longjmp there).
+const nonlocalExitDefectReason = "foreign nonlocal exit detected at process-root landing pad"
+
+// liveResourcePlaces projects the live-tracking map into the acquisition's
+// own TARGET PLACE id, not its operation id -- the same identifier
+// convention cgen.go's resourceLedger uses for its own lang_resource_ids
+// array, so the two engines report the identical strings for a nonlocal-
+// exit-triggered defect's live_resources field and its per-event
+// SourcePlace. This is a narrower, DIFFERENT convention than
+// liveResourceList's operation-id shape (used by every OTHER terminator
+// this phase), scoped only to the nonlocal-exit path this plan adds.
+func liveResourcePlaces(operations map[string]core.LinearOperation, live map[string]bool, order []string) []string {
+	result := []string{}
+	for _, id := range order {
+		if live[id] {
+			result = append(result, operations[id].TargetID)
+		}
+	}
+	return result
 }
 
 // liveResourceList projects the live-tracking map into the deterministic
