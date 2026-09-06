@@ -473,14 +473,12 @@ func NAT03Mutations() []NAT03Mutation {
 			ExpectedAxis:  AxisTerminalOutcome,
 			Subjected:     true,
 		},
-		// PENDING-05-08
 		{
 			ControlID:     "control:native.sanitize.allocator_mismatch",
 			CorpusProgram: "testdata/phase5/allocator_mismatch.lang",
 			ExpectedAxis:  AxisTerminalOutcome,
 			Subjected:     true,
 		},
-		// PENDING-05-08
 		{
 			ControlID:     "control:native.sanitize.retained_pointer",
 			CorpusProgram: "testdata/phase5/retained_pointer.lang",

@@ -1,0 +1,377 @@
+package session
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"reflect"
+	"time"
+
+	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/interp"
+	"github.com/codename-lang/lang/internal/compiler/native"
+	"github.com/codename-lang/lang/internal/compiler/protocol"
+)
+
+// Phase5RequiredControls is the complete Phase 5 required-control list as
+// of plan 05-09 (D-05-17): every control this gate's own lanes fire,
+// copying Phase4RequiredControls' shape verbatim -- a flat slice of exact
+// identifier strings, one per line, no computation.
+// scripts/verify-phase5.sh (this plan) duplicates this list VERBATIM, and
+// TestPhase5RequiredControlsMatchScript asserts the two are set-equal in
+// both directions, so the gate cannot silently shrink by dropping a
+// control from either copy (T-05-32).
+//
+// control:foreign.no_unproven_attributes is plan 05-04's control, narrowed
+// (not deleted) by that plan; every other identifier here is a Phase 5
+// control introduced by plans 05-04 through 05-08. Plan 05-13 adds the
+// coordinated source/core false-claim control and plan 05-14 extends this
+// list further with the reducer and QLT-01 registry controls -- neither is
+// declared here, because a declared-but-unimplemented control is exactly
+// the "not run rendered as pass" shape D-05-17 forbids.
+func Phase5RequiredControls() []string {
+	return []string{
+		"control:foreign.no_unproven_attributes",
+		"control:alias.false_no_alias",
+		"control:interpreter-o0-o3-lto",
+		"control:diagnostic.reject_program_id_equivalence",
+		"control:compare.field_routing_unrouted",
+		"control:native.sanitize.retained_pointer",
+		"control:native.sanitize.ubsan_no_recover",
+		"control:native.sanitize.allocator_mismatch",
+		"control:native.sanitize.use_after_free",
+		"control:core.attribute_unjustified",
+	}
+}
+
+// Phase5ExpectedEscapes is Phase 5's own declared, gate-visible residual as
+// of this plan: the callback-invocation half of NAT-03's stale-callback-
+// retention mutation (D-05-07), never claimed solved and never permitted to
+// appear as a detected lane control. Plan 05-13 extends this list with the
+// coordinated source-to-core false-claim escape.
+func Phase5ExpectedEscapes() []string {
+	return []string{EscapeCallbackInvocationUnsubjected}
+}
+
+// Phase5ClangPathOverrideForTest is a mutable seam ONLY for
+// TestPhase5ToolMissingIsNamedObligationNotPass (D-05-17): the test
+// substitutes a broken ClangPath to prove the sanitizer controls surface
+// as named, gate-visible operational obligations -- never a silent pass --
+// without widening VerifyPhase5ControlsAndWork's own plan-specified
+// signature. Production callers must never set this. Empty means "use the
+// default toolchain resolution", mirroring native.DefaultRunner's own
+// default.
+var Phase5ClangPathOverrideForTest = ""
+
+func phase5DefaultRunner() native.Runner {
+	runner := native.DefaultRunner()
+	if Phase5ClangPathOverrideForTest != "" {
+		runner.ClangPath = Phase5ClangPathOverrideForTest
+	}
+	return runner
+}
+
+// VerifyPhase5ControlsAndWork is Phase 5's own control-and-work gate
+// (D-05-17), peering verifyForeignCorpus's own addLane/fail shape: it runs
+// the alias-fact mutation lane, the two attribute-justification lanes
+// (positive and negative, narrowing control:foreign.no_unproven_attributes
+// per plan 05-04), the reject-program diagnostic-ID equivalence lane, the
+// comparator's own fail-closed field-routing check, a real
+// interpreter/-O0/-O3/-O3-LTO differential over one of the Phase 5
+// adversarial fixtures, and the sanitizer lane -- collecting every
+// control's fired status and RecomputedWork.
+//
+// A `tool_missing`/`sanitizer_inert` sanitizer lane is NEVER folded into a
+// silent pass: when VerifyPhase5SanitizeLane itself does not reach every
+// one of its own controls (an unavailable or non-instrumented sanitizer
+// runtime), this function adds an explicit obligation lane naming all four
+// sanitizer controls under the sanitizer lane's own reported status, so
+// every declared control is always visible in the result even when it
+// could not be exercised (T-05-33).
+func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
+	started := time.Now()
+	result := protocol.New("verify", protocol.StatusPass)
+	result.ExpectedEscapes = append([]string{}, Phase5ExpectedEscapes()...)
+
+	addLane := func(id, status string, controls []string, work int, laneStarted time.Time) {
+		result.Lanes = append(result.Lanes, protocol.Lane{
+			Schema: "lang.verify-lane/0", ID: id, Status: status,
+			Controls: append([]string{}, controls...), RecomputedWork: work,
+			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable",
+		})
+		result.Metrics.RecomputedWork += work
+	}
+	markFail := func(status string) {
+		if result.Status == protocol.StatusPass {
+			result.Status = status
+		}
+	}
+
+	runner := phase5DefaultRunner()
+
+	// Lanes: control:foreign.no_unproven_attributes (positive, narrowed by
+	// plan 05-04) and control:core.attribute_unjustified (negative,
+	// D-05-03b's own falsifier), both driven off the same checked
+	// restrict_borrow.lang fixture so the negative lane's corrupted claim
+	// is compared against the identical program the positive lane proved
+	// justified.
+	attributesStarted := time.Now()
+	restrictSource, err := os.ReadFile(nat03CorpusPath("testdata/phase5/restrict_borrow.lang"))
+	switch {
+	case err != nil:
+		addLane("lane:foreign-no-unproven-attributes", protocol.StatusOperational, nil, 1, attributesStarted)
+		addLane("lane:attribute-unjustified", protocol.StatusOperational, nil, 1, attributesStarted)
+		markFail(protocol.StatusOperational)
+	default:
+		restrictChecked := Check(restrictSource)
+		if len(restrictChecked.Diagnostics) != 0 || len(restrictChecked.Program.Functions) != 1 {
+			addLane("lane:foreign-no-unproven-attributes", protocol.StatusInvalid, nil, 1, attributesStarted)
+			addLane("lane:attribute-unjustified", protocol.StatusInvalid, nil, 1, attributesStarted)
+			markFail(protocol.StatusInvalid)
+		} else {
+			function := restrictChecked.Program.Functions[0]
+			loanID := ""
+			if function.Linear != nil && len(function.Linear.Operations) > 0 {
+				loanID = function.Linear.Operations[0].LoanID
+			}
+
+			validClaim := corevalidate.AttributeClaim{Attr: "restrict", CoreNode: function.ID, Parameter: function.Parameter.ID, JustifiedBy: loanID}
+			if validateErr := corevalidate.ValidateEmittedAttributes(restrictChecked.Program, []corevalidate.AttributeClaim{validClaim}); validateErr != nil {
+				addLane("lane:foreign-no-unproven-attributes", protocol.StatusInvalid, nil, 1, attributesStarted)
+				markFail(protocol.StatusInvalid)
+			} else {
+				addLane("lane:foreign-no-unproven-attributes", protocol.StatusPass, []string{"control:foreign.no_unproven_attributes"}, 1, attributesStarted)
+			}
+
+			corruptClaim := corevalidate.AttributeClaim{Attr: "restrict", CoreNode: function.ID, Parameter: function.Parameter.ID, JustifiedBy: "gate-bogus-loan-id"}
+			corruptErr := corevalidate.ValidateEmittedAttributes(restrictChecked.Program, []corevalidate.AttributeClaim{corruptClaim})
+			var attributeErr *corevalidate.AttributeUnjustifiedError
+			if corruptErr == nil || !errors.As(corruptErr, &attributeErr) || attributeErr.Code != "core.attribute_unjustified" {
+				addLane("lane:attribute-unjustified", protocol.StatusInvalid, nil, 1, attributesStarted)
+				markFail(protocol.StatusInvalid)
+			} else {
+				addLane("lane:attribute-unjustified", protocol.StatusPass, []string{"control:core.attribute_unjustified"}, 1, attributesStarted)
+			}
+		}
+	}
+
+	// Lane: control:alias.false_no_alias (D-05-05), reusing the exact
+	// mutation runner and assertion NAT03Mutations' own row 5 cites.
+	aliasStarted := time.Now()
+	aliasRunner := NewAliasFactMutationRunner(runner, nat03CorpusPath("testdata/phase5/false_restrict_hoist.lang"))
+	if aliasErr := VerifyAliasFalseNoAlias(ctx, aliasRunner); aliasErr != nil {
+		addLane("lane:alias-false-no-alias", protocol.StatusMismatch, nil, aliasRunner.RecomputedWork()+1, aliasStarted)
+		markFail(protocol.StatusMismatch)
+	} else {
+		addLane("lane:alias-false-no-alias", protocol.StatusPass, []string{ControlAliasFalseNoAlias}, aliasRunner.RecomputedWork()+1, aliasStarted)
+	}
+
+	// Lane: control:diagnostic.reject_program_id_equivalence (D-05-20):
+	// two independent Check() runs over the same reject-program must agree
+	// on the exact same diagnostic ID.
+	diagnosticStarted := time.Now()
+	rejectSource, rejectErr := os.ReadFile(nat03CorpusPath("testdata/phase4/foreign_call_target_not_foreign.lang"))
+	if rejectErr != nil {
+		addLane("lane:diagnostic-reject-program-id-equivalence", protocol.StatusOperational, nil, 1, diagnosticStarted)
+		markFail(protocol.StatusOperational)
+	} else {
+		firstChecked := Check(rejectSource)
+		secondChecked := Check(rejectSource)
+		if len(firstChecked.Diagnostics) == 0 || len(secondChecked.Diagnostics) == 0 {
+			addLane("lane:diagnostic-reject-program-id-equivalence", protocol.StatusInvalid, nil, 1, diagnosticStarted)
+			markFail(protocol.StatusInvalid)
+		} else {
+			diagnostics := map[string]diagnostic.Diagnostic{"check-run-1": firstChecked.Diagnostics[0], "check-run-2": secondChecked.Diagnostics[0]}
+			if compareErr := Phase5CompareDiagnosticIDs("foreign_call_target_not_foreign.lang", diagnostics); compareErr != nil {
+				addLane("lane:diagnostic-reject-program-id-equivalence", protocol.StatusMismatch, nil, 2, diagnosticStarted)
+				markFail(protocol.StatusMismatch)
+			} else {
+				addLane("lane:diagnostic-reject-program-id-equivalence", protocol.StatusPass, []string{ControlDiagnosticRejectProgramIDEquivalence}, 2, diagnosticStarted)
+			}
+		}
+	}
+
+	// Lane: control:compare.field_routing_unrouted (D-05-21): every field
+	// reachable from execution.Execution is routed to either
+	// Phase5ComparedComparisonFields or Phase5ExcludedComparisonFields --
+	// never left unrouted, and never a stale entry naming a field that no
+	// longer exists.
+	routingStarted := time.Now()
+	actualFields := reachableFieldPaths(reflect.TypeOf(execution.Execution{}), "Execution")
+	unrouted := unroutedFields(actualFields, Phase5ComparedComparisonFields, Phase5ExcludedComparisonFields)
+	stale := staleFields(actualFields, Phase5ComparedComparisonFields, Phase5ExcludedComparisonFields)
+	if len(unrouted) != 0 || len(stale) != 0 {
+		addLane("lane:compare-field-routing", protocol.StatusInvalid, nil, len(actualFields)+1, routingStarted)
+		markFail(protocol.StatusInvalid)
+	} else {
+		addLane("lane:compare-field-routing", protocol.StatusPass, []string{"control:compare.field_routing_unrouted"}, len(actualFields)+1, routingStarted)
+	}
+
+	// Lane: control:interpreter-o0-o3-lto (D-05-19): a real
+	// interpreter/-O0/-O3/-O3-LTO differential over one of the Phase 5
+	// adversarial fixtures -- inline_across_foreign.lang, the fixture
+	// D-05-18a specifically engineered to give `-flto` a real cross-TU
+	// inlining opportunity the non-LTO tiers cannot take.
+	ltoStarted := time.Now()
+	ltoStatus, ltoControls, ltoWork := phase5RunInterpreterO0O3LTOLane(ctx, runner)
+	addLane("lane:interpreter-o0-o3-lto", ltoStatus, ltoControls, ltoWork, ltoStarted)
+	if ltoStatus != protocol.StatusPass {
+		markFail(ltoStatus)
+	}
+
+	// Lane: the sanitizer lane's own four controls (D-05-08/D-05-09/
+	// D-05-13/D-05-14). When VerifyPhase5SanitizeLane itself does not
+	// pass -- an unavailable sanitizer runtime, or one of its own controls
+	// failing to fire -- an explicit obligation lane names all four
+	// sanitizer controls under the sanitizer lane's own reported status,
+	// so a `tool_missing`/`sanitizer_inert` runtime is a NAMED OBLIGATION,
+	// never an implicit pass (T-05-33).
+	sanitizeStarted := time.Now()
+	sanitizeResult, sanitizeErr := VerifyPhase5SanitizeLane(ctx, runner)
+	if sanitizeErr != nil {
+		return protocol.Result{}, sanitizeErr
+	}
+	result.Lanes = append(result.Lanes, sanitizeResult.Lanes...)
+	result.Metrics.RecomputedWork += sanitizeResult.Metrics.RecomputedWork
+	if sanitizeResult.Status != protocol.StatusPass {
+		addLane("lane:native-sanitize-obligations", sanitizeResult.Status,
+			[]string{ControlSanitizeRetainedPointer, ControlSanitizeUseAfterFree, ControlSanitizeAllocatorMismatch, ControlSanitizeUBSanNoRecover},
+			1, sanitizeStarted)
+		markFail(sanitizeResult.Status)
+	}
+
+	for _, required := range Phase5RequiredControls() {
+		if !hasControl(result.Lanes, required) {
+			markFail(protocol.StatusInvalid)
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("verify.control_missing", diagnostic.Span{}, required))
+		}
+	}
+	for _, lane := range result.Lanes {
+		if lane.RecomputedWork == 0 {
+			markFail(protocol.StatusInvalid)
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("verify.zero_work", diagnostic.Span{}, lane.ID))
+		}
+	}
+
+	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
+	return result.Finalize(), nil
+}
+
+// phase5RunInterpreterO0O3LTOLane drives inline_across_foreign.lang
+// through the interpreter and three native builds -- -O0, -O3, and
+// -O3 with LTO -- and compares all four via Phase5CompareEngines. Split
+// out of VerifyPhase5ControlsAndWork as its own function so a failure at
+// any step degrades to a single reported lane status rather than aborting
+// the whole gate.
+func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) (status string, controls []string, work int) {
+	const fixture = "inline_across_foreign.lang"
+	source, err := os.ReadFile(nat03CorpusPath("testdata/phase5/" + fixture))
+	if err != nil {
+		return protocol.StatusOperational, nil, 1
+	}
+	checked := Check(source)
+	if len(checked.Diagnostics) != 0 {
+		return protocol.StatusInvalid, nil, 1
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return protocol.StatusInvalid, nil, 1
+	}
+	program := validated.Program()
+	if len(program.Functions) != 1 {
+		return protocol.StatusInvalid, nil, 1
+	}
+	functionName := program.Functions[0].Name
+
+	interpreted, err := interp.Run(program, functionName, "7")
+	if err != nil {
+		return protocol.StatusOperational, nil, 1
+	}
+	cSource, err := cgen.EmitNative(program)
+	if err != nil {
+		return protocol.StatusOperational, nil, 1
+	}
+
+	nativeRunner := runner
+	nativeRunner.Expect = expectForOutcomeKind(interpreted.Outcome.Kind)
+	for _, function := range program.Functions {
+		if function.Name != functionName || function.ForeignContract == nil {
+			continue
+		}
+		if sourcePath, known := native.ForeignSourcePathForSymbol(function.ForeignContract.Symbol); known {
+			nativeRunner.ForeignSources = append(append([]string(nil), nativeRunner.ForeignSources...), sourcePath)
+		}
+	}
+
+	o0, err := nativeRunner.Run(ctx, cSource, "-O0", []string{"7"})
+	if err != nil || len(o0.Pairs) != 1 {
+		return protocol.StatusOperational, nil, 1
+	}
+	o3, err := nativeRunner.Run(ctx, cSource, "-O3", []string{"7"})
+	if err != nil || len(o3.Pairs) != 1 {
+		return protocol.StatusOperational, nil, 2
+	}
+	ltoRunner := nativeRunner
+	ltoRunner.LTO = true
+	o3lto, err := ltoRunner.Run(ctx, cSource, "-O3", []string{"7"})
+	if err != nil || len(o3lto.Pairs) != 1 {
+		return protocol.StatusOperational, nil, 3
+	}
+
+	engines := map[string]execution.Execution{
+		"interpreter": interpreted,
+		"O0":          o0.Pairs[0].Execution,
+		"O3":          o3.Pairs[0].Execution,
+		"O3-LTO":      o3lto.Pairs[0].Execution,
+	}
+	if compareErr := Phase5CompareEngines(fixture, engines); compareErr != nil {
+		return protocol.StatusMismatch, nil, 4
+	}
+	return protocol.StatusPass, []string{"control:interpreter-o0-o3-lto"}, 4
+}
+
+// Phase5AssertMutationMovesAnAxis closes D-05-22's cross-plan obligation:
+// plan 05-07 built NAT03Mutations()/AssertMutationMovesAnAxis but ran
+// concurrently with plan 05-08, which authors the allocator_mismatch.lang
+// fixture row 6 cites, so 05-07's own AssertMutationMovesAnAxis has no case
+// for control:native.sanitize.allocator_mismatch (row 6 is unreachable
+// there, falling through to its "row not yet subjected" default). This
+// plan depends on both 05-07 and 05-08, so it is the first point the
+// assertion is deterministic rather than a race -- but 05-07's own
+// session_phase5_alias.go is otherwise byte-frozen this plan (only its two
+// now-closed PENDING-05-08 marker comments are removed), so the new case
+// is added here, as a thin dispatcher: every other control still delegates
+// verbatim, unmodified, to AssertMutationMovesAnAxis.
+func Phase5AssertMutationMovesAnAxis(ctx context.Context, mutation NAT03Mutation) error {
+	if mutation.ControlID == ControlSanitizeAllocatorMismatch {
+		return assertAllocatorMismatchMovesAxis(ctx, mutation)
+	}
+	return AssertMutationMovesAnAxis(ctx, mutation)
+}
+
+// assertAllocatorMismatchMovesAxis proves control:native.sanitize.allocator_mismatch
+// against its cited fixture (testdata/phase5/allocator_mismatch.lang):
+// ASan's own alloc-dealloc-mismatch report is a genuine divergence from a
+// clean terminal outcome so extreme no comparable execution.Execution
+// document is ever produced at all -- mapped onto axis:terminal-outcome,
+// the same mapping assertLayoutMismatchMovesAxis uses for an equally
+// total refusal (a normal return vs. an ASan-terminated process).
+func assertAllocatorMismatchMovesAxis(ctx context.Context, mutation NAT03Mutation) error {
+	cSource, err := compilePhase5SanitizeFixture("testdata/phase5/allocator_mismatch.lang")
+	if err != nil {
+		return err
+	}
+	runner := phase5DefaultRunner()
+	runner.ForeignSources = []string{native.ForeignArenaSourcePath()}
+	report, runErr := runner.RunSanitized(ctx, cSource, []string{"7"})
+	wantSignature := sanitizerSignatureFor("alloc-dealloc-mismatch")
+	if runErr != nil || report.ExitCode == 0 || report.ReportSignature != wantSignature {
+		return fmt.Errorf("%s produced no divergence: allocator-mismatch fixture did not report %q (exit=%d, check_kind=%q, err=%v)",
+			mutation.ControlID, wantSignature, report.ExitCode, report.CheckKind, runErr)
+	}
+	return requireAxis(mutation, AxisTerminalOutcome)
+}
