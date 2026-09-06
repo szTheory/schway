@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-09-06T01:21:09.241Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-09-06T01:50:58.898Z"
 last_activity: 2026-09-05
-last_activity_desc: Phase 04 complete, transitioned to Phase 5
-state_head: a1c9f2390cbfa67ab74648becb9639b36e305b8f
+last_activity_desc: Phase 05 execution started
+state_head: 952bebd26bbbed8b4e39051aea5a56d4731f6d2e
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 33
+  completed_plans: 34
   percent: 67
 ---
 
@@ -25,16 +25,16 @@ See: .planning/PROJECT.md (updated 2026-09-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 04 — Fallible Resources and C Boundary
+**Current focus:** Phase 05 — Native Equivalence and Adversarial Evidence
 
 ## Current Position
 
-Phase: 05 (Native Equivalence and Adversarial Evidence) — READY TO EXECUTE
-Plan: Not started
+Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
+Plan: 2 of 14
 Status: Ready to execute
-Last activity: 2026-09-05 — Phase 04 complete, transitioned to Phase 5
+Last activity: 2026-09-05 — Phase 05 execution started
 
-Progress: ██████████ [█████░░░░░] 50%
+Progress: ██████████ [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -88,6 +88,7 @@ Progress: ██████████ [█████░░░░░] 50%
 | Phase 04 P11 | 35 min | 2 tasks | 3 files |
 | Phase 04 P12 | 45min | 3 tasks | 5 files |
 | Phase 04 P13 | 30 min | 4 tasks | 10 files |
+| Phase 05 P01 | 110 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -170,6 +171,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: Promoted okEdgeInto's plural map to the primary representation (assumption-delta promote): the single-edge case is the len==1 degenerate branch, not a separate side table — Keeps exactly one source of truth for which ok edge(s) target a block; an add-alongside side table would reintroduce the last-writer-wins collapse this plan closes
 - [Phase 04]: corevalidate audits ForeignContract.Symbol's identifier shape (foreign.symbol_not_identifier) and cgen independently refuses the same hostile input on its three Validate-bypassing EmitForeign* entry points, closing 04-VERIFICATION.md gap 2's C-injection hole
 - [Phase 04]: [Phase 04] 04-13: full C-identifier shape for allocator/unwind/nonlocal_exit (DD-04-13-01), a third independent predicate at check.go's source-admission layer, plus comment-safety/C-type-expression audits in corevalidate and cgen for every remaining spliced ForeignContract field -- closing 04-VERIFICATION.md gap 2b's code-injection hole at the C boundary.
+- [Phase 05]: selectsByPointerLowering gates on function.PublicOrigin == nil to keep declared borrow-return functions (identical op shape) on their existing lowering path — public_view_mixed_access.lang structurally matches the new by-pointer predicate; PublicOrigin is the only structural fact that distinguishes them
 
 ### Pending Todos
 
@@ -200,6 +202,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T00:23:41.591Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-native-equivalence-and-adversarial-evidence/05-CONTEXT.md
+Last session: 2026-09-06T01:50:58.761Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None
