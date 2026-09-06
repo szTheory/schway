@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
 status: executing
-stopped_at: Completed 05-07-PLAN.md
-last_updated: "2026-09-06T05:07:50.115Z"
+stopped_at: Completed 05-08-PLAN.md
+last_updated: "2026-09-06T05:40:34.245Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 05 execution started
-state_head: 6c01b64dd15a14812d5532169ccfda008259b89c
+state_head: b9811f41c1ddfaa91864a5f5adeec75064b5d550
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 40
+  completed_plans: 41
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
-Plan: 8 of 14
+Plan: 9 of 14
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 05 execution started
 
@@ -95,6 +95,7 @@ Progress: ██████████ [███████░░░] 67%
 | Phase 05 P05 | ~140min | 3 tasks | 8 files |
 | Phase 05 P06 | 75 min | 3 tasks | 5 files |
 | Phase 05 P07 | 180 min | 3 tasks | 4 files |
+| Phase 05 P08 | 95min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -191,6 +192,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 05]: [Phase 05-06]: TestLTOTierIsNotInert captures compiled binary bytes via a new Runner.LastBinary() recorder rather than reusing Run's temp directory, which is deleted before Run returns.
 - [Phase 05]: [Phase 05-07]: deriveAliasFacts and cgen.selectsByPointerLowering are mathematically equivalent for every checker-admitted straight-line program in this language's current grammar — Proven both analytically and empirically (8+ constructed .lang shapes); the false-restrict fixture uses a SHARED borrow chain (deriveAliasFacts's own exclusive-first gate makes it trivially zero-fact) rather than a discovered divergent case, since none exists
 - [Phase 05]: [Phase 05-07]: added cgen.selectsByPointerLoweringSharedOnly/emitLinearBorrowedByPointerPlain, an additive by-pointer-without-restrict lowering path mutually exclusive with the existing exclusive-borrow gate — Required so the mutation runner's fail-closed marker-count guard has a real marker to attack in normally-compiled, unmutated generated C; verified against the full corpus (including 05-05's enumerated closure) for zero regression
+- [Phase 05]: Empirically falsified posix_memalign+free as an ASan allocator-mismatch mechanism; used C++ operator-new/delete (_Znwm/_ZdlPv) linked via -lc++ instead, verified on-host to produce a genuine alloc-dealloc-mismatch report.
+- [Phase 05]: Collapsed a three-distinct-foreign-symbol retained-pointer fixture design to one call-count-dispatched symbol after confirming cgen only calls the first declared symbol in a resource-lifecycle sequence.
 
 ### Pending Todos
 
@@ -221,6 +224,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T05:07:49.984Z
-Stopped at: Completed 05-07-PLAN.md
+Last session: 2026-09-06T05:40:34.117Z
+Stopped at: Completed 05-08-PLAN.md
 Resume file: None
