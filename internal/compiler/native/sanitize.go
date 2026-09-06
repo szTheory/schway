@@ -173,6 +173,18 @@ func (r Runner) compileSanitized(parent context.Context, cSource string, compile
 	defer cancel()
 	arguments := append(append([]string{}, compileFlags...), sourcePath)
 	arguments = append(arguments, objectPaths...)
+	// -lc++ is linked unconditionally on every sanitizer-lane build
+	// (Phase 5 plan 05-08, D-05-08): native/lang_foreign_arena.c's dynamic
+	// allocator-mismatch defect calls the Itanium-mangled operator-new/
+	// operator-delete entry points (_Znwm/_ZdlPv) directly from plain C to
+	// reach a genuinely ASan-distinguishable allocator identity -- verified
+	// empirically that no purely-libc allocator pairing (malloc, calloc,
+	// realloc, posix_memalign, aligned_alloc, memalign, valloc) produces
+	// ASan's alloc-dealloc-mismatch diagnostic on this host, since every
+	// one of them shares ASan's single FROM_MALLOC allocation-type bucket.
+	// Harmless for every other sanitizer-lane build: an unreferenced
+	// library adds no behavior.
+	arguments = append(arguments, "-lc++")
 	arguments = append(arguments, "-o", binaryPath)
 	command := r.commandContext(ctx, r.ClangPath, arguments...)
 	var stdout, stderr boundedWriter

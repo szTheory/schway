@@ -32,6 +32,10 @@ func ForeignSourcePathForSymbol(symbol string) (string, bool) {
 		return ForeignResourceSourcePath(), true
 	case "lang_nonlocal_probe":
 		return ForeignNonlocalSourcePath(), true
+	case "lang_arena_open":
+		return ForeignArenaSourcePath(), true
+	case "lang_retained_touch":
+		return ForeignRetainedSourcePath(), true
 	default:
 		return "", false
 	}
