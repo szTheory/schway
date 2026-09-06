@@ -2,6 +2,9 @@ package measure
 
 import (
 	"errors"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"math"
 	"testing"
 )
@@ -206,5 +209,161 @@ func TestSummaryComputesCoVFromStdDevOverMean(t *testing.T) {
 	}
 	if math.IsInf(variedSummary.CoV, 0) || math.IsNaN(variedSummary.CoV) {
 		t.Fatalf("CoV = %v, want a finite value", variedSummary.CoV)
+	}
+}
+
+func lowCoVSummary() Summary {
+	return Summary{P50: 100, P95: 105, Mean: 100, StdDev: 1, CoV: CoVDemotionThreshold / 2, Count: WarmSampleCount}
+}
+
+func highCoVSummary() Summary {
+	return Summary{P50: 100, P95: 400, Mean: 100, StdDev: 100, CoV: CoVDemotionThreshold * 4, Count: WarmSampleCount}
+}
+
+func TestVerdictVocabularyIsClosed(t *testing.T) {
+	got := Verdicts()
+	want := []string{VerdictBlocking, VerdictObserved, VerdictNotRatified}
+	if len(got) != len(want) {
+		t.Fatalf("Verdicts() = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("Verdicts()[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+	known := map[string]bool{}
+	for _, v := range got {
+		known[v] = true
+	}
+	if known["blocking"] != true || known["observed"] != true || known["not_ratified"] != true {
+		t.Fatalf("Verdicts() = %v, want exactly blocking/observed/not_ratified", got)
+	}
+	// Exhaustiveness: a fourth value is not in the closed set.
+	if known["quarantined"] {
+		t.Fatal("Verdicts() unexpectedly contains a fourth value")
+	}
+}
+
+func TestCoVAboveThresholdDemotesToObserved(t *testing.T) {
+	got := Demote(VerdictBlocking, "recomputed_work", highCoVSummary(), nil)
+	if got != VerdictObserved {
+		t.Fatalf("Demote() = %q, want %q for a CoV above threshold", got, VerdictObserved)
+	}
+	// Regardless of the caller's requested gate type.
+	got = Demote(VerdictObserved, "recomputed_work", highCoVSummary(), nil)
+	if got != VerdictObserved {
+		t.Fatalf("Demote() = %q, want %q for a CoV above threshold", got, VerdictObserved)
+	}
+}
+
+func TestCoVBelowThresholdPassesThroughUnchanged(t *testing.T) {
+	got := Demote(VerdictBlocking, "recomputed_work", lowCoVSummary(), nil)
+	if got != VerdictBlocking {
+		t.Fatalf("Demote() = %q, want %q for a CoV below threshold (pass-through)", got, VerdictBlocking)
+	}
+	got = Demote(VerdictObserved, "recomputed_work", lowCoVSummary(), nil)
+	if got != VerdictObserved {
+		t.Fatalf("Demote() = %q, want %q for a CoV below threshold (pass-through)", got, VerdictObserved)
+	}
+}
+
+func TestOnlyRecomputedWorkIsGateEligible(t *testing.T) {
+	metrics := []string{"elapsed_ns", "output_bytes", "peak_rss", "cache_inputs_reused_count"}
+	for _, metric := range metrics {
+		t.Run(metric, func(t *testing.T) {
+			got := Demote(VerdictBlocking, metric, lowCoVSummary(), nil)
+			if got != VerdictObserved {
+				t.Fatalf("Demote(%q, %q, low-CoV, nil) = %q, want %q -- only recomputed_work is gate-eligible", VerdictBlocking, metric, got, VerdictObserved)
+			}
+		})
+	}
+	// The one eligible metric, for contrast.
+	got := Demote(VerdictBlocking, "recomputed_work", lowCoVSummary(), nil)
+	if got != VerdictBlocking {
+		t.Fatalf("Demote(%q, \"recomputed_work\", low-CoV, nil) = %q, want %q", VerdictBlocking, got, VerdictBlocking)
+	}
+}
+
+func TestUndeterminableCoVIsNotRatified(t *testing.T) {
+	refused := &Error{Code: "measure.stats_short_sample_set", Got: 3, Want: WarmSampleCount}
+	got := Demote(VerdictBlocking, "recomputed_work", Summary{}, refused)
+	if got != VerdictNotRatified {
+		t.Fatalf("Demote() = %q, want %q for a refused sample set", got, VerdictNotRatified)
+	}
+	got = Demote(VerdictObserved, "elapsed_ns", Summary{}, refused)
+	if got != VerdictNotRatified {
+		t.Fatalf("Demote() = %q, want %q for a refused sample set, regardless of requested/metric", got, VerdictNotRatified)
+	}
+}
+
+// TestCoVDemotionNeverPromotesToBlocking is the anti-promotion property
+// test: over a generated grid of (requested, metric, CoV) it asserts
+// Demote returns VerdictBlocking only in the pass-through cell where
+// requested == VerdictBlocking && metric == "recomputed_work" (and the CoV
+// is at or below threshold -- a high CoV demotes even that cell).
+func TestCoVDemotionNeverPromotesToBlocking(t *testing.T) {
+	requestedValues := []string{VerdictBlocking, VerdictObserved, VerdictNotRatified}
+	metrics := []string{"recomputed_work", "elapsed_ns", "output_bytes", "peak_rss"}
+	covValues := []float64{0, CoVDemotionThreshold / 2, CoVDemotionThreshold, CoVDemotionThreshold * 2, CoVDemotionThreshold * 10}
+
+	sawBlocking := false
+	for _, requested := range requestedValues {
+		for _, metric := range metrics {
+			for _, cov := range covValues {
+				summary := Summary{P50: 100, P95: 100, Mean: 100, StdDev: cov * 100, CoV: cov, Count: WarmSampleCount}
+				got := Demote(requested, metric, summary, nil)
+				if got == VerdictBlocking {
+					sawBlocking = true
+					if requested != VerdictBlocking || metric != "recomputed_work" {
+						t.Fatalf("Demote(%q, %q, CoV=%v, nil) = %q, want blocking only from (blocking, recomputed_work)", requested, metric, cov, got)
+					}
+					if cov > CoVDemotionThreshold {
+						t.Fatalf("Demote(%q, %q, CoV=%v, nil) = %q, want observed above threshold", requested, metric, cov, got)
+					}
+				}
+			}
+		}
+	}
+	if !sawBlocking {
+		t.Fatal("grid never produced blocking -- test would pass vacuously")
+	}
+}
+
+// TestDemoteHasExactlyOnePromotionPassthrough is D-06-19/D-06-22's
+// structural guard: a go/ast scan of Demote's body asserting
+// "return VerdictBlocking" appears in exactly one return position -- the
+// pass-through -- so a future edit cannot add a second promotion path
+// without failing this test.
+func TestDemoteHasExactlyOnePromotionPassthrough(t *testing.T) {
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, "statistics.go", nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var demoteFunc *ast.FuncDecl
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if ok && fn.Name.Name == "Demote" {
+			demoteFunc = fn
+			break
+		}
+	}
+	if demoteFunc == nil {
+		t.Fatal("statistics.go does not declare a Demote function")
+	}
+	count := 0
+	ast.Inspect(demoteFunc.Body, func(n ast.Node) bool {
+		ret, ok := n.(*ast.ReturnStmt)
+		if !ok || len(ret.Results) != 1 {
+			return true
+		}
+		ident, ok := ret.Results[0].(*ast.Ident)
+		if ok && ident.Name == "VerdictBlocking" {
+			count++
+		}
+		return true
+	})
+	if count != 1 {
+		t.Fatalf("Demote contains %d `return VerdictBlocking` statements, want exactly 1 (the pass-through)", count)
 	}
 }
