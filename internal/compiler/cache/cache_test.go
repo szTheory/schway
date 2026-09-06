@@ -1,6 +1,7 @@
 package cache_test
 
 import (
+	"context"
 	"encoding/json"
 	"go/ast"
 	"go/parser"
@@ -194,6 +195,182 @@ func TestCacheImportsStayIndependent(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// ---------------------------------------------------------------------
+// Task 3: fail-closed not_cacheable, adjacency, and the cold empty store.
+// ---------------------------------------------------------------------
+
+func newArtifactSpecFixture(t *testing.T, seed string) cache.ArtifactSpec {
+	t.Helper()
+	dir := t.TempDir()
+	clangPath := filepath.Join(dir, "fixture-clang.sh")
+	if err := os.WriteFile(clangPath, []byte("#!/bin/sh\necho fixture clang version 1.0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runnerPath := filepath.Join(dir, "runner.go")
+	if err := os.WriteFile(runnerPath, []byte("package fake\n// mutation runner fixture: "+seed+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return cache.ArtifactSpec{
+		Kind:                     cache.KindCompiledBinary,
+		FixtureSource:            []byte("fn main() { " + seed + "() }\n"),
+		BuildFlags:               "-O0 target=x86_64-apple-darwin",
+		ClangPath:                clangPath,
+		RuntimeIdentity:          "none",
+		ForeignTranslationUnit:   []byte("// frozen TU: " + seed + "\n"),
+		MutationRunnerSourcePath: runnerPath,
+		GoToolchain:              "go1.24.0",
+	}
+}
+
+func TestCacheStatusVocabularyIsClosed(t *testing.T) {
+	statuses := cache.CacheStatuses()
+	if len(statuses) != 4 {
+		t.Fatalf("expected exactly 4 cache statuses, got %d: %v", len(statuses), statuses)
+	}
+	allowed := map[string]bool{
+		"artifact_reused": true, "artifact_recomputed": true,
+		"not_cacheable": true, "unavailable": true,
+	}
+	for _, status := range statuses {
+		if !allowed[status] {
+			t.Fatalf("status %q is not one of the four D-06-12 values", status)
+		}
+		if status == "hit" || status == "miss" {
+			t.Fatalf("status vocabulary must never contain hit/miss terminology (D-06-12): it would wrongly imply a verdict was cached")
+		}
+	}
+}
+
+func TestCacheFailsClosedToNotCacheable(t *testing.T) {
+	ctx := context.Background()
+	root := filepath.Join(t.TempDir(), "does-not-exist-yet")
+	store := &cache.Store{Root: root}
+
+	failingSpec := newArtifactSpecFixture(t, "probe-fail")
+	failingSpec.ClangPath = filepath.Join(t.TempDir(), "no-such-clang-binary")
+	outcome, err := cache.Consult(ctx, store, failingSpec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Status != cache.StatusNotCacheable || outcome.Key.ID != "" {
+		t.Fatalf("failing Clang probe: got status=%s key=%+v, want StatusNotCacheable with a zero Key", outcome.Status, outcome.Key)
+	}
+	if _, statErr := os.Stat(root); !os.IsNotExist(statErr) {
+		t.Fatalf("Consult must perform no store lookup when not_cacheable: root now exists (stat err=%v)", statErr)
+	}
+
+	outcome, err = cache.Consult(ctx, store, cache.ArtifactSpec{Kind: "not-a-real-kind"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Status != cache.StatusNotCacheable || outcome.Key.ID != "" {
+		t.Fatalf("unclassified kind: got status=%s key=%+v, want StatusNotCacheable with a zero Key", outcome.Status, outcome.Key)
+	}
+}
+
+func TestCacheEqualDeclaredInputsShareOneEntry(t *testing.T) {
+	ctx := context.Background()
+	specA := newArtifactSpecFixture(t, "shared-seed")
+	specB := newArtifactSpecFixture(t, "shared-seed")
+
+	inputsA, err := cache.InputsFor(ctx, specA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputsB, err := cache.InputsFor(ctx, specB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyA, err := cache.ComputeKey(inputsA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyB, err := cache.ComputeKey(inputsB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if keyA.ID != keyB.ID {
+		t.Fatalf("byte-identical declared inputs must share one key: %s vs %s", keyA.ID, keyB.ID)
+	}
+
+	specC := newArtifactSpecFixture(t, "different-seed")
+	inputsC, err := cache.InputsFor(ctx, specC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyC, err := cache.ComputeKey(inputsC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if keyA.ID == keyC.ID {
+		t.Fatal("a spec differing in a declared input must produce a different key (miss)")
+	}
+
+	store := &cache.Store{Root: t.TempDir()}
+	artifact := []byte("shared-artifact-bytes")
+	if err := store.Put(keyA, artifact); err != nil {
+		t.Fatal(err)
+	}
+	got, found, err := store.Get(keyB)
+	if err != nil || !found {
+		t.Fatalf("second Get for the merged entry: found=%v err=%v", found, err)
+	}
+	if string(got) != string(artifact) {
+		t.Fatalf("merged entry returned different bytes: got %q want %q", got, artifact)
+	}
+}
+
+func TestCacheEmptyStoreReportsCold(t *testing.T) {
+	ctx := context.Background()
+	store := &cache.Store{Root: t.TempDir()}
+	specs := []cache.ArtifactSpec{
+		newArtifactSpecFixture(t, "cold-1"),
+		newArtifactSpecFixture(t, "cold-2"),
+		{Kind: "unclassified-kind"},
+	}
+	for index, spec := range specs {
+		outcome, err := cache.Consult(ctx, store, spec)
+		if err != nil {
+			t.Fatalf("case %d: %v", index, err)
+		}
+		if outcome.Status == cache.StatusArtifactReused {
+			t.Fatalf("case %d: a fresh empty store must never report reuse, got %s", index, outcome.Status)
+		}
+		if outcome.Status != cache.StatusArtifactRecomputed && outcome.Status != cache.StatusNotCacheable {
+			t.Fatalf("case %d: unexpected status %s", index, outcome.Status)
+		}
+	}
+}
+
+func TestCacheMismatchedMetaIsTreatedAsAbsent(t *testing.T) {
+	store := &cache.Store{Root: t.TempDir()}
+	key, err := cache.ComputeKey([]cache.Input{{Name: "fixture_source", Digest: "abc"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Put(key, []byte("artifact-bytes")); err != nil {
+		t.Fatal(err)
+	}
+
+	dir := store.Path(key)
+	tampered := map[string]any{
+		"schema": cache.Schema,
+		"id":     key.ID,
+		"inputs": []map[string]string{{"name": "fixture_source", "digest": "TAMPERED"}},
+	}
+	encoded, err := json.Marshal(tampered)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "meta.json"), encoded, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, found, err := store.Get(key); err != nil || found {
+		t.Fatalf("meta.json recording a mismatched input list must be treated as absent: found=%v err=%v", found, err)
 	}
 }
 
