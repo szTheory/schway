@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
-status: executing
-stopped_at: Completed 05-13-PLAN.md
-last_updated: "2026-09-06T16:17:22.435Z"
+status: verifying
+stopped_at: Completed 05-14-PLAN.md — Phase 5 complete (14/14)
+last_updated: "2026-09-06T18:22:38.180Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 05 execution started
-state_head: 21a42696fa322e3de42224b87c48bad142e473a4
+state_head: d5ce550a00b5cae1a48a4ef931480a64cd4d46ac
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 46
+  completed_plans: 47
   percent: 67
 ---
 
@@ -31,7 +31,7 @@ hiding runtime costs.
 
 Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
 Plan: 14 of 14
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-05 — Phase 05 execution started
 
 Progress: ██████████ [███████░░░] 67%
@@ -101,6 +101,7 @@ Progress: ██████████ [███████░░░] 67%
 | Phase 05 P11 | 45min | 3 tasks | 3 files |
 | Phase 05 P12 | 95min | 3 tasks | 8 files |
 | Phase 05 P13 | ~50min | 2 tasks | 5 files |
+| Phase 05 P14 | ~35 min (continuation) | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -206,6 +207,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 05]: 05-12: lang.mismatch/0 publishes D-05-26's twelve fields plus an additive evidence_id (human-approved Task 1 checkpoint decision, Claude's Discretion)
 - [Phase 05]: 05-12: session.SignatureFromDisagreement wires session -> reduce (05-10's deferred wiring), keeping internal/compiler/reduce a dependency-free leaf package
 - [Phase 05]: 05-12: TestReducerNonDeterminismGoesRed required an engineered 3-arm-match-with-unused-bindings fixture; the original borrowChainSeed/foreignChainSeedWithSteps fixtures never diverged under shuffled move order (verified empirically)
+- [Phase 05]: [Phase 05] 05-14: OpCall and interprocedural loan liveness/-O3 equivalence are OUT of M001, developer-confirmed one-way, and become M002's LEAD charter item (D-05-32/D-05-33); M001 ships without Lang-to-Lang calls and D-03-02 remains open past the milestone
 
 ### Pending Todos
 
@@ -236,6 +238,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T16:17:22.296Z
-Stopped at: Completed 05-13-PLAN.md
+Last session: 2026-09-06T18:22:38.041Z
+Stopped at: Completed 05-14-PLAN.md — Phase 5 complete (14/14)
 Resume file: None

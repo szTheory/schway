@@ -65,7 +65,7 @@ hiding runtime costs.
   the portable milestone subset, then builds and runs them with Clang.
 - [x] **NAT-02**: Interpreter, native `-O0`, and native `-O3` agree on terminal
   outcome, semantic-event order, and live-resource state for valid probes.
-- [ ] **NAT-03**: Native validation detects layout mismatch, missing partial
+- [x] **NAT-03**: Native validation detects layout mismatch, missing partial
   cleanup, allocator mismatch, stale callback retention, false no-alias facts,
   use-after-free, and foreign nonlocal-exit cleanup bypass.
 
@@ -80,7 +80,7 @@ hiding runtime costs.
   emits or validates the compact manifest and expands detail only on demand.
 - [ ] **DX-04**: An agent can introduce, locate, and repair representative match,
   move, borrow, cleanup, and stale-evidence defects without scraping prose.
-- [ ] **QLT-01**: The suite preserves every relevant negative control and reduced
+- [x] **QLT-01**: The suite preserves every relevant negative control and reduced
   counterexample from Spikes 001–005 while making the coordinated false
   source-to-core claim an explicit expected escape.
 - [ ] **QLT-02**: Compiler feedback budgets are ratified as cold/warm
@@ -149,12 +149,12 @@ hiding runtime costs.
 | INT-02 | Phase 5 | Complete |
 | NAT-01 | Phase 1 | Complete |
 | NAT-02 | Phase 5 | Complete |
-| NAT-03 | Phase 5 | Pending |
+| NAT-03 | Phase 5 | Complete |
 | DX-01 | Phase 1 | Complete |
 | DX-02 | Phase 6 | Pending |
 | DX-03 | Phase 6 | Pending |
 | DX-04 | Phase 6 | Pending |
-| QLT-01 | Phase 5 | Pending |
+| QLT-01 | Phase 5 | Complete |
 | QLT-02 | Phase 6 | Pending |
 
 **Coverage:**
