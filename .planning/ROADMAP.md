@@ -252,7 +252,7 @@ validator, the code generator, or the session gate, so no two plans have disjoin
   3. ASan/UBSan evidence is isolated from semantic equivalence evidence and catches retained-pointer lifetime defects.
   4. Any injected mismatch reports a minimized source/core case and causal event trace; the coordinated source-to-core false claim remains a documented escape.
 
-**Plans**: 6/14 plans executed
+**Plans**: 7/14 plans executed
 
 Plans:
 **Wave 1**
@@ -269,7 +269,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 05-07-PLAN.md — `control:alias.false_no_alias` and the NAT-03 axis-movement table (wave 3)
+- [x] 05-07-PLAN.md — `control:alias.false_no_alias` and the NAT-03 axis-movement table (wave 3)
 - [ ] 05-08-PLAN.md — Foreign dynamic fixtures: allocator mismatch, UAF, retained pointer (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
@@ -315,5 +315,5 @@ Plans:
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
-| 5. Native Equivalence and Adversarial Evidence | 6/14 | In Progress|  |
+| 5. Native Equivalence and Adversarial Evidence | 7/14 | In Progress|  |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |
