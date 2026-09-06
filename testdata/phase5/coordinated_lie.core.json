@@ -1,0 +1,75 @@
+{
+  "schema": "lang.core/1",
+  "module": "phase5.coordinated_lie",
+  "module_id": "s1:phase5.coordinated_lie:module:phase5.coordinated_lie",
+  "data_types": null,
+  "functions": [
+    {
+      "id": "s1:phase5.coordinated_lie:fn:relay",
+      "name": "relay",
+      "entry_point_id": "s1:phase5.coordinated_lie:fn:relay:point:entry",
+      "return_point_id": "s1:phase5.coordinated_lie:fn:relay:point:return",
+      "parameter": {
+        "id": "s1:phase5.coordinated_lie:fn:relay:place:0",
+        "name": "buffer",
+        "type": "Buffer"
+      },
+      "return_type": "Buffer",
+      "linear": {
+        "id": "s1:phase5.coordinated_lie:fn:relay:linear",
+        "types": [
+          {
+            "id": "s1:phase5.coordinated_lie:fn:relay:type:0",
+            "shape": {
+              "constructor": "Buffer",
+              "arguments": []
+            },
+            "abilities": [
+              "drop",
+              "share",
+              "send",
+              "escape"
+            ],
+            "negative_witnesses": [
+              {
+                "ability": "copy",
+                "path": ["Buffer"]
+              }
+            ]
+          }
+        ],
+        "places": [
+          {
+            "id": "s1:phase5.coordinated_lie:fn:relay:place:0",
+            "name": "buffer",
+            "type_id": "s1:phase5.coordinated_lie:fn:relay:type:0"
+          },
+          {
+            "id": "s1:phase5.coordinated_lie:fn:relay:place:1",
+            "name": "delivered",
+            "type_id": "s1:phase5.coordinated_lie:fn:relay:type:0"
+          }
+        ],
+        "operations": [
+          {
+            "id": "s1:phase5.coordinated_lie:fn:relay:op:0",
+            "point_id": "s1:phase5.coordinated_lie:fn:relay:point:linear:0",
+            "kind": "borrow_shared",
+            "source_id": "s1:phase5.coordinated_lie:fn:relay:place:0",
+            "target_id": "s1:phase5.coordinated_lie:fn:relay:place:1",
+            "loan_id": "s1:phase5.coordinated_lie:fn:relay:loan:0",
+            "type_id": "s1:phase5.coordinated_lie:fn:relay:type:0"
+          },
+          {
+            "id": "s1:phase5.coordinated_lie:fn:relay:op:1",
+            "point_id": "s1:phase5.coordinated_lie:fn:relay:point:linear:1",
+            "kind": "return",
+            "source_id": "s1:phase5.coordinated_lie:fn:relay:place:1",
+            "type_id": "s1:phase5.coordinated_lie:fn:relay:type:0"
+          }
+        ]
+      },
+      "span": { "start": 0, "end": 0 }
+    }
+  ]
+}
