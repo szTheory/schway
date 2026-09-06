@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -57,11 +59,25 @@ var pinnedFixtures = []pinnedFixture{
 	{"testdata/phase3/public_view_understated.lang", "b45496eb4292454be7a919c1f63a7768060f383a1dc61f3f0a77f7aba65d8574", "evidence:9b24e9af419804d5e7cb22ec"},
 	{"testdata/phase3/sequential_shared_then_exclusive_accept.lang", "56d20794f8a43822f4483d2da39e870b4cb036c262f5e9289d32f5859bed20bd", "evidence:a7bf54fca28c4ddc52303c8f"},
 	{"testdata/phase3/shared_shared_accept.lang", "ecc14ac0c851b90546fb41502b8915ac325ba322d3a3a7d4887b86961ed231b4", "evidence:00cb19b4caa2945e6ce59859"},
+	// Phase 4 accepting fixtures (D-05-39): widened from Phase 1-3 so this
+	// pin also catches a Phase 5 emitter change that silently perturbs
+	// Phase 4. Only the accepting testdata/phase4 fixtures are pinned here,
+	// matching the Phase 3 precedent above (reject fixtures produce
+	// diagnostics and are out of scope for this byte-identity pin); the set
+	// mirrors native_test.go's phase4CorpusMatrix() "clean(...)" entries.
+	{"testdata/phase4/acquire_three_fail_second.lang", "fcfd88bc97a15bdd0c774148e8efb23b2210d3f6e40ad101d0b3cfcf33591dee", "evidence:db391e8cbf6a999c40fbdaf4"},
+	{"testdata/phase4/acquire_three_fail_third.lang", "1a23c824283bd12341da16197690f611884c8ef3b465458e134bfacd8dc7eb06", "evidence:1fb10eea4a10a005462dfaf6"},
+	{"testdata/phase4/acquire_three_success.lang", "8bbce39409d78a99c55c02053deff4ee016dfbf9d03733ad6cd8a5e0362ec88a", "evidence:d68787f08a68a17f486d1783"},
+	{"testdata/phase4/defect_terminal.lang", "4f348119f72c9d8aa1b3dc1cb91942176d74727297142ca940d44c08737bab0f", "evidence:2e320e87c5d9609ee86275bb"},
+	{"testdata/phase4/discard_because.lang", "6b1b048e4e0b2d3cc2791886d7b54f31de63788b4e2c5a8b185df51e5f652d89", "evidence:ac3003a93f4568b404aa319a"},
+	{"testdata/phase4/foreign_acquire_one.lang", "718bed114e0754d3bfdb36a08d10649672915644d2eaca5caf266072f7e4dbf1", "evidence:dbfea02f20d97aff459e458b"},
+	{"testdata/phase4/nonlocal_exit_probe.lang", "cde5fabf98be29972f21c4331bacde11fc135f1e3981c5ed495e23d554af0eb8", "evidence:0c768d94aeee2d03625e613b"},
 }
 
-// TestPreviousPhaseCoreBytesUnchanged pins every Phase 1/2/3 fixture's
-// serialized core JSON to its exact byte value at the Phase 4 phase-start
-// commit (D-04-23). It must be green before any new operation kind lands.
+// TestPreviousPhaseCoreBytesUnchanged pins every Phase 1/2/3/4 fixture's
+// serialized core JSON to its exact byte value from before Phase 5 (D-05-39,
+// widened from the Phase 4 pin which stopped at Phase 3). It must be green
+// before any new operation kind lands.
 func TestPreviousPhaseCoreBytesUnchanged(t *testing.T) {
 	for _, fixture := range pinnedFixtures {
 		t.Run(fixture.Path, func(t *testing.T) {
@@ -86,7 +102,7 @@ func TestPreviousPhaseCoreBytesUnchanged(t *testing.T) {
 }
 
 // TestPreviousPhaseManifestIDsUnchanged is TestPreviousPhaseCoreBytesUnchanged's
-// evidence-manifest-identity sibling (D-04-23).
+// evidence-manifest-identity sibling (D-04-23), widened to Phase 4 by D-05-39.
 func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 	for _, fixture := range pinnedFixtures {
 		t.Run(fixture.Path, func(t *testing.T) {
@@ -105,6 +121,66 @@ func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 				t.Fatalf("manifest ID moved for %s: got %s, want %s", fixture.Path, product.Manifest.ID, fixture.ManifestID)
 			}
 		})
+	}
+}
+
+// previousPhaseGoldenCDigests pins the SHA-256 digest of every committed
+// *.golden.c file under testdata/phase1 through testdata/phase4 to its exact
+// value before any Phase 5 emitter change (D-05-39). This is Task 1's
+// tripwire: the by-pointer lowering emitter Task 2 adds must be additive, and
+// this test is the only mechanical proof that it did not perturb a prior
+// phase's committed generated-C golden. Digests were computed from the tree
+// as it stood immediately before this plan's Task 2 change.
+var previousPhaseGoldenCDigests = map[string]string{
+	"testdata/phase1/generated.golden.c":               "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74",
+	"testdata/phase2/owned_transfer.golden.c":          "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8",
+	"testdata/phase4/foreign_layout_mismatch.golden.c": "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031",
+}
+
+// TestPreviousPhaseGoldenCUnchanged hashes every committed *.golden.c under
+// testdata/phase1, testdata/phase2, testdata/phase3, and testdata/phase4 and
+// compares each against previousPhaseGoldenCDigests. It fails on any drift,
+// naming the exact file path and both digests, and also fails if the corpus
+// gains or loses a golden.c file relative to the pinned table -- so a Phase 5
+// change that accidentally perturbs a prior golden (or silently deletes one)
+// is caught here rather than in review (D-05-39).
+func TestPreviousPhaseGoldenCUnchanged(t *testing.T) {
+	var found []string
+	for _, phaseDir := range []string{"phase1", "phase2", "phase3", "phase4"} {
+		matches, err := filepath.Glob(testsupport.ProjectPath("testdata", phaseDir, "*.golden.c"))
+		if err != nil {
+			t.Fatalf("glob testdata/%s: %v", phaseDir, err)
+		}
+		for _, match := range matches {
+			relative := "testdata/" + phaseDir + "/" + filepath.Base(match)
+			found = append(found, relative)
+		}
+	}
+	sort.Strings(found)
+
+	seen := make(map[string]bool, len(found))
+	for _, relative := range found {
+		seen[relative] = true
+		t.Run(relative, func(t *testing.T) {
+			want, known := previousPhaseGoldenCDigests[relative]
+			if !known {
+				t.Fatalf("unpinned golden.c file %s found on disk; add its digest to previousPhaseGoldenCDigests", relative)
+			}
+			data, err := os.ReadFile(testsupport.ProjectPath(splitPath(relative)...))
+			if err != nil {
+				t.Fatalf("read %s: %v", relative, err)
+			}
+			sum := sha256.Sum256(data)
+			got := hex.EncodeToString(sum[:])
+			if got != want {
+				t.Fatalf("golden.c bytes moved for %s: got sha256 %s, want %s", relative, got, want)
+			}
+		})
+	}
+	for relative := range previousPhaseGoldenCDigests {
+		if !seen[relative] {
+			t.Fatalf("pinned golden.c file %s no longer exists on disk", relative)
+		}
 	}
 }
 
