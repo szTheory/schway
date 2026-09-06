@@ -155,6 +155,70 @@ func TestCacheExportedSurfaceStoresNoVerdict(t *testing.T) {
 	}
 }
 
+// TestOutcomeFieldSetIsPinned closes the one hole the identifier denylist
+// cannot: "outcome" and "status" are excluded from
+// forbiddenIdentifierSubstrings because this package's own exported
+// Outcome/CacheStatus names use them, so a LATER field such as
+// Outcome.LaneOutcome or Outcome.CheckStatus would pass
+// TestCacheExportedSurfaceStoresNoVerdict unnoticed. Pinning the exact
+// field set makes any addition to Outcome a deliberate, reviewed act
+// rather than a silent one -- the same self-invalidating-enumeration
+// discipline 06-01 used for the result-identity struct.
+//
+// Outcome may only ever report WHAT THIS INVOCATION SKIPPED. If a future
+// field would report whether a lane passed, that is D-06-06's one-way
+// violation and this test is where it must stop.
+func TestOutcomeFieldSetIsPinned(t *testing.T) {
+	want := []string{"Artifact", "Key", "Status"}
+	got := exportedFieldNames(t, "Outcome")
+	if len(got) != len(want) {
+		t.Fatalf("cache.Outcome field set changed: got %v, want exactly %v -- adding a field to Outcome requires re-reading D-06-06 (artifacts, never verdicts)", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("cache.Outcome field set changed: got %v, want exactly %v -- adding a field to Outcome requires re-reading D-06-06 (artifacts, never verdicts)", got, want)
+		}
+	}
+}
+
+// exportedFieldNames parses this package's non-test sources and returns the
+// declared field names of typeName, in declaration order. It fails when the
+// type is absent, so a rename cannot make the pin above vacuously pass.
+func exportedFieldNames(t *testing.T, typeName string) []string {
+	t.Helper()
+	dir := testsupport.ProjectPath("internal", "compiler", "cache")
+	fileSet := token.NewFileSet()
+	var names []string
+	found := false
+	for _, path := range nonTestGoFiles(t, dir) {
+		file, err := parser.ParseFile(fileSet, path, nil, parser.AllErrors)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
+		ast.Inspect(file, func(node ast.Node) bool {
+			spec, ok := node.(*ast.TypeSpec)
+			if !ok || spec.Name.Name != typeName {
+				return true
+			}
+			structType, ok := spec.Type.(*ast.StructType)
+			if !ok || structType.Fields == nil {
+				return true
+			}
+			found = true
+			for _, field := range structType.Fields.List {
+				for _, name := range field.Names {
+					names = append(names, name.Name)
+				}
+			}
+			return false
+		})
+	}
+	if !found {
+		t.Fatalf("type %s not found in internal/compiler/cache -- the field-set pin cannot vacuously pass", typeName)
+	}
+	return names
+}
+
 func assertIdentifierClean(t *testing.T, path, name string) {
 	t.Helper()
 	lower := strings.ToLower(name)
