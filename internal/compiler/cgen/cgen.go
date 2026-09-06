@@ -1092,6 +1092,12 @@ func unsafeForeignContractField(contract *core.ForeignContract) string {
 	if !commentSafeForeignField(contract.Aliasing) {
 		return "aliasing"
 	}
+	// Alias is Phase 4 plan 06's additive aliasing-obligation field
+	// (D-04-28); D-05-36 closes the carried D-04-33 audit gap by giving it
+	// the exact same comment-safety check as its Aliasing sibling above.
+	if !commentSafeForeignField(contract.Alias) {
+		return "alias"
+	}
 	if contract.Layout != nil {
 		if !validForeignSymbol(contract.Layout.ForeignTypeName) {
 			return "layout.foreign_type_name"

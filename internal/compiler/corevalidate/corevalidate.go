@@ -1763,7 +1763,12 @@ func validCTypeExpression(value string) bool {
 // splice site over one of these fields has this doc comment and this
 // function as its named place to extend.
 func foreignContractFieldsCSafe(contract *core.ForeignContract) bool {
-	if !commentSafe(contract.Fails) || !commentSafe(contract.InitializedState) || !commentSafe(contract.Capture) || !commentSafe(contract.Retention) || !commentSafe(contract.Aliasing) {
+	// Alias is Phase 4 plan 06's additive aliasing-obligation field
+	// (D-04-28); D-05-36 closes the carried D-04-33 audit gap by giving it
+	// the exact same comment-safety check as its Aliasing sibling. This is
+	// an independent re-derivation of cgen's own unsafeForeignContractField
+	// Alias check (D-12): neither file imports the other.
+	if !commentSafe(contract.Fails) || !commentSafe(contract.InitializedState) || !commentSafe(contract.Capture) || !commentSafe(contract.Retention) || !commentSafe(contract.Aliasing) || !commentSafe(contract.Alias) {
 		return false
 	}
 	if contract.Layout == nil {

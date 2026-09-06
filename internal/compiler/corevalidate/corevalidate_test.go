@@ -691,7 +691,7 @@ func TestForeignContractCommentSafetyRefused(t *testing.T) {
 		t.Fatalf("valid foreign-call core rejected: %+v", result)
 	}
 
-	commentFields := []string{"Fails", "InitializedState", "Capture", "Retention", "Aliasing"}
+	commentFields := []string{"Fails", "InitializedState", "Capture", "Retention", "Aliasing", "Alias"}
 	commentPayloads := []struct {
 		name  string
 		value string
@@ -715,6 +715,8 @@ func TestForeignContractCommentSafetyRefused(t *testing.T) {
 			contract.Retention = value
 		case "Aliasing":
 			contract.Aliasing = value
+		case "Alias":
+			contract.Alias = value
 		}
 	}
 	for _, field := range commentFields {
@@ -808,6 +810,26 @@ func TestForeignContractCommentSafetyRefused(t *testing.T) {
 			t.Fatalf("expected an empty CType to be accepted, got %+v", result)
 		}
 	})
+}
+
+// TestCorevalidateRefusesUnsafeAliasField is D-05-36's dedicated regression
+// proof (closing the carried D-04-33 gap): a comment-terminating Alias value
+// is refused with foreign.contract_field_not_c_safe, exactly like its
+// Aliasing sibling. TestForeignContractCommentSafetyRefused above already
+// exercises "Alias" through its own commentFields table; this test is the
+// plan's named, standalone assertion of the same fact, so removing the new
+// Alias clause from foreignContractFieldsCSafe fails THIS test directly.
+func TestCorevalidateRefusesUnsafeAliasField(t *testing.T) {
+	valid := foreignAcquireProgram(t)
+	if result := corevalidate.Validate(valid); !result.Valid {
+		t.Fatalf("valid foreign-call core rejected: %+v", result)
+	}
+	mutated := cloneProgram(t, valid)
+	mutated.Functions[0].ForeignContract.Alias = "*/ int injected(void){return 1;} /*"
+	result := corevalidate.Validate(mutated)
+	if result.Valid || result.Problems[0].Code != "foreign.contract_field_not_c_safe" {
+		t.Fatalf("expected foreign.contract_field_not_c_safe for a comment-terminating Alias value, got %+v", result)
+	}
 }
 
 // TestAllocatorIdentityMismatchRejected proves T-04-14's allocator-identity

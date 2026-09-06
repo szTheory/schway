@@ -765,3 +765,51 @@ func TestPhase5ByPointerLoweringThreeEngineAgreement(t *testing.T) {
 		t.Fatalf("expected the by-pointer lowering path to be selected, got:\n%s", result.CSource)
 	}
 }
+
+// aliasProbeSentinel is D-05-36's distinctive core.ForeignContract.Alias
+// value: driven through every EmitForeign* entry point, it must appear in
+// NONE of their outputs (D-04-33 closed). It is a plain identifier-shaped
+// string (no comment terminator), so it stays comment-safe and is never
+// itself refused by unsafeForeignContractField's new Alias check -- the
+// point of this test is that the field is never spliced anywhere at all,
+// not merely that a hostile value would be caught.
+const aliasProbeSentinel = "lang_alias_probe_sentinel"
+
+// TestEmitForeignNeverContainsAliasValue is D-05-36's regression proof: every
+// exported EmitForeign* entry point is driven with a core.ForeignContract
+// carrying aliasProbeSentinel as its Alias value, and none of their outputs
+// may ever contain it. Closing the carried D-04-33 gap means a future splice
+// site over Alias fails this test loudly rather than silently reopening the
+// closed C-injection class.
+func TestEmitForeignNeverContainsAliasValue(t *testing.T) {
+	checked := foreignAcquireCheckedProgram(t)
+	mutatedContract := *checked.Program.Functions[0].ForeignContract
+	mutatedContract.Alias = aliasProbeSentinel
+	mutated := checked.Program
+	mutated.Functions = append([]core.Function(nil), mutated.Functions...)
+	mutated.Functions[0].ForeignContract = &mutatedContract
+
+	manifest, err := cgen.EmitForeignManifest(mutated)
+	if err != nil {
+		t.Fatalf("EmitForeignManifest: %v", err)
+	}
+	if strings.Contains(manifest, aliasProbeSentinel) {
+		t.Fatalf("EmitForeignManifest output contains the Alias sentinel:\n%s", manifest)
+	}
+
+	header, err := cgen.EmitForeignHeader(mutated)
+	if err != nil {
+		t.Fatalf("EmitForeignHeader: %v", err)
+	}
+	if strings.Contains(header, aliasProbeSentinel) {
+		t.Fatalf("EmitForeignHeader output contains the Alias sentinel:\n%s", header)
+	}
+
+	conformance, err := cgen.EmitForeignConformance(mutated, testsupport.ProjectPath("native", "lang_foreign_resource_private.h"))
+	if err != nil {
+		t.Fatalf("EmitForeignConformance: %v", err)
+	}
+	if strings.Contains(conformance, aliasProbeSentinel) {
+		t.Fatalf("EmitForeignConformance output contains the Alias sentinel:\n%s", conformance)
+	}
+}
