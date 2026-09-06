@@ -1,10 +1,12 @@
 package session
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
@@ -251,6 +253,125 @@ func TestExplainEdgeKindVocabularyIsClosed(t *testing.T) {
 			t.Fatalf("no edges were checked -- the in-tree rejecting-fixture set produced no cause edges")
 		}
 	})
+}
+
+// --- Task 3: the determinism obligation ---------------------------------
+
+// TestExplainCauseGraphIsDeterministic discharges D-06-02's stated
+// obligation as an executable claim: ExplainCommandFile called twice on the
+// same source and diagnostic ID produces byte-identical marshalled
+// ExplainSummary bytes and the same Result.ID, over every rejecting fixture
+// in the Phase 2-5 corpora (not one hand-picked case).
+func TestExplainCauseGraphIsDeterministic(t *testing.T) {
+	total := 0
+	for _, dir := range []string{"phase2", "phase3", "phase4", "phase5"} {
+		for _, fixture := range rejectingFixtures(t, dir) {
+			for _, diagID := range fixtureDiagnosticIDs(t, fixture) {
+				fixture, diagID := fixture, diagID
+				name := fmt.Sprintf("%s/%s", filepath.Base(fixture), diagID)
+				t.Run(name, func(t *testing.T) {
+					first, err := ExplainCommandFile(fixture, diagID, 0)
+					if err != nil {
+						t.Fatalf("first call: %v", err)
+					}
+					second, err := ExplainCommandFile(fixture, diagID, 0)
+					if err != nil {
+						t.Fatalf("second call: %v", err)
+					}
+					firstBytes, err := json.Marshal(first.Explain)
+					if err != nil {
+						t.Fatalf("marshal first: %v", err)
+					}
+					secondBytes, err := json.Marshal(second.Explain)
+					if err != nil {
+						t.Fatalf("marshal second: %v", err)
+					}
+					if string(firstBytes) != string(secondBytes) {
+						t.Fatalf("non-deterministic ExplainSummary bytes:\nfirst:  %s\nsecond: %s", firstBytes, secondBytes)
+					}
+					if first.Finalize().ID != second.Finalize().ID {
+						t.Fatalf("non-deterministic Result.ID: first=%s second=%s", first.Finalize().ID, second.Finalize().ID)
+					}
+				})
+				total++
+			}
+		}
+	}
+	if total == 0 {
+		t.Fatalf("no rejecting fixtures with diagnostics found across testdata/phase2-5")
+	}
+}
+
+// TestExplainNodeOrderIsStableOnTies constructs a diagnostic whose causes
+// attach at out-of-insertion-order depths: cause 0 and cause 2 both end up
+// at depth 1 (cause 2 attaches via `narrows` directly to root, skipping
+// past cause 1 which is inserted between them), while cause 1 correlates
+// via `same_binding` to cause 0 and lands one level deeper at depth 2. Raw
+// insertion order is therefore [root, cause0(depth1), cause1(depth2),
+// cause2(depth1)] -- NOT depth-ascending -- so the final
+// sort.SliceStable(items, ...) in buildExplainGraph is load-bearing, not
+// decorative. This was manually verified during 06-02's execution: deleting
+// that sort call reproduces the raw insertion order below and this test
+// goes red (recorded in 06-02-SUMMARY.md), proving the test is not inert.
+func TestExplainNodeOrderIsStableOnTies(t *testing.T) {
+	build := func() ([]string, []protocol.ExplainEdge) {
+		root := diagnostic.Diagnostic{
+			ID: "diagnostic:tie", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 100},
+			Causes: []diagnostic.Cause{
+				{Kind: "place", Detail: "p1"},                  // 0: caused_by root, depth 1
+				{Kind: "place", Detail: "p1"},                  // 1: same_binding -> 0, depth 2
+				{Kind: "declared_here", Span: spanPtr(10, 90)}, // 2: narrows root, depth 1
+			},
+		}
+		nodes, edges, _, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+		ids := make([]string, len(nodes))
+		for index, node := range nodes {
+			ids[index] = node.ID
+		}
+		return ids, edges
+	}
+
+	first, firstEdges := build()
+	second, _ := build()
+	if fmt.Sprint(first) != fmt.Sprint(second) {
+		t.Fatalf("two identical calls produced different node order: %v vs %v", first, second)
+	}
+
+	// depth-ascending order interleaves cause2 (depth 1) BEFORE cause1
+	// (depth 2), even though cause1 was inserted first -- this is exactly
+	// what raw insertion order would get wrong.
+	want := []string{"diagnostic:tie", "diagnostic:tie:cause:0", "diagnostic:tie:cause:2", "diagnostic:tie:cause:1"}
+	if fmt.Sprint(first) != fmt.Sprint(want) {
+		t.Fatalf("node order = %v, want %v (depth-ascending, not insertion order)", first, want)
+	}
+
+	wantEdgeKinds := map[string]string{
+		"diagnostic:tie:cause:0": protocol.EdgeCausedBy,
+		"diagnostic:tie:cause:1": protocol.EdgeSameBinding,
+		"diagnostic:tie:cause:2": protocol.EdgeNarrows,
+	}
+	for _, edge := range firstEdges {
+		if got, want := edge.Kind, wantEdgeKinds[edge.To]; got != want {
+			t.Fatalf("edge to %s has kind %q, want %q", edge.To, got, want)
+		}
+	}
+}
+
+// TestExplainSynthesisOpensNoWritePath structurally asserts D-06-02's
+// non-persistence claim: the explain synthesizer's own source file imports
+// no file-write or cache package, so "never persisted" is a checked
+// property rather than a claim.
+func TestExplainSynthesisOpensNoWritePath(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "session", "session_phase6_explain.go"))
+	if err != nil {
+		t.Fatalf("read session_phase6_explain.go: %v", err)
+	}
+	forbidden := []string{"os.Create", "os.WriteFile", "os.OpenFile", `"cache"`, "ioutil.WriteFile"}
+	for _, marker := range forbidden {
+		if strings.Contains(string(source), marker) {
+			t.Fatalf("session_phase6_explain.go references forbidden write/cache marker %q", marker)
+		}
+	}
 }
 
 // --- shared fixture-corpus helpers --------------------------------------
