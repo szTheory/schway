@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/codename-lang/lang/internal/compiler/ability"
 	"github.com/codename-lang/lang/internal/compiler/ast"
@@ -28,6 +29,62 @@ import (
 // (D-09, mirroring 02-VALIDATION.md's recorded residual-weakness
 // precedent for fault-injection seams).
 var testOnlyForceUniformLoanJoin = false
+
+// loanLivenessShadowRecorder is D-05-35(b)'s shadow-mode seam, following
+// testOnlyForceUniformLoanJoin's own "seam that never gates behaviour until
+// proven" doc-comment convention immediately above: loanLivenessRecorder is
+// nil in production, and recordLoanLivenessDivergence is a pure no-op with no
+// allocation whenever it is nil, so shadow-mode costs nothing outside a test
+// that explicitly installs a recorder. When installed
+// (TestLoanLivenessShadowZeroDivergence), analyzeStraightLine/analyzeArmBody
+// each independently compute what loanLivenessFixpoint (the candidate law,
+// via candidateLoanUses) would have decided and hand the comparison to
+// recordLoanLivenessDivergence, which counts every comparison performed
+// (observed) and records only genuine accept/reject disagreements
+// (divergences). The candidate law's answer is NEVER consulted for
+// admission -- discoverLoanLastUses (the real, decided law) always wins.
+type loanLivenessShadowRecorder struct {
+	mu          sync.Mutex
+	observed    int
+	divergences []string
+}
+
+// loanLivenessRecorder is the installed recorder, or nil (production
+// default, and the default for every test that does not explicitly opt in).
+var loanLivenessRecorder *loanLivenessShadowRecorder
+
+// recordLoanLivenessDivergence is called once per admission-site comparison
+// when a shadow recorder is installed (a no-op otherwise). It always counts
+// the comparison (observed), so a caller can later assert the enumeration
+// that drove it was not silently truncated (D-10's "an empty pass reporting
+// clean" shape), and appends a human-readable detail line only when the two
+// laws' accept/reject verdicts actually disagree.
+func recordLoanLivenessDivergence(fixture string, oldAccepted, newAccepted bool, detail string) {
+	if loanLivenessRecorder == nil {
+		return
+	}
+	loanLivenessRecorder.mu.Lock()
+	defer loanLivenessRecorder.mu.Unlock()
+	loanLivenessRecorder.observed++
+	if oldAccepted != newAccepted {
+		loanLivenessRecorder.divergences = append(loanLivenessRecorder.divergences, fmt.Sprintf(
+			"fixture=%q old_accepted=%v new_accepted=%v detail=%s", fixture, oldAccepted, newAccepted, detail,
+		))
+	}
+}
+
+// shadowCompareLoanLiveness is the single call site analyzeStraightLine and
+// analyzeArmBody both use to run D-05-35(b)'s shadow comparison. It is a
+// no-op whenever no recorder is installed, so it costs nothing on the
+// production/default path (candidateLoanUses is never even called).
+func shadowCompareLoanLiveness(fixture, parameterName string, typeFact core.TypeFact, body *ast.LinearBody, oldAccepted bool) {
+	if loanLivenessRecorder == nil {
+		return
+	}
+	candidateUses, _ := candidateLoanUses(parameterName, body)
+	newCode := admissionVerdict(parameterName, typeFact, body, candidateUses)
+	recordLoanLivenessDivergence(fixture, oldAccepted, newCode == "", fmt.Sprintf("candidate_code=%q", newCode))
+}
 
 type Result struct {
 	Program     core.Program
@@ -714,7 +771,18 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // IDs are distinct global ordinals). Deliberately a separate function from
 // analyzeStraightLine, duplicating rather than reusing it, so the Phase 1/2
 // straight-line path (checkLinear) carries zero risk from this addition.
+//
+// analyzeArmBody is D-05-35(b)'s other shadow-comparison entry point,
+// wrapping analyzeArmBodyAdmission (this function's own pre-shadow-mode body,
+// renamed verbatim) exactly as analyzeStraightLine wraps
+// analyzeStraightLineAdmission -- see that function's doc comment.
 func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+	result := analyzeArmBodyAdmission(functionID, startIndex, parameterName, parameterPlaceID, parameterSpan, typeFact, body)
+	shadowCompareLoanLiveness(functionID, parameterName, typeFact, body, result.DiagnosticCode == "")
+	return result
+}
+
+func analyzeArmBodyAdmission(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
@@ -1706,7 +1774,22 @@ type placeState struct {
 	moveTargetID string
 }
 
+// analyzeStraightLine is D-05-35(b)'s shadow-comparison entry point: it runs
+// the real, admission-deciding walk (analyzeStraightLineAdmission, renamed
+// verbatim from this function's own pre-shadow-mode body -- zero behavior
+// change to the decision path itself), then, only when a shadow recorder is
+// installed, independently replays the SAME body under the candidate law
+// (loanLivenessFixpoint, via candidateLoanUses) and records any accept/reject
+// disagreement. The candidate law's answer is computed here and handed to
+// recordLoanLivenessDivergence; it is NEVER consulted for admission -- the
+// real walk's own result, decided above, is always what is returned.
 func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+	result := analyzeStraightLineAdmission(functionID, parameterName, parameterSpan, typeFact, body)
+	shadowCompareLoanLiveness(functionID, parameterName, typeFact, body, result.DiagnosticCode == "")
+	return result
+}
+
+func analyzeStraightLineAdmission(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
 	parameterID := functionID + ":place:0"
 	result := ownershipSupport{
 		Places:     []core.Place{{ID: parameterID, Name: parameterName, TypeID: typeFact.ID}},
@@ -2028,6 +2111,210 @@ func discoverLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]l
 		}
 	}
 	return uses, work
+}
+
+// candidateLoanUses is D-05-35(b)'s candidate law: it derives the exact same
+// map[int]loanUse shape discoverLoanLastUses returns (binding index -> last
+// use), but via loanLivenessFixpoint's backward worklist dataflow instead of
+// discoverLoanLastUses' forward chain-inheritance scan. It builds a
+// synthetic, single-block operation stream directly from body's bindings
+// (kind/source only -- the real production build has not necessarily run at
+// all, or may have stopped early on rejection, so this cannot depend on it;
+// synthetic place/loan IDs are deterministic per binding index, since only
+// RELATIVE identity matters for a liveness computation, never the real
+// production IDs), then runs the SAME loanLivenessFixpoint/
+// materializeLoanEndpoints machinery Task 1 wired into analyzeStraightLine to
+// recover each loan's last-use binding index.
+func candidateLoanUses(parameterName string, body *ast.LinearBody) (map[int]loanUse, int) {
+	const parameterPlaceID = "shadow:place:parameter"
+	visible := map[string]string{parameterName: parameterPlaceID}
+	operations := make([]core.LinearOperation, 0, len(body.Bindings)+1)
+	loanIndexByLoanID := make(map[string]int, len(body.Bindings))
+	for index, binding := range body.Bindings {
+		sourcePlaceID, ok := visible[binding.RHS.Source]
+		if !ok {
+			// An out-of-scope/unknown source is a real-admission rejection
+			// (name.unknown) that discoverLoanLastUses never has to reason
+			// about either -- give it a place ID no other binding can ever
+			// produce so the chain simply carries no inherited loan through
+			// it, matching discoverLoanLastUses' own "not found -> no
+			// inheritance" behavior.
+			sourcePlaceID = fmt.Sprintf("shadow:place:unknown:%d", index)
+		}
+		targetPlaceID := fmt.Sprintf("shadow:place:%d", index)
+		kind := core.OpCopy
+		loanID := ""
+		switch binding.RHS.Kind {
+		case "take":
+			kind = core.OpMove
+		case "borrow":
+			kind = core.OpBorrowShared
+			loanID = fmt.Sprintf("shadow:loan:%d", index)
+		case "borrow_mut":
+			kind = core.OpBorrowExclusive
+			loanID = fmt.Sprintf("shadow:loan:%d", index)
+		}
+		operations = append(operations, core.LinearOperation{
+			ID: fmt.Sprintf("shadow:op:%d", index), Kind: kind, SourceID: sourcePlaceID, TargetID: targetPlaceID, LoanID: loanID,
+		})
+		if loanID != "" {
+			loanIndexByLoanID[loanID] = index
+		}
+		visible[binding.Name] = targetPlaceID
+	}
+	resultOperationIndex := len(body.Bindings)
+	resultSourceID := parameterPlaceID
+	if placeID, ok := visible[body.Result]; ok {
+		resultSourceID = placeID
+	}
+	operations = append(operations, core.LinearOperation{
+		ID: fmt.Sprintf("shadow:op:%d", resultOperationIndex), Kind: core.OpReturn, SourceID: resultSourceID,
+	})
+
+	blockID := "shadow:block:straight"
+	block := cfgBlockSpec{id: blockID, operations: operations, successors: nil}
+	uses := make(map[int]loanUse, len(loanIndexByLoanID))
+	fixpoint, err := loanLivenessFixpoint("shadow", []cfgBlockSpec{block})
+	if err != nil {
+		return uses, 0
+	}
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints("shadow", []cfgBlockSpec{block}, edgeID, fixpoint)
+
+	operationIndexByID := make(map[string]int, len(operations))
+	for opIndex, operation := range operations {
+		operationIndexByID[operation.ID] = opIndex
+	}
+	// A closed single-block CFG (no successors) never produces an edge
+	// endpoint -- every loan it creates ends inside the same block -- so
+	// exactly one "point" endpoint exists per loan here; translate its
+	// AfterOperationID back to the binding index that operation corresponds
+	// to (the synthetic Return operation's index maps to len(body.Bindings),
+	// matching discoverLoanLastUses' own "used at result position" encoding).
+	for _, endpoint := range endpoints {
+		loanIndex, ok := loanIndexByLoanID[endpoint.LoanID]
+		if !ok {
+			continue
+		}
+		lastOperationIndex := operationIndexByID[endpoint.AfterOperationID]
+		bindingIndex := lastOperationIndex
+		span := body.Span
+		if bindingIndex < len(body.Bindings) {
+			span = body.Bindings[bindingIndex].RHS.Span
+		}
+		uses[loanIndex] = loanUse{index: bindingIndex, span: span}
+	}
+	return uses, fixpoint.work
+}
+
+// admissionVerdict is D-05-35(b)'s shared shadow-verdict replay: the same
+// activeLoans/expiringLoans/conflict-checking control flow
+// analyzeStraightLineAdmission and analyzeArmBodyAdmission each already run,
+// parameterized on an arbitrary loanUses map instead of a hard-wired call to
+// discoverLoanLastUses, returning ONLY the resulting diagnostic code (or ""
+// for a clean admission). It reuses conflictingLoan/hasTypeAbility verbatim
+// (the same conflict law both real walkers already call), so the ONLY
+// variable this function isolates between an "old law" run and a "candidate
+// law" run is which loanUses map governs loan expiry timing -- exactly
+// D-05-35(b)'s shadow comparison. It never builds Operations/Places/States:
+// those are build artifacts of the real, single, admission-deciding walk,
+// untouched by this task, not something a shadow verdict needs to reproduce.
+func admissionVerdict(parameterName string, typeFact core.TypeFact, body *ast.LinearBody, loanUses map[int]loanUse) string {
+	type shadowLoan struct {
+		id      string
+		ownerID string
+		lastUse int
+	}
+	placeID := map[string]string{parameterName: "shadow:place:0"}
+	initialized := map[string]bool{"shadow:place:0": true}
+	activeLoans := make(map[string]map[string]*shadowLoan)
+	expiringLoans := make(map[int][]*shadowLoan)
+	endLoans := func(index int) {
+		for _, loan := range expiringLoans[index] {
+			if loans := activeLoans[loan.ownerID]; loans != nil {
+				delete(loans, loan.id)
+				if len(loans) == 0 {
+					delete(activeLoans, loan.ownerID)
+				}
+			}
+		}
+	}
+	activeLoanStates := func(ownerID string) map[string]*loanState {
+		candidates := activeLoans[ownerID]
+		if candidates == nil {
+			return nil
+		}
+		converted := make(map[string]*loanState, len(candidates))
+		for id, loan := range candidates {
+			access := "shared"
+			if strings.HasSuffix(id, ":exclusive") {
+				access = "exclusive"
+			}
+			converted[id] = &loanState{id: id, ownerID: loan.ownerID, access: access}
+		}
+		return converted
+	}
+	for index, binding := range body.Bindings {
+		sourceID, ok := placeID[binding.RHS.Source]
+		if !ok {
+			return "name.unknown"
+		}
+		if !initialized[sourceID] {
+			return "ownership.use_after_move"
+		}
+		targetID := fmt.Sprintf("shadow:place:%d", index+1)
+		switch binding.RHS.Kind {
+		case "take":
+			if loans := activeLoans[sourceID]; len(loans) > 0 {
+				return "ownership.move_while_borrowed"
+			}
+			initialized[sourceID] = false
+		case "borrow":
+			if !hasTypeAbility(typeFact, core.AbilityShare) {
+				return "ownership.borrow_requires_share"
+			}
+			if conflictingLoan(activeLoanStates(sourceID), "shared") != nil {
+				return "ownership.borrow_conflict"
+			}
+			use := loanUses[index]
+			loan := &shadowLoan{id: fmt.Sprintf("shadow:loan:%d:shared", index), ownerID: sourceID, lastUse: use.index}
+			if activeLoans[sourceID] == nil {
+				activeLoans[sourceID] = make(map[string]*shadowLoan)
+			}
+			activeLoans[sourceID][loan.id] = loan
+			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+		case "borrow_mut":
+			if !hasTypeAbility(typeFact, core.AbilityShare) {
+				return "ownership.borrow_requires_share"
+			}
+			if conflictingLoan(activeLoanStates(sourceID), "exclusive") != nil {
+				return "ownership.borrow_conflict"
+			}
+			use := loanUses[index]
+			loan := &shadowLoan{id: fmt.Sprintf("shadow:loan:%d:exclusive", index), ownerID: sourceID, lastUse: use.index}
+			if activeLoans[sourceID] == nil {
+				activeLoans[sourceID] = make(map[string]*shadowLoan)
+			}
+			activeLoans[sourceID][loan.id] = loan
+			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+		default:
+			if !hasTypeAbility(typeFact, core.AbilityCopy) {
+				return "ownership.transfer_requires_take"
+			}
+		}
+		placeID[binding.Name] = targetID
+		initialized[targetID] = true
+		endLoans(index)
+	}
+	resultID, ok := placeID[body.Result]
+	if !ok {
+		return "name.unknown"
+	}
+	if !initialized[resultID] {
+		return "ownership.use_after_move"
+	}
+	endLoans(len(body.Bindings))
+	return ""
 }
 
 func ownershipSnapshot(index int, places map[string]*placeState, activeLoans map[string]map[string]*loanState) ownershipStateFact {
