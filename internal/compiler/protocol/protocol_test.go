@@ -2,6 +2,8 @@ package protocol_test
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -86,4 +88,127 @@ func TestHumanJSONProjectionParity(t *testing.T) {
 			t.Fatalf("count=%d: JSON's self-reported output_bytes does not match its own rendered length: %s", count, encoded)
 		}
 	}
+}
+
+// setSentinelFields sets every settable field of value (a pointer to a
+// struct) to a non-zero sentinel: ints/int64s become 7, strings become
+// "sentinel", and []string slices become []string{"sentinel"}. Fields whose
+// name is in skip are left untouched. It is used by
+// TestMetricsAndLaneFieldsExcludedFromIdentity to prove that non-identity
+// fields cannot perturb Result.Finalize()'s ID no matter what value they
+// hold (D-06-32).
+func setSentinelFields(t *testing.T, value interface{}, skip map[string]bool) {
+	t.Helper()
+	elem := reflect.ValueOf(value).Elem()
+	structType := elem.Type()
+	for index := 0; index < elem.NumField(); index++ {
+		field := elem.Field(index)
+		name := structType.Field(index).Name
+		if skip[name] {
+			continue
+		}
+		if !field.CanSet() {
+			continue
+		}
+		switch field.Kind() {
+		case reflect.Int, reflect.Int64, reflect.Int32:
+			field.SetInt(7)
+		case reflect.String:
+			field.SetString("sentinel")
+		case reflect.Slice:
+			if field.Type().Elem().Kind() == reflect.String {
+				field.Set(reflect.ValueOf([]string{"sentinel"}))
+			} else {
+				t.Fatalf("setSentinelFields: unhandled slice element kind for field %s: %s", name, field.Type().Elem().Kind())
+			}
+		case reflect.Bool:
+			field.SetBool(true)
+		default:
+			t.Fatalf("setSentinelFields: unhandled field kind for field %s: %s", name, field.Kind())
+		}
+	}
+}
+
+// TestMetricsAndLaneFieldsExcludedFromIdentity pins D-06-32: no field of
+// protocol.Metrics, and no field of protocol.Lane other than ID and Status,
+// may ever reach Result.Finalize()'s identity struct. Two positive
+// assertions (changing Lane.ID and changing Lane.Status each change
+// Result.ID) prove the test is not inert -- without them it could pass
+// vacuously if Finalize ignored lanes entirely.
+func TestMetricsAndLaneFieldsExcludedFromIdentity(t *testing.T) {
+	base := protocol.New("verify", protocol.StatusPass)
+	baseID := base.Finalize().ID
+
+	t.Run("Metrics", func(t *testing.T) {
+		mutated := base
+		setSentinelFields(t, &mutated.Metrics, nil)
+		if got := mutated.Finalize().ID; got != baseID {
+			t.Fatalf("a Metrics field reached Result.Finalize()'s identity: base=%s got=%s metrics=%+v", baseID, got, mutated.Metrics)
+		}
+	})
+
+	t.Run("Lane non-identity fields", func(t *testing.T) {
+		withLane := base
+		withLane.Lanes = []protocol.Lane{{ID: "lane:one", Status: "pass"}}
+		laneBaselineID := withLane.Finalize().ID
+
+		mutated := withLane
+		mutated.Lanes = append([]protocol.Lane(nil), withLane.Lanes...)
+		setSentinelFields(t, &mutated.Lanes[0], map[string]bool{"ID": true, "Status": true})
+		if got := mutated.Finalize().ID; got != laneBaselineID {
+			t.Fatalf("a Lane field other than ID/Status reached Result.Finalize()'s identity: base=%s got=%s lane=%+v", laneBaselineID, got, mutated.Lanes[0])
+		}
+
+		t.Run("Lane.ID changes Result.ID", func(t *testing.T) {
+			changedID := withLane
+			changedID.Lanes = append([]protocol.Lane(nil), withLane.Lanes...)
+			changedID.Lanes[0].ID = "lane:two"
+			if got := changedID.Finalize().ID; got == laneBaselineID {
+				t.Fatalf("changing Lane.ID did not change Result.ID: still %s", got)
+			}
+		})
+
+		t.Run("Lane.Status changes Result.ID", func(t *testing.T) {
+			changedStatus := withLane
+			changedStatus.Lanes = append([]protocol.Lane(nil), withLane.Lanes...)
+			changedStatus.Lanes[0].Status = "fail"
+			if got := changedStatus.Finalize().ID; got == laneBaselineID {
+				t.Fatalf("changing Lane.Status did not change Result.ID: still %s", got)
+			}
+		})
+	})
+}
+
+// TestIdentityFieldEnumerationIsExhaustive reflects over protocol.Metrics
+// and protocol.Lane and compares each struct's sorted field-name set against
+// a literal expected slice declared here. It is the self-invalidating half
+// of D-06-32: a field added to either struct without updating the expected
+// slice below fails this test, forcing the reader back to
+// TestMetricsAndLaneFieldsExcludedFromIdentity to reconfirm the new field is
+// identity-excluded before 06-06 adds cache_status, selection_reason,
+// machine_id, gate_verdict, cold_or_warm, stage_breakdown, and
+// cache_inputs_reused_count.
+func TestIdentityFieldEnumerationIsExhaustive(t *testing.T) {
+	assertFieldSet := func(t *testing.T, label string, value interface{}, expected []string) {
+		t.Helper()
+		structType := reflect.TypeOf(value)
+		var got []string
+		for index := 0; index < structType.NumField(); index++ {
+			got = append(got, structType.Field(index).Name)
+		}
+		sort.Strings(got)
+		wanted := append([]string(nil), expected...)
+		sort.Strings(wanted)
+		if !reflect.DeepEqual(got, wanted) {
+			t.Fatalf("%s field set changed: got %v, want %v -- if you added a field, add it to the sentinel loop in TestMetricsAndLaneFieldsExcludedFromIdentity and confirm it is identity-excluded before updating this expected set (D-06-32)", label, got, wanted)
+		}
+	}
+
+	assertFieldSet(t, "protocol.Metrics", protocol.Metrics{}, []string{
+		"ElapsedNS", "PeakRSSStatus", "PeakRSSBytes", "OutputBytes", "RecomputedWork",
+	})
+
+	assertFieldSet(t, "protocol.Lane", protocol.Lane{}, []string{
+		"Schema", "ID", "Status", "Controls", "RecomputedWork", "ElapsedNS", "PeakRSSStatus", "PeakRSSBytes", "OutputBytes",
+	})
 }
