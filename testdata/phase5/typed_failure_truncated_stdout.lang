@@ -1,0 +1,193 @@
+// adversarial-target: typed-failure-with-truncated-stdout
+//
+// D-05-18a: a long chain of 150 successive foreign acquisitions, all of
+// which the frozen production TU genuinely succeeds at real runtime
+// (D-04-10), while a test-only foreign double used elsewhere in this
+// phase's own harness (session_phase5_corpus_test.go, peering
+// session_test.go's own writeFailingForeignDouble/assertTypedFailurePathAgrees
+// pattern) fails exactly the LAST stage, taking the err edge and releasing
+// every one of the 149 preceding completed acquisitions in reverse
+// order before the typed failure. 150 acquisitions plus 149 releases
+// plus one failure is enough distinct semantic events that the generated
+// native binary's own real stdout -- the strict-JSON execution document
+// every one of those events is serialized into -- crosses the project's
+// existing 64 KiB-plus-one stdout bound (D-05-18), exercising the stable
+// stage/stream truncation code as a genuinely compared axis rather than an
+// assumed one. Every one of the 150 stages is independent and unread
+// (D-05-18a's own dead-store shape, repeated 150 times), so this fixture
+// also stresses the same optimizer surface dead_store_unused_acquire.lang
+// and reorder_two_events.lang name individually, at a scale neither of
+// those two-and-under-sized fixtures reaches.
+
+module phase5.typed_failure_truncated_stdout
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let v0 = try lang_res_open(request)
+  let v1 = try lang_res_open(request)
+  let v2 = try lang_res_open(request)
+  let v3 = try lang_res_open(request)
+  let v4 = try lang_res_open(request)
+  let v5 = try lang_res_open(request)
+  let v6 = try lang_res_open(request)
+  let v7 = try lang_res_open(request)
+  let v8 = try lang_res_open(request)
+  let v9 = try lang_res_open(request)
+  let v10 = try lang_res_open(request)
+  let v11 = try lang_res_open(request)
+  let v12 = try lang_res_open(request)
+  let v13 = try lang_res_open(request)
+  let v14 = try lang_res_open(request)
+  let v15 = try lang_res_open(request)
+  let v16 = try lang_res_open(request)
+  let v17 = try lang_res_open(request)
+  let v18 = try lang_res_open(request)
+  let v19 = try lang_res_open(request)
+  let v20 = try lang_res_open(request)
+  let v21 = try lang_res_open(request)
+  let v22 = try lang_res_open(request)
+  let v23 = try lang_res_open(request)
+  let v24 = try lang_res_open(request)
+  let v25 = try lang_res_open(request)
+  let v26 = try lang_res_open(request)
+  let v27 = try lang_res_open(request)
+  let v28 = try lang_res_open(request)
+  let v29 = try lang_res_open(request)
+  let v30 = try lang_res_open(request)
+  let v31 = try lang_res_open(request)
+  let v32 = try lang_res_open(request)
+  let v33 = try lang_res_open(request)
+  let v34 = try lang_res_open(request)
+  let v35 = try lang_res_open(request)
+  let v36 = try lang_res_open(request)
+  let v37 = try lang_res_open(request)
+  let v38 = try lang_res_open(request)
+  let v39 = try lang_res_open(request)
+  let v40 = try lang_res_open(request)
+  let v41 = try lang_res_open(request)
+  let v42 = try lang_res_open(request)
+  let v43 = try lang_res_open(request)
+  let v44 = try lang_res_open(request)
+  let v45 = try lang_res_open(request)
+  let v46 = try lang_res_open(request)
+  let v47 = try lang_res_open(request)
+  let v48 = try lang_res_open(request)
+  let v49 = try lang_res_open(request)
+  let v50 = try lang_res_open(request)
+  let v51 = try lang_res_open(request)
+  let v52 = try lang_res_open(request)
+  let v53 = try lang_res_open(request)
+  let v54 = try lang_res_open(request)
+  let v55 = try lang_res_open(request)
+  let v56 = try lang_res_open(request)
+  let v57 = try lang_res_open(request)
+  let v58 = try lang_res_open(request)
+  let v59 = try lang_res_open(request)
+  let v60 = try lang_res_open(request)
+  let v61 = try lang_res_open(request)
+  let v62 = try lang_res_open(request)
+  let v63 = try lang_res_open(request)
+  let v64 = try lang_res_open(request)
+  let v65 = try lang_res_open(request)
+  let v66 = try lang_res_open(request)
+  let v67 = try lang_res_open(request)
+  let v68 = try lang_res_open(request)
+  let v69 = try lang_res_open(request)
+  let v70 = try lang_res_open(request)
+  let v71 = try lang_res_open(request)
+  let v72 = try lang_res_open(request)
+  let v73 = try lang_res_open(request)
+  let v74 = try lang_res_open(request)
+  let v75 = try lang_res_open(request)
+  let v76 = try lang_res_open(request)
+  let v77 = try lang_res_open(request)
+  let v78 = try lang_res_open(request)
+  let v79 = try lang_res_open(request)
+  let v80 = try lang_res_open(request)
+  let v81 = try lang_res_open(request)
+  let v82 = try lang_res_open(request)
+  let v83 = try lang_res_open(request)
+  let v84 = try lang_res_open(request)
+  let v85 = try lang_res_open(request)
+  let v86 = try lang_res_open(request)
+  let v87 = try lang_res_open(request)
+  let v88 = try lang_res_open(request)
+  let v89 = try lang_res_open(request)
+  let v90 = try lang_res_open(request)
+  let v91 = try lang_res_open(request)
+  let v92 = try lang_res_open(request)
+  let v93 = try lang_res_open(request)
+  let v94 = try lang_res_open(request)
+  let v95 = try lang_res_open(request)
+  let v96 = try lang_res_open(request)
+  let v97 = try lang_res_open(request)
+  let v98 = try lang_res_open(request)
+  let v99 = try lang_res_open(request)
+  let v100 = try lang_res_open(request)
+  let v101 = try lang_res_open(request)
+  let v102 = try lang_res_open(request)
+  let v103 = try lang_res_open(request)
+  let v104 = try lang_res_open(request)
+  let v105 = try lang_res_open(request)
+  let v106 = try lang_res_open(request)
+  let v107 = try lang_res_open(request)
+  let v108 = try lang_res_open(request)
+  let v109 = try lang_res_open(request)
+  let v110 = try lang_res_open(request)
+  let v111 = try lang_res_open(request)
+  let v112 = try lang_res_open(request)
+  let v113 = try lang_res_open(request)
+  let v114 = try lang_res_open(request)
+  let v115 = try lang_res_open(request)
+  let v116 = try lang_res_open(request)
+  let v117 = try lang_res_open(request)
+  let v118 = try lang_res_open(request)
+  let v119 = try lang_res_open(request)
+  let v120 = try lang_res_open(request)
+  let v121 = try lang_res_open(request)
+  let v122 = try lang_res_open(request)
+  let v123 = try lang_res_open(request)
+  let v124 = try lang_res_open(request)
+  let v125 = try lang_res_open(request)
+  let v126 = try lang_res_open(request)
+  let v127 = try lang_res_open(request)
+  let v128 = try lang_res_open(request)
+  let v129 = try lang_res_open(request)
+  let v130 = try lang_res_open(request)
+  let v131 = try lang_res_open(request)
+  let v132 = try lang_res_open(request)
+  let v133 = try lang_res_open(request)
+  let v134 = try lang_res_open(request)
+  let v135 = try lang_res_open(request)
+  let v136 = try lang_res_open(request)
+  let v137 = try lang_res_open(request)
+  let v138 = try lang_res_open(request)
+  let v139 = try lang_res_open(request)
+  let v140 = try lang_res_open(request)
+  let v141 = try lang_res_open(request)
+  let v142 = try lang_res_open(request)
+  let v143 = try lang_res_open(request)
+  let v144 = try lang_res_open(request)
+  let v145 = try lang_res_open(request)
+  let v146 = try lang_res_open(request)
+  let v147 = try lang_res_open(request)
+  let v148 = try lang_res_open(request)
+  let v149 = try lang_res_open(request)
+  request
+}
