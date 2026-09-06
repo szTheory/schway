@@ -63,7 +63,7 @@ hiding runtime costs.
   case, causal facts, and addressable event trace.
 - [x] **NAT-01**: The compiler emits readable C17 and interface declarations for
   the portable milestone subset, then builds and runs them with Clang.
-- [ ] **NAT-02**: Interpreter, native `-O0`, and native `-O3` agree on terminal
+- [x] **NAT-02**: Interpreter, native `-O0`, and native `-O3` agree on terminal
   outcome, semantic-event order, and live-resource state for valid probes.
 - [ ] **NAT-03**: Native validation detects layout mismatch, missing partial
   cleanup, allocator mismatch, stale callback retention, false no-alias facts,
@@ -148,7 +148,7 @@ hiding runtime costs.
 | INT-01 | Phase 1 | Complete |
 | INT-02 | Phase 5 | Pending |
 | NAT-01 | Phase 1 | Complete |
-| NAT-02 | Phase 5 | Pending |
+| NAT-02 | Phase 5 | Complete |
 | NAT-03 | Phase 5 | Pending |
 | DX-01 | Phase 1 | Complete |
 | DX-02 | Phase 6 | Pending |
