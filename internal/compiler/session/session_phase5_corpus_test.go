@@ -445,6 +445,23 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 				// disprove.
 				t.Skip("typed_failure_truncated_stdout.lang intentionally exceeds the native stdout bound; see TestPhase5AdversarialSubsetIsComplete for its own interpreter-level verification")
 			}
+			if fixture == "allocator_mismatch.lang" || fixture == "retained_pointer.lang" {
+				// D-05-10 (plan 05-08): detection for both of these fixtures
+				// is ASan ONLY, never a bare native run -- a plain -O0/-O3
+				// run is undefined behavior, not a guaranteed crash, and this
+				// generic differential's own comparator has no ASan-aware
+				// notion of "the defect fired." allocator_mismatch.lang's
+				// frozen TU additionally calls the Itanium-mangled operator-
+				// new/operator-delete entry points directly (D-05-08's
+				// verified allocator-identity mismatch mechanism), which
+				// requires linking against the C++ runtime (-lc++) --
+				// wired into sanitize.go's own sanitizer-lane link step
+				// only, deliberately never added to this plain differential
+				// build. Both fixtures are exercised end-to-end through
+				// lane:native-sanitize (session.VerifyPhase5SanitizeLane's
+				// own tests), not this generic three-engine comparator.
+				t.Skip("detection for this fixture is ASan-only (D-05-10); see session.VerifyPhase5SanitizeLane's own tests")
+			}
 			dir := filepath.Dir(path)
 			program, functionName, err := session.Phase4CheckedProgram(dir, fixture)
 			if err != nil {
