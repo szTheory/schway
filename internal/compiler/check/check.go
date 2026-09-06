@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/codename-lang/lang/internal/compiler/ability"
 	"github.com/codename-lang/lang/internal/compiler/ast"
@@ -17,7 +16,7 @@ import (
 // arm-body loan's computed last use is forced to len(body.Bindings) -- as
 // if edge-specific placement had been deleted and every loan ended
 // uniformly at the join regardless of which edge actually needs it --
-// instead of whatever discoverLoanLastUses would otherwise compute. It is
+// instead of whatever computeLoanLastUses would otherwise compute. It is
 // read only by analyzeArmBody, never by analyzeStraightLine, so the
 // straight-line exhaustive differential (TestOwnershipSequenceExhaustive)
 // is untouched by its existence. This is a test-only seam, not a
@@ -29,62 +28,6 @@ import (
 // (D-09, mirroring 02-VALIDATION.md's recorded residual-weakness
 // precedent for fault-injection seams).
 var testOnlyForceUniformLoanJoin = false
-
-// loanLivenessShadowRecorder is D-05-35(b)'s shadow-mode seam, following
-// testOnlyForceUniformLoanJoin's own "seam that never gates behaviour until
-// proven" doc-comment convention immediately above: loanLivenessRecorder is
-// nil in production, and recordLoanLivenessDivergence is a pure no-op with no
-// allocation whenever it is nil, so shadow-mode costs nothing outside a test
-// that explicitly installs a recorder. When installed
-// (TestLoanLivenessShadowZeroDivergence), analyzeStraightLine/analyzeArmBody
-// each independently compute what loanLivenessFixpoint (the candidate law,
-// via candidateLoanUses) would have decided and hand the comparison to
-// recordLoanLivenessDivergence, which counts every comparison performed
-// (observed) and records only genuine accept/reject disagreements
-// (divergences). The candidate law's answer is NEVER consulted for
-// admission -- discoverLoanLastUses (the real, decided law) always wins.
-type loanLivenessShadowRecorder struct {
-	mu          sync.Mutex
-	observed    int
-	divergences []string
-}
-
-// loanLivenessRecorder is the installed recorder, or nil (production
-// default, and the default for every test that does not explicitly opt in).
-var loanLivenessRecorder *loanLivenessShadowRecorder
-
-// recordLoanLivenessDivergence is called once per admission-site comparison
-// when a shadow recorder is installed (a no-op otherwise). It always counts
-// the comparison (observed), so a caller can later assert the enumeration
-// that drove it was not silently truncated (D-10's "an empty pass reporting
-// clean" shape), and appends a human-readable detail line only when the two
-// laws' accept/reject verdicts actually disagree.
-func recordLoanLivenessDivergence(fixture string, oldAccepted, newAccepted bool, detail string) {
-	if loanLivenessRecorder == nil {
-		return
-	}
-	loanLivenessRecorder.mu.Lock()
-	defer loanLivenessRecorder.mu.Unlock()
-	loanLivenessRecorder.observed++
-	if oldAccepted != newAccepted {
-		loanLivenessRecorder.divergences = append(loanLivenessRecorder.divergences, fmt.Sprintf(
-			"fixture=%q old_accepted=%v new_accepted=%v detail=%s", fixture, oldAccepted, newAccepted, detail,
-		))
-	}
-}
-
-// shadowCompareLoanLiveness is the single call site analyzeStraightLine and
-// analyzeArmBody both use to run D-05-35(b)'s shadow comparison. It is a
-// no-op whenever no recorder is installed, so it costs nothing on the
-// production/default path (candidateLoanUses is never even called).
-func shadowCompareLoanLiveness(fixture, parameterName string, typeFact core.TypeFact, body *ast.LinearBody, oldAccepted bool) {
-	if loanLivenessRecorder == nil {
-		return
-	}
-	candidateUses, _ := candidateLoanUses(parameterName, body)
-	newCode := admissionVerdict(parameterName, typeFact, body, candidateUses)
-	recordLoanLivenessDivergence(fixture, oldAccepted, newCode == "", fmt.Sprintf("candidate_code=%q", newCode))
-}
 
 type Result struct {
 	Program     core.Program
@@ -447,20 +390,20 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 //
 // This gives checkBranch's arm blocks their LoanEndpoint records (point vs
 // edge) via a genuinely backward, block-local-transfer, worklist-to-a-
-// fixpoint mechanism (Q2), independent of discoverLoanLastUses (kept only
-// as 03-05's future path-oracle building block, per this plan's own
-// prohibition against deleting it). Scope note (documented deviation): the
-// straight-line path (checkLinear/analyzeStraightLine) is NOT rewired onto
-// this pass -- 03-06's already-shipped TestPhase3FieldsAreOmittedWhenAbsent
+// fixpoint mechanism (Q2). Scope note (documented deviation, historical):
+// the straight-line path's SERIALIZED core.LoanEndpoints stayed absent for
+// Phase 1/2/3 -- 03-06's already-shipped TestPhase3FieldsAreOmittedWhenAbsent
 // requires loan_endpoints stay absent from every Phase 1/2 program's
 // serialized core, and every Phase 2 fixture is a straight-line body, so
-// populating LoanEndpoints there would move those already-verified bytes.
-// discoverLoanLastUses therefore still drives conflict/expiry decisions in
-// both analyzeStraightLine and analyzeArmBody (verdicts provably unchanged,
-// since neither of those functions is touched by this section); this
-// dataflow is the sole producer of the observable core.LoanEndpoint records,
-// wired only into checkBranch's arm blocks, where new (not previously
-// shipped) fixtures exercise it.
+// populating that FIELD there would have moved those already-verified
+// bytes. That constraint is still honored (analyzeStraightLine never
+// populates linear.LoanEndpoints), but D-05-35(d) has since made this same
+// fixpoint (via computeLoanLastUses) the sole law deciding conflict/expiry
+// in BOTH analyzeStraightLine and analyzeArmBody -- discoverLoanLastUses,
+// the forward chain-inheritance scan that used to drive those decisions, is
+// retired. This dataflow remains the sole producer of the observable
+// core.LoanEndpoint records, still wired only into checkBranch's arm
+// blocks.
 // ---------------------------------------------------------------------
 
 // cfgBlockSpec is the minimal per-block shape the backward worklist
@@ -772,22 +715,18 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // analyzeStraightLine, duplicating rather than reusing it, so the Phase 1/2
 // straight-line path (checkLinear) carries zero risk from this addition.
 //
-// analyzeArmBody is D-05-35(b)'s other shadow-comparison entry point,
-// wrapping analyzeArmBodyAdmission (this function's own pre-shadow-mode body,
-// renamed verbatim) exactly as analyzeStraightLine wraps
-// analyzeStraightLineAdmission -- see that function's doc comment.
+// D-05-35(d): computeLoanLastUses (loanLivenessFixpoint's own last-use
+// derivation) is now the sole law deciding conflict/expiry here --
+// discoverLoanLastUses is retired, authorized by D-05-35(b)/(c)'s recorded
+// zero-divergence shadow run over the full TestOwnershipSequenceExhaustive/
+// TestBranchSequenceExhaustive enumeration (225,890 + 4,802 comparisons, see
+// the retired shadow test's own history).
 func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
-	result := analyzeArmBodyAdmission(functionID, startIndex, parameterName, parameterPlaceID, parameterSpan, typeFact, body)
-	shadowCompareLoanLiveness(functionID, parameterName, typeFact, body, result.DiagnosticCode == "")
-	return result
-}
-
-func analyzeArmBodyAdmission(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
 	}
-	loanUses, discoveryWork := discoverLoanLastUses(parameterName, body)
+	loanUses, discoveryWork := computeLoanLastUses(parameterName, body)
 	result.Work += discoveryWork
 	if testOnlyForceUniformLoanJoin {
 		// Fault-injection seam for TestUniformJoinPlacementFlipsBothVerdicts
@@ -1752,17 +1691,20 @@ type ownershipSupport struct {
 	DiagnosticCode string
 	Diagnostic     *diagnostic.Diagnostic
 
-	// FixpointWork is D-05-35(a)'s widened-domain cost: the counted work of
-	// running loanLivenessFixpoint over this straight-line body's own single-
-	// block CFG, computed but NOT folded into Work above. It is kept separate
-	// from Work deliberately: Work is the field TestOwnershipSequenceExhaustive/
-	// TestOwnershipWorkSeries pin exactly against an independent oracle (and
-	// against a hand-derived formula) that predates this widening and knows
-	// nothing of the fixpoint's own internal loan-chain-walk cost. checkLinear
-	// folds FixpointWork into its own function-level RecomputedWork total (the
-	// same place checkBranch already folds its own loanLivenessFixpoint call's
-	// work), on the same "the widened domain does not silently add uncounted
-	// cost" basis the branch-arm path already established (D-03-01/D-04-25).
+	// FixpointWork is loanLivenessFixpoint's own counted cost for this
+	// straight-line body (via computeLoanLastUses, D-05-35(d)'s sole
+	// admission-deciding law), computed but deliberately NOT folded into Work
+	// above. It is kept separate from Work: Work is the field
+	// TestOwnershipSequenceExhaustive/TestOwnershipWorkSeries pin exactly
+	// against an independent oracle (and a hand-derived formula) that predates
+	// D-05-35 and has no way to reproduce loanLivenessFixpoint's own
+	// internal, loan-chain-shape-dependent cost. checkLinear folds
+	// FixpointWork into its own function-level RecomputedWork total (the same
+	// place checkBranch already folds its own loanLivenessFixpoint call's
+	// work), so the fixpoint's real cost is honestly counted, not hidden --
+	// only kept out of the one field an independent oracle already pins
+	// exactly (D-03-01/D-04-25's "does not silently add uncounted cost"
+	// basis, applied without disturbing that pin).
 	FixpointWork int
 }
 
@@ -1774,30 +1716,31 @@ type placeState struct {
 	moveTargetID string
 }
 
-// analyzeStraightLine is D-05-35(b)'s shadow-comparison entry point: it runs
-// the real, admission-deciding walk (analyzeStraightLineAdmission, renamed
-// verbatim from this function's own pre-shadow-mode body -- zero behavior
-// change to the decision path itself), then, only when a shadow recorder is
-// installed, independently replays the SAME body under the candidate law
-// (loanLivenessFixpoint, via candidateLoanUses) and records any accept/reject
-// disagreement. The candidate law's answer is computed here and handed to
-// recordLoanLivenessDivergence; it is NEVER consulted for admission -- the
-// real walk's own result, decided above, is always what is returned.
+// D-05-35(d): computeLoanLastUses (loanLivenessFixpoint's own last-use
+// derivation) is now the sole law deciding conflict/expiry here --
+// discoverLoanLastUses is retired, authorized by D-05-35(b)/(c)'s recorded
+// zero-divergence shadow run over the full TestOwnershipSequenceExhaustive/
+// TestBranchSequenceExhaustive enumeration.
+//
+// The discoveryWork term folded into result.Work below is deliberately kept
+// as the historical flat len(body.Bindings)+1 accounting convention (not
+// computeLoanLastUses' own fixpoint.work, which varies with loan-chain shape)
+// -- TestOwnershipSequenceExhaustive/TestOwnershipWorkSeries pin this exact
+// field against an independent oracle/hand-derived formula that predates
+// D-05-35 and has no way to reproduce loanLivenessFixpoint's own internal
+// cost shape. The fixpoint's REAL, honestly-varying cost is not hidden: it is
+// counted separately via FixpointWork (see its own doc comment), folded into
+// checkLinear's function-level RecomputedWork total.
 func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
-	result := analyzeStraightLineAdmission(functionID, parameterName, parameterSpan, typeFact, body)
-	shadowCompareLoanLiveness(functionID, parameterName, typeFact, body, result.DiagnosticCode == "")
-	return result
-}
-
-func analyzeStraightLineAdmission(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
 	parameterID := functionID + ":place:0"
 	result := ownershipSupport{
 		Places:     []core.Place{{ID: parameterID, Name: parameterName, TypeID: typeFact.ID}},
 		Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: typeNodeCount(typeFact.Shape) + len(body.Bindings) + 1,
 	}
-	loanUses, discoveryWork := discoverLoanLastUses(parameterName, body)
-	result.Work += discoveryWork
+	loanUses, fixpointWork := computeLoanLastUses(parameterName, body)
+	result.FixpointWork = fixpointWork
+	result.Work += len(body.Bindings) + 1
 	for index, binding := range body.Bindings {
 		if binding.RHS.Kind == "borrow" || binding.RHS.Kind == "borrow_mut" {
 			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{
@@ -1975,20 +1918,6 @@ func analyzeStraightLineAdmission(functionID, parameterName string, parameterSpa
 	})
 	endLoans(ordinal)
 	result.States = append(result.States, ownershipSnapshot(ordinal, places, activeLoans))
-
-	// D-05-35(a): a straight-line body is the degenerate single-block CFG --
-	// construct that one block from the operations this function just built
-	// (rather than adding a second fixpoint entry point) so
-	// loanLivenessFixpoint's domain covers straight-line bodies too, not only
-	// checkBranch's arm blocks. This is deliberately computed and returned
-	// (via FixpointWork, see its doc comment) but NOT consulted for admission
-	// here: discoverLoanLastUses above remains the sole law deciding
-	// conflict/expiry in this function, so Task 2's shadow pass has a real,
-	// non-circular candidate answer to compare against.
-	straightLineBlockID := functionID + ":block:straight"
-	if fixpoint, err := loanLivenessFixpoint(functionID, []cfgBlockSpec{{id: straightLineBlockID, operations: result.Operations, successors: nil}}); err == nil {
-		result.FixpointWork = fixpoint.work
-	}
 	return result
 }
 
@@ -2052,80 +1981,27 @@ func borrowConflictDiagnostic(span diagnostic.Span, blocking *loanState, ownerID
 	)
 }
 
-// discoverLoanLastUses extends every loan to its last transitively derived
-// use. Association is inherited: a binding derived from a loan-derived
-// binding stays associated with the same loans, so a reborrow
-// (`let c = borrow b`) or a copy of a loan (`let c = b`) keeps extending the
-// original owner's blocked window. Associating only the immediate borrow
-// target expires the loan one hop early and admits a move while the loan is
-// still observable.
-// discoverLoanLastUses returns the discovered last-use map together with its
-// own recomputed-work count (D-04-25): one unit per binding scanned by the
-// outer loop, plus one unit per transitive-ancestor step the inner loop
-// walks -- matching blockLoanLiveness's own "one unit per operation
-// inspected" plus "one unit per chain-ancestor step walked" dual counting
-// (check.go:505-513) rather than inventing a new convention. Before this,
-// the transitive scan's own cost was invisible to every caller's Work
-// total: a branch function's recomputed work understated its real cost by
-// exactly this scan, twice over (once per call site). This closes only the
-// metric-honesty half of carried debt D-03-01/D-05 -- retiring the scan
-// itself is deliberately deferred (D-04-26, see 04-DEBT.md) because
-// performing that surgery in this same file, which is simultaneously
-// gaining four operation kinds, is the compounding-wave defect shape two
-// prior phases already hit. No admission verdict changes: every accept/
-// reject decision this function ever influenced is unchanged, only the
-// work total attributed to reaching it.
-func discoverLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]loanUse, int) {
-	uses := make(map[int]loanUse)
-	visible := map[string]int{parameterName: -1}
-	loansForBinding := make(map[int][]int)
-	work := 0
-	for index, binding := range body.Bindings {
-		work++ // one unit per operation (binding) this transitive scan visits
-		var inherited []int
-		if sourceBinding, ok := visible[binding.RHS.Source]; ok {
-			for _, loanIndex := range loansForBinding[sourceBinding] {
-				if use, tracked := uses[loanIndex]; tracked {
-					use.index = index
-					use.span = binding.RHS.Span
-					uses[loanIndex] = use
-				}
-				inherited = append(inherited, loanIndex)
-			}
-		}
-		visible[binding.Name] = index
-		if binding.RHS.Kind == "borrow" || binding.RHS.Kind == "borrow_mut" {
-			uses[index] = loanUse{index: index, span: binding.RHS.Span}
-			inherited = append(inherited, index)
-		}
-		loansForBinding[index] = inherited
-	}
-	work++ // the final result-position scan this transitive scan also visits
-	if resultBinding, ok := visible[body.Result]; ok {
-		for _, loanIndex := range loansForBinding[resultBinding] {
-			if use, tracked := uses[loanIndex]; tracked {
-				use.index = len(body.Bindings)
-				use.span = body.Span
-				uses[loanIndex] = use
-			}
-		}
-	}
-	return uses, work
-}
-
-// candidateLoanUses is D-05-35(b)'s candidate law: it derives the exact same
-// map[int]loanUse shape discoverLoanLastUses returns (binding index -> last
-// use), but via loanLivenessFixpoint's backward worklist dataflow instead of
-// discoverLoanLastUses' forward chain-inheritance scan. It builds a
-// synthetic, single-block operation stream directly from body's bindings
-// (kind/source only -- the real production build has not necessarily run at
-// all, or may have stopped early on rejection, so this cannot depend on it;
-// synthetic place/loan IDs are deterministic per binding index, since only
-// RELATIVE identity matters for a liveness computation, never the real
-// production IDs), then runs the SAME loanLivenessFixpoint/
-// materializeLoanEndpoints machinery Task 1 wired into analyzeStraightLine to
-// recover each loan's last-use binding index.
-func candidateLoanUses(parameterName string, body *ast.LinearBody) (map[int]loanUse, int) {
+// computeLoanLastUses is D-05-35(d)'s sole liveness law: it derives, for
+// every loan, its last transitively-derived use (binding index -> last use),
+// via loanLivenessFixpoint's backward worklist dataflow -- the same
+// machinery checkBranch's arm blocks and materializeLoanEndpoints already
+// use, now the ONLY law computing loan expiry for admission anywhere in this
+// package. discoverLoanLastUses (the forward chain-inheritance scan this
+// function replaces) is retired: D-05-35(b)/(c)'s shadow-mode migration
+// recorded a zero-divergence run of the two laws over the full
+// TestOwnershipSequenceExhaustive/TestBranchSequenceExhaustive enumeration
+// (225,890 + 4,802 admission-site comparisons) before this deletion was
+// authorized -- never merely a green suite (D-05-35e).
+//
+// It builds a synthetic, single-block operation stream directly from body's
+// bindings (kind/source only -- there is no other operation stream to derive
+// from yet, since this function's OWN answer is what decides whether the
+// real admission walk accepts or rejects; synthetic place/loan IDs are
+// deterministic per binding index, since only RELATIVE identity matters for
+// a liveness computation, never a real production ID), then runs
+// loanLivenessFixpoint/materializeLoanEndpoints over it to recover each
+// loan's last-use binding index.
+func computeLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]loanUse, int) {
 	const parameterPlaceID = "shadow:place:parameter"
 	visible := map[string]string{parameterName: parameterPlaceID}
 	operations := make([]core.LinearOperation, 0, len(body.Bindings)+1)
@@ -2205,116 +2081,6 @@ func candidateLoanUses(parameterName string, body *ast.LinearBody) (map[int]loan
 		uses[loanIndex] = loanUse{index: bindingIndex, span: span}
 	}
 	return uses, fixpoint.work
-}
-
-// admissionVerdict is D-05-35(b)'s shared shadow-verdict replay: the same
-// activeLoans/expiringLoans/conflict-checking control flow
-// analyzeStraightLineAdmission and analyzeArmBodyAdmission each already run,
-// parameterized on an arbitrary loanUses map instead of a hard-wired call to
-// discoverLoanLastUses, returning ONLY the resulting diagnostic code (or ""
-// for a clean admission). It reuses conflictingLoan/hasTypeAbility verbatim
-// (the same conflict law both real walkers already call), so the ONLY
-// variable this function isolates between an "old law" run and a "candidate
-// law" run is which loanUses map governs loan expiry timing -- exactly
-// D-05-35(b)'s shadow comparison. It never builds Operations/Places/States:
-// those are build artifacts of the real, single, admission-deciding walk,
-// untouched by this task, not something a shadow verdict needs to reproduce.
-func admissionVerdict(parameterName string, typeFact core.TypeFact, body *ast.LinearBody, loanUses map[int]loanUse) string {
-	type shadowLoan struct {
-		id      string
-		ownerID string
-		lastUse int
-	}
-	placeID := map[string]string{parameterName: "shadow:place:0"}
-	initialized := map[string]bool{"shadow:place:0": true}
-	activeLoans := make(map[string]map[string]*shadowLoan)
-	expiringLoans := make(map[int][]*shadowLoan)
-	endLoans := func(index int) {
-		for _, loan := range expiringLoans[index] {
-			if loans := activeLoans[loan.ownerID]; loans != nil {
-				delete(loans, loan.id)
-				if len(loans) == 0 {
-					delete(activeLoans, loan.ownerID)
-				}
-			}
-		}
-	}
-	activeLoanStates := func(ownerID string) map[string]*loanState {
-		candidates := activeLoans[ownerID]
-		if candidates == nil {
-			return nil
-		}
-		converted := make(map[string]*loanState, len(candidates))
-		for id, loan := range candidates {
-			access := "shared"
-			if strings.HasSuffix(id, ":exclusive") {
-				access = "exclusive"
-			}
-			converted[id] = &loanState{id: id, ownerID: loan.ownerID, access: access}
-		}
-		return converted
-	}
-	for index, binding := range body.Bindings {
-		sourceID, ok := placeID[binding.RHS.Source]
-		if !ok {
-			return "name.unknown"
-		}
-		if !initialized[sourceID] {
-			return "ownership.use_after_move"
-		}
-		targetID := fmt.Sprintf("shadow:place:%d", index+1)
-		switch binding.RHS.Kind {
-		case "take":
-			if loans := activeLoans[sourceID]; len(loans) > 0 {
-				return "ownership.move_while_borrowed"
-			}
-			initialized[sourceID] = false
-		case "borrow":
-			if !hasTypeAbility(typeFact, core.AbilityShare) {
-				return "ownership.borrow_requires_share"
-			}
-			if conflictingLoan(activeLoanStates(sourceID), "shared") != nil {
-				return "ownership.borrow_conflict"
-			}
-			use := loanUses[index]
-			loan := &shadowLoan{id: fmt.Sprintf("shadow:loan:%d:shared", index), ownerID: sourceID, lastUse: use.index}
-			if activeLoans[sourceID] == nil {
-				activeLoans[sourceID] = make(map[string]*shadowLoan)
-			}
-			activeLoans[sourceID][loan.id] = loan
-			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
-		case "borrow_mut":
-			if !hasTypeAbility(typeFact, core.AbilityShare) {
-				return "ownership.borrow_requires_share"
-			}
-			if conflictingLoan(activeLoanStates(sourceID), "exclusive") != nil {
-				return "ownership.borrow_conflict"
-			}
-			use := loanUses[index]
-			loan := &shadowLoan{id: fmt.Sprintf("shadow:loan:%d:exclusive", index), ownerID: sourceID, lastUse: use.index}
-			if activeLoans[sourceID] == nil {
-				activeLoans[sourceID] = make(map[string]*shadowLoan)
-			}
-			activeLoans[sourceID][loan.id] = loan
-			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
-		default:
-			if !hasTypeAbility(typeFact, core.AbilityCopy) {
-				return "ownership.transfer_requires_take"
-			}
-		}
-		placeID[binding.Name] = targetID
-		initialized[targetID] = true
-		endLoans(index)
-	}
-	resultID, ok := placeID[body.Result]
-	if !ok {
-		return "name.unknown"
-	}
-	if !initialized[resultID] {
-		return "ownership.use_after_move"
-	}
-	endLoans(len(body.Bindings))
-	return ""
 }
 
 func ownershipSnapshot(index int, places map[string]*placeState, activeLoans map[string]map[string]*loanState) ownershipStateFact {

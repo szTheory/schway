@@ -695,155 +695,6 @@ func TestBranchSequenceExhaustive(t *testing.T) {
 	}
 }
 
-// minObservedOwnershipShadowCases is D-05-35(c)'s case-count floor: the
-// shadow pass must observe AT LEAST this many admission-site comparisons
-// before "zero divergences" can be trusted -- an empty or truncated pass
-// reporting clean is exactly the false-green shape D-10 exists to prevent.
-const minObservedOwnershipShadowCases = 113000
-
-// TestLoanLivenessShadowZeroDivergence is D-05-35(b)/(c)'s shadow-mode
-// authorization gate: it installs loanLivenessRecorder and drives the FULL
-// enumeration of both TestOwnershipSequenceExhaustive's straight-line
-// generator (generatedOwnershipBody, referenced from both tests -- not a
-// re-derived case space) and TestBranchSequenceExhaustive's two-block
-// generator through analyzeStraightLine/analyzeArmBody's shadow comparison
-// (discoverLoanLastUses, the real law, vs loanLivenessFixpoint via
-// candidateLoanUses, the candidate law). It fails on ANY divergence (printing
-// the first one's full detail plus the total count) and separately fails if
-// the recorder observed fewer than minObservedOwnershipShadowCases
-// comparisons -- a passing run with too few observed cases is a false green,
-// not a real zero-divergence result, and must not be allowed to authorize
-// Task 3's deletion.
-func TestLoanLivenessShadowZeroDivergence(t *testing.T) {
-	recorder := &loanLivenessShadowRecorder{}
-	loanLivenessRecorder = recorder
-	defer func() { loanLivenessRecorder = nil }()
-
-	const alphabet = 48
-
-	// The straight-line sweep: identical nested loops to
-	// TestOwnershipSequenceExhaustive's own first two loops (byteTypeFact and
-	// nonShareableTypeFact), consuming the SAME generatedOwnershipBody
-	// generator that test uses, driven through analyzeStraightLine so the
-	// shadow comparison installed there fires on every case.
-	for length := 0; length <= 3; length++ {
-		cases := 1
-		for index := 0; index < length; index++ {
-			cases *= alphabet
-		}
-		for encoded := 0; encoded < cases; encoded++ {
-			shareBody := generatedOwnershipBody(encoded, length, alphabet)
-			analyzeStraightLine("shadow:owned", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &shareBody)
-			noShareBody := generatedOwnershipBody(encoded, length, alphabet)
-			analyzeStraightLine("shadow:owned-noshare", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &noShareBody)
-		}
-	}
-
-	// The branch sweep: identical generator and program construction to
-	// TestBranchSequenceExhaustive, driven through Program(...) (the real
-	// checkBranch/analyzeArmBody path) so every arm's own shadow comparison
-	// fires too.
-	const maxLength = 1
-	branchCases := func(length int) int {
-		count := 1
-		for index := 0; index < length; index++ {
-			count *= alphabet
-		}
-		return count
-	}
-	for lengthA := 0; lengthA <= maxLength; lengthA++ {
-		for encodedA := 0; encodedA < branchCases(lengthA); encodedA++ {
-			bodyA := generatedOwnershipBody(encodedA, lengthA, alphabet)
-			for lengthB := 0; lengthB <= maxLength; lengthB++ {
-				for encodedB := 0; encodedB < branchCases(lengthB); encodedB++ {
-					bodyB := generatedOwnershipBody(encodedB, lengthB, alphabet)
-					Program(branchSequenceProgram(bodyA, bodyB))
-				}
-			}
-		}
-	}
-
-	assertLoanLivenessShadowClean(t, recorder, minObservedOwnershipShadowCases)
-}
-
-// assertLoanLivenessShadowClean is the shared zero-divergence/case-count-
-// floor assertion TestLoanLivenessShadowZeroDivergence uses, factored out so
-// TestLoanLivenessShadowRecorderCatchesSeededDivergence can drive it against
-// a manufactured recorder state (a seeded divergence, and a restored/clean
-// one) without duplicating the assertion logic itself.
-// loanLivenessShadowCleanError is the pure, non-testing-T-bound half of the
-// zero-divergence/case-count-floor assertion: it returns an error describing
-// the first divergence (plus total count) or an empty-observation failure,
-// or nil for a genuinely clean pass. Kept as a plain function (not a
-// t.Fatalf-calling helper) so
-// TestLoanLivenessShadowRecorderCatchesSeededDivergence can call it directly
-// on a manufactured recorder and inspect the returned error, without routing
-// through testing.T.Run -- a subtest failure there would mark this whole
-// test (and the package's exit code) failed even though the failure is the
-// falsifier's own intended, restored-immediately-after demonstration.
-func loanLivenessShadowCleanError(recorder *loanLivenessShadowRecorder, minObserved int) error {
-	recorder.mu.Lock()
-	observed := recorder.observed
-	divergences := append([]string(nil), recorder.divergences...)
-	recorder.mu.Unlock()
-
-	if observed < minObserved {
-		return fmt.Errorf("shadow recorder observed only %d comparisons, want at least %d -- an empty/truncated pass must not report clean", observed, minObserved)
-	}
-	if len(divergences) != 0 {
-		n := len(divergences)
-		if n > 10 {
-			n = 10
-		}
-		return fmt.Errorf("shadow pass found %d divergence(s) between discoverLoanLastUses and loanLivenessFixpoint over %d observed comparisons; first divergence: %s (showing up to 10 of %d): %v",
-			len(divergences), observed, divergences[0], len(divergences), divergences[:n])
-	}
-	return nil
-}
-
-func assertLoanLivenessShadowClean(t *testing.T, recorder *loanLivenessShadowRecorder, minObserved int) {
-	t.Helper()
-	if err := loanLivenessShadowCleanError(recorder, minObserved); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// TestLoanLivenessShadowRecorderCatchesSeededDivergence is D-05-35(e)'s
-// mutation-kill for the shadow harness itself: TestLoanLivenessShadowZeroDivergence
-// is a green suite only because the two laws genuinely agree, not because the
-// assertion is a no-op. This seeds a manufactured old/new disagreement
-// directly into a recorder and confirms assertLoanLivenessShadowClean (the
-// exact assertion the real test relies on) goes red and names the seeded
-// case's detail, then confirms restoring the recorder (clearing the seeded
-// divergence) makes the identical assertion pass again -- demonstrated via
-// t.Run's own pass/fail signal, so this falsifying action never fails the
-// outer test itself (mirroring TestUniformJoinPlacementFlipsBothVerdicts'
-// own seed-then-restore pattern for a different fault-injection seam).
-func TestLoanLivenessShadowRecorderCatchesSeededDivergence(t *testing.T) {
-	recorder := &loanLivenessShadowRecorder{observed: minObservedOwnershipShadowCases}
-	loanLivenessRecorder = recorder
-	recordLoanLivenessDivergence("seeded:synthetic-case", true, false, "candidate_code=\"ownership.move_while_borrowed\" (manufactured for this falsifier)")
-	loanLivenessRecorder = nil
-
-	if len(recorder.divergences) != 1 || !strings.Contains(recorder.divergences[0], "seeded:synthetic-case") {
-		t.Fatalf("seeded divergence was not recorded as expected: %v", recorder.divergences)
-	}
-
-	seededErr := loanLivenessShadowCleanError(recorder, minObservedOwnershipShadowCases)
-	if seededErr == nil {
-		t.Fatalf("expected the seeded divergence to fail loanLivenessShadowCleanError, but it reported clean")
-	}
-	if !strings.Contains(seededErr.Error(), "seeded:synthetic-case") {
-		t.Fatalf("failure did not name the seeded case: %v", seededErr)
-	}
-	t.Logf("harness correctly caught the seeded divergence: %v", seededErr)
-
-	recorder.divergences = nil
-	if err := loanLivenessShadowCleanError(recorder, minObservedOwnershipShadowCases); err != nil {
-		t.Fatalf("expected the restored (divergence-free) recorder to report clean, got: %v", err)
-	}
-}
-
 // TestLivenessWorkScale is 03-03-03's honest-work series (D-05/D-02-03):
 // the fixpoint's counted work over a reborrow chain of 10, 100, 1,000, and
 // 10,000 operations must grow within a linear factor of operation count,
@@ -979,26 +830,103 @@ func TestCheckerVerdictsUnchanged(t *testing.T) {
 	}
 }
 
-// TestLastUseDiscoveryWorkIsCounted is D-04-25's basic falsifier:
-// discoverLoanLastUses must report nonzero work for a body with at least
-// one binding, closing the metric-honesty gap where its own transitive-scan
-// cost was invisible to every caller's Work total.
+// TestSingleLoanLivenessLaw is D-05-35(d)'s source-scan falsifier: the
+// retired forward chain-inheritance scan must not reappear anywhere in this
+// package's production or test code outside a comment. The identifier is
+// deliberately built via string concatenation (never spelled out as one
+// contiguous literal) so this test's own source line does not trip its own
+// scan.
+func TestSingleLoanLivenessLaw(t *testing.T) {
+	retiredIdentifier := "discover" + "LoanLastUses"
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatalf("read package dir: %v", err)
+	}
+	found := false
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
+			continue
+		}
+		content, err := os.ReadFile(entry.Name())
+		if err != nil {
+			t.Fatalf("read %s: %v", entry.Name(), err)
+		}
+		for lineNumber, line := range strings.Split(string(content), "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "//") {
+				continue
+			}
+			if strings.Contains(line, retiredIdentifier) {
+				t.Fatalf("%s:%d: retired identifier reappeared outside a comment: %q", entry.Name(), lineNumber+1, line)
+			}
+		}
+		found = true
+	}
+	if !found {
+		t.Fatalf("scanned zero .go files -- the source-scan itself is broken")
+	}
+}
+
+// TestLivenessLawsStayIndependent is D-05-35(d)'s D-12 guard: corevalidate's
+// loan-endpoint re-derivation (recomputeLoanEndpoints) must remain a
+// genuinely INDEPENDENT re-derivation from this package's own
+// computeLoanLastUses/loanLivenessFixpoint -- sharing no helper name and no
+// import edge -- even though this task made the same fixpoint load-bearing
+// for admission here. Collapsing the two derivations back into one would
+// break D-12's two-independent-derivations invariant this package and
+// corevalidate both depend on.
+func TestLivenessLawsStayIndependent(t *testing.T) {
+	source, err := os.ReadFile(filepath.Join("..", "..", "..", "internal", "compiler", "corevalidate", "corevalidate.go"))
+	if err != nil {
+		t.Fatalf("read corevalidate.go: %v", err)
+	}
+	if strings.Contains(string(source), "compiler/check") {
+		t.Fatalf("corevalidate.go imports compiler/check -- D-12's independence invariant is broken")
+	}
+	// Comment lines are exempt: corevalidate.go's own doc comments legitimately
+	// NAME check.go's helpers in prose to explain why its mechanism is
+	// deliberately different (see corevalidate.go's recomputeLoanEndpoints
+	// doc comment). What must never happen is one of those identifiers
+	// appearing as a live, callable symbol -- i.e. outside a comment.
+	var codeLines []string
+	for _, line := range strings.Split(string(source), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "//") {
+			continue
+		}
+		codeLines = append(codeLines, line)
+	}
+	code := strings.Join(codeLines, "\n")
+	sharedHelperNames := []string{
+		"computeLoanLastUses", "loanLivenessFixpoint", "materializeLoanEndpoints",
+		"blockLoanLiveness", "derivePlaceLoans", "cfgBlockSpec", "loanBlockUse",
+	}
+	for _, name := range sharedHelperNames {
+		if strings.Contains(code, name) {
+			t.Fatalf("corevalidate.go calls check.go's own liveness helper %q outside a comment -- the two loan-endpoint derivations must share no helper", name)
+		}
+	}
+}
+
+// TestLastUseDiscoveryWorkIsCounted is D-04-25's basic falsifier, repointed
+// at computeLoanLastUses (D-05-35(d)'s sole liveness law, replacing
+// discoverLoanLastUses): it must report nonzero work for a body with at
+// least one binding, closing the metric-honesty gap where a transitive
+// last-use scan's own cost was invisible to every caller's Work total.
 func TestLastUseDiscoveryWorkIsCounted(t *testing.T) {
 	body := ast.LinearBody{
 		Bindings: []ast.Binding{binding("view", "borrow", "owner", -1)},
 		Result:   "view",
 	}
-	_, work := discoverLoanLastUses("owner", &body)
+	_, work := computeLoanLastUses("owner", &body)
 	if work == 0 {
 		t.Fatalf("expected nonzero discovery work, got 0")
 	}
 }
 
-// TestLastUseDiscoveryWorkSeries is D-04-25's growth falsifier: reported
-// work over a chain of increasing length must grow with the real scan cost
-// rather than stay flat -- the exact metric-honesty gap this task closes.
-// The before/after values for chain length 100 are recorded in
-// 04-06-SUMMARY.md.
+// TestLastUseDiscoveryWorkSeries is D-04-25's growth falsifier, repointed at
+// computeLoanLastUses: reported work over a chain of increasing length must
+// grow with the real scan cost rather than stay flat -- the metric-honesty
+// property this series has pinned since D-04-25, now proven against
+// loanLivenessFixpoint's own counted cost instead of discoverLoanLastUses'.
 func TestLastUseDiscoveryWorkSeries(t *testing.T) {
 	series := []int{10, 100, 1_000}
 	work := make([]int, len(series))
@@ -1012,7 +940,7 @@ func TestLastUseDiscoveryWorkSeries(t *testing.T) {
 			bindings[i] = binding(fmt.Sprintf("copy%d", i), "read", source, i*2)
 		}
 		body := ast.LinearBody{Bindings: bindings, Result: fmt.Sprintf("copy%d", length-1)}
-		_, w := discoverLoanLastUses("owner", &body)
+		_, w := computeLoanLastUses("owner", &body)
 		work[index] = w
 	}
 	for index := 1; index < len(work); index++ {

@@ -338,10 +338,20 @@ type Edge struct {
 }
 
 // LoanEndpoint records where a loan ends, either at a point inside a block or
-// on an edge between two blocks (never both). This phase's arm-body lowering
-// does not yet populate LoanEndpoints — edge-specific liveness lands in a
-// later plan — but the additive shape exists now so that plan does not need
-// a schema change.
+// on an edge between two blocks (never both). checkBranch's arm blocks
+// populate this from loanLivenessFixpoint's backward worklist dataflow
+// (03-03+). As of D-05-35(d) these endpoints are LOAD-BEARING, not
+// decorative: the same fixpoint that materializes them (via
+// computeLoanLastUses) is now the sole law deciding loan conflict/expiry
+// admission in both analyzeStraightLine and analyzeArmBody -- the forward
+// chain-inheritance scan (discoverLoanLastUses) that used to decide
+// admission independently of this dataflow is retired, authorized by a
+// recorded zero-divergence shadow run of the two laws over the full
+// TestOwnershipSequenceExhaustive/TestBranchSequenceExhaustive enumeration.
+// Straight-line functions still never populate this FIELD in their
+// serialized core (see LinearBody.LoanEndpoints' own doc comment) -- only
+// checkBranch's arm blocks serialize it -- but the fixpoint driving it now
+// decides real admission everywhere, not only where it is observable.
 type LoanEndpoint struct {
 	ID               string `json:"id"`
 	LoanID           string `json:"loan_id"`
