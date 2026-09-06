@@ -33,6 +33,12 @@ type Result struct {
 	Program     core.Program
 	Diagnostics []diagnostic.Diagnostic
 	Work        int
+	// AliasFacts is D-05-01's admission-gating alias-lattice fact set
+	// (deriveAliasFacts): exposed here, on the checker's existing result,
+	// rather than as a new core.Program field, so cgen's restrict emission
+	// and the evidence path can reach it without a lang.core/2 schema bump
+	// (D-05-39). Empty for every Phase 1-4 program.
+	AliasFacts []AliasFact
 }
 
 func Program(program ast.Program) Result {
@@ -116,6 +122,18 @@ func Program(program ast.Program) Result {
 			if len(diagnostics) == 0 {
 				result.Program.Schema = core.Schema1
 				result.Program.Functions = append(result.Program.Functions, checked)
+				// D-05-01: alias facts are derivable only for the plain
+				// straight-line shape checkLinear itself produces (Blocks
+				// empty, no Match, no ForeignContract) -- checkFallibleLinear's
+				// foreign-call shape (Blocks > 0) and any branch-shaped
+				// function never reach this append site with those fields
+				// clear, so this guard is never redundant, just explicit.
+				if checked.Linear != nil && checked.Match == nil && checked.ForeignContract == nil && len(checked.Linear.Blocks) == 0 {
+					endpoints, endpointWork := aliasFactEndpoints(checked.ID, checked.Linear.Operations)
+					facts, factWork := deriveAliasFacts(checked, checked.Linear, endpoints)
+					result.AliasFacts = append(result.AliasFacts, facts...)
+					result.Work += endpointWork + factWork
+				}
 			}
 			continue
 		}
@@ -1979,6 +1997,134 @@ func borrowConflictDiagnostic(span diagnostic.Span, blocking *loanState, ownerID
 		"ownership.borrow_conflict", span, "cannot create a loan while a conflicting loan is live", causes,
 		diagnostic.Repair{Kind: "create_loan_after_conflicting_loan_ends"},
 	)
+}
+
+// AliasFact is D-05-01's optimizer-facing alias-lattice fact: an
+// independently-checked promise that a function's sole parameter is covered,
+// for the ENTIRE duration of that function's own execution (C17 section
+// 6.7.3.1's "for the duration of that function's execution", not merely "at
+// some point"), by a single loan chain rooted at the parameter itself. It
+// exists to give NAT-03's optimizer-attribute controls an honest subject
+// this phase (D-05-01): cgen's restrict emission and corevalidate's
+// independent re-derivation both consume this shape, sharing no helper with
+// each other or with this derivation (D-12 -- three independent
+// derivations: check, cgen, corevalidate).
+type AliasFact struct {
+	Function  string
+	Parameter string
+	LoanID    string
+	// Kind is AliasFactExclusiveBorrow or AliasFactUniqueOwner. Only
+	// AliasFactExclusiveBorrow is derivable this phase: cgen's by-pointer
+	// lowering (selectsByPointerLowering) never admits a moved-only owned
+	// chain, so AliasFactUniqueOwner has no fixture and no lowering to
+	// justify this plan ever emitting it -- the constant exists so the
+	// lattice's second half is named, not silently absent, for a later plan
+	// to derive.
+	Kind string
+}
+
+const (
+	AliasFactExclusiveBorrow = "exclusive_borrow"
+	AliasFactUniqueOwner     = "unique_owner"
+)
+
+// aliasFactEndpoints computes the SAME backward-worklist loan-liveness
+// fixpoint checkBranch's arm blocks already use (loanLivenessFixpoint plus
+// materializeLoanEndpoints), over a straight-line function's own REAL,
+// already-admitted operation stream (real per-function IDs, not the
+// synthetic "shadow:" IDs computeLoanLastUses builds during admission
+// itself). It is called only AFTER checkLinear has already produced the
+// core.Function -- this is a POST-HOC re-derivation for deriveAliasFacts,
+// never a second admission-deciding law: computeLoanLastUses remains the
+// sole law deciding conflict/expiry (D-05-35(d)). A closed single-block CFG
+// (no successors) never produces an edge endpoint, matching
+// computeLoanLastUses' own single-block construction.
+func aliasFactEndpoints(functionID string, operations []core.LinearOperation) ([]core.LoanEndpoint, int) {
+	block := cfgBlockSpec{id: functionID + ":block:straight", operations: operations, successors: nil}
+	fixpoint, err := loanLivenessFixpoint(functionID, []cfgBlockSpec{block})
+	if err != nil {
+		return nil, 0
+	}
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints(functionID, []cfgBlockSpec{block}, edgeID, fixpoint)
+	return endpoints, fixpoint.work
+}
+
+// deriveAliasFacts is D-05-01's admission-gating alias-fact derivation. It
+// returns a fact ONLY when function's sole parameter is covered by an
+// exclusive loan across every operation from the function's first use of the
+// parameter to its own terminator -- deliberately the SAME structural
+// condition cgen's selectsByPointerLowering checks (D-05-02), duplicated
+// rather than shared (D-12), PLUS grounding the "for the whole call" claim
+// in the liveness fixpoint's own materialized endpoints (never
+// re-implementing last-use discovery itself): the exclusive loan's endpoint
+// must be a "point" endpoint whose AfterOperationID is the function's own
+// terminator, not merely somewhere earlier in the operation stream -- this
+// is exactly what rejects a loan whose last use is before the terminator
+// (a partially-covering loan never produces a fact). Counts its own work
+// (one unit per operation inspected, matching the existing per-fact loops'
+// accounting basis) as its second return value.
+func deriveAliasFacts(function core.Function, linear *core.LinearBody, endpoints []core.LoanEndpoint) ([]AliasFact, int) {
+	work := 0
+	if linear == nil {
+		return nil, work
+	}
+	// PublicOrigin != nil marks a declared borrow-return function (OWN-04's
+	// public borrowed views, e.g. testdata/phase3/public_view_mixed_access.lang):
+	// a distinct, already-shipped semantic category that can have the exact
+	// same exclusive-borrow-then-reborrow-to-terminator operation shape as
+	// this plan's own by-pointer fixture. Excluding it here mirrors
+	// selectsByPointerLowering's own identical guard (cgen.go) -- the one
+	// genuinely structural fact (not a name or file match) that tells the
+	// two apart, required for TestAliasFactAgreesWithByPointerSelection to
+	// hold on testdata/phase3/public_view_mixed_access.lang.
+	if function.PublicOrigin != nil {
+		return nil, work
+	}
+	operations := linear.Operations
+	if len(operations) == 0 {
+		return nil, work
+	}
+	first := operations[0]
+	work++
+	if first.Kind != core.OpBorrowExclusive || first.SourceID != function.Parameter.ID || first.TargetID == "" {
+		return nil, work
+	}
+	current := first.TargetID
+	terminatorIndex := -1
+	for index := 1; index < len(operations); index++ {
+		work++
+		operation := operations[index]
+		if operation.SourceID == function.Parameter.ID {
+			return nil, work
+		}
+		if operation.SourceID != current {
+			return nil, work
+		}
+		if operation.Kind == core.OpReturn {
+			terminatorIndex = index
+			break
+		}
+		if operation.TargetID == "" {
+			return nil, work
+		}
+		current = operation.TargetID
+	}
+	if terminatorIndex != len(operations)-1 {
+		return nil, work
+	}
+	terminator := operations[terminatorIndex]
+	for _, endpoint := range endpoints {
+		work++
+		if endpoint.LoanID != first.LoanID {
+			continue
+		}
+		if endpoint.Kind == "point" && endpoint.AfterOperationID == terminator.ID {
+			return []AliasFact{{Function: function.ID, Parameter: function.Parameter.ID, LoanID: first.LoanID, Kind: AliasFactExclusiveBorrow}}, work
+		}
+		return nil, work
+	}
+	return nil, work
 }
 
 // computeLoanLastUses is D-05-35(d)'s sole liveness law: it derives, for

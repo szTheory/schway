@@ -339,6 +339,20 @@ const borrowByPointerMarker = "/* lang:by-pointer-param */"
 // structural fact (not a name or file match) that tells the two apart, and
 // is exactly what TestPhase5ByPointerLoweringIsAdditive asserts keeps every
 // Phase 1-4 fixture on its own existing lowering path.
+// SelectsByPointerLowering is the exported form of selectsByPointerLowering
+// (D-05-02): promoted from a test-only accessor (export_test.go) to a real
+// production export this plan, so check package's own tests can prove
+// deriveAliasFacts (check.go) and this predicate decide the SAME condition
+// on every corpus fixture (TestAliasFactAgreesWithByPointerSelection) --
+// D-12's three independent derivations still share zero HELPERS with each
+// other (this is read-only cross-package test verification, not a shared
+// implementation), and Emit/EmitNative's own internal dispatch keeps calling
+// the unexported selectsByPointerLowering directly, unaffected by this
+// export.
+func SelectsByPointerLowering(function core.Function, linear *core.LinearBody) bool {
+	return selectsByPointerLowering(function, linear)
+}
+
 func selectsByPointerLowering(function core.Function, linear *core.LinearBody) bool {
 	if function.Match != nil || function.PublicOrigin != nil || linear == nil || len(linear.Blocks) > 0 {
 		return false
