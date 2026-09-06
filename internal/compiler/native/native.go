@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -53,7 +54,86 @@ type Runner struct {
 	// pre-Phase-4 caller, which keeps the original single-file compile-and-
 	// link invocation byte-for-byte unchanged.
 	ForeignSources []string
-	command        func(context.Context, string, ...string) *exec.Cmd
+	// LTO gates D-05-19's `-flto` tier: when true, `-flto` is appended to
+	// BOTH the per-TU foreign compile argument list and the final link
+	// argument list -- never just one, since LTO is inert if either is
+	// missing. Gated on this field only: with LTO false, every argument
+	// vector this Runner constructs is byte-for-byte identical to the
+	// pre-Phase-5 shape, so the existing -O0/-O3 differential is untouched.
+	LTO bool
+	// recorder, when non-nil (via EnableCommandRecording), captures every
+	// constructed command line and the final compiled binary's bytes. This
+	// exists so "did -flto reach clang" and "did LTO change codegen" are
+	// assertions a test makes directly, never inferences from a successful
+	// build (D-05-19/D-05-38). Nil for every production caller.
+	recorder *commandRecorder
+	command  func(context.Context, string, ...string) *exec.Cmd
+}
+
+// commandRecorder is a pointer-shared recording sink: Runner is used by
+// value throughout this package, so every constructed command line and the
+// resulting binary are recorded through this indirection to survive value
+// copies of the Runner that holds it.
+type commandRecorder struct {
+	mu     sync.Mutex
+	lines  [][]string
+	binary []byte
+}
+
+// EnableCommandRecording returns a copy of r with command-line and binary
+// recording turned on. Test-only: used exclusively to assert that `-flto`
+// reaches both the compile and link command lines, and that the LTO and
+// non-LTO tiers produce different codegen (D-05-19/D-05-38).
+func (r Runner) EnableCommandRecording() Runner {
+	r.recorder = &commandRecorder{}
+	return r
+}
+
+// LastCommandLines returns every command line recorded by this Runner's
+// most recent Run call, in construction order. Returns nil when command
+// recording was never enabled via EnableCommandRecording.
+func (r Runner) LastCommandLines() [][]string {
+	if r.recorder == nil {
+		return nil
+	}
+	r.recorder.mu.Lock()
+	defer r.recorder.mu.Unlock()
+	return append([][]string(nil), r.recorder.lines...)
+}
+
+// LastBinary returns the compiled binary's bytes from this Runner's most
+// recent Run call. Returns nil when command recording was never enabled via
+// EnableCommandRecording.
+func (r Runner) LastBinary() []byte {
+	if r.recorder == nil {
+		return nil
+	}
+	r.recorder.mu.Lock()
+	defer r.recorder.mu.Unlock()
+	return append([]byte(nil), r.recorder.binary...)
+}
+
+func (r Runner) recordCommandLine(name string, arguments []string) {
+	if r.recorder == nil {
+		return
+	}
+	line := append([]string{name}, arguments...)
+	r.recorder.mu.Lock()
+	r.recorder.lines = append(r.recorder.lines, line)
+	r.recorder.mu.Unlock()
+}
+
+func (r Runner) recordBinary(path string) {
+	if r.recorder == nil {
+		return
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	r.recorder.mu.Lock()
+	r.recorder.binary = data
+	r.recorder.mu.Unlock()
 }
 
 func DefaultRunner() Runner { return Runner{ClangPath: "clang", Timeout: 5 * time.Second} }
@@ -85,7 +165,13 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 	for index, foreignSource := range r.ForeignSources {
 		objectPath := filepath.Join(directory, fmt.Sprintf("foreign_%d.o", index))
 		foreignCtx, foreignCancel := context.WithTimeout(parent, r.Timeout)
-		foreignCommand := r.commandContext(foreignCtx, r.ClangPath, "-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization, "-c", foreignSource, "-o", objectPath)
+		foreignArguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization}
+		if r.LTO {
+			foreignArguments = append(foreignArguments, "-flto")
+		}
+		foreignArguments = append(foreignArguments, "-c", foreignSource, "-o", objectPath)
+		foreignCommand := r.commandContext(foreignCtx, r.ClangPath, foreignArguments...)
+		r.recordCommandLine(r.ClangPath, foreignArguments)
 		var foreignStdout, foreignStderr boundedWriter
 		foreignCommand.Stdout = &foreignStdout
 		foreignCommand.Stderr = &foreignStderr
@@ -114,9 +200,15 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 	ctx, cancel := context.WithTimeout(parent, r.Timeout)
 	defer cancel()
 	started := time.Now()
-	arguments := append([]string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization, sourcePath}, objectPaths...)
+	arguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization}
+	if r.LTO {
+		arguments = append(arguments, "-flto")
+	}
+	arguments = append(arguments, sourcePath)
+	arguments = append(arguments, objectPaths...)
 	arguments = append(arguments, "-o", binaryPath)
 	command := r.commandContext(ctx, r.ClangPath, arguments...)
+	r.recordCommandLine(r.ClangPath, arguments)
 	var compileStdout, compileStderr boundedWriter
 	command.Stdout = &compileStdout
 	command.Stderr = &compileStderr
@@ -138,6 +230,7 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 		}
 		return Result{}, &ToolError{Code: code, Err: withStderr(err, compileStderr.bytes())}
 	}
+	r.recordBinary(binaryPath)
 
 	result := Result{Optimization: optimization, CompileTime: compileTime, Pairs: make([]Pair, 0, len(inputs))}
 	for _, input := range inputs {
