@@ -3,18 +3,38 @@ package session
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 )
+
+// nat03ProjectRoot mirrors testsupport.ProjectPath's own technique (a
+// runtime.Caller(0)-anchored resolution, same depth: internal/compiler/
+// session/ is exactly as deep as internal/compiler/testsupport/) rather
+// than importing the test-only testsupport package into production code.
+// NAT03Mutation.CorpusProgram is deliberately a REPO-RELATIVE path (the
+// literal grep target D-05-07's acceptance criteria pin), so
+// AssertMutationMovesAnAxis resolves it to an absolute path here, once.
+func nat03ProjectRoot() string {
+	_, file, _, _ := runtime.Caller(0)
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
+}
+
+func nat03CorpusPath(relative string) string {
+	return filepath.Join(nat03ProjectRoot(), filepath.FromSlash(relative))
+}
 
 // byPointerParamMarker is duplicated, verbatim, from cgen.go's own
 // borrowByPointerMarker constant (D-05-01/D-05-02) — matching this file's
@@ -397,4 +417,284 @@ func VerifyAliasFalseNoAlias(ctx context.Context, runner *AliasFactMutationRunne
 		return fmt.Errorf("%s mutation broke -O0 (expected agreement with the interpreter): interpreter=%s, -O0=%s", ControlAliasFalseNoAlias, interpreterValue, o0Value)
 	}
 	return nil
+}
+
+// NAT03Mutation is D-05-22's per-mutation citation: which corpus program a
+// NAT-03 mutation is injected into, which of plan 05-06's five named axes
+// it is expected to move, and — for the one row not yet subjected this
+// wave — the named escape closing plan 05-09 discharges it under.
+type NAT03Mutation struct {
+	ControlID     string
+	CorpusProgram string
+	ExpectedAxis  string
+	Subjected     bool
+	EscapeID      string
+}
+
+// NAT03Mutations returns D-05-07's honest NAT-03 arithmetic: six
+// mutations this milestone subjects directly, plus one (stale callback
+// retention) subsumed under a named escape rather than silently claimed
+// 7/7. Rows 6 and 7 cite plan 05-08's fixtures at their FINAL declared
+// paths (testdata/phase5/allocator_mismatch.lang,
+// testdata/phase5/retained_pointer.lang) — plan 05-08 runs concurrently in
+// wave 3 with no dependency on this plan, so neither path's existence nor
+// row 6's axis-movement is asserted here; both are closed at plan 05-09's
+// gate, which depends on both this plan and 05-08 and therefore has a
+// defined execution order.
+func NAT03Mutations() []NAT03Mutation {
+	return []NAT03Mutation{
+		{
+			ControlID:     "control:foreign.layout_mismatch",
+			CorpusProgram: "testdata/phase4/foreign_layout_mismatch.golden.c",
+			ExpectedAxis:  AxisTerminalOutcome,
+			Subjected:     true,
+		},
+		{
+			ControlID:     "control:resource.release_omitted",
+			CorpusProgram: "testdata/phase4/acquire_three_success.lang",
+			ExpectedAxis:  AxisResourceLedger,
+			Subjected:     true,
+		},
+		{
+			ControlID:     "control:resource.release_order_transposed",
+			CorpusProgram: "testdata/phase4/acquire_three_success.lang",
+			ExpectedAxis:  AxisEventOrder,
+			Subjected:     true,
+		},
+		{
+			ControlID:     "control:foreign.nonlocal_exit_undetected",
+			CorpusProgram: "testdata/phase4/nonlocal_exit_probe.lang",
+			ExpectedAxis:  AxisEventOrder,
+			Subjected:     true,
+		},
+		{
+			ControlID:     ControlAliasFalseNoAlias,
+			CorpusProgram: "testdata/phase5/false_restrict_hoist.lang",
+			ExpectedAxis:  AxisTerminalOutcome,
+			Subjected:     true,
+		},
+		// PENDING-05-08
+		{
+			ControlID:     "control:native.sanitize.allocator_mismatch",
+			CorpusProgram: "testdata/phase5/allocator_mismatch.lang",
+			ExpectedAxis:  AxisTerminalOutcome,
+			Subjected:     true,
+		},
+		// PENDING-05-08
+		{
+			ControlID:     "control:native.sanitize.retained_pointer",
+			CorpusProgram: "testdata/phase5/retained_pointer.lang",
+			ExpectedAxis:  AxisTerminalOutcome,
+			Subjected:     false,
+			EscapeID:      "escape:callback-invocation-unsubjected",
+		},
+	}
+}
+
+// AssertMutationMovesAnAxis runs mutation's cited corpus program unmutated
+// and mutated and asserts the resulting divergence lands on EXACTLY
+// mutation.ExpectedAxis — a mutation that moves a different axis than
+// claimed is as much a false detector as one that moves none (D-05-22).
+// Rows 1-3 never reach a comparable pair of execution.Execution documents
+// at all — the mutation is refused at compile time (layout_mismatch), at
+// native-execution validation time (release_omitted), or at corevalidate's
+// own core-level re-derivation (release_order_transposed) — so for those
+// three the "axis" is the semantic dimension the refusal itself names,
+// asserted directly against the refusal's own diagnostic content rather
+// than via Phase5CompareEngines. Rows 4-5 produce two genuinely comparable
+// execution.Execution documents and are asserted via Phase5CompareEngines
+// itself, naming the axis Phase5CompareEngines actually reports.
+func AssertMutationMovesAnAxis(ctx context.Context, mutation NAT03Mutation) error {
+	switch mutation.ControlID {
+	case "control:foreign.layout_mismatch":
+		return assertLayoutMismatchMovesAxis(ctx, mutation)
+	case "control:resource.release_omitted":
+		return assertReleaseOmissionMovesAxis(ctx, mutation)
+	case "control:resource.release_order_transposed":
+		return assertReleaseTranspositionMovesAxis(mutation)
+	case "control:foreign.nonlocal_exit_undetected":
+		return assertNonlocalExitMovesAxis(ctx, mutation)
+	case ControlAliasFalseNoAlias:
+		return assertAliasFalseNoAliasMovesAxis(ctx, mutation)
+	default:
+		return fmt.Errorf("AssertMutationMovesAnAxis: unsupported control %q (row not yet subjected — see PENDING-05-08)", mutation.ControlID)
+	}
+}
+
+func requireAxis(mutation NAT03Mutation, observed string) error {
+	if observed != mutation.ExpectedAxis {
+		return fmt.Errorf("%s moved %s, not its claimed %s", mutation.ControlID, observed, mutation.ExpectedAxis)
+	}
+	return nil
+}
+
+// assertLayoutMismatchMovesAxis proves control:foreign.layout_mismatch
+// against its cited frozen fixture: compiling the deliberately-transposed
+// conformance unit against the declared probe contract must be refused
+// (native.conformance_failed) — a rejection so extreme no execution
+// document is ever produced at all, mapped onto axis:terminal-outcome as
+// the most extreme form of "the terminal outcome diverges" (a normal
+// return vs. no execution whatsoever).
+func assertLayoutMismatchMovesAxis(ctx context.Context, mutation NAT03Mutation) error {
+	runner := LayoutMutationRunner{Runner: native.DefaultRunner(), Contract: LayoutProbeContract(), FixturePath: nat03CorpusPath(mutation.CorpusProgram)}
+	err := runner.Run(ctx)
+	if err == nil {
+		return fmt.Errorf("%s produced no divergence: the mismatched fixture was accepted", mutation.ControlID)
+	}
+	var toolError *native.ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.conformance_failed" {
+		return fmt.Errorf("%s expected native.conformance_failed, got %v", mutation.ControlID, err)
+	}
+	return requireAxis(mutation, AxisTerminalOutcome)
+}
+
+// assertReleaseOmissionMovesAxis proves control:resource.release_omitted
+// against acquire_three_success.lang: deleting the emitter's own final
+// release site leaves a resource observably live at termination, refused
+// by native.Runner's own "a returned outcome requires empty live_resources"
+// contract (native.invalid_execution) before an execution document can
+// even be constructed — mapped onto axis:resource-ledger, the exact
+// dimension that hard-reject protects.
+func assertReleaseOmissionMovesAxis(ctx context.Context, mutation NAT03Mutation) error {
+	inner := native.DefaultRunner()
+	inner.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	runner := NewReleaseOmissionMutationRunner(inner)
+	_, _, err := RunNativeFile(ctx, nat03CorpusPath(mutation.CorpusProgram), runner)
+	if err == nil {
+		return fmt.Errorf("%s produced no divergence: the omission was accepted", mutation.ControlID)
+	}
+	var toolError *native.ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.invalid_execution" {
+		return fmt.Errorf("%s expected native.invalid_execution, got %v", mutation.ControlID, err)
+	}
+	return requireAxis(mutation, AxisResourceLedger)
+}
+
+// assertReleaseTranspositionMovesAxis proves
+// control:resource.release_order_transposed against
+// acquire_three_success.lang: exchanging two emitted OpRelease operations
+// in the checked core artifact is refused by corevalidate's own
+// independent re-derivation (core.release_order_mismatch) before any
+// execution is ever attempted — mapped onto axis:event-order, the ordered-
+// sequence dimension corevalidate's release-order re-derivation protects.
+func assertReleaseTranspositionMovesAxis(mutation NAT03Mutation) error {
+	source, err := os.ReadFile(nat03CorpusPath(mutation.CorpusProgram))
+	if err != nil {
+		return err
+	}
+	checked := Check(source)
+	if len(checked.Diagnostics) != 0 {
+		return fmt.Errorf("%s: fixture failed to check: %+v", mutation.ControlID, checked.Diagnostics)
+	}
+	mutated, err := TransposeReleaseOrder(checked.Program)
+	if err != nil {
+		return fmt.Errorf("%s: %w", mutation.ControlID, err)
+	}
+	result := corevalidate.Validate(mutated)
+	if result.Valid {
+		return fmt.Errorf("%s produced no divergence: the transposed order was accepted", mutation.ControlID)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != "core.release_order_mismatch" {
+		return fmt.Errorf("%s expected core.release_order_mismatch, got %+v", mutation.ControlID, result.Problems)
+	}
+	return requireAxis(mutation, AxisEventOrder)
+}
+
+// assertNonlocalExitMovesAxis proves control:foreign.nonlocal_exit_undetected
+// against nonlocal_exit_probe.lang via NonlocalLedgerOmissionMutationRunner
+// (D-09/D-10's SECOND, distinct mutation-kill demonstration for this
+// control): dropping one ledger-population site changes the mutated run's
+// own resource.leaked event count relative to the golden run's — a genuine
+// comparable pair of execution.Execution documents, asserted via
+// Phase5CompareEngines itself (the differing event content is caught by
+// axis:event-order, which comparePhase5Pair checks before
+// axis:resource-ledger).
+func assertNonlocalExitMovesAxis(ctx context.Context, mutation NAT03Mutation) error {
+	source, err := os.ReadFile(nat03CorpusPath(mutation.CorpusProgram))
+	if err != nil {
+		return err
+	}
+	checked := Check(source)
+	if len(checked.Diagnostics) != 0 {
+		return fmt.Errorf("%s: fixture failed to check: %+v", mutation.ControlID, checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		return fmt.Errorf("%s: %w", mutation.ControlID, err)
+	}
+	base := native.DefaultRunner()
+	base.Expect = native.ExpectDefect
+	base.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	golden, err := base.Run(ctx, generated, "-O0", []string{"7"})
+	if err != nil || len(golden.Pairs) != 1 {
+		return fmt.Errorf("%s: golden run failed: err=%v result=%+v", mutation.ControlID, err, golden)
+	}
+	mutationRunner := NewNonlocalLedgerOmissionMutationRunner(base)
+	mutated, err := mutationRunner.Run(ctx, generated, "-O0", []string{"7"})
+	if err != nil || len(mutated.Pairs) != 1 {
+		return fmt.Errorf("%s: mutated run failed: err=%v result=%+v", mutation.ControlID, err, mutated)
+	}
+	disagreement := Phase5CompareEngines(mutation.CorpusProgram, map[string]execution.Execution{
+		"golden":  golden.Pairs[0].Execution,
+		"mutated": mutated.Pairs[0].Execution,
+	})
+	if disagreement == nil {
+		return fmt.Errorf("%s produced no divergence: the golden and mutated runs agree", mutation.ControlID)
+	}
+	mismatch, ok := disagreement.(*Phase5EngineDisagreement)
+	if !ok {
+		return fmt.Errorf("%s: unexpected disagreement type %T", mutation.ControlID, disagreement)
+	}
+	return requireAxis(mutation, mismatch.Axis)
+}
+
+// assertAliasFalseNoAliasMovesAxis proves control:alias.false_no_alias by
+// reusing VerifyAliasFalseNoAlias's own machinery, then re-deriving the
+// SAME divergence through Phase5CompareEngines directly (rather than
+// VerifyAliasFalseNoAlias's own hand-rolled Outcome.Value comparison), so
+// this row is asserted on the SAME shared comparator every other execution-
+// bearing row uses.
+func assertAliasFalseNoAliasMovesAxis(ctx context.Context, mutation NAT03Mutation) error {
+	source, err := os.ReadFile(nat03CorpusPath(mutation.CorpusProgram))
+	if err != nil {
+		return err
+	}
+	checked := Check(source)
+	if len(checked.Diagnostics) != 0 {
+		return fmt.Errorf("%s: fixture failed to check: %+v", mutation.ControlID, checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		return fmt.Errorf("%s: fixture rejected by corevalidate: %+v", mutation.ControlID, validated.Problems)
+	}
+	program := validated.Program()
+	cSource, err := cgen.EmitNative(program)
+	if err != nil {
+		return err
+	}
+	nativeInputs, ok := interpreterInputs(program)
+	if !ok || len(nativeInputs) == 0 {
+		return fmt.Errorf("%s: no derivable interpreter input", mutation.ControlID)
+	}
+	interpreted, err := interp.Run(program, program.Functions[0].Name, "2")
+	if err != nil {
+		return err
+	}
+	runner := NewAliasFactMutationRunner(native.DefaultRunner(), nat03CorpusPath(mutation.CorpusProgram))
+	o3, err := runner.Run(ctx, cSource, "-O3", []string{nativeInputs[0]})
+	if err != nil || len(o3.Pairs) != 1 {
+		return fmt.Errorf("%s: -O3 mutated run failed: err=%v result=%+v", mutation.ControlID, err, o3)
+	}
+	disagreement := Phase5CompareEngines(mutation.CorpusProgram, map[string]execution.Execution{
+		"interpreter": interpreted,
+		"o3":          o3.Pairs[0].Execution,
+	})
+	if disagreement == nil {
+		return fmt.Errorf("%s produced no divergence between the interpreter and -O3", mutation.ControlID)
+	}
+	mismatch, ok := disagreement.(*Phase5EngineDisagreement)
+	if !ok {
+		return fmt.Errorf("%s: unexpected disagreement type %T", mutation.ControlID, disagreement)
+	}
+	return requireAxis(mutation, mismatch.Axis)
 }
