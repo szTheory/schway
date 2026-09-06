@@ -1,0 +1,248 @@
+[
+  {
+    "spike_id": "001",
+    "control_id": "spike-001-move-while-borrowed-fault",
+    "control_mechanism": "a checker that permits transferring ownership of a place while a future-used shared loan on it remains live accepts an unsound program",
+    "live_descendant": null,
+    "waived": {
+      "reason": "the spike's ad hoc differential-search counterexample has no control:-registry identifier of its own; the identical hazard is guarded in production by check.go's ownership.move_while_borrowed diagnostic and independently re-derived by corevalidate's core.move_while_borrowed, both exercised exhaustively by TestOwnershipSequenceExhaustive rather than tracked through the Phase 4/5 control:-ID gate vocabulary this registry cross-checks",
+      "citation": "internal/compiler/check/check.go's \"ownership.move_while_borrowed\" diagnostic plus internal/compiler/corevalidate/corevalidate.go's \"core.move_while_borrowed\" check, both proven zero-divergence by check_test.go's TestOwnershipSequenceExhaustive",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "001",
+    "control_id": "spike-001-unsound-branch-join-fault",
+    "control_mechanism": "a branch-join analyzer that gives one static loan identity different owners or access modes on the two incoming paths, and accepts the merge instead of rejecting it conservatively",
+    "live_descendant": null,
+    "waived": {
+      "reason": "the spike's unsound-join fault injection targeted a bounded exhaustive path oracle that has no production control:-registry entry; the identical join-conflict hazard is guarded in production by corevalidate's independent loan-endpoint re-derivation and exercised by TestBranchSequenceExhaustive, again outside the Phase 4/5 control:-ID vocabulary",
+      "citation": "internal/compiler/corevalidate/corevalidate.go's core.loan_endpoint_mismatch check (recomputeLoanEndpoints) proven against check_test.go's TestBranchSequenceExhaustive",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "001",
+    "control_id": "spike-001-manual-inferred-loan-end-divergence",
+    "control_mechanism": "an explicit source-level loan-ending operation occurring before its corresponding borrow silently suppresses a checker's independently inferred loan endpoint, hiding a real defect behind result-only comparison",
+    "live_descendant": null,
+    "waived": {
+      "reason": "this language has no source-level loan-ending syntax at all (a superseded design decision from the parser boundary onward), so manual/inferred liveness interaction is structurally unconstructible; Phase 5's retirement of discoverLoanLastUses further collapsed all loan-liveness derivation onto the single CFG-derived loanLivenessFixpoint law, removing even the two-law-coexistence precondition for this hazard",
+      "citation": "05-09-SUMMARY.md's recorded discoverLoanLastUses retirement (D-05-34/D-05-35): \"grep -rn discoverLoanLastUses --include=*.go . returns only comment references\" after a 230,692-case zero-divergence shadow run",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "002",
+    "control_id": "spike-002-omitted-edge-endpoints-fault",
+    "control_mechanism": "a backward CFG liveness analyzer that materializes no edge-specific loan endpoints permits a mutation on a branch where the loan is only live on the other, unused edge",
+    "live_descendant": null,
+    "waived": {
+      "reason": "the spike's injected-edge-bug counterexample exercised a standalone CFG liveness workbench with no control:-registry identifier; the same edge-sensitive liveness law now ships in production as check.go's loanLivenessFixpoint, widened in Phase 5 to the full straight-line-plus-branch domain and proven zero-divergence against the retired discoverLoanLastUses scanner",
+      "citation": "internal/compiler/check/check.go's loanLivenessFixpoint (D-05-34/D-05-35), the sole liveness law in both analyzeStraightLine and analyzeArmBody as of 05-02-SUMMARY.md",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "002",
+    "control_id": "spike-002-malformed-cfg-graph",
+    "control_mechanism": "a control-flow graph with a structurally invalid block or edge (for example a dangling successor) is accepted by the liveness analyzer instead of being rejected as malformed",
+    "live_descendant": null,
+    "waived": {
+      "reason": "the spike's malformed-graph diagnostics validated a hand-built CFG workbench format that no longer exists; production core.LinearBody's block/edge graph is validated by corevalidate's own structural predicates (a different but overlapping mechanism), not by a control:-registry identifier",
+      "citation": "internal/compiler/corevalidate/corevalidate.go's terminal-block structural check (core.terminal_block_unreachable) and sibling block/edge structural predicates",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "002",
+    "control_id": "spike-002-oracle-masking-defense",
+    "control_mechanism": "an imported linear-form normalizer silently repairs or masks a missing CFG-derived loan endpoint before comparison, hiding a real divergence between the CFG analyzer and the oracle it is checked against",
+    "live_descendant": null,
+    "waived": {
+      "reason": "the spike's late-terminal-guard defense was a workbench-internal comparison-harness precaution; production's equivalent discipline is D-05-35's explicit requirement to LOG every accept/reject divergence during the discoverLoanLastUses shadow run rather than silently reconciling it, which is what the zero-divergence gate in D-05-34/D-05-35 already enforces",
+      "citation": "05-CONTEXT.md D-05-35: \"Rust ran the old AST borrowck and NLL in parallel migration mode for years and deleted the old checker only when the divergence population converged to zero -- on data, never on a schedule\"",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "003",
+    "control_id": "spike-003-under-declared-origin-fault",
+    "control_mechanism": "a producer that omits one source from a returned borrow's declared origin union permits a consumer to mutate that still-borrowed source and then use the returned view, which the implementation body actually rejects",
+    "live_descendant": null,
+    "waived": {
+      "reason": "the spike's multi-source origin-union fixture (Pair-shaped, field-projected, multi-parameter) has no admissible source shape in this language: Box/Pair are rejected at check.go's execution-admission gate before a body is ever analyzed, so this language has only the single-parameter public-origin case, which IS live production code",
+      "citation": "STATE.md [Phase 03-06]: \"Box/Pair are rejected at check.go's execution-admission gate before a body is ever analyzed, so a richer field-path grammar would have no honest source input to exercise this phase\"; the single-parameter case ships as RecomputeOriginPerReturn, verified unconditionally by ValidatePublished",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "003",
+    "control_id": "spike-003-ability-propagation-leak",
+    "control_mechanism": "an ability-propagation rule lets one of copy/drop/share/send/escape leak into another through a generic wrapper instead of deriving each independently, exposed across 32 exhaustive atomic ability combinations",
+    "live_descendant": null,
+    "waived": {
+      "reason": "M001 ships no user-defined generic containers (Option/Result/List/View wrappers were the spike's fixture, not an admissible shipped source type); the only production independent-ability-derivation surface is Buffer's own grant table, already ability-isolated by decision and covered by the shipped ability-table tests rather than a control:-registry identifier",
+      "citation": "STATE.md [Phase 02]: \"Buffer grants share (OV-02-01) ... Buffer remains noncopyable\"",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "003",
+    "control_id": "spike-003-shallow-copy-interface-aliasing",
+    "control_mechanism": "a body-blind interface exporter shallow-copies return slices so that mutating the published summary silently mutates the implementation-body facts it was supposed to be isolated from",
+    "live_descendant": null,
+    "waived": {
+      "reason": "this exact hazard class -- a validator sharing state with the code it validates -- is what D-12's independence rule exists to prevent in production; corevalidate/originvalidate never read what check/cgen wrote, and RecomputeOriginPerReturn/ValidatePublished operate on freshly recomputed values, never an aliased slice from the checker's own working state",
+      "citation": "05-CONTEXT.md D-12/D-05-39: \"check and corevalidate remain independent derivations with no shared helpers\"",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "003",
+    "control_id": "spike-003-higher-ranked-origin-escape",
+    "control_mechanism": "a callback boundary lets a fresh higher-ranked origin escape past the single call that scoped it, letting the caller retain access after the callback returns",
+    "live_descendant": null,
+    "waived": {
+      "reason": "M001 has no closures, no higher-ranked callback syntax, and no calls-into-Lang by design, so this hazard has no admissible source shape to attack -- OpCall and interprocedural constructs are explicitly deferred to M002",
+      "citation": "05-CONTEXT.md D-05-32/D-05-33: \"OpCall is OUT of Phase 5 ... M001 ships without Lang-to-Lang calls\"",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "004",
+    "control_id": "spike-004-coordinated-frontend-summary-lie",
+    "control_mechanism": "a coordinated false statement across the typed-core fact, the published summary, the content digest, and the certificate is mutually self-consistent and therefore undetectable by a source-blind independent checker",
+    "live_descendant": null,
+    "waived": {
+      "reason": "this residual is deliberately not closed, only made gate-visible: it is tracked as an escape: identifier, not a control: identifier, so it cannot be a live_descendant in this registry (which cross-checks only control: identifiers against the shipped required-control sets); the shipped escape constant matches the spike's own named escape verbatim, and plan 05-13 additionally demonstrates it as a reachable, gate-passing adversarial program",
+      "citation": "internal/compiler/originvalidate/originvalidate.go: \"const KnownEscape = \\\"escape:coordinated-frontend-summary-lie\\\"\", matching the spike's own escape name; 05-CONTEXT.md D-05-30 schedules the reachability demonstration for plan 05-13",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "004",
+    "control_id": "spike-004-certificate-mutation-coverage",
+    "control_mechanism": "an independent certificate checker fails to detect a stale/forged digest, an omitted origin, a borrowed-as-owned or exclusive-as-shared summary, a forged ability, a false event or final state, a use-after-move, a missing loan end, or a duplicate event identity in an untrusted certificate bound to a typed-core artifact",
+    "live_descendant": null,
+    "waived": {
+      "reason": "M001 ships no production remote/cache/CI certificate-replay boundary at all -- no package manager, no artifact cache, no separate trust-crossing consumer of typed-core evidence -- so this checker has no shipped subject to attach to; the closest production analogue, corevalidate's independent structural re-derivation, attacks the same typed-core artifact class through full re-derivation rather than certificate-claim verification and is covered by its own existing tests",
+      "citation": "05-CONTEXT.md D-12/D-05-39 (independent re-derivation, no shared helpers) plus the spike's own README: \"It should not run as an expensive second frontend after every edit ... The independent validator belongs at trust crossings -- package import, shared cache acceptance, CI/release evidence\", none of which M001 has built",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "004",
+    "control_id": "spike-004-digest-reorder-sensitivity",
+    "control_mechanism": "a content-binding digest is sensitive to a semantically irrelevant reordering (declaration/set order) or, conversely, insensitive to a semantically relevant one (event-trace order), either of which would make the digest an unreliable identity for the bound artifact",
+    "live_descendant": null,
+    "waived": {
+      "reason": "the property is real, but its production analogue (evidence.Manifest's content-bound SHA-256 identity) has no certificate-replay consumer in M001 to test the reordering-sensitivity property against, since M001 ships no separate certificate artifact at all",
+      "citation": "STATE.md [Phase 02]: \"SHA-256 is content identity only; the coordinated source/core lie is an expected escape, never a detected control\"",
+      "owner": "compiler-frontend",
+      "phase": "05"
+    }
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter2-layout-mismatch",
+    "control_mechanism": "separately-declared C translation units disagree on a shared struct's field layout, silently corrupting cross-TU by-value data even though the linker succeeds -- linker success is not ABI evidence",
+    "live_descendant": {
+      "fixture": "testdata/phase4/foreign_layout_mismatch.golden.c",
+      "control_id": "control:foreign.layout_mismatch"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter3-release-omitted",
+    "control_mechanism": "a partial-initialization/cleanup path releases fewer resources than it acquired when an intermediate acquisition stage fails, or on the success path",
+    "live_descendant": {
+      "fixture": "testdata/phase4/acquire_three_success.lang",
+      "control_id": "control:resource.release_omitted"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter3-release-order-transposed",
+    "control_mechanism": "a cleanup path releases the same set of acquired resources it should, but not in the required reverse-of-acquisition order",
+    "live_descendant": {
+      "fixture": "testdata/phase4/acquire_three_success.lang",
+      "control_id": "control:resource.release_order_transposed"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter3-allocator-identity-mismatch",
+    "control_mechanism": "a release is routed through an allocator identity different from the one that performed the matching allocation, and the mismatch is accepted instead of rejected",
+    "live_descendant": {
+      "fixture": "testdata/phase5/allocator_mismatch.lang",
+      "control_id": "control:native.sanitize.allocator_mismatch"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter3-stale-callback-retention",
+    "control_mechanism": "a foreign boundary retains a raw pointer to a borrowed buffer past its owner's release and dereferences it after the owner generation has ended",
+    "live_descendant": {
+      "fixture": "testdata/phase5/retained_pointer.lang",
+      "control_id": "control:native.sanitize.retained_pointer"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter4-false-restrict-alias",
+    "control_mechanism": "a false `restrict`/no-alias promise on a parameter that is actually aliased diverges between -O0 and -O3 under optimization",
+    "live_descendant": {
+      "fixture": "testdata/phase5/false_restrict_hoist.lang",
+      "control_id": "control:alias.false_no_alias"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter5-heap-use-after-free",
+    "control_mechanism": "a concrete heap use-after-free is silent undefined behavior under a plain -O0/-O3 execution -- not a guaranteed crash, since the freed block is often re-served intact -- and requires a sanitizer's deterministic redzone/quarantine trap to become observable at all",
+    "live_descendant": {
+      "fixture": "testdata/phase5/retained_pointer.lang",
+      "control_id": "control:native.sanitize.use_after_free"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter5-ubsan-no-recover",
+    "control_mechanism": "`-fno-sanitize-recover=all` silently fails to take effect (for example a typo'd options string), letting UBSan continue past a real violation instead of aborting with a report -- a clean sanitizer run is not evidence unless this itself is proven",
+    "live_descendant": {
+      "fixture": "internal/compiler/session/session_phase5_sanitize.go",
+      "control_id": "control:native.sanitize.ubsan_no_recover"
+    },
+    "waived": null
+  },
+  {
+    "spike_id": "005",
+    "control_id": "spike-005-iter5-nonlocal-exit-no-sanitizer-report",
+    "control_mechanism": "a foreign nonlocal exit (a `longjmp` past an acquiring frame) bypasses ordinary lexical cleanup and produces NO sanitizer report at all -- zero ASan/UBSan diagnostics -- which is the load-bearing caution distinguishing this hazard from every other Phase 5 sanitizer-detected defect: the sanitizer lane cannot see it by construction, so its live descendant is Phase 4's own nonlocal-exit control, not the Phase 5 sanitizer lane",
+    "live_descendant": {
+      "fixture": "testdata/phase4/nonlocal_exit_probe.lang",
+      "control_id": "control:foreign.nonlocal_exit_undetected"
+    },
+    "waived": null
+  }
+]
