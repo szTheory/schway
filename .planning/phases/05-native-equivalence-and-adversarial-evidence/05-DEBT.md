@@ -20,9 +20,9 @@ corpus file, frozen foreign TU, and prior gate script reports no changes.
 
 ## Items
 
-| ID | Source | Threat/Req | Severity | Item |
-|---|---|---|---|---|
-| D-05-41 | 05-09 `VerifyPhase5ControlsAndWork` (`lane:interpreter-o0-o3-lto`) | D-05-19 | info | The runtime gate's own `control:interpreter-o0-o3-lto` lane drives the interpreter/-O0/-O3/-O3-LTO differential over exactly one adversarial fixture (`inline_across_foreign.lang`), not the full six-fixture adversarial subset D-05-18a defines |
+| ID | Source | Threat/Req | Severity | Landing phase | Item |
+|---|---|---|---|---|---|
+| D-05-41 | 05-09 `VerifyPhase5ControlsAndWork` (`lane:interpreter-o0-o3-lto`) | D-05-19 | info | Phase 5+ | The runtime gate's own `control:interpreter-o0-o3-lto` lane drives the interpreter/-O0/-O3/-O3-LTO differential over exactly one adversarial fixture (`inline_across_foreign.lang`), not the full six-fixture adversarial subset D-05-18a defines |
 
 ## Detail
 
