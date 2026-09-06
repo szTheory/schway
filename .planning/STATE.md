@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
 status: executing
-stopped_at: Completed 05-10-PLAN.md
-last_updated: "2026-09-06T14:46:23.114Z"
+stopped_at: Completed 05-11-PLAN.md
+last_updated: "2026-09-06T15:15:49.321Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 05 execution started
-state_head: d1edcd06afd650448e037901743113ab98679025
+state_head: 3aefa844c2b1a12af40837bca85e7be091e9309f
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 43
+  completed_plans: 44
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
-Plan: 11 of 14
+Plan: 12 of 14
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 05 execution started
 
@@ -98,6 +98,7 @@ Progress: ██████████ [███████░░░] 67%
 | Phase 05 P08 | 95min | 3 tasks | 13 files |
 | Phase 05 P09 | 36min | 3 tasks | 6 files |
 | Phase 05 P10 | ~110min | 3 tasks | 4 files |
+| Phase 05 P11 | 45min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -199,6 +200,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 05]: D-05-41 (LTO lane one-fixture sample) accepted as recorded debt, landing phase Phase 5+ — TestPhase5CorpusThreeEngineAgreement and TestLTOTierIsNotInert already cover the correctness gap; widening now is optional
 - [Phase 05]: [Phase 05-10]: drop-offpath-foreign-stage and collapse-branch-to-diverging-arm rebuild the affected core region from scratch via the checker's own ID-generation algorithms, rather than surgical graph patching -- an earlier surgical version left a dangling release reference.
 - [Phase 05]: [Phase 05-10]: ProjectSource explicitly reports (never fabricates) an unsupported-shape marker for a collapsed ADT-typed match, since this project's checker admits a declared ADT type only inside an exhaustive match body and there is no partial-match syntax.
+- [Phase 05]: [Phase 05-11]: Only Phase 4/5 control:-prefixed identifiers are valid QLT-01 live_descendant citations, since the audit cross-checks only those; all 13 rows from spikes 001-004 (ownership-kernel hazards predating that native/FFI control vocabulary) are honestly waived with citations to the specific production mechanism or test that supersedes each hazard, never free text.
 
 ### Pending Todos
 
@@ -229,6 +231,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T14:46:14.601Z
-Stopped at: Completed 05-10-PLAN.md
+Last session: 2026-09-06T15:15:49.177Z
+Stopped at: Completed 05-11-PLAN.md
 Resume file: None
