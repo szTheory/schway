@@ -72,12 +72,30 @@ var pinnedFixtures = []pinnedFixture{
 	{"testdata/phase4/discard_because.lang", "6b1b048e4e0b2d3cc2791886d7b54f31de63788b4e2c5a8b185df51e5f652d89", "evidence:ac3003a93f4568b404aa319a"},
 	{"testdata/phase4/foreign_acquire_one.lang", "718bed114e0754d3bfdb36a08d10649672915644d2eaca5caf266072f7e4dbf1", "evidence:dbfea02f20d97aff459e458b"},
 	{"testdata/phase4/nonlocal_exit_probe.lang", "cde5fabf98be29972f21c4331bacde11fc135f1e3981c5ed495e23d554af0eb8", "evidence:0c768d94aeee2d03625e613b"},
+	// Phase 5 accepting fixtures (D-06-31/D-06-32): widened from Phase 1-4 so
+	// this pin also catches a Phase 6 lang.command/lang.verify-lane bump that
+	// silently perturbs a Phase 5 program. Only the accepting testdata/phase5
+	// fixtures are pinned here, matching the Phase 3/4 precedent above.
+	// coordinated_lie.lang (and its coordinated_lie.core.json) is the
+	// declared expected-escape pair (escape:coordinated-source-to-core-false-claim)
+	// and is deliberately excluded from this table.
+	{"testdata/phase5/allocator_mismatch.lang", "636097c74c3f161f532284bbaf2d6567e53413a7a9652f76c29da223dd0222c2", "evidence:1cdac22aba40cacc0f5e0001"},
+	{"testdata/phase5/dead_store_unused_acquire.lang", "22a734be2932d02ecc47ced7c778f05e3d56296d4bfb9f3a7f4c1e543738fd1c", "evidence:f454a99f26276fb1545ce790"},
+	{"testdata/phase5/defect_dies_by_signal.lang", "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a", "evidence:864b0ad460d0e0d00135227f"},
+	{"testdata/phase5/false_restrict_hoist.lang", "2e2deae3e230984bf1430bb2d4c347d172444e22ad68f71c4d1197e34766f791", "evidence:ca3e057326af5276f18f5393"},
+	{"testdata/phase5/inline_across_foreign.lang", "02fd41768398d0c650462790f15162f02c0eb5a0fc07bb97d15078d2a11cb53b", "evidence:2a9644fce2f925ca50841428"},
+	{"testdata/phase5/reorder_two_events.lang", "5bc35a467aadffee60cb1ad7978ed17bf54f5f372c5f68d2ea9ebf81bf0ae56d", "evidence:1d7d61d8028a9472ee203b54"},
+	{"testdata/phase5/restrict_borrow.lang", "15398f69e1d647b768f361cb0bedfc6064fee3f5fd5a00e03e88d573b8d96710", "evidence:65b0b4195299987d10f0ac80"},
+	{"testdata/phase5/retained_pointer.lang", "7bac4e9375cbb0cfe1cae1eed15ba6278589220d21095018b78ac9081fa69297", "evidence:4d70b9513ffa2ed821dc26ad"},
+	{"testdata/phase5/tail_collapse_release_ladder.lang", "f280d9999f29812956e1bec639aaed801342c60ae8706446852e25180c7f2594", "evidence:23a9ce0dc643fb05498e1963"},
+	{"testdata/phase5/typed_failure_truncated_stdout.lang", "b146e3cd1f157d393fff9eecae8d5520db826ba6cbf635f4f1ef36ffd238886c", "evidence:598f270123ab0a123a99d351"},
 }
 
-// TestPreviousPhaseCoreBytesUnchanged pins every Phase 1/2/3/4 fixture's
-// serialized core JSON to its exact byte value from before Phase 5 (D-05-39,
-// widened from the Phase 4 pin which stopped at Phase 3). It must be green
-// before any new operation kind lands.
+// TestPreviousPhaseCoreBytesUnchanged pins every Phase 1-5 fixture's
+// serialized core JSON to its exact byte value from before Phase 6
+// (D-06-31/D-06-32, widened from the Phase 5 pin which stopped at Phase 4).
+// It must be green before the coordinated lang.command and lang.verify-lane
+// bump lands.
 func TestPreviousPhaseCoreBytesUnchanged(t *testing.T) {
 	for _, fixture := range pinnedFixtures {
 		t.Run(fixture.Path, func(t *testing.T) {
@@ -102,7 +120,9 @@ func TestPreviousPhaseCoreBytesUnchanged(t *testing.T) {
 }
 
 // TestPreviousPhaseManifestIDsUnchanged is TestPreviousPhaseCoreBytesUnchanged's
-// evidence-manifest-identity sibling (D-04-23), widened to Phase 4 by D-05-39.
+// evidence-manifest-identity sibling (D-04-23), widened to Phase 5 by
+// D-06-31/D-06-32. It must be green before the coordinated lang.command and
+// lang.verify-lane bump lands.
 func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 	for _, fixture := range pinnedFixtures {
 		t.Run(fixture.Path, func(t *testing.T) {
@@ -135,18 +155,20 @@ var previousPhaseGoldenCDigests = map[string]string{
 	"testdata/phase1/generated.golden.c":               "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74",
 	"testdata/phase2/owned_transfer.golden.c":          "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8",
 	"testdata/phase4/foreign_layout_mismatch.golden.c": "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031",
+	"testdata/phase5/restrict_borrow.golden.c":         "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0",
 }
 
 // TestPreviousPhaseGoldenCUnchanged hashes every committed *.golden.c under
-// testdata/phase1, testdata/phase2, testdata/phase3, and testdata/phase4 and
-// compares each against previousPhaseGoldenCDigests. It fails on any drift,
-// naming the exact file path and both digests, and also fails if the corpus
-// gains or loses a golden.c file relative to the pinned table -- so a Phase 5
-// change that accidentally perturbs a prior golden (or silently deletes one)
-// is caught here rather than in review (D-05-39).
+// testdata/phase1 through testdata/phase5 and compares each against
+// previousPhaseGoldenCDigests. It fails on any drift, naming the exact file
+// path and both digests, and also fails if the corpus gains or loses a
+// golden.c file relative to the pinned table -- so a Phase 6 change that
+// accidentally perturbs a prior golden (or silently deletes one) is caught
+// here rather than in review (D-06-31/D-06-32). It must be green before the
+// coordinated lang.command and lang.verify-lane bump lands.
 func TestPreviousPhaseGoldenCUnchanged(t *testing.T) {
 	var found []string
-	for _, phaseDir := range []string{"phase1", "phase2", "phase3", "phase4"} {
+	for _, phaseDir := range []string{"phase1", "phase2", "phase3", "phase4", "phase5"} {
 		matches, err := filepath.Glob(testsupport.ProjectPath("testdata", phaseDir, "*.golden.c"))
 		if err != nil {
 			t.Fatalf("glob testdata/%s: %v", phaseDir, err)
