@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -104,4 +105,154 @@ func admitPhase5Candidate(source string) (core.Program, bool) {
 		return core.Program{}, false
 	}
 	return program, true
+}
+
+// phase5ChainKinds is the ownership-operation alphabet D-05-18b's
+// enumerated closure draws from for its straight-line candidates:
+// borrow/take are two of the four "only fallible consumers" D-05-18b names
+// (the other two, try/discard, are exercised separately by
+// phase5ForeignChainSource). `borrow mut` is included as the exclusive
+// counterpart to `borrow`'s shared loan, matching the same alphabet
+// restrict_borrow.lang's own chain uses (05-01-SUMMARY.md).
+var phase5ChainKinds = []string{"borrow", "borrow mut", "take"}
+
+// phase5OwnershipChainSource generates one straight-line candidate source
+// text: a chain of exactly length bindings over paramType, each binding's
+// kind selected by decoding encoded as a base-len(phase5ChainKinds) integer
+// (the same deterministic base-N encoding idiom check_test.go's own
+// TestOwnershipSequenceExhaustive/generatedOwnershipBody uses), so the same
+// (paramType, length, encoded) triple always yields byte-identical source.
+// Every step chains onto the immediately preceding binding, never back to
+// the parameter or an earlier binding, so the checker alone -- never this
+// generator -- decides which chains are legal (e.g. `take` of an
+// already-borrowed, not-owned place is refused, not filtered out here).
+// touchParamAgain, when true, appends one further binding that re-reads
+// the ORIGINAL parameter (`let extra = borrow x`) after the whole chain,
+// before the result line. This is the generator's own genuine-rejection
+// axis: if the chain's first step moved x away (kind "take"), re-touching
+// x here is a real ownership.use_after_move the checker must refuse, so
+// EnumeratePhase5Closure's rejected count is never vacuously zero
+// (T-05-17) -- a candidate is refused by the checker for a real, checkable
+// reason, not by any filter this generator applies itself.
+func phase5OwnershipChainSource(paramType string, length, encoded int, touchParamAgain bool) string {
+	var body strings.Builder
+	fmt.Fprintf(&body, "module phase5.enum_chain_%s_l%d_e%d_t%v\n\n", strings.ToLower(paramType), length, encoded, touchParamAgain)
+	body.WriteString("export {\n  fn f\n}\n\n")
+	fmt.Fprintf(&body, "fn f(x: %s) -> %s {\n", paramType, paramType)
+	prev := "x"
+	remaining := encoded
+	for step := 0; step < length; step++ {
+		kind := phase5ChainKinds[remaining%len(phase5ChainKinds)]
+		remaining /= len(phase5ChainKinds)
+		name := fmt.Sprintf("v%d", step)
+		fmt.Fprintf(&body, "  let %s = %s %s\n", name, kind, prev)
+		prev = name
+	}
+	if touchParamAgain {
+		body.WriteString("  let extra = borrow x\n")
+	}
+	fmt.Fprintf(&body, "  %s\n}\n", prev)
+	return body.String()
+}
+
+// phase5ForeignChainShapes and phase5ForeignAlternativeCounts are the two
+// enumeration axes phase5ForeignChainSource combines: a fixed set of
+// try/discard chain shapes (peering testdata/phase4's own acquire_three_*
+// and discard_because.lang shapes) crossed with a declared failure ADT of
+// either 1 or 2 alternatives (D-05-18b's "at most 2 ADT alternatives").
+// Only single-call shapes are enumerated here: D-05-18b's own grammar
+// bounds a candidate to "0 or 1 foreign call" per function, and try2/try3/
+// mixed multi-stage chains (each with 2+ OpForeignCall operations) belong
+// to the hand-written adversarial subset's tail_collapse_release_ladder.lang
+// and reorder_two_events.lang instead (Task 1), not this bounded closure.
+var phase5ForeignChainShapes = []string{"try1", "discard1"}
+var phase5ForeignAlternativeCounts = []int{1, 2}
+
+// phase5ForeignChainSource generates one resource-lifecycle candidate: a
+// single declared foreign symbol (Byte parameter, matching every shipped
+// foreign fixture) called through the named shape's try/discard sequence,
+// with the function returning its own parameter -- checkFallibleLinear's
+// resource-lifecycle shape (D-05-18b's "0 or 1 foreign call" axis; every
+// shape here declares exactly one foreign symbol, called one to three
+// times).
+func phase5ForeignChainSource(shape string, alternativeCount int) string {
+	var body strings.Builder
+	fmt.Fprintf(&body, "module phase5.enum_foreign_%s_alt%d\n\n", shape, alternativeCount)
+	body.WriteString("export {\n  fn main\n}\n\n")
+	body.WriteString("foreign C {\n\n  fn probe(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: ProbeError\n  }\n}\n\n")
+	body.WriteString("data ProbeError =\n  | ProbeFailed\n")
+	if alternativeCount >= 2 {
+		body.WriteString("  | ProbeFailedAgain\n")
+	}
+	body.WriteString("\nfn main(request: Byte) -> Byte {\n")
+	switch shape {
+	case "try1":
+		body.WriteString("  let a = try probe(request)\n")
+	case "discard1":
+		body.WriteString("  discard probe(request) because \"advisory\"\n")
+	}
+	body.WriteString("  request\n}\n")
+	return body.String()
+}
+
+// enumeratePhase5Closure is the single computation both EnumeratePhase5Closure
+// and EnumeratePhase5ClosureRejected read from: deterministic (no
+// randomness, no map iteration in the generation path), so two calls in the
+// same process, or two calls across separate `go test` runs, produce
+// byte-identical accepted-program sequences and an identical rejected
+// count (TestPhase5EnumerationIsDeterministic).
+func enumeratePhase5Closure() ([]core.Program, int) {
+	var accepted []core.Program
+	rejected := 0
+	for _, paramType := range []string{"Byte", "Buffer"} {
+		for length := 0; length <= Phase5EnumerationMaxDepth; length++ {
+			combos := 1
+			for step := 0; step < length; step++ {
+				combos *= len(phase5ChainKinds)
+			}
+			for encoded := 0; encoded < combos; encoded++ {
+				for _, touchParamAgain := range []bool{false, true} {
+					source := phase5OwnershipChainSource(paramType, length, encoded, touchParamAgain)
+					if program, ok := admitPhase5Candidate(source); ok {
+						accepted = append(accepted, program)
+					} else {
+						rejected++
+					}
+				}
+			}
+		}
+	}
+	for _, alternativeCount := range phase5ForeignAlternativeCounts {
+		for _, shape := range phase5ForeignChainShapes {
+			source := phase5ForeignChainSource(shape, alternativeCount)
+			if program, ok := admitPhase5Candidate(source); ok {
+				accepted = append(accepted, program)
+			} else {
+				rejected++
+			}
+		}
+	}
+	return accepted, rejected
+}
+
+// EnumeratePhase5Closure is D-05-18b's bounded enumerated closure: every
+// admissible candidate this file's two generators produce, over exactly
+// the grammar slice D-05-18b names (one parameter, Byte | Buffer, at most 2
+// ADT alternatives, straight-line or single-level-branch body, 0 or 1
+// foreign call, borrow/take/try/discard as the only fallible consumers)
+// and bounded by Phase5EnumerationMaxDepth/Phase5EnumerationMaxStatements.
+// A candidate the checker or corevalidate refuses is never included here --
+// see EnumeratePhase5ClosureRejected for its count.
+func EnumeratePhase5Closure() []core.Program {
+	accepted, _ := enumeratePhase5Closure()
+	return accepted
+}
+
+// EnumeratePhase5ClosureRejected reports how many generated candidates
+// EnumeratePhase5Closure's own admission gate refused -- exposed
+// specifically so a silently-empty (or silently-all-rejected) enumeration
+// can never be mistaken for a clean run (T-05-17, D-05-18b).
+func EnumeratePhase5ClosureRejected() int {
+	_, rejected := enumeratePhase5Closure()
+	return rejected
 }

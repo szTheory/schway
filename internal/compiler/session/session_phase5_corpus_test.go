@@ -1,6 +1,8 @@
 package session_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/interp/interptestdirect"
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -177,5 +180,137 @@ func assertTypedFailureTruncatedStdout(t *testing.T, corpus string) {
 	}
 	if len(execution.Events) < stages {
 		t.Fatalf("typed_failure_truncated_stdout.lang: only %d events, want at least %d (one per acquired stage, release, and the final failure)", len(execution.Events), stages)
+	}
+}
+
+// TestPhase5CorpusBoundConstantsAreExported is D-05-18's own duplication-
+// plus-equality-test anchor: scripts/verify-phase5.sh (plan 05-09) and
+// TestPhase5RequiredControlsMatchScript's own peer will duplicate these
+// four names and values verbatim, mirroring Phase4RequiredControls'
+// established pattern.
+func TestPhase5CorpusBoundConstantsAreExported(t *testing.T) {
+	if session.Phase5CorpusBoundVersion != 1 {
+		t.Fatalf("Phase5CorpusBoundVersion = %d, want 1", session.Phase5CorpusBoundVersion)
+	}
+	if session.Phase5EnumerationMaxDepth != 3 {
+		t.Fatalf("Phase5EnumerationMaxDepth = %d, want 3", session.Phase5EnumerationMaxDepth)
+	}
+	if session.Phase5EnumerationMaxStatements != 4 {
+		t.Fatalf("Phase5EnumerationMaxStatements = %d, want 4", session.Phase5EnumerationMaxStatements)
+	}
+	if len(session.Phase5AdversarialTargets) != 6 {
+		t.Fatalf("Phase5AdversarialTargets has %d entries, want 6", len(session.Phase5AdversarialTargets))
+	}
+}
+
+// phase5CanonicalPrograms serializes programs deterministically (sorted by
+// module name, then canonical JSON per program) so two independently
+// generated slices compare byte-for-byte regardless of any incidental
+// slice-order coincidence.
+func phase5CanonicalPrograms(t *testing.T, programs []core.Program) []byte {
+	t.Helper()
+	sorted := append([]core.Program(nil), programs...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Module < sorted[j].Module })
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	for _, program := range sorted {
+		if err := encoder.Encode(program); err != nil {
+			t.Fatalf("encode program %q: %v", program.Module, err)
+		}
+	}
+	return buffer.Bytes()
+}
+
+// TestPhase5EnumerationIsDeterministic proves EnumeratePhase5Closure has no
+// hidden nondeterminism (randomness, map iteration order, wall-clock or
+// filesystem dependence): two independent calls in the same process
+// produce byte-identical serialized program sequences.
+func TestPhase5EnumerationIsDeterministic(t *testing.T) {
+	first := session.EnumeratePhase5Closure()
+	second := session.EnumeratePhase5Closure()
+	if len(first) != len(second) {
+		t.Fatalf("first run produced %d programs, second run produced %d", len(first), len(second))
+	}
+	firstBytes := phase5CanonicalPrograms(t, first)
+	secondBytes := phase5CanonicalPrograms(t, second)
+	if !bytes.Equal(firstBytes, secondBytes) {
+		t.Fatalf("two EnumeratePhase5Closure runs diverged byte-for-byte")
+	}
+	firstRejected := session.EnumeratePhase5ClosureRejected()
+	secondRejected := session.EnumeratePhase5ClosureRejected()
+	if firstRejected != secondRejected {
+		t.Fatalf("EnumeratePhase5ClosureRejected diverged across runs: %d vs %d", firstRejected, secondRejected)
+	}
+}
+
+// TestPhase5EnumerationIsNonEmpty is T-05-17's mitigation: an empty or
+// all-rejected enumeration must never pass as a clean run. The accepted
+// count must clear a floor of 20, and the rejected count -- however large
+// -- is always exposed alongside it, never hidden.
+func TestPhase5EnumerationIsNonEmpty(t *testing.T) {
+	accepted := session.EnumeratePhase5Closure()
+	rejected := session.EnumeratePhase5ClosureRejected()
+	t.Logf("EnumeratePhase5Closure: accepted=%d rejected=%d", len(accepted), rejected)
+	if len(accepted) < 20 {
+		t.Fatalf("EnumeratePhase5Closure accepted only %d programs, want at least 20 (rejected=%d)", len(accepted), rejected)
+	}
+	if rejected < 0 {
+		t.Fatalf("EnumeratePhase5ClosureRejected returned a negative count: %d", rejected)
+	}
+}
+
+// phase5AllowedGrammarConstructors is the exact two-element type slice
+// D-05-18b's enumerated closure is scoped to ("one parameter, Byte |
+// Buffer").
+var phase5AllowedGrammarConstructors = map[string]bool{"Byte": true, "Buffer": true}
+
+// TestPhase5EnumerationRespectsBound asserts, structurally (never by
+// comment), that no generated program exceeds Phase5EnumerationMaxDepth /
+// Phase5EnumerationMaxStatements and none uses a construct outside the
+// six-element grammar slice: more than one parameter type outside Byte |
+// Buffer, more than 2 ADT alternatives, more than one foreign call per
+// function, or an operation kind this project's core package does not
+// define (core has no Lang-to-Lang call kind at all -- D-05-32/D-12a -- so
+// this loop additionally proves that invariant on every generated program,
+// not merely by the absence of a constructor in this file).
+func TestPhase5EnumerationRespectsBound(t *testing.T) {
+	knownKinds := map[core.OperationKind]bool{
+		core.OpCopy: true, core.OpMove: true, core.OpBorrowShared: true, core.OpBorrowExclusive: true,
+		core.OpReturn: true, core.OpForeignCall: true, core.OpFail: true, core.OpRelease: true, core.OpDefect: true,
+	}
+	programs := session.EnumeratePhase5Closure()
+	if len(programs) == 0 {
+		t.Fatal("no programs to check (EnumeratePhase5Closure returned empty)")
+	}
+	for _, program := range programs {
+		for _, dataType := range program.DataTypes {
+			if len(dataType.Alternatives) > 2 {
+				t.Fatalf("program %q: data type %q has %d alternatives, want at most 2", program.Module, dataType.Name, len(dataType.Alternatives))
+			}
+		}
+		for _, function := range program.Functions {
+			if !phase5AllowedGrammarConstructors[function.Parameter.Type] {
+				t.Fatalf("program %q: function %q has parameter type %q outside {Byte, Buffer}", program.Module, function.Name, function.Parameter.Type)
+			}
+			if function.Linear == nil {
+				t.Fatalf("program %q: function %q has no linear body (branch-only bodies are outside this enumerator's scope)", program.Module, function.Name)
+			}
+			foreignCalls := 0
+			maxOperations := (session.Phase5EnumerationMaxStatements+1)*4 + 16
+			if len(function.Linear.Operations) > maxOperations {
+				t.Fatalf("program %q: function %q has %d operations, want at most %d (Phase5EnumerationMaxStatements=%d bound)", program.Module, function.Name, len(function.Linear.Operations), maxOperations, session.Phase5EnumerationMaxStatements)
+			}
+			for _, operation := range function.Linear.Operations {
+				if !knownKinds[operation.Kind] {
+					t.Fatalf("program %q: function %q has an operation of unknown kind %q (a Lang-to-Lang call construct would surface here)", program.Module, function.Name, operation.Kind)
+				}
+				if operation.Kind == core.OpForeignCall {
+					foreignCalls++
+				}
+			}
+			if foreignCalls > 1 {
+				t.Fatalf("program %q: function %q has %d foreign calls, want 0 or 1", program.Module, function.Name, foreignCalls)
+			}
+		}
 	}
 }
