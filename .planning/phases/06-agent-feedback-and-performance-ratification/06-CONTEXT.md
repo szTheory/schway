@@ -74,9 +74,33 @@ in every case.
 
 - **D-06-05:** Command surface (concrete):
   ```
-  lang explain <id> [--depth=N] [--json]
-  lang query <id-or-pattern> [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C] [--json]
+  lang explain SRC ID [--depth=N] [--json]
+  lang query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C] [--json]
   ```
+  **Amended 2026-09-06 (developer-confirmed) — the source operand.** As first
+  written this decision named no source operand (`lang explain <id>`), which is
+  not implementable: D-06-02 forbids any persisted graph, store, or daemon, so
+  a cold process has no state a bare `<id>` could resolve against — the
+  compiler must re-derive the diagnostic from source on every invocation. The
+  developer selected the positional `SRC`-first form, matching the shipped
+  `lang debug-map SRC [QUERY]` precedent exactly, so the two new arms look like
+  the arm already beside them in `cmd/lang/main.go`'s flat dispatcher and no
+  flag-parsing machinery is added (the repo has no `flag` package or cobra;
+  `extractJSON` handles `--json` alone today).
+
+  Rejected here, recorded so it is not re-litigated: a `--source=SRC` flag with
+  the ID kept positional — honors D-06-05's original wording more literally but
+  introduces a flag shape no other shipped command uses. And the bare-ID form as
+  originally written — it requires the persisted store D-06-02 and PROJECT.md
+  both forbid for M001.
+
+  **The addressing grammar itself is untouched by this amendment.** Which ID
+  vocabularies are recognized and what their prefixes are remains exactly as
+  D-06-01 locked it; only the operand list changed. — **Reversibility:**
+  costly — the operand list is part of the published agent-facing contract, so
+  changing it later invalidates agent workflows built on it, which is why it was
+  settled before `lang.explain/0` was minted rather than after.
+
   Rejected alternative, recorded so it is not re-litigated: per-kind
   subcommands (`query symbol`, `query type`, …). Rejected because it
   reproduces the subcommand-sprawl anti-pattern — the agent must already know
