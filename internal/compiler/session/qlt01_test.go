@@ -1,6 +1,7 @@
 package session_test
 
 import (
+	"context"
 	"os"
 	"regexp"
 	"testing"
@@ -190,5 +191,48 @@ func TestQLT01AuditGoesRedOnEmptyRegistry(t *testing.T) {
 	failures := session.AuditQLT01Registry(nil, session.AllShippedControlIDs())
 	if len(failures) == 0 {
 		t.Fatal("expected an empty registry to fail the audit, got no failures")
+	}
+}
+
+// TestQLT01LaneCountsWork asserts VerifyQLT01Registry's RecomputedWork
+// equals the expected row-derived value and is strictly greater than zero.
+func TestQLT01LaneCountsWork(t *testing.T) {
+	rows, err := session.LoadQLT01Registry()
+	if err != nil {
+		t.Fatalf("LoadQLT01Registry() failed: %v", err)
+	}
+	expected := 0
+	for _, row := range rows {
+		expected++
+		if row.LiveDescendant != nil {
+			expected++
+		}
+	}
+
+	result, err := session.VerifyQLT01Registry(context.Background())
+	if err != nil {
+		t.Fatalf("VerifyQLT01Registry() failed: %v", err)
+	}
+	if result.RecomputedWork <= 0 {
+		t.Fatalf("expected strictly positive RecomputedWork, got %d", result.RecomputedWork)
+	}
+	if result.RecomputedWork != expected {
+		t.Fatalf("expected RecomputedWork == %d (row-derived), got %d", expected, result.RecomputedWork)
+	}
+	if result.Status != "pass" {
+		t.Fatalf("expected the committed registry to pass its own lane, got status %q", result.Status)
+	}
+}
+
+// TestQLT01LaneEmptyRegistryReportsZeroWorkAndFails asserts an empty
+// registry produces zero work AND a lane failure -- never zero work and a
+// pass, which would be the inert-lane shape.
+func TestQLT01LaneEmptyRegistryReportsZeroWorkAndFails(t *testing.T) {
+	result := session.QLT01LaneFromRows(nil, session.AllShippedControlIDs())
+	if result.RecomputedWork != 0 {
+		t.Fatalf("expected zero RecomputedWork for an empty registry, got %d", result.RecomputedWork)
+	}
+	if result.Status == "pass" {
+		t.Fatal("expected an empty registry to fail the lane, got status \"pass\" (zero work with a pass is the inert-lane shape)")
 	}
 }

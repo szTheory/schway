@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -211,4 +212,76 @@ func normalizeQLT01Citation(citation string) string {
 // directory.
 func qlt01RepoPath(relative string) string {
 	return nat03CorpusPath(relative)
+}
+
+// LaneQLT01RegistryAudit is the lane identifier plan 05-14 wires into the
+// Phase 5 required-control set alongside the reducer's controls.
+// Phase5RequiredControls() is deliberately NOT modified by this plan --
+// plan 05-14 owns the final control-set and gate-script update together.
+const LaneQLT01RegistryAudit = "lane:qlt01-registry-audit"
+
+// LaneResult is a minimal counted-work lane outcome, independent of
+// protocol.Result/protocol.Lane so this file has no dependency on how
+// plan 05-14 ultimately wires the lane into VerifyPhase5ControlsAndWork.
+type LaneResult struct {
+	ID             string
+	Status         string
+	Controls       []string
+	RecomputedWork int
+	Fired          map[string]bool
+}
+
+// VerifyQLT01Registry runs the QLT-01 registry completeness audit as a
+// counted-work lane: one unit of RecomputedWork per row inspected plus one
+// per control-ID cross-check performed, so an empty registry cannot report
+// nonzero work. It reports both control IDs from AuditQLT01Registry with
+// their fired status.
+func VerifyQLT01Registry(ctx context.Context) (LaneResult, error) {
+	_ = ctx
+	rows, err := LoadQLT01Registry()
+	if err != nil {
+		return LaneResult{}, err
+	}
+	return QLT01LaneFromRows(rows, AllShippedControlIDs()), nil
+}
+
+// QLT01LaneFromRows is VerifyQLT01Registry's core, exported so tests can
+// exercise the empty-registry and non-embedded-registry shapes directly
+// (mirroring this package's other exported test seams, e.g.
+// Phase5RetainedPointerFixtureLoaderForTest) without needing to swap out
+// the embedded qlt01_registry.json.
+func QLT01LaneFromRows(rows []QLT01Row, shippedControlIDs []string) LaneResult {
+	failures := AuditQLT01Registry(rows, shippedControlIDs)
+
+	work := 0
+	for _, row := range rows {
+		work++ // one unit per row inspected
+		if row.LiveDescendant != nil {
+			work++ // one unit per control-ID cross-check performed
+		}
+	}
+
+	fired := map[string]bool{
+		ControlQLT01RegistryIncomplete:    false,
+		ControlQLT01StaleControlReference: false,
+	}
+	for _, failure := range failures {
+		fired[failure.Control] = true
+	}
+
+	status := "pass"
+	var firedControls []string
+	if len(failures) != 0 {
+		status = "invalid"
+	} else {
+		firedControls = []string{ControlQLT01RegistryIncomplete, ControlQLT01StaleControlReference}
+	}
+
+	return LaneResult{
+		ID:             LaneQLT01RegistryAudit,
+		Status:         status,
+		Controls:       firedControls,
+		RecomputedWork: work,
+		Fired:          fired,
+	}
 }
