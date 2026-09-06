@@ -26,7 +26,7 @@
     {
       "number": "5",
       "name": "Native Equivalence and Adversarial Evidence",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "6",
@@ -36,8 +36,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 5 of 6 · 67% · executing"
+    "label": "Advance to the next step (plan phase 6)",
+    "reason": "Phase 6 of 6 — needs a plan"
   },
-  "updated_at": "2026-09-06T15:15:23.210Z"
+  "updated_at": "2026-09-06T19:23:04.446Z"
 }
