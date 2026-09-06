@@ -78,8 +78,8 @@ exist to prevent.
   gives the complementary rule: never claim a stronger guarantee than the static
   prover actually established.
 
-- **D-05-02 — THE BLOCKING PRECONDITION, verified in the shipped tree during
-  this discussion:** `cgen` emits Lang-derived functions with **by-value**
+- **D-05-02:** **THE BLOCKING PRECONDITION, verified in the shipped tree during
+  this discussion.** `cgen` emits Lang-derived functions with **by-value**
   parameters — `fmt.Fprintf(&out, "static %s %s(%s %s) {\n", typeName,
   functionName, typeName, parameterName)` at `internal/compiler/cgen/cgen.go:157`
   — and `testdata/phase2/owned_transfer.golden.c` confirms the only pointer
