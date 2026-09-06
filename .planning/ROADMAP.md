@@ -18,7 +18,7 @@ native evidence, and finally the bounded agent/human feedback service.
 - [x] **Phase 2: Owned Values and Abilities** - Add affine transfer and independently derived type abilities across the same spine.
 - [x] **Phase 3: Borrowed Views and CFG Lifetimes** - Add shared/exclusive loans, edge-specific last use, and public borrow origins. (completed 2026-09-04)
 - [x] **Phase 4: Fallible Resources and C Boundary** - Prove partial cleanup and typed foreign obligations through a real C call. (completed 2026-09-05)
-- [ ] **Phase 5: Native Equivalence and Adversarial Evidence** - Preserve semantics under optimization, sanitizers, and hostile mutations.
+- [x] **Phase 5: Native Equivalence and Adversarial Evidence** - Preserve semantics under optimization, sanitizers, and hostile mutations. (completed 2026-09-06)
 - [ ] **Phase 6: Agent Feedback and Performance Ratification** - Expose bounded query/explain/verify/evidence protocols and ratify feedback budgets.
 
 ## Phase Details
@@ -252,7 +252,7 @@ validator, the code generator, or the session gate, so no two plans have disjoin
   3. ASan/UBSan evidence is isolated from semantic equivalence evidence and catches retained-pointer lifetime defects.
   4. Any injected mismatch reports a minimized source/core case and causal event trace; the coordinated source-to-core false claim remains a documented escape.
 
-**Plans**: 13/14 plans executed
+**Plans**: 14/14 plans executed
 
 Plans:
 **Wave 1**
@@ -288,7 +288,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 05-14-PLAN.md — Final gate, M002 charter and debt-register entries (wave 7)
+- [x] 05-14-PLAN.md — Final gate, M002 charter and debt-register entries (wave 7)
 
 ### Phase 6: Agent Feedback and Performance Ratification
 
@@ -305,6 +305,43 @@ Plans:
 
 **Plans**: TBD
 
+### M002 Charter (deferred from Phase 5, D-05-32/D-05-33)
+
+**`OpCall` (Lang-to-Lang calls) is M002's LEAD charter item — recorded explicitly
+here so the deferral is an owned, scheduled decision, never an unowned carry.**
+No phase in the current M001 roadmap owns this work: Phase 6 is agent feedback
+and performance ratification, not language surface.
+
+M002's lead item, named explicitly:
+
+- `OpCall` itself — the new `OperationKind` at all six dispatch sites (D-12a).
+- Interprocedural loan liveness in BOTH admission layers (`check` and
+  `corevalidate`), rebuilt cross-function rather than the single-function
+  differentials Phase 3/4/5 shipped.
+- Call-graph construction and cycle refusal.
+- A bounded interpreter call stack.
+- The cross-function rebuild of Phase 3's exhaustive differentials.
+
+**Gated on**: callable ⊆ publishable (D-04-03) — a function is callable only if
+`originvalidate.ValidatePublished` would publish it. This lift condition is
+unchanged by Phase 5.
+
+**Why deferred out of M001**: pulling `OpCall` into Phase 5 would have landed a
+new `OperationKind` at six dispatch sites simultaneously with alias-fact
+emission, the first sanitizer lanes, the first reducer, and the QLT-01
+registry — the exact fingerprint of the failure that cost Phase 2 a
+remediation round, Phase 3 a mid-phase gate plus three gap-closure plans, and
+Phase 4 thirteen plans and five review rounds (D-05-32).
+
+**Accepted consequence, stated plainly**: **M001 ships without Lang-to-Lang
+calls.** Interprocedural `-O3` equivalence is outside M001's proof scope BY
+CONSTRUCTION, since M001 ships without calls — this is not an accident of
+Phase 5's success-criteria wording, it is a direct structural consequence of
+this deferral. `.planning/phases/03-borrowed-views-and-cfg-lifetimes/03-DEBT.md`'s
+D-03-02 remains open past the milestone on this basis (see
+`.planning/phases/05-native-equivalence-and-adversarial-evidence/05-DEBT.md`
+for the verbatim carry-forward entry).
+
 ## Progress
 
 **Execution Order:** Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6.
@@ -315,5 +352,5 @@ Plans:
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
-| 5. Native Equivalence and Adversarial Evidence | 13/14 | In Progress|  |
+| 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |
