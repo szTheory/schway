@@ -73,7 +73,7 @@ hiding runtime costs.
 
 - [x] **DX-01**: One root command provides `format`, `check`, and
   `run --engine=interpreter|native` with concise human output and versioned JSON.
-- [ ] **DX-02**: `explain` and `query` expose diagnostic cause graphs, symbols,
+- [x] **DX-02**: `explain` and `query` expose diagnostic cause graphs, symbols,
   types, ownership, dependencies, and affected tests by stable identity.
 - [ ] **DX-03**: `verify` selects deterministic, property, mutation,
   differential, optimized, and sanitizer lanes by changed risk, while `evidence`
@@ -151,7 +151,7 @@ hiding runtime costs.
 | NAT-02 | Phase 5 | Complete |
 | NAT-03 | Phase 5 | Complete |
 | DX-01 | Phase 1 | Complete |
-| DX-02 | Phase 6 | Pending |
+| DX-02 | Phase 6 | Complete |
 | DX-03 | Phase 6 | Pending |
 | DX-04 | Phase 6 | Pending |
 | QLT-01 | Phase 5 | Complete |

@@ -303,7 +303,7 @@ Plans:
   3. An automated repair exercise fixes representative match, move, borrow, cleanup, and stale-evidence defects using only the supported command protocol.
   4. Declared-machine cold/warm feedback distributions, peak memory, output bytes, and affected work meet ratified budgets or identify a specific blocking regression.
 
-**Plans**: 15 plans
+**Plans**: 2/15 plans executed
 
 Plans:
 **Wave 1**
@@ -312,7 +312,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-02-PLAN.md — `explain`: bounded, deterministic cause DAG under the net-new `lang.explain/0`
+- [x] 06-02-PLAN.md — `explain`: bounded, deterministic cause DAG under the net-new `lang.explain/0`
 - [ ] 06-04-PLAN.md — `internal/compiler/cache`: declared-input artifact store that structurally cannot hold a verdict
 - [ ] 06-08-PLAN.md — `internal/compiler/measure`: leak-free machine probe, 20-sample p50/p95, CoV auto-demotion
 - [ ] 06-11-PLAN.md — `diagnostic.Repair` grows into an applicable edit; identity split held at `kind` only
@@ -393,4 +393,4 @@ for the verbatim carry-forward entry).
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
 | 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
-| 6. Agent Feedback and Performance Ratification | 0/15 | Planned | - |
+| 6. Agent Feedback and Performance Ratification | 2/15 | In Progress|  |
