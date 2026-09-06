@@ -252,7 +252,7 @@ validator, the code generator, or the session gate, so no two plans have disjoin
   3. ASan/UBSan evidence is isolated from semantic equivalence evidence and catches retained-pointer lifetime defects.
   4. Any injected mismatch reports a minimized source/core case and causal event trace; the coordinated source-to-core false claim remains a documented escape.
 
-**Plans**: 8/14 plans executed
+**Plans**: 9/14 plans executed
 
 Plans:
 **Wave 1**
@@ -274,7 +274,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 05-09-PLAN.md — MID-PHASE GATE: `Phase5RequiredControls()` and `scripts/verify-phase5.sh` (wave 4)
+- [x] 05-09-PLAN.md — MID-PHASE GATE: `Phase5RequiredControls()` and `scripts/verify-phase5.sh` (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -315,5 +315,5 @@ Plans:
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
-| 5. Native Equivalence and Adversarial Evidence | 8/14 | In Progress|  |
+| 5. Native Equivalence and Adversarial Evidence | 9/14 | In Progress|  |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |

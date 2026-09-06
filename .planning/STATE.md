@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
 status: executing
-stopped_at: Completed 05-08-PLAN.md
-last_updated: "2026-09-06T05:40:34.245Z"
+stopped_at: Completed 05-09-PLAN.md
+last_updated: "2026-09-06T14:07:59.341Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 05 execution started
-state_head: b9811f41c1ddfaa91864a5f5adeec75064b5d550
+state_head: 4ee1b22a3142e59370812dfe9767ac8aba85285e
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 41
+  completed_plans: 42
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
-Plan: 9 of 14
+Plan: 10 of 14
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 05 execution started
 
@@ -96,6 +96,7 @@ Progress: ██████████ [███████░░░] 67%
 | Phase 05 P06 | 75 min | 3 tasks | 5 files |
 | Phase 05 P07 | 180 min | 3 tasks | 4 files |
 | Phase 05 P08 | 95min | 3 tasks | 13 files |
+| Phase 05 P09 | 36min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -194,6 +195,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 05]: [Phase 05-07]: added cgen.selectsByPointerLoweringSharedOnly/emitLinearBorrowedByPointerPlain, an additive by-pointer-without-restrict lowering path mutually exclusive with the existing exclusive-borrow gate — Required so the mutation runner's fail-closed marker-count guard has a real marker to attack in normally-compiled, unmutated generated C; verified against the full corpus (including 05-05's enumerated closure) for zero regression
 - [Phase 05]: Empirically falsified posix_memalign+free as an ASan allocator-mismatch mechanism; used C++ operator-new/delete (_Znwm/_ZdlPv) linked via -lc++ instead, verified on-host to produce a genuine alloc-dealloc-mismatch report.
 - [Phase 05]: Collapsed a three-distinct-foreign-symbol retained-pointer fixture design to one call-count-dispatched symbol after confirming cgen only calls the first declared symbol in a resource-lifecycle sequence.
+- [Phase 05]: D-05-41 (LTO lane one-fixture sample) accepted as recorded debt, landing phase Phase 5+ — TestPhase5CorpusThreeEngineAgreement and TestLTOTierIsNotInert already cover the correctness gap; widening now is optional
 
 ### Pending Todos
 
@@ -224,6 +226,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T05:40:34.117Z
-Stopped at: Completed 05-08-PLAN.md
+Last session: 2026-09-06T14:07:59.202Z
+Stopped at: Completed 05-09-PLAN.md
 Resume file: None
