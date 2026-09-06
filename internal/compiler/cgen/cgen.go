@@ -403,8 +403,12 @@ func selectsByPointerLowering(function core.Function, linear *core.LinearBody) b
 // admits (one exclusive borrow of the parameter, zero or more reborrows,
 // terminated by OpReturn) -- a richer straight-line shape is out of this
 // plan's scope and this function errors rather than silently mishandling
-// it. No `restrict` or other optimizer attribute is emitted here (D-05-03
-// is a later plan's concern); BannedOptimizerAttributes is untouched.
+// it. D-05-01/D-05-03: this emitter now emits exactly one optimizer-visible
+// attribute, `restrict`, on the parameter -- see the emission site's own
+// comment for why that is legal without importing check's AliasFact type.
+// BannedOptimizerAttributes itself is untouched: `restrict` stays banned at
+// every foreign-extern declaration site (JustifiableAttributes narrows the
+// control, it does not delete it).
 func emitLinearBorrowedByPointer(function core.Function) (string, error) {
 	input, initializer, typeName, err := linearInput(function)
 	if err != nil {
@@ -440,7 +444,14 @@ func emitLinearBorrowedByPointer(function core.Function) (string, error) {
 	}
 	emitLinearOutputSupport(&out, function, typeName)
 
-	fmt.Fprintf(&out, "static %s %s(%s *%s) { %s\n", typeName, functionName, typeName, parameterName, borrowByPointerMarker)
+	// D-05-01/D-05-03: this emitter is reached ONLY through
+	// selectsByPointerLowering's own gate (Emit/EmitNative's dispatch), and
+	// TestAliasFactAgreesWithByPointerSelection (check package) proves that
+	// gate is the EXACT SAME condition as check's independently-derived
+	// AliasFact -- so `restrict` is legal here unconditionally, without cgen
+	// importing check's AliasFact type or re-deriving liveness itself
+	// (D-12: zero shared helpers between the three derivations).
+	fmt.Fprintf(&out, "static %s %s(%s *restrict %s) { %s\n", typeName, functionName, typeName, parameterName, borrowByPointerMarker)
 
 	declared := map[string]bool{parameter.ID: true}
 	returnLocal := ""
@@ -510,6 +521,25 @@ func emitLinearBorrowedByPointer(function core.Function) (string, error) {
 	out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
 	out.WriteString("  return 0;\n}\n")
 	return out.String(), nil
+}
+
+// emittedAttributeForByPointerParameter returns D-05-01's restrict
+// attribute binding for a function this file has ALREADY selected for
+// by-pointer lowering (selectsByPointerLowering, Emit/EmitNative's own
+// gate). The binding always exists in that case, since
+// selectsByPointerLowering's own structural condition (an exclusive loan on
+// the parameter, unbroken to the terminator) IS check's independently
+// derived AliasFact condition (TestAliasFactAgreesWithByPointerSelection,
+// check package) -- so this reads the loan ID directly off the operation
+// stream cgen already owns (function.Linear.Operations[0].LoanID, the loan
+// the first, exclusive-borrow operation creates) rather than importing
+// check's AliasFact type (D-12: zero shared helpers).
+func emittedAttributeForByPointerParameter(function core.Function) EmittedAttribute {
+	loanID := ""
+	if function.Linear != nil && len(function.Linear.Operations) > 0 {
+		loanID = function.Linear.Operations[0].LoanID
+	}
+	return EmittedAttribute{Attr: "restrict", CoreNode: function.ID, Parameter: function.Parameter.ID, JustifiedBy: loanID}
 }
 
 // emitLinearForeign is the native lowering for a straight-line (Match-less)
@@ -1531,8 +1561,12 @@ const ForeignManifestSchema = "lang.foreign/0"
 // foreignManifestDocument is the lang.foreign/0 sidecar's exact field
 // layout: the complete core.ForeignContract plus two fields no
 // ForeignContract itself carries. EmittedAttributes has no omitempty tag
-// (D-04-13): it is deliberately a present, empty JSON array this phase, not
-// an omission -- the distinction Phase 5 needs to assert on.
+// (D-04-13): it is deliberately a present, empty JSON array this phase when
+// nothing was emitted, not an omission. As of D-05-01/D-05-04 it can also be
+// a present, POPULATED array: an empty []EmittedAttribute and an empty
+// []string both serialize to the same `[]`, so every Phase 1-4 sidecar's
+// serialized bytes stay unchanged (TestForeignManifestBytesUnchangedForPriorPhases
+// asserts this directly, not merely assumes it).
 // UncheckedObligations names every obligation this phase declares but never
 // exercises, so a quarantine reader never mistakes a declared fact for a
 // proven one (D-04-12/D-10).
@@ -1548,8 +1582,23 @@ type foreignManifestDocument struct {
 	Retention            string             `json:"retention"`
 	Aliasing             string             `json:"aliasing"`
 	Layout               *core.RecordLayout `json:"layout"`
-	EmittedAttributes    []string           `json:"emitted_attributes"`
+	EmittedAttributes    []EmittedAttribute `json:"emitted_attributes"`
 	UncheckedObligations []string           `json:"unchecked_obligations"`
+}
+
+// EmittedAttribute is one lang.foreign/0 sidecar emitted_attributes entry
+// (D-05-04): the optimizer-visible attribute cgen emitted, which core node
+// and parameter it was emitted on, and the borrow-fact identity that
+// justifies it. corevalidate independently re-derives JustifiedBy from
+// core's own loan facts and refuses any entry whose claim does not match
+// (ValidateEmittedAttributes, corevalidate.go) -- it declares its own local
+// AttributeClaim decoding of this exact JSON shape rather than importing
+// this type, so the two packages share no helper (D-12).
+type EmittedAttribute struct {
+	Attr        string `json:"attr"`
+	CoreNode    string `json:"core_node"`
+	Parameter   string `json:"parameter"`
+	JustifiedBy string `json:"justified_by"`
 }
 
 // uncheckedForeignObligations names every obligation this phase declares but
@@ -1605,22 +1654,50 @@ func singleForeignFunction(program core.Program) (core.Function, error) {
 	return core.Function{}, fmt.Errorf("program declares no foreign contract")
 }
 
-// EmitForeignManifest serializes program's single foreign contract as a
-// lang.foreign/0 sidecar manifest document (D-04-12c): the JSON is
-// authoritative, and EmitForeignHeader's obligation comment block is
-// generated FROM the same contract value, so the two can never drift
-// (D-04-12).
+// singleManifestFunction returns the one function in program that
+// EmitForeignManifest has a lang.foreign/0 sidecar to say something about:
+// either a declared foreign contract (singleForeignFunction's existing
+// Phase 4 scope, delegated to verbatim so its validation/error behavior is
+// completely unchanged for every foreign-shaped program) or, when no
+// function declares a foreign contract at all, the sole function selecting
+// D-05-02's by-pointer lowering. EmitForeignHeader and EmitForeignConformance
+// stay scoped to singleForeignFunction directly -- a by-pointer function has
+// no separate header or conformance unit to emit, so generalizing THEIR
+// selector would be reaching for a case that does not exist.
+func singleManifestFunction(program core.Program) (core.Function, error) {
+	for _, function := range program.Functions {
+		if function.ForeignContract != nil {
+			return singleForeignFunction(program)
+		}
+	}
+	for _, function := range program.Functions {
+		if function.Linear != nil && selectsByPointerLowering(function, function.Linear) {
+			return function, nil
+		}
+	}
+	return core.Function{}, fmt.Errorf("program declares no foreign contract")
+}
+
+// EmitForeignManifest serializes program's single foreign contract (or, as
+// of D-05-01, its single by-pointer-lowered function) as a lang.foreign/0
+// sidecar manifest document (D-04-12c): the JSON is authoritative, and
+// EmitForeignHeader's obligation comment block is generated FROM the same
+// contract value, so the two can never drift (D-04-12).
 func EmitForeignManifest(program core.Program) (string, error) {
-	function, err := singleForeignFunction(program)
+	function, err := singleManifestFunction(program)
 	if err != nil {
 		return "", err
 	}
-	contract := function.ForeignContract
 	document := foreignManifestDocument{
-		Schema: ForeignManifestSchema, Symbol: contract.Symbol, Allocator: contract.Allocator,
-		Unwind: contract.Unwind, NonlocalExit: contract.NonlocalExit, Fails: contract.Fails,
-		InitializedState: contract.InitializedState, Capture: contract.Capture, Retention: contract.Retention, Aliasing: contract.Aliasing,
-		Layout: contract.Layout, EmittedAttributes: []string{}, UncheckedObligations: uncheckedForeignObligations(),
+		Schema: ForeignManifestSchema, EmittedAttributes: []EmittedAttribute{}, UncheckedObligations: uncheckedForeignObligations(),
+	}
+	if contract := function.ForeignContract; contract != nil {
+		document.Symbol, document.Allocator = contract.Symbol, contract.Allocator
+		document.Unwind, document.NonlocalExit, document.Fails = contract.Unwind, contract.NonlocalExit, contract.Fails
+		document.InitializedState, document.Capture, document.Retention, document.Aliasing = contract.InitializedState, contract.Capture, contract.Retention, contract.Aliasing
+		document.Layout = contract.Layout
+	} else {
+		document.EmittedAttributes = append(document.EmittedAttributes, emittedAttributeForByPointerParameter(function))
 	}
 	encoded, err := json.Marshal(document)
 	if err != nil {
@@ -1770,6 +1847,39 @@ func ScanForBannedAttributes(sources ...string) []string {
 			if strings.Contains(source, token) {
 				found = append(found, token)
 			}
+		}
+	}
+	return found
+}
+
+// JustifiableAttributes is D-05-03's second and only other exemption from
+// the zero-attribute control (NoreturnExemption above is the first). Unlike
+// NoreturnExemption -- a property of a function cgen itself emits, requiring
+// no justification at all -- a JustifiableAttributes token is legal ONLY
+// inside a lang.foreign/0 manifest's emitted_attributes entry, ONLY when
+// that entry carries a non-empty JustifiedBy binding corevalidate
+// independently re-derives (ScanForUnjustifiedAttributes below,
+// ValidateEmittedAttributes in corevalidate.go), and NEVER inside a foreign
+// extern declaration, where ScanForBannedAttributes' existing
+// declaration-site ban stays exactly as strict as Phase 4
+// (BannedOptimizerAttributes is unchanged, still containing "restrict").
+// The exemption's exact boundary: cgen-owned by-pointer parameters only,
+// never a foreign extern declaration cgen does not own.
+var JustifiableAttributes = []string{"restrict"}
+
+// ScanForUnjustifiedAttributes returns every entry in attributes whose Attr
+// is not a member of JustifiableAttributes, or whose JustifiedBy is empty.
+// A non-empty result is a hard build failure (D-05-03b), never a warning --
+// an attribute with no proven backing fact must never ship.
+func ScanForUnjustifiedAttributes(attributes []EmittedAttribute) []string {
+	justifiable := make(map[string]bool, len(JustifiableAttributes))
+	for _, token := range JustifiableAttributes {
+		justifiable[token] = true
+	}
+	var found []string
+	for _, attribute := range attributes {
+		if !justifiable[attribute.Attr] || attribute.JustifiedBy == "" {
+			found = append(found, attribute.Attr)
 		}
 	}
 	return found

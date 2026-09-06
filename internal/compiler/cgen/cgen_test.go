@@ -2,6 +2,7 @@ package cgen_test
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -811,5 +812,190 @@ func TestEmitForeignNeverContainsAliasValue(t *testing.T) {
 	}
 	if strings.Contains(conformance, aliasProbeSentinel) {
 		t.Fatalf("EmitForeignConformance output contains the Alias sentinel:\n%s", conformance)
+	}
+}
+
+// restrictAbsentWithoutAliasFactSource is the negative half of
+// TestRestrictEmittedOnlyWithAliasFact (mirroring check_exclusive_test.go's
+// identical partialCoverageExclusiveSource fixture, duplicated here rather
+// than imported since it lives in an external _test package with no
+// exported symbol for it): the exclusive loan `first` never covers the
+// call's own terminator -- `relay` returns `buffer` directly, bypassing the
+// loan chain entirely (a borrow never moves ownership) -- so neither
+// check's AliasFact nor cgen's selectsByPointerLowering ever fire for this
+// function, and Emit falls back to the plain (non-by-pointer) lowering.
+const restrictAbsentWithoutAliasFactSource = `module owned.alias_fact_partial_coverage
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let first = borrow mut buffer
+  let second = borrow first
+  buffer
+}
+`
+
+// TestRestrictEmittedOnlyWithAliasFact is D-05-01's own falsifier: the
+// Phase 5 tracer fixture (whose exclusive loan genuinely covers the whole
+// call) emits exactly one `restrict` token, while a fixture whose loan does
+// NOT cover the terminator -- so no alias fact, and no by-pointer selection
+// -- emits none at all.
+func TestRestrictEmittedOnlyWithAliasFact(t *testing.T) {
+	positive, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	positiveChecked := session.Check(positive)
+	if len(positiveChecked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", positiveChecked.Diagnostics)
+	}
+	positiveGenerated, err := cgen.Emit(positiveChecked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// "restrict" as a substring also appears inside this fixture's own
+	// module/function identifiers ("phase5.restrict_borrow"), so the
+	// falsifiable count is the actual C `*restrict ` qualifier token, not a
+	// bare substring match.
+	if count := strings.Count(positiveGenerated, "*restrict "); count != 1 {
+		t.Fatalf("expected exactly one *restrict qualifier, got %d in:\n%s", count, positiveGenerated)
+	}
+
+	negativeChecked := session.Check([]byte(restrictAbsentWithoutAliasFactSource))
+	if len(negativeChecked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", negativeChecked.Diagnostics)
+	}
+	negativeGenerated, err := cgen.Emit(negativeChecked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(negativeGenerated, "restrict") {
+		t.Fatalf("expected no restrict token without an alias fact, got:\n%s", negativeGenerated)
+	}
+	if strings.Contains(negativeGenerated, "/* lang:by-pointer-param */") {
+		t.Fatalf("expected the by-pointer path NOT to be selected without an alias fact, got:\n%s", negativeGenerated)
+	}
+}
+
+// TestRestrictNeverOnForeignExtern is D-05-03's declaration-site regression
+// proof: a foreign-shaped fixture's emitted C, header, and conformance unit
+// (the three inspectable layers D-04-12 names) carry zero occurrences of any
+// BannedOptimizerAttributes token -- including "restrict" -- in any extern
+// declaration. BannedOptimizerAttributes/ScanForBannedAttributes are
+// completely unchanged by this plan, so this is a pure non-regression
+// proof: the declaration-site ban stays exactly as strict as Phase 4.
+func TestRestrictNeverOnForeignExtern(t *testing.T) {
+	checked := foreignAcquireCheckedProgram(t)
+	cSource, err := cgen.Emit(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	header, err := cgen.EmitForeignHeader(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conformance, err := cgen.EmitForeignConformance(checked.Program, testsupport.ProjectPath("native", "lang_foreign_resource_private.h"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found := cgen.ScanForBannedAttributes(cSource, header, conformance); len(found) != 0 {
+		t.Fatalf("expected zero banned attributes in a foreign-shaped fixture's emitted C, got %v", found)
+	}
+	for name, source := range map[string]string{"c source": cSource, "header": header, "conformance": conformance} {
+		if strings.Contains(source, "restrict") {
+			t.Fatalf("expected zero occurrences of restrict in the %s, got:\n%s", name, source)
+		}
+	}
+}
+
+// TestEmittedAttributesCarryJustification is D-05-04's own falsifier: every
+// EmittedAttribute the Phase 5 fixture's manifest carries has a non-empty
+// JustifiedBy binding, naming the exact core node, parameter, and loan
+// identity the attribute is justified by.
+func TestEmittedAttributesCarryJustification(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+	}
+	manifest, err := cgen.EmitForeignManifest(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitForeignManifest: %v", err)
+	}
+	var document struct {
+		EmittedAttributes []cgen.EmittedAttribute `json:"emitted_attributes"`
+	}
+	if err := json.Unmarshal([]byte(manifest), &document); err != nil {
+		t.Fatalf("decode manifest: %v", err)
+	}
+	if len(document.EmittedAttributes) != 1 {
+		t.Fatalf("want exactly one emitted attribute, got %d: %+v", len(document.EmittedAttributes), document.EmittedAttributes)
+	}
+	attribute := document.EmittedAttributes[0]
+	if attribute.Attr != "restrict" {
+		t.Fatalf("want Attr %q, got %q", "restrict", attribute.Attr)
+	}
+	if attribute.JustifiedBy == "" {
+		t.Fatal("attribute carries no justification")
+	}
+	if len(checked.Program.Functions) != 1 {
+		t.Fatalf("want one function, got %d", len(checked.Program.Functions))
+	}
+	function := checked.Program.Functions[0]
+	if attribute.CoreNode != function.ID {
+		t.Fatalf("want CoreNode %q, got %q", function.ID, attribute.CoreNode)
+	}
+	if attribute.Parameter != function.Parameter.ID {
+		t.Fatalf("want Parameter %q, got %q", function.Parameter.ID, attribute.Parameter)
+	}
+	if len(function.Linear.Operations) == 0 || attribute.JustifiedBy != function.Linear.Operations[0].LoanID {
+		t.Fatalf("want JustifiedBy to equal the first operation's loan id %q, got %q", function.Linear.Operations[0].LoanID, attribute.JustifiedBy)
+	}
+}
+
+// TestForeignManifestBytesUnchangedForPriorPhases is D-05-39's own
+// falsifier for the foreignManifestDocument.EmittedAttributes element-type
+// change ([]string -> []EmittedAttribute): asserts, rather than assumes,
+// that an empty slice of either element type serializes to the identical
+// JSON array literal `[]`, then confirms every Phase 4 foreign-contract
+// fixture's manifest still carries that exact empty array (by-pointer
+// lowering and a declared foreign contract are mutually exclusive shapes,
+// so these fixtures' EmittedAttributes stays empty, unaffected by D-05-04).
+func TestForeignManifestBytesUnchangedForPriorPhases(t *testing.T) {
+	oldShape, err := json.Marshal([]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	newShape, err := json.Marshal([]cgen.EmittedAttribute{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(oldShape) != string(newShape) {
+		t.Fatalf("empty-slice encodings diverge: old=%s new=%s", oldShape, newShape)
+	}
+
+	for _, fixture := range []string{"testdata/phase4/foreign_acquire_one.lang", "testdata/phase4/acquire_three_success.lang"} {
+		t.Run(fixture, func(t *testing.T) {
+			source, err := os.ReadFile(testsupport.ProjectPath(strings.Split(fixture, "/")...))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+			}
+			manifest, err := cgen.EmitForeignManifest(checked.Program)
+			if err != nil {
+				t.Fatalf("EmitForeignManifest: %v", err)
+			}
+			if !strings.Contains(manifest, `"emitted_attributes":[]`) {
+				t.Fatalf("expected the Phase 4 foreign-contract manifest to keep an empty emitted_attributes array, got:\n%s", manifest)
+			}
+		})
 	}
 }

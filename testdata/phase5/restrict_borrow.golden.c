@@ -91,7 +91,7 @@ static int lang_write_buffer_hex(const LANG_BUFFER *value) {
   return 1;
 }
 
-static LANG_BUFFER LANG_TOUCH(LANG_BUFFER *LANG_BUFFER_LANG_PARAMETER_0) { /* lang:by-pointer-param */
+static LANG_BUFFER LANG_TOUCH(LANG_BUFFER *restrict LANG_BUFFER_LANG_PARAMETER_0) { /* lang:by-pointer-param */
   LANG_BUFFER lang_value_first = *LANG_BUFFER_LANG_PARAMETER_0; /* exclusive borrow representation: s1:phase5.restrict_borrow:fn:touch:op:0 */
   (void)lang_value_first;
   (void)lang_record_event("value.borrowed_exclusive", "s1:phase5.restrict_borrow:fn:touch:op:0:event", "s1:phase5.restrict_borrow:fn:touch", "s1:phase5.restrict_borrow:fn:touch:place:0", "s1:phase5.restrict_borrow:fn:touch:place:1", "s1:phase5.restrict_borrow:fn:touch:type:0");
