@@ -169,27 +169,32 @@ var phase5ForeignChainShapes = []string{"try1", "discard1"}
 var phase5ForeignAlternativeCounts = []int{1, 2}
 
 // phase5ForeignChainSource generates one resource-lifecycle candidate: a
-// single declared foreign symbol (Byte parameter, matching every shipped
-// foreign fixture) called through the named shape's try/discard sequence,
-// with the function returning its own parameter -- checkFallibleLinear's
-// resource-lifecycle shape (D-05-18b's "0 or 1 foreign call" axis; every
-// shape here declares exactly one foreign symbol, called one to three
-// times).
+// single declared foreign symbol called through the named shape's
+// try/discard sequence, with the function returning its own parameter --
+// checkFallibleLinear's resource-lifecycle shape (D-05-18b's "0 or 1
+// foreign call" axis). The declared symbol is `lang_res_open` -- the SAME
+// real, frozen, byte-identical production symbol every Phase 4 foreign
+// fixture declares -- rather than a made-up name, because
+// native.ForeignSourcePathForSymbol only resolves a fixed, closed set of
+// real frozen translation units (D-04-10/D-04-17): a synthetic symbol name
+// would check-admit but never link natively, which would make Task 3's
+// three-engine agreement run over this closure vacuous for every foreign
+// candidate.
 func phase5ForeignChainSource(shape string, alternativeCount int) string {
 	var body strings.Builder
 	fmt.Fprintf(&body, "module phase5.enum_foreign_%s_alt%d\n\n", shape, alternativeCount)
 	body.WriteString("export {\n  fn main\n}\n\n")
-	body.WriteString("foreign C {\n\n  fn probe(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: ProbeError\n  }\n}\n\n")
-	body.WriteString("data ProbeError =\n  | ProbeFailed\n")
+	body.WriteString("foreign C {\n\n  fn lang_res_open(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: AcquireError\n  }\n}\n\n")
+	body.WriteString("data AcquireError =\n  | OpenFailed\n")
 	if alternativeCount >= 2 {
-		body.WriteString("  | ProbeFailedAgain\n")
+		body.WriteString("  | OpenFailedAgain\n")
 	}
 	body.WriteString("\nfn main(request: Byte) -> Byte {\n")
 	switch shape {
 	case "try1":
-		body.WriteString("  let a = try probe(request)\n")
+		body.WriteString("  let a = try lang_res_open(request)\n")
 	case "discard1":
-		body.WriteString("  discard probe(request) because \"advisory\"\n")
+		body.WriteString("  discard lang_res_open(request) because \"advisory\"\n")
 	}
 	body.WriteString("  request\n}\n")
 	return body.String()
