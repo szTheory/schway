@@ -1,0 +1,31 @@
+// D-05-02 tracer fixture: touch's sole Buffer parameter is exclusively
+// borrowed as the very FIRST use in the body (`borrow mut buffer`) and never
+// referenced again directly -- every remaining operation is a reborrow
+// chained off that exclusive loan (a repeated load/store over the borrowed
+// view an optimizer could hoist, the seed of D-05-05's later engineered
+// fixture), so the loan's own last use is the function's own terminator.
+// This is the structural shape selectsByPointerLowering (cgen.go) detects:
+// exclusive loan on the parameter covering every operation from the
+// parameter's first use to the terminator, never a fixture-name allowlist.
+//
+// The return type is a PLAIN owned `-> Buffer`, not a declared
+// `borrow(...)` view: selectsByPointerLowering additionally requires
+// function.PublicOrigin == nil, so a declared borrow-return function (e.g.
+// testdata/phase3/public_view_mixed_access.lang, which has the identical
+// exclusive-borrow-then-reborrow-to-terminator operation shape) never
+// selects this path -- PublicOrigin is a genuinely distinct, already-shipped
+// semantic category this plan does not touch. check.go admits a plain
+// return of a borrow-derived place unchanged (no checker change this plan;
+// this is the documented D-03-02 gap, not a new behavior).
+module phase5.restrict_borrow
+
+export {
+  fn touch
+}
+
+fn touch(buffer: Buffer) -> Buffer {
+  let first = borrow mut buffer
+  let second = borrow first
+  let third = borrow second
+  third
+}

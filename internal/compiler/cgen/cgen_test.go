@@ -1,12 +1,14 @@
 package cgen_test
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -651,5 +653,115 @@ func TestBlindSpotsAreNamedNotClaimed(t *testing.T) {
 		if !found[blindSpot] {
 			t.Fatalf("blind spot %q is never named in any scanned source", blindSpot)
 		}
+	}
+}
+
+// TestPhase5ByPointerLoweringGolden pins testdata/phase5/restrict_borrow.lang's
+// generated C to its committed golden and asserts the by-pointer-param
+// marker (cgen.go's borrowByPointerMarker) appears exactly once, matching
+// this plan's acceptance criteria and giving 05-07's mutation runner a
+// fail-closed single-marker target (D-05-02).
+func TestPhase5ByPointerLoweringGolden(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.Emit(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.golden.c"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if generated != string(golden) {
+		t.Fatalf("by-pointer lowering output moved from its committed golden:\n--- got ---\n%s\n--- want ---\n%s", generated, string(golden))
+	}
+	if count := strings.Count(generated, "/* lang:by-pointer-param */"); count != 1 {
+		t.Fatalf("expected exactly one by-pointer-param marker, got %d in:\n%s", count, generated)
+	}
+}
+
+// phase1Through4AcceptingFixtures is the same accepting-fixture domain
+// internal/compiler/core/core_test.go's pinnedFixtures pins (duplicated here
+// rather than imported, since core_test.go lives in an external _test
+// package with no exported symbol for it) plus the Phase 4 accepting
+// fixtures core_test.go's D-05-39 widening added. TestPhase5ByPointerLoweringIsAdditive
+// enumerates every one of them.
+var phase1Through4AcceptingFixtures = []string{
+	"testdata/phase1/comments.lang",
+	"testdata/phase1/toggle.lang",
+	"testdata/phase2/implicit_copy.lang",
+	"testdata/phase2/owned_transfer.lang",
+	"testdata/phase3/borrowed_view.lang",
+	"testdata/phase3/branch_one_arm_shared_accept.lang",
+	"testdata/phase3/branch_view.lang",
+	"testdata/phase3/public_view.lang",
+	"testdata/phase3/public_view_impossible.lang",
+	"testdata/phase3/public_view_mixed_access.lang",
+	"testdata/phase3/public_view_multi_arm_access_conflict.lang",
+	"testdata/phase3/public_view_multi_arm_omitted.lang",
+	"testdata/phase3/public_view_omitted.lang",
+	"testdata/phase3/public_view_understated.lang",
+	"testdata/phase3/sequential_shared_then_exclusive_accept.lang",
+	"testdata/phase3/shared_shared_accept.lang",
+	"testdata/phase4/acquire_three_fail_second.lang",
+	"testdata/phase4/acquire_three_fail_third.lang",
+	"testdata/phase4/acquire_three_success.lang",
+	"testdata/phase4/defect_terminal.lang",
+	"testdata/phase4/discard_because.lang",
+	"testdata/phase4/foreign_acquire_one.lang",
+	"testdata/phase4/nonlocal_exit_probe.lang",
+}
+
+// TestPhase5ByPointerLoweringIsAdditive proves selectsByPointerLowering
+// never reaches into Phase 1-4: every accepting fixture from those phases
+// selects false for every one of its functions, so
+// emitLinear/emitBranch/emitLinearForeign's existing dispatch is genuinely
+// unperturbed by this plan (D-05-02/D-05-39).
+func TestPhase5ByPointerLoweringIsAdditive(t *testing.T) {
+	for _, path := range phase1Through4AcceptingFixtures {
+		t.Run(path, func(t *testing.T) {
+			source, err := os.ReadFile(testsupport.ProjectPath(strings.Split(path, "/")...))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+			}
+			for _, function := range checked.Program.Functions {
+				if cgen.SelectsByPointerLowering(function, function.Linear) {
+					t.Fatalf("function %q wrongly selects the by-pointer lowering path", function.Name)
+				}
+			}
+		})
+	}
+}
+
+// TestPhase5ByPointerLoweringThreeEngineAgreement is what makes Task 2 a
+// tracer rather than a bare emitter change: session.RunNativeFile already
+// asserts interpreter/-O0/-O3 agreement internally (returning an
+// EngineMismatch error on divergence), so a clean run here proves the
+// by-pointer C function this plan adds is semantically correct end to end,
+// not merely syntactically distinct.
+func TestPhase5ByPointerLoweringThreeEngineAgreement(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang")
+	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if len(diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", diagnostics)
+	}
+	if err != nil {
+		t.Fatalf("engines disagreed or native run failed: %v", err)
+	}
+	if len(result.Interpreter) == 0 || len(result.O0.Pairs) == 0 || len(result.O3.Pairs) == 0 {
+		t.Fatal("expected at least one execution from every engine")
+	}
+	if !strings.Contains(result.CSource, "/* lang:by-pointer-param */") {
+		t.Fatalf("expected the by-pointer lowering path to be selected, got:\n%s", result.CSource)
 	}
 }

@@ -30,6 +30,9 @@ func Emit(program core.Program) (string, error) {
 		if len(function.Linear.Blocks) > 0 {
 			return emitLinearForeign(program, function)
 		}
+		if selectsByPointerLowering(function, function.Linear) {
+			return emitLinearBorrowedByPointer(function)
+		}
 		return emitLinear(function)
 	}
 	return emitMatch(program, false)
@@ -58,6 +61,9 @@ func EmitNative(program core.Program) (string, error) {
 	if function.Linear != nil {
 		if len(function.Linear.Blocks) > 0 {
 			return emitLinearForeign(program, function)
+		}
+		if selectsByPointerLowering(function, function.Linear) {
+			return emitLinearBorrowedByPointer(function)
 		}
 		return emitLinear(function)
 	}
@@ -297,6 +303,197 @@ func emitLinear(function core.Function) (string, error) {
 			return "", fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
 	}
+	out.WriteString("  return 0;\n}\n")
+	return out.String(), nil
+}
+
+// borrowByPointerMarker is the single, stable marker comment
+// emitLinearBorrowedByPointer places on its generated function's own
+// signature line (D-05-01/D-05-02): a later Phase 5 plan's mutation runner
+// locates this exact marker as its fail-closed single-occurrence target,
+// mirroring every existing mutation-site marker convention in this file
+// (mutationMarker in session.go, padInstallMarker/padEndMarker,
+// ledgerPopulateMarker above).
+const borrowByPointerMarker = "/* lang:by-pointer-param */"
+
+// selectsByPointerLowering is D-05-02's structural selection predicate. It
+// returns true only when function's sole parameter is exclusively borrowed
+// as literally the FIRST operation of a straight-line (Match-less,
+// block-less) linear body, is never referenced again directly anywhere else
+// in the operation stream, and every remaining operation forms one unbroken
+// derivation chain rooted at that borrow's own target place and ending
+// exactly at the function's OpReturn terminator. That is precisely "an
+// exclusive loan covering every operation from the parameter's first use to
+// the function terminator" (D-05-02) -- derived entirely from the core
+// artifact's own LinearOperation.SourceID/TargetID/Kind facts, never a
+// fixture name, function name, or allowlist. A branch-shaped body
+// (function.Match != nil) or a foreign-call body (len(linear.Blocks) > 0)
+// never selects this path; both keep their own existing lowering unchanged.
+//
+// PublicOrigin == nil is also required: a function whose return type
+// carries a declared `borrow(path)` annotation is already a distinct,
+// previously-shipped semantic category (OWN-04's public borrowed views,
+// e.g. testdata/phase3/public_view_mixed_access.lang) that can have the
+// exact same exclusive-borrow-then-reborrow-to-terminator operation shape
+// as this plan's own fixture -- PublicOrigin is the one genuinely
+// structural fact (not a name or file match) that tells the two apart, and
+// is exactly what TestPhase5ByPointerLoweringIsAdditive asserts keeps every
+// Phase 1-4 fixture on its own existing lowering path.
+func selectsByPointerLowering(function core.Function, linear *core.LinearBody) bool {
+	if function.Match != nil || function.PublicOrigin != nil || linear == nil || len(linear.Blocks) > 0 {
+		return false
+	}
+	operations := linear.Operations
+	if len(operations) == 0 {
+		return false
+	}
+	first := operations[0]
+	if first.Kind != core.OpBorrowExclusive || first.SourceID != function.Parameter.ID || first.TargetID == "" {
+		return false
+	}
+	for _, operation := range operations[1:] {
+		if operation.SourceID == function.Parameter.ID {
+			return false
+		}
+	}
+	current := first.TargetID
+	terminatorIndex := -1
+	for index := 1; index < len(operations); index++ {
+		operation := operations[index]
+		if operation.SourceID != current {
+			return false
+		}
+		if operation.Kind == core.OpReturn {
+			terminatorIndex = index
+			break
+		}
+		if operation.TargetID == "" {
+			return false
+		}
+		current = operation.TargetID
+	}
+	return terminatorIndex == len(operations)-1
+}
+
+// emitLinearBorrowedByPointer is D-05-02's additive by-pointer lowering: the
+// thin vertical slice proving a Buffer parameter whose exclusive loan
+// structurally covers the whole body (selectsByPointerLowering above) can
+// lower to a genuine C function taking that parameter BY POINTER, with a
+// single dereference at the one use site that reads the pointer's own
+// pointee value. Modeled exactly on emitLinearForeignOutputSupport's
+// additive-sibling shape (D-04-20): a brand-new function reached only
+// through selectsByPointerLowering, never called from emitLinear,
+// emitBranch, or emitLinearForeign, so every existing committed
+// generated-C golden stays byte-for-byte untouched (D-04-23/D-05-39). Scope
+// is deliberately narrow: exactly the chain shape selectsByPointerLowering
+// admits (one exclusive borrow of the parameter, zero or more reborrows,
+// terminated by OpReturn) -- a richer straight-line shape is out of this
+// plan's scope and this function errors rather than silently mishandling
+// it. No `restrict` or other optimizer attribute is emitted here (D-05-03
+// is a later plan's concern); BannedOptimizerAttributes is untouched.
+func emitLinearBorrowedByPointer(function core.Function) (string, error) {
+	input, initializer, typeName, err := linearInput(function)
+	if err != nil {
+		return "", err
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	parameter, ok := places[function.Parameter.ID]
+	if !ok {
+		return "", fmt.Errorf("linear parameter place is absent")
+	}
+	names := newCNames(linearFixedNames...)
+	placeIDs := make([]string, len(function.Linear.Places))
+	for index, place := range function.Linear.Places {
+		placeIDs[index] = place.ID
+	}
+	locals := make(map[string]string, len(placeIDs))
+	for index, id := range placeIDs {
+		locals[id] = names.allocate(cLocal(function.Linear.Places[index].Name), "place", index)
+	}
+	functionName := names.allocate(cName(function.Name), "function", 0)
+	parameterName := names.allocate(cName(parameter.Name), "parameter", 0)
+	resultLocal := names.allocate(cLocal("result"), "result", 0)
+
+	var out strings.Builder
+	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 */\n")
+	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")
+	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n\n")
+	if function.Parameter.Type == "Buffer" {
+		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
+	}
+	emitLinearOutputSupport(&out, function, typeName)
+
+	fmt.Fprintf(&out, "static %s %s(%s *%s) { %s\n", typeName, functionName, typeName, parameterName, borrowByPointerMarker)
+
+	declared := map[string]bool{parameter.ID: true}
+	returnLocal := ""
+	for index, operation := range function.Linear.Operations {
+		source := places[operation.SourceID]
+		switch operation.Kind {
+		case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
+			target, exists := places[operation.TargetID]
+			if !exists || declared[operation.TargetID] {
+				return "", fmt.Errorf("operation %q has invalid target", operation.ID)
+			}
+			label := "copy"
+			if operation.Kind == core.OpMove {
+				label = "authority transfer"
+			} else if operation.Kind == core.OpBorrowShared {
+				label = "shared borrow representation"
+			} else if operation.Kind == core.OpBorrowExclusive {
+				label = "exclusive borrow representation"
+			}
+			sourceExpr := locals[source.ID]
+			if index == 0 {
+				// The one dereference site: the exclusive loan's own
+				// creation reads the pointer parameter's pointee value.
+				sourceExpr = "*" + parameterName
+			}
+			fmt.Fprintf(&out, "  %s %s = %s; /* %s: %s */\n", typeName, locals[target.ID], sourceExpr, label, operation.ID)
+			fmt.Fprintf(&out, "  (void)%s;\n", locals[target.ID])
+			eventKind := "value.copied"
+			if operation.Kind == core.OpMove {
+				eventKind = "value.transferred"
+			} else if operation.Kind == core.OpBorrowShared {
+				eventKind = "value.borrowed"
+			} else if operation.Kind == core.OpBorrowExclusive {
+				eventKind = "value.borrowed_exclusive"
+			}
+			fmt.Fprintf(&out, "  (void)lang_record_event(%s, %s, %s, %s, %s, %s);\n",
+				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
+				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
+			declared[operation.TargetID] = true
+		case core.OpReturn:
+			fmt.Fprintf(&out, "  (void)lang_record_event(%s, %s, %s, %s, NULL, %s); /* returned place: %s */\n",
+				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
+				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
+			returnLocal = locals[source.ID]
+		default:
+			return "", fmt.Errorf("operation %q has unsupported kind %q for by-pointer lowering", operation.ID, operation.Kind)
+		}
+	}
+	if returnLocal == "" {
+		return "", fmt.Errorf("by-pointer lowering requires a terminal return")
+	}
+	fmt.Fprintf(&out, "  return %s;\n}\n\n", returnLocal)
+
+	out.WriteString("int main(int argc, char **argv) {\n")
+	out.WriteString("  if (argc != 2) return 64;\n")
+	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
+	fmt.Fprintf(&out, "  %s %s = %s;\n", typeName, locals[parameter.ID], initializer)
+	fmt.Fprintf(&out, "  %s %s = %s(&%s);\n", typeName, resultLocal, functionName, locals[parameter.ID])
+	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
+	if function.Parameter.Type == "Buffer" {
+		fmt.Fprintf(&out, "  if (!lang_write_buffer_hex(&%s)) return 74;\n", resultLocal)
+	} else {
+		fmt.Fprintf(&out, "  if (!lang_write_byte(%s)) return 74;\n", resultLocal)
+	}
+	out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
+	out.WriteString("  if (!lang_write_events()) return 74;\n")
+	out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
 	out.WriteString("  return 0;\n}\n")
 	return out.String(), nil
 }
