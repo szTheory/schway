@@ -352,5 +352,5 @@ for the verbatim carry-forward entry).
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
-| 5. Native Equivalence and Adversarial Evidence | 14/14 | In Progress|  |
+| 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |
