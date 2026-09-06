@@ -313,7 +313,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 06-02-PLAN.md — `explain`: bounded, deterministic cause DAG under the net-new `lang.explain/0`
-- [ ] 06-04-PLAN.md — `internal/compiler/cache`: declared-input artifact store that structurally cannot hold a verdict
+- [x] 06-04-PLAN.md — `internal/compiler/cache`: declared-input artifact store that structurally cannot hold a verdict
 - [ ] 06-08-PLAN.md — `internal/compiler/measure`: leak-free machine probe, 20-sample p50/p95, CoV auto-demotion
 - [ ] 06-11-PLAN.md — `diagnostic.Repair` grows into an applicable edit; identity split held at `kind` only
 
