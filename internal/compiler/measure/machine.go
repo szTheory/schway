@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os/exec"
 	"runtime"
 	"time"
@@ -50,10 +51,22 @@ func FactFieldNames() []string {
 
 // Error is this package's stable typed failure, matching the {Code}-only
 // shape evidence.ValidationError / debugmap.Error / cache.Error already
-// use, so callers can dispatch on Code identically.
-type Error struct{ Code string }
+// use, so callers can dispatch on Code identically. Got/Want are optional
+// (zero when unused, e.g. by the machine probes above): statistics.go sets
+// them so a short-sample-set refusal can name the count it got and the
+// count it needed without minting a second error type in this package.
+type Error struct {
+	Code string
+	Got  int
+	Want int
+}
 
-func (e *Error) Error() string { return e.Code }
+func (e *Error) Error() string {
+	if e.Want != 0 || e.Got != 0 {
+		return fmt.Sprintf("%s: got %d, want %d", e.Code, e.Got, e.Want)
+	}
+	return e.Code
+}
 
 // commandFactory is the injectable subprocess-launch seam ProbeMachine uses
 // in production (exec.CommandContext) and machine_test.go overrides for
