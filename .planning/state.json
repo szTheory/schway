@@ -26,7 +26,7 @@
     {
       "number": "5",
       "name": "Native Equivalence and Adversarial Evidence",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "6",
@@ -39,5 +39,5 @@
     "label": "Advance to the next step",
     "reason": "Phase 5 of 6 · 67% · executing"
   },
-  "updated_at": "2026-09-06T01:50:50.589Z"
+  "updated_at": "2026-09-06T02:35:55.625Z"
 }

@@ -252,14 +252,14 @@ validator, the code generator, or the session gate, so no two plans have disjoin
   3. ASan/UBSan evidence is isolated from semantic equivalence evidence and catches retained-pointer lifetime defects.
   4. Any injected mismatch reports a minimized source/core case and causal event trace; the coordinated source-to-core false claim remains a documented escape.
 
-**Plans**: 2/14 plans executed
+**Plans**: 3/14 plans executed
 
 Plans:
 **Wave 1**
 
 - [x] 05-01-PLAN.md — Phase 1-4 identity pin, by-pointer lowering tracer, `Alias` discharge (wave 1)
 - [x] 05-02-PLAN.md — `discoverLoanLastUses` shadow-mode retirement (wave 1)
-- [ ] 05-03-PLAN.md — Sanitizer lane: isolated binary, pinned options, availability probe (wave 1)
+- [x] 05-03-PLAN.md — Sanitizer lane: isolated binary, pinned options, availability probe (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -315,5 +315,5 @@ Plans:
 | 2. Owned Values and Abilities | 7/7 | Complete    | 2026-09-03 |
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
-| 5. Native Equivalence and Adversarial Evidence | 2/14 | In Progress|  |
+| 5. Native Equivalence and Adversarial Evidence | 3/14 | In Progress|  |
 | 6. Agent Feedback and Performance Ratification | 0/TBD | Not started | - |

@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-09-06T02:24:05.464Z"
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-09-06T02:36:10.357Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 05 execution started
-state_head: b1a9aef22c7dcf221a99c81554b559be51f9369d
+state_head: 88dee6ba420bd4062d64afe268171ec2f077b7f1
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 35
+  completed_plans: 36
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
-Plan: 3 of 14
+Plan: 4 of 14
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 05 execution started
 
@@ -90,6 +90,7 @@ Progress: ██████████ [███████░░░] 67%
 | Phase 04 P13 | 30 min | 4 tasks | 10 files |
 | Phase 05 P01 | 110 min | 3 tasks | 8 files |
 | Phase 05 P02 | ~70min | 3 tasks | 3 files |
+| Phase 05 P03 | 35 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -174,6 +175,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 04]: [Phase 04] 04-13: full C-identifier shape for allocator/unwind/nonlocal_exit (DD-04-13-01), a third independent predicate at check.go's source-admission layer, plus comment-safety/C-type-expression audits in corevalidate and cgen for every remaining spliced ForeignContract field -- closing 04-VERIFICATION.md gap 2b's code-injection hole at the C boundary.
 - [Phase 05]: selectsByPointerLowering gates on function.PublicOrigin == nil to keep declared borrow-return functions (identical op shape) on their existing lowering path — public_view_mixed_access.lang structurally matches the new by-pointer predicate; PublicOrigin is the only structural fact that distinguishes them
 - [Phase 05]: computeLoanLastUses (loanLivenessFixpoint) is the sole liveness law deciding admission in both analyzeStraightLine and analyzeArmBody; discoverLoanLastUses retired after a recorded zero-divergence shadow run over 230,692 admission-site comparisons (D-04-26/D-03-01 closed).
+- [Phase 05]: [Phase 05-03]: All three tasks were authored and committed as a single cohesive file/commit rather than three incremental commits since the tasks share helpers in one small file.
+- [Phase 05]: [Phase 05-03]: classifySanitizerRun is a pure (exitCode, stderrText) function with no process I/O, so the unclassified-abort false-green mode and path/address-exclusion property are unit-testable on synthetic input.
 
 ### Pending Todos
 
@@ -204,6 +207,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T02:24:04.837Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-09-06T02:35:58.877Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
