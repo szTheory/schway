@@ -410,3 +410,54 @@ func TestPhase5SanitizerOptionsMatchScript(t *testing.T) {
 		t.Fatalf("scripts/verify-phase5.sh's pinned UBSAN_OPTIONS is not byte-identical to native.UBSanOptions (%q)", native.UBSanOptions)
 	}
 }
+
+// TestPhase5RequiredControlsIsFifteen pins the control count at exactly 15
+// (this plan's close-out task): the ten controls plans 05-04 through 05-08
+// introduced, plus the three reducer vacuity controls (plan 05-12) and the
+// two QLT-01 registry controls (plan 05-11) this plan wires in. This is a
+// COUNT assertion, distinct from TestPhase5RequiredControlsMatchScript's
+// SET-EQUALITY assertion -- the two catch different mistakes: a control
+// silently dropped from both copies in lockstep would still pass set
+// equality (both sides shrink together) but fails this count pin.
+func TestPhase5RequiredControlsIsFifteen(t *testing.T) {
+	got := len(session.Phase5RequiredControls())
+	if got != 15 {
+		t.Fatalf("expected exactly 15 required Phase 5 controls, got %d: %v", got, session.Phase5RequiredControls())
+	}
+}
+
+// TestPhase5EveryDeclaredControlActuallyFires asserts set-equality between
+// Phase5RequiredControls() and the set of control IDs that actually
+// reported a fired-or-operational status in a real
+// VerifyPhase5ControlsAndWork run. A declared-but-never-firing control is
+// "not run rendered as pass", the exact shape this project's gate
+// discipline exists to prevent (T-05-53).
+func TestPhase5EveryDeclaredControlActuallyFires(t *testing.T) {
+	result, err := session.VerifyPhase5ControlsAndWork(context.Background())
+	if err != nil {
+		t.Fatalf("VerifyPhase5ControlsAndWork returned an unexpected error: %v", err)
+	}
+	if result.Status != "pass" {
+		t.Fatalf("expected a pass result, got status=%q diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+	}
+	fired := make(map[string]bool)
+	for _, lane := range result.Lanes {
+		for _, control := range lane.Controls {
+			fired[control] = true
+		}
+	}
+	declared := make(map[string]bool, len(session.Phase5RequiredControls()))
+	for _, control := range session.Phase5RequiredControls() {
+		declared[control] = true
+	}
+	for control := range declared {
+		if !fired[control] {
+			t.Fatalf("declared control %q never actually fired in a real VerifyPhase5ControlsAndWork run: %+v", control, result.Lanes)
+		}
+	}
+	for control := range fired {
+		if !declared[control] {
+			t.Fatalf("control %q fired in a real run but is not declared in Phase5RequiredControls()", control)
+		}
+	}
+}

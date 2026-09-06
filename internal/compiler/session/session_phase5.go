@@ -27,12 +27,17 @@ import (
 // control from either copy (T-05-32).
 //
 // control:foreign.no_unproven_attributes is plan 05-04's control, narrowed
-// (not deleted) by that plan; every other identifier here is a Phase 5
-// control introduced by plans 05-04 through 05-08. Plan 05-13 adds the
-// coordinated source/core false-claim control and plan 05-14 extends this
-// list further with the reducer and QLT-01 registry controls -- neither is
-// declared here, because a declared-but-unimplemented control is exactly
-// the "not run rendered as pass" shape D-05-17 forbids.
+// (not deleted) by that plan; the first ten identifiers are Phase 5
+// controls introduced by plans 05-04 through 05-08. Plan 05-14 (this plan)
+// closes the phase by adding the final five: the three reducer vacuity
+// controls plan 05-12 built but deliberately left unwired
+// (LaneMismatchReduce, session_phase5_mismatch.go), and the two QLT-01
+// registry-audit controls plan 05-11 built but deliberately left unwired
+// (LaneQLT01RegistryAudit, qlt01.go) -- both plans left the wiring to this
+// plan precisely so the Go control set and scripts/verify-phase5.sh's own
+// required-control block are extended TOGETHER, in one commit, and
+// TestPhase5RequiredControlsMatchScript never observes a transiently
+// divergent pair (D-05-17).
 func Phase5RequiredControls() []string {
 	return []string{
 		"control:foreign.no_unproven_attributes",
@@ -45,16 +50,22 @@ func Phase5RequiredControls() []string {
 		"control:native.sanitize.allocator_mismatch",
 		"control:native.sanitize.use_after_free",
 		"control:core.attribute_unjustified",
+		"control:reduce.no_progress",
+		"control:reduce.predicate_too_loose",
+		"control:reduce.nondeterministic",
+		"control:qlt01.registry_incomplete",
+		"control:qlt01.stale_control_reference",
 	}
 }
 
-// Phase5ExpectedEscapes is Phase 5's own declared, gate-visible residual as
-// of this plan: the callback-invocation half of NAT-03's stale-callback-
-// retention mutation (D-05-07), never claimed solved and never permitted to
-// appear as a detected lane control. Plan 05-13 extends this list with the
-// coordinated source-to-core false-claim escape.
+// Phase5ExpectedEscapes is Phase 5's own declared, gate-visible residual
+// set: the callback-invocation half of NAT-03's stale-callback-retention
+// mutation (D-05-07), and plan 05-13's coordinated source-to-core false
+// claim (D-05-30) -- neither claimed solved, neither ever permitted to
+// appear as a detected lane control (TestBothPhase5EscapesAreVisible,
+// TestCoordinatedLieEscapeIsNeverDetected).
 func Phase5ExpectedEscapes() []string {
-	return []string{EscapeCallbackInvocationUnsubjected}
+	return []string{EscapeCallbackInvocationUnsubjected, EscapeCoordinatedSourceToCoreFalseClaim}
 }
 
 // Phase5ClangPathOverrideForTest is a mutable seam ONLY for
@@ -242,6 +253,60 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			[]string{ControlSanitizeRetainedPointer, ControlSanitizeUseAfterFree, ControlSanitizeAllocatorMismatch, ControlSanitizeUBSanNoRecover},
 			1, sanitizeStarted)
 		markFail(sanitizeResult.Status)
+	}
+
+	// Lane: the QLT-01 registry completeness audit (D-05-29), built by
+	// plan 05-11 and deliberately left unwired until this plan so the
+	// registry's two controls (control:qlt01.registry_incomplete,
+	// control:qlt01.stale_control_reference) join Phase5RequiredControls()
+	// in the same commit as the shell gate's own extension.
+	qlt01Started := time.Now()
+	qlt01Lane, qlt01Err := VerifyQLT01Registry(ctx)
+	if qlt01Err != nil {
+		addLane(LaneQLT01RegistryAudit, protocol.StatusOperational, nil, 1, qlt01Started)
+		markFail(protocol.StatusOperational)
+	} else {
+		addLane(qlt01Lane.ID, qlt01Lane.Status, qlt01Lane.Controls, qlt01Lane.RecomputedWork, qlt01Started)
+		if qlt01Lane.Status != protocol.StatusPass {
+			markFail(qlt01Lane.Status)
+		}
+	}
+
+	// Lane: the reducer's three vacuity controls (D-05-27), built by
+	// plan 05-12 and deliberately left unwired until this plan
+	// (LaneMismatchReduce, session_phase5_mismatch.go). Its own
+	// VerifyMismatchReduceLane already returns a full protocol.Result with
+	// its own lane and RecomputedWork, so it is merged directly rather
+	// than re-derived through addLane.
+	mismatchStarted := time.Now()
+	mismatchResult, mismatchErr := VerifyMismatchReduceLane(ctx)
+	if mismatchErr != nil {
+		addLane(LaneMismatchReduce, protocol.StatusOperational, nil, 1, mismatchStarted)
+		markFail(protocol.StatusOperational)
+	} else {
+		result.Lanes = append(result.Lanes, mismatchResult.Lanes...)
+		result.Metrics.RecomputedWork += mismatchResult.Metrics.RecomputedWork
+		if mismatchResult.Status != protocol.StatusPass {
+			markFail(mismatchResult.Status)
+		}
+	}
+
+	// Lane: the coordinated source-to-core false-claim escape (D-05-30),
+	// declared by plan 05-13 and wired here alongside this plan's own
+	// extension of Phase5ExpectedEscapes(). A pass here is attributed to
+	// the named escape (never a silent absence of checking); an error
+	// means the adversarial pair failed to construct as claimed, which is
+	// a genuine gate failure, not an escape.
+	coordinatedStarted := time.Now()
+	coordinatedLane, coordinatedErr := VerifyCoordinatedLieEscape(ctx)
+	if coordinatedErr != nil {
+		addLane(LaneCoordinatedLieEscape, protocol.StatusOperational, nil, 1, coordinatedStarted)
+		markFail(protocol.StatusOperational)
+	} else {
+		addLane(coordinatedLane.ID, coordinatedLane.Status, coordinatedLane.Controls, coordinatedLane.RecomputedWork, coordinatedStarted)
+		if coordinatedLane.Status != protocol.StatusPass {
+			markFail(coordinatedLane.Status)
+		}
 	}
 
 	for _, required := range Phase5RequiredControls() {

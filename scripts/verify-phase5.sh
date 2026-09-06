@@ -82,15 +82,21 @@ for control in \
 	control:native.sanitize.ubsan_no_recover \
 	control:native.sanitize.allocator_mismatch \
 	control:native.sanitize.use_after_free \
-	control:core.attribute_unjustified
+	control:core.attribute_unjustified \
+	control:reduce.no_progress \
+	control:reduce.predicate_too_loose \
+	control:reduce.nondeterministic \
+	control:qlt01.registry_incomplete \
+	control:qlt01.stale_control_reference
 do
 	grep -q "$control" "$verify_tmp/phase5.json" || { echo "phase5 verify: required Phase 5 control missing: $control" >&2; exit 1; }
 done
 
-# The expected escape must appear under expected escapes and must never be
-# claimed as a solved, detected control (D-05-07): declared, asserted
-# visible, and never presented as covered.
+# The expected escapes must appear under expected escapes and must never be
+# claimed as a solved, detected control (D-05-07/D-05-30): declared,
+# asserted visible, and never presented as covered.
 grep -q 'escape:callback-invocation-unsubjected' "$verify_tmp/phase5.json" || { echo "phase5 verify: expected escape missing: escape:callback-invocation-unsubjected" >&2; exit 1; }
+grep -q 'escape:coordinated-source-to-core-false-claim' "$verify_tmp/phase5.json" || { echo "phase5 verify: expected escape missing: escape:coordinated-source-to-core-false-claim" >&2; exit 1; }
 
 # Phase 5's own corpus bound (D-05-18). Duplicated verbatim from
 # internal/compiler/session/session_phase5_corpus.go's own
