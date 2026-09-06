@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
 status: executing
-stopped_at: Completed 05-04-PLAN.md
-last_updated: "2026-09-06T03:09:48.437Z"
+stopped_at: Completed 05-05-PLAN.md
+last_updated: "2026-09-06T03:42:56.819Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 05 execution started
-state_head: b0fdfe82b74015997c643ba783d63c7160d56f3d
+state_head: 25a7a246e4c304d5663db38e9ae6b612afe27e6b
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 37
+  completed_plans: 38
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
-Plan: 5 of 14
+Plan: 6 of 14
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 05 execution started
 
@@ -92,6 +92,7 @@ Progress: ██████████ [███████░░░] 67%
 | Phase 05 P02 | ~70min | 3 tasks | 3 files |
 | Phase 05 P03 | 35 min | 3 tasks | 2 files |
 | Phase 05 P04 | 90 min | 3 tasks | 8 files |
+| Phase 05 P05 | ~140min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -181,6 +182,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 05]: [Phase 05-04]: deriveAliasFacts additionally excludes function.PublicOrigin != nil, mirroring selectsByPointerLowering's own identical guard, required for the checker/cgen agreement test to hold on public_view_mixed_access.lang — Same operation shape as the Phase 5 fixture but a distinct, already-shipped semantic category
 - [Phase 05]: [Phase 05-04]: cgen never imports check's AliasFact type -- restrict is emitted unconditionally inside emitLinearBorrowedByPointer (only ever reached when the fact holds by construction), reading the justification loan ID directly off function.Linear.Operations[0].LoanID — TestAliasFactAgreesWithByPointerSelection proves selectsByPointerLowering and deriveAliasFacts decide the identical condition, so no data dependency between check and cgen is needed (D-12)
 - [Phase 05]: [Phase 05-04]: corevalidate.recomputeAliasJustifications feeds a synthetic single-block core.LinearBody into the EXISTING recomputeLoanEndpoints rather than adding a parallel mechanism for straight-line bodies — recomputeLoanEndpoints already refuses when Linear.Blocks is empty, which every straight-line function's serialized core is by design
+- [Phase 05]: [Phase 05-05]: The bounded closure's 'single-level branch' axis is checkFallibleLinear's own ok/err block fork (a try/discard call), never a match{} construct -- check.Program dispatches per-function on hasTryCall, so a straight-line function calling a foreign symbol is already block-graph-shaped in core.
+- [Phase 05]: [Phase 05-05]: phase5ForeignChainSource declares the real frozen lang_res_open symbol, not a synthetic name -- native.ForeignSourcePathForSymbol only resolves the closed set of real frozen translation units, so a made-up symbol would check-admit but never link natively.
 
 ### Pending Todos
 
@@ -211,6 +214,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T03:09:13.082Z
-Stopped at: Completed 05-04-PLAN.md
+Last session: 2026-09-06T03:42:46.721Z
+Stopped at: Completed 05-05-PLAN.md
 Resume file: None
