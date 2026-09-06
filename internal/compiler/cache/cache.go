@@ -27,6 +27,7 @@ package cache
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -249,3 +250,79 @@ func hashBytes(data []byte) string {
 }
 
 func hashString(s string) string { return hashBytes([]byte(s)) }
+
+// CacheStatus is D-06-12's closed, four-value reporting vocabulary for what
+// Consult did this invocation. It is deliberately NOT the hit/miss pair:
+// that phrasing would wrongly imply a verdict was cached, when in fact only
+// an artifact was reused or recomputed -- the checker, the five-axis
+// comparator, and the sanitizer classifier always re-run fresh regardless
+// of which of these four values applies (D-06-06).
+type CacheStatus string
+
+const (
+	StatusArtifactReused     CacheStatus = "artifact_reused"
+	StatusArtifactRecomputed CacheStatus = "artifact_recomputed"
+	StatusNotCacheable       CacheStatus = "not_cacheable"
+	StatusUnavailable        CacheStatus = "unavailable"
+)
+
+// CacheStatuses returns the closed set of four D-06-12 status strings.
+func CacheStatuses() []string {
+	return []string{
+		string(StatusArtifactReused),
+		string(StatusArtifactRecomputed),
+		string(StatusNotCacheable),
+		string(StatusUnavailable),
+	}
+}
+
+// Outcome is Consult's report: the resolved artifact bytes (nil unless
+// Status is StatusArtifactReused), the resolved Key (a zero Key when
+// Status is StatusNotCacheable), and a Status drawn from CacheStatuses().
+// Outcome carries NO judgement about whether a lane passed or failed --
+// see cache.go's package doc (D-06-06) and
+// TestCacheExportedSurfaceStoresNoVerdict, which enforces this structurally.
+type Outcome struct {
+	Artifact []byte
+	Key      Key
+	Status   CacheStatus
+}
+
+func isDeclaredKind(kind string) bool {
+	for _, declared := range ArtifactKinds() {
+		if declared == kind {
+			return true
+		}
+	}
+	return false
+}
+
+// Consult resolves spec against store: classifying its Kind, computing its
+// declared-input Key, and looking that Key up. Ambiguity and silence
+// resolve to "run it," never to "skip it" (D-06-11): an unclassified Kind,
+// or a declared-input computation that fails for any reason (including a
+// failed Clang probe), returns StatusNotCacheable with a zero Key and
+// performs NO store lookup at all -- store is never touched on that path,
+// so a not_cacheable verdict about the input space is never confused with
+// a statement about the store's own contents.
+func Consult(ctx context.Context, store *Store, spec ArtifactSpec) (Outcome, error) {
+	if !isDeclaredKind(spec.Kind) {
+		return Outcome{Status: StatusNotCacheable}, nil
+	}
+	inputs, err := InputsFor(ctx, spec)
+	if err != nil {
+		return Outcome{Status: StatusNotCacheable}, nil
+	}
+	key, err := ComputeKey(inputs)
+	if err != nil {
+		return Outcome{Status: StatusNotCacheable}, nil
+	}
+	artifact, found, err := store.Get(key)
+	if err != nil {
+		return Outcome{Key: key, Status: StatusUnavailable}, nil
+	}
+	if found {
+		return Outcome{Artifact: artifact, Key: key, Status: StatusArtifactReused}, nil
+	}
+	return Outcome{Key: key, Status: StatusArtifactRecomputed}, nil
+}
