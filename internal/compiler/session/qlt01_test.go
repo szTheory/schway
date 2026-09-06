@@ -111,3 +111,84 @@ func TestQLT01RegistryCoversAllFiveSpikes(t *testing.T) {
 		t.Fatal("spike 005's iteration-5 (longjmp bypasses cleanup with no sanitizer report) row is missing")
 	}
 }
+
+// TestQLT01RegistryComplete implements D-05-29's two halves plus the (c)/(d)
+// extensions: neither/both disposition, stale control reference, missing
+// fixture, and empty registry are all hard failures with distinct messages.
+func TestQLT01RegistryComplete(t *testing.T) {
+	rows, err := session.LoadQLT01Registry()
+	if err != nil {
+		t.Fatalf("LoadQLT01Registry() failed: %v", err)
+	}
+	shipped := session.AllShippedControlIDs()
+	if len(shipped) < 2 {
+		t.Fatalf("AllShippedControlIDs() returned suspiciously few controls: %v", shipped)
+	}
+	failures := session.AuditQLT01Registry(rows, shipped)
+	if len(failures) != 0 {
+		for _, failure := range failures {
+			t.Errorf("qlt01 audit failure: %v", failure)
+		}
+		t.Fatal("TestQLT01RegistryComplete found audit failures in the committed registry")
+	}
+}
+
+// TestQLT01AuditGoesRedOnStaleControl proves the audit can go red without
+// editing the committed registry (D-05-38): an in-memory row citing a
+// nonexistent control must be reported.
+func TestQLT01AuditGoesRedOnStaleControl(t *testing.T) {
+	rows := []session.QLT01Row{
+		{
+			SpikeID:          "999",
+			ControlID:        "synthetic-stale-row",
+			ControlMechanism: "a synthetic hazard used only to prove the audit can go red",
+			LiveDescendant: &session.QLT01LiveDescendant{
+				Fixture:   "testdata/phase5/false_restrict_hoist.lang",
+				ControlID: "control:does.not.exist",
+			},
+		},
+	}
+	failures := session.AuditQLT01Registry(rows, session.AllShippedControlIDs())
+	if len(failures) == 0 {
+		t.Fatal("expected AuditQLT01Registry to report a stale control reference, got no failures")
+	}
+	var found bool
+	for _, failure := range failures {
+		if failure.Control == session.ControlQLT01StaleControlReference {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a %s failure, got %v", session.ControlQLT01StaleControlReference, failures)
+	}
+}
+
+// TestQLT01AuditGoesRedOnDualDisposition proves the audit also rejects a
+// row carrying both a live descendant and a waiver.
+func TestQLT01AuditGoesRedOnDualDisposition(t *testing.T) {
+	rows := []session.QLT01Row{
+		{
+			SpikeID:          "999",
+			ControlID:        "synthetic-dual-row",
+			ControlMechanism: "a synthetic hazard used only to prove the audit rejects dual dispositions",
+			LiveDescendant: &session.QLT01LiveDescendant{
+				Fixture:   "testdata/phase5/false_restrict_hoist.lang",
+				ControlID: "control:alias.false_no_alias",
+			},
+			Waived: &session.QLT01Waiver{Reason: "r", Citation: "a specific citation", Owner: "o", Phase: "05"},
+		},
+	}
+	failures := session.AuditQLT01Registry(rows, session.AllShippedControlIDs())
+	if len(failures) == 0 {
+		t.Fatal("expected AuditQLT01Registry to reject a dual-disposition row, got no failures")
+	}
+}
+
+// TestQLT01AuditGoesRedOnEmptyRegistry proves an empty registry fails the
+// audit rather than passing costlessly.
+func TestQLT01AuditGoesRedOnEmptyRegistry(t *testing.T) {
+	failures := session.AuditQLT01Registry(nil, session.AllShippedControlIDs())
+	if len(failures) == 0 {
+		t.Fatal("expected an empty registry to fail the audit, got no failures")
+	}
+}
