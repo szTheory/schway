@@ -55,6 +55,29 @@ type Execution struct {
 	Outcome       Outcome  `json:"outcome"`
 	Events        []Event  `json:"events"`
 	LiveResources []string `json:"live_resources"`
+
+	// AllocatorAddress and WallClockNanos are physical observations D-05-21
+	// explicitly excludes from Phase5CompareEngines' comparison (addresses
+	// and wall-clock time are two of the five named exclusion categories).
+	// Neither field is populated by the interpreter, cgen, or native.Runner
+	// production paths today -- both stay the zero value on every real
+	// execution document -- so their sole purpose is to give
+	// session.Phase5ExcludedComparisonFields a genuine struct-field target
+	// to route to, proving the fail-closed field-routing test's excluded
+	// branch is load-bearing rather than vacuously empty.
+	AllocatorAddress string `json:"allocator_address,omitempty"`
+	WallClockNanos   int64  `json:"wall_clock_nanos,omitempty"`
+
+	// ExitSignaled and ExitSignal are D-05-20's exit-status/signal axis
+	// data: SC1 silently omitted exit status and signal from its comparison
+	// scope, so these carry that fact as its own explicit, independently
+	// comparable pair rather than an inference from Outcome.Kind. Neither
+	// field is populated by production engines today (a defect's SIGABRT is
+	// otherwise fully implied by Outcome.Kind=="defect"); they exist so
+	// session.Phase5CompareEngines' axis:exit-status-signal has real data to
+	// compare independently of axis:terminal-outcome.
+	ExitSignaled bool   `json:"exit_signaled,omitempty"`
+	ExitSignal   string `json:"exit_signal,omitempty"`
 }
 
 func CanonicalBytes(value Execution) ([]byte, error) { return json.Marshal(value) }
