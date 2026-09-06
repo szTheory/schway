@@ -252,7 +252,23 @@ validator, the code generator, or the session gate, so no two plans have disjoin
   3. ASan/UBSan evidence is isolated from semantic equivalence evidence and catches retained-pointer lifetime defects.
   4. Any injected mismatch reports a minimized source/core case and causal event trace; the coordinated source-to-core false claim remains a documented escape.
 
-**Plans**: TBD
+**Plans**: 14 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Phase 1-4 identity pin, by-pointer lowering tracer, `Alias` discharge (wave 1)
+- [ ] 05-02-PLAN.md — `discoverLoanLastUses` shadow-mode retirement (wave 1)
+- [ ] 05-03-PLAN.md — Sanitizer lane: isolated binary, pinned options, availability probe (wave 1)
+- [ ] 05-04-PLAN.md — Alias-fact proof, `restrict` emission, manifest justification binding (wave 2)
+- [ ] 05-05-PLAN.md — Phase 5 corpus: adversarial subset plus bounded enumerated closure (wave 2)
+- [ ] 05-06-PLAN.md — `-O3 -flto` tier, five-axis comparator, fail-closed field routing (wave 2)
+- [ ] 05-07-PLAN.md — `control:alias.false_no_alias` and the NAT-03 axis-movement table (wave 3)
+- [ ] 05-08-PLAN.md — Foreign dynamic fixtures: allocator mismatch, UAF, retained pointer (wave 3)
+- [ ] 05-09-PLAN.md — MID-PHASE GATE: `Phase5RequiredControls()` and `scripts/verify-phase5.sh` (wave 4)
+- [ ] 05-10-PLAN.md — Core reducer: five moves, strict predicate, bounded budget (wave 5)
+- [ ] 05-11-PLAN.md — QLT-01 control registry and executable audit (wave 5)
+- [ ] 05-12-PLAN.md — `lang.mismatch/0` document and the three reducer mutation-kills (wave 6)
+- [ ] 05-13-PLAN.md — Demonstrable coordinated source-to-core false-claim escape (wave 6)
+- [ ] 05-14-PLAN.md — Final gate, M002 charter and debt-register entries (wave 7)
 
 ### Phase 6: Agent Feedback and Performance Ratification
 
