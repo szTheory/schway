@@ -1019,7 +1019,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 		ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
 		Parameter: core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor}, ReturnType: function.ReturnType.Constructor,
 		Linear: linear, PublicOrigin: publicOrigin, Span: function.Span,
-	}, nil, support.Work
+	}, nil, support.Work + support.FixpointWork
 }
 
 // ---------------------------------------------------------------------
@@ -1683,6 +1683,19 @@ type ownershipSupport struct {
 	Work           int
 	DiagnosticCode string
 	Diagnostic     *diagnostic.Diagnostic
+
+	// FixpointWork is D-05-35(a)'s widened-domain cost: the counted work of
+	// running loanLivenessFixpoint over this straight-line body's own single-
+	// block CFG, computed but NOT folded into Work above. It is kept separate
+	// from Work deliberately: Work is the field TestOwnershipSequenceExhaustive/
+	// TestOwnershipWorkSeries pin exactly against an independent oracle (and
+	// against a hand-derived formula) that predates this widening and knows
+	// nothing of the fixpoint's own internal loan-chain-walk cost. checkLinear
+	// folds FixpointWork into its own function-level RecomputedWork total (the
+	// same place checkBranch already folds its own loanLivenessFixpoint call's
+	// work), on the same "the widened domain does not silently add uncounted
+	// cost" basis the branch-arm path already established (D-03-01/D-04-25).
+	FixpointWork int
 }
 
 type placeState struct {
@@ -1879,6 +1892,20 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	})
 	endLoans(ordinal)
 	result.States = append(result.States, ownershipSnapshot(ordinal, places, activeLoans))
+
+	// D-05-35(a): a straight-line body is the degenerate single-block CFG --
+	// construct that one block from the operations this function just built
+	// (rather than adding a second fixpoint entry point) so
+	// loanLivenessFixpoint's domain covers straight-line bodies too, not only
+	// checkBranch's arm blocks. This is deliberately computed and returned
+	// (via FixpointWork, see its doc comment) but NOT consulted for admission
+	// here: discoverLoanLastUses above remains the sole law deciding
+	// conflict/expiry in this function, so Task 2's shadow pass has a real,
+	// non-circular candidate answer to compare against.
+	straightLineBlockID := functionID + ":block:straight"
+	if fixpoint, err := loanLivenessFixpoint(functionID, []cfgBlockSpec{{id: straightLineBlockID, operations: result.Operations, successors: nil}}); err == nil {
+		result.FixpointWork = fixpoint.work
+	}
 	return result
 }
 

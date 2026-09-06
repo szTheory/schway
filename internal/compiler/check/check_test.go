@@ -169,6 +169,51 @@ func TestLoanLivenessFixpoint(t *testing.T) {
 	}
 }
 
+// TestLoanLivenessFixpointCoversStraightLine is D-05-35(a)'s widened-domain
+// falsifier: loanLivenessFixpoint/materializeLoanEndpoints, run directly
+// against a straight-line function's own single-block CFG, now produce
+// endpoints for a shipped straight-line-with-borrow fixture -- something the
+// PRODUCTION serialized core never did for a straight-line function (Linear.
+// LoanEndpoints stays nil there, per the byte-identity note above
+// cfgBlockSpec's own doc comment), demonstrating the fixpoint's domain now
+// genuinely covers straight-line bodies, not only checkBranch's arm blocks.
+// (The read_first note names testdata/phase2, but no ACCEPTED phase2 fixture
+// carries a borrow -- both of that phase's borrow fixtures are REJECT
+// controls -- so this uses shared_shared_accept.lang, the first accepted
+// straight-line borrow fixture testdata/phase3 ships.)
+func TestLoanLivenessFixpointCoversStraightLine(t *testing.T) {
+	source := readTestdataFixture(t, "shared_shared_accept.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("fixture unexpectedly rejected: %+v", result.Diagnostics)
+	}
+	if len(result.Program.Functions) != 1 {
+		t.Fatalf("want exactly one function, got %d", len(result.Program.Functions))
+	}
+	function := result.Program.Functions[0]
+	if function.Linear == nil || len(function.Linear.Operations) == 0 {
+		t.Fatalf("expected a populated straight-line body: %+v", function)
+	}
+	if len(function.Linear.LoanEndpoints) != 0 {
+		t.Fatalf("straight-line functions must not (yet) serialize LoanEndpoints -- byte-identity would move: %+v", function.Linear.LoanEndpoints)
+	}
+
+	blockID := function.ID + ":block:straight"
+	block := cfgBlockSpec{id: blockID, operations: function.Linear.Operations, successors: nil}
+	fixpoint, err := loanLivenessFixpoint(function.ID, []cfgBlockSpec{block})
+	if err != nil {
+		t.Fatalf("unexpected acyclicity error: %v", err)
+	}
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints(function.ID, []cfgBlockSpec{block}, edgeID, fixpoint)
+	if len(endpoints) == 0 {
+		t.Fatalf("widened fixpoint produced zero endpoints for a straight-line body carrying borrows, where it previously covered none")
+	}
+	if fixpoint.work == 0 {
+		t.Fatalf("expected nonzero counted fixpoint work over a non-trivial straight-line body")
+	}
+}
+
 // TestEdgeSpecificLiveOut is the general, genuinely multi-successor proof of
 // OWN-03's success criterion 2: a block with TWO successors, where only ONE
 // successor references the loan, must materialize exactly one edge endpoint
