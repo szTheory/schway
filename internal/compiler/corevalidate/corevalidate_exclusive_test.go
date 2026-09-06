@@ -1,6 +1,9 @@
 package corevalidate_test
 
 import (
+	"errors"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -117,5 +120,102 @@ func TestUnknownOperationStillRejected(t *testing.T) {
 	}
 	if len(result.Problems) == 0 || result.Problems[0].Code != "core.unknown_operation" {
 		t.Fatalf("code=%v want=core.unknown_operation", result.Problems)
+	}
+}
+
+// restrictBorrowCheckedProgram checks the Phase 5 tracer fixture, reused by
+// the D-05-04 attribute-justification falsifiers below.
+func restrictBorrowCheckedProgram(t *testing.T) session.CheckResult {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
+	}
+	return checked
+}
+
+func mustBeAttributeUnjustified(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	var attrErr *corevalidate.AttributeUnjustifiedError
+	if !errors.As(err, &attrErr) || attrErr.Code != "core.attribute_unjustified" {
+		t.Fatalf("want core.attribute_unjustified, got %v", err)
+	}
+}
+
+// TestAttributeJustificationIsIndependentlyRederived is D-05-04's own
+// independence falsifier: the validator produces the correct justification
+// for restrict_borrow.lang purely from core.Program -- it is never given
+// the sidecar's own JustifiedBy as input to its own re-derivation
+// (recomputeAliasJustifications takes only a core.Program). Blanking the
+// claim's JustifiedBy before validating still fails for the RIGHT reason (a
+// mismatch against the independently re-derived value, not "no
+// justification found at all"), proving a nonempty answer was computed from
+// core alone.
+func TestAttributeJustificationIsIndependentlyRederived(t *testing.T) {
+	checked := restrictBorrowCheckedProgram(t)
+	function := checked.Program.Functions[0]
+	realLoanID := function.Linear.Operations[0].LoanID
+	if realLoanID == "" {
+		t.Fatal("fixture's first operation carries no loan id")
+	}
+	claim := corevalidate.AttributeClaim{Attr: "restrict", CoreNode: function.ID, Parameter: function.Parameter.ID, JustifiedBy: realLoanID}
+	if err := corevalidate.ValidateEmittedAttributes(checked.Program, []corevalidate.AttributeClaim{claim}); err != nil {
+		t.Fatalf("expected the independently re-derived justification to match, got: %v", err)
+	}
+
+	blanked := claim
+	blanked.JustifiedBy = ""
+	mustBeAttributeUnjustified(t, corevalidate.ValidateEmittedAttributes(checked.Program, []corevalidate.AttributeClaim{blanked}))
+}
+
+// TestUnjustifiedAttributeIsRefused is D-05-03b's own falsifier: an
+// emitted_attributes entry with an empty or wrong justified_by is refused
+// with core.attribute_unjustified, a hard build failure never a warning.
+func TestUnjustifiedAttributeIsRefused(t *testing.T) {
+	checked := restrictBorrowCheckedProgram(t)
+	function := checked.Program.Functions[0]
+
+	wrong := corevalidate.AttributeClaim{Attr: "restrict", CoreNode: function.ID, Parameter: function.Parameter.ID, JustifiedBy: "bogus-loan-id"}
+	mustBeAttributeUnjustified(t, corevalidate.ValidateEmittedAttributes(checked.Program, []corevalidate.AttributeClaim{wrong}))
+
+	empty := corevalidate.AttributeClaim{Attr: "restrict", CoreNode: function.ID, Parameter: function.Parameter.ID, JustifiedBy: ""}
+	mustBeAttributeUnjustified(t, corevalidate.ValidateEmittedAttributes(checked.Program, []corevalidate.AttributeClaim{empty}))
+}
+
+// TestUnprovenAttributeNameIsRefused proves the only justifiable attribute
+// name is "restrict" -- an entry claiming any other optimizer attribute
+// (e.g. "noalias") is refused outright, regardless of its JustifiedBy value.
+func TestUnprovenAttributeNameIsRefused(t *testing.T) {
+	checked := restrictBorrowCheckedProgram(t)
+	function := checked.Program.Functions[0]
+	claim := corevalidate.AttributeClaim{
+		Attr: "noalias", CoreNode: function.ID, Parameter: function.Parameter.ID,
+		JustifiedBy: function.Linear.Operations[0].LoanID,
+	}
+	mustBeAttributeUnjustified(t, corevalidate.ValidateEmittedAttributes(checked.Program, []corevalidate.AttributeClaim{claim}))
+}
+
+// TestAttributeValidatorImportsStayIndependent asserts corevalidate.go's own
+// source text references neither "compiler/check" nor "compiler/cgen" --
+// D-12's independence invariant, extended by this plan to the new attribute
+// re-derivation (TestValidatorImportsStayIndependent, the package-internal
+// sibling of this test, already covers check/ast; this test additionally
+// covers cgen, which that internal test does not).
+func TestAttributeValidatorImportsStayIndependent(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "corevalidate", "corevalidate.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{"compiler/check", "compiler/cgen"} {
+		if strings.Contains(string(source), forbidden) {
+			t.Fatalf("corevalidate.go must never reference %s", forbidden)
+		}
 	}
 }

@@ -1805,3 +1805,131 @@ func cloneProgram(program core.Program) core.Program {
 	}
 	return clone
 }
+
+// ---------------------------------------------------------------------
+// D-05-03b/D-05-04: independent re-derivation of an emitted attribute's
+// justification. This section shares no helper with the checker's own
+// alias-fact derivation or the C emitter's own emission logic -- D-12's
+// three independent derivations.
+// ---------------------------------------------------------------------
+
+// AttributeClaim is corevalidate's OWN local decoding of one lang.foreign/0
+// sidecar emitted_attributes entry (D-05-04/D-12): declared here, never
+// imported from cgen.EmittedAttribute, so this validator's refusal logic
+// never shares a type -- let alone a helper -- with the producer it audits.
+type AttributeClaim struct {
+	Attr        string
+	CoreNode    string
+	Parameter   string
+	JustifiedBy string
+}
+
+// AttributeUnjustifiedError is returned by ValidateEmittedAttributes when an
+// entry's attribute name is not one D-05-01 proves justifiable, or its
+// claimed justification does not match the independently re-derived one.
+// Code is always "core.attribute_unjustified" (D-05-03b) -- joining the
+// lang.diagnostic/1 taxonomy without moving any existing ID (D-05-39).
+type AttributeUnjustifiedError struct {
+	Code   string
+	Detail string
+}
+
+func (e *AttributeUnjustifiedError) Error() string { return fmt.Sprintf("%s: %s", e.Code, e.Detail) }
+
+// recomputeAliasJustifications independently re-derives, for every function
+// in program whose by-pointer shape (D-05-01's whole-call exclusivity
+// condition) is present, the loan ID that justifies an emitted `restrict`
+// on its sole parameter -- keyed by "<function id>/<parameter id>". It uses
+// corevalidate's OWN existing independent loan-endpoint re-derivation
+// (recomputeLoanEndpoints's reachability-closure-plus-reduction mechanism),
+// fed a synthetic single-block CFG view of the function's own straight-line
+// operations (recomputeLoanEndpoints itself only walks a function whose
+// Linear.Blocks are already populated) -- never check's fixpoint, and
+// shares no helper with check or cgen (D-12).
+func recomputeAliasJustifications(program core.Program) map[string]string {
+	justifications := make(map[string]string)
+	v := &validator{program: program}
+	for _, function := range program.Functions {
+		if function.Linear == nil || function.Match != nil || function.PublicOrigin != nil || len(function.Linear.Blocks) > 0 {
+			continue
+		}
+		operations := function.Linear.Operations
+		if len(operations) == 0 {
+			continue
+		}
+		first := operations[0]
+		if first.Kind != core.OpBorrowExclusive || first.SourceID != function.Parameter.ID || first.TargetID == "" {
+			continue
+		}
+		current := first.TargetID
+		terminatorIndex := -1
+		valid := true
+		for index := 1; index < len(operations); index++ {
+			operation := operations[index]
+			if operation.SourceID == function.Parameter.ID || operation.SourceID != current {
+				valid = false
+				break
+			}
+			if operation.Kind == core.OpReturn {
+				terminatorIndex = index
+				break
+			}
+			if operation.TargetID == "" {
+				valid = false
+				break
+			}
+			current = operation.TargetID
+		}
+		if !valid || terminatorIndex != len(operations)-1 {
+			continue
+		}
+		terminator := operations[terminatorIndex]
+
+		opIDs := make([]string, len(operations))
+		for index, operation := range operations {
+			opIDs[index] = operation.ID
+		}
+		synthetic := function
+		synthetic.Linear = &core.LinearBody{
+			ID: function.Linear.ID, Types: function.Linear.Types, Places: function.Linear.Places,
+			Operations: operations,
+			Blocks:     []core.Block{{ID: function.ID + ":block:straight", OperationIDs: opIDs, Successors: nil}},
+		}
+		endpoints := v.recomputeLoanEndpoints(&synthetic)
+		for _, endpoint := range endpoints {
+			if endpoint.LoanID != first.LoanID {
+				continue
+			}
+			if endpoint.Kind == "point" && endpoint.AfterOperationID == terminator.ID {
+				justifications[function.ID+"/"+function.Parameter.ID] = first.LoanID
+			}
+			break
+		}
+	}
+	return justifications
+}
+
+// ValidateEmittedAttributes independently re-derives, from program's own
+// loan facts alone, the justification for every claimed emitted attribute,
+// and refuses any entry whose name is not proven-justifiable or whose
+// claimed justification does not match the re-derived one (D-05-03b/D-05-04).
+// It never reads cgen's EmittedAttributes as its own evidence: attributes is
+// corevalidate's OWN AttributeClaim decoding of the sidecar's JSON, and this
+// function's own re-derivation (recomputeAliasJustifications) shares no
+// helper with check's deriveAliasFacts or cgen's emission logic (D-12).
+func ValidateEmittedAttributes(program core.Program, attributes []AttributeClaim) error {
+	justifications := recomputeAliasJustifications(program)
+	for _, attribute := range attributes {
+		if attribute.Attr != "restrict" {
+			return &AttributeUnjustifiedError{Code: "core.attribute_unjustified", Detail: fmt.Sprintf("attribute %q is not a proven-justifiable attribute", attribute.Attr)}
+		}
+		expected, ok := justifications[attribute.CoreNode+"/"+attribute.Parameter]
+		if !ok || expected == "" {
+			return &AttributeUnjustifiedError{Code: "core.attribute_unjustified", Detail: fmt.Sprintf("no independently re-derived justification for %s/%s", attribute.CoreNode, attribute.Parameter)}
+		}
+		if attribute.JustifiedBy != expected {
+			return &AttributeUnjustifiedError{Code: "core.attribute_unjustified", Detail: fmt.Sprintf("claimed justification %q does not match re-derived %q for %s/%s", attribute.JustifiedBy, expected, attribute.CoreNode, attribute.Parameter)}
+		}
+	}
+	return nil
+}
