@@ -60,6 +60,26 @@ func Moves() []Move {
 	}
 }
 
+// testOnlyMoves is D-05-27's fault-injection seam: when non-nil, Reduce
+// uses this move list instead of Moves()' fixed order. Test-only, exposed
+// via export_test.go's SetTestOnlyMoves/ResetTestOnlyMoves following this
+// repository's testOnlyForceUniformLoanJoin precedent (check.go) -- a seam
+// that never gates production behaviour until proven safe. Production
+// code must never set this; movesToApply falls back to the real Moves()
+// whenever it is nil, which is its permanent default value.
+var testOnlyMoves func() []Move
+
+// movesToApply is Reduce's own move-source indirection: testOnlyMoves when
+// set (TestNoOpReducerGoesRed's identity-move override,
+// TestReducerNonDeterminismGoesRed's randomized-order override), otherwise
+// the real, fixed Moves() order every production caller observes.
+func movesToApply() []Move {
+	if testOnlyMoves != nil {
+		return testOnlyMoves()
+	}
+	return Moves()
+}
+
 // Result is one completed reduction run. Source is always populated inside
 // Reduce from Result.Program -- D-05-23's binding rule that the reduced
 // source case and the reduced core case always correspond, because both
@@ -110,7 +130,7 @@ func Reduce(ctx context.Context, seed core.Program, interesting Predicate) (Resu
 pass:
 	for {
 		progressedThisPass := false
-		for _, move := range Moves() {
+		for _, move := range movesToApply() {
 			for {
 				if attempts >= MaxReductionAttempts {
 					minimality = MinimalityBudgetExhausted
