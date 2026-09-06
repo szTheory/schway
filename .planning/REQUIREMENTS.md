@@ -59,7 +59,7 @@ hiding runtime costs.
 - [x] **INT-01**: A deterministic interpreter executes valid core programs and
   emits ordered semantic events for values, moves, loans, initialization,
   release, failure, and simulated foreign operations.
-- [ ] **INT-02**: Interpreter mismatches report the smallest known source/core
+- [x] **INT-02**: Interpreter mismatches report the smallest known source/core
   case, causal facts, and addressable event trace.
 - [x] **NAT-01**: The compiler emits readable C17 and interface declarations for
   the portable milestone subset, then builds and runs them with Clang.
@@ -146,7 +146,7 @@ hiding runtime costs.
 | RES-01 | Phase 4 | Complete |
 | FFI-01 | Phase 4 | Complete |
 | INT-01 | Phase 1 | Complete |
-| INT-02 | Phase 5 | Pending |
+| INT-02 | Phase 5 | Complete |
 | NAT-01 | Phase 1 | Complete |
 | NAT-02 | Phase 5 | Complete |
 | NAT-03 | Phase 5 | Pending |
