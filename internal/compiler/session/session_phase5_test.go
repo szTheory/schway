@@ -2,10 +2,13 @@ package session_test
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -118,19 +121,46 @@ func TestPhase5ToolMissingIsNamedObligationNotPass(t *testing.T) {
 	}
 }
 
+// phase5ExtractFunctionBody returns the exact text of the named top-level
+// function, from its own "func name(" line up to (but excluding) the next
+// top-level "\nfunc " line -- the same anchor-string-plus-block-extraction
+// technique session_test.go's phase4OwnControlIdentifiers uses, applied to
+// a Go function body instead of a shell `for control in` block.
+func phase5ExtractFunctionBody(t *testing.T, source, name string) string {
+	t.Helper()
+	anchor := "func " + name + "("
+	start := strings.Index(source, anchor)
+	if start == -1 {
+		t.Fatalf("function %s not found", name)
+	}
+	rest := source[start+len(anchor):]
+	end := strings.Index(rest, "\nfunc ")
+	if end == -1 {
+		return rest
+	}
+	return rest[:end]
+}
+
 // TestSanitizeLaneNotInEditOrCheck asserts D-05-17's cost-placement rule
-// at the CLI dispatch layer: neither the `check` command (session.Check/
-// session.CheckCommandFile, wired from cmd/lang/main.go's runCheck) nor
-// any edit-loop path references the sanitizer lane or the Phase 5 gate
-// that invokes it.
+// at the CLI dispatch layer: the `check`/`format` commands (session.Check/
+// session.CheckCommandFile, wired from cmd/lang/main.go's runCheck/
+// runFormat -- the project's own edit-loop pipeline) never reference the
+// sanitizer lane or the Phase 5 gate that invokes it. `runVerify` itself
+// (the `verify`/`release` cost lane) is exempt -- it is the plan's own
+// required integration point, per D-05-17's "mandatory in verify and
+// release" placement -- so this test scopes to the check/format function
+// bodies specifically, not the whole file.
 func TestSanitizeLaneNotInEditOrCheck(t *testing.T) {
 	mainSource, err := os.ReadFile(testsupport.ProjectPath("cmd", "lang", "main.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, forbidden := range []string{"VerifyPhase5SanitizeLane", "VerifyPhase5ControlsAndWork"} {
-		if strings.Contains(string(mainSource), forbidden) {
-			t.Fatalf("cmd/lang/main.go must not reference %s outside the verify/release path", forbidden)
+	for _, editFunction := range []string{"runCheck", "runFormat"} {
+		body := phase5ExtractFunctionBody(t, string(mainSource), editFunction)
+		for _, forbidden := range []string{"VerifyPhase5SanitizeLane", "VerifyPhase5ControlsAndWork"} {
+			if strings.Contains(body, forbidden) {
+				t.Fatalf("cmd/lang/main.go's %s must not reference %s -- the sanitizer lane is verify/release-only", editFunction, forbidden)
+			}
 		}
 	}
 
@@ -212,5 +242,171 @@ func TestNoNAT03RowRemainsPending(t *testing.T) {
 		if strings.TrimSpace(line) == "// PENDING-05-08" {
 			t.Fatalf("session_phase5_alias.go still carries a PENDING-05-08 marker comment: %q", line)
 		}
+	}
+}
+
+// phase5VerifierScriptText reads scripts/verify-phase5.sh's own text --
+// shared by every test below that inspects the script, peering
+// phase4VerifierScriptText's own precedent (session_test.go).
+func phase5VerifierScriptText(t testing.TB) string {
+	t.Helper()
+	data, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase5.sh"))
+	if err != nil {
+		t.Fatalf("read scripts/verify-phase5.sh: %v", err)
+	}
+	return string(data)
+}
+
+// phase5OwnControlIdentifiers extracts the exact set of `control:` tokens
+// from the script's OWN required-control block (the `for control in ...`
+// loop following the "Phase 5's own required-control set" comment), as
+// distinct from the earlier non-regression blocks re-asserting Phase 2-4
+// controls against their own JSON -- conflating the blocks would let an
+// earlier phase's control identifier masquerade as a Phase 5 one. Peers
+// phase4OwnControlIdentifiers's own anchor-string-plus-block-extraction
+// technique (session_test.go) exactly.
+func phase5OwnControlIdentifiers(t testing.TB, text string) []string {
+	t.Helper()
+	anchor := "Phase 5's own required-control set"
+	anchorIndex := strings.Index(text, anchor)
+	if anchorIndex == -1 {
+		t.Fatalf("scripts/verify-phase5.sh is missing its own required-control-set comment anchor")
+	}
+	rest := text[anchorIndex:]
+	doneIndex := strings.Index(rest, "\ndone")
+	if doneIndex == -1 {
+		t.Fatalf("scripts/verify-phase5.sh's own required-control block has no closing done")
+	}
+	block := rest[:doneIndex]
+	var identifiers []string
+	for _, line := range strings.Split(block, "\n") {
+		trimmed := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(line), "\\"))
+		if strings.HasPrefix(trimmed, "control:") {
+			identifiers = append(identifiers, trimmed)
+		}
+	}
+	return identifiers
+}
+
+// TestPhase5RequiredControlsMatchScript asserts set equality between
+// session.Phase5RequiredControls() and the identifiers named in the
+// script's own required-control block, so a control added to one and
+// forgotten in the other fails here rather than silently drifting apart
+// (T-05-32).
+func TestPhase5RequiredControlsMatchScript(t *testing.T) {
+	text := phase5VerifierScriptText(t)
+	fromScript := phase5OwnControlIdentifiers(t, text)
+	scriptSet := make(map[string]bool, len(fromScript))
+	for _, control := range fromScript {
+		scriptSet[control] = true
+	}
+	sessionSet := make(map[string]bool, len(session.Phase5RequiredControls()))
+	for _, control := range session.Phase5RequiredControls() {
+		sessionSet[control] = true
+	}
+	for control := range sessionSet {
+		if !scriptSet[control] {
+			t.Fatalf("session.Phase5RequiredControls() names %s, which the script's own required-control block does not", control)
+		}
+	}
+	for control := range scriptSet {
+		if !sessionSet[control] {
+			t.Fatalf("the script's required-control block names %s, which session.Phase5RequiredControls() does not", control)
+		}
+	}
+	if len(scriptSet) != len(sessionSet) {
+		t.Fatalf("script control set (%d) and session control set (%d) differ in size: script=%v session=%v", len(scriptSet), len(sessionSet), fromScript, session.Phase5RequiredControls())
+	}
+}
+
+// phase5ScriptShellVarValue extracts the value of a `name=value` shell
+// assignment from text -- the exact form the D-05-18 corpus-bound anchor
+// block declares.
+func phase5ScriptShellVarValue(t testing.TB, text, name string) string {
+	t.Helper()
+	anchor := name + "="
+	index := strings.Index(text, anchor)
+	if index == -1 {
+		t.Fatalf("scripts/verify-phase5.sh is missing shell variable %s", name)
+	}
+	rest := text[index+len(anchor):]
+	end := strings.IndexAny(rest, "\n")
+	if end == -1 {
+		end = len(rest)
+	}
+	return strings.TrimSpace(rest[:end])
+}
+
+// TestPhase5CorpusBoundMatchesScript asserts the three D-05-18 bound
+// values duplicated into the script's own anchor block are byte-identical
+// to session_phase5_corpus.go's exported constants.
+func TestPhase5CorpusBoundMatchesScript(t *testing.T) {
+	text := phase5VerifierScriptText(t)
+	anchor := "Phase 5's own corpus bound"
+	if !strings.Contains(text, anchor) {
+		t.Fatalf("scripts/verify-phase5.sh is missing its own corpus-bound comment anchor")
+	}
+	cases := []struct {
+		name string
+		want int
+	}{
+		{"phase5_corpus_bound_version", session.Phase5CorpusBoundVersion},
+		{"phase5_enumeration_max_depth", session.Phase5EnumerationMaxDepth},
+		{"phase5_enumeration_max_statements", session.Phase5EnumerationMaxStatements},
+	}
+	for _, testCase := range cases {
+		got := phase5ScriptShellVarValue(t, text, testCase.name)
+		want := strconv.Itoa(testCase.want)
+		if got != want {
+			t.Fatalf("script's %s=%s does not match session.%s constant %s", testCase.name, got, testCase.name, want)
+		}
+	}
+}
+
+// TestPhase5VerifierScriptContract is this plan's own contract test over
+// the gate script's own text: it asserts the script never invokes a
+// previous-phase gate script, names every one of the ten required Phase 5
+// control identifiers, names all five `--json verify testdata/phaseN`
+// invocations, and pins both sanitizer option strings.
+func TestPhase5VerifierScriptContract(t *testing.T) {
+	text := phase5VerifierScriptText(t)
+	for _, forbidden := range []string{"verify-phase1.sh", "verify-phase2.sh", "verify-phase3.sh", "verify-phase4.sh"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("scripts/verify-phase5.sh must never invoke a previous-phase gate script, but its text contains %q", forbidden)
+		}
+	}
+	for _, control := range session.Phase5RequiredControls() {
+		if !strings.Contains(text, control) {
+			t.Fatalf("scripts/verify-phase5.sh's text is missing required control %s", control)
+		}
+	}
+	for phase := 1; phase <= 5; phase++ {
+		want := fmt.Sprintf("json verify testdata/phase%d", phase)
+		if !strings.Contains(text, want) {
+			t.Fatalf("scripts/verify-phase5.sh is missing invocation %q", want)
+		}
+	}
+	if !strings.Contains(text, "ASAN_OPTIONS=") {
+		t.Fatal("scripts/verify-phase5.sh does not pin ASAN_OPTIONS")
+	}
+	if !strings.Contains(text, "UBSAN_OPTIONS=") {
+		t.Fatal("scripts/verify-phase5.sh does not pin UBSAN_OPTIONS")
+	}
+	phase4Path := testsupport.ProjectPath("scripts", "verify-phase4.sh")
+	if _, err := os.Stat(phase4Path); err != nil {
+		t.Fatalf("scripts/verify-phase4.sh must still exist unchanged: %v", err)
+	}
+}
+
+// TestPhase5SanitizerOptionsMatchScript asserts the ASAN_OPTIONS string
+// pinned in scripts/verify-phase5.sh is byte-identical to
+// native.ASanOptions -- what catches a typo'd options string (D-05-13).
+func TestPhase5SanitizerOptionsMatchScript(t *testing.T) {
+	text := phase5VerifierScriptText(t)
+	if !strings.Contains(text, "ASAN_OPTIONS='"+native.ASanOptions+"'") {
+		t.Fatalf("scripts/verify-phase5.sh's pinned ASAN_OPTIONS is not byte-identical to native.ASanOptions (%q)", native.ASanOptions)
+	}
+	if !strings.Contains(text, "UBSAN_OPTIONS='"+native.UBSanOptions+"'") {
+		t.Fatalf("scripts/verify-phase5.sh's pinned UBSAN_OPTIONS is not byte-identical to native.UBSanOptions (%q)", native.UBSanOptions)
 	}
 }

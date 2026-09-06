@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
@@ -137,8 +138,29 @@ func runEvidenceValidation(manifestPath, sourcePath string, jsonMode bool) int {
 }
 
 func runVerify(corpus string, jsonMode bool) int {
+	if isPhase5Corpus(corpus) {
+		result, err := session.VerifyPhase5ControlsAndWork(context.Background())
+		if err != nil {
+			return emit(problemResult("verify", protocol.StatusOperational, "tool.phase5_gate_failed", "unable to run the phase 5 control-and-work gate"), jsonMode, false)
+		}
+		return emit(result, jsonMode, false)
+	}
 	result := session.VerifyCorpusFile(context.Background(), corpus, native.DefaultRunner())
 	return emit(result, jsonMode, false)
+}
+
+// isPhase5Corpus recognizes the testdata/phase5 corpus by its own
+// characteristic marker fixture (restrict_borrow.lang), the same
+// dispatch-by-marker-file discipline session.VerifyCorpus itself uses to
+// pick between the foreign/borrowed/owned corpora. D-05-17 requires the
+// Phase 5 gate to be reachable through `lang verify testdata/phase5` (the
+// mandatory verify/release cost lane scripts/verify-phase5.sh drives), but
+// session.go stays untouched throughout Phase 5 (every new Phase 5
+// surface lives in session_phase5*.go siblings) -- so this dispatch lives
+// at the CLI layer instead of inside session.VerifyCorpus itself.
+func isPhase5Corpus(corpus string) bool {
+	_, err := os.Stat(filepath.Join(corpus, "restrict_borrow.lang"))
+	return err == nil
 }
 
 // runInterfaceExport is OWN-04's producer-side CLI seam: it checks SRC,
