@@ -308,7 +308,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — Wave 0: freeze prior-phase bytes, pin Metrics/Lane identity exclusion, pin the 12 lane-schema sites
+- [x] 06-01-PLAN.md — Wave 0: freeze prior-phase bytes, pin Metrics/Lane identity exclusion, pin the 12 lane-schema sites
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
