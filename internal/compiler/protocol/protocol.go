@@ -73,6 +73,66 @@ type DebugMapSummary struct {
 	Entries []DebugMapEntry `json:"entries"`
 }
 
+// ExplainSchema versions the `lang explain` command's cause-DAG projection
+// independently of every other schema in the compiler. explain is a
+// net-new capability (D-06-04): it gets a net-new /0 schema rather than
+// folding into Schema ("lang.command/0"), and does not trigger that
+// constant's coordinated /1 bump on its own account.
+const ExplainSchema = "lang.explain/0"
+
+// Edge kind vocabulary for ExplainSummary.Edges is closed to exactly these
+// three values (D-06-03's Claude's-discretion edge typing).
+const (
+	EdgeCausedBy    = "caused_by"
+	EdgeNarrows     = "narrows"
+	EdgeSameBinding = "same_binding"
+)
+
+// ExplainDefaultDepth is the cause-DAG expansion depth used when `--depth`
+// is not supplied (D-06-03).
+const ExplainDefaultDepth = 3
+
+// ExplainMaxNodes bounds the number of nodes a single ExplainSummary may
+// contain, sized like debugmap.MaxEntries's order of magnitude (D-06-03):
+// exceeding it stops expansion and reports a stable truncation code rather
+// than growing the output.
+const ExplainMaxNodes = 4096
+
+// ExplainNode is one node in the synthesized cause DAG: either the
+// diagnostic itself (the root, addressed by the diagnostic's own ID) or one
+// of its Causes. Availability reuses the existing debugmap.Availability
+// vocabulary (available/optimized_out/not_captured) rather than fabricating
+// a value the compiler does not hold (D-06-02).
+type ExplainNode struct {
+	ID           string           `json:"id"`
+	Kind         string           `json:"kind"`
+	Detail       string           `json:"detail,omitempty"`
+	Span         *diagnostic.Span `json:"span,omitempty"`
+	Availability string           `json:"availability"`
+}
+
+// ExplainEdge is one typed relation between two ExplainNode IDs. Kind is one
+// of EdgeCausedBy/EdgeNarrows/EdgeSameBinding — the vocabulary is closed.
+type ExplainEdge struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+	Kind string `json:"kind"`
+}
+
+// ExplainSummary is the `lang explain` command projection: a bounded,
+// deterministic cause DAG synthesized fresh per cold invocation from a
+// diagnostic's existing flat Causes list (D-06-02, D-06-04). Truncated
+// carries a stable code ("truncated:explain.depth" or
+// "truncated:explain.node_budget") when either bound is hit, and is empty
+// otherwise.
+type ExplainSummary struct {
+	Schema    string        `json:"schema"`
+	RootID    string        `json:"root_id"`
+	Nodes     []ExplainNode `json:"nodes"`
+	Edges     []ExplainEdge `json:"edges"`
+	Truncated string        `json:"truncated,omitempty"`
+}
+
 type Lane struct {
 	Schema         string   `json:"schema"`
 	ID             string   `json:"id"`
@@ -97,6 +157,7 @@ type Result struct {
 	Evidence        *EvidenceSummary        `json:"evidence,omitempty"`
 	Interface       *InterfaceSummary       `json:"interface,omitempty"`
 	DebugMap        *DebugMapSummary        `json:"debug_map,omitempty"`
+	Explain         *ExplainSummary         `json:"explain,omitempty"`
 	Lanes           []Lane                  `json:"lanes"`
 	ExpectedEscapes []string                `json:"expected_escapes,omitempty"`
 	Metrics         Metrics                 `json:"metrics"`
@@ -122,6 +183,7 @@ func (result Result) Finalize() Result {
 		EvidenceID       string
 		InterfaceID      string
 		DebugMapID       string
+		ExplainID        string
 		LaneIDs          []string
 		ExpectedEscapes  []string `json:",omitempty"`
 	}{
@@ -155,6 +217,11 @@ func (result Result) Finalize() Result {
 		encodedDebugMap, _ := json.Marshal(result.DebugMap)
 		debugMapSum := sha256.Sum256(encodedDebugMap)
 		identity.DebugMapID = hex.EncodeToString(debugMapSum[:12])
+	}
+	if result.Explain != nil {
+		encodedExplain, _ := json.Marshal(result.Explain)
+		explainSum := sha256.Sum256(encodedExplain)
+		identity.ExplainID = hex.EncodeToString(explainSum[:12])
 	}
 	for _, lane := range result.Lanes {
 		identity.LaneIDs = append(identity.LaneIDs, lane.ID+":"+lane.Status)
@@ -245,6 +312,12 @@ func human(result Result) string {
 		fmt.Fprintf(&output, "%s entries=%d\n", result.DebugMap.Schema, len(result.DebugMap.Entries))
 		for _, entry := range result.DebugMap.Entries {
 			fmt.Fprintf(&output, "  %s kind=%s availability=%s\n", entry.ID, entry.Kind, entry.Availability)
+		}
+	}
+	if result.Explain != nil {
+		fmt.Fprintf(&output, "%s root=%s nodes=%d edges=%d\n", result.Explain.Schema, result.Explain.RootID, len(result.Explain.Nodes), len(result.Explain.Edges))
+		for _, node := range result.Explain.Nodes {
+			fmt.Fprintf(&output, "  %s kind=%s availability=%s\n", node.ID, node.Kind, node.Availability)
 		}
 	}
 	for _, lane := range result.Lanes {

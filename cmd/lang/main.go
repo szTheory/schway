@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
@@ -28,6 +29,13 @@ func run(args []string) int {
 	args, jsonMode, ok := extractJSON(args)
 	if !ok {
 		return emit(usageResult(), true, false)
+	}
+	args, depth, ok := extractDepth(args)
+	if !ok {
+		return emit(usageResult(), jsonMode, false)
+	}
+	if len(args) == 3 && args[0] == "explain" {
+		return runExplain(args[1], args[2], depth, jsonMode)
 	}
 	if len(args) == 2 && args[0] == "format" {
 		return runFormat(args[1], false, jsonMode)
@@ -213,6 +221,45 @@ func runDebugMap(source, query string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
+// runExplain is D-06-02's/D-06-04's CLI seam for the net-new `lang.explain/0`
+// schema: it re-derives the requested diagnostic's bounded cause DAG from
+// SRC on this cold invocation alone (D-06-02 forbids any persisted store or
+// daemon a bare ID could resolve against, matching the `debug-map SRC
+// [QUERY]` operand convention).
+func runExplain(source, id string, depth int, jsonMode bool) int {
+	result, err := session.ExplainCommandFile(source, id, depth)
+	if err != nil {
+		return emit(problemResult("explain", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
+	}
+	return emit(result, jsonMode, false)
+}
+
+// extractDepth strips one `--depth=N` flag from args, mirroring
+// extractJSON's own strip-and-report shape. A missing flag resolves to
+// protocol.ExplainDefaultDepth; a malformed or repeated flag is a usage
+// error (returns ok=false), exactly like extractJSON's repeated-flag case.
+func extractDepth(args []string) ([]string, int, bool) {
+	filtered := make([]string, 0, len(args))
+	depth := protocol.ExplainDefaultDepth
+	seen := false
+	for _, argument := range args {
+		if strings.HasPrefix(argument, "--depth=") {
+			if seen {
+				return nil, 0, false
+			}
+			seen = true
+			parsed, err := strconv.Atoi(strings.TrimPrefix(argument, "--depth="))
+			if err != nil || parsed <= 0 {
+				return nil, 0, false
+			}
+			depth = parsed
+			continue
+		}
+		filtered = append(filtered, argument)
+	}
+	return filtered, depth, true
+}
+
 func extractJSON(args []string) ([]string, bool, bool) {
 	filtered := make([]string, 0, len(args))
 	jsonMode := false
@@ -261,5 +308,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N]")
 }

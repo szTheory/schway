@@ -90,6 +90,42 @@ func TestHumanJSONProjectionParity(t *testing.T) {
 	}
 }
 
+// TestExplainFoldsIntoResultIdentity is Task 1's own identity-fold
+// falsifier for the net-new lang.explain/0 schema (D-06-04): a nil Explain
+// omits the "explain" key entirely, and a non-nil Explain both appears in
+// JSON and changes Result.Finalize().ID versus an otherwise-identical
+// Result with Explain == nil.
+func TestExplainFoldsIntoResultIdentity(t *testing.T) {
+	base := protocol.New("explain", protocol.StatusPass)
+	baseID := base.Finalize().ID
+
+	encoded, err := protocol.JSON(base)
+	if err != nil {
+		t.Fatalf("JSON: %v", err)
+	}
+	if strings.Contains(string(encoded), `"explain":`) {
+		t.Fatalf("nil Explain leaked an \"explain\" key: %s", encoded)
+	}
+
+	withExplain := base
+	withExplain.Explain = &protocol.ExplainSummary{
+		Schema: protocol.ExplainSchema, RootID: "diagnostic:x",
+		Nodes: []protocol.ExplainNode{{ID: "diagnostic:x", Kind: "test.code", Availability: "available"}},
+	}
+	explainID := withExplain.Finalize().ID
+	if explainID == baseID {
+		t.Fatalf("Explain did not perturb Result.ID: %s", explainID)
+	}
+
+	encodedWithExplain, err := protocol.JSON(withExplain)
+	if err != nil {
+		t.Fatalf("JSON: %v", err)
+	}
+	if !strings.Contains(string(encodedWithExplain), `"schema":"`+protocol.ExplainSchema+`"`) {
+		t.Fatalf("Explain summary schema missing from JSON: %s", encodedWithExplain)
+	}
+}
+
 // setSentinelFields sets every settable field of value (a pointer to a
 // struct) to a non-zero sentinel: ints/int64s become 7, strings become
 // "sentinel", and []string slices become []string{"sentinel"}. Fields whose
