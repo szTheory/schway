@@ -1,7 +1,10 @@
 package session
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
@@ -94,7 +97,186 @@ func TestExplainDiagnosticNotFoundIsOperational(t *testing.T) {
 	}
 }
 
+// --- Task 2: typed edges, depth/node budget, stable truncation ---------
+
+// TestExplainRespectsDepthAndNodeBudget covers Tests 1-3 of the plan's
+// <behavior> list.
+func TestExplainRespectsDepthAndNodeBudget(t *testing.T) {
+	t.Run("depth=1 truncates a two-level chain to root+immediate causes", func(t *testing.T) {
+		root := diagnostic.Diagnostic{
+			ID: "diagnostic:root", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 100},
+			Causes: []diagnostic.Cause{
+				{Kind: "declared_here", Span: spanPtr(10, 90)}, // depth 1: narrows root
+				{Kind: "declared_here", Span: spanPtr(20, 80)}, // depth 2: narrows cause 0
+			},
+		}
+		nodes, edges, truncated, _ := buildExplainGraph(root, 1)
+		if truncated != "truncated:explain.depth" {
+			t.Fatalf("truncated = %q, want truncated:explain.depth", truncated)
+		}
+		if len(nodes) != 2 {
+			t.Fatalf("nodes = %+v, want root + 1 immediate cause", nodes)
+		}
+		if len(edges) != 1 {
+			t.Fatalf("edges = %+v, want exactly 1 edge", edges)
+		}
+	})
+
+	t.Run("default depth is 3 when no depth is supplied", func(t *testing.T) {
+		if got := resolveExplainDepth(0); got != protocol.ExplainDefaultDepth {
+			t.Fatalf("resolveExplainDepth(0) = %d, want %d", got, protocol.ExplainDefaultDepth)
+		}
+		if protocol.ExplainDefaultDepth != 3 {
+			t.Fatalf("protocol.ExplainDefaultDepth = %d, want 3 (D-06-03)", protocol.ExplainDefaultDepth)
+		}
+		if got := resolveExplainDepth(5); got != 5 {
+			t.Fatalf("resolveExplainDepth(5) = %d, want 5 (explicit depth passes through)", got)
+		}
+	})
+
+	t.Run("exceeding the node budget stops at the budget with the same truncation code family", func(t *testing.T) {
+		causes := make([]diagnostic.Cause, protocol.ExplainMaxNodes+50)
+		for index := range causes {
+			causes[index] = diagnostic.Cause{Kind: "detail", Detail: fmt.Sprintf("d%d", index)}
+		}
+		root := diagnostic.Diagnostic{ID: "diagnostic:budget", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 1}, Causes: causes}
+		nodes, _, truncated, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+		if truncated != "truncated:explain.node_budget" {
+			t.Fatalf("truncated = %q, want truncated:explain.node_budget", truncated)
+		}
+		if len(nodes) != protocol.ExplainMaxNodes {
+			t.Fatalf("len(nodes) = %d, want exactly ExplainMaxNodes (%d)", len(nodes), protocol.ExplainMaxNodes)
+		}
+	})
+}
+
+// TestExplainTruncationCodeIsStable pins the exact two truncation code
+// strings D-06-03 mints.
+func TestExplainTruncationCodeIsStable(t *testing.T) {
+	depthCase := diagnostic.Diagnostic{
+		ID: "diagnostic:depth", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 100},
+		Causes: []diagnostic.Cause{
+			{Kind: "declared_here", Span: spanPtr(10, 90)},
+			{Kind: "declared_here", Span: spanPtr(20, 80)},
+		},
+	}
+	if _, _, truncated, _ := buildExplainGraph(depthCase, 1); truncated != "truncated:explain.depth" {
+		t.Fatalf("depth truncation code = %q, want truncated:explain.depth", truncated)
+	}
+
+	budgetCauses := make([]diagnostic.Cause, protocol.ExplainMaxNodes+10)
+	for index := range budgetCauses {
+		budgetCauses[index] = diagnostic.Cause{Kind: "detail", Detail: fmt.Sprintf("d%d", index)}
+	}
+	budgetCase := diagnostic.Diagnostic{ID: "diagnostic:budget", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 1}, Causes: budgetCauses}
+	if _, _, truncated, _ := buildExplainGraph(budgetCase, protocol.ExplainDefaultDepth); truncated != "truncated:explain.node_budget" {
+		t.Fatalf("node budget truncation code = %q, want truncated:explain.node_budget", truncated)
+	}
+}
+
+// TestExplainZeroCauseDiagnosticReturnsSingleNode covers Test 5: an honest
+// empty result, never an error and never a fabricated cause (FND-04).
+func TestExplainZeroCauseDiagnosticReturnsSingleNode(t *testing.T) {
+	root := diagnostic.Diagnostic{ID: "diagnostic:lonely", Code: "test.code", Primary: diagnostic.Span{Start: 5, End: 6}}
+	nodes, edges, truncated, work := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+	if len(nodes) != 1 {
+		t.Fatalf("nodes = %+v, want exactly 1 (the root)", nodes)
+	}
+	if len(edges) != 0 {
+		t.Fatalf("edges = %+v, want none", edges)
+	}
+	if truncated != "" {
+		t.Fatalf("truncated = %q, want empty", truncated)
+	}
+	if work != 1 {
+		t.Fatalf("work = %d, want 1", work)
+	}
+	if nodes[0].ID != root.ID || nodes[0].Availability != string(debugmap.Available) {
+		t.Fatalf("root node = %+v", nodes[0])
+	}
+}
+
+// TestExplainEdgeKindVocabularyIsClosed covers Test 4 (same_binding,
+// narrows, caused_by all reachable) directly, plus the corpus-wide closed
+// enumeration the plan's acceptance criteria requires.
+func TestExplainEdgeKindVocabularyIsClosed(t *testing.T) {
+	t.Run("same_binding for shared identity, narrows for span containment, caused_by otherwise", func(t *testing.T) {
+		root := diagnostic.Diagnostic{
+			ID: "diagnostic:mixed", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 100},
+			Causes: []diagnostic.Cause{
+				{Kind: "place", Detail: "p:place:0"},           // 0: caused_by (first occurrence, no span)
+				{Kind: "place", Detail: "p:place:0"},           // 1: same_binding -> 0
+				{Kind: "declared_here", Span: spanPtr(10, 90)}, // 2: narrows -> root
+				{Kind: "type", Detail: "p:type:0"},             // 3: caused_by (no correlation, no span)
+			},
+		}
+		_, edges, truncated, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+		if truncated != "" {
+			t.Fatalf("unexpected truncation: %q", truncated)
+		}
+		kinds := map[string]int{}
+		for _, edge := range edges {
+			kinds[edge.Kind]++
+		}
+		for _, want := range []string{protocol.EdgeCausedBy, protocol.EdgeNarrows, protocol.EdgeSameBinding} {
+			if kinds[want] == 0 {
+				t.Fatalf("edge kind %q never emitted: edges=%+v", want, edges)
+			}
+		}
+	})
+
+	t.Run("closed over the whole in-tree rejecting-fixture set", func(t *testing.T) {
+		validKinds := map[string]bool{protocol.EdgeCausedBy: true, protocol.EdgeNarrows: true, protocol.EdgeSameBinding: true}
+		checked := 0
+		for _, dir := range []string{"phase2", "phase3", "phase4", "phase5"} {
+			for _, fixture := range rejectingFixtures(t, dir) {
+				for _, diagID := range fixtureDiagnosticIDs(t, fixture) {
+					result, err := ExplainCommandFile(fixture, diagID, 0)
+					if err != nil {
+						t.Fatalf("%s %s: %v", fixture, diagID, err)
+					}
+					if result.Explain == nil {
+						t.Fatalf("%s %s: Explain is nil", fixture, diagID)
+					}
+					for _, edge := range result.Explain.Edges {
+						checked++
+						if !validKinds[edge.Kind] {
+							t.Fatalf("%s %s: edge kind %q outside the closed vocabulary", fixture, diagID, edge.Kind)
+						}
+					}
+				}
+			}
+		}
+		if checked == 0 {
+			t.Fatalf("no edges were checked -- the in-tree rejecting-fixture set produced no cause edges")
+		}
+	})
+}
+
 // --- shared fixture-corpus helpers --------------------------------------
+
+// rejectingFixtures returns the absolute paths of every .lang fixture under
+// testdata/<dir> that produces at least one diagnostic at parse or check
+// time, discovered dynamically rather than hand-listed -- the standing
+// project rule (adopted after three gate failures shared one shape) that a
+// property test's reachable input space must be the real corpus, not a
+// curated subset.
+func rejectingFixtures(t *testing.T, dir string) []string {
+	t.Helper()
+	root := testsupport.ProjectPath("testdata", dir)
+	matches, err := filepath.Glob(filepath.Join(root, "*.lang"))
+	if err != nil {
+		t.Fatalf("glob %s: %v", root, err)
+	}
+	var rejecting []string
+	for _, path := range matches {
+		if len(fixtureDiagnosticIDs(t, path)) > 0 {
+			rejecting = append(rejecting, path)
+		}
+	}
+	sort.Strings(rejecting)
+	return rejecting
+}
 
 // fixtureDiagnosticIDs parses (and, if the parse is clean, checks) path and
 // returns every diagnostic ID it produced. It is the single source of truth
