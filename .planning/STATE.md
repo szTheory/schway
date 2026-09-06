@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Native Equivalence and Adversarial Evidence
 status: executing
-stopped_at: Completed 05-09-PLAN.md
-last_updated: "2026-09-06T14:07:59.341Z"
+stopped_at: Completed 05-10-PLAN.md
+last_updated: "2026-09-06T14:46:23.114Z"
 last_activity: 2026-09-05
 last_activity_desc: Phase 05 execution started
-state_head: 4ee1b22a3142e59370812dfe9767ac8aba85285e
+state_head: d1edcd06afd650448e037901743113ab98679025
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 47
-  completed_plans: 42
+  completed_plans: 43
   percent: 67
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 05 (Native Equivalence and Adversarial Evidence) — EXECUTING
-Plan: 10 of 14
+Plan: 11 of 14
 Status: Ready to execute
 Last activity: 2026-09-05 — Phase 05 execution started
 
@@ -97,6 +97,7 @@ Progress: ██████████ [███████░░░] 67%
 | Phase 05 P07 | 180 min | 3 tasks | 4 files |
 | Phase 05 P08 | 95min | 3 tasks | 13 files |
 | Phase 05 P09 | 36min | 3 tasks | 6 files |
+| Phase 05 P10 | ~110min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 05]: Empirically falsified posix_memalign+free as an ASan allocator-mismatch mechanism; used C++ operator-new/delete (_Znwm/_ZdlPv) linked via -lc++ instead, verified on-host to produce a genuine alloc-dealloc-mismatch report.
 - [Phase 05]: Collapsed a three-distinct-foreign-symbol retained-pointer fixture design to one call-count-dispatched symbol after confirming cgen only calls the first declared symbol in a resource-lifecycle sequence.
 - [Phase 05]: D-05-41 (LTO lane one-fixture sample) accepted as recorded debt, landing phase Phase 5+ — TestPhase5CorpusThreeEngineAgreement and TestLTOTierIsNotInert already cover the correctness gap; widening now is optional
+- [Phase 05]: [Phase 05-10]: drop-offpath-foreign-stage and collapse-branch-to-diverging-arm rebuild the affected core region from scratch via the checker's own ID-generation algorithms, rather than surgical graph patching -- an earlier surgical version left a dangling release reference.
+- [Phase 05]: [Phase 05-10]: ProjectSource explicitly reports (never fabricates) an unsupported-shape marker for a collapsed ADT-typed match, since this project's checker admits a declared ADT type only inside an exhaustive match body and there is no partial-match syntax.
 
 ### Pending Todos
 
@@ -226,6 +229,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T14:07:59.202Z
-Stopped at: Completed 05-09-PLAN.md
+Last session: 2026-09-06T14:46:14.601Z
+Stopped at: Completed 05-10-PLAN.md
 Resume file: None
