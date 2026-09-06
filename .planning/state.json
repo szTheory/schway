@@ -31,13 +31,13 @@
     {
       "number": "6",
       "name": "Agent Feedback and Performance Ratification",
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step (plan phase 6)",
-    "reason": "Phase 6 of 6 — needs a plan"
+    "label": "Advance to the next step",
+    "reason": "Phase 6 of 6 · 81% · executing"
   },
-  "updated_at": "2026-09-06T19:23:04.446Z"
+  "updated_at": "2026-09-06T23:50:18.434Z"
 }
