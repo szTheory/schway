@@ -306,20 +306,43 @@ Plans:
 **Plans**: 15 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 06-01-PLAN.md — Wave 0: freeze prior-phase bytes, pin Metrics/Lane identity exclusion, pin the 12 lane-schema sites
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 06-02-PLAN.md — `explain`: bounded, deterministic cause DAG under the net-new `lang.explain/0`
-- [ ] 06-03-PLAN.md — `query`: five-vocabulary join, cursor-paginated, under `lang.query/0`
 - [ ] 06-04-PLAN.md — `internal/compiler/cache`: declared-input artifact store that structurally cannot hold a verdict
-- [ ] 06-05-PLAN.md — `risk_lanes.json`, conservative widening, gitignored change-state file, bidirectional audit
-- [ ] 06-06-PLAN.md — The one coordinated additive bump: `lang.command/1`, `lang.verify-lane/1`, seven reporting fields
-- [ ] 06-07-PLAN.md — Wire cache + risk selection into `verify`; deferred lanes never render pass; `evidence` trace expansion
 - [ ] 06-08-PLAN.md — `internal/compiler/measure`: leak-free machine probe, 20-sample p50/p95, CoV auto-demotion
-- [ ] 06-09-PLAN.md — `qlt02_budget_manifest.json`, executable audit, observation-only mode, the blocking rule
-- [ ] 06-10-PLAN.md — Stage attribution without a tracer; peak-RSS gap recorded as a deliberate decision
 - [ ] 06-11-PLAN.md — `diagnostic.Repair` grows into an applicable edit; identity split held at `kind` only
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-03-PLAN.md — `query`: five-vocabulary join, cursor-paginated, under `lang.query/0`
+- [ ] 06-05-PLAN.md — `risk_lanes.json`, conservative widening, gitignored change-state file, bidirectional audit
 - [ ] 06-12-PLAN.md — Five defect injectors, held-out corpus, and anti-theater guard 3 (marker mutation-kill)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 06-06-PLAN.md — The one coordinated additive bump: `lang.command/1`, `lang.verify-lane/1`, seven reporting fields
 - [ ] 06-13-PLAN.md — `cmd/lang-repair`: subprocess-only driver, import boundary, non-degenerate success oracle
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 06-07-PLAN.md — Wire cache + risk selection into `verify`; deferred lanes never render pass; `evidence` trace expansion
 - [ ] 06-14-PLAN.md — Anti-theater guards 1 and 2: prose-scramble identical, vocabulary-removal goes RED
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 06-09-PLAN.md — `qlt02_budget_manifest.json`, executable audit, observation-only mode, the blocking rule
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 06-10-PLAN.md — Stage attribution without a tracer; peak-RSS gap recorded as a deliberate decision
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 06-15-PLAN.md — `scripts/verify-phase6.sh`, required-control set, escape register, 06-DEBT.md
 
 ### M002 Charter (deferred from Phase 5, D-05-32/D-05-33)
