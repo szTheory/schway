@@ -223,12 +223,19 @@ const LaneQLT01RegistryAudit = "lane:qlt01-registry-audit"
 // LaneResult is a minimal counted-work lane outcome, independent of
 // protocol.Result/protocol.Lane so this file has no dependency on how
 // plan 05-14 ultimately wires the lane into VerifyPhase5ControlsAndWork.
+//
+// ExpectedEscapes is an additive, omittable-by-zero-value field (plan
+// 05-13, D-05-30): a lane whose pass is attributed to a declared,
+// gate-visible residual (never a silent absence of checking) names that
+// escape identifier here. QLT01LaneFromRows leaves it nil -- the registry
+// audit attributes no escape of its own.
 type LaneResult struct {
-	ID             string
-	Status         string
-	Controls       []string
-	RecomputedWork int
-	Fired          map[string]bool
+	ID              string
+	Status          string
+	Controls        []string
+	RecomputedWork  int
+	Fired           map[string]bool
+	ExpectedEscapes []string
 }
 
 // VerifyQLT01Registry runs the QLT-01 registry completeness audit as a

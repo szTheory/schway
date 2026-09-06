@@ -1,6 +1,7 @@
 package session_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -106,5 +107,109 @@ func TestCoordinatedLieArtifactsBothValidate(t *testing.T) {
 	}
 	if sourceClaim == coreClaim {
 		t.Fatalf("expected the source-derived claim and the hand-authored core claim to DIFFER -- both were %q, which is not a coordinated lie, just an accurate translation", sourceClaim)
+	}
+}
+
+// TestCoordinatedLieEscapeIsDeclared asserts EscapeCoordinatedSourceToCoreFalseClaim
+// appears in VerifyCoordinatedLieEscape's own returned LaneResult.ExpectedEscapes
+// -- the Phase 5 expected-escape set THIS PLAN establishes (plan 05-14 owns
+// folding it into the shipped session.Phase5ExpectedEscapes(), a dependency
+// recorded in this plan's summary and NOT performed here, to keep the Go
+// control/escape sets and the shell gate script from ever seeing a
+// transiently divergent pair).
+func TestCoordinatedLieEscapeIsDeclared(t *testing.T) {
+	result, err := session.VerifyCoordinatedLieEscape(context.Background())
+	if err != nil {
+		t.Fatalf("VerifyCoordinatedLieEscape: %v", err)
+	}
+	declared := false
+	for _, escape := range result.ExpectedEscapes {
+		if escape == session.EscapeCoordinatedSourceToCoreFalseClaim {
+			declared = true
+		}
+	}
+	if !declared {
+		t.Fatalf("expected %s in VerifyCoordinatedLieEscape's ExpectedEscapes, got %+v", session.EscapeCoordinatedSourceToCoreFalseClaim, result.ExpectedEscapes)
+	}
+}
+
+// TestCoordinatedLieEscapeIsNeverDetected asserts the escape identifier
+// never appears in any phase's shipped required-control set
+// (session.AllShippedControlIDs(), the union of Phase4RequiredControls()
+// and Phase5RequiredControls() -- qlt01.go's own single source of truth for
+// "any control this repository currently ships") so it can never be
+// claimed as covered by a control that happens to share its name.
+func TestCoordinatedLieEscapeIsNeverDetected(t *testing.T) {
+	for _, control := range session.AllShippedControlIDs() {
+		if control == session.EscapeCoordinatedSourceToCoreFalseClaim {
+			t.Fatalf("escape %s must never appear in the shipped required-control set, but it does", session.EscapeCoordinatedSourceToCoreFalseClaim)
+		}
+	}
+}
+
+// TestCoordinatedLiePassesTheGateUnderTheNamedEscape is D-05-30's
+// demonstration proper: the gate passes the adversarial pair (no error, a
+// "pass" status, zero fired controls) AND the result explicitly names the
+// escape it attributes that pass to.
+func TestCoordinatedLiePassesTheGateUnderTheNamedEscape(t *testing.T) {
+	result, err := session.VerifyCoordinatedLieEscape(context.Background())
+	if err != nil {
+		t.Fatalf("expected the gate to pass the adversarial pair, got error: %v", err)
+	}
+	if result.Status != "pass" {
+		t.Fatalf("expected LaneResult.Status = %q, got %q", "pass", result.Status)
+	}
+	if len(result.Fired) != 0 {
+		t.Fatalf("expected no control to have fired on the adversarial pair, got %+v", result.Fired)
+	}
+	if result.RecomputedWork == 0 {
+		t.Fatal("expected nonzero RecomputedWork -- a lane that inspects nothing cannot claim to have verified anything")
+	}
+	found := false
+	for _, escape := range result.ExpectedEscapes {
+		if escape == session.EscapeCoordinatedSourceToCoreFalseClaim {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected the pass to be attributed to %s, got ExpectedEscapes=%+v", session.EscapeCoordinatedSourceToCoreFalseClaim, result.ExpectedEscapes)
+	}
+}
+
+// TestBothPhase5EscapesAreVisible asserts both Phase 5 escapes -- plan
+// 05-08's escape:callback-invocation-unsubjected (already shipped in
+// session.Phase5ExpectedEscapes()) and this plan's
+// escape:coordinated-source-to-core-false-claim (declared by
+// VerifyCoordinatedLieEscape, not yet folded into
+// session.Phase5ExpectedEscapes() -- that fold is plan 05-14's job) --
+// appear together in the union this test constructs, and that NEITHER
+// appears in session.AllShippedControlIDs(). This documents the full set
+// plan 05-14 will ship without prematurely editing session_phase5.go here.
+func TestBothPhase5EscapesAreVisible(t *testing.T) {
+	escapes := append([]string{}, session.Phase5ExpectedEscapes()...)
+	escapes = append(escapes, session.EscapeCoordinatedSourceToCoreFalseClaim)
+
+	wantCallback := false
+	wantCoordinatedLie := false
+	for _, escape := range escapes {
+		if escape == session.EscapeCallbackInvocationUnsubjected {
+			wantCallback = true
+		}
+		if escape == session.EscapeCoordinatedSourceToCoreFalseClaim {
+			wantCoordinatedLie = true
+		}
+	}
+	if !wantCallback || !wantCoordinatedLie {
+		t.Fatalf("expected both Phase 5 escapes present, got %+v", escapes)
+	}
+
+	shipped := make(map[string]bool, len(session.AllShippedControlIDs()))
+	for _, control := range session.AllShippedControlIDs() {
+		shipped[control] = true
+	}
+	for _, escape := range escapes {
+		if shipped[escape] {
+			t.Fatalf("escape %s must never appear in the shipped required-control set", escape)
+		}
 	}
 }
