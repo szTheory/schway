@@ -38,6 +38,10 @@ func run(args []string) int {
 	if !ok {
 		return emit(usageResult(), jsonMode, false)
 	}
+	args, expand, ok := extractExpand(args)
+	if !ok {
+		return emit(usageResult(), jsonMode, false)
+	}
 	if len(args) == 3 && args[0] == "explain" {
 		return runExplain(args[1], args[2], depth, jsonMode)
 	}
@@ -57,7 +61,7 @@ func run(args []string) int {
 		return runEvidence(args[1], jsonMode)
 	}
 	if len(args) == 4 && args[0] == "evidence" && args[1] == "--validate" {
-		return runEvidenceValidation(args[2], args[3], jsonMode)
+		return runEvidenceValidation(args[2], args[3], expand, jsonMode)
 	}
 	if len(args) == 2 && args[0] == "verify" {
 		return runVerify(args[1], jsonMode)
@@ -147,8 +151,8 @@ func runEvidence(path string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
-func runEvidenceValidation(manifestPath, sourcePath string, jsonMode bool) int {
-	result := session.ValidateEvidenceCommandFile(context.Background(), manifestPath, sourcePath)
+func runEvidenceValidation(manifestPath, sourcePath string, expand, jsonMode bool) int {
+	result := session.ValidateEvidenceExpanded(context.Background(), manifestPath, sourcePath, expand)
 	return emit(result, jsonMode, false)
 }
 
@@ -311,6 +315,25 @@ func extractDepth(args []string) ([]string, int, bool) {
 	return filtered, depth, true
 }
 
+// extractExpand strips the boolean "--expand" flag (DX-03's evidence-trace
+// expansion request), mirroring extractJSON's own boolean-flag-stripping
+// shape exactly.
+func extractExpand(args []string) ([]string, bool, bool) {
+	filtered := make([]string, 0, len(args))
+	expand := false
+	for _, argument := range args {
+		if argument == "--expand" {
+			if expand {
+				return nil, false, false
+			}
+			expand = true
+			continue
+		}
+		filtered = append(filtered, argument)
+	}
+	return filtered, expand, true
+}
+
 func extractJSON(args []string) ([]string, bool, bool) {
 	filtered := make([]string, 0, len(args))
 	jsonMode := false
@@ -359,5 +382,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
 }

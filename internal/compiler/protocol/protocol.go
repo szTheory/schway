@@ -77,6 +77,34 @@ type EvidenceSummary struct {
 	Schema string `json:"schema"`
 	ID     string `json:"id"`
 	Digest string `json:"digest"`
+	// Trace is the expanded per-input digest comparison that produced this
+	// validation's verdict (DX-03's evidence-expansion half). Omitted on a
+	// successful validation that did not request expansion -- the compact
+	// manifest is the default, and expansion is opt-in or failure-triggered
+	// only.
+	Trace *TraceSummary `json:"trace,omitempty"`
+}
+
+// TraceEntry is one input's recorded-vs-recomputed digest comparison: which
+// input it bound, the manifest's own recorded value, and the value
+// recomputed fresh from source and facts this invocation. Match is a
+// convenience projection of Recorded == Recomputed, never itself a cached
+// verdict -- it is always derived, on every read, from the two digest
+// strings sitting right next to it.
+type TraceEntry struct {
+	Input      string `json:"input"`
+	Recorded   string `json:"recorded"`
+	Recomputed string `json:"recomputed"`
+	Match      bool   `json:"match"`
+}
+
+// TraceSummary is the expanded evidence-validation trace: one TraceEntry
+// per bound input, bounded like every other untrusted-size projection in
+// this project. Truncated carries the stable "truncated:evidence.trace_bound"
+// code when the bound is hit, empty otherwise.
+type TraceSummary struct {
+	Entries   []TraceEntry `json:"entries"`
+	Truncated string       `json:"truncated,omitempty"`
 }
 
 // InterfaceFunctionAnswer is one function's body-blind origin answer, read
