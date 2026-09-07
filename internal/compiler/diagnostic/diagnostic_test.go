@@ -186,3 +186,62 @@ func TestRepairFieldEnumerationIsExhaustive(t *testing.T) {
 		t.Fatalf("Repair field set changed: got %v, want %v -- see test doc comment: classify the new field as identity-bearing or not before updating this list", got, expected)
 	}
 }
+
+// --- Task 3: driver eligibility and /0 stays frozen -----------------------
+
+func TestOnlyMachineApplicableIsDriverEligible(t *testing.T) {
+	span := Span{Start: 0, End: 1}
+	cases := []struct {
+		name string
+		r    Repair
+		want bool
+	}{
+		{"complete MachineApplicable", Repair{Kind: "k", Applicability: ApplicabilityMachineApplicable, Span: &span, Replacement: "x"}, true},
+		{"RequiresConfirmation", Repair{Kind: "k", Applicability: ApplicabilityRequiresConfirmation, Span: &span, Replacement: "x"}, false},
+		{"Unspecified", Repair{Kind: "k", Applicability: ApplicabilityUnspecified, Span: &span, Replacement: "x"}, false},
+		{"empty applicability", Repair{Kind: "k", Applicability: "", Span: &span, Replacement: "x"}, false},
+		{"out-of-vocabulary", Repair{Kind: "k", Applicability: "Bogus", Span: &span, Replacement: "x"}, false},
+	}
+	eligibleCount := 0
+	for _, c := range cases {
+		if got := DriverEligible(c.r); got != c.want {
+			t.Errorf("%s: DriverEligible = %v, want %v", c.name, got, c.want)
+		}
+		if DriverEligible(c.r) {
+			eligibleCount++
+		}
+	}
+	if eligibleCount != 1 {
+		t.Fatalf("expected exactly one eligible row, got %d", eligibleCount)
+	}
+}
+
+func TestMachineApplicableWithoutMaterialIsNotEligible(t *testing.T) {
+	span := Span{Start: 0, End: 1}
+	if DriverEligible(Repair{Kind: "k", Applicability: ApplicabilityMachineApplicable, Span: nil, Replacement: "x"}) {
+		t.Errorf("MachineApplicable with no Span must not be eligible")
+	}
+	if DriverEligible(Repair{Kind: "k", Applicability: ApplicabilityMachineApplicable, Span: &span, Replacement: ""}) {
+		t.Errorf("MachineApplicable with no Replacement must not be eligible")
+	}
+}
+
+func TestDiagnosticZeroBytesUnchanged(t *testing.T) {
+	span := Span{Start: 10, End: 20}
+	causes := []Cause{{Kind: "declared_here", Span: &Span{Start: 1, End: 2}}}
+	d := Error("test.code", span, "a fixed message", causes...)
+
+	if d.Schema != Schema {
+		t.Fatalf("Schema = %q, want %q", d.Schema, Schema)
+	}
+	// Pinned literal: the /0 identity struct (Schema, Code, Span, Causes) has
+	// no RepairKinds field and must never gain one -- the /0 path is
+	// untouched by the /1 Repair extension in this plan.
+	const wantID = "diagnostic:d34396fcc8ea6530a1f04dc3"
+	if d.ID != wantID {
+		t.Fatalf("Error() ID = %q, want pinned %q -- a /0 ID change is a T-06-REPAIR-03 regression", d.ID, wantID)
+	}
+	if d.Repairs != nil {
+		t.Fatalf("Error()-constructed diagnostic must have nil Repairs, got %v", d.Repairs)
+	}
+}
