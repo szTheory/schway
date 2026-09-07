@@ -37,14 +37,25 @@ const currentLaneSchema = "lang.verify-lane/1"
 // the mechanical completeness check that a coordinated bump moves ALL sites,
 // and a future half-landed bump (add/remove/relocate one site without the
 // rest) is caught here instead of by a runtime schema mismatch.
+//
+// session_phase6_verify.go x3 is a DIFFERENT species of entry: not a site
+// migrated by the 06-06 bump, but three brand-new lane:native-differential /
+// addDeferredLane composite literals this plan (06-07) adds, which
+// correctly reference protocol.LaneSchema1 directly (there was never a /0
+// literal at these sites to move). [Rule 1/3 deviation: this map and the
+// total below were updated from 06-06's original 12 to include these 3 new,
+// legitimate sites -- 15 total -- so this pin keeps catching a genuinely
+// half-landed /0-to-/1 bump among the ORIGINAL 12 while not treating this
+// plan's own new production lanes as drift.]
 var expectedLaneSchemaLiteralSitesByFile = map[string]int{
 	"session.go":                 8,
 	"session_phase5.go":          1,
 	"session_phase5_mismatch.go": 2,
 	"session_phase5_sanitize.go": 1,
+	"session_phase6_verify.go":   3,
 }
 
-const expectedLaneSchemaLiteralSiteTotal = 12
+const expectedLaneSchemaLiteralSiteTotal = 15
 
 // TestLaneSchemaLiteralSiteCountIsPinned pins the exact count and per-file
 // location of every protocol.LaneSchema1 reference in

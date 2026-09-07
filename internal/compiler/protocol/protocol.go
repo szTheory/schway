@@ -44,7 +44,21 @@ const (
 	StatusOperational = "operational_failure"
 	StatusMismatch    = "semantic_mismatch"
 	StatusUsage       = "usage_error"
+	// StatusDeferred is D-06-12's lane-status value for "not run this
+	// invocation": a lane the selector deferred, or that this invocation
+	// otherwise did not execute. It is structurally distinct from StatusPass
+	// -- a lane that was not run must never render as pass (T-06-VERIFY-02).
+	StatusDeferred = "deferred"
 )
+
+// LaneStatuses returns the closed lane-status vocabulary this project's
+// verify paths may emit on a Lane's Status field. It exists so an
+// exhaustiveness test can assert every emitted status is one of these
+// values -- a status outside this set is, by construction, not a value any
+// shipped lane may report.
+func LaneStatuses() []string {
+	return []string{StatusPass, StatusInvalid, StatusOperational, StatusMismatch, StatusUsage, StatusDeferred}
+}
 
 type Metrics struct {
 	ElapsedNS      int64  `json:"elapsed_ns"`
@@ -320,7 +334,7 @@ func ValidateLaneVocabularies(lane Lane) error {
 	if lane.CacheStatus != "" && !contains(LaneCacheStatuses(), lane.CacheStatus) {
 		return fmt.Errorf("protocol: lane %q has out-of-vocabulary cache_status %q", lane.ID, lane.CacheStatus)
 	}
-	if lane.SelectionReason != "" && !contains(LaneSelectionReasons(), lane.SelectionReason) {
+	if lane.SelectionReason != "" && !selectionReasonInVocabulary(lane.SelectionReason) {
 		return fmt.Errorf("protocol: lane %q has out-of-vocabulary selection_reason %q", lane.ID, lane.SelectionReason)
 	}
 	if lane.GateVerdict != "" && !contains(LaneGateVerdicts(), lane.GateVerdict) {
@@ -330,6 +344,26 @@ func ValidateLaneVocabularies(lane Lane) error {
 		return fmt.Errorf("protocol: lane %q has out-of-vocabulary cold_or_warm %q", lane.ID, lane.ColdOrWarm)
 	}
 	return nil
+}
+
+// selectionReasonInVocabulary accepts either a bare vocabulary word
+// ("selected", "deferred", "widened") or session.Selection.Reasons's own
+// fuller detail form ("selected: pure_match matched", "deferred: no
+// declared dependency", "widened: undeclared-input risk") -- the closed
+// vocabulary governs the LEADING word, not the full free-text explanation
+// that follows it (D-06-10/D-06-11's own reason strings always carry that
+// detail; protocol cannot import session to compare against its exact
+// constants, so this checks the same three-word prefix independently).
+func selectionReasonInVocabulary(value string) bool {
+	if contains(LaneSelectionReasons(), value) {
+		return true
+	}
+	for _, vocabulary := range LaneSelectionReasons() {
+		if strings.HasPrefix(value, vocabulary+":") {
+			return true
+		}
+	}
+	return false
 }
 
 func contains(vocabulary []string, value string) bool {
