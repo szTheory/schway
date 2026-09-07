@@ -11,7 +11,31 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/interp"
 )
 
+// Schema is the frozen /0 record for lang.command. Its bytes must remain
+// reproducible forever (D-06-31); Schema1 is the coordinated additive bump
+// every new Result now carries, following diagnostic.go's/evidence.go's own
+// two-constant coexistence shape.
 const Schema = "lang.command/0"
+
+// Schema1 is the coordinated lang.command/1 bump (D-06-31): protocol.New()
+// now returns Schema1, while Schema ("lang.command/0") remains declared and
+// bound to its original string so already-published /0 documents stay
+// reproducible.
+const Schema1 = "lang.command/1"
+
+// LaneSchema is the frozen /0 record for lang.verify-lane. Its bytes must
+// remain reproducible forever (D-06-31); LaneSchema1 is the coordinated
+// additive bump landing at the same commit as Schema1.
+const LaneSchema = "lang.verify-lane/0"
+
+// LaneSchema1 is the coordinated lang.verify-lane/1 bump (D-06-31): every one
+// of the 12 lane-schema composite literal sites across session.go,
+// session_phase5.go, session_phase5_mismatch.go, and
+// session_phase5_sanitize.go moves to this constant in the same commit as
+// Schema1. LaneSchema ("lang.verify-lane/0") remains declared and bound to
+// its original string so already-published /0 lane documents stay
+// reproducible.
+const LaneSchema1 = "lang.verify-lane/1"
 
 const (
 	StatusPass        = "pass"
@@ -212,7 +236,7 @@ type Result struct {
 
 func New(command, status string) Result {
 	return Result{
-		Schema: Schema, Command: command, Status: status,
+		Schema: Schema1, Command: command, Status: status,
 		Diagnostics: []diagnostic.Diagnostic{}, Executions: []interp.Execution{}, Lanes: []Lane{},
 		Metrics: Metrics{PeakRSSStatus: "unavailable"},
 	}

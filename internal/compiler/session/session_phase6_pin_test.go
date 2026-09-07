@@ -7,31 +7,36 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
-// currentLaneSchema is deliberately a test-local constant, not an import of
-// protocol.Schema/protocol.LaneSchema1 -- the whole point of this pin is to
-// catch drift between what the session package's composite literals
-// actually say and what this test independently expects, which a shared
-// constant would silently paper over.
-const currentLaneSchema = "lang.verify-lane/0"
+// currentLaneSchema documents the /1 lane-schema string this pin's sites now
+// carry, for readers -- it is not used for AST matching. 06-06's coordinated
+// bump (D-06-31) moved all 12 sites from the raw "lang.verify-lane/0" string
+// literal to the protocol.LaneSchema1 constant reference (the same
+// two-constant-coexistence discipline diagnostic.go/evidence.go already use),
+// so this pin now counts protocol.LaneSchema1 *identifier references*
+// (ast.SelectorExpr) rather than ast.BasicLit string values -- a raw /1
+// string literal reintroduced at any site would NOT satisfy this pin, which
+// is intentional: the constant reference is now the required shape, not
+// merely the current one.
+const currentLaneSchema = "lang.verify-lane/1"
 
 // expectedLaneSchemaLiteralSitesByFile pins the per-file count of
-// currentLaneSchema string literals in internal/compiler/session as of the
-// start of Phase 6 (D-06-31), confirmed by direct grep: session.go x8,
-// session_phase5.go x1, session_phase5_mismatch.go x2,
-// session_phase5_sanitize.go x1, total 12. Every one of these sites is a
-// protocol.Lane{Schema: currentLaneSchema, ...} composite literal inside one
-// of the 5 independently-implemented addLane closures (VerifyCorpus,
-// verifyOwnedCorpus, verifyBorrowedCorpus, verifyForeignCorpus,
-// VerifyPhase5ControlsAndWork). The coordinated 06-06 bump to
-// "lang.verify-lane/1" must move every single one of these sites at once --
-// this test is the mechanical completeness check waiting for it.
+// protocol.LaneSchema1 identifier references in internal/compiler/session,
+// confirmed by direct grep: session.go x8, session_phase5.go x1,
+// session_phase5_mismatch.go x2, session_phase5_sanitize.go x1, total 12.
+// Every one of these sites is a protocol.Lane{Schema: protocol.LaneSchema1,
+// ...} composite literal inside one of the 5 independently-implemented
+// addLane closures (VerifyCorpus, verifyOwnedCorpus, verifyBorrowedCorpus,
+// verifyForeignCorpus, VerifyPhase5ControlsAndWork). 06-06's coordinated bump
+// moved every single one of these sites at once (D-06-31) -- this test is
+// the mechanical completeness check that a coordinated bump moves ALL sites,
+// and a future half-landed bump (add/remove/relocate one site without the
+// rest) is caught here instead of by a runtime schema mismatch.
 var expectedLaneSchemaLiteralSitesByFile = map[string]int{
 	"session.go":                 8,
 	"session_phase5.go":          1,
@@ -42,11 +47,12 @@ var expectedLaneSchemaLiteralSitesByFile = map[string]int{
 const expectedLaneSchemaLiteralSiteTotal = 12
 
 // TestLaneSchemaLiteralSiteCountIsPinned pins the exact count and per-file
-// location of every currentLaneSchema string literal in
+// location of every protocol.LaneSchema1 reference in
 // internal/compiler/session, so the coordinated lang.verify-lane/0 -> /1
 // bump in 06-06 cannot half-land: a site moved between files, added, or
 // removed without updating every other site is caught here instead of
-// discovered by a runtime schema mismatch (D-06-31, T-06-03).
+// discovered by a runtime schema mismatch (D-06-31, T-06-03). A coordinated
+// bump moves ALL sites at once -- that is what this pin proves.
 func TestLaneSchemaLiteralSiteCountIsPinned(t *testing.T) {
 	dir := testsupport.ProjectPath("internal", "compiler", "session")
 	entries, err := os.ReadDir(dir)
@@ -69,17 +75,15 @@ func TestLaneSchemaLiteralSiteCountIsPinned(t *testing.T) {
 		}
 		count := 0
 		ast.Inspect(file, func(node ast.Node) bool {
-			literal, ok := node.(*ast.BasicLit)
-			if !ok || literal.Kind != token.STRING {
+			selector, ok := node.(*ast.SelectorExpr)
+			if !ok || selector.Sel == nil || selector.Sel.Name != "LaneSchema1" {
 				return true
 			}
-			value, err := strconv.Unquote(literal.Value)
-			if err != nil {
+			ident, ok := selector.X.(*ast.Ident)
+			if !ok || ident.Name != "protocol" {
 				return true
 			}
-			if value == currentLaneSchema {
-				count++
-			}
+			count++
 			return true
 		})
 		if count > 0 {

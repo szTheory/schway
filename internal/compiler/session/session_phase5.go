@@ -110,7 +110,7 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 
 	addLane := func(id, status string, controls []string, work int, laneStarted time.Time) {
 		result.Lanes = append(result.Lanes, protocol.Lane{
-			Schema: "lang.verify-lane/0", ID: id, Status: status,
+			Schema: protocol.LaneSchema1, ID: id, Status: status,
 			Controls: append([]string{}, controls...), RecomputedWork: work,
 			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable",
 		})

@@ -126,6 +126,38 @@ func TestExplainFoldsIntoResultIdentity(t *testing.T) {
 	}
 }
 
+// TestCommandSchemaIsVersionOne pins 06-06's coordinated bump (D-06-31):
+// protocol.New() now stamps every new Result with Schema1
+// ("lang.command/1"), not the frozen Schema ("lang.command/0").
+func TestCommandSchemaIsVersionOne(t *testing.T) {
+	if protocol.Schema1 != "lang.command/1" {
+		t.Fatalf("protocol.Schema1 = %q, want %q", protocol.Schema1, "lang.command/1")
+	}
+	if protocol.LaneSchema1 != "lang.verify-lane/1" {
+		t.Fatalf("protocol.LaneSchema1 = %q, want %q", protocol.LaneSchema1, "lang.verify-lane/1")
+	}
+	result := protocol.New("verify", protocol.StatusPass)
+	if result.Schema != protocol.Schema1 {
+		t.Fatalf("protocol.New().Schema = %q, want protocol.Schema1 (%q)", result.Schema, protocol.Schema1)
+	}
+}
+
+// TestSchemaZeroConstantsStillExist pins D-06-31's frozen-record half of the
+// coordinated bump: protocol.Schema and protocol.LaneSchema remain declared
+// and bound to their original /0 strings after the bump lands. A /0
+// document's bytes are frozen once shipped and may only be superseded
+// additively by a /1 -- deleting either constant as "dead code" would erase
+// the ability to reproduce those already-published bytes, and this test
+// exists to catch exactly that mistake.
+func TestSchemaZeroConstantsStillExist(t *testing.T) {
+	if protocol.Schema != "lang.command/0" {
+		t.Fatalf("protocol.Schema = %q, want frozen %q", protocol.Schema, "lang.command/0")
+	}
+	if protocol.LaneSchema != "lang.verify-lane/0" {
+		t.Fatalf("protocol.LaneSchema = %q, want frozen %q", protocol.LaneSchema, "lang.verify-lane/0")
+	}
+}
+
 // setSentinelFields sets every settable field of value (a pointer to a
 // struct) to a non-zero sentinel: ints/int64s become 7, strings become
 // "sentinel", and []string slices become []string{"sentinel"}. Fields whose
