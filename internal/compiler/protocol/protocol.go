@@ -133,6 +133,52 @@ type ExplainSummary struct {
 	Truncated string        `json:"truncated,omitempty"`
 }
 
+// QuerySchema versions `lang query`'s joined-addressing-surface projection
+// independently of every other schema in the compiler. query is a net-new
+// capability (D-06-04): it gets a net-new /0 schema rather than folding into
+// Schema ("lang.command/0"), and does not trigger that constant's
+// coordinated /1 bump on its own account (D-06-31 names the actual
+// coordinated bump separately).
+const QuerySchema = "lang.query/0"
+
+// QueryMaxFactsPerPage bounds how many QueryFact entries a single
+// QuerySummary page may carry (D-06-03: query pages by cursor, never by
+// depth). Deliberately smaller than ExplainMaxNodes/debugmap.MaxEntries --
+// query's own bounding discipline is "smallest sufficient context by
+// default" (wiki/compute-efficiency-constitution.md), so its default page is
+// an order of magnitude below those two full-artifact caps rather than
+// matching them.
+const QueryMaxFactsPerPage = 64
+
+// QueryFact is one resolved (or honestly absent) fact about the address a
+// `lang query` call named. Vocabulary carries the fine-grained ID kind that
+// was actually matched (e.g. "diagnostic", "operation_id", "core_id",
+// "point_id", "evidence", "control", "lane", or the "unrecognized" sentinel
+// when the address matched none of D-06-01's five vocabularies) --
+// Availability reuses debugmap's existing honest three-value vocabulary
+// rather than fabricating a new one.
+type QueryFact struct {
+	ID           string           `json:"id"`
+	Kind         string           `json:"kind,omitempty"`
+	Vocabulary   string           `json:"vocabulary"`
+	Detail       string           `json:"detail,omitempty"`
+	Span         *diagnostic.Span `json:"span,omitempty"`
+	Availability string           `json:"availability"`
+}
+
+// QuerySummary is the `lang query` command projection: a bounded,
+// cursor-paginated list of facts resolved against D-06-01's one joined
+// addressing surface. NextCursor is set only when more facts remain past
+// this page; Truncated carries the stable "truncated:query.page_bound" code
+// in that case.
+type QuerySummary struct {
+	Schema     string      `json:"schema"`
+	Query      string      `json:"query"`
+	Facts      []QueryFact `json:"facts"`
+	NextCursor string      `json:"next_cursor,omitempty"`
+	Truncated  string      `json:"truncated,omitempty"`
+}
+
 type Lane struct {
 	Schema         string   `json:"schema"`
 	ID             string   `json:"id"`
@@ -158,6 +204,7 @@ type Result struct {
 	Interface       *InterfaceSummary       `json:"interface,omitempty"`
 	DebugMap        *DebugMapSummary        `json:"debug_map,omitempty"`
 	Explain         *ExplainSummary         `json:"explain,omitempty"`
+	Query           *QuerySummary           `json:"query,omitempty"`
 	Lanes           []Lane                  `json:"lanes"`
 	ExpectedEscapes []string                `json:"expected_escapes,omitempty"`
 	Metrics         Metrics                 `json:"metrics"`
@@ -184,6 +231,7 @@ func (result Result) Finalize() Result {
 		InterfaceID      string
 		DebugMapID       string
 		ExplainID        string
+		QueryID          string
 		LaneIDs          []string
 		ExpectedEscapes  []string `json:",omitempty"`
 	}{
@@ -222,6 +270,11 @@ func (result Result) Finalize() Result {
 		encodedExplain, _ := json.Marshal(result.Explain)
 		explainSum := sha256.Sum256(encodedExplain)
 		identity.ExplainID = hex.EncodeToString(explainSum[:12])
+	}
+	if result.Query != nil {
+		encodedQuery, _ := json.Marshal(result.Query)
+		querySum := sha256.Sum256(encodedQuery)
+		identity.QueryID = hex.EncodeToString(querySum[:12])
 	}
 	for _, lane := range result.Lanes {
 		identity.LaneIDs = append(identity.LaneIDs, lane.ID+":"+lane.Status)
@@ -318,6 +371,12 @@ func human(result Result) string {
 		fmt.Fprintf(&output, "%s root=%s nodes=%d edges=%d\n", result.Explain.Schema, result.Explain.RootID, len(result.Explain.Nodes), len(result.Explain.Edges))
 		for _, node := range result.Explain.Nodes {
 			fmt.Fprintf(&output, "  %s kind=%s availability=%s\n", node.ID, node.Kind, node.Availability)
+		}
+	}
+	if result.Query != nil {
+		fmt.Fprintf(&output, "%s query=%s facts=%d\n", result.Query.Schema, result.Query.Query, len(result.Query.Facts))
+		for _, fact := range result.Query.Facts {
+			fmt.Fprintf(&output, "  %s vocabulary=%s availability=%s\n", fact.ID, fact.Vocabulary, fact.Availability)
 		}
 	}
 	for _, lane := range result.Lanes {

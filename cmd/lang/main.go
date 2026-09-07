@@ -34,8 +34,15 @@ func run(args []string) int {
 	if !ok {
 		return emit(usageResult(), jsonMode, false)
 	}
+	args, kind, cursor, ok := extractKindAndCursor(args)
+	if !ok {
+		return emit(usageResult(), jsonMode, false)
+	}
 	if len(args) == 3 && args[0] == "explain" {
 		return runExplain(args[1], args[2], depth, jsonMode)
+	}
+	if len(args) == 3 && args[0] == "query" {
+		return runQuery(args[1], args[2], kind, cursor, depth, jsonMode)
 	}
 	if len(args) == 2 && args[0] == "format" {
 		return runFormat(args[1], false, jsonMode)
@@ -234,6 +241,50 @@ func runExplain(source, id string, depth int, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
+// runQuery is D-06-01's CLI seam for the net-new `lang.query/0` schema: one
+// joined addressing surface over the five stable ID vocabularies already
+// shipped in the tree, re-derived from SRC on this cold invocation alone
+// (matching explain/debug-map's no-persisted-store discipline).
+func runQuery(source, address, kind, cursor string, depth int, jsonMode bool) int {
+	options := session.QueryOptions{Kind: kind, Cursor: cursor, Depth: depth}
+	result, err := session.QueryCommandFile(source, address, options)
+	if err != nil {
+		return emit(problemResult("query", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
+	}
+	return emit(result, jsonMode, false)
+}
+
+// extractKindAndCursor strips `--kind=K` and `--cursor=C` flags from args,
+// mirroring extractDepth/extractJSON's own strip-and-report shape. A
+// repeated flag is a usage error (returns ok=false), exactly like
+// extractJSON's repeated-flag case.
+func extractKindAndCursor(args []string) ([]string, string, string, bool) {
+	filtered := make([]string, 0, len(args))
+	kind := ""
+	cursor := ""
+	seenKind := false
+	seenCursor := false
+	for _, argument := range args {
+		switch {
+		case strings.HasPrefix(argument, "--kind="):
+			if seenKind {
+				return nil, "", "", false
+			}
+			seenKind = true
+			kind = strings.TrimPrefix(argument, "--kind=")
+		case strings.HasPrefix(argument, "--cursor="):
+			if seenCursor {
+				return nil, "", "", false
+			}
+			seenCursor = true
+			cursor = strings.TrimPrefix(argument, "--cursor=")
+		default:
+			filtered = append(filtered, argument)
+		}
+	}
+	return filtered, kind, cursor, true
+}
+
 // extractDepth strips one `--depth=N` flag from args, mirroring
 // extractJSON's own strip-and-report shape. A missing flag resolves to
 // protocol.ExplainDefaultDepth; a malformed or repeated flag is a usage
@@ -308,5 +359,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N]")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
 }
