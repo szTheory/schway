@@ -1,8 +1,13 @@
 package session
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/codename-lang/lang/internal/compiler/cache"
@@ -261,4 +266,212 @@ func liveLanesPhase5Adversarial() []string {
 		"lane:terminator-walk-complete",
 		"lane:compare-field-routing",
 	}
+}
+
+// FixtureInputs maps a declared-input NAME (drawn from
+// cache.DeclaredInputNames()) to its current digest for one fixture
+// instance -- the per-invocation input this file compares against the
+// change-state file's last-seen record.
+type FixtureInputs map[string]string
+
+// changeStateFileName is the change-state file's basename. D-06-08:
+// "changed" is measured against a gitignored LOCAL state file, never
+// git diff and never a committed baseline, because a no-diff commit can
+// still change effective risk through toolchain drift, and a committed
+// baseline would import cross-machine staleness.
+const changeStateFileName = "risklane-state.json"
+
+// MaxChangeStateBytes bounds a read of the change-state file, going
+// through the same readBoundedFile discipline session.go's own bounded
+// reads use.
+const MaxChangeStateBytes = 4 << 20
+
+// ChangeState records the last-seen input hash per (fixture, lane) pair
+// (D-06-08). Entries is keyed by laneChangeKey(fixtureID, laneID).
+type ChangeState struct {
+	Entries map[string]string `json:"entries"`
+}
+
+// DefaultChangeStatePath resolves the change-state file's default location
+// under os.UserCacheDir() joined with "lang-verify" -- alongside the
+// artifact cache from 06-04 -- NOT under the repository root.
+func DefaultChangeStatePath() (string, error) {
+	base, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, "lang-verify", changeStateFileName), nil
+}
+
+// LoadChangeState reads and strict-decodes path through the existing
+// bounded-read discipline. ANY anomaly -- the file missing, unreadable,
+// too large, or failing strict JSON decode -- returns an EMPTY state
+// rather than an error: an empty state has no entries for any (fixture,
+// lane) key, so it widens to "everything changed" by construction
+// (D-06-11's rule applied to the change oracle), never a partially
+// trusted parse of a corrupt prefix.
+func LoadChangeState(path string) (ChangeState, error) {
+	empty := ChangeState{Entries: map[string]string{}}
+
+	data, err := readBoundedFile(path, MaxChangeStateBytes)
+	if err != nil {
+		return empty, nil
+	}
+	if len(data) > MaxChangeStateBytes {
+		return empty, nil
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	var decoded ChangeState
+	if err := decoder.Decode(&decoded); err != nil {
+		return empty, nil
+	}
+	if decoded.Entries == nil {
+		decoded.Entries = map[string]string{}
+	}
+	return decoded, nil
+}
+
+// Save writes s to path atomically (temp file in the same directory, then
+// os.Rename), mirroring cache.Store.Put's write-then-rename discipline so
+// a crashed run never leaves a half-written state file that a later
+// LoadChangeState could misread as a legitimate (if odd) baseline.
+func (s ChangeState) Save(path string) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	entries := s.Entries
+	if entries == nil {
+		entries = map[string]string{}
+	}
+	data, err := json.Marshal(ChangeState{Entries: entries})
+	if err != nil {
+		return err
+	}
+	temp, err := os.CreateTemp(dir, ".tmp-"+changeStateFileName+"-*")
+	if err != nil {
+		return err
+	}
+	tempName := temp.Name()
+	if _, err := temp.Write(data); err != nil {
+		temp.Close()
+		os.Remove(tempName)
+		return err
+	}
+	if err := temp.Close(); err != nil {
+		os.Remove(tempName)
+		return err
+	}
+	return os.Rename(tempName, path)
+}
+
+// laneChangeKey is the (fixture, lane) composite key ChangeState.Entries
+// is indexed by.
+func laneChangeKey(fixtureID, laneID string) string {
+	return fixtureID + "\x00" + laneID
+}
+
+// laneInputHash hashes the current digests of exactly declaredInputs (a
+// lane's own declared_inputs list), in sorted-name order so the hash is
+// independent of the registry's on-disk field ordering. ok is false when
+// current is missing a digest for one of declaredInputs -- treated by the
+// caller as widening, never as a partial hash over what happened to be
+// present.
+func laneInputHash(declaredInputs []string, current FixtureInputs) (hash string, ok bool) {
+	names := append([]string(nil), declaredInputs...)
+	sort.Strings(names)
+	digest := sha256.New()
+	for _, name := range names {
+		value, present := current[name]
+		if !present {
+			return "", false
+		}
+		digest.Write([]byte(name))
+		digest.Write([]byte{0})
+		digest.Write([]byte(value))
+		digest.Write([]byte{0})
+	}
+	return hex.EncodeToString(digest.Sum(nil)), true
+}
+
+// SelectLanesForFixture layers D-06-08's per-(fixture, lane) change-state
+// oracle over the registry: for each of kind's declared lanes, it hashes
+// the lane's own declared-input digests and compares against the
+// last-seen hash recorded for (fixtureID, laneID) in the state file at
+// statePath. A lane with no prior entry, or whose hash moved, is selected;
+// everything else is deferred. computeErr and an unclassified kind still
+// take SelectLanes's fail-closed widen path. cold is true when there was
+// no usable prior state for this run at all (missing, corrupt, or truly
+// the first invocation) -- reported honestly, never as a degraded mode.
+func SelectLanesForFixture(kind, fixtureID string, current FixtureInputs, computeErr error, statePath string) (Selection, ChangeState, bool, error) {
+	rows, err := LoadRiskLaneRegistry()
+	if err != nil {
+		return Selection{}, ChangeState{}, false, err
+	}
+	return selectLanesForFixtureFromRows(rows, LiveLaneIDs(), kind, fixtureID, current, computeErr, statePath)
+}
+
+// selectLanesForFixtureFromRows is SelectLanesForFixture's pure core,
+// exercised directly by tests against an in-memory rows/liveLanes pair,
+// mirroring selectLanesFromRows's own test seam.
+func selectLanesForFixtureFromRows(rows []RiskLaneRow, liveLanes []string, kind, fixtureID string, current FixtureInputs, computeErr error, statePath string) (Selection, ChangeState, bool, error) {
+	known := false
+	for _, row := range rows {
+		if row.FixtureKind == kind {
+			known = true
+			break
+		}
+	}
+
+	if computeErr != nil || !known {
+		sel := selectLanesFromRows(rows, liveLanes, kind, nil, computeErr)
+		return sel, ChangeState{Entries: map[string]string{}}, true, nil
+	}
+
+	state, err := LoadChangeState(statePath)
+	if err != nil {
+		return Selection{}, ChangeState{}, false, err
+	}
+
+	sel := Selection{Reasons: map[string]string{}}
+	next := ChangeState{Entries: map[string]string{}}
+	for key, value := range state.Entries {
+		next.Entries[key] = value
+	}
+
+	cold := true
+	seenLane := map[string]bool{}
+	for _, row := range rows {
+		if row.FixtureKind != kind {
+			continue
+		}
+		if seenLane[row.LaneID] {
+			continue
+		}
+		seenLane[row.LaneID] = true
+
+		hash, ok := laneInputHash(row.DeclaredInputs, current)
+		key := laneChangeKey(fixtureID, row.LaneID)
+		if !ok {
+			sel.LaneIDs = append(sel.LaneIDs, row.LaneID)
+			sel.Reasons[row.LaneID] = ReasonWidened + ": undeclared-input risk"
+			continue
+		}
+
+		previous, seen := state.Entries[key]
+		if seen {
+			cold = false
+		}
+		if !seen || previous != hash {
+			sel.LaneIDs = append(sel.LaneIDs, row.LaneID)
+			sel.Reasons[row.LaneID] = fmt.Sprintf("%s: %s matched", ReasonSelected, kind)
+		} else {
+			sel.Reasons[row.LaneID] = ReasonDeferred + ": no declared dependency"
+		}
+		next.Entries[key] = hash
+	}
+	sort.Strings(sel.LaneIDs)
+	return sel, next, cold, nil
 }

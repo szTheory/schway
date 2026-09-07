@@ -1,3 +1,12 @@
 /.lang/
 /lang
 /.gsd/
+
+# D-06-08: the change-risk selection state file (session.ChangeState) is
+# deliberately local-only, never committed. It normally lives under
+# os.UserCacheDir()/lang-verify, outside this repository entirely; this
+# entry also guards any accidental fallback path under the repo root. A
+# no-diff commit can still change effective risk through toolchain drift,
+# and a committed baseline would import cross-machine staleness -- so the
+# first run on any machine is deliberately cold, never pre-seeded.
+risklane-state.json
