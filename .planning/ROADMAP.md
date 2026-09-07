@@ -303,7 +303,7 @@ Plans:
   3. An automated repair exercise fixes representative match, move, borrow, cleanup, and stale-evidence defects using only the supported command protocol.
   4. Declared-machine cold/warm feedback distributions, peak memory, output bytes, and affected work meet ratified budgets or identify a specific blocking regression.
 
-**Plans**: 10/15 plans executed
+**Plans**: 11/15 plans executed
 
 Plans:
 **Wave 1**
@@ -330,7 +330,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 06-07-PLAN.md — Wire cache + risk selection into `verify`; deferred lanes never render pass; `evidence` trace expansion
+- [x] 06-07-PLAN.md — Wire cache + risk selection into `verify`; deferred lanes never render pass; `evidence` trace expansion
 - [ ] 06-14-PLAN.md — Anti-theater guards 1 and 2: prose-scramble identical, vocabulary-removal goes RED
 
 **Wave 6** *(blocked on Wave 5 completion)*
@@ -393,4 +393,4 @@ for the verbatim carry-forward entry).
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
 | 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
-| 6. Agent Feedback and Performance Ratification | 10/15 | In Progress|  |
+| 6. Agent Feedback and Performance Ratification | 11/15 | In Progress|  |
