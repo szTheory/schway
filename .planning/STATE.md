@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 current_phase: 06
 current_phase_name: Agent Feedback and Performance Ratification
-status: executing
-stopped_at: Completed 06-09-PLAN.md
-last_updated: "2026-09-07T04:05:20.839Z"
+status: verifying
+stopped_at: Completed 06-10-PLAN.md
+last_updated: "2026-09-07T04:38:12.944Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 06 execution started
-state_head: 07b4e66e628c81360e90362c426d3aadcf4eeb50
+state_head: a3a1666185e85dee73e4e4e7df358bf5aa8a22fd
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 62
-  completed_plans: 60
+  completed_plans: 61
   percent: 83
 ---
 
@@ -31,7 +31,7 @@ hiding runtime costs.
 
 Phase: 06 (Agent Feedback and Performance Ratification) — EXECUTING
 Plan: 15 of 15
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-06 — Phase 06 execution started
 
 Progress: ██████████ [████████░░] 83%
@@ -116,6 +116,7 @@ Progress: ██████████ [████████░░] 83%
 | Phase 06 P07 | 95min | 3 tasks | 8 files |
 | Phase 06-agent-feedback-and-performance-ratification P14 | 50 min | 3 tasks | 11 files |
 | Phase 06 P09 | 55min | 3 tasks | 4 files |
+| Phase 06 P10 | 55min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -239,6 +240,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 06]: Cleanup and stale-evidence classes are repaired gate-side (test file), not through the driver's check-repair JSON protocol, since neither is reachable via lang check diagnostics
 - [Phase 06]: Anti-theater guards (D-06-27.1/.2) shipped via a content-hash-keyed fixture-substitution subprocess; found and fixed a genuine driverEligible/DriverEligible gap (Kind was never checked).
 - [Phase 06]: D-06-16/17/18/22 implemented: qlt02_budget_manifest.json seeded with real measured machine_id/recomputed_work, executable audit, observation-only mode, and exact recomputed_work-only blocking rule wired into protocol.Lane. — Closes the phase's standing blocker on choosing baseline machines for ratified feedback budgets.
+- [Phase 06]: 06-10: native_compile and link split into two real clang invocations (compile-to-object, then link) so D-06-21's five stage boundaries are genuinely separate, independently timed spans.
+- [Phase 06]: 06-10: protocol.PeakRSSUnavailable constant carries D-06-20's full rationale as an enforceable doc comment, replacing ~15 hardcoded 'unavailable' literals; TestNoGetrusageAnywhere/TestPeakRSSStaysUnavailable make the gap mechanically enforced.
 
 ### Pending Todos
 
@@ -269,6 +272,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T04:05:20.628Z
-Stopped at: Completed 06-09-PLAN.md
+Last session: 2026-09-07T04:38:04.000Z
+Stopped at: Completed 06-10-PLAN.md
 Resume file: None
