@@ -19,7 +19,7 @@ native evidence, and finally the bounded agent/human feedback service.
 - [x] **Phase 3: Borrowed Views and CFG Lifetimes** - Add shared/exclusive loans, edge-specific last use, and public borrow origins. (completed 2026-09-04)
 - [x] **Phase 4: Fallible Resources and C Boundary** - Prove partial cleanup and typed foreign obligations through a real C call. (completed 2026-09-05)
 - [x] **Phase 5: Native Equivalence and Adversarial Evidence** - Preserve semantics under optimization, sanitizers, and hostile mutations. (completed 2026-09-06)
-- [ ] **Phase 6: Agent Feedback and Performance Ratification** - Expose bounded query/explain/verify/evidence protocols and ratify feedback budgets.
+- [x] **Phase 6: Agent Feedback and Performance Ratification** - Expose bounded query/explain/verify/evidence protocols and ratify feedback budgets. (completed 2026-09-07)
 
 ## Phase Details
 
@@ -393,4 +393,4 @@ for the verbatim carry-forward entry).
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
 | 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
-| 6. Agent Feedback and Performance Ratification | 15/15 | In Progress|  |
+| 6. Agent Feedback and Performance Ratification | 15/15 | Complete    | 2026-09-07 |
