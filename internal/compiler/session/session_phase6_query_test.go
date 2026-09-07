@@ -7,6 +7,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/debugmap"
+	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -99,6 +100,207 @@ func TestQueryUnknownIDReportsNotCaptured(t *testing.T) {
 	}
 	if unrecognized.Query.Facts[0].Availability != string(debugmap.NotCaptured) {
 		t.Fatalf("unrecognized Availability = %q, want not_captured", unrecognized.Query.Facts[0].Availability)
+	}
+}
+
+// --- Task 2: the five-vocabulary join dispatcher ---------------------------
+
+func TestQueryResolvesEveryStableIDVocabulary(t *testing.T) {
+	t.Run("diagnostic", func(t *testing.T) {
+		path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+		diagID := firstDiagnosticID(t, path)
+		result, err := QueryCommandFile(path, diagID, QueryOptions{})
+		if err != nil {
+			t.Fatalf("QueryCommandFile: %v", err)
+		}
+		if len(result.Query.Facts) == 0 {
+			t.Fatalf("no facts resolved for a real diagnostic ID")
+		}
+		if result.Query.Facts[0].Vocabulary != QueryVocabularyDiagnostic {
+			t.Fatalf("Vocabulary = %q, want diagnostic", result.Query.Facts[0].Vocabulary)
+		}
+	})
+
+	t.Run("debugmap operation_id/core_id/point_id", func(t *testing.T) {
+		path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+		built := buildDebugMap(t, path)
+		if len(built.Entries) == 0 {
+			t.Fatalf("debugmap.Build produced no entries for %s", path)
+		}
+		entry := built.Entries[0]
+
+		for _, testCase := range []struct {
+			name       string
+			address    string
+			vocabulary string
+		}{
+			{"operation_id", entry.OperationID, "operation_id"},
+			{"core_id", entry.CoreID, "core_id"},
+			{"point_id", entry.PointID, "point_id"},
+		} {
+			t.Run(testCase.name, func(t *testing.T) {
+				result, err := QueryCommandFile(path, testCase.address, QueryOptions{})
+				if err != nil {
+					t.Fatalf("QueryCommandFile: %v", err)
+				}
+				if len(result.Query.Facts) != 1 {
+					t.Fatalf("Facts = %+v, want exactly one", result.Query.Facts)
+				}
+				if result.Query.Facts[0].Vocabulary != testCase.vocabulary {
+					t.Fatalf("Vocabulary = %q, want %q", result.Query.Facts[0].Vocabulary, testCase.vocabulary)
+				}
+				if result.Query.Facts[0].Availability != string(debugmap.Available) {
+					t.Fatalf("Availability = %q, want available", result.Query.Facts[0].Availability)
+				}
+			})
+		}
+	})
+
+	t.Run("evidence", func(t *testing.T) {
+		path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+		_, evidenceResult, err := EvidenceCommandFile(context.Background(), path)
+		if err != nil {
+			t.Fatalf("EvidenceCommandFile: %v", err)
+		}
+		if evidenceResult.Evidence == nil {
+			t.Fatalf("no evidence manifest produced for %s", path)
+		}
+		result, err := QueryCommandFile(path, evidenceResult.Evidence.ID, QueryOptions{})
+		if err != nil {
+			t.Fatalf("QueryCommandFile: %v", err)
+		}
+		if len(result.Query.Facts) != 1 || result.Query.Facts[0].Vocabulary != QueryVocabularyEvidence {
+			t.Fatalf("Facts = %+v, want one evidence fact", result.Query.Facts)
+		}
+		if result.Query.Facts[0].Availability != string(debugmap.Available) {
+			t.Fatalf("Availability = %q, want available", result.Query.Facts[0].Availability)
+		}
+	})
+
+	t.Run("control", func(t *testing.T) {
+		controls := AllShippedControlIDs()
+		if len(controls) == 0 {
+			t.Fatalf("AllShippedControlIDs() is empty")
+		}
+		result, err := QueryCommandFile("", controls[0], QueryOptions{})
+		if err != nil {
+			t.Fatalf("QueryCommandFile: %v", err)
+		}
+		if len(result.Query.Facts) != 1 || result.Query.Facts[0].Vocabulary != QueryVocabularyControl {
+			t.Fatalf("Facts = %+v, want one control fact", result.Query.Facts)
+		}
+		if result.Query.Facts[0].Availability != string(debugmap.Available) {
+			t.Fatalf("Availability = %q, want available", result.Query.Facts[0].Availability)
+		}
+	})
+
+	t.Run("lane", func(t *testing.T) {
+		corpus := testsupport.ProjectPath("testdata", "phase1")
+		verifyResult := VerifyCorpusFile(context.Background(), corpus, native.DefaultRunner())
+		if len(verifyResult.Lanes) == 0 {
+			t.Fatalf("verify produced no lanes for %s", corpus)
+		}
+		laneID := verifyResult.Lanes[0].ID
+		result, err := QueryCommandFile(corpus, laneID, QueryOptions{})
+		if err != nil {
+			t.Fatalf("QueryCommandFile: %v", err)
+		}
+		if len(result.Query.Facts) != 1 || result.Query.Facts[0].Vocabulary != QueryVocabularyLane {
+			t.Fatalf("Facts = %+v, want one lane fact", result.Query.Facts)
+		}
+		if result.Query.Facts[0].Availability != string(debugmap.Available) {
+			t.Fatalf("Availability = %q, want available", result.Query.Facts[0].Availability)
+		}
+	})
+}
+
+// TestQueryMintsNoSixthVocabulary pins D-06-01's closed vocabulary set: the
+// dispatch table this file's classifier routes through has exactly five
+// entries, each one derivable from a shipped constant, and the two can
+// never independently drift because QueryVocabularies() is read directly
+// off the same map classifyQueryVocabulary/QueryCommandFile dispatch
+// through.
+func TestQueryMintsNoSixthVocabulary(t *testing.T) {
+	vocabularies := QueryVocabularies()
+	if len(vocabularies) != 5 {
+		t.Fatalf("QueryVocabularies() = %v, want exactly 5 entries", vocabularies)
+	}
+	want := map[string]bool{
+		QueryVocabularyDiagnostic: true, QueryVocabularyDebugMap: true, QueryVocabularyEvidence: true,
+		QueryVocabularyControl: true, QueryVocabularyLane: true,
+	}
+	for _, vocabulary := range vocabularies {
+		if !want[vocabulary] {
+			t.Fatalf("unexpected vocabulary %q outside the closed D-06-01 set", vocabulary)
+		}
+		if _, ok := queryVocabularyDispatch[vocabulary]; !ok {
+			t.Fatalf("vocabulary %q has no matching dispatcher branch", vocabulary)
+		}
+	}
+	// Every dispatch-table entry must also be named by QueryVocabularies() --
+	// an entry present in the map but absent from the slice would itself be
+	// an undetected sixth vocabulary.
+	seen := map[string]bool{}
+	for _, vocabulary := range vocabularies {
+		seen[vocabulary] = true
+	}
+	for name := range queryVocabularyDispatch {
+		if !seen[name] {
+			t.Fatalf("dispatch table entry %q is not named by QueryVocabularies() -- unrouted/undeclared vocabulary", name)
+		}
+	}
+}
+
+// TestQueryKindFilterVocabularyIsClosed covers Test 7: --kind filters the
+// fact list, and an unrecognized kind is a usage error, never a silent
+// no-op.
+func TestQueryKindFilterVocabularyIsClosed(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+	diagID := firstDiagnosticID(t, path)
+
+	unfiltered, err := QueryCommandFile(path, diagID, QueryOptions{})
+	if err != nil {
+		t.Fatalf("QueryCommandFile: %v", err)
+	}
+	if len(unfiltered.Query.Facts) < 2 {
+		t.Fatalf("fixture produced too few facts (%d) to prove filtering narrows the list", len(unfiltered.Query.Facts))
+	}
+
+	filtered, err := QueryCommandFile(path, diagID, QueryOptions{Kind: "ownership"})
+	if err != nil {
+		t.Fatalf("QueryCommandFile (kind=ownership): %v", err)
+	}
+	if len(filtered.Query.Facts) == 0 {
+		t.Fatalf("--kind=ownership matched nothing on a fixture with place/transfer_target causes")
+	}
+	if len(filtered.Query.Facts) >= len(unfiltered.Query.Facts) {
+		t.Fatalf("--kind=ownership did not narrow the fact list: filtered=%d unfiltered=%d", len(filtered.Query.Facts), len(unfiltered.Query.Facts))
+	}
+	for _, fact := range filtered.Query.Facts {
+		if !queryOwnershipKinds[fact.Kind] {
+			t.Fatalf("fact %+v leaked through --kind=ownership filter", fact)
+		}
+	}
+
+	for _, kind := range QueryKinds() {
+		result, err := QueryCommandFile(path, diagID, QueryOptions{Kind: kind})
+		if err != nil {
+			t.Fatalf("QueryCommandFile (kind=%s): %v", kind, err)
+		}
+		if result.Status == protocol.StatusUsage {
+			t.Fatalf("kind=%s (a declared valid kind) was rejected as a usage error", kind)
+		}
+	}
+
+	unknownKind, err := QueryCommandFile(path, diagID, QueryOptions{Kind: "nonsense"})
+	if err != nil {
+		t.Fatalf("QueryCommandFile (kind=nonsense): %v", err)
+	}
+	if unknownKind.Status != protocol.StatusUsage {
+		t.Fatalf("Status = %q, want usage_error for an unrecognized --kind", unknownKind.Status)
+	}
+	if len(unknownKind.Diagnostics) != 1 || unknownKind.Diagnostics[0].Code != "tool.query_unknown_kind" {
+		t.Fatalf("Diagnostics = %+v, want one entry with code tool.query_unknown_kind", unknownKind.Diagnostics)
 	}
 }
 
