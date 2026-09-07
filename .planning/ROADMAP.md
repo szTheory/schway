@@ -303,7 +303,7 @@ Plans:
   3. An automated repair exercise fixes representative match, move, borrow, cleanup, and stale-evidence defects using only the supported command protocol.
   4. Declared-machine cold/warm feedback distributions, peak memory, output bytes, and affected work meet ratified budgets or identify a specific blocking regression.
 
-**Plans**: 4/15 plans executed
+**Plans**: 7/15 plans executed
 
 Plans:
 **Wave 1**
@@ -320,7 +320,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 06-03-PLAN.md — `query`: five-vocabulary join, cursor-paginated, under `lang.query/0`
-- [ ] 06-05-PLAN.md — `risk_lanes.json`, conservative widening, gitignored change-state file, bidirectional audit
+- [x] 06-05-PLAN.md — `risk_lanes.json`, conservative widening, gitignored change-state file, bidirectional audit
 - [ ] 06-12-PLAN.md — Five defect injectors, held-out corpus, and anti-theater guard 3 (marker mutation-kill)
 
 **Wave 4** *(blocked on Wave 3 completion)*
@@ -393,4 +393,4 @@ for the verbatim carry-forward entry).
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
 | 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
-| 6. Agent Feedback and Performance Ratification | 4/15 | In Progress|  |
+| 6. Agent Feedback and Performance Ratification | 7/15 | In Progress|  |

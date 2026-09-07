@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 06
 current_phase_name: Agent Feedback and Performance Ratification
 status: executing
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-09-07T00:41:35.603Z"
+stopped_at: Completed 06-05-PLAN.md
+last_updated: "2026-09-07T01:02:09.973Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 06 execution started
-state_head: 6759a1a2ec825040f535c34ecf999bf3d15ec5e5
+state_head: bb984c5eec45367ff2d82000856ce2f56f223e98
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 62
-  completed_plans: 53
+  completed_plans: 54
   percent: 83
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 06 (Agent Feedback and Performance Ratification) — EXECUTING
-Plan: 7 of 15
+Plan: 8 of 15
 Status: Ready to execute
 Last activity: 2026-09-06 — Phase 06 execution started
 
@@ -109,6 +109,7 @@ Progress: ██████████ [████████░░] 83%
 | Phase 06 P08 | 35min | 3 tasks | 4 files |
 | Phase 06-agent-feedback-and-performance-ratification P11 | 18 min | 3 tasks | 3 files |
 | Phase 06-agent-feedback-and-performance-ratification P03 | 70min | 3 tasks | 4 files |
+| Phase 06 P05 | 55min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -224,6 +225,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 06]: 06-03: QueryVocabularies() returns D-06-01's five COARSE category names (dispatch-table driven, no hand-copied literal); QueryFact.Vocabulary carries a finer per-fact label (operation_id/core_id/point_id under the debugmap category) -- reconciles Task 1's per-fact label instruction with Task 2's closed-5 audit.
 - [Phase 06]: 06-03: core_id has no stable address prefix; an address only classifies as core_id when it matches a REAL entry.CoreID in SRC's freshly-built debugmap, else it reports the honest 'unrecognized' sentinel rather than a guessed core_id.
 - [Phase 06]: 06-03: lane: vocabulary resolves against a live VerifyCorpusFile run over SRC, so SRC is expected to be a corpus directory for that one vocabulary, matching lang verify's own operand.
+- [Phase 06]: 06-05: change-state key is (fixtureID, laneID) per CONTEXT.md Test 4, not (fixtureID, inputName); LiveLaneIDs() composed from five hand-authored per-corpus category functions cross-checked against live addLane sites; risk-lane audit is a NEW executable audit, not a QLT-01 extension (row shapes are structurally unrelated).
 
 ### Pending Todos
 
@@ -254,6 +256,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T00:41:25.500Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-09-07T01:02:09.768Z
+Stopped at: Completed 06-05-PLAN.md
 Resume file: None
