@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/codename-lang/lang/internal/compiler/cache"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 )
@@ -51,6 +52,11 @@ type Metrics struct {
 	PeakRSSBytes   int64  `json:"peak_rss_bytes,omitempty"`
 	OutputBytes    int    `json:"output_bytes"`
 	RecomputedWork int    `json:"recomputed_work"`
+	// CacheInputsReusedCount counts artifacts this invocation reused from
+	// the local cache (D-06-12), in the same counted-unit currency as
+	// RecomputedWork -- a plain int counter, no unit conversion between the
+	// two. Never reaches Result.Finalize()'s identity struct (D-06-32).
+	CacheInputsReusedCount int `json:"cache_inputs_reused_count,omitempty"`
 }
 
 type EvidenceSummary struct {
@@ -203,6 +209,16 @@ type QuerySummary struct {
 	Truncated  string      `json:"truncated,omitempty"`
 }
 
+// StageTiming is one named compilation stage's elapsed duration (D-06-21),
+// appended to Lane.StageBreakdown. Like every field on StageTiming, it is
+// gated by the LANG_OBSERVE_TIMING convention (protocol.go's completeCommand
+// analog in session.go) and never populated unconditionally -- an
+// unconditional time.Since would perturb a golden/pinned-JSON test.
+type StageTiming struct {
+	Stage     string `json:"stage"`
+	ElapsedNS int64  `json:"elapsed_ns"`
+}
+
 type Lane struct {
 	Schema         string   `json:"schema"`
 	ID             string   `json:"id"`
@@ -213,6 +229,116 @@ type Lane struct {
 	PeakRSSStatus  string   `json:"peak_rss_status"`
 	PeakRSSBytes   int64    `json:"peak_rss_bytes,omitempty"`
 	OutputBytes    int      `json:"output_bytes"`
+
+	// The seven /1 reporting fields (D-06-12, D-06-15, D-06-17, D-06-21).
+	// All omitempty: an unaffected /0-era lane's JSON is a superset-by-
+	// absence of what it was before this bump. None of these fields may
+	// ever reach Result.Finalize()'s identity struct (D-06-32) -- see
+	// TestMetricsAndLaneFieldsExcludedFromIdentity.
+
+	// CacheStatus reports what THIS invocation skipped (or didn't) for this
+	// lane, drawn from cache.CacheStatuses(). Deliberately NOT hit/miss:
+	// those words would wrongly imply a verdict itself was cached, when in
+	// fact the checker, five-axis comparator, and sanitizer classifier
+	// always re-run fresh regardless of cache status (D-06-06, D-06-12).
+	CacheStatus string `json:"cache_status,omitempty"`
+	// SelectionReason names why this lane ran (or was deferred/widened) this
+	// invocation, drawn from LaneSelectionReasons() (D-06-10, D-06-11).
+	SelectionReason string `json:"selection_reason,omitempty"`
+	// MachineID is the declared-machine identity this lane's measurements
+	// were taken on (D-06-17), never a raw host fingerprint.
+	MachineID string `json:"machine_id,omitempty"`
+	// GateVerdict is this lane's ratification verdict, drawn from
+	// LaneGateVerdicts() (D-06-14, D-06-18, D-06-22).
+	GateVerdict string `json:"gate_verdict,omitempty"`
+	// ColdOrWarm reports whether this lane's measurement was taken cold or
+	// warm (D-06-19); exactly "cold" or "warm".
+	ColdOrWarm string `json:"cold_or_warm,omitempty"`
+	// StageBreakdown is a per-stage elapsed-time report (D-06-21).
+	StageBreakdown []StageTiming `json:"stage_breakdown,omitempty"`
+}
+
+// LaneCacheStatuses returns the closed, four-value cache-status vocabulary a
+// Lane's CacheStatus may report, drawn directly from cache.CacheStatuses()
+// (D-06-12) so this package never maintains a second copy of that
+// vocabulary.
+func LaneCacheStatuses() []string {
+	return cache.CacheStatuses()
+}
+
+// The closed SelectionReason vocabulary (D-06-10, D-06-11): a lane was
+// selected, deferred, or its selection was widened out of an abundance of
+// caution. These three literal words match session.ReasonSelected/
+// ReasonDeferred/ReasonWidened's own values; protocol cannot import session
+// (session imports protocol), so the values are declared independently here
+// and must be kept in sync by inspection.
+const (
+	LaneSelectionSelected = "selected"
+	LaneSelectionDeferred = "deferred"
+	LaneSelectionWidened  = "widened"
+)
+
+// LaneSelectionReasons returns the closed, three-value selection-reason
+// vocabulary a Lane's SelectionReason may report (D-06-10, D-06-11).
+func LaneSelectionReasons() []string {
+	return []string{LaneSelectionSelected, LaneSelectionDeferred, LaneSelectionWidened}
+}
+
+// The closed GateVerdict vocabulary (D-06-14, D-06-18, D-06-22).
+const (
+	LaneGateBlocking    = "blocking"
+	LaneGateObserved    = "observed"
+	LaneGateNotRatified = "not_ratified"
+)
+
+// LaneGateVerdicts returns the closed, three-value gate-verdict vocabulary a
+// Lane's GateVerdict may report.
+func LaneGateVerdicts() []string {
+	return []string{LaneGateBlocking, LaneGateObserved, LaneGateNotRatified}
+}
+
+// The closed ColdOrWarm vocabulary (D-06-19).
+const (
+	LaneCold = "cold"
+	LaneWarm = "warm"
+)
+
+// LaneColdOrWarmValues returns the closed, two-value cold/warm vocabulary a
+// Lane's ColdOrWarm may report.
+func LaneColdOrWarmValues() []string {
+	return []string{LaneCold, LaneWarm}
+}
+
+// ValidateLaneVocabularies refuses a Lane whose CacheStatus, SelectionReason,
+// GateVerdict, or ColdOrWarm holds any value outside its closed vocabulary.
+// An empty value in any of these fields is valid (not yet populated is not
+// the same as out-of-vocabulary) -- only a genuinely out-of-vocabulary,
+// non-empty value is refused. This is what keeps a free-text cache_status
+// from silently reintroducing hit/miss semantics (D-06-12) or any other
+// field from carrying an unvocabularied value into a published /1 document.
+func ValidateLaneVocabularies(lane Lane) error {
+	if lane.CacheStatus != "" && !contains(LaneCacheStatuses(), lane.CacheStatus) {
+		return fmt.Errorf("protocol: lane %q has out-of-vocabulary cache_status %q", lane.ID, lane.CacheStatus)
+	}
+	if lane.SelectionReason != "" && !contains(LaneSelectionReasons(), lane.SelectionReason) {
+		return fmt.Errorf("protocol: lane %q has out-of-vocabulary selection_reason %q", lane.ID, lane.SelectionReason)
+	}
+	if lane.GateVerdict != "" && !contains(LaneGateVerdicts(), lane.GateVerdict) {
+		return fmt.Errorf("protocol: lane %q has out-of-vocabulary gate_verdict %q", lane.ID, lane.GateVerdict)
+	}
+	if lane.ColdOrWarm != "" && !contains(LaneColdOrWarmValues(), lane.ColdOrWarm) {
+		return fmt.Errorf("protocol: lane %q has out-of-vocabulary cold_or_warm %q", lane.ID, lane.ColdOrWarm)
+	}
+	return nil
+}
+
+func contains(vocabulary []string, value string) bool {
+	for _, candidate := range vocabulary {
+		if candidate == value {
+			return true
+		}
+	}
+	return false
 }
 
 type Result struct {

@@ -1,12 +1,14 @@
 package protocol_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/cache"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
@@ -22,7 +24,7 @@ func TestOwnershipProjectionIdentityParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if machine.Schema != "lang.command/0" || !strings.Contains(human, machine.ID) || !strings.Contains(human, machine.Diagnostics[0].ID) || !strings.Contains(human, machine.Executions[0].Events[0].ID) {
+	if machine.Schema != "lang.command/1" || !strings.Contains(human, machine.ID) || !strings.Contains(human, machine.Diagnostics[0].ID) || !strings.Contains(human, machine.Executions[0].Events[0].ID) {
 		t.Fatalf("human/JSON ownership identities diverged: result=%+v human=%q", machine, human)
 	}
 	for _, want := range []string{"source_place=owned:p0", "target_place=owned:p1", "type_id=owned:t0"} {
@@ -158,10 +160,46 @@ func TestSchemaZeroConstantsStillExist(t *testing.T) {
 	}
 }
 
+// setSentinelValue sets a single settable reflect.Value to a non-zero
+// sentinel, recursing into slice-of-struct elements (e.g.
+// protocol.StageTiming) so newly added structured fields do not require a
+// bespoke case here. Used by setSentinelFields.
+func setSentinelValue(t *testing.T, field reflect.Value) {
+	t.Helper()
+	if !field.CanSet() {
+		return
+	}
+	switch field.Kind() {
+	case reflect.Int, reflect.Int64, reflect.Int32:
+		field.SetInt(7)
+	case reflect.String:
+		field.SetString("sentinel")
+	case reflect.Bool:
+		field.SetBool(true)
+	case reflect.Slice:
+		elemType := field.Type().Elem()
+		switch elemType.Kind() {
+		case reflect.String:
+			field.Set(reflect.ValueOf([]string{"sentinel"}))
+		case reflect.Struct:
+			element := reflect.New(elemType).Elem()
+			for index := 0; index < element.NumField(); index++ {
+				setSentinelValue(t, element.Field(index))
+			}
+			slice := reflect.MakeSlice(field.Type(), 1, 1)
+			slice.Index(0).Set(element)
+			field.Set(slice)
+		default:
+			t.Fatalf("setSentinelValue: unhandled slice element kind: %s", elemType.Kind())
+		}
+	default:
+		t.Fatalf("setSentinelValue: unhandled field kind: %s", field.Kind())
+	}
+}
+
 // setSentinelFields sets every settable field of value (a pointer to a
-// struct) to a non-zero sentinel: ints/int64s become 7, strings become
-// "sentinel", and []string slices become []string{"sentinel"}. Fields whose
-// name is in skip are left untouched. It is used by
+// struct) to a non-zero sentinel via setSentinelValue. Fields whose name is
+// in skip are left untouched. It is used by
 // TestMetricsAndLaneFieldsExcludedFromIdentity to prove that non-identity
 // fields cannot perturb Result.Finalize()'s ID no matter what value they
 // hold (D-06-32).
@@ -175,25 +213,7 @@ func setSentinelFields(t *testing.T, value interface{}, skip map[string]bool) {
 		if skip[name] {
 			continue
 		}
-		if !field.CanSet() {
-			continue
-		}
-		switch field.Kind() {
-		case reflect.Int, reflect.Int64, reflect.Int32:
-			field.SetInt(7)
-		case reflect.String:
-			field.SetString("sentinel")
-		case reflect.Slice:
-			if field.Type().Elem().Kind() == reflect.String {
-				field.Set(reflect.ValueOf([]string{"sentinel"}))
-			} else {
-				t.Fatalf("setSentinelFields: unhandled slice element kind for field %s: %s", name, field.Type().Elem().Kind())
-			}
-		case reflect.Bool:
-			field.SetBool(true)
-		default:
-			t.Fatalf("setSentinelFields: unhandled field kind for field %s: %s", name, field.Kind())
-		}
+		setSentinelValue(t, field)
 	}
 }
 
@@ -274,9 +294,113 @@ func TestIdentityFieldEnumerationIsExhaustive(t *testing.T) {
 
 	assertFieldSet(t, "protocol.Metrics", protocol.Metrics{}, []string{
 		"ElapsedNS", "PeakRSSStatus", "PeakRSSBytes", "OutputBytes", "RecomputedWork",
+		"CacheInputsReusedCount",
 	})
 
 	assertFieldSet(t, "protocol.Lane", protocol.Lane{}, []string{
 		"Schema", "ID", "Status", "Controls", "RecomputedWork", "ElapsedNS", "PeakRSSStatus", "PeakRSSBytes", "OutputBytes",
+		"CacheStatus", "SelectionReason", "MachineID", "GateVerdict", "ColdOrWarm", "StageBreakdown",
 	})
+}
+
+// TestNewLaneAndMetricsFieldsAreAdditive is Behavior Test 1 (D-06-06's Task
+// 2): a zero-valued Lane's seven /1 fields never appear in marshalled JSON,
+// so /1 output for an unaffected lane is a superset-by-absence of /0.
+func TestNewLaneAndMetricsFieldsAreAdditive(t *testing.T) {
+	lane := protocol.Lane{ID: "lane:one", Status: "pass"}
+	encoded, err := json.Marshal(lane)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{
+		`"cache_status"`, `"selection_reason"`, `"machine_id"`,
+		`"gate_verdict"`, `"cold_or_warm"`, `"stage_breakdown"`,
+	} {
+		if strings.Contains(string(encoded), key) {
+			t.Fatalf("zero-valued Lane leaked %s: %s", key, encoded)
+		}
+	}
+
+	metrics := protocol.Metrics{}
+	encodedMetrics, err := json.Marshal(metrics)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encodedMetrics), `"cache_inputs_reused_count"`) {
+		t.Fatalf("zero-valued Metrics leaked cache_inputs_reused_count: %s", encodedMetrics)
+	}
+}
+
+// TestLaneVocabulariesAreClosed is Behavior Tests 2 and 3 (plus GateVerdict/
+// ColdOrWarm): cache_status, selection_reason, gate_verdict, and
+// cold_or_warm each accept only their declared closed vocabulary, and
+// ValidateLaneVocabularies refuses any out-of-vocabulary value.
+func TestLaneVocabulariesAreClosed(t *testing.T) {
+	gotCacheStatuses := append([]string(nil), protocol.LaneCacheStatuses()...)
+	sort.Strings(gotCacheStatuses)
+	wantCacheStatuses := append([]string(nil), cache.CacheStatuses()...)
+	sort.Strings(wantCacheStatuses)
+	if !reflect.DeepEqual(gotCacheStatuses, wantCacheStatuses) {
+		t.Fatalf("protocol.LaneCacheStatuses() = %v, want set-equal to cache.CacheStatuses() = %v", gotCacheStatuses, wantCacheStatuses)
+	}
+	for _, want := range []string{"artifact_reused", "artifact_recomputed", "not_cacheable", "unavailable"} {
+		if !containsString(gotCacheStatuses, want) {
+			t.Fatalf("protocol.LaneCacheStatuses() missing %q: %v", want, gotCacheStatuses)
+		}
+	}
+
+	if got := protocol.LaneGateVerdicts(); !reflect.DeepEqual(got, []string{"blocking", "observed", "not_ratified"}) {
+		t.Fatalf("protocol.LaneGateVerdicts() = %v, want [blocking observed not_ratified]", got)
+	}
+
+	if got := protocol.LaneSelectionReasons(); len(got) != 3 || !containsString(got, "selected") || !containsString(got, "deferred") || !containsString(got, "widened") {
+		t.Fatalf("protocol.LaneSelectionReasons() = %v, want exactly the three declared forms", got)
+	}
+
+	if got := protocol.LaneColdOrWarmValues(); !reflect.DeepEqual(got, []string{"cold", "warm"}) {
+		t.Fatalf("protocol.LaneColdOrWarmValues() = %v, want [cold warm]", got)
+	}
+
+	valid := protocol.Lane{ID: "lane:one", CacheStatus: "artifact_reused", SelectionReason: "selected", GateVerdict: "blocking", ColdOrWarm: "cold"}
+	if err := protocol.ValidateLaneVocabularies(valid); err != nil {
+		t.Fatalf("ValidateLaneVocabularies rejected an in-vocabulary lane: %v", err)
+	}
+
+	for _, invalid := range []protocol.Lane{
+		{ID: "lane:x", CacheStatus: "hit"},
+		{ID: "lane:x", CacheStatus: "miss"},
+		{ID: "lane:x", SelectionReason: "maybe"},
+		{ID: "lane:x", GateVerdict: "unknown"},
+		{ID: "lane:x", ColdOrWarm: "lukewarm"},
+	} {
+		if err := protocol.ValidateLaneVocabularies(invalid); err == nil {
+			t.Fatalf("ValidateLaneVocabularies accepted out-of-vocabulary lane: %+v", invalid)
+		}
+	}
+}
+
+func containsString(haystack []string, needle string) bool {
+	for _, candidate := range haystack {
+		if candidate == needle {
+			return true
+		}
+	}
+	return false
+}
+
+// TestCacheInputsReusedCountSharesUnitWithRecomputedWork is Behavior Test 4:
+// CacheInputsReusedCount and RecomputedWork are both plain int counters in
+// the same counted-unit currency, with no unit-conversion factor between
+// them -- setting one to a value and reading it back must not scale it.
+func TestCacheInputsReusedCountSharesUnitWithRecomputedWork(t *testing.T) {
+	metrics := protocol.Metrics{RecomputedWork: 5, CacheInputsReusedCount: 5}
+	if metrics.RecomputedWork != metrics.CacheInputsReusedCount {
+		t.Fatalf("RecomputedWork=%d and CacheInputsReusedCount=%d diverged despite equal assignment -- both must be plain int counters", metrics.RecomputedWork, metrics.CacheInputsReusedCount)
+	}
+	metricsType := reflect.TypeOf(protocol.Metrics{})
+	recomputed, _ := metricsType.FieldByName("RecomputedWork")
+	reused, _ := metricsType.FieldByName("CacheInputsReusedCount")
+	if recomputed.Type.Kind() != reflect.Int || reused.Type.Kind() != reflect.Int {
+		t.Fatalf("RecomputedWork (%s) and CacheInputsReusedCount (%s) must both be plain int", recomputed.Type.Kind(), reused.Type.Kind())
+	}
 }

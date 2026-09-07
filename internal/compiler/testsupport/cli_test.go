@@ -212,7 +212,7 @@ func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
 		if err := json.Unmarshal(machine.Stdout, &decoded); err != nil {
 			t.Fatal(err)
 		}
-		if decoded.Schema != "lang.command/0" || len(decoded.Diagnostics) != 1 {
+		if decoded.Schema != "lang.command/1" || len(decoded.Diagnostics) != 1 {
 			t.Fatalf("command envelope or diagnostic missing: %+v", decoded)
 		}
 		if !strings.Contains(string(human.Stderr), decoded.ID) || !strings.Contains(string(human.Stderr), decoded.Diagnostics[0].ID) {
@@ -235,7 +235,7 @@ func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
 	if err := json.Unmarshal(machine.Stdout, &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.Schema != "lang.command/0" || len(decoded.Diagnostics) != 3 {
+	if decoded.Schema != "lang.command/1" || len(decoded.Diagnostics) != 3 {
 		t.Fatalf("command envelope or diagnostics missing: %+v", decoded)
 	}
 	if !strings.Contains(string(human.Stderr), decoded.ID) {
