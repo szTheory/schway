@@ -303,7 +303,7 @@ Plans:
   3. An automated repair exercise fixes representative match, move, borrow, cleanup, and stale-evidence defects using only the supported command protocol.
   4. Declared-machine cold/warm feedback distributions, peak memory, output bytes, and affected work meet ratified budgets or identify a specific blocking regression.
 
-**Plans**: 14/15 plans executed
+**Plans**: 15/15 plans executed
 
 Plans:
 **Wave 1**
@@ -343,7 +343,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 06-15-PLAN.md — `scripts/verify-phase6.sh`, required-control set, escape register, 06-DEBT.md
+- [x] 06-15-PLAN.md — `scripts/verify-phase6.sh`, required-control set, escape register, 06-DEBT.md
 
 ### M002 Charter (deferred from Phase 5, D-05-32/D-05-33)
 
@@ -393,4 +393,4 @@ for the verbatim carry-forward entry).
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
 | 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
-| 6. Agent Feedback and Performance Ratification | 14/15 | In Progress|  |
+| 6. Agent Feedback and Performance Ratification | 15/15 | In Progress|  |

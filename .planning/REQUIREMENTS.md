@@ -15,7 +15,7 @@ hiding runtime costs.
   for schemas, nodes, symbols, CFG points/edges, diagnostics, and semantic events.
 - [x] **FND-03**: A compact evidence manifest binds source/core digests,
   toolchain, target, flags, and policy, and rejects any deliberately stale input.
-- [ ] **FND-04**: Every compiler command can report wall time, peak memory,
+- [x] **FND-04**: Every compiler command can report wall time, peak memory,
   output bytes, cache status, and affected/recomputed work without changing
   semantic output.
 
@@ -73,17 +73,17 @@ hiding runtime costs.
 
 - [x] **DX-01**: One root command provides `format`, `check`, and
   `run --engine=interpreter|native` with concise human output and versioned JSON.
-- [ ] **DX-02**: `explain` and `query` expose diagnostic cause graphs, symbols,
+- [x] **DX-02**: `explain` and `query` expose diagnostic cause graphs, symbols,
   types, ownership, dependencies, and affected tests by stable identity.
-- [ ] **DX-03**: `verify` selects deterministic, property, mutation,
+- [x] **DX-03**: `verify` selects deterministic, property, mutation,
   differential, optimized, and sanitizer lanes by changed risk, while `evidence`
   emits or validates the compact manifest and expands detail only on demand.
-- [ ] **DX-04**: An agent can introduce, locate, and repair representative match,
+- [x] **DX-04**: An agent can introduce, locate, and repair representative match,
   move, borrow, cleanup, and stale-evidence defects without scraping prose.
 - [x] **QLT-01**: The suite preserves every relevant negative control and reduced
   counterexample from Spikes 001–005 while making the coordinated false
   source-to-core claim an explicit expected escape.
-- [ ] **QLT-02**: Compiler feedback budgets are ratified as cold/warm
+- [x] **QLT-02**: Compiler feedback budgets are ratified as cold/warm
   distributions on declared machines, and regressions identify the responsible
   stage and affected-work expansion.
 
@@ -131,7 +131,7 @@ hiding runtime costs.
 | FND-01 | Phase 1 | Complete |
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
-| FND-04 | Phase 6 | Pending |
+| FND-04 | Phase 6 | Complete |
 | SYN-01 | Phase 1 | Complete |
 | SYN-02 | Phase 1 | Complete |
 | SYN-03 | Phase 1 | Complete |
@@ -151,11 +151,11 @@ hiding runtime costs.
 | NAT-02 | Phase 5 | Complete |
 | NAT-03 | Phase 5 | Complete |
 | DX-01 | Phase 1 | Complete |
-| DX-02 | Phase 6 | Pending |
-| DX-03 | Phase 6 | Pending |
-| DX-04 | Phase 6 | Pending |
+| DX-02 | Phase 6 | Complete |
+| DX-03 | Phase 6 | Complete |
+| DX-04 | Phase 6 | Complete |
 | QLT-01 | Phase 5 | Complete |
-| QLT-02 | Phase 6 | Pending |
+| QLT-02 | Phase 6 | Complete |
 
 **Coverage:**
 

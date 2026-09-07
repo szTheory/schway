@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 06
 current_phase_name: Agent Feedback and Performance Ratification
 status: verifying
-stopped_at: Completed 06-10-PLAN.md
-last_updated: "2026-09-07T04:38:12.944Z"
+stopped_at: Completed 06-15-PLAN.md (Phase 6 close)
+last_updated: "2026-09-07T04:58:21.615Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 06 execution started
-state_head: a3a1666185e85dee73e4e4e7df358bf5aa8a22fd
+state_head: 3f023f06fd7034efc7b99f88fbcf28272168248d
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 62
-  completed_plans: 61
+  completed_plans: 62
   percent: 83
 ---
 
@@ -117,6 +117,7 @@ Progress: ██████████ [████████░░] 83%
 | Phase 06-agent-feedback-and-performance-ratification P14 | 50 min | 3 tasks | 11 files |
 | Phase 06 P09 | 55min | 3 tasks | 4 files |
 | Phase 06 P10 | 55min | 3 tasks | 9 files |
+| Phase 06 P15 | ~40 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -242,6 +243,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 06]: D-06-16/17/18/22 implemented: qlt02_budget_manifest.json seeded with real measured machine_id/recomputed_work, executable audit, observation-only mode, and exact recomputed_work-only blocking rule wired into protocol.Lane. — Closes the phase's standing blocker on choosing baseline machines for ratified feedback budgets.
 - [Phase 06]: 06-10: native_compile and link split into two real clang invocations (compile-to-object, then link) so D-06-21's five stage boundaries are genuinely separate, independently timed spans.
 - [Phase 06]: 06-10: protocol.PeakRSSUnavailable constant carries D-06-20's full rationale as an enforceable doc comment, replacing ~15 hardcoded 'unavailable' literals; TestNoGetrusageAnywhere/TestPeakRSSStaysUnavailable make the gap mechanically enforced.
+- [Phase 06]: [Phase 06]: 06-15: Phase 6 closed with scripts/verify-phase6.sh (peer of verify-phase5.sh), Phase6RequiredControls()/VerifyPhase6ControlsAndWork() assembling the risk-lane, QLT-02, native-differential, and five defect-injection lanes, Phase6ExpectedEscapes() declaring D-06-13's four cache holes plus D-06-29's residual, and 06-DEBT.md recording every open item including the four unresolved unclassified edge probes and D-06-30's unrun agent-legibility exercise. All five phase requirements (FND-04, DX-02, DX-03, DX-04, QLT-02) marked complete.
 
 ### Pending Todos
 
@@ -272,6 +274,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T04:38:04.000Z
-Stopped at: Completed 06-10-PLAN.md
+Last session: 2026-09-07T04:58:21.415Z
+Stopped at: Completed 06-15-PLAN.md (Phase 6 close)
 Resume file: None
