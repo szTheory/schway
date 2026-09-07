@@ -160,6 +160,30 @@ func TestSchemaZeroConstantsStillExist(t *testing.T) {
 	}
 }
 
+// TestPhase1EvidenceBytesUnchangedAfterBump is Task 3's Behavior Test 4
+// (D-06-31): a Result constructed with the frozen protocol.Schema ("/0")
+// string, for a fixed deterministic Phase-1-shaped diagnostic, still
+// finalizes to the exact same ID it did before 06-06's bump. The pinned
+// literal below was computed at this commit against the tree as it stood
+// immediately after Tasks 1 and 2 landed; a future change to Finalize()'s
+// identity struct that would have perturbed already-published /0 documents
+// fails here, proving /0 document bytes are reproducible, not merely
+// retired.
+func TestPhase1EvidenceBytesUnchangedAfterBump(t *testing.T) {
+	result := protocol.Result{
+		Schema:      protocol.Schema,
+		Command:     "check",
+		Status:      protocol.StatusInvalid,
+		Diagnostics: []diagnostic.Diagnostic{diagnostic.Error("phase1.pin_check", diagnostic.Span{Start: 1, End: 2}, "pinned /0 fixture")},
+		Executions:  []interp.Execution{},
+		Lanes:       []protocol.Lane{},
+	}
+	const pinnedID = "result:787da433102c86ea05c7a2f1"
+	if got := result.Finalize().ID; got != pinnedID {
+		t.Fatalf("a /0-schema Result's Finalize().ID moved: got %s, want pinned %s -- a /0 document's bytes are frozen once shipped and this change would have perturbed already-published output", got, pinnedID)
+	}
+}
+
 // setSentinelValue sets a single settable reflect.Value to a non-zero
 // sentinel, recursing into slice-of-struct elements (e.g.
 // protocol.StageTiming) so newly added structured fields do not require a
