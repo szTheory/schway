@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cache"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
@@ -150,8 +151,17 @@ func VerifyPhase6ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 				lane.ElapsedNS = time.Since(nativeStarted).Nanoseconds()
 				result.Lanes = append(result.Lanes, lane)
 				result.Metrics.RecomputedWork += lane.RecomputedWork
-				if lane.CacheStatus != "" {
-					result.Metrics.CacheInputsReusedCount += 0 // status recorded on the lane itself; no double count here
+				// CR-01: this counter is a phase-wide aggregate of how many
+				// artifacts this invocation REUSED, so it must gate on the
+				// reused status specifically -- a non-empty CacheStatus also
+				// covers artifact_recomputed / not_cacheable / unavailable,
+				// none of which is a reuse. The prior `+= 0` made the counter
+				// structurally zero in this function, which is the one
+				// `lang verify testdata/phase6` actually runs, so FND-04's
+				// cache-status reporting was false here while the sibling
+				// VerifyPhase6ChangedRisk reported it correctly.
+				if lane.CacheStatus == string(cache.StatusArtifactReused) {
+					result.Metrics.CacheInputsReusedCount++
 				}
 				if lane.Status != protocol.StatusPass {
 					markFail(lane.Status)

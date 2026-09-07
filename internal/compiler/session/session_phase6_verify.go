@@ -364,7 +364,7 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 		Controls: []string{"control:interpreter-o0-o3"}, RecomputedWork: work,
 		ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 		StageBreakdown: recorder.Breakdown(),
-		CacheStatus: string(outcome.Status),
+		CacheStatus:    string(outcome.Status),
 	}
 	return lane, outcome, nil
 }

@@ -485,4 +485,3 @@ func TestRiskLaneFileDoesNotImportProtocol(t *testing.T) {
 		}
 	}
 }
-
