@@ -27,6 +27,56 @@ type Cause struct {
 type Repair struct {
 	Kind   string `json:"kind"`
 	Detail string `json:"detail,omitempty"`
+	// Span, Replacement, and Applicability grow a Repair from a mere
+	// classification into an applicable edit (D-06-24). All three are
+	// deliberately NON-identity-bearing: see the repairKinds comment in
+	// ErrorWithRepairs for why a coordinate shift must never move a
+	// diagnostic's ID.
+	Span          *Span  `json:"span,omitempty"`
+	Replacement   string `json:"replacement,omitempty"`
+	Applicability string `json:"applicability,omitempty"`
+}
+
+// The closed Applicability vocabulary (D-06-24), modeled on rustc's
+// Applicability enum. Only ApplicabilityMachineApplicable is driver-eligible;
+// everything else routes to the recorded, non-gating agent exercise
+// (D-06-23, D-06-30).
+const (
+	ApplicabilityMachineApplicable    = "MachineApplicable"
+	ApplicabilityRequiresConfirmation = "RequiresConfirmation"
+	ApplicabilityUnspecified          = "Unspecified"
+)
+
+// Applicabilities returns the closed set of valid Repair.Applicability
+// values.
+func Applicabilities() []string {
+	return []string{ApplicabilityMachineApplicable, ApplicabilityRequiresConfirmation, ApplicabilityUnspecified}
+}
+
+// ValidateRepair refuses any Applicability value outside the closed
+// vocabulary. An empty Applicability is treated as unset and is valid here;
+// callers that want the normalized value should use NormalizeApplicability.
+func ValidateRepair(r Repair) error {
+	if r.Applicability == "" {
+		return nil
+	}
+	for _, valid := range Applicabilities() {
+		if r.Applicability == valid {
+			return nil
+		}
+	}
+	return fmt.Errorf("diagnostic: invalid repair applicability %q", r.Applicability)
+}
+
+// NormalizeApplicability maps an empty Applicability to
+// ApplicabilityUnspecified. It never defaults to ApplicabilityMachineApplicable:
+// defaulting toward driver-eligible is exactly the fail-open shape this
+// project refuses.
+func NormalizeApplicability(applicability string) string {
+	if applicability == "" {
+		return ApplicabilityUnspecified
+	}
+	return applicability
 }
 
 type Diagnostic struct {
@@ -63,6 +113,10 @@ func ErrorWithRepairs(code string, span Span, message string, causes []Cause, re
 		}
 		return repairs[left].Kind < repairs[right].Kind
 	})
+	// Span, Replacement, and Applicability are deliberately excluded from
+	// repairKinds: a coordinate shift (an edit to a line above this
+	// diagnostic) must never change a diagnostic's published ID (D-06-24).
+	// Only Kind participates in semantic identity.
 	repairKinds := make([]string, len(repairs))
 	for index, repair := range repairs {
 		repairKinds[index] = repair.Kind

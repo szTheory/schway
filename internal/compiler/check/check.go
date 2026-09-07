@@ -1906,9 +1906,15 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 					{Kind: "place", Detail: source.place.ID},
 					{Kind: "type", Detail: source.place.TypeID},
 				}
+				takeSpan := binding.RHS.Span
 				return fail(diagnostic.ErrorWithRepairs(
 					"ownership.transfer_requires_take", binding.RHS.Span, "noncopyable binding requires explicit take", causes,
-					diagnostic.Repair{Kind: "insert_take"},
+					diagnostic.Repair{
+						Kind:          "insert_take",
+						Span:          &takeSpan,
+						Replacement:   "take " + binding.RHS.Source,
+						Applicability: diagnostic.ApplicabilityMachineApplicable,
+					},
 				))
 			}
 		}
