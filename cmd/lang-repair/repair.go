@@ -180,11 +180,13 @@ func runLangCheck(ctx context.Context, langBinary, sourcePath string) (checkResu
 	return result, nil
 }
 
-// driverEligible mirrors diagnostic.DriverEligible's own rule (06-11) --
+// driverEligible mirrors diagnostic.DriverEligible's own rule (06-11,
+// extended by 06-14's D-06-27.2 to also require a non-empty Kind) --
 // re-declared, not imported (D-06-28): a repair is eligible only when it
-// declares MachineApplicable AND carries both a span and replacement text.
+// declares MachineApplicable, carries both a span and replacement text,
+// AND carries a Kind.
 func driverEligible(r jsonRepair) bool {
-	return r.Applicability == applicabilityMachineApplicable && r.Span != nil && r.Replacement != ""
+	return r.Applicability == applicabilityMachineApplicable && r.Kind != "" && r.Span != nil && r.Replacement != ""
 }
 
 // selectRepair returns the first driver-eligible repair in document order

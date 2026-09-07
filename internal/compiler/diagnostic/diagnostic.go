@@ -81,14 +81,17 @@ func NormalizeApplicability(applicability string) string {
 
 // DriverEligible reports whether a repair may be applied mechanically by the
 // repair driver (06-13). A repair is eligible only when it declares
-// MachineApplicable AND carries both a span and replacement text to act on —
-// a repair that claims machine-applicability without the material to apply
-// it is not eligible; treating it as eligible would be the exact fail-open
-// shape this project refuses. Everything not eligible (RequiresConfirmation,
-// Unspecified, empty, or incomplete MachineApplicable) routes to the
-// recorded, non-gating agent exercise (D-06-23, D-06-30).
+// MachineApplicable, carries both a span and replacement text to act on, AND
+// carries a non-empty Kind — a repair that claims machine-applicability
+// without the material to apply it, or without even naming what it is, is
+// not eligible; treating either as eligible would be the exact fail-open
+// shape this project refuses (D-06-27.2's structured-vocabulary-removal
+// guard depends on Kind mattering here, not merely as reporting metadata).
+// Everything not eligible (RequiresConfirmation, Unspecified, empty, or
+// incomplete MachineApplicable) routes to the recorded, non-gating agent
+// exercise (D-06-23, D-06-30).
 func DriverEligible(r Repair) bool {
-	return r.Applicability == ApplicabilityMachineApplicable && r.Span != nil && r.Replacement != ""
+	return r.Applicability == ApplicabilityMachineApplicable && r.Kind != "" && r.Span != nil && r.Replacement != ""
 }
 
 type Diagnostic struct {

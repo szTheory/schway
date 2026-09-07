@@ -224,6 +224,9 @@ func TestMachineApplicableWithoutMaterialIsNotEligible(t *testing.T) {
 	if DriverEligible(Repair{Kind: "k", Applicability: ApplicabilityMachineApplicable, Span: &span, Replacement: ""}) {
 		t.Errorf("MachineApplicable with no Replacement must not be eligible")
 	}
+	if DriverEligible(Repair{Kind: "", Applicability: ApplicabilityMachineApplicable, Span: &span, Replacement: "x"}) {
+		t.Errorf("MachineApplicable with no Kind must not be eligible (D-06-27.2)")
+	}
 }
 
 func TestDiagnosticZeroBytesUnchanged(t *testing.T) {

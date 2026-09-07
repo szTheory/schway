@@ -5,9 +5,11 @@ package main
 // on. It is a _test.go file, so it is explicitly EXEMPT from the
 // import-boundary lint (import_boundary_test.go scans only non-test
 // files) -- exactly like repair_test.go, it imports internal/ packages to
-// DRIVE the real injectors and the real shipped `lang` binary, while the
-// driver itself (repair.go, main.go) stays untouched by this plan
-// (TestRepairDriverAndMainAreUnchangedByThisPlan).
+// DRIVE the real injectors and the real shipped `lang` binary. Task 3
+// (D-06-27.2) required one small, deliberate fix to repair.go itself:
+// driverEligible now also requires a non-empty Kind, mirroring the same
+// fix in diagnostic.DriverEligible -- see the "strip_kind" deviation note
+// in 06-14-SUMMARY.md for why.
 //
 // Mechanism (06-RESEARCH.md Open Question 2): a fixture-substitution
 // subprocess, not a driver-side test hook. The stand-in program built by
@@ -264,23 +266,6 @@ func TestFixtureSubstitutionIsFaithful(t *testing.T) {
 	}
 	if !bytes.Equal(standinRepaired, realRepaired) {
 		t.Fatalf("stand-in-driven repair bytes differ from the real-binary-driven repair bytes:\nreal:    %q\nstandin: %q", realRepaired, standinRepaired)
-	}
-}
-
-// TestRepairDriverAndMainAreUnchangedByThisPlan asserts, by content hash,
-// that repair.go and main.go -- the driver's own production code -- carry
-// the exact bytes 06-13 shipped. The fixture-substitution mechanism above
-// requires zero driver changes by construction; this test makes that a
-// live, falsifiable check rather than a claim in a comment.
-func TestRepairDriverAndMainAreUnchangedByThisPlan(t *testing.T) {
-	for _, name := range []string{"repair.go", "main.go"} {
-		info, err := os.Stat(name)
-		if err != nil {
-			t.Fatalf("%s: expected to exist unmodified from 06-13: %v", name, err)
-		}
-		if info.IsDir() {
-			t.Fatalf("%s: expected a file", name)
-		}
 	}
 }
 
@@ -661,6 +646,127 @@ func TestProseScrambleLeavesRepairBehaviourIdentical(t *testing.T) {
 	t.Run("stale_evidence", func(t *testing.T) {
 		testStaleEvidenceClassIsProseIndependent(t)
 	})
+}
+
+// ---------------------------------------------------------------------
+// Anti-theater guard 2 (D-06-27.2): the structured-vocabulary-removal
+// test. Four stripping modes remove exactly one structured channel from
+// the diagnose capture -- repairs[] wholesale, or a single field within
+// each repair -- while leaving every message/detail value byte-identical
+// to the baseline. If the driver genuinely depends only on the structured
+// channel, every one of these must drive it RED (a non-zero exit and a
+// reported-unrepaired outcome), even though a human reading the prose
+// could plainly see what needs fixing.
+// ---------------------------------------------------------------------
+
+// assertMessageAndDetailUnaffectedByStrip proves the precondition every
+// strip_* subtest below depends on: the stripping mode removed only
+// structured vocabulary, leaving the diagnostic's own message and each
+// cause's detail exactly as the real binary produced them. Without this,
+// a RED result could be coincidental (the strip could have also silently
+// mangled the prose) rather than proof that the structured channel alone
+// mattered.
+func assertMessageAndDetailUnaffectedByStrip(t testing.TB, before, after []byte) {
+	t.Helper()
+	beforeDoc := decodeGenericOrFatal(t, before)
+	afterDoc := decodeGenericOrFatal(t, after)
+	beforeDiagnostics, _ := beforeDoc["diagnostics"].([]interface{})
+	afterDiagnostics, _ := afterDoc["diagnostics"].([]interface{})
+	if len(beforeDiagnostics) != len(afterDiagnostics) {
+		t.Fatalf("diagnostics count changed by stripping structured vocabulary: %d -> %d", len(beforeDiagnostics), len(afterDiagnostics))
+	}
+	for i := range beforeDiagnostics {
+		b := beforeDiagnostics[i].(map[string]interface{})
+		a := afterDiagnostics[i].(map[string]interface{})
+		if b["message"] != a["message"] {
+			t.Fatalf("diagnostics[%d].message changed by stripping structured vocabulary: %v -> %v", i, b["message"], a["message"])
+		}
+		bCauses, _ := b["causes"].([]interface{})
+		aCauses, _ := a["causes"].([]interface{})
+		if len(bCauses) != len(aCauses) {
+			t.Fatalf("diagnostics[%d].causes count changed by stripping structured vocabulary", i)
+		}
+		for j := range bCauses {
+			bc, _ := bCauses[j].(map[string]interface{})
+			ac, _ := aCauses[j].(map[string]interface{})
+			if bc["detail"] != ac["detail"] {
+				t.Fatalf("diagnostics[%d].causes[%d].detail changed by stripping structured vocabulary: %v -> %v", i, j, bc["detail"], ac["detail"])
+			}
+		}
+	}
+}
+
+// testVocabularyRemovalMode drives the real driver, via the stand-in,
+// against the move class's real captures with mode's structured
+// vocabulary stripped from the diagnose capture, and asserts the driver
+// goes RED: a non-zero exit, a reported-unrepaired outcome, and the
+// source file left completely untouched (the driver never even attempts
+// a splice when it selects no repair).
+func testVocabularyRemovalMode(t *testing.T, standinBinary string, mode string) {
+	t.Helper()
+	original := phase6Fixture(t, "heldout_move_defect.lang")
+	mutated, err := session.MoveInjector{}.Inject(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	diagnoseCapture := captureFile(t, "move_diagnose_capture.json")
+	reverifyCapture := captureFile(t, "move_reverify_capture.json")
+
+	assertMessageAndDetailUnaffectedByStrip(t, diagnoseCapture, mutateCaptureOrFatal(t, diagnoseCapture, mode))
+
+	exitCode, outcome, repaired := runViaStandin(t, standinBinary, mutated, diagnoseCapture, reverifyCapture, mode)
+	if exitCode == 0 {
+		t.Fatalf("mode %q: driver exited 0 (success) despite the structured vocabulary being stripped -- prose alone must never be sufficient", mode)
+	}
+	if outcome.Status != OutcomeUnrepairable {
+		t.Fatalf("mode %q: got outcome status %q, want %q", mode, outcome.Status, OutcomeUnrepairable)
+	}
+	if !bytes.Equal(repaired, mutated) {
+		t.Fatalf("mode %q: source file was modified despite the driver reporting %q", mode, OutcomeUnrepairable)
+	}
+}
+
+// TestVocabularyRemovalDrivesTheDriverRed is the second anti-theater
+// guard (D-06-27.2): stripping repairs[]/kind/span/replacement from the
+// JSON with prose left fully intact makes the driver go RED. This proves
+// the mechanism genuinely depends on the structured channel rather than
+// silently falling back to prose it could scrape.
+func TestVocabularyRemovalDrivesTheDriverRed(t *testing.T) {
+	standinBinary := buildStandin(t)
+
+	t.Run("strip_repairs", func(t *testing.T) { testVocabularyRemovalMode(t, standinBinary, "strip_repairs") })
+	t.Run("strip_kind", func(t *testing.T) { testVocabularyRemovalMode(t, standinBinary, "strip_kind") })
+	t.Run("strip_span", func(t *testing.T) { testVocabularyRemovalMode(t, standinBinary, "strip_span") })
+	t.Run("strip_replacement", func(t *testing.T) { testVocabularyRemovalMode(t, standinBinary, "strip_replacement") })
+}
+
+// TestVocabularyRemovalGuardIsNotInert is the load-bearing control: the
+// SAME harness (runViaStandin), against the SAME move-class captures,
+// with NOTHING stripped ("identity" mode) must go GREEN. Without this
+// control, a broken harness that made every run fail for an unrelated
+// reason would make all four RED assertions above pass for the wrong
+// reason -- a guard that can only ever assert RED cannot detect its own
+// inertness any more than one that can only ever assert green.
+func TestVocabularyRemovalGuardIsNotInert(t *testing.T) {
+	standinBinary := buildStandin(t)
+	original := phase6Fixture(t, "heldout_move_defect.lang")
+	mutated, err := session.MoveInjector{}.Inject(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	diagnoseCapture := captureFile(t, "move_diagnose_capture.json")
+	reverifyCapture := captureFile(t, "move_reverify_capture.json")
+
+	exitCode, outcome, repaired := runViaStandin(t, standinBinary, mutated, diagnoseCapture, reverifyCapture, "identity")
+	if exitCode != 0 {
+		t.Fatalf("control run (nothing stripped) exited nonzero (%d) -- the harness itself is broken, independent of any stripping mode", exitCode)
+	}
+	if outcome.Status != OutcomeRepaired {
+		t.Fatalf("control run (nothing stripped) got outcome status %q, want %q -- the harness itself is broken", outcome.Status, OutcomeRepaired)
+	}
+	if bytes.Equal(repaired, mutated) {
+		t.Fatal("control run (nothing stripped) left the source unmodified -- the harness itself is broken")
+	}
 }
 
 // TestProseScrambleFixtureKeepsStructuredFieldsIntact is the scrambler's
