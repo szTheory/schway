@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 06
 current_phase_name: Agent Feedback and Performance Ratification
 status: executing
-stopped_at: Completed 06-06-PLAN.md
-last_updated: "2026-09-07T02:13:30.665Z"
+stopped_at: Completed 06-13-PLAN.md
+last_updated: "2026-09-07T02:44:32.953Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 06 execution started
-state_head: fdb3d419822e76e6aa46be61a58dca3bb93549e2
+state_head: a84373f6021a381cc541578e1ccb507071e7a980
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 62
-  completed_plans: 56
+  completed_plans: 57
   percent: 83
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 06 (Agent Feedback and Performance Ratification) — EXECUTING
-Plan: 10 of 15
+Plan: 11 of 15
 Status: Ready to execute
 Last activity: 2026-09-06 — Phase 06 execution started
 
@@ -112,6 +112,7 @@ Progress: ██████████ [████████░░] 83%
 | Phase 06 P05 | 55min | 3 tasks | 4 files |
 | Phase 06 P12 | ~35 min | 3 tasks | 13 files |
 | Phase 06 P06 | 65min | 3 tasks | 8 files |
+| Phase 06 P13 | 55min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -231,6 +232,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 06]: match.non_exhaustive's add_missing_arm repair is gated on allArmsSelfMap, keeping the frozen Phase 1 diagnostic golden byte-identical — ErrorWithRepairs always uses schema /1 even with zero repairs, so the gate must decide BEFORE calling it, not after
 - [Phase 06]: CleanupInjector reuses ReleaseOmissionMutationRunner via a new Mutate method extracted from Run, keeping exactly one release-marker scan in the tree — D-06-25 requires reuse, not reimplementation; go/ast test enforces no second scan
 - [Phase 06]: D-06-31 coordinated bump confirmed and landed: lang.command/1 and lang.verify-lane/1 in one commit, all 12 lane-schema sites moved together, /0 frozen and byte-proven. — Checkpoint pre-resolved at orchestration time; seven-field list confirmed complete against 06-04/06-05/06-08 before committing.
+- [Phase 06]: cmd/lang-repair is fully generic over Span/Replacement/Applicability; no hardcoded kind-to-edit mapping needed
+- [Phase 06]: Cleanup and stale-evidence classes are repaired gate-side (test file), not through the driver's check-repair JSON protocol, since neither is reachable via lang check diagnostics
 
 ### Pending Todos
 
@@ -261,6 +264,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T02:13:30.479Z
-Stopped at: Completed 06-06-PLAN.md
+Last session: 2026-09-07T02:44:32.740Z
+Stopped at: Completed 06-13-PLAN.md
 Resume file: None
