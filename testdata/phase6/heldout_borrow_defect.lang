@@ -11,7 +11,7 @@ export {
   fn relay
 }
 
-fn relay(buffer: Buffer) -> Buffer {
+fn relay(buffer: Buffer) -> borrow(buffer) Buffer {
   let first = borrow buffer
   let second = borrow buffer // lang:borrow-target
   let reviewed = borrow first

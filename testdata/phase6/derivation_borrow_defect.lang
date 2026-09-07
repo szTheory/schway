@@ -11,7 +11,7 @@ export {
   fn relay
 }
 
-fn relay(item: Buffer) -> Buffer {
+fn relay(item: Buffer) -> borrow(item) Buffer {
   let alpha = borrow item
   let beta = borrow item
   let reviewed = borrow alpha
