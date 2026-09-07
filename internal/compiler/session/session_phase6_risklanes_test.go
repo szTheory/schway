@@ -1,12 +1,17 @@
 package session
 
 import (
+	"context"
 	"errors"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cache"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
 // TestRiskLaneRegistryLoads proves the embedded risk_lanes.json parses to a
@@ -289,6 +294,194 @@ func TestRiskLaneChangeStateRecordsOnePerFixtureLane(t *testing.T) {
 	for _, id := range []string{"lane:a", "lane:b"} {
 		if reason := sel.Reasons[id]; reason != ReasonDeferred+": no declared dependency" {
 			t.Errorf("lane %s reason = %q, want deferred", id, reason)
+		}
+	}
+}
+
+// TestRiskLaneAuditRefusesStaleLaneID: a row whose lane_id is not in the
+// live lane-ID set fails the audit with the stale-reference control.
+func TestRiskLaneAuditRefusesStaleLaneID(t *testing.T) {
+	rows := []RiskLaneRow{
+		{FixtureKind: "k", LaneID: "lane:does-not-exist", DeclaredInputs: []string{"fixture_source"}},
+	}
+	live := []string{"lane:a"}
+	declared := []string{"fixture_source"}
+
+	result := AuditRiskLaneRegistry(rows, live, declared)
+	if result.Status == "pass" {
+		t.Fatal("expected a fail status for a fabricated lane_id")
+	}
+	if !result.Fired[ControlRiskLaneStaleLaneReference] {
+		t.Errorf("Fired[%s] = false, want true", ControlRiskLaneStaleLaneReference)
+	}
+}
+
+// TestRiskLaneAuditRefusesEmptyRegistry: an empty registry is a hard audit
+// failure, not a vacuous pass.
+func TestRiskLaneAuditRefusesEmptyRegistry(t *testing.T) {
+	result := AuditRiskLaneRegistry(nil, []string{"lane:a"}, []string{"fixture_source"})
+	if result.Status == "pass" {
+		t.Fatal("an empty registry must not pass the audit")
+	}
+}
+
+// TestRiskLaneAuditRefusesUndeclaredLane: the audit is bidirectional -- a
+// live lane ID with no row in the registry also fails the audit, so a
+// newly added lane cannot silently escape declaration.
+func TestRiskLaneAuditRefusesUndeclaredLane(t *testing.T) {
+	rows := []RiskLaneRow{
+		{FixtureKind: "k", LaneID: "lane:a", DeclaredInputs: []string{"fixture_source"}},
+	}
+	live := []string{"lane:a", "lane:orphaned"}
+	declared := []string{"fixture_source"}
+
+	result := AuditRiskLaneRegistry(rows, live, declared)
+	if result.Status == "pass" {
+		t.Fatal("expected a fail status when a live lane has no registry row")
+	}
+	if !result.Fired[ControlRiskLaneUndeclaredLane] {
+		t.Errorf("Fired[%s] = false, want true", ControlRiskLaneUndeclaredLane)
+	}
+}
+
+// TestRiskLaneAuditRefusesUnknownDeclaredInput: a row naming a declared
+// input outside cache.DeclaredInputNames() fails the audit.
+func TestRiskLaneAuditRefusesUnknownDeclaredInput(t *testing.T) {
+	rows := []RiskLaneRow{
+		{FixtureKind: "k", LaneID: "lane:a", DeclaredInputs: []string{"not_a_real_declared_input"}},
+	}
+	live := []string{"lane:a"}
+	declared := cache.DeclaredInputNames()
+
+	result := AuditRiskLaneRegistry(rows, live, declared)
+	if result.Status == "pass" {
+		t.Fatal("expected a fail status for a row naming an undeclared input")
+	}
+}
+
+// TestRiskLaneAuditPassesCheckedInRegistry proves AuditRiskLaneRegistry on
+// the real, checked-in registry against LiveLaneIDs() and
+// cache.DeclaredInputNames() returns pass with zero fired controls -- the
+// declared table cannot drift from the code that emits the lanes, in
+// either direction.
+func TestRiskLaneAuditPassesCheckedInRegistry(t *testing.T) {
+	rows, err := LoadRiskLaneRegistry()
+	if err != nil {
+		t.Fatalf("LoadRiskLaneRegistry error: %v", err)
+	}
+	result := AuditRiskLaneRegistry(rows, LiveLaneIDs(), cache.DeclaredInputNames())
+	if result.Status != "pass" {
+		t.Fatalf("Status = %q, want pass; Fired = %v", result.Status, result.Fired)
+	}
+	for control, fired := range result.Fired {
+		if fired {
+			t.Errorf("control %s fired against the checked-in registry", control)
+		}
+	}
+}
+
+// TestRiskLaneVerifyRegistryRunsCleanly is a thin smoke test over
+// VerifyRiskLaneRegistry, mirroring VerifyQLT01Registry's own shape.
+func TestRiskLaneVerifyRegistryRunsCleanly(t *testing.T) {
+	result, err := VerifyRiskLaneRegistry(context.Background())
+	if err != nil {
+		t.Fatalf("VerifyRiskLaneRegistry error: %v", err)
+	}
+	if result.Status != "pass" {
+		t.Fatalf("Status = %q, want pass", result.Status)
+	}
+	if result.RecomputedWork <= 0 {
+		t.Errorf("RecomputedWork = %d, want > 0", result.RecomputedWork)
+	}
+}
+
+// TestRiskLaneDoubleMatchSelectsOnce: a lane matched by two different rows
+// (for the same fixture kind) is selected exactly once, with the FIRST
+// matching row's reason by registry order.
+func TestRiskLaneDoubleMatchSelectsOnce(t *testing.T) {
+	rows := []RiskLaneRow{
+		{FixtureKind: "k", LaneID: "lane:dup", DeclaredInputs: []string{"fixture_source"}},
+		{FixtureKind: "k", LaneID: "lane:dup", DeclaredInputs: []string{"build_flags"}},
+	}
+	live := []string{"lane:dup"}
+
+	sel := selectLanesFromRows(rows, live, "k", []string{"fixture_source", "build_flags"}, nil)
+
+	count := 0
+	for _, id := range sel.LaneIDs {
+		if id == "lane:dup" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("lane:dup appears %d times in LaneIDs, want exactly once: %v", count, sel.LaneIDs)
+	}
+	if len(sel.Reasons) != 1 {
+		t.Fatalf("Reasons has %d entries, want exactly 1 (one reason for the deduplicated lane): %v", len(sel.Reasons), sel.Reasons)
+	}
+}
+
+// TestRiskLaneSelectionOrderIsStable: two lanes comparing equal on the
+// selection key appear in a specified, stable order (lexicographic)
+// across two invocations.
+func TestRiskLaneSelectionOrderIsStable(t *testing.T) {
+	rows := []RiskLaneRow{
+		{FixtureKind: "k", LaneID: "lane:zeta", DeclaredInputs: []string{"fixture_source"}},
+		{FixtureKind: "k", LaneID: "lane:alpha", DeclaredInputs: []string{"fixture_source"}},
+		{FixtureKind: "k", LaneID: "lane:mid", DeclaredInputs: []string{"fixture_source"}},
+	}
+	live := []string{"lane:zeta", "lane:alpha", "lane:mid"}
+	changed := []string{"fixture_source"}
+
+	first := selectLanesFromRows(rows, live, "k", changed, nil)
+	second := selectLanesFromRows(rows, live, "k", changed, nil)
+
+	want := []string{"lane:alpha", "lane:mid", "lane:zeta"}
+	for i, id := range want {
+		if first.LaneIDs[i] != id {
+			t.Fatalf("first.LaneIDs = %v, want %v", first.LaneIDs, want)
+		}
+		if second.LaneIDs[i] != id {
+			t.Fatalf("second.LaneIDs = %v, want %v", second.LaneIDs, want)
+		}
+	}
+}
+
+// TestRiskLaneSelectLanesOutputHasNoDuplicates is a direct check of
+// SelectLanes's own dedup/sort contract over the real checked-in registry.
+func TestRiskLaneSelectLanesOutputHasNoDuplicates(t *testing.T) {
+	sel, err := SelectLanes("pure_match", []string{"fixture_source"}, nil)
+	if err != nil {
+		t.Fatalf("SelectLanes error: %v", err)
+	}
+	seen := map[string]bool{}
+	for i, id := range sel.LaneIDs {
+		if seen[id] {
+			t.Fatalf("duplicate lane ID %s in LaneIDs: %v", id, sel.LaneIDs)
+		}
+		seen[id] = true
+		if i > 0 && sel.LaneIDs[i-1] > id {
+			t.Fatalf("LaneIDs not lexicographically sorted: %v", sel.LaneIDs)
+		}
+	}
+}
+
+// TestRiskLaneFileDoesNotImportProtocol is D-06-28's structural import
+// boundary applied here: session_phase6_risklanes.go must never import
+// internal/compiler/protocol, keeping this file's wiring independent of
+// how a future caller (06-07) attaches Selection to protocol.Lane --
+// mirroring corevalidate's own TestValidatorImportsStayIndependent.
+func TestRiskLaneFileDoesNotImportProtocol(t *testing.T) {
+	path := testsupport.ProjectPath("internal", "compiler", "session", "session_phase6_risklanes.go")
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, path, nil, parser.ImportsOnly)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	for _, imported := range file.Imports {
+		path := strings.Trim(imported.Path.Value, `"`)
+		if strings.HasSuffix(path, "/compiler/protocol") {
+			t.Fatalf("session_phase6_risklanes.go imports %s, which it must never depend on", path)
 		}
 	}
 }
