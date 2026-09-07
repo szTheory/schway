@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 06
 current_phase_name: Agent Feedback and Performance Ratification
 status: executing
-stopped_at: Completed 06-07-PLAN.md
-last_updated: "2026-09-07T03:17:43.981Z"
+stopped_at: Completed 06-14-PLAN.md
+last_updated: "2026-09-07T03:47:11.617Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 06 execution started
-state_head: 221aa62e46e5f4b91849b4d4f0cde8afda66dbaf
+state_head: 0d577443e7241975e74f5c7d924209e0142ac6f8
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 62
-  completed_plans: 58
+  completed_plans: 59
   percent: 83
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 06 (Agent Feedback and Performance Ratification) — EXECUTING
-Plan: 12 of 15
+Plan: 14 of 15
 Status: Ready to execute
 Last activity: 2026-09-06 — Phase 06 execution started
 
@@ -114,6 +114,7 @@ Progress: ██████████ [████████░░] 83%
 | Phase 06 P06 | 65min | 3 tasks | 8 files |
 | Phase 06 P13 | 55min | 3 tasks | 6 files |
 | Phase 06 P07 | 95min | 3 tasks | 8 files |
+| Phase 06-agent-feedback-and-performance-ratification P14 | 50 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -235,6 +236,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 06]: D-06-31 coordinated bump confirmed and landed: lang.command/1 and lang.verify-lane/1 in one commit, all 12 lane-schema sites moved together, /0 frozen and byte-proven. — Checkpoint pre-resolved at orchestration time; seven-field list confirmed complete against 06-04/06-05/06-08 before committing.
 - [Phase 06]: cmd/lang-repair is fully generic over Span/Replacement/Applicability; no hardcoded kind-to-edit mapping needed
 - [Phase 06]: Cleanup and stale-evidence classes are repaired gate-side (test file), not through the driver's check-repair JSON protocol, since neither is reachable via lang check diagnostics
+- [Phase 06]: Anti-theater guards (D-06-27.1/.2) shipped via a content-hash-keyed fixture-substitution subprocess; found and fixed a genuine driverEligible/DriverEligible gap (Kind was never checked).
 
 ### Pending Todos
 
@@ -265,6 +267,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T03:17:43.771Z
-Stopped at: Completed 06-07-PLAN.md
+Last session: 2026-09-07T03:47:11.429Z
+Stopped at: Completed 06-14-PLAN.md
 Resume file: None

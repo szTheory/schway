@@ -331,7 +331,7 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [x] 06-07-PLAN.md — Wire cache + risk selection into `verify`; deferred lanes never render pass; `evidence` trace expansion
-- [ ] 06-14-PLAN.md — Anti-theater guards 1 and 2: prose-scramble identical, vocabulary-removal goes RED
+- [x] 06-14-PLAN.md — Anti-theater guards 1 and 2: prose-scramble identical, vocabulary-removal goes RED
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
