@@ -22,24 +22,44 @@ costs.
 
 ### Validated
 
-(None yet — five executable spikes validate design hypotheses, but no production
-language slice has shipped.)
+- ✓ A clean checkout can format, check, interpret, and natively run a small
+  canonical Lang program through one production command — M001 (Phase 1;
+  `lang format` / `lang check` / `lang run --engine={interp,native}`).
+- ✓ One portable typed core gives ownership, borrowing, cleanup, and foreign
+  boundaries the same meaning in the checker, interpreter, and native path —
+  M001 (Phases 2-4; `check`, `corevalidate`, `originvalidate`, `interp`, `cgen`
+  independently derive the same facts).
+- ✓ Interpreter, native `-O0`, and native `-O3` executions produce equivalent
+  semantic outcomes and events for the milestone corpus — M001 (Phase 5;
+  five-axis comparator, `-flto`-proven-non-inert `-O3` tier, ASan/UBSan lane,
+  adversarial + bounded-enumeration corpora). Scope note: M001 ships without
+  Lang-to-Lang calls, so this holds intraprocedurally by construction.
+- ✓ Invalid programs fail early with stable, bounded, machine-readable cause
+  graphs and calm human projections — M001 (Phases 1-3, 6; `lang.diagnostic`,
+  `lang explain` cause DAG, rustfix-style `diagnostic.Repair` applicability).
+- ✓ Compact content-bound evidence manifests make successful work reusable
+  without treating frontend claims as proofs of source correctness — M001
+  (Phases 1-2, 6; `evidence --validate`, `internal/compiler/cache` which is
+  structurally incapable of holding a verdict).
+- ✓ The default edit loop remains fast, deterministic, offline-capable, and
+  measurable; expensive evidence runs only when its distinct question is
+  relevant — M001 (Phase 6; `risk_lanes.json` changed-risk lane selection,
+  `internal/compiler/measure` p50/p95/CoV protocol, `qlt02_budget_manifest.json`).
 
 ### Active
 
-- [ ] A clean checkout can format, check, interpret, and natively run a small
-      canonical Lang program through one production command.
-- [ ] One portable typed core gives ownership, borrowing, cleanup, and foreign
-      boundaries the same meaning in the checker, interpreter, and native path.
-- [ ] Interpreter, native `-O0`, and native `-O3` executions produce equivalent
-      semantic outcomes and events for the milestone corpus.
-- [ ] Invalid programs fail early with stable, bounded, machine-readable cause
-      graphs and calm human projections.
-- [ ] Compact content-bound evidence manifests make successful work reusable
-      without treating frontend claims as proofs of source correctness.
-- [ ] The default edit loop remains fast, deterministic, offline-capable, and
-      measurable; expensive evidence runs only when its distinct question is
-      relevant.
+- [ ] Lang-to-Lang calls: `OpCall` as a real `OperationKind` at all six dispatch
+      sites, gated on callable ⊆ publishable (D-04-03).
+- [ ] Interprocedural loan liveness in both admission layers (`check` and
+      `corevalidate`), rebuilt cross-function — closes D-03-02, the one debt
+      item deliberately left open past M001.
+- [ ] Call-graph construction with cycle refusal and a bounded interpreter call
+      stack.
+- [ ] Cross-function rebuild of Phase 3's exhaustive loan-endpoint differentials.
+- [ ] Interprocedural `-O3` equivalence, which M001 could not claim because it
+      ships without calls.
+- [ ] Storable/matchable `Result` values and payload-carrying alternatives
+      (D-04-30, deferred from Phase 4).
 
 ### Out of Scope
 
@@ -54,23 +74,48 @@ language slice has shipped.)
   reflection, macros, and user-defined precedence — they would broaden the
   search space before the kernel oracle is trustworthy.
 - A permanent compiler host or final optimizing backend decision — Go 1.24 and
-  readable C17/Clang are reversible Stage 0 choices.
+  readable C17/Clang remain reversible Stage 0 choices; M001 gave no reason to
+  revisit either.
 
 ## Context
 
-The design corpus in `wiki/` records the author's intent, primary-source
-research, synthesis, decisions, examples, and open questions with explicit
-provenance. Five bounded workbenches in `.planning/spikes/` have already tested
-local affine ownership, CFG edge-specific loan liveness, separate-compilation
-origins and generic abilities, independent typed-core certificate validation,
-and native C ABI/provenance/cleanup hazards.
+**Shipped M001 — Source-to-Native Semantic Spine (2026-09-07).** 6 phases,
+62 plans, 174 tasks over 5 days; ~59,150 lines of Go plus ~916 lines of C/H
+across `cmd/`, `internal/`, `native/`, `scripts/`, and `testdata/`.
 
-Those experiments converged on an immutable portable core, deterministic
-interpreter oracle, compact trust-crossing validation, and conservative native
-contracts. Their Go and C APIs are disposable evidence, not production language
-architecture. The immediate risk is continuing to elaborate shadow models
-instead of connecting the surviving contracts through a real frontend and
-backend.
+What exists now is a real vertical compiler: lossless canonical frontend →
+typed core with a per-function CFG → an affine ownership and borrow checker →
+an independently re-implemented core validator (`corevalidate`) and published-
+origin validator (`originvalidate`) → deterministic interpreter oracle →
+readable C17 through Clang at `-O0`/`-O3`/`-flto`, with an ASan+UBSan lane, a
+core-level HDD reducer, and a content-bound evidence/cache layer. Phase 6 added
+the agent-facing surface: `lang explain`'s bounded cause DAG, rustfix-style
+repair applicability, changed-risk lane selection, and a measured feedback
+budget manifest.
+
+**The one structural gap, stated plainly: M001 ships without Lang-to-Lang
+calls.** `OpCall` was deliberately deferred rather than landed alongside
+alias-fact emission, the first sanitizer lanes, the reducer, and the QLT-01
+registry. Interprocedural `-O3` equivalence is therefore outside M001's proof
+scope by construction, and Phase 3's D-03-02 (an exported borrow-derived return
+with no declared origin, in its interprocedural half) is the single debt item
+knowingly carried past the milestone. Both are M002's lead charter.
+
+Remaining tech debt is registered per phase in `*-DEBT.md` and summarized in
+`.planning/milestones/M001-MILESTONE-AUDIT.md`: nine Phase 2 items (mostly info-
+level, four already closed in Phase 3), Phase 4's D-04-30 deferred `Result`
+payloads and D-04-31's four accepted residual limitations (the coordinated
+three-way lie, two nonlocal-exit blind spots, the single-host single-record-shape
+fence, and the permanence of quarantine). Nyquist validation is compliant for
+Phases 1, 2, and 4; Phases 3, 5, and 6 are not-validated.
+
+The design corpus in `wiki/` records intent, primary-source research, synthesis,
+decisions, examples, and open questions with explicit provenance. Five bounded
+workbenches in `.planning/spikes/` tested local affine ownership, CFG
+edge-specific loan liveness, separate-compilation origins and generic abilities,
+independent typed-core certificate validation, and native C ABI/provenance/
+cleanup hazards; their surviving contracts are now production code, and their
+hazards are reconciled row-by-row in `qlt01_registry.json`.
 
 Canonical planning inputs:
 
@@ -112,15 +157,16 @@ Canonical planning inputs:
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Build M001 as vertical source-to-native slices | Cross-layer feedback reveals semantic mistakes sooner than disconnected compiler layers | — Pending |
-| Use Go 1.24 stdlib for Stage 0 | Fast builds, current spike evidence, simple offline onboarding, and low dependency depth | — Pending |
-| Emit readable C17 through Clang first | Exposes real ABI and optimizer behavior while keeping backend replacement reversible | — Pending |
-| Make the deterministic interpreter the semantic oracle | Prevents C output or optimizer accidents from defining the language | — Pending |
-| Use affine values with separate copy/drop/share/send/escape abilities | Avoids conflating distinct semantic and cost properties | — Pending |
-| Infer local borrow ends at CFG last use; declare public origins | Preserves local ergonomics without hiding public ABI relationships | — Pending |
-| Validate compact typed-core facts independently at trust crossings | Gives cheap cache/release evidence without claiming source-to-core proof | — Pending |
-| Keep syntax provisional but canonical | Enables real parser/formatter evidence without freezing decorative choices early | — Pending |
-| Treat structured diagnostics and evidence as a versioned product API | AI effectiveness depends more on precise verifier feedback than exotic syntax | — Pending |
+| Build M001 as vertical source-to-native slices | Cross-layer feedback reveals semantic mistakes sooner than disconnected compiler layers | ✓ Good — every phase surfaced consumer gaps (e.g. 03-02's native execution-document validator) that a layered build would have hidden until integration |
+| Use Go 1.24 stdlib for Stage 0 | Fast builds, current spike evidence, simple offline onboarding, and low dependency depth | ✓ Good — zero external deps through 6 phases; `go/ast`/`go/parser` doubled as a structural-test substrate |
+| Emit readable C17 through Clang first | Exposes real ABI and optimizer behavior while keeping backend replacement reversible | ✓ Good — real `-O3`/LTO/`restrict` divergences and ASan findings only exist because the backend is real |
+| Make the deterministic interpreter the semantic oracle | Prevents C output or optimizer accidents from defining the language | ✓ Good — the five-axis comparator's authority rests on it; it caught two real `--engine=native` bugs in Phase 4 |
+| Use affine values with separate copy/drop/share/send/escape abilities | Avoids conflating distinct semantic and cost properties | ✓ Good — abilities derived independently through aggregates and generics; one accepted override (OV-02-01) |
+| Infer local borrow ends at CFG last use; declare public origins | Preserves local ergonomics without hiding public ABI relationships | ✓ Good intraprocedurally — `loanLivenessFixpoint` became the sole liveness law after a 230,692-comparison shadow run; ⚠️ Revisit for the interprocedural half (D-03-02) |
+| Validate compact typed-core facts independently at trust crossings | Gives cheap cache/release evidence without claiming source-to-core proof | ✓ Good — and its known escape is executable, not hypothetical (`escape:coordinated-source-to-core-false-claim`) |
+| Keep syntax provisional but canonical | Enables real parser/formatter evidence without freezing decorative choices early | ✓ Good — losslessness and idempotence held through generated programs and malformed AI edits |
+| Treat structured diagnostics and evidence as a versioned product API | AI effectiveness depends more on precise verifier feedback than exotic syntax | ✓ Good — the `/0`→`/1` schema bump landed across 12 literal sites with `/0` bytes provably frozen; `cmd/lang-repair` repairs 5 defect classes through the JSON protocol alone |
+| Defer `OpCall` and interprocedural equivalence out of M001 | Landing a new `OperationKind` at six dispatch sites alongside alias facts, sanitizers, the reducer, and the QLT-01 registry matched the fingerprint of the failures that cost Phases 2-4 extra remediation rounds | ⚠️ Revisit — correct for M001's risk budget, but it is the reason M001 ships without Lang-to-Lang calls; M002's lead charter |
 
 ## Evolution
 
@@ -140,4 +186,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-03 after formal GSD initialization*
+*Last updated: 2026-09-07 after M001 milestone*
