@@ -86,6 +86,64 @@ func (s Samples) Summary() (Summary, error) {
 	return Summary{P50: p50, P95: p95, Mean: mean, StdDev: stdDev, CoV: cov, Count: n}, nil
 }
 
+// CoVDemotionThreshold is the fixed coefficient-of-variation threshold
+// D-06-19's auto-demotion rule fires on. Claude's Discretion: this project
+// runs on exactly one laptop-class Apple-silicon host with no CI fleet
+// (D-06-15) -- battery state, P/E core scheduling, and thermal throttling
+// all confound into a single sample stream, and there is no cross-machine
+// averaging to smooth them out. 0.15 (15%) is a conservative threshold for
+// that single-host, no-fleet situation: tight enough to catch genuinely
+// unstable measurements, loose enough not to demote every warm run on a
+// machine with no dedicated benchmarking isolation. Exported so
+// scripts/verify-phase6.sh and a pin test can both cite it.
+const CoVDemotionThreshold = 0.15
+
+// The verdict vocabulary is closed to exactly these three values (D-06-19,
+// D-06-22): any other string is a bug, never a fourth state quietly
+// introduced later.
+const (
+	VerdictBlocking    = "blocking"
+	VerdictObserved    = "observed"
+	VerdictNotRatified = "not_ratified"
+)
+
+// Verdicts returns the closed three-value verdict set, in stable order.
+func Verdicts() []string {
+	return []string{VerdictBlocking, VerdictObserved, VerdictNotRatified}
+}
+
+// Demote is D-06-19's mechanical, one-directional quarantine rule: it only
+// ever demotes a requested gate type toward observed/not_ratified, never
+// promotes one toward blocking. The rule, in this order, with no other
+// branches:
+//
+//  1. A refused sample set (err != nil) is undeterminable -- not_ratified,
+//     never a silent pass and never blocking.
+//  2. Only recomputed_work is gate-eligible at all (D-06-14/D-06-22): wall
+//     clock and output bytes are never blocking on their own.
+//  3. A CoV above the fixed threshold demotes to observed, regardless of
+//     the caller's requested gate type.
+//  4. Otherwise, requested passes through unchanged -- and the ONLY
+//     literal `return VerdictBlocking` in this function is that
+//     pass-through, asserted structurally by
+//     TestDemoteHasExactlyOnePromotionPassthrough so a future edit cannot
+//     add a second promotion path without failing that test.
+func Demote(requested string, metric string, summary Summary, err error) string {
+	if err != nil {
+		return VerdictNotRatified
+	}
+	if metric != "recomputed_work" {
+		return VerdictObserved
+	}
+	if summary.CoV > CoVDemotionThreshold {
+		return VerdictObserved
+	}
+	if requested == VerdictBlocking {
+		return VerdictBlocking
+	}
+	return requested
+}
+
 // percentileIndex reproduces scripts/verify-phase2.sh's sorted-index
 // percentile rule exactly rather than inventing a new interpolation: at
 // n=20, `sed -n '10p'` on a 1-indexed sorted stream is 0-indexed position
