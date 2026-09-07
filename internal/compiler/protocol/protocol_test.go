@@ -428,3 +428,24 @@ func TestCacheInputsReusedCountSharesUnitWithRecomputedWork(t *testing.T) {
 		t.Fatalf("RecomputedWork (%s) and CacheInputsReusedCount (%s) must both be plain int", recomputed.Type.Kind(), reused.Type.Kind())
 	}
 }
+
+// TestStageBreakdownExcludedFromIdentity is D-06-32's identity-exclusion
+// pin for the last new field this phase adds: a three-entry StageBreakdown
+// must never reach Result.Finalize()'s identity struct, so stage
+// attribution cannot change semantic output.
+func TestStageBreakdownExcludedFromIdentity(t *testing.T) {
+	base := protocol.New("verify", protocol.StatusPass)
+	base.Lanes = []protocol.Lane{{ID: "lane:one", Status: "pass"}}
+	baseID := base.Finalize().ID
+
+	withBreakdown := base
+	withBreakdown.Lanes = append([]protocol.Lane(nil), base.Lanes...)
+	withBreakdown.Lanes[0].StageBreakdown = []protocol.StageTiming{
+		{Stage: "parse", ElapsedNS: 1},
+		{Stage: "check", ElapsedNS: 2},
+		{Stage: "lower", ElapsedNS: 3},
+	}
+	if got := withBreakdown.Finalize().ID; got != baseID {
+		t.Fatalf("a three-entry StageBreakdown reached Result.Finalize()'s identity: base=%s got=%s breakdown=%+v", baseID, got, withBreakdown.Lanes[0].StageBreakdown)
+	}
+}
