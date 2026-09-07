@@ -303,7 +303,7 @@ Plans:
   3. An automated repair exercise fixes representative match, move, borrow, cleanup, and stale-evidence defects using only the supported command protocol.
   4. Declared-machine cold/warm feedback distributions, peak memory, output bytes, and affected work meet ratified budgets or identify a specific blocking regression.
 
-**Plans**: 8/15 plans executed
+**Plans**: 9/15 plans executed
 
 Plans:
 **Wave 1**
@@ -325,7 +325,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 06-06-PLAN.md — The one coordinated additive bump: `lang.command/1`, `lang.verify-lane/1`, seven reporting fields
+- [x] 06-06-PLAN.md — The one coordinated additive bump: `lang.command/1`, `lang.verify-lane/1`, seven reporting fields
 - [ ] 06-13-PLAN.md — `cmd/lang-repair`: subprocess-only driver, import boundary, non-degenerate success oracle
 
 **Wave 5** *(blocked on Wave 4 completion)*
@@ -393,4 +393,4 @@ for the verbatim carry-forward entry).
 | 3. Borrowed Views and CFG Lifetimes | 10/10 | Complete    | 2026-09-04 |
 | 4. Fallible Resources and C Boundary | 13/13 | Complete    | 2026-09-05 |
 | 5. Native Equivalence and Adversarial Evidence | 14/14 | Complete    | 2026-09-06 |
-| 6. Agent Feedback and Performance Ratification | 8/15 | In Progress|  |
+| 6. Agent Feedback and Performance Ratification | 9/15 | In Progress|  |
