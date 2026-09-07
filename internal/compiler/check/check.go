@@ -207,7 +207,49 @@ func Program(program ast.Program) Result {
 			for _, name := range missing {
 				causes = append(causes, diagnostic.Cause{Kind: "missing_alternative", Detail: name})
 			}
-			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("match.non_exhaustive", function.Body.Span, "match does not cover every alternative", causes...))
+			// A single missing alternative has one mechanical, source-level
+			// fix -- IF the present arms already establish a safe value to
+			// guess: insert a self-mapping arm ("alt => alt") immediately
+			// after the last present arm, but ONLY when every present arm
+			// already maps its own pattern to itself (allArmsSelfMap). alt
+			// is always a member of dataType.Alternatives (the missing set
+			// is drawn from exactly that list), so the appended arm is
+			// always a legal match result, but "which value" is only a safe
+			// guess, not a certainty, when the arms already in source
+			// establish that identity-mapping convention -- otherwise (as
+			// in testdata/phase1/non_exhaustive.lang's Off => On, which
+			// does NOT self-map) there is no principled way to guess the
+			// missing arm's target, and offering one anyway would be
+			// exactly the fail-open shape this project refuses. This
+			// condition is also what keeps lang.diagnostic/0's frozen Phase
+			// 1 golden (TestPhase1DiagnosticGoldenUnchanged) byte-identical:
+			// diagnostic.Error (schema /0) is used whenever no repair
+			// applies, and ErrorWithRepairs (schema /1) always changes the
+			// diagnostic's schema even with zero repairs attached, so the
+			// two paths must never both reach the same call for the same
+			// input (D-06-24/D-06-25's match injector target; D-06-31
+			// "Phase 1 evidence bytes remain byte-identical"). More than one
+			// missing alternative has no equally uncontroversial single
+			// edit either, so it too stays classification-only.
+			if len(missing) == 1 && len(function.Body.Arms) > 0 && allArmsSelfMap(function.Body.Arms) {
+				insertion := function.Body.Arms[len(function.Body.Arms)-1].Span.End
+				insertionSpan := diagnostic.Span{Start: insertion, End: insertion}
+				alt := missing[0]
+				result.Diagnostics = append(result.Diagnostics, diagnostic.ErrorWithRepairs(
+					"match.non_exhaustive", function.Body.Span, "match does not cover every alternative", causes,
+					diagnostic.Repair{
+						Kind:          "add_missing_arm",
+						Detail:        alt,
+						Span:          &insertionSpan,
+						Replacement:   fmt.Sprintf("\n    %s => %s", alt, alt),
+						Applicability: diagnostic.ApplicabilityMachineApplicable,
+					},
+				))
+			} else {
+				result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
+					"match.non_exhaustive", function.Body.Span, "match does not cover every alternative", causes...,
+				))
+			}
 		}
 		result.Program.Functions = append(result.Program.Functions, core.Function{
 			ID: functionID, Name: function.Name,
@@ -2336,4 +2378,20 @@ func contains(values []string, value string) bool {
 		}
 	}
 	return false
+}
+
+// allArmsSelfMap reports whether every arm of a bare-arm match maps its own
+// pattern to itself (arm.Pattern == arm.Value). This is the sole gate on
+// match.non_exhaustive's add_missing_arm repair (D-06-24/D-06-25): a missing
+// arm's correct target value is only a safe mechanical guess when the arms
+// already present establish that identity-mapping convention. An empty arm
+// list vacuously self-maps but is never reached with this gate's meaning
+// intact, since the caller also requires len(function.Body.Arms) > 0.
+func allArmsSelfMap(arms []ast.MatchArm) bool {
+	for _, arm := range arms {
+		if arm.Pattern != arm.Value {
+			return false
+		}
+	}
+	return true
 }

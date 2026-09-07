@@ -1,0 +1,58 @@
+Phase 6 defect-injection corpus (D-06-25, D-06-29)
+===================================================
+
+This directory holds the held-out `.lang` fixtures the DX-04 defect injectors
+(match, move, borrow) operate on, plus one small subject fixture for the
+stale-evidence class. It follows testdata/phase5's flat layout: `.lang`
+files side by side, no subdirectories.
+
+Two prefixes, two disjoint uses -- do not blur them:
+
+- `heldout_*.lang` -- scored by the CI gate ONLY. These are the fixtures
+  session.MatchInjector / MoveInjector / BorrowInjector mutate and the
+  fixtures the repair driver (06-13) is verified against. NEVER read these
+  files, or their content, when hand-deriving the driver's kind->edit
+  mapping.
+- `derivation_*.lang` -- the ONLY fixtures anyone may consult when hand-
+  deriving the repair driver's kind->edit mapping in 06-13. NEVER wire an
+  injector runner or a CI-gate test against these files.
+
+This split (D-06-29) blunts -- it cannot eliminate, given how small this
+language is -- the automated-program-repair overfitting failure mode: a
+repairer written against the same fixtures it repairs, by the same author,
+is not evidence the underlying protocol is agent-legible (D-06-23). 06-13
+adds a test asserting no `derivation_*` reference ever names a `heldout_*`
+path.
+
+`heldout_match_defect.lang` is this corpus's characteristic marker file: a
+later `isPhase6Corpus`-shaped dispatch (06-15, mirroring
+`cmd/lang/main.go`'s `isPhase5Corpus`) recognizes this directory by that
+file's presence, exactly as `testdata/phase5`'s own marker
+(`restrict_borrow.lang`) is recognized today.
+
+Per-file injector targets, marked by a trailing `// lang:<class>-target`
+comment on the line the injector mutates (deleted for match, corrupted for
+move/borrow -- see session_phase6_injectors.go for the exact mechanism and
+the fail-closed marker-count guard every injector shares):
+
+- `heldout_match_defect.lang` / `derivation_match_defect.lang` -- every arm
+  self-maps (`Alt => Alt`), so re-adding a self-mapping arm for a removed
+  alternative reproduces the file byte-for-byte (D-06-26).
+- `heldout_move_defect.lang` / `derivation_move_defect.lang` -- a two-hop
+  move chain; the injector corrupts the second `take`'s source back to the
+  already-moved parameter name.
+- `heldout_borrow_defect.lang` / `derivation_borrow_defect.lang` -- two
+  overlapping shared borrows (legal); the injector escalates the marked one
+  to exclusive, producing a genuine loan conflict.
+
+The cleanup class (D-06-25) needs no dedicated fixture here at all: it
+reuses `session.ReleaseOmissionMutationRunner` directly against whatever
+`.lang` fixture's generated C already carries a `lang:release-site` marker
+(e.g. `testdata/phase4/acquire_three_success.lang`) -- see
+`session_phase6_injectors_test.go`.
+
+`stale_evidence_subject.lang` is neither `heldout_` nor `derivation_`: the
+stale-evidence class is not a source defect at all (D-06-25), so there is no
+kind->edit mapping to overfit and no CI-gate corpus to keep separate from
+it. It exists purely as a small, legitimate program to capture an evidence
+manifest over before re-touching it.
