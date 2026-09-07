@@ -117,5 +117,57 @@ The only place a genuine limitation touches a literal success-criterion wording 
 
 ---
 
+## Re-Verification: 2026-09-07 (UAT automation pass)
+
+**Trigger:** the fifteen Phase 6 SUMMARYs were edited after the initial pass, to
+replace hand-driven UAT evidence with automated evidence. That makes the report
+stale by mtime, so it is re-verified here rather than left to claim a result it
+no longer covers.
+
+**What changed since the initial verification.** Additive test coverage and CI
+wiring only — no production behavior was modified:
+
+1. `internal/compiler/testsupport/cli_phase6_test.go` (new) — six subprocess
+   e2e tests driving the shipped binary for `explain`, `query` (resolution,
+   closed-vocabulary, and honest-absence), the coordinated `/1` schema bump,
+   and `lang stats`. These replace the five deliverables previously confirmed
+   by a human at a terminal. `lang stats` had no test coverage of any kind
+   before this pass, despite `scripts/verify-phase6.sh:151` depending on it.
+2. `internal/compiler/testsupport/testsupport.go` — added `RunCLIStdin` /
+   `RunCLIStdinErr`, sharing one `runCLI` spawn path with the existing
+   `RunCLIErr`. Still `exec.CommandContext` + `WithTimeout` + `boundedWriter`
+   on both output streams; `native_test.go`'s `TestSourceNeverSpawnsUnbounded
+   Processes` and `TestSpawnGuardCatchesKnownEvasions` both re-run clean.
+3. `internal/compiler/session/session_phase6_test.go` — added
+   `TestCIWorkflowRunsPhase6Gate`, pinning `.github/workflows/ci.yml` to the
+   current phase's gate. It reads the workflow as text and never executes it
+   (the gate runs `go test ./...`, so executing it from a test would recurse).
+4. `.github/workflows/ci.yml` — the `phase-gate` job ran `verify-phase4.sh`,
+   two phases stale, against its own comment promising it would move forward.
+   Retargeted to `scripts/verify-phase6.sh`. The job key is unchanged, so
+   branch-protection rules keyed on it still match. **This was a real, live
+   gap: Phase 5's and Phase 6's gates existed but nothing in CI ran them.**
+
+`scripts/verify-phase6.sh` and `scripts/verify-phase5.sh` are byte-unchanged;
+all five Phase 6 script-text contract tests still pass.
+
+**Evidence.** Re-run end to end on the live tree for this pass: `go vet ./...`
+clean; `go test ./...` clean; `go test -race ./...` clean (18 packages);
+`sh scripts/verify-phase6.sh` green, exit 0. The new assertions were
+mutation-checked rather than merely observed passing — the explain schema
+literal, the explain node bound, the `not_captured` absence contract, and the
+`/1` schema assertion were each temporarily inverted and each produced a
+failure, then restored.
+
+**Effect on this report's findings.** None are changed. Every accepted item in
+the frontmatter (WR-01, WR-02, D-06-13, D-06-20, D-06-29, D-06-30, D-06-33)
+remains open and accurately characterized; nothing was silently escalated or
+dropped. SC4's cold-half gap is untouched. The `## Human Verification Required`
+section above said "None" for the success criteria, and that is now also true
+of the deliverable-level UAT: `uat.classify-coverage` reports
+`all_auto_covered: true, present: 0, errors: 0` for all fifteen SUMMARYs, 68
+deliverables, none requiring human judgment.
+
 _Verified: 2026-09-07T05:37:39Z_
+_Re-verified: 2026-09-07 (UAT automation pass)_
 _Verifier: Claude (gsd-verifier)_

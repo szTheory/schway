@@ -10,15 +10,21 @@
 #   checks      Fast feedback -- vet, build, unit/integration tests, and the
 #               race detector. This is what a contributor waits on.
 #   phase-gate  The current phase's own bounded gate script, which is a
-#               superset of `checks` and additionally verifies all four
+#               superset of `checks` and additionally verifies all six
 #               corpora with one freshly built binary and requires every
-#               Phase 4 control identifier and expected escape by exact text.
+#               Phase 6 control identifier and expected escape by exact text.
 #
-# Only `scripts/verify-phase4.sh` is run, not all four gate scripts: that
-# script proves Phase 1, 2, and 3 non-regression by re-running THEIR OWN
+# Only the current phase's gate is run, never the older ones as well: that
+# script proves every prior phase's non-regression by re-running THEIR OWN
 # corpora with THIS phase's binary (see its own comment), so invoking the
-# older gates as well would re-run the same suite three more times for no
-# additional signal. When a Phase 5 gate lands, this job moves to it.
+# older gates too would re-run the same suite five more times for no
+# additional signal.
+#
+# This job is pinned to the current phase's gate by
+# session_phase6_test.go#TestCIWorkflowRunsPhase6Gate, which fails if this
+# file names any superseded gate script. That pin exists because the prose
+# promise it replaces ("when the next gate lands, this job moves to it") was
+# made here once and then silently missed for two phases.
 name: CI
 
 on:
@@ -59,7 +65,7 @@ jobs:
       - run: go test -race ./...
 
   phase-gate:
-    name: phase-4 gate (${{ matrix.os }})
+    name: phase-6 gate (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -73,5 +79,5 @@ jobs:
           cache: true
       - name: Require clang
         run: clang --version
-      - name: scripts/verify-phase4.sh
-        run: sh scripts/verify-phase4.sh
+      - name: scripts/verify-phase6.sh
+        run: sh scripts/verify-phase6.sh

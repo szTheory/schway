@@ -47,6 +47,59 @@ decisions:
   - "The Phase 6 control-and-work gate is driven against testdata/phase1's toggle.lang for the native-differential control (the only corpus carrying that shared fixture) and against testdata/phase6's/testdata/phase4's fixtures for the five defect-injection controls, rather than requiring one dedicated corpus to carry every fixture the gate needs."
   - "All five requirements this phase set out to deliver (FND-04, DX-02, DX-03, DX-04, QLT-02) are marked complete by this plan via requirements.ready-ids/mark-complete, since it is the phase's final plan and the readiness check reported all five ready with none blocked."
 
+coverage:
+  - id: D1
+    description: "scripts/verify-phase6.sh is a runnable Phase 6 release-cost lane that runs green end-to-end, and is executed on every push and pull request on both host priorities"
+    requirement: "DX-04"
+    verification:
+      - kind: e2e
+        ref: ".github/workflows/ci.yml#phase-gate -- runs `sh scripts/verify-phase6.sh` on ubuntu-latest and macos-latest for every push and pull request"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_test.go#TestCIWorkflowRunsPhase6Gate"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_test.go#TestPhase6VerifierScriptContract"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_test.go#TestPhase6ScriptInvokesNoPriorGate"
+        status: pass
+    human_judgment: false
+  - id: D2
+    description: "The gate script and its Go sources cannot drift apart in either direction: required controls, pinned bounds, and declared escapes are each asserted against the script's own text"
+    requirement: "DX-04"
+    verification:
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_test.go#TestPhase6RequiredControlsMatchScript"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_test.go#TestPhase6BoundsMatchScript"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_escapes_test.go#TestPhase6EscapeGrepsMatchScript"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_escapes_test.go#TestPhase6EscapesAreNeverPresentedAsControls"
+        status: pass
+    human_judgment: false
+  - id: D3
+    description: "The Phase 6 control-and-work gate, its corpus dispatch, and the `lang stats` sampling seam are each reachable and correct through the shipped binary, not only in process"
+    requirement: "QLT-02"
+    verification:
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_test.go#TestVerifyPhase6ControlsAndWork"
+        status: pass
+      - kind: unit
+        ref: "cmd/lang/main_test.go#TestPhase6CorpusDispatchRequiresMarker"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase6_test.go#TestPhase6SamplingLoopMatchesGoStatistics"
+        status: pass
+      - kind: e2e
+        ref: "internal/compiler/testsupport/cli_phase6_test.go#TestStatsCLIComputesGoStatistics"
+        status: pass
+    human_judgment: false
+
 metrics:
   duration: ~40 min
   completed: 2026-09-07

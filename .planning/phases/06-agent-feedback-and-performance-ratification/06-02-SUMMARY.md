@@ -56,8 +56,8 @@ coverage:
       - kind: unit
         ref: "internal/compiler/session/session_phase6_explain_test.go#TestExplainSummarySchemaIsMinted"
         status: pass
-      - kind: command
-        ref: "lang --json explain testdata/phase2/use_after_move.lang <diagnostic-id>"
+      - kind: e2e
+        ref: "internal/compiler/testsupport/cli_phase6_test.go#TestExplainCLIReturnsBoundedCauseDAG"
         status: pass
     human_judgment: false
   - id: D2

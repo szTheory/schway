@@ -103,6 +103,7 @@ coverage:
       - kind: unit
         ref: "internal/compiler/measure/statistics_test.go#TestDemoteHasExactlyOnePromotionPassthrough"
         status: pass
+    human_judgment: false
 
 duration: 35min
 completed: 2026-09-06

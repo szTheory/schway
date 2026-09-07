@@ -71,8 +71,8 @@ coverage:
       - kind: unit
         ref: "internal/compiler/protocol/protocol_test.go#TestSchemaZeroConstantsStillExist"
         status: pass
-      - kind: manual
-        ref: "lang --json verify testdata/phase1 emits lang.command/1 top-level and lang.verify-lane/1 on all 5 lanes"
+      - kind: e2e
+        ref: "internal/compiler/testsupport/cli_phase6_test.go#TestVerifyPhase1CLIEmitsCoordinatedSchemaBump"
         status: pass
     human_judgment: false
   - id: D2
@@ -81,9 +81,6 @@ coverage:
     verification:
       - kind: unit
         ref: "internal/compiler/session/session_phase6_pin_test.go#TestLaneSchemaLiteralSiteCountIsPinned"
-        status: pass
-      - kind: unit
-        ref: "manual: reverted session_phase5.go's one site to protocol.LaneSchema, confirmed the pin fails naming session_phase5.go, then restored"
         status: pass
     human_judgment: false
   - id: D3

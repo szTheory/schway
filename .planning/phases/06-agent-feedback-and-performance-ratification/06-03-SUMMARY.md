@@ -59,8 +59,11 @@ coverage:
       - kind: unit
         ref: "internal/compiler/session/session_phase6_query_test.go#TestQueryMintsNoSixthVocabulary"
         status: pass
-      - kind: command
-        ref: "lang --json query testdata/phase2/owned_transfer.lang <real operation id>"
+      - kind: e2e
+        ref: "internal/compiler/testsupport/cli_phase6_test.go#TestQueryCLIResolvesEveryStableIDVocabulary"
+        status: pass
+      - kind: e2e
+        ref: "internal/compiler/testsupport/cli_phase6_test.go#TestQueryCLIMintsNoSixthVocabulary"
         status: pass
     human_judgment: false
   - id: D2
@@ -70,8 +73,8 @@ coverage:
       - kind: unit
         ref: "internal/compiler/session/session_phase6_query_test.go#TestQueryUnknownIDReportsNotCaptured"
         status: pass
-      - kind: command
-        ref: "lang --json query SRC <unknown id for each of the 5 vocabularies> (manually verified this session for diagnostic:, control:, lane:, evidence:, and operation_id shapes)"
+      - kind: e2e
+        ref: "internal/compiler/testsupport/cli_phase6_test.go#TestQueryCLIUnknownIDReportsNotCaptured"
         status: pass
     human_judgment: false
   - id: D3

@@ -138,8 +138,41 @@ func RunCLI(t testing.TB, binary string, environment []string, arguments ...stri
 	return result
 }
 
+// RunCLIStdin runs the built binary with `input` on its standard input,
+// failing the test on any spawn, timeout, or stream-overflow error. It is the
+// stdin-carrying peer of RunCLI, added for the `lang stats` seam, which reads
+// newline-separated samples from stdin rather than from a path argument.
+//
+// Unlike the child's output streams -- which are bounded by boundedWriter
+// because a runaway child must not exhaust the test process -- `input` is
+// supplied by the test itself and is therefore trusted and unbounded.
+func RunCLIStdin(t testing.TB, binary string, environment []string, input []byte, arguments ...string) CLIResult {
+	t.Helper()
+	result, err := RunCLIStdinErr(context.Background(), binary, environment, input, arguments...)
+	if err != nil {
+		t.Fatalf("run CLI with stdin: %v", err)
+	}
+	return result
+}
+
 // RunCLIErr is the goroutine-safe form of RunCLI.
 func RunCLIErr(parent context.Context, binary string, environment []string, arguments ...string) (CLIResult, error) {
+	return runCLI(parent, binary, environment, nil, arguments...)
+}
+
+// RunCLIStdinErr is the goroutine-safe form of RunCLIStdin.
+func RunCLIStdinErr(parent context.Context, binary string, environment []string, input []byte, arguments ...string) (CLIResult, error) {
+	return runCLI(parent, binary, environment, input, arguments...)
+}
+
+// runCLI is the single spawn path shared by every Run* form above. It keeps
+// exec.CommandContext plus a WithTimeout-derived context and a boundedWriter
+// on both output streams -- the four properties native_test.go's
+// scanUnboundedSpawns lint requires of every process this repo starts.
+//
+// A nil `input` leaves command.Stdin nil (the child reads /dev/null), which is
+// byte-for-byte the pre-existing RunCLIErr behavior.
+func runCLI(parent context.Context, binary string, environment []string, input []byte, arguments ...string) (CLIResult, error) {
 	ctx, cancel := context.WithTimeout(parent, RunCLITimeout)
 	defer cancel()
 	command := exec.CommandContext(ctx, binary, arguments...)
@@ -147,6 +180,9 @@ func RunCLIErr(parent context.Context, binary string, environment []string, argu
 		command.Env = os.Environ()
 	} else {
 		command.Env = environment
+	}
+	if input != nil {
+		command.Stdin = bytes.NewReader(input)
 	}
 	var stdout, stderr boundedWriter
 	command.Stdout = &stdout
