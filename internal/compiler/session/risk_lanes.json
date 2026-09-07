@@ -1,0 +1,230 @@
+[
+  {
+    "fixture_kind": "pure_match",
+    "lane_id": "lane:deterministic",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Determinism replay only re-parses/re-runs the same fixture source; nothing else it emits can move independently."
+  },
+  {
+    "fixture_kind": "pure_match",
+    "lane_id": "lane:syntax-properties",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Syntax property checks operate purely on parsed source bytes."
+  },
+  {
+    "fixture_kind": "pure_match",
+    "lane_id": "lane:negative-controls",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "The non-exhaustive-match negative control is a pure-source check fixture."
+  },
+  {
+    "fixture_kind": "pure_match",
+    "lane_id": "lane:evidence-bindings",
+    "declared_inputs": ["fixture_source", "go_toolchain"],
+    "rationale": "Evidence manifest binding recomputes over source bytes plus the Go toolchain that built the harness producing the manifest."
+  },
+  {
+    "fixture_kind": "pure_match",
+    "lane_id": "lane:native-differential",
+    "declared_inputs": ["fixture_source", "build_flags", "clang_identity", "go_toolchain"],
+    "rationale": "The interpreter-vs--O0-vs--O3 differential compiles native binaries, so it depends on build flags and the probed Clang identity in addition to source and the Go toolchain."
+  },
+  {
+    "fixture_kind": "owned",
+    "lane_id": "lane:owned-negative-controls",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Ownership negative controls are pure-source checker fixtures."
+  },
+  {
+    "fixture_kind": "owned",
+    "lane_id": "lane:owned-core-controls",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Forged-ability and duplicate-operation-id core controls recompute purely from source-derived typed-core facts."
+  },
+  {
+    "fixture_kind": "owned",
+    "lane_id": "lane:owned-native-differential",
+    "declared_inputs": ["fixture_source", "build_flags", "clang_identity", "go_toolchain"],
+    "rationale": "The owned-corpus native differential compiles native binaries, same dependency shape as lane:native-differential."
+  },
+  {
+    "fixture_kind": "owned",
+    "lane_id": "lane:owned-backend-causality",
+    "declared_inputs": ["fixture_source", "go_toolchain"],
+    "rationale": "Backend runtime-causality checks recompute over the mutation runner's optimization set, which is fixed by the Go toolchain that built it plus source."
+  },
+  {
+    "fixture_kind": "owned",
+    "lane_id": "lane:owned-evidence-bindings",
+    "declared_inputs": ["fixture_source", "go_toolchain"],
+    "rationale": "Owned-corpus evidence binding, same dependency shape as lane:evidence-bindings."
+  },
+  {
+    "fixture_kind": "borrowed",
+    "lane_id": "lane:borrowed-negative-controls",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Exclusive-borrow negative controls are pure-source checker fixtures."
+  },
+  {
+    "fixture_kind": "borrowed",
+    "lane_id": "lane:borrowed-origin-controls",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Public-origin propagation controls recompute purely from source-derived typed-core facts."
+  },
+  {
+    "fixture_kind": "borrowed",
+    "lane_id": "lane:borrowed-loan-endpoint-control",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "The corrupted-loan-endpoint control recomputes purely from source-derived CFG facts."
+  },
+  {
+    "fixture_kind": "borrowed",
+    "lane_id": "lane:path-oracle-disagreement",
+    "declared_inputs": ["fixture_source", "go_toolchain"],
+    "rationale": "The path-oracle disagreement lane recomputes an independent path-enumeration oracle built by the Go toolchain against source."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:foreign-unwind-policy-undeclared",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "Foreign-boundary unwind-policy checks depend on the declared C translation unit as well as source."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:foreign-call-target-not-foreign",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "Call-target-not-foreign is a foreign-boundary negative control, same dependency shape."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:foreign-acquire-admitted",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "Foreign acquisition admission checks the declared C translation unit against source."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:release-order-transposed",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "Release-order transposition is checked against the acquire/release sequence in the declared foreign translation unit."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:release-omitted",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit", "mutation_runner_source"],
+    "rationale": "Release-omission additionally depends on the release-omission mutation runner's own source, per D-06-07's explicit mutation-runner-source-hash requirement."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:foreign-layout-mismatch",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit", "clang_identity"],
+    "rationale": "Cross-TU layout-mismatch detection depends on the Clang identity that compiled the separately-declared translation units."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:foreign-no-unproven-attributes",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "The unproven-attributes scan reads the declared foreign translation unit alongside source."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:foreign-origin-omitted",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "Foreign origin-omission checks the declared C translation unit's contract against source."
+  },
+  {
+    "fixture_kind": "foreign",
+    "lane_id": "lane:foreign-unwind-forbidden",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "Forbidden-unwind detection reads the declared foreign translation unit alongside source."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:alias-false-no-alias",
+    "declared_inputs": ["fixture_source", "build_flags", "clang_identity"],
+    "rationale": "The -O0/-O3 false-restrict-alias divergence depends on build flags and the Clang identity that compiled both optimization levels."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:attribute-unjustified",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "Unjustified-attribute detection scans the declared foreign translation unit."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:coordinated-lie-escape",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "The coordinated-frontend-summary-lie reachability demonstration is a pure-source adversarial fixture."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:defect-no-release",
+    "declared_inputs": ["fixture_source", "mutation_runner_source"],
+    "rationale": "The no-release defect signal depends on the release-omission mutation runner's own source."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:defect-signal-adjudicated",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Defect-signal adjudication recomputes purely from source-derived facts."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:diagnostic-reject-program-id-equivalence",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Program-ID-equivalence rejection is a pure-source diagnostic check."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:interpreter-o0-o3-lto",
+    "declared_inputs": ["fixture_source", "build_flags", "clang_identity", "go_toolchain"],
+    "rationale": "The LTO-widened interpreter/-O0/-O3 differential compiles native binaries, same dependency shape as lane:native-differential."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:kind-exhaustive-dispatch",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Exhaustive OperationKind dispatch coverage recomputes purely from source-derived typed-core facts."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:mismatch-reduce",
+    "declared_inputs": ["fixture_source", "mutation_runner_source"],
+    "rationale": "The reducer's vacuity controls (no-progress, predicate-too-loose, nondeterministic) recompute against the mutation runner producing the disagreement being reduced."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:native-sanitize",
+    "declared_inputs": ["fixture_source", "runtime_identity", "clang_identity"],
+    "rationale": "ASan/UBSan sanitizer runs depend on the linked sanitizer runtime identity and the Clang identity that compiled the instrumented binary."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:native-sanitize-obligations",
+    "declared_inputs": ["fixture_source", "runtime_identity"],
+    "rationale": "The UBSan-no-recover-effective obligation depends on the linked sanitizer runtime identity."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:nonlocal-exit-undetected",
+    "declared_inputs": ["fixture_source", "foreign_translation_unit"],
+    "rationale": "The nonlocal-exit-past-acquiring-frame hazard is checked against the declared foreign translation unit."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:qlt01-registry-audit",
+    "declared_inputs": ["go_toolchain"],
+    "rationale": "The QLT-01 registry completeness audit recomputes AllShippedControlIDs(), which is fixed by the Go toolchain that built the harness, independent of any one fixture's source."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:terminator-walk-complete",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Terminator-walk completeness recomputes purely from source-derived CFG facts."
+  },
+  {
+    "fixture_kind": "phase5_adversarial",
+    "lane_id": "lane:compare-field-routing",
+    "declared_inputs": ["fixture_source"],
+    "rationale": "Five-axis comparator field-routing coverage recomputes purely from source-derived facts."
+  }
+]
