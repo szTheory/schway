@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
+	"github.com/codename-lang/lang/internal/compiler/measure"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -65,6 +67,9 @@ func run(args []string) int {
 	}
 	if len(args) == 2 && args[0] == "verify" {
 		return runVerify(args[1], jsonMode)
+	}
+	if len(args) == 1 && args[0] == "stats" {
+		return runStats()
 	}
 	if len(args) == 4 && args[0] == "interface" && args[1] == "export" {
 		return runInterfaceExport(args[2], args[3], jsonMode)
@@ -157,6 +162,13 @@ func runEvidenceValidation(manifestPath, sourcePath string, expand, jsonMode boo
 }
 
 func runVerify(corpus string, jsonMode bool) int {
+	if isPhase6Corpus(corpus) {
+		result, err := session.VerifyPhase6ControlsAndWork(context.Background())
+		if err != nil {
+			return emit(problemResult("verify", protocol.StatusOperational, "tool.phase6_gate_failed", "unable to run the phase 6 control-and-work gate"), jsonMode, false)
+		}
+		return emit(result, jsonMode, false)
+	}
 	if isPhase5Corpus(corpus) {
 		result, err := session.VerifyPhase5ControlsAndWork(context.Background())
 		if err != nil {
@@ -166,6 +178,57 @@ func runVerify(corpus string, jsonMode bool) int {
 	}
 	result := session.VerifyCorpusFile(context.Background(), corpus, native.DefaultRunner())
 	return emit(result, jsonMode, false)
+}
+
+// runStats is plan 06-15's small Go statistics seam for
+// scripts/verify-phase6.sh's own D-06-19 20-sample observation loop: it
+// reads newline-separated integer samples from stdin and prints their
+// measure.Samples.Summary() (p50, p95, CoV, count) as a single line of
+// JSON. This keeps the shell side of the sampling loop thin -- it drives
+// the binary WarmSampleCount times and collects raw elapsed_ns values,
+// then pipes them through THIS command -- rather than reimplementing
+// sorted-index percentile selection in sed, so the statistical logic
+// itself stays unit-tested Go (measure.Samples.Summary(), already covered
+// by internal/compiler/measure's own test suite) instead of untested
+// shell arithmetic.
+func runStats() int {
+	scanner := bufio.NewScanner(os.Stdin)
+	var samples measure.Samples
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		value, err := strconv.ParseInt(line, 10, 64)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "stats: invalid sample %q: %v\n", line, err)
+			return exitUsage
+		}
+		samples = append(samples, value)
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "stats: %v\n", err)
+		return exitOperational
+	}
+	summary, err := samples.Summary()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "stats: %v\n", err)
+		return exitOperational
+	}
+	fmt.Printf("{\"p50\":%d,\"p95\":%d,\"cov\":%g,\"count\":%d}\n", summary.P50, summary.P95, summary.CoV, summary.Count)
+	return exitSuccess
+}
+
+// isPhase6Corpus recognizes the testdata/phase6 corpus by its own
+// characteristic marker fixture (heldout_match_defect.lang, per
+// testdata/phase6/README), the same dispatch-by-marker-file discipline
+// isPhase5Corpus already established. Checked BEFORE isPhase5Corpus so a
+// Phase 6 corpus is never accidentally swallowed by an earlier check; a
+// directory with no Phase 6 marker falls through unchanged to the existing
+// dispatch chain (isPhase5Corpus, then the default VerifyCorpusFile path).
+func isPhase6Corpus(corpus string) bool {
+	_, err := os.Stat(filepath.Join(corpus, "heldout_match_defect.lang"))
+	return err == nil
 }
 
 // isPhase5Corpus recognizes the testdata/phase5 corpus by its own

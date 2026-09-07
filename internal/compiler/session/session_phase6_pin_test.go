@@ -47,15 +47,22 @@ const currentLaneSchema = "lang.verify-lane/1"
 // legitimate sites -- 15 total -- so this pin keeps catching a genuinely
 // half-landed /0-to-/1 bump among the ORIGINAL 12 while not treating this
 // plan's own new production lanes as drift.]
+//
+// session_phase6.go x1 is the same species of addition again, from plan
+// 06-15's own VerifyPhase6ControlsAndWork addLane closure -- one more
+// brand-new production lane, never a /0 literal moved. [Rule 1/3
+// deviation: total moved from 15 to 16 for this one additional legitimate
+// site.]
 var expectedLaneSchemaLiteralSitesByFile = map[string]int{
 	"session.go":                 8,
 	"session_phase5.go":          1,
 	"session_phase5_mismatch.go": 2,
 	"session_phase5_sanitize.go": 1,
+	"session_phase6.go":          1,
 	"session_phase6_verify.go":   3,
 }
 
-const expectedLaneSchemaLiteralSiteTotal = 15
+const expectedLaneSchemaLiteralSiteTotal = 16
 
 // TestLaneSchemaLiteralSiteCountIsPinned pins the exact count and per-file
 // location of every protocol.LaneSchema1 reference in
