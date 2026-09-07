@@ -32,6 +32,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io"
 	"os"
 	"os/exec"
@@ -42,6 +45,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -467,4 +471,218 @@ func decodeGenericOrFatal(t testing.TB, raw []byte) map[string]interface{} {
 		t.Fatal(err)
 	}
 	return doc
+}
+
+// ---------------------------------------------------------------------
+// Anti-theater guard 1 (D-06-27.1): the prose-scramble test.
+//
+// runViaStandin drives the REAL driver's Repair cycle end to end, but
+// with EVERY subprocess call answered by the stand-in serving mode-
+// mutated captures instead of the real binary. It is the shared harness
+// both this guard and guard 2 (vocabulary removal) are built on:
+//   - diagnoseCapture/reverifyCapture are the checked-in real captures
+//     (cmd/lang-repair/testdata/<class>_{diagnose,reverify}_capture.json).
+//   - The repair actually applied is always derived from the UNMODIFIED
+//     diagnoseCapture's own repairs[] (span/replacement/applicability are
+//     never touched by scramble_prose, and this lets the harness compute,
+//     independent of any guard, exactly what content the driver's SECOND
+//     invocation will be asked to check -- so the reverify capture can be
+//     staged at the right content-hash key before the driver ever runs).
+// ---------------------------------------------------------------------
+
+func runViaStandin(t testing.TB, standinBinary string, mutatedSource, diagnoseCapture, reverifyCapture []byte, mode string) (exitCode int, outcome Outcome, repaired []byte) {
+	t.Helper()
+
+	// Determine, from the REAL (unmutated) diagnose capture, exactly what
+	// repair the driver will select and apply -- this is mode-independent
+	// for scramble_prose (kind/span/replacement/applicability untouched)
+	// and is what lets this harness stage the reverify capture at the
+	// correct content-hash key up front.
+	decoded := decodeCheckJSON(t, diagnoseCapture)
+	repair, _, ok := selectRepair(decoded)
+	if !ok {
+		t.Fatalf("runViaStandin: baseline diagnose capture carries no driver-eligible repair")
+	}
+	repairComputationPath := writeTempCopy(t, mutatedSource)
+	if err := applyRepair(repairComputationPath, repair); err != nil {
+		t.Fatalf("runViaStandin: computing expected repaired bytes: %v", err)
+	}
+	expectedRepaired, err := os.ReadFile(repairComputationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	standinDir := t.TempDir()
+	writeCaptureForContent(t, standinDir, mutatedSource, mutateCaptureOrFatal(t, diagnoseCapture, mode))
+	writeCaptureForContent(t, standinDir, expectedRepaired, mutateCaptureOrFatal(t, reverifyCapture, mode))
+
+	sourcePath := writeTempCopy(t, mutatedSource)
+	t.Setenv(standinDirEnv, standinDir)
+	exitCode, stdout := runCapturingStdout(t, []string{"--lang=" + standinBinary, "--source=" + sourcePath, "--json"})
+	if err := json.Unmarshal(stdout, &outcome); err != nil {
+		t.Fatalf("runViaStandin: decoding driver's own --json outcome: %v (raw: %s)", err, stdout)
+	}
+	repaired, err = os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return exitCode, outcome, repaired
+}
+
+// testSourceClassProseScramble drives one of the three classes that go
+// through the driver's own check/repair JSON protocol (match, move,
+// borrow) twice through the stand-in -- once serving the real captures
+// unmodified (mode "identity"), once serving the SAME captures with every
+// message/detail string replaced by lorem ipsum -- and asserts all three
+// observables (repaired bytes, exit code, reported outcome) are
+// identical. This is "without scraping prose," operationalized.
+func testSourceClassProseScramble(t *testing.T, standinBinary string, injector session.Injector, fixture, class string) {
+	t.Helper()
+	original := phase6Fixture(t, fixture)
+	mutated, err := injector.Inject(original)
+	if err != nil {
+		t.Fatalf("injecting %s defect: %v", class, err)
+	}
+	diagnoseCapture := captureFile(t, class+"_diagnose_capture.json")
+	reverifyCapture := captureFile(t, class+"_reverify_capture.json")
+
+	identityExit, identityOutcome, identityRepaired := runViaStandin(t, standinBinary, mutated, diagnoseCapture, reverifyCapture, "identity")
+	scrambledExit, scrambledOutcome, scrambledRepaired := runViaStandin(t, standinBinary, mutated, diagnoseCapture, reverifyCapture, "scramble_prose")
+
+	if identityOutcome.Status != OutcomeRepaired {
+		t.Fatalf("%s: identity-mode control run did not even report %q (got %q) -- test harness is broken, not exercising the guard", class, OutcomeRepaired, identityOutcome.Status)
+	}
+	if scrambledExit != identityExit {
+		t.Fatalf("%s: exit codes differ under prose scramble: identity=%d scrambled=%d", class, identityExit, scrambledExit)
+	}
+	if scrambledOutcome != identityOutcome {
+		t.Fatalf("%s: reported outcome differs under prose scramble: identity=%+v scrambled=%+v", class, identityOutcome, scrambledOutcome)
+	}
+	if !bytes.Equal(scrambledRepaired, identityRepaired) {
+		t.Fatalf("%s: repaired bytes differ under prose scramble", class)
+	}
+}
+
+// testCleanupClassIsProseIndependent covers the cleanup class. Its repair
+// mechanism (re-deriving generated C from the untouched .lang source via
+// cgen.EmitNative, then re-validating via native execution) NEVER decodes
+// any JSON document at all -- there is no message/detail channel for a
+// prose scramble to touch, so "prose cannot change this class's repair
+// behaviour" is trivially and structurally true. Demonstrated concretely
+// by running the mechanism twice and asserting byte-identical output,
+// since a mechanism claimed to be prose-independent had better also be
+// plain deterministic.
+func testCleanupClassIsProseIndependent(t *testing.T) {
+	t.Helper()
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first != second {
+		t.Fatal("cleanup's repair mechanism (cgen.EmitNative re-derivation) is not deterministic -- cannot be claimed prose-independent if it is not even self-consistent")
+	}
+}
+
+// testStaleEvidenceClassIsProseIndependent covers the stale-evidence
+// class. Its repair mechanism (repairStaleEvidenceClass, repair_test.go)
+// DOES consume a JSON document (`lang --json evidence --validate`'s own
+// response), which legitimately carries a "message" field on failure --
+// but the mechanism's own validateStatus closure decodes ONLY {"status"},
+// exactly like the real driver's own TestRepairDriverDecodesNoProseFields
+// proves for cmd/lang-repair's structs. Asserted here by go/ast over
+// repair_test.go itself, so a future edit that starts reading message
+// cannot silently reintroduce a prose dependency for this class.
+func testStaleEvidenceClassIsProseIndependent(t *testing.T) {
+	t.Helper()
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "repair_test.go", nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	ast.Inspect(file, func(n ast.Node) bool {
+		fn, isFunc := n.(*ast.FuncDecl)
+		if !isFunc || fn.Name.Name != "repairStaleEvidenceClass" {
+			return true
+		}
+		found = true
+		ast.Inspect(fn, func(inner ast.Node) bool {
+			st, isStruct := inner.(*ast.StructType)
+			if !isStruct {
+				return true
+			}
+			for _, field := range st.Fields.List {
+				if field.Tag == nil {
+					continue
+				}
+				tag := strings.Trim(field.Tag.Value, "`")
+				if strings.Contains(tag, `json:"message`) || strings.Contains(tag, `json:"detail`) {
+					t.Fatalf("repairStaleEvidenceClass now decodes a prose field (%s) -- the stale-evidence class must remain structure-only", tag)
+				}
+			}
+			return true
+		})
+		return true
+	})
+	if !found {
+		t.Fatal("repairStaleEvidenceClass not found in repair_test.go -- this test's target moved or was renamed")
+	}
+}
+
+// TestProseScrambleLeavesRepairBehaviourIdentical is the first anti-
+// theater guard (D-06-27.1): the driver is run against real diagnostics
+// and, separately, against the same diagnostics with every message/detail
+// string replaced by lorem ipsum -- kind/span/replacement/applicability
+// untouched -- and both runs must produce IDENTICAL repair behaviour and
+// outcome. Covers all five defect classes (T-06-THEATER-01).
+func TestProseScrambleLeavesRepairBehaviourIdentical(t *testing.T) {
+	standinBinary := buildStandin(t)
+
+	t.Run("match", func(t *testing.T) {
+		testSourceClassProseScramble(t, standinBinary, session.MatchInjector{}, "heldout_match_defect.lang", "match")
+	})
+	t.Run("move", func(t *testing.T) {
+		testSourceClassProseScramble(t, standinBinary, session.MoveInjector{}, "heldout_move_defect.lang", "move")
+	})
+	t.Run("borrow", func(t *testing.T) {
+		testSourceClassProseScramble(t, standinBinary, session.BorrowInjector{}, "heldout_borrow_defect.lang", "borrow")
+	})
+	t.Run("cleanup", func(t *testing.T) {
+		testCleanupClassIsProseIndependent(t)
+	})
+	t.Run("stale_evidence", func(t *testing.T) {
+		testStaleEvidenceClassIsProseIndependent(t)
+	})
+}
+
+// TestProseScrambleFixtureKeepsStructuredFieldsIntact is the scrambler's
+// own verification, asserting BOTH directions: at least one prose value
+// changed (a scrambler that matched nothing would make the whole guard
+// pass vacuously), and every structured value is byte-identical (a
+// scrambler that accidentally touched a span would make the guard fail
+// for the wrong reason). Both failure modes are refused explicitly.
+func TestProseScrambleFixtureKeepsStructuredFieldsIntact(t *testing.T) {
+	for _, class := range []string{"match", "move", "borrow"} {
+		for _, kind := range []string{"diagnose", "reverify"} {
+			name := class + "_" + kind
+			t.Run(name, func(t *testing.T) {
+				raw := captureFile(t, class+"_"+kind+"_capture.json")
+				before := decodeGenericOrFatal(t, mutateCaptureOrFatal(t, raw, "identity"))
+				after := decodeGenericOrFatal(t, mutateCaptureOrFatal(t, raw, "scramble_prose"))
+				changed := false
+				assertOnlyProseDiffers(t, before, after, name, &changed)
+				if kind == "diagnose" && !changed {
+					t.Fatalf("%s: scramble_prose changed zero prose values -- the scrambler matched nothing, which would make the guard pass vacuously", name)
+				}
+			})
+		}
+	}
 }
