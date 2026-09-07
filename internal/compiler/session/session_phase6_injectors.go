@@ -3,6 +3,8 @@ package session
 import (
 	"fmt"
 	"strings"
+
+	"github.com/codename-lang/lang/internal/compiler/native"
 )
 
 // This file implements DX-04's five defect injectors (D-06-25) and their
@@ -66,7 +68,8 @@ func markerGuard(count int, want string) error {
 // Where more than one line carries a class's marker, the LAST one is the
 // injector's target -- the same stable "take the last match" choice
 // ReleaseOmissionMutationRunner already makes for lang:release-site, stated
-// here once rather than re-derived per injector.
+// here once rather than re-derived per injector
+// (TestInjectorTargetChoiceIsSpecified).
 func markerCount(lines []string, marker string) int {
 	count := 0
 	for _, line := range lines {
@@ -109,4 +112,188 @@ func (MatchInjector) Inject(source []byte) ([]byte, error) {
 	}
 	mutated := append(append([]string(nil), lines[:index]...), lines[index+1:]...)
 	return []byte(strings.Join(mutated, "\n")), nil
+}
+
+// moveTargetMarker marks the take-expression MoveInjector corrupts.
+const moveTargetMarker = "// lang:move-target"
+
+// MoveInjector corrupts the marked take-expression's source identifier back
+// to the function's own parameter name -- the parameter is always the
+// place a straight-line body's first take already moved out of, so
+// referencing it again on the marked line reproduces exactly the affine
+// use-after-move defect class D-06-25 names, at source granularity.
+type MoveInjector struct{}
+
+func (MoveInjector) Name() string { return "move" }
+
+func (MoveInjector) Inject(source []byte) ([]byte, error) {
+	lines, index := lastMarkerLine(source, moveTargetMarker)
+	if err := markerGuard(markerCount(lines, moveTargetMarker), "move target"); err != nil {
+		return nil, err
+	}
+	parameter, ok := extractFirstParameterName(source)
+	if !ok {
+		return nil, &InjectorError{Code: InjectorTargetMissingCode, Err: fmt.Errorf("move: no function parameter found to reintroduce as the stale reference")}
+	}
+	mutatedLine, ok := replaceTakeSource(lines[index], parameter)
+	if !ok {
+		return nil, &InjectorError{Code: InjectorTargetMissingCode, Err: fmt.Errorf("move: marked line has no take-expression to corrupt")}
+	}
+	lines[index] = mutatedLine
+	return []byte(strings.Join(lines, "\n")), nil
+}
+
+// extractFirstParameterName parses the parameter name out of this fixture
+// shape's single `fn NAME(PARAM: TYPE) -> ...` declaration -- deliberately
+// minimal (this phase's language has exactly one parameter per function;
+// PROJECT.md), not a general parser.
+func extractFirstParameterName(source []byte) (string, bool) {
+	text := string(source)
+	fnIndex := strings.Index(text, "fn ")
+	if fnIndex == -1 {
+		return "", false
+	}
+	openIndex := strings.Index(text[fnIndex:], "(")
+	if openIndex == -1 {
+		return "", false
+	}
+	openIndex += fnIndex
+	colonIndex := strings.Index(text[openIndex:], ":")
+	if colonIndex == -1 {
+		return "", false
+	}
+	colonIndex += openIndex
+	name := strings.TrimSpace(text[openIndex+1 : colonIndex])
+	if name == "" {
+		return "", false
+	}
+	return name, true
+}
+
+// replaceTakeSource rewrites the identifier immediately following the
+// first "take " on line with replacement, leaving everything else
+// (including any trailing marker comment) untouched.
+func replaceTakeSource(line, replacement string) (string, bool) {
+	const takeKeyword = "take "
+	takeIndex := strings.Index(line, takeKeyword)
+	if takeIndex == -1 {
+		return line, false
+	}
+	start := takeIndex + len(takeKeyword)
+	end := start
+	for end < len(line) && isIdentByte(line[end]) {
+		end++
+	}
+	if end == start {
+		return line, false
+	}
+	return line[:start] + replacement + line[end:], true
+}
+
+func isIdentByte(b byte) bool {
+	return b == '_' || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
+}
+
+// borrowTargetMarker marks the shared borrow BorrowInjector escalates.
+const borrowTargetMarker = "// lang:borrow-target"
+
+// BorrowInjector escalates the marked shared (`borrow`) binding to
+// exclusive (`borrow mut`), producing exactly the overlapping
+// exclusive+shared loan-conflict defect class D-06-25 names -- two
+// overlapping SHARED loans are legal (testdata/phase3/shared_shared_accept.lang),
+// so the escalation, and only the escalation, is what makes the mutated
+// fixture reject.
+type BorrowInjector struct{}
+
+func (BorrowInjector) Name() string { return "borrow" }
+
+func (BorrowInjector) Inject(source []byte) ([]byte, error) {
+	lines, index := lastMarkerLine(source, borrowTargetMarker)
+	if err := markerGuard(markerCount(lines, borrowTargetMarker), "borrow target"); err != nil {
+		return nil, err
+	}
+	line := lines[index]
+	if strings.Contains(line, "borrow mut ") {
+		return nil, &InjectorError{Code: InjectorTargetMissingCode, Err: fmt.Errorf("borrow: marked line is already an exclusive borrow, nothing to escalate")}
+	}
+	const sharedBorrow = "= borrow "
+	if !strings.Contains(line, sharedBorrow) {
+		return nil, &InjectorError{Code: InjectorTargetMissingCode, Err: fmt.Errorf("borrow: marked line has no shared borrow to escalate")}
+	}
+	lines[index] = strings.Replace(line, sharedBorrow, "= borrow mut ", 1)
+	return []byte(strings.Join(lines, "\n")), nil
+}
+
+// CleanupInjector is a thin adapter over the shipped
+// ReleaseOmissionMutationRunner (D-06-25: "reuse the existing
+// release-omission mutation runner directly", not a reimplementation).
+// Unlike its siblings, source here is generated C, not `.lang`: the
+// `lang:release-site` marker cgen emits never appears in `.lang` source at
+// all. There is exactly one release-marker scan in this whole package --
+// ReleaseOmissionMutationRunner.Mutate's own -- which
+// TestCleanupInjectorReusesReleaseOmissionRunner asserts by go/ast.
+type CleanupInjector struct{}
+
+func (CleanupInjector) Name() string { return "cleanup" }
+
+func (CleanupInjector) Inject(source []byte) ([]byte, error) {
+	runner := NewReleaseOmissionMutationRunner(native.Runner{})
+	mutated, err := runner.Mutate(string(source))
+	if err != nil {
+		// ReleaseOmissionMutationRunner.Mutate returns its own
+		// native.backend_control_invalid code (session.go's pre-existing
+		// convention for THAT runner's callers); every Phase 6 injector
+		// must additionally answer to the one uniform
+		// InjectorTargetMissingCode AllInjectors()-driven tests expect, so
+		// the underlying error is wrapped, never replaced -- Unwrap still
+		// reaches the original native.ToolError.
+		return nil, &InjectorError{Code: InjectorTargetMissingCode, Err: fmt.Errorf("cleanup: %w", err)}
+	}
+	return []byte(mutated), nil
+}
+
+// evidenceSubjectMarker marks a fixture as eligible stale-evidence subject
+// material. Unlike the other four classes, it does not name a mutation
+// SITE (there is no source defect to inject, D-06-25) -- its disappearance
+// means "this input was never meant to be run through this injector at
+// all", which is still the same fail-closed shape: refuse rather than
+// silently re-touch an arbitrary, unvetted file.
+const evidenceSubjectMarker = "// lang:evidence-subject"
+
+// StaleEvidenceInjector re-touches source captured evidence was bound to,
+// so the manifest's recorded SHA-256 no longer matches -- D-06-25's
+// stale-evidence class is NOT a source defect, so unlike its siblings the
+// mutation here is a deliberately inert, legitimate-looking edit (an
+// appended comment line), not a corruption. The locator is
+// ValidateEvidenceCommandFile's own mismatch report (session.go); this
+// injector computes no source diff and consults none
+// (TestStaleEvidenceInjectorBreaksManifestBinding's go/ast assertion,
+// D-06-27.2's structured-channel discipline extended to the locator side).
+type StaleEvidenceInjector struct{}
+
+func (StaleEvidenceInjector) Name() string { return "stale_evidence" }
+
+func (StaleEvidenceInjector) Inject(source []byte) ([]byte, error) {
+	lines, _ := lastMarkerLine(source, evidenceSubjectMarker)
+	if err := markerGuard(markerCount(lines, evidenceSubjectMarker), "evidence subject"); err != nil {
+		return nil, err
+	}
+	retouched := append(append([]byte(nil), source...), []byte("\n// lang:stale-evidence-retouch\n")...)
+	return retouched, nil
+}
+
+// AllInjectors returns all five defect injectors, enumerated once here so
+// TestEveryInjectorRefusesWhenMarkerDisappears (Task 3) and any future
+// caller is driven from this single list rather than a hand-written one --
+// a sixth injector added later without updating this function is invisible
+// to those tests, but a sixth injector added HERE without its own guard is
+// exactly what those tests catch.
+func AllInjectors() []Injector {
+	return []Injector{
+		MatchInjector{},
+		MoveInjector{},
+		BorrowInjector{},
+		CleanupInjector{},
+		StaleEvidenceInjector{},
+	}
 }

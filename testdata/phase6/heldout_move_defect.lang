@@ -1,0 +1,18 @@
+// Held-out move-defect fixture (D-06-25/D-06-29): scored by the CI gate
+// only, never consulted when hand-deriving the repair driver's kind->edit
+// mapping (06-13's derivation set is derivation_move_defect.lang instead).
+// A two-hop move chain: the injector corrupts the marked take's source back
+// to the already-moved parameter name, reproducing exactly the affine
+// use-after-move defect class D-06-25 names.
+
+module phase6.heldout_move_defect
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let delivered = take buffer
+  let echoed = take delivered // lang:move-target
+  echoed
+}

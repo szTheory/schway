@@ -122,7 +122,11 @@ func TestBorrowConflictMatrix(t *testing.T) {
 func TestBorrowConflictCauseChain(t *testing.T) {
 	problem := borrowConflictDiagnostic(t, "shared_exclusive_reject.lang", "ownership.borrow_conflict")
 	assertCauseKinds(t, problem, "borrow_created_here", "borrow_used_later", "loan", "owner", "type")
-	assertRepairKinds(t, problem, "create_loan_after_conflicting_loan_ends")
+	// shared_exclusive_reject.lang's conflicting loan is the NEW exclusive
+	// (borrow_mut) one, so it also carries the D-06-24/D-06-25
+	// narrow_to_shared_borrow MachineApplicable repair alongside the
+	// pre-existing classification-only repair (sorted: c < n).
+	assertRepairKinds(t, problem, "create_loan_after_conflicting_loan_ends", "narrow_to_shared_borrow")
 }
 
 // TestExclusiveMoveRejected mirrors TestMoveWhileBorrowedDiagnostic exactly,

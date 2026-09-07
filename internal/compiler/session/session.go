@@ -146,7 +146,12 @@ func NewReleaseOmissionMutationRunner(runner native.Runner) *ReleaseOmissionMuta
 	return &ReleaseOmissionMutationRunner{runner: runner}
 }
 
-func (r *ReleaseOmissionMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
+// Mutate performs ONLY the marker-scan-and-delete half of Run, with no
+// execution -- the seam Phase 6's CleanupInjector calls directly (D-06-25:
+// "reuse the existing release-omission mutation runner directly", not a
+// reimplementation). Run below calls this same method, so there is exactly
+// one release-marker scan in the whole tree, not two.
+func (r *ReleaseOmissionMutationRunner) Mutate(cSource string) (string, error) {
 	lines := strings.Split(cSource, "\n")
 	matched := -1
 	for index, line := range lines {
@@ -163,9 +168,16 @@ func (r *ReleaseOmissionMutationRunner) Run(ctx context.Context, cSource, optimi
 		}
 	}
 	if matched == -1 {
-		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("release mutation marker count is 0, want at least 1")}
+		return "", &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("release mutation marker count is 0, want at least 1")}
 	}
-	mutated := strings.Join(append(append([]string(nil), lines[:matched]...), lines[matched+1:]...), "\n")
+	return strings.Join(append(append([]string(nil), lines[:matched]...), lines[matched+1:]...), "\n"), nil
+}
+
+func (r *ReleaseOmissionMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
+	mutated, err := r.Mutate(cSource)
+	if err != nil {
+		return native.Result{}, err
+	}
 	r.mu.Lock()
 	r.optimizations = append(r.optimizations, optimization)
 	r.mu.Unlock()

@@ -2,13 +2,20 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -138,5 +145,351 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 		if bytes.Equal(heldoutBytes, derivationBytes) {
 			t.Fatalf("%s class: heldout and derivation fixtures are byte-identical", class)
 		}
+	}
+}
+
+// TestMoveDefectInjectorProducesExactlyOneDefect mirrors
+// TestMatchDefectInjectorProducesExactlyOneDefect for the move class.
+func TestMoveDefectInjectorProducesExactlyOneDefect(t *testing.T) {
+	source := phase6Fixture(t, "heldout_move_defect.lang")
+
+	clean := Check(source)
+	if len(clean.Diagnostics) != 0 {
+		t.Fatalf("heldout_move_defect.lang must check clean unmutated: %+v", clean.Diagnostics)
+	}
+
+	mutated, err := MoveInjector{}.Inject(source)
+	if err != nil {
+		t.Fatalf("MoveInjector.Inject failed on an eligible fixture: %v", err)
+	}
+	if bytes.Equal(mutated, source) {
+		t.Fatal("MoveInjector.Inject returned the source unmutated")
+	}
+
+	checked := Check(mutated)
+	if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != "ownership.use_after_move" {
+		t.Fatalf("mutated fixture did not reject with ownership.use_after_move: %+v", checked.Diagnostics)
+	}
+	if !hasDriverEligibleRepair(checked.Diagnostics) {
+		t.Fatalf("ownership.use_after_move diagnostic carries no DriverEligible repair: %+v", checked.Diagnostics)
+	}
+
+	noTarget := bytes.ReplaceAll(source, []byte(moveTargetMarker), []byte(""))
+	_, err = MoveInjector{}.Inject(noTarget)
+	typed := injectorError(err)
+	if typed == nil || typed.Code != InjectorTargetMissingCode {
+		t.Fatalf("MoveInjector.Inject on a fixture with no eligible take did not refuse with %s: %v", InjectorTargetMissingCode, err)
+	}
+}
+
+// TestBorrowDefectInjectorProducesExactlyOneDefect mirrors
+// TestMatchDefectInjectorProducesExactlyOneDefect for the borrow class.
+func TestBorrowDefectInjectorProducesExactlyOneDefect(t *testing.T) {
+	source := phase6Fixture(t, "heldout_borrow_defect.lang")
+
+	clean := Check(source)
+	if len(clean.Diagnostics) != 0 {
+		t.Fatalf("heldout_borrow_defect.lang must check clean unmutated: %+v", clean.Diagnostics)
+	}
+
+	mutated, err := BorrowInjector{}.Inject(source)
+	if err != nil {
+		t.Fatalf("BorrowInjector.Inject failed on an eligible fixture: %v", err)
+	}
+	if bytes.Equal(mutated, source) {
+		t.Fatal("BorrowInjector.Inject returned the source unmutated")
+	}
+
+	checked := Check(mutated)
+	if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != "ownership.borrow_conflict" {
+		t.Fatalf("mutated fixture did not reject with ownership.borrow_conflict: %+v", checked.Diagnostics)
+	}
+	if !hasDriverEligibleRepair(checked.Diagnostics) {
+		t.Fatalf("ownership.borrow_conflict diagnostic carries no DriverEligible repair: %+v", checked.Diagnostics)
+	}
+
+	noTarget := bytes.ReplaceAll(source, []byte(borrowTargetMarker), []byte(""))
+	_, err = BorrowInjector{}.Inject(noTarget)
+	typed := injectorError(err)
+	if typed == nil || typed.Code != InjectorTargetMissingCode {
+		t.Fatalf("BorrowInjector.Inject on a fixture with no eligible loan did not refuse with %s: %v", InjectorTargetMissingCode, err)
+	}
+}
+
+// injectorsSourceAST parses this package's own session_phase6_injectors.go,
+// the shared fixture every go/ast assertion below inspects.
+func injectorsSourceAST(t *testing.T) (*ast.File, []byte) {
+	t.Helper()
+	path := testsupport.ProjectPath("internal", "compiler", "session", "session_phase6_injectors.go")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, path, source, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return file, source
+}
+
+// containsCallTo reports whether file's AST contains any call whose callee
+// (a selector or plain identifier) has the given name.
+func containsCallTo(file *ast.File, name string) bool {
+	found := false
+	ast.Inspect(file, func(node ast.Node) bool {
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		switch fn := call.Fun.(type) {
+		case *ast.Ident:
+			if fn.Name == name {
+				found = true
+			}
+		case *ast.SelectorExpr:
+			if fn.Sel.Name == name {
+				found = true
+			}
+		}
+		return true
+	})
+	return found
+}
+
+// TestCleanupInjectorReusesReleaseOmissionRunner asserts, by go/ast, that
+// CleanupInjector delegates to ReleaseOmissionMutationRunner and that this
+// file declares no second release-marker scan of its own (D-06-25), then
+// proves the delegation functionally against a real generated C source.
+func TestCleanupInjectorReusesReleaseOmissionRunner(t *testing.T) {
+	file, source := injectorsSourceAST(t)
+	if !containsCallTo(file, "NewReleaseOmissionMutationRunner") {
+		t.Fatal("session_phase6_injectors.go does not call NewReleaseOmissionMutationRunner")
+	}
+	if !containsCallTo(file, "Mutate") {
+		t.Fatal("session_phase6_injectors.go does not call ReleaseOmissionMutationRunner's Mutate method")
+	}
+	if strings.Contains(string(source), releaseMarker) {
+		t.Fatalf("session_phase6_injectors.go contains its own %q literal -- a second release-marker scan", releaseMarker)
+	}
+
+	checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cSource, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	originalCount := strings.Count(cSource, releaseMarker)
+	if originalCount == 0 {
+		t.Fatal("fixture's generated C carries no release-site marker; test setup is broken")
+	}
+
+	mutated, err := CleanupInjector{}.Inject([]byte(cSource))
+	if err != nil {
+		t.Fatalf("CleanupInjector.Inject failed on an eligible C source: %v", err)
+	}
+	if strings.Count(string(mutated), releaseMarker) != originalCount-1 {
+		t.Fatalf("CleanupInjector.Inject did not remove exactly one release-site marker: got %d, want %d",
+			strings.Count(string(mutated), releaseMarker), originalCount-1)
+	}
+
+	noTarget := strings.ReplaceAll(cSource, releaseMarker, "")
+	_, err = CleanupInjector{}.Inject([]byte(noTarget))
+	typed := injectorError(err)
+	if typed == nil || typed.Code != InjectorTargetMissingCode {
+		t.Fatalf("CleanupInjector.Inject on C source with no release-site marker did not refuse with %s: %v", InjectorTargetMissingCode, err)
+	}
+}
+
+// TestStaleEvidenceInjectorBreaksManifestBinding proves the stale-evidence
+// class end-to-end: a manifest captured over the clean subject validates,
+// the SAME manifest fails to validate against the re-touched subject, and
+// -- by go/ast -- the injector computes no source diff (it imports no
+// differential/reduce machinery at all).
+func TestStaleEvidenceInjectorBreaksManifestBinding(t *testing.T) {
+	file, _ := injectorsSourceAST(t)
+	for _, imported := range file.Imports {
+		path := strings.Trim(imported.Path.Value, `"`)
+		if strings.Contains(path, "/compiler/reduce") {
+			t.Fatalf("session_phase6_injectors.go imports %s, a source-diff/differential package the stale-evidence locator must never consult (D-06-25)", path)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	source := phase6Fixture(t, "stale_evidence_subject.lang")
+
+	facts, err := evidence.DefaultFacts(ctx, "clang")
+	if err != nil {
+		t.Skipf("clang toolchain unavailable, skipping stale-evidence exercise: %v", err)
+	}
+	product, diagnostics, err := evidence.Build(source, facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(diagnostics) != 0 {
+		t.Fatalf("stale_evidence_subject.lang did not build cleanly: %+v", diagnostics)
+	}
+	if err := evidence.Validate(product.Manifest, source, facts); err != nil {
+		t.Fatalf("captured manifest did not validate against its own source before injection: %v", err)
+	}
+
+	mutated, err := StaleEvidenceInjector{}.Inject(source)
+	if err != nil {
+		t.Fatalf("StaleEvidenceInjector.Inject failed on an eligible subject: %v", err)
+	}
+	if bytes.Equal(mutated, source) {
+		t.Fatal("StaleEvidenceInjector.Inject returned the source unmutated")
+	}
+	if err := evidence.Validate(product.Manifest, mutated, facts); err == nil {
+		t.Fatal("the captured manifest still validated against the re-touched source; the binding was not broken")
+	}
+
+	noTarget := bytes.ReplaceAll(source, []byte(evidenceSubjectMarker), []byte(""))
+	_, err = StaleEvidenceInjector{}.Inject(noTarget)
+	typed := injectorError(err)
+	if typed == nil || typed.Code != InjectorTargetMissingCode {
+		t.Fatalf("StaleEvidenceInjector.Inject on a fixture with no evidence-subject marker did not refuse with %s: %v", InjectorTargetMissingCode, err)
+	}
+}
+
+// lineDiffCount reports how many lines differ between original and mutated
+// under either a same-length or a one-line-shorter alignment -- the two
+// shapes this plan's four source-granularity injectors ever produce.
+func lineDiffCount(t *testing.T, name string, original, mutated []byte) int {
+	t.Helper()
+	origLines := strings.Split(string(original), "\n")
+	mutLines := strings.Split(string(mutated), "\n")
+	switch len(mutLines) - len(origLines) {
+	case 0:
+		diff := 0
+		for index := range origLines {
+			if origLines[index] != mutLines[index] {
+				diff++
+			}
+		}
+		return diff
+	case -1:
+		diff := 0
+		mutIndex := 0
+		for _, origLine := range origLines {
+			if mutIndex < len(mutLines) && origLine == mutLines[mutIndex] {
+				mutIndex++
+				continue
+			}
+			diff++
+		}
+		return diff
+	default:
+		t.Fatalf("%s: unexpected line-count delta %d (orig=%d mutated=%d)", name, len(mutLines)-len(origLines), len(origLines), len(mutLines))
+		return -1
+	}
+}
+
+// TestEveryInjectorProducesExactlyOneMechanicalChange covers all four
+// source-granularity classes (D-06-26's byte-identity oracle depends on
+// this): match deletes exactly one arm line, move/borrow each rewrite
+// exactly one line, cleanup deletes exactly one generated C line.
+func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
+	matchSource := phase6Fixture(t, "heldout_match_defect.lang")
+	matchMutated, err := MatchInjector{}.Inject(matchSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := lineDiffCount(t, "match", matchSource, matchMutated); got != 1 {
+		t.Fatalf("match: got %d differing lines, want 1", got)
+	}
+
+	moveSource := phase6Fixture(t, "heldout_move_defect.lang")
+	moveMutated, err := MoveInjector{}.Inject(moveSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := lineDiffCount(t, "move", moveSource, moveMutated); got != 1 {
+		t.Fatalf("move: got %d differing lines, want 1", got)
+	}
+
+	borrowSource := phase6Fixture(t, "heldout_borrow_defect.lang")
+	borrowMutated, err := BorrowInjector{}.Inject(borrowSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := lineDiffCount(t, "borrow", borrowSource, borrowMutated); got != 1 {
+		t.Fatalf("borrow: got %d differing lines, want 1", got)
+	}
+
+	checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cSource, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cleanupMutated, err := CleanupInjector{}.Inject([]byte(cSource))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := lineDiffCount(t, "cleanup", []byte(cSource), cleanupMutated); got != 1 {
+		t.Fatalf("cleanup: got %d differing lines, want 1", got)
+	}
+}
+
+// TestInjectorTargetChoiceIsSpecified asserts, for each source-granularity
+// injector, that an ambiguous (two-marker) input resolves to the LAST
+// marked line, deterministically across repeated invocations -- the same
+// choice ReleaseOmissionMutationRunner already makes for lang:release-site.
+func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
+	// match: two marked arms, both otherwise-eligible; the LAST one is removed.
+	matchSource := []byte("data Signal =\n  | Red\n  | Green\n\nfn relay(state: Signal) -> Signal {\n  match state {\n    Red => Red // lang:match-target\n    Green => Green // lang:match-target\n  }\n}")
+	first, err := MatchInjector{}.Inject(matchSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := MatchInjector{}.Inject(matchSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(first, second) {
+		t.Fatal("MatchInjector.Inject is not deterministic across repeated invocations on the same ambiguous input")
+	}
+	if strings.Contains(string(first), "Green => Green") || !strings.Contains(string(first), "Red => Red") {
+		t.Fatalf("MatchInjector.Inject did not remove the LAST marked arm: %q", first)
+	}
+
+	// move: two marked take-expressions; the LAST is corrupted.
+	moveSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = take buffer // lang:move-target\n  let b = take a // lang:move-target\n  b\n}")
+	moveFirst, err := MoveInjector{}.Inject(moveSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moveSecond, err := MoveInjector{}.Inject(moveSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(moveFirst, moveSecond) {
+		t.Fatal("MoveInjector.Inject is not deterministic across repeated invocations on the same ambiguous input")
+	}
+	if !strings.Contains(string(moveFirst), "let a = take buffer") || strings.Contains(string(moveFirst), "let b = take a") {
+		t.Fatalf("MoveInjector.Inject did not corrupt the LAST marked take: %q", moveFirst)
+	}
+
+	// borrow: two marked shared borrows; the LAST is escalated.
+	borrowSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = borrow buffer // lang:borrow-target\n  let b = borrow buffer // lang:borrow-target\n  b\n}")
+	borrowFirst, err := BorrowInjector{}.Inject(borrowSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	borrowSecond, err := BorrowInjector{}.Inject(borrowSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(borrowFirst, borrowSecond) {
+		t.Fatal("BorrowInjector.Inject is not deterministic across repeated invocations on the same ambiguous input")
+	}
+	if !strings.Contains(string(borrowFirst), "let a = borrow buffer") || !strings.Contains(string(borrowFirst), "let b = borrow mut buffer") {
+		t.Fatalf("BorrowInjector.Inject did not escalate the LAST marked borrow: %q", borrowFirst)
 	}
 }

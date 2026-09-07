@@ -894,7 +894,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 				))
 			}
 			if blocking := conflictingLoan(activeLoans[source.place.ID], "shared"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
 			}
 			kind = core.OpBorrowShared
 			use := loanUses[index]
@@ -928,7 +928,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 				))
 			}
 			if blocking := conflictingLoan(activeLoans[source.place.ID], "exclusive"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
 			}
 			kind = core.OpBorrowExclusive
 			use := loanUses[index]
@@ -1774,6 +1774,16 @@ type placeState struct {
 	initialized  bool
 	movedAt      *diagnostic.Span
 	moveTargetID string
+	// moveTargetName is the surface-level binding name the move landed on
+	// (target.Name at the moment moveTargetID was set), kept alongside the
+	// internal place ID purely so analyzeStraightLine's useAfterMove can
+	// build a source-level MachineApplicable repair (D-06-24/D-06-25's move
+	// injector): a diagnostic can address a place by ID, but a repair must
+	// write source text, and only the surface name is source text. Set only
+	// where moveTargetID is set; analyzeArmBody leaves it empty (its own
+	// use_after_move repair stays classification-only, matching this file's
+	// existing asymmetry for insert_take).
+	moveTargetName string
 }
 
 // D-05-35(d): computeLoanLastUses (loanLivenessFixpoint's own last-use
@@ -1836,9 +1846,25 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 			{Kind: "transfer_target", Detail: state.moveTargetID},
 			{Kind: "type", Detail: state.place.TypeID},
 		}
+		// repairSpan is a copy of span (the exact identifier text that named
+		// the already-moved place), never a pointer aliasing the caller's own
+		// span value. Replacement is the moved-to binding's surface name
+		// (moveTargetName), the source-level counterpart of moveTargetID:
+		// swapping the stale name for the live one is the mechanical fix a
+		// use-after-move repair applies (D-06-24/D-06-25's move injector).
+		// moveTargetName is only ever unset if moveTargetID is also unset,
+		// in which case Replacement stays "" and DriverEligible is false by
+		// construction — fail-closed, no explicit guard needed.
+		repairSpan := span
 		return diagnostic.ErrorWithRepairs(
 			"ownership.use_after_move", span, "value was used after ownership transferred", causes,
-			diagnostic.Repair{Kind: "use_transfer_target", Detail: state.moveTargetID},
+			diagnostic.Repair{
+				Kind:          "use_transfer_target",
+				Detail:        state.moveTargetID,
+				Span:          &repairSpan,
+				Replacement:   state.moveTargetName,
+				Applicability: diagnostic.ApplicabilityMachineApplicable,
+			},
 			diagnostic.Repair{Kind: "move_use_before_transfer"},
 		)
 	}
@@ -1879,6 +1905,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 			source.initialized = false
 			source.movedAt = spanPointer(binding.RHS.Span)
 			source.moveTargetID = target.ID
+			source.moveTargetName = target.Name
 		case "borrow":
 			// A shared loan requires the share ability, exactly as the
 			// implicit-copy path below requires copy. Without this gate the
@@ -1898,7 +1925,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 				))
 			}
 			if blocking := conflictingLoan(activeLoans[source.place.ID], "shared"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
 			}
 			kind = core.OpBorrowShared
 			use := loanUses[index]
@@ -1927,7 +1954,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 				))
 			}
 			if blocking := conflictingLoan(activeLoans[source.place.ID], "exclusive"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID))
+				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
 			}
 			kind = core.OpBorrowExclusive
 			use := loanUses[index]
@@ -2033,7 +2060,7 @@ func conflictingLoan(candidates map[string]*loanState, newAccess string) *loanSt
 // span-bearing causes first (mirroring move_while_borrowed's construction),
 // then ID-bearing detail causes (loan/owner/type), then a repair — the exact
 // shape check.go's other ownership diagnostics already use.
-func borrowConflictDiagnostic(span diagnostic.Span, blocking *loanState, ownerID, ownerTypeID string) diagnostic.Diagnostic {
+func borrowConflictDiagnostic(span diagnostic.Span, blocking *loanState, ownerID, ownerTypeID string, binding ast.Binding) diagnostic.Diagnostic {
 	causes := []diagnostic.Cause{
 		{Kind: "borrow_created_here", Span: spanPointer(blocking.borrowedAt)},
 		{Kind: "borrow_used_later", Span: spanPointer(blocking.lastUseSpan)},
@@ -2041,9 +2068,29 @@ func borrowConflictDiagnostic(span diagnostic.Span, blocking *loanState, ownerID
 		{Kind: "owner", Detail: ownerID},
 		{Kind: "type", Detail: ownerTypeID},
 	}
+	repairs := []diagnostic.Repair{{Kind: "create_loan_after_conflicting_loan_ends"}}
+	// A NEW exclusive loan conflicting against an already-live loan has one
+	// mechanical, source-level fix a driver can apply without deeper
+	// program understanding: downgrade the new loan from exclusive back to
+	// shared, replacing the whole "let NAME = borrow mut SOURCE" statement
+	// with its shared-borrow equivalent (D-06-24/D-06-25's borrow injector
+	// target). The symmetric case -- a new SHARED loan conflicting against
+	// an already-live EXCLUSIVE one -- has no equally mechanical fix
+	// (narrowing an already-shared loan further does not resolve an
+	// exclusive conflict), so it stays classification-only, exactly like
+	// analyzeArmBody's own use_after_move repair stays classification-only.
+	if binding.RHS.Kind == "borrow_mut" {
+		bindingSpan := binding.Span
+		repairs = append(repairs, diagnostic.Repair{
+			Kind:          "narrow_to_shared_borrow",
+			Span:          &bindingSpan,
+			Replacement:   "let " + binding.Name + " = borrow " + binding.RHS.Source,
+			Applicability: diagnostic.ApplicabilityMachineApplicable,
+		})
+	}
 	return diagnostic.ErrorWithRepairs(
 		"ownership.borrow_conflict", span, "cannot create a loan while a conflicting loan is live", causes,
-		diagnostic.Repair{Kind: "create_loan_after_conflicting_loan_ends"},
+		repairs...,
 	)
 }
 
