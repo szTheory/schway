@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -474,4 +475,110 @@ func selectLanesForFixtureFromRows(rows []RiskLaneRow, liveLanes []string, kind,
 	}
 	sort.Strings(sel.LaneIDs)
 	return sel, next, cold, nil
+}
+
+// Control identifiers for the risk-lane registry audit (Task 3), following
+// the qlt01.go control:qlt01.* naming convention.
+const (
+	// ControlRiskLaneStaleLaneReference fires when a registry row's
+	// lane_id is not in the live lane-ID set produced by the shipped
+	// verify functions -- a row referencing a removed or renamed lane
+	// masking a real gap -- OR when a row names a declared input outside
+	// cache.DeclaredInputNames(): both are the same species of stale
+	// reference, a row pointing at something that does not exist.
+	ControlRiskLaneStaleLaneReference = "control:risklanes.stale_lane_reference"
+
+	// ControlRiskLaneUndeclaredLane fires when a live lane ID has no row
+	// in the registry at all -- the audit's bidirectional half: a newly
+	// added lane cannot silently escape declaration.
+	ControlRiskLaneUndeclaredLane = "control:risklanes.undeclared_lane"
+)
+
+// LaneRiskLaneRegistryAudit is this audit's own lane identifier, following
+// LaneQLT01RegistryAudit's naming convention.
+const LaneRiskLaneRegistryAudit = "lane:risklanes-registry-audit"
+
+// AuditRiskLaneRegistry cross-checks rows against liveLaneIDs and
+// declaredInputs in BOTH directions (D-06-10): a declared row referencing
+// a lane ID or declared-input name that does not exist fires
+// control:risklanes.stale_lane_reference; a live lane with no row at all
+// fires control:risklanes.undeclared_lane. An empty registry is a hard
+// failure, not a vacuous pass -- an empty table passing a completeness
+// audit would be exactly the false-green shape this whole phase is about.
+func AuditRiskLaneRegistry(rows []RiskLaneRow, liveLaneIDs []string, declaredInputs []string) LaneResult {
+	fired := map[string]bool{
+		ControlRiskLaneStaleLaneReference: false,
+		ControlRiskLaneUndeclaredLane:     false,
+	}
+
+	if len(rows) == 0 {
+		return LaneResult{
+			ID:             LaneRiskLaneRegistryAudit,
+			Status:         "invalid",
+			RecomputedWork: 0,
+			Fired:          fired,
+		}
+	}
+
+	liveSet := make(map[string]bool, len(liveLaneIDs))
+	for _, id := range liveLaneIDs {
+		liveSet[id] = true
+	}
+	declaredSet := make(map[string]bool, len(declaredInputs))
+	for _, name := range declaredInputs {
+		declaredSet[name] = true
+	}
+
+	declaredLanes := map[string]bool{}
+	work := 0
+	for _, row := range rows {
+		work++ // one unit per row inspected
+		if liveSet[row.LaneID] {
+			declaredLanes[row.LaneID] = true
+		} else {
+			fired[ControlRiskLaneStaleLaneReference] = true
+		}
+		work++ // one unit for the lane-ID cross-check performed
+		for _, name := range row.DeclaredInputs {
+			work++ // one unit per declared-input cross-check performed
+			if !declaredSet[name] {
+				fired[ControlRiskLaneStaleLaneReference] = true
+			}
+		}
+	}
+	for _, id := range liveLaneIDs {
+		work++ // one unit per bidirectional live-lane cross-check
+		if !declaredLanes[id] {
+			fired[ControlRiskLaneUndeclaredLane] = true
+		}
+	}
+
+	status := "pass"
+	var controls []string
+	for _, control := range []string{ControlRiskLaneStaleLaneReference, ControlRiskLaneUndeclaredLane} {
+		if fired[control] {
+			status = "invalid"
+		} else {
+			controls = append(controls, control)
+		}
+	}
+
+	return LaneResult{
+		ID:             LaneRiskLaneRegistryAudit,
+		Status:         status,
+		Controls:       controls,
+		RecomputedWork: work,
+		Fired:          fired,
+	}
+}
+
+// VerifyRiskLaneRegistry runs the risk-lane registry audit as a
+// counted-work lane, mirroring VerifyQLT01Registry's shape exactly.
+func VerifyRiskLaneRegistry(ctx context.Context) (LaneResult, error) {
+	_ = ctx
+	rows, err := LoadRiskLaneRegistry()
+	if err != nil {
+		return LaneResult{}, err
+	}
+	return AuditRiskLaneRegistry(rows, LiveLaneIDs(), cache.DeclaredInputNames()), nil
 }
