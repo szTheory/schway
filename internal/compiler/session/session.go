@@ -1234,11 +1234,22 @@ func commandProblem(command, status, code, message string) protocol.Result {
 	return result.Finalize()
 }
 
+// TimingObservationEnabled reports whether LANG_OBSERVE_TIMING is set to
+// "1" -- the ONE place in the tree that reads this environment variable
+// (TestTimingEnvironmentIsReadInExactlyOnePlace proves this by AST scan).
+// completeCommand and StageRecorder.Breakdown both route through this
+// single exported gate rather than each reading the variable a second way,
+// so a golden/pinned-JSON test run with the switch unset can never
+// intermittently fail from an unconditional time.Since (D-06-21).
+func TimingObservationEnabled() bool {
+	return os.Getenv("LANG_OBSERVE_TIMING") == "1"
+}
+
 func completeCommand(result protocol.Result, started time.Time, work int) protocol.Result {
 	// Bounded commands keep their default projection reproducible. The verify
 	// orchestrator records wall-time observations explicitly; later telemetry
 	// modes can opt into per-command timing without making ordinary output churn.
-	if os.Getenv("LANG_OBSERVE_TIMING") == "1" {
+	if TimingObservationEnabled() {
 		result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
 	}
 	result.Metrics.RecomputedWork = work

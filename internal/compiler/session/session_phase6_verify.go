@@ -14,12 +14,14 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/cache"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/measure"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
 
 // phase6NativeDifferentialLane is the one lane this plan wires end-to-end
@@ -125,7 +127,13 @@ func phase6ArtifactSpec(source []byte, clangPath string) cache.ArtifactSpec {
 // binary's own path or bytes independent of also running it) -- compiling
 // here is the ONLY way to obtain artifact bytes worth caching before
 // deciding whether to run them.
-func phase6CompileBinary(ctx context.Context, clangPath, cSource, optimization string, timeout time.Duration) ([]byte, error) {
+//
+// It runs as two genuinely separate clang invocations -- compile-to-object,
+// then link-object-to-executable -- rather than one combined
+// compile-and-link command, so D-06-21's native_compile and link stages are
+// real, independently timed pipeline boundaries via recorder rather than
+// two labels stamped on one measured span.
+func phase6CompileBinary(ctx context.Context, clangPath, cSource, optimization string, timeout time.Duration, recorder *StageRecorder) ([]byte, error) {
 	if clangPath == "" {
 		clangPath = "clang"
 	}
@@ -139,20 +147,46 @@ func phase6CompileBinary(ctx context.Context, clangPath, cSource, optimization s
 	defer os.RemoveAll(directory)
 
 	sourcePath := filepath.Join(directory, "program.c")
+	objectPath := filepath.Join(directory, "program.o")
 	binaryPath := filepath.Join(directory, "program")
 	if err := os.WriteFile(sourcePath, []byte(cSource), 0o600); err != nil {
 		return nil, err
 	}
 
-	runCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	arguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization, sourcePath, "-o", binaryPath}
-	command := exec.CommandContext(runCtx, clangPath, arguments...)
-	var stderr bytes.Buffer
-	command.Stderr = &stderr
-	if err := command.Run(); err != nil {
-		return nil, fmt.Errorf("phase6.compile_failed: %w (stderr: %s)", err, stderr.String())
+	if err := recorder.Start("native_compile"); err != nil {
+		return nil, err
 	}
+	compileCtx, compileCancel := context.WithTimeout(ctx, timeout)
+	compileArguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization, "-c", sourcePath, "-o", objectPath}
+	compileCommand := exec.CommandContext(compileCtx, clangPath, compileArguments...)
+	var compileStderr bytes.Buffer
+	compileCommand.Stderr = &compileStderr
+	compileErr := compileCommand.Run()
+	compileCancel()
+	if compileErr != nil {
+		return nil, fmt.Errorf("phase6.compile_failed: %w (stderr: %s)", compileErr, compileStderr.String())
+	}
+	if err := recorder.Stop("native_compile"); err != nil {
+		return nil, err
+	}
+
+	if err := recorder.Start("link"); err != nil {
+		return nil, err
+	}
+	linkCtx, linkCancel := context.WithTimeout(ctx, timeout)
+	linkArguments := []string{optimization, objectPath, "-o", binaryPath}
+	linkCommand := exec.CommandContext(linkCtx, clangPath, linkArguments...)
+	var linkStderr bytes.Buffer
+	linkCommand.Stderr = &linkStderr
+	linkErr := linkCommand.Run()
+	linkCancel()
+	if linkErr != nil {
+		return nil, fmt.Errorf("phase6.link_failed: %w (stderr: %s)", linkErr, linkStderr.String())
+	}
+	if err := recorder.Stop("link"); err != nil {
+		return nil, err
+	}
+
 	return os.ReadFile(binaryPath)
 }
 
@@ -210,10 +244,34 @@ func phase6RunCompiledBinary(ctx context.Context, binaryPath, input string, time
 // review.
 func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runner native.Runner, store *cache.Store) (protocol.Lane, cache.Outcome, error) {
 	laneStarted := time.Now()
+	recorder := &StageRecorder{}
 
-	// The checker runs first, unconditionally -- before the cache is even
-	// consulted, so it can never be skipped by a cache outcome.
-	checked := Check(source)
+	// D-06-21's five fixed, sequential stage boundaries, instrumented on
+	// this ONE lane end-to-end: parse and check are timed as two genuinely
+	// separate steps (not one combined call into session.Check, which
+	// would collapse both into a single measured span), duplicating
+	// Check's own parse-then-check-then-validate shape locally -- the same
+	// "duplicate rather than modify session.go" discipline
+	// classifyPhase6FixtureKind and phase6CompileBinary already follow in
+	// this sibling file.
+	if err := recorder.Start("parse"); err != nil {
+		return protocol.Lane{}, cache.Outcome{}, err
+	}
+	parsed := syntax.Parse(source)
+	if err := recorder.Stop("parse"); err != nil {
+		return protocol.Lane{}, cache.Outcome{}, err
+	}
+	if len(parsed.Diagnostics) != 0 {
+		return protocol.Lane{}, cache.Outcome{}, fmt.Errorf("phase6.fixture_invalid: parser rejected the native-differential fixture")
+	}
+
+	// The checker (and independent core validator) run next, unconditionally
+	// -- before the cache is even consulted, so neither can ever be skipped
+	// by a cache outcome.
+	if err := recorder.Start("check"); err != nil {
+		return protocol.Lane{}, cache.Outcome{}, err
+	}
+	checked := check.Program(parsed.Program)
 	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
 		return protocol.Lane{}, cache.Outcome{}, fmt.Errorf("phase6.fixture_invalid: checker rejected the native-differential fixture")
 	}
@@ -221,14 +279,24 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 	if !validated.Valid {
 		return protocol.Lane{}, cache.Outcome{}, fmt.Errorf("phase6.fixture_invalid: core validation rejected the native-differential fixture")
 	}
+	if err := recorder.Stop("check"); err != nil {
+		return protocol.Lane{}, cache.Outcome{}, err
+	}
 	program := validated.Program()
 	inputs, ok := interpreterInputs(program)
 	if !ok || len(inputs) == 0 {
 		return protocol.Lane{}, cache.Outcome{}, fmt.Errorf("phase6.fixture_invalid: no interpreter inputs for the native-differential fixture")
 	}
+
+	if err := recorder.Start("lower"); err != nil {
+		return protocol.Lane{}, cache.Outcome{}, err
+	}
 	cSource, err := cgen.EmitNative(program)
 	if err != nil {
 		return protocol.Lane{}, cache.Outcome{}, fmt.Errorf("phase6.cgen_failed: %w", err)
+	}
+	if err := recorder.Stop("lower"); err != nil {
+		return protocol.Lane{}, cache.Outcome{}, err
 	}
 
 	clangPath := runner.ClangPath
@@ -245,7 +313,11 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 	if outcome.Status == cache.StatusArtifactReused {
 		binary = outcome.Artifact
 	} else {
-		compiled, compileErr := phase6CompileBinary(ctx, clangPath, cSource, phase6BuildFlags, runner.Timeout)
+		// native_compile and link are recorded INSIDE phase6CompileBinary,
+		// as two separate clang invocations, so a cache-artifact-reused run
+		// simply never starts either stage rather than reporting a
+		// zero-elapsed entry for work that did not happen this invocation.
+		compiled, compileErr := phase6CompileBinary(ctx, clangPath, cSource, phase6BuildFlags, runner.Timeout, recorder)
 		if compileErr != nil {
 			return protocol.Lane{}, outcome, fmt.Errorf("phase6.compile_failed: %w", compileErr)
 		}
@@ -282,7 +354,7 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 			return protocol.Lane{
 				Schema: protocol.LaneSchema1, ID: phase6NativeDifferentialLane, Status: protocol.StatusMismatch,
 				RecomputedWork: work, ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable",
-				CacheStatus: string(outcome.Status),
+				CacheStatus: string(outcome.Status), StageBreakdown: recorder.Breakdown(),
 			}, outcome, nil
 		}
 	}
@@ -291,6 +363,7 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 		Schema: protocol.LaneSchema1, ID: phase6NativeDifferentialLane, Status: protocol.StatusPass,
 		Controls: []string{"control:interpreter-o0-o3"}, RecomputedWork: work,
 		ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable",
+		StageBreakdown: recorder.Breakdown(),
 		CacheStatus: string(outcome.Status),
 	}
 	return lane, outcome, nil
