@@ -90,9 +90,7 @@ func TestMatchDefectInjectorProducesExactlyOneDefect(t *testing.T) {
 // TestPhase6DefectCorpusIsHeldOut asserts D-06-29's structural split: the
 // heldout_ and derivation_ prefix sets are both non-empty and genuinely
 // distinct (different file content per class), not merely differently
-// named. The per-class distinctness check is driven from whichever
-// heldout_*_defect.lang fixtures exist on disk, so it scales automatically
-// as later tasks add the move and borrow classes alongside match.
+// named.
 func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 	dir := testsupport.ProjectPath("testdata", "phase6")
 	entries, err := os.ReadDir(dir)
@@ -137,11 +135,9 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 
 	// Genuine distinctness, not just naming: each class's heldout and
 	// derivation fixture must differ in content.
-	for _, name := range heldout {
-		class := strings.TrimSuffix(strings.TrimPrefix(name, "heldout_"), "_defect.lang")
-		derivationName := "derivation_" + class + "_defect.lang"
-		heldoutBytes := phase6Fixture(t, name)
-		derivationBytes := phase6Fixture(t, derivationName)
+	for _, class := range []string{"match", "move", "borrow"} {
+		heldoutBytes := phase6Fixture(t, "heldout_"+class+"_defect.lang")
+		derivationBytes := phase6Fixture(t, "derivation_"+class+"_defect.lang")
 		if bytes.Equal(heldoutBytes, derivationBytes) {
 			t.Fatalf("%s class: heldout and derivation fixtures are byte-identical", class)
 		}
@@ -491,5 +487,109 @@ func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 	}
 	if !strings.Contains(string(borrowFirst), "let a = borrow buffer") || !strings.Contains(string(borrowFirst), "let b = borrow mut buffer") {
 		t.Fatalf("BorrowInjector.Inject did not escalate the LAST marked borrow: %q", borrowFirst)
+	}
+}
+
+// markerAbsentInput builds, for each of the five injectors, an input shaped
+// like an eligible one but with its marker stripped out -- the "target
+// vanished" scenario TestEveryInjectorRefusesWhenMarkerDisappears drives
+// from AllInjectors() so a future sixth injector without this treatment
+// fails loudly instead of being silently skipped.
+func markerAbsentInput(t *testing.T, name string) []byte {
+	t.Helper()
+	switch name {
+	case "match":
+		return bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.lang"), []byte(matchTargetMarker), []byte(""))
+	case "move":
+		return bytes.ReplaceAll(phase6Fixture(t, "heldout_move_defect.lang"), []byte(moveTargetMarker), []byte(""))
+	case "borrow":
+		return bytes.ReplaceAll(phase6Fixture(t, "heldout_borrow_defect.lang"), []byte(borrowTargetMarker), []byte(""))
+	case "cleanup":
+		checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		cSource, err := cgen.EmitNative(checked.Program)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return []byte(strings.ReplaceAll(cSource, releaseMarker, ""))
+	case "stale_evidence":
+		return bytes.ReplaceAll(phase6Fixture(t, "stale_evidence_subject.lang"), []byte(evidenceSubjectMarker), []byte(""))
+	default:
+		t.Fatalf("markerAbsentInput: unhandled injector %q -- add a case here (this IS the test AllInjectors() drives)", name)
+		return nil
+	}
+}
+
+// TestEveryInjectorRefusesWhenMarkerDisappears is D-06-27.3's central
+// assertion, driven from AllInjectors() rather than a hand-written list:
+// every injector, given an input shaped like an eligible one but with its
+// target marker stripped, refuses with InjectorTargetMissingCode naming
+// both the found (0) and required (>=1) counts, and returns no output.
+func TestEveryInjectorRefusesWhenMarkerDisappears(t *testing.T) {
+	for _, injector := range AllInjectors() {
+		injector := injector
+		t.Run(injector.Name(), func(t *testing.T) {
+			input := markerAbsentInput(t, injector.Name())
+			mutated, err := injector.Inject(input)
+			typed := injectorError(err)
+			if typed == nil || typed.Code != InjectorTargetMissingCode {
+				t.Fatalf("%s: did not refuse with %s when its target vanished: mutated=%q err=%v", injector.Name(), InjectorTargetMissingCode, mutated, err)
+			}
+			if mutated != nil {
+				t.Fatalf("%s: refusal still returned a non-nil mutated source", injector.Name())
+			}
+			if !strings.Contains(typed.Error(), "0") {
+				t.Fatalf("%s: refusal message %q does not name the found count", injector.Name(), typed.Error())
+			}
+		})
+	}
+}
+
+// TestInjectorMarkerCountGuardIsNotInert demonstrates concretely what
+// MatchInjector.Inject would do WITHOUT markerGuard: matchInjectSkippingGuard,
+// its guard-disabled twin, silently returns an unmutated source that checks
+// clean when the marker is absent -- exactly the theatre the guard exists
+// to prevent -- while the guarded path refuses.
+func TestInjectorMarkerCountGuardIsNotInert(t *testing.T) {
+	source := bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.lang"), []byte(matchTargetMarker), []byte(""))
+
+	unguarded := matchInjectSkippingGuard(source)
+	if !bytes.Equal(unguarded, source) {
+		t.Fatalf("matchInjectSkippingGuard mutated a marker-absent source; it should have returned it unchanged")
+	}
+	uncheckedResult := Check(unguarded)
+	if len(uncheckedResult.Diagnostics) != 0 {
+		t.Fatalf("guard-disabled path's unmutated source did not check clean: %+v", uncheckedResult.Diagnostics)
+	}
+
+	_, err := MatchInjector{}.Inject(source)
+	typed := injectorError(err)
+	if typed == nil || typed.Code != InjectorTargetMissingCode {
+		t.Fatalf("guarded MatchInjector.Inject did not refuse on the same input the guard-disabled path silently accepted: %v", err)
+	}
+}
+
+// TestInjectorRefusalPropagatesToExerciseFailure drives MatchInjector
+// through RunDefectInjectionExercise on a marker-absent input and asserts
+// the reported Status is "fail", not merely that Inject returned an error
+// -- the refusal must propagate all the way to the exercise's own result,
+// not stop at the injector boundary.
+func TestInjectorRefusalPropagatesToExerciseFailure(t *testing.T) {
+	source := bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.lang"), []byte(matchTargetMarker), []byte(""))
+	result := RunDefectInjectionExercise(MatchInjector{}, source)
+	if result.Status != "fail" {
+		t.Fatalf("RunDefectInjectionExercise on a vanished target reported status %q, want \"fail\"", result.Status)
+	}
+	if result.Err == nil {
+		t.Fatal("RunDefectInjectionExercise reported failure with no error attached")
+	}
+
+	// The eligible, correctly-marked fixture is the control: it must pass.
+	eligible := phase6Fixture(t, "heldout_match_defect.lang")
+	passResult := RunDefectInjectionExercise(MatchInjector{}, eligible)
+	if passResult.Status != "pass" {
+		t.Fatalf("RunDefectInjectionExercise on an eligible fixture reported status %q, want \"pass\": err=%v", passResult.Status, passResult.Err)
 	}
 }
