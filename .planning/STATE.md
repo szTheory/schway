@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 06
 current_phase_name: Agent Feedback and Performance Ratification
 status: executing
-stopped_at: Completed 06-05-PLAN.md
-last_updated: "2026-09-07T01:02:09.973Z"
+stopped_at: Completed 06-12-PLAN.md
+last_updated: "2026-09-07T01:54:52.382Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 06 execution started
-state_head: bb984c5eec45367ff2d82000856ce2f56f223e98
+state_head: d43429e6b2aa609c721e15bd2c29c38a10814b4d
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 62
-  completed_plans: 54
+  completed_plans: 55
   percent: 83
 ---
 
@@ -30,7 +30,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 06 (Agent Feedback and Performance Ratification) — EXECUTING
-Plan: 8 of 15
+Plan: 9 of 15
 Status: Ready to execute
 Last activity: 2026-09-06 — Phase 06 execution started
 
@@ -110,6 +110,7 @@ Progress: ██████████ [████████░░] 83%
 | Phase 06-agent-feedback-and-performance-ratification P11 | 18 min | 3 tasks | 3 files |
 | Phase 06-agent-feedback-and-performance-ratification P03 | 70min | 3 tasks | 4 files |
 | Phase 06 P05 | 55min | 3 tasks | 4 files |
+| Phase 06 P12 | ~35 min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -226,6 +227,8 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 06]: 06-03: core_id has no stable address prefix; an address only classifies as core_id when it matches a REAL entry.CoreID in SRC's freshly-built debugmap, else it reports the honest 'unrecognized' sentinel rather than a guessed core_id.
 - [Phase 06]: 06-03: lane: vocabulary resolves against a live VerifyCorpusFile run over SRC, so SRC is expected to be a corpus directory for that one vocabulary, matching lang verify's own operand.
 - [Phase 06]: 06-05: change-state key is (fixtureID, laneID) per CONTEXT.md Test 4, not (fixtureID, inputName); LiveLaneIDs() composed from five hand-authored per-corpus category functions cross-checked against live addLane sites; risk-lane audit is a NEW executable audit, not a QLT-01 extension (row shapes are structurally unrelated).
+- [Phase 06]: match.non_exhaustive's add_missing_arm repair is gated on allArmsSelfMap, keeping the frozen Phase 1 diagnostic golden byte-identical — ErrorWithRepairs always uses schema /1 even with zero repairs, so the gate must decide BEFORE calling it, not after
+- [Phase 06]: CleanupInjector reuses ReleaseOmissionMutationRunner via a new Mutate method extracted from Run, keeping exactly one release-marker scan in the tree — D-06-25 requires reuse, not reimplementation; go/ast test enforces no second scan
 
 ### Pending Todos
 
@@ -256,6 +259,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T01:02:09.768Z
-Stopped at: Completed 06-05-PLAN.md
+Last session: 2026-09-07T01:54:52.174Z
+Stopped at: Completed 06-12-PLAN.md
 Resume file: None
