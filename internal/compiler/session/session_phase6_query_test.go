@@ -2,6 +2,8 @@ package session
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
@@ -301,6 +303,160 @@ func TestQueryKindFilterVocabularyIsClosed(t *testing.T) {
 	}
 	if len(unknownKind.Diagnostics) != 1 || unknownKind.Diagnostics[0].Code != "tool.query_unknown_kind" {
 		t.Fatalf("Diagnostics = %+v, want one entry with code tool.query_unknown_kind", unknownKind.Diagnostics)
+	}
+}
+
+// --- Task 3: cursor pagination, bounding, stable order on ties ------------
+
+func syntheticQueryFacts(count int) []protocol.QueryFact {
+	facts := make([]protocol.QueryFact, count)
+	for index := range facts {
+		facts[index] = protocol.QueryFact{
+			ID: fmt.Sprintf("synthetic:%03d", index), Kind: "synthetic",
+			Vocabulary: "control", Availability: string(debugmap.Available),
+		}
+	}
+	return facts
+}
+
+func TestQueryCursorPaginationIsBounded(t *testing.T) {
+	facts := syntheticQueryFacts(protocol.QueryMaxFactsPerPage + 10)
+	sortQueryFacts(facts)
+
+	page, nextCursor, truncated, err := paginateQueryFacts(facts, "")
+	if err != nil {
+		t.Fatalf("paginateQueryFacts: %v", err)
+	}
+	if len(page) != protocol.QueryMaxFactsPerPage {
+		t.Fatalf("len(page) = %d, want exactly QueryMaxFactsPerPage (%d)", len(page), protocol.QueryMaxFactsPerPage)
+	}
+	if nextCursor == "" {
+		t.Fatalf("nextCursor is empty, want a cursor for the remaining facts")
+	}
+	if truncated != "truncated:query.page_bound" {
+		t.Fatalf("truncated = %q, want truncated:query.page_bound", truncated)
+	}
+}
+
+func TestQueryPagesConcatenateExactlyOnce(t *testing.T) {
+	facts := syntheticQueryFacts(protocol.QueryMaxFactsPerPage*3 + 7)
+	sortQueryFacts(facts)
+
+	seen := map[string]bool{}
+	var walked []protocol.QueryFact
+	cursor := ""
+	for pages := 0; pages < 20; pages++ {
+		page, nextCursor, _, err := paginateQueryFacts(facts, cursor)
+		if err != nil {
+			t.Fatalf("paginateQueryFacts: %v", err)
+		}
+		for _, fact := range page {
+			if seen[fact.ID] {
+				t.Fatalf("fact %s emitted on more than one page", fact.ID)
+			}
+			seen[fact.ID] = true
+			walked = append(walked, fact)
+		}
+		if nextCursor == "" {
+			break
+		}
+		cursor = nextCursor
+	}
+	if len(walked) != len(facts) {
+		t.Fatalf("walked %d facts across all pages, want exactly %d (no gaps)", len(walked), len(facts))
+	}
+	for index, fact := range walked {
+		if fact.ID != facts[index].ID {
+			t.Fatalf("concatenated page order diverges from the unpaginated list at index %d: got %s want %s", index, fact.ID, facts[index].ID)
+		}
+	}
+}
+
+func TestQueryMalformedCursorIsUsageError(t *testing.T) {
+	facts := syntheticQueryFacts(5)
+	sortQueryFacts(facts)
+
+	if _, _, _, err := paginateQueryFacts(facts, "not-a-real-cursor"); err == nil {
+		t.Fatalf("paginateQueryFacts accepted a garbage cursor without error")
+	}
+
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	operationID := firstDebugMapOperationID(t, path)
+	result, err := QueryCommandFile(path, operationID, QueryOptions{Cursor: "garbage-cursor-value"})
+	if err != nil {
+		t.Fatalf("QueryCommandFile: %v", err)
+	}
+	if result.Status != protocol.StatusUsage {
+		t.Fatalf("Status = %q, want usage_error for a malformed cursor", result.Status)
+	}
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "tool.query_malformed_cursor" {
+		t.Fatalf("Diagnostics = %+v, want one entry with code tool.query_malformed_cursor", result.Diagnostics)
+	}
+}
+
+// TestQueryResultOrderIsStableOnTies proves sortQueryFacts is load-bearing:
+// two facts tied on (vocabulary, span) compare by ID last, giving one
+// specified, stable order rather than leaving ties to map/slice iteration
+// order (FND-04 ordering edge). This was manually verified during this
+// plan's execution: temporarily replacing sortQueryFacts's final ID
+// comparison with an unstable/no-op comparator reproduces out-of-order
+// output for this exact fixture and this test goes red -- recorded in
+// 06-03-SUMMARY.md.
+func TestQueryResultOrderIsStableOnTies(t *testing.T) {
+	facts := []protocol.QueryFact{
+		{ID: "z-last", Vocabulary: "control", Availability: string(debugmap.Available)},
+		{ID: "a-first", Vocabulary: "control", Availability: string(debugmap.Available)},
+		{ID: "m-middle", Vocabulary: "control", Availability: string(debugmap.Available)},
+	}
+	sortQueryFacts(facts)
+	want := []string{"a-first", "m-middle", "z-last"}
+	for index, fact := range facts {
+		if fact.ID != want[index] {
+			t.Fatalf("order = %v, want %v (ties on vocabulary+span must break on ID)", factIDs(facts), want)
+		}
+	}
+
+	// Cross-invocation stability: sorting the same tied set twice must not
+	// depend on map iteration or any other nondeterministic input.
+	again := []protocol.QueryFact{
+		{ID: "z-last", Vocabulary: "control", Availability: string(debugmap.Available)},
+		{ID: "a-first", Vocabulary: "control", Availability: string(debugmap.Available)},
+		{ID: "m-middle", Vocabulary: "control", Availability: string(debugmap.Available)},
+	}
+	sortQueryFacts(again)
+	for index := range facts {
+		if facts[index].ID != again[index].ID {
+			t.Fatalf("sortQueryFacts produced different order across two calls on identical input: %v vs %v", factIDs(facts), factIDs(again))
+		}
+	}
+}
+
+func factIDs(facts []protocol.QueryFact) []string {
+	ids := make([]string, len(facts))
+	for index, fact := range facts {
+		ids[index] = fact.ID
+	}
+	return ids
+}
+
+// TestQueryDepthDoesNotPaginate covers Test 4: --depth changes join
+// traversal depth only and must never affect pagination/bounding.
+func TestQueryDepthDoesNotPaginate(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+	diagID := firstDiagnosticID(t, path)
+
+	withoutDepth, err := QueryCommandFile(path, diagID, QueryOptions{})
+	if err != nil {
+		t.Fatalf("QueryCommandFile: %v", err)
+	}
+	withDepth, err := QueryCommandFile(path, diagID, QueryOptions{Depth: 1})
+	if err != nil {
+		t.Fatalf("QueryCommandFile (depth=1): %v", err)
+	}
+	firstBytes, _ := json.Marshal(withoutDepth.Query)
+	secondBytes, _ := json.Marshal(withDepth.Query)
+	if string(firstBytes) != string(secondBytes) {
+		t.Fatalf("--depth changed query's output; D-06-03 requires query to page by cursor only:\nwithout depth: %s\nwith depth=1:  %s", firstBytes, secondBytes)
 	}
 }
 
