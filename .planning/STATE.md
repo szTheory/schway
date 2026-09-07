@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 current_phase: 06
 current_phase_name: Agent Feedback and Performance Ratification
 status: executing
-stopped_at: Completed 06-04-PLAN.md
-last_updated: "2026-09-06T23:50:28.292Z"
+stopped_at: Completed 06-08-PLAN.md
+last_updated: "2026-09-07T00:03:32.516Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 06 execution started
-state_head: ffe2b5eb6d00339e551aaa9d1cc756354d8bfa62
+state_head: f98fcca802d1cd764e636d1c172edc81434bfcfa
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 62
-  completed_plans: 50
-  percent: 81
+  completed_plans: 51
+  percent: 82
 ---
 
 # Project State
@@ -30,11 +30,11 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 06 (Agent Feedback and Performance Ratification) — EXECUTING
-Plan: 4 of 15
+Plan: 5 of 15
 Status: Ready to execute
 Last activity: 2026-09-06 — Phase 06 execution started
 
-Progress: ██████████ [████████░░] 81%
+Progress: ██████████ [████████░░] 82%
 
 ## Performance Metrics
 
@@ -106,6 +106,7 @@ Progress: ██████████ [████████░░] 81%
 | Phase 06-agent-feedback-and-performance-ratification P01 | 40min | 3 tasks | 3 files |
 | Phase 06 P02 | 55 min | 3 tasks | 6 files |
 | Phase 06-agent-feedback-and-performance-ratification P04 | 55 min | 3 tasks | 4 files |
+| Phase 06 P08 | 35min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -216,6 +217,7 @@ Decisions are logged in PROJECT.md and the provenance-rich wiki research ledger.
 - [Phase 06]: 06-02: buildExplainGraph's edge derivation/depth/budget was implemented as one cohesive unit in Task 1's commit; Tasks 2/3 (tdd=true) discharged as test-only commits over that already-correct implementation
 - [Phase 06]: 06-02: session_phase6_explain_test.go uses package session (internal), the only internal-package test file in that directory, to construct exact depth/span/binding shapes no real check.go Cause site produces
 - [Phase 06-agent-feedback-and-performance-ratification]: 06-04: cache.go/probe.go implement D-06-06's artifacts-only cache, enforced structurally via TestCacheExportedSurfaceStoresNoVerdict/TestCacheImportsStayIndependent; the verdict-denylist excludes status/outcome since D-06-12 legitimately reuses those words for cache-reuse reporting — Keeps Task1's structural enforcement test compatible with Task3's Outcome/Status additions without weakening the actual verdict/judgement prohibition
+- [Phase 06]: measure.ProbeMachine/measure.MachineID implement D-06-17's leak-free declared-machine identity (six facts only, no host fingerprints); measure.Samples.Summary ports the shipped shell 20-sample p50/p95 protocol into testable Go; measure.Demote mechanizes D-06-19/D-06-22's CoV auto-demotion rule with a structurally-proven single promotion path.
 
 ### Pending Todos
 
@@ -246,6 +248,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-06T23:50:28.097Z
-Stopped at: Completed 06-04-PLAN.md
+Last session: 2026-09-07T00:03:24.206Z
+Stopped at: Completed 06-08-PLAN.md
 Resume file: None
