@@ -3,6 +3,11 @@ package protocol_test
 import (
 	"encoding/json"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -13,6 +18,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
 func TestOwnershipProjectionIdentityParity(t *testing.T) {
@@ -447,5 +453,208 @@ func TestStageBreakdownExcludedFromIdentity(t *testing.T) {
 	}
 	if got := withBreakdown.Finalize().ID; got != baseID {
 		t.Fatalf("a three-entry StageBreakdown reached Result.Finalize()'s identity: base=%s got=%s breakdown=%+v", baseID, got, withBreakdown.Lanes[0].StageBreakdown)
+	}
+}
+
+// peakRSSAssignmentValid reports whether value is a valid
+// protocol.PeakRSSUnavailable reference: either the bare identifier (used
+// from inside package protocol itself) or the qualified
+// protocol.PeakRSSUnavailable selector (used from every other package).
+func peakRSSAssignmentValid(value ast.Expr) bool {
+	switch expr := value.(type) {
+	case *ast.Ident:
+		return expr.Name == "PeakRSSUnavailable"
+	case *ast.SelectorExpr:
+		ident, ok := expr.X.(*ast.Ident)
+		return ok && ident.Name == "protocol" && expr.Sel.Name == "PeakRSSUnavailable"
+	default:
+		return false
+	}
+}
+
+// TestPeakRSSStaysUnavailable is a go/ast structural scan proving D-06-20:
+// every non-test PeakRSSStatus assignment in the tree references the
+// protocol.PeakRSSUnavailable constant (never a raw string literal), and no
+// non-test file assigns protocol.Metrics.PeakRSSBytes at all. Introducing
+// one raw literal, or one PeakRSSBytes assignment, fails this test naming
+// the offending file.
+func TestPeakRSSStaysUnavailable(t *testing.T) {
+	roots := []string{
+		testsupport.ProjectPath("internal"),
+		testsupport.ProjectPath("cmd"),
+	}
+	fileSet := token.NewFileSet()
+
+	var invalidStatusSites []string
+	var bytesSites []string
+
+	visit := func(path string) error {
+		file, err := parser.ParseFile(fileSet, path, nil, 0)
+		if err != nil {
+			return err
+		}
+		ast.Inspect(file, func(n ast.Node) bool {
+			if composite, ok := n.(*ast.CompositeLit); ok {
+				for _, element := range composite.Elts {
+					kv, ok := element.(*ast.KeyValueExpr)
+					if !ok {
+						continue
+					}
+					key, ok := kv.Key.(*ast.Ident)
+					if !ok {
+						continue
+					}
+					switch key.Name {
+					case "PeakRSSStatus":
+						if !peakRSSAssignmentValid(kv.Value) {
+							invalidStatusSites = append(invalidStatusSites, fmt.Sprintf("%s:%d", path, fileSet.Position(kv.Pos()).Line))
+						}
+					case "PeakRSSBytes":
+						bytesSites = append(bytesSites, fmt.Sprintf("%s:%d", path, fileSet.Position(kv.Pos()).Line))
+					}
+				}
+			}
+			if assign, ok := n.(*ast.AssignStmt); ok {
+				for _, lhs := range assign.Lhs {
+					selector, ok := lhs.(*ast.SelectorExpr)
+					if !ok {
+						continue
+					}
+					switch selector.Sel.Name {
+					case "PeakRSSStatus":
+						invalidStatusSites = append(invalidStatusSites, fmt.Sprintf("%s:%d (assignment)", path, fileSet.Position(assign.Pos()).Line))
+					case "PeakRSSBytes":
+						bytesSites = append(bytesSites, fmt.Sprintf("%s:%d (assignment)", path, fileSet.Position(assign.Pos()).Line))
+					}
+				}
+			}
+			return true
+		})
+		return nil
+	}
+
+	for _, root := range roots {
+		err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if info.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+				return nil
+			}
+			return visit(path)
+		})
+		if err != nil {
+			t.Fatalf("walk %s: %v", root, err)
+		}
+	}
+
+	if len(invalidStatusSites) != 0 {
+		t.Fatalf("found PeakRSSStatus site(s) not using protocol.PeakRSSUnavailable: %v", invalidStatusSites)
+	}
+	if len(bytesSites) != 0 {
+		t.Fatalf("found non-test PeakRSSBytes assignment(s), want 0: %v", bytesSites)
+	}
+}
+
+// TestPeakRSSUnavailabilityIsDocumented asserts the doc comment on
+// protocol.PeakRSSUnavailable is non-empty and names the second-machine
+// revisit condition (D-06-20), so the deferral remains an owned, scheduled
+// decision rather than an unowned carry. Deleting the doc comment, or its
+// revisit condition, fails this test.
+func TestPeakRSSUnavailabilityIsDocumented(t *testing.T) {
+	fileSet := token.NewFileSet()
+	path := testsupport.ProjectPath("internal", "compiler", "protocol", "protocol.go")
+	file, err := parser.ParseFile(fileSet, path, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("parser.ParseFile: %v", err)
+	}
+
+	var doc string
+	found := false
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.CONST {
+			continue
+		}
+		for _, spec := range genDecl.Specs {
+			valueSpec, ok := spec.(*ast.ValueSpec)
+			if !ok {
+				continue
+			}
+			for _, name := range valueSpec.Names {
+				if name.Name != "PeakRSSUnavailable" {
+					continue
+				}
+				found = true
+				if genDecl.Doc != nil {
+					doc = genDecl.Doc.Text()
+				} else if valueSpec.Doc != nil {
+					doc = valueSpec.Doc.Text()
+				}
+			}
+		}
+	}
+	if !found {
+		t.Fatal("protocol.PeakRSSUnavailable constant not found")
+	}
+	if strings.TrimSpace(doc) == "" {
+		t.Fatal("protocol.PeakRSSUnavailable has no doc comment")
+	}
+	if !strings.Contains(doc, "Linux") || !strings.Contains(doc, "Revisit") {
+		t.Fatalf("protocol.PeakRSSUnavailable doc comment does not name the second-machine revisit condition: %q", doc)
+	}
+}
+
+// TestNoGetrusageAnywhere is a go/ast import-and-selector scan over
+// internal/ and cmd/ (including test files) proving D-06-20's prohibition
+// holds: no reference to syscall.Getrusage, unix.Getrusage, or a ru_maxrss
+// identifier exists anywhere in the tree. This is the guard that keeps a
+// future contributor from quietly adding one.
+func TestNoGetrusageAnywhere(t *testing.T) {
+	roots := []string{
+		testsupport.ProjectPath("internal"),
+		testsupport.ProjectPath("cmd"),
+	}
+	fileSet := token.NewFileSet()
+	var sites []string
+
+	visit := func(path string) error {
+		file, err := parser.ParseFile(fileSet, path, nil, 0)
+		if err != nil {
+			return err
+		}
+		ast.Inspect(file, func(n ast.Node) bool {
+			switch node := n.(type) {
+			case *ast.SelectorExpr:
+				if node.Sel.Name == "Getrusage" {
+					sites = append(sites, fmt.Sprintf("%s:%d", path, fileSet.Position(node.Pos()).Line))
+				}
+			case *ast.Ident:
+				if strings.Contains(strings.ToLower(node.Name), "maxrss") {
+					sites = append(sites, fmt.Sprintf("%s:%d", path, fileSet.Position(node.Pos()).Line))
+				}
+			}
+			return true
+		})
+		return nil
+	}
+
+	for _, root := range roots {
+		err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if info.IsDir() || !strings.HasSuffix(path, ".go") {
+				return nil
+			}
+			return visit(path)
+		})
+		if err != nil {
+			t.Fatalf("walk %s: %v", root, err)
+		}
+	}
+
+	if len(sites) != 0 {
+		t.Fatalf("found getrusage/ru_maxrss reference(s), forbidden by D-06-20: %v", sites)
 	}
 }

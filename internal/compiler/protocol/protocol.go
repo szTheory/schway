@@ -60,6 +60,28 @@ func LaneStatuses() []string {
 	return []string{StatusPass, StatusInvalid, StatusOperational, StatusMismatch, StatusUsage, StatusDeferred}
 }
 
+// PeakRSSUnavailable is the sole value every peak_rss_status producer site
+// in this tree reports (D-06-20). This is a deliberate, documented,
+// mechanically enforced decision for M001, not an unowned gap:
+//
+//   - ru_maxrss reports bytes on macOS and kilobytes on Linux -- a unit
+//     discrepancy that cannot be resolved by inspection of this codebase's
+//     only available host.
+//   - A Go process's RSS is dominated by runtime and GC allocation unrelated
+//     to compiler work, so even a correctly-unit-converted number would not
+//     honestly represent the compiler's own memory cost.
+//   - Implementing getrusage on the only available host (Apple arm64) would
+//     trade this honest gap for exactly the host-encoding trap PROJECT.md
+//     warns against: wire contracts and target facts must not accidentally
+//     encode the current host.
+//
+// Revisit when a second, Linux, machine exists to validate the
+// bytes-vs-kilobytes unit conversion and to separate Go-runtime RSS from
+// compiler work. TestPeakRSSStaysUnavailable and TestNoGetrusageAnywhere
+// make this enforceable rather than merely documented; deleting this
+// comment fails TestPeakRSSUnavailabilityIsDocumented.
+const PeakRSSUnavailable = "unavailable"
+
 type Metrics struct {
 	ElapsedNS      int64  `json:"elapsed_ns"`
 	PeakRSSStatus  string `json:"peak_rss_status"`
@@ -426,7 +448,7 @@ func New(command, status string) Result {
 	return Result{
 		Schema: Schema1, Command: command, Status: status,
 		Diagnostics: []diagnostic.Diagnostic{}, Executions: []interp.Execution{}, Lanes: []Lane{},
-		Metrics: Metrics{PeakRSSStatus: "unavailable"},
+		Metrics: Metrics{PeakRSSStatus: PeakRSSUnavailable},
 	}
 }
 

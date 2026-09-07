@@ -353,7 +353,7 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 		if !execution.Equal(interpreted, actual) {
 			return protocol.Lane{
 				Schema: protocol.LaneSchema1, ID: phase6NativeDifferentialLane, Status: protocol.StatusMismatch,
-				RecomputedWork: work, ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable",
+				RecomputedWork: work, ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 				CacheStatus: string(outcome.Status), StageBreakdown: recorder.Breakdown(),
 			}, outcome, nil
 		}
@@ -362,7 +362,7 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 	lane := protocol.Lane{
 		Schema: protocol.LaneSchema1, ID: phase6NativeDifferentialLane, Status: protocol.StatusPass,
 		Controls: []string{"control:interpreter-o0-o3"}, RecomputedWork: work,
-		ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable",
+		ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 		StageBreakdown: recorder.Breakdown(),
 		CacheStatus: string(outcome.Status),
 	}

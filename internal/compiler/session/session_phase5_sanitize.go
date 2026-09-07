@@ -145,7 +145,7 @@ func VerifyPhase5SanitizeLane(ctx context.Context, runner native.Runner) (Phase5
 		result.Lanes = append(result.Lanes, protocol.Lane{
 			Schema: protocol.LaneSchema1, ID: id, Status: status,
 			Controls: append([]string{}, controls...), RecomputedWork: work,
-			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable",
+			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 		})
 		result.Metrics.RecomputedWork += work
 	}

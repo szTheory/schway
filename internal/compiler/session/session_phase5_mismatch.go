@@ -299,7 +299,7 @@ func VerifyMismatchReduceLane(ctx context.Context) (protocol.Result, error) {
 		result.Diagnostics = append(result.Diagnostics, diagnostic.Error("verify.mismatch_reduce_failed", diagnostic.Span{}, err.Error()))
 		result.Lanes = append(result.Lanes, protocol.Lane{
 			Schema: protocol.LaneSchema1, ID: LaneMismatchReduce, Status: protocol.StatusMismatch,
-			RecomputedWork: 1, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+			RecomputedWork: 1, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 		})
 		result.Metrics.RecomputedWork++
 		result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
@@ -313,7 +313,7 @@ func VerifyMismatchReduceLane(ctx context.Context) (protocol.Result, error) {
 	result.Lanes = append(result.Lanes, protocol.Lane{
 		Schema: protocol.LaneSchema1, ID: LaneMismatchReduce, Status: protocol.StatusPass,
 		Controls:       []string{ControlReduceNoProgress, ControlReducePredicateTooLoose, ControlReduceNondeterministic},
-		RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+		RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 	})
 	result.Metrics.RecomputedWork += work
 	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()

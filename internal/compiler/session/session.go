@@ -1277,7 +1277,7 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 		result.Lanes = append(result.Lanes, protocol.Lane{
 			Schema: protocol.LaneSchema1, ID: id, Status: status,
 			Controls: append([]string{}, controls...), RecomputedWork: work,
-			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable", OutputBytes: outputBytes,
+			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable, OutputBytes: outputBytes,
 		})
 		result.Metrics.RecomputedWork += work
 		result.Metrics.OutputBytes += outputBytes
@@ -1426,7 +1426,7 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 	result := protocol.New("verify", protocol.StatusPass)
 	result.ExpectedEscapes = []string{corevalidate.KnownEscape}
 	addLane := func(id string, controls []string, work, outputBytes int, laneStarted time.Time) {
-		result.Lanes = append(result.Lanes, protocol.Lane{Schema: protocol.LaneSchema1, ID: id, Status: "pass", Controls: append([]string(nil), controls...), RecomputedWork: work, ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable", OutputBytes: outputBytes})
+		result.Lanes = append(result.Lanes, protocol.Lane{Schema: protocol.LaneSchema1, ID: id, Status: "pass", Controls: append([]string(nil), controls...), RecomputedWork: work, ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable, OutputBytes: outputBytes})
 		result.Metrics.RecomputedWork += work
 		result.Metrics.OutputBytes += outputBytes
 	}
@@ -1571,7 +1571,7 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		result.Lanes = append(result.Lanes, protocol.Lane{
 			Schema: protocol.LaneSchema1, ID: id, Status: status,
 			Controls: append([]string{}, controls...), RecomputedWork: work,
-			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable", OutputBytes: outputBytes,
+			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable, OutputBytes: outputBytes,
 		})
 		result.Metrics.RecomputedWork += work
 		result.Metrics.OutputBytes += outputBytes
@@ -1891,7 +1891,7 @@ func BorrowedLoanEndpointControlLane(honest core.Program) protocol.Lane {
 	fail := func(work int) protocol.Lane {
 		return protocol.Lane{
 			Schema: protocol.LaneSchema1, ID: "lane:borrowed-loan-endpoint-control", Status: "fail",
-			Controls: nil, RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+			Controls: nil, RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 		}
 	}
 
@@ -1911,7 +1911,7 @@ func BorrowedLoanEndpointControlLane(honest core.Program) protocol.Lane {
 	return protocol.Lane{
 		Schema: protocol.LaneSchema1, ID: "lane:borrowed-loan-endpoint-control", Status: "pass",
 		Controls: []string{"control:core.loan_endpoint_mismatch"}, RecomputedWork: baseline.Checks + result.Checks,
-		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 	}
 }
 
@@ -1937,7 +1937,7 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 	fail := func(work int) protocol.Lane {
 		return protocol.Lane{
 			Schema: protocol.LaneSchema1, ID: "lane:path-oracle-disagreement", Status: "fail",
-			Controls: nil, RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+			Controls: nil, RecomputedWork: work, ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 		}
 	}
 
@@ -1982,7 +1982,7 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 	return protocol.Lane{
 		Schema: protocol.LaneSchema1, ID: "lane:path-oracle-disagreement", Status: "pass",
 		Controls: []string{"control:cfg.path_oracle_disagreement"}, RecomputedWork: work + reconfirmedWork,
-		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: "unavailable",
+		ElapsedNS: time.Since(started).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable,
 	}
 }
 
@@ -2057,7 +2057,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		result.Lanes = append(result.Lanes, protocol.Lane{
 			Schema: protocol.LaneSchema1, ID: id, Status: status,
 			Controls: append([]string{}, controls...), RecomputedWork: work,
-			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: "unavailable", OutputBytes: outputBytes,
+			ElapsedNS: time.Since(laneStarted).Nanoseconds(), PeakRSSStatus: protocol.PeakRSSUnavailable, OutputBytes: outputBytes,
 		})
 		result.Metrics.RecomputedWork += work
 		result.Metrics.OutputBytes += outputBytes
