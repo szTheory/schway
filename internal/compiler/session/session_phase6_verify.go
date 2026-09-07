@@ -17,6 +17,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
+	"github.com/codename-lang/lang/internal/compiler/measure"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 )
@@ -368,6 +369,28 @@ func VerifyPhase6ChangedRisk(ctx context.Context, corpus string, runner native.R
 		return protocol.Result{}, err
 	}
 
+	// Declared-machine ratification (D-06-17/D-06-18): probe this host once,
+	// and resolve whether it is a declared machine in the checked-in budget
+	// manifest. Loading the manifest here is the one-time membership check
+	// RatificationMode's own signature requires to answer that question --
+	// distinct from the manifest-CONSULTING (BudgetFor + EvaluateBudget)
+	// that stays strictly inside the Ratified==true branch below. On an
+	// undeclared machine no such consulting ever runs; every lane's
+	// GateVerdict renders not_ratified instead (D-06-18).
+	machineID := ""
+	var ratificationRows []QLT02BudgetRow
+	ratified := false
+	if facts, probeErr := measure.ProbeMachine(ctx); probeErr == nil {
+		machineID = measure.MachineID(facts)
+		if rows, loadErr := LoadQLT02BudgetManifest(); loadErr == nil {
+			mode := RatificationMode(rows, machineID)
+			if mode.Ratified {
+				ratificationRows = rows
+				ratified = true
+			}
+		}
+	}
+
 	selectedSet := make(map[string]bool, len(selection.LaneIDs))
 	for _, id := range selection.LaneIDs {
 		selectedSet[id] = true
@@ -393,6 +416,21 @@ func VerifyPhase6ChangedRisk(ctx context.Context, corpus string, runner native.R
 			}
 			lane.SelectionReason = reason
 			lane.ColdOrWarm = coldOrWarm
+			lane.MachineID = machineID
+
+			// Blocking rule (D-06-14, D-06-18, D-06-22): only recomputed_work
+			// on a declared, ratified machine may ever gate. An undeclared
+			// machine never consults the manifest -- not_ratified,
+			// unconditionally.
+			lane.GateVerdict = protocol.LaneGateNotRatified
+			if ratified {
+				if budgetRow, found := BudgetFor(ratificationRows, machineID, "recomputed_work"); found {
+					summary := deterministicSummary(int64(lane.RecomputedWork))
+					verdict, _ := EvaluateBudget(budgetRow, summary, lane.StageBreakdown)
+					lane.GateVerdict = verdict
+				}
+			}
+
 			if verr := protocol.ValidateLaneVocabularies(lane); verr != nil {
 				if firstErr == nil {
 					firstErr = verr
@@ -404,6 +442,12 @@ func VerifyPhase6ChangedRisk(ctx context.Context, corpus string, runner native.R
 			result.Metrics.RecomputedWork += lane.RecomputedWork
 			if lane.CacheStatus == string(cache.StatusArtifactReused) {
 				result.Metrics.CacheInputsReusedCount++
+			}
+			if lane.GateVerdict == protocol.LaneGateBlocking && result.Status == protocol.StatusPass {
+				// A blocking recomputed_work regression is the ONLY gate
+				// this project ever fails on for cost -- never a wall-clock
+				// or output-bytes observation on its own (D-06-22).
+				result.Status = protocol.StatusInvalid
 			}
 			if lane.Status != protocol.StatusPass && result.Status == protocol.StatusPass {
 				result.Status = lane.Status

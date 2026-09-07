@@ -1,0 +1,29 @@
+[
+  {
+    "machine_id": "machine:4797d76b7863",
+    "metric": "recomputed_work",
+    "gate_type": "hard",
+    "value_or_bound": 4,
+    "unit": "count",
+    "ratified_at": "2026-09-07T03:50:03Z",
+    "ratified_by_commit": "e9de50ec8dcd106497e3658ca30c5914efb5ade2"
+  },
+  {
+    "machine_id": "machine:4797d76b7863",
+    "metric": "elapsed_ns",
+    "gate_type": "observed",
+    "value_or_bound": 5000000000,
+    "unit": "nanoseconds",
+    "ratified_at": "2026-09-07T03:50:03Z",
+    "ratified_by_commit": "e9de50ec8dcd106497e3658ca30c5914efb5ade2"
+  },
+  {
+    "machine_id": "machine:4797d76b7863",
+    "metric": "output_bytes",
+    "gate_type": "observed",
+    "value_or_bound": 65536,
+    "unit": "bytes",
+    "ratified_at": "2026-09-07T03:50:03Z",
+    "ratified_by_commit": "e9de50ec8dcd106497e3658ca30c5914efb5ade2"
+  }
+]
