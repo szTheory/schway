@@ -319,7 +319,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 06-03-PLAN.md — `query`: five-vocabulary join, cursor-paginated, under `lang.query/0`
+- [x] 06-03-PLAN.md — `query`: five-vocabulary join, cursor-paginated, under `lang.query/0`
 - [ ] 06-05-PLAN.md — `risk_lanes.json`, conservative widening, gitignored change-state file, bidirectional audit
 - [ ] 06-12-PLAN.md — Five defect injectors, held-out corpus, and anti-theater guard 3 (marker mutation-kill)
 
