@@ -848,6 +848,27 @@ func TestInterfaceV1FieldInvariantsAcrossCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s/%s: BuildInterface: %v", phase, entry.Name(), err)
 			}
+			// 07-01 Task 3 (D-07-37): re-running BuildInterface over the same
+			// checked program must produce byte-identical ClosureDigests.
+			resummary, err := originvalidate.BuildInterface(checked.Program)
+			if err != nil {
+				t.Fatalf("%s/%s: BuildInterface (rerun): %v", phase, entry.Name(), err)
+			}
+			for _, function := range summary.Functions {
+				if !strings.HasPrefix(function.ClosureDigest, "sha256:") || len(function.ClosureDigest) != len("sha256:")+64 {
+					t.Fatalf("%s/%s: function %s ClosureDigest %q is not sha256:+64hex", phase, entry.Name(), function.ID, function.ClosureDigest)
+				}
+				for _, r := range function.ClosureDigest[len("sha256:"):] {
+					if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
+						t.Fatalf("%s/%s: function %s ClosureDigest %q has non-lowercase-hex byte", phase, entry.Name(), function.ID, function.ClosureDigest)
+					}
+				}
+			}
+			for index, function := range resummary.Functions {
+				if function.ClosureDigest != summary.Functions[index].ClosureDigest {
+					t.Fatalf("%s/%s: function %s ClosureDigest not identical across two BuildInterface runs: %q != %q", phase, entry.Name(), function.ID, summary.Functions[index].ClosureDigest, function.ClosureDigest)
+				}
+			}
 			for _, function := range summary.Functions {
 				checkedAny = true
 				for _, parameter := range function.Parameters {

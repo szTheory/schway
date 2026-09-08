@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
@@ -406,6 +407,84 @@ func digest(data []byte) string {
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
+// ClosureDigestDomainSeparator is D-07-37's canonical ClosureDigest
+// preimage's fixed prefix, declared exactly once here and referenced
+// everywhere else the preimage is built. It is not itself a digest of
+// anything -- it exists solely so a future digest with a superficially
+// similar preimage shape can never collide with this one.
+const ClosureDigestDomainSeparator = "lang.closure_digest/1\x00"
+
+// calleeDigestPair is one callee's (ID, ClosureDigest) pair, part of
+// D-07-37's canonical preimage. Field order is fixed by declaration (never
+// map iteration), so json.Marshal of a []calleeDigestPair is deterministic
+// regardless of insertion order -- SORTING the slice by ID (below) is what
+// makes the preimage itself order-independent; this struct's own encoding
+// was never order-dependent to begin with.
+type calleeDigestPair struct {
+	ID            string `json:"id"`
+	ClosureDigest string `json:"closure_digest"`
+}
+
+// closureDigestSortOverride is D-07-42's unexported fault-injection seam
+// for a same-package mutation-kill test (originvalidate_internal_test.go):
+// production always sorts callee pairs by ID; the test temporarily
+// replaces this with the identity function to prove the out-of-order test
+// actually depends on the sort, not merely appears to. nil (the
+// always-true production default) means "sort by ID".
+var closureDigestSortOverride func([]calleeDigestPair) []calleeDigestPair
+
+func sortCalleeDigestPairs(pairs []calleeDigestPair) []calleeDigestPair {
+	sorted := append([]calleeDigestPair(nil), pairs...)
+	if closureDigestSortOverride != nil {
+		return closureDigestSortOverride(sorted)
+	}
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].ID < sorted[j].ID })
+	return sorted
+}
+
+// closureDigestPreimageBytes builds D-07-37's canonical, non-self-
+// referential preimage for signature's ClosureDigest: the domain separator,
+// then signature with ClosureDigest itself ZEROED (so the digest never
+// depends on its own prior value — non-self-reference, Test 1), then the
+// callee (ID, ClosureDigest) pairs SORTED BY ID (Test 4) so the preimage is
+// independent of the order callees happen to be supplied in.
+//
+// D-07-38: this plan calls this only with an empty/nil callees slice — the
+// zero-callee base case, decided explicitly. The chaining arm over REAL
+// callees lands in 07-08-PLAN.md, after cycle refusal exists: the chain
+// terminates only on a DAG, so computing it before that gate would let a
+// cyclic program reach a non-terminating digest computation before the
+// gate that would refuse it. This function's signature already accepts
+// callees so 07-08 supplies them without changing this preimage
+// definition.
+func closureDigestPreimageBytes(signature core.FunctionSignature, callees []calleeDigestPair) ([]byte, error) {
+	signature.ClosureDigest = ""
+	payload := struct {
+		Signature core.FunctionSignature `json:"signature"`
+		Callees   []calleeDigestPair     `json:"callees"`
+	}{Signature: signature, Callees: sortCalleeDigestPairs(callees)}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	preimage := make([]byte, 0, len(ClosureDigestDomainSeparator)+len(body))
+	preimage = append(preimage, []byte(ClosureDigestDomainSeparator)...)
+	preimage = append(preimage, body...)
+	return preimage, nil
+}
+
+// computeClosureDigest computes D-07-37's canonical ClosureDigest for one
+// function signature and its (possibly empty) callee set, reusing the
+// shared digest() helper — no second digest format is minted anywhere in
+// this package.
+func computeClosureDigest(signature core.FunctionSignature, callees []calleeDigestPair) (string, error) {
+	preimage, err := closureDigestPreimageBytes(signature, callees)
+	if err != nil {
+		return "", err
+	}
+	return digest(preimage), nil
+}
+
 // BuildInterface strips every function body from program and binds the
 // resulting summary to program's own content digest, reusing the same
 // SHA-256 content-digest pattern already proven for evidence.CoreDigest
@@ -478,7 +557,7 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 			fails = function.ForeignContract.Fails
 		}
 
-		summary.Functions = append(summary.Functions, core.FunctionSignature{
+		signature := core.FunctionSignature{
 			ID: function.ID, Name: function.Name,
 			Parameters: []core.ParameterContract{parameterContract},
 			Return:     returnContract,
@@ -486,9 +565,16 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 			Callable:   false,
 			Fails:      fails,
 			Foreign:    foreignReach,
-			// ClosureDigest is filled by 07-01 Task 3.
-			ClosureDigest: "",
-		})
+		}
+		// D-07-38: only the zero-callee base case is computed in this plan
+		// (nil callees) — the chaining arm over real callees lands in
+		// 07-08-PLAN.md, after cycle refusal exists.
+		closureDigest, err := computeClosureDigest(signature, nil)
+		if err != nil {
+			return core.Interface{}, err
+		}
+		signature.ClosureDigest = closureDigest
+		summary.Functions = append(summary.Functions, signature)
 	}
 	return summary, nil
 }
