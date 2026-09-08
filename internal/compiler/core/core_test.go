@@ -310,6 +310,7 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 		"testdata/phase4/acquire_three_success.lang",
 		"testdata/phase4/defect_terminal.lang",
 		"testdata/phase07/call_basic.lang",
+		"testdata/phase07/call_from_both_match_arms.lang",
 	}
 	encountered := make(map[core.OperationKind]bool)
 	for _, path := range fixtures {
@@ -350,7 +351,23 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 			case function.Match != nil:
 				for _, arm := range function.Match.Arms {
 					if _, err := interp.Run(program, function.Name, arm.Pattern); err != nil {
-						t.Fatalf("%s/%s/%s: interp error: %v", path, function.Name, arm.Pattern, err)
+						// D-07-39: recognized, not executed. A match arm
+						// whose block body carries a core.OpCall (e.g.
+						// testdata/phase07/call_from_both_match_arms.lang)
+						// is recognized at the interp site via the
+						// dedicated interp.ErrCallUnsupported -- never a
+						// crash, never a silently faked success -- the
+						// same single documented exception
+						// functionHasOpCall grants the function.Linear
+						// branch below. function.Linear is also populated
+						// for an arm-bodied match function (its arm
+						// blocks lower into the same flat Operations
+						// list), so functionHasOpCall sees the same
+						// core.OpCall this arm's interp.Run just hit. Any
+						// OTHER error still fails this control.
+						if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
+							t.Fatalf("%s/%s/%s: interp error: %v", path, function.Name, arm.Pattern, err)
+						}
 					}
 				}
 			case function.Linear != nil:
@@ -384,6 +401,57 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 		if !encountered[kind] {
 			t.Fatalf("operation kind %q is never exercised by any corpus fixture in this control", kind)
 		}
+	}
+}
+
+// TestLinearProbeInputExercisesCallBasicFixture is T-07-22's own assertion
+// that the interp site is genuinely EXERCISED for the phase07 two-function
+// linear fixture, never silently skipped: a skipped site (linearProbeInput
+// returning ok == false) is indistinguishable from a covered one in
+// TestAllOperationKindsHandledAtEverySite's bookkeeping, which is exactly
+// the way that control could go green while proving nothing. Both of
+// call_basic.lang's functions -- the caller (main) and the callee
+// (identity) -- declare a Byte parameter, so linearProbeInput must return
+// ok == true for both, driving interp.Run for each rather than skipping
+// it.
+func TestLinearProbeInputExercisesCallBasicFixture(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath(splitPath("testdata/phase07/call_basic.lang")...))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) > 0 {
+		t.Fatalf("unexpected diagnostics: %v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("corevalidate rejected: %v", validated.Problems)
+	}
+	program := validated.Program()
+	if len(program.Functions) != 2 {
+		t.Fatalf("call_basic.lang: expected exactly 2 functions, got %d", len(program.Functions))
+	}
+	exercised := 0
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			t.Fatalf("%s: expected a straight-line (function.Linear != nil) function", function.Name)
+		}
+		input, ok := linearProbeInput(function)
+		if !ok {
+			t.Fatalf("%s: linearProbeInput returned ok == false -- the interp site would be SILENTLY SKIPPED for this function, not exercised", function.Name)
+		}
+		if _, err := interp.Run(program, function.Name, input); err != nil {
+			// D-07-39: recognized, not executed. main's OpCall is
+			// recognized via the named interp.ErrCallUnsupported; any
+			// OTHER error is a genuine failure.
+			if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
+				t.Fatalf("%s: interp error: %v", function.Name, err)
+			}
+		}
+		exercised++
+	}
+	if exercised != 2 {
+		t.Fatalf("expected the interp site exercised for both of call_basic.lang's functions, got %d", exercised)
 	}
 }
 
