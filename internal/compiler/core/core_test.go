@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -295,39 +296,62 @@ func linearProbeInput(function core.Function) (string, bool) {
 // the kind, matching their current terminator-membership-test shape. Widening
 // them to a stronger, kind-aware notion of "handled" is D-04-29, out of this
 // plan's scope.
-func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
-	fixtures := []string{
-		"testdata/phase1/toggle.lang",
-		"testdata/phase1/comments.lang",
-		"testdata/phase2/implicit_copy.lang",
-		"testdata/phase2/owned_transfer.lang",
-		"testdata/phase3/borrowed_view.lang",
-		"testdata/phase3/branch_view.lang",
-		"testdata/phase3/branch_one_arm_shared_accept.lang",
-		"testdata/phase3/sequential_shared_then_exclusive_accept.lang",
-		"testdata/phase3/shared_shared_accept.lang",
-		"testdata/phase4/foreign_acquire_one.lang",
-		"testdata/phase4/acquire_three_success.lang",
-		"testdata/phase4/defect_terminal.lang",
-		"testdata/phase07/call_basic.lang",
-		"testdata/phase07/call_from_both_match_arms.lang",
-	}
+// exhaustiveDispatchFixtures is the in-process control's own literal,
+// hand-maintained, phase-scoped fixture list (A-05). Extracted to a package
+// var (rather than inlined in TestAllOperationKindsHandledAtEverySite) so
+// Task 3's mutation-kill test (T-07-22/D-07-41) can drive
+// runExhaustiveDispatchControl against a DIFFERENT, OpCall-free subset
+// without duplicating this list.
+var exhaustiveDispatchFixtures = []string{
+	"testdata/phase1/toggle.lang",
+	"testdata/phase1/comments.lang",
+	"testdata/phase2/implicit_copy.lang",
+	"testdata/phase2/owned_transfer.lang",
+	"testdata/phase3/borrowed_view.lang",
+	"testdata/phase3/branch_view.lang",
+	"testdata/phase3/branch_one_arm_shared_accept.lang",
+	"testdata/phase3/sequential_shared_then_exclusive_accept.lang",
+	"testdata/phase3/shared_shared_accept.lang",
+	"testdata/phase4/foreign_acquire_one.lang",
+	"testdata/phase4/acquire_three_success.lang",
+	"testdata/phase4/defect_terminal.lang",
+	"testdata/phase07/call_basic.lang",
+	"testdata/phase07/call_from_both_match_arms.lang",
+}
+
+// runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's
+// (and, historically, control:kind.exhaustive_dispatch's) own driving logic,
+// extracted out of TestAllOperationKindsHandledAtEverySite into a function
+// of its own two genuinely load-bearing parameters -- fixtures and
+// requiredKinds -- so Task 3's mutation-kill test
+// (TestPhase7DispatchControlsMutationKilled, T-07-22/D-07-41) can call the
+// REAL control logic with a DIFFERENT requiredKinds list and prove the
+// required-kinds loop at the bottom is what makes the control load-bearing,
+// rather than duplicating this logic in a second, divergence-prone copy.
+// This is this control's own unexported seam (D-07-42): a plain function
+// parameter, never a package-level mutable var, so there is nothing for
+// -race or -shuffle=on to trip over.
+//
+// Returns an error (never t.Fatalf) so the caller decides whether a given
+// call is expected to fail (Test 1's "clean" beat) or expected to pass
+// (Test 1's "mutated" beat).
+func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.OperationKind) error {
 	encountered := make(map[core.OperationKind]bool)
 	for _, path := range fixtures {
 		source, err := os.ReadFile(testsupport.ProjectPath(splitPath(path)...))
 		if err != nil {
-			t.Fatalf("%s: read: %v", path, err)
+			return fmt.Errorf("%s: read: %w", path, err)
 		}
 		checked := session.Check(source)
 		if len(checked.Diagnostics) > 0 {
-			t.Fatalf("%s: unexpected diagnostics: %v", path, checked.Diagnostics)
+			return fmt.Errorf("%s: unexpected diagnostics: %v", path, checked.Diagnostics)
 		}
 		program := checked.Program
 
 		// corevalidate site.
 		validated := corevalidate.Validate(program)
 		if !validated.Valid {
-			t.Fatalf("%s: corevalidate rejected: %v", path, validated.Problems)
+			return fmt.Errorf("%s: corevalidate rejected: %v", path, validated.Problems)
 		}
 		program = validated.Program()
 
@@ -339,7 +363,7 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 				// pathoracle site: must not error while walking.
 				if function.Linear.ID != "" {
 					if _, _, err := pathoracle.RecomputeEndpoints(function); err != nil {
-						t.Fatalf("%s/%s: pathoracle error: %v", path, function.Name, err)
+						return fmt.Errorf("%s/%s: pathoracle error: %w", path, function.Name, err)
 					}
 				}
 			}
@@ -366,7 +390,7 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 						// core.OpCall this arm's interp.Run just hit. Any
 						// OTHER error still fails this control.
 						if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
-							t.Fatalf("%s/%s/%s: interp error: %v", path, function.Name, arm.Pattern, err)
+							return fmt.Errorf("%s/%s/%s: interp error: %w", path, function.Name, arm.Pattern, err)
 						}
 					}
 				}
@@ -383,7 +407,7 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 						// a function is "handled", not a control failure.
 						// Any OTHER error still fails this control.
 						if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
-							t.Fatalf("%s/%s: interp error: %v", path, function.Name, err)
+							return fmt.Errorf("%s/%s: interp error: %w", path, function.Name, err)
 						}
 					}
 				}
@@ -393,14 +417,35 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 		// cgen site: Emit requires exactly one function.
 		if len(program.Functions) == 1 {
 			if _, err := cgen.Emit(program); err != nil {
-				t.Fatalf("%s: cgen error: %v", path, err)
+				return fmt.Errorf("%s: cgen error: %w", path, err)
 			}
 		}
 	}
-	for _, kind := range core.AllOperationKinds() {
+	for _, kind := range requiredKinds {
 		if !encountered[kind] {
-			t.Fatalf("operation kind %q is never exercised by any corpus fixture in this control", kind)
+			return fmt.Errorf("operation kind %q is never exercised by any corpus fixture in this control", kind)
 		}
+	}
+	return nil
+}
+
+// TestAllOperationKindsHandledAtEverySite is the control:kind.exhaustive_dispatch
+// table (D-04-22): for every existing OperationKind, drive real programs
+// containing that kind through check (session.Check), corevalidate,
+// interp, cgen, pathoracle, and originvalidate, and assert none of them
+// reject or crash. Every declared kind must be exercised by at least one
+// fixture, so a kind that no corpus program ever produces cannot silently
+// pass this control by omission.
+//
+// pathoracle and originvalidate do not switch exhaustively on
+// core.OperationKind today (they walk only terminators); "handled" for these
+// two sites means the walk completes without error on a program containing
+// the kind, matching their current terminator-membership-test shape. Widening
+// them to a stronger, kind-aware notion of "handled" is D-04-29, out of this
+// plan's scope.
+func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
+	if err := runExhaustiveDispatchControl(exhaustiveDispatchFixtures, core.AllOperationKinds()); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -818,6 +863,94 @@ func TestDecodeInterfaceV1ValueDomainRefused(t *testing.T) {
 		_, err := core.DecodeInterface(data)
 		if code := decodeErrorCode(err); code != "core.interface_unknown_schema" {
 			t.Fatalf("expected core.interface_unknown_schema, got %q (%v)", code, err)
+		}
+	})
+}
+
+// TestPhase7DispatchControlsMutationKilled is Task 3's D-07-41 mutation-kill
+// suite (QLT-08): each of Phase 07's exhaustive-dispatch controls is
+// observed to FAIL under a seeded mutation, in the plan that introduces it,
+// proving the control is load-bearing rather than merely present. See
+// 07-04-PLAN.md's Task 3 <behavior> for the six numbered cases this test
+// covers; the session-package half of Test 2 (the phase07 CLI-observable
+// lane's own required-kinds seam) lives in session_phase7_mutation_test.go
+// alongside its own package's fault-injection seam (D-07-42), and the
+// interp/cgen recognized-not-executed kills (Tests 3-4) live in
+// internal/compiler/interp/interp_test.go and
+// internal/compiler/cgen/cgen_test.go respectively -- each control's kill
+// lives next to the control it kills, mirroring D-07-42's "same-package
+// tests" discipline rather than collecting every kill into one file no
+// package actually owns.
+func TestPhase7DispatchControlsMutationKilled(t *testing.T) {
+	// Test 1 (in-process control, T-07-22): removing core.OpCall from the
+	// required-kinds list runExhaustiveDispatchControl's own bottom loop
+	// checks proves that loop -- not the per-fixture site calls above it --
+	// is what makes the control load-bearing. opCallFreeFixtures is a real,
+	// legitimate Phase 1/2 sub-corpus that produces no core.OpCall at all.
+	t.Run("in_process_required_kinds_seam", func(t *testing.T) {
+		opCallFreeFixtures := []string{
+			"testdata/phase1/toggle.lang",
+			"testdata/phase2/implicit_copy.lang",
+		}
+		// Clean: core.OpCall IS required, but this corpus never produces
+		// it -- the control MUST fail.
+		if err := runExhaustiveDispatchControl(opCallFreeFixtures, []core.OperationKind{core.OpCall}); err == nil {
+			t.Fatal("expected the control to fail: core.OpCall is required but no fixture in this OpCall-free corpus produces it")
+		}
+		// Mutated: remove core.OpCall from the required-kinds list -- the
+		// SAME OpCall-free corpus now PASSES, because the loop that would
+		// have caught the omission no longer checks for it. This is the
+		// observable effect that proves the loop, not the per-fixture
+		// site calls, is what T-07-22 depends on.
+		if err := runExhaustiveDispatchControl(opCallFreeFixtures, []core.OperationKind{}); err != nil {
+			t.Fatalf("expected the control to pass once core.OpCall is excluded from required kinds, got: %v", err)
+		}
+	})
+
+	// Test 5: with linearProbeInput's Byte/Buffer recognition unavailable
+	// (stood in here by a probe that always returns ok == false, exactly
+	// what an unrecognized parameter type produces), the interp site would
+	// be SILENTLY SKIPPED for call_basic.lang's functions -- and this test
+	// asserts the skip is DETECTED (both functions counted as skipped),
+	// never silently tolerated, and that the REAL linearProbeInput
+	// exercises exactly those same functions instead of skipping them.
+	t.Run("linear_probe_input_arm_removed_is_detected", func(t *testing.T) {
+		probeInputArmRemoved := func(core.Function) (string, bool) { return "", false }
+		source, err := os.ReadFile(testsupport.ProjectPath(splitPath("testdata/phase07/call_basic.lang")...))
+		if err != nil {
+			t.Fatalf("read: %v", err)
+		}
+		checked := session.Check(source)
+		if len(checked.Diagnostics) > 0 {
+			t.Fatalf("unexpected diagnostics: %v", checked.Diagnostics)
+		}
+		validated := corevalidate.Validate(checked.Program)
+		if !validated.Valid {
+			t.Fatalf("corevalidate rejected: %v", validated.Problems)
+		}
+		program := validated.Program()
+		if len(program.Functions) != 2 {
+			t.Fatalf("call_basic.lang: expected exactly 2 functions, got %d", len(program.Functions))
+		}
+
+		skipped := 0
+		for _, function := range program.Functions {
+			if _, ok := probeInputArmRemoved(function); !ok {
+				skipped++
+			}
+		}
+		if skipped != len(program.Functions) {
+			t.Fatalf("expected the arm-removed stand-in to skip all %d functions, skipped %d", len(program.Functions), skipped)
+		}
+
+		exercised := 0
+		for _, function := range program.Functions {
+			if _, ok := linearProbeInput(function); ok {
+				exercised++
+			}
+		}
+		if exercised != len(program.Functions) {
+			t.Fatalf("expected the real linearProbeInput to exercise all %d functions the stand-in skipped, exercised %d", len(program.Functions), exercised)
 		}
 	})
 }

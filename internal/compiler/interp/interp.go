@@ -20,6 +20,16 @@ const Schema = execution.Schema0
 // look executed when no callee ever ran.
 var ErrCallUnsupported = errors.New("interp: OpCall is recognized but has no execution semantics in Phase 07")
 
+// opCallGroupedArmForTest is Task 3's D-07-41/D-07-42 fault-injection seam
+// (QLT-08): when true, runLinear's core.OpCall arm is folded into the
+// SAME grouped behaviour core.OpCopy uses -- exactly the stub-certification
+// failure D-07-39 exists to prevent, since a call would then look
+// executed (a successful "returned" outcome) when no callee ever ran.
+// Unexported, false by default, exercised only by the same-package test
+// TestOpCallGroupedArmMutationKilled (interp_test.go): never an exported
+// package-level mutable var on a production path.
+var opCallGroupedArmForTest = false
+
 type Outcome = execution.Outcome
 type Event = execution.Event
 type Execution = execution.Execution
@@ -442,6 +452,14 @@ func runLinear(function core.Function, input string) (Execution, error) {
 			})
 			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: []string{}}, nil
 		case core.OpCall:
+			if opCallGroupedArmForTest {
+				// D-07-42 Test 3 mutation: fold into OpCopy's grouped
+				// behaviour, proving a stub fold would otherwise pass
+				// unnoticed.
+				values[operation.TargetID] = value
+				events = append(events, ownedEvent(function, operation, "value.copied"))
+				continue
+			}
 			// D-07-39: recognized, never faked. See ErrCallUnsupported.
 			return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, ErrCallUnsupported)
 		default:

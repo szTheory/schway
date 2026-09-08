@@ -78,6 +78,38 @@ const (
 // Phase 4's dispatchFixtures (session.go); it carries its own.
 var phase07DispatchFixtures = []string{"call_basic.lang", "call_from_both_match_arms.lang"}
 
+// phase07LaneDispatchFixturesOverride and phase07LaneRequiredKindsOverride
+// are Task 3's D-07-41/D-07-42 fault-injection seams for the phase07 lane
+// (Test 2, control:kind.exhaustive_dispatch.phase07_lane's own kill):
+// unexported, nil by default (production callers never set these), and
+// exercised only via session_phase7_export_test.go's setters from the
+// external session_test package -- the same shape as
+// corevalidate.disableCalleeResolutionCheckForTest (07-02). A nil override
+// means "use the real default"; a non-nil (possibly empty) override
+// replaces it for the duration of the test.
+var (
+	phase07LaneDispatchFixturesOverride []string
+	phase07LaneRequiredKindsOverride    []core.OperationKind
+)
+
+// phase07LaneDispatchFixtures resolves the override seam above, or the
+// real default when unset.
+func phase07LaneDispatchFixtures() []string {
+	if phase07LaneDispatchFixturesOverride != nil {
+		return phase07LaneDispatchFixturesOverride
+	}
+	return phase07DispatchFixtures
+}
+
+// phase07LaneRequiredKinds resolves the override seam above, or the real
+// default ([]core.OperationKind{core.OpCall}) when unset.
+func phase07LaneRequiredKinds() []core.OperationKind {
+	if phase07LaneRequiredKindsOverride != nil {
+		return phase07LaneRequiredKindsOverride
+	}
+	return []core.OperationKind{core.OpCall}
+}
+
 // phase07FunctionHasOpCall mirrors core_test.go's functionHasOpCall (a
 // deliberate, small duplication across the in-process and CLI-observable
 // controls, matching A-05's requirement that each control carry its own
@@ -153,7 +185,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	laneStarted := time.Now()
 	encounteredKinds := make(map[core.OperationKind]bool)
 	dispatchWork := 0
-	for _, fixtureName := range phase07DispatchFixtures {
+	for _, fixtureName := range phase07LaneDispatchFixtures() {
 		fixtureSource, fixtureErr := readBoundedFile(filepath.Join(corpus, fixtureName), syntax.MaxSourceBytes)
 		if fixtureErr != nil {
 			addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
@@ -226,7 +258,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			dispatchWork++
 		}
 	}
-	for _, kind := range []core.OperationKind{core.OpCall} {
+	for _, kind := range phase07LaneRequiredKinds() {
 		if !encounteredKinds[kind] {
 			addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 			return fail(protocol.StatusInvalid, "verify.control_missing", "control:kind.exhaustive_dispatch.phase07_lane (kind "+string(kind)+" never encountered)")

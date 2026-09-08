@@ -13,6 +13,19 @@ import (
 
 const Schema = "lang.c17/0"
 
+// opCallGroupedArmForTest is Task 3's D-07-41/D-07-42 fault-injection seam
+// (QLT-08, plan 07-04's Test 4): when true, emitLinear's core.OpCall case
+// is folded into the SAME grouped behaviour core.OpCopy/OpMove/
+// OpBorrowShared/OpBorrowExclusive use, emitting copy-like C for a call and
+// producing NO error at all -- exactly the stub-certification failure
+// D-07-39 exists to prevent, since the emitted C would then look like a
+// successful, ordinary value transfer with no callee ever invoked.
+// Unexported, false by default, exercised only via the exported test-only
+// wrapper EmitLinearForTest (export_test.go) from the external cgen_test
+// package: never an exported package-level mutable var on a production
+// path.
+var opCallGroupedArmForTest = false
+
 func Emit(program core.Program) (string, error) {
 	validated := corevalidate.Validate(program)
 	if !validated.Valid {
@@ -306,6 +319,23 @@ func emitLinear(function core.Function) (string, error) {
 			out.WriteString("  if (!lang_write_events()) return 74;\n")
 			out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
 		case core.OpCall:
+			if opCallGroupedArmForTest {
+				// D-07-42 Test 4 mutation: fold into the grouped copy/
+				// move/borrow arm's behaviour, proving a stub fold would
+				// otherwise pass unnoticed -- emitted C looks like an
+				// ordinary successful value transfer, no error at all.
+				target, exists := places[operation.TargetID]
+				if !exists || declared[operation.TargetID] {
+					return "", fmt.Errorf("operation %q has invalid target", operation.ID)
+				}
+				fmt.Fprintf(&out, "  %s %s = %s; /* copy (mutated OpCall): %s */\n", typeName, locals[target.ID], locals[source.ID], operation.ID)
+				fmt.Fprintf(&out, "  (void)%s;\n", locals[target.ID])
+				fmt.Fprintf(&out, "  if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
+					strconv.Quote("value.copied"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
+					strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
+				declared[operation.TargetID] = true
+				continue
+			}
 			// D-07-39/A-02: OpCall is registered but not lowered by native
 			// emission this phase. Emit/EmitNative hard-fail on
 			// len(program.Functions) != 1 (cgen.go:22,52) before this arm
