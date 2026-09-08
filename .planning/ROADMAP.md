@@ -251,7 +251,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 07-04-PLAN.md — Stage 1b: both exhaustive-dispatch controls with their own phase-07 lists, asserting recognition not execution, each mutation-killed in this plan
+- [x] 07-04-PLAN.md — Stage 1b: both exhaustive-dispatch controls with their own phase-07 lists, asserting recognition not execution, each mutation-killed in this plan
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
