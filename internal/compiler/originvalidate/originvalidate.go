@@ -523,6 +523,36 @@ func computeClosureDigest(signature core.FunctionSignature, callees []calleeDige
 // from PublishProblemsFor (D-07-31/D-07-32, 07-02) — publication safety, not
 // export membership — and fails closed to false whenever PublishProblemsFor
 // reports any problem.
+// typeFactExactIDMatchOverride is D-07-42's fault-injection seam for
+// TestStage0SummaryMutationMatrix's fault 1 (07-02 Task 3): production
+// always requires an exact fact.ID == wantID match in BuildInterface's
+// abilities lookup below; the test temporarily forces every comparison to
+// report no match, reproducing D-07-23's silent empty-abilities fallback so
+// a divergence test can prove the corevalidate peer's independently-derived
+// abilities really do diverge, not merely appear to. nil (the always-true
+// production default) means "use the real fact.ID == wantID comparison".
+// Unexported: never a package-level var settable outside a same-package (or
+// export_test.go, which is excluded from every non-test build) fault test.
+var typeFactExactIDMatchOverride func(factID, wantID string) bool
+
+func typeFactExactIDMatch(factID, wantID string) bool {
+	if typeFactExactIDMatchOverride != nil {
+		return typeFactExactIDMatchOverride(factID, wantID)
+	}
+	return factID == wantID
+}
+
+// forceCallableAlwaysTrue is D-07-42's fault-injection seam for
+// TestStage0SummaryMutationMatrix's faults 3 and 4 (07-02 Task 3):
+// production always derives Callable from
+// len(PublishProblemsFor(function))==0; the test temporarily forces it
+// unconditionally true, proving the independent corevalidate peer still
+// refuses (fault 4) or, combined with corevalidate's own mirror seam,
+// proving a bilateral fault produces a FALSE agreement that the sweep must
+// report as a gate failure (fault 3). false (the always-real production
+// default) means "use the real derivation".
+var forceCallableAlwaysTrue bool
+
 func BuildInterface(program core.Program) (core.Interface, error) {
 	coreBytes, err := json.Marshal(program)
 	if err != nil {
@@ -537,7 +567,7 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 		hasDropAbility := false
 		if function.Linear != nil {
 			for _, fact := range function.Linear.Types {
-				if fact.ID == function.ID+":type:0" {
+				if typeFactExactIDMatch(fact.ID, function.ID+":type:0") {
 					abilities = fact.Abilities
 					break
 				}
@@ -585,12 +615,16 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 		// Callable is publication safety, not export membership (D-07-31):
 		// true exactly when PublishProblemsFor(function) reports zero
 		// problems. No export list is consulted anywhere on this path.
+		callable := len(PublishProblemsFor(function)) == 0
+		if forceCallableAlwaysTrue {
+			callable = true
+		}
 		signature := core.FunctionSignature{
 			ID: function.ID, Name: function.Name,
 			Parameters: []core.ParameterContract{parameterContract},
 			Return:     returnContract,
 			Abilities:  abilities,
-			Callable:   len(PublishProblemsFor(function)) == 0,
+			Callable:   callable,
 			Fails:      fails,
 			Foreign:    foreignReach,
 		}

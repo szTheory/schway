@@ -93,7 +93,12 @@ func TestValidatorImportsStayIndependent(t *testing.T) {
 		}
 		for _, imported := range file.Imports {
 			path := strings.Trim(imported.Path.Value, `"`)
-			if strings.HasSuffix(path, "/compiler/check") || strings.HasSuffix(path, "/compiler/ast") {
+			// 07-02 D-07-22: corevalidate's signature-summary peer must be a
+			// genuinely separate implementation from originvalidate's
+			// BuildInterface/PublishProblemsFor -- an import here would make
+			// this peer a second caller of the producer's own
+			// implementation, which cannot diverge by construction.
+			if strings.HasSuffix(path, "/compiler/check") || strings.HasSuffix(path, "/compiler/ast") || strings.HasSuffix(path, "/compiler/originvalidate") {
 				t.Fatalf("%s imports %s, which corevalidate must never depend on", entry.Name(), path)
 			}
 		}

@@ -44,11 +44,47 @@ type Result struct {
 	Problems []Problem `json:"problems,omitempty"`
 	Checks   int       `json:"checks"`
 	program  core.Program
+
+	// peerSignatures/peerRanStraightLine/peerRanBlocks carry 07-02's
+	// independent (D-07-20/D-07-22) structural summary-peer results --
+	// see PeerSignatures/PeerSiteCoverage below.
+	peerSignatures      map[string]core.FunctionSignature
+	peerRanStraightLine bool
+	peerRanBlocks       bool
 }
 
 // Program returns a content-owned copy of the validated program. Callers can
 // neither mutate the validator's copy nor race validation by retaining slices.
 func (r Result) Program() core.Program { return cloneProgram(r.program) }
+
+// PeerSignatures returns corevalidate's own independent (D-07-20/D-07-22)
+// structural re-derivation of every function's lang.interface/1 signature
+// summary, keyed by function ID. This is NOT originvalidate.BuildInterface's
+// output -- it is a materially different, separately-written computation
+// over the SAME checked core.Program, read from the validator's own
+// already-replayed type/place facts rather than a fresh exact-ID type-fact
+// lookup (corevalidate.go's doc-comment template, corevalidate.go:352-361).
+// A test harness with access to both packages compares this against
+// originvalidate.BuildInterface(program); this package never imports
+// originvalidate to make that comparison itself. Callers get a fresh copy of
+// the map on every call.
+func (r Result) PeerSignatures() map[string]core.FunctionSignature {
+	out := make(map[string]core.FunctionSignature, len(r.peerSignatures))
+	for id, signature := range r.peerSignatures {
+		out[id] = signature
+	}
+	return out
+}
+
+// PeerSiteCoverage reports whether the summary peer actually ran at
+// replayStraightLine and at replayBlocks during this Validate call (D-07-21).
+// A test asserts BOTH are true when the input program exercises both replay
+// shapes, rather than inferring coverage from which fixtures happened to be
+// supplied -- wiring the peer into only one site is the literal D-02-03/
+// D-03-01 repeat this instrumentation exists to catch.
+func (r Result) PeerSiteCoverage() (straightLine, blocks bool) {
+	return r.peerRanStraightLine, r.peerRanBlocks
+}
 
 // Validate is deliberately source-blind. It proves internal consistency of a
 // typed-core statement, not that a coordinated producer translated source
@@ -57,13 +93,25 @@ func Validate(input core.Program) Result {
 	owned := cloneProgram(input)
 	v := validator{program: owned}
 	v.run()
-	return Result{Valid: len(v.problems) == 0, Problems: v.problems, Checks: v.checks, program: owned}
+	return Result{
+		Valid: len(v.problems) == 0, Problems: v.problems, Checks: v.checks, program: owned,
+		peerSignatures:      v.peerSignatures,
+		peerRanStraightLine: v.peerRanStraightLine,
+		peerRanBlocks:       v.peerRanBlocks,
+	}
 }
 
 type validator struct {
 	program  core.Program
 	checks   int
 	problems []Problem
+
+	// peerSignatures/peerRanStraightLine/peerRanBlocks are populated by
+	// recordSummaryPeer, called from BOTH replayStraightLine and
+	// replayBlocks (D-07-21) -- see Result.PeerSignatures/PeerSiteCoverage.
+	peerSignatures      map[string]core.FunctionSignature
+	peerRanStraightLine bool
+	peerRanBlocks       bool
 }
 
 func (v *validator) check(ok bool, code, detail string) bool {
@@ -187,6 +235,19 @@ func (v *validator) matchBranch(function *core.Function, dataNames map[string]co
 }
 
 func (v *validator) match(function *core.Function, dataNames map[string]core.DataType) bool {
+	// D-07-25: a pure lang.core/0 match function (no Linear body at all)
+	// never reaches replayStraightLine/replayBlocks, but
+	// originvalidate.BuildInterface still emits a FunctionSignature for it
+	// (Callable trivially true: RecomputeOrigin reports not-ok when
+	// function.Linear is nil, so PublishProblemsFor reports no problem).
+	// Record the peer signature here too, with nil types/places, so the
+	// whole-corpus zero-divergence claim (D-07-25) covers /0-only programs
+	// as well, not only linear-bodied ones. This is not one of D-07-21's two
+	// replay sites, so it never sets peerRanStraightLine/peerRanBlocks.
+	if v.peerSignatures == nil {
+		v.peerSignatures = make(map[string]core.FunctionSignature)
+	}
+	v.peerSignatures[function.ID] = derivePeerSignature(function, nil, nil)
 	match := function.Match
 	if !v.check(match.ID != "" && match.PointID != "" && function.EntryPointID != "" && function.ReturnPointID != "", "core.invalid_id", function.ID) {
 		return false
@@ -839,6 +900,10 @@ func (v *validator) replay(function *core.Function, types map[string]core.TypeFa
 }
 
 func (v *validator) replayStraightLine(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	// D-07-21: the summary peer runs at THIS replay site, using the
+	// types/places this straight-line replay already computed -- one of the
+	// two required wiring points (see replayBlocks' identical call).
+	v.recordSummaryPeer(function, types, places, false)
 	operations := function.Linear.Operations
 	operationsByID := make(map[string]core.LinearOperation, len(operations))
 	for _, operation := range operations {
@@ -1037,6 +1102,17 @@ func (v *validator) releaseAllocatorMatches(operation core.LinearOperation, oper
 // "last operation in its own block", and "returned" becomes a per-block set
 // rather than one flag.
 func (v *validator) replayBlocks(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	// D-07-21: the summary peer runs at THIS replay site too, using the
+	// types/places this branch-shaped replay computed -- see
+	// replayStraightLine's identical call. A peer wired into only one site
+	// reproduces the literal D-02-03/D-03-01 repeat. disableSummaryPeerAtReplayBlocksForTest
+	// is fault 2's D-07-42 seam (07-02 Task 3): production always calls
+	// recordSummaryPeer here; the test temporarily skips it to prove a
+	// branch-shaped-only borrow-derived return becomes undetectable when
+	// only this site's wiring is missing.
+	if !disableSummaryPeerAtReplayBlocksForTest {
+		v.recordSummaryPeer(function, types, places, true)
+	}
 	linear := function.Linear
 	operations := linear.Operations
 	lastOperationOfBlock := make(map[string]string, len(linear.Blocks))
@@ -1235,6 +1311,240 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		if !v.check(returnedBlocks[block.ID], "core.final_claim_mismatch", block.ID) {
 			return false
 		}
+	}
+	return true
+}
+
+// recordSummaryPeer is 07-02's D-07-21 wiring point: called from BOTH
+// replayStraightLine (viaBlocks=false) and replayBlocks (viaBlocks=true),
+// storing derivePeerSignature's independently-derived summary for function
+// and marking which replay shape actually ran it. Called unconditionally at
+// each site's entry (not gated on the replay's own pass/fail), because the
+// signature summary a producer would publish is a fact about the function's
+// declared shape, independent of whether THIS validator run additionally
+// finds a different problem elsewhere in the same program.
+func (v *validator) recordSummaryPeer(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place, viaBlocks bool) {
+	if v.peerSignatures == nil {
+		v.peerSignatures = make(map[string]core.FunctionSignature)
+	}
+	v.peerSignatures[function.ID] = derivePeerSignature(function, types, places)
+	if viaBlocks {
+		v.peerRanBlocks = true
+	} else {
+		v.peerRanStraightLine = true
+	}
+}
+
+// SummaryPeerControls names every control 07-02 introduces (its PLAN.md's
+// <artifacts_this_phase_produces>), in a form 07-07's phase-wide
+// completeness matrix can compare against by exact set equality. This is
+// plain read-only data, never a fault-injection seam -- D-07-42's
+// unexported-mutable-var constraint does not apply to it.
+var SummaryPeerControls = []string{
+	"control:summary.peer_both_replay_sites",
+	"control:summary.producer_peer_zero_divergence",
+	"control:summary.callable_publication_safety",
+}
+
+// derivePeerSignature is corevalidate's independent (D-07-20/D-07-22)
+// structural re-derivation of one function's lang.interface/1 signature
+// summary. It names what originvalidate.BuildInterface does (strips every
+// function body and packages the producer's own already-proven facts into a
+// summary) and the materially different mechanism this one uses instead: it
+// reads types via a direct map lookup into the validator's own already-
+// replayed type-fact map (built once per Validate() call from
+// function.Linear.Types, keyed by fact ID) rather than BuildInterface's
+// fresh linear scan over function.Linear.Types for every call, and it
+// derives parameter-drop and origin-omission facts by forward set-
+// propagation over function.Linear.Operations rather than
+// originvalidate's backward per-return walk (see peerParameterEscapesOwned/
+// peerReturnDerivesFromBorrow). It never imports originvalidate and never
+// calls BuildInterface or PublishProblemsFor (enforced by
+// TestValidatorImportsStayIndependent, corevalidate_endpoint_internal_test.go) --
+// two callers of one implementation cannot diverge by construction, so
+// sharing the implementation here would make this "peer" agreement theater,
+// not evidence (D-07-20).
+//
+// D-07-33: Callable is narrowed to independently re-deriving ONLY the
+// core.origin_omitted refusal class. For core.origin_understated,
+// core.origin_access_mismatch, and foreign-origin-omitted, this peer does
+// not compute an independent answer at all -- it can only ever falsely
+// agree with whatever the producer declares for those classes this phase.
+// See PHASE-07-DEBT.md's D-07-33 entry; Phase 09 closes this.
+func derivePeerSignature(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) core.FunctionSignature {
+	// places is accepted (not merely function+types) so this signature
+	// matches recordSummaryPeer's call sites at both replay sites, which
+	// already have it in scope -- no field derived by this peer needs Place
+	// facts yet; a future field can gain access without a signature change.
+	_ = places
+
+	var abilities []core.Ability
+	if fact, ok := types[function.ID+":type:0"]; ok {
+		abilities = fact.Abilities
+	} else {
+		abilities = []core.Ability{}
+	}
+	hasDropAbility := false
+	for _, ability := range abilities {
+		if ability == core.AbilityDrop {
+			hasDropAbility = true
+			break
+		}
+	}
+
+	parameterContract := core.ParameterContract{
+		ID: function.Parameter.ID, Name: function.Parameter.Name, Type: function.Parameter.Type,
+		// D-07-01: today's grammar has exactly one parameter form.
+		Mode:  "owned",
+		Drops: hasDropAbility && !peerParameterEscapesOwned(function),
+	}
+
+	returnContract := core.ReturnContract{Type: function.ReturnType}
+	switch {
+	case function.PublicOrigin == nil:
+		returnContract.Mode = "owned"
+		returnContract.Paths = []string{}
+	case function.PublicOrigin.Access == "shared":
+		returnContract.Mode = "shared"
+		returnContract.Paths = function.PublicOrigin.Paths
+	default:
+		returnContract.Mode = function.PublicOrigin.Access
+		returnContract.Paths = function.PublicOrigin.Paths
+	}
+	returnContract.Fresh = returnContract.Mode == "owned" && hasDropAbility
+
+	foreignReach := core.ForeignReach{}
+	fails := ""
+	if function.ForeignContract != nil {
+		foreignReach = core.ForeignReach{
+			Allocator: function.ForeignContract.Allocator, Unwind: function.ForeignContract.Unwind,
+			NonlocalExit: function.ForeignContract.NonlocalExit,
+		}
+		fails = function.ForeignContract.Fails
+	}
+
+	return core.FunctionSignature{
+		ID: function.ID, Name: function.Name,
+		Parameters: []core.ParameterContract{parameterContract},
+		Return:     returnContract,
+		Abilities:  abilities,
+		Callable:   peerCallable(function),
+		Fails:      fails,
+		Foreign:    foreignReach,
+	}
+}
+
+// peerParameterEscapesOwned is peerParameterContract's independent
+// re-derivation of originvalidate.parameterEscapesOwned, by a materially
+// different mechanism (D-07-22): FORWARD set-propagation from the parameter
+// over function.Linear.Operations (an OpMove/OpCopy hop propagates
+// membership to its target) rather than a backward per-return walk with
+// cycle detection. It reports whether the parameter is directly moved or
+// copied, with no intervening borrow/foreign hop, all the way out through
+// some OpReturn.
+func peerParameterEscapesOwned(function *core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	tracesToParameter := map[string]bool{function.Parameter.ID: true}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpMove && operation.Kind != core.OpCopy {
+			continue
+		}
+		if tracesToParameter[operation.SourceID] {
+			tracesToParameter[operation.TargetID] = true
+		}
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpReturn && tracesToParameter[operation.SourceID] {
+			return true
+		}
+	}
+	return false
+}
+
+// peerReturnDerivesFromBorrow is peerCallable's independent re-derivation of
+// the core.origin_omitted refusal class ONLY (D-07-33's narrowed scope), by
+// a materially different mechanism (D-07-22) from
+// originvalidate.RecomputeOriginPerReturn's backward per-return walk:
+// FORWARD set-propagation from the parameter over
+// function.Linear.Operations, marking a place borrow-derived when it is the
+// target of an OpBorrowShared/OpBorrowExclusive hop from an already-tracked
+// place, or of a plain OpMove/OpCopy hop from one. It reports presence only
+// (does this function return SOME borrow-derived place), never an access
+// mode -- narrowed Callable only needs presence, not the mode
+// RecomputeOrigin's first-hop-wins rule additionally derives.
+//
+// D-07-33: this deliberately does NOT walk through OpForeignCall the way
+// originvalidate.checkForeignOriginOmitted/RecomputeOriginPerReturn do for a
+// declared borrow/retain foreign contract. foreign-origin-omitted is one of
+// the three classes this peer does not independently re-derive this phase
+// (see peerCallable's doc comment and TestPeerDoesNotRederiveNarrowedClasses).
+func peerReturnDerivesFromBorrow(function *core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	// paramTrace tracks places that are the parameter itself, or reach it
+	// through a pure Move/Copy chain -- check.go's arm lowering copies the
+	// match scrutinee (the parameter) into a fresh place before each arm
+	// borrows it, so the borrow hop's SourceID is usually a copy of the
+	// parameter, never the parameter's own place ID directly.
+	paramTrace := map[string]bool{function.Parameter.ID: true}
+	derived := make(map[string]bool)
+	for _, operation := range function.Linear.Operations {
+		switch operation.Kind {
+		case core.OpBorrowShared, core.OpBorrowExclusive:
+			if paramTrace[operation.SourceID] || derived[operation.SourceID] {
+				derived[operation.TargetID] = true
+			}
+		case core.OpMove, core.OpCopy:
+			if paramTrace[operation.SourceID] {
+				paramTrace[operation.TargetID] = true
+			}
+			if derived[operation.SourceID] {
+				derived[operation.TargetID] = true
+			}
+		}
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpReturn && derived[operation.SourceID] {
+			return true
+		}
+	}
+	return false
+}
+
+// peerCallable is D-07-33's narrowed independent re-derivation of Callable.
+// It only independently answers the core.origin_omitted class: when no
+// public origin is declared, it reports Callable false iff the body itself
+// returns a borrow-derived place. When a public origin IS declared, this
+// peer does not check whether the declaration is understated, access-
+// mismatched, or a foreign-origin omission -- it reports Callable true
+// unconditionally, which is only ever a FALSE agreement with the producer
+// for those three classes (D-07-33, declared in PHASE-07-DEBT.md, closed in
+// Phase 09).
+// disableSummaryPeerAtReplayBlocksForTest is fault 2's D-07-42 fault-
+// injection seam (07-02 Task 3): production always wires the summary peer
+// into replayBlocks (D-07-21); the test temporarily disables ONLY this
+// site, proving a branch-shaped function's borrow-derived-on-exactly-one-arm
+// return is undetectable through replayStraightLine alone -- the literal
+// D-02-03/D-03-01 repeat this wiring exists to catch. false (the
+// always-wired production default) means "call recordSummaryPeer here".
+var disableSummaryPeerAtReplayBlocksForTest bool
+
+// forcePeerCallableAlwaysTrue is D-07-42's fault-injection seam for
+// TestStage0SummaryMutationMatrix's faults 3 and 5 (07-02 Task 3): mirrors
+// originvalidate's forceCallableAlwaysTrue on this package's own peer
+// derivation. false (the always-real production default) means "use
+// peerCallable's real narrowed derivation".
+var forcePeerCallableAlwaysTrue bool
+
+func peerCallable(function *core.Function) bool {
+	if forcePeerCallableAlwaysTrue {
+		return true
+	}
+	if function.PublicOrigin == nil {
+		return !peerReturnDerivesFromBorrow(function)
 	}
 	return true
 }
