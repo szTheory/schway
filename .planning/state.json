@@ -1,7 +1,7 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M002",
+  "milestone": "M002 — Interprocedural Semantic Spine",
   "phases": [
     {
       "number": "07",
@@ -10,7 +10,7 @@
     },
     {
       "number": "08",
-      "name": "Interprocedural Loan Liveness in check",
+      "name": "Interprocedural Loan Liveness in `check`",
       "status": "pending"
     },
     {
@@ -25,12 +25,12 @@
     },
     {
       "number": "11",
-      "name": "Multi-Function Native Emission and Interprocedural Equivalence",
+      "name": "Multi-Function Native Emission and Equivalence",
       "status": "pending"
     },
     {
       "number": "12",
-      "name": "Result Payloads",
+      "name": "`Result` Payloads",
       "status": "pending"
     },
     {
@@ -40,9 +40,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss Phase 07",
-    "reason": "M002 roadmap created \u2014 discuss the first phase"
+    "command": "/gsd:progress",
+    "label": "Show progress",
+    "reason": "Unsure of state — showing progress"
   },
-  "updated_at": "2026-09-08T00:00:00.000Z"
+  "updated_at": "2026-09-08T18:47:42.243Z"
 }
