@@ -243,7 +243,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07-02-PLAN.md — Stage 0b: `Callable` as **publication safety** via `PublishProblemsFor`, the `corevalidate` summary peer at BOTH replay sites, the extracted negative control, and the three seeded faults incl. the bilateral one that must FAIL
+- [x] 07-02-PLAN.md — Stage 0b: `Callable` as **publication safety** via `PublishProblemsFor`, the `corevalidate` summary peer at BOTH replay sites, the extracted negative control, and the three seeded faults incl. the bilateral one that must FAIL
 
 **Wave 3** *(blocked on Wave 2 completion)*
 

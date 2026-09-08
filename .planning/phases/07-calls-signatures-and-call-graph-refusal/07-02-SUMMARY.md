@@ -237,6 +237,13 @@ None - no external service configuration required.
 - Phase 09 has a fully-declared, tested-false-agreement narrowing (D-07-33) to close, plus the loan-liveness peer (D-03-02) -- both entries are now in the mechanically-checked `PHASE-07-DEBT.md` register.
 - Ready for `07-03`.
 
+## Self-Check: PASSED
+
+- All key-files (created + modified) verified present on disk with `[ -f ]`.
+- All four commits (`1941a83`, `9b62c1a`, `8def161`, `3186458`) verified present via `git log --oneline --all`.
+- Re-ran every task's `<acceptance_criteria>` Go-level assertions: all pass.
+- Re-ran the plan-level `<verification>`: `go build ./...`, `go vet ./...`, `go test ./...` (whole repo, including the previously-failing `TestDebtRegistersAreWellFormed`), `go test -race ./internal/compiler/corevalidate/... ./internal/compiler/originvalidate/...` all green. The one plan-authored `<verify>` command that does not pass as literally written (`go run ./cmd/lang --json check testdata/phase07/clean_but_unpublishable.lang`) is documented above under "Issues Encountered" with the reason and the passing Go-test evidence that actually covers the underlying acceptance criteria.
+
 ---
 *Phase: 07-calls-signatures-and-call-graph-refusal*
 *Completed: 2026-09-08*
