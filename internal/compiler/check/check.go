@@ -267,7 +267,68 @@ func Program(program ast.Program) Result {
 			Span:       function.Span,
 		})
 	}
+	if len(result.Diagnostics) == 0 {
+		// D-07-29/D-07-41: check's own independent re-derivation of the
+		// three CalleeID invariants, from its own emission-time bookkeeping
+		// (the function ID table this func just built) -- never by
+		// consulting corevalidate. Run only once every function checked
+		// clean, over the WHOLE assembled program, so a call that resolves
+		// to a function declared later in source (declaration order is not
+		// admission order) is still recognized.
+		if invariant := verifyCallInvariants(result.Program.Functions); invariant != nil {
+			result.Diagnostics = append(result.Diagnostics, *invariant)
+		}
+	}
 	return result
+}
+
+// verifyCallInvariantsSeam is Task 2's D-07-41/D-07-42 fault-injection seam
+// (QLT-08): when true, check's own independent re-derivation that a CalleeID
+// resolves to a declared function is disabled. Unexported, same-package-
+// test-only, restored via defer in every test that engages it -- never an
+// exported package-level mutable var on a production path.
+var verifyCallInvariantsSeam = false
+
+// verifyCallInvariants independently re-derives D-07-29's three CalleeID
+// invariants over the whole assembled program: an OpCall with an empty
+// CalleeID; any non-OpCall operation with a non-empty CalleeID; and a
+// CalleeID naming no declared function (D-07-45, gated by
+// verifyCallInvariantsSeam for QLT-08's seeded-mutation control). This is
+// check's OWN bookkeeping, derived from the function ID set it just built --
+// it never consults corevalidate, mirroring corevalidate's own three checks
+// derived independently on its own side (D-07-29's "derived independently at
+// both sites" requirement).
+func verifyCallInvariants(functions []core.Function) *diagnostic.Diagnostic {
+	declared := make(map[string]bool, len(functions))
+	for _, function := range functions {
+		declared[function.ID] = true
+	}
+	for _, function := range functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall {
+				if operation.CalleeID != "" {
+					diag := diagnostic.Error("core.callee_id_kind_exclusive", function.Span, "only an OpCall operation may carry a CalleeID")
+					return &diag
+				}
+				continue
+			}
+			if operation.CalleeID == "" {
+				diag := diagnostic.Error("core.callee_id_missing", function.Span, "an OpCall operation must carry a CalleeID")
+				return &diag
+			}
+			if verifyCallInvariantsSeam {
+				continue
+			}
+			if !declared[operation.CalleeID] {
+				diag := diagnostic.Error(core.CallCalleeUnresolved, function.Span, "call target does not resolve to a declared function")
+				return &diag
+			}
+		}
+	}
+	return nil
 }
 
 func sealedNames(types map[string]core.DataType) map[string]bool {
@@ -1366,6 +1427,22 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 	if _, isForeign := foreignSymbols[binding.RHS.Callee]; isForeign {
 		diag := diagnostic.Error("syntax.fallible_call_not_consumed", binding.RHS.Span, "a fallible call must be the operand of `try`")
 		return core.LinearOperation{}, core.Place{}, &diag
+	}
+	if verifyCallInvariantsSeam {
+		// D-07-41/D-07-42 seam (QLT-08, Task 2 Test 6): skip the
+		// resolves-to-a-declared-function predicate, admitting the call
+		// anyway with a synthetic (non-ID) CalleeID -- demonstrates what a
+		// removed check would let through. Shares verifyCallInvariants'
+		// seam variable, both in package check, so this and the
+		// post-build pass fail together under the same seeded mutation;
+		// corevalidate carries the identical seam, independently, on its
+		// own side (disableCalleeResolutionCheckForTest).
+		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: argument.place.TypeID}
+		op := core.LinearOperation{
+			ID: fmt.Sprintf("%s:op:%d", functionID, opOrdinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, opOrdinal),
+			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: argument.place.TypeID, CalleeID: binding.RHS.Callee,
+		}
+		return op, target, nil
 	}
 	diag := diagnostic.Error(core.CallCalleeUnresolved, binding.RHS.Span, "call target does not resolve to a declared function")
 	return core.LinearOperation{}, core.Place{}, &diag

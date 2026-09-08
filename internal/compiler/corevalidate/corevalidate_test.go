@@ -1423,3 +1423,137 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 		t.Fatalf("expected discard_because.lang to validate, got %+v", discardResult)
 	}
 }
+
+// callerCalleeProgram builds a synthetic two-function core.Program (a caller
+// with a single OpCall, immediately returned, plus a trivial callee) for
+// Phase 07's CalleeID invariant tests (D-07-29). calleeID lets each test
+// construct the exact CalleeID value under test -- empty, a real ID, or a
+// bogus one -- without threading a full check.Program() build through it.
+func callerCalleeProgram(calleeID string) core.Program {
+	callerID := "s1:test:fn:caller"
+	calleeFnID := "s1:test:fn:callee"
+	callerTypeID := callerID + ":type:0"
+	callerParamID := callerID + ":place:0"
+	callerTargetID := callerID + ":place:1"
+	calleeTypeID := calleeFnID + ":type:0"
+	calleeParamID := calleeFnID + ":place:0"
+	byteFact := core.TypeFact{
+		ID: callerTypeID, Shape: core.TypeRef{Constructor: "Byte", Arguments: []core.TypeRef{}},
+		Abilities:         []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape},
+		NegativeWitnesses: []core.AbilityWitness{},
+	}
+	calleeFact := byteFact
+	calleeFact.ID = calleeTypeID
+	return core.Program{
+		Schema: core.Schema1, Module: "test", ModuleID: "s1:test:module:test",
+		Functions: []core.Function{
+			{
+				ID: callerID, Name: "caller", EntryPointID: callerID + ":point:entry", ReturnPointID: callerID + ":point:return",
+				Parameter: core.Parameter{ID: callerParamID, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+				Linear: &core.LinearBody{
+					ID:     callerID + ":linear",
+					Types:  []core.TypeFact{byteFact},
+					Places: []core.Place{{ID: callerParamID, Name: "value", TypeID: callerTypeID}, {ID: callerTargetID, Name: "result", TypeID: callerTypeID}},
+					Operations: []core.LinearOperation{
+						{ID: callerID + ":op:0", PointID: callerID + ":point:linear:0", Kind: core.OpCall, SourceID: callerParamID, TargetID: callerTargetID, TypeID: callerTypeID, CalleeID: calleeID},
+						{ID: callerID + ":op:1", PointID: callerID + ":point:linear:1", Kind: core.OpReturn, SourceID: callerTargetID, TypeID: callerTypeID},
+					},
+				},
+			},
+			{
+				ID: calleeFnID, Name: "callee", EntryPointID: calleeFnID + ":point:entry", ReturnPointID: calleeFnID + ":point:return",
+				Parameter: core.Parameter{ID: calleeParamID, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+				Linear: &core.LinearBody{
+					ID:         calleeFnID + ":linear",
+					Types:      []core.TypeFact{calleeFact},
+					Places:     []core.Place{{ID: calleeParamID, Name: "value", TypeID: calleeTypeID}},
+					Operations: []core.LinearOperation{{ID: calleeFnID + ":op:0", PointID: calleeFnID + ":point:linear:0", Kind: core.OpReturn, SourceID: calleeParamID, TypeID: calleeTypeID}},
+				},
+			},
+		},
+	}
+}
+
+// TestOpCallEmptyCalleeIDIsRefused is Task 2 Test 1 (D-07-29): a synthetic
+// core.Program with an OpCall whose CalleeID is empty is refused by
+// corevalidate with a specific code, at whichever replay site the caller's
+// straight-line shape reaches.
+func TestOpCallEmptyCalleeIDIsRefused(t *testing.T) {
+	program := callerCalleeProgram("")
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected refusal for an OpCall with an empty CalleeID, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != "core.callee_id_missing" {
+		t.Fatalf("expected core.callee_id_missing, got %+v", result.Problems)
+	}
+}
+
+// TestNonOpCallWithCalleeIDIsRefused is Task 2 Test 2 (D-07-29): CalleeID is
+// kind-exclusive, exactly as Allocator and ReleasesOperationID are -- an
+// OpCopy carrying a non-empty CalleeID is refused.
+func TestNonOpCallWithCalleeIDIsRefused(t *testing.T) {
+	program := callerCalleeProgram("s1:test:fn:callee")
+	program.Functions[0].Linear.Operations[1].CalleeID = "s1:test:fn:callee"
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected refusal for a non-OpCall operation carrying a CalleeID, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != "core.callee_id_kind_exclusive" {
+		t.Fatalf("expected core.callee_id_kind_exclusive, got %+v", result.Problems)
+	}
+}
+
+// TestOpCallUnresolvedCalleeIsRefused is Task 2 Test 3 (D-07-45): a
+// CalleeID naming no declared function is refused with its OWN typed
+// identity, distinct from the (07-06) cycle code and from the two refusals
+// above.
+func TestOpCallUnresolvedCalleeIsRefused(t *testing.T) {
+	program := callerCalleeProgram("s1:test:fn:does-not-exist")
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected refusal for a CalleeID naming no declared function, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != core.CallCalleeUnresolved {
+		t.Fatalf("expected %s, got %+v", core.CallCalleeUnresolved, result.Problems)
+	}
+	if core.CallCalleeUnresolved == "core.callee_id_missing" || core.CallCalleeUnresolved == "core.callee_id_kind_exclusive" || core.CallCalleeUnresolved == "core.call_graph_cycle" {
+		t.Fatalf("core.CallCalleeUnresolved must be distinct from the other CalleeID refusal codes and the cycle code, got %q", core.CallCalleeUnresolved)
+	}
+}
+
+// TestOpCallValidCalleeIDIsAccepted is the accepting-path counterpart: a
+// well-formed OpCall whose CalleeID names a real declared function validates
+// cleanly, proving the three refusals above are not vacuously always firing.
+func TestOpCallValidCalleeIDIsAccepted(t *testing.T) {
+	program := callerCalleeProgram("s1:test:fn:callee")
+	result := corevalidate.Validate(program)
+	if !result.Valid {
+		t.Fatalf("expected a well-formed OpCall to validate cleanly, got %+v", result)
+	}
+}
+
+// TestDisableCalleeResolutionCheckSeamSuppressesUnresolvedRefusal is Task 2
+// Test 6's corevalidate half (QLT-08, D-07-41/D-07-42): with
+// disableCalleeResolutionCheckForTest engaged, the SAME hand-built program
+// TestOpCallUnresolvedCalleeIsRefused refuses now validates cleanly;
+// restoring the seam (via defer) restores the refusal. Split from check's
+// own seam test (check_test.go) because Go's export_test.go pattern only
+// reaches a package's own external test package -- see 07-02-SUMMARY.md's
+// identical cross-package split for the bilateral fault.
+func TestDisableCalleeResolutionCheckSeamSuppressesUnresolvedRefusal(t *testing.T) {
+	program := callerCalleeProgram("s1:test:fn:does-not-exist")
+
+	restore := corevalidate.SetDisableCalleeResolutionCheckForTest(true)
+	defer restore()
+	if result := corevalidate.Validate(program); !result.Valid {
+		t.Fatalf("expected the seam to suppress the unresolved-callee refusal, got %+v", result)
+	}
+
+	restore()
+	if result := corevalidate.Validate(program); result.Valid {
+		t.Fatalf("expected the refusal restored once the seam is disengaged, got %+v", result)
+	} else if len(result.Problems) == 0 || result.Problems[0].Code != core.CallCalleeUnresolved {
+		t.Fatalf("expected %s restored, got %+v", core.CallCalleeUnresolved, result.Problems)
+	}
+}

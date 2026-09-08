@@ -1055,7 +1055,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			if !v.check(operation.CalleeID != "", "core.callee_id_missing", operation.ID) {
 				return false
 			}
-			if !v.check(declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
+			if !v.check(disableCalleeResolutionCheckForTest || declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
 				return false
 			}
 			if !v.targetMatches(function, index, operation, places, produced) {
@@ -1288,7 +1288,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			if !v.check(operation.CalleeID != "", "core.callee_id_missing", operation.ID) {
 				return false
 			}
-			if !v.check(declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
+			if !v.check(disableCalleeResolutionCheckForTest || declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
 				return false
 			}
 			if !v.targetMatches(function, index, operation, places, produced) {
@@ -1593,6 +1593,18 @@ func peerReturnDerivesFromBorrow(function *core.Function) bool {
 // D-02-03/D-03-01 repeat this wiring exists to catch. false (the
 // always-wired production default) means "call recordSummaryPeer here".
 var disableSummaryPeerAtReplayBlocksForTest bool
+
+// disableCalleeResolutionCheckForTest is Task 2's D-07-41/D-07-42 seam
+// (QLT-08): when true, corevalidate's own independent re-derivation that an
+// OpCall's CalleeID names a declared function is skipped, at BOTH replay
+// sites. It never suppresses the kind-exclusivity check (empty CalleeID on
+// an OpCall, or a non-empty one on any other kind) -- only the
+// resolves-to-a-declared-function predicate, mirroring check's own
+// verifyCallInvariantsSeam so the two independent sites can each be shown to
+// fail under the same seeded mutation, in their own package's own test
+// (D-07-42's cross-package split, following 07-02's precedent). false (the
+// production default) means "check declaredFunctionIDs for real".
+var disableCalleeResolutionCheckForTest bool
 
 // forcePeerCallableAlwaysTrue is D-07-42's fault-injection seam for
 // TestStage0SummaryMutationMatrix's faults 3 and 5 (07-02 Task 3): mirrors

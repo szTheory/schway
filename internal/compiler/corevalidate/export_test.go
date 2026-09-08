@@ -26,3 +26,12 @@ func SetDisableSummaryPeerAtReplayBlocksForTest(disable bool) (restore func()) {
 	disableSummaryPeerAtReplayBlocksForTest = disable
 	return func() { disableSummaryPeerAtReplayBlocksForTest = previous }
 }
+
+// SetDisableCalleeResolutionCheckForTest installs Task 2's (07-03)
+// resolves-to-a-declared-function seam and returns a restore func. Callers
+// MUST defer the restore immediately -- see the seam's own doc comment.
+func SetDisableCalleeResolutionCheckForTest(disable bool) (restore func()) {
+	previous := disableCalleeResolutionCheckForTest
+	disableCalleeResolutionCheckForTest = disable
+	return func() { disableCalleeResolutionCheckForTest = previous }
+}

@@ -1820,3 +1820,135 @@ func TestForeignAdmissionCapsRejectFailClosed(t *testing.T) {
 		t.Fatalf("expected check.foreign_symbol_limit, got symbols=%v diagnostics=%+v", symbols, diagnostics)
 	}
 }
+
+// verifyCallInvariantsFunctions builds a synthetic two-function core.Function
+// slice for verifyCallInvariants' own tests (Task 2 Test 4, D-07-29): a
+// caller with a single OpCall immediately returned, plus a trivial callee.
+// Mirrors corevalidate's own callerCalleeProgram (corevalidate_test.go) but
+// asserted independently here, against check's own verifyCallInvariants,
+// never by invoking corevalidate.
+func verifyCallInvariantsFunctions(calleeID string) []core.Function {
+	callerID, calleeFnID := "s1:test:fn:caller", "s1:test:fn:callee"
+	callerTypeID, calleeTypeID := callerID+":type:0", calleeFnID+":type:0"
+	callerParamID, callerTargetID := callerID+":place:0", callerID+":place:1"
+	calleeParamID := calleeFnID + ":place:0"
+	return []core.Function{
+		{
+			ID: callerID, Name: "caller", EntryPointID: callerID + ":point:entry", ReturnPointID: callerID + ":point:return",
+			Parameter: core.Parameter{ID: callerParamID, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+			Linear: &core.LinearBody{
+				ID:     callerID + ":linear",
+				Places: []core.Place{{ID: callerParamID, Name: "value", TypeID: callerTypeID}, {ID: callerTargetID, Name: "result", TypeID: callerTypeID}},
+				Operations: []core.LinearOperation{
+					{ID: callerID + ":op:0", PointID: callerID + ":point:linear:0", Kind: core.OpCall, SourceID: callerParamID, TargetID: callerTargetID, TypeID: callerTypeID, CalleeID: calleeID},
+					{ID: callerID + ":op:1", PointID: callerID + ":point:linear:1", Kind: core.OpReturn, SourceID: callerTargetID, TypeID: callerTypeID},
+				},
+			},
+		},
+		{
+			ID: calleeFnID, Name: "callee", EntryPointID: calleeFnID + ":point:entry", ReturnPointID: calleeFnID + ":point:return",
+			Parameter: core.Parameter{ID: calleeParamID, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+			Linear: &core.LinearBody{
+				ID:         calleeFnID + ":linear",
+				Places:     []core.Place{{ID: calleeParamID, Name: "value", TypeID: calleeTypeID}},
+				Operations: []core.LinearOperation{{ID: calleeFnID + ":op:0", PointID: calleeFnID + ":point:linear:0", Kind: core.OpReturn, SourceID: calleeParamID, TypeID: calleeTypeID}},
+			},
+		},
+	}
+}
+
+// TestVerifyCallInvariantsRefusesEmptyCalleeID is Task 2 Test 4 (D-07-29):
+// check's own verifyCallInvariants, asserted directly and independently of
+// corevalidate, refuses an OpCall with an empty CalleeID.
+func TestVerifyCallInvariantsRefusesEmptyCalleeID(t *testing.T) {
+	got := verifyCallInvariants(verifyCallInvariantsFunctions(""))
+	if got == nil || got.Code != "core.callee_id_missing" {
+		t.Fatalf("expected core.callee_id_missing, got %+v", got)
+	}
+}
+
+// TestVerifyCallInvariantsRefusesNonCallWithCalleeID is Task 2 Test 4
+// (D-07-29): check's own verifyCallInvariants refuses a non-OpCall operation
+// carrying a non-empty CalleeID.
+func TestVerifyCallInvariantsRefusesNonCallWithCalleeID(t *testing.T) {
+	functions := verifyCallInvariantsFunctions("s1:test:fn:callee")
+	functions[0].Linear.Operations[1].CalleeID = "s1:test:fn:callee"
+	got := verifyCallInvariants(functions)
+	if got == nil || got.Code != "core.callee_id_kind_exclusive" {
+		t.Fatalf("expected core.callee_id_kind_exclusive, got %+v", got)
+	}
+}
+
+// TestVerifyCallInvariantsRefusesUnresolvedCallee is Task 2 Test 4 (D-07-45):
+// check's own verifyCallInvariants refuses a CalleeID naming no declared
+// function, with its own typed identity.
+func TestVerifyCallInvariantsRefusesUnresolvedCallee(t *testing.T) {
+	got := verifyCallInvariants(verifyCallInvariantsFunctions("s1:test:fn:does-not-exist"))
+	if got == nil || got.Code != core.CallCalleeUnresolved {
+		t.Fatalf("expected %s, got %+v", core.CallCalleeUnresolved, got)
+	}
+}
+
+// TestVerifyCallInvariantsAcceptsWellFormedCall is the accepting-path
+// counterpart: verifyCallInvariants returns nil for a well-formed OpCall.
+func TestVerifyCallInvariantsAcceptsWellFormedCall(t *testing.T) {
+	if got := verifyCallInvariants(verifyCallInvariantsFunctions("s1:test:fn:callee")); got != nil {
+		t.Fatalf("expected no refusal for a well-formed OpCall, got %+v", got)
+	}
+}
+
+// TestUndeclaredCalleeRefusedNeverSilentlyDropped is Task 2 Test 5
+// (D-07-45): a source program calling an undeclared name is refused with
+// the unresolved-callee code, and the resulting core.Program is never
+// returned with the call silently dropped -- a dropped edge is how a cycle
+// escapes detection.
+func TestUndeclaredCalleeRefusedNeverSilentlyDropped(t *testing.T) {
+	source := "module test.undeclared\nexport { fn main }\nfn main(value: Byte) -> Byte {\n  let result = ghost(value)\n  result\n}\n"
+	result := Program(mustParseProgram(t, []byte(source)))
+	if len(result.Program.Functions) != 0 {
+		t.Fatalf("a call to an undeclared name must never reach a returned core.Program, got %d functions", len(result.Program.Functions))
+	}
+	found := false
+	for _, problem := range result.Diagnostics {
+		if problem.Code == core.CallCalleeUnresolved {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected %s, got %+v", core.CallCalleeUnresolved, result.Diagnostics)
+	}
+}
+
+// TestVerifyCallInvariantsSeamRestoresBothRefusals is Task 2 Test 6
+// (QLT-08, D-07-41/D-07-42): with the unexported seam engaged, the
+// resolves-to-a-declared-function refusal (both the synthetic
+// verifyCallInvariants case and the source-level undeclared-callee case)
+// stops firing; restoring the seam (via defer) restores both.
+func TestVerifyCallInvariantsSeamRestoresBothRefusals(t *testing.T) {
+	defer func() { verifyCallInvariantsSeam = false }()
+
+	verifyCallInvariantsSeam = true
+	if got := verifyCallInvariants(verifyCallInvariantsFunctions("s1:test:fn:does-not-exist")); got != nil {
+		t.Fatalf("expected the seam to suppress the unresolved-callee refusal, got %+v", got)
+	}
+	source := "module test.seam\nexport { fn main }\nfn main(value: Byte) -> Byte {\n  let result = ghost(value)\n  result\n}\n"
+	seamResult := Program(mustParseProgram(t, []byte(source)))
+	if len(seamResult.Diagnostics) != 0 {
+		t.Fatalf("expected the seam to suppress the source-level refusal too, got %+v", seamResult.Diagnostics)
+	}
+
+	verifyCallInvariantsSeam = false
+	if got := verifyCallInvariants(verifyCallInvariantsFunctions("s1:test:fn:does-not-exist")); got == nil {
+		t.Fatal("expected the refusal restored once the seam is disengaged")
+	}
+	restored := Program(mustParseProgram(t, []byte(source)))
+	found := false
+	for _, problem := range restored.Diagnostics {
+		if problem.Code == core.CallCalleeUnresolved {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected %s restored, got %+v", core.CallCalleeUnresolved, restored.Diagnostics)
+	}
+}
