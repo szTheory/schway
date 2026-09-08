@@ -1952,3 +1952,122 @@ func TestVerifyCallInvariantsSeamRestoresBothRefusals(t *testing.T) {
 		t.Fatalf("expected %s restored, got %+v", core.CallCalleeUnresolved, restored.Diagnostics)
 	}
 }
+
+// TestBareCallToDeclaredFunctionAdmitted is Task 3 Test 4 (D-07-01): a bare
+// call whose callee is a declared Lang function is admitted with no
+// diagnostic.
+func TestBareCallToDeclaredFunctionAdmitted(t *testing.T) {
+	source := "module test.call_admitted\nexport { fn main }\nfn identity(value: Byte) -> Byte {\n  value\n}\nfn main(value: Byte) -> Byte {\n  let result = identity(value)\n  result\n}\n"
+	result := Program(mustParseProgram(t, []byte(source)))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected a bare call to a declared Lang function to be admitted, got %+v", result.Diagnostics)
+	}
+	if len(result.Program.Functions) != 2 {
+		t.Fatalf("expected both functions checked, got %d", len(result.Program.Functions))
+	}
+}
+
+// TestTwoArgumentCallRefusedAtCheckNotParse is Task 3 Test 5 (D-07-01/
+// D-07-07): a call with two arguments is refused by a check predicate, and
+// parsing that same source produces no parser-level error diagnostic --
+// arity is a check-time rule this phase, not a parser-time one.
+func TestTwoArgumentCallRefusedAtCheckNotParse(t *testing.T) {
+	source := []byte("module test.call_arity\nexport { fn main }\nfn identity(value: Byte) -> Byte {\n  value\n}\nfn main(value: Byte) -> Byte {\n  let result = identity(value, value)\n  result\n}\n")
+	parsed := syntax.Parse(source)
+	for _, problem := range parsed.Diagnostics {
+		if problem.Severity == "error" {
+			t.Fatalf("expected no parser-level error diagnostic for a two-argument call, got %v", problem)
+		}
+	}
+	result := Program(parsed.Program)
+	found := false
+	for _, problem := range result.Diagnostics {
+		if problem.Code == "check.call_arity_unsupported" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected check.call_arity_unsupported, got %+v", result.Diagnostics)
+	}
+}
+
+// TestCallArgumentNotInScopeRefused is Task 3 Test 6: a call whose argument
+// names no in-scope binding is refused.
+func TestCallArgumentNotInScopeRefused(t *testing.T) {
+	source := "module test.call_scope\nexport { fn main }\nfn identity(value: Byte) -> Byte {\n  value\n}\nfn main(value: Byte) -> Byte {\n  let result = identity(ghost)\n  result\n}\n"
+	result := Program(mustParseProgram(t, []byte(source)))
+	found := false
+	for _, problem := range result.Diagnostics {
+		if problem.Code == "name.unknown" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected name.unknown for a call argument naming no in-scope binding, got %+v", result.Diagnostics)
+	}
+}
+
+// TestEveryBindingIsFallibleRejectsMixedCallBinding covers Task 3's
+// acceptance criterion that everyBindingIsFallible handles the "call" kind
+// explicitly: a body mixing a "call" binding with a "try" binding is not
+// "every binding fallible" (a "call" binding is never fallible), so it
+// falls through to check.foreign_call_shape_unsupported rather than being
+// silently treated as a resource-lifecycle chain.
+func TestEveryBindingIsFallibleRejectsMixedCallBinding(t *testing.T) {
+	if everyBindingIsFallible([]ast.Binding{
+		{Name: "a", RHS: ast.RHS{Kind: "call", Callee: "helper", Arguments: []string{"value"}}},
+		{Name: "b", RHS: ast.RHS{Kind: "try_call", Callee: "sym", Arguments: []string{"value"}}},
+	}) {
+		t.Fatal("expected everyBindingIsFallible to return false for a body mixing a call binding with a try binding")
+	}
+}
+
+// TestCallFromBothMatchArmsEnumeratedByKind is Task 3 Test 7 (D-07-28): a
+// fixture calling from BOTH arms of a match checks clean, and the checked
+// core.Program carries one core.OpCall per arm -- found by scanning ALL
+// operations for Kind == core.OpCall, never by block position, and still
+// found if the arms' own operation order is reversed.
+func TestCallFromBothMatchArmsEnumeratedByKind(t *testing.T) {
+	source, err := os.ReadFile("../../../testdata/phase07/call_from_both_match_arms.lang")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected the fixture to check clean, got %+v", result.Diagnostics)
+	}
+	var mainFunction *core.Function
+	for index := range result.Program.Functions {
+		if result.Program.Functions[index].Name == "main" {
+			mainFunction = &result.Program.Functions[index]
+		}
+	}
+	if mainFunction == nil || mainFunction.Linear == nil {
+		t.Fatal("expected a checked linear-carrying function named main")
+	}
+	calls := scanOpCallsByKind(mainFunction.Linear.Operations)
+	if len(calls) != 2 {
+		t.Fatalf("expected exactly 2 core.OpCall operations (one per arm), got %d", len(calls))
+	}
+
+	reversed := append([]core.LinearOperation(nil), mainFunction.Linear.Operations...)
+	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
+		reversed[i], reversed[j] = reversed[j], reversed[i]
+	}
+	if reversedCalls := scanOpCallsByKind(reversed); len(reversedCalls) != 2 {
+		t.Fatalf("expected the scan to still find 2 core.OpCall operations with operation order reversed, got %d", len(reversedCalls))
+	}
+}
+
+// scanOpCallsByKind is the D-07-28 enumeration technique every OpCall
+// consumer (07-06's callgraph included) must use: scan every operation for
+// Kind == core.OpCall, never assume a fixed block/arm position.
+func scanOpCallsByKind(operations []core.LinearOperation) []core.LinearOperation {
+	var calls []core.LinearOperation
+	for _, operation := range operations {
+		if operation.Kind == core.OpCall {
+			calls = append(calls, operation)
+		}
+	}
+	return calls
+}

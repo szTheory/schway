@@ -1,0 +1,44 @@
+// D-07-28: a fixture calling from BOTH arms of a match, proving core.OpCall
+// enumeration is by scanning every block for Kind == core.OpCall rather than
+// by block position -- this is Phase 12's forward guard, since a future
+// `Result` match arm's own call must be picked up the same way. `helper` and
+// `main` are both arm-bodied match functions (a module cannot mix a
+// match-bodied function with a straight-line one -- core.mixed_body_versions
+// -- and a bare-arm match function cannot share a program with an arm-bodied
+// one either, since corevalidate's per-function schema dispatch requires
+// lang.core/0 for a bare match but the whole program is bumped to
+// lang.core/1 the moment any function carries an arm body).
+
+module phase07.call_from_both_match_arms
+
+export {
+  fn main
+}
+
+data Choice =
+  | A
+  | B
+
+fn helper(value: Choice) -> Choice {
+  match value {
+    A => {
+      value
+    }
+    B => {
+      value
+    }
+  }
+}
+
+fn main(flag: Choice) -> Choice {
+  match flag {
+    A => {
+      let result = helper(flag)
+      result
+    }
+    B => {
+      let result = helper(flag)
+      result
+    }
+  }
+}

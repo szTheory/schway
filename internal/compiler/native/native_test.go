@@ -1234,6 +1234,29 @@ func TestShippedBinaryFourSubcommandCorpusMatrix(t *testing.T) {
 	}
 }
 
+// TestFallibleCallUnconsumedRefusedAtCheckNotFormat is Task 3's native-level
+// pin (D-07-40, 07-03-PLAN.md): drives the shipped binary through the
+// recorded four-subcommand matrix for fallible_call_unconsumed.lang
+// specifically -- `check`, `run --engine=interpreter`, and
+// `run --engine=native` all refuse it with the SAME preserved diagnostic
+// code phase4CorpusMatrix declares, and `format --check` now reports
+// format.non_canonical rather than the syntax code (the enforcement layer
+// moved to check; the published code did not).
+func TestFallibleCallUnconsumedRefusedAtCheckNotFormat(t *testing.T) {
+	binary := testsupport.BuildCLI(t)
+	path := testsupport.ProjectPath("testdata", "phase4", "fallible_call_unconsumed.lang")
+	var testCase phase4OutOfCorpusCase
+	for _, candidate := range phase4CorpusMatrix() {
+		if candidate.behavior == "fallible_call_unconsumed.lang" {
+			testCase = candidate
+		}
+	}
+	if len(testCase.steps) == 0 {
+		t.Fatal("phase4CorpusMatrix has no entry for fallible_call_unconsumed.lang")
+	}
+	runShippedBinarySteps(t, binary, path, testCase.steps)
+}
+
 // runShippedBinarySteps drives one source file through a recorded sequence of
 // shipped-binary subcommands, substituting "{path}" and asserting each step's
 // exit code and (when named) diagnostic code.
