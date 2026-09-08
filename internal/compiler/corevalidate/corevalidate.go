@@ -32,7 +32,12 @@ const KnownEscape = "escape:coordinated-source-core-lie"
 // unaccounted bump: TestValidatorReborrowChainIsLinear separately proves the
 // chain-walk's own cost scales with chain depth when the scale shape
 // actually has one to walk.
-func LinearWorkLimit(facts int) int { return 16*facts + 14 }
+//
+// The +1*facts over the pre-Phase-07 formula (16*facts+14) is D-07-29's
+// CalleeID kind-exclusivity check: one new v.check per operation, run
+// unconditionally regardless of kind, confirming a non-OpCall operation
+// (every operation in this scale shape) leaves CalleeID empty.
+func LinearWorkLimit(facts int) int { return 17*facts + 14 }
 
 type Problem struct {
 	Code   string `json:"code"`
@@ -909,6 +914,15 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	for _, operation := range operations {
 		operationsByID[operation.ID] = operation
 	}
+	// D-07-29: CalleeID is fail-closed and kind-exclusive, independently
+	// re-derived here rather than trusting check's own bookkeeping.
+	// declaredFunctionIDs backs the third refusal -- a CalleeID naming no
+	// declared function (D-07-45) -- with the whole program's own function
+	// ID set, never a name-keyed lookup.
+	declaredFunctionIDs := make(map[string]bool, len(v.program.Functions))
+	for _, fn := range v.program.Functions {
+		declaredFunctionIDs[fn.ID] = true
+	}
 	initialized := map[string]bool{function.Parameter.ID: true}
 	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
@@ -962,6 +976,13 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			return false
 		}
 		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+			return false
+		}
+		// D-07-29: CalleeID is populated only on an OpCall -- every other
+		// kind must leave it empty, exactly like Allocator/ReleasesOperationID
+		// before it. Checked once here, for every operation regardless of
+		// kind, rather than duplicated per non-OpCall case arm below.
+		if !v.check(operation.Kind == core.OpCall || operation.CalleeID == "", "core.callee_id_kind_exclusive", operation.ID) {
 			return false
 		}
 		v.checks++ // dispatch one independently authorized transition
@@ -1024,6 +1045,24 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				return v.check(false, "core.final_claim_mismatch", operation.ID)
 			}
 			returned = true
+		case core.OpCall:
+			// D-07-29/D-07-45: a call's CalleeID is fail-closed (never empty
+			// on an OpCall -- the kind-exclusive check above already refused
+			// the reverse) and must name a function this program actually
+			// declares. An unresolvable CalleeID is never silently dropped;
+			// it is refused here with its own typed identity, distinct from
+			// the (07-06) cycle code.
+			if !v.check(operation.CalleeID != "", "core.callee_id_missing", operation.ID) {
+				return false
+			}
+			if !v.check(declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
+				return false
+			}
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
 		case core.OpForeignCall:
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
@@ -1121,6 +1160,11 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	for _, operation := range operations {
 		operationsByID[operation.ID] = operation
 	}
+	// See replayStraightLine's identical declaration (D-07-29/D-07-45).
+	declaredFunctionIDs := make(map[string]bool, len(v.program.Functions))
+	for _, fn := range v.program.Functions {
+		declaredFunctionIDs[fn.ID] = true
+	}
 	for _, block := range linear.Blocks {
 		for index, opID := range block.OperationIDs {
 			blockOfOperation[opID] = block.ID
@@ -1168,6 +1212,11 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			return false
 		}
 		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+			return false
+		}
+		// See replayStraightLine's identical check (D-07-29): CalleeID is
+		// kind-exclusive, checked once per operation regardless of kind.
+		if !v.check(operation.Kind == core.OpCall || operation.CalleeID == "", "core.callee_id_kind_exclusive", operation.ID) {
 			return false
 		}
 		v.checks++ // dispatch one independently authorized transition
@@ -1234,6 +1283,19 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 				return false
 			}
 			returnedBlocks[blockID] = true
+		case core.OpCall:
+			// See replayStraightLine's identical case (D-07-29/D-07-45).
+			if !v.check(operation.CalleeID != "", "core.callee_id_missing", operation.ID) {
+				return false
+			}
+			if !v.check(declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
+				return false
+			}
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
 		case core.OpForeignCall:
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false

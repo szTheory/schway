@@ -410,17 +410,18 @@ func (p *parser) linearBody() ast.LinearBody {
 		}
 		source := p.identifier("syntax.expected_binding_source")
 		if p.peek().Kind == TokenLParen {
-			// D-04-06: a fallible foreign call is admissible only as the
-			// operand of `try` (or `discard ... because`, not yet a parsed
-			// construct this phase). A bare call in a binding right-hand
-			// side is refused here, at parse time, so the core IR never has
-			// to encode a fallible operation without a failure successor --
-			// the parser diagnostic alone short-circuits before check.go
-			// (and therefore corevalidate/interp/cgen) ever run.
-			p.problem("syntax.fallible_call_not_consumed", source, "a fallible call must be the operand of `try`")
-			_, end := p.callArguments()
+			// D-07-01/D-07-40: a bare call's callee identity (Lang function,
+			// foreign symbol, or unresolved) is a check-time fact, not a
+			// parse-time one. The parser used to unconditionally refuse this
+			// shape with syntax.fallible_call_not_consumed -- that refusal
+			// is still correct for a foreign callee, but it has relocated to
+			// check, where foreignSymbols and functionNames are both
+			// available. The parser now accepts the shape unconditionally
+			// and emits an ast.RHS{Kind: "call"} binding for check to admit
+			// or refuse.
+			arguments, end := p.callArguments()
 			body.Bindings = append(body.Bindings, ast.Binding{
-				Name: name.Text, RHS: ast.RHS{Kind: "call_unconsumed", Source: source.Text, Span: source.Span}, Span: spanFrom(bindingStart, source),
+				Name: name.Text, RHS: ast.RHS{Kind: "call", Callee: source.Text, Arguments: arguments, Span: source.Span}, Span: spanFrom(bindingStart, source),
 			})
 			body.Span.End = end
 			continue

@@ -305,6 +305,14 @@ func emitLinear(function core.Function) (string, error) {
 			out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
 			out.WriteString("  if (!lang_write_events()) return 74;\n")
 			out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
+		case core.OpCall:
+			// D-07-39/A-02: OpCall is registered but not lowered by native
+			// emission this phase. Emit/EmitNative hard-fail on
+			// len(program.Functions) != 1 (cgen.go:22,52) before this arm
+			// could ever run -- no legal OpCall-bearing program has exactly
+			// one function -- so this is forward hygiene for Phase 11's
+			// multi-function C emission, not a live gap.
+			return "", fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
 		default:
 			return "", fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
@@ -502,6 +510,9 @@ func emitLinearBorrowedByPointer(function core.Function) (string, error) {
 				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
 			returnLocal = locals[source.ID]
+		case core.OpCall:
+			// See emitLinear's identical case (D-07-39/A-02).
+			return "", fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
 		default:
 			return "", fmt.Errorf("operation %q has unsupported kind %q for by-pointer lowering", operation.ID, operation.Kind)
 		}
@@ -685,6 +696,9 @@ func emitLinearBorrowedByPointerPlain(function core.Function) (string, error) {
 				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
 			returnLocal = locals[source.ID]
+		case core.OpCall:
+			// See emitLinear's identical case (D-07-39/A-02).
+			return "", fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
 		default:
 			return "", fmt.Errorf("operation %q has unsupported kind %q for by-pointer-plain lowering", operation.ID, operation.Kind)
 		}
@@ -1727,6 +1741,13 @@ func emitBranchOperations(out *strings.Builder, function core.Function, places m
 			// _dispatch's six-site table finds a known-but-unsupported case
 			// rather than an unknown one (D-04-22).
 			return fmt.Errorf("operation %q: foreign calls inside a match arm body are not supported this phase", operation.ID)
+		case core.OpCall:
+			// D-07-39/A-02: OpCall is registered but not lowered by native
+			// emission this phase. Emit/EmitNative hard-fail on
+			// len(program.Functions) != 1 (cgen.go:22,52) before this arm
+			// could ever run, so this is forward hygiene for Phase 11's
+			// multi-function C emission, not a live gap.
+			return fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
 		default:
 			return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}

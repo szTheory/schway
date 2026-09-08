@@ -85,8 +85,15 @@ func Program(program ast.Program) Result {
 		return result
 	}
 	functionNames := make(map[string]bool, len(program.Funcs))
+	// functionIDs is Phase 07's callee-resolution table (D-07-01): the same
+	// name-keyed set as functionNames, but mapping to the function's own
+	// semantic ID rather than a bare boolean, so a bare call's callee name
+	// resolves directly to the core.LinearOperation.CalleeID value D-07-29
+	// requires (a function ID, never a name).
+	functionIDs := make(map[string]string, len(program.Funcs))
 	for _, function := range program.Funcs {
 		functionNames[function.Name] = true
+		functionIDs[function.Name] = semanticID(program.Module, "fn", function.Name)
 	}
 
 	for _, function := range program.Funcs {
@@ -115,7 +122,7 @@ func Program(program ast.Program) Result {
 			if hasTryCall(function.Body.Linear) {
 				checked, diagnostics, work = checkFallibleLinear(functionID, function, foreignSymbols, functionNames, types)
 			} else {
-				checked, diagnostics, work = checkLinear(program.Module, functionID, function)
+				checked, diagnostics, work = checkLinear(program.Module, functionID, function, functionIDs, foreignSymbols)
 			}
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
@@ -165,7 +172,7 @@ func Program(program ast.Program) Result {
 			}
 		}
 		if hasArmBody {
-			checked, diagnostics, work := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types))
+			checked, diagnostics, work := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types), functionIDs, foreignSymbols)
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
@@ -294,7 +301,7 @@ const maxBlocksPerFunction = 128
 // switch/case lowering never needs a bare-alternative fallback case inside a
 // block-shaped function, and the interpreter/validator dispatch stays a
 // simple "every arm has a BlockID" invariant rather than a per-arm union.
-func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool) (core.Function, []diagnostic.Diagnostic, int) {
+func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	derived, err := ability.DeriveSealed(parameterType, sealed)
 	if err != nil {
@@ -359,7 +366,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		nextIndex++
 		work++
 
-		support := analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body)
+		support := analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, functionIDs, foreignSymbols)
 		if support.Diagnostic != nil {
 			diagnostics = append(diagnostics, *support.Diagnostic)
 			continue
@@ -781,7 +788,7 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // zero-divergence shadow run over the full TestOwnershipSequenceExhaustive/
 // TestBranchSequenceExhaustive enumeration (225,890 + 4,802 comparisons, see
 // the retired shadow test's own history).
-func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
@@ -845,6 +852,18 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	for index, binding := range body.Bindings {
 		result.Work++
 		global := startIndex + index
+		if binding.RHS.Kind == "call" {
+			op, target, diag := resolveCallBinding(functionID, global, binding, places, functionIDs, foreignSymbols)
+			if diag != nil {
+				return fail(*diag)
+			}
+			result.Places = append(result.Places, target)
+			places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
+			result.Operations = append(result.Operations, op)
+			endLoans(index)
+			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
+			continue
+		}
 		source, ok := places[binding.RHS.Source]
 		if !ok {
 			return fail(diagnostic.Error("name.unknown", binding.RHS.Span, "binding source is unknown"))
@@ -1015,7 +1034,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	return result
 }
 
-func checkLinear(module, functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
+func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	if !sameType(function.ReturnType, function.Parameter.Type) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType)
@@ -1072,7 +1091,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl) (core.Functio
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
-	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear)
+	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, functionIDs, foreignSymbols)
 	if support.Diagnostic != nil {
 		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work
 	}
@@ -1297,6 +1316,59 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 		"check.foreign_call_shape_unsupported", body.Span,
 		"this phase supports only a single fallible foreign call immediately returned, or a sequence of try/discard foreign calls whose result is the function's own parameter",
 	)}, work
+}
+
+// resolveCallBinding implements D-07-01's call admission predicate, shared
+// verbatim by analyzeStraightLine and analyzeArmBody (Phase 07, D-07-40):
+// arity is fixed at 1 this phase (D-07-07 defers arity-N to a later phase);
+// the argument must resolve in the caller's own places scope map -- the
+// function's own parameter or any prior let -- exactly like every other
+// binding kind's Source lookup; and the callee must resolve to exactly one
+// of three outcomes: a declared Lang function (admitted, CalleeID set to
+// that function's own ID per D-07-29), a declared foreign symbol (refused
+// with the pre-Phase-07 syntax.fallible_call_not_consumed code -- D-07-40
+// relocates this refusal's enforcement layer from parse time to check time
+// without changing its published code), or neither (refused with
+// core.CallCalleeUnresolved, D-07-45 -- never silently dropped, since a
+// dropped edge is how a cycle escapes detection).
+func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, places map[string]*placeState, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.LinearOperation, core.Place, *diagnostic.Diagnostic) {
+	if len(binding.RHS.Arguments) != 1 {
+		causes := []diagnostic.Cause{
+			{Kind: "declared_arity", Detail: fmt.Sprintf("%d", len(binding.RHS.Arguments))},
+			{Kind: "supported_arity", Detail: "1"},
+		}
+		diag := diagnostic.Error("check.call_arity_unsupported", binding.RHS.Span, "this phase supports only arity-1 calls", causes...)
+		return core.LinearOperation{}, core.Place{}, &diag
+	}
+	argumentName := binding.RHS.Arguments[0]
+	argument, ok := places[argumentName]
+	if !ok {
+		diag := diagnostic.Error("name.unknown", binding.RHS.Span, "call argument is unknown")
+		return core.LinearOperation{}, core.Place{}, &diag
+	}
+	if !argument.initialized {
+		causes := []diagnostic.Cause{
+			{Kind: "moved_here", Span: argument.movedAt},
+			{Kind: "place", Detail: argument.place.ID},
+			{Kind: "transfer_target", Detail: argument.moveTargetID},
+		}
+		diag := diagnostic.Error("ownership.use_after_move", binding.RHS.Span, "value was used after ownership transferred", causes...)
+		return core.LinearOperation{}, core.Place{}, &diag
+	}
+	if calleeID, isFunction := functionIDs[binding.RHS.Callee]; isFunction {
+		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: argument.place.TypeID}
+		op := core.LinearOperation{
+			ID: fmt.Sprintf("%s:op:%d", functionID, opOrdinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, opOrdinal),
+			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: argument.place.TypeID, CalleeID: calleeID,
+		}
+		return op, target, nil
+	}
+	if _, isForeign := foreignSymbols[binding.RHS.Callee]; isForeign {
+		diag := diagnostic.Error("syntax.fallible_call_not_consumed", binding.RHS.Span, "a fallible call must be the operand of `try`")
+		return core.LinearOperation{}, core.Place{}, &diag
+	}
+	diag := diagnostic.Error(core.CallCalleeUnresolved, binding.RHS.Span, "call target does not resolve to a declared function")
+	return core.LinearOperation{}, core.Place{}, &diag
 }
 
 func everyBindingIsFallible(bindings []ast.Binding) bool {
@@ -1801,7 +1873,7 @@ type placeState struct {
 // cost shape. The fixpoint's REAL, honestly-varying cost is not hidden: it is
 // counted separately via FixpointWork (see its own doc comment), folded into
 // checkLinear's function-level RecomputedWork total.
-func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody) ownershipSupport {
+func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
 	parameterID := functionID + ":place:0"
 	result := ownershipSupport{
 		Places:     []core.Place{{ID: parameterID, Name: parameterName, TypeID: typeFact.ID}},
@@ -1870,6 +1942,18 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	}
 	for index, binding := range body.Bindings {
 		result.Work++
+		if binding.RHS.Kind == "call" {
+			op, target, diag := resolveCallBinding(functionID, index, binding, places, functionIDs, foreignSymbols)
+			if diag != nil {
+				return fail(*diag)
+			}
+			result.Places = append(result.Places, target)
+			places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
+			result.Operations = append(result.Operations, op)
+			endLoans(index)
+			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
+			continue
+		}
 		source, ok := places[binding.RHS.Source]
 		if !ok {
 			return fail(diagnostic.Error("name.unknown", binding.RHS.Span, "binding source is unknown"))

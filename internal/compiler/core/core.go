@@ -534,7 +534,22 @@ const (
 	// returns -- its SourceID exists only so the "every operation reads an
 	// initialized place" invariant stays uniform across every OperationKind.
 	OpDefect OperationKind = "defect"
+	// OpCall is Phase 07's Lang-to-Lang call surface (D-07-29): unlike
+	// OpForeignCall's two successor edges, an OpCall carries a single
+	// TargetID (exactly like OpCopy) plus a CalleeID naming the resolved
+	// callee's function ID. It is never a terminator (see TerminatorKinds)
+	// -- a call is an ordinary binding, not a block-ending outcome.
+	OpCall OperationKind = "call"
 )
+
+// CallCalleeUnresolved is Phase 07's typed identity for an OpCall whose
+// CalleeID names no declared function (D-07-45): distinct from the
+// call-graph cycle code (07-06), so check and corevalidate can each assert
+// the same stable fact independently, and so 07-06's callgraph has a code
+// to reuse as an inert string constant rather than inventing a second one.
+// A CalleeID naming no declared function must never be silently dropped --
+// a dropped edge is how a cycle escapes detection.
+const CallCalleeUnresolved = "core.call_callee_unresolved"
 
 // AllOperationKinds returns every declared OperationKind, in declaration
 // order. This is the single table every dispatch site (check, corevalidate,
@@ -543,7 +558,7 @@ const (
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
@@ -593,6 +608,17 @@ type LinearOperation struct {
 	// declared. Every pre-plan-04 operation, and every operation kind other
 	// than OpDefect, leaves this empty.
 	Reason string `json:"reason,omitempty"`
+	// CalleeID is Phase 07's additive omitempty fact (D-07-29): populated
+	// only on an OpCall operation, it holds the resolved callee's function
+	// ID -- never its name. Every pre-Phase-07 operation, and every
+	// operation kind other than OpCall, leaves this empty, so no
+	// pre-Phase-07 core artifact moves a byte. Three refusals follow from
+	// this invariant, derived independently at both the check and
+	// corevalidate sites: an OpCall with an empty CalleeID; any non-OpCall
+	// operation with a non-empty CalleeID; and a CalleeID naming no
+	// declared function (its own typed identity, distinct from the cycle
+	// code -- D-07-45).
+	CalleeID string `json:"callee_id,omitempty"`
 }
 
 type LinearBody struct {

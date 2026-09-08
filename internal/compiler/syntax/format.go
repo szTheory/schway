@@ -9,11 +9,19 @@ import (
 // token/CST projection: comments remain data and semantic tokens never move.
 func Format(tree Tree) []byte {
 	f := formatter{contexts: make([]string, 0, 3)}
+	tokens := make([]Token, 0, len(tree.Tokens))
 	for _, token := range tree.Tokens {
 		if token.Kind == TokenEOF || token.Kind == TokenWhitespace {
 			continue
 		}
-		f.token(token)
+		tokens = append(tokens, token)
+	}
+	for index, token := range tokens {
+		next := TokenEOF
+		if index+1 < len(tokens) {
+			next = tokens[index+1].Kind
+		}
+		f.token(token, next)
 	}
 	return append(bytes.TrimRight([]byte(f.out.String()), " \t\r\n"), '\n')
 }
@@ -30,6 +38,13 @@ type formatter struct {
 	// parameter-list paren) breaks the line the same way a plain binding's
 	// source identifier does.
 	tryCall bool
+	// callBinding is D-07-01/D-07-40's bare-call analogue of tryCall: true
+	// between a bare call's callee identifier (`let r = g(x)`, no `try`) and
+	// its closing paren, so that closing paren breaks the line the same way
+	// tryCall's does -- without it, the callee identifier would end its own
+	// line prematurely (the same rule a plain binding's source identifier
+	// follows), leaving the argument list stranded on the next line.
+	callBinding bool
 	// header records the declaration keyword that opened the line currently
 	// being written, so an opening brace is classified by the construct it
 	// belongs to rather than by whichever token happens to precede it. The
@@ -48,7 +63,7 @@ type formatter struct {
 	pendingDefectReason bool
 }
 
-func (f *formatter) token(token Token) {
+func (f *formatter) token(token Token, next Kind) {
 	switch token.Kind {
 	case TokenComment:
 		if f.lineOpen {
@@ -146,6 +161,12 @@ func (f *formatter) token(token Token) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
+		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && f.previous == TokenEqual && next == TokenLParen {
+			// D-07-01/D-07-40: this identifier is a bare call's callee, not
+			// a plain binding source -- its own argument list still follows
+			// on this line, so (unlike the branch below) this must NOT end
+			// the line here. See callBinding's doc comment.
+			f.callBinding = true
 		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
 			f.newline()
 			f.linearBinding = false
@@ -225,6 +246,11 @@ func (f *formatter) token(token Token) {
 		f.lineOpen = true
 		if f.tryCall {
 			f.tryCall = false
+			if f.context() == "function" || f.context() == "arm" {
+				f.newline()
+			}
+		} else if f.callBinding {
+			f.callBinding = false
 			if f.context() == "function" || f.context() == "arm" {
 				f.newline()
 			}

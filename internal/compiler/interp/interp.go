@@ -1,6 +1,7 @@
 package interp
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -9,6 +10,15 @@ import (
 )
 
 const Schema = execution.Schema0
+
+// ErrCallUnsupported is returned when the interpreter recognizes a
+// core.OpCall operation but Phase 07 defines no call-stack execution
+// semantics for it yet (SEM-08's call-stack machinery is Phase 10). D-07-39:
+// OpCall gets its own explicit, dedicated case at each of the three
+// switches below, returning this named error, rather than being folded into
+// a grouped copy/move/borrow arm -- a pass-through value would make a call
+// look executed when no callee ever ran.
+var ErrCallUnsupported = errors.New("interp: OpCall is recognized but has no execution semantics in Phase 07")
 
 type Outcome = execution.Outcome
 type Event = execution.Event
@@ -133,6 +143,9 @@ func runBranchArm(function core.Function, arm core.MatchArm, input string) (Exec
 				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
 			})
 			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: []string{}}, nil
+		case core.OpCall:
+			// D-07-39: recognized, never faked. See ErrCallUnsupported.
+			return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, ErrCallUnsupported)
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
@@ -315,6 +328,9 @@ func runLinearBlocks(function core.Function, input string) (Execution, error) {
 					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
 				})
 				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
+			case core.OpCall:
+				// D-07-39: recognized, never faked. See ErrCallUnsupported.
+				return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, ErrCallUnsupported)
 			default:
 				return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 			}
@@ -425,6 +441,9 @@ func runLinear(function core.Function, input string) (Execution, error) {
 				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 			})
 			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: []string{}}, nil
+		case core.OpCall:
+			// D-07-39: recognized, never faked. See ErrCallUnsupported.
+			return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, ErrCallUnsupported)
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}

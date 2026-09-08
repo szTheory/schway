@@ -1402,7 +1402,13 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// mechanical, expected update, not a work-formula change: LinearWorkLimit
 	// and the exact-formula TestCoreValidationWorkSeries are unaffected
 	// because scaleProgram declares no OpForeignCall.
-	const acquireThreeSuccessChecks = 412
+	//
+	// Phase 07 (D-07-29) adds one new accepting-path v.check PER OPERATION
+	// (the CalleeID kind-exclusivity check, run unconditionally regardless
+	// of kind): acquire_three_success.lang's checked program carries 13
+	// operations, moving the pin a final time to 412+13=425 (measured from
+	// the built code, not assumed).
+	const acquireThreeSuccessChecks = 425
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {

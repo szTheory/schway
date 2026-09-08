@@ -1170,9 +1170,18 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		clean("discard_because.lang"),
 		clean("foreign_acquire_one.lang"),
 		clean("nonlocal_exit_probe.lang"),
-		// The only fixture the FORMATTER itself refuses: an unconsumed
-		// fallible call is a syntax-level refusal, so it never reaches check.
-		refused("fallible_call_unconsumed.lang", 2, "syntax.fallible_call_not_consumed", "syntax.fallible_call_not_consumed"),
+		// D-07-40 (deliberate edit): this fixture's refusal moved from a
+		// syntax-level refusal to a check-level one (D-07-01) -- the parser
+		// now accepts a bare call's shape unconditionally, and check refuses
+		// a foreign callee with the SAME published code
+		// (syntax.fallible_call_not_consumed), not a new one. `format
+		// --check` no longer short-circuits on a parser diagnostic for this
+		// fixture, so it now runs the real formatter, which finds this
+		// pre-Phase-07 fixture's leading-comment-to-module spacing
+		// non-canonical (format.non_canonical) -- a pre-existing formatting
+		// fact this plan surfaces but does not alter (the fixture's bytes
+		// are unchanged; only what layer refuses the SEMANTIC shape moved).
+		refused("fallible_call_unconsumed.lang", 2, "format.non_canonical", "syntax.fallible_call_not_consumed"),
 		refused("foreign_call_target_not_foreign.lang", 0, "", "core.call_target_not_foreign"),
 		refused("foreign_origin_omitted.lang", 0, "", "core.foreign_origin_omitted"),
 		refused("foreign_policy_value_injection.lang", 0, "", "check.foreign_policy_value_unsafe"),

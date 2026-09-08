@@ -57,7 +57,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		}
 		for encoded := 0; encoded < cases; encoded++ {
 			body := generatedOwnershipBody(encoded, length, alphabet)
-			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &body)
+			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &body, nil, nil)
 			want := oracleStraightLine("test:fn", "owner", byteTypeFact(), &body)
 			assertSupportEqual(t, fmt.Sprintf("length=%d case=%d", length, encoded), got, want)
 		}
@@ -73,7 +73,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		}
 		for encoded := 0; encoded < cases; encoded++ {
 			body := generatedOwnershipBody(encoded, length, alphabet)
-			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &body)
+			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &body, nil, nil)
 			want := oracleStraightLine("test:fn", "owner", nonShareableTypeFact(), &body)
 			assertSupportEqual(t, fmt.Sprintf("no-share length=%d case=%d", length, encoded), got, want)
 		}
@@ -83,7 +83,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		Result:   "view",
 		Span:     diagnostic.Span{Start: 10, End: 20},
 	}
-	refused := analyzeStraightLine("test:no-share", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &denied)
+	refused := analyzeStraightLine("test:no-share", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &denied, nil, nil)
 	if refused.DiagnosticCode != "ownership.borrow_requires_share" || refused.Diagnostic == nil {
 		t.Fatalf("borrow of a type without share was admitted: %+v", refused)
 	}
@@ -113,7 +113,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		Result: "moved",
 		Span:   diagnostic.Span{Start: 10, End: 38},
 	}
-	got := analyzeStraightLine("test:witness", "owner", diagnostic.Span{Start: 1, End: 6}, bufferTypeFact(), &witness)
+	got := analyzeStraightLine("test:witness", "owner", diagnostic.Span{Start: 1, End: 6}, bufferTypeFact(), &witness, nil, nil)
 	if got.DiagnosticCode != "ownership.move_while_borrowed" || len(got.Operations) != 1 {
 		t.Fatalf("four-step witness changed: %+v", got)
 	}
@@ -124,7 +124,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 	withoutLaterRead.Bindings = withoutLaterRead.Bindings[:2]
 	withoutLaterRead.Result = "moved"
 	withoutLaterRead.Span.End = 28
-	legal := analyzeStraightLine("test:unused", "owner", diagnostic.Span{Start: 1, End: 6}, bufferTypeFact(), &withoutLaterRead)
+	legal := analyzeStraightLine("test:unused", "owner", diagnostic.Span{Start: 1, End: 6}, bufferTypeFact(), &withoutLaterRead, nil, nil)
 	if legal.DiagnosticCode != "" {
 		t.Fatalf("unused loan did not end before move: %+v", legal)
 	}
@@ -299,7 +299,7 @@ func TestStraightLineEndpointsUnchanged(t *testing.T) {
 		Result: "review",
 		Span:   diagnostic.Span{End: 16},
 	}
-	support := analyzeStraightLine("test:reborrow", "code", diagnostic.Span{}, bufferTypeFact(), &body)
+	support := analyzeStraightLine("test:reborrow", "code", diagnostic.Span{}, bufferTypeFact(), &body, nil, nil)
 	if support.DiagnosticCode != "" {
 		t.Fatalf("shipped reborrow fixture unexpectedly rejected: %+v", support)
 	}
@@ -560,7 +560,7 @@ func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
 		Result: "moved",
 		Span:   diagnostic.Span{End: 20},
 	}
-	got := analyzeStraightLine("test:multi", "owner", diagnostic.Span{}, byteTypeFact(), &body)
+	got := analyzeStraightLine("test:multi", "owner", diagnostic.Span{}, byteTypeFact(), &body, nil, nil)
 	want := oracleStraightLine("test:multi", "owner", byteTypeFact(), &body)
 	assertSupportEqual(t, "borrow one owner while moving another", got, want)
 	if got.DiagnosticCode != "" {
@@ -572,7 +572,7 @@ func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
 		Result:   "value",
 		Span:     diagnostic.Span{End: 12},
 	}
-	assertSupportEqual(t, "shadowed binding", analyzeStraightLine("test:shadow", "owner", diagnostic.Span{}, byteTypeFact(), &shadowed), oracleStraightLine("test:shadow", "owner", byteTypeFact(), &shadowed))
+	assertSupportEqual(t, "shadowed binding", analyzeStraightLine("test:shadow", "owner", diagnostic.Span{}, byteTypeFact(), &shadowed, nil, nil), oracleStraightLine("test:shadow", "owner", byteTypeFact(), &shadowed))
 
 	shadowedLoan := ast.LinearBody{
 		Bindings: []ast.Binding{
@@ -584,7 +584,7 @@ func TestOwnershipOracleTracksLoansPerOwner(t *testing.T) {
 		Result: "moved",
 		Span:   diagnostic.Span{End: 20},
 	}
-	got = analyzeStraightLine("test:shadow-loan", "owner", diagnostic.Span{}, byteTypeFact(), &shadowedLoan)
+	got = analyzeStraightLine("test:shadow-loan", "owner", diagnostic.Span{}, byteTypeFact(), &shadowedLoan, nil, nil)
 	want = oracleStraightLine("test:shadow-loan", "owner", byteTypeFact(), &shadowedLoan)
 	assertSupportEqual(t, "shadowed loan identity", got, want)
 	if got.DiagnosticCode != "" {
@@ -957,7 +957,7 @@ func TestOwnershipWorkSeries(t *testing.T) {
 			bindings[index] = binding(fmt.Sprintf("copy%d", index), "read", "owner", index*2)
 		}
 		body := ast.LinearBody{Bindings: bindings, Result: "owner", Span: diagnostic.Span{End: operations*2 + 1}}
-		got := analyzeStraightLine("test:scale", "owner", diagnostic.Span{}, byteTypeFact(), &body)
+		got := analyzeStraightLine("test:scale", "owner", diagnostic.Span{}, byteTypeFact(), &body, nil, nil)
 		// D-04-25: discoverLoanLastUses now counts its own transitive-scan
 		// work (operations+1), added on top of the pre-existing formula.
 		wantWork := 1 + 2*(operations+1) + (operations + 1)
@@ -979,7 +979,7 @@ func FuzzOwnershipLinear(f *testing.F) {
 			input = input[:32]
 		}
 		body := generatedOwnershipBodyBytes(input)
-		got := analyzeStraightLine("test:fuzz", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &body)
+		got := analyzeStraightLine("test:fuzz", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &body, nil, nil)
 		want := oracleStraightLine("test:fuzz", "owner", byteTypeFact(), &body)
 		assertSupportEqual(t, fmt.Sprintf("input=%v", input), got, want)
 	})

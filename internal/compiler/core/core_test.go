@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -224,7 +225,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 9 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect
+	const declaredCount = 10 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -250,6 +251,23 @@ func TestTerminatorKindsIsSubsetOfAll(t *testing.T) {
 			t.Fatalf("terminator kind %q is not in AllOperationKinds()", kind)
 		}
 	}
+}
+
+// functionHasOpCall reports whether function's flat Operations list carries
+// at least one core.OpCall -- used only to grant TestAllOperationKindsHandledAtEverySite's
+// interp step the single documented exception (D-07-39): interp.Run
+// returning ErrCallUnsupported for such a function is recognition, not a
+// crash or a silent fake success.
+func functionHasOpCall(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall {
+			return true
+		}
+	}
+	return false
 }
 
 func linearProbeInput(function core.Function) (string, bool) {
@@ -291,6 +309,7 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 		"testdata/phase4/foreign_acquire_one.lang",
 		"testdata/phase4/acquire_three_success.lang",
 		"testdata/phase4/defect_terminal.lang",
+		"testdata/phase07/call_basic.lang",
 	}
 	encountered := make(map[core.OperationKind]bool)
 	for _, path := range fixtures {
@@ -338,7 +357,17 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 				input, ok := linearProbeInput(function)
 				if ok {
 					if _, err := interp.Run(program, function.Name, input); err != nil {
-						t.Fatalf("%s/%s: interp error: %v", path, function.Name, err)
+						// D-07-39: a function containing an OpCall is
+						// RECOGNIZED at the interp site (never crashes, never
+						// falls into the unknown-kind default arm), but
+						// Phase 07 defines no call-stack execution semantics
+						// for it yet (SEM-08 is Phase 10) -- so interp.Run
+						// returning the dedicated ErrCallUnsupported for such
+						// a function is "handled", not a control failure.
+						// Any OTHER error still fails this control.
+						if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
+							t.Fatalf("%s/%s: interp error: %v", path, function.Name, err)
+						}
 					}
 				}
 			}

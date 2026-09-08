@@ -144,11 +144,15 @@ type RHS struct {
 	Kind   string
 	Source string
 	Span   diagnostic.Span
-	// Callee and Arguments are populated when Kind == "try_call" or
+	// Callee and Arguments are populated when Kind == "try_call",
 	// Kind == "discard_call" (D-04-06): a fallible foreign call, admissible
-	// only as the operand of `try` or `discard ... because`. Callee names
-	// the foreign symbol; Arguments is its argument place names in source
-	// order.
+	// only as the operand of `try` or `discard ... because`; or
+	// Kind == "call" (Phase 07, D-07-01): a bare call whose callee identity
+	// (Lang function, foreign symbol, or unresolved) is a check-time fact,
+	// not a parse-time one -- the parser accepts the shape unconditionally
+	// and admission relocates to check. Callee names the callee; Arguments
+	// is its argument place names in source order. "call" never sets
+	// Rationale.
 	Callee    string
 	Arguments []string
 	// Rationale is populated only when Kind == "discard_call": the required

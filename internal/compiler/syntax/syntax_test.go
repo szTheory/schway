@@ -1000,25 +1000,42 @@ func TestForeignCallRoundTrips(t *testing.T) {
 }
 
 // TestFallibleCallUnconsumedRejected pins D-04-06: a bare fallible call in a
-// binding right-hand side (no `try`) must not parse.
+// binding right-hand side (no `try`) must never reach a checked core
+// function.
+//
+// D-07-40 (deliberate edit): this refusal's ENFORCEMENT LAYER relocated from
+// parse time to check time in Phase 07 (D-07-01) -- a bare call's callee
+// identity (Lang function, foreign symbol, or unresolved) is a check-time
+// fact, since the parser now accepts the "call" shape unconditionally so a
+// bare call to a declared Lang function can be admitted. The PUBLISHED CODE
+// (syntax.fallible_call_not_consumed) did not change; only where it is
+// asserted did. This test now asserts syntax.Parse itself produces NO error
+// diagnostic for this source (the parser no longer refuses this shape), and
+// that the refusal appears from session.Check instead, with the identical
+// code.
 func TestFallibleCallUnconsumedRejected(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "fallible_call_unconsumed.lang"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	parsed := syntax.Parse(source)
-	found := false
 	for _, problem := range parsed.Diagnostics {
+		if problem.Severity == "error" {
+			t.Fatalf("D-07-40: syntax.Parse must produce no error diagnostic for a bare call shape now that check owns the refusal, got %v", problem)
+		}
+	}
+	checked := session.Check(source)
+	if len(checked.Program.Functions) != 0 {
+		t.Fatalf("a bare fallible call must never reach a checked core function, got %d", len(checked.Program.Functions))
+	}
+	found := false
+	for _, problem := range checked.Diagnostics {
 		if problem.Code == "syntax.fallible_call_not_consumed" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("expected syntax.fallible_call_not_consumed, got %v", parsed.Diagnostics)
-	}
-	checked := session.Check(source)
-	if len(checked.Program.Functions) != 0 {
-		t.Fatalf("a bare fallible call must never reach a checked core function, got %d", len(checked.Program.Functions))
+		t.Fatalf("expected syntax.fallible_call_not_consumed from check, got %v", checked.Diagnostics)
 	}
 }
 

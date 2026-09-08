@@ -1,0 +1,20 @@
+// Phase 07 tracer (D-07-01/D-07-02/SEM-04): a two-function Lang program
+// where `main` calls `identity` with a single in-scope binding as its
+// argument. Proves core.OpCall carries a real CalleeID (the callee's own
+// function ID, never its name) and is recognized -- never faked -- at all
+// six dispatch sites.
+
+module phase07.call_basic
+
+export {
+  fn main
+}
+
+fn identity(value: Byte) -> Byte {
+  value
+}
+
+fn main(value: Byte) -> Byte {
+  let result = identity(value)
+  result
+}
