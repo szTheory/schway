@@ -222,7 +222,7 @@ Not applicable — Phase 07 is additive (new grammar, new operation kind, new pa
 
 ### Pitfall 3: Assuming `exclusive_borrow_clean` and the `relay`/`escort` witness exist
 
-**What goes wrong:** A plan step that reads "wire the existing `exclusive_borrow_clean` fixture into the SEM-06 negative control" will fail at execution — the file does not exist under any name in `testdata/`.
+**What goes wrong:** A plan step that reads "wire the existing `exclusive_borrow_clean` fixture into the SEM-06 negative control" will fail at execution — no such *file* exists in `testdata/`. **CORRECTED (D-07-44):** the witness itself **does** exist, as inline Go source at `check/check_exclusive_test.go:46-58` (`module owned.exclusive_borrow_clean`, `fn relay`), asserted again at `originvalidate_test.go:230`. The task is to **extract** it verbatim into `testdata/phase07/`, not to author a new one — and it is the *correct* witness because it fails publication with `core.origin_omitted`, which is D-07-31's real predicate.
 **Why it happens:** The fixture name and the `relay`/`escort` witness program are quoted verbatim from Phase 4's `04-CONTEXT.md` discussion narrative (D-04-03), which describes them as the **decisive research witness**, not as artifacts that were ever committed to `testdata/`.
 **How to avoid:** Treat fixture creation as its own task: (1) a single-function fixture that checks clean today but must become `Callable == false` once D-04-03's predicate is implemented (candidates: any function whose `PublicOrigin.Access == "exclusive"` with no further constraint — `testdata/phase3/exclusive_exclusive_reject.lang` and `exclusive_move_reject.lang` exist but are *rejection* fixtures, not clean-but-uncallable ones; none of the existing phase3 `exclusive_*` fixtures is a clean-accept case per a quick content check, so a new one must be authored); (2) the two-function `relay`/`escort` dangling-alias witness, verbatim from `04-CONTEXT.md`'s D-04-03 block, as a **new** `testdata/phase07/` fixture proving the call-admission gate actually closes the D-03-02-adjacent hole this phase exists to prevent from reopening.
 **Warning signs:** A plan or PLAN.md task listing `testdata/phase3/exclusive_borrow_clean` as an input file.
@@ -340,22 +340,30 @@ return Diagnostic{Schema: Schema, ID: "diagnostic:" + hex.EncodeToString(sum[:12
 | A2 | `ForeignReach`'s three fields should be plain strings (not an enumerated Go type), following the `ForeignContract.Unwind`/`NonlocalExit` precedent | Standard Stack / Claude's Discretion item in CONTEXT.md | Low — CONTEXT.md already leaves this to planner discretion; this is a recommendation grounded in an in-tree precedent (`core.go:63-64`), not a locked decision |
 | A3 | `pgregory.net/rapid`'s STANDING-VERDICTS.md "Adopt" verdict is still current (not re-audited against the live registry this session) | Package Legitimacy Audit | Low — test-only, and the verdict is a standing project record; re-verify with `go list -m` if a plan actually adds it |
 
-## Open Questions
+## Open Questions (RESOLVED — see 07-CONTEXT.md amendments and 07-REVIEWS.md)
+
+> **All three questions below were resolved after this file was written.** Q1 and
+> Q2 are answered by name inside `07-03-PLAN.md`; **Q3's recommendation below is
+> now WRONG** and is superseded by **D-07-37**. Read the resolution markers, not
+> the original recommendations.
+
 
 1. **Where exactly does the relocated `syntax.fallible_call_not_consumed` refusal for a foreign callee live once the parser stops emitting it universally?**
    - What we know: the parser currently emits it unconditionally at `parser.go:404-421`; `check.go`'s `Program()` already builds `foreignSymbols`/`functionNames` maps that can distinguish the two cases.
    - What's unclear: whether the diagnostic *code* (`syntax.fallible_call_not_consumed`) should be preserved verbatim when re-emitted from `check` (keeping `testdata/phase4/fallible_call_unconsumed.lang`'s expected code unchanged, per `check_test.go:791`), or whether it becomes a new `core.*`/`check.*`-namespaced code now that it's a semantic rather than syntactic refusal.
    - Recommendation: preserve the existing code string for backward test compatibility (it is already asserted as a diagnostic *code*, not a diagnostic *source layer*, in `check_test.go`), and confirm this in Stage 1's first plan before touching the parser.
+   - **RESOLVED** in `07-03-PLAN.md:201` — the recommendation was adopted. See also **D-07-40**: `TestFallibleCallUnconsumedRejected` (`syntax_test.go:1004`) and `native_test.go:1173` are deliberate planned edits, not incidental breakage.
 
 2. **Does `resolveForeignStep`'s argument-shape check need to change at all, or does it stay exactly as-is (foreign-only) while a parallel, new predicate handles the Lang-call case?**
    - What we know: `resolveForeignStep` (`check.go:1316-1355`) is reachable only via `hasTryCall`-gated functions; a bare Lang call never reaches it.
    - What's unclear: whether CONTEXT.md's D-07-01 wording ("widens the existing predicate") was intended as a literal code-reuse instruction or a conceptual description of the *rule* (arity-1, in-scope-binding) being reused.
    - Recommendation: treat it as conceptual reuse only; `resolveForeignStep` stays untouched (it is correctly foreign-only), and the new Lang-call predicate is new code sharing the same *shape*, not the same function.
+   - **RESOLVED** in `07-03-PLAN.md:429-431` — conceptual reuse only, as recommended.
 
 3. **What is the minimal `ForeignReach`/`ClosureDigest` computation for Stage 0, given the language has no calls yet at the point Stage 0 lands?**
    - What we know: Stage 0 must widen every existing function's summary (all ~39 single-function Phase 1-4 corpus programs) with a total `ForeignReach` and `ClosureDigest` before any `OpCall` exists.
    - What's unclear: for a function with zero callees (every function in the Phase 1-4 corpus), is `ClosureDigest` simply `hash(own signature)` with an empty callee-digest list, or is there a reserved sentinel?
-   - Recommendation: `ClosureDigest = hash(own FunctionSignature bytes)` when the callee set is empty is the natural base case for a Merkle chain (matches OCaml `.cmi`/rustc SVH precedent cited in CONTEXT.md) — confirm this as part of Stage 0's plan rather than deferring it, since Stage 0's whole gate is "prove the shape is right before any consumer depends on it."
+   - ~~Recommendation: `ClosureDigest = hash(own FunctionSignature bytes)`~~ — **SUPERSEDED BY D-07-37. This recommendation is self-referential and must not be implemented:** the "own `FunctionSignature` bytes" include the `ClosureDigest` field itself. The cross-AI review (codex, HIGH) caught this. The locked definition is a canonical preimage — the `/1` signature **with `ClosureDigest` zeroed**, prefixed with a domain separator, followed by callee `(ID, ClosureDigest)` pairs **sorted by ID**; the zero-callee base case is that preimage with an empty callee list. Implemented in `07-01-PLAN.md` Task 3. Note also **D-07-38**: the chaining arm is deliberately deferred to `07-08-PLAN.md`, in a wave after cycle refusal, because the chain terminates only on a DAG.
 
 ## Environment Availability
 
@@ -391,8 +399,8 @@ Skipped — this phase has no external tool/service dependencies beyond the exis
 ### Wave 0 Gaps
 
 - [ ] `testdata/phase07/*.lang` — two-function call corpus: basic call, diamond+shared-leaves (parser-shaped, per Pitfall 2), self-call, unreachable cycle, foreign-symbol-shadowing, unresolvable-callee-forged-artifact, both-match-arms-call (D-07-28 `Result`-blindness guard)
-- [ ] a clean-but-uncallable fixture for SEM-06 (does not exist under any name today — see Pitfall 3)
-- [ ] the `relay`/`escort` two-function dangling-alias witness for the negative control referenced by D-04-03 (does not exist under any name today)
+- [ ] a clean-but-uncallable fixture for SEM-06 — **CORRECTED (D-07-44): EXTRACT** the existing inline witness at `check/check_exclusive_test.go:46-58`; do not author a new one (see Pitfall 3)
+- [ ] the `relay`/`escort` two-function dangling-alias witness referenced by D-04-03 — no file exists, **and D-07-44 adds:** the recorded source uses nested `relay(borrow mut buffer)`, which **D-07-01 has made ungrammatical**. It must be deliberately converted to A-normal form and shown semantically equivalent (`07-05-PLAN.md` Task 2), never copied verbatim.
 - [ ] `internal/compiler/callgraph/callgraph.go` + `callgraph_test.go` — the package itself does not exist
 - [ ] a new phase-07-scoped block in `session.go` mirroring `:2501-2568`, with its own `dispatchFixtures` list and required-kinds check
 - [ ] Framework install: none — stdlib `testing` already covers everything; `pgregory.net/rapid` add is optional/test-only if a plan wants property-based synthetic-`core.Program` generation for the `corevalidate` peer's mutation matrix (D-07-19)
