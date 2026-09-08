@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
-status: planning
-last_updated: "2026-09-08T16:21:49.317Z"
+status: roadmapped
+last_updated: "2026-09-08T00:00:00.000Z"
 last_activity: 2026-09-08
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -22,15 +22,32 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Planning next milestone (M002 — lead charter: `OpCall`,
-interprocedural loan liveness, and interprocedural `-O3` equivalence)
+**Current focus:** M002 — Interprocedural Semantic Spine. Land `OpCall` at all
+six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 07 — Calls, Signatures, and Call-Graph Refusal (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-08 — Milestone M002 started
+Status: Roadmap created; awaiting phase discussion/planning
+Last activity: 2026-09-08 — M002 roadmap created (7 phases, 30/30 requirements mapped)
+
+Progress: [--------------------] 0% (0/7 phases)
+
+## M002 Phase Map
+
+| Phase | Name | Requirements | Status |
+|-------|------|--------------|--------|
+| 07 | Calls, Signatures, and Call-Graph Refusal | 5 | Not started |
+| 08 | Interprocedural Loan Liveness in `check` | 2 | Not started |
+| 09 | Peer Re-Derivation and D-03-02 Closure | 6 | Not started |
+| 10 | Trusted Interprocedural Oracle | 5 | Not started |
+| 11 | Multi-Function Native Emission and Equivalence | 7 | Not started |
+| 12 | `Result` Payloads | 2 | Not started |
+| 13 | Agent Loop for Interprocedural Defects | 3 | Not started |
+
+Phase numbering continues from M001 (which ended at Phase 06). Full detail:
+`.planning/ROADMAP.md`.
 
 ## Performance Metrics
 
@@ -137,7 +154,20 @@ Standing architectural commitments carried into M002:
 
 ### Pending Todos
 
-None.
+Three bounded pre-phase spikes, recorded in ROADMAP.md ("Pre-Phase Spikes"):
+
+- **S-006 interprocedural liveness cost-scaling probe** — hard entry gate on
+  *planning* Phase 08. Deliberately a pre-phase spike rather than a phase or a
+  Phase 07 gate: it carries no requirement, produces throwaway workbench code,
+  and its finding is Phase-08-blocking, not Phase-07-blocking.
+- **S-007 recursive / mutually-recursive stress corpus** — runs alongside
+  Phase 07, non-blocking; informs whether the call-stack ceiling is a fixed
+  constant or a declared budget.
+- **S-008 Nyquist fold-in cost measurement** — runs before Phase 09 planning;
+  determines whether QLT-07 stays committed or becomes a declared stretch item.
+
+Also: a `Result` payload / interprocedural-origin interaction probe must be
+answered before Phase 12 is planned.
 
 ### Blockers/Concerns
 
@@ -165,6 +195,22 @@ None.
   vertical planning.
 - `OpCall` and interprocedural equivalence deferred out of M001 (Phase 5,
   D-05-32) and promoted to M002's lead charter.
+- **M002 roadmap (2026-09-08):** adopted `research/SUMMARY.md`'s reconciled
+  build order with **one documented departure** — SUMMARY's Phase 4 is split
+  into Phases 10 and 11 at the ARCHITECTURE.md Stage 6 / Stage 7 boundary.
+  Reason: as one phase it would carry 12 of 30 requirements and two brand-new
+  subsystems (interpreter `Frame` stack; multi-function C emission) at M001's
+  recorded 70-95 min/plan coordinated-change rate, and it would hold the
+  milestone's central risk unadjudicated for its whole length. The "cgen must
+  differential-test against a trusted interpreter" dependency SUMMARY itself
+  names is a gate, so it is used as one.
+- **Scope-cut order carried into the roadmap up front** (Phase 12 → QLT-07 →
+  Phase 13 narrowing), with the explicit trigger: if Phase 08 or 09 exceeds
+  ~2x its initial plan estimate, renegotiate Phase 12 out to M003 immediately
+  rather than adding plans.
+- **Two mandatory mid-phase gates** recorded, following M001 Phase 3's
+  precedent: Phase 08 (interprocedural loan liveness) and Phase 11
+  (multi-function C emission before alias-attribute call lowering).
 
 ## Deferred Items
 
@@ -175,10 +221,13 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-09-07T04:58:21.415Z
-Stopped at: Phase 06 complete — all phases complete
+Last session: 2026-09-08
+Stopped at: M002 roadmap created — Phases 07-13, 30/30 requirements mapped
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Review `.planning/ROADMAP.md` (note the documented departure from the
+  research-reconciled 6-phase order, and the pre-phase spike decision).
+- Kick off S-006 and S-007 alongside Phase 07.
+- Discuss and plan Phase 07 with /gsd-discuss-phase.

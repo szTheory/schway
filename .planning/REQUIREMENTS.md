@@ -155,16 +155,52 @@ Tracked, not in this roadmap.
 
 ## Traceability
 
-Populated during roadmap creation.
+Every M002 requirement maps to exactly one phase. Phase numbering continues from
+M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (pending roadmap) | — | Pending |
+| SEM-04 | Phase 07 | Pending |
+| SEM-05 | Phase 07 | Pending |
+| SEM-06 | Phase 07 | Pending |
+| SEM-07 | Phase 07 | Pending |
+| SEM-08 | Phase 10 | Pending |
+| SEM-09 | Phase 10 | Pending |
+| OWN-05 | Phase 09 | Pending |
+| OWN-06 | Phase 08 | Pending |
+| OWN-07 | Phase 09 | Pending |
+| OWN-08 | Phase 09 | Pending |
+| OWN-09 | Phase 09 | Pending |
+| NAT-04 | Phase 11 | Pending |
+| NAT-05 | Phase 11 | Pending |
+| NAT-06 | Phase 11 | Pending |
+| NAT-07 | Phase 11 | Pending |
+| TRU-02 | Phase 10 | Pending |
+| TRU-03 | Phase 10 | Pending |
+| TRU-04 | Phase 09 | Pending |
+| QLT-03 | Phase 11 | Pending |
+| QLT-04 | Phase 10 | Pending |
+| QLT-05 | Phase 11 | Pending |
+| QLT-06 | Phase 11 | Pending |
+| QLT-07 | Phase 09 | Pending |
+| QLT-08 | Phase 07 | Pending |
+| EFF-02 | Phase 08 | Pending |
+| RES-02 | Phase 12 | Pending |
+| RES-03 | Phase 12 | Pending |
+| DX-05 | Phase 13 | Pending |
+| DX-06 | Phase 13 | Pending |
+| DX-07 | Phase 13 | Pending |
 
 **Coverage:**
 - M002 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30 ⚠️
+- Mapped to phases: 30 ✓
+- Unmapped: 0
+
+**Per-phase counts:** 07 → 5, 08 → 2, 09 → 6, 10 → 5, 11 → 7, 12 → 2, 13 → 3.
+
+**Note on QLT-08:** mapped to Phase 07, the phase that establishes it, but it is
+a standing discipline enforced in every phase 07-13. Listed once so coverage
+stays unambiguous.
 
 ## Scope-Cut Order
 
@@ -190,4 +226,4 @@ second consecutive milestone.
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after M002 research synthesis*
+*Last updated: 2026-09-08 after M002 roadmap creation*
