@@ -636,5 +636,52 @@ the shipped tree where a claim was checkable. Planner discretion remains over:
 
 ---
 
+## Amendments from 07-RESEARCH.md (2026-09-08, post-research)
+
+Research falsified four factual anchors used above. **The decisions stand
+unchanged; their cost and their file references do not.** Independently
+re-verified in the tree before recording.
+
+- **A-01 — D-07-01 is parser work, not one predicate.**
+  `internal/compiler/syntax/parser.go:404-421` unconditionally refuses **any**
+  bare call in a binding RHS (`syntax.fallible_call_not_consumed`) at *parse
+  time*, before callee identity is known — deliberately, per D-04-06, "so the
+  core IR never has to encode a fallible operation without a failure successor."
+  `resolveForeignStep` is `hasTryCall`-gated and therefore **unreachable from a
+  non-fallible call**. So `let r = f(x)` needs a new `ast.RHS.Kind` and the
+  foreign-vs-Lang admission decision **relocated from parse time to check time**.
+  D-07-01's *rule* is unchanged; its *sizing* is not — Stage 1 must include
+  parser work, and the relocated refusal's diagnostic code identity is an open
+  question the planner must decide explicitly.
+- **A-02 — `cgen`'s `OpCall` case is unreachable this phase, and neither control
+  requires it.** `cgen.Emit`/`EmitNative` hard-fail on `len(Functions) != 1`, and
+  **both** exhaustive-dispatch controls gate the `cgen` site behind that same
+  condition (`core_test.go:346-352` — verified: `if len(program.Functions) == 1 {
+  cgen.Emit(...) }`; `session.go:2559`). No legal `OpCall`-bearing program can
+  have exactly one function. Registering the case in `cgen`'s switches is
+  **cheap hygiene for Phase 11, not a Phase 07 gate obligation** — and D-07-04's
+  boundary (do not lift the hard fail) is unaffected.
+- **A-03 — two named fixtures do not exist.** Neither
+  `testdata/phase3/exclusive_borrow_clean` nor the `relay`/`escort`
+  dangling-alias witness quoted in D-04-03's narrative is present anywhere in
+  the tree. **SEM-06's negative control has no existing artifact to point at;**
+  both must be authored from scratch as an early task, ahead of SEM-06's gate.
+- **A-04 — two `/1`-bump site references in D-07-08 are wrong.**
+  `debugmap.go:54` is a **comment**, not a functional site, and
+  `session.RunInterfaceCommandFile` does not exist — the real function is
+  `session.InterfaceExportCommandFile` (`session.go:1028`). The bump is *cheaper*
+  than D-07-08 assumed; the `/1` decision itself is unaffected.
+- **A-05 — the two exhaustive-dispatch controls are literal, phase-scoped
+  fixture lists, not generic sweeps.** Phase 07 must add **its own** fixture list
+  to `core_test.go` and **its own** lane block in `session.go` mirroring
+  `:2501-2568`. This is a task, not a free consequence of registering the kind.
+- **A-06 — open question for the planner (from research):** `ClosureDigest`'s
+  base case for a zero-callee function. Recommendation on the table: hash of its
+  own signature with an empty callee list. Decide it explicitly in Stage 0; do
+  not leave it implicit.
+
+---
+
 *Phase: 07-calls-signatures-and-call-graph-refusal*
 *Context gathered: 2026-09-08*
+*Amended: 2026-09-08 after 07-RESEARCH.md*
