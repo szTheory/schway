@@ -135,6 +135,11 @@ hazards are reconciled row-by-row in `qlt01_registry.json`.
 
 Canonical planning inputs:
 
+- `.planning/LANGUAGE-MATURITY.md` — where the language actually stands
+  (expressiveness vs assurance) versus how the roadmap sounds. **Read this
+  before answering any "how far along are we" question.**
+- `.planning/STANDING-VERDICTS.md` — dependency verdicts, anti-features, and
+  load-bearing facts already researched. Reopen only on new evidence.
 - `wiki/real-frontend-core-ir-entry-plan.md`
 - `wiki/semantic-kernel-contract.md`
 - `wiki/semantic-kernel-probes.md`
@@ -202,4 +207,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-08 after starting milestone M002*
+*Last updated: 2026-09-08 after recording M002 durable context*

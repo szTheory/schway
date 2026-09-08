@@ -25,6 +25,14 @@ hiding runtime costs.
 **Current focus:** M002 — Interprocedural Semantic Spine. Land `OpCall` at all
 six dispatch sites and prove every M001 guarantee survives a function boundary.
 
+**Durable context (survives context clears — read before re-deriving):**
+
+- `.planning/LANGUAGE-MATURITY.md` — the language is far less expressive than
+  the roadmap vocabulary implies: no arithmetic, no iteration, no Lang-to-Lang
+  calls yet. Assurance stack ~60-70% built; language surface ~5-10%.
+- `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
+  anti-features, the six dispatch sites, why `-flto` is load-bearing).
+
 ## Current Position
 
 Phase: 07 — Calls, Signatures, and Call-Graph Refusal (not started)
@@ -222,8 +230,10 @@ answered before Phase 12 is planned.
 ## Session Continuity
 
 Last session: 2026-09-08
-Stopped at: M002 roadmap created — Phases 07-13, 30/30 requirements mapped
+Stopped at: M002 roadmap created — Phases 07-13, 30/30 requirements mapped;
+durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
+Next command: `/gsd-discuss-phase 07`
 
 ## Operator Next Steps
 
