@@ -9,6 +9,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 )
 
 // testOnlyForceUniformLoanJoin is a fault-injection seam for
@@ -279,7 +280,179 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, *invariant)
 		}
 	}
+	if len(result.Diagnostics) == 0 && !verifyCallInvariantsSeam {
+		// D-07-42: sharing verifyCallInvariantsSeam here (rather than
+		// gating only on len(result.Diagnostics)) keeps this admission arm
+		// and verifyCallInvariants' resolves-to-a-declared-function
+		// re-derivation failing TOGETHER under the same seeded mutation
+		// (Task 2's TestVerifyCallInvariantsSeamRestoresBothRefusals): with
+		// the seam engaged, resolveCallBinding's own fallback branch admits
+		// a call whose CalleeID is a synthetic non-ID (the raw source
+		// name, never a real function's ID), which this table would
+		// correctly find absent and refuse -- a DIFFERENT, newer refusal
+		// than the one that pre-existing test seam was written to
+		// suppress. Suppressing this admission arm too, for the exact
+		// span the seam already claims to simulate ("what a removed
+		// resolves-to-a-declared-function check would let through"), keeps
+		// that claim honest rather than letting this later plan's own
+		// independent gate accidentally catch what the earlier seam was
+		// built to demonstrate slipping through.
+		//
+		// D-07-34/SEM-06: the pre-body signature pass and the "call"
+		// admission arm's Callable consult, run as their own final gate
+		// over the WHOLE assembled program -- exactly where
+		// verifyCallInvariants above already runs its own post-build
+		// re-derivation. This is deliberate, not incidental: Callable
+		// (originvalidate.PublishProblemsFor, D-07-31/D-07-32) is a
+		// predicate over a function's CHECKED body (it recomputes return
+		// origin from core.LinearOperation facts), so it cannot exist
+		// before every function's own body has been individually admitted
+		// -- there is no such thing as a "signature" that precedes a
+		// function's own admission when the signature's Callable bit is
+		// itself derived from that admission's output. What "before any
+		// body admission" (D-07-34's own words) means here, and can only
+		// coherently mean, is: before the ONE admission decision this
+		// table exists to gate -- the "call" arm's Callable consult below
+		// -- which is why that decision is deliberately NOT inlined into
+		// resolveCallBinding (where CalleeID resolution already happens):
+		// resolveCallBinding's per-function pass never reads Callable at
+		// all, so nothing about admitting any individual function's body
+		// ever depends on another function's publication status, and the
+		// table this builds is used exactly once, immediately after it is
+		// built, by nothing but the loop directly below.
+		table := buildCallSignatureTable(result.Program)
+		if diag := verifyCallableRefusal(result.Program.Functions, table); diag != nil {
+			result.Diagnostics = append(result.Diagnostics, *diag)
+		}
+	}
 	return result
+}
+
+// callSignatureTable is D-07-34's immutable signature table: a same-package,
+// read-only view over each declared function's lang.interface/1
+// FunctionSignature (ID, name, parameter contract, return contract, and the
+// Callable bit -- D-07-31/D-07-32's publication-safety predicate, never
+// export membership). It reuses core.FunctionSignature verbatim rather than
+// minting a parallel type: FunctionSignature "deliberately has no
+// Linear/Match field at all -- not merely an omitted one" (core.go's own
+// doc comment on the type), so a caller admission path holding this table
+// structurally cannot reach a callee body even by following a pointer
+// (T-07-28). The zero value's lookup always misses -- Callable's Go zero
+// value false extends to an absent table entry too (D-07-09) -- so a table
+// that somehow failed to build refuses every call rather than admitting
+// one, never the reverse. The only way to read it is lookup: there is no
+// exported or unexported setter, so once buildCallSignatureTable returns,
+// nothing in this package can mutate it (immutability by construction, not
+// merely by convention).
+type callSignatureTable struct {
+	entries map[string]core.FunctionSignature
+}
+
+func (t callSignatureTable) lookup(calleeID string) (core.FunctionSignature, bool) {
+	entry, ok := t.entries[calleeID]
+	return entry, ok
+}
+
+// buildCallSignatureTable builds D-07-34's signature table from every
+// function in program, using originvalidate.BuildInterface -- and, through
+// it, originvalidate.PublishProblemsFor -- as Callable's SOLE authority
+// (D-07-31/D-07-32, landed in 07-02). This is a deliberate reuse of the
+// established single source of truth for what a "signature" is under
+// lang.interface/1, not a second, competing derivation: the two genuinely
+// independent derivations of the D-04-03 predicate this phase's threat
+// register (T-07-31) requires are check's OWN admission-time consult of
+// this table versus corevalidate's own, separately-implemented peer
+// re-derivation (07-02's derivePeerSignature/peerCallable) -- never check
+// versus originvalidate, which would just be the producer read twice.
+// BuildInterface's only failure mode is a json.Marshal error, which cannot
+// occur for a program that reached this point with zero diagnostics (no
+// unsupported Go value ever enters core.Program); the empty-table fallback
+// exists only so a change elsewhere that somehow reintroduced that
+// impossibility fails closed (refuses every call) rather than panicking.
+func buildCallSignatureTable(program core.Program) callSignatureTable {
+	if callSignatureTableBuildObserved != nil {
+		callSignatureTableBuildObserved()
+	}
+	iface, err := originvalidate.BuildInterface(program)
+	if err != nil {
+		return callSignatureTable{}
+	}
+	entries := make(map[string]core.FunctionSignature, len(iface.Functions))
+	for _, signature := range iface.Functions {
+		entries[signature.ID] = signature
+	}
+	return callSignatureTable{entries: entries}
+}
+
+// callSignatureTableBuildObserved is Task 1's D-07-34 ordering-instrumentation
+// seam, the build-side counterpart to callSignatureTableLookupObserved: when
+// non-nil, invoked once, synchronously, at the start of every
+// buildCallSignatureTable call -- before it does anything else -- so a
+// same-package test can record a single, real event order across a build and
+// its lookups and assert the build strictly precedes every lookup. nil in
+// production: zero cost, zero allocation.
+var callSignatureTableBuildObserved func()
+
+// verifyCallableRefusalSeam is D-07-41/D-07-42's fault-injection seam for
+// Task 3's permitting-Callable control (QLT-08): when true, a callee whose
+// table entry reports Callable == false (or whose entry is altogether
+// absent) is treated as permitting the call anyway, instead of refusing it.
+// Unexported, same-package-test-only, restored via defer in every test that
+// engages it -- never an exported package-level mutable var on a
+// production path (D-07-42).
+var verifyCallableRefusalSeam = false
+
+// callSignatureTableLookupObserved is Task 3's D-07-41 instrumentation
+// seam: when non-nil, verifyCallableRefusal invokes it with every calleeID
+// it looks up in table, so a same-package test can observe EXACTLY what
+// this admission arm touched for a callee across a whole fixture and
+// assert that set is exactly {signature table entry} -- never a body
+// value. nil in production: zero cost, zero allocation, and the call site
+// below is the ONLY place in this admission arm that ever names a callee's
+// ID for a lookup.
+var callSignatureTableLookupObserved func(calleeID string)
+
+// verifyCallableRefusal is D-07-34/SEM-06's own "call" admission arm: for
+// every core.OpCall operation in the whole assembled program, it looks the
+// operation's own CalleeID up in table -- and reads NOTHING else about the
+// callee -- refusing with core.CalleeNotCallable when the entry is absent
+// (a synthetic gap; D-07-09's fail-closed default, since Callable's Go zero
+// value is false) or its Callable bit is false. It never reads
+// function.Linear or function.Match for the CALLEE (only for the CALLING
+// function, to enumerate its own operations, which is the caller's own
+// body -- never the callee's), so this arm structurally cannot reach a
+// callee body even by mistake: table's entry type (core.FunctionSignature)
+// carries neither field at all. The refusal carries no repairs
+// (diagnostic.Error, never ErrorWithRepairs) per D-07-31c: exporting the
+// callee cannot repair an unsafe borrow-derived return, so no
+// export_callee repair is ever offered.
+func verifyCallableRefusal(functions []core.Function, table callSignatureTable) *diagnostic.Diagnostic {
+	for _, function := range functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall {
+				continue
+			}
+			if callSignatureTableLookupObserved != nil {
+				callSignatureTableLookupObserved(operation.CalleeID)
+			}
+			entry, ok := table.lookup(operation.CalleeID)
+			callable := ok && entry.Callable
+			if verifyCallableRefusalSeam {
+				callable = true
+			}
+			if !callable {
+				diag := diagnostic.Error(
+					core.CalleeNotCallable, function.Span, "call target is not callable",
+					diagnostic.Cause{Kind: "callee", Detail: operation.CalleeID},
+				)
+				return &diag
+			}
+		}
+	}
+	return nil
 }
 
 // verifyCallInvariantsSeam is Task 2's D-07-41/D-07-42 fault-injection seam

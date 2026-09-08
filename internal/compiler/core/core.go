@@ -551,6 +551,19 @@ const (
 // a dropped edge is how a cycle escapes detection.
 const CallCalleeUnresolved = "core.call_callee_unresolved"
 
+// CalleeNotCallable is 07-05's checkpoint-ratified stable code (D-04-03,
+// SEM-06) for an OpCall whose CalleeID resolves to a DECLARED function that
+// is nonetheless not callable — Callable is publication safety
+// (originvalidate.PublishProblemsFor, D-07-31/D-07-32), never export
+// membership, and a call to a callee that fails that predicate is refused
+// with diagnostic.Error and carries no repairs (D-07-31c: exporting the
+// callee cannot fix an unsafe borrow-derived return, so no export_callee
+// repair is ever offered for this code). Distinct from CallCalleeUnresolved
+// (the callee names no declared function at all) and from the (07-06)
+// call-graph cycle code — a fourth, materially different fact each time,
+// not a fourth spelling of the same one.
+const CalleeNotCallable = "core.callee_not_callable"
+
 // AllOperationKinds returns every declared OperationKind, in declaration
 // order. This is the single table every dispatch site (check, corevalidate,
 // interp, cgen, pathoracle, originvalidate) is tested against (D-04-22): a

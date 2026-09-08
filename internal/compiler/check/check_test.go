@@ -3,6 +3,9 @@ package check
 import (
 	"encoding/json"
 	"fmt"
+	goast "go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -13,6 +16,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
@@ -2070,4 +2074,196 @@ func scanOpCallsByKind(operations []core.LinearOperation) []core.LinearOperation
 		}
 	}
 	return calls
+}
+
+// readPhase07Fixture reads a testdata/phase07 fixture the same way
+// TestCallFromBothMatchArmsEnumeratedByKind already does.
+func readPhase07Fixture(t *testing.T, name string) []byte {
+	t.Helper()
+	source, err := os.ReadFile("../../../testdata/phase07/" + name)
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", name, err)
+	}
+	return source
+}
+
+// TestCallToNonCallableCalleeRefused is 07-05 Task 1's SEM-06 tracer: a call
+// to a callee that checks clean but fails publication (Callable == false,
+// D-04-03/D-07-31) is refused with exactly one error diagnostic carrying the
+// ratified core.CalleeNotCallable code, one Cause{Kind: "callee"} naming the
+// callee's own function ID, and no repairs.
+func TestCallToNonCallableCalleeRefused(t *testing.T) {
+	source := readPhase07Fixture(t, "call_uncallable_callee.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 1 {
+		t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
+	}
+	diag := result.Diagnostics[0]
+	if diag.Code != core.CalleeNotCallable {
+		t.Fatalf("expected %s, got %s (%+v)", core.CalleeNotCallable, diag.Code, diag)
+	}
+	if diag.Severity != "error" {
+		t.Fatalf("expected error severity, got %q", diag.Severity)
+	}
+	if len(diag.Causes) != 1 || diag.Causes[0].Kind != "callee" {
+		t.Fatalf("expected exactly one Cause{Kind: \"callee\"}, got %+v", diag.Causes)
+	}
+	if !strings.HasSuffix(diag.Causes[0].Detail, ":fn:relay") {
+		t.Fatalf("expected the cause detail to name the callee's own function ID, got %q", diag.Causes[0].Detail)
+	}
+	if diag.Repairs != nil {
+		t.Fatalf("expected no repairs (D-07-31c: export_callee cannot fix an unsafe borrow-derived return), got %+v", diag.Repairs)
+	}
+}
+
+// TestCallToDeclaredLangCalleeStillAdmitted is the accepting-path
+// counterpart: a call to a callee that IS callable (call_basic.lang, already
+// proven by 07-03/07-04) is unaffected by this plan's new admission arm.
+func TestCallToDeclaredLangCalleeStillAdmitted(t *testing.T) {
+	source := readPhase07Fixture(t, "call_basic.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected call_basic.lang to still check clean, got %+v", result.Diagnostics)
+	}
+}
+
+// TestBuildCallSignatureTableCallableMatchesPublishProblemsFor is Task 1's
+// direct proof that the table's Callable bit really is
+// originvalidate.PublishProblemsFor's predicate (D-07-31/D-07-32) and
+// nothing else: over the two functions in call_uncallable_callee.lang, the
+// table entry's Callable bit matches len(PublishProblemsFor(fn))==0 exactly,
+// for both the callable and the non-callable function.
+func TestBuildCallSignatureTableCallableMatchesPublishProblemsFor(t *testing.T) {
+	source := readPhase07Fixture(t, "call_uncallable_callee.lang")
+	parsed := mustParseProgram(t, source)
+	// Bypass verifyCallableRefusal (which would refuse the whole program)
+	// by lowering functions directly through checkLinear, exactly like
+	// Program does internally, so the table can be built and inspected
+	// against a program this test controls end to end.
+	functionIDs := make(map[string]string, len(parsed.Funcs))
+	for _, function := range parsed.Funcs {
+		functionIDs[function.Name] = semanticID(parsed.Module, "fn", function.Name)
+	}
+	var functions []core.Function
+	for _, function := range parsed.Funcs {
+		checked, diagnostics, _ := checkLinear(parsed.Module, functionIDs[function.Name], function, functionIDs, nil)
+		if len(diagnostics) != 0 {
+			t.Fatalf("expected %s to check clean, got %+v", function.Name, diagnostics)
+		}
+		functions = append(functions, checked)
+	}
+	program := core.Program{Schema: core.Schema1, Module: parsed.Module, Functions: functions}
+	table := buildCallSignatureTable(program)
+	for _, function := range functions {
+		entry, ok := table.lookup(function.ID)
+		if !ok {
+			t.Fatalf("expected a table entry for %s", function.ID)
+		}
+		want := len(originvalidate.PublishProblemsFor(function)) == 0
+		if entry.Callable != want {
+			t.Fatalf("%s: expected Callable == %v (PublishProblemsFor), got %v", function.Name, want, entry.Callable)
+		}
+	}
+}
+
+// TestCallSignatureTableEntryCarriesNoBodyReachableField is Task 1's
+// structural proof of T-07-28/D-07-34's load-bearing property: the table
+// entry type (core.FunctionSignature) has no field of type *core.LinearBody,
+// *core.Match, or any type reachable to a function body -- reading its own
+// struct tags/field types directly via reflection, not trusting a doc
+// comment.
+func TestCallSignatureTableEntryCarriesNoBodyReachableField(t *testing.T) {
+	entryType := reflect.TypeOf(core.FunctionSignature{})
+	for i := 0; i < entryType.NumField(); i++ {
+		field := entryType.Field(i)
+		name := field.Type.String()
+		if strings.Contains(name, "LinearBody") || strings.Contains(name, "core.Match") || strings.Contains(name, "core.Function") {
+			t.Fatalf("core.FunctionSignature.%s has type %s, which is reachable to a function body", field.Name, name)
+		}
+	}
+}
+
+// TestCallSignatureTableHasOnlyLookupMethod is Task 1's structural proof
+// that callSignatureTable is a read-only accessor by TYPE, not merely by
+// convention: parsing check.go's own AST (the same technique
+// TestOriginValidatorImportsStayIndependent already uses for its own
+// boundary) and asserting the only method declared with a callSignatureTable
+// receiver is lookup -- there is no setter, exported or unexported, for a
+// future edit to accidentally introduce without this test catching it.
+func TestCallSignatureTableHasOnlyLookupMethod(t *testing.T) {
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, "check.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parse check.go: %v", err)
+	}
+	var methods []string
+	for _, declaration := range file.Decls {
+		function, ok := declaration.(*goast.FuncDecl)
+		if !ok || function.Recv == nil || len(function.Recv.List) != 1 {
+			continue
+		}
+		receiverType := function.Recv.List[0].Type
+		if starExpr, ok := receiverType.(*goast.StarExpr); ok {
+			receiverType = starExpr.X
+		}
+		identifier, ok := receiverType.(*goast.Ident)
+		if !ok || identifier.Name != "callSignatureTable" {
+			continue
+		}
+		methods = append(methods, function.Name.Name)
+	}
+	if len(methods) != 1 || methods[0] != "lookup" {
+		t.Fatalf("expected callSignatureTable's only method to be lookup, got %v", methods)
+	}
+}
+
+// TestCallSignatureTableBuiltBeforeCallableAdmissionRuns is Task 1's proof
+// that the table is fully built before the ONE admission decision it exists
+// to gate (verifyCallableRefusal's Callable consult) ever runs: an
+// instrumented build-observed seam and the existing lookup-observed seam
+// record a single, real, ordered event log, and every recorded lookup
+// event's index is strictly greater than the (exactly one) recorded build
+// event's index, across every testdata/phase07 fixture containing a call.
+func TestCallSignatureTableBuiltBeforeCallableAdmissionRuns(t *testing.T) {
+	defer func() {
+		callSignatureTableBuildObserved = nil
+		callSignatureTableLookupObserved = nil
+	}()
+
+	fixtures := []string{"call_basic.lang", "call_from_both_match_arms.lang", "call_uncallable_callee.lang"}
+	for _, fixture := range fixtures {
+		t.Run(fixture, func(t *testing.T) {
+			var events []string
+			callSignatureTableBuildObserved = func() { events = append(events, "build") }
+			callSignatureTableLookupObserved = func(calleeID string) { events = append(events, "lookup:"+calleeID) }
+			result := Program(mustParseProgram(t, readPhase07Fixture(t, fixture)))
+			callSignatureTableBuildObserved = nil
+			callSignatureTableLookupObserved = nil
+
+			buildIndex := -1
+			lookupCount := 0
+			for index, event := range events {
+				if event == "build" {
+					if buildIndex != -1 {
+						t.Fatalf("expected exactly one build event, got a second at index %d: %v", index, events)
+					}
+					buildIndex = index
+					continue
+				}
+				lookupCount++
+				if buildIndex == -1 {
+					t.Fatalf("observed a lookup event before any build event: %v", events)
+				}
+				if index <= buildIndex {
+					t.Fatalf("lookup event at index %d did not come strictly after the build event at index %d: %v", index, buildIndex, events)
+				}
+			}
+			if buildIndex == -1 {
+				t.Fatalf("expected a build event, got none: %v (diagnostics=%+v)", events, result.Diagnostics)
+			}
+			if lookupCount == 0 {
+				t.Fatalf("expected at least one lookup event for a fixture containing a call, got none: %v", events)
+			}
+		})
+	}
 }
