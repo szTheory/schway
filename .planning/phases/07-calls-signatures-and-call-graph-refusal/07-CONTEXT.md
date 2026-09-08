@@ -682,6 +682,160 @@ re-verified in the tree before recording.
 
 ---
 
+## Amendments from 07-REVIEWS.md (2026-09-08, post-cross-AI-review)
+
+Three independent external reviewers (codex, opencode, antigravity) each
+returned Risk: HIGH and converged on the same class of defect: the plans
+specified data flows the current architecture cannot carry. Every finding below
+was re-verified against the shipped tree by the orchestrator before being
+locked. These decisions **supersede** any conflicting earlier text.
+
+- **D-07-29:** Callee identity gets an additive core field. Add
+  `CalleeID string` with tag `json:"callee_id,omitempty"` to
+  `core.LinearOperation`, populated **only** on an `OpCall` and holding the
+  resolved callee's **function ID**, never its name. This follows the exact
+  D-04 precedent already in that struct (`OkEdgeID`, `Allocator`, `Reason`):
+  additive + `omitempty`, so no pre-Phase-07 core artifact moves a byte. Three
+  refusals, derived independently at both the `check` and `corevalidate` sites:
+  an `OpCall` with an empty `CalleeID`; any non-`OpCall` operation with a
+  non-empty one; a `CalleeID` naming no declared function. Rationale: the
+  reviews found `CalleeID` appears **zero** times across all five plans and this
+  document, while `07-04-PLAN.md` repeatedly says "an `OpCall` whose callee
+  *resolves* to no declared function" — presupposing a mechanism that was never
+  specified. `OpForeignCall`'s precedent does not generalize: it hangs symbol
+  identity off `Function.ForeignContract`, viable only because a function has at
+  most one foreign contract, whereas a function may call many callees.
+- **D-07-30:** `callgraph` node identity is the function **ID**, not the name.
+  `07-04-PLAN.md`'s instruction to "reuse `isDeclaredFunctionName`'s precedence
+  rule" is not literally possible — that helper is unexported inside
+  `corevalidate` (`corevalidate.go:1654`), and the same plan puts `corevalidate`
+  on `callgraph`'s own forbidden-import list. It also matches on `Name`. The
+  shadowing precedence rule it encodes answers a *different* question (foreign
+  symbol vs. Lang function at resolution time) and stays where it is, exercised
+  by its own `check`-side fixture. `callgraph` restates nothing and simply
+  follows `CalleeID`.
+- **D-07-31:** `Callable` is the D-04-03 predicate — publication safety, **not**
+  export membership. This is the review's highest-value finding and it falsifies
+  the rule the plans were about to enforce. D-04-03 defines callable as
+  "`originvalidate.ValidatePublished` would publish it";
+  `ValidatePublished` (`originvalidate.go:346-384`) recomputes **return-origin
+  safety** per function and refuses with `core.origin_omitted` /
+  `core.origin_understated` / `core.origin_access_mismatch`. It never reads an
+  export list. Consequences: (a) the phase needs **no** export set in
+  `core.Program` — the C-1 finding dissolves once the predicate is stated
+  correctly, and no core-schema export field is to be added; (b) an unexported
+  callee is the **wrong** negative control and must not be used; (c) the
+  proposed `export_callee` repair is invalid, since exporting a function cannot
+  fix an unsafe borrow-derived return.
+- **D-07-32:** Refactor `ValidatePublished` to a per-function predicate.
+  Introduce `PublishProblemsFor(function core.Function) []Problem` and have
+  `ValidatePublished` delegate to it, preserving its current first-problem
+  whole-program return exactly. Required because `Callable` is a per-function
+  fact and today one invalid function collapses the whole program to a single
+  problem. Non-breaking and bounded — the body is ~40 lines over `core.Function`
+  alone.
+- **D-07-33:** The peer's `Callable` re-derivation is **narrowed this phase, and
+  the narrowing is declared.** `corevalidate` independently re-derives only the
+  `core.origin_omitted` predicate — the one class whose witness this phase
+  already has. `core.origin_understated`, `core.origin_access_mismatch`, and
+  foreign-origin-omitted are **deferred to Phase 09's peer** alongside liveness.
+  This is D-07-26's scope-cut trigger being pulled deliberately rather than
+  discovered mid-execution: a full peer-side origin recomputation is a second
+  implementation of `RecomputeOrigin`/`RecomputeOriginPerReturn`
+  (`originvalidate.go:133,234`), which is Phase 09's size, not Phase 07's.
+  `Callable` as **published** stays the full predicate — only the peer's check
+  of it is narrow. `PHASE-07-DEBT.md` must state plainly that for the three
+  deferred classes the peer can only ever falsely agree, which is precisely the
+  single-producer leak D-07-23 names, scoped and time-boxed rather than denied.
+  `corevalidate` must **not** import `originvalidate` (it does not today); the
+  re-derivation is its own code by a materially different route.
+- **D-07-34:** `check` gets a pre-body signature pass, not a new public
+  parameter. `check.Program(ast.Program) Result` (`check.go:44`) keeps its
+  signature; inside it, a pass over all declared functions builds an immutable
+  signature table **from signatures only**, before any body admission, and body
+  admission consults only that table. This satisfies "admitted from the callee's
+  published signature summary alone, never from its body" without inventing a
+  cross-module summary channel that nothing in Phase 07 can populate.
+  Cross-module summary consumption stays Phase 09+.
+- **D-07-35:** No `Span` is added to `core.LinearOperation`. A span on every
+  operation would move bytes in every existing core artifact, against D-07-08's
+  whole point. Instead `callgraph.Order` returns **operation IDs**, and `check`
+  projects them to spans through its own in-memory emission bookkeeping when it
+  builds the diagnostic. The `corevalidate` peer has no spans and needs none —
+  its job is refusal, not diagnostics.
+- **D-07-36:** `lang.interface/1` gets a real decoder, because removing
+  `omitempty` does not make Go reject anything. Add `DecodeInterface([]byte)`
+  with schema-peek dispatch: `/0` routes to the pinned `InterfaceV0` struct,
+  `/1` routes to strict validation (every required field present and non-empty,
+  `Mode` within `{owned, shared, exclusive}`, digest format checked, no
+  duplicate function IDs), any other schema is refused. `CheckSummary`
+  (`originvalidate.go:459`) routes through it. Without this the threat-model
+  claim that a missing `Mode`/`Return`/`Foreign` is refused is unsupported, and
+  nothing would actually send a `/0` document to the pinned decoder.
+- **D-07-37:** `ClosureDigest` gets a canonical preimage — closing A-06, which
+  was a larger hole than it recorded. The preimage is the function's `/1`
+  signature **with `ClosureDigest` itself zeroed** (otherwise the definition is
+  self-referential), prefixed with a domain separator, followed by the callee
+  `(ID, ClosureDigest)` pairs **sorted by ID**. Base case, zero callees: the
+  digest of that preimage with an empty callee list.
+- **D-07-38:** Acyclicity is proven **before** any digest chaining is computed.
+  The chain terminates only on a DAG, so the earlier ordering let a cyclic
+  program reach a non-terminating digest computation before the gate that would
+  have refused it existed. The call graph and its cycle refusal must therefore
+  land in a wave **before** the wave that chains closure digests. Plan
+  decomposition is the planner's, but this ordering constraint is not.
+- **D-07-39:** `interp` and `cgen` get their own explicit `OpCall` arms
+  returning a named "recognized, unsupported in Phase 07" error. `OpCall` must
+  **not** be folded into the grouped copy/move/borrow cases (`cgen.go:259`,
+  `interp.go:391`) — doing so emits copy-like C and a pass-through value, making
+  a call look executed when no callee ran. The exhaustive-dispatch controls
+  assert **recognition**, never execution, and must say so, so that a green
+  control cannot certify a stub.
+- **D-07-40:** Two shipped tests change, and the plans must say so.
+  `TestFallibleCallUnconsumedRejected` (`syntax_test.go:1004`) pins the refusal
+  at `syntax.Parse`, and `native_test.go:1173` expects `format --check` to
+  reject the fixture syntactically. D-07-01 moves that enforcement, so both are
+  planned edits, not incidental breakage.
+- **D-07-41:** QLT-08's timing discipline is honoured literally. Each seeded
+  mutation lives in the plan that **introduces** its control — the two dispatch
+  controls get theirs where they are introduced, and cycle refusal gets its
+  parser-shaped mutation-kill where it is introduced, not deferred to a later
+  phase-wide matrix. The phase-wide matrix stays, but as a completeness check
+  derived from an authoritative control list and compared by exact set equality,
+  never as a self-authored registry that can omit a control from both the table
+  and its mutations.
+- **D-07-42:** Fault-injection seams are **unexported**. Use injected predicates
+  on a private walker configuration exercised by same-package tests, not
+  exported package-level `var` overrides on production paths. `pathoracle.go:51`
+  is precedent for the shape, but multiplying exported mutable globals across
+  production `check` and `corevalidate` paths risks `-race` failures and
+  test-order dependence.
+- **D-07-43:** Cycle witness selection is made deterministic, because canonical
+  rotation alone is not. Rotation normalizes *one* witness; a graph containing
+  several cycles can still yield different witnesses under different root
+  orderings, and therefore different diagnostic IDs. Sort roots and adjacency
+  lists by function ID, and select the witness whose canonical rotation is
+  lexicographically smallest. D-07-16's rotation stands; this completes it.
+- **D-07-44:** Amendment A-03 was partly wrong and is corrected here.
+  `exclusive_borrow_clean` **does** exist — as inline Go source at
+  `check/check_exclusive_test.go:46-58` (module `owned.exclusive_borrow_clean`,
+  `fn relay`), with the clean-but-unpublishable witness asserted again at
+  `originvalidate_test.go:230`. A-03 checked `testdata/` for a *file* and
+  reported the wrong conclusion. The Wave 0 task is to **extract the existing
+  inline witness**, not author a new one — and the existing one is the correct
+  witness precisely because it fails publication with `core.origin_omitted`,
+  which is D-07-31's real predicate. Separately, the `relay`/`escort` witness
+  recorded in D-04-03's narrative uses nested `relay(borrow mut buffer)`, which
+  **D-07-01 has just made ungrammatical**; it cannot be copied verbatim and must
+  be deliberately converted to A-normal form and shown semantically equivalent.
+- **D-07-45:** The unresolved-callee refusal gets its own typed identity,
+  separate from `cycleError`. A `CalleeID` naming no declared function is not a
+  cycle and must not borrow the cycle code, so `check` and `corevalidate` can
+  assert the same stable fact about it.
+
+---
+
 *Phase: 07-calls-signatures-and-call-graph-refusal*
 *Context gathered: 2026-09-08*
 *Amended: 2026-09-08 after 07-RESEARCH.md*
+*Amended: 2026-09-08 after 07-REVIEWS.md (cross-AI review, 3 reviewers, all HIGH)*
