@@ -2501,14 +2501,38 @@ func TestNoCoverageClaimedForNamedResiduals(t *testing.T) {
 	}
 }
 
+// phaseArtifactGlob resolves a phase-artifact pattern against both the live
+// phase tree (.planning/phases/) and the milestone archives
+// (.planning/milestones/<milestone>-phases/), which is where a completed
+// milestone's phase directories move. A test that only knew the live tree
+// would silently start failing -- or, worse for a completeness check,
+// silently start passing on an empty set -- the moment a milestone closed.
+func phaseArtifactGlob(parts ...string) ([]string, error) {
+	live, err := filepath.Glob(testsupport.ProjectPath(append([]string{".planning", "phases"}, parts...)...))
+	if err != nil {
+		return nil, err
+	}
+	archived, err := filepath.Glob(testsupport.ProjectPath(append([]string{".planning", "milestones", "*-phases"}, parts...)...))
+	if err != nil {
+		return nil, err
+	}
+	return append(live, archived...), nil
+}
+
 // TestPhase4ReachabilityRecordIsComplete is task 04-07-03's own closure of
 // the Generator and Probe Reachability Register (D-04-21): every row of
 // that register in 04-VALIDATION.md must be completed from an in-code
 // comment, each naming at least one shape the generator or probe does not
 // reach -- coverage is not the question, per D-04-21; reachability is.
 func TestPhase4ReachabilityRecordIsComplete(t *testing.T) {
-	path := testsupport.ProjectPath(".planning", "phases", "04-fallible-resources-and-c-boundary", "04-VALIDATION.md")
-	data, err := os.ReadFile(path)
+	matches, err := phaseArtifactGlob("04-fallible-resources-and-c-boundary", "04-VALIDATION.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("expected exactly one 04-VALIDATION.md, found %d: %v", len(matches), matches)
+	}
+	data, err := os.ReadFile(matches[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2587,12 +2611,12 @@ var debtRegisterSeverities = map[string]bool{"blocker": true, "warning": true, "
 // The register is scanned for every phase, not only Phase 4: a register that
 // stops being maintained is exactly the failure this catches.
 func TestDebtRegistersAreWellFormed(t *testing.T) {
-	registers, err := filepath.Glob(testsupport.ProjectPath(".planning", "phases", "*", "*-DEBT.md"))
+	registers, err := phaseArtifactGlob("*", "*-DEBT.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(registers) == 0 {
-		t.Fatal("no *-DEBT.md register found under .planning/phases")
+		t.Fatal("no *-DEBT.md register found under .planning/phases or .planning/milestones/*-phases")
 	}
 	for _, path := range registers {
 		t.Run(filepath.Base(path), func(t *testing.T) {
