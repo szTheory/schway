@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
+current_phase: 07
+current_phase_name: Calls, Signatures, and Call-Graph Refusal
 status: roadmapped
-last_updated: "2026-09-08T00:00:00.000Z"
+stopped_at: Phase 07 context gathered
+last_updated: "2026-09-08T17:47:28.557Z"
 last_activity: 2026-09-08
+last_activity_desc: M002 roadmap created (7 phases, 30/30 requirements mapped)
+state_head: e3bd6e266960e7053cb12a6b4f67af4335a6a69a
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 0
 ---
 
 # Project State
@@ -229,10 +233,10 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-08
-Stopped at: M002 roadmap created — Phases 07-13, 30/30 requirements mapped;
+Last session: 2026-09-08T17:47:28.537Z
+Stopped at: Phase 07 context gathered
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
-Resume file: None
+Resume file: .planning/phases/07-calls-signatures-and-call-graph-refusal/07-CONTEXT.md
 Next command: `/gsd-discuss-phase 07`
 
 ## Operator Next Steps
