@@ -1,6 +1,10 @@
 package core
 
-import "github.com/codename-lang/lang/internal/compiler/diagnostic"
+import (
+	"encoding/json"
+
+	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+)
 
 const (
 	Schema  = "lang.core/0"
@@ -281,6 +285,184 @@ type ForeignReach struct {
 	Allocator    string `json:"allocator"`
 	Unwind       string `json:"unwind"`
 	NonlocalExit string `json:"nonlocal_exit"`
+}
+
+// InterfaceV0 and FunctionSignatureV0 pin the frozen lang.interface/0 shape
+// (D-07-08): exactly the pre-/1-bump field set. A /0 document is decodable
+// but never admissible for a call: FunctionSignatureV0 has no Callable,
+// Parameters, Return, or ClosureDigest field at all — admission is
+// structurally unreachable, not merely refused by convention, the same
+// argument style already used for Interface/FunctionSignature above.
+type InterfaceV0 struct {
+	Schema     string                `json:"schema"`
+	ModuleID   string                `json:"module_id"`
+	CoreDigest string                `json:"core_digest"`
+	Functions  []FunctionSignatureV0 `json:"functions"`
+}
+
+// FunctionSignatureV0 is the frozen pre-/1 FunctionSignature shape (D-07-08).
+type FunctionSignatureV0 struct {
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	Parameter    Parameter     `json:"parameter"`
+	ReturnType   string        `json:"return_type"`
+	PublicOrigin *PublicOrigin `json:"public_origin,omitempty"`
+	Abilities    []Ability     `json:"abilities"`
+}
+
+// DecodedInterface is DecodeInterface's dispatch result (D-07-36): exactly
+// one of V0/V1 is populated, matching which schema the document declared.
+// Admissible is true only for a validated /1 document — a /0 document is
+// decodable (V0 populated) but Admissible is always false, and V0's own
+// type has no Callable/Parameters/Return/ClosureDigest field to admit from
+// even if a caller ignored Admissible (T-07-02).
+type DecodedInterface struct {
+	Schema     string
+	V0         *InterfaceV0
+	V1         *Interface
+	Admissible bool
+}
+
+// DecodeError is DecodeInterface's typed refusal, matching
+// originvalidate.Error's {Code}-only shape so callers can dispatch on Code
+// the same way.
+type DecodeError struct{ Code string }
+
+func (e *DecodeError) Error() string { return e.Code }
+
+// interfaceSchemaPeek reads only the schema string from an interface
+// document (D-07-36's schema-peek dispatch), without decoding any other
+// field, so a malformed or oversized body never has to be structurally
+// interpreted before the dispatch decision is made.
+type interfaceSchemaPeek struct {
+	Schema string `json:"schema"`
+}
+
+// decoderRequireNonEmpty is D-07-42's unexported fault-injection seam for
+// TestDecodeInterfaceRequiredModeMutationKilled (a same-package test, per
+// D-07-42 — never an exported package-level var on a production path):
+// production always requires a non-empty value; the test temporarily
+// widens it to accept "" so the missing-Mode refusal is proven to actually
+// bite, not merely appear to. Restoring it (via defer) restores the
+// refusal. This mirrors pathoracle.go's injection shape (pathoracle.go:38-
+// 51's bounded-const discipline): the accepted set is fail-closed and is
+// never widened to make a test pass in production.
+var decoderRequireNonEmpty = func(value string) bool { return value != "" }
+
+// isValidDigest reports whether value matches the exact shape
+// originvalidate.digest() emits: "sha256:" followed by exactly 64 lowercase
+// hex characters. DecodeInterface never mints a second digest-shape check —
+// this is a shape check only, not a re-derivation of the digest itself.
+func isValidDigest(value string) bool {
+	const prefix = "sha256:"
+	if len(value) != len(prefix)+64 || value[:len(prefix)] != prefix {
+		return false
+	}
+	for _, r := range value[len(prefix):] {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// DecodeInterface implements D-07-36: it peeks only the schema string, then
+// dispatches lang.interface/0 to the pinned InterfaceV0 path, lang.interface/1
+// to strict validation, and any other schema value to a refusal. The
+// accepted-schema set {InterfaceSchema, InterfaceSchema1} is fail-closed
+// and is never widened to make a test pass.
+func DecodeInterface(data []byte) (DecodedInterface, error) {
+	var peek interfaceSchemaPeek
+	if err := json.Unmarshal(data, &peek); err != nil {
+		return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_json"}
+	}
+	switch peek.Schema {
+	case InterfaceSchema:
+		var v0 InterfaceV0
+		if err := json.Unmarshal(data, &v0); err != nil {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_json"}
+		}
+		return DecodedInterface{Schema: peek.Schema, V0: &v0, Admissible: false}, nil
+	case InterfaceSchema1:
+		return decodeInterfaceV1(data)
+	default:
+		return DecodedInterface{}, &DecodeError{Code: "core.interface_unknown_schema"}
+	}
+}
+
+// decodeInterfaceV1 is DecodeInterface's strict lang.interface/1 validation
+// path (D-07-36): every required field named on FunctionSignature/
+// ParameterContract/ReturnContract's doc comments is checked present and
+// non-empty, Mode is checked against its closed set, both digest fields are
+// checked against isValidDigest's shape, and no two functions may share an
+// ID. "Foreign" needs a raw-JSON presence check specifically because
+// ForeignReach's own zero value ("" in every field) is a LEGAL value
+// (meaning "no foreign reach"), indistinguishable from an absent key once
+// typed-unmarshaled — every other required field's zero value is illegal,
+// so a typed-value check alone is sufficient for it.
+func decodeInterfaceV1(data []byte) (DecodedInterface, error) {
+	var v1 Interface
+	if err := json.Unmarshal(data, &v1); err != nil {
+		return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_json"}
+	}
+	var raw struct {
+		Functions []map[string]json.RawMessage `json:"functions"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_json"}
+	}
+
+	if !decoderRequireNonEmpty(v1.ModuleID) {
+		return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+	}
+	if !isValidDigest(v1.CoreDigest) {
+		return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_digest"}
+	}
+
+	seenIDs := make(map[string]bool, len(v1.Functions))
+	for index, function := range v1.Functions {
+		if seenIDs[function.ID] {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_duplicate_function_id"}
+		}
+		seenIDs[function.ID] = true
+
+		if !decoderRequireNonEmpty(function.ID) || !decoderRequireNonEmpty(function.Name) {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+		}
+		if len(function.Parameters) == 0 {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+		}
+		for _, parameter := range function.Parameters {
+			if parameter.Mode == "" {
+				if !decoderRequireNonEmpty(parameter.Mode) {
+					return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+				}
+			} else if parameter.Mode != "owned" && parameter.Mode != "shared" && parameter.Mode != "exclusive" {
+				return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_mode"}
+			}
+		}
+		if function.Return.Mode == "" {
+			if !decoderRequireNonEmpty(function.Return.Mode) {
+				return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+			}
+		} else if function.Return.Mode != "owned" && function.Return.Mode != "shared" && function.Return.Mode != "exclusive" {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_mode"}
+		} else if (function.Return.Mode == "owned") != (len(function.Return.Paths) == 0) {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+		}
+		if index < len(raw.Functions) {
+			if _, present := raw.Functions[index]["foreign"]; !present {
+				return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+			}
+		}
+		if !decoderRequireNonEmpty(function.ClosureDigest) {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_missing_field"}
+		}
+		if !isValidDigest(function.ClosureDigest) {
+			return DecodedInterface{}, &DecodeError{Code: "core.interface_invalid_digest"}
+		}
+	}
+	return DecodedInterface{Schema: InterfaceSchema1, V1: &v1, Admissible: true}, nil
 }
 
 type Parameter struct {

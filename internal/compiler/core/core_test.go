@@ -457,3 +457,270 @@ func cloneCoreProgram(t *testing.T, program core.Program) core.Program {
 	}
 	return clone
 }
+
+// pinnedInterfaceV0JSON is a hand-written lang.interface/0 document, pinned
+// at the exact bytes a pre-Stage-0 producer would have emitted (D-07-08).
+// Following protocol_test.go:169-192's frozen-literal discipline: this
+// string must never be regenerated to make a later test pass — a failure
+// here means already-published /0 document bytes would have been
+// perturbed.
+const pinnedInterfaceV0JSON = `{"schema":"lang.interface/0","module_id":"m1","core_digest":"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","public_origin":{"paths":["buffer"],"access":"shared"},"abilities":["share"]}]}`
+
+// TestFrozenInterfaceV0BytesUnchanged is 07-01 Task 2's Test 1 (D-07-08): a
+// pinned /0 JSON literal decodes into core.InterfaceV0 field-for-field
+// against a hand-written expected value, then re-encodes to those identical
+// pinned bytes. core.InterfaceSchema itself must still be the exported
+// "lang.interface/0" constant after the /1 bump.
+func TestFrozenInterfaceV0BytesUnchanged(t *testing.T) {
+	if core.InterfaceSchema != "lang.interface/0" {
+		t.Fatalf("core.InterfaceSchema = %q, want frozen %q", core.InterfaceSchema, "lang.interface/0")
+	}
+	var v0 core.InterfaceV0
+	if err := json.Unmarshal([]byte(pinnedInterfaceV0JSON), &v0); err != nil {
+		t.Fatalf("decode pinned /0 literal: %v", err)
+	}
+	want := core.InterfaceV0{
+		Schema: "lang.interface/0", ModuleID: "m1",
+		CoreDigest: "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd",
+		Functions: []core.FunctionSignatureV0{{
+			ID: "f1", Name: "identity",
+			Parameter:    core.Parameter{ID: "p1", Name: "buffer", Type: "Buffer"},
+			ReturnType:   "Buffer",
+			PublicOrigin: &core.PublicOrigin{Paths: []string{"buffer"}, Access: "shared"},
+			Abilities:    []core.Ability{core.AbilityShare},
+		}},
+	}
+	if v0.Schema != want.Schema || v0.ModuleID != want.ModuleID || v0.CoreDigest != want.CoreDigest {
+		t.Fatalf("decoded /0 top-level mismatch: got %+v, want %+v", v0, want)
+	}
+	if len(v0.Functions) != 1 || v0.Functions[0].ID != want.Functions[0].ID ||
+		v0.Functions[0].PublicOrigin == nil || v0.Functions[0].PublicOrigin.Access != "shared" {
+		t.Fatalf("decoded /0 function mismatch: got %+v, want %+v", v0.Functions, want.Functions)
+	}
+	reencoded, err := json.Marshal(v0)
+	if err != nil {
+		t.Fatalf("re-encode: %v", err)
+	}
+	if string(reencoded) != pinnedInterfaceV0JSON {
+		t.Fatalf("re-encoded /0 bytes moved:\n got  %s\n want %s", reencoded, pinnedInterfaceV0JSON)
+	}
+}
+
+// TestDecodeInterfaceV0NeverAdmissible is 07-01 Task 2's Test 2 (D-07-36/
+// T-07-02): DecodeInterface on a /0 document returns the pinned InterfaceV0
+// shape with Admissible always false; the V0 type itself has no Callable,
+// Parameters, Return, or ClosureDigest field, so admission is structurally
+// unreachable rather than merely refused.
+func TestDecodeInterfaceV0NeverAdmissible(t *testing.T) {
+	decoded, err := core.DecodeInterface([]byte(pinnedInterfaceV0JSON))
+	if err != nil {
+		t.Fatalf("expected a /0 document to decode cleanly, got %v", err)
+	}
+	if decoded.V0 == nil {
+		t.Fatal("expected V0 to be populated for a lang.interface/0 document")
+	}
+	if decoded.V1 != nil {
+		t.Fatal("expected V1 to stay nil for a lang.interface/0 document")
+	}
+	if decoded.Admissible {
+		t.Fatal("expected a /0 document to never be Admissible")
+	}
+}
+
+// validHexDigest is a syntactically valid sha256:+64-lowercase-hex digest
+// shape, used only to satisfy DecodeInterface's shape check in hand-built
+// fixtures below — it is not a real content digest of anything.
+const validHexDigest = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd" + "ef"
+
+// validInterfaceV1Document returns a fresh, independent map[string]any
+// representation of a minimal but fully valid lang.interface/1 document, so
+// each subtest below can safely mutate its own copy without cross-test
+// interference.
+func validInterfaceV1Document(t *testing.T) map[string]any {
+	t.Helper()
+	return map[string]any{
+		"schema":      "lang.interface/1",
+		"module_id":   "m1",
+		"core_digest": validHexDigest,
+		"functions": []any{
+			map[string]any{
+				"id":   "f1",
+				"name": "identity",
+				"parameters": []any{
+					map[string]any{"id": "p1", "name": "buffer", "type": "Buffer", "mode": "owned", "drops": false},
+				},
+				"return":         map[string]any{"type": "Buffer", "mode": "owned", "paths": []any{}, "fresh": false},
+				"abilities":      []any{},
+				"callable":       false,
+				"foreign":        map[string]any{"allocator": "", "unwind": "", "nonlocal_exit": ""},
+				"closure_digest": validHexDigest,
+			},
+		},
+	}
+}
+
+// deepCopyJSON round-trips value through JSON so a subtest can mutate its
+// own independent copy of a shared nested-map fixture.
+func deepCopyJSON(t *testing.T, value map[string]any) map[string]any {
+	t.Helper()
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal for deep copy: %v", err)
+	}
+	var clone map[string]any
+	if err := json.Unmarshal(data, &clone); err != nil {
+		t.Fatalf("unmarshal for deep copy: %v", err)
+	}
+	return clone
+}
+
+func firstFunction(t *testing.T, document map[string]any) map[string]any {
+	t.Helper()
+	functions, ok := document["functions"].([]any)
+	if !ok || len(functions) == 0 {
+		t.Fatal("expected at least one function in the fixture document")
+	}
+	function, ok := functions[0].(map[string]any)
+	if !ok {
+		t.Fatal("expected functions[0] to be an object")
+	}
+	return function
+}
+
+func decodeErrorCode(err error) string {
+	var typed *core.DecodeError
+	if err == nil {
+		return ""
+	}
+	if de, ok := err.(*core.DecodeError); ok {
+		typed = de
+	}
+	if typed == nil {
+		return ""
+	}
+	return typed.Code
+}
+
+// TestDecodeInterfaceV1BaselineAccepted proves the shared fixture itself is
+// valid before every mutation subtest below relies on it being refused only
+// because of the ONE thing each subtest breaks.
+func TestDecodeInterfaceV1BaselineAccepted(t *testing.T) {
+	document := validInterfaceV1Document(t)
+	data, err := json.Marshal(document)
+	if err != nil {
+		t.Fatalf("marshal baseline: %v", err)
+	}
+	decoded, err := core.DecodeInterface(data)
+	if err != nil {
+		t.Fatalf("expected the baseline /1 document to decode cleanly, got %v", err)
+	}
+	if decoded.V1 == nil || !decoded.Admissible {
+		t.Fatalf("expected the baseline /1 document to be Admissible: %+v", decoded)
+	}
+}
+
+// TestDecodeInterfaceV1RequiredFieldsRefused is 07-01 Task 2's Test 3
+// (D-07-36): DecodeInterface refuses a /1 document with a missing or empty
+// required field. Each subtest breaks exactly one field of the shared valid
+// baseline.
+func TestDecodeInterfaceV1RequiredFieldsRefused(t *testing.T) {
+	cases := []struct {
+		name   string
+		mutate func(function map[string]any)
+	}{
+		{"missing Mode", func(function map[string]any) {
+			parameters := function["parameters"].([]any)
+			parameter := parameters[0].(map[string]any)
+			delete(parameter, "mode")
+		}},
+		{"empty Mode", func(function map[string]any) {
+			parameters := function["parameters"].([]any)
+			parameter := parameters[0].(map[string]any)
+			parameter["mode"] = ""
+		}},
+		{"missing Return", func(function map[string]any) {
+			delete(function, "return")
+		}},
+		{"missing Foreign", func(function map[string]any) {
+			delete(function, "foreign")
+		}},
+		{"empty ClosureDigest", func(function map[string]any) {
+			function["closure_digest"] = ""
+		}},
+		{"empty Parameters where the function declares a parameter", func(function map[string]any) {
+			function["parameters"] = []any{}
+		}},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			document := deepCopyJSON(t, validInterfaceV1Document(t))
+			testCase.mutate(firstFunction(t, document))
+			data, err := json.Marshal(document)
+			if err != nil {
+				t.Fatalf("marshal mutated document: %v", err)
+			}
+			decoded, err := core.DecodeInterface(data)
+			if err == nil {
+				t.Fatalf("expected refusal for %q, got a clean decode: %+v", testCase.name, decoded)
+			}
+			if code := decodeErrorCode(err); code != "core.interface_missing_field" {
+				t.Fatalf("%s: expected code core.interface_missing_field, got %q (%v)", testCase.name, code, err)
+			}
+		})
+	}
+}
+
+// TestDecodeInterfaceV1ValueDomainRefused is 07-01 Task 2's Test 4
+// (D-07-36): DecodeInterface refuses a Mode outside the closed set, a
+// malformed digest, a duplicate function ID, and any unknown schema value.
+func TestDecodeInterfaceV1ValueDomainRefused(t *testing.T) {
+	t.Run("Mode outside closed set", func(t *testing.T) {
+		document := deepCopyJSON(t, validInterfaceV1Document(t))
+		function := firstFunction(t, document)
+		parameters := function["parameters"].([]any)
+		parameters[0].(map[string]any)["mode"] = "unspecified"
+		data, _ := json.Marshal(document)
+		_, err := core.DecodeInterface(data)
+		if code := decodeErrorCode(err); code != "core.interface_invalid_mode" {
+			t.Fatalf("expected core.interface_invalid_mode, got %q (%v)", code, err)
+		}
+	})
+	t.Run("malformed ClosureDigest", func(t *testing.T) {
+		document := deepCopyJSON(t, validInterfaceV1Document(t))
+		firstFunction(t, document)["closure_digest"] = "not-a-digest"
+		data, _ := json.Marshal(document)
+		_, err := core.DecodeInterface(data)
+		if code := decodeErrorCode(err); code != "core.interface_invalid_digest" {
+			t.Fatalf("expected core.interface_invalid_digest, got %q (%v)", code, err)
+		}
+	})
+	t.Run("malformed CoreDigest", func(t *testing.T) {
+		document := deepCopyJSON(t, validInterfaceV1Document(t))
+		document["core_digest"] = "sha256:tooshort"
+		data, _ := json.Marshal(document)
+		_, err := core.DecodeInterface(data)
+		if code := decodeErrorCode(err); code != "core.interface_invalid_digest" {
+			t.Fatalf("expected core.interface_invalid_digest, got %q (%v)", code, err)
+		}
+	})
+	t.Run("duplicate function ID", func(t *testing.T) {
+		document := deepCopyJSON(t, validInterfaceV1Document(t))
+		functions := document["functions"].([]any)
+		duplicate := deepCopyJSON(t, functions[0].(map[string]any))
+		document["functions"] = append(functions, duplicate)
+		data, _ := json.Marshal(document)
+		_, err := core.DecodeInterface(data)
+		if code := decodeErrorCode(err); code != "core.interface_duplicate_function_id" {
+			t.Fatalf("expected core.interface_duplicate_function_id, got %q (%v)", code, err)
+		}
+	})
+	t.Run("unknown schema", func(t *testing.T) {
+		document := deepCopyJSON(t, validInterfaceV1Document(t))
+		document["schema"] = "lang.interface/2"
+		data, _ := json.Marshal(document)
+		_, err := core.DecodeInterface(data)
+		if code := decodeErrorCode(err); code != "core.interface_unknown_schema" {
+			t.Fatalf("expected core.interface_unknown_schema, got %q (%v)", code, err)
+		}
+	})
+}

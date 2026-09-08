@@ -556,6 +556,10 @@ func TestStaleSummaryRejectedBeforeOtherChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// 07-01 Task 3 fills ClosureDigest for real; here it only needs to pass
+	// DecodeInterface's shape check so CheckSummary's own staleness check
+	// (the thing this test asserts) is what actually rejects the document.
+	summary.Functions[0].ClosureDigest = validClosureDigestPlaceholder
 	summaryBytes, err := json.Marshal(summary)
 	if err != nil {
 		t.Fatal(err)
@@ -585,6 +589,48 @@ func TestStaleSummaryRejectedBeforeOtherChecks(t *testing.T) {
 }
 
 // TestOriginEscapeIsNamed is 03-06-02's falsifier naming the accepted
+// TestCheckSummaryRoutesThroughDecodeInterface is 07-01 Task 2's Test 5
+// (D-07-36): a /1 document missing Mode is refused when passed to
+// CheckSummary, asserted through CheckSummary itself, not only through
+// core.DecodeInterface directly -- this is the exact gap codex found
+// ("CheckSummary unmarshals straight into core.Interface and checks only
+// JSON validity and CoreDigest").
+func TestCheckSummaryRoutesThroughDecodeInterface(t *testing.T) {
+	missingModeDoc := []byte(`{
+		"schema": "lang.interface/1",
+		"module_id": "m",
+		"core_digest": "` + validClosureDigestPlaceholder + `",
+		"functions": [{
+			"id": "f", "name": "f",
+			"parameters": [{"id":"p","name":"p","type":"Byte","mode":"","drops":false}],
+			"return": {"type":"Byte","mode":"owned","paths":[],"fresh":false},
+			"abilities": [], "callable": false,
+			"foreign": {"allocator":"","unwind":"","nonlocal_exit":""},
+			"closure_digest": "` + validClosureDigestPlaceholder + `"
+		}]
+	}`)
+	if _, err := originvalidate.CheckSummary(missingModeDoc, []byte(`{}`)); err == nil {
+		t.Fatal("expected CheckSummary to refuse a /1 document with a missing Mode")
+	} else if code := errorCode(err); code != "core.interface_missing_field" {
+		t.Fatalf("expected core.interface_missing_field, got %q (%v)", code, err)
+	}
+}
+
+// TestCheckSummaryRefusesV0Document is D-07-36/T-07-02's CheckSummary-level
+// falsifier: a lang.interface/0 document is decodable but never admissible
+// for a call, so CheckSummary must refuse it rather than silently answering
+// origin questions from a frozen legacy shape it was never validated
+// against.
+func TestCheckSummaryRefusesV0Document(t *testing.T) {
+	if _, err := originvalidate.CheckSummary([]byte(pinnedV0DocumentForCheckSummary), []byte(`{}`)); err == nil {
+		t.Fatal("expected CheckSummary to refuse a lang.interface/0 document")
+	} else if code := errorCode(err); code != "origin.summary_not_admissible" {
+		t.Fatalf("expected origin.summary_not_admissible, got %q (%v)", code, err)
+	}
+}
+
+const pinnedV0DocumentForCheckSummary = `{"schema":"lang.interface/0","module_id":"m1","core_digest":"` + validClosureDigestPlaceholder + `","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","abilities":[]}]}`
+
 // residual: a coordinated frontend-and-summary lie is declared as a named
 // expected escape, never solved and never silently absent.
 func TestOriginEscapeIsNamed(t *testing.T) {
@@ -629,6 +675,12 @@ func TestInterfaceSummaryOmitsBodies(t *testing.T) {
 		}
 	}
 }
+
+// validClosureDigestPlaceholder is a syntactically valid sha256:+64-hex
+// shape used only to satisfy DecodeInterface's shape check in tests that
+// predate 07-01 Task 3 (which computes ClosureDigest for real) — it is not
+// a real content digest of anything.
+const validClosureDigestPlaceholder = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
 func errorCode(err error) string {
 	var typed *originvalidate.Error

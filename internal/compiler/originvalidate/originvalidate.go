@@ -547,19 +547,44 @@ type FunctionAnswer struct {
 	Access string
 }
 
+// decodeErrorCode extracts a core.DecodeError's Code, so CheckSummary can
+// re-surface DecodeInterface's own refusal code through originvalidate's
+// {Code}-only Error shape rather than collapsing every structural refusal
+// into one generic code.
+func decodeErrorCode(err error) string {
+	if decodeErr, ok := err.(*core.DecodeError); ok {
+		return decodeErr.Code
+	}
+	return ""
+}
+
 // CheckSummary is the body-blind consuming path (OWN-04 success criterion
-// 4's second, independent CLI invocation). coreBytes is the RAW, UNPARSED
-// bytes of the core artifact the summary claims to be bound to: this
-// function hashes them and compares against the summary's recorded digest,
-// and NEVER unmarshals coreBytes into any struct that could carry a
-// Linear/Match body field — the digest check is the only use coreBytes is
-// put to, and it runs before any origin or access question is answered
-// (T-03-03: a stale summary is rejected before it is partially trusted).
+// 4's second, independent CLI invocation), rerouted through
+// core.DecodeInterface per D-07-36: a document is now schema-peeked and
+// strictly validated (presence, non-emptiness, Mode's closed set, digest
+// shape, and function-ID uniqueness) before this function ever asks an
+// origin or access question of it, and a lang.interface/0 document is
+// refused outright (T-07-02: never admissible for a call).
+//
+// coreBytes is the RAW, UNPARSED bytes of the core artifact the summary
+// claims to be bound to: this function hashes them and compares against the
+// summary's recorded digest, and NEVER unmarshals coreBytes into any struct
+// that could carry a Linear/Match body field — the digest check is the only
+// use coreBytes is put to, and it runs before any origin or access question
+// is answered (T-03-03: a stale summary is rejected before it is partially
+// trusted).
 func CheckSummary(summaryBytes, coreBytes []byte) ([]FunctionAnswer, error) {
-	var summary core.Interface
-	if err := json.Unmarshal(summaryBytes, &summary); err != nil {
+	decoded, err := core.DecodeInterface(summaryBytes)
+	if err != nil {
+		if code := decodeErrorCode(err); code != "" {
+			return nil, &Error{Code: code}
+		}
 		return nil, &Error{Code: "origin.invalid_summary"}
 	}
+	if !decoded.Admissible || decoded.V1 == nil {
+		return nil, &Error{Code: "origin.summary_not_admissible"}
+	}
+	summary := *decoded.V1
 	if summary.CoreDigest != digest(coreBytes) {
 		return nil, &Error{Code: "origin.stale_summary"}
 	}
