@@ -573,7 +573,8 @@ func TestStaleSummaryRejectedBeforeOtherChecks(t *testing.T) {
 	// against, which is itself the point: there IS no origin/access check
 	// left to run once the digest fails.
 	dishonest := summary
-	dishonest.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"nonexistent"}, Access: "exclusive"}
+	dishonest.Functions[0].Return.Mode = "exclusive"
+	dishonest.Functions[0].Return.Paths = []string{"nonexistent"}
 	dishonestBytes, err := json.Marshal(dishonest)
 	if err != nil {
 		t.Fatal(err)
@@ -615,7 +616,7 @@ func TestInterfaceSummaryOmitsBodies(t *testing.T) {
 	if len(summary.Functions) != 1 {
 		t.Fatalf("expected one function signature, got %d", len(summary.Functions))
 	}
-	if summary.Functions[0].PublicOrigin == nil || summary.Functions[0].PublicOrigin.Access != "shared" {
+	if summary.Functions[0].Return.Mode != "shared" {
 		t.Fatalf("expected the origin fact to survive stripping: %+v", summary.Functions[0])
 	}
 	encoded, err := json.Marshal(summary)
@@ -761,5 +762,58 @@ func TestTerminatorWalkMutationKilled(t *testing.T) {
 
 	if len(mutated) >= len(full) {
 		t.Fatalf("mutation (deleting OpFail) had no observable effect: full=%d mutated=%d", len(full), len(mutated))
+	}
+}
+
+// TestInterfaceV1FieldInvariantsAcrossCorpus is 07-01 Task 1's acceptance
+// criterion: over the entire testdata/phase1..phase4 corpus, BuildInterface
+// must produce, for every function, a Mode value in {owned, shared,
+// exclusive} for every parameter and every return, and Return.Paths empty
+// EXACTLY when Return.Mode == "owned" (D-07-09). Only fixtures that check
+// cleanly (zero diagnostics) are exercised -- a rejected/malformed fixture
+// never reaches BuildInterface in the real pipeline either.
+func TestInterfaceV1FieldInvariantsAcrossCorpus(t *testing.T) {
+	checkedAny := false
+	for _, phase := range []string{"phase1", "phase2", "phase3", "phase4"} {
+		dir := testsupport.ProjectPath("testdata", phase)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("read %s: %v", dir, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+				continue
+			}
+			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				t.Fatalf("read %s/%s: %v", phase, entry.Name(), err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) > 0 {
+				continue // rejected fixture: never reaches BuildInterface for real
+			}
+			summary, err := originvalidate.BuildInterface(checked.Program)
+			if err != nil {
+				t.Fatalf("%s/%s: BuildInterface: %v", phase, entry.Name(), err)
+			}
+			for _, function := range summary.Functions {
+				checkedAny = true
+				for _, parameter := range function.Parameters {
+					if parameter.Mode != "owned" && parameter.Mode != "shared" && parameter.Mode != "exclusive" {
+						t.Fatalf("%s/%s: function %s parameter %s: Mode %q outside {owned,shared,exclusive}", phase, entry.Name(), function.ID, parameter.Name, parameter.Mode)
+					}
+				}
+				if function.Return.Mode != "owned" && function.Return.Mode != "shared" && function.Return.Mode != "exclusive" {
+					t.Fatalf("%s/%s: function %s Return.Mode %q outside {owned,shared,exclusive}", phase, entry.Name(), function.ID, function.Return.Mode)
+				}
+				pathsEmpty := len(function.Return.Paths) == 0
+				if (function.Return.Mode == "owned") != pathsEmpty {
+					t.Fatalf("%s/%s: function %s Return.Paths=%v must be empty exactly when Mode==owned (Mode=%q)", phase, entry.Name(), function.ID, function.Return.Paths, function.Return.Mode)
+				}
+			}
+		}
+	}
+	if !checkedAny {
+		t.Fatal("expected at least one function across testdata/phase1..phase4 to be checked")
 	}
 }

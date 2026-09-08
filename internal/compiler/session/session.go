@@ -1206,13 +1206,19 @@ func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 	return completeCommand(result, started, work), nil
 }
 
+// interfaceProjection builds the R-02 deliberately-lossy CLI projection of a
+// lang.interface/1 summary (protocol.InterfaceSummary is the artifact of
+// record's lossy peer, never a second copy of it — see
+// protocol.InterfaceFunctionAnswer's doc comment). Function.Return replaces
+// the pre-/1 optional PublicOrigin field: Mode == "owned" carries no
+// origin/access to project, matching the old nil-PublicOrigin case exactly.
 func interfaceProjection(schema, moduleID, coreDigest string, functions []core.FunctionSignature) *protocol.InterfaceSummary {
 	summary := &protocol.InterfaceSummary{Schema: schema, ModuleID: moduleID, CoreDigest: coreDigest, Functions: make([]protocol.InterfaceFunctionAnswer, 0, len(functions))}
 	for _, function := range functions {
 		answer := protocol.InterfaceFunctionAnswer{ID: function.ID, Name: function.Name}
-		if function.PublicOrigin != nil {
-			answer.Paths = function.PublicOrigin.Paths
-			answer.Access = function.PublicOrigin.Access
+		if function.Return.Mode != "owned" {
+			answer.Paths = function.Return.Paths
+			answer.Access = function.Return.Mode
 		}
 		summary.Functions = append(summary.Functions, answer)
 	}

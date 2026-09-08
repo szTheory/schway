@@ -154,20 +154,133 @@ type Interface struct {
 
 // InterfaceSchema versions the Interface artifact independently of the core
 // schema it summarizes: adding a field here never moves a core.Program byte.
+// Frozen (D-07-08): a lang.interface/0 document is decodable only by the
+// pinned legacy struct InterfaceV0/FunctionSignatureV0, and is never
+// admissible for a call.
 const InterfaceSchema = "lang.interface/0"
 
-// FunctionSignature is one function's body-stripped public surface: identity,
-// parameter/return shape, its declared origin (if any), and its granted
-// abilities. It deliberately has no Linear/Match field at all — not merely an
+// InterfaceSchema1 mints lang.interface/1 (D-07-08): the interprocedural
+// call contract. Every required field on FunctionSignature/ParameterContract/
+// ReturnContract below carries no omitempty and is refused when missing or
+// empty by DecodeInterface (07-01 Task 2) -- absence is an error, not a
+// defaulting opportunity (D-07-09). A /0 document stays decodable but is
+// never admissible for a call; this bump moves no core.Program byte, which
+// is exactly the property InterfaceSchema's independent versioning was
+// created to buy.
+const InterfaceSchema1 = "lang.interface/1"
+
+// FunctionSignature is one function's body-stripped public surface under
+// lang.interface/1 (D-07-08/D-07-09): identity, the callee's per-parameter
+// ownership contract, its total return contract, its granted abilities,
+// whether it may be called at all, its failure vocabulary, its worst-case
+// foreign reach, and a canonical digest binding it to its own transitive
+// closure. It deliberately has no Linear/Match field at all — not merely an
 // omitted one — so a consumer decoding this type structurally cannot reach a
-// body even by accident.
+// body even by accident (the same argument style as /0).
+//
+// Every field is REQUIRED unless its doc comment says a legal empty value
+// exists: DecodeInterface (07-01 Task 2) refuses a /1 document missing or
+// emptying any required field. No field here may be populated by a caller
+// admission path — SEM-05 forbids that path from reading a callee body, but
+// does not forbid the PRODUCER (BuildInterface) from doing so; each field's
+// R-01 authority names exactly where its value comes from.
 type FunctionSignature struct {
-	ID           string        `json:"id"`
-	Name         string        `json:"name"`
-	Parameter    Parameter     `json:"parameter"`
-	ReturnType   string        `json:"return_type"`
-	PublicOrigin *PublicOrigin `json:"public_origin,omitempty"`
-	Abilities    []Ability     `json:"abilities"`
+	// ID and Name are copied verbatim from core.Function (R-01).
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Parameters is a slice per D-07-10 even though the checker admits
+	// exactly arity 1 today (D-07-01): schema capacity is taken now, with
+	// one producer, rather than later across five consumers. The arity
+	// rule stays tight in the checker, where the cost lives.
+	Parameters []ParameterContract `json:"parameters"`
+	// Return is this function's total return contract (R-01: subsumes the
+	// old optional PublicOrigin — the same two access modes, now total
+	// rather than optional).
+	Return ReturnContract `json:"return"`
+	// Abilities is read from the existing function.ID+":type:0" type-fact
+	// lookup (R-01, originvalidate.go BuildInterface) — unchanged from /0.
+	Abilities []Ability `json:"abilities"`
+	// Callable reports whether this function may appear as a call target
+	// (D-04-03: callable subseteq publishable). This plan declares the
+	// field and leaves it at its fail-closed zero value false; its
+	// predicate is defined in 07-02 (D-07-31/D-07-32) — an unpopulated
+	// field admits nothing.
+	Callable bool `json:"callable"`
+	// Fails reuses core.ForeignContract.Fails' vocabulary verbatim (R-01):
+	// "" (the legal empty value) means infallible; no new failure
+	// vocabulary is minted here.
+	Fails string `json:"fails,omitempty"`
+	// Foreign is this function's closure-derived worst-case foreign reach
+	// (R-01), plain strings per the ForeignContract precedent (core.go:60-64,
+	// planner discretion exercised: plain strings, not a new enumerated
+	// type).
+	Foreign ForeignReach `json:"foreign"`
+	// ClosureDigest is D-07-37's canonical, non-self-referential digest
+	// over this signature (with ClosureDigest itself zeroed) and its
+	// callees' own ClosureDigests, sorted by ID (D-07-38: the chaining arm
+	// over real callees lands in 07-08, after cycle refusal exists; this
+	// plan computes only the zero-callee base case).
+	//
+	// D-07-13: ClosureDigest proves integrity, never authenticity. It is
+	// an unkeyed content hash — anyone who can write the summary can write
+	// a consistent digest. It detects staleness, never forgery; the
+	// forgery answer is independent re-derivation (07-02), never this
+	// digest.
+	ClosureDigest string `json:"closure_digest"`
+}
+
+// ParameterContract is one parameter's ownership contract under
+// lang.interface/1 (D-07-09). Every field is required.
+type ParameterContract struct {
+	// ID, Name, and Type are copied verbatim from core.Function.Parameter
+	// (R-01).
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	// Mode is the declared parameter form (R-01): "owned", "shared", or
+	// "exclusive" — no legal "". Today's grammar has exactly one parameter
+	// form (by-value), so every function's Mode is "owned"; a future
+	// borrow/borrow mut parameter form maps to shared/exclusive. Any other
+	// value is unreachable and is refused by DecodeInterface.
+	Mode string `json:"mode"`
+	// Drops is producer-derived from the checked core (R-01): whether the
+	// callee discharges the drop obligation on this owned parameter
+	// (consumes/drops it internally) rather than moving it out to the
+	// caller via an owned return. Producer-side body reading is legal here
+	// — BuildInterface exists precisely to strip a body into a summary; no
+	// caller admission path may derive this fact itself (SEM-05).
+	Drops bool `json:"drops"`
+}
+
+// ReturnContract is a function's total return contract under
+// lang.interface/1 (D-07-09) — it subsumes the old optional PublicOrigin
+// (R-01): the same two access modes, now total rather than optional. Every
+// field is required except where noted.
+type ReturnContract struct {
+	// Type is copied verbatim from core.Function.ReturnType (R-01).
+	Type string `json:"type"`
+	// Mode is "owned", "shared", or "exclusive" (R-01), derived from
+	// core.Function.PublicOrigin: nil maps to {Mode: "owned", Paths: []};
+	// Access "shared"/"exclusive" maps to {shared/exclusive, Paths}.
+	Mode string `json:"mode"`
+	// Paths names the parameter path(s) this return derives from. Legally
+	// empty IFF Mode == "owned" (D-07-09); refused otherwise.
+	Paths []string `json:"paths"`
+	// Fresh is producer-derived (R-01): true iff Mode == "owned" and the
+	// returned type carries the drop ability, i.e. the caller inherits a
+	// new drop obligation. Producer-side body reading is legal; no caller
+	// admission path may derive this fact itself (SEM-05).
+	Fresh bool `json:"fresh"`
+}
+
+// ForeignReach is a function's closure-derived worst-case foreign reach
+// (R-01): plain strings per the ForeignContract precedent (core.go:60-64,
+// planner discretion exercised — plain strings, not a new enumerated type).
+// "" is each field's legal empty value, meaning "none reachable".
+type ForeignReach struct {
+	Allocator    string `json:"allocator"`
+	Unwind       string `json:"unwind"`
+	NonlocalExit string `json:"nonlocal_exit"`
 }
 
 type Parameter struct {

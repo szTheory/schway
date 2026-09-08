@@ -131,6 +131,13 @@ type TraceSummary struct {
 
 // InterfaceFunctionAnswer is one function's body-blind origin answer, read
 // directly from a core.Interface summary — never from a body field.
+//
+// R-02 (planner resolution, 07-01-PLAN.md): this is a DELIBERATELY LOSSY
+// projection of core.FunctionSignature's full lang.interface/1 fact set —
+// what a body-blind CLI consumer can act on today (origin/access) — never a
+// second copy of the /1 artifact. core.Interface is the artifact of record;
+// mirroring every /1 field here would create a second schema that can drift
+// from the first with no producer forcing them together.
 type InterfaceFunctionAnswer struct {
 	ID     string   `json:"id"`
 	Name   string   `json:"name"`
@@ -141,6 +148,9 @@ type InterfaceFunctionAnswer struct {
 // InterfaceSummary is the `interface export`/`interface check` command
 // projection: module identity, the digest binding the summary to its
 // producing core artifact, and each function's body-blind origin answer.
+// R-02: deliberately lossy relative to core.Interface (see
+// InterfaceFunctionAnswer's doc comment) — core.Interface remains the
+// artifact of record.
 type InterfaceSummary struct {
 	Schema     string                    `json:"schema"`
 	ModuleID   string                    `json:"module_id"`

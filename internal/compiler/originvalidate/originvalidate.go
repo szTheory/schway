@@ -412,17 +412,25 @@ func digest(data []byte) string {
 // (Spike 004's certificate binds the same way). Callers MUST run
 // ValidatePublished against program first: BuildInterface packages what the
 // producer already proved rather than re-deriving it.
+//
+// D-07-08: this emits Schema core.InterfaceSchema1 (lang.interface/1) —
+// every function.ID+":type:0" abilities is unchanged from /0.
+// Every /1 field is populated from its R-01 authority (see the field-level
+// doc comments on core.FunctionSignature); Callable is left at its
+// fail-closed zero value false (its predicate is 07-02's) and ClosureDigest
+// is left empty (07-01 Task 3 fills it).
 func BuildInterface(program core.Program) (core.Interface, error) {
 	coreBytes, err := json.Marshal(program)
 	if err != nil {
 		return core.Interface{}, err
 	}
 	summary := core.Interface{
-		Schema: core.InterfaceSchema, ModuleID: program.ModuleID, CoreDigest: digest(coreBytes),
+		Schema: core.InterfaceSchema1, ModuleID: program.ModuleID, CoreDigest: digest(coreBytes),
 		Functions: make([]core.FunctionSignature, 0, len(program.Functions)),
 	}
 	for _, function := range program.Functions {
 		abilities := []core.Ability{}
+		hasDropAbility := false
 		if function.Linear != nil {
 			for _, fact := range function.Linear.Types {
 				if fact.ID == function.ID+":type:0" {
@@ -431,12 +439,103 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 				}
 			}
 		}
+		for _, ability := range abilities {
+			if ability == core.AbilityDrop {
+				hasDropAbility = true
+				break
+			}
+		}
+
+		parameterContract := core.ParameterContract{
+			ID: function.Parameter.ID, Name: function.Parameter.Name, Type: function.Parameter.Type,
+			// D-07-01: today's grammar has exactly one parameter form
+			// (by-value), so every parameter's Mode is "owned" (R-01).
+			Mode:  "owned",
+			Drops: hasDropAbility && !parameterEscapesOwned(function),
+		}
+
+		returnContract := core.ReturnContract{Type: function.ReturnType}
+		switch {
+		case function.PublicOrigin == nil:
+			returnContract.Mode = "owned"
+			returnContract.Paths = []string{}
+		case function.PublicOrigin.Access == "shared":
+			returnContract.Mode = "shared"
+			returnContract.Paths = function.PublicOrigin.Paths
+		default:
+			returnContract.Mode = function.PublicOrigin.Access
+			returnContract.Paths = function.PublicOrigin.Paths
+		}
+		returnContract.Fresh = returnContract.Mode == "owned" && hasDropAbility
+
+		foreignReach := core.ForeignReach{}
+		fails := ""
+		if function.ForeignContract != nil {
+			foreignReach = core.ForeignReach{
+				Allocator: function.ForeignContract.Allocator, Unwind: function.ForeignContract.Unwind,
+				NonlocalExit: function.ForeignContract.NonlocalExit,
+			}
+			fails = function.ForeignContract.Fails
+		}
+
 		summary.Functions = append(summary.Functions, core.FunctionSignature{
-			ID: function.ID, Name: function.Name, Parameter: function.Parameter, ReturnType: function.ReturnType,
-			PublicOrigin: function.PublicOrigin, Abilities: abilities,
+			ID: function.ID, Name: function.Name,
+			Parameters: []core.ParameterContract{parameterContract},
+			Return:     returnContract,
+			Abilities:  abilities,
+			Callable:   false,
+			Fails:      fails,
+			Foreign:    foreignReach,
+			// ClosureDigest is filled by 07-01 Task 3.
+			ClosureDigest: "",
 		})
 	}
 	return summary, nil
+}
+
+// parameterEscapesOwned reports whether function's return traces back to its
+// own parameter as a directly moved/copied OWNED value, following only
+// OpMove/OpCopy chains and never crossing an OpBorrowShared/
+// OpBorrowExclusive/OpForeignCall operation. This is R-01's authority for
+// ParameterContract.Drops: a borrow-derived return never transfers the
+// parameter's ownership, so the parameter's drop obligation (if it has the
+// Drop ability at all) still belongs to, and is discharged by, the callee.
+// When the parameter itself IS the owned return value, ownership (and the
+// obligation to drop it) moves to the caller instead -- the callee does not
+// discharge it.
+func parameterEscapesOwned(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	operations := function.Linear.Operations
+	sourceOf := make(map[string]core.LinearOperation, len(operations))
+	var returnOps []core.LinearOperation
+	for _, operation := range operations {
+		if operation.Kind == core.OpReturn {
+			returnOps = append(returnOps, operation)
+			continue
+		}
+		sourceOf[operation.TargetID] = operation
+	}
+	for _, returnOp := range returnOps {
+		current := returnOp.SourceID
+		visited := make(map[string]bool)
+		for current != function.Parameter.ID {
+			if visited[current] {
+				break
+			}
+			visited[current] = true
+			operation, exists := sourceOf[current]
+			if !exists || (operation.Kind != core.OpMove && operation.Kind != core.OpCopy) {
+				break
+			}
+			current = operation.SourceID
+		}
+		if current == function.Parameter.ID {
+			return true
+		}
+	}
+	return false
 }
 
 // FunctionAnswer is what a body-blind consumer can decide for one function:
@@ -467,9 +566,9 @@ func CheckSummary(summaryBytes, coreBytes []byte) ([]FunctionAnswer, error) {
 	answers := make([]FunctionAnswer, 0, len(summary.Functions))
 	for _, function := range summary.Functions {
 		answer := FunctionAnswer{ID: function.ID, Name: function.Name}
-		if function.PublicOrigin != nil {
-			answer.Paths = function.PublicOrigin.Paths
-			answer.Access = function.PublicOrigin.Access
+		if function.Return.Mode != "owned" {
+			answer.Paths = function.Return.Paths
+			answer.Access = function.Return.Mode
 		}
 		answers = append(answers, answer)
 	}
