@@ -77,8 +77,8 @@ adopted in every case without further selection.
   arity-1-expressible — the variation lives in the **argument binding's loan
   state**, not in argument count.
 
-- **D-07-04 (accepted consequence, recorded in writing rather than discovered
-  later):** at arity 1, `cgen` can emit at most **one `restrict` per callee**.
+- **D-07-04:** accepted consequence, recorded in writing rather than discovered
+  later — at arity 1, `cgen` can emit at most **one `restrict` per callee**.
   The attribute is therefore provably *correct* but never *load-bearing* — the
   point of `restrict` is asserting that two pointers do not alias. **Phase 11
   must scope its `restrict` evidence explicitly to single-parameter derivation
@@ -375,20 +375,20 @@ independent runs of it, over disjoint reachable input spaces.**
 
 ### Cross-cutting
 
-- **D-07-26 (declare Phase 07's scope-cut trigger now, in writing).** The
+- **D-07-26:** declare Phase 07's scope-cut trigger now, in writing. The
   milestone declares a 2× trigger for Phases 08 and 09; Phase 07 currently has
   none. Adopt: **if Stage 0 + Stage 1 exceed ~2× their initial plan estimate,
   Stage 2's `callgraph` cycle refusal renegotiates out to Phase 08 — never the
   peer (D-07-20) and never the seeded faults (D-07-24).** Key Lesson 4: declare
   deferred scope in writing at the moment it is decided, not under pressure.
 
-- **D-07-27 (a `PHASE-07-DEBT.md` entry written at planning time, not at phase
-  end).** It names: the deferred item (*interprocedural **liveness**
+- **D-07-27:** a `PHASE-07-DEBT.md` entry written at planning time, not at phase
+  end. It names: the deferred item (*interprocedural **liveness**
   re-derivation*), its D-03-02 lineage, its closure phase (09), its closure gate
   verbatim, and — explicitly — that the **signature-summary peer is NOT part of
   this deferral.**
 
-- **D-07-28 (Phase 12 blindness guard, provable today).** The `callgraph`
+- **D-07-28:** Phase 12 blindness guard, provable today. The `callgraph`
   builder must enumerate operations by `Kind == core.OpCall` **across all
   blocks**, never by block position, so calls inside future `Result` match arms
   are picked up automatically (SEM-07 names *"cycles through `Result`
