@@ -4,17 +4,17 @@ milestone: M002
 milestone_name: Interprocedural Semantic Spine
 current_phase: 07
 current_phase_name: Calls, Signatures, and Call-Graph Refusal
-status: roadmapped
-stopped_at: Phase 07 context gathered
-last_updated: "2026-09-08T19:58:05.211Z"
+status: executing
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-09-08T20:33:40.178Z"
 last_activity: 2026-09-08
-last_activity_desc: M002 roadmap created (7 phases, 30/30 requirements mapped)
-state_head: 7b3da422b90d25619e2fa8ad266585ff96ee284f
+last_activity_desc: Phase 07 execution started
+state_head: b288866405848c84b4db84a4a1189e4b22f8ca7e
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M002 — Interprocedural Semantic Spine. Land `OpCall` at all
+**Current focus:** Phase 07 — Calls, Signatures, and Call-Graph Refusal
 six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 **Durable context (survives context clears — read before re-deriving):**
@@ -39,10 +39,10 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 07 — READY TO EXECUTE
-Plan: —
-Status: Roadmap created; awaiting phase discussion/planning
-Last activity: 2026-09-08 — M002 roadmap created (7 phases, 30/30 requirements mapped)
+Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — EXECUTING
+Plan: 2 of 8
+Status: Ready to execute
+Last activity: 2026-09-08 — Phase 07 execution started
 
 Progress: [--------------------] 0% (0/7 phases)
 
@@ -144,6 +144,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 06 P09 | 55min | 3 tasks | 4 files |
 | Phase 06 P10 | 55min | 3 tasks | 9 files |
 | Phase 06 P15 | ~40 min | 3 tasks | 12 files |
+| Phase 07 P01 | 55min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,7 @@ Standing architectural commitments carried into M002:
   identities are the asset.
 - Trust-crossing facts are re-derived independently (`corevalidate`,
   `originvalidate`), never trusted from the producer.
+- [Phase 07]: 07-01: DecodeInterface routes CheckSummary; /0 stays decodable but never admissible for a call — D-07-36 closes codex's HIGH finding that strict /1 decoding was unspecified and /0 dispatch was unwired
 
 ### Pending Todos
 
@@ -233,10 +235,10 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-08T17:47:28.537Z
-Stopped at: Phase 07 context gathered
+Last session: 2026-09-08T20:33:40.167Z
+Stopped at: Completed 07-01-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
-Resume file: .planning/phases/07-calls-signatures-and-call-graph-refusal/07-CONTEXT.md
+Resume file: None
 Next command: `/gsd-discuss-phase 07`
 
 ## Operator Next Steps

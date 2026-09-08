@@ -239,7 +239,7 @@ strictly sequential — every plan overlaps `check.go` / `corevalidate.go` /
 Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Stage 0a: `lang.interface/1`, `DecodeInterface` strict validation, pinned frozen `/0`, canonical non-self-referential `ClosureDigest` preimage (base case only)
+- [x] 07-01-PLAN.md — Stage 0a: `lang.interface/1`, `DecodeInterface` strict validation, pinned frozen `/0`, canonical non-self-referential `ClosureDigest` preimage (base case only)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
