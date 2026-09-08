@@ -2267,3 +2267,124 @@ func TestCallSignatureTableBuiltBeforeCallableAdmissionRuns(t *testing.T) {
 		})
 	}
 }
+
+// TestRelayEscortWitnessParsesCleanly is Task 2 Test 1 (D-07-44): the
+// A-normal-form conversion of D-04-03's decisive research witness parses
+// with zero parser diagnostics.
+func TestRelayEscortWitnessParsesCleanly(t *testing.T) {
+	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("expected zero parser diagnostics, got %+v", parsed.Diagnostics)
+	}
+}
+
+// TestRelayEscortWitnessCallArgumentsAreANormalForm is Task 2 Test 3
+// (D-07-01/D-07-44): every call argument in the fixture is a bare
+// identifier -- fails if a nested call or a borrow/take expression ever
+// appears at a call site (the exact shape the recorded witness's
+// `relay(borrow mut buffer)` had, and D-07-01 now forbids).
+func TestRelayEscortWitnessCallArgumentsAreANormalForm(t *testing.T) {
+	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	parsed := mustParseProgram(t, source)
+	callCount := 0
+	for _, function := range parsed.Funcs {
+		if function.Body.Linear == nil {
+			continue
+		}
+		for _, binding := range function.Body.Linear.Bindings {
+			if binding.RHS.Kind != "call" {
+				continue
+			}
+			callCount++
+			if len(binding.RHS.Arguments) != 1 {
+				t.Fatalf("%s: expected exactly one call argument, got %d", function.Name, len(binding.RHS.Arguments))
+			}
+			argument := binding.RHS.Arguments[0]
+			if argument == "" || strings.ContainsAny(argument, "() \t\n") {
+				t.Fatalf("%s: call argument %q is not a bare identifier (A-normal form violation)", function.Name, argument)
+			}
+		}
+	}
+	if callCount == 0 {
+		t.Fatal("expected at least one call binding in the fixture")
+	}
+}
+
+// TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness is Task 2
+// Tests 2 and 4 (D-04-03/D-07-44, D-03-02): the converted witness's check
+// outcome is asserted by an explicit assertion of zero error diagnostics --
+// this IS the finding, not a failure. `relay` and `escort` both declare
+// (and satisfy) a correct PublicOrigin, so both are Callable
+// (originvalidate.PublishProblemsFor reports no problems for either), and
+// `escort`'s call to `relay` is admitted under this plan's own SEM-06
+// admission arm. The dangling-alias hazard the original single-function
+// research witness demonstrated still slips through here: `escort` moves
+// `buffer` away (`take buffer`) while `aliased` -- the call's own return,
+// standing in for the borrowed view `relay` actually produced -- remains
+// live. `check`'s loan-liveness law (computeLoanLastUses) builds its
+// use-chain from each binding's RHS.Source; a "call" binding carries
+// RHS.Arguments, not RHS.Source, so the call is invisible to that chain as
+// a use of its argument, and the exclusive loan on `buffer` is treated as
+// ending at its own creation point. This is the INTERPROCEDURAL half of
+// D-03-02 (Phase 3 closed the single-function half): it remains open until
+// Phase 08/09's interprocedural loan-liveness work closes it
+// (D-05-32/D-05-33). A future phase's fix to this gap must flip this
+// exact assertion, not silently leave it stale -- that is exactly why it
+// is asserted explicitly here rather than left undocumented.
+func TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness(t *testing.T) {
+	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected zero error diagnostics (the D-03-02 interprocedural finding), got %+v", result.Diagnostics)
+	}
+	var escort *core.Function
+	for index := range result.Program.Functions {
+		if result.Program.Functions[index].Name == "escort" {
+			escort = &result.Program.Functions[index]
+		}
+	}
+	if escort == nil {
+		t.Fatal("expected a checked function named escort")
+	}
+	hasCall, hasMove := false, false
+	for _, operation := range escort.Linear.Operations {
+		switch operation.Kind {
+		case core.OpCall:
+			hasCall = true
+		case core.OpMove:
+			hasMove = true
+		}
+	}
+	if !hasCall || !hasMove {
+		t.Fatalf("expected escort's checked body to carry both a call and a move (the take), got call=%v move=%v", hasCall, hasMove)
+	}
+}
+
+// TestRelayEscortWitnessBothFunctionsAreCallable independently confirms
+// (via originvalidate.PublishProblemsFor, not by re-deriving a second
+// predicate) that BOTH `relay` and `escort` are Callable -- the call this
+// witness demonstrates is genuinely ADMITTED by this plan's own SEM-06 arm,
+// not accidentally refused for the unrelated reason Task 1's own negative
+// control (call_uncallable_callee.lang) demonstrates.
+func TestRelayEscortWitnessBothFunctionsAreCallable(t *testing.T) {
+	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected zero diagnostics, got %+v", result.Diagnostics)
+	}
+	iface, err := originvalidate.BuildInterface(result.Program)
+	if err != nil {
+		t.Fatalf("BuildInterface: %v", err)
+	}
+	found := 0
+	for _, signature := range iface.Functions {
+		if !signature.Callable {
+			t.Fatalf("expected %s to be Callable, got Callable == false", signature.Name)
+		}
+		found++
+	}
+	if found != 2 {
+		t.Fatalf("expected 2 functions (relay, escort), got %d", found)
+	}
+}

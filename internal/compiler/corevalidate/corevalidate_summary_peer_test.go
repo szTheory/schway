@@ -84,6 +84,22 @@ func structuralFieldsEqual(a, b core.FunctionSignature) bool {
 // zero divergence. Callable is asserted separately
 // (TestSummaryPeerCallableAgreesOnOriginOmittedClass) because D-07-33
 // deliberately narrows it.
+// relayEscortWitnessModule is 07-05 Task 2's D-03-02/D-07-44 named
+// exception to this test's own "checked-clean implies corevalidate-valid"
+// invariant: testdata/phase07/relay_escort_witness.lang is DELIBERATELY a
+// fixture that checks clean under `check`'s current (intraprocedural) loan
+// liveness but is independently refused by `corevalidate`'s own replay with
+// core.move_while_borrowed -- the INTERPROCEDURAL half of D-03-02, left
+// open until Phase 08/09 closes it (see check_test.go's
+// TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness for the
+// full account of why `check` misses it and corevalidate does not). This is
+// the ONE named exception in the whole corpus; every other fixture keeps
+// the strict invariant below. See
+// TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed
+// for the decisive, tested assertion of the divergence itself -- this is
+// not a silent skip.
+const relayEscortWitnessModule = "phase07.relay_escort_witness"
+
 func TestSummaryPeerStructuralFieldsMatchProducerAcrossCorpus(t *testing.T) {
 	checkedAny := false
 	for _, program := range corpusFixtures(t) {
@@ -95,6 +111,9 @@ func TestSummaryPeerStructuralFieldsMatchProducerAcrossCorpus(t *testing.T) {
 
 		result := corevalidate.Validate(program)
 		if !result.Valid {
+			if program.Module == relayEscortWitnessModule {
+				continue
+			}
 			t.Fatalf("expected a checked-clean corpus program to also corevalidate-validate, got problems: %+v", result.Problems)
 		}
 		peerByID := result.PeerSignatures()
@@ -116,6 +135,47 @@ func TestSummaryPeerStructuralFieldsMatchProducerAcrossCorpus(t *testing.T) {
 	}
 	if !checkedAny {
 		t.Fatal("expected at least one function to be compared across the corpus")
+	}
+}
+
+// TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed is
+// 07-05 Task 2's decisive, named assertion of the
+// relayEscortWitnessModule exception above: `check` admits
+// testdata/phase07/relay_escort_witness.lang (asserted by
+// check_test.go's TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness),
+// but corevalidate's own, independently-implemented replay refuses it with
+// core.move_while_borrowed on escort's `take buffer` operation --
+// `escort`'s exclusive loan on `buffer` (created for the call argument
+// `borrowed`) is still active, from corevalidate's own bookkeeping's point
+// of view, when `buffer` is moved. This is D-03-02's INTERPROCEDURAL half,
+// caught by one peer and missed by the other -- exactly the divergence the
+// two-validator architecture exists to surface, not hide. It remains open
+// until Phase 08/09's interprocedural loan-liveness work makes both sides
+// agree (by refusing, never by both silently accepting).
+func TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("expected check to admit the fixture (the D-03-02 finding), got %+v", checked.Diagnostics)
+	}
+	if checked.Program.Module != relayEscortWitnessModule {
+		t.Fatalf("expected module %s, got %s", relayEscortWitnessModule, checked.Program.Module)
+	}
+	result := corevalidate.Validate(checked.Program)
+	if result.Valid {
+		t.Fatal("expected corevalidate to independently refuse this program, got Valid == true")
+	}
+	found := false
+	for _, problem := range result.Problems {
+		if problem.Code == "core.move_while_borrowed" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a core.move_while_borrowed problem, got %+v", result.Problems)
 	}
 }
 
