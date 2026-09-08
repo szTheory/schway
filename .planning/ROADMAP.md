@@ -225,21 +225,32 @@ change with one producer — not after five consumers depend on it.
 breaks all six exhaustive switches at once — a forcing function, converting "six
 sites, easy to forget one" into "six failures, impossible to forget one". Expect
 Stage 0 as one plan, then coordinated-change plans at the M001 5-consumer base
-rate (70-95 min/plan), not the single-consumer rate.
+rate (70-95 min/plan), not the single-consumer rate. **Revised after cross-AI
+review:** Stage 0 is **two** plans (`07-01` schema/decoder/digest, `07-02`
+predicate/peer/faults) plus a third deferred to the end by D-07-38 (`07-08`
+digest chaining, which terminates only on a proven DAG). Stage 1 is three plans
+and Stage 2 is two, for eight sequential waves in total.
 **Parallel**: S-006 and S-007 spikes run alongside. `corevalidate`'s non-liveness
 `OpCall` engineering may start once Stage 1 lands.
-**Plans**: 5 plans
+**Plans**: 8 plans (replanned 2026-09-08 after cross-AI review returned Risk:
+HIGH on the original 5; resolutions locked as D-07-29..D-07-45. Waves are
+strictly sequential — every plan overlaps `check.go` / `corevalidate.go` /
+`core.go` with its neighbours, so there is no safe parallelism.)
 
 Plans:
-- [ ] 07-01-PLAN.md — Stage 0: `lang.interface/1` + the `corevalidate` summary peer + three seeded faults, gated before `OpCall` exists
-- [ ] 07-02-PLAN.md — Stage 1a: parser `"call"` RHS kind, `core.OpCall` registered at all six dispatch sites, both exhaustive-dispatch controls green
-- [ ] 07-03-PLAN.md — Stage 1b: SEM-06 callable ⊆ publishable, plus the two negative-control fixtures that did not exist
-- [ ] 07-04-PLAN.md — Stage 2a: the `internal/compiler/callgraph` package, `core.call_graph_cycle`, and cycle refusal inside `check`
-- [ ] 07-05-PLAN.md — Stage 2b: `corevalidate`'s independent traversal peer, the diamond/shared-leaf corpora, and the QLT-08 mutation matrix
+- [ ] 07-01-PLAN.md — Stage 0a: `lang.interface/1`, `DecodeInterface` strict validation, pinned frozen `/0`, canonical non-self-referential `ClosureDigest` preimage (base case only)
+- [ ] 07-02-PLAN.md — Stage 0b: `Callable` as **publication safety** via `PublishProblemsFor`, the `corevalidate` summary peer at BOTH replay sites, the extracted negative control, and the three seeded faults incl. the bilateral one that must FAIL
+- [ ] 07-03-PLAN.md — Stage 1a: `core.LinearOperation.CalleeID`, parser `"call"` RHS kind, `core.OpCall` registered at all six dispatch sites with explicit "recognized, unsupported" arms in `interp`/`cgen`
+- [ ] 07-04-PLAN.md — Stage 1b: both exhaustive-dispatch controls with their own phase-07 lists, asserting recognition not execution, each mutation-killed in this plan
+- [ ] 07-05-PLAN.md — Stage 1c: SEM-06 — the pre-body signature table, the callable-⊆-publishable refusal, the body-blindness control, and the A-normal-form relay/escort witness
+- [ ] 07-06-PLAN.md — Stage 2a: the `internal/compiler/callgraph` package, `core.call_graph_cycle` with deterministic witness selection, and the diamond/shared-leaf corpus that kills the gray-vs-visited mutation
+- [ ] 07-07-PLAN.md — Stage 2b: `corevalidate`'s independent synthetic-artifact traversal peer, the remaining corpora, and the phase-wide QLT-08 completeness matrix by exact set equality
+- [ ] 07-08-PLAN.md — Stage 0c (deferred by D-07-38): `ClosureDigest` chained over callee summary digests in reverse postorder, **after** acyclicity is proven
 
-**Declared scope-cut trigger (D-07-26):** if `07-01` + `07-02` + `07-03` exceed
-~2x their initial plan estimate, `07-04`/`07-05` renegotiate out to Phase 08 —
-never the Stage 0 peer, never the seeded faults. Recorded in
+**Declared scope-cut trigger (D-07-26):** if `07-01`..`07-05` exceed ~2x their
+initial plan estimate, `07-06`/`07-07` renegotiate out to Phase 08 — **and
+`07-08` goes with them**, because D-07-38 orders digest chaining strictly behind
+cycle refusal. Never cut: the Stage 0 peer, never the seeded faults. Recorded in
 `phases/07-calls-signatures-and-call-graph-refusal/PHASE-07-DEBT.md`.
 
 ### Phase 08: Interprocedural Loan Liveness in `check`
