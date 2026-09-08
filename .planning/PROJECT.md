@@ -18,6 +18,22 @@ Give an AI agent and a human reviewer the shortest reliable path from intent to
 sound, reproducible evidence without wasting iteration time or hiding runtime
 costs.
 
+## Current Milestone: M002 Interprocedural Semantic Spine
+
+**Goal:** Land Lang-to-Lang calls and prove that every semantic guarantee M001
+established intraprocedurally still holds across function boundaries.
+
+**Target features:**
+- `OpCall` as a real `OperationKind` at all six dispatch sites, gated on
+  callable ⊆ publishable (D-04-03)
+- Call-graph construction with cycle refusal and a bounded interpreter call stack
+- Interprocedural loan liveness in both admission layers (`check` and
+  `corevalidate`) — closes D-03-02
+- Cross-function rebuild of Phase 3's exhaustive loan-endpoint differentials
+- Interprocedural `-O3`/LTO equivalence on the five-axis comparator
+- Storable/matchable `Result` values and payload-carrying alternatives (D-04-30)
+- Close the Nyquist validation debt carried from Phases 3, 5, and 6
+
 ## Requirements
 
 ### Validated
@@ -186,4 +202,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-07 after M001 milestone*
+*Last updated: 2026-09-08 after starting milestone M002*

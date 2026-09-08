@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-status: Awaiting next milestone
-stopped_at: Phase 06 complete — all phases complete
-last_updated: "2026-09-07T23:52:31.502Z"
-last_activity: 2026-09-07
-last_activity_desc: Milestone M001 completed and archived
-state_head: 0c2fb31a2035f21ddd58550ada727071c93f1dec
+milestone: M002
+milestone_name: Interprocedural Semantic Spine
+status: planning
+last_updated: "2026-09-08T16:21:49.317Z"
+last_activity: 2026-09-08
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 62
-  completed_plans: 62
-  percent: 100
-current_phase: 06
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -29,10 +27,10 @@ interprocedural loan liveness, and interprocedural `-O3` equivalence)
 
 ## Current Position
 
-Phase: Milestone M001 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-07 — Milestone M001 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-08 — Milestone M002 started
 
 ## Performance Metrics
 
@@ -167,7 +165,6 @@ None.
   vertical planning.
 - `OpCall` and interprocedural equivalence deferred out of M001 (Phase 5,
   D-05-32) and promoted to M002's lead charter.
-
 
 ## Deferred Items
 
