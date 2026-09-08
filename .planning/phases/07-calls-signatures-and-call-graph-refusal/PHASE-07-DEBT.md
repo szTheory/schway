@@ -1,35 +1,53 @@
+---
+phase: 07-calls-signatures-and-call-graph-refusal
+recorded: 2026-09-08
+status: accepted
+disposition: in-progress
+items: 2
+blocking: 0
+---
+
 # Phase 07 — Declared Deferred Scope (D-07-27)
 
 **Written:** 2026-09-08, at *planning* time — not at phase end.
 **Amended:** 2026-09-08, after cross-AI review, when the plan set was rewritten
 from 5 plans to 8 and D-07-29..D-07-45 were locked.
+**Amended again:** 2026-09-08, by 07-02, to bring this file's shape into the
+mechanically-checked debt-register format `TestDebtRegistersAreWellFormed`
+(`internal/compiler/session/session_test.go`) enforces on every `*-DEBT.md`
+register, and to confirm D-07-33's narrowing entry now that the peer it
+describes actually ships (`07-02-PLAN.md` Task 2).
 Per Key Lesson 4: declare deferred scope in writing at the moment it is decided.
 
 ---
 
-## Deferred item 1 — interprocedural loan-*liveness* re-derivation
+## Items
+
+| ID | Source | Threat/Req | Severity | Landing phase | Item |
+|---|---|---|---|---|---|
+| D-03-02 | 07-01/07-02 (lineage: M001 D-03-02) | OWN-05, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07 | warning | Phase 09 — Peer Re-Derivation and D-03-02 Closure | Interprocedural loan-*liveness* re-derivation in `corevalidate` does not ship this phase; only the independent signature-summary peer (D-07-20) and the call-graph cycle peer (D-07-19) do |
+| D-07-33 | 07-02-PLAN.md (D-07-33, T-07-11) | SEM-06, QLT-08 | warning | Phase 09 — Peer Re-Derivation and D-03-02 Closure | The `corevalidate` summary peer's `Callable` re-derivation is narrowed to the `core.origin_omitted` class only; for `core.origin_understated`, `core.origin_access_mismatch`, and foreign-origin-omitted it can only ever falsely agree with the producer |
+
+## Detail
+
+### D-03-02 — interprocedural loan-*liveness* re-derivation
 
 **Interprocedural loan-liveness re-derivation in `corevalidate`.**
 
 Phase 07 ships `corevalidate`'s independent **signature-summary** re-derivation
-(D-07-20, `07-02-PLAN.md`) and its independent **call-graph cycle** traversal
-(D-07-19, `07-07-PLAN.md`). It does **not** ship an independent re-derivation of
-interprocedural *loan liveness*.
+(D-07-20, `07-02-PLAN.md` Task 2, landed as `corevalidate`'s unexported
+`derivePeerSignature`/`recordSummaryPeer`, exposed via `Result.PeerSignatures`)
+and its independent **call-graph cycle** traversal (D-07-19, `07-07-PLAN.md`). It
+does **not** ship an independent re-derivation of interprocedural *loan
+liveness*.
 
-### Lineage
-
-D-03-02, open past M001: an exported borrow-derived return with no declared
-origin exports indistinguishable from a fully-owned return, in the
+**Lineage.** D-03-02, open past M001: an exported borrow-derived return with no
+declared origin exports indistinguishable from a fully-owned return, in the
 **interprocedural** half of the hazard. The single-function half closed in M001
 Phase 3. The interprocedural half is owned by M002's `OpCall` charter
 (D-05-32 / D-05-33).
 
-### Closure phase
-
-**Phase 09 — Peer Re-Derivation and D-03-02 Closure** (OWN-05, OWN-07, OWN-08,
-OWN-09, TRU-04, QLT-07).
-
-### Closure gate, verbatim from ROADMAP.md Phase 09
+**Closure gate, verbatim from ROADMAP.md Phase 09:**
 
 > `corevalidate` independently re-derives the same interprocedural loan-liveness
 > facts without sharing an implementation with `check`; a seeded endpoint-level
@@ -37,45 +55,57 @@ OWN-09, TRU-04, QLT-07).
 > exported borrow-derived return with no declared origin is refused in the
 > interprocedural case, in **both** admission layers (OWN-08).
 
-### Explicitly NOT part of this deferral
+**Explicitly NOT part of this deferral.** The **signature-summary peer ships in
+Phase 07** (`07-02-PLAN.md`, D-07-20). Deferring the liveness peer does not
+defer the summary peer, and does not defer the seeded faults (D-07-24,
+`07-02-PLAN.md` Task 3).
 
-The **signature-summary peer ships in Phase 07** (`07-02-PLAN.md`, D-07-20).
-Deferring the liveness peer does not defer the summary peer, and does not defer
-the seeded faults (D-07-24).
+### D-07-33 — the peer's `Callable` re-derivation is NARROWED
 
----
-
-## Deferred item 2 — the peer's `Callable` re-derivation is NARROWED (D-07-33)
-
-**This is new in the post-review amendment and it is stated plainly because an
-undeclared version of it is exactly the failure mode this file exists to prevent.**
+**This is stated plainly because an undeclared version of it is exactly the
+failure mode this file exists to prevent.**
 
 `Callable` **as published** is the full D-04-03 predicate: publication safety,
-i.e. `originvalidate.PublishProblemsFor` returns no problems (D-07-31, D-07-32).
-`ValidatePublished` can refuse with any of four classes:
+i.e. `originvalidate.PublishProblemsFor` returns no problems (D-07-31, D-07-32,
+landed in `07-02-PLAN.md` Task 1). `ValidatePublished`/`PublishProblemsFor` can
+refuse with any of four classes:
 
   - `core.origin_omitted`
   - `core.origin_understated`
   - `core.origin_access_mismatch`
-  - foreign-origin-omitted (`checkForeignOriginOmitted`)
+  - foreign-origin-omitted (`checkForeignOriginOmitted`, code
+    `core.foreign_origin_omitted`)
 
-**In Phase 07, `corevalidate`'s independent peer re-derives only the first of
-those four.** For `core.origin_understated`, `core.origin_access_mismatch`, and
-foreign-origin-omitted, **the Phase 07 peer can only ever falsely agree with the
-producer.** It does not compute those classes at all, so its agreement on them is
-not evidence of anything. This is precisely the single-producer leak D-07-23
-names — `escape:coordinated-source-to-core-false-claim` promoted from origins to
-the call contract — scoped and time-boxed rather than denied.
+**In Phase 07, `corevalidate`'s independent peer (`peerCallable`,
+`peerReturnDerivesFromBorrow`, in `corevalidate.go`) re-derives only the first
+of those four.** For `core.origin_understated`, `core.origin_access_mismatch`,
+and foreign-origin-omitted, **the Phase 07 peer can only ever falsely agree
+with the producer.** It reports `Callable == true` unconditionally whenever a
+public origin is declared (`function.PublicOrigin != nil`), never checking
+whether that declaration is understated or access-mismatched, and its forward
+borrow-propagation walk deliberately never crosses an `OpForeignCall` hop, so
+it cannot detect a foreign-origin-omitted return either. It does not compute
+those classes at all, so its agreement on them is not evidence of anything.
+This is precisely the single-producer leak D-07-23 names —
+`escape:coordinated-source-to-core-false-claim` promoted from origins to the
+call contract — scoped and time-boxed rather than denied.
+`TestPeerDoesNotRederiveNarrowedClasses`
+(`corevalidate_summary_peer_test.go`) asserts this directly: it mutates an
+honestly-declared origin into an understated/access-mismatched one (the same
+technique `originvalidate_test.go`'s own falsifiers use, since check.go's
+honest producer can never construct these declarations itself) and a foreign
+declaration case, and shows the peer's `Callable` stays `true` — a **false**
+agreement — in all three cases.
 
-**Why narrowed:** a full peer-side origin recomputation is a second
+**Why narrowed.** A full peer-side origin recomputation is a second
 implementation of `RecomputeOrigin` / `RecomputeOriginPerReturn`
 (`originvalidate.go:234`, `:133`). That is Phase 09's size, not Phase 07's. This
 is D-07-26's scope-cut trigger being pulled **deliberately, at planning time**,
 rather than discovered mid-execution.
 
 **What the phase does still guarantee for the narrowed classes:** the producer
-computes them, they refuse publication, and `Callable` is false as published. What
-is missing is only the *second, independent* derivation.
+computes them, they refuse publication, and `Callable` is false as published.
+What is missing is only the *second, independent* derivation.
 
 **Closure phase:** **Phase 09**, alongside the liveness peer, in the same plan
 that builds the peer's own origin recomputation.
@@ -89,7 +119,7 @@ If **Stage 0 + Stage 1** (`07-01` + `07-02` + `07-03` + `07-04` + `07-05`) excee
 renegotiates out to Phase 08.
 
 **New consequence introduced by the post-review re-plan, recorded so it is not
-discovered under pressure:** `07-08` (closure-digest chaining) **goes with them**.
+discovered under pressure:** `07-08` (closure-digest chaining) **goes with them.**
 D-07-38 orders digest chaining strictly behind cycle refusal — the chain
 terminates only on a DAG — so cutting `07-06`/`07-07` necessarily cuts `07-08`.
 If that cut is taken, `ClosureDigest` ships with its zero-callee base case only
@@ -159,6 +189,9 @@ postponed.
   `Callable` is publication safety, not export membership;
   `originvalidate.ValidatePublished` never reads an export list, so the schema
   never wanted the field. Suggested by a reviewer; declined on the evidence.
+  Confirmed landed in `07-02-PLAN.md` Task 1: the string `Exports` never
+  appears in `originvalidate.go`
+  (`TestBuildInterfaceNeverConsultsExportList`).
 - **The `export_callee` repair for the SEM-06 refusal** — rejected (D-07-31c).
   Exporting a function cannot fix an unsafe borrow-derived return; an agent
   applying the repair would re-submit an identically-refused program. Suggested
@@ -169,4 +202,5 @@ postponed.
   refuse legal deep-but-acyclic programs. Only the emitted diagnostic is bounded.
 
 ---
-*Written at planning time per D-07-27; amended after cross-AI review.*
+*Written at planning time per D-07-27; amended after cross-AI review; amended
+again by 07-02 for debt-register shape and D-07-33 confirmation.*

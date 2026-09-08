@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -1032,4 +1033,92 @@ func TestBuildInterfaceNeverConsultsExportList(t *testing.T) {
 	if bytes.Contains(source, []byte("Exports")) {
 		t.Fatalf("originvalidate.go must never reference an export list; found the identifier \"Exports\"")
 	}
+}
+
+// TestStage0SummaryMutationMatrix (originvalidate half) is 07-02 Task 3's
+// D-07-24 gate for the two faults that flip THIS package's own
+// fault-injection seams (typeFactExactIDMatchOverride,
+// forceCallableAlwaysTrue): fault 1 (producer-only type-fact lookup) and
+// fault 4 (producer-side Callable-always-true). Faults 2, 3, and 5 live in
+// corevalidate_mutation_matrix_test.go (package corevalidate_test), which
+// flips corevalidate's own seams instead -- neither package's unexported
+// seam is reachable from the other's test package (Go's export_test.go
+// pattern only reaches a package's OWN external test package), so the five
+// faults are split across both packages' own TestStage0SummaryMutationMatrix
+// by which seam each one needs, per D-07-42's unexported-only constraint.
+func TestStage0SummaryMutationMatrix(t *testing.T) {
+	t.Run("fault1_producer_only_type_fact_lookup", func(t *testing.T) {
+		// D-07-23: forcing BuildInterface's exact-ID type-fact lookup to
+		// never match drives it into the silent empty-abilities fallback.
+		// The independent corevalidate peer, whose own lookup this seam
+		// never touches, must still report the real abilities -- a
+		// SPECIFIC abilities-field divergence, not a generic error.
+		program := honestProgram(t, "public_view.lang")
+		function := program.Functions[0]
+
+		restore := originvalidate.SetTypeFactExactIDMatchOverrideForTest(func(factID, wantID string) bool { return false })
+		defer restore()
+
+		producerSummary, err := originvalidate.BuildInterface(program)
+		if err != nil {
+			t.Fatalf("BuildInterface: %v", err)
+		}
+		if len(producerSummary.Functions[0].Abilities) != 0 {
+			t.Fatalf("expected the forced lookup failure to drive the producer into the empty-abilities fallback, got %+v", producerSummary.Functions[0].Abilities)
+		}
+
+		result := corevalidate.Validate(program)
+		if !result.Valid {
+			t.Fatalf("expected public_view.lang to corevalidate-validate, got problems: %+v", result.Problems)
+		}
+		peerSignature, ok := result.PeerSignatures()[function.ID]
+		if !ok {
+			t.Fatalf("function %s missing from peer signatures", function.ID)
+		}
+		if len(peerSignature.Abilities) == 0 {
+			t.Fatal("expected the peer's independent lookup to be unaffected by the producer-only fault and still report non-empty abilities")
+		}
+		if len(peerSignature.Abilities) == len(producerSummary.Functions[0].Abilities) {
+			t.Fatalf("expected a SPECIFIC abilities-field divergence (peer=%v, producer=%v), got equal lengths", peerSignature.Abilities, producerSummary.Functions[0].Abilities)
+		}
+	})
+
+	t.Run("fault4_callable_producer", func(t *testing.T) {
+		// Forcing ONLY the producer's Callable derivation to true must
+		// still leave the peer refusing on clean_but_unpublishable.lang --
+		// a real divergence, not a bilateral false agreement (see fault 3
+		// in corevalidate_mutation_matrix_test.go).
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		checked := session.Check(source)
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+		}
+		program := checked.Program
+		function := program.Functions[0]
+
+		restore := originvalidate.SetCallableForceOverrideForTest(true)
+		defer restore()
+
+		producerSummary, err := originvalidate.BuildInterface(program)
+		if err != nil {
+			t.Fatalf("BuildInterface: %v", err)
+		}
+		if !producerSummary.Functions[0].Callable {
+			t.Fatal("expected the forced producer override to report Callable == true")
+		}
+		result := corevalidate.Validate(program)
+		if !result.Valid {
+			t.Fatalf("expected clean_but_unpublishable.lang to corevalidate-validate, got problems: %+v", result.Problems)
+		}
+		peerSignature, ok := result.PeerSignatures()[function.ID]
+		if !ok {
+			t.Fatalf("function %s missing from peer signatures", function.ID)
+		}
+		if peerSignature.Callable {
+			t.Fatal("expected the UNFORCED peer to still independently refuse (Callable == false) -- diverging from the forced producer")
+		}
+	})
 }
