@@ -228,7 +228,19 @@ Stage 0 as one plan, then coordinated-change plans at the M001 5-consumer base
 rate (70-95 min/plan), not the single-consumer rate.
 **Parallel**: S-006 and S-007 spikes run alongside. `corevalidate`'s non-liveness
 `OpCall` engineering may start once Stage 1 lands.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Stage 0: `lang.interface/1` + the `corevalidate` summary peer + three seeded faults, gated before `OpCall` exists
+- [ ] 07-02-PLAN.md — Stage 1a: parser `"call"` RHS kind, `core.OpCall` registered at all six dispatch sites, both exhaustive-dispatch controls green
+- [ ] 07-03-PLAN.md — Stage 1b: SEM-06 callable ⊆ publishable, plus the two negative-control fixtures that did not exist
+- [ ] 07-04-PLAN.md — Stage 2a: the `internal/compiler/callgraph` package, `core.call_graph_cycle`, and cycle refusal inside `check`
+- [ ] 07-05-PLAN.md — Stage 2b: `corevalidate`'s independent traversal peer, the diamond/shared-leaf corpora, and the QLT-08 mutation matrix
+
+**Declared scope-cut trigger (D-07-26):** if `07-01` + `07-02` + `07-03` exceed
+~2x their initial plan estimate, `07-04`/`07-05` renegotiate out to Phase 08 —
+never the Stage 0 peer, never the seeded faults. Recorded in
+`phases/07-calls-signatures-and-call-graph-refusal/PHASE-07-DEBT.md`.
 
 ### Phase 08: Interprocedural Loan Liveness in `check`
 
@@ -498,7 +510,7 @@ whatever does ship.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 07. Calls, Signatures, and Call-Graph Refusal | 0/? | Not started | - |
+| 07. Calls, Signatures, and Call-Graph Refusal | 0/5 | Planned | - |
 | 08. Interprocedural Loan Liveness in `check` | 0/? | Not started | - |
 | 09. Peer Re-Derivation and D-03-02 Closure | 0/? | Not started | - |
 | 10. Trusted Interprocedural Oracle | 0/? | Not started | - |
