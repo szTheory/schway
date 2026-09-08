@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 07
 current_phase_name: Calls, Signatures, and Call-Graph Refusal
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-09-08T21:18:40.797Z"
+stopped_at: Completed 07-03-PLAN.md
+last_updated: "2026-09-08T22:03:20.885Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 07 execution started
-state_head: 31864585d3076bf375625a3577f2980dd99b51a5
+state_head: 9cf36529a153713401f0e2a446a01f7758ec552d
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-09-08 — Phase 07 execution started
 
@@ -146,6 +146,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 06 P15 | ~40 min | 3 tasks | 12 files |
 | Phase 07 P01 | 55min | 3 tasks | 8 files |
 | Phase 07 P02 | 90 min | 3 tasks | 11 files |
+| Phase 07 P03 | 55 min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,7 @@ Standing architectural commitments carried into M002:
   `originvalidate`), never trusted from the producer.
 - [Phase 07]: 07-01: DecodeInterface routes CheckSummary; /0 stays decodable but never admissible for a call — D-07-36 closes codex's HIGH finding that strict /1 decoding was unspecified and /0 dispatch was unwired
 - [Phase 07]: Callable is publication safety (D-04-03), not export membership: PublishProblemsFor extracted, corevalidate summary peer wired at both replay sites, narrowed to core.origin_omitted (D-07-33) — 07-02 review-driven decisions D-07-31/D-07-32/D-07-33/D-07-20/D-07-21/D-07-22 landed exactly as ratified at the checkpoint
+- [Phase 07]: core.LinearOperation.CalleeID added additive+omitempty per D-07-29; the parser change and the foreign-bare-call refusal relocation to check (D-07-40) landed together in Task 1 since they are inseparable within one green commit.
 
 ### Pending Todos
 
@@ -237,8 +239,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-08T21:18:40.784Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-09-08T22:03:20.873Z
+Stopped at: Completed 07-03-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

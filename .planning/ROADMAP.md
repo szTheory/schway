@@ -247,7 +247,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 07-03-PLAN.md — Stage 1a: `core.LinearOperation.CalleeID`, parser `"call"` RHS kind, `core.OpCall` registered at all six dispatch sites with explicit "recognized, unsupported" arms in `interp`/`cgen`
+- [x] 07-03-PLAN.md — Stage 1a: `core.LinearOperation.CalleeID`, parser `"call"` RHS kind, `core.OpCall` registered at all six dispatch sites with explicit "recognized, unsupported" arms in `interp`/`cgen`
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

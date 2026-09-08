@@ -12,7 +12,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Semantic Core — Calls
 
-- [ ] **SEM-04**: A Lang function can call another Lang function; `OpCall` is a
+- [x] **SEM-04**: A Lang function can call another Lang function; `OpCall` is a
       real `core.OperationKind` handled at all six dispatch sites (`check`,
       `corevalidate`, `interp`, `cgen`, `pathoracle`, `originvalidate`) with
       both exhaustive-dispatch controls green.
@@ -86,7 +86,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       cache keys derive from the call-graph closure, not per-unit hashes.
 - [ ] **QLT-07**: Nyquist validation is compliant for the loan-liveness surface,
       closing M001 Phase 3's validation debt.
-- [ ] **QLT-08**: Every new interprocedural control is mutation-killed in the
+- [x] **QLT-08**: Every new interprocedural control is mutation-killed in the
       plan that introduces it — no control ships having never been seen to fail.
 
 ### Cost and Feedback Latency
@@ -160,7 +160,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEM-04 | Phase 07 | Pending |
+| SEM-04 | Phase 07 | Complete |
 | SEM-05 | Phase 07 | Pending |
 | SEM-06 | Phase 07 | Pending |
 | SEM-07 | Phase 07 | Pending |
@@ -183,7 +183,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | QLT-05 | Phase 11 | Pending |
 | QLT-06 | Phase 11 | Pending |
 | QLT-07 | Phase 09 | Pending |
-| QLT-08 | Phase 07 | Pending |
+| QLT-08 | Phase 07 | Complete |
 | EFF-02 | Phase 08 | Pending |
 | RES-02 | Phase 12 | Pending |
 | RES-03 | Phase 12 | Pending |
@@ -192,6 +192,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | DX-07 | Phase 13 | Pending |
 
 **Coverage:**
+
 - M002 requirements: 30 total
 - Mapped to phases: 30 ✓
 - Unmapped: 0
