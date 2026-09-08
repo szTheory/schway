@@ -162,6 +162,13 @@ func runEvidenceValidation(manifestPath, sourcePath string, expand, jsonMode boo
 }
 
 func runVerify(corpus string, jsonMode bool) int {
+	if isPhase7Corpus(corpus) {
+		result, err := session.VerifyPhase7ControlsAndWork(context.Background())
+		if err != nil {
+			return emit(problemResult("verify", protocol.StatusOperational, "tool.phase7_gate_failed", "unable to run the phase 7 control-and-work gate"), jsonMode, false)
+		}
+		return emit(result, jsonMode, false)
+	}
 	if isPhase6Corpus(corpus) {
 		result, err := session.VerifyPhase6ControlsAndWork(context.Background())
 		if err != nil {
@@ -217,6 +224,21 @@ func runStats() int {
 	}
 	fmt.Printf("{\"p50\":%d,\"p95\":%d,\"cov\":%g,\"count\":%d}\n", summary.P50, summary.P95, summary.CoV, summary.Count)
 	return exitSuccess
+}
+
+// isPhase7Corpus recognizes the testdata/phase07 corpus by its own
+// characteristic marker fixture (call_basic.lang, the Phase 07 tracer
+// fixture), the same dispatch-by-marker-file discipline isPhase5Corpus/
+// isPhase6Corpus already established. Checked BEFORE isPhase6Corpus so a
+// Phase 07 corpus is never accidentally swallowed by an earlier check; a
+// directory with no Phase 07 marker falls through unchanged to the
+// existing dispatch chain (isPhase6Corpus, isPhase5Corpus, then the
+// default VerifyCorpusFile path). D-07-41: this dispatch lives at the CLI
+// layer, mirroring isPhase5Corpus/isPhase6Corpus's own precedent of
+// keeping session.go's generic VerifyCorpus untouched by each new phase.
+func isPhase7Corpus(corpus string) bool {
+	_, err := os.Stat(filepath.Join(corpus, "call_basic.lang"))
+	return err == nil
 }
 
 // isPhase6Corpus recognizes the testdata/phase6 corpus by its own
