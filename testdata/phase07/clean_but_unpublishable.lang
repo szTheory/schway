@@ -1,0 +1,34 @@
+// This fixture checks clean (zero diagnostics from session.Check) but
+// fails publication with core.origin_omitted, so BuildInterface reports
+// Callable == false for fn relay. It is the correct negative control for
+// SEM-06 BECAUSE it trips the publication-safety predicate
+// (originvalidate.PublishProblemsFor / ValidatePublished) rather than an
+// export list -- Callable is publication safety, not export membership
+// (D-04-03, D-07-31, D-07-32). An unexported callee would be the WRONG
+// negative control for this predicate.
+//
+// Extracted verbatim (module line only changed) from
+// internal/compiler/check/check_exclusive_test.go:46-58, where it is also
+// embedded inline as the "clean" variant of
+// TestExclusiveBorrowLowersToCore, and asserted again in
+// internal/compiler/originvalidate/originvalidate_test.go's
+// TestExclusiveBorrowCleanShapeChecksButCannotPublish. Amendment A-03
+// claimed this witness did not exist; A-03 checked testdata/ for a file and
+// reported the wrong conclusion -- D-07-44 corrects it.
+//
+// The pre-existing `fn relay` in testdata/phase3/shared_shared_accept.lang
+// (module owned.shared_shared_accept) is a DIFFERENT fixture: an owned
+// take/return that publishes with no problems at all. Do not confuse the
+// two.
+
+module phase07.clean_but_unpublishable
+
+export {
+  fn relay
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let view = borrow mut buffer
+  let reviewed = borrow view
+  view
+}

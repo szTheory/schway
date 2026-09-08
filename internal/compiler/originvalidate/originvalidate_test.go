@@ -229,25 +229,18 @@ func TestOwnedReturnWithNoOriginStillPublishes(t *testing.T) {
 
 // TestExclusiveBorrowCleanShapeChecksButCannotPublish is 03-09-01's
 // falsifier for the fixture_disposition: session.Check on the exact
-// exclusive_borrow_clean / relay source (embedded verbatim from
-// check_exclusive_test.go, so the disposition is machine-checked rather
-// than asserted in prose) still returns zero diagnostics, while
-// ValidatePublished on that same checked program now returns
-// core.origin_omitted — the gate lives on the publication path only.
+// exclusive_borrow_clean / relay source still returns zero diagnostics,
+// while ValidatePublished on that same checked program now returns
+// core.origin_omitted — the gate lives on the publication path only. 07-02
+// D-07-44: the source now lives at testdata/phase07/clean_but_unpublishable.lang,
+// the single extracted source of truth check_exclusive_test.go also reads,
+// rather than a third embedded copy here.
 func TestExclusiveBorrowCleanShapeChecksButCannotPublish(t *testing.T) {
-	const cleanSource = `module owned.exclusive_borrow_clean
-
-export {
-  fn relay
-}
-
-fn relay(buffer: Buffer) -> Buffer {
-  let view = borrow mut buffer
-  let reviewed = borrow view
-  view
-}
-`
-	checked := session.Check([]byte(cleanSource))
+	cleanSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(cleanSource)
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("expected session.Check to still accept the exclusive_borrow_clean shape unchanged, got %+v", checked.Diagnostics)
 	}
@@ -888,5 +881,155 @@ func TestInterfaceV1FieldInvariantsAcrossCorpus(t *testing.T) {
 	}
 	if !checkedAny {
 		t.Fatal("expected at least one function across testdata/phase1..phase4 to be checked")
+	}
+}
+
+// TestPublishProblemsForMatchesValidatePublishedAcrossCorpus is 07-02 Task
+// 1's D-07-32 falsifier: ValidatePublished must return byte-identical
+// Problem values before and after the refactor. Since ValidatePublished is
+// now a thin loop over PublishProblemsFor, this asserts the equivalence
+// directly rather than duplicating the old inlined logic in the test: for
+// every checked fixture across testdata/phase1..phase4 and
+// testdata/phase07, ValidatePublished(program) must equal the first
+// non-empty PublishProblemsFor(function) result over program.Functions in
+// order -- exactly the whole-program first-problem contract the doc comment
+// claims is preserved.
+func TestPublishProblemsForMatchesValidatePublishedAcrossCorpus(t *testing.T) {
+	checkedAny := false
+	for _, phase := range []string{"phase1", "phase2", "phase3", "phase4", "phase07"} {
+		dir := testsupport.ProjectPath("testdata", phase)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("read %s: %v", dir, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+				continue
+			}
+			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				t.Fatalf("read %s/%s: %v", phase, entry.Name(), err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) > 0 {
+				continue
+			}
+			checkedAny = true
+			var expected []originvalidate.Problem
+			for _, function := range checked.Program.Functions {
+				if problems := originvalidate.PublishProblemsFor(function); len(problems) > 0 {
+					expected = problems
+					break
+				}
+			}
+			actual := originvalidate.ValidatePublished(checked.Program)
+			if !problemsEqual(expected, actual) {
+				t.Fatalf("%s/%s: ValidatePublished()=%+v does not match first non-empty PublishProblemsFor result %+v", phase, entry.Name(), actual, expected)
+			}
+		}
+	}
+	if !checkedAny {
+		t.Fatal("expected at least one function across the corpus to be checked")
+	}
+}
+
+func problemsEqual(a, b []originvalidate.Problem) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// TestCallableIsPublicationSafetyNotExportMembership is 07-02 Task 1's
+// D-07-31 falsifier: Callable must be false for a function that checks
+// clean but fails publication (the extracted clean_but_unpublishable.lang
+// negative control, which trips core.origin_omitted -- not an unexported-
+// callee shape, which would be the wrong negative control for this
+// predicate), and true for every clean, publishable function in
+// testdata/phase1..phase4.
+func TestCallableIsPublicationSafetyNotExportMembership(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("expected clean_but_unpublishable.lang to check cleanly, got %+v", checked.Diagnostics)
+	}
+	problems := originvalidate.ValidatePublished(checked.Program)
+	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected exactly core.origin_omitted, got %+v", problems)
+	}
+	summary, err := originvalidate.BuildInterface(checked.Program)
+	if err != nil {
+		t.Fatalf("BuildInterface: %v", err)
+	}
+	if len(summary.Functions) != 1 {
+		t.Fatalf("expected exactly one function, got %d", len(summary.Functions))
+	}
+	if summary.Functions[0].Callable {
+		t.Fatalf("expected Callable == false for the publication-unsafe fixture, got true")
+	}
+
+	checkedAny := false
+	for _, phase := range []string{"phase1", "phase2", "phase3", "phase4"} {
+		dir := testsupport.ProjectPath("testdata", phase)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("read %s: %v", dir, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+				continue
+			}
+			fixtureSource, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				t.Fatalf("read %s/%s: %v", phase, entry.Name(), err)
+			}
+			fixtureChecked := session.Check(fixtureSource)
+			if len(fixtureChecked.Diagnostics) > 0 {
+				continue
+			}
+			if len(originvalidate.ValidatePublished(fixtureChecked.Program)) > 0 {
+				// This fixture is checked-clean but publication-unsafe by
+				// design (e.g. public_view_omitted.lang) -- not part of
+				// this assertion's "clean, publishable" set.
+				continue
+			}
+			fixtureSummary, err := originvalidate.BuildInterface(fixtureChecked.Program)
+			if err != nil {
+				t.Fatalf("%s/%s: BuildInterface: %v", phase, entry.Name(), err)
+			}
+			for _, function := range fixtureSummary.Functions {
+				checkedAny = true
+				if !function.Callable {
+					t.Fatalf("%s/%s: function %s expected Callable == true for a clean, publishable function, got false", phase, entry.Name(), function.ID)
+				}
+			}
+		}
+	}
+	if !checkedAny {
+		t.Fatal("expected at least one clean, publishable function across testdata/phase1..phase4")
+	}
+}
+
+// TestBuildInterfaceNeverConsultsExportList is 07-02 Task 1's structural
+// falsifier for D-07-31(c): the Callable derivation must never read an
+// export list. It re-scans originvalidate.go's own source (the same
+// technique TestOriginValidatorImportsStayIndependent uses for imports) and
+// fails if the identifier "Exports" ever appears in this package.
+func TestBuildInterfaceNeverConsultsExportList(t *testing.T) {
+	path := testsupport.ProjectPath("internal", "compiler", "originvalidate", "originvalidate.go")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(source, []byte("Exports")) {
+		t.Fatalf("originvalidate.go must never reference an export list; found the identifier \"Exports\"")
 	}
 }

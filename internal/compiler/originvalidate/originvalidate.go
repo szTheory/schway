@@ -344,43 +344,67 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 	return nil
 }
 
+// PublishProblemsFor is D-07-32's per-function extraction of
+// ValidatePublished's loop body: it recomputes exactly ONE function's
+// return-origin safety from its checked core body and reports every problem
+// that would refuse its publication. This is D-04-03's actual predicate —
+// "would ValidatePublished publish it" — restated at function granularity so
+// Callable (D-07-31) can be derived per function rather than collapsing an
+// entire program to its first offending function. It never reads an export
+// list: the word "export" does not appear on this path, because publication
+// safety and export membership are different rules (D-07-31).
+func PublishProblemsFor(function core.Function) []Problem {
+	if problem := checkForeignOriginOmitted(function); problem != nil {
+		return []Problem{*problem}
+	}
+	recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function)
+	if function.PublicOrigin == nil {
+		if ok {
+			return []Problem{{
+				Code:   "core.origin_omitted",
+				Detail: fmt.Sprintf("%s: no declared origin, but body derives origin %v with access %q", function.ID, recomputedPaths, recomputedAccess),
+			}}
+		}
+		return nil
+	}
+	// Declared-access domain check (Task 03-10-02): a declared Access
+	// outside {"shared", "exclusive"} is refused BEFORE any comparison
+	// with the recomputed answer, so a mutated summary cannot declare
+	// AccessConflicting and have it match a genuinely conflicting
+	// recomputation.
+	if function.PublicOrigin.Access != "shared" && function.PublicOrigin.Access != "exclusive" {
+		return []Problem{{
+			Code:   "core.origin_access_mismatch",
+			Detail: fmt.Sprintf("%s: declared access %q is not a declarable mode", function.ID, function.PublicOrigin.Access),
+		}}
+	}
+	if !ok || !containsAll(function.PublicOrigin.Paths, recomputedPaths) {
+		return []Problem{{
+			Code:   "core.origin_understated",
+			Detail: fmt.Sprintf("%s: declared origin %v does not cover the body-derived origin %v", function.ID, function.PublicOrigin.Paths, recomputedPaths),
+		}}
+	}
+	if function.PublicOrigin.Access != recomputedAccess {
+		return []Problem{{
+			Code:   "core.origin_access_mismatch",
+			Detail: fmt.Sprintf("%s: declared access %q, body derives %q", function.ID, function.PublicOrigin.Access, recomputedAccess),
+		}}
+	}
+	return nil
+}
+
+// ValidatePublished recomputes every function's origin from its body and
+// compares it against the declaration, following Spike 003's
+// producer-verification gates. It returns the first problem only, matching
+// corevalidate's first-problem-only accumulation, so the stable assertion
+// target is always the first defect. D-07-32: the per-function body now
+// lives in PublishProblemsFor; this loop preserves the original
+// whole-program first-problem contract exactly, byte-for-byte, by returning
+// the first non-empty PublishProblemsFor result it encounters.
 func ValidatePublished(program core.Program) []Problem {
 	for _, function := range program.Functions {
-		if problem := checkForeignOriginOmitted(function); problem != nil {
-			return []Problem{*problem}
-		}
-		recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function)
-		if function.PublicOrigin == nil {
-			if ok {
-				return []Problem{{
-					Code:   "core.origin_omitted",
-					Detail: fmt.Sprintf("%s: no declared origin, but body derives origin %v with access %q", function.ID, recomputedPaths, recomputedAccess),
-				}}
-			}
-			continue
-		}
-		// Declared-access domain check (Task 03-10-02): a declared Access
-		// outside {"shared", "exclusive"} is refused BEFORE any comparison
-		// with the recomputed answer, so a mutated summary cannot declare
-		// AccessConflicting and have it match a genuinely conflicting
-		// recomputation.
-		if function.PublicOrigin.Access != "shared" && function.PublicOrigin.Access != "exclusive" {
-			return []Problem{{
-				Code:   "core.origin_access_mismatch",
-				Detail: fmt.Sprintf("%s: declared access %q is not a declarable mode", function.ID, function.PublicOrigin.Access),
-			}}
-		}
-		if !ok || !containsAll(function.PublicOrigin.Paths, recomputedPaths) {
-			return []Problem{{
-				Code:   "core.origin_understated",
-				Detail: fmt.Sprintf("%s: declared origin %v does not cover the body-derived origin %v", function.ID, function.PublicOrigin.Paths, recomputedPaths),
-			}}
-		}
-		if function.PublicOrigin.Access != recomputedAccess {
-			return []Problem{{
-				Code:   "core.origin_access_mismatch",
-				Detail: fmt.Sprintf("%s: declared access %q, body derives %q", function.ID, function.PublicOrigin.Access, recomputedAccess),
-			}}
+		if problems := PublishProblemsFor(function); len(problems) > 0 {
+			return problems
 		}
 	}
 	return nil
@@ -495,9 +519,10 @@ func computeClosureDigest(signature core.FunctionSignature, callees []calleeDige
 // D-07-08: this emits Schema core.InterfaceSchema1 (lang.interface/1) —
 // every function.ID+":type:0" abilities is unchanged from /0.
 // Every /1 field is populated from its R-01 authority (see the field-level
-// doc comments on core.FunctionSignature); Callable is left at its
-// fail-closed zero value false (its predicate is 07-02's) and ClosureDigest
-// is left empty (07-01 Task 3 fills it).
+// doc comments on core.FunctionSignature); Callable is derived per function
+// from PublishProblemsFor (D-07-31/D-07-32, 07-02) — publication safety, not
+// export membership — and fails closed to false whenever PublishProblemsFor
+// reports any problem.
 func BuildInterface(program core.Program) (core.Interface, error) {
 	coreBytes, err := json.Marshal(program)
 	if err != nil {
@@ -557,12 +582,15 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 			fails = function.ForeignContract.Fails
 		}
 
+		// Callable is publication safety, not export membership (D-07-31):
+		// true exactly when PublishProblemsFor(function) reports zero
+		// problems. No export list is consulted anywhere on this path.
 		signature := core.FunctionSignature{
 			ID: function.ID, Name: function.Name,
 			Parameters: []core.ParameterContract{parameterContract},
 			Return:     returnContract,
 			Abilities:  abilities,
-			Callable:   false,
+			Callable:   len(PublishProblemsFor(function)) == 0,
 			Fails:      fails,
 			Foreign:    foreignReach,
 		}

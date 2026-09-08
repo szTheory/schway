@@ -45,19 +45,15 @@ func TestExclusiveBorrowLowersToCore(t *testing.T) {
 
 	// A variant that never moves the owner while the exclusive loan is live
 	// proves the exclusive operation itself lowers and validates cleanly.
-	clean := `module owned.exclusive_borrow_clean
-
-export {
-  fn relay
-}
-
-fn relay(buffer: Buffer) -> Buffer {
-  let view = borrow mut buffer
-  let reviewed = borrow view
-  view
-}
-`
-	checkedClean := session.Check([]byte(clean))
+	// 07-02 D-07-44: this exact shape is also the extracted
+	// testdata/phase07/clean_but_unpublishable.lang negative control (module
+	// name changed only), read here from that single source of truth rather
+	// than embedded a second time.
+	clean, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkedClean := session.Check(clean)
 	if len(checkedClean.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checkedClean.Diagnostics)
 	}
