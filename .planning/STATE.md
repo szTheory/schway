@@ -6,14 +6,14 @@ current_phase: 07
 current_phase_name: Calls, Signatures, and Call-Graph Refusal
 status: roadmapped
 stopped_at: Phase 07 context gathered
-last_updated: "2026-09-08T18:47:42.233Z"
+last_updated: "2026-09-08T19:58:05.211Z"
 last_activity: 2026-09-08
 last_activity_desc: M002 roadmap created (7 phases, 30/30 requirements mapped)
-state_head: f68327c1f58b23caac81d5b41adfe09dd7abfa9d
+state_head: 7b3da422b90d25619e2fa8ad266585ff96ee284f
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 5
+  total_plans: 8
   completed_plans: 0
 ---
 
@@ -39,7 +39,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — READY TO EXECUTE
+Phase: 07 — READY TO EXECUTE
 Plan: —
 Status: Roadmap created; awaiting phase discussion/planning
 Last activity: 2026-09-08 — M002 roadmap created (7 phases, 30/30 requirements mapped)
