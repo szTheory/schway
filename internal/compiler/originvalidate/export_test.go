@@ -54,3 +54,4 @@ func SetClosureDigestComputationOrderObservedForTest(observer func(functionID st
 	closureDigestComputationOrderObserved = observer
 	return func() { closureDigestComputationOrderObserved = previous }
 }
+

@@ -1,0 +1,59 @@
+// The standing witness for 07-VERIFICATION.md's PVG-02 and 07-REVIEW.md's
+// CR-03: `core.FunctionSignature.Foreign` and `.Fails` document themselves
+// as "closure-derived" (core.go), but before 07-12 both were computed with
+// a strictly LOCAL `if function.ForeignContract != nil { ... }` check --
+// no propagation across `OpCall` edges at all.
+//
+// Before this plan: `lang interface export` on this program published
+// `tracer` with `fails='ProbeError'` and a full foreign reach
+// (allocator=libc_malloc, unwind=forbidden, nonlocal_exit=forbidden), but
+// `main` -- which calls `tracer`, which `try`s `probe` -- published
+// `fails=''` and the ZERO `ForeignReach` (allocator/unwind/nonlocal_exit
+// all ""), which core.go's own doc comment names as a LEGAL value meaning
+// "no foreign reach". A body-blind consumer of `main`'s published summary
+// alone had no way to tell the difference between "does not reach libc at
+// all" and "reaches libc transitively, but the summary lies about it".
+// `corevalidate`'s independent peer (`derivePeerSignature`) reproduced the
+// same local-only read verbatim, so the bilateral producer/peer check
+// certified the false claim rather than catching it.
+//
+// After this plan: both `originvalidate.BuildInterface` (the producer) and
+// `corevalidate`'s own independent postorder walk (the peer) join every
+// caller's Foreign/Fails with its callees' ALREADY-JOINED published
+// values, in the existing acyclic second pass, before ClosureDigest is
+// computed -- so `main` now publishes the transitively-reached
+// `libc_malloc` allocator, `forbidden` unwind/nonlocal_exit, and a
+// non-empty `fails`, exactly like `tracer` does.
+//
+// This fixture checks CLEAN -- it is a witness about a PUBLISHED FIELD's
+// value, not a refusal fixture, so it belongs in any accepting-corpus
+// list, unlike cycle_self.lang or call_argument_used_twice.lang.
+
+module phase07.call_fallible_foreign_reach
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn probe(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: ProbeError
+  }
+}
+
+data ProbeError =
+  | ProbeFailed
+
+fn tracer(value: Byte) -> Byte {
+  let result = try probe(value)
+  result
+}
+
+fn main(value: Byte) -> Byte {
+  let out = tracer(value)
+  out
+}

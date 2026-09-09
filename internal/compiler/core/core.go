@@ -294,6 +294,21 @@ type ForeignReach struct {
 	NonlocalExit string `json:"nonlocal_exit"`
 }
 
+// ForeignReachConflict is 07-12's declared sentinel (CR-03/PVG-02): the
+// value a worst-case join over a function's call closure produces for
+// ForeignReach.Allocator (or, in principle, Unwind/NonlocalExit) when two
+// callees declare DIFFERENT non-empty values and today's vocabulary
+// provides no ordering between them -- an allocator name has no
+// "more constraining than" relation the way "forbidden" does over
+// "permitted". It means "assume the most constraining reach": a consumer
+// must treat this exactly as if the reach were maximally hostile, never as
+// an absent or default value. It exists so the join never resolves such a
+// disagreement by an arbitrary pick (whichever callee happened to be
+// iterated last) -- a last-writer-wins copy is precisely the defect class
+// CR-03 found. See PHASE-07-DEBT.md's D-07-53 for the join's disclosed
+// granularity limits.
+const ForeignReachConflict = "conflict"
+
 // InterfaceV0 and FunctionSignatureV0 pin the frozen lang.interface/0 shape
 // (D-07-08): exactly the pre-/1-bump field set. A /0 document is decodable
 // but never admissible for a call: FunctionSignatureV0 has no Callable,

@@ -587,6 +587,140 @@ var closureDigestDiscoveryOrderOverride bool
 // return value. nil in production: zero cost, zero allocation.
 var closureDigestComputationOrderObserved func(functionID string)
 
+// foreignClosureJoinSeam is 07-12's D-07-41/D-07-42 fault-injection seam for
+// control:summary.foreign_reach_closure_derived: production always joins a
+// caller's published Foreign with every callee's already-committed Foreign,
+// in the chainOrder loop, before that caller's own ClosureDigest is
+// computed; the test temporarily disables that join, reproducing CR-03's
+// original defect (a caller of a foreign-reaching callee wrongly publishes
+// the zero ForeignReach) so a mutation-kill test can prove the join is
+// genuinely load-bearing. false (the production default) means "join for
+// real".
+var foreignClosureJoinSeam = false
+
+// SetForeignClosureJoinSeam installs/lifts foreignClosureJoinSeam and
+// returns a restore func. Declared directly in this production file
+// (not export_test.go), mirroring check.SetCallArgumentConsumeSeamForTest's
+// established pattern (07-11, D-07-42): Go's build model excludes every
+// "_test.go" file (including export_test.go) from a normal cross-package
+// import, so a same-package-only or export_test.go-only setter cannot be
+// reached by corevalidate's own bilateral-independence test
+// (TestForeignClosureJoinPeersIndependent), which imports this package as
+// an ordinary dependency. Deliberately minimal: a documented test-only
+// no-op unless a test explicitly calls it, and always restored via its
+// returned closure. Callers MUST defer the restore immediately.
+func SetForeignClosureJoinSeam(disable bool) (restore func()) {
+	previous := foreignClosureJoinSeam
+	foreignClosureJoinSeam = disable
+	return func() { foreignClosureJoinSeam = previous }
+}
+
+// failsClosureJoinSeam is 07-12's D-07-41/D-07-42 fault-injection seam for
+// control:summary.fails_closure_derived: production always joins a
+// caller's published Fails with every callee's already-committed Fails, in
+// the same chainOrder loop, before ClosureDigest; the test temporarily
+// disables that join, reproducing CR-03's original defect (a caller of a
+// fallible callee wrongly publishes ""/infallible) so a mutation-kill test
+// can prove the join is genuinely load-bearing. false (the production
+// default) means "join for real".
+var failsClosureJoinSeam = false
+
+// SetFailsClosureJoinSeam installs/lifts failsClosureJoinSeam and returns
+// a restore func. Same cross-package-visibility rationale as
+// SetForeignClosureJoinSeam above. Callers MUST defer the restore
+// immediately.
+func SetFailsClosureJoinSeam(disable bool) (restore func()) {
+	previous := failsClosureJoinSeam
+	failsClosureJoinSeam = disable
+	return func() { failsClosureJoinSeam = previous }
+}
+
+// joinReachPolicy joins two ForeignReach policy field values (Unwind,
+// NonlocalExit) under today's two-value vocabulary {"", "permitted",
+// "forbidden"}: "" is the identity element (an empty operand contributes
+// nothing); two equal non-empty values merge to that value; "forbidden" is
+// strictly more constraining than "permitted" and wins whenever either
+// operand is "forbidden" (in either argument order, so this branch alone
+// makes the function commutative for this vocabulary); any other
+// disagreement -- unreachable while the vocabulary stays exactly these
+// three values, but not assumed away -- resolves to the declared
+// core.ForeignReachConflict sentinel rather than an arbitrary pick.
+// joinForeignReach below folds this pairwise operation over a caller's own
+// local value and every callee's already-joined value; because "forbidden"
+// (once present anywhere in the fold) is pairwise-absorbing against any
+// other operand, and because "" is a true identity, the FOLD's result does
+// not depend on fold order -- see TestForeignJoinIsOrderIndependent.
+func joinReachPolicy(into, from string) string {
+	switch {
+	case into == "":
+		return from
+	case from == "" || into == from:
+		return into
+	case into == "forbidden" || from == "forbidden":
+		return "forbidden"
+	default:
+		return core.ForeignReachConflict
+	}
+}
+
+// joinAllocatorName joins two ForeignReach.Allocator values: "" is the
+// identity; two equal non-empty names merge; two DIFFERENT non-empty names
+// have no vocabulary ordering at all (unlike Unwind/NonlocalExit's
+// forbidden-wins rule) and resolve to core.ForeignReachConflict, never to
+// either input. Like joinReachPolicy, this is commutative and, because
+// core.ForeignReachConflict is itself pairwise-absorbing against any
+// distinct operand once formed, associative under fold.
+func joinAllocatorName(into, from string) string {
+	switch {
+	case into == "":
+		return from
+	case from == "" || into == from:
+		return into
+	default:
+		return core.ForeignReachConflict
+	}
+}
+
+// joinForeignReach is 07-12's producer-side worst-case lattice join over
+// core.ForeignReach (CR-03/PVG-02), applied field by field via
+// joinAllocatorName/joinReachPolicy. It is commutative and associative
+// (TestForeignJoinIsOrderIndependent), so the published value the
+// chainOrder loop below folds this over does not depend on the order a
+// function's callees happen to be visited in. corevalidate has its OWN,
+// deliberately unshared implementation of this same join
+// (peerJoinForeignReach) over its own postorder -- see
+// PHASE-07-DEBT.md/07-REVIEW.md CR-03 for why no helper is shared between
+// the two packages.
+func joinForeignReach(into, from core.ForeignReach) core.ForeignReach {
+	return core.ForeignReach{
+		Allocator:    joinAllocatorName(into.Allocator, from.Allocator),
+		Unwind:       joinReachPolicy(into.Unwind, from.Unwind),
+		NonlocalExit: joinReachPolicy(into.NonlocalExit, from.NonlocalExit),
+	}
+}
+
+// joinFails is 07-12's producer-side join over FunctionSignature.Fails
+// (CR-03/PVG-02): "" is the identity (an empty operand contributes
+// nothing); two equal non-empty values merge; two DIFFERENT non-empty
+// values keep the EXISTING (caller-nearest -- the accumulator this
+// function is folded into, which starts as the caller's own local Fails
+// and is folded across callees in calleeIDsForClosureDigest's sorted-ID
+// order, so the result is deterministic in production even though this
+// function is not itself order-independent the way joinForeignReach is).
+// This is a deliberately DISCLOSED imprecision, not a hidden one:
+// core.FunctionSignature.Fails is a single string and cannot express a
+// UNION of two distinct error types, so a caller reaching two distinct
+// fallible callees publishes only one of them -- recorded as D-07-53 in
+// PHASE-07-DEBT.md, never silently overwritten last-writer-wins (the
+// EXISTING value always wins over a new disagreeing one, never the
+// reverse).
+func joinFails(into, from string) string {
+	if into == "" {
+		return from
+	}
+	return into
+}
+
 // calleeIDsForClosureDigest collects the DISTINCT callee IDs a function's
 // own core.OpCall operations name, sorted, from core.LinearOperation.
 // CalleeID -- the SAME edge fact callgraph.Order reads, from the same
@@ -641,6 +775,15 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 	summary := core.Interface{
 		Schema: core.InterfaceSchema1, ModuleID: program.ModuleID, CoreDigest: digest(coreBytes),
 		Functions: make([]core.FunctionSignature, 0, len(program.Functions)),
+	}
+	// programFunctionByID is 07-12's IN-01 fix (07-REVIEW.md INFO): the
+	// second pass below resolves a program function BY ID rather than by
+	// indexing program.Functions with an index built from
+	// len(summary.Functions). Built once, alongside indexByID, from the
+	// same range over program.Functions.
+	programFunctionByID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		programFunctionByID[function.ID] = function
 	}
 	indexByID := make(map[string]int, len(program.Functions))
 	for _, function := range program.Functions {
@@ -716,7 +859,14 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 		// summary.Functions, which keeps growing during this loop and could
 		// reallocate) so the second pass can mutate
 		// summary.Functions[index] directly, by index, once its callees'
-		// digests are already committed to the slice.
+		// digests are already committed to the slice. 07-12/IN-01:
+		// indexByID indexes summary.Functions ONLY -- it is no longer used
+		// to index program.Functions (the second pass resolves the program
+		// function from programFunctionByID, keyed by ID, instead), so the
+		// two slices are no longer index-coupled: any future `continue`
+		// added to this loop's body can no longer silently mis-associate a
+		// later function's callee set, join, or digest with an earlier
+		// function's index.
 		indexByID[function.ID] = len(summary.Functions)
 		summary.Functions = append(summary.Functions, signature)
 	}
@@ -741,15 +891,39 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 		if !ok {
 			continue
 		}
-		function := program.Functions[index]
+		function := programFunctionByID[functionID]
 		var calleePairs []calleeDigestPair
 		if !closureDigestEmptyCalleesOverride {
+			// 07-12 (CR-03/PVG-02): join this caller's own Foreign/Fails
+			// with every callee's ALREADY-COMMITTED Foreign/Fails (chainOrder
+			// is callee-before-caller on a proven DAG, so every callee's own
+			// joined value is already final by the time its caller reads
+			// it), strictly BEFORE computeClosureDigest below, so the digest
+			// covers the joined facts (T-07-12-03). calleeIDsForClosureDigest
+			// reads only the callee's own PUBLISHED SIGNATURE
+			// (summary.Functions[calleeIndex]) -- never a callee body, never
+			// a *core.LinearBody -- preserving SEM-05's body-blindness by
+			// construction.
 			for _, calleeID := range calleeIDsForClosureDigest(function) {
-				calleeDigest := ""
-				if calleeIndex, ok := indexByID[calleeID]; ok {
-					calleeDigest = summary.Functions[calleeIndex].ClosureDigest
+				calleeIndex, ok := indexByID[calleeID]
+				if !ok {
+					// Edge 2 (D-07-12/07-12 Test 5): a callee ID absent from
+					// the index is a DEFECT, not an empty-join contribution
+					// -- refuse loudly rather than silently narrowing this
+					// caller's published reach. Unreachable in practice
+					// (check's own callgraph.Order already requires every
+					// OpCall's CalleeID to resolve to a declared function
+					// before BuildInterface ever runs), but not assumed away.
+					return core.Interface{}, fmt.Errorf("originvalidate: callee %q has no published signature for closure join", calleeID)
 				}
-				calleePairs = append(calleePairs, calleeDigestPair{ID: calleeID, ClosureDigest: calleeDigest})
+				calleeSignature := summary.Functions[calleeIndex]
+				calleePairs = append(calleePairs, calleeDigestPair{ID: calleeID, ClosureDigest: calleeSignature.ClosureDigest})
+				if !foreignClosureJoinSeam {
+					summary.Functions[index].Foreign = joinForeignReach(summary.Functions[index].Foreign, calleeSignature.Foreign)
+				}
+				if !failsClosureJoinSeam {
+					summary.Functions[index].Fails = joinFails(summary.Functions[index].Fails, calleeSignature.Fails)
+				}
 			}
 		}
 		closureDigest, err := computeClosureDigest(summary.Functions[index], calleePairs)
