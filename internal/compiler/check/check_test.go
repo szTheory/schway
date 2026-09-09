@@ -3650,3 +3650,75 @@ func TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus(t *testing.T) {
 		}
 	})
 }
+
+// TestCallArgumentConsumeMutationKilled is 07-11 Task 3's check-side kill
+// for control:call.argument_consumed_when_noncopyable. It first engages
+// callArgumentConsumeSeam and runs the REAL production path
+// (Program(mustParseProgram(...))) on call_argument_used_twice.lang,
+// asserting the seam wrongly admits the double-consume with zero
+// diagnostics -- reproducing PVG-01/CR-01's pre-plan hole exactly. It
+// then disengages the seam and asserts the real gate is restored
+// (ownership.use_after_move).
+func TestCallArgumentConsumeMutationKilled(t *testing.T) {
+	defer func() { callArgumentConsumeSeam = false }()
+
+	source := readPhase07Fixture(t, "call_argument_used_twice.lang")
+
+	callArgumentConsumeSeam = true
+	seamed := Program(mustParseProgram(t, source))
+	if len(seamed.Diagnostics) != 0 {
+		t.Fatalf("expected the seam to wrongly admit the double-consume, got %+v", seamed.Diagnostics)
+	}
+
+	callArgumentConsumeSeam = false
+	restored := Program(mustParseProgram(t, source))
+	if len(restored.Diagnostics) != 1 || restored.Diagnostics[0].Code != "ownership.use_after_move" {
+		t.Fatalf("expected ownership.use_after_move restored once the seam is disengaged, got %+v", restored.Diagnostics)
+	}
+}
+
+// callByteArgumentTwiceSource is a Byte-argument double-call program,
+// built inline (never a testdata/phase07 fixture -- this plan adds no
+// third fixture) since call_basic.lang's own Byte argument is passed to
+// only ONE call: the over-refusal fault this test seeds needs a SECOND
+// use to observe wrongly firing on.
+const callByteArgumentTwiceSource = `module phase07.call_argument_byte_used_twice
+
+export {
+  fn main
+}
+
+fn identity(value: Byte) -> Byte {
+  value
+}
+
+fn main(value: Byte) -> Byte {
+  let first = identity(value)
+  let second = identity(value)
+  second
+}
+`
+
+// TestCallArgumentConsumeOverRefusalMutationKilled is 07-11 Task 3's
+// check-side kill for control:call.copyable_argument_not_consumed: the
+// over-refusal fault for the non-refusing direction. With
+// callArgumentConsumeAlwaysSeam engaged, a Byte argument passed to two
+// separate calls is WRONGLY refused with ownership.use_after_move; with
+// it disengaged, the real production path admits it cleanly.
+func TestCallArgumentConsumeOverRefusalMutationKilled(t *testing.T) {
+	defer func() { callArgumentConsumeAlwaysSeam = false }()
+
+	source := []byte(callByteArgumentTwiceSource)
+
+	callArgumentConsumeAlwaysSeam = true
+	seamed := Program(mustParseProgram(t, source))
+	if len(seamed.Diagnostics) != 1 || seamed.Diagnostics[0].Code != "ownership.use_after_move" {
+		t.Fatalf("expected the seam to wrongly refuse a copyable argument's second use, got %+v", seamed.Diagnostics)
+	}
+
+	callArgumentConsumeAlwaysSeam = false
+	restored := Program(mustParseProgram(t, source))
+	if len(restored.Diagnostics) != 0 {
+		t.Fatalf("expected the Byte double-call to check clean once the seam is disengaged, got %+v", restored.Diagnostics)
+	}
+}

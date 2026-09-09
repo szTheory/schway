@@ -1988,6 +1988,45 @@ func TestCallTypePeerMutationMatrix(t *testing.T) {
 	})
 }
 
+// TestCallConsumePeerMutationMatrix is 07-11 Task 3's peer-side
+// completeness proof that both SetDisableCallArgumentConsumePeerForTest
+// and SetForceCallArgumentConsumePeerForTest are wired to a REAL,
+// reachable production seam, in BOTH directions (control:call.
+// argument_consumed_when_noncopyable and control:call.
+// copyable_argument_not_consumed): disabling the consume seam wrongly
+// admits a double-consumed Buffer argument; forcing it wrongly refuses a
+// repeated Byte argument.
+func TestCallConsumePeerMutationMatrix(t *testing.T) {
+	t.Run("disable_seam_wrongly_admits_noncopyable_double_consume", func(t *testing.T) {
+		program := callArgumentConsumeStraightLineProgram(t, "Buffer")
+		clean := corevalidate.Validate(program)
+		if clean.Valid {
+			t.Fatalf("expected a refusal before the mutation, got %+v", clean)
+		}
+
+		restore := corevalidate.SetDisableCallArgumentConsumePeerForTest(true)
+		defer restore()
+		mutated := corevalidate.Validate(program)
+		if !mutated.Valid {
+			t.Fatalf("expected the disabled consume seam to wrongly admit the double-consume, got %+v", mutated.Problems)
+		}
+	})
+	t.Run("force_seam_wrongly_refuses_copyable_repeated_use", func(t *testing.T) {
+		program := callArgumentConsumeStraightLineProgram(t, "Byte")
+		clean := corevalidate.Validate(program)
+		if !clean.Valid {
+			t.Fatalf("expected admission before the mutation, got %+v", clean.Problems)
+		}
+
+		restore := corevalidate.SetForceCallArgumentConsumePeerForTest(true)
+		defer restore()
+		mutated := corevalidate.Validate(program)
+		if mutated.Valid || len(mutated.Problems) == 0 || mutated.Problems[0].Code != "core.place_uninitialized" {
+			t.Fatalf("expected the forced consume seam to wrongly refuse a copyable argument's second use, got %+v", mutated)
+		}
+	})
+}
+
 // TestOpCallEmptyCalleeIDIsRefused is Task 2 Test 1 (D-07-29): a synthetic
 // core.Program with an OpCall whose CalleeID is empty is refused by
 // corevalidate with a specific code, at whichever replay site the caller's

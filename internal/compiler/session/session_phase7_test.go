@@ -169,6 +169,12 @@ var controlsWithRecordedMutationKill = []string{
 	// TestInterfacePeerRefusalMutationKilled.
 	session.ControlCheckPeerConsulted,
 	session.ControlInterfacePeerRefusalIsInvalid,
+	// 07-11: check_test.go's TestCallArgumentConsumeMutationKilled /
+	// TestCallArgumentConsumeOverRefusalMutationKilled (check side) and
+	// corevalidate_test.go's TestCallConsumePeerMutationMatrix (peer side,
+	// both directions).
+	session.ControlCallArgumentConsumedWhenNoncopyable,
+	session.ControlCallCopyableArgumentNotConsumed,
 }
 
 // phase7ControlsExactSetEqual is the completeness check's own comparison

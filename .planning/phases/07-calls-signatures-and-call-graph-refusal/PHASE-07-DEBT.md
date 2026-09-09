@@ -3,7 +3,7 @@ phase: 07-calls-signatures-and-call-graph-refusal
 recorded: 2026-09-08
 status: accepted
 disposition: in-progress
-items: 8
+items: 9
 blocking: 0
 ---
 
@@ -33,6 +33,7 @@ Per Key Lesson 4: declare deferred scope in writing at the moment it is decided.
 | D-07-49 | 07-10-PLAN.md (Task 3) | SEM-04, SEM-06 | info | Phase 08 — Interprocedural Loan Liveness in `check` | PVG-04 / CR-02's defect (`computeLoanLastUses` has no `"call"` case) is now CLI-observable through the peer (`relay_escort_witness.lang` refuses at `lang check` as of 07-10) but is NOT fixed here and remains Phase 08 scope |
 | D-07-50 | 07-10-PLAN.md (Task 3, WR-01) | SEM-06, QLT-08 | info | Not scheduled — needs its own ratified diagnostic code | WR-01's check-side half is deliberately carried: `check` still does not diagnose duplicate `fn` declarations, and `buildCalleeContracts` still silently resolves a call to the LAST declaration while the emitted `CalleeID` names an ID shared by both. Only the user-visible half (the peer's `core.duplicate_function_id` now reaching `lang check`) closed in 07-10 |
 | D-07-51 | 07-10-PLAN.md (Task 3, WR-02) | QLT-08 | info | Not scheduled — needs its own ratification (changes a published diagnostic's Primary span) | WR-02 is deliberately carried: `verifyCallableRefusal` still emits `core.callee_not_callable` with the whole calling function's span, even though `spanByOperationID` already exists and is already used for per-edge cycle spans; it also still returns on the first offending call |
+| D-07-52 | 07-11-PLAN.md (T-07-11-06) | SEM-05 | info | Reopen when a call-site transfer marker is added to the grammar | A-normal form has no `f(take y)` syntax, so 07-11's consume-on-call transfer is IMPLICIT in source: a reader cannot see at `identity(buffer)` that `buffer` is consumed there, the way `take buffer` shows it for a plain binding |
 
 ## Detail
 
@@ -234,6 +235,39 @@ ratification, not a drive-by inside 07-10, whose job is the peer-consult
 channel, not a diagnostic-quality fix on a path 07-10 does not otherwise
 touch.
 
+### D-07-52 — the implicit call-site transfer, accepted and disclosed
+
+**Closes 07-VERIFICATION.md's PVG-01 / 07-REVIEW.md's CR-01 (CRITICAL/BLOCKER).**
+`07-11-PLAN.md` lands the consume rule inside `check.resolveCallBinding`
+(applying to both call paths through the shared resolver) and a genuinely
+independent consume peer in `corevalidate`'s two `core.OpCall` replay arms
+(deriving the argument's copy ability from the emitted core artifact's own
+`core.TypeFact.Shape`, sharing no helper with `check`): a call transfers its
+argument, a copyable argument (`Byte`) is copied, and a non-copyable argument
+(`Buffer`) is moved — reachable through the EXISTING `ownership.use_after_move`
+gate on the `check` side and the pre-existing generic `core.place_uninitialized`
+gate on the `corevalidate` side. `testdata/phase07/call_argument_used_twice.lang`
+is the standing negative control; `testdata/phase07/call_argument_used_once.lang`
+pins the non-refusing direction.
+
+**The retained limitation, disclosed rather than implied:** because A-normal
+form has no `f(take y)` syntax (D-07-01: a call's argument must be the NAME of
+an in-scope binding, never a nested `take`/`borrow`/`borrow mut` expression),
+the transfer a call performs is **implicit** at the call site — a reader
+cannot see, at `let first = identity(buffer)`, that `buffer` is consumed
+there, the way `take buffer` makes an ordinary binding's transfer visible in
+source text. This is accepted (T-07-11-06), not silently absorbed: the
+rejected alternative — refuse every non-copyable call argument outright,
+requiring an explicit call-site marker before it can be passed — was
+considered and declined at the ratifying checkpoint, because A-normal form
+has no such marker today, making `Buffer` **unpassable to any call** and
+flipping `testdata/phase07/relay_escort_witness.lang` (the D-03-02 witness
+this phase forbids disturbing) from clean to refused for an unrelated reason,
+erasing the deferred divergence rather than deferring it. **Reopens** when a
+call-site transfer marker (e.g. an explicit `f(take y)` form) is added to the
+grammar, at which point the marker becomes required and the implicit-transfer
+disclosure here is retired.
+
 ---
 
 ## Phase 07's own scope-cut trigger (D-07-26) — updated for the 8-plan set
@@ -289,9 +323,26 @@ Phase 08 with the cycle refusal.
 - **No interprocedural fact is marked cacheable** (`07-08`). QLT-06 is a later
   requirement; Phase 07 builds the callee-changes-invalidates-caller regression
   and the closure-derived key it will need, and modifies `cache.Input` not at all.
-- **Arity-N calls and multi-argument loan interaction** (D-07-07) are deferred.
-  The `/1` schema is arity-ready (D-07-10), so the future change is a checker
-  predicate plus an aliasing rule, not a `/2`.
+- **Arity-N calls and multi-argument ALIASING** (D-07-07, CORRECTED — see
+  below) are deferred. The `/1` schema is arity-ready (D-07-10), so the
+  future change is a checker predicate plus an aliasing rule, not a `/2`.
+  **Correction, not a supplement:** D-07-07's wording previously read as
+  though it deferred "multi-argument loan interaction" while implying the
+  SINGLE-argument case was already handled. It was not. From `07-03` through
+  `07-09`, a call neither moved nor copy-checked its argument at all — the
+  call boundary bypassed affine ownership entirely, so the identical
+  non-copyable value could be passed to two separate calls and admitted by
+  BOTH `check` and `corevalidate` (07-REVIEW.md **CR-01** / 07-VERIFICATION.md
+  **PVG-01**). Reading D-07-07 as evidence the single-argument case was sound
+  was the misreading this entry invited; it is retracted here. **`07-11`
+  closes the single-argument case** with consume-on-call, ability-decided,
+  refused independently by both layers (see D-07-52 below for the residual
+  it accepts). What remains genuinely and ONLY deferred under D-07-07 is the
+  MULTI-argument aliasing rule: with two or more arguments, consumption
+  becomes an argument-ALIASING question (two arguments naming the same
+  place; one shared and one exclusive loan of one owner) — a genuinely
+  different rule from the single-argument consume-on-call law 07-11 ships,
+  together with D-07-48's positional-correspondence obligation.
 - **Labeled call-site arguments** (M001 D-02) are deferred, not revoked (D-07-06),
   and reinstated when arity widens past 1.
 - **Keyed/signed summary digests** are out of scope. D-07-13: content digests

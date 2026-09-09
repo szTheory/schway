@@ -59,6 +59,8 @@ func Phase7RequiredControls() []string {
 		ControlCallTargetTypeFromCalleeReturn,
 		ControlCheckPeerConsulted,
 		ControlInterfacePeerRefusalIsInvalid,
+		ControlCallArgumentConsumedWhenNoncopyable,
+		ControlCallCopyableArgumentNotConsumed,
 	}
 }
 
@@ -245,6 +247,29 @@ const (
 	// discarded. Killed by interfacePeerRefusalSeam (session.go) and
 	// session_peer_gate_test.go's TestInterfacePeerRefusalMutationKilled.
 	ControlInterfacePeerRefusalIsInvalid = "control:interface.peer_refusal_is_invalid"
+	// ControlCallArgumentConsumedWhenNoncopyable names 07-11's consume-on-call
+	// claim (07-VERIFICATION.md PVG-01 / 07-REVIEW.md CR-01): a call
+	// transfers its argument, and a NON-COPYABLE argument is consumed
+	// (move-marked), checked independently at both admission layers --
+	// check.resolveCallBinding (from the argument's own core.TypeFact via
+	// the ability package) and corevalidate's OpCall replay (from the
+	// emitted core artifact's own types[operation.TypeID].Shape via
+	// corevalidate's own deriveAbility, no helper shared with check). Killed
+	// on the check side by check_test.go's
+	// TestCallArgumentConsumeMutationKilled and on the peer side by
+	// corevalidate_test.go's TestCallConsumePeerMutationMatrix.
+	// call_argument_used_twice.lang is this control's own standing negative
+	// control -- declared, not implied.
+	ControlCallArgumentConsumedWhenNoncopyable = "control:call.argument_consumed_when_noncopyable"
+	// ControlCallCopyableArgumentNotConsumed names 07-11's non-refusing-
+	// direction claim: a COPYABLE call argument is copied, never consumed
+	// -- a copyable value's second use through a call must not be wrongly
+	// refused. Killed on the check side by check_test.go's
+	// TestCallArgumentConsumeOverRefusalMutationKilled and on the peer side
+	// by corevalidate_test.go's TestCallConsumePeerMutationMatrix.
+	// call_argument_used_once.lang and call_basic.lang are this control's
+	// own admitting fixtures.
+	ControlCallCopyableArgumentNotConsumed = "control:call.copyable_argument_not_consumed"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped
