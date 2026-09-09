@@ -39,6 +39,13 @@ building a parser, compiler backend, runtime, or user-facing syntax.
 - Require unoptimized, optimized, semantic-oracle, and sanitizer evidence as
   distinct native lanes. Do not allow panic, unwind, or foreign nonlocal exit
   across an unaudited C ABI boundary.
+- Memoize interprocedural summaries within a run: derive each function's
+  summary once over the proven-acyclic call graph, never per call site. Cost
+  must be declared against program operation count, not call-graph shape.
+- Derive summaries from operations in program order. Any pass that reorders
+  operations before summary derivation must restate the cost bound.
+- Do not mark an interprocedural fact cacheable across runs before the
+  invalidation fallout of a real callee edit is measured.
 
 ## Spikes
 
@@ -49,3 +56,4 @@ building a parser, compiler backend, runtime, or user-facing syntax.
 | 003 | ownership-kernel | public-origins-generic-abilities | comparison | Given separately compiled APIs that return borrowed or generic values, a body-blind consumer checks verified origin, access, and ability summaries and agrees with an independent implementation oracle | VALIDATED | ownership, origins, generics, abilities, separate-compilation, higher-ranked |
 | 004 | ownership-kernel | independent-certificate-checker | comparison | Given canonical typed-core ownership facts and an untrusted certificate, a source- and body-blind checker catches distinct corruption classes without recreating frontend inference or taxing the ordinary edit loop | PARTIAL | ownership, certificates, trusted-computing-base, validation, mutation, provenance |
 | 005 | ownership-kernel | native-ffi-provenance-cleanup | standard | Given candidate ownership/resource invariants expressed through a minimal native C path, O0/O3 execution and hostile ABI, alias, provenance, allocator, cleanup, sanitizer, and nonlocal-exit cases expose contract violations | PARTIAL | native, ffi, abi, provenance, cleanup, optimization, sanitizers |
+| 006 | ownership-kernel | interprocedural-liveness-cost-scaling | comparison | Given call graphs of increasing size and sharing, summary-based loan liveness is memoization-bound: a memoized derivation stays linear in program size and agrees with a context-sensitive expansion oracle, while unmemoized arms are quadratic-to-exponential | VALIDATED | ownership, liveness, interprocedural, summaries, cost, scaling, caching, oracle |

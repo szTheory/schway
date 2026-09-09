@@ -53,6 +53,19 @@ spikes follow these unless the question requires otherwise.
 - External tool invocations record exact toolchain, target, flags, content
   digest, compile time, and artifact size; temporary outputs stay outside the
   source tree and are removed after the run.
+- Cost comparisons price at least one deliberately charitable variant of the
+  mechanism a spike expects to reject. A headline that only beats the weakest
+  possible opponent is not a finding.
+- Growth is fitted against program operation count as well as against the
+  structural size axis, and classified on the operation-count fit. A corpus
+  whose composition drifts with size moves the structural fit on its own.
+- Cost arms are compared only after every arm has been shown to agree with an
+  independent oracle on the same corpus.
+- Every corpus template used in a cost sweep is a discriminator: some admission
+  decision must flip on the fact being derived, so a defect cannot hide inside
+  a semantically inert body.
+- A cache is priced on both sides -- what it saves and what one upstream edit
+  forces it to throw away.
 
 ## Tools and libraries
 

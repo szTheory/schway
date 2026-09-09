@@ -40,7 +40,7 @@ answered**). None of them is production code and none carries a requirement.
 
 | Spike | Question it must answer | Blocks | Runs |
 |-------|-------------------------|--------|------|
-| **S-006 Interprocedural liveness cost-scaling probe** | Does summary-based liveness stay linear/sub-quadratic in call-graph size, or must a memoized summary cache be designed in from the start? | **Planning of Phase 08** (hard entry gate) | Alongside Phase 07 |
+| **S-006 Interprocedural liveness cost-scaling probe** — **ANSWERED (VALIDATED, 2026-09-09)**: memoized is linear in program size on every shape; unmemoized is quadratic-to-exponential. The cache is the mechanism, not an optimization. Phase 08 planning unblocked. | Does summary-based liveness stay linear/sub-quadratic in call-graph size, or must a memoized summary cache be designed in from the start? | **Planning of Phase 08** (hard entry gate) — released | Alongside Phase 07 |
 | **S-007 Recursive / mutually-recursive stress corpus** | Do a bounded call stack and cycle refusal distinguish legal deep recursion from illegal cycles without false positives on parser-shaped programs? Is the stack ceiling a fixed constant or a declared budget? | Nothing (informs Phase 07's design) | Alongside Phase 07, non-blocking |
 | **S-008 Nyquist fold-in cost measurement** | Is closing M001 Phase 3's Nyquist debt genuinely cheap when folded into code Phase 09 already has open? | **QLT-07's commitment status** in Phase 09 | Before Phase 09 planning; hours, not days |
 
@@ -59,7 +59,10 @@ Deliberate choice, stated per instruction:
 - **Therefore: a pre-phase spike, recorded here, executed alongside Phase 07,
   and a hard entry gate on Phase 08's *planning***. Phase 08 may not be planned
   until S-006 has answered whether `loanLivenessFixpoint` extends directly or
-  needs a memoized summary-caching layer designed in from the start. The
+  needs a memoized summary-caching layer designed in from the start. **Answered:
+  both — the backward worklist extends directly (a program-order canonicalization
+  pre-pass plus one transfer clause), and the summary table must be memoized
+  within a run from the start.** The
   precedent this guards against is real, not hypothetical: Go 1.18's 15-18%
   front-end-specific generics regression and Rust's Polonius performance wall.
 

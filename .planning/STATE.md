@@ -194,10 +194,20 @@ Standing architectural commitments carried into M002:
 
 Three bounded pre-phase spikes, recorded in ROADMAP.md ("Pre-Phase Spikes"):
 
-- **S-006 interprocedural liveness cost-scaling probe** — hard entry gate on
-  *planning* Phase 08. Deliberately a pre-phase spike rather than a phase or a
-  Phase 07 gate: it carries no requirement, produces throwaway workbench code,
-  and its finding is Phase-08-blocking, not Phase-07-blocking.
+- **S-006 interprocedural liveness cost-scaling probe** — **ANSWERED
+  2026-09-09, gate released** (`.planning/spikes/006-interprocedural-liveness-cost-scaling/`,
+  VALIDATED). A memoized summary cache must be designed into Phase 08 from the
+  start: memoized derivation is linear in program size on every call-graph
+  shape (~5 work units/op, one derivation per function), while the charitable
+  unmemoized arm is quadratic (76x the memoized cost at 512 functions, and the
+  multiplier doubles with size) and the naive one exhausts a 4M-unit budget at
+  32 functions. `loanLivenessFixpoint` itself extends directly — the new
+  subsystem is the summary table plus its invalidation, not a new dataflow
+  engine — reverse postorder over Phase 07's proven-acyclic call graph
+  suffices, program-order bodies are a load-bearing invariant (reversed: 192x
+  penalty, quadratic in body length), and a persistent CROSS-run summary cache
+  must not be assumed (one leaf edit invalidates 92% worst / 43% mean on the
+  parser-shaped graph).
 - **S-007 recursive / mutually-recursive stress corpus** — runs alongside
   Phase 07, non-blocking; informs whether the call-stack ceiling is a fixed
   constant or a declared budget.
@@ -269,5 +279,5 @@ Next command: `/gsd-discuss-phase 07`
 
 - Review `.planning/ROADMAP.md` (note the documented departure from the
   research-reconciled 6-phase order, and the pre-phase spike decision).
-- Kick off S-006 and S-007 alongside Phase 07.
+- S-006 is answered; Phase 08 planning is unblocked. Kick off S-007 alongside Phase 07.
 - Discuss and plan Phase 07 with /gsd-discuss-phase.
