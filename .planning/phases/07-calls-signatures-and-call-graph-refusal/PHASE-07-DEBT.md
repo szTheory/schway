@@ -294,6 +294,19 @@ introduced, or when `Fails` changes from a single string to a set in the
 schema — at which point the join defined here must be re-specified, not
 silently reused.
 
+**Note (07-REVIEW.md IN-02, iteration 1 fix):** the producer/peer
+agreement this debt's disclosure depends on (both sides folding over the
+same sorted-callee-ID order — see `corevalidate.go`'s `peerJoinFails` doc
+comment) is now test-caught, not just documented, by
+`TestPeerFailsAgreesOnDisagreeingMultiCalleeJoin`
+(`corevalidate_foreign_closure_test.go`), driven by the new fixture
+`testdata/phase07/call_two_fallible_callees_disagree.lang`. This closes
+the review finding that the coincidence was undefended by a dedicated
+test; it does NOT close D-07-53 itself — `joinFails`/`peerJoinFails`
+remain order-DEPENDENT within a single side (accumulator wins), and the
+schema-level imprecision (`Fails` cannot express a union) is unchanged
+and still reopens under the conditions stated above.
+
 ### D-07-54 — IN-02 and IN-03 deliberately carried
 
 **IN-02:** `check`'s argument-type admission gate compares the CALLING

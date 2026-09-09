@@ -8,6 +8,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
+	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -117,6 +118,74 @@ func TestPeerFailsIsClosureDerived(t *testing.T) {
 	}
 	if peerMain.Fails != "ProbeError" {
 		t.Fatalf("expected the peer to join main's Fails to %q, got %q", "ProbeError", peerMain.Fails)
+	}
+}
+
+// TestPeerFailsAgreesOnDisagreeingMultiCalleeJoin is 07-REVIEW.md IN-02's
+// standing witness: TestPeerFailsIsClosureDerived above only exercises
+// joinFails'/peerJoinFails' EQUAL-merge and identity cases (a single
+// fallible chain), never the genuinely disagreeing case where the fold
+// actually depends on order (D-07-53's disclosed imprecision: the
+// EXISTING accumulator wins over a later disagreeing value, never the
+// reverse). testdata/phase07/call_two_fallible_callees_disagree.lang
+// drives `main` through TWO callees (tracer_a, tracer_b) that publish
+// DIFFERENT non-empty Fails values (ErrA, ErrB) -- so this test proves
+// producer and peer agree on `main`'s published Fails even under the
+// disagreeing join, not merely when both operands already coincide.
+// Agreement here holds only because originvalidate's
+// calleeIDsForClosureDigest and corevalidate's checkCallGraphAcyclic
+// adjacency build both independently sort each caller's callee list by
+// ID before folding (see peerJoinFails' own doc comment in
+// corevalidate.go) -- this test is the first to assert that coincidence
+// actually produces equal `Fails` values for a shape where an order
+// mismatch between the two sides would be silently observable as a
+// producer/peer divergence with no diagnostic.
+func TestPeerFailsAgreesOnDisagreeingMultiCalleeJoin(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_two_fallible_callees_disagree.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("call_two_fallible_callees_disagree.lang: unexpected check diagnostics: %+v", checked.Diagnostics)
+	}
+	mainID := functionIDByName(checked.Program, "main")
+	if mainID == "" {
+		t.Fatal("expected call_two_fallible_callees_disagree.lang to declare main")
+	}
+
+	producerSummary, err := originvalidate.BuildInterface(checked.Program)
+	if err != nil {
+		t.Fatalf("originvalidate.BuildInterface: %v", err)
+	}
+	var producerMain core.FunctionSignature
+	for _, function := range producerSummary.Functions {
+		if function.ID == mainID {
+			producerMain = function
+		}
+	}
+	if producerMain.Fails == "" {
+		t.Fatal("expected the producer to publish a non-empty joined Fails for main")
+	}
+
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("expected call_two_fallible_callees_disagree.lang to corevalidate-validate, got problems: %+v", validated.Problems)
+	}
+	peerMain, ok := validated.PeerSignatures()[mainID]
+	if !ok {
+		t.Fatal("main missing from peer signatures")
+	}
+
+	if peerMain.Fails != producerMain.Fails {
+		t.Fatalf("expected the peer's independently-joined Fails to agree with the producer's even under a genuinely disagreeing multi-callee join: producer=%q peer=%q", producerMain.Fails, peerMain.Fails)
+	}
+	// main calls tracer_a before tracer_b, and joinFails/peerJoinFails
+	// both keep the EXISTING (caller-nearest, i.e. earlier-folded) value
+	// over a later disagreeing one -- so the published value is ErrA
+	// (tracer_a's), not ErrB (tracer_b's), on BOTH sides.
+	if producerMain.Fails != "ErrA" {
+		t.Fatalf("expected the accumulator-wins join to publish %q, got %q", "ErrA", producerMain.Fails)
 	}
 }
 
