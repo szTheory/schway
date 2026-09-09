@@ -231,10 +231,13 @@ digest chaining, which terminates only on a proven DAG). Stage 1 is three plans
 and Stage 2 is two, for eight sequential waves in total.
 **Parallel**: S-006 and S-007 spikes run alongside. `corevalidate`'s non-liveness
 `OpCall` engineering may start once Stage 1 lands.
-**Plans**: 8 plans (replanned 2026-09-08 after cross-AI review returned Risk:
-HIGH on the original 5; resolutions locked as D-07-29..D-07-45. Waves are
-strictly sequential — every plan overlaps `check.go` / `corevalidate.go` /
-`core.go` with its neighbours, so there is no safe parallelism.)
+**Plans**: 12 plans (8 planned 2026-09-08 after cross-AI review returned Risk:
+HIGH on the original 5, resolutions locked as D-07-29..D-07-45; `07-09` added as
+gap closure for 07-VERIFICATION.md's single failed truth; `07-10`..`07-12` added
+2026-09-09 as gap closure for 07-REVIEW.md's post-verification blockers CR-04,
+CR-01, and CR-03. Waves are strictly sequential — every plan overlaps `check.go`
+/ `corevalidate.go` / `core.go` / `session_phase7.go` / `scripts/verify-phase7.sh`
+with its neighbours, so there is no safe parallelism.)
 
 Plans:
 **Wave 1**
@@ -272,6 +275,18 @@ Plans:
 **Wave 1 (gap closure — from 07-VERIFICATION.md `gaps_found`)**
 
 - [x] 07-09-PLAN.md — Gap closure: argument-type-vs-declared-parameter-type refusal in `resolveCallBinding`, an independently-derived `corevalidate` peer, `OpCall`'s `TargetID.TypeID` derived from the callee's declared return type, `call_type_mismatch.lang`, and two new mutation-killed controls
+
+**Wave 1 (gap closure — post-verification, from 07-REVIEW.md CR-01/CR-03/CR-04)**
+
+- [ ] 07-10-PLAN.md — PVG-03 (CR-04, the amplifier): `lang check` consults `corevalidate` and reports the peer's refusal as an invalid source; `interface export`/`interface core` report a peer refusal as `StatusInvalid` instead of `tool.operation_failed`; an asserted divergence register; WR-01's user-visible half closed incidentally; PVG-04/WR-01/WR-02 dispositions recorded as D-07-49/50/51
+
+**Wave 2 (blocked on 07-10)**
+
+- [ ] 07-11-PLAN.md — PVG-01 (CR-01): the ownership half of the call contract — a call consumes its non-copyable argument in `check.resolveCallBinding`, an independently-derived `corevalidate` consume peer, `call_argument_used_twice.lang` / `call_argument_used_once.lang`, two mutation-killed controls, and D-07-07's misleading wording CORRECTED
+
+**Wave 3 (blocked on 07-11)**
+
+- [ ] 07-12-PLAN.md — PVG-02 (CR-03): `FunctionSignature.Foreign`/`.Fails` closure-derived by an explicit worst-case join in the acyclic second pass, an independently-implemented peer join over `corevalidate`'s own postorder, `call_fallible_foreign_reach.lang`, the IN-01 index-coupling fix, and two mutation-killed controls
 
 **Declared scope-cut trigger (D-07-26):** if `07-01`..`07-05` exceed ~2x their
 initial plan estimate, `07-06`/`07-07` renegotiate out to Phase 08 — **and
