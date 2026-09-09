@@ -339,7 +339,7 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, *diag)
 		}
 	}
-	if len(result.Diagnostics) == 0 {
+	if len(result.Diagnostics) == 0 && !disableCallGraphCycleRefusalForTest {
 		// D-07-14: run callgraph.Order over check's OWN completed
 		// in-memory core.Program and refuse BEFORE returning it. A cyclic
 		// core.Program therefore exists only as an ephemeral local inside
@@ -352,6 +352,16 @@ func Program(program ast.Program) Result {
 	}
 	return result
 }
+
+// disableCallGraphCycleRefusalForTest is 07-07 Task 3 Test 1's own D-07-42
+// independent-disable seam: when true, check's callgraph-based cycle
+// refusal is skipped entirely, so a genuinely cyclic core.Program is
+// returned as-is (never cleared) -- proving corevalidate's own,
+// independently written cycle peer (07-07) still refuses it on its own,
+// wholly without check's help. Unexported, same-package-test-only,
+// restored via defer in every test that engages it -- never an exported
+// package-level mutable var on a production path (D-07-42).
+var disableCallGraphCycleRefusalForTest = false
 
 // checkCallGraphAcyclic runs callgraph.Order over program and, on a
 // discovered cycle, builds the core.call_graph_cycle diagnostic ratified

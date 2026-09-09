@@ -119,7 +119,11 @@ for control in \
 	control:callgraph.self_edge \
 	control:callgraph.unresolved_edge_refused \
 	control:callgraph.cycle_id_deterministic \
-	control:callgraph.cause_bound
+	control:callgraph.cause_bound \
+	control:corevalidate.cycle_peer_independent \
+	control:corevalidate.cycle_peer_gray_reentry \
+	control:callgraph.foreign_shadowing_edge_preserved \
+	control:phase07.controls_are_mutation_killed
 do
 	grep -q "$control" "$verify_tmp/phase07.json" || { echo "phase07 verify: required Phase 07 control missing: $control" >&2; exit 1; }
 done

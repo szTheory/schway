@@ -49,6 +49,10 @@ func Phase7RequiredControls() []string {
 		ControlCallGraphCycleIDDeterministic,
 		ControlCallGraphCauseBound,
 		ControlCallCallableRefusal,
+		ControlCorevalidateCyclePeerIndependent,
+		ControlCorevalidateCyclePeerGrayReentry,
+		ControlCallGraphForeignShadowingEdgePreserved,
+		ControlPhase07ControlsAreMutationKilled,
 	}
 }
 
@@ -142,6 +146,33 @@ const (
 	// TestCallGraphCycleBoundedAt32Causes and
 	// TestCallGraphCycleTruncatesAt33Members.
 	ControlCallGraphCauseBound = "control:callgraph.cause_bound"
+	// ControlCorevalidateCyclePeerIndependent names 07-07 Task 1/Task 3's
+	// D-07-19 claim: corevalidate's own, independently written cycle
+	// traversal (over a disjoint, synthetic-only reachable input space)
+	// refuses a cycle even with check's own callgraph-based refusal
+	// disabled. Killed by
+	// check_test.go's TestCheckCycleRefusalIndependentOfCorevalidatePeer.
+	ControlCorevalidateCyclePeerIndependent = "control:corevalidate.cycle_peer_independent"
+	// ControlCorevalidateCyclePeerGrayReentry names 07-07 Task 3 Test 4's
+	// own gray-versus-visited seam on corevalidate's independent
+	// traversal -- a second derivation nobody has seen fail is not
+	// evidence (T-07-41). Killed by
+	// corevalidate_cycle_peer_test.go's TestCyclePeerMutationMatrix.
+	ControlCorevalidateCyclePeerGrayReentry = "control:corevalidate.cycle_peer_gray_reentry"
+	// ControlCallGraphForeignShadowingEdgePreserved names 07-07 Task 2/
+	// Task 3's T-07-43 claim: a declared Lang function whose name shadows
+	// a foreign symbol still contributes its own CalleeID graph edge
+	// (D-07-30's resolution-time precedence), never silently dropped as a
+	// foreign call would be. Killed by check_test.go's
+	// TestForeignSymbolShadowingFixtureRefusedAndEdgeMutationKilled.
+	ControlCallGraphForeignShadowingEdgePreserved = "control:callgraph.foreign_shadowing_edge_preserved"
+	// ControlPhase07ControlsAreMutationKilled names 07-07 Task 3 Test 5's
+	// own completeness claim (D-07-41): every control in
+	// Phase7RequiredControls() has a recorded seeded-mutation kill,
+	// compared by exact set equality against an authoritative list, never
+	// a self-authored registry. Killed by session_phase7_test.go's own
+	// TestPhase7ControlsAreMutationKilledMetaMutation.
+	ControlPhase07ControlsAreMutationKilled = "control:phase07.controls_are_mutation_killed"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped

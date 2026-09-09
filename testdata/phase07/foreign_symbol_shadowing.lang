@@ -1,0 +1,38 @@
+// T-07-43/D-07-30: a declared Lang function whose name shadows a declared
+// `foreign C` symbol. `check`'s own resolveCallBinding resolves a bare
+// call's callee by consulting the declared-Lang-function table BEFORE the
+// foreign-symbol table (D-07-01), so a call to `helper(...)` binds to the
+// LANG function, not the foreign symbol -- and the resulting cycle
+// (main -> helper -> main) is only visible under that precedence: a
+// divergent resolution rule would instead treat this as a fallible foreign
+// call (a materially different operation with no CalleeID graph edge at
+// all), silently dropping the edge and hiding the cycle.
+
+module phase07.foreign_symbol_shadowing
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn helper(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: HelperError
+  }
+}
+
+data HelperError =
+  | HelperFailed
+
+fn helper(value: Byte) -> Byte {
+  let result = main(value)
+  result
+}
+
+fn main(value: Byte) -> Byte {
+  let result = helper(value)
+  result
+}

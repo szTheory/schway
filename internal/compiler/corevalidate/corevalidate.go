@@ -266,6 +266,22 @@ func (v *validator) run() {
 // false (the production default) means "run the peer for real".
 var disableCyclePeerForTest bool
 
+// SetDisableCyclePeerForTest is Task 3 Test 2/Test 3's cross-package
+// bilateral-fault seam. Go's build model excludes "_test.go" files from a
+// normal package import, so a same-package-only unexported var (the shape
+// every other Phase 07 fault-injection seam in this file uses) cannot be
+// reached by check's own bilateral-fault test, which imports this package
+// as an ordinary dependency. This is the one, deliberately minimal,
+// clearly-named exception (D-07-42): production-visible, but a documented
+// test-only no-op unless a test explicitly calls it, and always restored
+// via the returned closure. Never called from any production code path in
+// this repository.
+func SetDisableCyclePeerForTest(disabled bool) (restore func()) {
+	previous := disableCyclePeerForTest
+	disableCyclePeerForTest = disabled
+	return func() { disableCyclePeerForTest = previous }
+}
+
 // peerGrayVsVisitedMutationForTest is Task 3 Test 4's own fault-injection
 // seam, mirroring callgraph.grayVsVisitedMutationForTest exactly but on
 // THIS package's own, independently written traversal (D-07-19): when

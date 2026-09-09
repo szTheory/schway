@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -2656,4 +2657,296 @@ func TestCallGraphCycleClearsReturnedProgram(t *testing.T) {
 	if len(result.Program.Functions) != 0 {
 		t.Fatalf("expected no functions in the returned core.Program on a cycle refusal, got %d", len(result.Program.Functions))
 	}
+}
+
+// TestCycleIndirectFixtureRefused is 07-07 Task 2's length-3 corpus item:
+// A -> B -> C -> A, completing SEM-07's self (1) / mutual (2) / indirect
+// (>= 3) trio, distinguished by cycle_length and membership rather than by
+// three separate codes.
+func TestCycleIndirectFixtureRefused(t *testing.T) {
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_indirect.lang")))
+	diag := findCallGraphCycleDiagnostic(t, result)
+	for _, cause := range diag.Causes {
+		if cause.Kind == "cycle_length" {
+			length, err := strconv.Atoi(cause.Detail)
+			if err != nil || length < 3 {
+				t.Fatalf("want cycle_length >= 3, got %q", cause.Detail)
+			}
+			return
+		}
+	}
+	t.Fatalf("expected a cycle_length cause, got %+v", diag.Causes)
+}
+
+// TestCycleUnreachableFixtureRefused is 07-07 Task 2's T-07-42 corpus item:
+// a cycle among functions `main` never calls into is still refused --
+// roots are ALL declared functions, never merely functions reachable from
+// an entry point.
+func TestCycleUnreachableFixtureRefused(t *testing.T) {
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_unreachable.lang")))
+	findCallGraphCycleDiagnostic(t, result)
+}
+
+// TestCycleUnreachableSurvivesEntryPointRemoval is the synthetic sibling of
+// TestCycleUnreachableFixtureRefused: with `main` disabled entirely
+// (check's own cycle refusal disabled first so the real, still-cyclic
+// core.Program is returned rather than cleared), deleting `main` from the
+// program's own Functions slice and re-running callgraph.Order directly
+// still refuses -- proving the refusal never depended on `main`'s
+// presence, only on the orbiting pair's own mutual edges.
+func TestCycleUnreachableSurvivesEntryPointRemoval(t *testing.T) {
+	previous := disableCallGraphCycleRefusalForTest
+	disableCallGraphCycleRefusalForTest = true
+	defer func() { disableCallGraphCycleRefusalForTest = previous }()
+
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_unreachable.lang")))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected the cycle refusal to be disabled, got %+v", result.Diagnostics)
+	}
+	program := result.Program
+
+	withoutEntry := core.Program{Schema: program.Schema, Module: program.Module, ModuleID: program.ModuleID, DataTypes: program.DataTypes}
+	for _, function := range program.Functions {
+		if function.Name == "main" {
+			continue
+		}
+		withoutEntry.Functions = append(withoutEntry.Functions, function)
+	}
+	if len(withoutEntry.Functions) != len(program.Functions)-1 {
+		t.Fatalf("expected exactly one function (main) removed, got %d of %d remaining", len(withoutEntry.Functions), len(program.Functions))
+	}
+	if _, err := callgraph.Order(withoutEntry); err == nil {
+		t.Fatalf("expected the orbiting cycle to still be refused with no entry point present")
+	} else if _, ok := callgraph.CycleError(err); !ok {
+		t.Fatalf("expected a cycle error, got %v", err)
+	}
+}
+
+// TestCycleThroughMatchArmFixtureRefused is 07-07 Task 2's D-07-28 corpus
+// item: the closing edge of this fixture's cycle originates INSIDE a match
+// arm (helper's arm A calls back into main), proving enumerate-by-kind-
+// across-all-blocks on the REFUSAL path, not only the admission path
+// call_from_both_match_arms.lang (07-04) proved.
+func TestCycleThroughMatchArmFixtureRefused(t *testing.T) {
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_through_match_arm.lang")))
+	findCallGraphCycleDiagnostic(t, result)
+}
+
+// TestCycleThroughMatchArmSurvivesBlockOrderReversal proves the
+// match-arm-closing edge is found by scanning ALL of a function's
+// Linear.Operations, never by Block/Successor position (D-07-28): with
+// check's own cycle refusal disabled so the real, still-cyclic program is
+// returned, reversing the Blocks slice order of every function that
+// carries one changes nothing about which operations exist or their
+// CalleeID edges, so callgraph.Order still refuses identically.
+func TestCycleThroughMatchArmSurvivesBlockOrderReversal(t *testing.T) {
+	previous := disableCallGraphCycleRefusalForTest
+	disableCallGraphCycleRefusalForTest = true
+	defer func() { disableCallGraphCycleRefusalForTest = previous }()
+
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_through_match_arm.lang")))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected the cycle refusal to be disabled, got %+v", result.Diagnostics)
+	}
+	program := result.Program
+	for fi := range program.Functions {
+		function := &program.Functions[fi]
+		if function.Linear == nil || len(function.Linear.Blocks) < 2 {
+			continue
+		}
+		blocks := function.Linear.Blocks
+		for i, j := 0, len(blocks)-1; i < j; i, j = i+1, j-1 {
+			blocks[i], blocks[j] = blocks[j], blocks[i]
+		}
+	}
+	if _, err := callgraph.Order(program); err == nil {
+		t.Fatalf("expected the cycle to still be refused after reversing block order")
+	} else if _, ok := callgraph.CycleError(err); !ok {
+		t.Fatalf("expected a cycle error after reversing block order, got %v", err)
+	}
+}
+
+// TestForeignSymbolShadowingFixtureRefusedAndEdgeMutationKilled is 07-07
+// Task 2's T-07-43 corpus item AND Task 3's control:callgraph.
+// foreign_shadowing_edge_preserved mutation kill in one test: the fixture
+// is refused with core.call_graph_cycle, the emitted CalleeID names the
+// LANG function `helper` resolves to (D-07-30's precedence, never the
+// foreign symbol of the same name) -- and, mutated to drop that edge (as a
+// divergent precedence rule would, since a foreign call contributes no
+// CalleeID graph edge at all), the cycle silently disappears, proving the
+// edge -- and the precedence rule that preserves it -- is load-bearing.
+func TestForeignSymbolShadowingFixtureRefusedAndEdgeMutationKilled(t *testing.T) {
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "foreign_symbol_shadowing.lang")))
+	findCallGraphCycleDiagnostic(t, result)
+
+	previous := disableCallGraphCycleRefusalForTest
+	disableCallGraphCycleRefusalForTest = true
+	defer func() { disableCallGraphCycleRefusalForTest = previous }()
+
+	realResult := Program(mustParseProgram(t, readPhase07Fixture(t, "foreign_symbol_shadowing.lang")))
+	if len(realResult.Diagnostics) != 0 {
+		t.Fatalf("expected the cycle refusal to be disabled, got %+v", realResult.Diagnostics)
+	}
+	program := realResult.Program
+
+	var helperCalleeID, mainID string
+	for _, function := range program.Functions {
+		if function.Name == "main" {
+			mainID = function.ID
+		}
+	}
+	for _, function := range program.Functions {
+		if function.Name != "helper" || function.Linear == nil {
+			continue
+		}
+		for _, op := range function.Linear.Operations {
+			if op.Kind == core.OpCall {
+				helperCalleeID = op.CalleeID
+			}
+		}
+	}
+	if helperCalleeID == "" {
+		t.Fatalf("expected helper to carry an OpCall")
+	}
+	if helperCalleeID != mainID {
+		t.Fatalf("expected helper's call to resolve to the Lang function %q (D-07-30), got %q", mainID, helperCalleeID)
+	}
+
+	if _, err := callgraph.Order(program); err == nil {
+		t.Fatalf("expected the real program to contain a cycle before any mutation")
+	} else if _, ok := callgraph.CycleError(err); !ok {
+		t.Fatalf("expected a cycle error before mutation, got %v", err)
+	}
+
+	mutated := core.Program{Schema: program.Schema, Module: program.Module, ModuleID: program.ModuleID, DataTypes: program.DataTypes}
+	for _, function := range program.Functions {
+		if function.Name == "helper" && function.Linear != nil {
+			filtered := make([]core.LinearOperation, 0, len(function.Linear.Operations))
+			for _, op := range function.Linear.Operations {
+				if op.Kind == core.OpCall {
+					// The mutation: as if this call had instead resolved
+					// against the foreign symbol of the same name --
+					// which produces core.OpForeignCall, never an
+					// OpCall/CalleeID graph edge at all.
+					continue
+				}
+				filtered = append(filtered, op)
+			}
+			linearCopy := *function.Linear
+			linearCopy.Operations = filtered
+			function.Linear = &linearCopy
+		}
+		mutated.Functions = append(mutated.Functions, function)
+	}
+	if _, err := callgraph.Order(mutated); err != nil {
+		t.Fatalf("mutation (dropping the shadowing-precedence edge) had no observable effect: expected the cycle to disappear, got %v", err)
+	}
+}
+
+// TestCheckCycleRefusalIndependentOfCorevalidatePeer is Task 3 Test 1
+// (D-07-42's independent-disable row, check side): with check's OWN
+// callgraph-based cycle refusal disabled through disableCallGraphCycleRefusalForTest,
+// the cyclic core.Program is returned instead of cleared -- and
+// corevalidate's own, independently written cycle peer (07-07), consulted
+// via its ordinary public Validate API in its DEFAULT (never toggled)
+// state, still refuses it on its own.
+func TestCheckCycleRefusalIndependentOfCorevalidatePeer(t *testing.T) {
+	previous := disableCallGraphCycleRefusalForTest
+	disableCallGraphCycleRefusalForTest = true
+	defer func() { disableCallGraphCycleRefusalForTest = previous }()
+
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected check's own cycle refusal to be disabled, got %+v", result.Diagnostics)
+	}
+	if len(result.Program.Functions) == 0 {
+		t.Fatalf("expected the real cyclic core.Program to be returned, not cleared")
+	}
+
+	validated := corevalidate.Validate(result.Program)
+	if validated.Valid {
+		t.Fatalf("expected corevalidate's own independent peer to still refuse the cyclic program")
+	}
+	foundCycle := false
+	for _, problem := range validated.Problems {
+		if problem.Code == core.CallGraphCycle {
+			foundCycle = true
+		}
+	}
+	if !foundCycle {
+		t.Fatalf("expected %s among corevalidate's problems, got %+v", core.CallGraphCycle, validated.Problems)
+	}
+}
+
+// TestCorevalidatePeerIndependentOfCheckCycleRefusal is Task 3 Test 2
+// (D-07-42's independent-disable row, peer side): with corevalidate's own
+// cycle peer disabled via its cross-package test seam, check's OWN
+// callgraph-based refusal -- consulted in its DEFAULT (never toggled)
+// state -- still refuses the same cyclic source on its own. check.Program
+// never calls into corevalidate at all in production, so this also
+// demonstrates the two pipelines are wholly separate.
+func TestCorevalidatePeerIndependentOfCheckCycleRefusal(t *testing.T) {
+	restore := corevalidate.SetDisableCyclePeerForTest(true)
+	defer restore()
+
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	findCallGraphCycleDiagnostic(t, result)
+
+	// With the peer disabled, feeding check's own (cleared-on-refusal, so
+	// re-parse+re-check with check's OWN refusal ALSO disabled) real
+	// cyclic program through corevalidate must now report it valid --
+	// confirming the peer, not some other corevalidate check, was what
+	// caught it.
+	previousCheckSeam := disableCallGraphCycleRefusalForTest
+	disableCallGraphCycleRefusalForTest = true
+	defer func() { disableCallGraphCycleRefusalForTest = previousCheckSeam }()
+	unrefused := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	if len(unrefused.Diagnostics) != 0 {
+		t.Fatalf("expected check's own refusal to be disabled too, got %+v", unrefused.Diagnostics)
+	}
+	validated := corevalidate.Validate(unrefused.Program)
+	if !validated.Valid {
+		t.Fatalf("expected corevalidate to report the cyclic program valid with its own peer disabled, got %+v", validated.Problems)
+	}
+}
+
+// TestBilateralCallGraphFaultReportsNoDivergenceAndFailsGate is Task 3 Test
+// 3, the bilateral row: with BOTH check's own callgraph-based refusal AND
+// corevalidate's independent cycle peer disabled at once, a genuinely
+// cyclic program passes BOTH pipelines silently -- the sweep itself must
+// observe that neither derivation caught it and report that finding,
+// failing the gate rather than passing it, never silently accepting the
+// cyclic program as evidence of anything.
+func TestBilateralCallGraphFaultReportsNoDivergenceAndFailsGate(t *testing.T) {
+	previousCheckSeam := disableCallGraphCycleRefusalForTest
+	disableCallGraphCycleRefusalForTest = true
+	defer func() { disableCallGraphCycleRefusalForTest = previousCheckSeam }()
+	restorePeer := corevalidate.SetDisableCyclePeerForTest(true)
+	defer restorePeer()
+
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	checkRefused := len(result.Diagnostics) != 0
+	validated := corevalidate.Validate(result.Program)
+	corevalidateRefused := !validated.Valid
+
+	report, gatePassed := bilateralCallGraphFaultReport(checkRefused, corevalidateRefused)
+	if gatePassed {
+		t.Fatalf("expected the bilateral fault to fail the gate, not pass it")
+	}
+	const wantReport = "no divergence detected under bilateral fault"
+	if report != wantReport {
+		t.Fatalf("want report %q, got %q", wantReport, report)
+	}
+}
+
+// bilateralCallGraphFaultReport is Task 3 Test 3's own sweep predicate:
+// when NEITHER independent derivation refused a genuinely cyclic program
+// (the bilateral-fault condition), report the finding and fail the gate.
+// Any other combination (at least one side still refusing) passes,
+// because at least one derivation is still doing its job.
+func bilateralCallGraphFaultReport(checkRefused, corevalidateRefused bool) (report string, gatePassed bool) {
+	if !checkRefused && !corevalidateRefused {
+		return "no divergence detected under bilateral fault", false
+	}
+	return "", true
 }

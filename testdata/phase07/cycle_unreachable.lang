@@ -1,0 +1,24 @@
+// T-07-42: a cycle among functions unreachable from any entry point is
+// still refused. `main` never calls `orbit_a` or `orbit_b` at all -- they
+// only call each other -- proving roots are ALL declared functions, never
+// merely functions reachable from `main`. Fail-closed.
+
+module phase07.cycle_unreachable
+
+export {
+  fn main
+}
+
+fn main(value: Byte) -> Byte {
+  value
+}
+
+fn orbit_a(value: Byte) -> Byte {
+  let result = orbit_b(value)
+  result
+}
+
+fn orbit_b(value: Byte) -> Byte {
+  let result = orbit_a(value)
+  result
+}

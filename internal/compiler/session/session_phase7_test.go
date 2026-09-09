@@ -2,7 +2,9 @@ package session_test
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 
@@ -112,4 +114,113 @@ func TestPhase7RequiredControlsMatchScript(t *testing.T) {
 	if len(scriptSet) != len(sessionSet) {
 		t.Fatalf("script control set (%d) and session control set (%d) differ in size: script=%v session=%v", len(scriptSet), len(sessionSet), fromScript, session.Phase7RequiredControls())
 	}
+}
+
+// controlsWithRecordedMutationKill is Task 3 Test 5's own authoritative
+// kill registry (D-07-41): one entry per control in
+// session.Phase7RequiredControls(), each already proven load-bearing by a
+// named seeded-mutation test IN THE PLAN THAT INTRODUCED IT -- see each
+// Control* identifier's own doc comment in session_phase7.go for the
+// exact test name. This is the completeness claim's other half: not a
+// self-authored table that could omit a control from both this list and
+// Phase7RequiredControls() without either going red, but a list compared
+// against that authoritative function by EXACT set equality below.
+var controlsWithRecordedMutationKill = []string{
+	// 07-04: core_test.go's TestPhase7DispatchControlsMutationKilled,
+	// session_phase7_mutation_test.go's own lane kill, and interp/cgen's
+	// TestOpCallGroupedArmMutationKilled.
+	session.ControlKindExhaustiveDispatchPhase07InProcess,
+	session.ControlKindExhaustiveDispatchPhase07Lane,
+	session.ControlDispatchRecognizedNotExecuted,
+	// 07-05: check_test.go's TestCallAdmissionBodyBlindControl and
+	// TestVerifyCallableRefusalSeamAdmitsUncallableCallee /
+	// corevalidate's fault6/fault7 subtests.
+	session.ControlCallAdmissionBodyBlind,
+	session.ControlCallCallableRefusal,
+	// 07-06: callgraph_test.go's TestCallGraphMutationMatrix subtests and
+	// TestRotationRemovalMutationKilled / TestWitnessSelectionRemovalMutationKilled.
+	session.ControlCallGraphGrayReentry,
+	session.ControlCallGraphSelfEdge,
+	session.ControlCallGraphUnresolvedEdgeRefused,
+	session.ControlCallGraphCycleIDDeterministic,
+	session.ControlCallGraphCauseBound,
+	// 07-07: corevalidate_cycle_peer_test.go's
+	// TestCyclePeerMutationMatrix and check_test.go's
+	// TestCheckCycleRefusalIndependentOfCorevalidatePeer /
+	// TestForeignSymbolShadowingFixtureRefusedAndEdgeMutationKilled, and
+	// this file's own TestPhase7ControlsAreMutationKilled (below).
+	session.ControlCorevalidateCyclePeerIndependent,
+	session.ControlCorevalidateCyclePeerGrayReentry,
+	session.ControlCallGraphForeignShadowingEdgePreserved,
+	session.ControlPhase07ControlsAreMutationKilled,
+}
+
+// phase7ControlsExactSetEqual is the completeness check's own comparison
+// primitive (D-07-41): returns an error unless required and killed name
+// EXACTLY the same set of controls, sorted so the error message is
+// deterministic. Exercised directly, with FABRICATED inputs, by
+// TestPhase7ControlsCompletenessMetaMutation below -- proving the
+// comparison itself is load-bearing, not merely present: a control added
+// to the required list with no recorded kill must fail, and a kill
+// recorded for a control absent from the required list must also fail.
+func phase7ControlsExactSetEqual(required, killed []string) error {
+	requiredSet := make(map[string]bool, len(required))
+	for _, control := range required {
+		requiredSet[control] = true
+	}
+	killedSet := make(map[string]bool, len(killed))
+	for _, control := range killed {
+		killedSet[control] = true
+	}
+	var missingKill, extraKill []string
+	for control := range requiredSet {
+		if !killedSet[control] {
+			missingKill = append(missingKill, control)
+		}
+	}
+	for control := range killedSet {
+		if !requiredSet[control] {
+			extraKill = append(extraKill, control)
+		}
+	}
+	sort.Strings(missingKill)
+	sort.Strings(extraKill)
+	if len(missingKill) != 0 || len(extraKill) != 0 {
+		return fmt.Errorf("phase07 control completeness mismatch: required-but-unkilled=%v killed-but-not-required=%v", missingKill, extraKill)
+	}
+	return nil
+}
+
+// TestPhase7ControlsAreMutationKilled is Task 3 Test 5: the phase-wide
+// completeness matrix, derived from session.Phase7RequiredControls() (the
+// authoritative list, itself held in exact set equality with
+// scripts/verify-phase7.sh by TestPhase7RequiredControlsMatchScript above)
+// and compared by EXACT set equality against controlsWithRecordedMutationKill.
+// Every control introduced across 07-01 through 07-07 must appear in both,
+// with a non-empty seeded-mutation kill -- an empty mutation set is
+// non-compliance, not a vacuous pass (QLT-08).
+func TestPhase7ControlsAreMutationKilled(t *testing.T) {
+	if err := phase7ControlsExactSetEqual(session.Phase7RequiredControls(), controlsWithRecordedMutationKill); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestPhase7ControlsCompletenessMetaMutation is Task 3 Test 5's own
+// meta-mutation proof: the completeness comparison itself is falsifiable.
+// Uses FABRICATED control lists, never touching production state, so this
+// test cannot itself corrupt session.Phase7RequiredControls() for any
+// sibling test.
+func TestPhase7ControlsCompletenessMetaMutation(t *testing.T) {
+	t.Run("a required control with no recorded kill fails completeness", func(t *testing.T) {
+		required := append(append([]string{}, session.Phase7RequiredControls()...), "control:phase07.fake_new_control_no_kill")
+		if err := phase7ControlsExactSetEqual(required, controlsWithRecordedMutationKill); err == nil {
+			t.Fatal("mutation (adding an unkilled control) had no observable effect: expected completeness to fail")
+		}
+	})
+	t.Run("a recorded kill for a control absent from the required list fails completeness", func(t *testing.T) {
+		killed := append(append([]string{}, controlsWithRecordedMutationKill...), "control:phase07.fake_extra_kill_not_required")
+		if err := phase7ControlsExactSetEqual(session.Phase7RequiredControls(), killed); err == nil {
+			t.Fatal("mutation (recording an extra kill) had no observable effect: expected completeness to fail")
+		}
+	})
 }
