@@ -127,7 +127,9 @@ for control in \
 	control:summary.closure_digest_chained \
 	control:summary.closure_digest_reverse_postorder \
 	control:call.argument_type_matches_parameter \
-	control:call.target_type_from_callee_return
+	control:call.target_type_from_callee_return \
+	control:check.peer_consulted \
+	control:interface.peer_refusal_is_invalid
 do
 	grep -q "$control" "$verify_tmp/phase07.json" || { echo "phase07 verify: required Phase 07 control missing: $control" >&2; exit 1; }
 done

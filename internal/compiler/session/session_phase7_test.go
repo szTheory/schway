@@ -164,6 +164,11 @@ var controlsWithRecordedMutationKill = []string{
 	// corevalidate_test.go's TestCallTypePeerMutationMatrix (peer side).
 	session.ControlCallArgumentTypeMatchesParameter,
 	session.ControlCallTargetTypeFromCalleeReturn,
+	// 07-10: session_peer_gate_test.go's
+	// TestCheckCommandPeerConsultMutationKilled and
+	// TestInterfacePeerRefusalMutationKilled.
+	session.ControlCheckPeerConsulted,
+	session.ControlInterfacePeerRefusalIsInvalid,
 }
 
 // phase7ControlsExactSetEqual is the completeness check's own comparison

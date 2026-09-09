@@ -57,6 +57,8 @@ func Phase7RequiredControls() []string {
 		ControlSummaryClosureDigestReversePostorder,
 		ControlCallArgumentTypeMatchesParameter,
 		ControlCallTargetTypeFromCalleeReturn,
+		ControlCheckPeerConsulted,
+		ControlInterfacePeerRefusalIsInvalid,
 	}
 }
 
@@ -229,6 +231,20 @@ const (
 	// .lang fixture; see PHASE-07-DEBT.md. This lane's own fixtures all
 	// admit, exactly as ControlCallArgumentTypeMatchesParameter above.
 	ControlCallTargetTypeFromCalleeReturn = "control:call.target_type_from_callee_return"
+	// ControlCheckPeerConsulted names 07-10 Task 1's D-07-10 union-rule
+	// claim (07-REVIEW.md CR-04 / PVG-03): CheckCommandFile consults
+	// corevalidate.Validate on every source it admits and reports the
+	// peer's own refusal code, never silently discarding it. Killed by
+	// checkCommandPeerSeam (session.go) and
+	// session_peer_gate_test.go's TestCheckCommandPeerConsultMutationKilled.
+	ControlCheckPeerConsulted = "control:check.peer_consulted"
+	// ControlInterfacePeerRefusalIsInvalid names 07-10 Task 2's claim: a
+	// corevalidate refusal on the `interface export` / `interface core`
+	// paths is reported as protocol.StatusInvalid carrying the peer's own
+	// code, never as tool.operation_failed/exit 3 with the code
+	// discarded. Killed by interfacePeerRefusalSeam (session.go) and
+	// session_peer_gate_test.go's TestInterfacePeerRefusalMutationKilled.
+	ControlInterfacePeerRefusalIsInvalid = "control:interface.peer_refusal_is_invalid"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped

@@ -3,7 +3,7 @@ phase: 07-calls-signatures-and-call-graph-refusal
 recorded: 2026-09-08
 status: accepted
 disposition: in-progress
-items: 5
+items: 8
 blocking: 0
 ---
 
@@ -30,6 +30,9 @@ Per Key Lesson 4: declare deferred scope in writing at the moment it is decided.
 | D-07-46 | 07-09-PLAN.md (T-07-09-05) | SEM-05 | warning | Not scheduled — reopen when a parameterized shape becomes callable | The call argument/return type boundary compares NOMINAL CONSTRUCTOR STRINGS only (`core.Parameter.Type`/`core.Function.ReturnType`, the `/1` `ParameterContract.Type`) — the core schema carries no type ARGUMENTS to compare, so a parameterized shape's arguments cannot be checked at all. Today only the arity-0 constructors `Byte` and `Buffer` are executable, so constructor equality and structural equality coincide and nothing unsound is admitted |
 | D-07-47 | 07-09-PLAN.md | SEM-05 | info | Not scheduled — no legal source program can reach it while `sameType` holds | `check.call_return_type_unrepresentable` is UNREACHABLE from any legal source program while `sameType` forces every function's declared return type to equal its declared parameter type; it is mutation-killed through a seeded seam (`callReturnTypeDerivationSeam`) and through `corevalidate`'s synthetic input space, never through a `.lang` fixture |
 | D-07-48 | 07-09-PLAN.md (probe edge 3, amends D-07-07) | SEM-04 | info | Reopen when arity widens past 1 (D-07-07) | Argument ORDERING has no meaning at arity 1 and is therefore UNANSWERED, not answered, by 07-09's admission gate; when arity widens past 1, a positional argument/parameter correspondence rule must be specified before the widened gate can be called sound |
+| D-07-49 | 07-10-PLAN.md (Task 3) | SEM-04, SEM-06 | info | Phase 08 — Interprocedural Loan Liveness in `check` | PVG-04 / CR-02's defect (`computeLoanLastUses` has no `"call"` case) is now CLI-observable through the peer (`relay_escort_witness.lang` refuses at `lang check` as of 07-10) but is NOT fixed here and remains Phase 08 scope |
+| D-07-50 | 07-10-PLAN.md (Task 3, WR-01) | SEM-06, QLT-08 | info | Not scheduled — needs its own ratified diagnostic code | WR-01's check-side half is deliberately carried: `check` still does not diagnose duplicate `fn` declarations, and `buildCalleeContracts` still silently resolves a call to the LAST declaration while the emitted `CalleeID` names an ID shared by both. Only the user-visible half (the peer's `core.duplicate_function_id` now reaching `lang check`) closed in 07-10 |
+| D-07-51 | 07-10-PLAN.md (Task 3, WR-02) | QLT-08 | info | Not scheduled — needs its own ratification (changes a published diagnostic's Primary span) | WR-02 is deliberately carried: `verifyCallableRefusal` still emits `core.callee_not_callable` with the whole calling function's span, even though `spanByOperationID` already exists and is already used for per-edge cycle spans; it also still returns on the first offending call |
 
 ## Detail
 
@@ -179,6 +182,57 @@ declared parameter, and in what order) must be specified and admitted
 BEFORE the widened gate can be called sound — the `/1` schema's
 `Parameters []ParameterContract` slice is already arity-ready (D-07-10), but
 the CHECKER predicate and the corresponding peer re-derivation are not.
+
+### D-07-49 — PVG-04 / CR-02 is now CLI-observable and is still Phase 08 scope
+
+`check.computeLoanLastUses` has no `"call"` case and reads `RHS.Source`,
+which a call binding never populates (a call binding carries `RHS.Arguments`
+instead) — so a loan whose last use is a call argument is computed dead and
+`ownership.move_while_borrowed` never fires in `check`. `corevalidate`
+independently catches it (`core.move_while_borrowed`), and as of 07-10 that
+refusal reaches `lang check`: `relay_escort_witness.lang` now reports
+`status: invalid` where it previously reported `status: pass`. The
+CHECK-SIDE law is UNFIXED and remains ROADMAP.md Phase 08's stated subject
+(*Interprocedural Loan Liveness in `check`*) — 07-10 makes the consequence
+visible; it does not move the assignment, and `check.computeLoanLastUses`
+gains no `"call"` case in 07-10 (`git diff --name-only --
+internal/compiler/check/` is empty for this plan). Two known reproductions
+Phase 08 inherits: `testdata/phase07/relay_escort_witness.lang` (this
+disclosure) and CR-02's `lk5`-shaped program (07-REVIEW.md).
+
+### D-07-50 — WR-01's check-side half deliberately carried
+
+`check` never diagnoses duplicate `fn` declarations: two declarations with
+the same name are assigned the identical `semanticID` (a pure function of
+module+kind+name, with no uniqueness check across declarations), and
+`buildCalleeContracts` — a `map[string]calleeContract` keyed by declared
+name, populated in declaration order — silently resolves a call to the LAST
+declaration while the emitted `CalleeID` names an ID both functions share.
+This means the callee identity recorded by the call graph and the
+`ClosureDigest` chain is ambiguous whenever two `fn` declarations collide on
+one name. The user-visible symptom is closed incidentally in 07-10 via the
+peer's own `core.duplicate_function_id` reaching `lang check`
+(`testdata/phase07/duplicate_function_name.lang`); the CHECK-SIDE half — a
+span-bearing `name.duplicate_function` diagnostic at the second declaration
+site, and closing the ambiguous-`CalleeID` hazard in `buildCalleeContracts`
+itself — is not shipped. It needs its own ratified diagnostic code string
+and its own mutation kill before it can land; not scheduled to a specific
+phase.
+
+### D-07-51 — WR-02 deliberately carried
+
+`verifyCallableRefusal` emits `core.callee_not_callable` with the whole
+calling function's span even though `check.Program` already builds
+`spanByOperationID` and `checkCallGraphAcyclic` already uses it for per-edge
+`cycle_member` spans (07-06/07-07) — so a caller's diagnostic points at the
+whole function rather than the specific call site. It also returns on the
+first offending call, so a program with two uncallable targets surfaces
+them one re-run at a time rather than both at once. Changing a published
+diagnostic's `Primary` span is an agent-facing change (`lang-repair` and
+`lang explain` both consume diagnostic spans) that deserves its own
+ratification, not a drive-by inside 07-10, whose job is the peer-consult
+channel, not a diagnostic-quality fix on a path 07-10 does not otherwise
+touch.
 
 ---
 

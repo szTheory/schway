@@ -92,13 +92,35 @@ func structuralFieldsEqual(a, b core.FunctionSignature) bool {
 // core.move_while_borrowed -- the INTERPROCEDURAL half of D-03-02, left
 // open until Phase 08/09 closes it (see check_test.go's
 // TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness for the
-// full account of why `check` misses it and corevalidate does not). This is
-// the ONE named exception in the whole corpus; every other fixture keeps
-// the strict invariant below. See
+// full account of why `check` misses it and corevalidate does not). See
 // TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed
 // for the decisive, tested assertion of the divergence itself -- this is
 // not a silent skip.
 const relayEscortWitnessModule = "phase07.relay_escort_witness"
+
+// duplicateFunctionNameModule is 07-10 Task 1's second named exception to
+// this test's "checked-clean implies corevalidate-valid" invariant (WR-01,
+// 07-REVIEW.md): testdata/phase07/duplicate_function_name.lang declares two
+// `fn helper` with the same name, so both share one semanticID; `check`'s
+// buildCalleeContracts silently resolves the call to the LAST declaration
+// and never diagnoses the collision (checks clean), but corevalidate's
+// independent function-ID uniqueness check refuses with
+// core.duplicate_function_id -- and with two Functions entries sharing one
+// ID, the peer's own PeerSignatures/Callable re-derivation is not
+// meaningfully comparable to the producer's per-function view either. This
+// is a second declared, tested divergence (session package's
+// peerDivergenceExpected asserts it corpus-wide at the CLI layer), not an
+// undisclosed gap.
+const duplicateFunctionNameModule = "phase07.duplicate_function_name"
+
+// isDeclaredPeerDivergentCorpusModule names every corpus module this test
+// suite deliberately excludes from the "checked-clean implies
+// corevalidate-valid" invariant below -- the two entries above, and no
+// others. A future third divergent fixture must be added here explicitly,
+// never inferred from a growing failure list.
+func isDeclaredPeerDivergentCorpusModule(module string) bool {
+	return module == relayEscortWitnessModule || module == duplicateFunctionNameModule
+}
 
 func TestSummaryPeerStructuralFieldsMatchProducerAcrossCorpus(t *testing.T) {
 	checkedAny := false
@@ -111,7 +133,7 @@ func TestSummaryPeerStructuralFieldsMatchProducerAcrossCorpus(t *testing.T) {
 
 		result := corevalidate.Validate(program)
 		if !result.Valid {
-			if program.Module == relayEscortWitnessModule {
+			if isDeclaredPeerDivergentCorpusModule(program.Module) {
 				continue
 			}
 			t.Fatalf("expected a checked-clean corpus program to also corevalidate-validate, got problems: %+v", result.Problems)
@@ -169,7 +191,7 @@ func TestSummaryPeerClosureDigestMatchesProducerAcrossCorpus(t *testing.T) {
 
 		result := corevalidate.Validate(program)
 		if !result.Valid {
-			if program.Module == relayEscortWitnessModule {
+			if isDeclaredPeerDivergentCorpusModule(program.Module) {
 				continue
 			}
 			t.Fatalf("expected a checked-clean corpus program to also corevalidate-validate, got problems: %+v", result.Problems)
@@ -350,6 +372,15 @@ func classifyPublicationProblem(t *testing.T, program core.Program, functionID s
 func TestSummaryPeerCallableAgreesOnOriginOmittedClass(t *testing.T) {
 	comparedOmitted := false
 	for _, program := range corpusFixtures(t) {
+		if isDeclaredPeerDivergentCorpusModule(program.Module) {
+			// duplicateFunctionNameModule's two Functions entries share one
+			// ID (that IS the divergence WR-01/07-10 names), so a
+			// per-function Callable comparison keyed by that shared ID is
+			// not meaningful here; relayEscortWitnessModule is excluded for
+			// the same "checked-clean implies corevalidate-valid" reason
+			// the other two tests above exclude it.
+			continue
+		}
 		producerSummary, err := originvalidate.BuildInterface(program)
 		if err != nil {
 			t.Fatalf("BuildInterface: %v", err)

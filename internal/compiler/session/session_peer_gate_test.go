@@ -334,6 +334,87 @@ func TestInterfaceCommandsReportPeerRefusalAsInvalid(t *testing.T) {
 	})
 }
 
+// TestCheckCommandPeerConsultMutationKilled is Task 3's own observation
+// that control:check.peer_consulted fails under its seeded fault (QLT-08):
+// a control never seen to fail is not evidence. With checkCommandPeerSeam
+// enabled, CheckCommandFile skips the peer entirely and WRONGLY reports
+// StatusPass on relay_escort_witness.lang; with the seam restored, it
+// correctly refuses with core.move_while_borrowed. Both directions are
+// asserted in one test, so a control that is green for the wrong reason
+// (e.g. a no-op seam) fails here.
+func TestCheckCommandPeerConsultMutationKilled(t *testing.T) {
+	fixture := phase07Fixture(t, "relay_escort_witness.lang")
+
+	restore := session.SetCheckCommandPeerSeamForTest(true)
+	wronglyPermissive, err := session.CheckCommandFile(fixture)
+	restore()
+	if err != nil {
+		t.Fatalf("CheckCommandFile (seam on) returned an error: %v", err)
+	}
+	if wronglyPermissive.Status != protocol.StatusPass {
+		t.Fatalf("with the seam ON, expected the mutation to wrongly report %s, got %s -- the seam is not load-bearing", protocol.StatusPass, wronglyPermissive.Status)
+	}
+
+	correctlyRefusing, err := session.CheckCommandFile(fixture)
+	if err != nil {
+		t.Fatalf("CheckCommandFile (seam restored) returned an error: %v", err)
+	}
+	if correctlyRefusing.Status != protocol.StatusInvalid || len(correctlyRefusing.Diagnostics) != 1 || correctlyRefusing.Diagnostics[0].Code != "core.move_while_borrowed" {
+		t.Fatalf("with the seam restored, expected exactly one core.move_while_borrowed diagnostic, got status=%s diagnostics=%+v", correctlyRefusing.Status, correctlyRefusing.Diagnostics)
+	}
+}
+
+// TestInterfacePeerRefusalMutationKilled is Task 3's own observation that
+// control:interface.peer_refusal_is_invalid fails under its seeded fault:
+// with interfacePeerRefusalSeam enabled, both interface command paths
+// restore the pre-07-10 behaviour of a non-nil error with no StatusInvalid
+// result (the code is discarded); with it restored, both report
+// StatusInvalid carrying the peer's own code. One seam kills the control
+// on both paths, asserted here on both.
+func TestInterfacePeerRefusalMutationKilled(t *testing.T) {
+	fixture := phase07Fixture(t, "duplicate_function_name.lang")
+
+	t.Run("InterfaceCoreCommandFile", func(t *testing.T) {
+		restore := session.SetInterfacePeerRefusalSeamForTest(true)
+		wrongResult, wrongErr := session.InterfaceCoreCommandFile(fixture, filepath.Join(t.TempDir(), "out.core.json"))
+		restore()
+		if wrongErr == nil {
+			t.Fatalf("with the seam ON, expected a non-nil error (the mutation restores discarding the peer's code), got result=%+v", wrongResult)
+		}
+		if wrongResult.Status == protocol.StatusInvalid {
+			t.Fatal("with the seam ON, a non-nil error must not also carry a StatusInvalid result -- the seam is not load-bearing")
+		}
+
+		correctResult, correctErr := session.InterfaceCoreCommandFile(fixture, filepath.Join(t.TempDir(), "out.core.json"))
+		if correctErr != nil {
+			t.Fatalf("with the seam restored, expected a nil error, got %v", correctErr)
+		}
+		if correctResult.Status != protocol.StatusInvalid || len(correctResult.Diagnostics) != 1 || correctResult.Diagnostics[0].Code != "core.duplicate_function_id" {
+			t.Fatalf("with the seam restored, expected exactly one core.duplicate_function_id diagnostic, got status=%s diagnostics=%+v", correctResult.Status, correctResult.Diagnostics)
+		}
+	})
+
+	t.Run("InterfaceExportCommandFile", func(t *testing.T) {
+		restore := session.SetInterfacePeerRefusalSeamForTest(true)
+		wrongResult, wrongErr := session.InterfaceExportCommandFile(fixture, filepath.Join(t.TempDir(), "out.summary.json"))
+		restore()
+		if wrongErr == nil {
+			t.Fatalf("with the seam ON, expected a non-nil error (the mutation restores discarding the peer's code), got result=%+v", wrongResult)
+		}
+		if wrongResult.Status == protocol.StatusInvalid {
+			t.Fatal("with the seam ON, a non-nil error must not also carry a StatusInvalid result -- the seam is not load-bearing")
+		}
+
+		correctResult, correctErr := session.InterfaceExportCommandFile(fixture, filepath.Join(t.TempDir(), "out.summary.json"))
+		if correctErr != nil {
+			t.Fatalf("with the seam restored, expected a nil error, got %v", correctErr)
+		}
+		if correctResult.Status != protocol.StatusInvalid || len(correctResult.Diagnostics) != 1 || correctResult.Diagnostics[0].Code != "core.duplicate_function_id" {
+			t.Fatalf("with the seam restored, expected exactly one core.duplicate_function_id diagnostic, got status=%s diagnostics=%+v", correctResult.Status, correctResult.Diagnostics)
+		}
+	})
+}
+
 // phase07Fixture resolves a testdata/phase07 fixture's absolute path,
 // mirroring this package's other phase07 test helpers' precedent.
 func phase07Fixture(t testing.TB, name string) string {
