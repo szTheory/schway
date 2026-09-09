@@ -278,7 +278,7 @@ Plans:
 
 **Wave 1 (gap closure — post-verification, from 07-REVIEW.md CR-01/CR-03/CR-04)**
 
-- [ ] 07-10-PLAN.md — PVG-03 (CR-04, the amplifier): `lang check` consults `corevalidate` and reports the peer's refusal as an invalid source; `interface export`/`interface core` report a peer refusal as `StatusInvalid` instead of `tool.operation_failed`; an asserted divergence register; WR-01's user-visible half closed incidentally; PVG-04/WR-01/WR-02 dispositions recorded as D-07-49/50/51
+- [x] 07-10-PLAN.md — PVG-03 (CR-04, the amplifier): `lang check` consults `corevalidate` and reports the peer's refusal as an invalid source; `interface export`/`interface core` report a peer refusal as `StatusInvalid` instead of `tool.operation_failed`; an asserted divergence register; WR-01's user-visible half closed incidentally; PVG-04/WR-01/WR-02 dispositions recorded as D-07-49/50/51
 
 **Wave 2 (blocked on 07-10)**
 
