@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/codename-lang/lang/internal/compiler/callgraph"
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
 
@@ -473,14 +474,14 @@ func sortCalleeDigestPairs(pairs []calleeDigestPair) []calleeDigestPair {
 // callee (ID, ClosureDigest) pairs SORTED BY ID (Test 4) so the preimage is
 // independent of the order callees happen to be supplied in.
 //
-// D-07-38: this plan calls this only with an empty/nil callees slice — the
-// zero-callee base case, decided explicitly. The chaining arm over REAL
-// callees lands in 07-08-PLAN.md, after cycle refusal exists: the chain
-// terminates only on a DAG, so computing it before that gate would let a
-// cyclic program reach a non-terminating digest computation before the
-// gate that would refuse it. This function's signature already accepts
-// callees so 07-08 supplies them without changing this preimage
-// definition.
+// D-07-38: 07-01 called this only with an empty/nil callees slice — the
+// zero-callee base case. This plan (07-08) supplies REAL callee pairs from
+// BuildInterface, now that cycle refusal exists (callgraph.Order runs
+// first): the chain terminates only on a DAG, so computing it before that
+// gate would let a cyclic program reach a non-terminating digest
+// computation before the gate that would refuse it. This function's
+// preimage definition itself is UNCHANGED by that addition — only where
+// the caller sources callees from changed.
 func closureDigestPreimageBytes(signature core.FunctionSignature, callees []calleeDigestPair) ([]byte, error) {
 	signature.ClosureDigest = ""
 	payload := struct {
@@ -553,7 +554,86 @@ func typeFactExactIDMatch(factID, wantID string) bool {
 // default) means "use the real derivation".
 var forceCallableAlwaysTrue bool
 
+// closureDigestEmptyCalleesOverride is Task 2's D-07-41/D-07-42
+// fault-injection seam (QLT-08's headline mutation kill): production
+// always supplies a caller's REAL, deduped, callee (ID, ClosureDigest)
+// pairs to closureDigestPreimageBytes; the test temporarily forces every
+// function to compute its ClosureDigest as if it had NO callees at all,
+// proving the callee-changes-invalidates-caller property (D-07-12) is
+// genuinely load-bearing: with this seam engaged, changing only a callee's
+// body no longer changes the caller's ClosureDigest, because the caller's
+// preimage never referenced the callee's digest to begin with. false (the
+// production default) means "chain over real callee pairs".
+var closureDigestEmptyCalleesOverride bool
+
+// closureDigestDiscoveryOrderOverride is Task 2's D-07-41/D-07-42
+// fault-injection seam for D-07-38's ordering claim: production computes
+// every function's ClosureDigest bottom-up, callee before caller
+// (BuildInterface's own reversal of callgraph.Order's returned array —
+// see the doc comment below); the test temporarily computes digests in
+// plain program.Functions DECLARATION order instead, so a caller declared
+// before its callee reads that callee's digest while it is still the
+// empty string (not yet computed), producing an observably DIFFERENT
+// digest than the correctly-ordered computation — proving the ordering
+// itself is load-bearing, not merely present. false (the production
+// default) means "chain in callgraph.Order's reverse-of-reverse-postorder
+// (callee-before-caller)".
+var closureDigestDiscoveryOrderOverride bool
+
+// closureDigestComputationOrderObserved is Task 1's own ordering-
+// instrumentation seam: when non-nil, invoked with each function's ID, in
+// the exact order BuildInterface finalizes its ClosureDigest, so a
+// same-package test can assert that sequence against callgraph.Order's own
+// return value. nil in production: zero cost, zero allocation.
+var closureDigestComputationOrderObserved func(functionID string)
+
+// calleeIDsForClosureDigest collects the DISTINCT callee IDs a function's
+// own core.OpCall operations name, sorted, from core.LinearOperation.
+// CalleeID -- the SAME edge fact callgraph.Order reads, from the same
+// place (D-07-38's read_first note), so there is no second edge notion to
+// drift. Dedup means a function calling the same callee twice contributes
+// exactly one (ID, ClosureDigest) pair to its own preimage, matching
+// callgraph.buildAdjacency's own dedup discipline.
+func calleeIDsForClosureDigest(function core.Function) []string {
+	if function.Linear == nil {
+		return nil
+	}
+	seen := make(map[string]bool)
+	var ids []string
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpCall {
+			continue
+		}
+		if seen[operation.CalleeID] {
+			continue
+		}
+		seen[operation.CalleeID] = true
+		ids = append(ids, operation.CalleeID)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
 func BuildInterface(program core.Program) (core.Interface, error) {
+	// D-07-38: callgraph.Order runs FIRST, before any ClosureDigest is
+	// computed. On a refused (cyclic, or unresolved-callee) graph, its
+	// error is returned unchanged and NO digest is computed at all --
+	// chaining over a graph that is not a proven DAG is exactly the
+	// non-termination this ordering exists to prevent. `order` is
+	// callgraph.Order's own "reverse postorder" (D-07-18): CALLERS first,
+	// callees last (see callgraph.Order's doc comment and
+	// TestOrderSortsAdjacencyByCalleeID's own worked example). Chaining
+	// needs the OPPOSITE direction -- every callee's digest computed
+	// before its caller reads it -- which is exactly `order` walked
+	// BACKWARD (its raw, un-reversed DFS postorder): a DFS node is
+	// appended to that raw postorder only once every callee it can reach
+	// has already finished, so walking `order` from its last element to
+	// its first recovers callee-before-caller processing with no second
+	// traversal.
+	order, err := callgraph.Order(program)
+	if err != nil {
+		return core.Interface{}, err
+	}
 	coreBytes, err := json.Marshal(program)
 	if err != nil {
 		return core.Interface{}, err
@@ -562,6 +642,7 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 		Schema: core.InterfaceSchema1, ModuleID: program.ModuleID, CoreDigest: digest(coreBytes),
 		Functions: make([]core.FunctionSignature, 0, len(program.Functions)),
 	}
+	indexByID := make(map[string]int, len(program.Functions))
 	for _, function := range program.Functions {
 		abilities := []core.Ability{}
 		hasDropAbility := false
@@ -628,15 +709,57 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 			Fails:      fails,
 			Foreign:    foreignReach,
 		}
-		// D-07-38: only the zero-callee base case is computed in this plan
-		// (nil callees) — the chaining arm over real callees lands in
-		// 07-08-PLAN.md, after cycle refusal exists.
-		closureDigest, err := computeClosureDigest(signature, nil)
+		// ClosureDigest is computed in a second pass, below, once every
+		// function's base signature (everything else) is built and every
+		// callee's own ClosureDigest is available in chaining order --
+		// D-07-38. indexByID is recorded (never a pointer into
+		// summary.Functions, which keeps growing during this loop and could
+		// reallocate) so the second pass can mutate
+		// summary.Functions[index] directly, by index, once its callees'
+		// digests are already committed to the slice.
+		indexByID[function.ID] = len(summary.Functions)
+		summary.Functions = append(summary.Functions, signature)
+	}
+
+	// D-07-38/D-07-12: chain ClosureDigest bottom-up, callee before caller.
+	// closureDigestDiscoveryOrderOverride (Task 2's own fault-injection
+	// seam) replaces this with plain declaration order, so a caller
+	// processed before its callee reads that callee's still-empty
+	// ClosureDigest -- proving the ordering is load-bearing.
+	chainOrder := make([]string, 0, len(order))
+	if closureDigestDiscoveryOrderOverride {
+		for _, function := range program.Functions {
+			chainOrder = append(chainOrder, function.ID)
+		}
+	} else {
+		for i := len(order) - 1; i >= 0; i-- {
+			chainOrder = append(chainOrder, order[i])
+		}
+	}
+	for _, functionID := range chainOrder {
+		index, ok := indexByID[functionID]
+		if !ok {
+			continue
+		}
+		function := program.Functions[index]
+		var calleePairs []calleeDigestPair
+		if !closureDigestEmptyCalleesOverride {
+			for _, calleeID := range calleeIDsForClosureDigest(function) {
+				calleeDigest := ""
+				if calleeIndex, ok := indexByID[calleeID]; ok {
+					calleeDigest = summary.Functions[calleeIndex].ClosureDigest
+				}
+				calleePairs = append(calleePairs, calleeDigestPair{ID: calleeID, ClosureDigest: calleeDigest})
+			}
+		}
+		closureDigest, err := computeClosureDigest(summary.Functions[index], calleePairs)
 		if err != nil {
 			return core.Interface{}, err
 		}
-		signature.ClosureDigest = closureDigest
-		summary.Functions = append(summary.Functions, signature)
+		summary.Functions[index].ClosureDigest = closureDigest
+		if closureDigestComputationOrderObserved != nil {
+			closureDigestComputationOrderObserved(functionID)
+		}
 	}
 	return summary, nil
 }

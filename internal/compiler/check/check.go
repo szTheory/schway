@@ -334,9 +334,26 @@ func Program(program ast.Program) Result {
 		// ever depends on another function's publication status, and the
 		// table this builds is used exactly once, immediately after it is
 		// built, by nothing but the loop directly below.
-		table := buildCallSignatureTable(result.Program)
-		if diag := verifyCallableRefusal(result.Program.Functions, table); diag != nil {
-			result.Diagnostics = append(result.Diagnostics, *diag)
+		// 07-08, D-07-38: BuildInterface now runs callgraph.Order internally
+		// before computing any ClosureDigest (the chain terminates only on
+		// a DAG), so a cyclic program makes buildCallSignatureTable fail
+		// here too -- reachable ONLY for a cycle, since verifyCallInvariants
+		// above already required every CalleeID to resolve to a declared
+		// function before this point is ever reached. Skip
+		// verifyCallableRefusal entirely on that failure (leaving
+		// result.Diagnostics empty) rather than admitting the empty-table
+		// fallback's fail-closed-refuse-every-call behavior to run: that
+		// would emit core.callee_not_callable for the first OpCall found,
+		// masking the correct core.call_graph_cycle diagnostic the
+		// dedicated gate below is about to construct with the right causes
+		// and spans. Falling through with zero diagnostics is safe: the
+		// gate below independently re-runs callgraph.Order and refuses the
+		// SAME cycle properly.
+		table, tableErr := buildCallSignatureTable(result.Program)
+		if tableErr == nil {
+			if diag := verifyCallableRefusal(result.Program.Functions, table); diag != nil {
+				result.Diagnostics = append(result.Diagnostics, *diag)
+			}
 		}
 	}
 	if len(result.Diagnostics) == 0 && !disableCallGraphCycleRefusalForTest {
@@ -457,24 +474,28 @@ func (t callSignatureTable) lookup(calleeID string) (core.FunctionSignature, boo
 // this table versus corevalidate's own, separately-implemented peer
 // re-derivation (07-02's derivePeerSignature/peerCallable) -- never check
 // versus originvalidate, which would just be the producer read twice.
-// BuildInterface's only failure mode is a json.Marshal error, which cannot
-// occur for a program that reached this point with zero diagnostics (no
-// unsupported Go value ever enters core.Program); the empty-table fallback
-// exists only so a change elsewhere that somehow reintroduced that
-// impossibility fails closed (refuses every call) rather than panicking.
-func buildCallSignatureTable(program core.Program) callSignatureTable {
+// BuildInterface's failure modes are a json.Marshal error (which cannot
+// occur for a program that reached this point with zero diagnostics -- no
+// unsupported Go value ever enters core.Program) and, since 07-08
+// (D-07-38), callgraph.Order refusing a cyclic graph before any
+// ClosureDigest is computed. The returned error is never swallowed here:
+// the call site skips verifyCallableRefusal entirely on error rather than
+// admitting the empty-table fallback to run and mask the dedicated
+// call-graph-cycle gate's own, more specific diagnostic (see that call
+// site's comment).
+func buildCallSignatureTable(program core.Program) (callSignatureTable, error) {
 	if callSignatureTableBuildObserved != nil {
 		callSignatureTableBuildObserved()
 	}
 	iface, err := originvalidate.BuildInterface(program)
 	if err != nil {
-		return callSignatureTable{}
+		return callSignatureTable{}, err
 	}
 	entries := make(map[string]core.FunctionSignature, len(iface.Functions))
 	for _, signature := range iface.Functions {
 		entries[signature.ID] = signature
 	}
-	return callSignatureTable{entries: entries}
+	return callSignatureTable{entries: entries}, nil
 }
 
 // callSignatureTableBuildObserved is Task 1's D-07-34 ordering-instrumentation

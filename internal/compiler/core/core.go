@@ -221,15 +221,22 @@ type FunctionSignature struct {
 	Foreign ForeignReach `json:"foreign"`
 	// ClosureDigest is D-07-37's canonical, non-self-referential digest
 	// over this signature (with ClosureDigest itself zeroed) and its
-	// callees' own ClosureDigests, sorted by ID (D-07-38: the chaining arm
-	// over real callees lands in 07-08, after cycle refusal exists; this
-	// plan computes only the zero-callee base case).
+	// callees' own ClosureDigests, sorted by ID — a real Merkle chain over
+	// callee SUMMARY digests (D-07-12), never a callee body. 07-01 computed
+	// only the zero-callee base case; 07-08 landed the chaining arm over
+	// real callees, in callgraph.Order's reverse postorder, only after
+	// cycle refusal exists (D-07-38: the chain terminates only on a DAG).
+	// Changing a callee changes its caller's ClosureDigest — this is the
+	// only thing that closes the stale-but-self-consistent hole a per-unit
+	// hash leaves (an unchanged caller silently serving a stale verdict
+	// when its callee changes).
 	//
-	// D-07-13: ClosureDigest proves integrity, never authenticity. It is
-	// an unkeyed content hash — anyone who can write the summary can write
-	// a consistent digest. It detects staleness, never forgery; the
-	// forgery answer is independent re-derivation (07-02), never this
-	// digest.
+	// D-07-13: chaining WIDENS what staleness ClosureDigest detects; it
+	// adds NO authenticity whatsoever. It remains an unkeyed content hash —
+	// anyone who can write the summary can write a consistent chained
+	// digest. It detects staleness, never forgery; the forgery answer is
+	// independent re-derivation (07-02's summary peer, 07-08's own chained
+	// re-derivation of it), never this digest.
 	ClosureDigest string `json:"closure_digest"`
 }
 

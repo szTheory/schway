@@ -2156,7 +2156,10 @@ func TestBuildCallSignatureTableCallableMatchesPublishProblemsFor(t *testing.T) 
 		functions = append(functions, checked)
 	}
 	program := core.Program{Schema: core.Schema1, Module: parsed.Module, Functions: functions}
-	table := buildCallSignatureTable(program)
+	table, err := buildCallSignatureTable(program)
+	if err != nil {
+		t.Fatalf("buildCallSignatureTable: %v", err)
+	}
 	for _, function := range functions {
 		entry, ok := table.lookup(function.ID)
 		if !ok {

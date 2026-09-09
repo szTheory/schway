@@ -29,3 +29,28 @@ func SetCallableForceOverrideForTest(force bool) (restore func()) {
 	forceCallableAlwaysTrue = force
 	return func() { forceCallableAlwaysTrue = previous }
 }
+
+// SetClosureDigestEmptyCalleesOverrideForTest installs 07-08 Task 2's
+// empty-callee-pairs fault-injection seam and returns a restore func.
+func SetClosureDigestEmptyCalleesOverrideForTest(force bool) (restore func()) {
+	previous := closureDigestEmptyCalleesOverride
+	closureDigestEmptyCalleesOverride = force
+	return func() { closureDigestEmptyCalleesOverride = previous }
+}
+
+// SetClosureDigestDiscoveryOrderOverrideForTest installs 07-08 Task 2's
+// discovery-order (non-reverse-postorder) fault-injection seam and returns
+// a restore func.
+func SetClosureDigestDiscoveryOrderOverrideForTest(force bool) (restore func()) {
+	previous := closureDigestDiscoveryOrderOverride
+	closureDigestDiscoveryOrderOverride = force
+	return func() { closureDigestDiscoveryOrderOverride = previous }
+}
+
+// SetClosureDigestComputationOrderObservedForTest installs 07-08 Task 1's
+// ordering-instrumentation seam and returns a restore func.
+func SetClosureDigestComputationOrderObservedForTest(observer func(functionID string)) (restore func()) {
+	previous := closureDigestComputationOrderObserved
+	closureDigestComputationOrderObserved = observer
+	return func() { closureDigestComputationOrderObserved = previous }
+}
