@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
 current_phase: 07
-current_phase_name: calls-signatures-and-call-graph-refusal
+current_phase_name: Calls, Signatures, and Call-Graph Refusal
 status: executing
-stopped_at: Completed 07-08-PLAN.md
-last_updated: "2026-09-09T12:37:15.625Z"
-last_activity: 2026-09-08
+stopped_at: Completed 07-09-PLAN.md
+last_updated: "2026-09-09T14:50:23.226Z"
+last_activity: 2026-09-09
 last_activity_desc: Phase 07 execution started
-state_head: f0457877b2ea70268348be03e001733c479b1af7
+state_head: b98d353f1b2dc26d0dff4872049c95f9cf7950f9
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -39,10 +39,10 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 07 (calls-signatures-and-call-graph-refusal) — READY TO EXECUTE
-Plan: 8 of 8
+Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — EXECUTING
+Plan: 2 of 9
 Status: Ready to execute
-Last activity: 2026-09-08 — Phase 07 execution started
+Last activity: 2026-09-09 — Phase 07 execution started
 
 Progress: [--------------------] 0% (0/7 phases)
 
@@ -152,6 +152,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 07 P06 | 95min | 3 tasks | 12 files |
 | Phase 07 P07 | 150 min | 3 tasks | 13 files |
 | Phase 07 P08 | 64min | 2 tasks | 11 files |
+| Phase 07 P09 | 90 min | 4 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -179,6 +180,8 @@ Standing architectural commitments carried into M002:
 - [Phase 07]: 07-06: callgraph.Order (iterative white/gray/black DFS, no native recursion, roots = all declared functions, edges from CalleeID only) wired into check before it returns a core.Program; canonical rotation plus cross-cycle lexicographically-smallest witness selection makes the core.call_graph_cycle diagnostic ID deterministic regardless of discovery order (D-07-16/D-07-43); diagnostic bounded at 32 cycle_member causes while the traversal itself stays unbounded; spans projected from OpCall operation IDs via new check-side emission bookkeeping, no Span added to core.LinearOperation (D-07-35); three fault-injection seams (gray-vs-visited, self-edge, unresolved-edge-drop) each independently mutation-killed against a diamond/shared-leaf corpus a chain fixture could never kill.
 - [Phase 07]: 07-07: corevalidate grows its own independently-written whole-program cycle peer (checkCallGraphAcyclic) over disjoint synthetic-only input space; run() split into structural-then-replay passes to place it correctly; remaining SEM-07 corpus (indirect/unreachable/match-arm/shadowing) landed; bilateral independent-disable proof and phase-wide completeness matrix close QLT-08 for Phase 07.
 - [Phase 07]: [Phase 07] 07-08: ClosureDigest chained over callee summary digests only after callgraph.Order proves acyclicity; corevalidate independently re-derives the chain over its own postorder, matching the producer byte-for-byte wherever D-07-33's narrowed Callable scope already agrees; callee-changes-invalidates-caller mutation-killed on both sides; SEM-05 closed.
+- [Phase 07]: Checkpoint auto-ratified: accepted all four proposed diagnostic code strings (check.call_argument_type_mismatch, check.call_return_type_unrepresentable, core.CallArgumentTypeMismatch, core.CallReturnTypeMismatch) and both ordered Causes shapes verbatim.
+- [Phase 07]: 07-09: check.resolveCallBinding gates argument-type match and derives OpCall's TargetID.TypeID from the callee's declared return contract (fail-closed); corevalidate independently re-derives both refusals with no shared helper. Closes 07-VERIFICATION.md's single FAILED truth and 07-REVIEW.md CR-01.
 
 ### Pending Todos
 
@@ -249,8 +252,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-09T04:22:24.835Z
-Stopped at: Completed 07-08-PLAN.md
+Last session: 2026-09-09T14:50:23.196Z
+Stopped at: Completed 07-09-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
