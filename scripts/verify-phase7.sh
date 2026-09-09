@@ -125,7 +125,9 @@ for control in \
 	control:callgraph.foreign_shadowing_edge_preserved \
 	control:phase07.controls_are_mutation_killed \
 	control:summary.closure_digest_chained \
-	control:summary.closure_digest_reverse_postorder
+	control:summary.closure_digest_reverse_postorder \
+	control:call.argument_type_matches_parameter \
+	control:call.target_type_from_callee_return
 do
 	grep -q "$control" "$verify_tmp/phase07.json" || { echo "phase07 verify: required Phase 07 control missing: $control" >&2; exit 1; }
 done

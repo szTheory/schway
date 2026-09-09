@@ -3,7 +3,7 @@ phase: 07-calls-signatures-and-call-graph-refusal
 recorded: 2026-09-08
 status: accepted
 disposition: in-progress
-items: 2
+items: 5
 blocking: 0
 ---
 
@@ -27,6 +27,9 @@ Per Key Lesson 4: declare deferred scope in writing at the moment it is decided.
 |---|---|---|---|---|---|
 | D-03-02 | 07-01/07-02 (lineage: M001 D-03-02) | OWN-05, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07 | warning | Phase 09 — Peer Re-Derivation and D-03-02 Closure | Interprocedural loan-*liveness* re-derivation in `corevalidate` does not ship this phase; only the independent signature-summary peer (D-07-20) and the call-graph cycle peer (D-07-19) do |
 | D-07-33 | 07-02-PLAN.md (D-07-33, T-07-11) | SEM-06, QLT-08 | warning | Phase 09 — Peer Re-Derivation and D-03-02 Closure | The `corevalidate` summary peer's `Callable` re-derivation is narrowed to the `core.origin_omitted` class only; for `core.origin_understated`, `core.origin_access_mismatch`, and foreign-origin-omitted it can only ever falsely agree with the producer |
+| D-07-46 | 07-09-PLAN.md (T-07-09-05) | SEM-05 | warning | Not scheduled — reopen when a parameterized shape becomes callable | The call argument/return type boundary compares NOMINAL CONSTRUCTOR STRINGS only (`core.Parameter.Type`/`core.Function.ReturnType`, the `/1` `ParameterContract.Type`) — the core schema carries no type ARGUMENTS to compare, so a parameterized shape's arguments cannot be checked at all. Today only the arity-0 constructors `Byte` and `Buffer` are executable, so constructor equality and structural equality coincide and nothing unsound is admitted |
+| D-07-47 | 07-09-PLAN.md | SEM-05 | info | Not scheduled — no legal source program can reach it while `sameType` holds | `check.call_return_type_unrepresentable` is UNREACHABLE from any legal source program while `sameType` forces every function's declared return type to equal its declared parameter type; it is mutation-killed through a seeded seam (`callReturnTypeDerivationSeam`) and through `corevalidate`'s synthetic input space, never through a `.lang` fixture |
+| D-07-48 | 07-09-PLAN.md (probe edge 3, amends D-07-07) | SEM-04 | info | Reopen when arity widens past 1 (D-07-07) | Argument ORDERING has no meaning at arity 1 and is therefore UNANSWERED, not answered, by 07-09's admission gate; when arity widens past 1, a positional argument/parameter correspondence rule must be specified before the widened gate can be called sound |
 
 ## Detail
 
@@ -109,6 +112,73 @@ What is missing is only the *second, independent* derivation.
 
 **Closure phase:** **Phase 09**, alongside the liveness peer, in the same plan
 that builds the peer's own origin recomputation.
+
+---
+
+### D-07-46 — Constructor-string comparison is the disclosed granularity, not an oversight
+
+**Closes 07-VERIFICATION.md's single FAILED must-have truth and 07-REVIEW.md's
+CR-01 (CRITICAL/BLOCKER).** `07-09-PLAN.md` lands the argument-type gate in
+`check.resolveCallBinding` (new code `check.call_argument_type_mismatch`), a
+genuinely independent peer in `corevalidate`'s `OpCall` replay (new codes
+`core.CallArgumentTypeMismatch` / `core.CallReturnTypeMismatch`, sharing no
+helper with `check`), and derives `OpCall`'s `TargetID.TypeID` from the
+callee's own declared return contract (fail-closed via
+`check.call_return_type_unrepresentable` when unresolvable) rather than
+copying it from the caller's argument place. The
+`FunctionSignature.Parameters[].Type -> call-site argument type check` key
+link 07-VERIFICATION.md marked **NOT WIRED** is now wired and corpus-asserted.
+
+**The retained limitation, disclosed rather than implied:** `core.Parameter.Type`
+and `core.Function.ReturnType`, and the `/1` `ParameterContract.Type`, are
+plain constructor strings carrying no type ARGUMENTS — the core schema has no
+place to hold them. Type identity at the call boundary is therefore NOMINAL
+CONSTRUCTOR-STRING EQUALITY, never `TypeID` equality (a `TypeID` is
+per-function and can never match across two functions) and never a subtyping
+or coercion relation (none exists). Today only the arity-0 constructors
+`Byte` and `Buffer` are executable shapes (`check.executableShape`), so
+constructor equality and structural equality coincide and nothing unsound is
+admitted. The moment a parameterized shape (e.g. `Box[T]`) becomes callable,
+this comparison is too weak: two calls with structurally different `Box`
+payloads would compare equal on `Box` alone. Reopen this item when a
+parameterized shape becomes callable — the schema will need to carry
+structured parameter types, not just constructor names.
+
+### D-07-47 — `check.call_return_type_unrepresentable` is unreachable from any legal source program
+
+The fail-closed half of deriving `OpCall`'s `TargetID.TypeID` from the
+callee's declared return type cannot be reached by any program the parser
+and `sameType` admit: `sameType` forces every function's declared return
+type to equal its declared parameter type at the head of `checkLinear`,
+`checkBranch`'s match path, and `checkFallibleLinear`, so a caller's own
+single type fact always matches a resolvable callee's declared return type
+whenever the argument-type gate has already been cleared. This is disclosed
+so a reviewer does not mistake the absence of a `.lang` fixture for this code
+as an absence of evidence: it is mutation-killed through
+`callReturnTypeDerivationSeam` (`check_test.go`'s
+`TestCallReturnTypeDerivationMutationKilled`) and through `corevalidate`'s
+disjoint synthetic input space (`corevalidate_test.go`'s
+`TestPeerRefusesCallReturnTypeMismatch`), never through a source fixture.
+Reopens only if a future phase lets a function's declared return type differ
+from its declared parameter type (see D-07-46's `Result`/payload-carrying
+successor work), at which point a caller will need to synthesize a second
+type fact it does not currently mint.
+
+### D-07-48 — Argument-ordering is unanswered at arity 1, amending D-07-07
+
+07-09's admission gate compares exactly one argument against exactly one
+declared parameter, because arity is fixed at 1 this phase (D-07-07). This
+means the gate answers NOTHING about positional argument/parameter
+correspondence — there is exactly one position, so no ordering question
+exists to get right or wrong. This is recorded explicitly, rather than left
+to be inferred from D-07-07's existing "arity-N calls are deferred" note,
+because 07-09's own deterministic-edge probe (probe edge 3, SEM-04/ordering)
+surfaced it directly: the moment arity widens past 1, a positional
+argument/parameter correspondence rule (which caller argument maps to which
+declared parameter, and in what order) must be specified and admitted
+BEFORE the widened gate can be called sound — the `/1` schema's
+`Parameters []ParameterContract` slice is already arity-ready (D-07-10), but
+the CHECKER predicate and the corresponding peer re-derivation are not.
 
 ---
 

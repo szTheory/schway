@@ -55,6 +55,8 @@ func Phase7RequiredControls() []string {
 		ControlPhase07ControlsAreMutationKilled,
 		ControlSummaryClosureDigestChained,
 		ControlSummaryClosureDigestReversePostorder,
+		ControlCallArgumentTypeMatchesParameter,
+		ControlCallTargetTypeFromCalleeReturn,
 	}
 }
 
@@ -194,6 +196,39 @@ const (
 	// corevalidate's TestPeerClosureDigestDiscoveryOrderMutationKilled
 	// (peer side).
 	ControlSummaryClosureDigestReversePostorder = "control:summary.closure_digest_reverse_postorder"
+	// ControlCallArgumentTypeMatchesParameter names 07-09's argument-type
+	// admission gate (D-07-09/SEM-05): a call's argument type must equal
+	// the callee's declared parameter type, checked independently at both
+	// admission layers -- check.resolveCallBinding (from a pre-body
+	// AST-derived callee-contract table) and corevalidate's OpCall replay
+	// (from this program's own places/type-facts and functionByID, with
+	// no helper shared with check). Killed on the check side by
+	// check_test.go's TestCallArgumentTypeCheckMutationKilled and on the
+	// peer side by corevalidate_test.go's TestCallTypePeerMutationMatrix.
+	// This lane's own fixtures (call_basic.lang,
+	// call_from_both_match_arms.lang, deep_diamond_acyclic.lang) all
+	// ADMIT -- declared, not implied: the lane exercises the CONSULTING
+	// mechanism with a permitting verdict, never the refusing branch,
+	// exactly like ControlCallAdmissionBodyBlind and
+	// ControlCallCallableRefusal above.
+	ControlCallArgumentTypeMatchesParameter = "control:call.argument_type_matches_parameter"
+	// ControlCallTargetTypeFromCalleeReturn names 07-09's target-type
+	// derivation claim (T-07-09-02): OpCall's TargetID.TypeID is derived
+	// from the callee's declared return type resolved against the
+	// caller's own type facts, fail-closed when unresolvable, never
+	// copied from the caller's argument place. Killed on the check side
+	// by check_test.go's TestCallReturnTypeDerivationMutationKilled and
+	// on the peer side by corevalidate_test.go's
+	// TestCallTypePeerMutationMatrix. Currently reachable from source only
+	// in the ADMITTING direction (every function's declared return type
+	// equals its declared parameter type this phase, D-07-09's language
+	// surface constraint) -- the REFUSING direction
+	// (check.call_return_type_unrepresentable /
+	// core.CallReturnTypeMismatch) is mutation-killed through a seeded
+	// seam and corevalidate's synthetic input space, never through a
+	// .lang fixture; see PHASE-07-DEBT.md. This lane's own fixtures all
+	// admit, exactly as ControlCallArgumentTypeMatchesParameter above.
+	ControlCallTargetTypeFromCalleeReturn = "control:call.target_type_from_callee_return"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped

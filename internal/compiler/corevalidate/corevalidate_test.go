@@ -1683,6 +1683,54 @@ func TestCallTypeContractDoesNotShadowExistingCallLaws(t *testing.T) {
 	})
 }
 
+// TestCallTypePeerMutationMatrix is 07-09 Task 3's peer-side completeness
+// proof that BOTH SetDisableCallArgumentTypePeerForTest and
+// SetDisableCallReturnTypePeerForTest are wired to a REAL, reachable
+// production seam (as opposed to a seam nothing calls): each, engaged
+// alone, changes corevalidate.Validate's verdict on the SAME
+// argument-and-return-coupled synthetic defect program from refused to
+// admitted-with-a-different-remaining-refusal or admitted outright,
+// proving neither setter is dead code. The full per-control fail-closed
+// proof (each predicate independently observed to make its OWN control
+// go red, isolated from the other) is in
+// corevalidate_call_type_internal_test.go's
+// TestCheckCallTypeContractArgumentPeerSeamKilled and
+// TestCheckCallTypeContractReturnPeerSeamKilled: this language's sameType
+// invariant forces a self-consistent callee's ParameterType and
+// ReturnType to be the SAME value, so on any WHOLE-PROGRAM synthetic
+// built from a self-consistent callee, the argument-type and return-type
+// predicates are mathematically the same boolean and cannot be observed
+// to diverge through corevalidate.Validate's full pipeline -- exactly the
+// coupling PHASE-07-DEBT.md's arity-N entry and this plan's language
+// surface constraint already document for check's own mutation kill
+// (check_test.go's TestCallArgumentTypeCheckMutationKilled uses the
+// identical direct-API technique for the identical reason).
+func TestCallTypePeerMutationMatrix(t *testing.T) {
+	program := callTypeContractProgram(t, "Buffer", "Byte", "Byte")
+
+	clean := corevalidate.Validate(program)
+	if clean.Valid || len(clean.Problems) == 0 {
+		t.Fatalf("expected a refusal before either mutation, got %+v", clean)
+	}
+
+	t.Run("argument_type_peer_disabled_changes_the_verdict", func(t *testing.T) {
+		restore := corevalidate.SetDisableCallArgumentTypePeerForTest(true)
+		defer restore()
+		mutated := corevalidate.Validate(program)
+		if mutated.Valid || len(mutated.Problems) == 0 || mutated.Problems[0].Code == clean.Problems[0].Code {
+			t.Fatalf("expected the argument-type peer seam to change which law refuses (still-active return-type peer), got %+v", mutated)
+		}
+	})
+	t.Run("return_type_peer_disabled_leaves_argument_refusal_intact", func(t *testing.T) {
+		restore := corevalidate.SetDisableCallReturnTypePeerForTest(true)
+		defer restore()
+		mutated := corevalidate.Validate(program)
+		if mutated.Valid || len(mutated.Problems) == 0 || mutated.Problems[0].Code != core.CallArgumentTypeMismatch {
+			t.Fatalf("expected the still-active argument-type peer to keep refusing with %s, got %+v", core.CallArgumentTypeMismatch, mutated)
+		}
+	})
+}
+
 // TestOpCallEmptyCalleeIDIsRefused is Task 2 Test 1 (D-07-29): a synthetic
 // core.Program with an OpCall whose CalleeID is empty is refused by
 // corevalidate with a specific code, at whichever replay site the caller's

@@ -472,6 +472,26 @@ const checkCallArgumentTypeMismatch = "check.call_argument_type_mismatch"
 // checkCallArgumentTypeMismatch above.
 const checkCallReturnTypeUnrepresentable = "check.call_return_type_unrepresentable"
 
+// callArgumentTypeCheckSeam is 07-09 Task 3's D-07-41/D-07-42
+// fault-injection seam for control:call.argument_type_matches_parameter:
+// when true, resolveCallBinding's argument-type gate is skipped entirely,
+// admitting a mismatched-argument call anyway. Unexported, false in
+// production, set only from a same-package test that defers the restore
+// immediately (see TestCallArgumentTypeCheckMutationKilled).
+var callArgumentTypeCheckSeam = false
+
+// callReturnTypeDerivationSeam is 07-09 Task 3's D-07-41/D-07-42
+// fault-injection seam for control:call.target_type_from_callee_return:
+// when true, the OpCall target's TypeID reverts to the caller's own
+// argument place's TypeID -- the PRE-PLAN behavior, i.e. the exact defect
+// 07-VERIFICATION.md's failed truth and 07-REVIEW.md's CR-01 named --
+// instead of being derived from the callee's declared return contract.
+// The seeded fault is literally the shipped bug, so the control's kill is
+// a direct reproduction of the original finding. Unexported, false in
+// production, set only from a same-package test that defers the restore
+// immediately (see TestCallReturnTypeDerivationMutationKilled).
+var callReturnTypeDerivationSeam = false
+
 // calleeContract is 07-09's pre-body callee-contract entry (D-07-09,
 // SEM-05): the callee's own declared parameter and return type
 // constructor strings, keyed by function NAME in buildCalleeContracts
@@ -1840,7 +1860,7 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		// exactly what the zero-value calleeContract's empty string
 		// achieves against typeFact.Shape.Constructor (never empty for
 		// an executable shape).
-		if typeFact.Shape.Constructor == "" || contract.ParameterType == "" || typeFact.Shape.Constructor != contract.ParameterType {
+		if !callArgumentTypeCheckSeam && (typeFact.Shape.Constructor == "" || contract.ParameterType == "" || typeFact.Shape.Constructor != contract.ParameterType) {
 			causes := []diagnostic.Cause{
 				{Kind: "callee", Detail: contract.ID},
 				{Kind: "argument_type", Detail: typeFact.Shape.Constructor},
@@ -1862,16 +1882,21 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		// does not, no honest TypeID can be derived and the call is
 		// refused fail-closed -- never fabricated, never a fallback to
 		// the argument's TypeID.
-		if contract.ReturnType == "" || contract.ReturnType != typeFact.Shape.Constructor {
-			causes := []diagnostic.Cause{
-				{Kind: "callee", Detail: contract.ID},
-				{Kind: "declared_return_type", Detail: contract.ReturnType},
-				{Kind: "available_type", Detail: typeFact.Shape.Constructor},
+		var derivedTypeID string
+		if callReturnTypeDerivationSeam {
+			derivedTypeID = argument.place.TypeID
+		} else {
+			if contract.ReturnType == "" || contract.ReturnType != typeFact.Shape.Constructor {
+				causes := []diagnostic.Cause{
+					{Kind: "callee", Detail: contract.ID},
+					{Kind: "declared_return_type", Detail: contract.ReturnType},
+					{Kind: "available_type", Detail: typeFact.Shape.Constructor},
+				}
+				diag := diagnostic.Error(checkCallReturnTypeUnrepresentable, binding.RHS.Span, "callee's declared return type names no type fact available in the calling function", causes...)
+				return core.LinearOperation{}, core.Place{}, &diag
 			}
-			diag := diagnostic.Error(checkCallReturnTypeUnrepresentable, binding.RHS.Span, "callee's declared return type names no type fact available in the calling function", causes...)
-			return core.LinearOperation{}, core.Place{}, &diag
+			derivedTypeID = typeFact.ID
 		}
-		derivedTypeID := typeFact.ID
 		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: derivedTypeID}
 		op := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, opOrdinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, opOrdinal),

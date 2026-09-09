@@ -159,6 +159,11 @@ var controlsWithRecordedMutationKill = []string{
 	// TestPeerClosureDigestDiscoveryOrderMutationKilled (peer side).
 	session.ControlSummaryClosureDigestChained,
 	session.ControlSummaryClosureDigestReversePostorder,
+	// 07-09: check_test.go's TestCallArgumentTypeCheckMutationKilled /
+	// TestCallReturnTypeDerivationMutationKilled (check side) and
+	// corevalidate_test.go's TestCallTypePeerMutationMatrix (peer side).
+	session.ControlCallArgumentTypeMatchesParameter,
+	session.ControlCallTargetTypeFromCalleeReturn,
 }
 
 // phase7ControlsExactSetEqual is the completeness check's own comparison

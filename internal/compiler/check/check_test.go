@@ -3340,3 +3340,94 @@ func TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus(t *testing.T
 		t.Fatal("expected to compare at least one callee across the corpus, compared zero")
 	}
 }
+
+// ---------------------------------------------------------------------
+// 07-09 Task 3: mutation kills for both new controls, check side.
+// ---------------------------------------------------------------------
+
+// TestCallArgumentTypeCheckMutationKilled is 07-09 Task 3's check-side kill
+// for control:call.argument_type_matches_parameter. It first confirms the
+// standing negative control (call_type_mismatch.lang) is refused with the
+// ratified code in production (the seam off). It then engages ONLY
+// callArgumentTypeCheckSeam through a direct resolveCallBinding call whose
+// callee contract deliberately decouples ParameterType from ReturnType --
+// a shape no real source program can construct, since sameType forces
+// every function's declared return type to equal its declared parameter
+// type. Without that decoupling, disabling only the argument gate on the
+// real fixture still hits the (production, unseamed) return-derivation
+// gate -- contract.ReturnType == contract.ParameterType always in real
+// source, so the two gates agree there -- proving nothing about THIS seam
+// specifically. The decoupled direct call isolates this control's own
+// kill from the return-derivation control's kill.
+func TestCallArgumentTypeCheckMutationKilled(t *testing.T) {
+	defer func() { callArgumentTypeCheckSeam = false }()
+
+	source := readPhase07Fixture(t, "call_type_mismatch.lang")
+	production := Program(mustParseProgram(t, source))
+	if len(production.Diagnostics) != 1 || production.Diagnostics[0].Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("expected %s without the seam, got %+v", checkCallArgumentTypeMismatch, production.Diagnostics)
+	}
+
+	typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Buffer"}}
+	places := map[string]*placeState{
+		"value": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: typeFact.ID}, initialized: true},
+	}
+	binding := ast.Binding{Name: "result", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}}}
+	contracts := map[string]calleeContract{
+		"identity": {ID: "s1:m:fn:identity", ParameterType: "Byte", ReturnType: "Buffer"},
+	}
+
+	callArgumentTypeCheckSeam = true
+	_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+	if diag != nil {
+		t.Fatalf("expected the seam to wrongly admit the mismatched argument, got %+v", diag)
+	}
+
+	callArgumentTypeCheckSeam = false
+	_, _, restored := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+	if restored == nil || restored.Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("expected %s restored once the seam is disengaged, got %+v", checkCallArgumentTypeMismatch, restored)
+	}
+}
+
+// TestCallReturnTypeDerivationMutationKilled is 07-09 Task 3's check-side
+// kill for control:call.target_type_from_callee_return. With the seam
+// engaged, an OpCall's target TypeID reverts to the caller's own argument
+// place's TypeID (the pre-plan defect); with it disengaged, the target
+// TypeID is derived from the callee's declared return contract resolved
+// against the caller's own type fact. The two derivations are constructed
+// to disagree (the argument place carries a TypeID the caller's own type
+// fact table does not), observably proving the seam is load-bearing.
+func TestCallReturnTypeDerivationMutationKilled(t *testing.T) {
+	defer func() { callReturnTypeDerivationSeam = false }()
+
+	typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Byte"}}
+	places := map[string]*placeState{
+		"value": {place: core.Place{ID: "s1:m:fn:main:place:9", Name: "value", TypeID: "s1:m:fn:main:type:9"}, initialized: true},
+	}
+	binding := ast.Binding{Name: "result", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}}}
+	contracts := map[string]calleeContract{
+		"identity": {ID: "s1:m:fn:identity", ParameterType: "Byte", ReturnType: "Byte"},
+	}
+
+	callReturnTypeDerivationSeam = true
+	op, target, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+	if diag != nil {
+		t.Fatalf("expected the seam to admit the call, got %+v", diag)
+	}
+	if op.TypeID != "s1:m:fn:main:type:9" || target.TypeID != "s1:m:fn:main:type:9" {
+		t.Fatalf("expected the seam to derive TypeID from the argument's own place (type:9), got op.TypeID=%q target.TypeID=%q", op.TypeID, target.TypeID)
+	}
+
+	callReturnTypeDerivationSeam = false
+	restoredOp, restoredTarget, restoredDiag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+	if restoredDiag != nil {
+		t.Fatalf("expected admission once restored, got %+v", restoredDiag)
+	}
+	if restoredOp.TypeID != typeFact.ID || restoredTarget.TypeID != typeFact.ID {
+		t.Fatalf("expected the restored derivation from the callee's declared return contract (type:0), got op.TypeID=%q target.TypeID=%q", restoredOp.TypeID, restoredTarget.TypeID)
+	}
+	if restoredOp.TypeID == "s1:m:fn:main:type:9" {
+		t.Fatal("expected the restored derivation to differ from the seam's, proving the seam is load-bearing")
+	}
+}
