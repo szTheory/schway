@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 07
 current_phase_name: Calls, Signatures, and Call-Graph Refusal
 status: executing
-stopped_at: Completed 07-10-PLAN.md
-last_updated: "2026-09-09T17:35:35.352Z"
+stopped_at: Completed 07-11-PLAN.md
+last_updated: "2026-09-09T18:33:34.364Z"
 last_activity: 2026-09-09
 last_activity_desc: Phase 07 execution started
-state_head: 045973aff94ab2b3e5f6f75369702aa5bd0b5fc2
+state_head: 58226375c3acb086278816e69f76aa138b29b47e
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — EXECUTING
-Plan: 2 of 12
+Plan: 3 of 12
 Status: Ready to execute
 Last activity: 2026-09-09 — Phase 07 execution started
 
@@ -154,6 +154,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 07 P08 | 64min | 2 tasks | 11 files |
 | Phase 07 P09 | 90 min | 4 tasks | 11 files |
 | Phase 07 P10 | 105min | 3 tasks | 9 files |
+| Phase 07 P11 | 90 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -184,6 +185,7 @@ Standing architectural commitments carried into M002:
 - [Phase 07]: Checkpoint auto-ratified: accepted all four proposed diagnostic code strings (check.call_argument_type_mismatch, check.call_return_type_unrepresentable, core.CallArgumentTypeMismatch, core.CallReturnTypeMismatch) and both ordered Causes shapes verbatim.
 - [Phase 07]: 07-09: check.resolveCallBinding gates argument-type match and derives OpCall's TargetID.TypeID from the callee's declared return contract (fail-closed); corevalidate independently re-derives both refusals with no shared helper. Closes 07-VERIFICATION.md's single FAILED truth and 07-REVIEW.md CR-01.
 - [Phase 07]: 07-10: CheckCommandFile consults corevalidate.Validate (refusing union, fixed precedence check-then-peer-then-originvalidate); interface export/core report a peer refusal as StatusInvalid with the peer's own code instead of tool.operation_failed. Closes 07-REVIEW.md CR-04/PVG-03.
+- [Phase 07]: 07-11: consume-on-call closes CR-01/PVG-01 -- resolveCallBinding consumes call arguments (ability-decided), corevalidate independently re-derives from the core artifact alone; D-07-07 corrected, D-07-52 records the accepted implicit-transfer residual — Checkpoint auto-ratified under auto_advance/yolo mode
 
 ### Pending Todos
 
@@ -254,8 +256,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-09T17:35:35.334Z
-Stopped at: Completed 07-10-PLAN.md
+Last session: 2026-09-09T18:33:34.349Z
+Stopped at: Completed 07-11-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

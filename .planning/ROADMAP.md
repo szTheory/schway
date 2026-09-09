@@ -282,7 +282,7 @@ Plans:
 
 **Wave 2 (blocked on 07-10)**
 
-- [ ] 07-11-PLAN.md — PVG-01 (CR-01): the ownership half of the call contract — a call consumes its non-copyable argument in `check.resolveCallBinding`, an independently-derived `corevalidate` consume peer, `call_argument_used_twice.lang` / `call_argument_used_once.lang`, two mutation-killed controls, and D-07-07's misleading wording CORRECTED
+- [x] 07-11-PLAN.md — PVG-01 (CR-01): the ownership half of the call contract — a call consumes its non-copyable argument in `check.resolveCallBinding`, an independently-derived `corevalidate` consume peer, `call_argument_used_twice.lang` / `call_argument_used_once.lang`, two mutation-killed controls, and D-07-07's misleading wording CORRECTED
 
 **Wave 3 (blocked on 07-11)**
 
