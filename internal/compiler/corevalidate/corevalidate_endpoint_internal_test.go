@@ -98,7 +98,13 @@ func TestValidatorImportsStayIndependent(t *testing.T) {
 			// BuildInterface/PublishProblemsFor -- an import here would make
 			// this peer a second caller of the producer's own
 			// implementation, which cannot diverge by construction.
-			if strings.HasSuffix(path, "/compiler/check") || strings.HasSuffix(path, "/compiler/ast") || strings.HasSuffix(path, "/compiler/originvalidate") {
+			//
+			// 07-07 D-07-19: corevalidate's own whole-program cycle peer
+			// (checkCallGraphAcyclic) must never import check's callgraph
+			// package -- independence comes from a disjoint reachable input
+			// space (parser-reachable for check, synthetic-only for this
+			// peer), never from importing the first derivation.
+			if strings.HasSuffix(path, "/compiler/check") || strings.HasSuffix(path, "/compiler/ast") || strings.HasSuffix(path, "/compiler/originvalidate") || strings.HasSuffix(path, "/compiler/callgraph") {
 				t.Fatalf("%s imports %s, which corevalidate must never depend on", entry.Name(), path)
 			}
 		}

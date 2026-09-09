@@ -1406,9 +1406,13 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// Phase 07 (D-07-29) adds one new accepting-path v.check PER OPERATION
 	// (the CalleeID kind-exclusivity check, run unconditionally regardless
 	// of kind): acquire_three_success.lang's checked program carries 13
-	// operations, moving the pin a final time to 412+13=425 (measured from
-	// the built code, not assumed).
-	const acquireThreeSuccessChecks = 425
+	// operations, moving the pin to 412+13=425.
+	//
+	// 07-07 adds one FLAT new accepting-path v.check per Validate call (not
+	// per operation): the whole-program cycle peer (checkCallGraphAcyclic)
+	// runs exactly once, moving the pin a final time to 425+1=426 (measured
+	// from the built code, not assumed).
+	const acquireThreeSuccessChecks = 426
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {

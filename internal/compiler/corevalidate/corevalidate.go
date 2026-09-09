@@ -37,7 +37,14 @@ const KnownEscape = "escape:coordinated-source-core-lie"
 // CalleeID kind-exclusivity check: one new v.check per operation, run
 // unconditionally regardless of kind, confirming a non-OpCall operation
 // (every operation in this scale shape) leaves CalleeID empty.
-func LinearWorkLimit(facts int) int { return 17*facts + 14 }
+//
+// The +1 flat term (from 17*facts+14 to 17*facts+15) is 07-07's own
+// whole-program cycle peer (checkCallGraphAcyclic): it runs exactly ONCE
+// per Validate call, not once per fact/operation, so it is a constant
+// addition regardless of facts -- mechanical, expected, and not a
+// per-operation work-formula change (mirrors the precedent already
+// recorded at this file's own TestCoreValidationWorkSeries call site).
+func LinearWorkLimit(facts int) int { return 17*facts + 15 }
 
 type Problem struct {
 	Code   string `json:"code"`
@@ -130,6 +137,17 @@ func (v *validator) check(ok bool, code, detail string) bool {
 	return false
 }
 
+// pendingReplayEntry defers one function's per-function replay (D-07-19/
+// T-07-46) until every declared function's own structural facts have been
+// independently validated, so run()'s whole-program cycle peer can run
+// once, program-wide, strictly between "all functions structurally valid"
+// and "any function replayed" -- see the call site's own comment in run().
+type pendingReplayEntry struct {
+	function *core.Function
+	types    map[string]core.TypeFact
+	places   map[string]core.Place
+}
+
 func (v *validator) run() {
 	if !v.check(v.program.Schema == core.Schema || v.program.Schema == core.Schema1, "core.schema", v.program.Schema) {
 		return
@@ -158,6 +176,7 @@ func (v *validator) run() {
 		dataNames[dataType.Name] = dataType
 	}
 	functionIDs := make(map[string]struct{}, len(v.program.Functions))
+	pending := make([]pendingReplayEntry, 0, len(v.program.Functions))
 	for index := range v.program.Functions {
 		function := &v.program.Functions[index]
 		if !v.unique(functionIDs, function.ID, "core.duplicate_function_id") {
@@ -175,19 +194,227 @@ func (v *validator) run() {
 			// cross-lock (03-PATTERNS I-7): linear-only requires /1,
 			// match-only requires /0, match-with-arm-bodies also requires
 			// /1.
-			if !v.check(v.program.Schema == core.Schema1, "core.schema", "a match with an arm body requires lang.core/1") || !v.matchBranch(function, dataNames) {
+			if !v.check(v.program.Schema == core.Schema1, "core.schema", "a match with an arm body requires lang.core/1") {
 				return
 			}
+			types, places, ok := v.matchBranchStructural(function, dataNames)
+			if !ok {
+				return
+			}
+			pending = append(pending, pendingReplayEntry{function: function, types: types, places: places})
 		case function.Linear != nil:
-			if !v.check(v.program.Schema == core.Schema1, "core.schema", "linear body requires lang.core/1") || !v.linear(function) {
+			if !v.check(v.program.Schema == core.Schema1, "core.schema", "linear body requires lang.core/1") {
 				return
 			}
+			types, places, ok := v.linearStructural(function)
+			if !ok {
+				return
+			}
+			pending = append(pending, pendingReplayEntry{function: function, types: types, places: places})
 		default:
 			if !v.check(v.program.Schema == core.Schema, "core.schema", "match body requires lang.core/0") || !v.match(function, dataNames) {
 				return
 			}
 		}
 	}
+
+	// D-07-19/T-07-46: corevalidate's own whole-program cycle peer runs
+	// HERE -- after every declared function's own structural facts (types,
+	// places, operation identity/order, block/edge referential closure,
+	// all validated above by linearStructural/matchBranchStructural) have
+	// been independently checked, but strictly BEFORE any function's own
+	// per-function replay runs below. Running it earlier would mean
+	// traversing a program whose own operations have not yet been checked
+	// for internal consistency; running it later (interleaved with, or
+	// after, per-function replay) would let an unrelated per-function
+	// replay error mask a real cycle, so the very same program could
+	// report two different first errors depending purely on function
+	// declaration order. See checkCallGraphAcyclic's own doc comment for
+	// the peer's independence rationale (D-07-19).
+	if !disableCyclePeerForTest {
+		if !v.checkCallGraphAcyclic() {
+			return
+		}
+	}
+
+	for _, entry := range pending {
+		if !v.replay(entry.function, entry.types, entry.places) {
+			return
+		}
+		if len(entry.function.Linear.Blocks) > 0 {
+			// T-03-13/D-12: independently re-derive the declared
+			// loan-endpoint set and require whole-value equality against
+			// what the producer declared -- see linearStructural's
+			// identical historical comment (moved here unchanged by this
+			// plan's two-pass split).
+			if !v.loanEndpointsMatch(entry.function) {
+				return
+			}
+		}
+	}
+}
+
+// disableCyclePeerForTest is Task 3's D-07-42 independent-disable seam
+// (QLT-08 Test 2/Test 3): when true, corevalidate's own whole-program
+// cycle peer (checkCallGraphAcyclic) is skipped entirely, proving check's
+// own callgraph-based refusal is wholly independent of this peer ever
+// running -- the bilateral row engages this alongside callgraph's own
+// disableCycleDetectionForTest to prove the sweep reports "no divergence
+// detected under bilateral fault" and fails the gate rather than passing
+// it. Exposed to other packages (callgraph_test's cross-package bilateral
+// tests) via corevalidate_export_test.go's SetDisableCyclePeerForTest.
+// false (the production default) means "run the peer for real".
+var disableCyclePeerForTest bool
+
+// peerGrayVsVisitedMutationForTest is Task 3 Test 4's own fault-injection
+// seam, mirroring callgraph.grayVsVisitedMutationForTest exactly but on
+// THIS package's own, independently written traversal (D-07-19): when
+// true, a legitimately revisited BLACK (finished, shared) node is wrongly
+// treated the same as a GRAY (on-stack) re-entry, so an acyclic diamond
+// with a shared leaf is wrongly refused. Proves the peer's own
+// gray-versus-visited distinction is independently load-bearing, not
+// merely present (T-07-41) -- a second derivation nobody has seen fail is
+// not evidence. false (the production default) means "only a gray
+// re-entry is treated as a cycle".
+var peerGrayVsVisitedMutationForTest bool
+
+// checkCallGraphAcyclic is corevalidate's OWN, independently written
+// three-color (white/gray/black) depth-first search over v.program's whole
+// call graph (D-07-19). It reads nothing from check's callgraph package --
+// TestValidatorImportsStayIndependent's forbidden-suffix list forbids this
+// file from ever importing it -- and, in this plan's own tests, is
+// exercised EXCLUSIVELY against hand-built synthetic core.Program values
+// via syntheticProgram, never through the parser or check. Independence
+// here comes from a DISJOINT REACHABLE INPUT SPACE (parser-reachable for
+// check, synthetic-only for this peer), never from a different algorithm
+// (D-07-19): this traversal mirrors pathoracle.backEdgeError's posture
+// exactly -- rather than trusting check.go's own callgraph.Order to have
+// caught a cycle first, a corrupted or synthetic core.Program check never
+// saw is still refused here.
+//
+// Roots are ALL declared functions, never merely an entry point: a
+// synthetic artifact may declare no entry point at all, and a cycle among
+// functions unreachable from any entry point must still be refused
+// (fail-closed). Edges come from core.LinearOperation.CalleeID on
+// operations with Kind == core.OpCall, enumerated across a function's
+// WHOLE Linear.Operations list -- never reconstructed from Block/Successor
+// position (D-07-28) -- so a cycle-closing OpCall inside a match arm is
+// found exactly like one in a straight-line body. An OpCall whose CalleeID
+// resolves to no declared function refuses with core.CallCalleeUnresolved
+// (D-07-45) rather than being silently dropped from the graph -- a dropped
+// edge is precisely how a cycle escapes detection here too.
+//
+// It emits the SAME inert string constant core.CallGraphCycle that
+// check's callgraph package emits, with no span (D-07-15/D-07-35): the
+// code is shared, verbatim, as a string constant; the derivation
+// producing it is not. The peer has no spans and needs none -- its job is
+// refusal, not diagnostics.
+func (v *validator) checkCallGraphAcyclic() bool {
+	declared := make(map[string]bool, len(v.program.Functions))
+	for _, function := range v.program.Functions {
+		declared[function.ID] = true
+	}
+
+	adjacency := make(map[string][]string, len(declared))
+	for id := range declared {
+		adjacency[id] = nil
+	}
+	for _, function := range v.program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall {
+				continue
+			}
+			if operation.CalleeID == "" {
+				// D-07-29's CalleeID kind-exclusivity check (an OpCall's
+				// CalleeID must be non-empty) is enforced during replay,
+				// not by this whole-program peer, which runs before
+				// replay and only concerns itself with edges it can
+				// actually form. Skip so replay's own dedicated
+				// core.callee_id_missing refusal still fires, unmasked.
+				continue
+			}
+			if !declared[operation.CalleeID] {
+				if disableCalleeResolutionCheckForTest {
+					// Mirrors check.checkCallGraphAcyclic's own identical
+					// suppression under verifyCallInvariantsSeam (07-06):
+					// this seam's whole point is that corevalidate's
+					// resolves-to-a-declared-function re-derivation is
+					// suppressed EVERYWHERE it appears in this package,
+					// including this newest, independent site, so the one
+					// seeded mutation keeps every admission arm it names
+					// failing together (TestDisableCalleeResolutionCheckSeamSuppressesUnresolvedRefusal).
+					continue
+				}
+				return v.check(false, core.CallCalleeUnresolved, operation.CalleeID)
+			}
+			adjacency[function.ID] = append(adjacency[function.ID], operation.CalleeID)
+		}
+	}
+	// Sorted adjacency (and, below, sorted roots) is what keeps this
+	// peer's refuse/accept verdict deterministic under -count=2
+	// -shuffle=on, exactly like callgraph.buildAdjacency's identical
+	// discipline -- a map-backed traversal cannot pass by luck.
+	for id := range adjacency {
+		sort.Strings(adjacency[id])
+	}
+	roots := make([]string, 0, len(adjacency))
+	for id := range adjacency {
+		roots = append(roots, id)
+	}
+	sort.Strings(roots)
+
+	const (
+		peerWhite = iota
+		peerGray
+		peerBlack
+	)
+	colorOf := make(map[string]int, len(adjacency))
+	type peerFrame struct {
+		id    string
+		index int
+	}
+	for _, root := range roots {
+		if colorOf[root] != peerWhite {
+			continue
+		}
+		stack := []peerFrame{{id: root}}
+		colorOf[root] = peerGray
+		for len(stack) > 0 {
+			top := &stack[len(stack)-1]
+			children := adjacency[top.id]
+			if top.index < len(children) {
+				child := children[top.index]
+				top.index++
+				switch colorOf[child] {
+				case peerWhite:
+					colorOf[child] = peerGray
+					stack = append(stack, peerFrame{id: child})
+				case peerGray:
+					// A back edge to an on-stack (gray) node is a real
+					// cycle -- including a self-edge (function.ID ==
+					// operation.CalleeID), which is caught here too since
+					// a root is marked gray before its own children are
+					// ever visited.
+					return v.check(false, core.CallGraphCycle, child)
+				case peerBlack:
+					// A legitimately revisited shared node in an acyclic
+					// subgraph (a diamond's shared leaf) -- not a cycle.
+					// Task 3 Test 4's mutation collapses exactly this
+					// distinction.
+					if peerGrayVsVisitedMutationForTest {
+						return v.check(false, core.CallGraphCycle, child)
+					}
+				}
+			} else {
+				colorOf[top.id] = peerBlack
+				stack = stack[:len(stack)-1]
+			}
+		}
+	}
+	return v.check(true, core.CallGraphCycle, "")
 }
 
 // matchBranch validates a match function whose arms carry linear bodies. It
@@ -195,15 +422,21 @@ func (v *validator) run() {
 // exhaustiveness) independently of the checker exactly as match() does, then
 // falls through to linear() for the flattened operations, places, types, and
 // the new Block/Edge facts the arms lowered into.
-func (v *validator) matchBranch(function *core.Function, dataNames map[string]core.DataType) bool {
+// matchBranchStructural is matchBranch's structural half (D-07-19's
+// two-pass split): it validates every match-shaped structural fact exactly
+// as matchBranch always did, then falls through to linearStructural for
+// the flattened operations/places/types/Block/Edge facts -- but returns
+// BEFORE replay, so run()'s whole-program cycle peer can run once, between
+// every function's own structural validation and any function's replay.
+func (v *validator) matchBranchStructural(function *core.Function, dataNames map[string]core.DataType) (map[string]core.TypeFact, map[string]core.Place, bool) {
 	match := function.Match
 	if !v.check(match.ID != "" && match.PointID != "" && function.EntryPointID != "" && function.ReturnPointID != "", "core.invalid_id", function.ID) {
-		return false
+		return nil, nil, false
 	}
 	dataType, knownType := dataNames[function.Parameter.Type]
 	if !v.check(knownType && function.ReturnType == function.Parameter.Type, "core.unknown_type", function.Parameter.Type) ||
 		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
-		return false
+		return nil, nil, false
 	}
 	alternatives := make(map[string]struct{}, len(dataType.Alternatives))
 	for _, alternative := range dataType.Alternatives {
@@ -214,13 +447,13 @@ func (v *validator) matchBranch(function *core.Function, dataNames map[string]co
 	patterns := make(map[string]struct{}, len(match.Arms))
 	for _, arm := range match.Arms {
 		if !v.unique(armIDs, arm.ID, "core.duplicate_arm_id") || !v.unique(edgeIDs, arm.EdgeID, "core.duplicate_edge_id") {
-			return false
+			return nil, nil, false
 		}
 		if !v.unique(patterns, arm.Pattern, "core.duplicate_pattern") {
-			return false
+			return nil, nil, false
 		}
 		if _, known := alternatives[arm.Pattern]; !v.check(known, "core.unknown_alternative", arm.ID) {
-			return false
+			return nil, nil, false
 		}
 		// This phase's scope decision (checkBranch): a match that carries
 		// any arm body requires every arm to carry one. Value and BlockID
@@ -228,15 +461,13 @@ func (v *validator) matchBranch(function *core.Function, dataNames map[string]co
 		// present here — a bare Value in a branch-shaped function is
 		// rejected rather than silently tolerated.
 		if !v.check(arm.Value == "" && arm.BlockID != "", "core.invalid_body", arm.ID) {
-			return false
+			return nil, nil, false
 		}
 	}
 	if !v.check(len(patterns) == len(alternatives), "core.final_claim_mismatch", match.ID) {
-		return false
+		return nil, nil, false
 	}
-	// v.linear itself independently re-derives and compares LoanEndpoints
-	// (T-03-13/D-12) once Blocks are present — see its own doc comment.
-	return v.linear(function)
+	return v.linearStructural(function)
 }
 
 func (v *validator) match(function *core.Function, dataNames map[string]core.DataType) bool {
@@ -285,50 +516,58 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 	return v.check(len(patterns) == len(alternatives), "core.final_claim_mismatch", match.ID)
 }
 
-func (v *validator) linear(function *core.Function) bool {
+// linearStructural is linear's structural half (D-07-19's two-pass
+// split): types, places, operation identity/order/reference consistency,
+// and (when Blocks/Edges are declared) their referential closure -- every
+// check linear always performed BEFORE its own replay call. It returns
+// BEFORE replay and loan-endpoint recomputation, which linear composes
+// back on afterward, so run() can insert its whole-program cycle peer
+// strictly between "every function structurally valid" and "any function
+// replayed".
+func (v *validator) linearStructural(function *core.Function) (map[string]core.TypeFact, map[string]core.Place, bool) {
 	linear := function.Linear
 	if !v.check(linear.ID == function.ID+":linear", "core.linear_id", linear.ID) ||
 		!v.check(function.EntryPointID == function.ID+":point:entry" && function.ReturnPointID == function.ID+":point:return", "core.point_id", function.ID) {
-		return false
+		return nil, nil, false
 	}
 
 	types := make(map[string]core.TypeFact, len(linear.Types))
 	for index, fact := range linear.Types {
 		if !v.uniqueType(types, fact) {
-			return false
+			return nil, nil, false
 		}
 		if !v.check(fact.ID == fmt.Sprintf("%s:type:%d", function.ID, index), "core.type_order", fact.ID) {
-			return false
+			return nil, nil, false
 		}
 		abilities, witnesses, ok := v.derive(fact.Shape, 0)
 		if !ok {
-			return false
+			return nil, nil, false
 		}
 		if !v.check(reflect.DeepEqual(fact.Abilities, abilities) && reflect.DeepEqual(fact.NegativeWitnesses, witnesses), "core.ability_mismatch", fact.ID) {
-			return false
+			return nil, nil, false
 		}
 	}
 
 	places := make(map[string]core.Place, len(linear.Places))
 	for index, place := range linear.Places {
 		if !v.uniquePlace(places, place) {
-			return false
+			return nil, nil, false
 		}
 		if !v.check(place.ID == fmt.Sprintf("%s:place:%d", function.ID, index), "core.place_order", place.ID) {
-			return false
+			return nil, nil, false
 		}
 		if _, ok := types[place.TypeID]; !v.check(ok, "core.unknown_type", place.TypeID) {
-			return false
+			return nil, nil, false
 		}
 	}
 	parameter, ok := places[function.Parameter.ID]
 	if !v.check(ok, "core.unknown_place", function.Parameter.ID) ||
 		!v.check(parameter.Name == function.Parameter.Name, "core.parameter_mismatch", function.Parameter.ID) {
-		return false
+		return nil, nil, false
 	}
 	parameterType := types[parameter.TypeID]
 	if !v.check(parameterType.Shape.Constructor == function.Parameter.Type, "core.parameter_mismatch", function.Parameter.ID) {
-		return false
+		return nil, nil, false
 	}
 
 	operationIDs := make(map[string]struct{}, len(linear.Operations))
@@ -336,16 +575,16 @@ func (v *validator) linear(function *core.Function) bool {
 	loanIDs := make(map[string]struct{})
 	for index, operation := range linear.Operations {
 		if !v.unique(operationIDs, operation.ID, "core.duplicate_operation_id") || !v.unique(pointIDs, operation.PointID, "core.duplicate_point_id") {
-			return false
+			return nil, nil, false
 		}
 		if !v.check(operation.ID == fmt.Sprintf("%s:op:%d", function.ID, index) && operation.PointID == fmt.Sprintf("%s:point:linear:%d", function.ID, index), "core.operation_order", operation.ID) {
-			return false
+			return nil, nil, false
 		}
 		if _, ok := places[operation.SourceID]; !v.check(ok, "core.unknown_place", operation.SourceID) {
-			return false
+			return nil, nil, false
 		}
 		if _, ok := types[operation.TypeID]; !v.check(ok, "core.unknown_type", operation.TypeID) {
-			return false
+			return nil, nil, false
 		}
 		// OpFail and OpDefect are terminators alongside OpReturn (D-04-04/
 		// D-04-15): none of the three ever carries a TargetID, since none
@@ -353,18 +592,18 @@ func (v *validator) linear(function *core.Function) bool {
 		// ends the err block, OpDefect ends an arm block by aborting.
 		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
-				return false
+				return nil, nil, false
 			}
 		}
 		if operation.Kind == core.OpForeignCall {
 			if _, ok := places[operation.ErrTargetID]; !v.check(ok, "core.unknown_place", operation.ErrTargetID) {
-				return false
+				return nil, nil, false
 			}
 			if !v.check(operation.OkEdgeID != "" && operation.ErrEdgeID != "", "core.foreign_call_edges_missing", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			// Phase 4 plan 12 (D-04-12/FFI-01, 04-VERIFICATION.md gap 2):
 			// check.go refuses a malformed symbol at parse-resolution time by
@@ -380,7 +619,7 @@ func (v *validator) linear(function *core.Function) bool {
 			// string containing newlines or quotes into an output channel is
 			// the same class of defect this check exists to close.
 			if !v.check(validCIdentifier(function.ForeignContract.Symbol), "foreign.symbol_not_identifier", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			// D-04-16, independently derived: check.go refuses a missing
 			// unwind/nonlocal_exit policy at admission time by inspecting
@@ -391,7 +630,7 @@ func (v *validator) linear(function *core.Function) bool {
 			// a corrupted core artifact that skipped check.go's gate is
 			// still caught here.
 			if !v.check(function.ForeignContract.Unwind != "" && function.ForeignContract.NonlocalExit != "", "foreign.unwind_policy_undeclared", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			// 04-13 (04-VERIFICATION.md gap 2b, FFI-01): check.go now refuses
 			// a hostile policy value at source-admission time by inspecting
@@ -413,7 +652,7 @@ func (v *validator) linear(function *core.Function) bool {
 			// diagnostic-JSON-echo reason as every sibling check in this
 			// block.
 			if !v.check(validCIdentifier(function.ForeignContract.Allocator) && validCIdentifier(function.ForeignContract.Unwind) && validCIdentifier(function.ForeignContract.NonlocalExit), "foreign.policy_value_not_identifier", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			// D-04-02, independently derived: check.go refuses a callee that
 			// resolves to a Lang function name at parse-resolution time (an
@@ -423,7 +662,7 @@ func (v *validator) linear(function *core.Function) bool {
 			// every OTHER function this core.Program itself declares --
 			// reading only the core artifact, never check's own name table.
 			if !v.check(!isDeclaredFunctionName(v.program.Functions, function.ID, function.ForeignContract.Symbol), "core.call_target_not_foreign", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			// Phase 4 plan 03 (D-04-12/FFI-01): every foreign obligation
 			// category must be present -- no default value that would let an
@@ -433,7 +672,7 @@ func (v *validator) linear(function *core.Function) bool {
 			// fields and the Layout struct core.ForeignContract itself
 			// carries, never check's AST-level foreignSymbolInfo.
 			if !v.check(function.ForeignContract.InitializedState != "" && function.ForeignContract.Capture != "" && function.ForeignContract.Retention != "" && function.ForeignContract.Aliasing != "", "foreign.obligation_undeclared", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			// 04-13 Task 3 (04-VERIFICATION.md gap 2b, FFI-01): audit every
 			// REMAINING core.ForeignContract string field cgen splices into
@@ -450,40 +689,26 @@ func (v *validator) linear(function *core.Function) bool {
 			// diagnostic-JSON-echo reason as every sibling check in this
 			// block.
 			if !v.check(foreignContractFieldsCSafe(function.ForeignContract), "foreign.contract_field_not_c_safe", operation.ID) {
-				return false
+				return nil, nil, false
 			}
 			if !v.foreignLayoutConsistent(function.ForeignContract.Layout, operation.ID) {
-				return false
+				return nil, nil, false
 			}
 		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			if !v.unique(loanIDs, operation.LoanID, "core.unknown_loan") {
-				return false
+				return nil, nil, false
 			}
 		} else if !v.check(operation.LoanID == "", "core.unknown_loan", operation.LoanID) {
-			return false
+			return nil, nil, false
 		}
 	}
 	if len(linear.Blocks) > 0 || len(linear.Edges) > 0 {
 		if !v.blocksAndEdges(function, operationIDs) {
-			return false
+			return nil, nil, false
 		}
 	}
-	if !v.replay(function, types, places) {
-		return false
-	}
-	if len(linear.Blocks) > 0 {
-		// T-03-13/D-12: independently re-derive the declared loan-endpoint
-		// set (recomputeLoanEndpoints) and require whole-value equality
-		// against what the producer declared. A moved, dropped, or invented
-		// endpoint is caught here, not by trusting the checker's own
-		// dataflow. Gated on Blocks (never populated for a straight-line
-		// body this phase) rather than on the match/linear dispatch shape,
-		// so this runs for any branch-shaped function regardless of which
-		// run() case dispatched here.
-		return v.loanEndpointsMatch(function)
-	}
-	return true
+	return types, places, true
 }
 
 // blocksAndEdges independently validates the Phase 3 CFG facts: every block
