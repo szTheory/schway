@@ -263,7 +263,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 07-07-PLAN.md — Stage 2b: `corevalidate`'s independent synthetic-artifact traversal peer, the remaining corpora, and the phase-wide QLT-08 completeness matrix by exact set equality
+- [x] 07-07-PLAN.md — Stage 2b: `corevalidate`'s independent synthetic-artifact traversal peer, the remaining corpora, and the phase-wide QLT-08 completeness matrix by exact set equality
 
 **Wave 8** *(blocked on Wave 7 completion)*
 

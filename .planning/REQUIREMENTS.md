@@ -22,7 +22,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [x] **SEM-06**: A call is admitted only when the callee is callable ⊆
       publishable (D-04-03); a call to a non-publishable target is refused with
       a stable diagnostic code.
-- [ ] **SEM-07**: The compiler constructs a call graph and refuses cycles —
+- [x] **SEM-07**: The compiler constructs a call graph and refuses cycles —
       direct, mutual, and indirect (including cycles through `Result` matching)
       — with a named refusal code, never a hang.
 - [ ] **SEM-08**: The interpreter executes calls on a bounded call stack with a
@@ -163,7 +163,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | SEM-04 | Phase 07 | Complete |
 | SEM-05 | Phase 07 | Pending |
 | SEM-06 | Phase 07 | Complete |
-| SEM-07 | Phase 07 | Pending |
+| SEM-07 | Phase 07 | Complete |
 | SEM-08 | Phase 10 | Pending |
 | SEM-09 | Phase 10 | Pending |
 | OWN-05 | Phase 09 | Pending |
