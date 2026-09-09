@@ -513,8 +513,26 @@ func (v *validator) chainPeerClosureDigests() {
 		}
 		var pairs []peerCalleeDigestPair
 		if !closureDigestEmptyCalleesForTest {
+			// 07-12 (CR-03/PVG-02): join this caller's own Foreign/Fails
+			// with every callee's ALREADY-JOINED peer signature, strictly
+			// before peerComputeClosureDigest below -- v.peerPostorder
+			// already lists every function callee-before-caller, so each
+			// callee's own joined value is already final by the time its
+			// caller reads it. This reads v.peerAdjacency/v.peerSignatures
+			// (corevalidate's OWN postorder and OWN independently-derived
+			// signatures), never originvalidate's chainOrder or
+			// calleeIDsForClosureDigest -- a materially different source
+			// from the producer's, per CR-03's own coordinated-blindness
+			// finding.
 			for _, calleeID := range v.peerAdjacency[id] {
-				pairs = append(pairs, peerCalleeDigestPair{ID: calleeID, ClosureDigest: v.peerSignatures[calleeID].ClosureDigest})
+				calleeSignature := v.peerSignatures[calleeID]
+				pairs = append(pairs, peerCalleeDigestPair{ID: calleeID, ClosureDigest: calleeSignature.ClosureDigest})
+				if !disableForeignClosureJoinPeerForTest {
+					signature.Foreign = peerJoinForeignReach(signature.Foreign, calleeSignature.Foreign)
+				}
+				if !disableFailsClosureJoinPeerForTest {
+					signature.Fails = peerJoinFails(signature.Fails, calleeSignature.Fails)
+				}
 			}
 		}
 		digest, err := peerComputeClosureDigest(signature, pairs)
@@ -528,6 +546,92 @@ func (v *validator) chainPeerClosureDigests() {
 		signature.ClosureDigest = digest
 		v.peerSignatures[id] = signature
 	}
+}
+
+// disableForeignClosureJoinPeerForTest and disableFailsClosureJoinPeerForTest
+// are 07-12's D-07-41/D-07-42 fault-injection seams for THIS package's
+// independent Foreign/Fails closure join (control:summary.
+// foreign_reach_closure_derived / control:summary.fails_closure_derived,
+// peer side): unexported, false by production default, restored via defer
+// in every test that engages them -- mirroring originvalidate's identically
+// purposed foreignClosureJoinSeam/failsClosureJoinSeam on the producer
+// side, with no shared implementation.
+var (
+	disableForeignClosureJoinPeerForTest bool
+	disableFailsClosureJoinPeerForTest   bool
+)
+
+// peerJoinReachPolicy independently re-derives originvalidate's
+// joinReachPolicy (07-12, CR-03/PVG-02): "" is the identity; equal
+// non-empty values merge; "forbidden" wins over "permitted" in either
+// argument order; any other disagreement -- unreachable while the
+// vocabulary stays exactly {"", "permitted", "forbidden"} -- resolves to
+// the shared core.ForeignReachConflict schema sentinel. This package
+// deliberately shares no helper function with originvalidate (only the
+// core.ForeignReachConflict constant itself, a schema value, not a
+// derivation) -- see peerJoinForeignReach's own doc comment.
+func peerJoinReachPolicy(into, from string) string {
+	switch {
+	case into == "":
+		return from
+	case from == "" || into == from:
+		return into
+	case into == "forbidden" || from == "forbidden":
+		return "forbidden"
+	default:
+		return core.ForeignReachConflict
+	}
+}
+
+// peerJoinAllocatorName independently re-derives originvalidate's
+// joinAllocatorName: "" is the identity; equal non-empty names merge; two
+// DIFFERENT non-empty names have no vocabulary ordering and resolve to
+// core.ForeignReachConflict.
+func peerJoinAllocatorName(into, from string) string {
+	switch {
+	case into == "":
+		return from
+	case from == "" || into == from:
+		return into
+	default:
+		return core.ForeignReachConflict
+	}
+}
+
+// peerJoinForeignReach is corevalidate's OWN, independently written
+// worst-case lattice join over core.ForeignReach (07-12, CR-03/PVG-02):
+// same SEMANTICS as originvalidate.joinForeignReach (empty is the
+// identity; equal merges; forbidden beats permitted; a genuine allocator
+// disagreement resolves to core.ForeignReachConflict), different
+// implementation, in a different package, sharing no helper function --
+// 07-REVIEW.md CR-03 found producer and peer reproducing the SAME local
+// read verbatim, so this join is written independently by design, never
+// imported from originvalidate (enforced by
+// TestForeignClosureJoinPeersIndependent and the grep-based import-
+// boundary assertions this package already carries).
+func peerJoinForeignReach(into, from core.ForeignReach) core.ForeignReach {
+	return core.ForeignReach{
+		Allocator:    peerJoinAllocatorName(into.Allocator, from.Allocator),
+		Unwind:       peerJoinReachPolicy(into.Unwind, from.Unwind),
+		NonlocalExit: peerJoinReachPolicy(into.NonlocalExit, from.NonlocalExit),
+	}
+}
+
+// peerJoinFails is corevalidate's OWN, independently written join over
+// FunctionSignature.Fails (07-12, CR-03/PVG-02): "" is the identity; equal
+// merges; two different non-empty values keep the EXISTING (caller-
+// nearest) value, mirroring originvalidate.joinFails' semantics exactly
+// but written independently. Folded over v.peerAdjacency[id], which is
+// NOT sorted by ID the way originvalidate's calleeIDsForClosureDigest is
+// (checkCallGraphAcyclic's own adjacency-build sorts each function's
+// callee list by ID too -- see its own doc comment -- so this fold is
+// equally deterministic in production, by the same sorted-iteration
+// discipline, independently applied).
+func peerJoinFails(into, from string) string {
+	if into == "" {
+		return from
+	}
+	return into
 }
 
 // closureDigestDiscoveryOrderForTest and closureDigestEmptyCalleesForTest

@@ -90,3 +90,23 @@ func SetForceCallArgumentConsumePeerForTest(force bool) (restore func()) {
 	forceCallArgumentConsumePeerForTest = force
 	return func() { forceCallArgumentConsumePeerForTest = previous }
 }
+
+// SetDisableForeignClosureJoinPeerForTest installs 07-12's independent
+// Foreign-closure-join peer-disable seam
+// (control:summary.foreign_reach_closure_derived, peer side) and returns a
+// restore func. Callers MUST defer the restore immediately.
+func SetDisableForeignClosureJoinPeerForTest(disable bool) (restore func()) {
+	previous := disableForeignClosureJoinPeerForTest
+	disableForeignClosureJoinPeerForTest = disable
+	return func() { disableForeignClosureJoinPeerForTest = previous }
+}
+
+// SetDisableFailsClosureJoinPeerForTest installs 07-12's independent
+// Fails-closure-join peer-disable seam
+// (control:summary.fails_closure_derived, peer side) and returns a restore
+// func. Callers MUST defer the restore immediately.
+func SetDisableFailsClosureJoinPeerForTest(disable bool) (restore func()) {
+	previous := disableFailsClosureJoinPeerForTest
+	disableFailsClosureJoinPeerForTest = disable
+	return func() { disableFailsClosureJoinPeerForTest = previous }
+}
