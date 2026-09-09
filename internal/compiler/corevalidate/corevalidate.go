@@ -1590,7 +1590,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 					return false
 				}
 			}
-			if !v.consumeCallArgument(operation, types, initialized) {
+			if !v.consumeCallArgument(operation, source.TypeID, types, initialized) {
 				return false
 			}
 			if !v.targetMatches(function, index, operation, places, produced) {
@@ -1842,7 +1842,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 				}
 			}
 			// See replayStraightLine's identical case (07-11/PVG-01/CR-01).
-			if !v.consumeCallArgument(operation, types, initialized) {
+			if !v.consumeCallArgument(operation, source.TypeID, types, initialized) {
 				return false
 			}
 			if !v.targetMatches(function, index, operation, places, produced) {
@@ -2221,6 +2221,24 @@ var forceCallArgumentConsumePeerForTest bool
 // its kind-specific switch runs (this function's own caller), so deriving
 // from operation.TypeID IS deriving from the argument's own type.
 //
+// WR-01 (07-REVIEW): that equivalence is NOT an IR invariant local to
+// OpCall the way it is for OpCopy/OpMove/OpBorrow* (where TargetID's type
+// and SourceID's type are definitionally the same value) -- for OpCall,
+// operation.TypeID is the call's declared RETURN type (derived on the
+// producer side from the callee's declared return type), and it only
+// equals the argument's own SourceID type because of two OTHER,
+// separately-checked facts: the generic source.TypeID == operation.TypeID
+// law above (which is not OpCall-specific and could in principle be
+// loosened or bypassed for one kind without this function noticing), and
+// D-07-09's constraint that a function's declared return type equals its
+// own declared parameter type. sourceTypeID is threaded through
+// explicitly by this function's two callers (each already holding
+// places[operation.SourceID].TypeID as `source.TypeID`) so this function
+// can assert the equivalence itself, right where the derivation happens,
+// instead of trusting a caller-side law it cannot see -- if either
+// constraint above is ever weakened, this assertion fails closed here
+// rather than silently deriving copyability from the wrong type.
+//
 // A non-copyable argument is consumed by mirroring the OpMove arm verbatim
 // (initialized[operation.SourceID] = false); the SECOND use of that same
 // source -- including a second call -- is then refused by the pre-existing
@@ -2231,9 +2249,23 @@ var forceCallArgumentConsumePeerForTest bool
 // REFUSING case: v.derive itself appends a core.unknown_type_constructor
 // problem and reports failure, which this function propagates by returning
 // false -- fail-closed, never a silent admit.
-func (v *validator) consumeCallArgument(operation core.LinearOperation, types map[string]core.TypeFact, initialized map[string]bool) bool {
+func (v *validator) consumeCallArgument(operation core.LinearOperation, sourceTypeID string, types map[string]core.TypeFact, initialized map[string]bool) bool {
 	if disableCallArgumentConsumePeerForTest {
 		return true
+	}
+	// WR-01 (07-REVIEW): OpCall-specific defense -- operation.TypeID (the
+	// call's declared return type) must equal sourceTypeID (the argument
+	// place's own declared type) before the ability derivation below is
+	// allowed to key off operation.TypeID. This is NOT redundant with the
+	// generic source.TypeID == operation.TypeID check every operation kind
+	// already passes (corevalidate.go, replayStraightLine/replayBlocks):
+	// that check is generic across all kinds and could be loosened or
+	// bypassed for OpCall specifically without this function ever knowing.
+	// A divergence here ties directly to D-07-09 (a function's declared
+	// return type must equal its own declared parameter type) -- if that
+	// constraint is ever relaxed, this assertion is what catches it.
+	if !v.check(operation.TypeID == sourceTypeID, "core.type_mismatch", operation.ID) {
+		return false
 	}
 	granted, _, known := v.derive(types[operation.TypeID].Shape, 0)
 	if !known {
