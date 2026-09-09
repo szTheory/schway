@@ -1,109 +1,57 @@
 ---
 phase: 07-calls-signatures-and-call-graph-refusal
-fixed_at: 2026-09-09T00:00:00Z
+fixed_at: 2026-09-09T20:48:58Z
 review_path: .planning/phases/07-calls-signatures-and-call-graph-refusal/07-REVIEW.md
 iteration: 1
-findings_in_scope: 1
-fixed: 1
+findings_in_scope: 2
+fixed: 2
 skipped: 0
 status: all_fixed
 ---
 
 # Phase 07: Code Review Fix Report
 
-**Fixed at:** 2026-09-09
+**Fixed at:** 2026-09-09T20:48:58Z
 **Source review:** .planning/phases/07-calls-signatures-and-call-graph-refusal/07-REVIEW.md
 **Iteration:** 1
 
 **Summary:**
-- Findings in scope: 1 (WR-01 only -- `fix_scope: critical_warning`, 0 critical findings; IN-01/IN-02 are Info severity and out of scope for this run)
-- Fixed: 1
+- Findings in scope: 2 (`fix_scope: all` — both are Info-severity; REVIEW.md's frontmatter `status: clean` reflects 0 Critical/0 Warning, not "nothing to fix")
+- Fixed: 2
 - Skipped: 0
+
+**Verification environment:** `workflow.use_worktrees` is `false` in `.planning/config.json`, so this run edited and committed directly in the main checkout (no isolated worktree was created; no fast-forward/cleanup tail applies). All numbers below are reproducible from this tree as-is.
 
 ## Fixed Issues
 
-### WR-01: `consumeCallArgument`'s ability re-derivation is keyed off the callee's return type, not the argument's own declared type, and this equivalence is not defended by any operation-kind-specific check
+### IN-01: `originvalidate/export_test.go` still has a stray trailing blank line
 
-**Files modified:** `internal/compiler/corevalidate/corevalidate.go`, `internal/compiler/corevalidate/corevalidate_call_argument_consume_internal_test.go`
-**Commit:** 3f274ad
-**Applied fix:** Chose the review's second offered option (an explicit
-`OpCall`-specific assertion tied to the D-07-09 constraint it depends on)
-over deriving from `types[source.TypeID].Shape` directly, because it
-produces a defense that is local to `consumeCallArgument` itself and
-independently test-caught, per the review's own stated intent ("a fix
-that makes the dependency explicit and test-caught is what is wanted").
+**Files modified:** `internal/compiler/originvalidate/export_test.go`
+**Commit:** `c8c3d8f`
+**Applied fix:** Removed the extra blank line after the file's final `}` (confirmed via hex dump before/after: file previously ended `...7d0a 7d0a 0a` — `}\n}\n\n` — now ends `...7d0a 7d0a` — `}\n}\n`). File is gofmt-clean; no other content touched.
 
-- `consumeCallArgument`'s signature grew a `sourceTypeID string`
-  parameter. Both call sites (`replayStraightLine` and `replayBlocks`,
-  each already holding `source := places[operation.SourceID]` in scope)
-  now pass `source.TypeID` explicitly instead of relying on the generic,
-  not-OpCall-specific `source.TypeID == operation.TypeID` law checked
-  earlier in the same loop.
-- Inside `consumeCallArgument`, before the `v.derive` call, a new
-  `v.check(operation.TypeID == sourceTypeID, "core.type_mismatch",
-  operation.ID)` fails closed if the two ever diverge, with a comment
-  tying the assertion to D-07-09 (a function's declared return type must
-  equal its own declared parameter type) and explaining why it is not
-  redundant with the pre-existing generic check.
-- The doc comment above `consumeCallArgument` was extended to explain why
-  the equivalence is a derived consequence of two other, separately
-  checked facts (not an IR invariant of `OpCall` itself, unlike
-  `OpCopy`/`OpMove`/`OpBorrow*`), and why this function now defends it
-  locally rather than trusting the caller-side law.
-- Updated the two existing internal tests
-  (`TestConsumeCallArgumentDerivesFromOwnShapeNotRecordedAbilities`,
-  `TestConsumeCallArgumentConsumesNonCopyableFromOwnShape`) to pass the
-  new `sourceTypeID` parameter (equal to their existing `typeID`, since
-  neither test previously modeled a source/operation type divergence).
-- Added a new negative test,
-  `TestConsumeCallArgumentRefusesWhenSourceTypeDivergesFromOperationType`,
-  which drives `consumeCallArgument` directly with a deliberately
-  diverging `sourceTypeID` and asserts it is refused fail-closed (not a
-  silent consume) -- this is the "test-caught" half of the fix the review
-  asked for.
+### IN-02: `peerJoinFails`'s determinism still depends on an unenforced cross-package sort-order coincidence
 
-**Constraints honored:**
-- No shared helper, type, or constant introduced between `corevalidate`
-  and `check`; the fix is entirely local to the `corevalidate` package,
-  touching only `consumeCallArgument` and its two same-package call sites.
-- No existing test weakened or deleted. The phase-07 control registry
-  triple (`session.Phase7RequiredControls()`,
-  `scripts/verify-phase7.sh`, `session_phase7_test.go`'s
-  `controlsWithRecordedMutationKill`) was not touched and still agrees
-  (24/24 controls, verified below).
-- No fixture verdict changed: `call_argument_used_twice.lang` still
-  refuses `ownership.use_after_move`;
-  `call_argument_used_once.lang` still admits (both exercised end-to-end
-  by the full test suite and `verify-phase7.sh` below).
+**Files modified:** `testdata/phase07/call_two_fallible_callees_disagree.lang` (new), `internal/compiler/corevalidate/corevalidate_foreign_closure_test.go`, `.planning/phases/07-calls-signatures-and-call-graph-refusal/PHASE-07-DEBT.md`
+**Commit:** `590f680`
+**Applied fix:** The existing `TestPeerFailsIsClosureDerived` only exercised `joinFails`/`peerJoinFails`'s identity/equal-merge cases (a single fallible chain via `call_fallible_foreign_reach.lang`), never a genuinely disagreeing multi-callee shape where the fold's result actually depends on discovery/sort order. Added a new fixture, `call_two_fallible_callees_disagree.lang`, whose `main` calls two callees (`tracer_a`, `tracer_b`) publishing different non-empty `Fails` values (`ErrA`, `ErrB`), and a new test, `TestPeerFailsAgreesOnDisagreeingMultiCalleeJoin`, that drives it through both `originvalidate.BuildInterface` (producer) and `corevalidate.Validate`'s `PeerSignatures()` (peer) and asserts the two `Fails` values agree — confirmed both sides publish `"ErrA"` (accumulator-wins: `main` calls `tracer_a` before `tracer_b`). This makes the previously-only-documented producer/peer sort-order coincidence test-caught, per the finding's own fix suggestion.
+
+Per the project-context constraints for this fix: `corevalidate` was NOT given any new shared helper, type, or constant with `check`/`originvalidate` — the new test only *observes* agreement between the two independently-implemented sides, exactly the shape the existing `TestPeerFailsIsClosureDerived`/`TestPeerForeignReachIsClosureDerived` tests already use. `joinFails` itself was left unchanged (still deliberately not order-independent — D-07-53). A note was added to `PHASE-07-DEBT.md`'s existing D-07-53 entry (new paragraph, not an edit to the entry's existing text) stating that the producer/peer agreement is now test-caught; the debt's own scope (schema-level `Fails`-cannot-express-a-union imprecision, reopens on vocabulary/schema changes) is unchanged. No control-registry identifier was added (this finding did not warrant one), so the three-registry set-equality tests (`session.Phase7RequiredControls()`, `scripts/verify-phase7.sh`, `session_phase7_test.go`'s `controlsWithRecordedMutationKill`) required no changes and remain in sync.
 
 ## Verification
 
-All commands run against the real tree (no worktree isolation was used --
-`workflow.use_worktrees` is `false` in `.planning/config.json`, so the fix
-was edited and committed directly on `main` per the documented opt-out):
+Ran to completion, in this order, on the resulting tree:
 
-- `go build ./...` -- pass, no output.
-- `go vet ./...` -- pass, no output.
-- `go test ./... -p 1` -- all packages `ok`, including
-  `internal/compiler/corevalidate` (new/updated tests pass) and
-  `internal/compiler/session` (274s, drives the native/CLI corpus).
-- `sh scripts/verify-phase7.sh` -- exit code 0. Final lane
-  (`lane:kind-exhaustive-dispatch-phase07`) reports `status: pass` with
-  all 24 phase-07 controls present, including
-  `control:call.argument_consumed_when_noncopyable` and
-  `control:call.copyable_argument_not_consumed` (the two controls this
-  fix's derivation path feeds).
-- `git status --short go.mod go.sum` -- no output; `go.mod`/`go.sum`
-  unmodified.
+- `go build ./...` — clean, no output.
+- `go vet ./...` — clean, no output.
+- `go test ./... -p 1` — all packages pass (`ok` for every package with tests; no failures).
+- `sh scripts/verify-phase7.sh` (~8-10 min: full suite plus `go test -race ./...`, then the phase 1-7 verify-lane gates) — exit 0. All required phase-07 controls present and passing, including `control:phase07.controls_are_mutation_killed`, `control:summary.fails_closure_derived`, `control:summary.foreign_reach_closure_derived`, and the rest of the `lane:kind-exhaustive-dispatch-phase07` control set.
+- `go.mod` unmodified (not in `git status`); `go.sum` does not exist in this repository (no external dependencies) — no drift possible.
 
-## Skipped Issues
-
-None -- WR-01 was the entire in-scope finding set for this run
-(`fix_scope: critical_warning`) and it was fixed. IN-01 and IN-02 are
-Info-severity and deliberately out of scope; they were not attempted.
+No fixture's verdict changed: `call_fallible_foreign_reach.lang` and every other existing `testdata/phase07/*.lang` fixture were left untouched; the new fixture (`call_two_fallible_callees_disagree.lang`) checks and corevalidates clean by design (a witness fixture, not a refusal fixture), consistent with the file's own doc comment.
 
 ---
 
-_Fixed: 2026-09-09_
+_Fixed: 2026-09-09T20:48:58Z_
 _Fixer: Claude (gsd-code-fixer)_
 _Iteration: 1_
