@@ -53,6 +53,8 @@ func Phase7RequiredControls() []string {
 		ControlCorevalidateCyclePeerGrayReentry,
 		ControlCallGraphForeignShadowingEdgePreserved,
 		ControlPhase07ControlsAreMutationKilled,
+		ControlSummaryClosureDigestChained,
+		ControlSummaryClosureDigestReversePostorder,
 	}
 }
 
@@ -173,6 +175,25 @@ const (
 	// a self-authored registry. Killed by session_phase7_test.go's own
 	// TestPhase7ControlsAreMutationKilledMetaMutation.
 	ControlPhase07ControlsAreMutationKilled = "control:phase07.controls_are_mutation_killed"
+	// ControlSummaryClosureDigestChained names 07-08 Task 1/Task 2's
+	// D-07-12/D-07-38 claim: ClosureDigest is a real Merkle chain over
+	// callee SUMMARY digests (never a callee body), and changing a
+	// callee's own published signature changes its caller's ClosureDigest
+	// -- the only thing that closes the stale-but-self-consistent hole a
+	// per-unit hash leaves. Killed by originvalidate's
+	// TestClosureDigestEmptyCalleesMutationKilled (producer side) and
+	// corevalidate's TestPeerClosureDigestEmptyCalleesMutationKilled (peer
+	// side).
+	ControlSummaryClosureDigestChained = "control:summary.closure_digest_chained"
+	// ControlSummaryClosureDigestReversePostorder names 07-08's D-07-38
+	// ordering claim: the digest chain is computed only over a graph
+	// already proven acyclic, in an order where every callee is finished
+	// before its caller (callgraph.Order's own reverse postorder, walked
+	// backward). Killed by originvalidate's
+	// TestClosureDigestDiscoveryOrderMutationKilled (producer side) and
+	// corevalidate's TestPeerClosureDigestDiscoveryOrderMutationKilled
+	// (peer side).
+	ControlSummaryClosureDigestReversePostorder = "control:summary.closure_digest_reverse_postorder"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped

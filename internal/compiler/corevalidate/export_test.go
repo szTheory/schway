@@ -35,3 +35,21 @@ func SetDisableCalleeResolutionCheckForTest(disable bool) (restore func()) {
 	disableCalleeResolutionCheckForTest = disable
 	return func() { disableCalleeResolutionCheckForTest = previous }
 }
+
+// SetClosureDigestEmptyCalleesForTest installs 07-08 Task 2's own
+// empty-callee-pairs fault-injection seam on THIS package's independent
+// chained-digest re-derivation and returns a restore func.
+func SetClosureDigestEmptyCalleesForTest(force bool) (restore func()) {
+	previous := closureDigestEmptyCalleesForTest
+	closureDigestEmptyCalleesForTest = force
+	return func() { closureDigestEmptyCalleesForTest = previous }
+}
+
+// SetClosureDigestDiscoveryOrderForTest installs 07-08 Task 2's own
+// discovery-order (non-postorder) fault-injection seam on THIS package's
+// independent chained-digest re-derivation and returns a restore func.
+func SetClosureDigestDiscoveryOrderForTest(force bool) (restore func()) {
+	previous := closureDigestDiscoveryOrderForTest
+	closureDigestDiscoveryOrderForTest = force
+	return func() { closureDigestDiscoveryOrderForTest = previous }
+}

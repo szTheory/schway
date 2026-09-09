@@ -153,6 +153,12 @@ var controlsWithRecordedMutationKill = []string{
 	session.ControlCorevalidateCyclePeerGrayReentry,
 	session.ControlCallGraphForeignShadowingEdgePreserved,
 	session.ControlPhase07ControlsAreMutationKilled,
+	// 07-08: originvalidate_test.go's TestClosureDigestEmptyCalleesMutationKilled
+	// / TestClosureDigestDiscoveryOrderMutationKilled (producer side) and
+	// corevalidate_test's TestPeerClosureDigestEmptyCalleesMutationKilled /
+	// TestPeerClosureDigestDiscoveryOrderMutationKilled (peer side).
+	session.ControlSummaryClosureDigestChained,
+	session.ControlSummaryClosureDigestReversePostorder,
 }
 
 // phase7ControlsExactSetEqual is the completeness check's own comparison

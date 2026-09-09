@@ -138,6 +138,75 @@ func TestSummaryPeerStructuralFieldsMatchProducerAcrossCorpus(t *testing.T) {
 	}
 }
 
+// TestSummaryPeerClosureDigestMatchesProducerAcrossCorpus is 07-08 Task 2
+// Test 3: corevalidate's own independent chained-ClosureDigest
+// re-derivation (chainPeerClosureDigests, over checkCallGraphAcyclic's own
+// adjacency and postorder) equals originvalidate.BuildInterface's producer
+// digest, byte for byte, for every function whose Callable value the peer
+// and producer are already known to agree on (D-07-33's narrowed scope --
+// see TestSummaryPeerCallableAgreesOnOriginOmittedClass immediately above:
+// this test reuses the SAME scoping, since ClosureDigest is a digest over
+// the WHOLE FunctionSignature, Callable included, so a function in
+// D-07-33's already-documented, narrowed-away Callable-divergence classes
+// would trivially fail a byte-for-byte digest comparison for a reason this
+// plan does not introduce and does not own). A divergence within this
+// scope means the two independently-written preimage builders disagree,
+// which this test treats as fatal (refuses), never a silent pass. Unlike
+// structuralFieldsEqual (which deliberately excludes ClosureDigest as
+// "comparing it is circular"), THIS comparison is exactly the independent
+// evidence structuralFieldsEqual's own doc comment says a bare field
+// comparison would not be: two materially different derivations
+// (callgraph.Order's DFS vs. checkCallGraphAcyclic's own DFS) producing
+// the identical final digest.
+func TestSummaryPeerClosureDigestMatchesProducerAcrossCorpus(t *testing.T) {
+	checkedAny := false
+	for _, program := range corpusFixtures(t) {
+		producerSummary, err := originvalidate.BuildInterface(program)
+		if err != nil {
+			t.Fatalf("BuildInterface: %v", err)
+		}
+		producerByID := signatureByID(producerSummary)
+
+		result := corevalidate.Validate(program)
+		if !result.Valid {
+			if program.Module == relayEscortWitnessModule {
+				continue
+			}
+			t.Fatalf("expected a checked-clean corpus program to also corevalidate-validate, got problems: %+v", result.Problems)
+		}
+		peerByID := result.PeerSignatures()
+
+		for _, function := range program.Functions {
+			problemCode := classifyPublicationProblem(t, program, function.ID)
+			if problemCode != "" && problemCode != "core.origin_omitted" {
+				// D-07-33's narrowed-away classes: Callable itself is only
+				// ever a false agreement here, so a ClosureDigest
+				// comparison (which incorporates Callable) is not this
+				// test's claim either.
+				continue
+			}
+			checkedAny = true
+			producerSignature, ok := producerByID[function.ID]
+			if !ok {
+				t.Fatalf("function %s missing from producer summary", function.ID)
+			}
+			peerSignature, ok := peerByID[function.ID]
+			if !ok {
+				t.Fatalf("function %s missing from peer signatures -- summary peer did not run", function.ID)
+			}
+			if producerSignature.ClosureDigest == "" {
+				t.Fatalf("function %s: producer ClosureDigest is empty", function.ID)
+			}
+			if peerSignature.ClosureDigest != producerSignature.ClosureDigest {
+				t.Fatalf("function %s (problem=%q): peer ClosureDigest diverges from producer:\nproducer=%s\npeer=%s", function.ID, problemCode, producerSignature.ClosureDigest, peerSignature.ClosureDigest)
+			}
+		}
+	}
+	if !checkedAny {
+		t.Fatal("expected at least one function to be compared across the corpus")
+	}
+}
+
 // TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed is
 // 07-05 Task 2's decisive, named assertion of the
 // relayEscortWitnessModule exception above: `check` admits

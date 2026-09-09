@@ -4,6 +4,8 @@
 package corevalidate
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -124,6 +126,16 @@ type validator struct {
 	peerSignatures      map[string]core.FunctionSignature
 	peerRanStraightLine bool
 	peerRanBlocks       bool
+
+	// peerAdjacency/peerPostorder are checkCallGraphAcyclic's own byproduct
+	// (07-08, D-07-38/D-07-22): the SAME deduped adjacency it already
+	// builds to prove acyclicity, plus the raw DFS postorder (callee
+	// FINISHES before caller) its traversal already produces for free --
+	// chainPeerClosureDigests below consumes both to chain ClosureDigest
+	// over corevalidate's OWN, independently-derived route, never
+	// callgraph's or originvalidate's.
+	peerAdjacency map[string][]string
+	peerPostorder []string
 }
 
 func (v *validator) check(ok bool, code, detail string) bool {
@@ -252,6 +264,18 @@ func (v *validator) run() {
 			}
 		}
 	}
+
+	// D-07-38/D-07-12 (07-08): chain the peer's own ClosureDigest
+	// re-derivation ONLY after every function's peer signature has been
+	// recorded (v.match()'s direct call for /0-only functions, plus every
+	// pending entry's replayStraightLine/replayBlocks call above) and ONLY
+	// on the success path -- run() returns early, above, before ever
+	// reaching here, on any structural or replay problem. v.peerPostorder
+	// is populated by checkCallGraphAcyclic, so this is gated identically
+	// to that call.
+	if !disableCyclePeerForTest {
+		v.chainPeerClosureDigests()
+	}
 }
 
 // disableCyclePeerForTest is Task 3's D-07-42 independent-disable seam
@@ -335,6 +359,13 @@ func (v *validator) checkCallGraphAcyclic() bool {
 	for id := range declared {
 		adjacency[id] = nil
 	}
+	// edgeSeen dedupes a caller calling the SAME callee via more than one
+	// OpCall (07-08, D-07-38): a duplicate edge changes nothing about
+	// cycle presence, but chainPeerClosureDigests below reuses this exact
+	// adjacency to build closure-digest callee pairs, and a duplicate
+	// pair there would diverge from originvalidate's own deduped pairs
+	// (D-07-37) -- mirrors callgraph.buildAdjacency's identical dedup.
+	edgeSeen := make(map[[2]string]bool)
 	for _, function := range v.program.Functions {
 		if function.Linear == nil {
 			continue
@@ -366,6 +397,11 @@ func (v *validator) checkCallGraphAcyclic() bool {
 				}
 				return v.check(false, core.CallCalleeUnresolved, operation.CalleeID)
 			}
+			key := [2]string{function.ID, operation.CalleeID}
+			if edgeSeen[key] {
+				continue
+			}
+			edgeSeen[key] = true
 			adjacency[function.ID] = append(adjacency[function.ID], operation.CalleeID)
 		}
 	}
@@ -376,6 +412,7 @@ func (v *validator) checkCallGraphAcyclic() bool {
 	for id := range adjacency {
 		sort.Strings(adjacency[id])
 	}
+	v.peerAdjacency = adjacency
 	roots := make([]string, 0, len(adjacency))
 	for id := range adjacency {
 		roots = append(roots, id)
@@ -426,11 +463,139 @@ func (v *validator) checkCallGraphAcyclic() bool {
 				}
 			} else {
 				colorOf[top.id] = peerBlack
+				// 07-08, D-07-38: a node is appended here only once every
+				// callee it can reach has already finished (this is plain
+				// DFS postorder, callee-before-caller) -- the exact order
+				// chainPeerClosureDigests needs to chain bottom-up, free as
+				// a byproduct of the SAME traversal that already proves
+				// acyclicity, with no second pass over the graph.
+				v.peerPostorder = append(v.peerPostorder, top.id)
 				stack = stack[:len(stack)-1]
 			}
 		}
 	}
 	return v.check(true, core.CallGraphCycle, "")
+}
+
+// chainPeerClosureDigests is 07-08's own independent re-derivation of
+// D-07-38's chained ClosureDigest (D-07-12/D-07-22): it consumes
+// checkCallGraphAcyclic's OWN adjacency and postorder (never callgraph's
+// or originvalidate's -- this package imports neither), so a chaining bug
+// here is a genuine divergence from the producer, not two callers of one
+// implementation. It runs strictly after checkCallGraphAcyclic has proven
+// the whole program's call graph acyclic: the chain terminates only on a
+// DAG (D-07-38).
+//
+// v.peerPostorder already lists every function callee-before-caller (see
+// the doc comment at its append site above), so this walks it in the
+// order recorded -- no reversal needed here, unlike
+// originvalidate.BuildInterface's consumption of callgraph.Order's own
+// array (which is handed back caller-first, for Phase 08's fixpoint, and
+// must be walked backward to recover this same property).
+func (v *validator) chainPeerClosureDigests() {
+	order := v.peerPostorder
+	if closureDigestDiscoveryOrderForTest {
+		// Task 2 Test 5's own seam (D-07-41/D-07-42): chain in plain
+		// declaration order instead of the proven-correct postorder, so a
+		// caller processed before its callee reads that callee's
+		// still-empty ClosureDigest -- an observably different digest,
+		// proving the ordering is genuinely load-bearing here too, not
+		// merely on originvalidate's side.
+		order = make([]string, 0, len(v.program.Functions))
+		for _, function := range v.program.Functions {
+			order = append(order, function.ID)
+		}
+	}
+	for _, id := range order {
+		signature, ok := v.peerSignatures[id]
+		if !ok {
+			continue
+		}
+		var pairs []peerCalleeDigestPair
+		if !closureDigestEmptyCalleesForTest {
+			for _, calleeID := range v.peerAdjacency[id] {
+				pairs = append(pairs, peerCalleeDigestPair{ID: calleeID, ClosureDigest: v.peerSignatures[calleeID].ClosureDigest})
+			}
+		}
+		digest, err := peerComputeClosureDigest(signature, pairs)
+		if err != nil {
+			// Unreachable in practice (json.Marshal over a
+			// core.FunctionSignature cannot fail): fail closed by leaving
+			// this function's ClosureDigest at its zero value rather than
+			// propagating an error run() has no return path for.
+			continue
+		}
+		signature.ClosureDigest = digest
+		v.peerSignatures[id] = signature
+	}
+}
+
+// closureDigestDiscoveryOrderForTest and closureDigestEmptyCalleesForTest
+// are Task 2's own D-07-41/D-07-42 fault-injection seams for THIS
+// package's independent chained-digest re-derivation (mirroring
+// originvalidate's identically-purposed closureDigestDiscoveryOrderOverride/
+// closureDigestEmptyCalleesOverride on the producer side): unexported,
+// false by production default, restored via defer in every test that
+// engages them.
+var (
+	closureDigestDiscoveryOrderForTest bool
+	closureDigestEmptyCalleesForTest   bool
+)
+
+// closureDigestDomainSeparator duplicates
+// originvalidate.ClosureDigestDomainSeparator's exact literal value
+// (D-07-22): this package must never import originvalidate (enforced by
+// TestValidatorImportsStayIndependent), so an independent literal, kept
+// byte-identical by convention, is the only way this peer's chained
+// digest can be compared byte-for-byte against the producer's -- the same
+// "shared verbatim as an inert string constant, never a shared
+// derivation" posture core.CallGraphCycle already holds across these two
+// packages' cycle refusals.
+const closureDigestDomainSeparator = "lang.closure_digest/1\x00"
+
+// peerCalleeDigestPair mirrors originvalidate's calleeDigestPair
+// field-for-field (same JSON tags, same declaration order) so
+// json.Marshal produces byte-identical output given byte-identical
+// values -- this package's own independent implementation of the SAME
+// preimage shape (D-07-37), never a shared type.
+type peerCalleeDigestPair struct {
+	ID            string `json:"id"`
+	ClosureDigest string `json:"closure_digest"`
+}
+
+func peerSortCalleeDigestPairs(pairs []peerCalleeDigestPair) []peerCalleeDigestPair {
+	sorted := append([]peerCalleeDigestPair(nil), pairs...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].ID < sorted[j].ID })
+	return sorted
+}
+
+// peerClosureDigestPreimageBytes independently re-derives
+// originvalidate.closureDigestPreimageBytes' exact preimage shape
+// (domain separator, then signature with ClosureDigest zeroed, then
+// callee pairs sorted by ID) by this package's own route.
+func peerClosureDigestPreimageBytes(signature core.FunctionSignature, callees []peerCalleeDigestPair) ([]byte, error) {
+	signature.ClosureDigest = ""
+	payload := struct {
+		Signature core.FunctionSignature `json:"signature"`
+		Callees   []peerCalleeDigestPair `json:"callees"`
+	}{Signature: signature, Callees: peerSortCalleeDigestPairs(callees)}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	preimage := make([]byte, 0, len(closureDigestDomainSeparator)+len(body))
+	preimage = append(preimage, []byte(closureDigestDomainSeparator)...)
+	preimage = append(preimage, body...)
+	return preimage, nil
+}
+
+func peerComputeClosureDigest(signature core.FunctionSignature, callees []peerCalleeDigestPair) (string, error) {
+	preimage, err := peerClosureDigestPreimageBytes(signature, callees)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(preimage)
+	return "sha256:" + hex.EncodeToString(sum[:]), nil
 }
 
 // matchBranch validates a match function whose arms carry linear bodies. It

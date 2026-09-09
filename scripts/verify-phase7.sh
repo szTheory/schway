@@ -123,7 +123,9 @@ for control in \
 	control:corevalidate.cycle_peer_independent \
 	control:corevalidate.cycle_peer_gray_reentry \
 	control:callgraph.foreign_shadowing_edge_preserved \
-	control:phase07.controls_are_mutation_killed
+	control:phase07.controls_are_mutation_killed \
+	control:summary.closure_digest_chained \
+	control:summary.closure_digest_reverse_postorder
 do
 	grep -q "$control" "$verify_tmp/phase07.json" || { echo "phase07 verify: required Phase 07 control missing: $control" >&2; exit 1; }
 done
