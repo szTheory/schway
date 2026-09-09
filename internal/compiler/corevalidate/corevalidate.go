@@ -923,6 +923,13 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	for _, fn := range v.program.Functions {
 		declaredFunctionIDs[fn.ID] = true
 	}
+	// functionByID backs the NEW (07-05 Task 3) Callable refusal below: the
+	// callee's own core.Function value, from this program's own function
+	// set, is peerCallable's only input -- never check's signature table.
+	functionByID := make(map[string]core.Function, len(v.program.Functions))
+	for _, fn := range v.program.Functions {
+		functionByID[fn.ID] = fn
+	}
 	initialized := map[string]bool{function.Parameter.ID: true}
 	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
@@ -1058,6 +1065,18 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			if !v.check(disableCalleeResolutionCheckForTest || declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
 				return false
 			}
+			// 07-05 Task 3/D-07-34: corevalidate's OWN, independently
+			// re-derived half of SEM-06 -- peerCallable (D-07-33's narrowed
+			// re-derivation, 07-02), consulted here on the CALLEE'S OWN
+			// core.Function value from this program's own function set,
+			// never on check's signature table and never by asking check.
+			// See verifyCallableRefusal (check.go) for the other, separate
+			// derivation of this exact fact.
+			if callee, ok := functionByID[operation.CalleeID]; ok {
+				if !v.check(peerCallable(&callee), core.CalleeNotCallable, operation.CalleeID) {
+					return false
+				}
+			}
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
 			}
@@ -1164,6 +1183,11 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	declaredFunctionIDs := make(map[string]bool, len(v.program.Functions))
 	for _, fn := range v.program.Functions {
 		declaredFunctionIDs[fn.ID] = true
+	}
+	// See replayStraightLine's identical declaration (07-05 Task 3/D-07-34).
+	functionByID := make(map[string]core.Function, len(v.program.Functions))
+	for _, fn := range v.program.Functions {
+		functionByID[fn.ID] = fn
 	}
 	for _, block := range linear.Blocks {
 		for index, opID := range block.OperationIDs {
@@ -1290,6 +1314,12 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			}
 			if !v.check(disableCalleeResolutionCheckForTest || declaredFunctionIDs[operation.CalleeID], core.CallCalleeUnresolved, operation.CalleeID) {
 				return false
+			}
+			// See replayStraightLine's identical case (07-05 Task 3/D-07-34).
+			if callee, ok := functionByID[operation.CalleeID]; ok {
+				if !v.check(peerCallable(&callee), core.CalleeNotCallable, operation.CalleeID) {
+					return false
+				}
 			}
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false

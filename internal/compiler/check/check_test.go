@@ -16,6 +16,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
@@ -2386,5 +2387,134 @@ func TestRelayEscortWitnessBothFunctionsAreCallable(t *testing.T) {
 	}
 	if found != 2 {
 		t.Fatalf("expected 2 functions (relay, escort), got %d", found)
+	}
+}
+
+// TestCallAdmissionBodyBlindControl is Task 3 Tests 1-2 (D-07-41/D-07-42,
+// SEM-05's structural claim made falsifiable): across every
+// testdata/phase07 fixture containing a call, verifyCallableRefusal's
+// admission arm consults ONLY the signature table for a callee -- never a
+// body value -- at the production default. Engaging
+// verifyCallableRefusalBodyReadSeam proves the SAME instrumentation would
+// have caught it: the body-read observer fires at least once, exactly the
+// condition this test's own zero-invocations assertion exists to detect.
+// Restoring the seam (via defer) restores the zero-invocations guarantee.
+func TestCallAdmissionBodyBlindControl(t *testing.T) {
+	defer func() {
+		verifyCallableRefusalBodyReadSeam = false
+		calleeBodyReadObserved = nil
+	}()
+
+	fixtures := []string{"call_basic.lang", "call_from_both_match_arms.lang", "relay_escort_witness.lang"}
+	for _, fixture := range fixtures {
+		t.Run(fixture, func(t *testing.T) {
+			source := readPhase07Fixture(t, fixture)
+
+			// Production default: zero body reads.
+			var bodyReads int
+			calleeBodyReadObserved = func(string) { bodyReads++ }
+			result := Program(mustParseProgram(t, source))
+			calleeBodyReadObserved = nil
+			if len(result.Diagnostics) != 0 {
+				t.Fatalf("expected the fixture to check clean, got %+v", result.Diagnostics)
+			}
+			if bodyReads != 0 {
+				t.Fatalf("expected 0 body reads at the production default, got %d", bodyReads)
+			}
+
+			// The fault: engaging the body-read seam makes the SAME
+			// instrumentation observe at least one body read -- proving the
+			// zero-invocations assertion above would have gone red had the
+			// production code actually taken this path.
+			bodyReads = 0
+			calleeBodyReadObserved = func(string) { bodyReads++ }
+			verifyCallableRefusalBodyReadSeam = true
+			Program(mustParseProgram(t, source))
+			verifyCallableRefusalBodyReadSeam = false
+			calleeBodyReadObserved = nil
+			if bodyReads == 0 {
+				t.Fatal("expected the body-read seam to make at least one body read observable")
+			}
+		})
+	}
+}
+
+// TestVerifyCallableRefusalSeamAdmitsUncallableCallee is Task 3 Test 3
+// (QLT-08, D-07-41/D-07-42): with verifyCallableRefusalSeam engaged,
+// call_uncallable_callee.lang -- refused at the production default -- is
+// wrongly admitted (zero diagnostics). Restoring the seam restores the
+// refusal.
+func TestVerifyCallableRefusalSeamAdmitsUncallableCallee(t *testing.T) {
+	defer func() { verifyCallableRefusalSeam = false }()
+	source := readPhase07Fixture(t, "call_uncallable_callee.lang")
+
+	verifyCallableRefusalSeam = true
+	seamResult := Program(mustParseProgram(t, source))
+	if len(seamResult.Diagnostics) != 0 {
+		t.Fatalf("expected the seam to admit the call, got %+v", seamResult.Diagnostics)
+	}
+
+	verifyCallableRefusalSeam = false
+	restored := Program(mustParseProgram(t, source))
+	if len(restored.Diagnostics) != 1 || restored.Diagnostics[0].Code != core.CalleeNotCallable {
+		t.Fatalf("expected %s restored once the seam is disengaged, got %+v", core.CalleeNotCallable, restored.Diagnostics)
+	}
+}
+
+// TestVerifyCallableRefusalRefusesUnpopulatedTableEntry is Task 3 Test 4
+// (D-07-09): a callee whose signature-table entry was never populated (a
+// synthetic gap, simulating a table-build failure or a callee the table
+// forgot) is refused, never admitted -- absence is the refusing case.
+func TestVerifyCallableRefusalRefusesUnpopulatedTableEntry(t *testing.T) {
+	functions := verifyCallInvariantsFunctions("s1:test:fn:callee")
+	// The zero-value table: no entries at all. A callee ID that is a real,
+	// resolvable function (per verifyCallInvariants' own fixture) but
+	// simply absent from THIS table must still be refused.
+	got := verifyCallableRefusal(functions, callSignatureTable{})
+	if got == nil || got.Code != core.CalleeNotCallable {
+		t.Fatalf("expected %s for an unpopulated table entry, got %+v", core.CalleeNotCallable, got)
+	}
+}
+
+// TestVerifyCallableRefusalAcceptsPopulatedCallableEntry is the accepting
+// counterpart: a table entry that IS present and Callable admits the call.
+func TestVerifyCallableRefusalAcceptsPopulatedCallableEntry(t *testing.T) {
+	functions := verifyCallInvariantsFunctions("s1:test:fn:callee")
+	table := callSignatureTable{entries: map[string]core.FunctionSignature{
+		"s1:test:fn:callee": {ID: "s1:test:fn:callee", Callable: true},
+	}}
+	if got := verifyCallableRefusal(functions, table); got != nil {
+		t.Fatalf("expected no refusal for a populated, Callable entry, got %+v", got)
+	}
+}
+
+// TestVerifyCallableRefusalSeamCheckDisabledCorevalidateStillRefuses is
+// Task 3 Test 5's "check disabled, corevalidate still refuses" half
+// (D-07-34's two-peer discipline): with check's OWN admission arm
+// disabled (verifyCallableRefusalSeam engaged), call_uncallable_callee.lang
+// is admitted by check -- but the resulting core.Program is
+// INDEPENDENTLY still refused by corevalidate's own peerCallable-based
+// admission arm (07-05 Task 3), which never consults check's table or its
+// seam at all.
+func TestVerifyCallableRefusalSeamCheckDisabledCorevalidateStillRefuses(t *testing.T) {
+	defer func() { verifyCallableRefusalSeam = false }()
+	verifyCallableRefusalSeam = true
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "call_uncallable_callee.lang")))
+	verifyCallableRefusalSeam = false
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected check's seam to admit the call, got %+v", result.Diagnostics)
+	}
+	coreResult := corevalidate.Validate(result.Program)
+	if coreResult.Valid {
+		t.Fatal("expected corevalidate to independently still refuse, got Valid == true")
+	}
+	found := false
+	for _, problem := range coreResult.Problems {
+		if problem.Code == core.CalleeNotCallable {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected %s, got %+v", core.CalleeNotCallable, coreResult.Problems)
 	}
 }

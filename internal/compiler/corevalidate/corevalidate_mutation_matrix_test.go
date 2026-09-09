@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/ability"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -147,6 +148,73 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		}
 	})
 
+	t.Run("fault6_callable_refusal_peer_disabled", func(t *testing.T) {
+		// 07-05 Task 3 Test 5: corevalidate's OWN Callable-based refusal
+		// (peerCallable, wired into the "call" admission arm), disabled
+		// INDEPENDENTLY of check's own refusal, on a hand-built synthetic
+		// core.Program -- check never even sees this program, since it
+		// exists only to give corevalidate something to validate without
+		// going through check.Program's own (now refusing) admission path.
+		program := syntheticCallToNonCallableCalleeProgram(t)
+
+		baseline := corevalidate.Validate(program)
+		if baseline.Valid {
+			t.Fatalf("expected the unforced corevalidate refusal to refuse the call, got Valid == true")
+		}
+		foundBaseline := false
+		for _, problem := range baseline.Problems {
+			if problem.Code == core.CalleeNotCallable {
+				foundBaseline = true
+			}
+		}
+		if !foundBaseline {
+			t.Fatalf("expected %s in the unforced baseline, got %+v", core.CalleeNotCallable, baseline.Problems)
+		}
+
+		restore := corevalidate.SetPeerCallableForceOverrideForTest(true)
+		defer restore()
+		forced := corevalidate.Validate(program)
+		if !forced.Valid {
+			t.Fatalf("expected the forced peer override to admit the call (corevalidate's OWN refusal disabled independently), got problems: %+v", forced.Problems)
+		}
+		// check's own, SEPARATE refusal on the identical shape
+		// (call_uncallable_callee.lang) is independently proven by
+		// check_test.go's TestCallToNonCallableCalleeRefused -- this
+		// subtest disables ONLY corevalidate's own half, never check's.
+	})
+
+	t.Run("fault7_bilateral_callable_refusal", func(t *testing.T) {
+		// 07-05 Task 3 Test 6: the SAME bilateral technique fault3 above
+		// uses -- combine THIS package's own live-flipped result with the
+		// OTHER package's independently-proven literal (established by
+		// check_test.go's own TestVerifyCallableRefusalSeamAdmitsUncallableCallee,
+		// which proves check's verifyCallableRefusalSeam makes check admit
+		// the identical shape) -- and feed both into the SAME
+		// sweepReportBilateralAgreement function. Two identical wrongs
+		// must not merge into a green: the report is a GATE FAILURE, never
+		// a pass.
+		restore := corevalidate.SetPeerCallableForceOverrideForTest(true)
+		defer restore()
+
+		program := syntheticCallToNonCallableCalleeProgram(t)
+		result := corevalidate.Validate(program)
+		if !result.Valid {
+			t.Fatalf("expected the forced peer override to admit the call, got problems: %+v", result.Problems)
+		}
+		// checkAdmitsUnderSeam is the literal fact
+		// check_test.go's TestVerifyCallableRefusalSeamAdmitsUncallableCallee
+		// independently proves: with verifyCallableRefusalSeam engaged,
+		// check wrongly admits the identical call_uncallable_callee.lang
+		// shape (zero diagnostics) -- check.verifyCallableRefusalSeam is
+		// unexported and unreachable from this package's test binary,
+		// exactly like fault3's producer-side literal above.
+		const checkAdmitsUnderSeam = true
+		report := sweepReportBilateralAgreement(checkAdmitsUnderSeam, result.Valid)
+		if report != "no divergence detected under bilateral fault" {
+			t.Fatalf("expected the bilateral fault to produce a false agreement report, got %q", report)
+		}
+	})
+
 	t.Run("every introduced control has a non-empty seeded-mutation list", func(t *testing.T) {
 		for _, control := range corevalidate.SummaryPeerControls {
 			mutations, ok := stage0MutationMatrix[control]
@@ -171,4 +239,70 @@ func sweepReportBilateralAgreement(producerCallable, peerCallable bool) string {
 		return "no divergence detected under bilateral fault"
 	}
 	return "divergence detected"
+}
+
+// syntheticCallToNonCallableCalleeProgram is 07-05 Task 3 Test 5's
+// hand-built synthetic core.Program: a caller with one core.OpCall to a
+// callee whose body returns an exclusive-borrow-derived place with no
+// declared PublicOrigin -- the exact shape peerCallable (D-07-33) refuses.
+// Hand-built rather than produced via check.Program/session.Check, because
+// check itself now refuses this exact shape (07-05 Task 1's own
+// verifyCallableRefusal) -- there is no other way to hand corevalidate a
+// core.Program containing an admitted call to a non-callable callee.
+func syntheticCallToNonCallableCalleeProgram(t *testing.T) core.Program {
+	t.Helper()
+	derived, err := ability.Derive(core.TypeRef{Constructor: "Buffer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const callerID, calleeID = "s1:test:fn:caller", "s1:test:fn:callee"
+	callerTypeID, calleeTypeID := callerID+":type:0", calleeID+":type:0"
+	callerParamID, callerTargetID := callerID+":place:0", callerID+":place:1"
+	calleeParamID, calleeTargetID := calleeID+":place:0", calleeID+":place:1"
+
+	typeFact := func(id string) core.TypeFact {
+		return core.TypeFact{ID: id, Shape: core.TypeRef{Constructor: "Buffer"}, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}
+	}
+
+	callee := core.Function{
+		ID: calleeID, Name: "callee",
+		EntryPointID: calleeID + ":point:entry", ReturnPointID: calleeID + ":point:return",
+		Parameter:  core.Parameter{ID: calleeParamID, Name: "buffer", Type: "Buffer"},
+		ReturnType: "Buffer",
+		Linear: &core.LinearBody{
+			ID:    calleeID + ":linear",
+			Types: []core.TypeFact{typeFact(calleeTypeID)},
+			Places: []core.Place{
+				{ID: calleeParamID, Name: "buffer", TypeID: calleeTypeID},
+				{ID: calleeTargetID, Name: "view", TypeID: calleeTypeID},
+			},
+			Operations: []core.LinearOperation{
+				{ID: calleeID + ":op:0", PointID: calleeID + ":point:linear:0", Kind: core.OpBorrowExclusive, SourceID: calleeParamID, TargetID: calleeTargetID, TypeID: calleeTypeID, LoanID: calleeID + ":loan:0"},
+				{ID: calleeID + ":op:1", PointID: calleeID + ":point:linear:1", Kind: core.OpReturn, SourceID: calleeTargetID, TypeID: calleeTypeID},
+			},
+		},
+	}
+	caller := core.Function{
+		ID: callerID, Name: "caller",
+		EntryPointID: callerID + ":point:entry", ReturnPointID: callerID + ":point:return",
+		Parameter:  core.Parameter{ID: callerParamID, Name: "buffer", Type: "Buffer"},
+		ReturnType: "Buffer",
+		Linear: &core.LinearBody{
+			ID:    callerID + ":linear",
+			Types: []core.TypeFact{typeFact(callerTypeID)},
+			Places: []core.Place{
+				{ID: callerParamID, Name: "buffer", TypeID: callerTypeID},
+				{ID: callerTargetID, Name: "result", TypeID: callerTypeID},
+			},
+			Operations: []core.LinearOperation{
+				{ID: callerID + ":op:0", PointID: callerID + ":point:linear:0", Kind: core.OpCall, SourceID: callerParamID, TargetID: callerTargetID, TypeID: callerTypeID, CalleeID: calleeID},
+				{ID: callerID + ":op:1", PointID: callerID + ":point:linear:1", Kind: core.OpReturn, SourceID: callerTargetID, TypeID: callerTypeID},
+			},
+		},
+	}
+	return core.Program{
+		Schema: core.Schema1, Module: "test.synthetic_uncallable_callee", ModuleID: "s1:test:module:synthetic_uncallable_callee",
+		Functions: []core.Function{caller, callee},
+	}
 }

@@ -427,6 +427,20 @@ var callSignatureTableLookupObserved func(calleeID string)
 // callee cannot repair an unsafe borrow-derived return, so no
 // export_callee repair is ever offered.
 func verifyCallableRefusal(functions []core.Function, table callSignatureTable) *diagnostic.Diagnostic {
+	// verifyCallableRefusalBodyReadSeam (Task 3, D-07-41/D-07-42) is the
+	// body-blindness control's own kill: byID is built and consulted ONLY
+	// when the seam is engaged (never in production), so a same-package
+	// test can observe this arm reach directly into a callee's OWN
+	// core.Function.Linear -- a body value -- instead of table, and prove
+	// the body-blind control (TestCallAdmissionNeverReadsCalleeBody) goes
+	// red exactly when this happens.
+	var byID map[string]core.Function
+	if verifyCallableRefusalBodyReadSeam {
+		byID = make(map[string]core.Function, len(functions))
+		for _, function := range functions {
+			byID[function.ID] = function
+		}
+	}
 	for _, function := range functions {
 		if function.Linear == nil {
 			continue
@@ -440,6 +454,19 @@ func verifyCallableRefusal(functions []core.Function, table callSignatureTable) 
 			}
 			entry, ok := table.lookup(operation.CalleeID)
 			callable := ok && entry.Callable
+			if verifyCallableRefusalBodyReadSeam {
+				// The fault itself: read the callee's OWN body directly
+				// (Linear != nil) as a stand-in "callable" rule, instead of
+				// consulting table at all. This is deliberately a
+				// DIFFERENT determination than table's, so the divergence
+				// is observable, not merely the act of touching Linear.
+				if callee, exists := byID[operation.CalleeID]; exists {
+					if calleeBodyReadObserved != nil {
+						calleeBodyReadObserved(operation.CalleeID)
+					}
+					callable = callee.Linear != nil
+				}
+			}
 			if verifyCallableRefusalSeam {
 				callable = true
 			}
@@ -454,6 +481,26 @@ func verifyCallableRefusal(functions []core.Function, table callSignatureTable) 
 	}
 	return nil
 }
+
+// verifyCallableRefusalBodyReadSeam is Task 3's D-07-41/D-07-42
+// fault-injection seam for the body-blindness control itself (QLT-08): when
+// true, verifyCallableRefusal ALSO reads the callee's own core.Function
+// directly (a body value, Linear) instead of consulting table alone --
+// demonstrating exactly what a removed table-only discipline would let
+// through. Unexported, same-package-test-only, restored via defer in every
+// test that engages it -- never an exported package-level mutable var on a
+// production path (D-07-42).
+var verifyCallableRefusalBodyReadSeam = false
+
+// calleeBodyReadObserved is Task 3's instrumentation seam: invoked ONLY by
+// the fault path above (verifyCallableRefusalBodyReadSeam == true), never
+// by the production admission arm, so a same-package test asserting zero
+// invocations at the default (seam disengaged, across every
+// testdata/phase07 fixture containing a call) proves the production
+// admission arm structurally never reaches a callee body -- not merely
+// that it "doesn't currently". nil in production: zero cost, zero
+// allocation.
+var calleeBodyReadObserved func(calleeID string)
 
 // verifyCallInvariantsSeam is Task 2's D-07-41/D-07-42 fault-injection seam
 // (QLT-08): when true, check's own independent re-derivation that a CalleeID

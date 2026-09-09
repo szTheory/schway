@@ -112,7 +112,9 @@ done
 for control in \
 	control:kind.exhaustive_dispatch.phase07_in_process \
 	control:kind.exhaustive_dispatch.phase07_lane \
-	control:dispatch.recognized_not_executed
+	control:dispatch.recognized_not_executed \
+	control:call.admission_body_blind \
+	control:call.callable_refusal
 do
 	grep -q "$control" "$verify_tmp/phase07.json" || { echo "phase07 verify: required Phase 07 control missing: $control" >&2; exit 1; }
 done

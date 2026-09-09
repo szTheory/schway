@@ -42,6 +42,8 @@ func Phase7RequiredControls() []string {
 		ControlKindExhaustiveDispatchPhase07InProcess,
 		ControlKindExhaustiveDispatchPhase07Lane,
 		ControlDispatchRecognizedNotExecuted,
+		ControlCallAdmissionBodyBlind,
+		ControlCallCallableRefusal,
 	}
 }
 
@@ -69,6 +71,32 @@ const (
 	// load-bearing: folding core.OpCall into a grouped copy/move/borrow arm
 	// makes it go red.
 	ControlDispatchRecognizedNotExecuted = "control:dispatch.recognized_not_executed"
+	// ControlCallAdmissionBodyBlind names 07-05 Task 3's SEM-05 structural
+	// claim, made falsifiable rather than asserted: check's "call"
+	// admission arm (verifyCallableRefusal) never reaches a callee's own
+	// core.Function.Linear/Match -- only the pre-body signature table
+	// (D-07-34). Killed by check_test.go's own
+	// TestCallAdmissionBodyBlindControl (the body-read seam) -- an
+	// in-process Go-test proof, same category as
+	// ControlDispatchRecognizedNotExecuted above. This lane's own two
+	// fixtures (both Callable) exercise the SAME production admission arm
+	// through a real CLI path with zero divergence, but neither fixture
+	// contains a REFUSED call -- declared here, never implied, exactly
+	// like A-02's cgen declaration above.
+	ControlCallAdmissionBodyBlind = "control:call.admission_body_blind"
+	// ControlCallCallableRefusal names 07-05 Task 3's SEM-06 two-peer
+	// discipline: a call to a non-publishable callee (Callable == false,
+	// D-04-03) is refused independently at BOTH check (the signature
+	// table's Callable consult) and corevalidate (peerCallable, D-07-33's
+	// narrowed re-derivation), with the bilateral case failing the gate
+	// rather than passing it. Killed by check_test.go's
+	// TestVerifyCallableRefusalSeamAdmitsUncallableCallee and
+	// corevalidate_mutation_matrix_test.go's fault6/fault7 subtests --
+	// in-process Go-test proofs. Declared, not implied: this lane's own
+	// fixtures contain no refused call (both are Callable), so the lane
+	// exercises the CONSULTING mechanism (with a permitting verdict), not
+	// the refusing branch.
+	ControlCallCallableRefusal = "control:call.callable_refusal"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped
