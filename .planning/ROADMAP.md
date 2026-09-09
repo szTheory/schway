@@ -269,6 +269,10 @@ Plans:
 
 - [x] 07-08-PLAN.md — Stage 0c (deferred by D-07-38): `ClosureDigest` chained over callee summary digests in reverse postorder, **after** acyclicity is proven
 
+**Wave 1 (gap closure — from 07-VERIFICATION.md `gaps_found`)**
+
+- [ ] 07-09-PLAN.md — Gap closure: argument-type-vs-declared-parameter-type refusal in `resolveCallBinding`, an independently-derived `corevalidate` peer, `OpCall`'s `TargetID.TypeID` derived from the callee's declared return type, `call_type_mismatch.lang`, and two new mutation-killed controls
+
 **Declared scope-cut trigger (D-07-26):** if `07-01`..`07-05` exceed ~2x their
 initial plan estimate, `07-06`/`07-07` renegotiate out to Phase 08 — **and
 `07-08` goes with them**, because D-07-38 orders digest chaining strictly behind
