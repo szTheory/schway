@@ -259,7 +259,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 07-06-PLAN.md — Stage 2a: the `internal/compiler/callgraph` package, `core.call_graph_cycle` with deterministic witness selection, and the diamond/shared-leaf corpus that kills the gray-vs-visited mutation
+- [x] 07-06-PLAN.md — Stage 2a: the `internal/compiler/callgraph` package, `core.call_graph_cycle` with deterministic witness selection, and the diamond/shared-leaf corpus that kills the gray-vs-visited mutation
 
 **Wave 7** *(blocked on Wave 6 completion)*
 

@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 07
 current_phase_name: Calls, Signatures, and Call-Graph Refusal
 status: executing
-stopped_at: Completed 07-05-PLAN.md
-last_updated: "2026-09-09T00:36:35.520Z"
+stopped_at: Completed 07-06-PLAN.md
+last_updated: "2026-09-09T01:38:08.137Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 07 execution started
-state_head: 20b0a520c4d377d9c6244eace08272b4a21ac6ff
+state_head: 1e56983303248858fb87deed319a700251a62e24
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-09-08 — Phase 07 execution started
 
@@ -149,6 +149,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 07 P03 | 55 min | 3 tasks | 16 files |
 | Phase 07 P04 | ~70 min | 3 tasks | 14 files |
 | Phase 07 P05 | ~140min | 3 tasks | 10 files |
+| Phase 07 P06 | 95min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -173,6 +174,7 @@ Standing architectural commitments carried into M002:
 - [Phase 07]: core.LinearOperation.CalleeID added additive+omitempty per D-07-29; the parser change and the foreign-bare-call refusal relocation to check (D-07-40) landed together in Task 1 since they are inseparable within one green commit.
 - [Phase 07]: 07-04: phase07 lane fires all three Phase 07 controls (phase07_in_process, phase07_lane, dispatch.recognized_not_executed) since the lane's own fixtures genuinely re-prove all three claims through the CLI path; cmd/lang main.go isPhase7Corpus dispatch added as Rule 3 blocking fix (not in plan's files_modified) since the lane is not CLI-observable without it
 - [Phase 07]: 07-05: check.Program builds an immutable post-body signature table (reusing core.FunctionSignature, structurally body-free) and refuses a call to a non-Callable callee with core.callee_not_callable; corevalidate independently re-derives the same refusal via peerCallable. Discovered relay_escort_witness.lang checks clean while corevalidate refuses (core.move_while_borrowed) -- the interprocedural half of D-03-02, left open for Phase 08/09. — Two genuinely independent SEM-06 derivations (check's table consult, corevalidate's own peerCallable) satisfy QLT-08 without collapsing to one derivation read twice; the D-03-02 divergence is documented as a named, tested finding rather than hidden.
+- [Phase 07]: 07-06: callgraph.Order (iterative white/gray/black DFS, no native recursion, roots = all declared functions, edges from CalleeID only) wired into check before it returns a core.Program; canonical rotation plus cross-cycle lexicographically-smallest witness selection makes the core.call_graph_cycle diagnostic ID deterministic regardless of discovery order (D-07-16/D-07-43); diagnostic bounded at 32 cycle_member causes while the traversal itself stays unbounded; spans projected from OpCall operation IDs via new check-side emission bookkeeping, no Span added to core.LinearOperation (D-07-35); three fault-injection seams (gray-vs-visited, self-edge, unresolved-edge-drop) each independently mutation-killed against a diamond/shared-leaf corpus a chain fixture could never kill.
 
 ### Pending Todos
 
@@ -243,8 +245,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-09T00:36:35.506Z
-Stopped at: Completed 07-05-PLAN.md
+Last session: 2026-09-09T01:37:43.953Z
+Stopped at: Completed 07-06-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
