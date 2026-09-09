@@ -1,0 +1,34 @@
+// The standing negative control for 07-VERIFICATION.md's PVG-01 and
+// 07-REVIEW.md's CR-01. Before 07-11, this program was admitted
+// `status: pass`, exit 0, zero diagnostics, by BOTH `check` and
+// `corevalidate`: the call boundary neither moved nor copy-checked its
+// argument, so the same non-copyable `Buffer` could be passed by value to
+// two separate calls with no refusal at all.
+//
+// The refusal below is an OWNERSHIP refusal, not a type refusal (both
+// calls' argument and parameter types match) and not a callability
+// refusal (`identity` is callable -- it has no problems reported by
+// originvalidate.PublishProblemsFor). The matched non-call control -- the
+// identical double use written as plain bindings -- has always been
+// refused with ownership.transfer_requires_take; this fixture proves the
+// same law now reaches the call boundary too, via the EXISTING
+// ownership.use_after_move gate.
+//
+// This fixture must NEVER be added to any list that expects a clean
+// check, in the same way cycle_self.lang never is.
+
+module phase07.call_argument_used_twice
+
+export {
+  fn main
+}
+
+fn identity(value: Buffer) -> Buffer {
+  value
+}
+
+fn main(buffer: Buffer) -> Buffer {
+  let first = identity(buffer)
+  let second = identity(buffer)
+  second
+}

@@ -3384,6 +3384,16 @@ func TestCallArgumentTypeCheckMutationKilled(t *testing.T) {
 	}
 
 	callArgumentTypeCheckSeam = false
+	// 07-11: the first (seam-engaged) call above admitted a non-copyable
+	// (Buffer) argument, which the new consume rule move-marked as a side
+	// effect of admission -- unrelated to the argument-type gate this test
+	// isolates. Reset the place's move state before the second call so
+	// that call exercises the argument-type gate itself, not the
+	// unrelated use-after-move gate the first call's consume left behind.
+	places["value"].initialized = true
+	places["value"].movedAt = nil
+	places["value"].moveTargetID = ""
+	places["value"].moveTargetName = ""
 	_, _, restored := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
 	if restored == nil || restored.Code != checkCallArgumentTypeMismatch {
 		t.Fatalf("expected %s restored once the seam is disengaged, got %+v", checkCallArgumentTypeMismatch, restored)
@@ -3420,6 +3430,13 @@ func TestCallReturnTypeDerivationMutationKilled(t *testing.T) {
 	}
 
 	callReturnTypeDerivationSeam = false
+	// 07-11: typeFact here is Byte (copyable), so the consume rule does not
+	// move-mark "value" -- included for parity with the sibling test above,
+	// which does need the reset because its typeFact is Buffer.
+	places["value"].initialized = true
+	places["value"].movedAt = nil
+	places["value"].moveTargetID = ""
+	places["value"].moveTargetName = ""
 	restoredOp, restoredTarget, restoredDiag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
 	if restoredDiag != nil {
 		t.Fatalf("expected admission once restored, got %+v", restoredDiag)
@@ -3430,4 +3447,206 @@ func TestCallReturnTypeDerivationMutationKilled(t *testing.T) {
 	if restoredOp.TypeID == "s1:m:fn:main:type:9" {
 		t.Fatal("expected the restored derivation to differ from the seam's, proving the seam is load-bearing")
 	}
+}
+
+// TestCallConsumesNoncopyableArgument is 07-11 Task 1's Test 1 (the gap)
+// and Test 4 (both call paths). It first proves
+// call_argument_used_twice.lang -- 07-VERIFICATION.md PVG-01 /
+// 07-REVIEW.md CR-01's standing negative control -- is refused with
+// exactly one ownership.use_after_move diagnostic whose Primary span is
+// the SECOND call site and whose ordered causes are moved_here (the FIRST
+// call site) / place / transfer_target. It then proves the identical
+// double-consume, expressed inside a match arm so it runs through
+// analyzeArmBody rather than analyzeStraightLine, is refused identically
+// -- the law reaches both call paths through the one shared resolver,
+// never a duplicated copy.
+func TestCallConsumesNoncopyableArgument(t *testing.T) {
+	t.Run("straight_line", func(t *testing.T) {
+		source := readPhase07Fixture(t, "call_argument_used_twice.lang")
+		parsed := mustParseProgram(t, source)
+		result := Program(parsed)
+		if len(result.Diagnostics) != 1 {
+			t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
+		}
+		diag := result.Diagnostics[0]
+		if diag.Code != "ownership.use_after_move" {
+			t.Fatalf("expected ownership.use_after_move, got %s (%+v)", diag.Code, diag)
+		}
+		var mainFunc ast.FuncDecl
+		for _, function := range parsed.Funcs {
+			if function.Name == "main" {
+				mainFunc = function
+			}
+		}
+		if mainFunc.Body.Linear == nil || len(mainFunc.Body.Linear.Bindings) != 2 {
+			t.Fatalf("expected main's straight-line body to carry exactly two bindings, got %+v", mainFunc.Body.Linear)
+		}
+		firstCallSpan := mainFunc.Body.Linear.Bindings[0].RHS.Span
+		secondCallSpan := mainFunc.Body.Linear.Bindings[1].RHS.Span
+		if diag.Primary != secondCallSpan {
+			t.Fatalf("expected Primary span to be the second call site %+v, got %+v", secondCallSpan, diag.Primary)
+		}
+		if len(diag.Causes) != 3 {
+			t.Fatalf("expected three ordered causes (moved_here/place/transfer_target), got %+v", diag.Causes)
+		}
+		if diag.Causes[0].Kind != "moved_here" || diag.Causes[0].Span == nil || *diag.Causes[0].Span != firstCallSpan {
+			t.Fatalf("expected the first cause to be moved_here pointing at the first call site %+v, got %+v", firstCallSpan, diag.Causes[0])
+		}
+		if diag.Causes[1].Kind != "place" {
+			t.Fatalf("expected the second cause to be place, got %+v", diag.Causes[1])
+		}
+		if diag.Causes[2].Kind != "transfer_target" {
+			t.Fatalf("expected the third cause to be transfer_target, got %+v", diag.Causes[2])
+		}
+	})
+
+	t.Run("match_arm", func(t *testing.T) {
+		// Drives analyzeArmBody directly (rather than through a .lang
+		// fixture) since this language surface has no data type carrying
+		// a Buffer-typed field to route a non-copyable value into a match
+		// arm's own bindings -- the direct-call technique this file's
+		// mutation-kill tests already use for the same reason.
+		typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Buffer"}}
+		contracts := map[string]calleeContract{
+			"identity": {ID: "s1:m:fn:identity", ParameterType: "Buffer", ReturnType: "Buffer"},
+		}
+		body := &ast.LinearBody{
+			Bindings: []ast.Binding{
+				{Name: "first", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"buffer"}, Span: diagnostic.Span{Start: 10, End: 20}}, Span: diagnostic.Span{Start: 10, End: 20}},
+				{Name: "second", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"buffer"}, Span: diagnostic.Span{Start: 30, End: 40}}, Span: diagnostic.Span{Start: 30, End: 40}},
+			},
+			Result: "second",
+		}
+		support := analyzeArmBody("s1:m:fn:main", 0, "buffer", "s1:m:fn:main:place:0", diagnostic.Span{}, typeFact, body, contracts, nil)
+		if support.Diagnostic == nil {
+			t.Fatalf("expected the match-arm double-consume to be refused, got a clean result: %+v", support)
+		}
+		if support.DiagnosticCode != "ownership.use_after_move" {
+			t.Fatalf("expected ownership.use_after_move, got %s (%+v)", support.DiagnosticCode, support.Diagnostic)
+		}
+		if support.Diagnostic.Primary != (diagnostic.Span{Start: 30, End: 40}) {
+			t.Fatalf("expected the second call site's span as Primary, got %+v", support.Diagnostic.Primary)
+		}
+	})
+}
+
+// TestCallDoesNotConsumeCopyableArgument is 07-11 Task 1's Test 2: the
+// non-refusing direction, pinned as hard as the refusing one.
+// call_argument_used_once.lang (a Buffer passed to exactly one call) and a
+// Byte argument passed to two separate calls both check clean --
+// copyable values are copied, never consumed, and passing a Buffer to a
+// call at all is legal so long as it is never used again afterward.
+func TestCallDoesNotConsumeCopyableArgument(t *testing.T) {
+	t.Run("buffer_used_once", func(t *testing.T) {
+		source := readPhase07Fixture(t, "call_argument_used_once.lang")
+		result := Program(mustParseProgram(t, source))
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("expected call_argument_used_once.lang to check clean, got %+v", result.Diagnostics)
+		}
+	})
+
+	t.Run("byte_used_twice", func(t *testing.T) {
+		typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Byte"}, Abilities: []core.Ability{core.AbilityCopy}}
+		places := map[string]*placeState{
+			"value": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: typeFact.ID}, initialized: true},
+		}
+		contracts := map[string]calleeContract{
+			"identity": {ID: "s1:m:fn:identity", ParameterType: "Byte", ReturnType: "Byte"},
+		}
+		firstBinding := ast.Binding{Name: "first", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}, Span: diagnostic.Span{Start: 1, End: 2}}}
+		op, target, diag := resolveCallBinding("s1:m:fn:main", 0, firstBinding, places, contracts, typeFact, nil)
+		if diag != nil {
+			t.Fatalf("expected the first call to admit a copyable argument, got %+v", diag)
+		}
+		places["first"] = &placeState{place: target, initialized: true}
+		if !places["value"].initialized {
+			t.Fatal("expected a copyable call argument to stay initialized (copied, not consumed)")
+		}
+		secondBinding := ast.Binding{Name: "second", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}, Span: diagnostic.Span{Start: 3, End: 4}}}
+		_, _, secondDiag := resolveCallBinding("s1:m:fn:main", 1, secondBinding, places, contracts, typeFact, nil)
+		if secondDiag != nil {
+			t.Fatalf("expected the second call on the same copyable value to also be admitted, got %+v", secondDiag)
+		}
+		_ = op
+	})
+}
+
+// TestCallConsumeMoveStateComplete is 07-11 Task 1's Test 3: after a
+// consuming call, the argument's placeState carries all four fields the
+// documented moveTargetName/moveTargetID invariant depends on, so the
+// use_transfer_target repair never ships with an empty Detail.
+func TestCallConsumeMoveStateComplete(t *testing.T) {
+	typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Buffer"}}
+	places := map[string]*placeState{
+		"buffer": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "buffer", TypeID: typeFact.ID}, initialized: true},
+	}
+	contracts := map[string]calleeContract{
+		"identity": {ID: "s1:m:fn:identity", ParameterType: "Buffer", ReturnType: "Buffer"},
+	}
+	callSpan := diagnostic.Span{Start: 5, End: 15}
+	binding := ast.Binding{Name: "first", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"buffer"}, Span: callSpan}}
+	_, target, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+	if diag != nil {
+		t.Fatalf("expected the consuming call to admit, got %+v", diag)
+	}
+	argument := places["buffer"]
+	if argument.initialized {
+		t.Fatal("expected the consumed argument's initialized field to be false")
+	}
+	if argument.movedAt == nil || *argument.movedAt != callSpan {
+		t.Fatalf("expected movedAt to equal the call's own span %+v, got %+v", callSpan, argument.movedAt)
+	}
+	if argument.moveTargetID != target.ID {
+		t.Fatalf("expected moveTargetID to equal the call's target place ID %q, got %q", target.ID, argument.moveTargetID)
+	}
+	if argument.moveTargetName == "" {
+		t.Fatal("expected a non-empty moveTargetName, matching the documented moveTargetID/moveTargetName invariant")
+	}
+}
+
+// callConsumptionRippleFixtures lists every accepting fixture (a fixture
+// that checked clean before this plan) this test sweeps to prove the 07-11
+// consume rule ripples nowhere: same verdict, same emitted core.Program,
+// deterministically re-derived. Deliberately NOT every testdata/phase07
+// fixture -- the corpus also carries refusing fixtures (cycle_*.lang,
+// call_uncallable_callee.lang, the two new 07-11 fixtures,
+// duplicate_function_name.lang) whose check.Program-level verdict this
+// plan does not claim is clean.
+var callConsumptionRippleFixtures = []string{
+	"call_basic.lang",
+	"call_from_both_match_arms.lang",
+	"clean_but_unpublishable.lang",
+	"deep_diamond_acyclic.lang",
+}
+
+// TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus is 07-11 Task
+// 1's Test 7 (ripple): every fixture that checked clean before this plan
+// still checks clean, and its emitted core.Program is byte-identical
+// across two independent re-derivations -- consumption changes checker
+// state only, never emitted core.
+func TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus(t *testing.T) {
+	for _, fixture := range callConsumptionRippleFixtures {
+		t.Run(fixture, func(t *testing.T) {
+			source := readPhase07Fixture(t, fixture)
+			first := Program(mustParseProgram(t, source))
+			if len(first.Diagnostics) != 0 {
+				t.Fatalf("expected %s to still check clean, got %+v", fixture, first.Diagnostics)
+			}
+			second := Program(mustParseProgram(t, source))
+			if len(second.Diagnostics) != 0 {
+				t.Fatalf("expected %s to still check clean on re-derivation, got %+v", fixture, second.Diagnostics)
+			}
+			if !reflect.DeepEqual(first.Program, second.Program) {
+				t.Fatalf("expected %s's emitted core.Program to be deterministic and unchanged across re-derivations", fixture)
+			}
+		})
+	}
+
+	t.Run("relay_escort_witness_unchanged", func(t *testing.T) {
+		source := readPhase07Fixture(t, "relay_escort_witness.lang")
+		result := Program(mustParseProgram(t, source))
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("expected relay_escort_witness.lang to stay clean at the check.Program level (D-03-02 deferred), got %+v", result.Diagnostics)
+		}
+	})
 }

@@ -492,6 +492,29 @@ var callArgumentTypeCheckSeam = false
 // immediately (see TestCallReturnTypeDerivationMutationKilled).
 var callReturnTypeDerivationSeam = false
 
+// callArgumentConsumeSeam is 07-11's D-07-41/D-07-42 fault-injection seam
+// for control:call.argument_consumed_when_noncopyable: when true, the
+// consume rule at the end of resolveCallBinding's declared-function arm is
+// skipped entirely, so a call NEVER move-marks its argument regardless of
+// its copy ability -- reproducing 07-VERIFICATION.md PVG-01 / 07-REVIEW.md
+// CR-01's pre-plan hole, where the call boundary bypassed affine ownership
+// entirely and the same non-copyable value could be passed to two separate
+// calls and admitted by both check and corevalidate. Unexported, false in
+// production, set only from a same-package test that defers the restore
+// immediately (see TestCallArgumentConsumeMutationKilled).
+var callArgumentConsumeSeam = false
+
+// callArgumentConsumeAlwaysSeam is 07-11's D-07-41/D-07-42 fault-injection
+// seam for control:call.copyable_argument_not_consumed: when true, a call
+// argument is move-marked REGARDLESS of its copy ability -- the
+// over-refusal fault for the non-refusing direction, so a COPYABLE
+// argument's second use is wrongly refused with ownership.use_after_move.
+// Over-refusal is a defect, not caution (07-11's own prohibition).
+// Unexported, false in production, set only from a same-package test that
+// defers the restore immediately (see
+// TestCallArgumentConsumeOverRefusalMutationKilled).
+var callArgumentConsumeAlwaysSeam = false
+
 // calleeContract is 07-09's pre-body callee-contract entry (D-07-09,
 // SEM-05): the callee's own declared parameter and return type
 // constructor strings, keyed by function NAME in buildCalleeContracts
@@ -1902,6 +1925,24 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 			ID: fmt.Sprintf("%s:op:%d", functionID, opOrdinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, opOrdinal),
 			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: derivedTypeID, CalleeID: contract.ID,
 		}
+		// 07-11 (PVG-01/CR-01, T-07-11-01): a call transfers its argument.
+		// A copyable argument (core.AbilityCopy) is COPIED -- the caller's
+		// binding stays live, mirroring the binding switch's default arm.
+		// A non-copyable argument is MOVED -- all four placeState fields
+		// are set, mirroring the "take" arm verbatim, so the EXISTING
+		// ownership.use_after_move gate at the top of this function fires
+		// on any later use, including a second call. An argument whose
+		// type fact carries no AbilityCopy witness at all (empty ability
+		// list) is treated as non-copyable: fail-closed, never the
+		// permitting default. This must stay the ONLY place this rule is
+		// expressed -- see check.go's own doc comment on
+		// resolveCallBinding and the two call arms' unchanged continues.
+		if !callArgumentConsumeSeam && (callArgumentConsumeAlwaysSeam || !hasTypeAbility(typeFact, core.AbilityCopy)) {
+			argument.initialized = false
+			argument.movedAt = spanPointer(binding.RHS.Span)
+			argument.moveTargetID = target.ID
+			argument.moveTargetName = binding.Name
+		}
 		return op, target, nil
 	}
 	if _, isForeign := foreignSymbols[binding.RHS.Callee]; isForeign {
@@ -1929,6 +1970,16 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		op := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, opOrdinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, opOrdinal),
 			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: typeFact.ID, CalleeID: binding.RHS.Callee,
+		}
+		// Mirrors the declared-function arm's 07-11 consume rule above, so
+		// this seam continues to differ from production in exactly the ONE
+		// predicate it was written to disable (callee resolution) and not
+		// incidentally in consumption too.
+		if !callArgumentConsumeSeam && (callArgumentConsumeAlwaysSeam || !hasTypeAbility(typeFact, core.AbilityCopy)) {
+			argument.initialized = false
+			argument.movedAt = spanPointer(binding.RHS.Span)
+			argument.moveTargetID = target.ID
+			argument.moveTargetName = binding.Name
 		}
 		return op, target, nil
 	}
