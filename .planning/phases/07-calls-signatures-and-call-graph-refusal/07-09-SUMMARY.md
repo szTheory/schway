@@ -218,3 +218,9 @@ None - no external service configuration required.
 ---
 *Phase: 07-calls-signatures-and-call-graph-refusal*
 *Completed: 2026-09-09*
+
+## Self-Check: PASSED
+
+- Verified on disk: `testdata/phase07/call_type_mismatch.lang`, `internal/compiler/corevalidate/corevalidate_call_type_internal_test.go`, this SUMMARY.
+- Verified in git history: `a0d5090` (Task 1), `d801754` (Task 2), `5046c37` (Task 3), `6fef04a` (this SUMMARY commit).
+- Re-ran plan-level `<verification>`: `go build ./...`, `go vet ./...`, `go test ./... -p 1` (sequential, exit 0, zero failures); `go run ./cmd/lang --json check testdata/phase07/call_type_mismatch.lang` (status invalid, `check.call_argument_type_mismatch`); every other `testdata/phase07` fixture unchanged; `git status --porcelain testdata/` empty (fixture already committed); `sh scripts/verify-phase7.sh` (exit 0, both new controls listed `pass`).
