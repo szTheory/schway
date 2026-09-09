@@ -4,17 +4,17 @@ milestone: M002
 milestone_name: Interprocedural Semantic Spine
 current_phase: 07
 current_phase_name: Calls, Signatures, and Call-Graph Refusal
-status: executing
-stopped_at: Completed 07-07-PLAN.md
-last_updated: "2026-09-09T03:16:46.372Z"
+status: verifying
+stopped_at: Completed 07-08-PLAN.md
+last_updated: "2026-09-09T04:22:43.649Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 07 execution started
-state_head: e2db3935edfbe7a9c9f386c49b448270b18fbe9e
+state_head: 5f33da313c0cf7ee5801a030ecece6fde8f521ad
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -41,7 +41,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — EXECUTING
 Plan: 8 of 8
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-08 — Phase 07 execution started
 
 Progress: [--------------------] 0% (0/7 phases)
@@ -151,6 +151,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 07 P05 | ~140min | 3 tasks | 10 files |
 | Phase 07 P06 | 95min | 3 tasks | 12 files |
 | Phase 07 P07 | 150 min | 3 tasks | 13 files |
+| Phase 07 P08 | 64min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -177,6 +178,7 @@ Standing architectural commitments carried into M002:
 - [Phase 07]: 07-05: check.Program builds an immutable post-body signature table (reusing core.FunctionSignature, structurally body-free) and refuses a call to a non-Callable callee with core.callee_not_callable; corevalidate independently re-derives the same refusal via peerCallable. Discovered relay_escort_witness.lang checks clean while corevalidate refuses (core.move_while_borrowed) -- the interprocedural half of D-03-02, left open for Phase 08/09. — Two genuinely independent SEM-06 derivations (check's table consult, corevalidate's own peerCallable) satisfy QLT-08 without collapsing to one derivation read twice; the D-03-02 divergence is documented as a named, tested finding rather than hidden.
 - [Phase 07]: 07-06: callgraph.Order (iterative white/gray/black DFS, no native recursion, roots = all declared functions, edges from CalleeID only) wired into check before it returns a core.Program; canonical rotation plus cross-cycle lexicographically-smallest witness selection makes the core.call_graph_cycle diagnostic ID deterministic regardless of discovery order (D-07-16/D-07-43); diagnostic bounded at 32 cycle_member causes while the traversal itself stays unbounded; spans projected from OpCall operation IDs via new check-side emission bookkeeping, no Span added to core.LinearOperation (D-07-35); three fault-injection seams (gray-vs-visited, self-edge, unresolved-edge-drop) each independently mutation-killed against a diamond/shared-leaf corpus a chain fixture could never kill.
 - [Phase 07]: 07-07: corevalidate grows its own independently-written whole-program cycle peer (checkCallGraphAcyclic) over disjoint synthetic-only input space; run() split into structural-then-replay passes to place it correctly; remaining SEM-07 corpus (indirect/unreachable/match-arm/shadowing) landed; bilateral independent-disable proof and phase-wide completeness matrix close QLT-08 for Phase 07.
+- [Phase 07]: [Phase 07] 07-08: ClosureDigest chained over callee summary digests only after callgraph.Order proves acyclicity; corevalidate independently re-derives the chain over its own postorder, matching the producer byte-for-byte wherever D-07-33's narrowed Callable scope already agrees; callee-changes-invalidates-caller mutation-killed on both sides; SEM-05 closed.
 
 ### Pending Todos
 
@@ -247,8 +249,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-09T03:15:21.546Z
-Stopped at: Completed 07-07-PLAN.md
+Last session: 2026-09-09T04:22:24.835Z
+Stopped at: Completed 07-08-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

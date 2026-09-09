@@ -267,7 +267,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 07-08-PLAN.md — Stage 0c (deferred by D-07-38): `ClosureDigest` chained over callee summary digests in reverse postorder, **after** acyclicity is proven
+- [x] 07-08-PLAN.md — Stage 0c (deferred by D-07-38): `ClosureDigest` chained over callee summary digests in reverse postorder, **after** acyclicity is proven
 
 **Declared scope-cut trigger (D-07-26):** if `07-01`..`07-05` exceed ~2x their
 initial plan estimate, `07-06`/`07-07` renegotiate out to Phase 08 — **and

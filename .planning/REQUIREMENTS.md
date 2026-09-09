@@ -16,7 +16,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       real `core.OperationKind` handled at all six dispatch sites (`check`,
       `corevalidate`, `interp`, `cgen`, `pathoracle`, `originvalidate`) with
       both exhaustive-dispatch controls green.
-- [ ] **SEM-05**: A callee signature summary — extending `core.Interface` /
+- [x] **SEM-05**: A callee signature summary — extending `core.Interface` /
       `core.FunctionSignature` — is a digest-bound artifact carrying everything
       a caller needs for admission; no caller admission reads a callee body.
 - [x] **SEM-06**: A call is admitted only when the callee is callable ⊆
@@ -161,7 +161,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SEM-04 | Phase 07 | Complete |
-| SEM-05 | Phase 07 | Pending |
+| SEM-05 | Phase 07 | Complete |
 | SEM-06 | Phase 07 | Complete |
 | SEM-07 | Phase 07 | Complete |
 | SEM-08 | Phase 10 | Pending |
