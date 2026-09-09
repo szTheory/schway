@@ -7,6 +7,7 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/ability"
 	"github.com/codename-lang/lang/internal/compiler/ast"
+	"github.com/codename-lang/lang/internal/compiler/callgraph"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
@@ -325,7 +326,59 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, *diag)
 		}
 	}
+	if len(result.Diagnostics) == 0 {
+		// D-07-14: run callgraph.Order over check's OWN completed
+		// in-memory core.Program and refuse BEFORE returning it. A cyclic
+		// core.Program therefore exists only as an ephemeral local inside
+		// this function -- never returned, serialized, cached,
+		// interpreted, or lowered. There is no AST-side graph.
+		if diag := checkCallGraphAcyclic(result.Program); diag != nil {
+			result.Diagnostics = append(result.Diagnostics, *diag)
+			result.Program = core.Program{}
+		}
+	}
 	return result
+}
+
+// checkCallGraphAcyclic runs callgraph.Order over program and, on a
+// discovered cycle, builds the core.call_graph_cycle diagnostic ratified
+// at the 07-06 checkpoint (D-07-15): code core.call_graph_cycle, message
+// "call graph contains a cycle; recursion is refused", causes ordered
+// cycle_length followed by one cycle_member per witness member, no
+// repairs (a cycle has no local, mechanical edit). Returns nil when the
+// program is acyclic.
+func checkCallGraphAcyclic(program core.Program) *diagnostic.Diagnostic {
+	if _, err := callgraph.Order(program); err != nil {
+		if cycle, ok := callgraph.CycleError(err); ok {
+			causes := []diagnostic.Cause{{Kind: "cycle_length", Detail: fmt.Sprintf("%d", len(cycle.Members()))}}
+			for _, member := range cycle.Members() {
+				causes = append(causes, diagnostic.Cause{Kind: "cycle_member", Detail: member})
+			}
+			diag := diagnostic.Error(core.CallGraphCycle, diagnostic.Span{}, "call graph contains a cycle; recursion is refused", causes...)
+			return &diag
+		}
+		if _, ok := callgraph.UnresolvedCalleeError(err); ok && verifyCallInvariantsSeam {
+			// verifyCallInvariantsSeam (D-07-41/D-07-42, Task 2 Test 6)
+			// suppresses check's OWN resolves-to-a-declared-function
+			// re-derivation everywhere it appears in this package,
+			// including this independent callgraph-side re-derivation,
+			// so the seam's single seeded mutation keeps every admission
+			// arm it names failing TOGETHER rather than leaving this one
+			// still refusing.
+			return nil
+		}
+		// A forged or otherwise-inconsistent program surfaced an
+		// unresolved-callee edge callgraph independently re-derived
+		// (D-07-45) -- reuse its own stable code rather than inventing a
+		// new one here.
+		if coder, ok := err.(interface{ Code() string }); ok {
+			diag := diagnostic.Error(coder.Code(), diagnostic.Span{}, err.Error())
+			return &diag
+		}
+		diag := diagnostic.Error("core.call_graph_error", diagnostic.Span{}, err.Error())
+		return &diag
+	}
+	return nil
 }
 
 // callSignatureTable is D-07-34's immutable signature table: a same-package,

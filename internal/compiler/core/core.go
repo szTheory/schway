@@ -564,6 +564,22 @@ const CallCalleeUnresolved = "core.call_callee_unresolved"
 // not a fourth spelling of the same one.
 const CalleeNotCallable = "core.callee_not_callable"
 
+// CallGraphCycle is 07-06's checkpoint-ratified (D-07-15) stable code for a
+// call graph whose OpCall edges form a cycle -- SEM-07's named refusal,
+// singular: self-recursion, mutual recursion, and any longer cycle all
+// carry this ONE code, distinguished by each cause's own cycle_length and
+// membership, never by a second or third code. check's own
+// internal/compiler/callgraph package derives this refusal from an
+// iterative three-color DFS over its own completed in-memory program,
+// before that program is ever returned (D-07-14); corevalidate (07-07)
+// independently re-derives the same refusal with its own traversal and
+// emits this identical inert string constant, with its own message and no
+// spans. Distinct from CallCalleeUnresolved (the callee names no declared
+// function at all) and from CalleeNotCallable (a declared but unpublishable
+// callee) -- a third, materially different fact, not a third spelling of
+// either.
+const CallGraphCycle = "core.call_graph_cycle"
+
 // AllOperationKinds returns every declared OperationKind, in declaration
 // order. This is the single table every dispatch site (check, corevalidate,
 // interp, cgen, pathoracle, originvalidate) is tested against (D-04-22): a
