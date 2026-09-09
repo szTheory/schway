@@ -104,8 +104,8 @@ do
 	grep -q "$control" "$verify_tmp/phase6.json" || { echo "phase07 verify: required Phase 6 control missing: $control" >&2; exit 1; }
 done
 
-# Phase 07's own required-control set (plan 07-04). Every identifier
-# listed here must also appear, verbatim, in
+# Phase 07's own required-control set (plans 07-04 through 07-06). Every
+# identifier listed here must also appear, verbatim, in
 # internal/compiler/session/session_phase7.go's Phase7RequiredControls() --
 # TestPhase7RequiredControlsMatchScript asserts the two sets are equal, so
 # a control added to one and forgotten in the other fails that test.
@@ -114,7 +114,12 @@ for control in \
 	control:kind.exhaustive_dispatch.phase07_lane \
 	control:dispatch.recognized_not_executed \
 	control:call.admission_body_blind \
-	control:call.callable_refusal
+	control:call.callable_refusal \
+	control:callgraph.gray_reentry \
+	control:callgraph.self_edge \
+	control:callgraph.unresolved_edge_refused \
+	control:callgraph.cycle_id_deterministic \
+	control:callgraph.cause_bound
 do
 	grep -q "$control" "$verify_tmp/phase07.json" || { echo "phase07 verify: required Phase 07 control missing: $control" >&2; exit 1; }
 done

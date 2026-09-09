@@ -23,3 +23,28 @@ func SetWitnessSelectionDisabledForTest(disabled bool) (restore func()) {
 	witnessSelectionDisabledForTest = disabled
 	return func() { witnessSelectionDisabledForTest = previous }
 }
+
+// SetGrayVsVisitedMutationForTest installs Task 3's gray-versus-visited
+// seam (the highest-value mutation this phase must kill) and returns a
+// restore func.
+func SetGrayVsVisitedMutationForTest(engaged bool) (restore func()) {
+	previous := grayVsVisitedMutationForTest
+	grayVsVisitedMutationForTest = engaged
+	return func() { grayVsVisitedMutationForTest = previous }
+}
+
+// SetSkipSelfEdgeForTest installs Task 3's self-edge-exclusion seam and
+// returns a restore func.
+func SetSkipSelfEdgeForTest(engaged bool) (restore func()) {
+	previous := skipSelfEdgeForTest
+	skipSelfEdgeForTest = engaged
+	return func() { skipSelfEdgeForTest = previous }
+}
+
+// SetSkipUnresolvedEdgeForTest installs Task 3's unresolvable-edge-drop
+// seam and returns a restore func.
+func SetSkipUnresolvedEdgeForTest(engaged bool) (restore func()) {
+	previous := skipUnresolvedEdgeForTest
+	skipUnresolvedEdgeForTest = engaged
+	return func() { skipUnresolvedEdgeForTest = previous }
+}

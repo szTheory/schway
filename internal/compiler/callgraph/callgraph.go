@@ -87,6 +87,30 @@ var (
 	witnessSelectionDisabledForTest = false
 )
 
+// grayVsVisitedMutationForTest, skipSelfEdgeForTest, and
+// skipUnresolvedEdgeForTest are Task 3's own fault-injection seams
+// (D-07-41/D-07-42): unexported, false by production default, exercised
+// ONLY via callgraph_export_test.go's setters, restored via defer in
+// every test that engages them, never assigned on a production code
+// path. Each demonstrates a plausible "optimization" that would silently
+// break a correctness guarantee if it ever reached production:
+//
+//   - grayVsVisitedMutationForTest: replaces the gray-only re-entry
+//     predicate with a plain visited set (gray OR black both count as a
+//     cycle) -- the highest-value mutation this phase must kill, because
+//     it wrongly refuses a legitimately shared node in an acyclic diamond
+//     as if it were a cycle.
+//   - skipSelfEdgeForTest: excludes a callee == caller edge from the
+//     graph entirely, silently legalizing direct recursion.
+//   - skipUnresolvedEdgeForTest: silently drops an edge whose CalleeID
+//     resolves to nothing instead of refusing -- exactly how a cycle
+//     escapes detection (D-07-45).
+var (
+	grayVsVisitedMutationForTest = false
+	skipSelfEdgeForTest          = false
+	skipUnresolvedEdgeForTest    = false
+)
+
 // cycleError is callgraph's private witness-carrying typed error for a
 // discovered cycle: the canonically-rotated member function IDs
 // (D-07-16 -- the lexicographically smallest function ID sits at index 0)
@@ -207,9 +231,24 @@ func buildAdjacency(program core.Program) (map[string][]string, map[[2]string]st
 				continue
 			}
 			if !declared[operation.CalleeID] {
+				if skipUnresolvedEdgeForTest {
+					// Task 3's unresolvable-edge seam (D-07-41/D-07-42):
+					// the mutation this test proves is load-bearing --
+					// silently DROPPING the edge instead of refusing.
+					// Never engaged in production; a dropped edge is
+					// precisely how a cycle escapes detection (D-07-45).
+					continue
+				}
 				return nil, nil, &unresolvedCalleeError{
 					functionID: function.ID, operationID: operation.ID, calleeID: operation.CalleeID,
 				}
+			}
+			if skipSelfEdgeForTest && function.ID == operation.CalleeID {
+				// Task 3's self-edge seam (D-07-41/D-07-42): the mutation
+				// this test proves is load-bearing -- silently excluding
+				// a callee == caller edge, which would silently legalize
+				// direct recursion. Never engaged in production.
+				continue
 			}
 			key := edgeKey{function.ID, operation.CalleeID}
 			edgeSeen[key] = true
@@ -278,6 +317,24 @@ func Order(program core.Program) ([]string, error) {
 		onStackIndex[root] = 0
 
 		for len(stack) > 0 {
+			// recordCandidate builds a cycle witness from the CURRENT
+			// stack, treating startIndex as the position of the on-stack
+			// re-entry point. Shared by the real gray-re-entry case and
+			// Task 3's grayVsVisitedMutationForTest black-re-entry case,
+			// so both paths build a witness the exact same way.
+			recordCandidate := func(startIndex int) {
+				members := make([]string, 0, len(stack)-startIndex)
+				for i := startIndex; i < len(stack); i++ {
+					members = append(members, stack[i].id)
+				}
+				edgeIDs := make([]string, len(members))
+				for i := range members {
+					next := members[(i+1)%len(members)]
+					edgeIDs[i] = edgeOperation[[2]string{members[i], next}]
+				}
+				candidates = append(candidates, cycleWitness{members: members, edgeOperationIDs: edgeIDs})
+			}
+
 			top := &stack[len(stack)-1]
 			children := adjacency[top.id]
 			if top.nextChildIndex < len(children) {
@@ -297,22 +354,21 @@ func Order(program core.Program) ([]string, error) {
 					// them at the very end, rather than short-circuiting
 					// on whichever cycle a single root ordering happens to
 					// reach first.
-					startIndex := onStackIndex[child]
-					members := make([]string, 0, len(stack)-startIndex)
-					for i := startIndex; i < len(stack); i++ {
-						members = append(members, stack[i].id)
-					}
-					edgeIDs := make([]string, len(members))
-					for i := range members {
-						next := members[(i+1)%len(members)]
-						edgeIDs[i] = edgeOperation[[2]string{members[i], next}]
-					}
-					candidates = append(candidates, cycleWitness{members: members, edgeOperationIDs: edgeIDs})
+					recordCandidate(onStackIndex[child])
 				case black:
 					// A legitimately revisited shared node in an acyclic
 					// subgraph (a diamond's shared leaf) -- not a cycle.
 					// This is the exact distinction the gray-versus-
-					// visited mutation (Task 3) collapses.
+					// visited mutation (Task 3) collapses: with the
+					// mutation engaged, a plain visited set cannot tell
+					// this apart from a real back edge, so it wrongly
+					// records a "cycle" here too (using startIndex 0,
+					// since a finished node's on-stack position is no
+					// longer tracked -- any non-empty witness is enough
+					// to demonstrate the wrongful refusal).
+					if grayVsVisitedMutationForTest {
+						recordCandidate(0)
+					}
 				}
 			} else {
 				colorOf[top.id] = black

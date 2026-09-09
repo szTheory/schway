@@ -1,0 +1,20 @@
+// SEM-07 (D-07-17/D-07-18): a call graph whose calls form a cycle is
+// refused with a named refusal code. This fixture is the length-1 case:
+// a function that calls itself directly. Skipping edges where
+// callee == caller is a plausible-looking "optimization" that would
+// silently legalize direct recursion -- it needs its own fixture and its
+// own seeded mutation (Task 3, control:callgraph.self_edge). Fixtures are
+// named by cycle length: cycle_mutual (length 2, 07-06 Task 1) and
+// cycle_indirect (length >= 3, landing in 07-07) are the only other
+// names; there is no cycle_direct.lang.
+
+module phase07.cycle_self
+
+export {
+  fn loop_forever
+}
+
+fn loop_forever(value: Byte) -> Byte {
+  let result = loop_forever(value)
+  result
+}

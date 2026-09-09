@@ -1,0 +1,87 @@
+// SEM-07 / QLT-08 (Task 3, D-07-41): the pathological-depth-but-acyclic
+// corpus the gray-versus-visited mutation actually needs to be killed.
+// A straight chain (A -> B -> C -> ... -> Z) can NEVER kill that
+// mutation: reverse postorder never revisits a node on a chain, so
+// black-as-cycle and gray-as-cycle behave identically and the row would
+// silently pass while proving nothing. This fixture instead chains FOUR
+// diamonds (each: a node with two distinct successors that both reach a
+// shared successor), so the shared leaf of each diamond is legitimately
+// revisited via its second parent -- exactly the case a plain visited
+// set (instead of gray-only re-entry) would wrongly flag as a cycle.
+// Depth comes from stacking diamonds via many small functions, never
+// from long bodies (no arithmetic, no iteration, no collections this
+// phase). This program must always check clean and terminate.
+
+module phase07.deep_diamond_acyclic
+
+export {
+  fn top4
+}
+
+fn leaf(value: Byte) -> Byte {
+  value
+}
+
+fn mid1a(value: Byte) -> Byte {
+  let result = leaf(value)
+  result
+}
+
+fn mid1b(value: Byte) -> Byte {
+  let result = leaf(value)
+  result
+}
+
+fn top1(value: Byte) -> Byte {
+  let r1 = mid1a(value)
+  let r2 = mid1b(value)
+  r2
+}
+
+fn mid2a(value: Byte) -> Byte {
+  let result = top1(value)
+  result
+}
+
+fn mid2b(value: Byte) -> Byte {
+  let result = top1(value)
+  result
+}
+
+fn top2(value: Byte) -> Byte {
+  let r1 = mid2a(value)
+  let r2 = mid2b(value)
+  r2
+}
+
+fn mid3a(value: Byte) -> Byte {
+  let result = top2(value)
+  result
+}
+
+fn mid3b(value: Byte) -> Byte {
+  let result = top2(value)
+  result
+}
+
+fn top3(value: Byte) -> Byte {
+  let r1 = mid3a(value)
+  let r2 = mid3b(value)
+  r2
+}
+
+fn mid4a(value: Byte) -> Byte {
+  let result = top3(value)
+  result
+}
+
+fn mid4b(value: Byte) -> Byte {
+  let result = top3(value)
+  result
+}
+
+fn top4(value: Byte) -> Byte {
+  let r1 = mid4a(value)
+  let r2 = mid4b(value)
+  r2
+}

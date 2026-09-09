@@ -43,6 +43,11 @@ func Phase7RequiredControls() []string {
 		ControlKindExhaustiveDispatchPhase07Lane,
 		ControlDispatchRecognizedNotExecuted,
 		ControlCallAdmissionBodyBlind,
+		ControlCallGraphGrayReentry,
+		ControlCallGraphSelfEdge,
+		ControlCallGraphUnresolvedEdgeRefused,
+		ControlCallGraphCycleIDDeterministic,
+		ControlCallGraphCauseBound,
 		ControlCallCallableRefusal,
 	}
 }
@@ -97,6 +102,46 @@ const (
 	// exercises the CONSULTING mechanism (with a permitting verdict), not
 	// the refusing branch.
 	ControlCallCallableRefusal = "control:call.callable_refusal"
+	// ControlCallGraphGrayReentry names 07-06 Task 3's headline mutation
+	// kill (QLT-08): the on-stack (gray) re-entry distinguisher, never a
+	// plain visited set, is what lets callgraph.Order accept a
+	// diamond-laden acyclic graph while still refusing a real cycle.
+	// Killed by callgraph_test.go's own TestCallGraphMutationMatrix
+	// (gray_reentry subtest), which observes
+	// testdata/phase07/deep_diamond_acyclic.lang wrongly refused the
+	// instant the gray-versus-visited seam is engaged -- an in-process
+	// Go-test proof, same category as ControlCallAdmissionBodyBlind
+	// above. This lane's own dispatch fixtures now include
+	// deep_diamond_acyclic.lang (it accepts); cycle_self.lang is never
+	// added to a fixture list that expects a clean check.
+	ControlCallGraphGrayReentry = "control:callgraph.gray_reentry"
+	// ControlCallGraphSelfEdge names 07-06 Task 3's self-recursion control:
+	// excluding a callee == caller edge would silently legalize direct
+	// recursion. Killed by TestCallGraphMutationMatrix's self_edge
+	// subtest, which observes testdata/phase07/cycle_self.lang wrongly
+	// accepted the instant that seam is engaged.
+	ControlCallGraphSelfEdge = "control:callgraph.self_edge"
+	// ControlCallGraphUnresolvedEdgeRefused names 07-06 Task 3's
+	// dropped-edge control (D-07-45): a CalleeID resolving to no declared
+	// function must refuse, never be silently dropped from the graph --
+	// a dropped edge is how a cycle escapes detection. Killed by
+	// TestCallGraphMutationMatrix's unresolved_edge_refused subtest.
+	ControlCallGraphUnresolvedEdgeRefused = "control:callgraph.unresolved_edge_refused"
+	// ControlCallGraphCycleIDDeterministic names 07-06 Task 2's
+	// determinism controls (D-07-16/D-07-43): canonical rotation and
+	// cross-cycle lexicographically-smallest witness selection, each
+	// independently load-bearing. Killed by callgraph_test.go's
+	// TestRotationRemovalMutationKilled and
+	// TestWitnessSelectionRemovalMutationKilled.
+	ControlCallGraphCycleIDDeterministic = "control:callgraph.cycle_id_deterministic"
+	// ControlCallGraphCauseBound names 07-06 Task 2's D-07-15 bound: the
+	// core.call_graph_cycle diagnostic caps emitted cycle_member causes at
+	// callgraph.MaxCycleCauses (32), reporting
+	// callgraph.TruncatedCycleBound on overflow, while the traversal
+	// itself stays unbounded. Verified by check_test.go's
+	// TestCallGraphCycleBoundedAt32Causes and
+	// TestCallGraphCycleTruncatesAt33Members.
+	ControlCallGraphCauseBound = "control:callgraph.cause_bound"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped
@@ -104,7 +149,11 @@ const (
 // originvalidate, interp, and cgen -- the CLI-observable sibling of
 // core_test.go's own fixtures slice. Phase 07 does not extend or reuse
 // Phase 4's dispatchFixtures (session.go); it carries its own.
-var phase07DispatchFixtures = []string{"call_basic.lang", "call_from_both_match_arms.lang"}
+// deep_diamond_acyclic.lang (07-06 Task 3) is wired in here because it
+// accepts (checks clean, bounded) -- a refusing fixture like
+// cycle_self.lang or cycle_mutual.lang must never be added to a list this
+// lane expects a clean check from.
+var phase07DispatchFixtures = []string{"call_basic.lang", "call_from_both_match_arms.lang", "deep_diamond_acyclic.lang"}
 
 // phase07LaneDispatchFixturesOverride and phase07LaneRequiredKindsOverride
 // are Task 3's D-07-41/D-07-42 fault-injection seams for the phase07 lane

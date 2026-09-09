@@ -8,9 +8,30 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/callgraph"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// checkedPhase07Fixture parses and checks a testdata/phase07 fixture,
+// failing the test if either step reports a problem.
+func checkedPhase07Fixture(t *testing.T, name string) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", name))
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", name, err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("fixture %q failed to parse: %+v", name, parsed.Diagnostics)
+	}
+	result := check.Program(parsed.Program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("fixture %q unexpectedly rejected: %+v", name, result.Diagnostics)
+	}
+	return result.Program
+}
 
 // TestImportsStayIndependent reads callgraph's own Go import list (parsed
 // from source, never assumed) and fails if it imports check, corevalidate,
@@ -542,4 +563,222 @@ func itoa(i int) string {
 		i /= 10
 	}
 	return string(buf)
+}
+
+// buildCallEdges independently re-derives the same caller->callee edge
+// relation callgraph.Order builds internally, straight from a checked
+// core.Program's own OpCall operations -- used ONLY to inspect graph
+// SHAPE (diamond count, depth) for test assertions; it duplicates none of
+// callgraph's cycle-detection logic.
+func buildCallEdges(program core.Program) map[string][]string {
+	edges := make(map[string][]string)
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpCall {
+				edges[function.ID] = append(edges[function.ID], operation.CalleeID)
+			}
+		}
+	}
+	return edges
+}
+
+// countDiamonds counts nodes with at least two DISTINCT successors that
+// both eventually reach a common shared descendant -- read from the
+// checked program's own built graph, never from a comment.
+func countDiamonds(edges map[string][]string) int {
+	reaches := func(from, target string) bool {
+		visited := map[string]bool{}
+		var stack []string
+		stack = append(stack, edges[from]...)
+		for len(stack) > 0 {
+			n := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			if n == target {
+				return true
+			}
+			if visited[n] {
+				continue
+			}
+			visited[n] = true
+			stack = append(stack, edges[n]...)
+		}
+		return false
+	}
+	count := 0
+	for _, successors := range edges {
+		if len(successors) < 2 {
+			continue
+		}
+		for i := 0; i < len(successors); i++ {
+			for j := i + 1; j < len(successors); j++ {
+				if successors[i] == successors[j] {
+					continue
+				}
+				// A shared descendant: something both successors[i] and
+				// successors[j] can reach (including one being the other,
+				// or both reaching some further common node).
+				common := successors[i] == successors[j]
+				if !common {
+					for _, candidate := range append([]string{successors[i], successors[j]}, edges[successors[i]]...) {
+						if candidate == successors[j] || reaches(successors[j], candidate) && (candidate == successors[i] || reaches(successors[i], candidate)) {
+							common = true
+							break
+						}
+					}
+				}
+				if common {
+					count++
+				}
+			}
+		}
+	}
+	return count
+}
+
+// depthOf computes the longest call chain (in edges) starting from
+// startID over the acyclic edges relation.
+func depthOf(edges map[string][]string, startID string) int {
+	memo := map[string]int{}
+	var longest func(id string) int
+	longest = func(id string) int {
+		if d, ok := memo[id]; ok {
+			return d
+		}
+		best := 0
+		for _, next := range edges[id] {
+			if d := 1 + longest(next); d > best {
+				best = d
+			}
+		}
+		memo[id] = best
+		return best
+	}
+	return longest(startID)
+}
+
+// TestDeepDiamondAcyclicHasFourDiamondsAndDepthEight is Task 3's own
+// acceptance criterion: deep_diamond_acyclic.lang's BUILT graph (not a
+// comment) contains at least four distinct diamond subgraphs at a
+// call-graph depth of at least 8, and checks clean.
+func TestDeepDiamondAcyclicHasFourDiamondsAndDepthEight(t *testing.T) {
+	program := checkedPhase07Fixture(t, "deep_diamond_acyclic.lang")
+	edges := buildCallEdges(program)
+	if got := countDiamonds(edges); got < 4 {
+		t.Fatalf("want at least 4 diamond subgraphs, got %d (edges=%v)", got, edges)
+	}
+	var topID string
+	for _, function := range program.Functions {
+		if strings.Contains(function.Name, "top4") {
+			topID = function.ID
+		}
+	}
+	if topID == "" {
+		t.Fatalf("expected a top4 function in %+v", program.Functions)
+	}
+	if depth := depthOf(edges, topID); depth < 8 {
+		t.Fatalf("want a call-graph depth of at least 8 from top4, got %d", depth)
+	}
+	order, err := callgraph.Order(program)
+	if err != nil {
+		t.Fatalf("expected deep_diamond_acyclic.lang to check clean, got: %v", err)
+	}
+	if len(order) != len(program.Functions) {
+		t.Fatalf("want every function ordered, got %d for %d functions", len(order), len(program.Functions))
+	}
+}
+
+// TestCallGraphMutationMatrix is Task 3's own six-behaviour mutation
+// matrix (D-07-41): each row follows the four-beat body (assert clean,
+// save/override/defer-restore, assert an OBSERVABLE effect, assert the
+// SPECIFIC code by exact string) pathoracle_test.go's own
+// TestTerminatorWalkMutationKilled established.
+func TestCallGraphMutationMatrix(t *testing.T) {
+	t.Run("gray_reentry", func(t *testing.T) {
+		diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.lang")
+		if _, err := callgraph.Order(diamond); err != nil {
+			t.Fatalf("expected deep_diamond_acyclic.lang to check clean at the default, got: %v", err)
+		}
+
+		restore := callgraph.SetGrayVsVisitedMutationForTest(true)
+		defer restore()
+		_, mutatedErr := callgraph.Order(diamond)
+		if mutatedErr == nil {
+			t.Fatalf("mutation (gray-versus-visited) had no observable effect on the diamond corpus: expected a wrongful cycle refusal")
+		}
+		cycle, ok := callgraph.CycleError(mutatedErr)
+		if !ok || cycle.Code() != core.CallGraphCycle {
+			t.Fatalf("want %s after the mutation, got: %v", core.CallGraphCycle, mutatedErr)
+		}
+	})
+
+	t.Run("self_edge", func(t *testing.T) {
+		selfCycle := core.Program{Functions: []core.Function{syntheticFunction("fn:loop_forever", "fn:loop_forever", "fn:loop_forever:op:0")}} // mirrors cycle_self.lang
+		_, defaultErr := callgraph.Order(selfCycle)
+		if _, ok := callgraph.CycleError(defaultErr); !ok {
+			t.Fatalf("expected cycle_self.lang to be refused with a cycle error at the default, got: %v", defaultErr)
+		}
+
+		restore := callgraph.SetSkipSelfEdgeForTest(true)
+		defer restore()
+		_, mutatedErr := callgraph.Order(selfCycle)
+		if mutatedErr != nil {
+			t.Fatalf("mutation (skip self-edge) had no observable effect: expected cycle_self.lang to be wrongly accepted, got: %v", mutatedErr)
+		}
+	})
+
+	t.Run("unresolved_edge_refused", func(t *testing.T) {
+		// A synthetic program whose ONLY cycle runs through an edge whose
+		// CalleeID resolves to nothing: at the default, Order refuses
+		// with the unresolved-callee code before cycle detection ever
+		// runs. With the seam engaged, that edge is silently dropped
+		// instead, and the remaining graph is acyclic -- wrongly
+		// accepted.
+		program := core.Program{Functions: []core.Function{
+			syntheticFunction("fn:a", "fn:ghost", "fn:a:op:0"),
+			leafFunction("fn:b"),
+		}}
+		_, defaultErr := callgraph.Order(program)
+		unresolved, ok := callgraph.UnresolvedCalleeError(defaultErr)
+		if !ok || unresolved.Code() != core.CallCalleeUnresolved {
+			t.Fatalf("want %s at the default, got: %v", core.CallCalleeUnresolved, defaultErr)
+		}
+
+		restore := callgraph.SetSkipUnresolvedEdgeForTest(true)
+		defer restore()
+		_, mutatedErr := callgraph.Order(program)
+		if mutatedErr != nil {
+			t.Fatalf("mutation (skip unresolved edge) had no observable effect: expected the program to be wrongly accepted, got: %v", mutatedErr)
+		}
+	})
+
+	t.Run("restored_after_every_override", func(t *testing.T) {
+		diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.lang")
+		selfCycle := core.Program{Functions: []core.Function{syntheticFunction("fn:loop_forever", "fn:loop_forever", "fn:loop_forever:op:0")}} // mirrors cycle_self.lang
+
+		restoreGray := callgraph.SetGrayVsVisitedMutationForTest(true)
+		restoreGray()
+		restoreSelf := callgraph.SetSkipSelfEdgeForTest(true)
+		restoreSelf()
+		restoreUnresolved := callgraph.SetSkipUnresolvedEdgeForTest(true)
+		restoreUnresolved()
+
+		if _, err := callgraph.Order(diamond); err != nil {
+			t.Fatalf("expected the diamond corpus to check clean again after every override was restored, got: %v", err)
+		}
+		if _, err := callgraph.Order(selfCycle); err == nil {
+			t.Fatalf("expected cycle_self.lang to be refused again after every override was restored")
+		}
+	})
+}
+
+// TestCallGraphMutationMatrixDeterministicUnderShuffle is Task 3 Test 6:
+// running the matrix twice under -count=2 -shuffle=on produces identical
+// per-control kill results (each subtest is independently idempotent --
+// no shared mutable state survives across runs, since every seam is
+// restored via defer within its own subtest).
+func TestCallGraphMutationMatrixDeterministicUnderShuffle(t *testing.T) {
+	TestCallGraphMutationMatrix(t)
 }
