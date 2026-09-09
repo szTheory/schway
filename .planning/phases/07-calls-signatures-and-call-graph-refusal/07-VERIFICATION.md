@@ -1,7 +1,7 @@
 ---
 phase: 07-calls-signatures-and-call-graph-refusal
 verified: 2026-09-09T00:00:00Z
-status: passed
+status: gaps_found
 score: 4/4 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -12,6 +12,15 @@ re_verification:
     - "A call is admitted only when it can be proven safe from the callee's signature — the signature summary is a sound gate, not merely a body-blindness mechanism"
   gaps_remaining: []
   regressions: []
+post_review_gaps: 3
+post_review_source: 07-REVIEW.md
+post_review_note: >-
+  Must-have verification passed 4/4 on the letter of SEM-04..07. A code review
+  run AFTER this verification reproduced four blockers at the same call site.
+  Three are in scope for Phase 07 and are listed under "Post-Verification Gaps"
+  below; CR-02 is assigned to Phase 08. Status flipped passed -> gaps_found by
+  the execute-phase orchestrator on operator decision, so that
+  `/gsd-plan-phase 07 --gaps` has these as its source.
 ---
 
 # Phase 07: Calls, Signatures, and Call-Graph Refusal — Verification Report
@@ -20,7 +29,7 @@ re_verification:
 the callee's signature alone, and a program whose calls form a cycle is
 refused by name instead of hanging.
 **Verified:** 2026-09-09
-**Status:** passed
+**Status:** gaps_found (must-haves passed 4/4; see Post-Verification Gaps)
 **Re-verification:** Yes — after gap-closure plan 07-09
 
 ## Goal Achievement
@@ -157,8 +166,77 @@ a parameterized shape becomes callable) is disclosed in PHASE-07-DEBT.md
 (D-07-47, D-07-48). This is appropriately scoped future work, not a gap in
 this phase's own goal.
 
-Phase 07 is fully closed. All 5 requirement IDs (SEM-04, SEM-05, SEM-06,
-SEM-07, QLT-08) are satisfied. Ready to proceed to Phase 08.
+All 5 requirement IDs (SEM-04, SEM-05, SEM-06, SEM-07, QLT-08) are satisfied
+as literally worded, and every must-have in this phase's plans is verified.
+
+**However, this phase is NOT closed.** See "Post-Verification Gaps" below.
+
+---
+
+## Post-Verification Gaps
+
+> Added by the execute-phase orchestrator after this report was written, on an
+> explicit operator decision. NOT part of the gsd-verifier's own assessment —
+> the verifier's 4/4 finding above stands unaltered and is correct on the
+> letter of SEM-04..07. These gaps come from the code review in `07-REVIEW.md`,
+> which ran after verification and reproduced four blockers at the same call
+> site. Two were independently re-reproduced by the orchestrator before this
+> section was written; the other two are recorded as the reviewer stated them.
+
+The unifying defect is the one this phase already had once: a soundness hole
+that stayed invisible because nothing consulted the right source. 07-09 closed
+the TYPE half of the call contract. The OWNERSHIP half of the same call site
+was never wired — `resolveCallBinding`'s callers `continue` before the binding
+switch that enforces every ownership law in `check`.
+
+### In scope for Phase 07 — must close before the phase is marked complete
+
+**PVG-01 (from CR-01) — a call neither moves nor copy-checks its argument.**
+Independently reproduced by the orchestrator. The same non-copyable `Buffer`
+passed as the argument to two separate calls is admitted `status: pass`,
+exit 0, zero diagnostics. The identical double-use WITHOUT a call is correctly
+refused with `ownership.transfer_requires_take`. Both `check` and
+`corevalidate` accept it, so the peer does not cover this either. The call
+boundary bypasses affine ownership entirely.
+- Not named in SEM-04..07, but it admits unsound programs today.
+- D-07-07 ("multi-argument loan interaction is deferred") reads as a claim
+  that the single-argument case IS handled. PVG-01 disproves that, so the
+  debt entry is currently misleading and must be corrected too.
+
+**PVG-02 (from CR-03) — `FunctionSignature.Foreign`/`Fails` are computed
+locally, not closure-derived.** Directly contradicts SEM-05's "carrying
+everything a caller needs for admission". A caller of a fallible,
+libc-reaching callee publishes `"fails":""` and `"foreign":{}`. Producer and
+peer share the blind spot — the same coordinated-blindness shape as the
+original CR-01. Undeclared in PHASE-07-DEBT.md, so it is an omission, not a cut.
+
+**PVG-03 (from CR-04) — `lang check` never runs `corevalidate`.**
+Structurally confirmed by the orchestrator: `CheckCommandFile`
+(`internal/compiler/session/session.go:661`) runs
+`originvalidate.ValidatePublished` but never `corevalidate.Validate`, while
+roughly ten other command paths do. The peer's verdict only escapes as
+`tool.operation_failed` / exit 3, with the code swallowed. This is the
+amplifier for the others: PVG-04 below IS caught by the peer, but the gate
+users actually run never asks it.
+
+### Assigned to Phase 08 — not a Phase 07 gap
+
+**PVG-04 (from CR-02) — `computeLoanLastUses` has no `"call"` case** and reads
+`RHS.Source`, which is empty for calls, so wrapping a loan's last use in a
+call defeats `ownership.move_while_borrowed`. This is squarely Phase 08's
+stated subject ("Interprocedural Loan Liveness in `check`"). Recorded here so
+Phase 08 planning inherits it with its reproduction already known; it is
+caught today by `corevalidate` (`core.move_while_borrowed`), reachable once
+PVG-03 is fixed.
+
+### Warnings and info from the same review
+
+Not gaps; carried for the gap-closure planner's awareness — WR-01 (duplicate
+function names undiagnosed, silently last-wins in `buildCalleeContracts`),
+WR-02 (`core.callee_not_callable` uses the caller's whole-function span while
+`spanByOperationID` sits unused), plus three INFO items. WR-03 from the prior
+review was downgraded: the reviewer verified `MaxTokens` transitively bounds
+`callArguments` and no parser hang exists.
 
 ---
 
