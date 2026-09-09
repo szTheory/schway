@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/ability"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
@@ -17,6 +18,23 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// mustDeriveTypeFactForTest builds a structurally-valid core.TypeFact for a
+// primitive constructor (Byte or Buffer), deriving its real ability set
+// through ability.Derive rather than hand-guessing it -- Buffer denies
+// AbilityCopy (with a witness), Byte grants it, and a hardcoded ability
+// list here would silently drift from the real derivation and trip
+// core.ability_mismatch on an unrelated axis this file never intended to
+// test. id is the caller-supplied core.TypeFact.ID.
+func mustDeriveTypeFactForTest(t *testing.T, id, constructor string) core.TypeFact {
+	t.Helper()
+	shape := core.TypeRef{Constructor: constructor, Arguments: []core.TypeRef{}}
+	derived, err := ability.Derive(shape)
+	if err != nil {
+		t.Fatalf("ability.Derive(%q): %v", constructor, err)
+	}
+	return core.TypeFact{ID: id, Shape: shape, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}
+}
 
 func TestOwnershipMutationMatrix(t *testing.T) {
 	valid := ownedProgram()
@@ -1476,6 +1494,193 @@ func callerCalleeProgram(calleeID string) core.Program {
 			},
 		},
 	}
+}
+
+// callTypeContractProgram builds a synthetic two-function core.Program
+// (07-09 Task 2), a materially different construction from
+// callerCalleeProgram above: it parametrizes the CALLER's own type
+// constructor and the CALLEE's declared Parameter.Type/ReturnType
+// independently, so a test can construct exactly the mismatched-argument
+// or mismatched-return shape it needs -- including a callee whose declared
+// return type differs from its declared parameter type, a shape NO source
+// program can produce (this language's sameType invariant forces exactly
+// one type fact per function) -- reaching corevalidate's disjoint
+// synthetic input space (D-07-19) the same way callerCalleeProgram already
+// does for the CalleeID invariants. Every place in the CALLER (parameter,
+// call target, and the final OpReturn's source) shares the caller's own
+// single type fact, exactly as check's promoted derivation produces on
+// every admitted program (07-09 Task 1 Test 6) -- there is no second
+// caller-side type fact, because corevalidate's own PRE-EXISTING
+// source.TypeID == operation.TypeID and target.TypeID == operation.TypeID
+// laws (targetMatches) already force them equal. The return-type-mismatch
+// shape is reached by diverging calleeReturnType from callerType, not by
+// diverging the caller's own places from each other.
+func callTypeContractProgram(t *testing.T, callerType, calleeParameterType, calleeReturnType string) core.Program {
+	t.Helper()
+	callerID := "s1:test:fn:caller"
+	calleeFnID := "s1:test:fn:callee"
+	callerTypeID := callerID + ":type:0"
+	callerParamID := callerID + ":place:0"
+	callerTargetID := callerID + ":place:1"
+	calleeTypeID := calleeFnID + ":type:0"
+	calleeParamID := calleeFnID + ":place:0"
+	callerFact := mustDeriveTypeFactForTest(t, callerTypeID, callerType)
+	calleeFact := mustDeriveTypeFactForTest(t, calleeTypeID, calleeParameterType)
+	return core.Program{
+		Schema: core.Schema1, Module: "test", ModuleID: "s1:test:module:test",
+		Functions: []core.Function{
+			{
+				ID: callerID, Name: "caller", EntryPointID: callerID + ":point:entry", ReturnPointID: callerID + ":point:return",
+				Parameter: core.Parameter{ID: callerParamID, Name: "value", Type: callerType}, ReturnType: callerType,
+				Linear: &core.LinearBody{
+					ID:     callerID + ":linear",
+					Types:  []core.TypeFact{callerFact},
+					Places: []core.Place{{ID: callerParamID, Name: "value", TypeID: callerTypeID}, {ID: callerTargetID, Name: "result", TypeID: callerTypeID}},
+					Operations: []core.LinearOperation{
+						{ID: callerID + ":op:0", PointID: callerID + ":point:linear:0", Kind: core.OpCall, SourceID: callerParamID, TargetID: callerTargetID, TypeID: callerTypeID, CalleeID: calleeFnID},
+						{ID: callerID + ":op:1", PointID: callerID + ":point:linear:1", Kind: core.OpReturn, SourceID: callerTargetID, TypeID: callerTypeID},
+					},
+				},
+			},
+			{
+				ID: calleeFnID, Name: "callee", EntryPointID: calleeFnID + ":point:entry", ReturnPointID: calleeFnID + ":point:return",
+				Parameter: core.Parameter{ID: calleeParamID, Name: "value", Type: calleeParameterType}, ReturnType: calleeReturnType,
+				Linear: &core.LinearBody{
+					ID:         calleeFnID + ":linear",
+					Types:      []core.TypeFact{calleeFact},
+					Places:     []core.Place{{ID: calleeParamID, Name: "value", TypeID: calleeTypeID}},
+					Operations: []core.LinearOperation{{ID: calleeFnID + ":op:0", PointID: calleeFnID + ":point:linear:0", Kind: core.OpReturn, SourceID: calleeParamID, TypeID: calleeTypeID}},
+				},
+			},
+		},
+	}
+}
+
+// TestPeerRefusesCallArgumentTypeMismatch is 07-09 Task 2 Test 1: a
+// hand-built synthetic core.Program whose OpCall's source place resolves
+// to a type fact with constructor Buffer while
+// functionByID[CalleeID].Parameter.Type is Byte is refused by
+// corevalidate.Validate with Problem.Code == core.CallArgumentTypeMismatch.
+func TestPeerRefusesCallArgumentTypeMismatch(t *testing.T) {
+	program := callTypeContractProgram(t, "Buffer", "Byte", "Buffer")
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected refusal for a mismatched argument type, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != core.CallArgumentTypeMismatch {
+		t.Fatalf("expected %s, got %+v", core.CallArgumentTypeMismatch, result.Problems)
+	}
+}
+
+// TestPeerRefusesCallReturnTypeMismatch is 07-09 Task 2 Test 2: a
+// hand-built synthetic core.Program whose OpCall's TARGET place resolves
+// to a type fact whose constructor differs from
+// functionByID[CalleeID].ReturnType is refused with
+// Problem.Code == core.CallReturnTypeMismatch. This shape is unreachable
+// from source (sameType forces one type fact per function) and is exactly
+// what corevalidate's disjoint synthetic input space (D-07-19) exists to
+// reach.
+func TestPeerRefusesCallReturnTypeMismatch(t *testing.T) {
+	program := callTypeContractProgram(t, "Byte", "Byte", "Buffer")
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected refusal for a mismatched target/return type, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != core.CallReturnTypeMismatch {
+		t.Fatalf("expected %s, got %+v", core.CallReturnTypeMismatch, result.Problems)
+	}
+}
+
+// TestCallTypePeersIndependentOfCheck is 07-09 Task 2 Test 3
+// (independence, T-07-09-03): this hand-built synthetic core.Program is
+// NEVER produced by check.Program -- check never runs at all here, so
+// this program's refusal cannot be a second observation of check's own
+// verdict. corevalidate refuses it entirely on its own, from its own
+// inputs, proving the peer is load-bearing on its own.
+func TestCallTypePeersIndependentOfCheck(t *testing.T) {
+	program := callTypeContractProgram(t, "Buffer", "Byte", "Buffer")
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected the peer to refuse independently of check, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != core.CallArgumentTypeMismatch {
+		t.Fatalf("expected %s, got %+v", core.CallArgumentTypeMismatch, result.Problems)
+	}
+}
+
+// TestCallTypeContractFailsClosedOnAbsentFacts is 07-09 Task 2 Test 4
+// (fail-closed, edge 2): an OpCall whose CalleeID resolves to a function
+// with an EMPTY Parameter.Type, or whose source/target place resolves to
+// no type fact at all, refuses. Absence never admits.
+func TestCallTypeContractFailsClosedOnAbsentFacts(t *testing.T) {
+	// The "empty declared parameter type" sub-case of this edge is proven
+	// directly against the unexported checkCallTypeContract predicate in
+	// corevalidate_call_type_internal_test.go (package corevalidate):
+	// linearStructural's own pre-existing core.parameter_mismatch law
+	// already refuses any structurally-valid core.Program whose
+	// core.Function.Parameter.Type disagrees with its own type fact's
+	// Shape.Constructor, so an empty ParameterType can never reach the
+	// OpCall replay arm through corevalidate.Validate's full pipeline --
+	// exactly the same unreachable-from-a-valid-program shape check.go's
+	// own Test 3 (check_test.go) proves directly against
+	// resolveCallBinding rather than through the full check.Program
+	// pipeline.
+	t.Run("unresolvable source type fact refuses", func(t *testing.T) {
+		program := callTypeContractProgram(t, "Byte", "Byte", "Byte")
+		program.Functions[0].Linear.Places[0].TypeID = "s1:test:fn:caller:type:missing"
+		result := corevalidate.Validate(program)
+		if result.Valid {
+			t.Fatalf("expected refusal for an unresolvable source type fact, got %+v", result)
+		}
+	})
+}
+
+// TestCallTypeContractAdjacencyAndBoundary is 07-09 Task 2 Test 5 (edges
+// 1/4): constructor equality admits; any inequality refuses, in both
+// directions.
+func TestCallTypeContractAdjacencyAndBoundary(t *testing.T) {
+	cases := []struct {
+		name       string
+		callerType string
+		calleeType string
+		wantValid  bool
+	}{
+		{"Byte==Byte admits", "Byte", "Byte", true},
+		{"Buffer==Buffer admits", "Buffer", "Buffer", true},
+		{"Byte argument vs Buffer parameter refuses", "Byte", "Buffer", false},
+		{"Buffer argument vs Byte parameter refuses", "Buffer", "Byte", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			program := callTypeContractProgram(t, tc.callerType, tc.calleeType, tc.callerType)
+			result := corevalidate.Validate(program)
+			if result.Valid != tc.wantValid {
+				t.Fatalf("want valid=%v, got valid=%v (problems=%+v)", tc.wantValid, result.Valid, result.Problems)
+			}
+		})
+	}
+}
+
+// TestCallTypeContractDoesNotShadowExistingCallLaws is 07-09 Task 2 Test 6
+// (adjacency with existing laws): core.type_mismatch, core.invalid_target,
+// core.callee_not_callable, and core.call_callee_unresolved each still
+// fire for their own defect shapes; a program exhibiting one of those does
+// not now report a type-contract code instead.
+func TestCallTypeContractDoesNotShadowExistingCallLaws(t *testing.T) {
+	t.Run("unresolved callee still reports core.call_callee_unresolved", func(t *testing.T) {
+		program := callerCalleeProgram("s1:test:fn:does-not-exist")
+		result := corevalidate.Validate(program)
+		if result.Valid || len(result.Problems) == 0 || result.Problems[0].Code != core.CallCalleeUnresolved {
+			t.Fatalf("expected %s, got %+v", core.CallCalleeUnresolved, result.Problems)
+		}
+	})
+	t.Run("well-formed OpCall to a matching callee still validates", func(t *testing.T) {
+		program := callerCalleeProgram("s1:test:fn:callee")
+		result := corevalidate.Validate(program)
+		if !result.Valid {
+			t.Fatalf("expected a well-formed OpCall to validate cleanly, got %+v", result)
+		}
+	})
 }
 
 // TestOpCallEmptyCalleeIDIsRefused is Task 2 Test 1 (D-07-29): a synthetic

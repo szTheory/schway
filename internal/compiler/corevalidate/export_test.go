@@ -53,3 +53,21 @@ func SetClosureDigestDiscoveryOrderForTest(force bool) (restore func()) {
 	closureDigestDiscoveryOrderForTest = force
 	return func() { closureDigestDiscoveryOrderForTest = previous }
 }
+
+// SetDisableCallArgumentTypePeerForTest installs 07-09 Task 2's independent
+// argument-type peer-disable seam and returns a restore func. Callers MUST
+// defer the restore immediately.
+func SetDisableCallArgumentTypePeerForTest(disable bool) (restore func()) {
+	previous := disableCallArgumentTypePeerForTest
+	disableCallArgumentTypePeerForTest = disable
+	return func() { disableCallArgumentTypePeerForTest = previous }
+}
+
+// SetDisableCallReturnTypePeerForTest installs 07-09 Task 2's independent
+// return-type peer-disable seam and returns a restore func. Callers MUST
+// defer the restore immediately.
+func SetDisableCallReturnTypePeerForTest(disable bool) (restore func()) {
+	previous := disableCallReturnTypePeerForTest
+	disableCallReturnTypePeerForTest = disable
+	return func() { disableCallReturnTypePeerForTest = previous }
+}

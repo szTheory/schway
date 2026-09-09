@@ -1482,6 +1482,9 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				if !v.check(peerCallable(&callee), core.CalleeNotCallable, operation.CalleeID) {
 					return false
 				}
+				if !v.checkCallTypeContract(callee, source, operation, places, types) {
+					return false
+				}
 			}
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
@@ -1724,6 +1727,10 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			// See replayStraightLine's identical case (07-05 Task 3/D-07-34).
 			if callee, ok := functionByID[operation.CalleeID]; ok {
 				if !v.check(peerCallable(&callee), core.CalleeNotCallable, operation.CalleeID) {
+					return false
+				}
+				// See replayStraightLine's identical case (07-09).
+				if !v.checkCallTypeContract(callee, source, operation, places, types) {
 					return false
 				}
 			}
@@ -2048,6 +2055,85 @@ var disableCalleeResolutionCheckForTest bool
 // derivation. false (the always-real production default) means "use
 // peerCallable's real narrowed derivation".
 var forcePeerCallableAlwaysTrue bool
+
+// disableCallArgumentTypePeerForTest is 07-09 Task 2's D-07-42 fault-
+// injection seam: when true, the OpCall replay arm's independent argument-
+// type refusal (core.CallArgumentTypeMismatch) is skipped, admitting a
+// mismatched argument type anyway. Unexported, false in production, set
+// only via SetDisableCallArgumentTypePeerForTest (export_test.go) by a
+// same-package test that defers the restore immediately. Its purpose is to
+// prove the peer refusal is load-bearing ON ITS OWN: Task 2's
+// TestCallTypePeersIndependentOfCheck disables check's own argument-type
+// gate through ITS seam and shows corevalidate still refuses; Task 3's
+// mutation matrix disables THIS seam and shows corevalidate stops
+// refusing, proving this predicate -- not merely check's -- is what was
+// catching the defect.
+var disableCallArgumentTypePeerForTest bool
+
+// disableCallReturnTypePeerForTest is 07-09 Task 2's D-07-42 fault-
+// injection seam, the target/return-type counterpart of
+// disableCallArgumentTypePeerForTest above: when true, the OpCall replay
+// arm's independent return-type refusal (core.CallReturnTypeMismatch) is
+// skipped. Unexported, false in production, set only via
+// SetDisableCallReturnTypePeerForTest.
+var disableCallReturnTypePeerForTest bool
+
+// checkCallTypeContract is 07-09's independent peer half of the call
+// argument/return type contract (D-07-09/SEM-05/T-07-09-03) -- the pair of
+// facts 07-VERIFICATION.md found missing entirely from corevalidate's
+// OpCall replay. It is consulted from BOTH OpCall replay sites
+// (replayStraightLine and replayBlocks) on the callee's OWN core.Function
+// value (from THIS program's own functionByID, never check's
+// callSignatureTable and never a value obtained by asking check anything).
+// Sharing this helper across corevalidate's own two replay sites does not
+// weaken the independence property the plan requires: the property is
+// independence FROM check, never internal deduplication within this one
+// package, and check.go's resolveCallBinding has no reachable path into
+// this or any other corevalidate symbol.
+//
+// The two predicates are structurally independent of check's own gate:
+//  1. It lives entirely in package corevalidate, importing nothing from
+//     the checker package.
+//  2. It reads the callee's own declared Parameter.Type/ReturnType off
+//     core.Function -- a plain field on this program's own data, never a
+//     published interface signature type and never a value check produced.
+//  3. It resolves the ARGUMENT and TARGET places' own types by walking
+//     places and this function's own type facts (place.TypeID ->
+//     types[TypeID].Shape.Constructor) -- a materially different
+//     mechanism from check's name-keyed AST-derived callee-contract table
+//     lookup (resolveCallBinding, check.go).
+//  4. It shares no function, type, or constant with check that expresses
+//     either comparison. The two sides' code strings
+//     (core.CallArgumentTypeMismatch/core.CallReturnTypeMismatch versus
+//     check.call_argument_type_mismatch/check.call_return_type_unrepresentable)
+//     are already distinct by the checkpoint's ratification, which makes
+//     accidental coupling visible in any diagnostics list.
+//
+// Both predicates fail closed: an unresolvable place, an unresolvable
+// type fact, or an empty constructor or contract string refuses -- absence
+// is never the permitting case. 07-VERIFICATION.md found that both
+// derivations shared one blind spot (the caller's own argument TypeID,
+// asked nothing of the callee), so the two-peer safety net gave zero
+// protection against this defect class. A shared helper WITH check here
+// would rebuild exactly that; this helper shares nothing with it.
+func (v *validator) checkCallTypeContract(callee core.Function, source core.Place, operation core.LinearOperation, places map[string]core.Place, types map[string]core.TypeFact) bool {
+	argumentConstructor := ""
+	if fact, ok := types[source.TypeID]; ok {
+		argumentConstructor = fact.Shape.Constructor
+	}
+	argumentTypeMatches := argumentConstructor != "" && callee.Parameter.Type != "" && argumentConstructor == callee.Parameter.Type
+	if !v.check(disableCallArgumentTypePeerForTest || argumentTypeMatches, core.CallArgumentTypeMismatch, operation.ID) {
+		return false
+	}
+	targetConstructor := ""
+	if targetPlace, ok := places[operation.TargetID]; ok {
+		if fact, ok := types[targetPlace.TypeID]; ok {
+			targetConstructor = fact.Shape.Constructor
+		}
+	}
+	targetTypeMatches := targetConstructor != "" && callee.ReturnType != "" && targetConstructor == callee.ReturnType
+	return v.check(disableCallReturnTypePeerForTest || targetTypeMatches, core.CallReturnTypeMismatch, operation.ID)
+}
 
 func peerCallable(function *core.Function) bool {
 	if forcePeerCallableAlwaysTrue {
