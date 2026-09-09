@@ -255,7 +255,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07-05-PLAN.md — Stage 1c: SEM-06 — the pre-body signature table, the callable-⊆-publishable refusal, the body-blindness control, and the A-normal-form relay/escort witness
+- [x] 07-05-PLAN.md — Stage 1c: SEM-06 — the pre-body signature table, the callable-⊆-publishable refusal, the body-blindness control, and the A-normal-form relay/escort witness
 
 **Wave 6** *(blocked on Wave 5 completion)*
 

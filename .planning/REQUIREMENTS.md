@@ -19,7 +19,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [ ] **SEM-05**: A callee signature summary — extending `core.Interface` /
       `core.FunctionSignature` — is a digest-bound artifact carrying everything
       a caller needs for admission; no caller admission reads a callee body.
-- [ ] **SEM-06**: A call is admitted only when the callee is callable ⊆
+- [x] **SEM-06**: A call is admitted only when the callee is callable ⊆
       publishable (D-04-03); a call to a non-publishable target is refused with
       a stable diagnostic code.
 - [ ] **SEM-07**: The compiler constructs a call graph and refuses cycles —
@@ -162,7 +162,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 |-------------|-------|--------|
 | SEM-04 | Phase 07 | Complete |
 | SEM-05 | Phase 07 | Pending |
-| SEM-06 | Phase 07 | Pending |
+| SEM-06 | Phase 07 | Complete |
 | SEM-07 | Phase 07 | Pending |
 | SEM-08 | Phase 10 | Pending |
 | SEM-09 | Phase 10 | Pending |
