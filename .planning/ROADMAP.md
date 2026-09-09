@@ -340,7 +340,15 @@ liveness law is declared final and before `corevalidate`'s peer is planned. Open
 items are adjudicated or recorded as debt, never assumed safe.
 **Parallel**: none at gate level. This phase must produce a stable target before
 Phase 09 is meaningful.
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Tracer: one interprocedural refusal end-to-end (summary bit → forward canonicalization → diagnostic → CLI) plus D-07-49's entry defect in both admission paths
+- [ ] 08-02-PLAN.md — The summary mechanism: `UsesParam` derived once per function in reverse postorder, memoized and transitive; the backward `OpCall` gate; program-order and never-persisted invariants
+- [ ] 08-03-PLAN.md — Criterion 1's adversarial corpus: both twin pairs, depth-≥2 relay chain, negative control, match-arm regression, and criterion 4's consulted-field-set assertion
+- [ ] 08-04-PLAN.md — Criterion 2: the derived fail-closed iteration bound, its named refusal, the seeded mutation-kill, and the explicit-stack pre-walk hardening
+- [ ] 08-05-PLAN.md — Criterion 3 (EFF-02): the synthetic four-shape corpus, the growth-exponent fit, both gate chokepoints widened together, the manifest row and the risk lane
+- [ ] 08-06-PLAN.md — The mandatory mid-phase gate, its adjudications, the cost bound ratified at the gate, and the liveness law declared final
 
 ### Phase 09: Peer Re-Derivation and D-03-02 Closure
 
