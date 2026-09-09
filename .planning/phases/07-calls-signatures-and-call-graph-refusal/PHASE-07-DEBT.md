@@ -3,7 +3,7 @@ phase: 07-calls-signatures-and-call-graph-refusal
 recorded: 2026-09-08
 status: accepted
 disposition: in-progress
-items: 9
+items: 11
 blocking: 0
 ---
 
@@ -34,6 +34,8 @@ Per Key Lesson 4: declare deferred scope in writing at the moment it is decided.
 | D-07-50 | 07-10-PLAN.md (Task 3, WR-01) | SEM-06, QLT-08 | info | Not scheduled — needs its own ratified diagnostic code | WR-01's check-side half is deliberately carried: `check` still does not diagnose duplicate `fn` declarations, and `buildCalleeContracts` still silently resolves a call to the LAST declaration while the emitted `CalleeID` names an ID shared by both. Only the user-visible half (the peer's `core.duplicate_function_id` now reaching `lang check`) closed in 07-10 |
 | D-07-51 | 07-10-PLAN.md (Task 3, WR-02) | QLT-08 | info | Not scheduled — needs its own ratification (changes a published diagnostic's Primary span) | WR-02 is deliberately carried: `verifyCallableRefusal` still emits `core.callee_not_callable` with the whole calling function's span, even though `spanByOperationID` already exists and is already used for per-edge cycle spans; it also still returns on the first offending call |
 | D-07-52 | 07-11-PLAN.md (T-07-11-06) | SEM-05 | info | Reopen when a call-site transfer marker is added to the grammar | A-normal form has no `f(take y)` syntax, so 07-11's consume-on-call transfer is IMPLICIT in source: a reader cannot see at `identity(buffer)` that `buffer` is consumed there, the way `take buffer` shows it for a plain binding |
+| D-07-53 | 07-12-PLAN.md (Task 3) | SEM-04, SEM-05 | info | Reopen when a third policy value, a second allocator vocabulary, or a `Fails` schema change to a set lands | `core.ForeignReach`'s worst-case join is defined field-by-field over TODAY's vocabulary only, and `FunctionSignature.Fails` is a single string that cannot express a union of two distinct error types |
+| D-07-54 | 07-12-PLAN.md (Task 3) | SEM-05 | info | Not scheduled — `check`-side paths this gap-closure run does not touch | IN-02 (`check`'s argument-type gate compares the caller's single `typeFact` rather than resolving `argument.place.TypeID`) and IN-03 (`check.Program` clears `result.Program` on a cyclic program but leaves `result.AliasFacts` populated) are deliberately carried, unchanged by this plan |
 
 ## Detail
 
@@ -267,6 +269,52 @@ erasing the deferred divergence rather than deferring it. **Reopens** when a
 call-site transfer marker (e.g. an explicit `f(take y)` form) is added to the
 grammar, at which point the marker becomes required and the implicit-transfer
 disclosure here is retired.
+
+### D-07-53 — join granularity: three plain strings, no structured lattice
+
+`core.ForeignReach` carries three plain string policy fields (`Allocator`,
+`Unwind`, `NonlocalExit`) with no structured lattice in the schema, so
+07-12's worst-case join is defined field-by-field over TODAY's vocabulary:
+`forbidden` is strictly more constraining than `permitted` and wins the
+join in either argument order; a non-empty allocator name beats an empty
+one; two DIFFERENT non-empty allocator names — which no vocabulary rule
+orders — join to the declared, named `core.ForeignReachConflict` sentinel
+rather than to an arbitrary pick.
+
+`FunctionSignature.Fails` is a single string and therefore CANNOT express a
+UNION of two distinct error types: a caller reaching two distinct fallible
+callees publishes only ONE of them (the caller's own local value if
+non-empty, else the first non-empty value encountered in sorted callee-ID
+order — deterministic in production, never last-writer-wins). This is a
+known imprecision in the DISCLOSING direction only: a caller is never
+wrongly told it is infallible when it is fallible, but it may under-name
+WHICH failure it can produce. **Reopens** when a third policy value beyond
+`forbidden`/`permitted` lands, when a second allocator vocabulary is
+introduced, or when `Fails` changes from a single string to a set in the
+schema — at which point the join defined here must be re-specified, not
+silently reused.
+
+### D-07-54 — IN-02 and IN-03 deliberately carried
+
+**IN-02:** `check`'s argument-type admission gate compares the CALLING
+function's single `typeFact` (one type fact per function, forced by
+`sameType`) rather than resolving `argument.place.TypeID` directly. This is
+sound only while `sameType` holds; `corevalidate`'s own independent
+re-derivation already does the more robust per-place resolution, so the two
+derivations would diverge in the PERMITTING direction on the `check` side
+the moment a function is legally able to carry two distinct type facts.
+
+**IN-03:** `check.Program` clears `result.Program` on a detected call-graph
+cycle (D-07-14/D-07-15) but leaves `result.AliasFacts` populated — a
+half-cleared result whose stated invariant is "nothing from a cyclic
+program escapes admission". Latent today because no production consumer
+reads `AliasFacts` from a refused result.
+
+Both are on `check`-side paths this gap-closure run does not touch (its own
+scope is the summary-signature join, `originvalidate`/`corevalidate`, and
+the IN-01 index fix in the same pass); recorded here rather than silently
+omitted, per 07-REVIEW.md's own INFO-level findings. Not scheduled to a
+specific phase.
 
 ---
 

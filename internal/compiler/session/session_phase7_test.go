@@ -175,6 +175,12 @@ var controlsWithRecordedMutationKill = []string{
 	// both directions).
 	session.ControlCallArgumentConsumedWhenNoncopyable,
 	session.ControlCallCopyableArgumentNotConsumed,
+	// 07-12: originvalidate's TestForeignClosureJoinMutationKilled /
+	// TestFailsClosureJoinMutationKilled (producer side) and
+	// corevalidate's TestForeignClosureJoinPeerMutationMatrix's "foreign"/
+	// "fails" subtests (peer side).
+	session.ControlSummaryForeignReachClosureDerived,
+	session.ControlSummaryFailsClosureDerived,
 }
 
 // phase7ControlsExactSetEqual is the completeness check's own comparison

@@ -131,7 +131,9 @@ for control in \
 	control:check.peer_consulted \
 	control:interface.peer_refusal_is_invalid \
 	control:call.argument_consumed_when_noncopyable \
-	control:call.copyable_argument_not_consumed
+	control:call.copyable_argument_not_consumed \
+	control:summary.foreign_reach_closure_derived \
+	control:summary.fails_closure_derived
 do
 	grep -q "$control" "$verify_tmp/phase07.json" || { echo "phase07 verify: required Phase 07 control missing: $control" >&2; exit 1; }
 done

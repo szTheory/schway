@@ -61,6 +61,8 @@ func Phase7RequiredControls() []string {
 		ControlInterfacePeerRefusalIsInvalid,
 		ControlCallArgumentConsumedWhenNoncopyable,
 		ControlCallCopyableArgumentNotConsumed,
+		ControlSummaryForeignReachClosureDerived,
+		ControlSummaryFailsClosureDerived,
 	}
 }
 
@@ -270,6 +272,35 @@ const (
 	// call_argument_used_once.lang and call_basic.lang are this control's
 	// own admitting fixtures.
 	ControlCallCopyableArgumentNotConsumed = "control:call.copyable_argument_not_consumed"
+	// ControlSummaryForeignReachClosureDerived names 07-12's Foreign
+	// closure-join claim (07-VERIFICATION.md PVG-02 / 07-REVIEW.md CR-03):
+	// core.FunctionSignature.Foreign is closure-derived over the acyclic
+	// call graph, joined worst-case (empty is the identity; equal merges;
+	// "forbidden" beats "permitted"; a genuine allocator disagreement
+	// resolves to the declared core.ForeignReachConflict sentinel), before
+	// ClosureDigest is computed -- checked independently at both the
+	// producer (originvalidate.BuildInterface's chainOrder loop) and the
+	// peer (corevalidate's own v.peerPostorder/v.peerAdjacency walk in
+	// chainPeerClosureDigests), with no helper shared between the two.
+	// Killed on the producer side by originvalidate's
+	// TestForeignClosureJoinMutationKilled and on the peer side by
+	// corevalidate's TestForeignClosureJoinPeerMutationMatrix.
+	// call_fallible_foreign_reach.lang is this control's own standing
+	// witness -- declared, not implied.
+	ControlSummaryForeignReachClosureDerived = "control:summary.foreign_reach_closure_derived"
+	// ControlSummaryFailsClosureDerived names 07-12's Fails closure-join
+	// claim (07-VERIFICATION.md PVG-02 / 07-REVIEW.md CR-03):
+	// core.FunctionSignature.Fails is closure-derived over the same acyclic
+	// call graph and the same before-ClosureDigest placement, joined
+	// first-non-empty-wins (a disclosed imprecision, D-07-53: Fails is a
+	// single string and cannot express a union of two distinct error
+	// types), checked independently at both the producer and the peer with
+	// no shared helper. Killed on the producer side by originvalidate's
+	// TestFailsClosureJoinMutationKilled and on the peer side by
+	// corevalidate's TestForeignClosureJoinPeerMutationMatrix.
+	// call_fallible_foreign_reach.lang is this control's own standing
+	// witness too.
+	ControlSummaryFailsClosureDerived = "control:summary.fails_closure_derived"
 )
 
 // phase07DispatchFixtures is the literal, hand-maintained, phase-scoped
