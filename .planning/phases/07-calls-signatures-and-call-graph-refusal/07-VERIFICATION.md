@@ -1,242 +1,145 @@
 ---
 phase: 07-calls-signatures-and-call-graph-refusal
 verified: 2026-09-09T00:00:00Z
-status: gaps_found
+status: passed
 score: 4/4 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
-  previous_score: 3/4
+  previous_score: 4/4 (must-haves), 0/3 (post-verification gaps)
   gaps_closed:
-    - "A call is admitted only when it can be proven safe from the callee's signature — the signature summary is a sound gate, not merely a body-blindness mechanism"
+    - "PVG-03 (CR-04): lang check never ran corevalidate.Validate — CheckCommandFile now consults it, InterfaceExportCommandFile/InterfaceCoreCommandFile now report a peer refusal as protocol.StatusInvalid instead of tool.operation_failed/exit 3"
+    - "PVG-01 (CR-01): a call neither moved nor copy-checked its non-copyable argument — check.resolveCallBinding now consumes the argument (copy if AbilityCopy, move otherwise), independently re-derived by corevalidate's consumeCallArgument on both OpCall replay arms"
+    - "PVG-02 (CR-03): core.FunctionSignature.Foreign/.Fails were computed locally, not closure-derived — originvalidate.BuildInterface now joins Foreign/Fails with every already-joined callee via an explicit worst-case lattice join before ClosureDigest, independently re-derived by corevalidate's own postorder join"
   gaps_remaining: []
   regressions: []
-post_review_gaps: 3
-post_review_source: 07-REVIEW.md
-post_review_note: >-
-  Must-have verification passed 4/4 on the letter of SEM-04..07. A code review
-  run AFTER this verification reproduced four blockers at the same call site.
-  Three are in scope for Phase 07 and are listed under "Post-Verification Gaps"
-  below; CR-02 is assigned to Phase 08. Status flipped passed -> gaps_found by
-  the execute-phase orchestrator on operator decision, so that
-  `/gsd-plan-phase 07 --gaps` has these as its source.
 ---
 
 # Phase 07: Calls, Signatures, and Call-Graph Refusal — Verification Report
 
-**Phase Goal:** A Lang function can call another Lang function, admitted from
-the callee's signature alone, and a program whose calls form a cycle is
-refused by name instead of hanging.
+**Phase Goal:** `OpCall` becomes real at all six dispatch sites; cycles are
+refused, never hung. (Full phase intent: a Lang function can call another
+Lang function, admitted from the callee's signature alone, and a program
+whose calls form a cycle is refused by name instead of hanging.)
+
 **Verified:** 2026-09-09
-**Status:** gaps_found (must-haves passed 4/4; see Post-Verification Gaps)
-**Re-verification:** Yes — after gap-closure plan 07-09
+**Status:** passed
+**Re-verification:** Yes — after gap-closure plans 07-10, 07-11, 07-12, closing
+post-verification gaps PVG-01/02/03 recorded by the prior 07-VERIFICATION.md.
+
+## Central Question Answered
+
+**Are PVG-01, PVG-02, and PVG-03 genuinely closed, and did closing them
+regress anything in 07-01..07-09?**
+
+Yes to both. Each PVG was independently re-tested live in this session — not
+by reading the SUMMARYs — against the actual CLI, and the full existing
+`testdata/phase07` corpus was swept to confirm no verdict changed except the
+two deliberately-declared new divergences (`relay_escort_witness.lang`,
+`duplicate_function_name.lang`, both from 07-10, both previously disclosed as
+intended flips). `go build ./...`, `go vet ./...`, `go test ./... -p 1`, and a
+full live run of `sh scripts/verify-phase7.sh` (which itself runs `go test
+./...` and `go test -race ./...` from a clean cache) all completed with zero
+failures, exit code 0, and all 24 phase-07 controls `pass` in
+`kind-exhaustive-dispatch-phase07`.
 
 ## Goal Achievement
 
-### Observable Truths
+### Observable Truths (PVG re-tests)
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | `lang check` admits a two-function program where one calls another; `core.OpCall` is handled at all six dispatch sites and both exhaustive-dispatch controls are green | ✓ VERIFIED (regression check) | `go run ./cmd/lang --json check testdata/phase07/call_basic.lang` → `status: pass`. Full `lang verify testdata/phase07` lane `kind-exhaustive-dispatch-phase07` → `status: pass`, 18 controls listed (16 prior + 2 new from 07-09), all `pass`. |
-| 2 | No caller admission path reads a callee body — the signature summary is the only input — **and it is a sound gate**: a call whose argument type does not match the callee's declared parameter type is refused, not admitted | ✓ VERIFIED (gap closed) | Independently re-derived: `go run ./cmd/lang --json check testdata/phase07/call_type_mismatch.lang` → `status: invalid`, code `check.call_argument_type_mismatch`, causes `callee`/`argument_type=Buffer`/`declared_parameter_type=Byte`, exactly as ratified. Read `check.go:1852-1905` directly: the gate compares `typeFact.Shape.Constructor` (caller) against `calleeContracts[...].ParameterType` (callee's declared parameter type, from a pre-body AST-derived table) before ever constructing `core.LinearOperation`. Body-blindness still holds — the new `calleeContract` table is built from `ast.FuncDecl.Parameter.Type`/`ReturnType` only, never a body. `TargetID.TypeID` (and the operation's own `TypeID`) is now `typeFact.ID` resolved against the callee's declared `ReturnType`, not `argument.place.TypeID` (`grep -c 'TypeID: argument.place.TypeID' check.go` = 0 in the production path). `corevalidate`'s independent peer (`checkCallTypeContract`, `corevalidate.go`) re-derives the same two facts from `places`/type-facts/`functionByID` — confirmed by reading the source and by `grep -rn 'compiler/check' internal/compiler/corevalidate/` returning zero real imports (only forbidden-import-list *strings* in tests). All named tests (`TestCallArgumentTypeMismatchRefused`, `TestCallTargetTypeDerivedFromCalleeReturn`, `TestOpCallTargetTypeIDUnchangedAcrossAcceptingCorpus`, `TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus`, `TestPeerRefusesCallArgumentTypeMismatch`, `TestPeerRefusesCallReturnTypeMismatch`, `TestCallTypePeersIndependentOfCheck`) re-run in this session and pass. |
-| 3 | Direct, mutual, and indirect call cycles are each refused with a named refusal code and never hang; depth alone does not trigger refusal; traversal is worklist-based, not native recursion | ✓ VERIFIED (regression check) | Re-ran the full cycle corpus in this session: `cycle_self`, `cycle_mutual`, `cycle_indirect`, `cycle_unreachable`, `cycle_through_match_arm`, `foreign_symbol_shadowing` → all `core.call_graph_cycle`, unchanged by 07-09. `deep_diamond_acyclic.lang` → `status: pass`, unchanged. |
-| 4 | Every new interprocedural control introduced this phase has been observed to fail against a seeded mutation in the plan that introduced it (QLT-08), including the two new 07-09 controls | ✓ VERIFIED, with a disclosed judgment call (see below) | `control:call.argument_type_matches_parameter` and `control:call.target_type_from_callee_return` both appear in `session.Phase7RequiredControls()` (session_phase7.go:58-59), verbatim in `scripts/verify-phase7.sh` (lines 129-130), and in `controlsWithRecordedMutationKill` (session_phase7_test.go:165-166). `TestPhase7ControlsAreMutationKilled` and `TestPhase7RequiredControlsMatchScript` re-run green in the full suite. Each control's mutation-kill test (`TestCallArgumentTypeCheckMutationKilled`, `TestCallReturnTypeDerivationMutationKilled`, `TestCheckCallTypeContractArgumentPeerSeamKilled`, `TestCheckCallTypeContractReturnPeerSeamKilled`) re-run and pass. |
+| 1 | **PVG-01 closed:** a call now consumes its non-copyable argument — the same `Buffer` passed to two separate calls is refused, not admitted | ✓ VERIFIED | Live run: `go run ./cmd/lang --json check testdata/phase07/call_argument_used_twice.lang` → `status: invalid`, `ownership.use_after_move`, exit 1. `call_argument_used_once.lang` (A/B control, non-refusing direction) → `status: pass`, exit 0. Source read: `check.resolveCallBinding` sets all four `placeState` fields on a non-copyable argument, mirroring the `take` arm; `corevalidate.consumeCallArgument` independently re-derives ability from the emitted `core.Program`'s own `types[operation.TypeID].Shape`, called from both `OpCall` replay arms, sharing no helper with `check`. |
+| 2 | **PVG-02 closed:** `core.FunctionSignature.Foreign`/`.Fails` are closure-derived — a caller of a fallible, libc-reaching callee publishes the real reach, not the empty/zero value | ✓ VERIFIED | Live run: `go run ./cmd/lang --json interface export testdata/phase07/call_fallible_foreign_reach.lang /tmp/phase07_foreign_reach.json` → both `tracer` and `main` publish identical `foreign: {allocator: "libc_malloc", unwind: "forbidden", nonlocal_exit: "forbidden"}` and `fails: "ProbeError"`. Source read: `originvalidate.BuildInterface`'s `chainOrder` loop runs `joinForeignReach`/`joinFails` before `computeClosureDigest`; `corevalidate`'s `chainPeerClosureDigests` runs its own independently-written `peerJoinForeignReach`/`peerJoinFails` over its own `peerPostorder`/`peerAdjacency`, sharing no helper with `originvalidate` (only the `core.ForeignReachConflict` schema sentinel is shared). |
+| 3 | **PVG-03 closed:** `lang check` now consults `corevalidate.Validate` and reports its refusal with the peer's own code, instead of discarding it | ✓ VERIFIED | Live run: `grep -n corevalidate.Validate internal/compiler/session/session.go` shows `CheckCommandFile` (the function `lang check` dispatches to) calling `corevalidate.Validate(checked.Program)` at line 732, in the documented precedence (check's own diagnostics, then the peer, then `originvalidate.ValidatePublished`). `relay_escort_witness.lang` → `status: invalid`, `core.move_while_borrowed`, exit 1 (was `status: pass` before 07-10). `duplicate_function_name.lang` → `status: invalid`, `core.duplicate_function_id`, exit 1 (new fixture). Both are declared, intended divergence flips, not accidental over-refusal. |
+| 4 | **No regression:** every fixture in `testdata/phase07` unaffected by the three closures reports exactly the status/code the prior verification's Behavioral Spot-Checks table recorded | ✓ VERIFIED | Live CLI sweep of all 17 phase07 fixtures in this session: `call_basic` → pass; `call_type_mismatch` → `check.call_argument_type_mismatch`; `deep_diamond_acyclic` → pass; `call_uncallable_callee` → `core.callee_not_callable`; `clean_but_unpublishable` → `core.origin_omitted`; `foreign_symbol_shadowing`, `cycle_self`, `cycle_mutual`, `cycle_indirect`, `cycle_through_match_arm`, `cycle_unreachable` → all `core.call_graph_cycle`; `call_from_both_match_arms` → pass. No previously-admitted fixture is now refused for an unrelated reason; no previously-refused fixture is now admitted. |
 
-**Score:** 4/4 truths verified (up from 3/4 in the prior verification).
-
-### Judgment Call: Does the direct-API mutation-kill technique satisfy QLT-08?
-
-**The deviation.** 07-09-SUMMARY.md discloses (Rule-1, auto-fixed) that this
-language's `sameType` invariant forces every function's declared return type
-to equal its declared parameter type. Consequently, for any real `.lang`
-fixture or any full-pipeline-constructible synthetic `core.Program`, the
-argument-type comparison and the return-type comparison are the mathematically
-identical boolean — disabling only one of the two new seams on a real fixture
-still gets caught by the *other*, still-active gate, so neither seam can be
-observed failing in isolation through an end-to-end fixture. The executor
-instead proved each control's kill by calling the unexported production
-predicate directly (`resolveCallBinding` in `check`; `checkCallTypeContract` in
-`corevalidate`) with hand-built inputs that deliberately decouple the two
-facts — a shape no real source program or full-pipeline synthetic can
-construct.
-
-**This verification's independent read of the tests** (`check_test.go:3348-3433`,
-reproduced above) confirms the claim precisely: these tests call the actual
-production function with the actual production seam variable
-(`callArgumentTypeCheckSeam`, `callReturnTypeDerivationSeam`) — not a mock,
-not a re-implementation — and observe the real gate change its verdict from
-admit to refuse and back. The only artificial element is the *input*
-(a `calleeContract` whose `ParameterType` and `ReturnType` differ, which the
-language surface cannot express on any legally-typed callee), not the
-predicate under test.
-
-**Judgment: this satisfies QLT-08's substance, not merely its letter.** QLT-08
-requires "observed to fail against a seeded mutation" — it does not mandate
-that the seeding vehicle be an end-to-end `.lang` fixture, and the same plan's
-own D-07-47 (the `check.call_return_type_unrepresentable` code) is already
-disclosed as reachable only through a seeded seam and never through a fixture,
-for the identical structural reason. Requiring fixture-only mutation kills here
-would be requiring a mathematical impossibility given this language's `sameType`
-rule, not a stronger form of evidence — it would not catch a bug that this
-technique misses. This is a legitimate, disclosed, same-real-code
-fault-injection technique, not a weakened control. It is recorded here rather
-than passed over silently, per this task's instruction.
-
-### Required Artifacts (07-09 delta only — see prior verification for the rest, all still holding)
-
-| Artifact | Expected | Status | Details |
-|----------|----------|--------|---------|
-| `internal/compiler/core/core.go` | `CallArgumentTypeMismatch`, `CallReturnTypeMismatch` peer codes | ✓ VERIFIED | Present with doc comments distinguishing from `core.type_mismatch` |
-| `internal/compiler/check/check.go` | `calleeContract`, `buildCalleeContracts`, argument-type gate, callee-return-derived `TargetID.TypeID` | ✓ VERIFIED | Read in full; matches must_haves exactly (see Truth 2 evidence) |
-| `internal/compiler/corevalidate/corevalidate.go` | Independent `checkCallTypeContract` peer, no import of `check` | ✓ VERIFIED | `grep -rn 'compiler/check' internal/compiler/corevalidate/` → zero real imports |
-| `testdata/phase07/call_type_mismatch.lang` | Standing negative-control fixture | ✓ VERIFIED | Exists, refused at both layers, verdict confirmed live in this session |
-| `session_phase7.go`, `scripts/verify-phase7.sh`, `session_phase7_test.go` | Two new control identifiers wired into all three | ✓ VERIFIED | Confirmed via grep and a live `sh scripts/verify-phase7.sh` run in this session, both controls listed `pass` |
-| `PHASE-07-DEBT.md` | Discloses retained limitation | ✓ VERIFIED | D-07-46 (nominal constructor-string comparison), D-07-47 (unreachable return-refusal code), D-07-48 (arity-N ordering unanswered) all present and well-formed |
-
-### Key Link Verification (delta)
-
-| From | To | Via | Status | Details |
-|------|-----|-----|--------|---------|
-| `FunctionSignature.Parameters[].Type` | call-site argument type check | `calleeContract.ParameterType` consulted in `resolveCallBinding` before `OpCall` construction | ✓ WIRED (was NOT WIRED) | `TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus` re-run and passes; source read confirms the gate fires before construction, not after |
-| `check`-produced `core.Program` | `corevalidate` replay | independent re-derivation from `places`/type-facts/`functionByID`, no shared helper with `check` | ✓ WIRED, independence confirmed | Zero real cross-package imports; different input mechanism (AST-derived vs core-artifact-derived) per source read |
-
-### Behavioral Spot-Checks (re-run live in this session)
-
-| Behavior | Command | Result | Status |
-|----------|---------|--------|--------|
-| Type-mismatched call now refused (the prior FAIL) | `lang --json check testdata/phase07/call_type_mismatch.lang` | `status: invalid`, `check.call_argument_type_mismatch`, correct ordered causes | ✓ PASS (was ✗ FAIL) |
-| Two-function call still admitted | `lang --json check testdata/phase07/call_basic.lang` | `status: pass` | ✓ PASS |
-| All six cycle fixtures still refused unchanged | `lang --json check` on each | all `core.call_graph_cycle` | ✓ PASS |
-| Deep acyclic diamond still admitted | `lang --json check testdata/phase07/deep_diamond_acyclic.lang` | `status: pass` | ✓ PASS |
-| Callability/publication refusals unchanged | `call_uncallable_callee.lang`, `clean_but_unpublishable.lang` | `core.callee_not_callable`, `core.origin_omitted` | ✓ PASS |
-| `relay_escort_witness.lang` divergence untouched | `lang --json check testdata/phase07/relay_escort_witness.lang` | `status: pass` (check admits; corevalidate's independent refusal is asserted separately in its own test, per the disclosed, deferred D-03-02 divergence) | ✓ PASS (unchanged, deferred to Phase 08/09) |
-| Named unit/integration tests | `go test ./internal/compiler/check/... -run 'TestCallArgumentTypeMismatchRefused\|TestCallTargetTypeDerivedFromCalleeReturn\|TestOpCallTargetTypeIDUnchangedAcrossAcceptingCorpus\|TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus\|TestCallArgumentTypeCheckMutationKilled\|TestCallReturnTypeDerivationMutationKilled' -v` | 6/6 PASS | ✓ PASS |
-| Named corevalidate tests | `go test ./internal/compiler/corevalidate/... -run 'TestPeerRefusesCallArgumentTypeMismatch\|TestPeerRefusesCallReturnTypeMismatch\|TestCallTypePeersIndependentOfCheck\|TestCallTypePeerMutationMatrix\|TestCheckCallTypeContractArgumentPeerSeamKilled\|TestCheckCallTypeContractReturnPeerSeamKilled' -v` | 6/6 PASS | ✓ PASS |
-| Full `sh scripts/verify-phase7.sh` (includes full `go test ./...`) | run live, full output captured | `status: pass` on every `verify` JSON emitted, `kind-exhaustive-dispatch-phase07` lane lists both new controls `pass`, zero `FAIL` lines in the whole transcript | ✓ PASS |
-| Golden/core artifacts untouched | `git status --porcelain testdata/phase1/evidence.golden.json testdata/phase2/evidence.golden.json testdata/phase5/coordinated_lie.core.json` | empty; `git log` on each shows no commit from this plan | ✓ PASS |
-| `relay_escort_witness.lang` parity exception unwidened | `grep -n relay_escort_witness internal/compiler/corevalidate/*.go` | Same named test/exception present, unchanged shape | ✓ PASS |
-
-**Note on transient flakes:** an earlier isolated run of `sh scripts/verify-phase7.sh` (run concurrently with other background test invocations in this same verification session) showed unrelated flakes in `internal/compiler/cache` (`cache.input_undeclared`), `internal/compiler/cgen` (`native.timeout`), and `internal/compiler/measure` (`measure.probe_timeout`) — none in `check`, `corevalidate`, or `session`, and none touching this plan's files. A subsequent clean, non-concurrent full run (captured in full above) showed zero `FAIL` lines across all packages, consistent with 07-09-SUMMARY.md's own account of environmental contention under concurrent test execution on this machine.
+**Score:** 4/4 truths verified.
 
 ### Requirements Coverage
 
 | Requirement | Source Plan(s) | Description | Status | Evidence |
 |-------------|-----------------|-------------|--------|----------|
-| SEM-04 | 07-03, 07-04, 07-07 | `OpCall` real at all six dispatch sites, both exhaustive controls green | ✓ SATISFIED | Unchanged by 07-09; re-confirmed live |
-| SEM-05 | 07-01, 07-02, 07-05, 07-08, 07-09 | Digest-bound signature summary carries everything a caller needs for admission; no admission reads a callee body; **the signature is actually consulted for argument-type soundness** | ✓ SATISFIED (gap closed) | The `Parameters[].Type` field is now read and enforced at the one call site meant to consult it; body-blindness preserved by construction (new contract table is AST-derived, pre-body) |
-| SEM-06 | 07-02, 07-05 | Call admitted only when callee callable ⊆ publishable; stable refusal code | ✓ SATISFIED | `call_uncallable_callee.lang` → `core.callee_not_callable`, unchanged |
-| SEM-07 | 07-06, 07-07 | Call graph constructed, direct/mutual/indirect cycles refused by name, never a hang | ✓ SATISFIED | Full cycle corpus re-confirmed unchanged |
-| QLT-08 | all 9 plans | Every new interprocedural control mutation-killed in its introducing plan | ✓ SATISFIED, with disclosed judgment call | Direct-API fault-injection for the two 07-09 controls judged sufficient — see "Judgment Call" section above |
+| SEM-04 | 07-03, 07-04, 07-07, 07-10, 07-11 | `OpCall` real at all six dispatch sites, both exhaustive controls green | ✓ SATISFIED | REQUIREMENTS.md marks `[x]` complete; unchanged by 07-10..12 except the CLI now surfacing the peer; re-confirmed live via `verify-phase7.sh`'s 24-control `kind-exhaustive-dispatch-phase07` lane, all `pass`. |
+| SEM-05 | 07-01, 07-02, 07-05, 07-08, 07-09, 07-11, 07-12 | Digest-bound signature summary carries everything a caller needs for admission; no admission reads a callee body; the signature is actually consulted for argument-type soundness AND ownership AND foreign-reach | ✓ SATISFIED, gaps closed | The type half closed in 07-09 (prior verification). The ownership half (PVG-01) and the `Foreign`/`Fails` closure-derivation half (PVG-02) close here, independently re-tested above. |
+| SEM-06 | 07-02, 07-05, 07-10 | Call admitted only when callee callable ⊆ publishable; stable refusal code | ✓ SATISFIED | `call_uncallable_callee.lang` → `core.callee_not_callable`, unchanged; `interface` command paths now report a peer refusal as `StatusInvalid` rather than discarding it (PVG-03/07-10). |
+| SEM-07 | 07-06, 07-07 | Call graph constructed, direct/mutual/indirect cycles refused by name, never a hang | ✓ SATISFIED | Full cycle corpus re-confirmed unchanged live in this session. |
+| QLT-08 | all 12 plans | Every new interprocedural control mutation-killed in its introducing plan | ✓ SATISFIED | 24 controls total in `Phase7RequiredControls()`/`scripts/verify-phase7.sh`/`controlsWithRecordedMutationKill`, all `pass` in the live run, including the 8 controls added across 07-09..07-12 (2 each). |
 
-No orphaned requirements: all five IDs mapped to Phase 07 in REQUIREMENTS.md (lines 15-25, 89) appear in at least one plan's `requirements` frontmatter field, including 07-09's `[SEM-05, QLT-08]`. REQUIREMENTS.md marks all five `[x]` complete.
+No orphaned requirements: all five IDs (SEM-04, SEM-05, SEM-06, SEM-07,
+QLT-08) map to Phase 07 in REQUIREMENTS.md and appear `[x]` complete there
+(lines 15-25, 89, 163-166, 186).
+
+### Live Verification Runs (this session)
+
+| Check | Command | Result |
+|-------|---------|--------|
+| Build | `go build ./...` | clean |
+| Vet | `go vet ./...` | clean |
+| Full test suite | `go test ./... -p 1` | 23/23 packages `ok`, zero `FAIL` |
+| Full gate script (build/vet/test/-race/verify all corpora) | `sh scripts/verify-phase7.sh` | exit code 0; all `verify` JSON emitted `status: pass`; `lane:kind-exhaustive-dispatch-phase07` lists 24 controls, all `pass` |
+| PVG-01 refusing direction | `lang --json check call_argument_used_twice.lang` | `status: invalid`, `ownership.use_after_move` |
+| PVG-01 non-refusing direction | `lang --json check call_argument_used_once.lang` | `status: pass` |
+| PVG-02 | `lang --json interface export call_fallible_foreign_reach.lang` | `main` and `tracer` both publish identical non-empty `foreign`/`fails` |
+| PVG-03 | `lang --json check relay_escort_witness.lang`, `duplicate_function_name.lang` | both `status: invalid` via peer-sourced codes (`core.move_while_borrowed`, `core.duplicate_function_id`) |
+| Regression sweep | `lang --json check` on all 17 `testdata/phase07/*.lang` | every fixture matches the documented/expected verdict, no unexplained flip |
+| Anti-pattern scan | `grep -nE 'TBD|FIXME|XXX'` on all files touched by 07-10/11/12 | none found |
 
 ### Anti-Patterns Found
 
-No `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER` markers found in any file 07-09 modified. The prior verification's single defect (CR-01) is closed with a real, tested fix — not a stub, not a suppressed warning.
+None. No `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER` markers in any file
+modified by the gap-closure plans. `07-REVIEW.md` (the fresh gap-closure code
+review) found 0 critical, 1 warning (WR-01), 2 info — none rise to blocker
+level.
+
+### Carried Warning (not a gap — noted for awareness)
+
+**WR-01** (`07-REVIEW.md`): `corevalidate.consumeCallArgument` derives
+copy-ability from `types[operation.TypeID].Shape` (the call's target/return
+type) rather than `types[source.TypeID].Shape` (the argument's own type).
+This is safe today only because a separate, independently-checked invariant
+(`sameType`, D-07-09) forces the two to agree for every legally-typed
+program — the generic `source.TypeID==operation.TypeID` law isn't
+`OpCall`-specific and would not by itself catch a future divergence. This is
+disclosed, not silently absorbed, and does not admit an unsound program
+today. Not a Phase 07 blocker; the reviewer's suggested fix (derive from
+`source.TypeID` directly, or add an explicit `OpCall`-specific assertion) is
+appropriately deferred as a hardening item, not required for this phase's
+goal.
+
+### Debt Register
+
+`PHASE-07-DEBT.md` is well-formed (11 items, `TestDebtRegistersAreWellFormed`
+passing), correctly records D-07-49 (PVG-04/CR-02, explicitly assigned to
+Phase 08, out of scope here), D-07-50/51 (WR-01/WR-02 from the round-1
+review, check-side halves deliberately carried), D-07-52 (the accepted
+implicit call-site transfer residual from PVG-01's closure), D-07-53 (join
+granularity limits from PVG-02's closure), and D-07-54 (IN-02/IN-03 carried).
+D-07-07 is corrected, not merely supplemented, to no longer imply the
+single-argument ownership case was already handled before 07-11.
 
 ### Human Verification Required
 
-None. All 07-09 claims were independently reproduced programmatically in this
-session: the fixture verdict, the source-level derivation, the peer's
-independence (via import grep and source read), the control wiring, and the
-full test/verify-script runs. The QLT-08 mutation-kill-technique question is a
-judgment call, not a fact requiring human observation, and is resolved above
-with explicit reasoning rather than deferred.
+None. Every claim above was independently reproduced by running the actual
+CLI and reading the actual source in this session — not by trusting
+SUMMARY.md or REVIEW.md narration.
 
 ### Gaps Summary
 
-None remaining. The single FAILED must-have truth from the prior verification
-— "a call is admitted only when it can be proven safe from the callee's
-signature" — is now demonstrably true: `check.resolveCallBinding` refuses a
-type-mismatched call before constructing `core.OpCall`, derives the call
-result's type from the callee's own declared return contract (fail-closed when
-unresolvable), and `corevalidate` independently re-derives both facts from a
-materially different input path with no shared helper. The
-`FunctionSignature.Parameters[].Type -> call-site argument type check` key
-link marked NOT WIRED is now wired and corpus-asserted
-(`TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus`). No
-previously-admitted or previously-refused fixture changed verdict; no
-committed golden or core artifact was modified; the `relay_escort_witness.lang`
-divergence remains disclosed and deferred to Phase 08/09, untouched.
+None remaining. All three post-verification gaps (PVG-01, PVG-02, PVG-03)
+from the prior 07-VERIFICATION.md are closed and independently re-verified.
+PVG-04 (CR-02, `computeLoanLastUses` has no `"call"` case) was explicitly out
+of scope for this re-verification per the task's own instructions — it is
+Phase 08's stated subject and remains correctly assigned there in
+`PHASE-07-DEBT.md` D-07-49, unmodified by 07-10/11/12. No regression was
+found anywhere in the existing `testdata/phase07` corpus, and the full
+`go test ./... -p 1`, `go test -race ./...` (via `verify-phase7.sh`), and
+`go vet ./...` are all green.
 
-The retained limitation (nominal constructor-string comparison, too weak once
-a parameterized shape becomes callable) is disclosed in PHASE-07-DEBT.md
-(D-07-46) rather than left implicit, alongside two related disclosures
-(D-07-47, D-07-48). This is appropriately scoped future work, not a gap in
-this phase's own goal.
-
-All 5 requirement IDs (SEM-04, SEM-05, SEM-06, SEM-07, QLT-08) are satisfied
-as literally worded, and every must-have in this phase's plans is verified.
-
-**However, this phase is NOT closed.** See "Post-Verification Gaps" below.
-
----
-
-## Post-Verification Gaps
-
-> Added by the execute-phase orchestrator after this report was written, on an
-> explicit operator decision. NOT part of the gsd-verifier's own assessment —
-> the verifier's 4/4 finding above stands unaltered and is correct on the
-> letter of SEM-04..07. These gaps come from the code review in `07-REVIEW.md`,
-> which ran after verification and reproduced four blockers at the same call
-> site. Two were independently re-reproduced by the orchestrator before this
-> section was written; the other two are recorded as the reviewer stated them.
-
-The unifying defect is the one this phase already had once: a soundness hole
-that stayed invisible because nothing consulted the right source. 07-09 closed
-the TYPE half of the call contract. The OWNERSHIP half of the same call site
-was never wired — `resolveCallBinding`'s callers `continue` before the binding
-switch that enforces every ownership law in `check`.
-
-### In scope for Phase 07 — must close before the phase is marked complete
-
-**PVG-01 (from CR-01) — a call neither moves nor copy-checks its argument.**
-Independently reproduced by the orchestrator. The same non-copyable `Buffer`
-passed as the argument to two separate calls is admitted `status: pass`,
-exit 0, zero diagnostics. The identical double-use WITHOUT a call is correctly
-refused with `ownership.transfer_requires_take`. Both `check` and
-`corevalidate` accept it, so the peer does not cover this either. The call
-boundary bypasses affine ownership entirely.
-- Not named in SEM-04..07, but it admits unsound programs today.
-- D-07-07 ("multi-argument loan interaction is deferred") reads as a claim
-  that the single-argument case IS handled. PVG-01 disproves that, so the
-  debt entry is currently misleading and must be corrected too.
-
-**PVG-02 (from CR-03) — `FunctionSignature.Foreign`/`Fails` are computed
-locally, not closure-derived.** Directly contradicts SEM-05's "carrying
-everything a caller needs for admission". A caller of a fallible,
-libc-reaching callee publishes `"fails":""` and `"foreign":{}`. Producer and
-peer share the blind spot — the same coordinated-blindness shape as the
-original CR-01. Undeclared in PHASE-07-DEBT.md, so it is an omission, not a cut.
-
-**PVG-03 (from CR-04) — `lang check` never runs `corevalidate`.**
-Structurally confirmed by the orchestrator: `CheckCommandFile`
-(`internal/compiler/session/session.go:661`) runs
-`originvalidate.ValidatePublished` but never `corevalidate.Validate`, while
-roughly ten other command paths do. The peer's verdict only escapes as
-`tool.operation_failed` / exit 3, with the code swallowed. This is the
-amplifier for the others: PVG-04 below IS caught by the peer, but the gate
-users actually run never asks it.
-
-### Assigned to Phase 08 — not a Phase 07 gap
-
-**PVG-04 (from CR-02) — `computeLoanLastUses` has no `"call"` case** and reads
-`RHS.Source`, which is empty for calls, so wrapping a loan's last use in a
-call defeats `ownership.move_while_borrowed`. This is squarely Phase 08's
-stated subject ("Interprocedural Loan Liveness in `check`"). Recorded here so
-Phase 08 planning inherits it with its reproduction already known; it is
-caught today by `corevalidate` (`core.move_while_borrowed`), reachable once
-PVG-03 is fixed.
-
-### Warnings and info from the same review
-
-Not gaps; carried for the gap-closure planner's awareness — WR-01 (duplicate
-function names undiagnosed, silently last-wins in `buildCalleeContracts`),
-WR-02 (`core.callee_not_callable` uses the caller's whole-function span while
-`spanByOperationID` sits unused), plus three INFO items. WR-03 from the prior
-review was downgraded: the reviewer verified `MaxTokens` transitively bounds
-`callArguments` and no parser hang exists.
+**Phase 07 is complete.** All 5 requirement IDs (SEM-04, SEM-05, SEM-06,
+SEM-07, QLT-08) are satisfied, all must-haves verified, and no open
+post-verification gap remains.
 
 ---
 
