@@ -12,12 +12,25 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/ability"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// 07-11 Task 2 Test 3 (independence): this test file imports
+// compiler/check as an ORDINARY dependency, purely to drive
+// TestCallConsumePeerIndependentOfCheck's bilateral independent-disable
+// proof (mirroring check_test.go's own
+// TestCorevalidatePeerIndependentOfCheckCycleRefusal in reverse). This is
+// NOT the independence property under test: that property is
+// corevalidate.go's OWN production source never importing compiler/check
+// (TestArbitraryMaskCannotEnterCoreValidation above, which reads
+// corevalidate.go's file text directly, unaffected by what this _test.go
+// file imports).
 
 // mustDeriveTypeFactForTest builds a structurally-valid core.TypeFact for a
 // primitive constructor (Byte or Buffer), deriving its real ability set
@@ -1681,6 +1694,250 @@ func TestCallTypeContractDoesNotShadowExistingCallLaws(t *testing.T) {
 			t.Fatalf("expected a well-formed OpCall to validate cleanly, got %+v", result)
 		}
 	})
+}
+
+// callArgumentConsumeStraightLineProgram builds a synthetic two-function
+// core.Program (07-11 Task 2, PVG-01/CR-01): the caller's straight-line
+// body issues TWO core.OpCall operations from the SAME SourceID (the
+// parameter place) to the SAME callee -- the double-consume shape
+// 07-VERIFICATION.md PVG-01 / 07-REVIEW.md CR-01 names -- built entirely
+// by the peer's own test, never once run through check.Program. The
+// callee's declared ParameterType/ReturnType equal argumentType so
+// checkCallTypeContract's pre-existing gates pass, isolating this test's
+// own assertion to the consume rule.
+func callArgumentConsumeStraightLineProgram(t *testing.T, argumentType string) core.Program {
+	t.Helper()
+	callerID := "s1:test:fn:caller"
+	calleeFnID := "s1:test:fn:callee"
+	callerTypeID := callerID + ":type:0"
+	callerParamID := callerID + ":place:0"
+	firstTargetID := callerID + ":place:1"
+	secondTargetID := callerID + ":place:2"
+	calleeTypeID := calleeFnID + ":type:0"
+	calleeParamID := calleeFnID + ":place:0"
+	callerFact := mustDeriveTypeFactForTest(t, callerTypeID, argumentType)
+	calleeFact := mustDeriveTypeFactForTest(t, calleeTypeID, argumentType)
+	return core.Program{
+		Schema: core.Schema1, Module: "test", ModuleID: "s1:test:module:test",
+		Functions: []core.Function{
+			{
+				ID: callerID, Name: "caller", EntryPointID: callerID + ":point:entry", ReturnPointID: callerID + ":point:return",
+				Parameter: core.Parameter{ID: callerParamID, Name: "value", Type: argumentType}, ReturnType: argumentType,
+				Linear: &core.LinearBody{
+					ID:    callerID + ":linear",
+					Types: []core.TypeFact{callerFact},
+					Places: []core.Place{
+						{ID: callerParamID, Name: "value", TypeID: callerTypeID},
+						{ID: firstTargetID, Name: "first", TypeID: callerTypeID},
+						{ID: secondTargetID, Name: "second", TypeID: callerTypeID},
+					},
+					Operations: []core.LinearOperation{
+						{ID: callerID + ":op:0", PointID: callerID + ":point:linear:0", Kind: core.OpCall, SourceID: callerParamID, TargetID: firstTargetID, TypeID: callerTypeID, CalleeID: calleeFnID},
+						{ID: callerID + ":op:1", PointID: callerID + ":point:linear:1", Kind: core.OpCall, SourceID: callerParamID, TargetID: secondTargetID, TypeID: callerTypeID, CalleeID: calleeFnID},
+						{ID: callerID + ":op:2", PointID: callerID + ":point:linear:2", Kind: core.OpReturn, SourceID: secondTargetID, TypeID: callerTypeID},
+					},
+				},
+			},
+			{
+				ID: calleeFnID, Name: "callee", EntryPointID: calleeFnID + ":point:entry", ReturnPointID: calleeFnID + ":point:return",
+				Parameter: core.Parameter{ID: calleeParamID, Name: "value", Type: argumentType}, ReturnType: argumentType,
+				Linear: &core.LinearBody{
+					ID:         calleeFnID + ":linear",
+					Types:      []core.TypeFact{calleeFact},
+					Places:     []core.Place{{ID: calleeParamID, Name: "value", TypeID: calleeTypeID}},
+					Operations: []core.LinearOperation{{ID: calleeFnID + ":op:0", PointID: calleeFnID + ":point:linear:0", Kind: core.OpReturn, SourceID: calleeParamID, TypeID: calleeTypeID}},
+				},
+			},
+		},
+	}
+}
+
+// callArgumentConsumeBranchProgram is callArgumentConsumeStraightLineProgram's
+// branch-shaped counterpart (07-11 Task 2 Test 6): the identical
+// double-consume, but the caller's three operations sit inside a single
+// core.Block with no successors, routing corevalidate.Validate through
+// replayBlocks (len(function.Linear.Blocks) > 0) rather than
+// replayStraightLine -- proving the consume rule reaches BOTH replay
+// arms through the one shared consumeCallArgument helper, not a
+// duplicated copy.
+func callArgumentConsumeBranchProgram(t *testing.T, argumentType string) core.Program {
+	t.Helper()
+	program := callArgumentConsumeStraightLineProgram(t, argumentType)
+	caller := &program.Functions[0]
+	entryID := caller.ID + ":block:entry"
+	armID := caller.ID + ":block:arm"
+	joinID := caller.ID + ":block:join"
+	// Mirrors checkBranch's own real shape (check.go): an empty-ops entry
+	// block dispatching to the arm block, the arm block carrying the
+	// REAL operations (both core.OpCall's -- the double-consume this test
+	// exists to reach -- terminated by the OpReturn), and an empty-ops
+	// join block. Only a block with a non-empty OperationIDs list is
+	// subject to checkReleaseOrder's core.release_order_indeterminate law
+	// and the returnedBlocks/core.final_claim_mismatch completeness law,
+	// so entry/join (both empty) are exempt by construction and only the
+	// arm block's own termination and incoming edge matter -- exactly the
+	// contract every real check.go producer (checkBranch,
+	// checkForeignTracer, checkResourceLifecycle) already honors.
+	caller.Linear.Blocks = []core.Block{
+		{ID: entryID, PointID: caller.EntryPointID, OperationIDs: []string{}, Successors: []string{armID}},
+		{ID: armID, PointID: caller.ID + ":point:arm", OperationIDs: []string{caller.Linear.Operations[0].ID, caller.Linear.Operations[1].ID, caller.Linear.Operations[2].ID}, Successors: []string{joinID}},
+		{ID: joinID, PointID: caller.ID + ":point:return", OperationIDs: []string{}, Successors: []string{}},
+	}
+	caller.Linear.Edges = []core.Edge{
+		{ID: caller.ID + ":edge:entry:arm", FromBlockID: entryID, ToBlockID: armID, Pattern: "arm"},
+		{ID: caller.ID + ":edge:arm:join", FromBlockID: armID, ToBlockID: joinID, Pattern: "arm"},
+	}
+	return program
+}
+
+// TestPeerRefusesDoubleConsumedCallArgument is 07-11 Task 2 Test 1: a
+// synthetic core.Program the peer builds itself -- two core.OpCall
+// operations with the identical non-copyable (Buffer) SourceID -- is
+// refused by corevalidate.Validate with core.place_uninitialized naming
+// that source place. The program is hand-built, never one check
+// produced.
+func TestPeerRefusesDoubleConsumedCallArgument(t *testing.T) {
+	program := callArgumentConsumeStraightLineProgram(t, "Buffer")
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected the double-consumed Buffer argument to be refused, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != "core.place_uninitialized" {
+		t.Fatalf("expected core.place_uninitialized, got %+v", result.Problems)
+	}
+	if result.Problems[0].Detail != "s1:test:fn:caller:place:0" {
+		t.Fatalf("expected the problem to name the consumed source place, got %+v", result.Problems[0])
+	}
+}
+
+// TestPeerAdmitsRepeatedCopyableCallArgument is 07-11 Task 2 Test 2: the
+// identical synthetic shape with a COPYABLE (Byte) type is accepted --
+// the peer does not over-refuse either.
+func TestPeerAdmitsRepeatedCopyableCallArgument(t *testing.T) {
+	program := callArgumentConsumeStraightLineProgram(t, "Byte")
+	result := corevalidate.Validate(program)
+	if !result.Valid {
+		t.Fatalf("expected a copyable argument passed to two calls to be admitted, got %+v", result.Problems)
+	}
+}
+
+// TestCallConsumePeerMatchesBranchReplayArm is 07-11 Task 2 Test 6: the
+// identical double-consume, replayed through replayBlocks instead of
+// replayStraightLine, is refused identically.
+func TestCallConsumePeerMatchesBranchReplayArm(t *testing.T) {
+	program := callArgumentConsumeBranchProgram(t, "Buffer")
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected the branch-replayed double-consumed Buffer argument to be refused, got %+v", result)
+	}
+	if len(result.Problems) == 0 || result.Problems[0].Code != "core.place_uninitialized" {
+		t.Fatalf("expected core.place_uninitialized from the branch replay arm, got %+v", result.Problems)
+	}
+
+	admitted := callArgumentConsumeBranchProgram(t, "Byte")
+	admittedResult := corevalidate.Validate(admitted)
+	if !admittedResult.Valid {
+		t.Fatalf("expected a copyable argument to still admit through the branch replay arm, got %+v", admittedResult.Problems)
+	}
+}
+
+// TestCallConsumeFailsClosedOnUnresolvableType is 07-11 Task 2 Test 5
+// (edge 2, fail-closed): a synthetic core.OpCall whose TypeID resolves to
+// no type fact is refused -- never admitted as if copyable. An absent
+// type fact is the refusing case.
+func TestCallConsumeFailsClosedOnUnresolvableType(t *testing.T) {
+	program := callArgumentConsumeStraightLineProgram(t, "Byte")
+	program.Functions[0].Linear.Types = nil
+	result := corevalidate.Validate(program)
+	if result.Valid {
+		t.Fatalf("expected refusal when the argument's type fact is unresolvable, got %+v", result)
+	}
+}
+
+// mustCheckPhase07Fixture parses and checks a real testdata/phase07
+// fixture through check.Program, mirroring readPhase07Fixture's own
+// path resolution (check_test.go) from this package's directory.
+func mustCheckPhase07Fixture(t *testing.T, name string) check.Result {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", name))
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", name, err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("fixture %q failed to parse: %+v", name, parsed.Diagnostics)
+	}
+	return check.Program(parsed.Program)
+}
+
+// TestCallConsumePeerIndependentOfCheck is 07-11 Task 2 Test 3
+// (independence, the coordinated-blindness assertion, mirroring
+// check_test.go's TestCorevalidatePeerIndependentOfCheckCycleRefusal in
+// reverse): with check's OWN consume seam disabled -- the producer's gate
+// off -- corevalidate still refuses call_argument_used_twice.lang's
+// REAL emitted core on its own. And with the peer's own seam disabled,
+// check's own (default, never toggled) refusal still catches the same
+// source. Each side refuses alone; neither is a second observation of
+// the other's verdict.
+func TestCallConsumePeerIndependentOfCheck(t *testing.T) {
+	t.Run("peer refuses with check's own gate disabled", func(t *testing.T) {
+		restore := check.SetCallArgumentConsumeSeamForTest(true)
+		defer restore()
+
+		result := mustCheckPhase07Fixture(t, "call_argument_used_twice.lang")
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("expected check's own consume gate to be disabled (program admitted by check), got %+v", result.Diagnostics)
+		}
+
+		validated := corevalidate.Validate(result.Program)
+		if validated.Valid {
+			t.Fatal("expected corevalidate's own independent peer to still refuse the double-consumed argument")
+		}
+		if len(validated.Problems) == 0 || validated.Problems[0].Code != "core.place_uninitialized" {
+			t.Fatalf("expected core.place_uninitialized among corevalidate's problems, got %+v", validated.Problems)
+		}
+	})
+
+	t.Run("check refuses with the peer's own gate disabled", func(t *testing.T) {
+		restore := corevalidate.SetDisableCallArgumentConsumePeerForTest(true)
+		defer restore()
+
+		result := mustCheckPhase07Fixture(t, "call_argument_used_twice.lang")
+		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "ownership.use_after_move" {
+			t.Fatalf("expected check's own refusal (unaffected by the peer's seam) to still fire, got %+v", result.Diagnostics)
+		}
+	})
+}
+
+// TestCallArgumentConsumeSeamSettersRestoreCleanly proves
+// SetDisableCallArgumentConsumePeerForTest and
+// SetForceCallArgumentConsumePeerForTest each return a restore closure
+// that returns corevalidate.Validate's verdict to production behavior.
+func TestCallArgumentConsumeSeamSettersRestoreCleanly(t *testing.T) {
+	program := callArgumentConsumeStraightLineProgram(t, "Buffer")
+
+	restoreDisable := corevalidate.SetDisableCallArgumentConsumePeerForTest(true)
+	disabled := corevalidate.Validate(program)
+	if !disabled.Valid {
+		t.Fatalf("expected the disabled seam to wrongly admit the double-consume, got %+v", disabled.Problems)
+	}
+	restoreDisable()
+	restored := corevalidate.Validate(program)
+	if restored.Valid {
+		t.Fatalf("expected production behavior restored after SetDisableCallArgumentConsumePeerForTest's restore, got %+v", restored)
+	}
+
+	copyableProgram := callArgumentConsumeStraightLineProgram(t, "Byte")
+	restoreForce := corevalidate.SetForceCallArgumentConsumePeerForTest(true)
+	forced := corevalidate.Validate(copyableProgram)
+	if forced.Valid {
+		t.Fatalf("expected the forced seam to wrongly refuse a copyable argument's second use, got %+v", forced)
+	}
+	restoreForce()
+	restoredCopyable := corevalidate.Validate(copyableProgram)
+	if !restoredCopyable.Valid {
+		t.Fatalf("expected production behavior restored after SetForceCallArgumentConsumePeerForTest's restore, got %+v", restoredCopyable.Problems)
+	}
 }
 
 // TestCallTypePeerMutationMatrix is 07-09 Task 3's peer-side completeness

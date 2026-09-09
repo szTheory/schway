@@ -71,3 +71,22 @@ func SetDisableCallReturnTypePeerForTest(disable bool) (restore func()) {
 	disableCallReturnTypePeerForTest = disable
 	return func() { disableCallReturnTypePeerForTest = previous }
 }
+
+// SetDisableCallArgumentConsumePeerForTest installs 07-11's independent
+// call-argument-consume peer-disable seam (PVG-01/CR-01) and returns a
+// restore func. Callers MUST defer the restore immediately.
+func SetDisableCallArgumentConsumePeerForTest(disable bool) (restore func()) {
+	previous := disableCallArgumentConsumePeerForTest
+	disableCallArgumentConsumePeerForTest = disable
+	return func() { disableCallArgumentConsumePeerForTest = previous }
+}
+
+// SetForceCallArgumentConsumePeerForTest installs 07-11's over-refusal
+// fault-injection seam (a copyable argument consumed regardless of its copy
+// ability) and returns a restore func. Callers MUST defer the restore
+// immediately.
+func SetForceCallArgumentConsumePeerForTest(force bool) (restore func()) {
+	previous := forceCallArgumentConsumePeerForTest
+	forceCallArgumentConsumePeerForTest = force
+	return func() { forceCallArgumentConsumePeerForTest = previous }
+}

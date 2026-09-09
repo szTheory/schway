@@ -515,6 +515,25 @@ var callArgumentConsumeSeam = false
 // TestCallArgumentConsumeOverRefusalMutationKilled).
 var callArgumentConsumeAlwaysSeam = false
 
+// SetCallArgumentConsumeSeamForTest is 07-11 Task 2 Test 3's cross-package
+// independence seam. Go's build model excludes "_test.go" files from a
+// normal package import, so a same-package-only unexported var (the shape
+// callArgumentConsumeSeam itself uses for check's own same-package tests)
+// cannot be reached by corevalidate's own independence test
+// (TestCallConsumePeerIndependentOfCheck), which imports this package as
+// an ordinary dependency to prove the peer still refuses
+// call_argument_used_twice.lang's emitted core with the PRODUCER's own
+// gate disabled. This mirrors corevalidate.go's own
+// SetDisableCyclePeerForTest exactly (D-07-42): production-visible, but a
+// documented test-only no-op unless a test explicitly calls it, always
+// restored via the returned closure, and never called from any production
+// code path in this repository.
+func SetCallArgumentConsumeSeamForTest(disabled bool) (restore func()) {
+	previous := callArgumentConsumeSeam
+	callArgumentConsumeSeam = disabled
+	return func() { callArgumentConsumeSeam = previous }
+}
+
 // calleeContract is 07-09's pre-body callee-contract entry (D-07-09,
 // SEM-05): the callee's own declared parameter and return type
 // constructor strings, keyed by function NAME in buildCalleeContracts

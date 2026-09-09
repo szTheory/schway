@@ -1486,6 +1486,9 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 					return false
 				}
 			}
+			if !v.consumeCallArgument(operation, types, initialized) {
+				return false
+			}
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
 			}
@@ -1733,6 +1736,10 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 				if !v.checkCallTypeContract(callee, source, operation, places, types) {
 					return false
 				}
+			}
+			// See replayStraightLine's identical case (07-11/PVG-01/CR-01).
+			if !v.consumeCallArgument(operation, types, initialized) {
+				return false
 			}
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
@@ -2077,6 +2084,74 @@ var disableCallArgumentTypePeerForTest bool
 // skipped. Unexported, false in production, set only via
 // SetDisableCallReturnTypePeerForTest.
 var disableCallReturnTypePeerForTest bool
+
+// disableCallArgumentConsumePeerForTest is 07-11's D-07-41/D-07-42
+// fault-injection seam (PVG-01/CR-01, QLT-08) for
+// control:call.argument_consumed_when_noncopyable: when true,
+// consumeCallArgument never move-marks a call argument, regardless of its
+// copy ability -- reproducing the pre-07-11 hole from the peer's own side,
+// independently of check's identical seam (callArgumentConsumeSeam,
+// check.go). Unexported, false in production, set only via
+// SetDisableCallArgumentConsumePeerForTest (export_test.go) by a
+// same-package test that defers the restore immediately.
+var disableCallArgumentConsumePeerForTest bool
+
+// forceCallArgumentConsumePeerForTest is 07-11's D-07-41/D-07-42
+// fault-injection seam for control:call.copyable_argument_not_consumed:
+// when true, consumeCallArgument move-marks a call argument REGARDLESS of
+// its copy ability -- the over-refusal fault for the non-refusing
+// direction, so a copyable argument's second use is wrongly refused with
+// core.place_uninitialized. Unexported, false in production, set only via
+// SetForceCallArgumentConsumePeerForTest.
+var forceCallArgumentConsumePeerForTest bool
+
+// consumeCallArgument is 07-11's independent peer half of the call-site
+// ownership consume rule (PVG-01/CR-01): a call transfers its argument, and
+// corevalidate decides whether that transfer costs the caller its binding
+// using ONLY its own derivation -- v.derive over the emitted core
+// artifact's own types[operation.TypeID].Shape (its own in-package
+// deriveAbility/sealedLeaves) -- never check's recorded Abilities list and
+// never check's ability package. operation.TypeID is already asserted equal
+// to the argument place's own TypeID by the generic
+// `source.TypeID == operation.TypeID` check every operation passes before
+// its kind-specific switch runs (this function's own caller), so deriving
+// from operation.TypeID IS deriving from the argument's own type.
+//
+// A non-copyable argument is consumed by mirroring the OpMove arm verbatim
+// (initialized[operation.SourceID] = false); the SECOND use of that same
+// source -- including a second call -- is then refused by the pre-existing
+// generic initialized[...]/finalOrTransitionCode gate at the top of the
+// per-operation loop, which yields core.place_uninitialized. A copyable
+// argument is left untouched, exactly as the OpCopy arm leaves its own
+// source. An unresolvable type fact or an unknown type constructor is the
+// REFUSING case: v.derive itself appends a core.unknown_type_constructor
+// problem and reports failure, which this function propagates by returning
+// false -- fail-closed, never a silent admit.
+func (v *validator) consumeCallArgument(operation core.LinearOperation, types map[string]core.TypeFact, initialized map[string]bool) bool {
+	if disableCallArgumentConsumePeerForTest {
+		return true
+	}
+	granted, _, known := v.derive(types[operation.TypeID].Shape, 0)
+	if !known {
+		return false
+	}
+	if forceCallArgumentConsumePeerForTest || !abilityGranted(granted, core.AbilityCopy) {
+		initialized[operation.SourceID] = false
+	}
+	return true
+}
+
+// abilityGranted reports whether wanted appears in a v.derive-returned
+// granted-abilities slice -- corevalidate's own independent structural
+// re-derivation, never check's TypeFact.Abilities list or hasAbility.
+func abilityGranted(granted []core.Ability, wanted core.Ability) bool {
+	for _, candidate := range granted {
+		if candidate == wanted {
+			return true
+		}
+	}
+	return false
+}
 
 // checkCallTypeContract is 07-09's independent peer half of the call
 // argument/return type contract (D-07-09/SEM-05/T-07-09-03) -- the pair of
