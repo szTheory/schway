@@ -587,6 +587,41 @@ const CalleeNotCallable = "core.callee_not_callable"
 // either.
 const CallGraphCycle = "core.call_graph_cycle"
 
+// CallArgumentTypeMismatch is 07-09's peer-side stable code for
+// corevalidate's OWN, independently-derived refusal of an OpCall whose
+// SOURCE place's own TypeFact.Shape.Constructor does not equal
+// functionByID[operation.CalleeID].Parameter.Type -- the callee's own
+// declared parameter contract, resolved through this program's own
+// function set, never through check's callSignatureTable and never by
+// asking check anything. Distinct from core.type_mismatch (an operation's
+// own source.TypeID == operation.TypeID internal-consistency law, about
+// ONE operation) -- this is a CROSS-FUNCTION contract: the caller's
+// argument type versus a DIFFERENT function's declared parameter type.
+// check's own, materially different derivation (an AST-derived
+// name-keyed callee-contract table, consulted at emission time in
+// resolveCallBinding) is check.call_argument_type_mismatch -- a
+// deliberately different code string in a deliberately different
+// namespace, so a diagnostics list can distinguish "check's gate fired"
+// from "corevalidate's peer fired" rather than reading one fact twice
+// under two names.
+const CallArgumentTypeMismatch = "core.call_argument_type_mismatch"
+
+// CallReturnTypeMismatch is 07-09's peer-side stable code for
+// corevalidate's OWN, independently-derived refusal of an OpCall whose
+// TARGET place's own TypeFact.Shape.Constructor does not equal
+// functionByID[operation.CalleeID].ReturnType -- the callee's own
+// declared return contract, resolved the same way as
+// CallArgumentTypeMismatch above. Distinct from core.type_mismatch (a
+// single operation's own internal consistency) and from
+// type.return_mismatch (a function's own declared return type versus its
+// own declared parameter type, checked once per function, never at a
+// call site). check's own derivation of this same fact -- deriving the
+// OpCall target's TypeID from the callee's declared return type at
+// emission time, fail-closed when unresolvable -- is
+// check.call_return_type_unrepresentable, again a distinct code in a
+// distinct namespace for the same independence reason.
+const CallReturnTypeMismatch = "core.call_return_type_mismatch"
+
 // AllOperationKinds returns every declared OperationKind, in declaration
 // order. This is the single table every dispatch site (check, corevalidate,
 // interp, cgen, pathoracle, originvalidate) is tested against (D-04-22): a

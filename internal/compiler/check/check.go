@@ -93,15 +93,20 @@ func Program(program ast.Program) Result {
 		return result
 	}
 	functionNames := make(map[string]bool, len(program.Funcs))
-	// functionIDs is Phase 07's callee-resolution table (D-07-01): the same
-	// name-keyed set as functionNames, but mapping to the function's own
-	// semantic ID rather than a bare boolean, so a bare call's callee name
-	// resolves directly to the core.LinearOperation.CalleeID value D-07-29
-	// requires (a function ID, never a name).
-	functionIDs := make(map[string]string, len(program.Funcs))
+	// calleeContracts is 07-09's pre-body callee-contract table
+	// (superseding Phase 07's original functionIDs table): the same
+	// name-keyed callee-resolution map functionIDs provided (a bare call's
+	// callee name still resolves to the function's own semantic ID, D-07-01),
+	// PLUS the callee's own declared parameter and return type constructors
+	// -- built from the AST, so it genuinely precedes every body admission
+	// (a declared type is a syntactic fact), unlike callSignatureTable
+	// (below), whose Callable bit can only exist AFTER every body is
+	// checked. Both tables are signature-only channels: neither carries a
+	// *core.LinearBody or *core.Match, so SEM-05's body-blindness holds on
+	// this path too.
+	calleeContracts := buildCalleeContracts(program)
 	for _, function := range program.Funcs {
 		functionNames[function.Name] = true
-		functionIDs[function.Name] = semanticID(program.Module, "fn", function.Name)
 	}
 
 	for _, function := range program.Funcs {
@@ -131,7 +136,7 @@ func Program(program ast.Program) Result {
 			if hasTryCall(function.Body.Linear) {
 				checked, diagnostics, work = checkFallibleLinear(functionID, function, foreignSymbols, functionNames, types)
 			} else {
-				checked, diagnostics, work, callSpans = checkLinear(program.Module, functionID, function, functionIDs, foreignSymbols)
+				checked, diagnostics, work, callSpans = checkLinear(program.Module, functionID, function, calleeContracts, foreignSymbols)
 			}
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
@@ -184,7 +189,7 @@ func Program(program ast.Program) Result {
 			}
 		}
 		if hasArmBody {
-			checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types), functionIDs, foreignSymbols)
+			checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types), calleeContracts, foreignSymbols)
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
@@ -436,6 +441,72 @@ func checkCallGraphAcyclic(program core.Program, spanByOperationID map[string]di
 		return &diag
 	}
 	return nil
+}
+
+// checkCallArgumentTypeMismatch is 07-09's ratified check-side code for a
+// call whose argument's type does not match the callee's declared
+// parameter type, refused at emission time in resolveCallBinding. Its
+// Primary span is the call site (binding.RHS.Span); its ordered Causes
+// are callee / argument_type / declared_parameter_type. Constructed with
+// diagnostic.Error -- no repairs: fixing it requires changing either the
+// argument or the callee's own signature, and neither is a span-local
+// replacement this checker can name (D-07-31c's standing reasoning).
+// Distinct from core.CallArgumentTypeMismatch (corevalidate.go): the two
+// codes name the SAME fact through two independent derivations and are
+// deliberately never unified into one shared constant (see that const's
+// own doc comment).
+const checkCallArgumentTypeMismatch = "check.call_argument_type_mismatch"
+
+// checkCallReturnTypeUnrepresentable is 07-09's ratified check-side code
+// for the fail-closed half of deriving an OpCall's TargetID.TypeID from
+// the callee's declared return type: refused when the callee's declared
+// return type names no type fact available in the calling function, so no
+// honest TargetID.TypeID can be derived. Its Primary span is the call
+// site; its ordered Causes are callee / declared_return_type /
+// available_type. diagnostic.Error, no repairs. Currently UNREACHABLE
+// from any legal source program (sameType forces every function's return
+// type to equal its parameter type) -- mutation-killed through
+// callReturnTypeDerivationSeam, never through a .lang fixture; see
+// PHASE-07-DEBT.md. Distinct from core.CallReturnTypeMismatch
+// (corevalidate.go) for the same independence reason as
+// checkCallArgumentTypeMismatch above.
+const checkCallReturnTypeUnrepresentable = "check.call_return_type_unrepresentable"
+
+// calleeContract is 07-09's pre-body callee-contract entry (D-07-09,
+// SEM-05): the callee's own declared parameter and return type
+// constructor strings, keyed by function NAME in buildCalleeContracts
+// below -- the same key functionIDs/functionNames already used, so callee
+// resolution is unchanged. This is a SECOND, different table from
+// callSignatureTable: callSignatureTable is core-derived and can only be
+// built AFTER every function's body is checked (its Callable bit recomputes
+// return origin from checked core.LinearOperation facts); calleeContract is
+// AST-derived and therefore genuinely precedes every body admission -- a
+// declared parameter/return type is a syntactic fact available before any
+// body is walked. Like callSignatureTable, it carries no *core.LinearBody
+// or *core.Match field, so SEM-05's body-blindness is preserved by
+// construction on this path too. A missing entry's zero value has empty
+// ParameterType/ReturnType strings, which the admission gate below treats
+// as the REFUSING case (D-07-09): absence never admits.
+type calleeContract struct {
+	ID            string
+	ParameterType string
+	ReturnType    string
+}
+
+// buildCalleeContracts builds the pre-body callee-contract table from
+// program's own AST, one entry per declared function, keyed by function
+// name. See calleeContract's own doc comment for why this table is
+// necessarily separate from callSignatureTable.
+func buildCalleeContracts(program ast.Program) map[string]calleeContract {
+	contracts := make(map[string]calleeContract, len(program.Funcs))
+	for _, function := range program.Funcs {
+		contracts[function.Name] = calleeContract{
+			ID:            semanticID(program.Module, "fn", function.Name),
+			ParameterType: function.Parameter.Type.Constructor,
+			ReturnType:    function.ReturnType.Constructor,
+		}
+	}
+	return contracts
 }
 
 // callSignatureTable is D-07-34's immutable signature table: a same-package,
@@ -696,7 +767,7 @@ const maxBlocksPerFunction = 128
 // switch/case lowering never needs a bare-alternative fallback case inside a
 // block-shaped function, and the interpreter/validator dispatch stays a
 // simple "every arm has a BlockID" invariant rather than a per-arm union.
-func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
+func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
 	parameterType := coreType(function.Parameter.Type)
 	derived, err := ability.DeriveSealed(parameterType, sealed)
 	if err != nil {
@@ -762,7 +833,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		nextIndex++
 		work++
 
-		support := analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, functionIDs, foreignSymbols)
+		support := analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols)
 		if support.Diagnostic != nil {
 			diagnostics = append(diagnostics, *support.Diagnostic)
 			continue
@@ -1187,7 +1258,7 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // zero-divergence shadow run over the full TestOwnershipSequenceExhaustive/
 // TestBranchSequenceExhaustive enumeration (225,890 + 4,802 comparisons, see
 // the retired shadow test's own history).
-func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
+func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
@@ -1252,7 +1323,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 		result.Work++
 		global := startIndex + index
 		if binding.RHS.Kind == "call" {
-			op, target, diag := resolveCallBinding(functionID, global, binding, places, functionIDs, foreignSymbols)
+			op, target, diag := resolveCallBinding(functionID, global, binding, places, calleeContracts, typeFact, foreignSymbols)
 			if diag != nil {
 				return fail(*diag)
 			}
@@ -1437,7 +1508,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	return result
 }
 
-func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
+func checkLinear(module, functionID string, function ast.FuncDecl, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
 	parameterType := coreType(function.Parameter.Type)
 	if !sameType(function.ReturnType, function.Parameter.Type) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType), nil
@@ -1494,7 +1565,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs m
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
-	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, functionIDs, foreignSymbols)
+	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, calleeContracts, foreignSymbols)
 	if support.Diagnostic != nil {
 		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work, nil
 	}
@@ -1734,7 +1805,7 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 // without changing its published code), or neither (refused with
 // core.CallCalleeUnresolved, D-07-45 -- never silently dropped, since a
 // dropped edge is how a cycle escapes detection).
-func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, places map[string]*placeState, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.LinearOperation, core.Place, *diagnostic.Diagnostic) {
+func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, places map[string]*placeState, calleeContracts map[string]calleeContract, typeFact core.TypeFact, foreignSymbols map[string]foreignSymbolInfo) (core.LinearOperation, core.Place, *diagnostic.Diagnostic) {
 	if len(binding.RHS.Arguments) != 1 {
 		causes := []diagnostic.Cause{
 			{Kind: "declared_arity", Detail: fmt.Sprintf("%d", len(binding.RHS.Arguments))},
@@ -1758,11 +1829,53 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		diag := diagnostic.Error("ownership.use_after_move", binding.RHS.Span, "value was used after ownership transferred", causes...)
 		return core.LinearOperation{}, core.Place{}, &diag
 	}
-	if calleeID, isFunction := functionIDs[binding.RHS.Callee]; isFunction {
-		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: argument.place.TypeID}
+	if contract, isFunction := calleeContracts[binding.RHS.Callee]; isFunction {
+		// 07-09 D-07-09/SEM-05: the argument-type gate. Exact string
+		// equality on the constructor -- never TypeID equality (a TypeID
+		// is per-function and can never match across two functions, so
+		// that comparison would refuse every legal call) and never a
+		// coercion or subtyping relation (none exists). An absent
+		// contract entry or an empty ParameterType refuses: absence is
+		// the refusing case (D-07-09's fail-closed default), which is
+		// exactly what the zero-value calleeContract's empty string
+		// achieves against typeFact.Shape.Constructor (never empty for
+		// an executable shape).
+		if typeFact.Shape.Constructor == "" || contract.ParameterType == "" || typeFact.Shape.Constructor != contract.ParameterType {
+			causes := []diagnostic.Cause{
+				{Kind: "callee", Detail: contract.ID},
+				{Kind: "argument_type", Detail: typeFact.Shape.Constructor},
+				{Kind: "declared_parameter_type", Detail: contract.ParameterType},
+			}
+			diag := diagnostic.Error(checkCallArgumentTypeMismatch, binding.RHS.Span, "call argument type does not match the callee's declared parameter type", causes...)
+			return core.LinearOperation{}, core.Place{}, &diag
+		}
+		// 07-09 T-07-09-02: the target place's type is derived from the
+		// CALLEE'S OWN declared return contract, resolved against the
+		// CALLER's own type facts -- never copied from the caller's
+		// argument place. This function has exactly one type fact
+		// (typeFact), per D-07-09's language-surface constraint (every
+		// function's declared return type equals its declared parameter
+		// type, sameType-enforced at the head of checkLinear/checkBranch/
+		// checkFallibleLinear), so "resolved against the caller's own
+		// type facts" means: the callee's declared return type must equal
+		// this function's single type fact's own constructor. When it
+		// does not, no honest TypeID can be derived and the call is
+		// refused fail-closed -- never fabricated, never a fallback to
+		// the argument's TypeID.
+		if contract.ReturnType == "" || contract.ReturnType != typeFact.Shape.Constructor {
+			causes := []diagnostic.Cause{
+				{Kind: "callee", Detail: contract.ID},
+				{Kind: "declared_return_type", Detail: contract.ReturnType},
+				{Kind: "available_type", Detail: typeFact.Shape.Constructor},
+			}
+			diag := diagnostic.Error(checkCallReturnTypeUnrepresentable, binding.RHS.Span, "callee's declared return type names no type fact available in the calling function", causes...)
+			return core.LinearOperation{}, core.Place{}, &diag
+		}
+		derivedTypeID := typeFact.ID
+		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: derivedTypeID}
 		op := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, opOrdinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, opOrdinal),
-			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: argument.place.TypeID, CalleeID: calleeID,
+			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: derivedTypeID, CalleeID: contract.ID,
 		}
 		return op, target, nil
 	}
@@ -1778,11 +1891,19 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		// seam variable, both in package check, so this and the
 		// post-build pass fail together under the same seeded mutation;
 		// corevalidate carries the identical seam, independently, on its
-		// own side (disableCalleeResolutionCheckForTest).
-		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: argument.place.TypeID}
+		// own side (disableCalleeResolutionCheckForTest). 07-09: the
+		// duplicated operation here derives its TypeID from typeFact.ID
+		// -- the SAME source production now uses -- rather than
+		// argument.place.TypeID, so this seam continues to differ from
+		// production in exactly the ONE predicate it was written to
+		// disable (callee resolution) and not incidentally in the type
+		// derivation too. No calleeContract exists for this branch (the
+		// callee name is, by construction, unresolved), so there is
+		// nothing to derive a callee return type from here.
+		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: typeFact.ID}
 		op := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, opOrdinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, opOrdinal),
-			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: argument.place.TypeID, CalleeID: binding.RHS.Callee,
+			Kind: core.OpCall, SourceID: argument.place.ID, TargetID: target.ID, TypeID: typeFact.ID, CalleeID: binding.RHS.Callee,
 		}
 		return op, target, nil
 	}
@@ -2303,7 +2424,7 @@ type placeState struct {
 // cost shape. The fixpoint's REAL, honestly-varying cost is not hidden: it is
 // counted separately via FixpointWork (see its own doc comment), folded into
 // checkLinear's function-level RecomputedWork total.
-func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
+func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
 	parameterID := functionID + ":place:0"
 	result := ownershipSupport{
 		Places:     []core.Place{{ID: parameterID, Name: parameterName, TypeID: typeFact.ID}},
@@ -2373,7 +2494,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	for index, binding := range body.Bindings {
 		result.Work++
 		if binding.RHS.Kind == "call" {
-			op, target, diag := resolveCallBinding(functionID, index, binding, places, functionIDs, foreignSymbols)
+			op, target, diag := resolveCallBinding(functionID, index, binding, places, calleeContracts, typeFact, foreignSymbols)
 			if diag != nil {
 				return fail(*diag)
 			}

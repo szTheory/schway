@@ -2143,13 +2143,10 @@ func TestBuildCallSignatureTableCallableMatchesPublishProblemsFor(t *testing.T) 
 	// by lowering functions directly through checkLinear, exactly like
 	// Program does internally, so the table can be built and inspected
 	// against a program this test controls end to end.
-	functionIDs := make(map[string]string, len(parsed.Funcs))
-	for _, function := range parsed.Funcs {
-		functionIDs[function.Name] = semanticID(parsed.Module, "fn", function.Name)
-	}
+	calleeContracts := buildCalleeContracts(parsed)
 	var functions []core.Function
 	for _, function := range parsed.Funcs {
-		checked, diagnostics, _, _ := checkLinear(parsed.Module, functionIDs[function.Name], function, functionIDs, nil)
+		checked, diagnostics, _, _ := checkLinear(parsed.Module, calleeContracts[function.Name].ID, function, calleeContracts, nil)
 		if len(diagnostics) != 0 {
 			t.Fatalf("expected %s to check clean, got %+v", function.Name, diagnostics)
 		}
@@ -2952,4 +2949,394 @@ func bilateralCallGraphFaultReport(checkRefused, corevalidateRefused bool) (repo
 		return "no divergence detected under bilateral fault", false
 	}
 	return "", true
+}
+
+// ---------------------------------------------------------------------
+// 07-09 Task 1: the argument-type gate and the callee-return-derived
+// target TypeID.
+// ---------------------------------------------------------------------
+
+// TestCallArgumentTypeMismatchRefused is Task 1 Test 1: the standing
+// negative control (call_type_mismatch.lang) is refused with exactly one
+// error-severity diagnostic carrying the ratified
+// check.call_argument_type_mismatch code, whose Primary span is the call
+// site and whose ordered Causes are callee / argument_type (Buffer) /
+// declared_parameter_type (Byte), with no repairs.
+func TestCallArgumentTypeMismatchRefused(t *testing.T) {
+	source := readPhase07Fixture(t, "call_type_mismatch.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 1 {
+		t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
+	}
+	diag := result.Diagnostics[0]
+	if diag.Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("expected %s, got %s (%+v)", checkCallArgumentTypeMismatch, diag.Code, diag)
+	}
+	if diag.Severity != "error" {
+		t.Fatalf("expected error severity, got %q", diag.Severity)
+	}
+	wantKinds := []string{"callee", "argument_type", "declared_parameter_type"}
+	if len(diag.Causes) != len(wantKinds) {
+		t.Fatalf("expected %d causes, got %+v", len(wantKinds), diag.Causes)
+	}
+	for i, kind := range wantKinds {
+		if diag.Causes[i].Kind != kind {
+			t.Fatalf("cause %d: want kind %q, got %q (%+v)", i, kind, diag.Causes[i].Kind, diag.Causes)
+		}
+	}
+	if !strings.HasSuffix(diag.Causes[0].Detail, ":fn:identity") {
+		t.Fatalf("expected the callee cause to name identity's own function ID, got %q", diag.Causes[0].Detail)
+	}
+	if diag.Causes[1].Detail != "Buffer" {
+		t.Fatalf("expected argument_type detail Buffer, got %q", diag.Causes[1].Detail)
+	}
+	if diag.Causes[2].Detail != "Byte" {
+		t.Fatalf("expected declared_parameter_type detail Byte, got %q", diag.Causes[2].Detail)
+	}
+	if diag.Repairs != nil {
+		t.Fatalf("expected no repairs, got %+v", diag.Repairs)
+	}
+}
+
+// TestCallTargetTypeDerivedFromCalleeReturn is Task 1 Test 2: call_basic.lang
+// still checks clean, and its OpCall's TargetID place has
+// TypeID == "<caller function ID>:type:0" -- the same value as before this
+// plan -- proving the promoted derivation is byte-identical where it must be.
+func TestCallTargetTypeDerivedFromCalleeReturn(t *testing.T) {
+	source := readPhase07Fixture(t, "call_basic.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected call_basic.lang to still check clean, got %+v", result.Diagnostics)
+	}
+	var mainFunction *core.Function
+	for i := range result.Program.Functions {
+		if result.Program.Functions[i].Name == "main" {
+			mainFunction = &result.Program.Functions[i]
+		}
+	}
+	if mainFunction == nil || mainFunction.Linear == nil {
+		t.Fatal("expected a checked linear-carrying function named main")
+	}
+	calls := scanOpCallsByKind(mainFunction.Linear.Operations)
+	if len(calls) != 1 {
+		t.Fatalf("expected exactly one core.OpCall, got %d", len(calls))
+	}
+	call := calls[0]
+	wantTypeID := mainFunction.ID + ":type:0"
+	if call.TypeID != wantTypeID {
+		t.Fatalf("expected OpCall.TypeID %q, got %q", wantTypeID, call.TypeID)
+	}
+	var targetPlace *core.Place
+	for i := range mainFunction.Linear.Places {
+		if mainFunction.Linear.Places[i].ID == call.TargetID {
+			targetPlace = &mainFunction.Linear.Places[i]
+		}
+	}
+	if targetPlace == nil {
+		t.Fatalf("expected to find the target place %q", call.TargetID)
+	}
+	if targetPlace.TypeID != wantTypeID {
+		t.Fatalf("expected target place TypeID %q, got %q", wantTypeID, targetPlace.TypeID)
+	}
+}
+
+// TestCallArgumentTypeContractAbsentOrEmptyRefuses is Task 1 Test 3 (edge 2,
+// empty/fail-closed): a callee-contract table entry that is absent, or
+// whose parameter type constructor is the empty string, refuses the call.
+// No legal source program can produce either shape (buildCalleeContracts
+// always derives a non-empty ParameterType from a parsed function
+// declaration), so this drives resolveCallBinding directly with a
+// hand-built calleeContracts table -- the seeded, package-internal seam
+// this plan's own must_haves require, since no fixture can reach it.
+func TestCallArgumentTypeContractAbsentOrEmptyRefuses(t *testing.T) {
+	typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Byte"}}
+	places := map[string]*placeState{
+		"value": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: typeFact.ID}, initialized: true},
+	}
+	binding := ast.Binding{Name: "result", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}}}
+
+	t.Run("absent entry refuses (via CallCalleeUnresolved)", func(t *testing.T) {
+		_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, map[string]calleeContract{}, typeFact, nil)
+		if diag == nil {
+			t.Fatal("expected a refusal for an absent callee-contract entry, got none")
+		}
+		if diag.Code != core.CallCalleeUnresolved {
+			t.Fatalf("expected %s, got %s", core.CallCalleeUnresolved, diag.Code)
+		}
+	})
+
+	t.Run("empty ParameterType refuses (via the new gate)", func(t *testing.T) {
+		contracts := map[string]calleeContract{
+			"identity": {ID: "s1:m:fn:identity", ParameterType: "", ReturnType: "Byte"},
+		}
+		_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+		if diag == nil {
+			t.Fatal("expected a refusal for an empty declared parameter type, got none")
+		}
+		if diag.Code != checkCallArgumentTypeMismatch {
+			t.Fatalf("expected %s, got %s", checkCallArgumentTypeMismatch, diag.Code)
+		}
+	})
+}
+
+// TestCallArgumentTypeAdjacencyAndBoundary is Task 1 Test 4 (edges 1/4,
+// adjacency and boundary): equal constructor strings admit; Byte against
+// Buffer refuses in both directions.
+func TestCallArgumentTypeAdjacencyAndBoundary(t *testing.T) {
+	binding := ast.Binding{Name: "result", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}}}
+	cases := []struct {
+		name            string
+		callerType      string
+		calleeParamType string
+		wantAdmit       bool
+	}{
+		{"Byte argument into Byte parameter admits", "Byte", "Byte", true},
+		{"Buffer argument into Buffer parameter admits", "Buffer", "Buffer", true},
+		{"Byte argument into Buffer parameter refuses", "Byte", "Buffer", false},
+		{"Buffer argument into Byte parameter refuses", "Buffer", "Byte", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: tc.callerType}}
+			places := map[string]*placeState{
+				"value": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: typeFact.ID}, initialized: true},
+			}
+			// ReturnType == callerType so the admitting cases also clear the
+			// return-derivation gate -- this table is testing the
+			// argument-type gate specifically.
+			contracts := map[string]calleeContract{
+				"identity": {ID: "s1:m:fn:identity", ParameterType: tc.calleeParamType, ReturnType: tc.callerType},
+			}
+			_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+			admitted := diag == nil
+			if admitted != tc.wantAdmit {
+				t.Fatalf("want admit=%v, got admit=%v (diag=%+v)", tc.wantAdmit, admitted, diag)
+			}
+			if !tc.wantAdmit && diag.Code != checkCallArgumentTypeMismatch {
+				t.Fatalf("expected refusal code %s, got %s", checkCallArgumentTypeMismatch, diag.Code)
+			}
+		})
+	}
+}
+
+// TestCallTypeMismatchPrecedesCycleRefusal is Task 1 Test 5 (edges 6/7,
+// precedence): a program that is BOTH type-mismatched (main calling
+// identity with a Buffer argument) and cyclic (a self-recursive loop
+// function elsewhere in the same module) reports
+// check.call_argument_type_mismatch, never core.call_graph_cycle -- the
+// argument-type refusal fires at emission time inside resolveCallBinding,
+// strictly before the post-build callgraph.Order pass, which runs only
+// when len(result.Diagnostics) == 0. The six existing cycle fixtures each
+// still report core.call_graph_cycle unchanged, proving this precedence
+// rule changes no existing fixture's verdict.
+func TestCallTypeMismatchPrecedesCycleRefusal(t *testing.T) {
+	source := []byte(`module phase07.mismatch_and_cycle
+
+export {
+  fn main
+}
+
+fn identity(value: Byte) -> Byte {
+  value
+}
+
+fn loop(value: Byte) -> Byte {
+  let next = loop(value)
+  next
+}
+
+fn main(buffer: Buffer) -> Buffer {
+  let result = identity(buffer)
+  result
+}
+`)
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 1 {
+		t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
+	}
+	if result.Diagnostics[0].Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("expected %s to take precedence over core.call_graph_cycle, got %s", checkCallArgumentTypeMismatch, result.Diagnostics[0].Code)
+	}
+
+	for _, fixture := range []string{
+		"cycle_self.lang", "cycle_mutual.lang", "cycle_indirect.lang",
+		"cycle_unreachable.lang", "cycle_through_match_arm.lang", "foreign_symbol_shadowing.lang",
+	} {
+		t.Run(fixture, func(t *testing.T) {
+			cycleResult := Program(mustParseProgram(t, readPhase07Fixture(t, fixture)))
+			if len(cycleResult.Diagnostics) != 1 {
+				t.Fatalf("expected exactly one diagnostic for %s, got %+v", fixture, cycleResult.Diagnostics)
+			}
+			if cycleResult.Diagnostics[0].Code != core.CallGraphCycle {
+				t.Fatalf("expected %s for %s, got %s", core.CallGraphCycle, fixture, cycleResult.Diagnostics[0].Code)
+			}
+		})
+	}
+}
+
+// phase07TypeRippleCorpusDirs is the corpus TestOpCallTargetTypeIDUnchangedAcrossAcceptingCorpus
+// and TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus both
+// sweep, following originvalidate_test.go's TestInterfaceV1FieldInvariantsAcrossCorpus
+// os.ReadDir pattern (07-09 adds testdata/phase07 to that established set).
+var phase07TypeRippleCorpusDirs = []string{"phase07", "phase1", "phase2", "phase3", "phase4", "phase5", "phase6"}
+
+// TestOpCallTargetTypeIDUnchangedAcrossAcceptingCorpus is Task 1 Test 6
+// (ripple): across every fixture in testdata/phase07 and testdata/phase1
+// through testdata/phase6 that checks clean, every core.OpCall's TargetID
+// place TypeID equals the calling function's own single type fact ID, and
+// equals the ID whose Shape.Constructor matches the callee's declared
+// ReturnType. The two derivations agree on every admitted program. Fails
+// the test rather than skipping if it compared zero core.OpCall operations.
+func TestOpCallTargetTypeIDUnchangedAcrossAcceptingCorpus(t *testing.T) {
+	comparisons := 0
+	for _, dirName := range phase07TypeRippleCorpusDirs {
+		dir := filepath.Join("..", "..", "..", "testdata", dirName)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("read %s: %v", dir, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+				continue
+			}
+			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				t.Fatalf("read %s/%s: %v", dirName, entry.Name(), err)
+			}
+			parsed := syntax.Parse(source)
+			if len(parsed.Diagnostics) != 0 {
+				continue
+			}
+			result := Program(parsed.Program)
+			if len(result.Diagnostics) != 0 {
+				continue // rejected fixture (including call_type_mismatch.lang itself)
+			}
+			functionByID := make(map[string]core.Function, len(result.Program.Functions))
+			for _, function := range result.Program.Functions {
+				functionByID[function.ID] = function
+			}
+			for _, function := range result.Program.Functions {
+				if function.Linear == nil {
+					continue
+				}
+				wantTypeID := function.ID + ":type:0"
+				var callerType core.TypeFact
+				for _, fact := range function.Linear.Types {
+					if fact.ID == wantTypeID {
+						callerType = fact
+					}
+				}
+				placesByID := make(map[string]core.Place, len(function.Linear.Places))
+				for _, place := range function.Linear.Places {
+					placesByID[place.ID] = place
+				}
+				for _, operation := range function.Linear.Operations {
+					if operation.Kind != core.OpCall {
+						continue
+					}
+					comparisons++
+					if operation.TypeID != wantTypeID {
+						t.Fatalf("%s/%s: OpCall %s TypeID = %q, want %q", dirName, entry.Name(), operation.ID, operation.TypeID, wantTypeID)
+					}
+					targetPlace, ok := placesByID[operation.TargetID]
+					if !ok {
+						t.Fatalf("%s/%s: OpCall %s target place %q not found", dirName, entry.Name(), operation.ID, operation.TargetID)
+					}
+					if targetPlace.TypeID != wantTypeID {
+						t.Fatalf("%s/%s: OpCall %s target place TypeID = %q, want %q", dirName, entry.Name(), operation.ID, targetPlace.TypeID, wantTypeID)
+					}
+					callee, ok := functionByID[operation.CalleeID]
+					if !ok {
+						t.Fatalf("%s/%s: OpCall %s CalleeID %q does not resolve", dirName, entry.Name(), operation.ID, operation.CalleeID)
+					}
+					if callerType.ID == "" {
+						t.Fatalf("%s/%s: no type fact %q found on function %s", dirName, entry.Name(), wantTypeID, function.ID)
+					}
+					if callerType.Shape.Constructor != callee.ReturnType {
+						t.Fatalf("%s/%s: OpCall %s caller type constructor %q != callee %s declared ReturnType %q", dirName, entry.Name(), operation.ID, callerType.Shape.Constructor, callee.ID, callee.ReturnType)
+					}
+				}
+			}
+		}
+	}
+	if comparisons == 0 {
+		t.Fatal("expected to compare at least one core.OpCall operation across the corpus, compared zero")
+	}
+}
+
+// TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus is Task 1
+// Test 7 (SEM-05 key link): across every accepting fixture, for every
+// core.OpCall, originvalidate.BuildInterface's FunctionSignature.Parameters[0].Type
+// for the callee equals the declared parameter type constructor the
+// admission gate consulted -- proving the /1 field carries the fact the
+// gate decides on, closing the key link 07-VERIFICATION.md marked NOT
+// WIRED. Fails rather than skips if it compared zero callees.
+func TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus(t *testing.T) {
+	comparisons := 0
+	for _, dirName := range phase07TypeRippleCorpusDirs {
+		dir := filepath.Join("..", "..", "..", "testdata", dirName)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("read %s: %v", dir, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+				continue
+			}
+			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				t.Fatalf("read %s/%s: %v", dirName, entry.Name(), err)
+			}
+			parsed := syntax.Parse(source)
+			if len(parsed.Diagnostics) != 0 {
+				continue
+			}
+			astProgram := parsed.Program
+			result := Program(astProgram)
+			if len(result.Diagnostics) != 0 {
+				continue
+			}
+			iface, err := originvalidate.BuildInterface(result.Program)
+			if err != nil {
+				continue
+			}
+			signatureByID := make(map[string]core.FunctionSignature, len(iface.Functions))
+			for _, signature := range iface.Functions {
+				signatureByID[signature.ID] = signature
+			}
+			calleeContracts := buildCalleeContracts(astProgram)
+			contractByID := make(map[string]calleeContract, len(calleeContracts))
+			for _, contract := range calleeContracts {
+				contractByID[contract.ID] = contract
+			}
+			for _, function := range result.Program.Functions {
+				if function.Linear == nil {
+					continue
+				}
+				for _, operation := range function.Linear.Operations {
+					if operation.Kind != core.OpCall {
+						continue
+					}
+					signature, ok := signatureByID[operation.CalleeID]
+					if !ok {
+						t.Fatalf("%s/%s: no signature for callee %q", dirName, entry.Name(), operation.CalleeID)
+					}
+					if len(signature.Parameters) != 1 {
+						t.Fatalf("%s/%s: expected exactly one parameter on signature %q, got %d", dirName, entry.Name(), signature.ID, len(signature.Parameters))
+					}
+					contract, ok := contractByID[operation.CalleeID]
+					if !ok {
+						t.Fatalf("%s/%s: no callee contract for %q", dirName, entry.Name(), operation.CalleeID)
+					}
+					comparisons++
+					if signature.Parameters[0].Type != contract.ParameterType {
+						t.Fatalf("%s/%s: FunctionSignature.Parameters[0].Type = %q, admission contract ParameterType = %q", dirName, entry.Name(), signature.Parameters[0].Type, contract.ParameterType)
+					}
+				}
+			}
+		}
+	}
+	if comparisons == 0 {
+		t.Fatal("expected to compare at least one callee across the corpus, compared zero")
+	}
 }
