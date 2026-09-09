@@ -695,6 +695,18 @@ func peerRefusalDiagnostic(validated corevalidate.Result, moduleID string) diagn
 // session symbol reaches it on a production path.
 var checkCommandPeerSeam = false
 
+// interfacePeerRefusalSeam is 07-10 Task 2's unexported fault-injection
+// seam for control:interface.peer_refusal_is_invalid: when true, both
+// InterfaceExportCommandFile and InterfaceCoreCommandFile restore the
+// pre-07-10 behaviour of returning a non-nil error that discards the
+// peer's own code, instead of a protocol.StatusInvalid result carrying it
+// (07-REVIEW.md CR-04's `interface` half). One seam kills the control on
+// both paths -- they are one fact, asserted twice. Reachable only from
+// same-package tests via session_phase7_export_test.go's
+// SetInterfacePeerRefusalSeamForTest; no exported session symbol reaches
+// it on a production path.
+var interfacePeerRefusalSeam = false
+
 // CheckCommandFile reports the REFUSING UNION of two independently derived
 // admission layers, in fixed precedence order (07-10 checkpoint, SEM-04):
 // (1) check's own diagnostics, (2) corevalidate.Validate's independent
@@ -1097,7 +1109,16 @@ func InterfaceExportCommandFile(sourcePath, outPath string) (protocol.Result, er
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		return protocol.Result{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+		diag := peerRefusalDiagnostic(validated, checked.Program.ModuleID)
+		if interfacePeerRefusalSeam {
+			// control:interface.peer_refusal_is_invalid's own fault: restores
+			// the pre-07-10 behaviour of discarding the peer's own code
+			// behind a generic tool-failure error (07-REVIEW.md CR-04).
+			return protocol.Result{}, fmt.Errorf("interface command: peer refusal seam active, would report %s", diag.Code)
+		}
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = []diagnostic.Diagnostic{diag}
+		return completeCommand(result, started, checked.Work), nil
 	}
 	checked.Program = validated.Program()
 	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
@@ -1143,7 +1164,16 @@ func InterfaceCoreCommandFile(sourcePath, outPath string) (protocol.Result, erro
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		return protocol.Result{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+		diag := peerRefusalDiagnostic(validated, checked.Program.ModuleID)
+		if interfacePeerRefusalSeam {
+			// control:interface.peer_refusal_is_invalid's own fault: restores
+			// the pre-07-10 behaviour of discarding the peer's own code
+			// behind a generic tool-failure error (07-REVIEW.md CR-04).
+			return protocol.Result{}, fmt.Errorf("interface command: peer refusal seam active, would report %s", diag.Code)
+		}
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = []diagnostic.Diagnostic{diag}
+		return completeCommand(result, started, checked.Work), nil
 	}
 	program := validated.Program()
 	coreBytes, err := json.Marshal(program)

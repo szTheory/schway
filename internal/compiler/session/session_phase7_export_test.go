@@ -57,3 +57,12 @@ func SetCheckCommandPeerSeamForTest(disable bool) (restore func()) {
 	checkCommandPeerSeam = disable
 	return func() { checkCommandPeerSeam = previous }
 }
+
+// SetInterfacePeerRefusalSeamForTest installs 07-10 Task 2's
+// control:interface.peer_refusal_is_invalid fault-injection seam and
+// returns a restore func the caller MUST defer immediately.
+func SetInterfacePeerRefusalSeamForTest(disable bool) (restore func()) {
+	previous := interfacePeerRefusalSeam
+	interfacePeerRefusalSeam = disable
+	return func() { interfacePeerRefusalSeam = previous }
+}

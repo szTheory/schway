@@ -238,6 +238,102 @@ func TestNoUndeclaredCheckPeerDivergenceAcrossCorpus(t *testing.T) {
 	}
 }
 
+// TestInterfaceCommandsReportPeerRefusalAsInvalid is Task 2's core proof: a
+// program corevalidate.Validate refuses is reported by both
+// InterfaceExportCommandFile and InterfaceCoreCommandFile as a
+// protocol.StatusInvalid result carrying the peer's own code, with a NIL
+// error -- never the pre-07-10 `fmt.Errorf("core validation failed: …")`
+// that reached the CLI as tool.operation_failed / exit 3 with the code
+// discarded (07-REVIEW.md CR-04's `interface` half).
+func TestInterfaceCommandsReportPeerRefusalAsInvalid(t *testing.T) {
+	fixture := phase07Fixture(t, "duplicate_function_name.lang")
+
+	// Test 1: InterfaceCoreCommandFile.
+	t.Run("InterfaceCoreCommandFile reports StatusInvalid with a nil error", func(t *testing.T) {
+		outPath := filepath.Join(t.TempDir(), "duplicate_function_name.core.json")
+		result, err := session.InterfaceCoreCommandFile(fixture, outPath)
+		if err != nil {
+			t.Fatalf("InterfaceCoreCommandFile returned a non-nil error: %v", err)
+		}
+		if result.Status != protocol.StatusInvalid {
+			t.Fatalf("status = %s, want %s", result.Status, protocol.StatusInvalid)
+		}
+		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "core.duplicate_function_id" {
+			t.Fatalf("diagnostics = %+v, want exactly one core.duplicate_function_id", result.Diagnostics)
+		}
+		// Test 3: no output artifact is written on a refusal.
+		if _, statErr := os.Stat(outPath); !os.IsNotExist(statErr) {
+			t.Fatalf("expected %s to not exist after a refusal, stat err = %v", outPath, statErr)
+		}
+	})
+
+	// Test 2: InterfaceExportCommandFile, the same shape.
+	t.Run("InterfaceExportCommandFile reports StatusInvalid with a nil error", func(t *testing.T) {
+		outPath := filepath.Join(t.TempDir(), "duplicate_function_name.summary.json")
+		result, err := session.InterfaceExportCommandFile(fixture, outPath)
+		if err != nil {
+			t.Fatalf("InterfaceExportCommandFile returned a non-nil error: %v", err)
+		}
+		if result.Status != protocol.StatusInvalid {
+			t.Fatalf("status = %s, want %s", result.Status, protocol.StatusInvalid)
+		}
+		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "core.duplicate_function_id" {
+			t.Fatalf("diagnostics = %+v, want exactly one core.duplicate_function_id", result.Diagnostics)
+		}
+		if _, statErr := os.Stat(outPath); !os.IsNotExist(statErr) {
+			t.Fatalf("expected %s to not exist after a refusal, stat err = %v", outPath, statErr)
+		}
+	})
+
+	// Test 4: an accepting program behaves exactly as before -- same
+	// StatusPass, artifact written, and a working round-trip through
+	// InterfaceCheckCommandFile (the existing CoreDigest-bound contract).
+	t.Run("accepting program: unchanged StatusPass, written artifacts, and a working round-trip", func(t *testing.T) {
+		accepting := phase07Fixture(t, "call_basic.lang")
+		dir := t.TempDir()
+		summaryPath := filepath.Join(dir, "call_basic.summary.json")
+		corePath := filepath.Join(dir, "call_basic.core.json")
+
+		exportResult, err := session.InterfaceExportCommandFile(accepting, summaryPath)
+		if err != nil {
+			t.Fatalf("InterfaceExportCommandFile: %v", err)
+		}
+		if exportResult.Status != protocol.StatusPass {
+			t.Fatalf("export status = %s, want %s", exportResult.Status, protocol.StatusPass)
+		}
+		if exportResult.Interface == nil {
+			t.Fatal("expected a non-nil Interface projection on an accepting program")
+		}
+
+		coreResult, err := session.InterfaceCoreCommandFile(accepting, corePath)
+		if err != nil {
+			t.Fatalf("InterfaceCoreCommandFile: %v", err)
+		}
+		if coreResult.Status != protocol.StatusPass {
+			t.Fatalf("core status = %s, want %s", coreResult.Status, protocol.StatusPass)
+		}
+
+		checkResult, err := session.InterfaceCheckCommandFile(summaryPath, corePath)
+		if err != nil {
+			t.Fatalf("InterfaceCheckCommandFile: %v", err)
+		}
+		if checkResult.Status != protocol.StatusPass {
+			t.Fatalf("round-trip check status = %s, want %s (the digest bound at export time must still match the bytes InterfaceCoreCommandFile wrote)", checkResult.Status, protocol.StatusPass)
+		}
+	})
+
+	// Test 5 (edge 2, fail-closed): !Valid with an empty Problems slice
+	// yields StatusInvalid with the fallback code, on both paths -- driven
+	// through the shared peerRefusalDiagnostic helper, since no real
+	// program produces an empty Problems slice.
+	t.Run("edge 2: empty Problems fails closed on both interface paths too", func(t *testing.T) {
+		diag := session.PeerRefusalDiagnosticForTest(corevalidate.Result{Valid: false}, "phase07.example")
+		if diag.Code != session.PeerRefusalUnnamedCodeForTest {
+			t.Fatalf("code = %q, want the fail-closed fallback %q", diag.Code, session.PeerRefusalUnnamedCodeForTest)
+		}
+	})
+}
+
 // phase07Fixture resolves a testdata/phase07 fixture's absolute path,
 // mirroring this package's other phase07 test helpers' precedent.
 func phase07Fixture(t testing.TB, name string) string {
