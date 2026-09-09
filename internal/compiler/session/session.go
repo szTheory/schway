@@ -658,6 +658,52 @@ func CheckFile(path string) (CheckResult, error) {
 	return Check(source), nil
 }
 
+// peerRefusalUnnamedCode is 07-10's fail-closed fallback code (D-10 union
+// rule edge 2): corevalidate.Validate reporting !Valid with an EMPTY
+// Problems slice is structurally impossible today, but absence of a named
+// problem must never be read as absence of a refusal. Every command path
+// that consults the peer falls back to this constant, never to
+// protocol.StatusPass and never to an empty diagnostic code, when that
+// impossible shape is ever produced.
+const peerRefusalUnnamedCode = "core.peer_refusal_unnamed"
+
+// peerRefusalDiagnostic formats corevalidate.Validate's own refusal into a
+// single diagnostic.Diagnostic. It is called from three sites
+// (CheckCommandFile, InterfaceExportCommandFile, InterfaceCoreCommandFile)
+// that each report the SAME already-computed peer verdict -- this is
+// shared FORMATTING of one derivation's own answer, never a reconciliation
+// of two independent derivations (07-10 checkpoint prohibition): it reads
+// nothing from check, contributes no predicate of its own, and callers
+// still decide independently whether to call it at all.
+func peerRefusalDiagnostic(validated corevalidate.Result, moduleID string) diagnostic.Diagnostic {
+	code := peerRefusalUnnamedCode
+	detail := fmt.Sprintf("corevalidate refused module %s", moduleID)
+	if len(validated.Problems) > 0 {
+		code = validated.Problems[0].Code
+		detail = validated.Problems[0].Detail
+	}
+	return diagnostic.Error(code, diagnostic.Span{}, detail)
+}
+
+// checkCommandPeerSeam is 07-10 Task 1's unexported fault-injection seam
+// for control:check.peer_consulted: when true, CheckCommandFile skips the
+// corevalidate.Validate consult entirely, restoring the pre-07-10 CR-04
+// defect (07-REVIEW.md) where a program the independent peer refused could
+// still report status: pass, exit 0 from the gate users actually run.
+// Reachable only from same-package tests via
+// session_phase7_export_test.go's SetCheckCommandPeerSeam; no exported
+// session symbol reaches it on a production path.
+var checkCommandPeerSeam = false
+
+// CheckCommandFile reports the REFUSING UNION of two independently derived
+// admission layers, in fixed precedence order (07-10 checkpoint, SEM-04):
+// (1) check's own diagnostics, (2) corevalidate.Validate's independent
+// replay over the emitted core.Program alone, then (3)
+// originvalidate.ValidatePublished on the peer-normalized program -- the
+// exact order InterfaceExportCommandFile already uses. Neither layer's
+// verdict suppresses, reconciles, or overrides the other; this function
+// contributes no predicate of its own about ownership, types, or
+// callability (07-REVIEW.md CR-04 / PVG-03).
 func CheckCommandFile(path string) (protocol.Result, error) {
 	started := time.Now()
 	checked, err := CheckFile(path)
@@ -668,7 +714,18 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics
-	} else if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
+		return completeCommand(result, started, checked.Work), nil
+	}
+	if !checkCommandPeerSeam {
+		validated := corevalidate.Validate(checked.Program)
+		if !validated.Valid {
+			result.Status = protocol.StatusInvalid
+			result.Diagnostics = []diagnostic.Diagnostic{peerRefusalDiagnostic(validated, checked.Program.ModuleID)}
+			return completeCommand(result, started, checked.Work), nil
+		}
+		checked.Program = validated.Program()
+	}
+	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
 		// D-04-27/WR-01: originvalidate.ValidatePublished no longer runs only
 		// on the `interface export` path -- the foreign declaration surface
 		// is a second place an alias fact can be silently absent (D-04-28),

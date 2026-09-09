@@ -1,6 +1,10 @@
 package session
 
-import "github.com/codename-lang/lang/internal/compiler/core"
+import (
+	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+)
 
 // This file is compiled ONLY into test binaries (Go excludes every
 // "_test.go" file from a non-test build), mirroring
@@ -27,4 +31,29 @@ func SetPhase07LaneRequiredKindsForTest(kinds []core.OperationKind) (restore fun
 	previous := phase07LaneRequiredKindsOverride
 	phase07LaneRequiredKindsOverride = kinds
 	return func() { phase07LaneRequiredKindsOverride = previous }
+}
+
+// PeerRefusalDiagnosticForTest exposes 07-10 Task 1's unexported
+// peerRefusalDiagnostic formatting helper to session_test's edge-2
+// fail-closed assertion: corevalidate.Validate reporting !Valid with an
+// EMPTY Problems slice is structurally impossible from any real program
+// (v.problems is only ever populated alongside setting v.valid = false via
+// v.check/v.checkErr), so the fail-closed fallback can only be exercised
+// with a hand-built corevalidate.Result.
+func PeerRefusalDiagnosticForTest(validated corevalidate.Result, moduleID string) diagnostic.Diagnostic {
+	return peerRefusalDiagnostic(validated, moduleID)
+}
+
+// PeerRefusalUnnamedCodeForTest exposes 07-10's fail-closed fallback code
+// constant so tests assert against the named constant rather than a
+// duplicated string literal.
+const PeerRefusalUnnamedCodeForTest = peerRefusalUnnamedCode
+
+// SetCheckCommandPeerSeamForTest installs 07-10 Task 1's
+// control:check.peer_consulted fault-injection seam and returns a restore
+// func the caller MUST defer immediately.
+func SetCheckCommandPeerSeamForTest(disable bool) (restore func()) {
+	previous := checkCommandPeerSeam
+	checkCommandPeerSeam = disable
+	return func() { checkCommandPeerSeam = previous }
 }

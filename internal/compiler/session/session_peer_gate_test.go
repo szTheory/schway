@@ -1,0 +1,249 @@
+package session_test
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
+)
+
+// peerDivergenceExpected is 07-10's named, commented, hand-maintained
+// register of every fixture under testdata/ where `check` ADMITS (zero
+// checked.Diagnostics) but corevalidate.Validate REFUSES independently.
+// TestNoUndeclaredCheckPeerDivergenceAcrossCorpus asserts this is the
+// EXACT set, in both directions (T-07-10-05): an undeclared new divergence
+// fails, and a stale entry that no longer diverges also fails. Keyed by
+// project-relative path (forward slashes); value is the peer's reported
+// Problems[0].Code.
+var peerDivergenceExpected = map[string]string{
+	// D-03-02 interprocedural half (PVG-04/CR-02, Phase 08 scope --
+	// PHASE-07-DEBT.md D-07-49): check.computeLoanLastUses has no "call"
+	// case, so the exclusive loan on `buffer` is treated as ending before
+	// `relay`'s call is ever reached and `escort` checks clean; corevalidate's
+	// independent OpCall replay refuses with core.move_while_borrowed.
+	"testdata/phase07/relay_escort_witness.lang": "core.move_while_borrowed",
+	// WR-01's user-visible half (07-REVIEW.md; check-side half carried as
+	// debt, PHASE-07-DEBT.md D-07-50): two `fn helper` declarations share
+	// one semanticID; check's buildCalleeContracts silently resolves the
+	// call to the LAST declaration, so check itself stays clean, but
+	// corevalidate's function-ID uniqueness check refuses independently.
+	"testdata/phase07/duplicate_function_name.lang": "core.duplicate_function_id",
+}
+
+// phase07SpotCheckRegression is 07-VERIFICATION.md's own pre-07-10
+// Behavioral Spot-Checks table, restated here as a mechanical assertion
+// (must_haves backstop truth): every fixture below is NOT a declared
+// divergence entry, and its `lang check` status/code must be byte-for-byte
+// unchanged by this plan.
+var phase07SpotCheckRegression = []struct {
+	fixture string
+	status  string
+	code    string // empty when status is pass (no diagnostics expected)
+}{
+	{"call_basic.lang", protocol.StatusPass, ""},
+	{"call_from_both_match_arms.lang", protocol.StatusPass, ""},
+	{"deep_diamond_acyclic.lang", protocol.StatusPass, ""},
+	{"call_type_mismatch.lang", protocol.StatusInvalid, "check.call_argument_type_mismatch"},
+	{"call_uncallable_callee.lang", protocol.StatusInvalid, "core.callee_not_callable"},
+	{"clean_but_unpublishable.lang", protocol.StatusInvalid, "core.origin_omitted"},
+	{"cycle_indirect.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_mutual.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_self.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_through_match_arm.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_unreachable.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"foreign_symbol_shadowing.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
+}
+
+// TestCheckCommandSurfacesPeerRefusal is Task 1's core proof: CheckCommandFile
+// now takes the refusing union of `check`'s own diagnostics and
+// corevalidate.Validate's independent verdict, in fixed precedence order
+// (07-10 checkpoint, SEM-04), closing 07-REVIEW.md CR-04 / PVG-03.
+func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
+	// Test 1: relay_escort_witness.lang now reports the peer's own
+	// core.move_while_borrowed refusal at the CLI, where before 07-10 it
+	// reported status: pass, exit-0-equivalent (StatusPass).
+	t.Run("relay_escort_witness flips to the peer's refusal", func(t *testing.T) {
+		result, err := session.CheckCommandFile(phase07Fixture(t, "relay_escort_witness.lang"))
+		if err != nil {
+			t.Fatalf("CheckCommandFile returned an error: %v", err)
+		}
+		if result.Status != protocol.StatusInvalid {
+			t.Fatalf("status = %s, want %s", result.Status, protocol.StatusInvalid)
+		}
+		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "core.move_while_borrowed" {
+			t.Fatalf("diagnostics = %+v, want exactly one core.move_while_borrowed", result.Diagnostics)
+		}
+	})
+
+	// Test 2: duplicate_function_name.lang (WR-01's user-visible half)
+	// refuses with the peer's own core.duplicate_function_id.
+	t.Run("duplicate_function_name refuses with the peer's code", func(t *testing.T) {
+		result, err := session.CheckCommandFile(phase07Fixture(t, "duplicate_function_name.lang"))
+		if err != nil {
+			t.Fatalf("CheckCommandFile returned an error: %v", err)
+		}
+		if result.Status != protocol.StatusInvalid {
+			t.Fatalf("status = %s, want %s", result.Status, protocol.StatusInvalid)
+		}
+		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "core.duplicate_function_id" {
+			t.Fatalf("diagnostics = %+v, want exactly one core.duplicate_function_id", result.Diagnostics)
+		}
+	})
+
+	// Test 3 (no regression): every fixture NOT in the declared divergence
+	// register still reports exactly the status/code
+	// 07-VERIFICATION.md's Behavioral Spot-Checks table recorded pre-07-10.
+	t.Run("no regression across the rest of the phase07 corpus", func(t *testing.T) {
+		for _, spot := range phase07SpotCheckRegression {
+			spot := spot
+			t.Run(spot.fixture, func(t *testing.T) {
+				result, err := session.CheckCommandFile(phase07Fixture(t, spot.fixture))
+				if err != nil {
+					t.Fatalf("CheckCommandFile returned an error: %v", err)
+				}
+				if result.Status != spot.status {
+					t.Fatalf("status = %s, want %s", result.Status, spot.status)
+				}
+				if spot.code == "" {
+					if len(result.Diagnostics) != 0 {
+						t.Fatalf("expected zero diagnostics, got %+v", result.Diagnostics)
+					}
+					return
+				}
+				// Edge 1 (adjacency): whether the shared code came from
+				// check's own diagnostics or the peer, the union never
+				// duplicates it -- exactly one diagnostic is reported.
+				if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != spot.code {
+					t.Fatalf("diagnostics = %+v, want exactly one %s", result.Diagnostics, spot.code)
+				}
+			})
+		}
+	})
+
+	// Test 4 (edge 3, ordering): call_type_mismatch.lang has BOTH a check
+	// diagnostic (check.call_argument_type_mismatch) and would separately
+	// be refused by the peer's own OpCall replay -- the reported code is
+	// check's, because check's diagnostics are reported before the peer
+	// ever runs (precedence is asserted, not assumed).
+	t.Run("edge 3: check diagnostics take precedence over the peer", func(t *testing.T) {
+		result, err := session.CheckCommandFile(phase07Fixture(t, "call_type_mismatch.lang"))
+		if err != nil {
+			t.Fatalf("CheckCommandFile returned an error: %v", err)
+		}
+		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "check.call_argument_type_mismatch" {
+			t.Fatalf("diagnostics = %+v, want exactly one check.call_argument_type_mismatch (check's own code, not a core.* peer code)", result.Diagnostics)
+		}
+	})
+
+	// Test 5 (edge 2, empty/fail-closed): !Valid with an EMPTY Problems
+	// slice is structurally impossible from any real program, so it is
+	// driven through a hand-built corevalidate.Result. The fallback must
+	// never report an empty code and must never behave as StatusPass.
+	t.Run("edge 2: empty Problems fails closed to the named fallback code", func(t *testing.T) {
+		diag := session.PeerRefusalDiagnosticForTest(corevalidate.Result{Valid: false}, "phase07.example")
+		if diag.Code != session.PeerRefusalUnnamedCodeForTest {
+			t.Fatalf("code = %q, want the fail-closed fallback %q", diag.Code, session.PeerRefusalUnnamedCodeForTest)
+		}
+		if diag.Code == "" {
+			t.Fatal("fail-closed fallback code must never be empty")
+		}
+	})
+}
+
+// TestDuplicateFunctionDeclarationRefusedAtCLI is the standing negative
+// control for WR-01's user-visible half (D-07-50): before 07-10, this
+// program reported status: pass, exit 0. It is now refused, incidentally,
+// once CheckCommandFile consults the peer -- named as its own test per
+// 07-10's <artifacts_this_phase_produces>, distinct from the table-driven
+// assertion above so a future regression on this specific fixture names
+// itself unambiguously in test output.
+func TestDuplicateFunctionDeclarationRefusedAtCLI(t *testing.T) {
+	result, err := session.CheckCommandFile(phase07Fixture(t, "duplicate_function_name.lang"))
+	if err != nil {
+		t.Fatalf("CheckCommandFile returned an error: %v", err)
+	}
+	if result.Status != protocol.StatusInvalid {
+		t.Fatalf("status = %s, want %s (WR-01's user-visible half must be refused, not silently admitted)", result.Status, protocol.StatusInvalid)
+	}
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "core.duplicate_function_id" {
+		t.Fatalf("diagnostics = %+v, want exactly one core.duplicate_function_id", result.Diagnostics)
+	}
+}
+
+// TestNoUndeclaredCheckPeerDivergenceAcrossCorpus is Task 1 Test 7
+// (T-07-10-05): walks every .lang file under testdata/, computes both
+// verdicts (check's own diagnostics, and corevalidate.Validate on the
+// checked core.Program when check itself admits), and asserts the set of
+// files where check admits but the peer refuses equals peerDivergenceExpected
+// EXACTLY, in both directions. An undeclared new divergence fails this test
+// rather than passing silently; a stale entry that no longer diverges also
+// fails it.
+func TestNoUndeclaredCheckPeerDivergenceAcrossCorpus(t *testing.T) {
+	root := testsupport.ProjectPath("testdata")
+	found := make(map[string]string)
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() || filepath.Ext(path) != ".lang" {
+			return nil
+		}
+		checked, checkErr := session.CheckFile(path)
+		if checkErr != nil {
+			t.Fatalf("CheckFile(%s): %v", path, checkErr)
+		}
+		if len(checked.Diagnostics) > 0 {
+			// check itself refuses -- not a check-admits/peer-refuses
+			// divergence, regardless of what the peer would say.
+			return nil
+		}
+		validated := corevalidate.Validate(checked.Program)
+		if validated.Valid {
+			return nil
+		}
+		code := session.PeerRefusalUnnamedCodeForTest
+		if len(validated.Problems) > 0 {
+			code = validated.Problems[0].Code
+		}
+		relative, relErr := filepath.Rel(testsupport.ProjectPath("."), path)
+		if relErr != nil {
+			t.Fatalf("filepath.Rel: %v", relErr)
+		}
+		found[filepath.ToSlash(relative)] = code
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking %s: %v", root, err)
+	}
+
+	for path, wantCode := range peerDivergenceExpected {
+		gotCode, ok := found[path]
+		if !ok {
+			t.Errorf("declared divergence %s no longer diverges (check admits, peer no longer refuses, or the fixture is missing) -- stale entry in peerDivergenceExpected", path)
+			continue
+		}
+		if gotCode != wantCode {
+			t.Errorf("%s: peer code = %q, want declared %q", path, gotCode, wantCode)
+		}
+	}
+	for path, gotCode := range found {
+		if _, declared := peerDivergenceExpected[path]; !declared {
+			t.Errorf("UNDECLARED divergence: %s (check admits, corevalidate refuses with %s) is not in peerDivergenceExpected", path, gotCode)
+		}
+	}
+}
+
+// phase07Fixture resolves a testdata/phase07 fixture's absolute path,
+// mirroring this package's other phase07 test helpers' precedent.
+func phase07Fixture(t testing.TB, name string) string {
+	t.Helper()
+	if strings.Contains(name, string(filepath.Separator)) || strings.Contains(name, "/") {
+		t.Fatalf("phase07Fixture expects a bare filename, got %q", name)
+	}
+	return testsupport.ProjectPath("testdata", "phase07", name)
+}
