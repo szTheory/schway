@@ -129,6 +129,19 @@ type TraceSummary struct {
 	Truncated string       `json:"truncated,omitempty"`
 }
 
+// Note (D-07-15/07-06): the call-graph cycle diagnostic's OWN truncation
+// code, "truncated:core.call_cycle_bound", is declared as
+// callgraph.TruncatedCycleBound rather than here. protocol is imported by
+// interp, and internal/compiler/interp's own test package imports check,
+// which must reach this code -- declaring it in protocol would close an
+// import cycle (check -> protocol -> interp -> [test] -> check). callgraph
+// carries no such constraint and already declares this refusal's sibling
+// bound (MaxCycleCauses), so the code sits there instead, following the
+// SAME declared-once-never-a-string-literal-at-the-emission-site
+// convention as session.TruncatedEvidenceTraceBound and the
+// "truncated:explain.depth" / "truncated:explain.node_budget" /
+// "truncated:query.page_bound" family.
+
 // InterfaceFunctionAnswer is one function's body-blind origin answer, read
 // directly from a core.Interface summary — never from a body field.
 //

@@ -45,6 +45,12 @@ type Result struct {
 
 func Program(program ast.Program) Result {
 	result := Result{Program: core.Program{Schema: core.Schema, Module: program.Module, ModuleID: semanticID(program.Module, "module", program.Module)}}
+	// spanByOperationID is D-07-35's program-wide merge of every checked
+	// function's own CallSpans: check's OWN emission-time bookkeeping,
+	// consulted only when a core.call_graph_cycle diagnostic must project
+	// an OpCall operation ID onto a source span. No Span is added to
+	// core.LinearOperation.
+	spanByOperationID := map[string]diagnostic.Span{}
 	hasMatch, hasLinear := false, false
 	for _, function := range program.Funcs {
 		if function.Body.Linear != nil {
@@ -121,14 +127,18 @@ func Program(program ast.Program) Result {
 			var checked core.Function
 			var diagnostics []diagnostic.Diagnostic
 			var work int
+			var callSpans map[string]diagnostic.Span
 			if hasTryCall(function.Body.Linear) {
 				checked, diagnostics, work = checkFallibleLinear(functionID, function, foreignSymbols, functionNames, types)
 			} else {
-				checked, diagnostics, work = checkLinear(program.Module, functionID, function, functionIDs, foreignSymbols)
+				checked, diagnostics, work, callSpans = checkLinear(program.Module, functionID, function, functionIDs, foreignSymbols)
 			}
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
+				for opID, span := range callSpans {
+					spanByOperationID[opID] = span
+				}
 				result.Program.Schema = core.Schema1
 				result.Program.Functions = append(result.Program.Functions, checked)
 				// D-05-01: alias facts are derivable only for the plain
@@ -174,12 +184,15 @@ func Program(program ast.Program) Result {
 			}
 		}
 		if hasArmBody {
-			checked, diagnostics, work := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types), functionIDs, foreignSymbols)
+			checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types), functionIDs, foreignSymbols)
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
 				result.Program.Schema = core.Schema1
 				result.Program.Functions = append(result.Program.Functions, checked)
+				for opID, span := range callSpans {
+					spanByOperationID[opID] = span
+				}
 			}
 			continue
 		}
@@ -332,7 +345,7 @@ func Program(program ast.Program) Result {
 		// core.Program therefore exists only as an ephemeral local inside
 		// this function -- never returned, serialized, cached,
 		// interpreted, or lowered. There is no AST-side graph.
-		if diag := checkCallGraphAcyclic(result.Program); diag != nil {
+		if diag := checkCallGraphAcyclic(result.Program, spanByOperationID); diag != nil {
 			result.Diagnostics = append(result.Diagnostics, *diag)
 			result.Program = core.Program{}
 		}
@@ -344,17 +357,34 @@ func Program(program ast.Program) Result {
 // discovered cycle, builds the core.call_graph_cycle diagnostic ratified
 // at the 07-06 checkpoint (D-07-15): code core.call_graph_cycle, message
 // "call graph contains a cycle; recursion is refused", causes ordered
-// cycle_length followed by one cycle_member per witness member, no
-// repairs (a cycle has no local, mechanical edit). Returns nil when the
-// program is acyclic.
-func checkCallGraphAcyclic(program core.Program) *diagnostic.Diagnostic {
+// cycle_length (the TRUE member count, never the truncated one) followed
+// by up to callgraph.MaxCycleCauses cycle_member causes, each carrying the
+// span of that member's own outgoing edge (D-07-35: projected here from
+// the OpCall operation ID callgraph's witness names, via spanByOperationID
+// -- never a span callgraph or core.LinearOperation itself carries), and,
+// on overflow, exactly one truncated cause naming
+// protocol.TruncatedCallCycleBound. The diagnostic's own Primary is the
+// span of the closing edge. No repairs (a cycle has no local, mechanical
+// edit). Returns nil when the program is acyclic.
+func checkCallGraphAcyclic(program core.Program, spanByOperationID map[string]diagnostic.Span) *diagnostic.Diagnostic {
 	if _, err := callgraph.Order(program); err != nil {
 		if cycle, ok := callgraph.CycleError(err); ok {
-			causes := []diagnostic.Cause{{Kind: "cycle_length", Detail: fmt.Sprintf("%d", len(cycle.Members()))}}
-			for _, member := range cycle.Members() {
-				causes = append(causes, diagnostic.Cause{Kind: "cycle_member", Detail: member})
+			members := cycle.Members()
+			edgeOperationIDs := cycle.MemberEdgeOperationIDs()
+			causes := []diagnostic.Cause{{Kind: "cycle_length", Detail: fmt.Sprintf("%d", len(members))}}
+			emitted := len(members)
+			if emitted > callgraph.MaxCycleCauses {
+				emitted = callgraph.MaxCycleCauses
 			}
-			diag := diagnostic.Error(core.CallGraphCycle, diagnostic.Span{}, "call graph contains a cycle; recursion is refused", causes...)
+			for i := 0; i < emitted; i++ {
+				span := spanByOperationID[edgeOperationIDs[i]]
+				causes = append(causes, diagnostic.Cause{Kind: "cycle_member", Detail: members[i], Span: &span})
+			}
+			if len(members) > callgraph.MaxCycleCauses {
+				causes = append(causes, diagnostic.Cause{Kind: "truncated", Detail: callgraph.TruncatedCycleBound})
+			}
+			primary := spanByOperationID[cycle.ClosingOperationID()]
+			diag := diagnostic.Error(core.CallGraphCycle, primary, "call graph contains a cycle; recursion is refused", causes...)
 			return &diag
 		}
 		if _, ok := callgraph.UnresolvedCalleeError(err); ok && verifyCallInvariantsSeam {
@@ -635,11 +665,11 @@ const maxBlocksPerFunction = 128
 // switch/case lowering never needs a bare-alternative fallback case inside a
 // block-shaped function, and the interpreter/validator dispatch stays a
 // simple "every arm has a BlockID" invariant rather than a per-arm union.
-func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int) {
+func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
 	parameterType := coreType(function.Parameter.Type)
 	derived, err := ability.DeriveSealed(parameterType, sealed)
 	if err != nil {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType), nil
 	}
 	typeID := functionID + ":type:0"
 	parameterID := functionID + ":place:0"
@@ -663,6 +693,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	armBlockIDs := make([]string, 0, len(function.Body.Arms))
 	armCFGBlocks := make([]cfgBlockSpec, 0, len(function.Body.Arms))
 	armEdgeIDs := make(map[string]string, len(function.Body.Arms))
+	callSpans := map[string]diagnostic.Span{}
 
 	for index, arm := range function.Body.Arms {
 		if seen[arm.Pattern] {
@@ -707,6 +738,9 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		}
 		linear.Places = append(linear.Places, support.Places...)
 		linear.Operations = append(linear.Operations, support.Operations...)
+		for opID, span := range support.CallSpans {
+			callSpans[opID] = span
+		}
 		for _, operation := range support.Operations {
 			armOperationIDs = append(armOperationIDs, operation.ID)
 		}
@@ -747,7 +781,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		diagnostics = append(diagnostics, diagnostic.Error("match.non_exhaustive", function.Body.Span, "match does not cover every alternative", causes...))
 	}
 	if len(diagnostics) > 0 {
-		return core.Function{}, diagnostics, work
+		return core.Function{}, diagnostics, work, nil
 	}
 
 	blocks = append([]core.Block{{ID: entryBlockID, PointID: functionID + ":point:entry", OperationIDs: []string{}, Successors: armBlockIDs}}, blocks...)
@@ -764,7 +798,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	fixpoint, err := loanLivenessFixpoint(functionID, cfgBlocks)
 	if err != nil {
 		diagnostics = append(diagnostics, diagnostic.Error("check.cfg_back_edge", function.Body.Span, err.Error()))
-		return core.Function{}, diagnostics, work
+		return core.Function{}, diagnostics, work, nil
 	}
 	edgeIDLookup := func(fromBlockID, toBlockID string) string {
 		if id, ok := armEdgeIDs[fromBlockID+"->"+toBlockID]; ok {
@@ -783,7 +817,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		Match:      &core.Match{ID: matchID, PointID: functionID + ":point:match", Scrutinee: function.Body.Scrutinee, Arms: arms},
 		Linear:     linear,
 		Span:       function.Span,
-	}, nil, work
+	}, nil, work, callSpans
 }
 
 // ---------------------------------------------------------------------
@@ -1194,6 +1228,10 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 			result.Places = append(result.Places, target)
 			places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
 			result.Operations = append(result.Operations, op)
+			if result.CallSpans == nil {
+				result.CallSpans = map[string]diagnostic.Span{}
+			}
+			result.CallSpans[op.ID] = binding.RHS.Span
 			endLoans(index)
 			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 			continue
@@ -1368,10 +1406,10 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	return result
 }
 
-func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int) {
+func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs map[string]string, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
 	parameterType := coreType(function.Parameter.Type)
 	if !sameType(function.ReturnType, function.Parameter.Type) {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType)
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType), nil
 	}
 	// OWN-04: the borrowed-view return case relaxes nothing about type
 	// identity above (the underlying type must still match the parameter
@@ -1389,11 +1427,11 @@ func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs m
 		}
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
 			"origin.unknown_path", function.ReturnOrigin.Span, "borrowed-view origin path must name the function's own parameter", causes...,
-		)}, typeNodeCount(parameterType)
+		)}, typeNodeCount(parameterType), nil
 	}
 	derived, err := ability.Derive(parameterType)
 	if err != nil {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType), nil
 	}
 	typeID := functionID + ":type:0"
 	if !executableShape(parameterType) {
@@ -1416,7 +1454,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs m
 			"check.unexecutable_shape", function.Parameter.Span,
 			"parameter shape has no native execution lowering this phase", causes,
 			diagnostic.Repair{Kind: "use_executable_shape", Detail: "Byte or Buffer"},
-		)}, typeNodeCount(parameterType)
+		)}, typeNodeCount(parameterType), nil
 	}
 	parameterID := functionID + ":place:0"
 	linear := &core.LinearBody{
@@ -1427,7 +1465,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs m
 	}
 	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, functionIDs, foreignSymbols)
 	if support.Diagnostic != nil {
-		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work
+		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work, nil
 	}
 	linear.Places = support.Places
 	linear.Operations = support.Operations
@@ -1439,7 +1477,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl, functionIDs m
 		ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
 		Parameter: core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor}, ReturnType: function.ReturnType.Constructor,
 		Linear: linear, PublicOrigin: publicOrigin, Span: function.Span,
-	}, nil, support.Work + support.FixpointWork
+	}, nil, support.Work + support.FixpointWork, support.CallSpans
 }
 
 // ---------------------------------------------------------------------
@@ -2188,6 +2226,17 @@ type ownershipSupport struct {
 	// exactly (D-03-01/D-04-25's "does not silently add uncounted cost"
 	// basis, applied without disturbing that pin).
 	FixpointWork int
+
+	// CallSpans is D-07-35's emission-time bookkeeping: for every "call"
+	// binding admitted in this body, the resulting core.OpCall operation's
+	// own ID mapped to the AST call-site span it came from
+	// (binding.RHS.Span). No Span is added to core.LinearOperation itself
+	// -- that would move bytes in every existing core artifact, against
+	// D-07-08's whole point -- so this map is check's OWN in-memory
+	// projection, built once per function body and merged program-wide in
+	// Program(), read only when a core.call_graph_cycle diagnostic must
+	// project an operation ID to a span.
+	CallSpans map[string]diagnostic.Span
 }
 
 type placeState struct {
@@ -2300,6 +2349,10 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 			result.Places = append(result.Places, target)
 			places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
 			result.Operations = append(result.Operations, op)
+			if result.CallSpans == nil {
+				result.CallSpans = map[string]diagnostic.Span{}
+			}
+			result.CallSpans[op.ID] = binding.RHS.Span
 			endLoans(index)
 			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 			continue

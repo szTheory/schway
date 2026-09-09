@@ -14,9 +14,10 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/ast"
+	"github.com/codename-lang/lang/internal/compiler/callgraph"
 	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
@@ -2147,7 +2148,7 @@ func TestBuildCallSignatureTableCallableMatchesPublishProblemsFor(t *testing.T) 
 	}
 	var functions []core.Function
 	for _, function := range parsed.Funcs {
-		checked, diagnostics, _ := checkLinear(parsed.Module, functionIDs[function.Name], function, functionIDs, nil)
+		checked, diagnostics, _, _ := checkLinear(parsed.Module, functionIDs[function.Name], function, functionIDs, nil)
 		if len(diagnostics) != 0 {
 			t.Fatalf("expected %s to check clean, got %+v", function.Name, diagnostics)
 		}
@@ -2516,5 +2517,143 @@ func TestVerifyCallableRefusalSeamCheckDisabledCorevalidateStillRefuses(t *testi
 	}
 	if !found {
 		t.Fatalf("expected %s, got %+v", core.CalleeNotCallable, coreResult.Problems)
+	}
+}
+
+// buildCycleSource generates a Lang source program declaring n functions,
+// f0..f(n-1), each calling the next in sequence, with the last wrapping
+// around to f0 -- a synthetic length-n call cycle, used to exercise
+// D-07-15's 32-cause bound without hand-writing 33 fixture functions.
+func buildCycleSource(n int) []byte {
+	var b strings.Builder
+	b.WriteString("module test.bigcycle\nexport { fn f0 }\n")
+	for i := 0; i < n; i++ {
+		next := (i + 1) % n
+		fmt.Fprintf(&b, "fn f%d(value: Byte) -> Byte {\n  let result = f%d(value)\n  result\n}\n", i, next)
+	}
+	return []byte(b.String())
+}
+
+// findCallGraphCycleDiagnostic locates the core.call_graph_cycle diagnostic
+// among result.Diagnostics, failing the test if absent.
+func findCallGraphCycleDiagnostic(t *testing.T, result Result) diagnostic.Diagnostic {
+	t.Helper()
+	for _, diag := range result.Diagnostics {
+		if diag.Code == core.CallGraphCycle {
+			return diag
+		}
+	}
+	t.Fatalf("expected a %s diagnostic, got %+v", core.CallGraphCycle, result.Diagnostics)
+	return diagnostic.Diagnostic{}
+}
+
+// TestCallGraphCycleBoundedAt32Causes is Task 2 Test 4: a 32-member
+// synthetic cycle emits exactly 32 cycle_member causes and zero truncated
+// causes.
+func TestCallGraphCycleBoundedAt32Causes(t *testing.T) {
+	result := Program(mustParseProgram(t, buildCycleSource(32)))
+	diag := findCallGraphCycleDiagnostic(t, result)
+	memberCauses, truncatedCauses := 0, 0
+	for _, cause := range diag.Causes {
+		switch cause.Kind {
+		case "cycle_member":
+			memberCauses++
+		case "truncated":
+			truncatedCauses++
+		case "cycle_length":
+			if cause.Detail != "32" {
+				t.Fatalf("want cycle_length 32, got %s", cause.Detail)
+			}
+		}
+	}
+	if memberCauses != 32 {
+		t.Fatalf("want 32 cycle_member causes, got %d", memberCauses)
+	}
+	if truncatedCauses != 0 {
+		t.Fatalf("want zero truncated causes at exactly the bound, got %d", truncatedCauses)
+	}
+}
+
+// TestCallGraphCycleTruncatesAt33Members is Task 2 Test 5: a 33-member
+// synthetic cycle emits exactly 32 cycle_member causes plus one truncated
+// cause whose Detail is callgraph.TruncatedCycleBound, and Task 2 Test 6:
+// the cycle_length cause's Detail is the TRUE member count ("33"), never
+// the truncated count.
+func TestCallGraphCycleTruncatesAt33Members(t *testing.T) {
+	result := Program(mustParseProgram(t, buildCycleSource(33)))
+	diag := findCallGraphCycleDiagnostic(t, result)
+	memberCauses := 0
+	truncatedCauses := 0
+	sawLength := false
+	for _, cause := range diag.Causes {
+		switch cause.Kind {
+		case "cycle_member":
+			memberCauses++
+		case "truncated":
+			truncatedCauses++
+			if cause.Detail != callgraph.TruncatedCycleBound {
+				t.Fatalf("want truncated detail %q, got %q", callgraph.TruncatedCycleBound, cause.Detail)
+			}
+		case "cycle_length":
+			sawLength = true
+			if cause.Detail != "33" {
+				t.Fatalf("want the TRUE member count (33), got %s", cause.Detail)
+			}
+		}
+	}
+	if !sawLength {
+		t.Fatalf("expected a cycle_length cause, got %+v", diag.Causes)
+	}
+	if memberCauses != 32 {
+		t.Fatalf("want exactly 32 cycle_member causes after truncation, got %d", memberCauses)
+	}
+	if truncatedCauses != 1 {
+		t.Fatalf("want exactly 1 truncated cause, got %d", truncatedCauses)
+	}
+}
+
+// TestCallGraphCycleProjectsSpansFromOperationIDs is Task 2 Test 7
+// (D-07-35): the diagnostic's Primary and each cycle_member cause's span
+// are real, non-zero source spans projected by check from operation IDs
+// -- never a Span core.LinearOperation itself carries (there is no such
+// field; see TestLinearOperationHasNoSpanField).
+func TestCallGraphCycleProjectsSpansFromOperationIDs(t *testing.T) {
+	source := readPhase07Fixture(t, "cycle_mutual.lang")
+	result := Program(mustParseProgram(t, source))
+	diag := findCallGraphCycleDiagnostic(t, result)
+	if diag.Primary.Start == 0 && diag.Primary.End == 0 {
+		t.Fatalf("expected a real, non-zero Primary span projected from an operation ID, got %+v", diag.Primary)
+	}
+	for _, cause := range diag.Causes {
+		if cause.Kind != "cycle_member" {
+			continue
+		}
+		if cause.Span == nil || (cause.Span.Start == 0 && cause.Span.End == 0) {
+			t.Fatalf("expected cycle_member cause %+v to carry a real, non-zero projected span", cause)
+		}
+	}
+}
+
+// TestLinearOperationHasNoSpanField is Task 2 Test 7's other half
+// (D-07-35): core.LinearOperation carries no Span field at all -- spans
+// are projected on check's side from operation IDs, never added to the
+// serialized core artifact.
+func TestLinearOperationHasNoSpanField(t *testing.T) {
+	typ := reflect.TypeOf(core.LinearOperation{})
+	for i := 0; i < typ.NumField(); i++ {
+		if typ.Field(i).Name == "Span" {
+			t.Fatalf("core.LinearOperation must not carry a Span field (D-07-35), found one")
+		}
+	}
+}
+
+// TestCallGraphCycleClearsReturnedProgram is D-07-14's own falsifier: when
+// check refuses on a call-graph cycle, the returned core.Program carries
+// no functions at all -- a cyclic program exists only as an ephemeral
+// local, never returned.
+func TestCallGraphCycleClearsReturnedProgram(t *testing.T) {
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	if len(result.Program.Functions) != 0 {
+		t.Fatalf("expected no functions in the returned core.Program on a cycle refusal, got %d", len(result.Program.Functions))
 	}
 }

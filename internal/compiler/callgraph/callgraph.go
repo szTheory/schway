@@ -49,15 +49,58 @@ const (
 	black
 )
 
+// MaxCycleCauses bounds the number of cycle_member causes check's
+// core.call_graph_cycle diagnostic will ever emit (D-07-15). Today's
+// language has no construct that could produce a legal, meaningfully
+// larger cycle witness than a handful of members, so this bound is a
+// genuine, finite, fail-closed ceiling against a future call-graph shape
+// (mirroring pathoracle.MaxPaths's doc-comment pattern) rather than a
+// tuning knob: it bounds only the emitted DIAGNOSTIC, never the traversal
+// itself (Order still visits every node and edge regardless of cycle
+// length), and it is never raised to make a test pass.
+const MaxCycleCauses = 32
+
+// TruncatedCycleBound is the stable truncation code check's
+// core.call_graph_cycle diagnostic reports when a cycle's true member
+// count exceeds MaxCycleCauses: check appends exactly one cause carrying
+// this code and drops the overflow, matching the
+// "truncated:evidence.trace_bound" / "truncated:explain.depth" /
+// "truncated:query.page_bound" convention. Declared here (not in
+// protocol, which would close an import cycle through interp -- see
+// protocol.go's own note) alongside its sibling bound, MaxCycleCauses.
+const TruncatedCycleBound = "truncated:core.call_cycle_bound"
+
+// rotationDisabledForTest and witnessSelectionDisabledForTest are Task 2's
+// own fault-injection seams (D-07-42): unexported, false by production
+// default, exercised ONLY via callgraph_export_test.go's setters (same
+// shape as session's phase07-lane overrides), restored via defer in every
+// test that engages them, never assigned on a production code path. They
+// exist to prove D-07-16's canonical rotation and D-07-43's
+// lexicographically-smallest cross-cycle witness selection are each
+// independently load-bearing: disabling rotation alone breaks the
+// same-cycle/different-discovery-order identity stability test; disabling
+// witness selection alone breaks the two-distinct-cycles test, with
+// rotation still applied to whichever candidate happened to be found
+// first.
+var (
+	rotationDisabledForTest         = false
+	witnessSelectionDisabledForTest = false
+)
+
 // cycleError is callgraph's private witness-carrying typed error for a
-// discovered cycle: the ordered member function IDs (cycle order, not yet
-// canonically rotated -- Task 2 adds rotation and deterministic
-// cross-cycle witness selection) and the operation ID of the OpCall edge
-// that closed the cycle (the gray re-entry edge), so check's diagnostic
-// construction never has to re-derive it.
+// discovered cycle: the canonically-rotated member function IDs
+// (D-07-16 -- the lexicographically smallest function ID sits at index 0)
+// and, parallel to members, the OpCall operation ID that realizes each
+// member's own outgoing edge to the NEXT member (wrapping around), so
+// check's diagnostic construction can project every cycle_member cause's
+// span, and the diagnostic's own Primary span, from operation IDs without
+// re-deriving anything (D-07-35). When several cycles exist in the graph,
+// this is the one whose canonical rotation is lexicographically smallest
+// across every cycle discovered (D-07-43) -- deterministic regardless of
+// root or adjacency traversal order.
 type cycleError struct {
-	members            []string
-	closingOperationID string
+	members          []string
+	edgeOperationIDs []string
 }
 
 func (e *cycleError) Error() string {
@@ -77,13 +120,30 @@ func CycleError(err error) (*cycleError, bool) {
 	return e, ok
 }
 
-// Members reports the cycle's witness path of function IDs, in discovery
-// (not yet rotated) order.
+// Members reports the cycle's witness path of function IDs, canonically
+// rotated (D-07-16) so the lexicographically smallest function ID sits at
+// index 0.
 func (e *cycleError) Members() []string { return append([]string(nil), e.members...) }
 
-// ClosingOperationID reports the OpCall operation ID whose edge closed the
-// cycle (the gray re-entry edge).
-func (e *cycleError) ClosingOperationID() string { return e.closingOperationID }
+// MemberEdgeOperationIDs reports, parallel to Members, the OpCall
+// operation ID realizing each member's own outgoing edge to the next
+// member in the (already-rotated) cycle order, wrapping from the last
+// member back to the first (D-07-35): check projects each cycle_member
+// cause's span from these operation IDs, never from a Span this package
+// or core.LinearOperation carries.
+func (e *cycleError) MemberEdgeOperationIDs() []string {
+	return append([]string(nil), e.edgeOperationIDs...)
+}
+
+// ClosingOperationID reports the OpCall operation ID whose edge closes the
+// canonical cycle -- the wrap-around edge from the last member back to the
+// first -- the span check projects onto the diagnostic's own Primary.
+func (e *cycleError) ClosingOperationID() string {
+	if len(e.edgeOperationIDs) == 0 {
+		return ""
+	}
+	return e.edgeOperationIDs[len(e.edgeOperationIDs)-1]
+}
 
 // unresolvedCalleeError is callgraph's own independent re-derivation of
 // D-07-45's unresolved-callee refusal: an OpCall whose CalleeID names no
@@ -207,6 +267,7 @@ func Order(program core.Program) ([]string, error) {
 	colorOf := make(map[string]color, len(adjacency))
 	onStackIndex := make(map[string]int, len(adjacency))
 	var postorder []string
+	var candidates []cycleWitness
 
 	for _, root := range roots {
 		if colorOf[root] != white {
@@ -228,13 +289,25 @@ func Order(program core.Program) ([]string, error) {
 					stack = append(stack, stackFrame{id: child})
 					onStackIndex[child] = len(stack) - 1
 				case gray:
+					// A back edge to an on-stack (gray) node is a real
+					// cycle. Record it as a candidate and KEEP GOING --
+					// D-07-43 requires collecting every cycle the whole
+					// deterministic traversal discovers, then choosing the
+					// lexicographically-smallest-rotation witness among
+					// them at the very end, rather than short-circuiting
+					// on whichever cycle a single root ordering happens to
+					// reach first.
 					startIndex := onStackIndex[child]
 					members := make([]string, 0, len(stack)-startIndex)
 					for i := startIndex; i < len(stack); i++ {
 						members = append(members, stack[i].id)
 					}
-					closingOperationID := edgeOperation[[2]string{top.id, child}]
-					return nil, &cycleError{members: members, closingOperationID: closingOperationID}
+					edgeIDs := make([]string, len(members))
+					for i := range members {
+						next := members[(i+1)%len(members)]
+						edgeIDs[i] = edgeOperation[[2]string{members[i], next}]
+					}
+					candidates = append(candidates, cycleWitness{members: members, edgeOperationIDs: edgeIDs})
 				case black:
 					// A legitimately revisited shared node in an acyclic
 					// subgraph (a diamond's shared leaf) -- not a cycle.
@@ -250,9 +323,67 @@ func Order(program core.Program) ([]string, error) {
 		}
 	}
 
+	if len(candidates) > 0 {
+		best := canonicalRotate(candidates[0])
+		if !witnessSelectionDisabledForTest {
+			for _, candidate := range candidates[1:] {
+				rotated := canonicalRotate(candidate)
+				if lexLess(rotated.members, best.members) {
+					best = rotated
+				}
+			}
+		}
+		return nil, &cycleError{members: best.members, edgeOperationIDs: best.edgeOperationIDs}
+	}
+
 	reversePostorder := make([]string, len(postorder))
 	for i, id := range postorder {
 		reversePostorder[len(postorder)-1-i] = id
 	}
 	return reversePostorder, nil
+}
+
+// cycleWitness is one candidate cycle discovered mid-traversal: its
+// (not-yet-rotated) member function IDs in discovery order, and, parallel
+// to members, the OpCall operation ID realizing each member's own
+// outgoing edge to the next member, wrapping around.
+type cycleWitness struct {
+	members          []string
+	edgeOperationIDs []string
+}
+
+// canonicalRotate rotates a cycle witness so the lexicographically
+// smallest function ID sits at index 0 (D-07-16), rotating members and
+// their parallel edgeOperationIDs in lockstep so each member's own
+// outgoing-edge operation ID stays correctly paired after rotation.
+func canonicalRotate(witness cycleWitness) cycleWitness {
+	n := len(witness.members)
+	if n == 0 || rotationDisabledForTest {
+		return witness
+	}
+	minIndex := 0
+	for i := 1; i < n; i++ {
+		if witness.members[i] < witness.members[minIndex] {
+			minIndex = i
+		}
+	}
+	members := make([]string, n)
+	edgeIDs := make([]string, n)
+	for i := 0; i < n; i++ {
+		members[i] = witness.members[(minIndex+i)%n]
+		edgeIDs[i] = witness.edgeOperationIDs[(minIndex+i)%n]
+	}
+	return cycleWitness{members: members, edgeOperationIDs: edgeIDs}
+}
+
+// lexLess reports whether a sorts before b under ordinary element-wise
+// lexicographic slice comparison -- the D-07-43 tie-break rule selecting
+// one witness among several distinct cycles.
+func lexLess(a, b []string) bool {
+	for i := 0; i < len(a) && i < len(b); i++ {
+		if a[i] != b[i] {
+			return a[i] < b[i]
+		}
+	}
+	return len(a) < len(b)
 }
