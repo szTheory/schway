@@ -286,7 +286,7 @@ Plans:
 
 **Wave 3 (blocked on 07-11)**
 
-- [ ] 07-12-PLAN.md — PVG-02 (CR-03): `FunctionSignature.Foreign`/`.Fails` closure-derived by an explicit worst-case join in the acyclic second pass, an independently-implemented peer join over `corevalidate`'s own postorder, `call_fallible_foreign_reach.lang`, the IN-01 index-coupling fix, and two mutation-killed controls
+- [x] 07-12-PLAN.md — PVG-02 (CR-03): `FunctionSignature.Foreign`/`.Fails` closure-derived by an explicit worst-case join in the acyclic second pass, an independently-implemented peer join over `corevalidate`'s own postorder, `call_fallible_foreign_reach.lang`, the IN-01 index-coupling fix, and two mutation-killed controls
 
 **Declared scope-cut trigger (D-07-26):** if `07-01`..`07-05` exceed ~2x their
 initial plan estimate, `07-06`/`07-07` renegotiate out to Phase 08 — **and

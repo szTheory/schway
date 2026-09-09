@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 07
 current_phase_name: Calls, Signatures, and Call-Graph Refusal
 status: executing
-stopped_at: Completed 07-11-PLAN.md
-last_updated: "2026-09-09T18:33:34.364Z"
+stopped_at: Completed 07-12-PLAN.md
+last_updated: "2026-09-09T19:05:48.919Z"
 last_activity: 2026-09-09
 last_activity_desc: Phase 07 execution started
-state_head: 58226375c3acb086278816e69f76aa138b29b47e
+state_head: c622189a88dfa8c696df410ff503e3a5e9a8612e
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 07 (Calls, Signatures, and Call-Graph Refusal) — EXECUTING
-Plan: 3 of 12
+Plan: 4 of 12
 Status: Ready to execute
 Last activity: 2026-09-09 — Phase 07 execution started
 
@@ -155,6 +155,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 07 P09 | 90 min | 4 tasks | 11 files |
 | Phase 07 P10 | 105min | 3 tasks | 9 files |
 | Phase 07 P11 | 90 min | 3 tasks | 12 files |
+| Phase 07 P12 | 55min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -186,6 +187,7 @@ Standing architectural commitments carried into M002:
 - [Phase 07]: 07-09: check.resolveCallBinding gates argument-type match and derives OpCall's TargetID.TypeID from the callee's declared return contract (fail-closed); corevalidate independently re-derives both refusals with no shared helper. Closes 07-VERIFICATION.md's single FAILED truth and 07-REVIEW.md CR-01.
 - [Phase 07]: 07-10: CheckCommandFile consults corevalidate.Validate (refusing union, fixed precedence check-then-peer-then-originvalidate); interface export/core report a peer refusal as StatusInvalid with the peer's own code instead of tool.operation_failed. Closes 07-REVIEW.md CR-04/PVG-03.
 - [Phase 07]: 07-11: consume-on-call closes CR-01/PVG-01 -- resolveCallBinding consumes call arguments (ability-decided), corevalidate independently re-derives from the core artifact alone; D-07-07 corrected, D-07-52 records the accepted implicit-transfer residual — Checkpoint auto-ratified under auto_advance/yolo mode
+- [Phase 07]: 07-12: Foreign/Fails made closure-derived over the proven-acyclic call graph in both originvalidate (joinForeignReach/joinFails) and corevalidate (peerJoinForeignReach/peerJoinFails, independently written, no shared helper beyond core.ForeignReachConflict); closes 07-REVIEW.md CR-03/PVG-02 and incidentally IN-01 (index-coupling fix). Phase 07 has no open post-verification gaps.
 
 ### Pending Todos
 
@@ -256,8 +258,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-09T18:33:34.349Z
-Stopped at: Completed 07-11-PLAN.md
+Last session: 2026-09-09T19:05:48.902Z
+Stopped at: Completed 07-12-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
