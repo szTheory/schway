@@ -596,9 +596,15 @@ func buildInterproceduralSummaries(program core.Program, table callSignatureTabl
 		work++
 		var summary interproceduralSummary
 		if signature, ok := table.lookup(functionID); ok {
+			if interproceduralConsultObserved != nil {
+				interproceduralConsultObserved(functionID, "return.mode")
+			}
 			summary.returnMode = signature.Return.Mode
 			summary.returnsBorrowOfParam = signature.Return.Mode == "shared" || signature.Return.Mode == "exclusive"
 			if len(signature.Parameters) > 0 {
+				if interproceduralConsultObserved != nil {
+					interproceduralConsultObserved(functionID, "parameters[0].mode")
+				}
 				summary.parameterMode = signature.Parameters[0].Mode
 			}
 		}
@@ -620,6 +626,19 @@ func buildInterproceduralSummaries(program core.Program, table callSignatureTabl
 // check.Program invocation (never persisted or reused across calls). nil in
 // production: zero cost, zero allocation.
 var buildInterproceduralSummariesObserved func()
+
+// interproceduralConsultObserved is 08-03 Task 3's D-08-26 disclosure-proof
+// instrumentation seam, mirroring callSignatureTableLookupObserved's own
+// shape (check.go:1106-1114): when non-nil, invoked with the callee's own
+// function ID and the exact signature-field name read, at every point
+// buildInterproceduralSummaries consults a callee-signature field --
+// currently exactly two call sites, both inside the block immediately
+// below, reading "return.mode" and "parameters[0].mode" respectively. This
+// is deliberately the SAME two-call-site set the ratified diagnostic
+// template's own cause 3 Detail string draws from (D-08-20/D-08-23):
+// nothing else in this derivation ever names a callee-signature field. nil
+// in production: zero cost, zero allocation.
+var interproceduralConsultObserved func(calleeID, field string)
 
 // deriveFunctionUsesParam is 08-02 Task 1's own derivation (D-08-01/D-08-02):
 // whether function's checked body uses its own declared parameter, computed

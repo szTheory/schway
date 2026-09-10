@@ -41,6 +41,21 @@ var peerDivergenceExpected = map[string]string{
 	// call to the LAST declaration, so check itself stays clean, but
 	// corevalidate's function-ID uniqueness check refuses independently.
 	"testdata/phase07/duplicate_function_name.lang": "core.duplicate_function_id",
+
+	// 08-03's ACCEPTING twin members (D-03-02's interprocedural half,
+	// producer side): check's own new interprocedural loan-liveness law
+	// (Phase 08) correctly admits these -- the callee's declared return
+	// contract is owned, so no loan is propagated across the call boundary.
+	// corevalidate's own loan-liveness re-derivation is still
+	// INTRAPROCEDURAL this phase (unmodified, Phase 09's own charter:
+	// "peer re-derivation and D-03-02 closure"): loanChainIndex.carriedLoans
+	// sets parent[operation.TargetID] = operation.SourceID for EVERY
+	// operation kind, including OpCall, so it unconditionally treats the
+	// call's own result as still carrying the argument's loan, regardless
+	// of what the callee's declared contract says, and refuses. See
+	// twin_a_accept.lang's own header for the full argument.
+	"testdata/phase08/twin_a_accept.lang":       "core.move_while_borrowed",
+	"testdata/phase08/relay_depth2_accept.lang": "core.move_while_borrowed",
 }
 
 // phase07SpotCheckRegression is 07-VERIFICATION.md's own pre-07-10

@@ -4646,3 +4646,107 @@ fn main(flag: Byte) -> Byte {
 		t.Fatalf("expected the match-arm shape's verdict (%d diagnostics) to match the straight-line equivalent's (%d diagnostics)", len(matchResult.Diagnostics), len(straightLineResult.Diagnostics))
 	}
 }
+
+// ---------------------------------------------------------------------
+// Phase 08 Task 3 (08-03): criterion 4's refusal half -- the exact
+// consulted callee-signature field set.
+// ---------------------------------------------------------------------
+
+// splitCalleeFieldDetail parses a cause 3 (callee_return_contract) Detail
+// string of the ratified shape "<calleeID>:<field>=<value>"
+// (D-08-20/D-08-23) back into its calleeID and field parts. calleeID itself
+// contains colons (e.g. "s1:phase08.twin_a_refuse:fn:escortee"), so this
+// cannot split on the first colon -- it instead searches for one of the two
+// field names this derivation is allowed to ever disclose, exactly
+// mirroring the closed set interproceduralConsultObserved records.
+func splitCalleeFieldDetail(detail string) (calleeID, field string, ok bool) {
+	for _, candidate := range []string{"return.mode", "parameters[0].mode"} {
+		marker := ":" + candidate + "="
+		if index := strings.Index(detail, marker); index != -1 {
+			return detail[:index], candidate, true
+		}
+	}
+	return "", "", false
+}
+
+// TestInterproceduralDisclosedFieldSet is Task 3's D-08-26 machine-assertion
+// of criterion 4's REFUSAL half: table-driven over every testdata/phase08
+// fixture plus testdata/phase07/relay_escort_witness.lang, it installs
+// interproceduralConsultObserved, runs check.Program, and asserts (a) the
+// recorded per-callee field set is a subset of exactly {"return.mode",
+// "parameters[0].mode"} -- the derivation must consult no other signature
+// field and must reach no body value -- and (b) for every emitted
+// check.interprocedural_loan_liveness diagnostic, the field named in cause
+// 3 (callee_return_contract) is a member of the recorded set for that same
+// callee. That second assertion is what makes the shipped diagnostic's
+// disclosure TRUE rather than merely well-formed: a diagnostic could name a
+// plausible-looking field string without this derivation having actually
+// read it.
+//
+// Honest scope (D-08-26, restated verbatim from PHASE-08-DEBT.md): criterion
+// 4's REFUSAL half is met by a shipped artifact (this diagnostic's own
+// cause 3); the ACCEPTED-program half is met by THIS TEST ALONE, by no
+// shipped runtime artifact -- protocol.ExplainSummary needs a diagnostic to
+// expand, internal/compiler/cache is structurally incapable of holding a
+// verdict, and a sibling lang.*/1 document contradicts
+// protocol.InterfaceSummary's own recorded anti-pattern. Whether that half
+// should become a runtime artifact is on the mid-phase gate's agenda.
+func TestInterproceduralDisclosedFieldSet(t *testing.T) {
+	defer func() { interproceduralConsultObserved = nil }()
+
+	paths, err := filepath.Glob("../../../testdata/phase08/*.lang")
+	if err != nil {
+		t.Fatalf("glob testdata/phase08: %v", err)
+	}
+	paths = append(paths, "../../../testdata/phase07/relay_escort_witness.lang")
+	sort.Strings(paths)
+	if len(paths) == 0 {
+		t.Fatal("expected at least one fixture")
+	}
+
+	allowedFields := map[string]bool{"return.mode": true, "parameters[0].mode": true}
+
+	for _, path := range paths {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			source, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+
+			recorded := map[string]map[string]bool{}
+			interproceduralConsultObserved = func(calleeID, field string) {
+				if recorded[calleeID] == nil {
+					recorded[calleeID] = map[string]bool{}
+				}
+				recorded[calleeID][field] = true
+			}
+			result := Program(mustParseProgram(t, source))
+			interproceduralConsultObserved = nil
+
+			for calleeID, fields := range recorded {
+				for field := range fields {
+					if !allowedFields[field] {
+						t.Fatalf("callee %s: consulted disallowed field %q -- must be a subset of {return.mode, parameters[0].mode}", calleeID, field)
+					}
+				}
+			}
+
+			for _, diag := range result.Diagnostics {
+				if diag.Code != "check.interprocedural_loan_liveness" {
+					continue
+				}
+				if len(diag.Causes) != 3 {
+					t.Fatalf("expected exactly 3 causes on an interprocedural refusal, got %+v", diag.Causes)
+				}
+				thirdCause := diag.Causes[2]
+				calleeID, field, ok := splitCalleeFieldDetail(thirdCause.Detail)
+				if !ok {
+					t.Fatalf("could not parse cause 3 Detail %q into <calleeID>:<field>=<value>", thirdCause.Detail)
+				}
+				if !recorded[calleeID][field] {
+					t.Fatalf("diagnostic's cause 3 names field %q for callee %q, but that field was never recorded as consulted for that callee: %+v", field, calleeID, recorded[calleeID])
+				}
+			}
+		})
+	}
+}
