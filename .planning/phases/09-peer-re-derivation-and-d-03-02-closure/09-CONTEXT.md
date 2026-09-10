@@ -98,12 +98,21 @@ named, so no future reader has to discover the change.
   `parent[TargetID] = SourceID` through **every** `core.OpCall` with no
   callee-signature consultation. It must consult the peer-derived
   "returns-borrow-of-param" bit before propagating. Landing this should retire
-  **`testdata/phase07/twin_a_accept.lang`** and
-  **`testdata/phase07/relay_depth2_accept.lang`** from
-  `peerDivergenceExpected` (`internal/compiler/session/session_peer_gate_test.go`)
+  **`testdata/phase08/twin_a_accept.lang`** and
+  **`testdata/phase08/relay_depth2_accept.lang`** from
+  `peerDivergenceExpected` (`internal/compiler/session/session_peer_gate_test.go:57-58`)
   — turning D-08-40's declared debt into a test-visible fact rather than a
   comment. **Retiring both entries is a required assertion of this phase**, not
   a side effect.
+
+  **Path correction (2026-09-10, research pass):** an earlier revision of this
+  decision wrote these fixtures under `testdata/phase07/`. Verified wrong — they
+  are under **`testdata/phase08/`** (`session_peer_gate_test.go:57-58`). The one
+  `phase07`-prefixed entry in that map is
+  `testdata/phase07/duplicate_function_name.lang` → `core.duplicate_function_id`
+  (`:43`), which is **unrelated** to this phase's work and must **not** be
+  retired. Recorded rather than silently fixed, per this project's own
+  stale-reference discipline (D-09-45).
 
 - **D-09-04 (placement):** the new derivation functions live **inside package
   `corevalidate`**, either in `corevalidate.go` or a sibling file in the same
@@ -681,6 +690,68 @@ named, so no future reader has to discover the change.
   subset is superseded by Phase 09's document as of that date. This is the
   supplemental-filing pattern: reference the original approval record, never
   rewrite it.
+
+### Research-pass findings that change the plan (added 2026-09-10)
+
+These three were surfaced by the phase researcher **after** the eight gray areas
+were locked, and each was independently re-verified against the tree by the
+orchestrator. None reverses a locked decision; two add work the decisions
+assumed was free, and one narrows scope.
+
+- **D-09-46 (a BLOCKER for D-09-23's vehicle — verified):**
+  `generateCallGraphCorpus` is **unexported and lives in a `_test.go` file inside
+  package `check`** — `internal/compiler/check/costcorpus_test.go:50`. It is
+  therefore **structurally uncallable** from `session`'s test package, so
+  D-09-23's "same generator, disjoint consumers" cannot be satisfied as written
+  until the generator is made reachable.
+
+  This is a **Wave 0 prerequisite**, not a detail: exporting or relocating it
+  must land before the TRU-04 differential can consume synthetic shapes.
+  Planner's discretion over the mechanism (promote to an exported symbol in a
+  non-test file, move to an internal testing-support package, or a
+  `export_test.go`-style accessor — the tree already uses
+  `corevalidate/export_test.go` for a comparable need), subject to one
+  constraint: it must **not** become a route by which `session` or `corevalidate`
+  gains a production import of `check`.
+
+- **D-09-47 (OWN-09's blast radius is NARROWER than D-09-09 assumed — good
+  news, and it lowers the D-09-43 trigger risk):** only **two** of the five
+  `ownership.*` codes actually depend on `computeLoanLastUses`' timing index —
+  `ownership.move_while_borrowed` and `ownership.borrow_conflict`. The other
+  three (`ownership.use_after_move`, `ownership.borrow_requires_share`,
+  `ownership.transfer_requires_take`) fire from **immediate per-binding facts**
+  unrelated to loan-liveness timing.
+
+  **Those three must not be touched.** Scoping the restructure to the two
+  timing-dependent codes materially shrinks the largest and least-reversible
+  piece of the phase, and correspondingly shrinks the diagnostic-ordering
+  surface D-09-13 warns about.
+
+- **D-09-48 (the restructure EXTENDS an existing pass rather than building
+  one):** `checkInterproceduralLoanLiveness` (`check.go:828-941`) **already
+  exists as a whole-program post-assembly pass** and already handles the
+  interprocedurally-extended case. OWN-09's target state is **extending that
+  same pass** to also cover the purely-intraprocedural
+  `move_while_borrowed` / `borrow_conflict` case — not authoring a new pass.
+  D-09-09's "strict two-pass pipeline" therefore describes a **destination the
+  tree is already half-way to**, which is a materially cheaper starting point
+  than the decision text implies.
+
+- **D-09-49 (two open questions the plan must resolve, not inherit):** the
+  researcher left these deliberately unanswered because they are design
+  questions, not facts:
+  1. Does deferring `move_while_borrowed` to post-assembly change
+     `use_after_move` behavior for any existing fixture? (A within-function
+     interaction — traced but not exhaustively verified.) This is the concrete
+     form D-09-13's ordering risk takes; the plan needs an assertion that
+     settles it, not an assumption.
+  2. Does the peer's new liveness bit need **multi-hop** propagation across 2+
+     `OpCall` hops (the `relay_depth2_accept.lang` case), and does a single
+     forward pass suffice or is a fixpoint required? Note D-08-02 recorded that
+     `check`'s equivalent bits are **transitive through relays**, so the peer
+     almost certainly needs transitivity too — but the peer's forward-propagation
+     shape reaches it differently, and D-09-02's "structurally opposite" mandate
+     means the answer must be derived on the peer's own terms, not copied.
 
 ### Cross-cutting
 
