@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 09
 current_phase_name: Peer Re-Derivation and D-03-02 Closure
 status: executing
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-09-10T20:33:07.496Z"
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-09-10T20:47:49.429Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 09 execution started
-state_head: 8ed01d0c0863671bc94ba6ca72ea9f674146ae4f
+state_head: 3f5dff215f8142eeb8685a8be59a1710c35a2544
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 19
+  completed_plans: 20
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 09 (Peer Re-Derivation and D-03-02 Closure) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-09-10 — Phase 09 execution started
 
@@ -165,6 +165,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 08 P05 | 65min | 3 tasks | 8 files |
 | Phase 08 P06 | ~45min | 3 tasks | 4 files |
 | Phase 09 P01 | 33min | 3 tasks | 9 files |
+| Phase 09 P02 | 45min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -205,6 +206,7 @@ Standing architectural commitments carried into M002:
 - [Phase 08]: 08-05: interprocedural cost gate shipped -- five-shape synthetic call-graph corpus fits buildInterproceduralSummaries' own deterministic work counter to <=1.2 growth exponent against operation count; both hardcoded gate-eligibility chokepoints (measure.Demote, session.QLT02GateEligibleMetrics) widened together and proven to agree; a latent EvaluateBudget bug (literal-string gating instead of set membership) surfaced by that widening was Rule-1-fixed so the new metric genuinely blocks on its bound; ratified hard manifest row + lane:interprocedural-cost-scaling changed-risk lane land the gate in the feedback-budget ledger
 - [Phase 08]: 08-06: Mid-phase gate adjudicated all four agenda items from re-run evidence (a/b carried as named debt, c/d resolved), scope-cut trigger did not fire, liveness law declared final; debt register expanded 5->9 items; manifest row re-ratified at gate's own commit; OWN-06/EFF-02 confirmed complete (found already marked by 08-03/08-05 ahead of the gate, a process-ordering deviation documented, not reverted since correct in substance).
 - [Phase 09]: 09-01: corevalidate's own forward-derived interprocedural loan-carry peer (derivePeerLoanCarry/chainPeerLoanCarry) folded into the existing v.peerPostorder substrate; buildLoanChainIndex's OpCall consult retires both peerDivergenceExpected accept-twin divergences (D-08-40 resolved); bidirectional seeded-fault companion assertions prove the agreement load-bearing. Discovered and documented (not fixed) a pre-existing originvalidate OpCall-transparency defect this fix unmasks (PHASE-09-DEBT.md D-09-51) -- the full CLI's clean-check claim for both fixtures is not satisfied end-to-end, a separate validator's pre-existing bug.
+- [Phase 09]: [Phase 09]: 09-02: generateCallGraphCorpus relocated verbatim from check's costcorpus_test.go to testsupport.GenerateCallGraphCorpus/CallGraphCorpusShapes (D-09-46), unblocking session/corevalidate consumption with zero production import of check; a third gate-eligible metric (peer_closure_recomputed_work_growth_exponent) declared at both chokepoints plus the QLT-02 vocabulary with no manifest row yet (D-09-28); spike-006's QLT-01 registry gap closed (waived, since AllShippedControlIDs predates Phase 08), making go test ./... unconditionally green for the rest of Phase 09 (D-08-43 resolved).
 
 ### Pending Todos
 
@@ -285,8 +287,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-10T20:33:07.375Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-09-10T20:47:49.306Z
+Stopped at: Completed 09-02-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
