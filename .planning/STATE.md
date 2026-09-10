@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 08
 current_phase_name: Interprocedural Loan Liveness in `check`
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-09-10T00:46:09.489Z"
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-09-10T01:22:59.895Z"
 last_activity: 2026-09-09
 last_activity_desc: Phase 08 execution started
-state_head: 6b7cdc82db2a762172591108962ae841e7072645
+state_head: cd16f49e4a9b7e793f6d9f8a023602e525af8967
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 18
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 08 (Interprocedural Loan Liveness in `check`) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-09-09 — Phase 08 execution started
 
@@ -158,6 +158,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 07 P11 | 90 min | 3 tasks | 12 files |
 | Phase 07 P12 | 55min | 3 tasks | 12 files |
 | Phase 08 P01 | ~33min | 3 tasks | 5 files |
+| Phase 08 P02 | ~50 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -191,6 +192,7 @@ Standing architectural commitments carried into M002:
 - [Phase 07]: 07-11: consume-on-call closes CR-01/PVG-01 -- resolveCallBinding consumes call arguments (ability-decided), corevalidate independently re-derives from the core artifact alone; D-07-07 corrected, D-07-52 records the accepted implicit-transfer residual — Checkpoint auto-ratified under auto_advance/yolo mode
 - [Phase 07]: 07-12: Foreign/Fails made closure-derived over the proven-acyclic call graph in both originvalidate (joinForeignReach/joinFails) and corevalidate (peerJoinForeignReach/peerJoinFails, independently written, no shared helper beyond core.ForeignReachConflict); closes 07-REVIEW.md CR-03/PVG-02 and incidentally IN-01 (index-coupling fix). Phase 07 has no open post-verification gaps.
 - [Phase 08]: 08-01: interprocedural fact enters through derivePlaceLoans' forward canonicalization pass (D-08-07), never the backward transfer function; new post-acyclicity check.interprocedural_loan_liveness law closes D-03-02's interprocedural half on relay_escort_witness.lang, with both admission paths proven to agree via a mutation-tested differential (D-08-09).
+- [Phase 08]: 08-02: fixed a real callgraph.Order ordering-direction bug in buildInterproceduralSummaries (its result is caller-before-callee, not callee-before-caller as previously assumed) -- required for UsesParam transitivity to hold; deriveFunctionUsesParam's fixpoint-loop shape makes the program-order-vs-reversed cost claim genuinely falsifiable (171.3x observed multiplier at k=512, matching spike S-006's 192x finding).
 
 ### Pending Todos
 
@@ -271,8 +273,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-10T00:46:09.415Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-09-10T01:22:59.822Z
+Stopped at: Completed 08-02-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

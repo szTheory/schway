@@ -349,7 +349,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 08-02-PLAN.md — The summary mechanism: `UsesParam` derived once per function in reverse postorder, memoized and transitive; the backward `OpCall` gate; program-order and never-persisted invariants
+- [x] 08-02-PLAN.md — The summary mechanism: `UsesParam` derived once per function in reverse postorder, memoized and transitive; the backward `OpCall` gate; program-order and never-persisted invariants
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
