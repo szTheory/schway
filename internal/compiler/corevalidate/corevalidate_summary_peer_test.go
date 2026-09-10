@@ -420,20 +420,24 @@ func TestSummaryPeerCallableAgreesOnOriginOmittedClass(t *testing.T) {
 	}
 }
 
-// TestPeerDoesNotRederiveNarrowedClasses is 07-02 Task 2's Test 5 (D-07-33):
-// names, by an explicit assertion rather than by silent agreement, that the
-// peer does NOT independently re-derive core.origin_understated,
-// core.origin_access_mismatch, or foreign-origin-omitted. It does this by
-// mutating an honestly-checked program's PublicOrigin the same way
+// TestPeerRederivesFormerlyNarrowedClasses is 07-02 Task 2's Test 5
+// (D-07-33), FLIPPED in Phase 09 under D-09-16: this test used to be named
+// TestPeerDoesNotRederiveNarrowedClasses and named, by an explicit
+// assertion rather than by silent agreement, that the peer did NOT
+// independently re-derive core.origin_understated, core.origin_access_mismatch,
+// or foreign-origin-omitted -- asserting Callable stayed true (a FALSE
+// agreement) on all three mutated/refusing cases. Phase 09 closes D-07-33:
+// peerCallable now independently re-derives all four PublishProblemsFor
+// classes (peerOriginContained for the two declared-origin classes,
+// peerForeignOriginOmitted for the fourth), so that claim is no longer
+// true, and every assertion below is INVERTED accordingly. It still
+// mutates an honestly-checked program's PublicOrigin the same way
 // originvalidate_test.go's own falsifiers do for these exact classes
 // (check.go's honest producer can never construct these declarations
-// itself), then showing the peer's Callable stays true -- it falsely agrees
-// with a producer that WOULD refuse -- for the two origin-declared classes,
-// and separately that foreign_origin_omitted.lang's peer Callable diverges
-// from the producer specifically because the peer does not walk
-// OpForeignCall.
-func TestPeerDoesNotRederiveNarrowedClasses(t *testing.T) {
-	t.Run("core.origin_understated: peer falsely agrees (Callable stays true)", func(t *testing.T) {
+// itself, so the dishonest artifact is assembled the same way as before);
+// only the expected Callable verdict changed, from true to false.
+func TestPeerRederivesFormerlyNarrowedClasses(t *testing.T) {
+	t.Run("core.origin_understated: peer now independently refuses (Callable false)", func(t *testing.T) {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view_understated.lang"))
 		if err != nil {
 			t.Fatal(err)
@@ -460,12 +464,12 @@ func TestPeerDoesNotRederiveNarrowedClasses(t *testing.T) {
 		if !ok {
 			t.Fatalf("function %s missing from peer signatures", function.ID)
 		}
-		if !peerSignature.Callable {
-			t.Fatal("expected the peer to FALSELY agree (Callable == true) on a core.origin_understated function -- it does not independently re-derive this class (D-07-33)")
+		if peerSignature.Callable {
+			t.Fatal("expected the peer to independently refuse (Callable == false) a core.origin_understated function (D-09-16, closing D-07-33)")
 		}
 	})
 
-	t.Run("core.origin_access_mismatch: peer falsely agrees (Callable stays true)", func(t *testing.T) {
+	t.Run("core.origin_access_mismatch: peer now independently refuses (Callable false)", func(t *testing.T) {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view_impossible.lang"))
 		if err != nil {
 			t.Fatal(err)
@@ -489,12 +493,12 @@ func TestPeerDoesNotRederiveNarrowedClasses(t *testing.T) {
 		if !ok {
 			t.Fatalf("function %s missing from peer signatures", function.ID)
 		}
-		if !peerSignature.Callable {
-			t.Fatal("expected the peer to FALSELY agree (Callable == true) on a core.origin_access_mismatch function -- it does not independently re-derive this class (D-07-33)")
+		if peerSignature.Callable {
+			t.Fatal("expected the peer to independently refuse (Callable == false) a core.origin_access_mismatch function (D-09-16, closing D-07-33)")
 		}
 	})
 
-	t.Run("foreign-origin-omitted: peer diverges from the refusing producer", func(t *testing.T) {
+	t.Run("foreign-origin-omitted: peer now independently refuses (Callable false)", func(t *testing.T) {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_origin_omitted.lang"))
 		if err != nil {
 			t.Fatal(err)
@@ -521,8 +525,8 @@ func TestPeerDoesNotRederiveNarrowedClasses(t *testing.T) {
 		if !ok {
 			t.Fatalf("function %s missing from peer signatures", function.ID)
 		}
-		if !peerSignature.Callable {
-			t.Fatal("expected the peer's narrowed re-derivation to NOT catch foreign-origin-omitted -- Callable should stay true, diverging from the producer's false, demonstrating D-07-33's declared single-producer leak")
+		if peerSignature.Callable {
+			t.Fatal("expected the peer's bounded foreign-origin-omitted re-derivation to now agree with the producer's refusal (Callable == false), closing D-07-33's declared single-producer leak (D-09-20)")
 		}
 	})
 }
