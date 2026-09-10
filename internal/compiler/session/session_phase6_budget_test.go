@@ -183,6 +183,57 @@ func TestBudgetAuditRefusesUnknownMetricVocabulary(t *testing.T) {
 // constant) -- this test is what makes a future one-sided widening of only
 // one chokepoint a test failure instead of a silently decorative manifest
 // row that reads gate_type: hard but can never actually block.
+// TestQLT02InterproceduralGrowthExponent is Task 3(a)'s own falsifier
+// (D-08-33): the checked-in manifest carries EXACTLY ONE
+// recomputed_work_growth_exponent row, it is gate_type "hard", its metric
+// is in QLT02GateEligibleMetrics(), its value_or_bound is 1200 with unit
+// "milliexponent", and AuditQLT02BudgetManifest reports zero failures for
+// it against the live machine ID -- proving the row is genuinely
+// gate-eligible and audit-clean, not merely present.
+func TestQLT02InterproceduralGrowthExponent(t *testing.T) {
+	rows, err := LoadQLT02BudgetManifest()
+	if err != nil {
+		t.Fatalf("LoadQLT02BudgetManifest: %v", err)
+	}
+
+	const wantMetric = "recomputed_work_growth_exponent"
+	var matches []QLT02BudgetRow
+	for _, row := range rows {
+		if row.Metric == wantMetric {
+			matches = append(matches, row)
+		}
+	}
+	if len(matches) != 1 {
+		t.Fatalf("manifest carries %d rows for metric %q, want exactly 1: %+v", len(matches), wantMetric, matches)
+	}
+	row := matches[0]
+
+	if row.GateType != QLT02GateTypeHard {
+		t.Errorf("row.GateType = %q, want %q", row.GateType, QLT02GateTypeHard)
+	}
+	eligible := false
+	for _, metric := range QLT02GateEligibleMetrics() {
+		if metric == row.Metric {
+			eligible = true
+		}
+	}
+	if !eligible {
+		t.Errorf("row.Metric %q is not in QLT02GateEligibleMetrics() %v", row.Metric, QLT02GateEligibleMetrics())
+	}
+	if row.ValueOrBound != 1200 {
+		t.Errorf("row.ValueOrBound = %d, want 1200", row.ValueOrBound)
+	}
+	if row.Unit != "milliexponent" {
+		t.Errorf("row.Unit = %q, want %q", row.Unit, "milliexponent")
+	}
+
+	live := liveMachineIDForTest(t)
+	failures := AuditQLT02BudgetManifest(rows, live, QLT02GateEligibleMetrics())
+	if len(failures) != 0 {
+		t.Errorf("AuditQLT02BudgetManifest against real live machine_id %q returned failures: %+v", live, failures)
+	}
+}
+
 func TestGateEligibleMetricSetsAgreeAcrossChokepoints(t *testing.T) {
 	sessionSet := QLT02GateEligibleMetrics()
 	measureSet := measure.GateEligibleMetrics()

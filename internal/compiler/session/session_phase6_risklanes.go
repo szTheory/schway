@@ -195,6 +195,7 @@ func LiveLaneIDs() []string {
 	add(liveLanesBorrowed())
 	add(liveLanesForeign())
 	add(liveLanesPhase5Adversarial())
+	add(liveLanesPhase8())
 	sort.Strings(all)
 	return all
 }
@@ -267,6 +268,22 @@ func liveLanesPhase5Adversarial() []string {
 		"lane:terminator-walk-complete",
 		"lane:compare-field-routing",
 	}
+}
+
+// liveLanesPhase8 names Phase 08 Plan 05's own changed-risk lane
+// (D-08-36): the interprocedural cost-scaling sweep gated by
+// qlt02_budget_manifest.json's recomputed_work_growth_exponent row. A
+// dedicated contributor function, rather than appending to
+// liveLanesPhase5Adversarial's list, per this plan's own Task 3(b)
+// instruction -- so a future phase's own lane set stays separately
+// traceable to the phase that introduced it. This lane is explicitly not
+// yet wired to a shipped VerifyXxx addLane call site (it runs at the
+// mid-phase gate and pre-merge, not the default edit loop -- see
+// risk_lanes.json's own rationale for this lane_id); it is registered here
+// solely so risk_lanes.json's row for it satisfies
+// TestRiskLaneRegistryLanesAreLive.
+func liveLanesPhase8() []string {
+	return []string{"lane:interprocedural-cost-scaling"}
 }
 
 // FixtureInputs maps a declared-input NAME (drawn from

@@ -226,5 +226,11 @@
     "lane_id": "lane:compare-field-routing",
     "declared_inputs": ["fixture_source"],
     "rationale": "Five-axis comparator field-routing coverage recomputes purely from source-derived facts."
+  },
+  {
+    "fixture_kind": "phase8_interprocedural",
+    "lane_id": "lane:interprocedural-cost-scaling",
+    "declared_inputs": ["go_toolchain"],
+    "rationale": "A changed-risk lane (D-08-36) firing when internal/compiler/check's interprocedural summary/liveness code or internal/compiler/callgraph changes: it sweeps a synthetic call-graph corpus and re-fits the growth exponent gated by qlt02_budget_manifest.json's recomputed_work_growth_exponent row. Declared input gap: cache.DeclaredInputNames() has no name for the checker/callgraph package's OWN Go source (its seven names cover fixture text, build flags, toolchain identities, and translation units -- not the compiler's own source tree); go_toolchain is the closest available proxy, matching lane:qlt01-registry-audit's own precedent for a lane whose risk tracks the compiled harness rather than any one fixture. This is explicitly NOT the default edit loop -- a multi-shape size sweep exceeds what wiki/compiler-and-feedback-latency.md permits the default loop to pay; it runs at the mid-phase gate and pre-merge."
   }
 ]

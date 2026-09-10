@@ -25,5 +25,14 @@
     "unit": "bytes",
     "ratified_at": "2026-09-07T03:50:03Z",
     "ratified_by_commit": "e9de50ec8dcd106497e3658ca30c5914efb5ade2"
+  },
+  {
+    "machine_id": "machine:4797d76b7863",
+    "metric": "recomputed_work_growth_exponent",
+    "gate_type": "hard",
+    "value_or_bound": 1200,
+    "unit": "milliexponent",
+    "ratified_at": "2026-09-10T03:05:50Z",
+    "ratified_by_commit": "f642ae12a9a64c5d1eab927aed5cacccc5035bac"
   }
 ]
