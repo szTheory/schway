@@ -361,7 +361,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 08-05-PLAN.md — Criterion 3 (EFF-02): the synthetic four-shape corpus, the growth-exponent fit, both gate chokepoints widened together, the manifest row and the risk lane
+- [x] 08-05-PLAN.md — Criterion 3 (EFF-02): the synthetic four-shape corpus, the growth-exponent fit, both gate chokepoints widened together, the manifest row and the risk lane
 
 **Wave 6** *(blocked on Wave 5 completion)*
 

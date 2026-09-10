@@ -91,7 +91,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Cost and Feedback Latency
 
-- [ ] **EFF-02**: Interprocedural admission cost is measured on realistic
+- [x] **EFF-02**: Interprocedural admission cost is measured on realistic
       call-graph fan-out under the existing p50/p95/CoV protocol, stays within a
       declared bound, and is recorded in the feedback-budget manifest.
 
@@ -184,7 +184,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | QLT-06 | Phase 11 | Pending |
 | QLT-07 | Phase 09 | Pending |
 | QLT-08 | Phase 07 | Complete |
-| EFF-02 | Phase 08 | Pending |
+| EFF-02 | Phase 08 | Complete |
 | RES-02 | Phase 12 | Pending |
 | RES-03 | Phase 12 | Pending |
 | DX-05 | Phase 13 | Pending |
