@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 09
 current_phase_name: Peer Re-Derivation and D-03-02 Closure
 status: executing
-stopped_at: Completed 09-07-PLAN.md
-last_updated: "2026-09-10T22:29:49.921Z"
+stopped_at: Completed 09-06-PLAN.md
+last_updated: "2026-09-10T22:56:59.060Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 09 execution started
-state_head: d11ad7475d29b3d7a2de1eb9795187c383071d13
+state_head: 7574cd7cc731f4a0905ecc01c295ba3b1046654e
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 09 (Peer Re-Derivation and D-03-02 Closure) — EXECUTING
-Plan: 7 of 10
+Plan: 8 of 10
 Status: Ready to execute
 Last activity: 2026-09-10 — Phase 09 execution started
 
@@ -170,6 +170,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 09 P04 | 55min | 3 tasks | 2 files |
 | Phase 09 P05 | 55min | 3 tasks | 3 files |
 | Phase 09 P07 | 55min | 3 tasks | 2 files |
+| Phase 09 P06 | 50min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -216,6 +217,7 @@ Standing architectural commitments carried into M002:
 - [Phase 09]: OWN-05 stays Pending after 09-05 (D-09-37): only check+corevalidate proven this plan; interp is Phase 10
 - [Phase 09]: No new seam minted for core-layer convention override (D-09-35): existing ParameterContract.Mode closed-set decode check confirmed as the fail-closed control
 - [Phase 09]: [Phase 09] 09-07: D-09-49 Q1 settled by enumeration (no fixture exhibits the interaction across all 6 move_while_borrowed fixtures); shadowPathReachableCodes={move_while_borrowed,borrow_conflict} proven by source scan + testOnlyForceUniformLoanJoin perturbation, not merely predicted
+- [Phase 09]: [Phase 09]: 09-06: peer's cost sweep injects a genuine borrow into every generated function (raw corpus has none, D-09-04) via injectBorrowForLoanCarry, fits flat-linear against a self-derived 1300 milli-exponent bound (all five shapes ~999-1000), and mutation-kills it via peerClosureUnmemoizedSeamForTest (foldChain memo-write skip) on the 'forward' shape (0.999->1.396 exponent, 4.58x checks at n=512); Result.PeerConsultedFields() closes D-08-26's positive half, proven identical to check's set (D-09-30). No qlt02_budget_manifest.json row added (D-09-28 -- ratified at 09-08's gate).
 
 ### Pending Todos
 
@@ -296,8 +298,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-10T22:29:49.799Z
-Stopped at: Completed 09-07-PLAN.md
+Last session: 2026-09-10T22:56:58.947Z
+Stopped at: Completed 09-06-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
