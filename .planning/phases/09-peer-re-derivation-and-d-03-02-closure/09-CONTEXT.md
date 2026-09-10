@@ -72,8 +72,7 @@ named, so no future reader has to discover the change.
 
 ### `corevalidate`'s independent liveness derivation (OWN-07)
 
-- **D-09-01 (the substrate already exists, and this is the finding that shapes
-  the area):** `corevalidate` already ships a working peer-derivation substrate
+- **D-09-01 (the substrate already exists, and this is the finding that shapes the area):** `corevalidate` already ships a working peer-derivation substrate
   for a structurally analogous problem — Phase 07's signature/`Callable` peer.
   Verified in tree: `v.peerPostorder` (`corevalidate.go:138`, appended at
   `:472`) is built as a byproduct of `checkCallGraphAcyclic`'s **own**
@@ -114,16 +113,14 @@ named, so no future reader has to discover the change.
   retired. Recorded rather than silently fixed, per this project's own
   stale-reference discipline (D-09-45).
 
-- **D-09-04 (placement):** the new derivation functions live **inside package
-  `corevalidate`**, either in `corevalidate.go` or a sibling file in the same
+- **D-09-04 (placement):** the new derivation functions live **inside package `corevalidate`**, either in `corevalidate.go` or a sibling file in the same
   package (planner's discretion — `corevalidate.go` is already ~137KB, so a
   sibling `corevalidate_peer_liveness.go` is reasonable). The doc comment must
   state explicitly that what is reused from Phase 07 is **substrate** (ordering
   plumbing plus memoization), never **derivation** — this is precisely the
   conflation a reviewer will probe.
 
-- **D-09-05 (CORRECTION — the shared-substrate line is already drawn and
-  enforced, which answers the question the researcher left open):** the peer
+- **D-09-05 (CORRECTION — the shared-substrate line is already drawn and enforced, which answers the question the researcher left open):** the peer
   **may not** reuse `callgraph.Order`, and this is not a judgement call — it is
   a shipped test. `corevalidate_endpoint_internal_test.go:107` forbids
   `corevalidate` from importing `compiler/check`, `compiler/ast`,
@@ -146,8 +143,7 @@ named, so no future reader has to discover the change.
 
 ### OWN-09 — the single decision point (and what "one law" actually means)
 
-- **D-09-07 (THE CORRECTION THAT REDEFINES THIS REQUIREMENT — verified
-  directly, and every planner must read it before touching OWN-09):** there was
+- **D-09-07 (THE CORRECTION THAT REDEFINES THIS REQUIREMENT — verified directly, and every planner must read it before touching OWN-09):** there was
   **never** a second loan-liveness law. Verified in tree: `computeLoanLastUses`
   is at **`check.go:3743`** (not `:2979` — `08-CONTEXT.md`'s D-08-09 line
   reference is **stale**, recorded here rather than left to mislead), and it
@@ -166,8 +162,7 @@ named, so no future reader has to discover the change.
   post-assembly.** Any plan that reads OWN-09 as "delete a law" will either find
   nothing to delete or delete the wrong thing.
 
-- **D-09-08 (this REVERSES Phase 08's D-08-41 disposition, deliberately and in
-  writing):** D-08-41 adjudicated `computeLoanLastUses`' summary-blindness as
+- **D-09-08 (this REVERSES Phase 08's D-08-41 disposition, deliberately and in writing):** D-08-41 adjudicated `computeLoanLastUses`' summary-blindness as
   "an accepted, permanent, disclosed scope limitation… Landing phase: Not
   scheduled." **That disposition is superseded.** `computeLoanLastUses` is
   **deleted** in Phase 09.
@@ -199,8 +194,7 @@ named, so no future reader has to discover the change.
   machines currently consume `computeLoanLastUses`' index to raise
   `ownership.move_while_borrowed` (`check.go:2176`, `:3392`) during lowering.
 
-- **D-09-10 (ORDERING — build-then-delete, and this is a safety constraint, not
-  a preference):** (1) land `corevalidate`'s contract-aware peer **fully first**,
+- **D-09-10 (ORDERING — build-then-delete, and this is a safety constraint, not a preference):** (1) land `corevalidate`'s contract-aware peer **fully first**,
   so a second independent detector exists before anything is removed; (2) get
   TRU-04's zero-divergence gate green; (3) **only then** restructure and delete,
   in the same commit that flips lowering to defer to the single pass. Never an
@@ -256,8 +250,7 @@ named, so no future reader has to discover the change.
   consistent — it was never proposed for cutting. It needs **execution**, or a
   **new** cut decision with its own justification.
 
-- **D-09-16 (the literal OWN-08 reading is REJECTED, and this is the adversarial
-  crux of the area):** OWN-08 says "an exported borrow-derived return with no
+- **D-09-16 (the literal OWN-08 reading is REJECTED, and this is the adversarial crux of the area):** OWN-08 says "an exported borrow-derived return with no
   declared origin is refused… in both admission layers," and "no declared
   origin" maps exactly to `core.origin_omitted` — the one class the peer already
   covers. A literal reading therefore says OWN-08 closes without touching the
@@ -291,8 +284,7 @@ named, so no future reader has to discover the change.
   mode** (`shared`/`exclusive`), not path containment. **Re-open the moment
   arity widens past 1 (D-07-07).**
 
-- **D-09-19 (CORRECTION — the peer performs a CONTAINMENT check, not a
-  recomputation, and the distinction is what preserves independence):** the peer
+- **D-09-19 (CORRECTION — the peer performs a CONTAINMENT check, not a recomputation, and the distinction is what preserves independence):** the peer
   must differ from **both** `check` and `originvalidate` — `originvalidate` is
   itself already a third layer. The peer therefore compares its **declared**
   origin against its **own** forward-derived access/presence facts (a
@@ -324,8 +316,7 @@ named, so no future reader has to discover the change.
 
 ### TRU-04 — the shadow-run zero-divergence gate
 
-- **D-09-22 ("recursion" is a CATEGORY ERROR as written, and the disposition
-  must be written into TRU-04's own text):** TRU-04 names "recursion" as a
+- **D-09-22 ("recursion" is a CATEGORY ERROR as written, and the disposition must be written into TRU-04's own text):** TRU-04 names "recursion" as a
   required call-graph shape, but Phase 07 shipped cycle refusal — `callgraph`'s
   iterative three-color DFS refuses `core.call_graph_cycle` **before any
   liveness derivation runs**. There is no admitted recursive program in this
@@ -358,9 +349,7 @@ named, so no future reader has to discover the change.
   consumers. The real corpus alone is insufficient — D-08-41 already proved it
   structurally cannot demonstrate an intended split verdict.
 
-- **D-09-24 (CORRECTION — the seam precedent is in `check`, and it is the exact
-  companion-assertion shape, running the OPPOSITE direction from the
-  recommendation):** verified in tree, the precedent is `verifyCallableRefusalSeam`
+- **D-09-24 (CORRECTION — the seam precedent is in `check`, and it is the exact companion-assertion shape, running the OPPOSITE direction from the recommendation):** verified in tree, the precedent is `verifyCallableRefusalSeam`
   (`check.go:1183`, read at `:1250`) with
   `TestVerifyCallableRefusalSeamCheckDisabledCorevalidateStillRefuses`
   (`check_test.go:3322`) — **in `check`, not `corevalidate_mutation_matrix_test.go`**
@@ -371,8 +360,7 @@ named, so no future reader has to discover the change.
   free (it already exists and generalizes), and the `corevalidate`-side seam is
   the sharper test of *this* phase's stated risk.
 
-- **D-09-25 (the seam design, and the argument for why it discriminates —
-  this is the section a planner must not compress):** a seeded fault that merely
+- **D-09-25 (the seam design, and the argument for why it discriminates — this is the section a planner must not compress):** a seeded fault that merely
   makes both peers diverge proves nothing. That is precisely the false positive
   **Knight & Leveson (1986)** documented for N-version programming: independently
   written implementations correlate on faults because the spec, the requirements
@@ -413,8 +401,7 @@ named, so no future reader has to discover the change.
   is the thing to get right; a skipped/pending assertion until the final task is
   the failure mode to avoid.
 
-- **D-09-28 (CORRECTION + a cost the research did not price — the peer needs its
-  own bound, and getting a new metric name wrong silently makes it decorative):**
+- **D-09-28 (CORRECTION + a cost the research did not price — the peer needs its own bound, and getting a new metric name wrong silently makes it decorative):**
   verified, `qlt02_budget_manifest.json` **already carries**
   `recomputed_work_growth_exponent` alongside `recomputed_work`, `elapsed_ns`,
   and `output_bytes`; **both** chokepoints were **already widened by Phase 08**
@@ -435,8 +422,7 @@ named, so no future reader has to discover the change.
 
 ### The accepted-program disclosure (D-08-26) and the code-promotion commitment (D-08-21)
 
-- **D-09-29 (permanent test-of-record — no runtime vehicle, ever, for this
-  fact — and the reason is a verified property, not a budget excuse):** verified
+- **D-09-29 (permanent test-of-record — no runtime vehicle, ever, for this fact — and the reason is a verified property, not a budget excuse):** verified
   in tree, the accepted-side consulted field set is a **compile-time constant**.
   The consultation loop (`check.go:594-609`) fires exactly `return.mode` and
   `parameters[0].mode` for every function with a declared signature, corpus-wide,
@@ -455,8 +441,7 @@ named, so no future reader has to discover the change.
   "resolved — no vehicle, by design"** so a future phase does not reopen it as
   unfinished.
 
-- **D-09-30 (the peer discloses too, the two sets must match — and this RESOLVES
-  the independence tension rather than dodging it):** `corevalidate` gets its
+- **D-09-30 (the peer discloses too, the two sets must match — and this RESOLVES the independence tension rather than dodging it):** `corevalidate` gets its
   **own independently-written** corpus-wide closed-field-set test, and a
   cross-peer test asserts the two sets are **identical**.
 
@@ -477,8 +462,7 @@ named, so no future reader has to discover the change.
   runtime cost. **This is the independence instrument Phase 08's gate
   anticipated when it sent both disclosure questions here together.**
 
-- **D-09-31 (D-08-21's promotion commitment is FORMALLY SUPERSEDED — the codes
-  stay divergent):** Phase 08 committed in writing to promoting
+- **D-09-31 (D-08-21's promotion commitment is FORMALLY SUPERSEDED — the codes stay divergent):** Phase 08 committed in writing to promoting
   `check.interprocedural_loan_liveness` to `core.interprocedural_loan_liveness`
   in Phase 09, "at the moment `corevalidate` independently re-derives the same
   fact and both peers must agree on-code." **That trigger is retired as the
@@ -504,8 +488,7 @@ named, so no future reader has to discover the change.
   agent-facing API consumed by `lang-repair` and `lang explain`. Not promoting
   costs nothing and stays available.
 
-- **D-09-32 (the cause template is NOT forced onto the peer — this is why
-  promotion fails):** promoting would require either forcing `corevalidate` to
+- **D-09-32 (the cause template is NOT forced onto the peer — this is why promotion fails):** promoting would require either forcing `corevalidate` to
   synthesize `check`'s fixed three-role template
   (`borrow_created_here` / `loan_extended_by_call` / `callee_return_contract`)
   for which a reachability closure has **no natural "the call that extended the
@@ -518,7 +501,7 @@ named, so no future reader has to discover the change.
   `check`'s side, independently justified by D-08-25's safety argument, and is
   never imposed on the peer.
 
-- **D-09-33 (in-tree precedent, and the ecosystem's answer):**
+- **D-09-33 [informational] (in-tree precedent, and the ecosystem's answer — supporting evidence for D-09-31, which is the actionable decision and is cited in five plans; this bullet carries no separate task):**
   divergent-codes-per-peer is **already shipped**, not novel:
   `check.call_argument_type_mismatch` / `core.CallArgumentTypeMismatch`
   (D-07-46, Phase 07) are a different-code pair for the same defect, deliberately
@@ -533,8 +516,7 @@ named, so no future reader has to discover the change.
 
 ### OWN-05 — one meaning for call-site transfer
 
-- **D-09-34 (non-expressibility is true at the source layer — prove it as
-  structural absence, not as a refusal):** verified — `core.LinearOperation`
+- **D-09-34 (non-expressibility is true at the source layer — prove it as structural absence, not as a refusal):** verified — `core.LinearOperation`
   (read in full) carries no per-call convention-override field; its only Phase-07
   addition is `CalleeID`. `corevalidate.derivePeerSignature` (`corevalidate.go:2011-2015`)
   and `originvalidate.go:811` both hardcode `Mode: "owned"` with an explicit
@@ -543,8 +525,7 @@ named, so no future reader has to discover the change.
   grammar/parser-level test that no production admits a call-site convention
   annotation, plus a `core`-level test that no field can carry one.
 
-- **D-09-35 (do NOT mint a new seam here — and the distinction from D-07-47 /
-  D-08-15 is the point):** the one core-level field a hostile or corrupted
+- **D-09-35 (do NOT mint a new seam here — and the distinction from D-07-47 / D-08-15 is the point):** the one core-level field a hostile or corrupted
   producer could use to claim a non-`"owned"` convention is
   `ParameterContract.Mode`, and it is **already validated against its closed
   three-value set at decode time**. There is no undecoded slot for a call-site
@@ -610,8 +591,7 @@ named, so no future reader has to discover the change.
   as an explicit process amendment to ROADMAP.md's spike table, not a silent
   substitution.
 
-- **D-09-40 (the threshold is PRE-REGISTERED here, before the count is taken —
-  this is what keeps the gate non-decorative):** enumerate **only** the
+- **D-09-40 (the threshold is PRE-REGISTERED here, before the count is taken — this is what keeps the gate non-decorative):** enumerate **only** the
   loan-liveness-scoped rows of `03-VALIDATION.md`'s Per-Task Verification Map,
   Mutation-Kill Register, and Generator Reachability Register — i.e. the
   03-03 / 03-04 / 03-05 rows, **explicitly excluding 03-06 / 03-07's OWN-04
@@ -630,8 +610,7 @@ named, so no future reader has to discover the change.
   fixed **now**, before planning starts — not discovered mid-phase under
   pressure.
 
-- **D-09-40a (INVENTORY RUN 2026-09-10, before any `09-PLAN.md` was drafted —
-  RESULT: QLT-07 is COMMITTED, in scope):** the pass required by D-09-39/D-09-40
+- **D-09-40a (INVENTORY RUN 2026-09-10, before any `09-PLAN.md` was drafted — RESULT: QLT-07 is COMMITTED, in scope):** the pass required by D-09-39/D-09-40
   was executed at context-capture time. Finding: **all 33 tests named across the
   12 loan-liveness-scoped rows already exist in the tree and pass.**
 
@@ -670,8 +649,7 @@ named, so no future reader has to discover the change.
   loop-carried-liveness clause remains structurally un-closable while the
   language has no loops.
 
-- **D-09-41 (the archived M001 document is NEVER amended in place — and it can
-  never honestly close in full):** `03-VALIDATION.md`'s `nyquist_compliant: false`,
+- **D-09-41 (the archived M001 document is NEVER amended in place — and it can never honestly close in full):** `03-VALIDATION.md`'s `nyquist_compliant: false`,
   its unticked checkboxes, and its recorded acyclic-CFG scope limitation stay
   exactly as written. Its own text defers loop-carried loan liveness, loop-exit
   edges, and per-iteration loan identity to "Phase 4-or-later" — **and the
@@ -714,8 +692,7 @@ assumed was free, and one narrows scope.
   constraint: it must **not** become a route by which `session` or `corevalidate`
   gains a production import of `check`.
 
-- **D-09-47 (OWN-09's blast radius is NARROWER than D-09-09 assumed — good
-  news, and it lowers the D-09-43 trigger risk):** only **two** of the five
+- **D-09-47 (OWN-09's blast radius is NARROWER than D-09-09 assumed — good news, and it lowers the D-09-43 trigger risk):** only **two** of the five
   `ownership.*` codes actually depend on `computeLoanLastUses`' timing index —
   `ownership.move_while_borrowed` and `ownership.borrow_conflict`. The other
   three (`ownership.use_after_move`, `ownership.borrow_requires_share`,
@@ -727,9 +704,7 @@ assumed was free, and one narrows scope.
   piece of the phase, and correspondingly shrinks the diagnostic-ordering
   surface D-09-13 warns about.
 
-- **D-09-48 (the restructure EXTENDS an existing pass rather than building
-  one):** `checkInterproceduralLoanLiveness` (`check.go:828-941`) **already
-  exists as a whole-program post-assembly pass** and already handles the
+- **D-09-48 (the restructure EXTENDS an existing pass rather than building one):** `checkInterproceduralLoanLiveness` (`check.go:828-941`) **already exists as a whole-program post-assembly pass** and already handles the
   interprocedurally-extended case. OWN-09's target state is **extending that
   same pass** to also cover the purely-intraprocedural
   `move_while_borrowed` / `borrow_conflict` case — not authoring a new pass.
@@ -765,7 +740,7 @@ assumed was free, and one narrows scope.
   (D-09-08), and never the two `peerDivergenceExpected` retirements (D-09-03).**
   Any cut is a deferral with a named landing phase, never a silent drop.
 
-- **D-09-44 (`PHASE-09-DEBT.md` written at PLANNING time, not phase end):** in
+- **D-09-44 [informational] (`PHASE-09-DEBT.md` written at PLANNING time, not phase end — SATISFIED at planning time, 2026-09-10: the register exists with 13 items and passes `TestDebtRegistersAreWellFormed`, so no execution task creates it):** in
   the mechanically-checked format `TestDebtRegistersAreWellFormed` enforces
   (`items:` count matching the `## Items` table, one `### <ID>` detail section
   per row, severity from {blocker, warning, info}). It must carry, at minimum:
@@ -776,8 +751,7 @@ assumed was free, and one narrows scope.
   carry forward the resolutions of **D-08-26** (→ D-09-29/D-09-30, resolved),
   **D-08-27** (→ D-09-14, resolved), and **D-08-40** (→ D-09-03, resolved).
 
-- **D-09-45 (three stale planning-document references, corrected here rather
-  than left to mislead):** (a) `08-CONTEXT.md`'s D-08-09 cites
+- **D-09-45 (three stale planning-document references, corrected here rather than left to mislead):** (a) `08-CONTEXT.md`'s D-08-09 cites
   `computeLoanLastUses` at `check.go:2979`; it is at **`check.go:3743`**.
   (b) `08-CONTEXT.md`'s D-08-03 and 08-01-PLAN's original doc comment assert
   `callgraph.Order` is callee-before-caller; it is **caller-before-callee** and

@@ -420,15 +420,32 @@ convenience: the peer lands fully first, the zero-divergence differential goes
 green, and only then does the deletion land (D-09-10, build-then-delete).
 
 Plans:
+**Wave 1**
+
 - [ ] 09-01-PLAN.md — TRACER: `corevalidate`'s own interprocedural loan-liveness derivation, its `OpCall` consult, the differential authored red-first, and seeded faults in both directions
 - [ ] 09-02-PLAN.md — Enablement: relocate the call-graph corpus generator, widen the third gate-eligible metric chokepoint, and close the one pre-existing test failure
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 09-03-PLAN.md — OWN-08: the peer re-derives all four `PublishProblemsFor` classes; D-03-02 closed in both admission layers
 - [ ] 09-04-PLAN.md — TRU-04 shapes: the synthetic-shape zero-divergence differential and the cycle-peer differential with witness agreement
 - [ ] 09-05-PLAN.md — OWN-05: call-site transfer has one meaning; override non-expressible in source and fail-closed in core
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 09-06-PLAN.md — The peer's own closure cost curve, its bound and mutation-kill, and the two-way disclosed-field-set identity
 - [ ] 09-07-PLAN.md — The three pre-deletion gates: diagnostic ordering stability, D-09-49 Q1's enumeration, and the AST-shadow-path subsumption corpus
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 09-08-PLAN.md — MANDATORY MID-PHASE GATE at the build-then-delete boundary; the peer's bound ratified at the gate's own commit
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 09-09-PLAN.md — OWN-09: extend the post-assembly pass, remove the lowering-time emission, delete the shadow scaffolding — one commit
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 09-10-PLAN.md — QLT-07's scoped closure, the OWN-05a/OWN-05b split, and the requirement and roadmap corrections
 
 ### Phase 10: Trusted Interprocedural Oracle
