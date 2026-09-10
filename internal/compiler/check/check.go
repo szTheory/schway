@@ -402,7 +402,7 @@ func Program(program ast.Program) Result {
 				signatureTable, signatureTableBuilt = table, true
 			}
 		}
-		if signatureTableBuilt {
+		if signatureTableBuilt && !disableInterproceduralLoanLivenessForTest {
 			summaries, summaryWork := buildInterproceduralSummaries(result.Program, signatureTable)
 			result.Work += summaryWork
 			result.Diagnostics = append(result.Diagnostics, checkInterproceduralLoanLiveness(result.Program, summaries, spanByOperationID)...)
@@ -410,6 +410,20 @@ func Program(program ast.Program) Result {
 	}
 	return result
 }
+
+// disableInterproceduralLoanLivenessForTest is Phase 09's own D-09-24/D-09-25
+// fault-injection seam (QLT-08): when true, check's own post-assembly
+// interprocedural loan-liveness pass (checkInterproceduralLoanLiveness) is
+// skipped entirely -- check.Program admits a program it would otherwise
+// refuse with check.interprocedural_loan_liveness -- so a same-package test
+// can prove corevalidate's own, independently written peer
+// (corevalidate_peer_liveness.go) still refuses the SAME endpoint fact
+// wholly on its own, mirroring verifyCallableRefusalSeam's own established
+// shape (check.go:1183) generalized to the liveness fact. Unexported,
+// same-package-test-only, restored via defer in every test that engages it
+// -- never an exported package-level mutable var on a production path
+// (D-07-42).
+var disableInterproceduralLoanLivenessForTest = false
 
 // disableCallGraphCycleRefusalForTest is 07-07 Task 3 Test 1's own D-07-42
 // independent-disable seam: when true, check's callgraph-based cycle

@@ -3,13 +3,39 @@ package corevalidate
 import (
 	"go/parser"
 	"go/token"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// mustCheckFixture parses and checks a testdata fixture through the real
+// front end, exactly like check_test.go's own mustParseProgram +
+// Program(...) pair, so the two mutation-kill tests below drive the same
+// real .lang fixtures the retired peerDivergenceExpected entries named,
+// not a hand-built synthetic program.
+func mustCheckFixture(t *testing.T, pathParts ...string) check.Result {
+	t.Helper()
+	relativePath := strings.Join(pathParts, "/")
+	source, err := os.ReadFile(testsupport.ProjectPath(pathParts...))
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", relativePath, err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("fixture %q failed to parse: %+v", relativePath, parsed.Diagnostics)
+	}
+	result := check.Program(parsed.Program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("fixture %q failed check.Program: %+v", relativePath, result.Diagnostics)
+	}
+	return result
+}
 
 // loanCarryFunction builds one structurally-minimal core.Function for
 // derivePeerLoanCarry's own tests: a parameter place, plus whatever
@@ -259,6 +285,66 @@ func TestPeerLivenessFileImportsStayIndependent(t *testing.T) {
 			if strings.HasSuffix(path, forbid) {
 				t.Fatalf("corevalidate_peer_liveness.go imports %s, which corevalidate must never depend on", path)
 			}
+		}
+	}
+}
+
+// TestPeerLoanCarryForcedTrueReintroducesRetiredDivergence is Task 3(d)'s
+// QLT-08 mutation-kill: a control that has never been seen to fail is a
+// claim, not evidence. With forcePeerLoanCarryTrueForTest engaged, every
+// OpCall is treated as carrying its argument's loan regardless of what
+// derivePeerLoanCarry actually derived -- reverting corevalidate to its
+// pre-Phase-09 unconditional-propagation shape -- and BOTH retired
+// peerDivergenceExpected fixtures (testdata/phase08/twin_a_accept.lang,
+// testdata/phase08/relay_depth2_accept.lang) must refuse again with
+// core.move_while_borrowed, proving D-09-03's retirement is genuinely this
+// mechanism's doing.
+func TestPeerLoanCarryForcedTrueReintroducesRetiredDivergence(t *testing.T) {
+	for _, fixture := range []string{"testdata/phase08/twin_a_accept.lang", "testdata/phase08/relay_depth2_accept.lang"} {
+		result := mustCheckFixture(t, strings.Split(fixture, "/")...)
+		restore := SetForcePeerLoanCarryTrueForTest(true)
+		coreResult := Validate(result.Program)
+		restore()
+		if coreResult.Valid {
+			t.Fatalf("%s: expected corevalidate to refuse again with forcePeerLoanCarryTrueForTest engaged, got Valid == true", fixture)
+		}
+		found := false
+		for _, problem := range coreResult.Problems {
+			if problem.Code == "core.move_while_borrowed" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("%s: expected core.move_while_borrowed, got %+v", fixture, coreResult.Problems)
+		}
+	}
+}
+
+// TestPeerLoanCarryConsultDisabledReintroducesRetiredDivergence is Task
+// 3(d)'s second QLT-08 mutation-kill, the same claim proven through the
+// OTHER seam: with disablePeerLoanCarryConsultForTest engaged instead of
+// forcePeerLoanCarryTrueForTest, buildLoanChainIndex's OpCall branch never
+// even reaches the "does the callee carry" question -- a DIFFERENT code
+// path than the force-true seam, but the same externally observable
+// reintroduced-divergence result, so the two seams each independently kill
+// the mutation they were built to catch.
+func TestPeerLoanCarryConsultDisabledReintroducesRetiredDivergence(t *testing.T) {
+	for _, fixture := range []string{"testdata/phase08/twin_a_accept.lang", "testdata/phase08/relay_depth2_accept.lang"} {
+		result := mustCheckFixture(t, strings.Split(fixture, "/")...)
+		restore := SetDisablePeerLoanCarryConsultForTest(true)
+		coreResult := Validate(result.Program)
+		restore()
+		if coreResult.Valid {
+			t.Fatalf("%s: expected corevalidate to refuse again with disablePeerLoanCarryConsultForTest engaged, got Valid == true", fixture)
+		}
+		found := false
+		for _, problem := range coreResult.Problems {
+			if problem.Code == "core.move_while_borrowed" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("%s: expected core.move_while_borrowed, got %+v", fixture, coreResult.Problems)
 		}
 	}
 }

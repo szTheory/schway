@@ -137,9 +137,9 @@ func (v *validator) chainPeerLoanCarry() {
 // branch never breaks the chain at a call boundary at all -- reproducing
 // the pre-Phase-09 unconditional-propagation shape from the peer's own
 // side, independently of check's own interprocedural liveness law.
-// Unexported, false in production, set only via
-// SetDisablePeerLoanCarryConsultForTest (export_test.go) by a same-package
-// test that defers the restore immediately.
+// Unexported, false in production; set only via
+// SetDisablePeerLoanCarryConsultForTest by a test that defers the restore
+// immediately.
 var disablePeerLoanCarryConsultForTest bool
 
 // forcePeerLoanCarryTrueForTest is Phase 09's own D-09-25/D-09-26
@@ -150,6 +150,32 @@ var disablePeerLoanCarryConsultForTest bool
 // reintroducing the two retired peerDivergenceExpected fixtures'
 // over-refusal from a DIFFERENT mechanism than disabling the consult
 // entirely, so the two seams can each be shown to fail the mutation-kill
-// independently. Unexported, false in production, set only via
+// independently. Unexported, false in production; set only via
 // SetForcePeerLoanCarryTrueForTest.
 var forcePeerLoanCarryTrueForTest bool
+
+// SetDisablePeerLoanCarryConsultForTest is D-09-25/D-09-26's cross-package
+// fault-injection seam for disablePeerLoanCarryConsultForTest above. Go's
+// build model excludes "_test.go" files from a normal package import, so a
+// same-package-only unexported var (the shape corevalidate_peer_liveness_test.go
+// itself uses to set the var directly) cannot be reached by check's own
+// companion-assertion test (check_peer_liveness_seam_test.go), which
+// imports this package as an ordinary dependency -- exactly the same
+// cross-package exception SetDisableCyclePeerForTest above documents
+// (D-07-42). Production-visible, but a documented test-only no-op unless a
+// test explicitly calls it, and always restored via the returned closure.
+// Never called from any production code path in this repository.
+func SetDisablePeerLoanCarryConsultForTest(disable bool) (restore func()) {
+	previous := disablePeerLoanCarryConsultForTest
+	disablePeerLoanCarryConsultForTest = disable
+	return func() { disablePeerLoanCarryConsultForTest = previous }
+}
+
+// SetForcePeerLoanCarryTrueForTest is forcePeerLoanCarryTrueForTest's own
+// cross-package counterpart, for the same reason
+// SetDisablePeerLoanCarryConsultForTest exists.
+func SetForcePeerLoanCarryTrueForTest(force bool) (restore func()) {
+	previous := forcePeerLoanCarryTrueForTest
+	forcePeerLoanCarryTrueForTest = force
+	return func() { forcePeerLoanCarryTrueForTest = previous }
+}
