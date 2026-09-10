@@ -787,8 +787,8 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 			continue
 		}
 		blocks := cfgBlocksForFunction(function)
-		fixpoint, err := loanLivenessFixpoint(function.ID, blocks, summaries)
-		if err != nil {
+		fixpoint, diag := loanLivenessFixpoint(function.ID, blocks, summaries, function.Span)
+		if diag != nil {
 			// A CFG cycle here would already have been refused by this same
 			// function's own intraprocedural admission, which has already
 			// passed by the time this pass runs (D-08-12) -- unreachable in
@@ -1432,9 +1432,9 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	// itself is general (see materializeLoanEndpoints's own multi-successor
 	// test coverage in check_test.go).
 	cfgBlocks := append(append([]cfgBlockSpec(nil), armCFGBlocks...), cfgBlockSpec{id: joinBlockID, successors: nil})
-	fixpoint, err := loanLivenessFixpoint(functionID, cfgBlocks, interproceduralSummaryTable{})
-	if err != nil {
-		diagnostics = append(diagnostics, diagnostic.Error("check.cfg_back_edge", function.Body.Span, err.Error()))
+	fixpoint, diag := loanLivenessFixpoint(functionID, cfgBlocks, interproceduralSummaryTable{}, function.Body.Span)
+	if diag != nil {
+		diagnostics = append(diagnostics, *diag)
 		return core.Function{}, diagnostics, work, nil
 	}
 	edgeIDLookup := func(fromBlockID, toBlockID string) string {
@@ -1668,13 +1668,98 @@ func loanSetsEqual(a, b map[string]bool) bool {
 	return true
 }
 
+// cfgWalkFrame is the cycle pre-walk's own explicit-stack DFS frame
+// (D-08-19a, porting callgraph.stackFrame's identical shape, D-07-18): the
+// block's own ID and the index of the next successor still to visit.
+// Pushed/popped entries replace the recursion frame a native-recursive walk
+// would otherwise cost, so depth here is bounded by Go slice growth, never
+// by the goroutine's own stack.
+type cfgWalkFrame struct {
+	id             string
+	nextChildIndex int
+}
+
+// detectCFGCycle runs an iterative three-colour (white/gray/black)
+// depth-first search over blocks' successors, rooted at every block in
+// order (mirroring loanLivenessFixpoint's own former recursive walk, which
+// also treated every block as a potential root) -- porting
+// callgraph.Order's own explicit-stack structure (D-08-19a) rather than a
+// self-calling closure: depth here is bounded by CFG block count within
+// one function body, which is smaller than callgraph's roots, but "bounded
+// by body size" is not the same guarantee a fixed native stack gives, and a
+// long straight-line body is adversarially reachable (T-08-13). On a cycle
+// it reports the SAME block identity the old recursive walk would have
+// named in its error: the successor block found already on-stack (gray) at
+// the moment of re-entry.
+func detectCFGCycle(order []string, byID map[string]cfgBlockSpec) (blockID string, cyclic bool) {
+	const (
+		unvisited = 0
+		inWork    = 1
+		done      = 2
+	)
+	state := make(map[string]int, len(byID))
+	for _, root := range order {
+		if state[root] != unvisited {
+			continue
+		}
+		stack := []cfgWalkFrame{{id: root}}
+		state[root] = inWork
+		for len(stack) > 0 {
+			top := &stack[len(stack)-1]
+			successors := byID[top.id].successors
+			if top.nextChildIndex < len(successors) {
+				child := successors[top.nextChildIndex]
+				top.nextChildIndex++
+				switch state[child] {
+				case unvisited:
+					state[child] = inWork
+					stack = append(stack, cfgWalkFrame{id: child})
+				case inWork:
+					// A back edge to an on-stack (in-work) block is a real
+					// cycle -- the exact re-entry point the old recursive
+					// walk's own state[id]==inWork check would have named.
+					return child, true
+				case done:
+					// A legitimately revisited already-finished block --
+					// not a cycle.
+				}
+			} else {
+				state[top.id] = done
+				stack = stack[:len(stack)-1]
+			}
+		}
+	}
+	return "", false
+}
+
+// cfgBackEdgeDiagnostic builds the check.cfg_back_edge refusal (D-08-19b):
+// Primary is span (the caller's own function-level span, since the CFG
+// pre-walk operates over a whole function's block graph before any
+// per-operation admission has anything narrower to point at), and the SOLE
+// cause names the offending block's own ID -- never a bare formatted error
+// string -- so an agent-side dispatch site can act on Causes[0].Detail
+// directly (mirroring interproceduralLoanLivenessDiagnostic's own
+// discipline). No repairs: a CFG cycle is a whole-topology defect no
+// span-local edit resolves (matching core.call_graph_cycle's own
+// non-repairable disposition for the analogous whole-program cycle,
+// D-07-31c's reasoning restated at the intraprocedural CFG level).
+func cfgBackEdgeDiagnostic(functionID, blockID string, span diagnostic.Span) diagnostic.Diagnostic {
+	return diagnostic.Error(
+		"check.cfg_back_edge", span,
+		fmt.Sprintf("function %q's control-flow graph contains a cycle", functionID),
+		diagnostic.Cause{Kind: "cycle_block", Detail: blockID},
+	)
+}
+
 // loanLivenessFixpoint computes backward monotone dataflow over the finite
 // lattice of live loan IDs per block boundary (Q2), iterated with a
 // worklist to a fixpoint. blocks must be given in a stable order; every
 // successor ID must resolve to a block in the same slice. A cycle (a block
 // reachable from itself by following successors) is rejected fail-closed --
-// OWN-03 is scoped to acyclic CFGs this phase (T-03-11).
-func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec, summaries interproceduralSummaryTable) (loanLivenessResult, error) {
+// OWN-03 is scoped to acyclic CFGs this phase (T-03-11) -- via the coded
+// check.cfg_back_edge diagnostic (D-08-19b); span is the caller's own
+// function-level span, attached to that refusal.
+func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec, summaries interproceduralSummaryTable, span diagnostic.Span) (loanLivenessResult, *diagnostic.Diagnostic) {
 	byID := make(map[string]cfgBlockSpec, len(blocks))
 	order := make([]string, 0, len(blocks))
 	var allOps []core.LinearOperation
@@ -1685,33 +1770,9 @@ func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec, summaries in
 	}
 	placeLoan := derivePlaceLoans(allOps, summaries)
 
-	const (
-		unvisited = 0
-		inWork    = 1
-		done      = 2
-	)
-	state := make(map[string]int, len(blocks))
-	var walk func(id string) error
-	walk = func(id string) error {
-		switch state[id] {
-		case inWork:
-			return fmt.Errorf("check.cfg_back_edge: block %q participates in a cycle", id)
-		case done:
-			return nil
-		}
-		state[id] = inWork
-		for _, successor := range byID[id].successors {
-			if err := walk(successor); err != nil {
-				return err
-			}
-		}
-		state[id] = done
-		return nil
-	}
-	for _, id := range order {
-		if err := walk(id); err != nil {
-			return loanLivenessResult{}, err
-		}
+	if cycleBlockID, cyclic := detectCFGCycle(order, byID); cyclic {
+		diag := cfgBackEdgeDiagnostic(functionID, cycleBlockID, span)
+		return loanLivenessResult{}, &diag
 	}
 
 	predecessors := make(map[string][]string, len(blocks))
@@ -3423,8 +3484,8 @@ const (
 // computeLoanLastUses' own single-block construction.
 func aliasFactEndpoints(functionID string, operations []core.LinearOperation) ([]core.LoanEndpoint, int) {
 	block := cfgBlockSpec{id: functionID + ":block:straight", operations: operations, successors: nil}
-	fixpoint, err := loanLivenessFixpoint(functionID, []cfgBlockSpec{block}, interproceduralSummaryTable{})
-	if err != nil {
+	fixpoint, diag := loanLivenessFixpoint(functionID, []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
 		return nil, 0
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }
@@ -3610,8 +3671,8 @@ func computeLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]lo
 	blockID := "shadow:block:straight"
 	block := cfgBlockSpec{id: blockID, operations: operations, successors: nil}
 	uses := make(map[int]loanUse, len(loanIndexByLoanID))
-	fixpoint, err := loanLivenessFixpoint("shadow", []cfgBlockSpec{block}, interproceduralSummaryTable{})
-	if err != nil {
+	fixpoint, diag := loanLivenessFixpoint("shadow", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
 		return uses, 0
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }

@@ -149,9 +149,9 @@ func TestLoanLivenessFixpoint(t *testing.T) {
 	useOp := core.LinearOperation{ID: "fn:op:1", Kind: core.OpReturn, SourceID: "fn:place:1"}
 	b2 := cfgBlockSpec{id: "fn:block:b2", operations: []core.LinearOperation{useOp}, successors: nil}
 
-	result, err := loanLivenessFixpoint("fn", []cfgBlockSpec{b1, b2}, interproceduralSummaryTable{})
-	if err != nil {
-		t.Fatalf("unexpected acyclicity error: %v", err)
+	result, diag := loanLivenessFixpoint("fn", []cfgBlockSpec{b1, b2}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
+		t.Fatalf("unexpected acyclicity error: %+v", diag)
 	}
 	if result.work == 0 {
 		t.Fatalf("fixpoint reported zero counted work")
@@ -207,9 +207,9 @@ func TestLoanLivenessFixpointCoversStraightLine(t *testing.T) {
 
 	blockID := function.ID + ":block:straight"
 	block := cfgBlockSpec{id: blockID, operations: function.Linear.Operations, successors: nil}
-	fixpoint, err := loanLivenessFixpoint(function.ID, []cfgBlockSpec{block}, interproceduralSummaryTable{})
-	if err != nil {
-		t.Fatalf("unexpected acyclicity error: %v", err)
+	fixpoint, diag := loanLivenessFixpoint(function.ID, []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
+		t.Fatalf("unexpected acyclicity error: %+v", diag)
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }
 	endpoints := materializeLoanEndpoints(function.ID, []cfgBlockSpec{block}, edgeID, fixpoint, interproceduralSummaryTable{})
@@ -237,9 +237,9 @@ func TestEdgeSpecificLiveOut(t *testing.T) {
 	unused := cfgBlockSpec{id: "fn:block:unused", operations: []core.LinearOperation{unusedOp}, successors: nil}
 
 	blocks := []cfgBlockSpec{entry, used, unused}
-	result, err := loanLivenessFixpoint("fn", blocks, interproceduralSummaryTable{})
-	if err != nil {
-		t.Fatalf("unexpected acyclicity error: %v", err)
+	result, diag := loanLivenessFixpoint("fn", blocks, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
+		t.Fatalf("unexpected acyclicity error: %+v", diag)
 	}
 	if !result.liveIn["fn:block:used"]["fn:loan:0"] {
 		t.Fatalf("loan must be live entering the block that references it: %+v", result.liveIn)
@@ -276,12 +276,110 @@ func TestEdgeSpecificLiveOut(t *testing.T) {
 
 // TestBackEdgeRejected proves the fixpoint fails closed on a cyclic CFG
 // rather than iterating forever (T-03-11) — a real back edge, if one is ever
-// present, is rejected, not silently accepted.
+// present, is rejected, not silently accepted. Task 1(c) widens this to
+// assert on the returned diagnostic's own Code and its cycle_block cause,
+// rather than merely a non-nil error, now that loanLivenessFixpoint returns
+// a coded *diagnostic.Diagnostic (D-08-19b) instead of a bare error.
 func TestBackEdgeRejected(t *testing.T) {
 	a := cfgBlockSpec{id: "fn:block:a", operations: nil, successors: []string{"fn:block:b"}}
 	b := cfgBlockSpec{id: "fn:block:b", operations: nil, successors: []string{"fn:block:a"}}
-	if _, err := loanLivenessFixpoint("fn", []cfgBlockSpec{a, b}, interproceduralSummaryTable{}); err == nil {
+	_, diag := loanLivenessFixpoint("fn", []cfgBlockSpec{a, b}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag == nil {
 		t.Fatalf("expected a back-edge rejection, got none")
+	}
+	if diag.Code != "check.cfg_back_edge" {
+		t.Fatalf("expected code check.cfg_back_edge, got %q", diag.Code)
+	}
+	var sawCycleBlock bool
+	for _, cause := range diag.Causes {
+		if cause.Kind != "cycle_block" {
+			continue
+		}
+		sawCycleBlock = true
+		if cause.Detail != "fn:block:a" && cause.Detail != "fn:block:b" {
+			t.Fatalf("cycle_block cause names an unexpected block: %+v", cause)
+		}
+	}
+	if !sawCycleBlock {
+		t.Fatalf("expected a cycle_block cause, got %+v", diag.Causes)
+	}
+}
+
+// TestCFGBackEdgeWalkIsIterative is Task 1(c)'s D-08-19a structural guard,
+// following TestDemoteHasExactlyOnePromotionPassthrough's go/ast-scan
+// precedent (internal/compiler/measure/statistics_test.go): parses check.go
+// itself and asserts loanLivenessFixpoint's OWN body declares no
+// function-typed local variable that is assigned a closure calling itself
+// -- the exact `var walk func(id string) error; walk = func(id string)
+// error { ...; walk(successor); ... }` shape this task removed. A future
+// edit reintroducing native recursion here fails this test even before it
+// exhausts a stack. It then exercises the (now-iterative) cycle pre-walk on
+// a synthetic 50,000-deep single-successor-chain CFG -- deep enough that a
+// reintroduced native-recursion walk would exhaust the goroutine stack --
+// proving the conversion is load-bearing under depth, not merely
+// structurally absent (T-08-13).
+func TestCFGBackEdgeWalkIsIterative(t *testing.T) {
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, "check.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parse check.go: %v", err)
+	}
+	var target *goast.FuncDecl
+	for _, decl := range file.Decls {
+		if fn, ok := decl.(*goast.FuncDecl); ok && fn.Name.Name == "loanLivenessFixpoint" {
+			target = fn
+			break
+		}
+	}
+	if target == nil {
+		t.Fatal("check.go does not declare a loanLivenessFixpoint function")
+	}
+
+	var selfCalling []string
+	goast.Inspect(target.Body, func(n goast.Node) bool {
+		assign, ok := n.(*goast.AssignStmt)
+		if !ok || len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
+			return true
+		}
+		ident, ok := assign.Lhs[0].(*goast.Ident)
+		if !ok {
+			return true
+		}
+		lit, ok := assign.Rhs[0].(*goast.FuncLit)
+		if !ok {
+			return true
+		}
+		callsSelf := false
+		goast.Inspect(lit.Body, func(inner goast.Node) bool {
+			call, ok := inner.(*goast.CallExpr)
+			if !ok {
+				return true
+			}
+			if fnIdent, ok := call.Fun.(*goast.Ident); ok && fnIdent.Name == ident.Name {
+				callsSelf = true
+			}
+			return true
+		})
+		if callsSelf {
+			selfCalling = append(selfCalling, ident.Name)
+		}
+		return true
+	})
+	if len(selfCalling) != 0 {
+		t.Fatalf("loanLivenessFixpoint declares a self-calling closure for %v -- the cycle pre-walk must use an explicit stack, not native recursion (D-08-19a)", selfCalling)
+	}
+
+	const depth = 50_000
+	blocks := make([]cfgBlockSpec, depth)
+	for i := 0; i < depth; i++ {
+		var successors []string
+		if i+1 < depth {
+			successors = []string{fmt.Sprintf("deep:block:%d", i+1)}
+		}
+		blocks[i] = cfgBlockSpec{id: fmt.Sprintf("deep:block:%d", i), successors: successors}
+	}
+	if _, diag := loanLivenessFixpoint("deep", blocks, interproceduralSummaryTable{}, diagnostic.Span{}); diag != nil {
+		t.Fatalf("expected the acyclic %d-deep chain to admit, got %+v", depth, diag)
 	}
 }
 
@@ -314,9 +412,9 @@ func TestStraightLineEndpointsUnchanged(t *testing.T) {
 		t.Fatalf("want 2 tracked loans, got %+v", support.LoanFinalUses)
 	}
 	block := cfgBlockSpec{id: "test:reborrow:block:straight", operations: support.Operations, successors: nil}
-	result, err := loanLivenessFixpoint("test:reborrow", []cfgBlockSpec{block}, interproceduralSummaryTable{})
-	if err != nil {
-		t.Fatalf("unexpected acyclicity error: %v", err)
+	result, diag := loanLivenessFixpoint("test:reborrow", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
+		t.Fatalf("unexpected acyclicity error: %+v", diag)
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }
 	endpoints := materializeLoanEndpoints("test:reborrow", []cfgBlockSpec{block}, edgeID, result, interproceduralSummaryTable{})
@@ -716,9 +814,9 @@ func TestBranchSequenceExhaustive(t *testing.T) {
 func TestLivenessWorkScale(t *testing.T) {
 	for _, n := range []int{10, 100, 1_000, 10_000} {
 		block := cfgBlockSpec{id: "chain:block:straight", operations: reborrowChainOperations(n), successors: nil}
-		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block}, interproceduralSummaryTable{})
-		if err != nil {
-			t.Fatalf("n=%d: unexpected acyclicity error: %v", n, err)
+		result, diag := loanLivenessFixpoint("chain", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+		if diag != nil {
+			t.Fatalf("n=%d: unexpected acyclicity error: %+v", n, diag)
 		}
 		if result.work == 0 {
 			t.Fatalf("n=%d: zero counted work", n)
@@ -739,9 +837,9 @@ func TestReborrowChainWorkIsLinear(t *testing.T) {
 	work := make([]int, len(series))
 	for index, n := range series {
 		block := cfgBlockSpec{id: "chain:block:ratio", operations: reborrowChainOperations(n), successors: nil}
-		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block}, interproceduralSummaryTable{})
-		if err != nil {
-			t.Fatalf("n=%d: unexpected acyclicity error: %v", n, err)
+		result, diag := loanLivenessFixpoint("chain", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+		if diag != nil {
+			t.Fatalf("n=%d: unexpected acyclicity error: %+v", n, diag)
 		}
 		work[index] = result.work
 	}
