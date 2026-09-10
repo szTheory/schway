@@ -31,19 +31,19 @@ name the superseded text so no future reader has to discover the change.
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
 | D-09-03 | 09-CONTEXT.md (D-09-03), resolves PHASE-08-DEBT.md D-08-40 | OWN-07, TRU-04 | info | Phase 09 — plan 09-01 (required assertion, not a side effect) | RESOLUTION of D-08-40. `buildLoanChainIndex` (`corevalidate.go:1133`) propagates `parent[TargetID] = SourceID` through every `core.OpCall` with no callee-signature consultation. Landing the peer's contract-aware consult must retire BOTH `peerDivergenceExpected` entries — `testdata/phase08/twin_a_accept.lang` and `testdata/phase08/relay_depth2_accept.lang` (`session_peer_gate_test.go:56-58`). Retiring both is a required assertion of this phase |
-| D-09-08 | 09-CONTEXT.md (D-09-08), REVERSES PHASE-08-DEBT.md D-08-41 | OWN-09 | warning | Phase 09 — plan 09-08 (the deletion), gated by plan 09-07's mid-phase gate | REVERSAL. D-08-41 adjudicated `computeLoanLastUses`' summary-blindness as "an accepted, permanent, disclosed scope limitation… Landing phase: Not scheduled." That disposition is SUPERSEDED: `computeLoanLastUses` (`check.go:3743`) and its `shadow:place:*` synthesis are DELETED in Phase 09, because a summary-blind decision point actively masks the law the milestone exists to prove (it refuses both Pattern B twins identically before the interprocedural pass runs). Reversibility: costly — restoring the shadow path would mean reconstructing the `shadow:place:*` synthesis and re-threading two call sites through lowering. Deliberately so |
+| D-09-08 | 09-CONTEXT.md (D-09-08), REVERSES PHASE-08-DEBT.md D-08-41 | OWN-09 | warning | Phase 09 — plan 09-09 (the deletion itself); AUTHORIZED at plan 09-08's mid-phase gate, 2026-09-10 | REVERSAL. D-08-41 adjudicated `computeLoanLastUses`' summary-blindness as "an accepted, permanent, disclosed scope limitation… Landing phase: Not scheduled." That disposition is SUPERSEDED: `computeLoanLastUses` (`check.go:3743`) and its `shadow:place:*` synthesis are DELETED in Phase 09, because a summary-blind decision point actively masks the law the milestone exists to prove (it refuses both Pattern B twins identically before the interprocedural pass runs). Reversibility: costly — restoring the shadow path would mean reconstructing the `shadow:place:*` synthesis and re-threading two call sites through lowering. Deliberately so |
 | D-09-13 | 09-CONTEXT.md (D-09-13), 09-RESEARCH.md Pitfall 4 | OWN-09, TRU-04 | warning | Phase 09 — plan 09-06 authors the gate; plan 09-08 must keep it green | Moving `ownership.move_while_borrowed` / `ownership.borrow_conflict` emission from per-function lowering to the post-assembly pass changes WHICH diagnostic is reported first for a program with errors in two functions. `Code + Span + Causes` fold into a SHA-256 diagnostic identity (`diagnostic/diagnostic.go:96-112`), so an emission-order change moves a published, agent-facing diagnostic ID for an ordering reason rather than a content reason. Requires an explicit ordering-stability assertion, never a corpus replay |
 | D-09-14 | 09-CONTEXT.md (D-09-14), resolves PHASE-08-DEBT.md D-08-27 | OWN-09 | info | Phase 09 — plan 09-09 (document change) | RESOLUTION of D-08-27. The OWN-09 Phase-08-vs-09 document conflict closes in favour of `REQUIREMENTS.md:173`'s Phase 09 mapping, which stands as operative. Phase 08 is shipped (`4ab5c65`) and reopening it is not viable. OWN-09's OWN REQUIREMENT TEXT is what gets corrected to say Phase 09, exactly as Phase 08's mid-phase gate anticipated |
-| D-09-21 | 09-CONTEXT.md (D-09-21), PHASE-07-DEBT.md D-07-33 | OWN-08, SEM-06 | warning | Phase 09 — plan 09-03 executes; fallback lands in this register with a named landing phase if triggered | DECLARED FALLBACK, with its trigger fixed in advance. If EXECUTION — not plan-time analysis — discovers the peer's `OpForeignCall` origin-omitted class is genuinely unbounded (it touches multi-hop foreign chains spike 005 did not clear), then and only then: split D-07-33 into two rows, close the two body-only classes (`core.origin_understated`, `core.origin_access_mismatch`) in Phase 09, cut foreign-origin-omitted peer re-derivation with a NAMED landing phase, and amend REQUIREMENTS.md to carve that class explicitly out of OWN-08's scope. OWN-08 is on the never-cut list, so narrowing any slice of its supporting peer requires explicit written sign-off, never a silent scope read |
+| D-09-21 | 09-CONTEXT.md (D-09-21), PHASE-07-DEBT.md D-07-33 | OWN-08, SEM-06 | warning | Resolved at plan 09-08's mid-phase gate, 2026-09-10 — fallback did NOT fire; no landing phase needed | DECLARED FALLBACK, with its trigger fixed in advance. If EXECUTION — not plan-time analysis — discovers the peer's `OpForeignCall` origin-omitted class is genuinely unbounded (it touches multi-hop foreign chains spike 005 did not clear), then and only then: split D-07-33 into two rows, close the two body-only classes (`core.origin_understated`, `core.origin_access_mismatch`) in Phase 09, cut foreign-origin-omitted peer re-derivation with a NAMED landing phase, and amend REQUIREMENTS.md to carve that class explicitly out of OWN-08's scope. OWN-08 is on the never-cut list, so narrowing any slice of its supporting peer requires explicit written sign-off, never a silent scope read |
 | D-09-29 | 09-CONTEXT.md (D-09-29/D-09-30), resolves PHASE-08-DEBT.md D-08-26 | OWN-06 (Phase 08 success criterion 4) | info | Resolved at Phase 09 planning — no vehicle, by design; not deferred | RESOLUTION of D-08-26. The accepted-side consulted field set is a COMPILE-TIME CONSTANT: the consultation loop (`check.go:594-609`) fires exactly `return.mode` and `parameters[0].mode` for every function with a declared signature, corpus-wide, already proven a closed set by `TestInterproceduralDisclosedFieldSet` (`check_test.go:4898`). A runtime record would reprint a constant on every run at real `qlt02`-gated cost with zero incremental per-program information. All three Phase 08 vehicles stay ruled out; the fourth candidate (an opt-in flag mirroring `evidence --validate`'s `Trace *TraceSummary`) is buildable and still rejected on the constant-payload argument. D-08-26's "declared debt" framing is REPLACED with "resolved — no vehicle, by design" so no future phase reopens it as unfinished. Phase 09's positive obligation instead is D-09-30: `corevalidate` gets its own independently-written closed-field-set test and a cross-peer test asserting the two sets are identical |
 | D-09-31 | 09-CONTEXT.md (D-09-31/D-09-32/D-09-33), SUPERSEDES 08-CONTEXT.md D-08-21 | OWN-07, TRU-04 | warning | Superseded at Phase 09 planning — closed, not deferred; reopen only under the condition named below | SUPERSESSION. Phase 08 committed in writing to promoting `check.interprocedural_loan_liveness` to `core.interprocedural_loan_liveness` in Phase 09 "at the moment `corevalidate` independently re-derives the same fact and both peers must agree on-code." That trigger is RETIRED as the promotion criterion because it was never achievable — D-08-17's own reasoning (the peer computes liveness through a reachability closure, not a worklist, so it cannot fail the same way) is general to the two mechanisms, not scoped to the iteration bound. LOCKED: `check.interprocedural_loan_liveness` stays `check.*`; `corevalidate` keeps `core.move_while_borrowed` with its own existing causes; neither is renamed, aliased, or merged. Reversibility: one-way if reversed later — promotion would move every existing diagnostic ID for the code, and diagnostic codes are published agent-facing API consumed by `lang-repair` and `lang explain` |
 | D-09-37 | 09-CONTEXT.md (D-09-37), REQUIREMENTS.md:169 | OWN-05 | warning | Phase 09 — plan 09-09 records the split; OWN-05b lands in Phase 10 | OWN-05's text names THREE derivers (`check`, `corevalidate`, `interp`); Phase 09 delivers two. OWN-05 must NOT be flipped to Complete at Phase 09's end — that would be exactly the requirement-vs-code overclaim the debt registers exist to catch. Disposition chosen at planning time: SPLIT into OWN-05a (Phase 09: `check` + `corevalidate`) and OWN-05b (Phase 10: `interp`, verified there by TRU-03 / NAT-06), rather than a single partial row, so the traceability table's one-requirement-one-phase discipline survives |
 | D-09-40a | 09-CONTEXT.md (D-09-40/D-09-40a), inventory run 2026-09-10 | QLT-07 | info | Phase 09 — plan 09-09 (closure section); threshold pre-registered before planning began | QLT-07's committed-vs-stretch status was decided against a threshold FIXED BEFORE the count was taken: committed iff the inventory requires ≤ 1 additional plan and opens zero packages or files OWN-07/OWN-08 do not already touch. Inventory result: all 33 tests named across the 12 loan-liveness-scoped rows (03-03/03-04/03-05 only, excluding OWN-04's 03-06/03-07 rows) already exist and pass. VERDICT: QLT-07 is COMMITTED. The debt is a ratification/documentation debt, not a test-authorship debt; the work touches only `.planning/` documents and ZERO production files. Scope-cut order item 2 is NOT triggered. Caveat preserved: this covers only the loan-liveness subset — `03-VALIDATION.md`'s own `nyquist_compliant: false` stays false (D-09-41), its OWN-04 rows are outside the claim, and its loop-carried-liveness clause is structurally un-closable while the language has no loops |
-| D-09-43 | 09-CONTEXT.md (D-09-43), ROADMAP.md M002 scope-cut order | all six phase requirements | info | Phase 09 — adjudicated at plan 09-07's mid-phase gate | DECLARED SCOPE-CUT TRIGGER. If the peer-derivation + D-07-33-closure work exceeds ~2x its initial plan estimate, the cut order is (1) QLT-07 per D-09-40's threshold, then (2) the `OpForeignCall` slice of D-07-33 per D-09-21's named fallback. NEVER the criterion-1 differential corpus (D-09-23), never the seeded fault and its companion assertion (D-09-25), never the `computeLoanLastUses` deletion (D-09-08), and never the two `peerDivergenceExpected` retirements (D-09-03). Any cut is a deferral with a named landing phase, never a silent drop |
+| D-09-43 | 09-CONTEXT.md (D-09-43), ROADMAP.md M002 scope-cut order | all six phase requirements | info | Resolved at plan 09-08's mid-phase gate, 2026-09-10 — trigger did NOT fire | DECLARED SCOPE-CUT TRIGGER. If the peer-derivation + D-07-33-closure work exceeds ~2x its initial plan estimate, the cut order is (1) QLT-07 per D-09-40's threshold, then (2) the `OpForeignCall` slice of D-07-33 per D-09-21's named fallback. NEVER the criterion-1 differential corpus (D-09-23), never the seeded fault and its companion assertion (D-09-25), never the `computeLoanLastUses` deletion (D-09-08), and never the two `peerDivergenceExpected` retirements (D-09-03). Any cut is a deferral with a named landing phase, never a silent drop |
 | D-09-45 | 09-CONTEXT.md (D-09-45), 09-RESEARCH.md Pitfall 5 | QLT-01, OWN-07 | info | Phase 09 — plans 09-01 and 09-09 record the corrections; the spike-registry row closes opportunistically in 09-09 | STALE PLANNING-DOCUMENT REFERENCES, corrected here rather than left to mislead. (a) `08-CONTEXT.md`'s D-08-09 cites `computeLoanLastUses` at `check.go:2979`; it is at `check.go:3743`. (b) `08-CONTEXT.md`'s D-08-03 asserts `callgraph.Order` is callee-before-caller; it is caller-before-callee (already D-08-42). (c) An earlier revision of D-09-03 wrote the two retiring fixtures under `testdata/phase07/`; the shipped map keys are under `testdata/phase08/`. (d) D-08-43's `.planning/spikes` registry gap (spike 006 has a directory and no registry row, so `TestQLT01RegistryCoversAllFiveSpikes` fails) is still open and still un-owned; it is cheap to close while Phase 09 touches the spike table under D-09-39 and is recommended, not required |
 | D-09-46 | 09-CONTEXT.md (D-09-46), 09-RESEARCH.md Pitfall 3 | TRU-04 | info | Phase 09 — plan 09-02 Task 1 (Wave 0 prerequisite, blocks TRU-04's vehicle) | CORPUS-VISIBILITY PREREQUISITE. `generateCallGraphCorpus` is unexported inside `internal/compiler/check/costcorpus_test.go:50`, so Go's package-visibility rules make it structurally uncallable from any other package's test binary. D-09-23's "same generator, disjoint consumers" cannot be satisfied until it is made reachable. Resolution chosen at planning time: RELOCATE it (not duplicate it) to `internal/compiler/testsupport`, which imports only stdlib today and therefore cannot become a route by which `session` or `corevalidate` gains a production import of `check` |
 | D-09-50 | 09-PLAN planning pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | TRU-04 | warning | Phase 09 — plan 09-01 hosts the synthetic-shape differential; plan 09-07's gate reviews the split | D-09-23 prescribes feeding the synthetic call-graph shapes into `session_peer_gate_test.go`'s existing corpus-wide gate. VERIFIED AT PLANNING TIME THAT THIS IS NOT POSSIBLE AS WRITTEN: `check`'s only exported entry point is `check.Program(ast.Program)` (`check.go:46`), so no package outside `check` can compute a `check`-side verdict for a synthetically constructed `core.Program`. The `.lang` corpus gate therefore stays exactly where it is (and is where the two D-09-03 retirements are proven), while the SYNTHETIC-shape differential must live inside package `check`, which alone can reach both the unexported post-assembly pass and `corevalidate.Validate`. This is a split of VEHICLE, never of TRUTH: the synthetic differential must reuse the same both-directions exactness discipline and cross-reference `peerDivergenceExpected`'s doc comment, and must never define "divergence" a second way |
-| D-09-51 | 09-01 execution pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | OWN-07, TRU-04 | warning | Discovered plan 09-01; NOT landed there — out of that plan's file scope (`originvalidate.go` untouched); no landing phase yet named | NEWLY DISCOVERED, PREVIOUSLY-MASKED DEFECT in a THIRD validator. Once `buildLoanChainIndex`'s peer-derived OpCall consult (D-09-03) lands and `corevalidate.Validate` correctly stops refusing `testdata/phase08/twin_a_accept.lang` and `testdata/phase08/relay_depth2_accept.lang`, running either fixture through the FULL `lang check` CLI (`session.CheckCommandFile`, which additionally consults `originvalidate.ValidatePublished` after `check` and `corevalidate` both pass) surfaces a DIFFERENT, PRE-EXISTING refusal: `core.origin_omitted`. Root cause verified directly: `originvalidate.walkReturnOrigin` (`originvalidate.go:171-218`) has no `case core.OpCall` in its backward-walk switch, so it treats a call boundary as fully transparent, walking straight through `operation.SourceID` into the CALL'S ARGUMENT's own provenance — it never consults the CALLEE's own declared return contract the way `check`'s `derivePlaceLoans`/`corevalidate`'s new `derivePeerLoanCarry` both now do. For `twin_a_accept.lang`, `escortee` declares a plain owned return (`-> Buffer`), so `escort`'s own return is genuinely a fresh owned value with no live alias risk — but `originvalidate` still reports it as borrow-derived (walking through the call to the pre-call exclusive borrow) and refuses the exported, origin-undeclared `escort` with `core.origin_omitted`. This is NOT a defect introduced by this plan's change: confirmed directly (`check.Program` alone returns zero diagnostics for this fixture; `originvalidate.ValidatePublished(checked.Program)` independently returns the `core.origin_omitted` problem regardless of what corevalidate does) that this refusal has been latent since Phase 07/08, simply unreachable through the full CLI because `corevalidate`'s own (now-fixed) unconditional-propagation bug always refused FIRST in `CheckCommandFile`'s fixed precedence (check, then corevalidate, then originvalidate) — this is the exact "one validator's own defect masks another's" shape D-09-08 names for `check`, discovered here one layer further down the pipeline than any Phase 08/09 planning document anticipated. `TestNoUndeclaredCheckPeerDivergenceAcrossCorpus` (the actual mechanically-enforced gate for D-09-03's retirement) is UNAFFECTED and passes cleanly: it compares `check.Program` diagnostics against `corevalidate.Validate` only, never invoking `originvalidate.ValidatePublished` at all. A real fix requires threading callee-return-contract lookups through `RecomputeOriginPerReturn`/`walkReturnOrigin`'s signatures (currently `func(function core.Function) ...`, no whole-`core.Program` access) — a cross-cutting signature change touching `BuildInterface`, `ValidatePublished`, and every existing `originvalidate_test.go` call site, judged out of bounds for this plan's declared `files_modified` and Rule 4 territory (significant structural modification), not a bounded inline fix. Landing phase and vehicle: not yet decided; needs its own scoped plan or a Phase 09 mid-phase gate (09-07/09-08) agenda item |
+| D-09-51 | 09-01 execution pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | OWN-07, TRU-04 | warning | Phase 10 — Trusted Interprocedural Oracle, Success Criterion 1 (`originvalidate` walks published origins across `OpCall`); recorded as DEBT at plan 09-08's mid-phase gate, 2026-09-10, not fixed in Phase 09 | NEWLY DISCOVERED, PREVIOUSLY-MASKED DEFECT in a THIRD validator. Once `buildLoanChainIndex`'s peer-derived OpCall consult (D-09-03) lands and `corevalidate.Validate` correctly stops refusing `testdata/phase08/twin_a_accept.lang` and `testdata/phase08/relay_depth2_accept.lang`, running either fixture through the FULL `lang check` CLI (`session.CheckCommandFile`, which additionally consults `originvalidate.ValidatePublished` after `check` and `corevalidate` both pass) surfaces a DIFFERENT, PRE-EXISTING refusal: `core.origin_omitted`. Root cause verified directly: `originvalidate.walkReturnOrigin` (`originvalidate.go:171-218`) has no `case core.OpCall` in its backward-walk switch, so it treats a call boundary as fully transparent, walking straight through `operation.SourceID` into the CALL'S ARGUMENT's own provenance — it never consults the CALLEE's own declared return contract the way `check`'s `derivePlaceLoans`/`corevalidate`'s new `derivePeerLoanCarry` both now do. For `twin_a_accept.lang`, `escortee` declares a plain owned return (`-> Buffer`), so `escort`'s own return is genuinely a fresh owned value with no live alias risk — but `originvalidate` still reports it as borrow-derived (walking through the call to the pre-call exclusive borrow) and refuses the exported, origin-undeclared `escort` with `core.origin_omitted`. This is NOT a defect introduced by this plan's change: confirmed directly (`check.Program` alone returns zero diagnostics for this fixture; `originvalidate.ValidatePublished(checked.Program)` independently returns the `core.origin_omitted` problem regardless of what corevalidate does) that this refusal has been latent since Phase 07/08, simply unreachable through the full CLI because `corevalidate`'s own (now-fixed) unconditional-propagation bug always refused FIRST in `CheckCommandFile`'s fixed precedence (check, then corevalidate, then originvalidate) — this is the exact "one validator's own defect masks another's" shape D-09-08 names for `check`, discovered here one layer further down the pipeline than any Phase 08/09 planning document anticipated. `TestNoUndeclaredCheckPeerDivergenceAcrossCorpus` (the actual mechanically-enforced gate for D-09-03's retirement) is UNAFFECTED and passes cleanly: it compares `check.Program` diagnostics against `corevalidate.Validate` only, never invoking `originvalidate.ValidatePublished` at all. A real fix requires threading callee-return-contract lookups through `RecomputeOriginPerReturn`/`walkReturnOrigin`'s signatures (currently `func(function core.Function) ...`, no whole-`core.Program` access) — a cross-cutting signature change touching `BuildInterface`, `ValidatePublished`, and every existing `originvalidate_test.go` call site, judged out of bounds for this plan's declared `files_modified` and Rule 4 territory (significant structural modification), not a bounded inline fix. Landing phase and vehicle: not yet decided; needs its own scoped plan or a Phase 09 mid-phase gate (09-07/09-08) agenda item |
 
 ## Detail
 
@@ -102,6 +102,32 @@ here is the documented "strangler fig that never finishes."
 fully first, the zero-divergence differential goes green, and only then does the
 deletion land in the same commit that flips lowering to defer to the single pass.
 
+**GATE DISPOSITION (plan 09-08, 2026-09-10): AUTHORIZED.** All five deletion
+preconditions are met from code-level evidence: (1) a second, independently-
+implemented interprocedural loan-liveness detector (`corevalidate`'s
+`derivePeerLoanCarry`/`chainPeerLoanCarry`, plan 09-01) has fully landed; (2)
+the zero-divergence differential is green
+(`TestNoUndeclaredCheckPeerDivergenceAcrossCorpus`, both retired fixtures, plus
+`TestSyntheticShapeDifferentialHasNoUndeclaredDivergence` over five synthetic
+call-graph shapes, plan 09-04); (3) both bidirectional seeded-fault companion
+assertions hold (plan 09-01 Task 3); (4) the peer's own cost bound is
+independently measured and re-ratified at THIS gate's own commit (see the
+`qlt02_budget_manifest.json` row this plan adds), not borrowed from `check`'s
+bound; (5) all three of plan 09-07's pre-deletion gates are green (the
+ordering-stability baseline, D-09-49 Q1's enumeration, and both shadow-path
+reachability sets with their pre-deletion refusal baseline). Plan 09-09 is
+AUTHORIZED to proceed with the `computeLoanLastUses` deletion.
+
+**Human-adjudicated disposition:** the human reviewing this gate additionally
+directed that D-09-51 — the newly discovered, pre-existing `originvalidate`
+`OpCall`-transparency defect — be recorded as DEBT with a named landing phase
+(Phase 10) rather than fixed inline here, since fixing it is a cross-cutting
+signature change outside every current plan's declared file scope (Rule 4
+architectural territory). See D-09-51's own updated detail section below. This
+is NOT a precondition of the `computeLoanLastUses` deletion: D-09-51 lives in a
+third, independent validator (`originvalidate`) that this deletion's own
+authorization evidence never touches.
+
 ### D-09-13 — diagnostic order and identity is the real risk of the restructure
 
 Today a per-function early exit can report a different *first* error than a
@@ -123,6 +149,33 @@ short-circuits a binding loop, deferring it lets lowering proceed past the move
 and may ALSO trip `ownership.use_after_move`, producing two errors where one
 existed. The plan set settles this by enumeration over the existing corpus, not
 by assumption.
+
+**GATE DISPOSITION (plan 09-08, 2026-09-10): D-09-49's two open questions are
+RESOLVED, recorded here as D-09-13's own concrete forms.**
+
+- **Q1 (within-function ordering, this row's own form) — RESOLVED.** Plan
+  09-07's enumeration (`TestUseAfterMoveUnchangedByDeferredMoveWhileBorrowed`)
+  walks all 6 fixtures where `ownership.move_while_borrowed` fires today
+  (`phase08/twin_b_accept.lang`, `phase08/twin_b_refuse.lang`,
+  `phase2/move_while_borrowed.lang`, `phase2/reborrow_while_moved.lang`,
+  `phase3/branch_one_arm_shared_reject.lang`,
+  `phase3/exclusive_move_reject.lang`) and proves, per fixture, that no
+  binding or result position after the offending move still references the
+  moved place by its own name — only through the borrowed view's own binding
+  name. Deferring the refusal to post-assembly cannot newly trip
+  `ownership.use_after_move` for any existing fixture. No exception set
+  exists; the answer is unconditional over the real corpus, not assumed.
+- **Q2 (the peer's own multi-hop composition claim) — RESOLVED.** Plan 09-01
+  Task 2 proves, on the peer's own terms, that callee-before-caller postorder
+  (the peer's `v.peerPostorder` substrate, shared with `peerReturnDerivesFromBorrow`)
+  makes a single forward pass sufficient for arbitrary-depth composition: each
+  callee's loan-carry fact is fully derived before any caller that depends on
+  it is visited, so composition falls out of the traversal order for free —
+  no second pass, no fixpoint, no re-visitation. The ordering falsifier
+  (`TestPeerLoanCarryPropagatesAcrossTwoCallHops`'s companion assertion)
+  genuinely fails closed at both depth 1 and depth 2 when postorder is
+  violated, confirming the claim is falsifiable rather than definitionally
+  true. Sound.
 
 ### D-09-14 — OWN-09's document conflict closes in favour of the mapping table
 
@@ -159,6 +212,15 @@ The peer mirrors that **narrowness in spirit, never in code**.
 
 The fallback above fires only on an execution-time discovery, and it is written
 here now so that discovering it under load cannot be mistaken for deciding it.
+
+**GATE DISPOSITION (plan 09-08, 2026-09-10): RESOLVED — the fallback did NOT
+fire.** Plan 09-03 confirmed the foreign-origin-omitted class was fully
+bounded exactly as plan-time analysis predicted: `peerForeignOriginOmitted`'s
+own bounded, function-local forward walk (seeded from the function's own
+`OpForeignCall` target) needed no multi-hop foreign-chain reasoning. No split
+of D-07-33, no scope carve-out, and no REQUIREMENTS.md amendment to OWN-08's
+scope was needed. This row is closed at planning-time text but the gate
+confirms it needed no landing-phase action.
 
 ### D-09-29 — the accepted-program disclosure is resolved as "no vehicle, by design"
 
@@ -221,6 +283,16 @@ sameness is expressed as a documented relationship, never as a merged identifier
 **Reopen only if** the two mechanisms are ever proven to refuse for the identical
 underlying fact with an identical natural cause shape.
 
+**GATE REVIEW (plan 09-08, 2026-09-10): recorded, not reopened.** The
+`plan:pre` assumption-delta capability fired on this phase's pluralization
+signals (peer, peers, mechanisms, derivers) and asked an identity-model
+question the gate reviewed rather than treated as newly open. It is already
+adjudicated by locked decisions: this row (D-09-31) chose divergent
+diagnostic identities for the two peers deliberately, and D-09-07 established
+that "one law" means one DECISION POINT, not one IDENTITY. The gate confirms
+this disposition stands unchanged — an advisory signal reviewed and closed,
+not an advisory signal ignored.
+
 ### D-09-37 — OWN-05 completes partially, and the split is recorded now
 
 OWN-05's text names three derivers; Phase 09 delivers two. This is the same class
@@ -245,6 +317,15 @@ classification" helper (D-09-38). `check` and `corevalidate` already each read
 `signature.Parameters[0].Mode` independently, sharing nothing beyond the struct
 shape. A helper "ready for `interp`" is precisely ARCHITECTURE §4's "single point
 of failure wearing two names."
+
+**GATE REVIEW (plan 09-08, 2026-09-10): reviewed and CARRIED, as designed.**
+The gate confirms plan 09-05's own cross-peer agreement proof (`check`/
+`corevalidate`, via the two exported declared-contract readers) is sufficient
+for OWN-05a's purposes without adding production surface, and that no debt
+accrues from declining to extract a shared helper (D-09-38 stays correctly
+rejected). OWN-05 stays split; OWN-05b (the `interp` peer) still lands in
+Phase 10, verified there by TRU-03 and in Phase 11 by NAT-06, per this row's
+own disposition.
 
 ### D-09-40a — QLT-07's pre-registered threshold, and the COMMITTED verdict
 
@@ -277,14 +358,28 @@ clause is structurally un-closable today and the document's boolean can never
 legitimately flip to `true`. The only permitted edit is a single non-mutating
 pointer line.
 
+**GATE REVIEW (plan 09-08, 2026-09-10): reviewed and CARRIED, as designed.**
+The gate confirms the COMMITTED verdict stands unchanged; plan 09-09's
+closure section is still where the ratification/documentation debt lands.
+
 ### D-09-43 — the scope-cut trigger, declared before the phase begins
 
 The milestone declares a 2x trigger for Phases 08 and 09. Adopted for Phase 09
 with an explicit, ordered cut list and an explicit never-cut list, both above.
 
 Any cut is a **deferral with a named landing phase**, never a silent drop, and
-the decision is adjudicated at plan 09-07's mid-phase gate where the elapsed
+the decision is adjudicated at plan 09-08's mid-phase gate where the elapsed
 cost against the initial estimate is actually visible.
+
+**GATE DISPOSITION (plan 09-08, 2026-09-10): RESOLVED — the trigger did NOT
+fire.** Elapsed actual cost across plans 09-01 through 09-07 totals exactly 76,385
+tokens (`actuals.tokens` summed from each plan's own SUMMARY frontmatter:
+11106 + 11751 + 10385 + 9824 + 8664 + 13400 + 11255 = 76385) against an
+initial-estimate baseline of approximately 460,000 tokens across the same
+plans — a ratio of roughly 0.17x, far below the ~2x threshold. Nothing was cut under budget
+pressure: QLT-07 stays COMMITTED (D-09-40a) and D-09-21's `OpForeignCall`
+fallback never fired on its own merits (D-09-21), not because of a forced cut
+under this trigger.
 
 ### D-09-45 — four stale references, corrected rather than left to mislead
 
@@ -303,6 +398,12 @@ un-owned registry-maintenance gap, the one known pre-existing test failure in th
 tree. Phase 09 touches the spike table anyway under D-09-39 (S-008's replacement
 must be recorded as an explicit process amendment, not a silent substitution), so
 adding spike 006's row is cheap and clears the failure. Recommended, not required.
+
+**GATE REVIEW (plan 09-08, 2026-09-10): (d) CLOSED.** Plan 09-02 Task 3 added
+spike 006's `waived` row to `qlt01_registry.json` (commit `3f5dff2`), closing
+Phase 08's own D-08-43. `go test ./...` and `go vet ./...` are unconditionally
+green with no named exemption. (a), (b), and (c) remain corrections recorded
+here rather than left to mislead; no further action needed on any of the four.
 
 ### D-09-46 — the corpus generator must be made reachable before TRU-04's vehicle works
 
@@ -404,10 +505,45 @@ signature change across a validator with its own extensive same-package test
 suite) is judged Rule 4 territory (significant structural modification), not
 a bounded inline fix available to an executor mid-task.
 
+**GATE DISPOSITION (plan 09-08, 2026-09-10): recorded as DEBT, landing Phase
+10 — CONFIRMED PRE-EXISTING, NOT A REGRESSION.** The gate independently
+verified, at the pre-Phase-09 commit `133a731` (via a detached worktree),
+that both `testdata/phase08/twin_a_accept.lang` and
+`testdata/phase08/relay_depth2_accept.lang` were ALREADY CLI-refused before
+Phase 09 touched anything — with `core.move_while_borrowed`, `corevalidate`'s
+own now-fixed bug. At HEAD, both are CLI-refused with `core.origin_omitted`
+instead. **The fixtures were never CLI-clean.** Phase 09 fixed the
+`corevalidate` loan-liveness refusal it was chartered to fix (D-09-03), and
+that fix unmasked a second, independent, pre-existing `originvalidate`
+refusal that the first one had been shadowing the entire time. Further
+confirmed: `case core.OpCall` has ZERO occurrences in `originvalidate.go`
+both at HEAD and at `133a731` — the defect predates this phase entirely, in
+code this phase never touched.
+
+**Therefore this row is a pre-existing defect, NOT a regression, and NOT a
+loss of CLI cleanliness introduced by Phase 09.** A future reader must not
+infer that Phase 09 broke something that was working; it was never working
+for these two fixtures at the full-CLI level, for a wholly different reason
+than the one Phase 09 exists to fix.
+
+**Landing phase, now named:** Phase 10 — Trusted Interprocedural Oracle.
+ROADMAP.md's own Phase 10 Success Criterion 1 already states the fix
+verbatim: "`originvalidate` walks published origins across `OpCall`
+(mirroring the proven `OpForeignCall` hop) ... with neither importing `check`
+or `corevalidate`, enforced by a build- or test-level import control rather
+than convention." This is the correct, already-declared home for the fix —
+no new phase needs to be invented. This row stays open (severity: warning)
+until Phase 10 lands it.
+
 ---
 
 *Register written at Phase 09 planning time, 2026-09-10.*
 *D-09-51 appended during plan 09-01 execution, 2026-09-10 (execution-time
 finding, not a planning-time item).*
+*Plan 09-08's mandatory mid-phase gate (2026-09-10) adjudicated every open
+item above (D-09-08, D-09-13, D-09-21, D-09-31, D-09-37, D-09-40a, D-09-43,
+D-09-45, D-09-51) from code-level evidence and AUTHORIZED the
+`computeLoanLastUses` deletion (D-09-08) for plan 09-09. No new `D-09-NN`
+item was opened at this gate; the frontmatter `items:` count stays 14.*
 *Shape validated by `TestDebtRegistersAreWellFormed`
 (`internal/compiler/session/session_test.go`).*
