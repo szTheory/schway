@@ -196,6 +196,7 @@ func LiveLaneIDs() []string {
 	add(liveLanesForeign())
 	add(liveLanesPhase5Adversarial())
 	add(liveLanesPhase8())
+	add(liveLanesPhase9())
 	sort.Strings(all)
 	return all
 }
@@ -284,6 +285,22 @@ func liveLanesPhase5Adversarial() []string {
 // TestRiskLaneRegistryLanesAreLive.
 func liveLanesPhase8() []string {
 	return []string{"lane:interprocedural-cost-scaling"}
+}
+
+// liveLanesPhase9 names Phase 09 Plan 06's own changed-risk lane
+// (D-09-28): the peer closure cost-scaling sweep gated by
+// peer_closure_recomputed_work_growth_exponent, ratified into
+// qlt02_budget_manifest.json at plan 09-08's mid-phase gate. A dedicated
+// contributor function, mirroring liveLanesPhase8's own precedent, so this
+// lane stays separately traceable to the phase that introduced it and
+// deliberately DISJOINT from lane:interprocedural-cost-scaling (check's
+// own distinct bounded-worklist cost curve, never this peer's reachability
+// closure). Not yet wired to a shipped VerifyXxx addLane call site (runs
+// at the mid-phase gate and pre-merge, not the default edit loop -- see
+// risk_lanes.json's own rationale); registered here solely so
+// risk_lanes.json's row for it satisfies TestRiskLaneRegistryLanesAreLive.
+func liveLanesPhase9() []string {
+	return []string{"lane:peer-closure-cost-scaling"}
 }
 
 // FixtureInputs maps a declared-input NAME (drawn from

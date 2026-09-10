@@ -1217,6 +1217,34 @@ func (idx *loanChainIndex) carriedLoans(placeID string) []string {
 	return idx.foldChain(path, nil)
 }
 
+// peerClosureUnmemoizedSeamForTest is Phase 09 Plan 06's own QLT-08
+// mutation-kill seam for the peer's cost bound
+// (peer_closure_recomputed_work_growth_exponent, D-09-28): when true,
+// foldChain (below) skips writing idx.memo entirely, so carriedLoans'
+// fast-path memo hit (corevalidate.go:1207) can never trigger and every
+// later reference to a place already on some prior walk's path re-walks
+// its FULL parent chain from scratch instead of stopping at an
+// already-folded prefix. This specifically reproduces a genuinely
+// quadratic walk (not merely a slower one) for any shape whose per-
+// function chain DEPTH grows with corpus size -- see
+// TestPeerClosureCostUnmemoizedSeamExceedsBound's own doc comment for why
+// the "forward" corpus shape (corpusForward, a single caller threading one
+// borrow through k sequential calls) is the one shape this seam is
+// asserted against: querying the i-th call's own source without a memo
+// shortcut costs O(i) (walking all the way back to the borrowed root), so
+// the SUM over k calls is O(k^2) -- exactly S-006's own "quadratic in body
+// length" finding for the unmemoized arm, reproduced here inside the
+// shipped validator rather than in a workbench. The read-half seam
+// (skipping foldChain's write) was chosen over a carriedLoans-read-skip
+// because a write-skip is the minimal change that defeats memoization
+// while leaving every other invariant (bornAt, parent, the walk's own
+// cycle guard) untouched -- a read-skip would additionally have to
+// reimplement "pretend this specific lookup missed" without disturbing
+// the walk that follows it. Unexported, false in production; set only via
+// SetPeerClosureUnmemoizedSeamForTest (export_test.go) by a test that
+// defers the restore immediately.
+var peerClosureUnmemoizedSeamForTest bool
+
 // foldChain memoizes every place on path, walking from the outermost
 // (furthest from the original query) back to the innermost, each place's
 // loan list being its own birth loan (if any) prepended to whatever loans
@@ -1231,7 +1259,9 @@ func (idx *loanChainIndex) foldChain(path []string, tail []string) []string {
 			here = append(here, loanID)
 		}
 		here = append(here, loans...)
-		idx.memo[place] = here
+		if !peerClosureUnmemoizedSeamForTest {
+			idx.memo[place] = here
+		}
 		loans = here
 	}
 	return loans

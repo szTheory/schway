@@ -422,3 +422,82 @@ func TestPeerClosureCostRatioStabilityTripwire(t *testing.T) {
 		})
 	}
 }
+
+// TestPeerClosureCostUnmemoizedSeamExceedsBound is Task 2's own
+// mutation-kill (T-09-17): "a cost bound that has never been exceeded, and
+// therefore measures nothing." It sweeps ONLY the "forward" shape, not all
+// five: corpusForward is the ONE shape in this corpus whose per-function
+// chain DEPTH grows with corpus size (a single caller threading one borrow
+// through k sequential calls, corpusForward's own doc comment) -- the
+// other four shapes' per-function chain depth stays O(1) regardless of
+// corpus size BY THIS TEST'S OWN CONSTRUCTION (every function borrows its
+// own parameter exactly once and every operation inside that SAME function
+// reads that SAME borrowed place or a one-hop derivative of it), so
+// disabling memoization cannot make THEM quadratic -- there is nothing
+// deep to re-walk. Asserting the seam's effect only where it can
+// structurally show up, rather than averaging it away across shapes that
+// can never exhibit it, is the same discipline 09-04's own mutation-kill
+// used (a hand-picked fixture, not the whole corpus).
+//
+// Both directions are asserted: with the seam engaged, the fitted
+// exponent must EXCEED peerClosureGrowthExponentBoundMilli (proving the
+// bound is a real control); with the seam off (the production path,
+// already proven in TestPeerClosureCostGrowthExponentWithinBound above),
+// it must hold -- reasserted here, on the SAME sweep function, so a reader
+// sees both outcomes of the identical mechanism side by side rather than
+// having to cross-reference a separate test file.
+func TestPeerClosureCostUnmemoizedSeamExceedsBound(t *testing.T) {
+	const shape = "forward"
+
+	t.Run("seam disabled (production path) stays within bound", func(t *testing.T) {
+		ops, checks := sweepPeerClosureCost(t, shape)
+		exponent := fitPeerClosureGrowthExponent(ops, checks)
+		if math.IsNaN(exponent) {
+			t.Fatalf("shape=%s: fitted exponent is NaN", shape)
+		}
+		milli := int64(math.Round(exponent * 1000))
+		if milli > peerClosureGrowthExponentBoundMilli {
+			t.Fatalf("shape=%s: seam OFF (production path) milli-exponent=%d exceeds bound=%d -- the production path itself should never trip this bound",
+				shape, milli, peerClosureGrowthExponentBoundMilli)
+		}
+	})
+
+	t.Run("seam engaged reproduces a genuinely quadratic walk", func(t *testing.T) {
+		restore := corevalidate.SetPeerClosureUnmemoizedSeamForTest(true)
+		defer restore()
+
+		ops, checks := sweepPeerClosureCost(t, shape)
+		exponent := fitPeerClosureGrowthExponent(ops, checks)
+		if math.IsNaN(exponent) {
+			t.Fatalf("shape=%s: fitted exponent is NaN", shape)
+		}
+		milli := int64(math.Round(exponent * 1000))
+
+		var ratioAtSmall, ratioAtLarge float64
+		var sawSmall, sawLarge bool
+		for index, n := range peerCostSizeLadder {
+			switch n {
+			case peerCostRatioSmall:
+				ratioAtSmall = float64(checks[index]) / float64(ops[index])
+				sawSmall = true
+			case peerCostRatioLarge:
+				ratioAtLarge = float64(checks[index]) / float64(ops[index])
+				sawLarge = true
+			}
+		}
+		var ratioDelta float64
+		var ratioExceeds bool
+		if sawSmall && sawLarge {
+			ratioDelta = math.Abs(ratioAtLarge-ratioAtSmall) / ratioAtSmall
+			ratioExceeds = ratioDelta > peerClosureRatioStabilityBound
+		}
+
+		t.Logf("shape=%s seam=unmemoized milli-exponent=%d (exponent=%.4f) bound=%d; ratio delta=%.1f%% bound=%.0f%%",
+			shape, milli, exponent, peerClosureGrowthExponentBoundMilli, ratioDelta*100, peerClosureRatioStabilityBound*100)
+
+		if milli <= peerClosureGrowthExponentBoundMilli && !ratioExceeds {
+			t.Fatalf("shape=%s: unmemoized seam failed to exceed EITHER the growth-exponent bound (milli=%d, bound=%d) or the ratio-stability tripwire (delta=%.1f%%, bound=%.0f%%) -- the bound has never been seen to fail, so it measures nothing (T-09-17)",
+				shape, milli, peerClosureGrowthExponentBoundMilli, ratioDelta*100, peerClosureRatioStabilityBound*100)
+		}
+	})
+}

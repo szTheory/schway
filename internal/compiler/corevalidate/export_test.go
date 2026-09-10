@@ -128,3 +128,13 @@ func SetDisableForeignOriginPeerForTest(disable bool) (restore func()) {
 	disablePeerForeignOriginPeerForTest = disable
 	return func() { disablePeerForeignOriginPeerForTest = previous }
 }
+
+// SetPeerClosureUnmemoizedSeamForTest installs Phase 09 Plan 06's own
+// QLT-08 mutation-kill seam (peerClosureUnmemoizedSeamForTest,
+// corevalidate.go, beside foldChain) and returns a restore func. Callers
+// MUST defer the restore immediately.
+func SetPeerClosureUnmemoizedSeamForTest(force bool) (restore func()) {
+	previous := peerClosureUnmemoizedSeamForTest
+	peerClosureUnmemoizedSeamForTest = force
+	return func() { peerClosureUnmemoizedSeamForTest = previous }
+}
