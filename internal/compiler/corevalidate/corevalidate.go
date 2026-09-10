@@ -65,6 +65,10 @@ type Result struct {
 	peerSignatures      map[string]core.FunctionSignature
 	peerRanStraightLine bool
 	peerRanBlocks       bool
+
+	// peerConsultedFields carries Phase 09 Plan 06's own D-09-30 disclosure
+	// fact -- see PeerConsultedFields below.
+	peerConsultedFields map[string]bool
 }
 
 // Program returns a content-owned copy of the validated program. Callers can
@@ -100,6 +104,25 @@ func (r Result) PeerSiteCoverage() (straightLine, blocks bool) {
 	return r.peerRanStraightLine, r.peerRanBlocks
 }
 
+// PeerConsultedFields returns corevalidate's own record of every
+// callee-signature field name its interprocedural derivation consulted
+// during this Validate call (D-09-30) -- a fresh, sorted copy on every
+// call, mirroring PeerSignatures' own contract. This exists so a test
+// harness with access to both this package and check can compare this set
+// against check's own interproceduralConsultObserved record and assert
+// they are IDENTICAL; this package never imports check to make that
+// comparison itself. Matching sets constrain what each peer may READ
+// (SEM-05 body-blindness), never how it derives -- proven on OUTPUTS,
+// exactly as PeerSignatures/ClosureDigest byte-equality already are.
+func (r Result) PeerConsultedFields() []string {
+	out := make([]string, 0, len(r.peerConsultedFields))
+	for field := range r.peerConsultedFields {
+		out = append(out, field)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // Validate is deliberately source-blind. It proves internal consistency of a
 // typed-core statement, not that a coordinated producer translated source
 // truthfully.
@@ -112,6 +135,7 @@ func Validate(input core.Program) Result {
 		peerSignatures:      v.peerSignatures,
 		peerRanStraightLine: v.peerRanStraightLine,
 		peerRanBlocks:       v.peerRanBlocks,
+		peerConsultedFields: v.peerConsultedFields,
 	}
 }
 
@@ -126,6 +150,12 @@ type validator struct {
 	peerSignatures      map[string]core.FunctionSignature
 	peerRanStraightLine bool
 	peerRanBlocks       bool
+
+	// peerConsultedFields accumulates every callee-signature field name
+	// this validator's interprocedural derivation consulted during this
+	// Validate call (D-09-30) -- see recordPeerConsult and
+	// Result.PeerConsultedFields.
+	peerConsultedFields map[string]bool
 
 	// peerAdjacency/peerPostorder are checkCallGraphAcyclic's own byproduct
 	// (07-08, D-07-38/D-07-22): the SAME deduped adjacency it already
@@ -787,7 +817,7 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 	if v.peerSignatures == nil {
 		v.peerSignatures = make(map[string]core.FunctionSignature)
 	}
-	v.peerSignatures[function.ID] = derivePeerSignature(function, nil, nil)
+	v.peerSignatures[function.ID] = v.derivePeerSignature(function, nil, nil)
 	match := function.Match
 	if !v.check(match.ID != "" && match.PointID != "" && function.EntryPointID != "" && function.ReturnPointID != "", "core.invalid_id", function.ID) {
 		return false
@@ -2009,7 +2039,7 @@ func (v *validator) recordSummaryPeer(function *core.Function, types map[string]
 	if v.peerSignatures == nil {
 		v.peerSignatures = make(map[string]core.FunctionSignature)
 	}
-	v.peerSignatures[function.ID] = derivePeerSignature(function, types, places)
+	v.peerSignatures[function.ID] = v.derivePeerSignature(function, types, places)
 	if viaBlocks {
 		v.peerRanBlocks = true
 	} else {
@@ -2053,12 +2083,65 @@ var SummaryPeerControls = []string{
 // not compute an independent answer at all -- it can only ever falsely
 // agree with whatever the producer declares for those classes this phase.
 // See PHASE-07-DEBT.md's D-07-33 entry; Phase 09 closes this.
-func derivePeerSignature(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) core.FunctionSignature {
+// peerConsultObserved is Phase 09 Plan 06's own D-09-30 disclosure-proof
+// instrumentation seam, mirroring check.go:641's interproceduralConsultObserved
+// exactly: when non-nil, invoked with the function's own ID and the exact
+// consulted field name, at every point this derivation reads a
+// callee-signature-shaped field. nil in production: zero cost, zero
+// allocation. Production visibility of WHICH fields were consulted is
+// instead carried on the validator itself (recordPeerConsult, below) and
+// surfaced through Result.PeerConsultedFields() -- unlike check's own
+// seam, this fact must be readable from an ordinary (non-test) Validate
+// call, since PeerConsultedFields is an exported, always-available
+// accessor, not a test-only observation.
+var peerConsultObserved func(calleeID, field string)
+
+// recordPeerConsult is the single choke point every consult of a
+// callee-signature-shaped field must pass through: it accumulates field
+// into v.peerConsultedFields (surfaced production-side via
+// Result.PeerConsultedFields()) and, if a same-package test has installed
+// peerConsultObserved, also invokes it with the same (calleeID, field)
+// pair -- mirroring check's own per-call-site observation shape for
+// symmetry, even though this package's own closed-set test only needs the
+// flat set.
+func (v *validator) recordPeerConsult(calleeID, field string) {
+	if v.peerConsultedFields == nil {
+		v.peerConsultedFields = make(map[string]bool)
+	}
+	v.peerConsultedFields[field] = true
+	if peerConsultObserved != nil {
+		peerConsultObserved(calleeID, field)
+	}
+}
+
+func (v *validator) derivePeerSignature(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) core.FunctionSignature {
 	// places is accepted (not merely function+types) so this signature
 	// matches recordSummaryPeer's call sites at both replay sites, which
 	// already have it in scope -- no field derived by this peer needs Place
 	// facts yet; a future field can gain access without a signature change.
 	_ = places
+
+	// Phase 09 Plan 06, Task 3 (D-09-30): this is the peer's own
+	// per-function summary-derivation site, structurally mirroring
+	// check.go:594-609's own consult of a callee's declared
+	// return.mode/parameters[0].mode -- run once per declared function,
+	// unconditionally, regardless of whether that function is ever
+	// actually called (exactly check's own discipline). check reads these
+	// two fields from originvalidate's independently-built interface;
+	// corevalidate independently RE-DERIVES the equivalent facts here
+	// (returnContract.Mode/parameterContract.Mode, below) rather than
+	// reading them from a stored declaration -- but the DISCLOSED FIELD
+	// NAME is the same closed vocabulary either way, because both
+	// mechanisms answer the identical SEM-05 body-blind question ("what is
+	// this function's own declared return/parameter access mode"), just by
+	// different means. Recording both here, not only at an OpCall site,
+	// mirrors check's own recording point exactly (functionID names the
+	// function whose OWN fields these are, matching interproceduralConsultObserved's
+	// convention -- later, when some OTHER function calls this one, this
+	// recorded consult is what answers "what did the peer read about its
+	// callee").
+	v.recordPeerConsult(function.ID, "parameters[0].mode")
+	v.recordPeerConsult(function.ID, "return.mode")
 
 	var abilities []core.Ability
 	if fact, ok := types[function.ID+":type:0"]; ok {

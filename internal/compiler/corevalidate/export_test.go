@@ -138,3 +138,20 @@ func SetPeerClosureUnmemoizedSeamForTest(force bool) (restore func()) {
 	peerClosureUnmemoizedSeamForTest = force
 	return func() { peerClosureUnmemoizedSeamForTest = previous }
 }
+
+// SetPeerConsultObservedForTest installs Phase 09 Plan 06's own D-09-30
+// per-call-site disclosure observation hook (peerConsultObserved,
+// corevalidate.go, beside recordPeerConsult) and returns a restore func.
+// Mirrors check.go's own interproceduralConsultObserved test-installation
+// shape. Callers MUST defer the restore immediately. Note this is NOT the
+// mechanism check.check_disclosure_peer_test.go actually needs for the
+// cross-peer identity assertion -- that test reads the flat set via the
+// exported, always-available Result.PeerConsultedFields() instead, since
+// (unlike check's own seam) this fact must be readable from an ordinary
+// Validate call. This setter exists for symmetry and for any future
+// same-package test wanting per-call-site granularity.
+func SetPeerConsultObservedForTest(observer func(calleeID, field string)) (restore func()) {
+	previous := peerConsultObserved
+	peerConsultObserved = observer
+	return func() { peerConsultObserved = previous }
+}
