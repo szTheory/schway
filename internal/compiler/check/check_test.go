@@ -905,11 +905,168 @@ func TestLivenessLawsStayIndependent(t *testing.T) {
 	sharedHelperNames := []string{
 		"computeLoanLastUses", "loanLivenessFixpoint", "materializeLoanEndpoints",
 		"blockLoanLiveness", "derivePlaceLoans", "cfgBlockSpec", "loanBlockUse",
+		// Phase 08 Task 3: the new interprocedural liveness helpers must stay
+		// equally independent from corevalidate.go's own peer re-derivation
+		// (D-08-12's own two-independent-derivations invariant, mirroring
+		// D-12 for the interprocedural law).
+		"buildInterproceduralSummaries", "interproceduralSummaryTable", "checkInterproceduralLoanLiveness",
 	}
 	for _, name := range sharedHelperNames {
 		if strings.Contains(code, name) {
 			t.Fatalf("corevalidate.go calls check.go's own liveness helper %q outside a comment -- the two loan-endpoint derivations must share no helper", name)
 		}
+	}
+}
+
+// TestComputeLoanLastUsesAndDerivePlaceLoansAgree is Task 3(c)/D-08-09's
+// differential: computeLoanLastUses (the AST-shadow admission path) and
+// derivePlaceLoans/blockLoanLiveness (the real core.LinearOperation path)
+// must derive the SAME loan last-use operation index for every loan in a
+// call-bearing body, position for position. Each sub-test independently
+// builds its own []core.LinearOperation stream (a distinct "indep:"
+// place/loan/op ID namespace from computeLoanLastUses' own "shadow:"
+// namespace, mirroring the real admission path's own place-numbering shape
+// rather than reusing computeLoanLastUses' internal construction) and runs
+// derivePlaceLoans/blockLoanLiveness over it directly, then compares against
+// computeLoanLastUses' reported last-use binding index for the same loan.
+// Reverting EITHER path's own "call" handling alone makes this fail: the
+// shadow path's case "call" (computeLoanLastUses) or the independent
+// derivation's own OpCall construction below (which models the real
+// resolveCallBinding-built operation) -- see the two one-line reversions and
+// the exact failures they produce, recorded in 08-01-SUMMARY.md.
+func TestComputeLoanLastUsesAndDerivePlaceLoansAgree(t *testing.T) {
+	cases := []struct {
+		name string
+		body *ast.LinearBody
+	}{
+		{
+			name: "borrow_then_call",
+			body: &ast.LinearBody{
+				Bindings: []ast.Binding{
+					{Name: "v", RHS: ast.RHS{Kind: "borrow_mut", Source: "buffer"}},
+					{Name: "r", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"v"}}},
+				},
+				Result: "r",
+			},
+		},
+		{
+			name: "borrow_call_take",
+			body: &ast.LinearBody{
+				Bindings: []ast.Binding{
+					{Name: "v", RHS: ast.RHS{Kind: "borrow_mut", Source: "buffer"}},
+					{Name: "r", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"v"}}},
+					{Name: "t", RHS: ast.RHS{Kind: "take", Source: "buffer"}},
+				},
+				Result: "r",
+			},
+		},
+		{
+			name: "call_then_borrow",
+			body: &ast.LinearBody{
+				Bindings: []ast.Binding{
+					{Name: "c", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"buffer"}}},
+					{Name: "w", RHS: ast.RHS{Kind: "borrow", Source: "buffer"}},
+				},
+				Result: "w",
+			},
+		},
+		{
+			name: "call_argument_is_reborrow",
+			body: &ast.LinearBody{
+				Bindings: []ast.Binding{
+					{Name: "v", RHS: ast.RHS{Kind: "borrow_mut", Source: "buffer"}},
+					{Name: "w", RHS: ast.RHS{Kind: "borrow", Source: "v"}},
+					{Name: "r", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"w"}}},
+				},
+				Result: "r",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			shadowUses, _ := computeLoanLastUses("buffer", tc.body)
+
+			const parameterPlaceID = "indep:place:parameter"
+			visible := map[string]string{"buffer": parameterPlaceID}
+			operations := make([]core.LinearOperation, 0, len(tc.body.Bindings)+1)
+			loanIndexByLoanID := map[string]int{}
+			for index, binding := range tc.body.Bindings {
+				targetPlaceID := fmt.Sprintf("indep:place:%d", index)
+				kind := core.OpCopy
+				loanID := ""
+				sourceID := parameterPlaceID
+				switch binding.RHS.Kind {
+				case "take":
+					kind = core.OpMove
+					sourceID = visible[binding.RHS.Source]
+				case "borrow":
+					kind = core.OpBorrowShared
+					loanID = fmt.Sprintf("indep:loan:%d", index)
+					sourceID = visible[binding.RHS.Source]
+				case "borrow_mut":
+					kind = core.OpBorrowExclusive
+					loanID = fmt.Sprintf("indep:loan:%d", index)
+					sourceID = visible[binding.RHS.Source]
+				case "call":
+					// Mirrors resolveCallBinding's own OpCall construction
+					// (check.go): Kind is OpCall and SourceID is the call's
+					// sole argument's own place. This is the ONE line-pair
+					// that, if reverted to "kind = core.OpCopy; sourceID =
+					// parameterPlaceID" (the pre-D-08-09 shape), makes this
+					// test fail -- the independent derivation would then
+					// disagree with computeLoanLastUses' own "call" case.
+					kind = core.OpCall
+					sourceID = visible[binding.RHS.Arguments[0]]
+				default:
+					sourceID = visible[binding.RHS.Source]
+				}
+				operations = append(operations, core.LinearOperation{
+					ID: fmt.Sprintf("indep:op:%d", index), Kind: kind, SourceID: sourceID, TargetID: targetPlaceID, LoanID: loanID,
+				})
+				if loanID != "" {
+					loanIndexByLoanID[loanID] = index
+				}
+				visible[binding.Name] = targetPlaceID
+			}
+			resultSourceID := parameterPlaceID
+			if placeID, ok := visible[tc.body.Result]; ok {
+				resultSourceID = placeID
+			}
+			returnIndex := len(tc.body.Bindings)
+			operations = append(operations, core.LinearOperation{
+				ID: fmt.Sprintf("indep:op:%d", returnIndex), Kind: core.OpReturn, SourceID: resultSourceID,
+			})
+
+			chain := derivePlaceLoans(operations, interproceduralSummaryTable{})
+			uses, _, _ := blockLoanLiveness(operations, chain, map[string]bool{}, interproceduralSummaryTable{})
+
+			independentLastUse := make(map[int]int, len(loanIndexByLoanID))
+			seen := make(map[string]bool)
+			for _, use := range uses {
+				if seen[use.loanID] {
+					continue // blockLoanLiveness walks backward; the FIRST occurrence found IS the loan's LAST use in forward program order.
+				}
+				seen[use.loanID] = true
+				bindingIndex, ok := loanIndexByLoanID[use.loanID]
+				if !ok {
+					continue
+				}
+				independentLastUse[bindingIndex] = use.operationIndex
+			}
+			if len(independentLastUse) == 0 {
+				t.Fatal("expected at least one loan in this fixture")
+			}
+			for bindingIndex, wantLastUseIndex := range independentLastUse {
+				got, ok := shadowUses[bindingIndex]
+				if !ok {
+					t.Fatalf("loan at binding %d: computeLoanLastUses reported no use at all, independent derivePlaceLoans/blockLoanLiveness says last-use index %d", bindingIndex, wantLastUseIndex)
+				}
+				if got.index != wantLastUseIndex {
+					t.Fatalf("loan at binding %d: computeLoanLastUses last-use index = %d, independent derivePlaceLoans/blockLoanLiveness last-use index = %d -- the two admission paths disagree", bindingIndex, got.index, wantLastUseIndex)
+				}
+			}
+		})
 	}
 }
 

@@ -822,6 +822,15 @@ type calleeContract struct {
 	ID            string
 	ParameterType string
 	ReturnType    string
+	// ReturnsBorrowOfParam is Task 3(b)'s widening (D-08-09): true iff the
+	// callee's AST declares a borrowed return origin (function.ReturnOrigin
+	// != nil) -- a genuinely PRE-BODY, syntactic fact, exactly like
+	// ParameterType/ReturnType above. It is unused by the AST-shadow path
+	// (computeLoanLastUses) this plan itself widens; it exists so a later
+	// plan's fixture work and parity tests can name the declared fact on
+	// both sides of the two admission paths without either path reading a
+	// body.
+	ReturnsBorrowOfParam bool
 }
 
 // buildCalleeContracts builds the pre-body callee-contract table from
@@ -832,9 +841,10 @@ func buildCalleeContracts(program ast.Program) map[string]calleeContract {
 	contracts := make(map[string]calleeContract, len(program.Funcs))
 	for _, function := range program.Funcs {
 		contracts[function.Name] = calleeContract{
-			ID:            semanticID(program.Module, "fn", function.Name),
-			ParameterType: function.Parameter.Type.Constructor,
-			ReturnType:    function.ReturnType.Constructor,
+			ID:                   semanticID(program.Module, "fn", function.Name),
+			ParameterType:        function.Parameter.Type.Constructor,
+			ReturnType:           function.ReturnType.Constructor,
+			ReturnsBorrowOfParam: function.ReturnOrigin != nil,
 		}
 	}
 	return contracts
@@ -3312,8 +3322,28 @@ func computeLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]lo
 	operations := make([]core.LinearOperation, 0, len(body.Bindings)+1)
 	loanIndexByLoanID := make(map[string]int, len(body.Bindings))
 	for index, binding := range body.Bindings {
-		sourcePlaceID, ok := visible[binding.RHS.Source]
-		if !ok {
+		var sourcePlaceID string
+		if binding.RHS.Kind == "call" {
+			// D-08-09/D-07-49 (closed here, Task 3): a call binding carries
+			// RHS.Arguments, not RHS.Source -- resolving sourcePlaceID from
+			// binding.RHS.Source (as the default branch below does) always
+			// misses for a call binding, which is the literal entry defect
+			// testdata/phase07/relay_escort_witness.lang's own header used
+			// to describe: the call became invisible to this chain as a use
+			// of its argument. Resolve from the call's own sole argument
+			// instead (arity 1, mirroring resolveCallBinding's own
+			// check.call_arity_unsupported guard on the real admission
+			// path) so the call becomes a visible reference to that
+			// argument's loan chain in blockLoanLiveness's backward walk.
+			sourcePlaceID = fmt.Sprintf("shadow:place:unknown:%d", index)
+			if len(binding.RHS.Arguments) == 1 {
+				if placeID, ok := visible[binding.RHS.Arguments[0]]; ok {
+					sourcePlaceID = placeID
+				}
+			}
+		} else if placeID, ok := visible[binding.RHS.Source]; ok {
+			sourcePlaceID = placeID
+		} else {
 			// An out-of-scope/unknown source is a real-admission rejection
 			// (name.unknown) that discoverLoanLastUses never has to reason
 			// about either -- give it a place ID no other binding can ever
@@ -3334,6 +3364,18 @@ func computeLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]lo
 		case "borrow_mut":
 			kind = core.OpBorrowExclusive
 			loanID = fmt.Sprintf("shadow:loan:%d", index)
+		case "call":
+			// Kind stays core.OpCall (not OpCopy): this routes the operation
+			// through derivePlaceLoans' own OpCall branch (D-08-07), whose
+			// FALSE direction (summaries is the zero-value
+			// interproceduralSummaryTable{} on this shadow path, so every
+			// lookup misses) explicitly refuses to propagate the argument's
+			// loan onto the call's target place -- keeping this path's
+			// result identity exactly as conservative as the real,
+			// summary-blind admission path's own answer. The interprocedural
+			// alias is established ONLY by Task 2's summary-aware pass, over
+			// real core.LinearOperations, never here.
+			kind = core.OpCall
 		}
 		operations = append(operations, core.LinearOperation{
 			ID: fmt.Sprintf("shadow:op:%d", index), Kind: kind, SourceID: sourcePlaceID, TargetID: targetPlaceID, LoanID: loanID,
