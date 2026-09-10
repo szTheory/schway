@@ -825,15 +825,38 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 			continue
 		}
 		borrowOperation, hasBorrow := chain.borrowOperation[offendingLoanID]
-		callOperation, extended := chain.extendedByCall[offendingLoanID]
-		if !hasBorrow || !extended {
-			// Never call-extended -- an intraprocedural-only conflict, which
-			// the per-function admission pass this pass runs strictly after
-			// would already have refused (D-08-12); nothing new to report.
+		if !hasBorrow {
 			continue
 		}
-		summary, _ := summaries.lookup(callOperation.CalleeID)
-		diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, callOperation, summary.returnMode, spanByOperationID))
+		// Two, mutually exclusive, ways this conflict can be interprocedural
+		// (08-02 Task 2 widens the original forward-only check): the FORWARD
+		// direction (D-08-07), where derivePlaceLoans propagated the loan
+		// across a call's return onto a place read later than the move; or
+		// the BACKWARD direction (D-08-08), where the offending loan's own
+		// last use (as this pass's own summary-aware fixpoint computed it)
+		// IS the call itself, because the callee's usesParam gated
+		// blockLoanLiveness's chain-ancestor walk open. Checking forward
+		// first mirrors D-08-07's own priority (the mechanism this phase
+		// landed first); a conflict can only ever be attributed to one
+		// direction, since extendedByCall and a call-shaped last use are
+		// populated by disjoint call-site facts.
+		if callOperation, extended := chain.extendedByCall[offendingLoanID]; extended {
+			summary, _ := summaries.lookup(callOperation.CalleeID)
+			detail := fmt.Sprintf("%s:return.mode=%s", callOperation.CalleeID, summary.returnMode)
+			diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, callOperation, detail, spanByOperationID))
+			continue
+		}
+		if lastUse, ok := lastUseIndexByLoan[offendingLoanID]; ok && lastUse >= 0 && lastUse < len(function.Linear.Operations) {
+			if candidate := function.Linear.Operations[lastUse]; candidate.Kind == core.OpCall {
+				summary, _ := summaries.lookup(candidate.CalleeID)
+				detail := fmt.Sprintf("%s:parameters[0].mode=%s", candidate.CalleeID, summary.parameterMode)
+				diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, candidate, detail, spanByOperationID))
+				continue
+			}
+		}
+		// Neither direction fired -- an intraprocedural-only conflict, which
+		// the per-function admission pass this pass runs strictly after
+		// would already have refused (D-08-12); nothing new to report.
 	}
 	return diagnostics
 }
@@ -844,13 +867,18 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 // borrow_created_here / loan_extended_by_call / callee_return_contract
 // (D-08-23), Primary is the offending OpMove's own span (D-08-22), and
 // Repairs is nil (D-08-25) -- diagnostic.Error, never ErrorWithRepairs.
-func interproceduralLoanLivenessDiagnostic(move, borrow, call core.LinearOperation, returnMode string, spanByOperationID map[string]diagnostic.Span) diagnostic.Diagnostic {
+// causeDetail is cause 3's precomputed Detail string, chosen by the caller
+// from a RECORDED fact (which direction fired), never re-derived here
+// (08-02 Task 2): "<calleeID>:return.mode=<Mode>" for the forward direction
+// (D-08-07), "<calleeID>:parameters[0].mode=<Mode>" for the backward
+// direction (D-08-08).
+func interproceduralLoanLivenessDiagnostic(move, borrow, call core.LinearOperation, causeDetail string, spanByOperationID map[string]diagnostic.Span) diagnostic.Diagnostic {
 	borrowSpan := spanByOperationID[borrow.ID]
 	callSpan := spanByOperationID[call.ID]
 	causes := []diagnostic.Cause{
 		{Kind: "borrow_created_here", Span: &borrowSpan},
 		{Kind: "loan_extended_by_call", Span: &callSpan, Detail: call.CalleeID},
-		{Kind: "callee_return_contract", Detail: fmt.Sprintf("%s:return.mode=%s", call.CalleeID, returnMode)},
+		{Kind: "callee_return_contract", Detail: causeDetail},
 	}
 	primary := spanByOperationID[move.ID]
 	return diagnostic.Error(
@@ -1557,11 +1585,23 @@ type loanBlockUse struct {
 // faster than operation count, which TestReborrowChainWorkIsLinear asserts
 // directly against.
 //
-// summaries is threaded through for signature consistency with
-// derivePlaceLoans and loanLivenessFixpoint (D-08-07 Task 2); this transfer
-// function itself needs no interprocedural fact of its own this task --
-// every reference this function walks already resolves through chain,
-// which derivePlaceLoans has already made summary-aware.
+// summaries is D-08-08 Task 2's own consuming clause: an OpCall enters the
+// chain-ancestor walk below if and only if summaries.lookup(CalleeID)
+// reports usesParam == true, OR the callee is absent from summaries (the
+// refusing direction, never the permitting one) -- symmetric to how a
+// plain reference is already treated unconditionally. Every OTHER
+// operation kind keeps entering the walk exactly as before this task; this
+// is a widening in one direction (a using callee now counts as a
+// reference, where derivePlaceLoans' forward pass alone never established
+// one) and a narrowing in the other (a non-using callee no longer
+// over-approximates a use it never makes) -- both are required, since
+// without the narrowing a callee that never touches its parameter would
+// still extend the caller's loan and Pattern B's safe twin would never
+// admit. summaries' zero value (interproceduralSummaryTable{}) always
+// misses every lookup, so this gate is a no-op (unconditional entry, byte-
+// identical to pre-Task-2 behaviour) for every pre-existing call site that
+// still passes the zero-value table -- OWN-03's own intraprocedural
+// admission law is untouched.
 func blockLoanLiveness(operations []core.LinearOperation, chain placeLoanChain, liveOut map[string]bool, summaries interproceduralSummaryTable) ([]loanBlockUse, map[string]bool, int) {
 	live := make(map[string]bool, len(liveOut))
 	for loan := range liveOut {
@@ -1573,11 +1613,18 @@ func blockLoanLiveness(operations []core.LinearOperation, chain placeLoanChain, 
 	for index := len(operations) - 1; index >= 0; index-- {
 		work++ // one unit per operation inspected
 		operation := operations[index]
-		for loan := chain.latestLoan[operation.SourceID]; loan != "" && !recorded[loan]; loan = chain.parentLoan[loan] {
-			work++ // one unit per chain-ancestor step walked
-			live[loan] = true
-			recorded[loan] = true
-			uses = append(uses, loanBlockUse{loanID: loan, operationIndex: index, operationID: operation.ID})
+		entersWalk := true
+		if operation.Kind == core.OpCall {
+			summary, ok := summaries.lookup(operation.CalleeID)
+			entersWalk = !ok || summary.usesParam
+		}
+		if entersWalk {
+			for loan := chain.latestLoan[operation.SourceID]; loan != "" && !recorded[loan]; loan = chain.parentLoan[loan] {
+				work++ // one unit per chain-ancestor step walked
+				live[loan] = true
+				recorded[loan] = true
+				uses = append(uses, loanBlockUse{loanID: loan, operationIndex: index, operationID: operation.ID})
+			}
 		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			if !recorded[operation.LoanID] {

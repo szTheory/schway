@@ -2742,6 +2742,79 @@ func TestSummaryDerivationIsOnePassPerFunction(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------
+// Phase 08 Task 2 (08-02): the backward OpCall gate in blockLoanLiveness.
+// ---------------------------------------------------------------------
+
+// TestInterproceduralLivenessTwinPatternB is 08-02 Task 2's synthetic-
+// core.Program twin (D-08-08): borrow; move; call(v), where the two
+// programs differ ONLY in the callee's own usesParam bit. A using callee
+// refuses; a non-using callee admits with zero diagnostics -- the refusal
+// is contract-driven, not shape-driven.
+func TestInterproceduralLivenessTwinPatternB(t *testing.T) {
+	usingCallee := core.Function{
+		ID: "fn:user_true", Name: "user_true", Parameter: core.Parameter{ID: "user_true:place:0", Name: "borrowed", Type: "Buffer"},
+		Linear: &core.LinearBody{ID: "user_true:linear", Operations: []core.LinearOperation{
+			{ID: "user_true:op:0", Kind: core.OpCopy, SourceID: "user_true:place:0", TargetID: "user_true:place:1"},
+			{ID: "user_true:op:1", Kind: core.OpReturn, SourceID: "user_true:place:1"},
+		}},
+	}
+	notUsingCallee := core.Function{
+		ID: "fn:user_false", Name: "user_false", Parameter: core.Parameter{ID: "user_false:place:0", Name: "borrowed", Type: "Buffer"},
+		Linear: &core.LinearBody{ID: "user_false:linear", Operations: []core.LinearOperation{
+			{ID: "user_false:op:0", Kind: core.OpReturn, SourceID: "user_false:place:0"},
+		}},
+	}
+	signatureTable := callSignatureTable{entries: map[string]core.FunctionSignature{
+		"fn:user_true":  {ID: "fn:user_true", Return: core.ReturnContract{Mode: "owned"}, Parameters: []core.ParameterContract{{Mode: "owned"}}},
+		"fn:user_false": {ID: "fn:user_false", Return: core.ReturnContract{Mode: "owned"}, Parameters: []core.ParameterContract{{Mode: "owned"}}},
+	}}
+
+	for _, tc := range []struct {
+		name           string
+		calleeID       string
+		callee         core.Function
+		wantDiagnostic bool
+	}{
+		{"callee uses its parameter", "fn:user_true", usingCallee, true},
+		{"callee does not use its parameter", "fn:user_false", notUsingCallee, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			caller := core.Function{
+				ID: "fn:escort", Name: "escort", Parameter: core.Parameter{ID: "escort:place:buffer", Name: "buffer", Type: "Buffer"},
+				Linear: &core.LinearBody{ID: "escort:linear", Operations: []core.LinearOperation{
+					{ID: "escort:op:0", Kind: core.OpBorrowExclusive, SourceID: "escort:place:buffer", TargetID: "escort:place:borrowed", LoanID: "escort:loan:0"},
+					{ID: "escort:op:1", Kind: core.OpMove, SourceID: "escort:place:buffer", TargetID: "escort:place:moved"},
+					{ID: "escort:op:2", Kind: core.OpCall, SourceID: "escort:place:borrowed", TargetID: "escort:place:result", CalleeID: tc.calleeID},
+					{ID: "escort:op:3", Kind: core.OpReturn, SourceID: "escort:place:result"},
+				}},
+			}
+			program := core.Program{Functions: []core.Function{caller, tc.callee}}
+			summaries, _ := buildInterproceduralSummaries(program, signatureTable)
+			diagnostics := checkInterproceduralLoanLiveness(program, summaries, map[string]diagnostic.Span{})
+			if !tc.wantDiagnostic {
+				if len(diagnostics) != 0 {
+					t.Fatalf("expected zero diagnostics for the non-using callee, got %+v", diagnostics)
+				}
+				return
+			}
+			if len(diagnostics) != 1 {
+				t.Fatalf("expected exactly 1 diagnostic for the using callee, got %+v", diagnostics)
+			}
+			diag := diagnostics[0]
+			if diag.Code != "check.interprocedural_loan_liveness" {
+				t.Fatalf("expected code check.interprocedural_loan_liveness, got %s", diag.Code)
+			}
+			if len(diag.Causes) != 3 || diag.Causes[2].Kind != "callee_return_contract" {
+				t.Fatalf("expected 3 causes with cause 3 kind callee_return_contract, got %+v", diag.Causes)
+			}
+			if !strings.Contains(diag.Causes[2].Detail, "parameters[0].mode=") {
+				t.Fatalf("expected cause 3's Detail to contain parameters[0].mode= for the backward direction, got %q", diag.Causes[2].Detail)
+			}
+		})
+	}
+}
+
 // TestRelayEscortWitnessBothFunctionsAreCallable independently confirms
 // (via originvalidate.PublishProblemsFor, not by re-deriving a second
 // predicate) that BOTH `relay` and `escort` are Callable -- the call this
