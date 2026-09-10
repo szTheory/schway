@@ -34,5 +34,14 @@
     "unit": "milliexponent",
     "ratified_at": "2026-09-10T03:27:15Z",
     "ratified_by_commit": "b28a92f927e40f5c0c6279dfef1368c660fe75c5"
+  },
+  {
+    "machine_id": "machine:4797d76b7863",
+    "metric": "peer_closure_recomputed_work_growth_exponent",
+    "gate_type": "hard",
+    "value_or_bound": 1300,
+    "unit": "milliexponent",
+    "ratified_at": "2026-09-10T23:46:52Z",
+    "ratified_by_commit": "64a81c887b59e253618290884a41079eb5c86978"
   }
 ]
