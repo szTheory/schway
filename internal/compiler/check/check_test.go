@@ -2815,6 +2815,137 @@ func TestInterproceduralLivenessTwinPatternB(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------
+// Phase 08 Task 3 (08-02): program-order invariant and never-persisted memo.
+// ---------------------------------------------------------------------
+
+// relayChainFunction builds a single function whose body is a chain of n
+// OpCopy operations rooted at its own parameter (op[i]'s source is
+// op[i-1]'s own target), the per-function analogue of
+// reborrowChainOperations -- the exact shape that exposes
+// deriveFunctionUsesParam's own program-order dependency: each successive
+// operation's SourceID is only in the parameter-derived set once its
+// antecedent has already been visited.
+func relayChainFunction(n int) core.Function {
+	parameter := core.Parameter{ID: "chain:place:0", Name: "value", Type: "Byte"}
+	operations := make([]core.LinearOperation, n)
+	source := parameter.ID
+	for index := 0; index < n; index++ {
+		target := fmt.Sprintf("chain:place:%d", index+1)
+		operations[index] = core.LinearOperation{ID: fmt.Sprintf("chain:op:%d", index), Kind: core.OpCopy, SourceID: source, TargetID: target}
+		source = target
+	}
+	return core.Function{ID: "fn:chain", Name: "chain", Parameter: parameter, Linear: &core.LinearBody{ID: "chain:linear", Operations: operations}}
+}
+
+// reverseFunctionOperations returns a shallow copy of function with its own
+// Linear.Operations reversed -- the control this task's falsifier compares
+// against the program-order arrangement built by relayChainFunction.
+func reverseFunctionOperations(function core.Function) core.Function {
+	original := function.Linear.Operations
+	reversed := make([]core.LinearOperation, len(original))
+	for index, operation := range original {
+		reversed[len(original)-1-index] = operation
+	}
+	clone := function
+	clone.Linear = &core.LinearBody{ID: function.Linear.ID, Operations: reversed}
+	return clone
+}
+
+// TestSummaryDerivationRequiresProgramOrder is 08-02 Task 3(a)'s pin of
+// D-08-11: summary derivation work over a relay chain of k operations grows
+// no faster than operation count as k rises through a size series, AND the
+// identical chain with its operations reversed costs strictly more per
+// operation at the largest size -- the falsifier a future pass reordering
+// operations before summary derivation would trip.
+func TestSummaryDerivationRequiresProgramOrder(t *testing.T) {
+	series := []int{8, 32, 128, 512}
+	forwardWork := make([]int, len(series))
+	reversedWork := make([]int, len(series))
+	for index, n := range series {
+		function := relayChainFunction(n)
+		usesParam, work := deriveFunctionUsesParam(function, interproceduralSummaryTable{})
+		if !usesParam {
+			t.Fatalf("n=%d: expected usesParam true for a chain rooted at the parameter", n)
+		}
+		forwardWork[index] = work
+
+		_, reversedWorkAtN := deriveFunctionUsesParam(reverseFunctionOperations(function), interproceduralSummaryTable{})
+		reversedWork[index] = reversedWorkAtN
+	}
+
+	for index := 1; index < len(series); index++ {
+		operationRatio := float64(series[index]) / float64(series[index-1])
+		workRatio := float64(forwardWork[index]) / float64(forwardWork[index-1])
+		if workRatio > operationRatio*2 {
+			t.Fatalf("n=%d->%d: operation count grew %.1fx but program-order work grew %.1fx (%d->%d) -- looks quadratic",
+				series[index-1], series[index], operationRatio, workRatio, forwardWork[index-1], forwardWork[index])
+		}
+	}
+
+	largest := len(series) - 1
+	forwardPerOp := float64(forwardWork[largest]) / float64(series[largest])
+	reversedPerOp := float64(reversedWork[largest]) / float64(series[largest])
+	multiplier := reversedPerOp / forwardPerOp
+	if reversedPerOp <= forwardPerOp {
+		t.Fatalf("n=%d: expected the reversed arrangement to cost strictly more per operation than program order: forward=%.2f reversed=%.2f (%.1fx)",
+			series[largest], forwardPerOp, reversedPerOp, multiplier)
+	}
+	t.Logf("n=%d: reversed-vs-forward work-per-operation multiplier: %.1fx (forward=%.2f reversed=%.2f)", series[largest], multiplier, forwardPerOp, reversedPerOp)
+}
+
+// TestSummaryMemoNeverPersisted is 08-02 Task 3(b)'s pin of D-08-12/D-08-37:
+// (a) a go/ast structural scan of package check's own non-test source files
+// asserts no top-level var declaration anywhere references
+// interproceduralSummaryTable, and (b) running check.Program twice over the
+// same parsed program invokes buildInterproceduralSummaries exactly twice
+// -- a fresh memo built per invocation, never persisted or reused. Within-
+// run memoization is mandatory and sufficient (EFF-02); a cross-run cache
+// is Phase 11 / QLT-06 work (D-08-37) and must not appear here by accident.
+func TestSummaryMemoNeverPersisted(t *testing.T) {
+	files, err := filepath.Glob("*.go")
+	if err != nil {
+		t.Fatalf("glob package check's own sources: %v", err)
+	}
+	fileSet := token.NewFileSet()
+	for _, path := range files {
+		if strings.HasSuffix(path, "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fileSet, path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
+		for _, declaration := range file.Decls {
+			genDecl, ok := declaration.(*goast.GenDecl)
+			if !ok || genDecl.Tok != token.VAR {
+				continue
+			}
+			goast.Inspect(genDecl, func(node goast.Node) bool {
+				identifier, ok := node.(*goast.Ident)
+				if ok && identifier.Name == "interproceduralSummaryTable" {
+					t.Fatalf("%s: a package-level var declaration references interproceduralSummaryTable -- the memo must never be held in a package-level variable (D-08-12/D-08-37)", path)
+				}
+				return true
+			})
+		}
+	}
+
+	defer func() { buildInterproceduralSummariesObserved = nil }()
+	source := readPhase07Fixture(t, "call_basic.lang")
+	parsed := mustParseProgram(t, source)
+
+	buildCount := 0
+	buildInterproceduralSummariesObserved = func() { buildCount++ }
+	Program(parsed)
+	Program(parsed)
+	buildInterproceduralSummariesObserved = nil
+
+	if buildCount != 2 {
+		t.Fatalf("expected buildInterproceduralSummaries to run exactly twice across two check.Program calls on the same parsed program (a fresh memo per invocation), got %d", buildCount)
+	}
+}
+
 // TestRelayEscortWitnessBothFunctionsAreCallable independently confirms
 // (via originvalidate.PublishProblemsFor, not by re-deriving a second
 // predicate) that BOTH `relay` and `escort` are Callable -- the call this
