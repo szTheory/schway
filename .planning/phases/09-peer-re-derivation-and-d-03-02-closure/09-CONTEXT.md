@@ -621,6 +621,46 @@ named, so no future reader has to discover the change.
   fixed **now**, before planning starts — not discovered mid-phase under
   pressure.
 
+- **D-09-40a (INVENTORY RUN 2026-09-10, before any `09-PLAN.md` was drafted —
+  RESULT: QLT-07 is COMMITTED, in scope):** the pass required by D-09-39/D-09-40
+  was executed at context-capture time. Finding: **all 33 tests named across the
+  12 loan-liveness-scoped rows already exist in the tree and pass.**
+
+  Rows inventoried (03-03/03-04/03-05 only, per D-09-40's exclusion of OWN-04's
+  03-06/03-07 rows): Per-Task Verification Map rows 03-03-01, 03-03-02, 03-03-03,
+  03-04-01, 03-04-02, 03-04-03, 03-05-01, 03-05-02, 03-05-03; Mutation-Kill
+  Register rows for the path-oracle endpoint differential, the uniform-join
+  falsifier, the validator endpoint recomputation, the edge-specificity fixture
+  pair, and counted-work honesty; Generator Reachability Register rows for
+  `generatedLinearProgram` (extended), exhaustive ownership sequence enumeration,
+  and path-oracle metamorphic trials.
+
+  Verification performed:
+  `go test ./internal/compiler/check ./internal/compiler/corevalidate ./internal/compiler/pathoracle`
+  — all three packages **ok** (6.43s / 1.67s / 0.40s). Every named test resolved
+  to a real `func Test…(` / `func Fuzz…(` in `internal/`.
+
+  **Therefore M001 Phase 3's loan-liveness Nyquist debt is a
+  ratification/documentation debt, not a test-authorship debt.** The evidence was
+  supplied by execution long ago; the boxes were simply never ticked and
+  `nyquist_compliant` was never revisited.
+
+  Against D-09-40's pre-registered threshold: **≤ 1 additional plan — yes**
+  (writing one `09-VALIDATION.md` section plus one pointer line); **zero packages
+  or files OWN-07/OWN-08 do not already touch — yes** (the work touches only
+  `.planning/` documents; **zero** production files). Both bounds satisfied with
+  margin.
+
+  **QLT-07 is committed.** No stretch re-declaration is written, and the
+  scope-cut order's item 2 is **not** triggered. The closure itself follows
+  D-09-42's vehicle unchanged.
+
+  Caveat the planner must preserve: this verdict covers **only** the
+  loan-liveness subset. `03-VALIDATION.md`'s own `nyquist_compliant: false` stays
+  false (D-09-41) — its OWN-04 rows are outside QLT-07's claim and its
+  loop-carried-liveness clause remains structurally un-closable while the
+  language has no loops.
+
 - **D-09-41 (the archived M001 document is NEVER amended in place — and it can
   never honestly close in full):** `03-VALIDATION.md`'s `nyquist_compliant: false`,
   its unticked checkboxes, and its recorded acyclic-CFG scope limitation stay
