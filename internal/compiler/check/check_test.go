@@ -149,7 +149,7 @@ func TestLoanLivenessFixpoint(t *testing.T) {
 	useOp := core.LinearOperation{ID: "fn:op:1", Kind: core.OpReturn, SourceID: "fn:place:1"}
 	b2 := cfgBlockSpec{id: "fn:block:b2", operations: []core.LinearOperation{useOp}, successors: nil}
 
-	result, err := loanLivenessFixpoint("fn", []cfgBlockSpec{b1, b2})
+	result, err := loanLivenessFixpoint("fn", []cfgBlockSpec{b1, b2}, interproceduralSummaryTable{})
 	if err != nil {
 		t.Fatalf("unexpected acyclicity error: %v", err)
 	}
@@ -167,7 +167,7 @@ func TestLoanLivenessFixpoint(t *testing.T) {
 	// endpoint on, so the loan flows through b1 unremarked and is finally
 	// consumed as a POINT endpoint in b2, where it is actually referenced.
 	edgeID := func(from, to string) string { return from + "->" + to }
-	endpoints := materializeLoanEndpoints("fn", []cfgBlockSpec{b1, b2}, edgeID, result)
+	endpoints := materializeLoanEndpoints("fn", []cfgBlockSpec{b1, b2}, edgeID, result, interproceduralSummaryTable{})
 	if len(endpoints) != 1 || endpoints[0].Kind != "point" || endpoints[0].LoanID != "fn:loan:0" {
 		t.Fatalf("loan consumed in b2 must materialize as exactly one point endpoint there: %+v", endpoints)
 	}
@@ -207,12 +207,12 @@ func TestLoanLivenessFixpointCoversStraightLine(t *testing.T) {
 
 	blockID := function.ID + ":block:straight"
 	block := cfgBlockSpec{id: blockID, operations: function.Linear.Operations, successors: nil}
-	fixpoint, err := loanLivenessFixpoint(function.ID, []cfgBlockSpec{block})
+	fixpoint, err := loanLivenessFixpoint(function.ID, []cfgBlockSpec{block}, interproceduralSummaryTable{})
 	if err != nil {
 		t.Fatalf("unexpected acyclicity error: %v", err)
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }
-	endpoints := materializeLoanEndpoints(function.ID, []cfgBlockSpec{block}, edgeID, fixpoint)
+	endpoints := materializeLoanEndpoints(function.ID, []cfgBlockSpec{block}, edgeID, fixpoint, interproceduralSummaryTable{})
 	if len(endpoints) == 0 {
 		t.Fatalf("widened fixpoint produced zero endpoints for a straight-line body carrying borrows, where it previously covered none")
 	}
@@ -237,7 +237,7 @@ func TestEdgeSpecificLiveOut(t *testing.T) {
 	unused := cfgBlockSpec{id: "fn:block:unused", operations: []core.LinearOperation{unusedOp}, successors: nil}
 
 	blocks := []cfgBlockSpec{entry, used, unused}
-	result, err := loanLivenessFixpoint("fn", blocks)
+	result, err := loanLivenessFixpoint("fn", blocks, interproceduralSummaryTable{})
 	if err != nil {
 		t.Fatalf("unexpected acyclicity error: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestEdgeSpecificLiveOut(t *testing.T) {
 	// (entry->unused, where the omission is), not on the edge that still
 	// carries it forward.
 	edgeID := func(from, to string) string { return from + "->" + to }
-	endpoints := materializeLoanEndpoints("fn", blocks, edgeID, result)
+	endpoints := materializeLoanEndpoints("fn", blocks, edgeID, result, interproceduralSummaryTable{})
 	var edgeEndpoints, pointEndpoints []core.LoanEndpoint
 	for _, endpoint := range endpoints {
 		if endpoint.LoanID != "fn:loan:0" {
@@ -280,7 +280,7 @@ func TestEdgeSpecificLiveOut(t *testing.T) {
 func TestBackEdgeRejected(t *testing.T) {
 	a := cfgBlockSpec{id: "fn:block:a", operations: nil, successors: []string{"fn:block:b"}}
 	b := cfgBlockSpec{id: "fn:block:b", operations: nil, successors: []string{"fn:block:a"}}
-	if _, err := loanLivenessFixpoint("fn", []cfgBlockSpec{a, b}); err == nil {
+	if _, err := loanLivenessFixpoint("fn", []cfgBlockSpec{a, b}, interproceduralSummaryTable{}); err == nil {
 		t.Fatalf("expected a back-edge rejection, got none")
 	}
 }
@@ -314,12 +314,12 @@ func TestStraightLineEndpointsUnchanged(t *testing.T) {
 		t.Fatalf("want 2 tracked loans, got %+v", support.LoanFinalUses)
 	}
 	block := cfgBlockSpec{id: "test:reborrow:block:straight", operations: support.Operations, successors: nil}
-	result, err := loanLivenessFixpoint("test:reborrow", []cfgBlockSpec{block})
+	result, err := loanLivenessFixpoint("test:reborrow", []cfgBlockSpec{block}, interproceduralSummaryTable{})
 	if err != nil {
 		t.Fatalf("unexpected acyclicity error: %v", err)
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }
-	endpoints := materializeLoanEndpoints("test:reborrow", []cfgBlockSpec{block}, edgeID, result)
+	endpoints := materializeLoanEndpoints("test:reborrow", []cfgBlockSpec{block}, edgeID, result, interproceduralSummaryTable{})
 	byLoan := make(map[string]core.LoanEndpoint, len(endpoints))
 	for _, endpoint := range endpoints {
 		byLoan[endpoint.LoanID] = endpoint
@@ -716,7 +716,7 @@ func TestBranchSequenceExhaustive(t *testing.T) {
 func TestLivenessWorkScale(t *testing.T) {
 	for _, n := range []int{10, 100, 1_000, 10_000} {
 		block := cfgBlockSpec{id: "chain:block:straight", operations: reborrowChainOperations(n), successors: nil}
-		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block})
+		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block}, interproceduralSummaryTable{})
 		if err != nil {
 			t.Fatalf("n=%d: unexpected acyclicity error: %v", n, err)
 		}
@@ -739,7 +739,7 @@ func TestReborrowChainWorkIsLinear(t *testing.T) {
 	work := make([]int, len(series))
 	for index, n := range series {
 		block := cfgBlockSpec{id: "chain:block:ratio", operations: reborrowChainOperations(n), successors: nil}
-		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block})
+		result, err := loanLivenessFixpoint("chain", []cfgBlockSpec{block}, interproceduralSummaryTable{})
 		if err != nil {
 			t.Fatalf("n=%d: unexpected acyclicity error: %v", n, err)
 		}
@@ -2314,33 +2314,54 @@ func TestRelayEscortWitnessCallArgumentsAreANormalForm(t *testing.T) {
 	}
 }
 
-// TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness is Task 2
-// Tests 2 and 4 (D-04-03/D-07-44, D-03-02): the converted witness's check
-// outcome is asserted by an explicit assertion of zero error diagnostics --
-// this IS the finding, not a failure. `relay` and `escort` both declare
-// (and satisfy) a correct PublicOrigin, so both are Callable
-// (originvalidate.PublishProblemsFor reports no problems for either), and
-// `escort`'s call to `relay` is admitted under this plan's own SEM-06
-// admission arm. The dangling-alias hazard the original single-function
-// research witness demonstrated still slips through here: `escort` moves
-// `buffer` away (`take buffer`) while `aliased` -- the call's own return,
-// standing in for the borrowed view `relay` actually produced -- remains
-// live. `check`'s loan-liveness law (computeLoanLastUses) builds its
-// use-chain from each binding's RHS.Source; a "call" binding carries
-// RHS.Arguments, not RHS.Source, so the call is invisible to that chain as
-// a use of its argument, and the exclusive loan on `buffer` is treated as
-// ending at its own creation point. This is the INTERPROCEDURAL half of
-// D-03-02 (Phase 3 closed the single-function half): it remains open until
-// Phase 08/09's interprocedural loan-liveness work closes it
-// (D-05-32/D-05-33). A future phase's fix to this gap must flip this
-// exact assertion, not silently leave it stale -- that is exactly why it
-// is asserted explicitly here rather than left undocumented.
-func TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness(t *testing.T) {
+// TestRelayEscortWitnessRefusesInterproceduralLiveness is Task 2 Tests 2 and
+// 4 (D-04-03/D-07-44, D-03-02), CLOSED: the converted witness's check
+// outcome is now a refusal, not the historical clean-check finding this
+// test used to assert. `relay` and `escort` both declare (and satisfy) a
+// correct PublicOrigin, so both are Callable (originvalidate.PublishProblemsFor
+// reports no problems for either), and `escort`'s call to `relay` is
+// admitted under Phase 07's SEM-06 admission arm -- the refusal below is
+// NOT a call-admission rejection, it is Phase 08's new interprocedural
+// loan-liveness law. `escort` moves `buffer` away (`take buffer`) while
+// `aliased` -- the call's own return, standing in for the exclusive
+// borrowed view `relay` actually produced -- remains live past the move:
+// `derivePlaceLoans` now propagates the loan across the OpCall boundary
+// (D-08-07) because `relay`'s declared `-> borrow mut(buffer) Buffer`
+// return contract reports `returnsBorrowOfParam == true`, closing the
+// INTERPROCEDURAL half of D-03-02 (Phase 3 closed the single-function half)
+// via check.interprocedural_loan_liveness.
+func TestRelayEscortWitnessRefusesInterproceduralLiveness(t *testing.T) {
 	source := readPhase07Fixture(t, "relay_escort_witness.lang")
 	result := Program(mustParseProgram(t, source))
-	if len(result.Diagnostics) != 0 {
-		t.Fatalf("expected zero error diagnostics (the D-03-02 interprocedural finding), got %+v", result.Diagnostics)
+	if len(result.Diagnostics) != 1 {
+		t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
 	}
+	diag := result.Diagnostics[0]
+	if diag.Code != "check.interprocedural_loan_liveness" {
+		t.Fatalf("expected code check.interprocedural_loan_liveness, got %s", diag.Code)
+	}
+	if len(diag.Repairs) != 0 {
+		t.Fatalf("expected zero repairs (D-08-25), got %+v", diag.Repairs)
+	}
+	if len(diag.Causes) != 3 {
+		t.Fatalf("expected exactly 3 causes (D-08-23), got %d: %+v", len(diag.Causes), diag.Causes)
+	}
+	wantKinds := []string{"borrow_created_here", "loan_extended_by_call", "callee_return_contract"}
+	for i, want := range wantKinds {
+		if diag.Causes[i].Kind != want {
+			t.Fatalf("cause %d: expected kind %q, got %q", i, want, diag.Causes[i].Kind)
+		}
+	}
+	if diag.Causes[2].Span != nil {
+		t.Fatalf("cause 3 (callee_return_contract) must be spanless (D-08-24), got %+v", diag.Causes[2].Span)
+	}
+	if diag.Causes[2].Detail == "" || !strings.Contains(diag.Causes[2].Detail, ":return.mode=") {
+		t.Fatalf("cause 3's Detail must match <calleeID>:return.mode=<Mode>, got %q", diag.Causes[2].Detail)
+	}
+	if !strings.HasSuffix(diag.Causes[2].Detail, ":return.mode=exclusive") {
+		t.Fatalf("expected return.mode=exclusive (relay declares -> borrow mut(buffer)), got %q", diag.Causes[2].Detail)
+	}
+
 	var escort *core.Function
 	for index := range result.Program.Functions {
 		if result.Program.Functions[index].Name == "escort" {
@@ -2362,6 +2383,37 @@ func TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness(t *testing.
 	if !hasCall || !hasMove {
 		t.Fatalf("expected escort's checked body to carry both a call and a move (the take), got call=%v move=%v", hasCall, hasMove)
 	}
+	if diag.Primary.Start == 0 && diag.Primary.End == 0 {
+		t.Fatalf("expected a non-zero Primary span (the take buffer binding's RHS span), got %+v", diag.Primary)
+	}
+}
+
+// TestInterproceduralLoanLivenessTracer is Task 2's accepting counterpart:
+// the same caller body against a callee declaring an OWNED return (not a
+// borrow of its parameter) produces zero diagnostics -- the refusal above
+// is contract-driven, not shape-driven (must_haves backstop truth).
+func TestInterproceduralLoanLivenessTracer(t *testing.T) {
+	source := []byte(`module phase08.tracer_safe_twin
+
+export {
+  fn escort
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  buffer
+}
+
+fn escort(buffer: Buffer) -> Buffer {
+  let borrowed = borrow mut buffer
+  let aliased = relay(borrowed)
+  let delivered = take buffer
+  aliased
+}
+`)
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected zero diagnostics for the owned-return safe twin, got %+v", result.Diagnostics)
+	}
 }
 
 // TestRelayEscortWitnessBothFunctionsAreCallable independently confirms
@@ -2369,12 +2421,16 @@ func TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness(t *testing.
 // predicate) that BOTH `relay` and `escort` are Callable -- the call this
 // witness demonstrates is genuinely ADMITTED by this plan's own SEM-06 arm,
 // not accidentally refused for the unrelated reason Task 1's own negative
-// control (call_uncallable_callee.lang) demonstrates.
+// control (call_uncallable_callee.lang) demonstrates. Phase 08's new
+// interprocedural loan-liveness refusal (TestRelayEscortWitnessRefusesInterproceduralLiveness)
+// is a SEPARATE, later admission arm; it never clears result.Program (unlike
+// the call-graph-cycle gate), so Callable is still independently checkable
+// here even though the fixture now refuses.
 func TestRelayEscortWitnessBothFunctionsAreCallable(t *testing.T) {
 	source := readPhase07Fixture(t, "relay_escort_witness.lang")
 	result := Program(mustParseProgram(t, source))
-	if len(result.Diagnostics) != 0 {
-		t.Fatalf("expected zero diagnostics, got %+v", result.Diagnostics)
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+		t.Fatalf("expected exactly the interprocedural_loan_liveness diagnostic, got %+v", result.Diagnostics)
 	}
 	iface, err := originvalidate.BuildInterface(result.Program)
 	if err != nil {
@@ -2417,8 +2473,17 @@ func TestCallAdmissionBodyBlindControl(t *testing.T) {
 			calleeBodyReadObserved = func(string) { bodyReads++ }
 			result := Program(mustParseProgram(t, source))
 			calleeBodyReadObserved = nil
-			if len(result.Diagnostics) != 0 {
-				t.Fatalf("expected the fixture to check clean, got %+v", result.Diagnostics)
+			// relay_escort_witness.lang refuses under Phase 08's new
+			// check.interprocedural_loan_liveness law since this task
+			// (TestRelayEscortWitnessRefusesInterproceduralLiveness); that
+			// refusal is unrelated to THIS test's body-blindness claim about
+			// verifyCallableRefusal, so accept it here too -- but any OTHER
+			// diagnostic (in particular a callee_not_callable body-read
+			// symptom) still fails the test.
+			for _, diag := range result.Diagnostics {
+				if diag.Code != "check.interprocedural_loan_liveness" {
+					t.Fatalf("expected the fixture to check clean (or only refuse via check.interprocedural_loan_liveness), got %+v", result.Diagnostics)
+				}
 			}
 			if bodyReads != 0 {
 				t.Fatalf("expected 0 body reads at the production default, got %d", bodyReads)
@@ -3643,10 +3708,19 @@ func TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus(t *testing.T) {
 	}
 
 	t.Run("relay_escort_witness_unchanged", func(t *testing.T) {
+		// Phase 08 closes the interprocedural half of D-03-02
+		// (TestRelayEscortWitnessRefusesInterproceduralLiveness): the
+		// fixture now refuses deterministically rather than staying clean,
+		// but that refusal must still be exactly reproducible across
+		// re-derivations.
 		source := readPhase07Fixture(t, "relay_escort_witness.lang")
-		result := Program(mustParseProgram(t, source))
-		if len(result.Diagnostics) != 0 {
-			t.Fatalf("expected relay_escort_witness.lang to stay clean at the check.Program level (D-03-02 deferred), got %+v", result.Diagnostics)
+		first := Program(mustParseProgram(t, source))
+		if len(first.Diagnostics) != 1 || first.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+			t.Fatalf("expected relay_escort_witness.lang to refuse via check.interprocedural_loan_liveness, got %+v", first.Diagnostics)
+		}
+		second := Program(mustParseProgram(t, source))
+		if !reflect.DeepEqual(first.Diagnostics, second.Diagnostics) {
+			t.Fatalf("expected relay_escort_witness.lang's refusal to be deterministic across re-derivations, got %+v vs %+v", first.Diagnostics, second.Diagnostics)
 		}
 	})
 }

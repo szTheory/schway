@@ -21,12 +21,20 @@ import (
 // project-relative path (forward slashes); value is the peer's reported
 // Problems[0].Code.
 var peerDivergenceExpected = map[string]string{
-	// D-03-02 interprocedural half (PVG-04/CR-02, Phase 08 scope --
-	// PHASE-07-DEBT.md D-07-49): check.computeLoanLastUses has no "call"
-	// case, so the exclusive loan on `buffer` is treated as ending before
-	// `relay`'s call is ever reached and `escort` checks clean; corevalidate's
-	// independent OpCall replay refuses with core.move_while_borrowed.
-	"testdata/phase07/relay_escort_witness.lang": "core.move_while_borrowed",
+	// D-03-02's interprocedural half (PVG-04/CR-02) was carried here as
+	// PHASE-07-DEBT.md D-07-49: check.computeLoanLastUses had no "call"
+	// case, so the exclusive loan on `buffer` was treated as ending before
+	// `relay`'s call was ever reached and `escort` checked clean, while
+	// corevalidate's independent OpCall replay refused with
+	// core.move_while_borrowed. CLOSED in Phase 08 (Task 2/3): check now
+	// independently refuses this fixture too (check.interprocedural_loan_liveness),
+	// so it is no longer a check-admits/peer-refuses divergence and this
+	// entry is retired -- see
+	// TestRelayEscortWitnessRefusesInterproceduralLiveness (check package)
+	// and TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed
+	// (corevalidate package), which now assert BOTH sides refuse
+	// independently, via different codes, for the same program.
+	//
 	// WR-01's user-visible half (07-REVIEW.md; check-side half carried as
 	// debt, PHASE-07-DEBT.md D-07-50): two `fn helper` declarations share
 	// one semanticID; check's buildCalleeContracts silently resolves the
@@ -64,9 +72,18 @@ var phase07SpotCheckRegression = []struct {
 // corevalidate.Validate's independent verdict, in fixed precedence order
 // (07-10 checkpoint, SEM-04), closing 07-REVIEW.md CR-04 / PVG-03.
 func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
-	// Test 1: relay_escort_witness.lang now reports the peer's own
-	// core.move_while_borrowed refusal at the CLI, where before 07-10 it
-	// reported status: pass, exit-0-equivalent (StatusPass).
+	// Test 1: relay_escort_witness.lang reported the PEER's own
+	// core.move_while_borrowed refusal at the CLI from 07-10 through Phase
+	// 07 (before 07-10 it reported status: pass, exit-0-equivalent
+	// StatusPass). Phase 08 closes the interprocedural half of D-03-02:
+	// check ITSELF now refuses this fixture, via its own new
+	// check.interprocedural_loan_liveness law
+	// (TestRelayEscortWitnessRefusesInterproceduralLiveness, check
+	// package), which runs and reports BEFORE CheckCommandFile ever
+	// consults the peer -- the peer's own core.move_while_borrowed refusal
+	// (TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed,
+	// corevalidate package) still independently exists, it is simply no
+	// longer the code surfaced at the CLI for this fixture.
 	t.Run("relay_escort_witness flips to the peer's refusal", func(t *testing.T) {
 		result, err := session.CheckCommandFile(phase07Fixture(t, "relay_escort_witness.lang"))
 		if err != nil {
@@ -75,8 +92,8 @@ func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
 		if result.Status != protocol.StatusInvalid {
 			t.Fatalf("status = %s, want %s", result.Status, protocol.StatusInvalid)
 		}
-		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "core.move_while_borrowed" {
-			t.Fatalf("diagnostics = %+v, want exactly one core.move_while_borrowed", result.Diagnostics)
+		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+			t.Fatalf("diagnostics = %+v, want exactly one check.interprocedural_loan_liveness", result.Diagnostics)
 		}
 	})
 
@@ -343,7 +360,20 @@ func TestInterfaceCommandsReportPeerRefusalAsInvalid(t *testing.T) {
 // asserted in one test, so a control that is green for the wrong reason
 // (e.g. a no-op seam) fails here.
 func TestCheckCommandPeerConsultMutationKilled(t *testing.T) {
-	fixture := phase07Fixture(t, "relay_escort_witness.lang")
+	// relay_escort_witness.lang was this test's fixture through Phase 07:
+	// check itself admitted it, so a peer-consult seam that wrongly skips
+	// the peer entirely made CheckCommandFile wrongly report StatusPass,
+	// proving the peer consult load-bearing. Phase 08 closes the
+	// interprocedural half of D-03-02 (Task 2/3): check now independently
+	// refuses this exact fixture via its own new
+	// check.interprocedural_loan_liveness law, BEFORE CheckCommandFile ever
+	// reaches the peer-consult seam -- so this fixture can no longer
+	// demonstrate the seam is load-bearing (it would report StatusInvalid
+	// regardless of the seam). duplicate_function_name.lang is the
+	// remaining declared divergence (peerDivergenceExpected): check admits
+	// it cleanly and only the peer's independent function-ID uniqueness
+	// check refuses it, which is exactly the shape this mutation-kill needs.
+	fixture := phase07Fixture(t, "duplicate_function_name.lang")
 
 	restore := session.SetCheckCommandPeerSeamForTest(true)
 	wronglyPermissive, err := session.CheckCommandFile(fixture)
@@ -359,8 +389,8 @@ func TestCheckCommandPeerConsultMutationKilled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CheckCommandFile (seam restored) returned an error: %v", err)
 	}
-	if correctlyRefusing.Status != protocol.StatusInvalid || len(correctlyRefusing.Diagnostics) != 1 || correctlyRefusing.Diagnostics[0].Code != "core.move_while_borrowed" {
-		t.Fatalf("with the seam restored, expected exactly one core.move_while_borrowed diagnostic, got status=%s diagnostics=%+v", correctlyRefusing.Status, correctlyRefusing.Diagnostics)
+	if correctlyRefusing.Status != protocol.StatusInvalid || len(correctlyRefusing.Diagnostics) != 1 || correctlyRefusing.Diagnostics[0].Code != "core.duplicate_function_id" {
+		t.Fatalf("with the seam restored, expected exactly one core.duplicate_function_id diagnostic, got status=%s diagnostics=%+v", correctlyRefusing.Status, correctlyRefusing.Diagnostics)
 	}
 }
 

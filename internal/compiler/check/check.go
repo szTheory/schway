@@ -299,6 +299,16 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, *invariant)
 		}
 	}
+	// signatureTable/signatureTableErr are hoisted out of the
+	// verifyCallableRefusal admission arm below so the interprocedural pass
+	// (D-08-12) can reuse the SAME build rather than invoking
+	// buildCallSignatureTable a second time --
+	// callSignatureTableBuildObserved (D-07-34's own ordering-
+	// instrumentation seam) asserts exactly one build event per
+	// check.Program call, which a second build would break
+	// (TestCallSignatureTableBuiltBeforeCallableAdmissionRuns).
+	var signatureTable callSignatureTable
+	var signatureTableBuilt bool
 	if len(result.Diagnostics) == 0 && !verifyCallInvariantsSeam {
 		// D-07-42: sharing verifyCallInvariantsSeam here (rather than
 		// gating only on len(result.Diagnostics)) keeps this admission arm
@@ -356,6 +366,7 @@ func Program(program ast.Program) Result {
 		// SAME cycle properly.
 		table, tableErr := buildCallSignatureTable(result.Program)
 		if tableErr == nil {
+			signatureTable, signatureTableBuilt = table, true
 			if diag := verifyCallableRefusal(result.Program.Functions, table); diag != nil {
 				result.Diagnostics = append(result.Diagnostics, *diag)
 			}
@@ -370,6 +381,31 @@ func Program(program ast.Program) Result {
 		if diag := checkCallGraphAcyclic(result.Program, spanByOperationID); diag != nil {
 			result.Diagnostics = append(result.Diagnostics, *diag)
 			result.Program = core.Program{}
+		}
+	}
+	if len(result.Diagnostics) == 0 {
+		// D-08-12, D-08-27 interim rule: the interprocedural loan-liveness
+		// pass runs STRICTLY here -- after callgraph.Order has already
+		// proven the program acyclic (the gate immediately above) and after
+		// every function's own intraprocedural admission has already passed
+		// (nothing above this point has appended a diagnostic) -- so no
+		// program is ever judged by both the intraprocedural and the
+		// interprocedural liveness law for the same fact. Reuses Task 1's
+		// signatureTable when the admission arm above already built one
+		// (the common case); only rebuilds when it was skipped
+		// (verifyCallInvariantsSeam, D-07-42's own test-only seam) --
+		// callSignatureTableBuildObserved asserts exactly one build event
+		// per check.Program call in production, so a second, unconditional
+		// build here would break that invariant.
+		if !signatureTableBuilt {
+			if table, tableErr := buildCallSignatureTable(result.Program); tableErr == nil {
+				signatureTable, signatureTableBuilt = table, true
+			}
+		}
+		if signatureTableBuilt {
+			summaries, summaryWork := buildInterproceduralSummaries(result.Program, signatureTable)
+			result.Work += summaryWork
+			result.Diagnostics = append(result.Diagnostics, checkInterproceduralLoanLiveness(result.Program, summaries, spanByOperationID)...)
 		}
 	}
 	return result
@@ -441,6 +477,239 @@ func checkCallGraphAcyclic(program core.Program, spanByOperationID map[string]di
 		return &diag
 	}
 	return nil
+}
+
+// ---------------------------------------------------------------------
+// Phase 08 Task 2: interprocedural loan liveness.
+//
+// The end-to-end tracer -- one interprocedural loan-liveness refusal
+// travelling declared callee return contract -> in-memory summary bit ->
+// forward canonicalization in derivePlaceLoans -> backward liveness -> a
+// newly minted check.interprocedural_loan_liveness diagnostic -> the
+// `lang check` CLI. Wires exactly ONE direction (a callee that returns a
+// borrow of its own parameter, D-08-07); no transitivity, no bound -- those
+// are later plans' expansion work.
+// ---------------------------------------------------------------------
+
+// interproceduralSummary is one function's per-callee interprocedural
+// summary bit set (D-08-02/D-08-04/D-08-06): read-only once built, and
+// derived EXCLUSIVELY from callSignatureTable's already-published
+// core.FunctionSignature -- which structurally carries no Linear/Match
+// field -- so consuming it can never reach a callee body (SEM-05, T-08-04).
+type interproceduralSummary struct {
+	// usesParam is 08-02's own derivation; left at its fail-closed zero
+	// value (false) by this plan.
+	usesParam bool
+	// returnsBorrowOfParam is true iff the callee's declared
+	// core.FunctionSignature.Return.Mode is "shared" or "exclusive", false
+	// iff "owned" (D-08-07 Task 2(a)) -- the ONE direction this plan wires.
+	returnsBorrowOfParam bool
+	// returnMode is the callee's own declared Return.Mode string, consulted
+	// ONLY to build the ratified third cause's Detail
+	// (<calleeID>:return.mode=<Mode>, D-08-20/23/24). Disclosing it is safe
+	// (T-08-03): it is copied verbatim from the callee's DECLARED type, so
+	// disclosure reveals nothing about the callee's control flow.
+	returnMode string
+}
+
+// interproceduralSummaryTable is a same-package, read-only view over every
+// declared function's interproceduralSummary, mirroring callSignatureTable's
+// own immutability-by-construction invariant (check.go:590-597): the only
+// way to read it is lookup, there is no setter, and its zero value's lookup
+// always misses -- a table that somehow failed to build treats every callee
+// as "no interprocedural facts" (fail-closed toward the pre-Phase-08
+// behaviour), never toward admitting a false direction.
+type interproceduralSummaryTable struct {
+	summaries map[string]interproceduralSummary
+}
+
+func (t interproceduralSummaryTable) lookup(calleeID string) (interproceduralSummary, bool) {
+	summary, ok := t.summaries[calleeID]
+	return summary, ok
+}
+
+// MaxInterproceduralLoanCauses bounds the interprocedural loan-liveness
+// diagnostic's own cause list, mirroring callgraph.MaxCycleCauses. Unused by
+// this plan's fixed three-cause template (D-08-23) -- Task 1's ratified
+// shape never grows past three -- but declared now so 08-04's truncation
+// work (the loan_liveness_bound refusal) has a named sibling constant to
+// reference, per Task 1(d)/(d)'s instruction to declare both together.
+const MaxInterproceduralLoanCauses = 32
+
+// TruncatedInterproceduralLoanBound is the cause-list truncation marker
+// constant ratified at this plan's Task 1 checkpoint, declared in package
+// check (never protocol) alongside MaxInterproceduralLoanCauses, per the
+// recorded check -> protocol -> interp -> [test] -> check import cycle.
+const TruncatedInterproceduralLoanBound = "check.interprocedural_loan_bound"
+
+// buildInterproceduralSummaries derives, for every declared function,
+// exactly one interproceduralSummary entry -- read from table's already-
+// published core.FunctionSignature, never from a callee body. It iterates
+// callgraph.Order(program)'s reverse postorder (callee before caller,
+// D-08-12) for a deterministic, one-derivation-per-function build. program
+// is, by the time check.Program calls this, already proven acyclic
+// (checkCallGraphAcyclic runs strictly before this); a callgraph.Order
+// failure here is therefore unreachable in production and is handled
+// defensively -- "no interprocedural facts" for every function -- rather
+// than by panicking.
+func buildInterproceduralSummaries(program core.Program, table callSignatureTable) (interproceduralSummaryTable, int) {
+	summaries := make(map[string]interproceduralSummary, len(program.Functions))
+	order, err := callgraph.Order(program)
+	if err != nil {
+		return interproceduralSummaryTable{summaries: summaries}, 0
+	}
+	work := 0
+	for _, functionID := range order {
+		work++
+		var summary interproceduralSummary
+		if signature, ok := table.lookup(functionID); ok {
+			summary.returnMode = signature.Return.Mode
+			summary.returnsBorrowOfParam = signature.Return.Mode == "shared" || signature.Return.Mode == "exclusive"
+		}
+		summaries[functionID] = summary
+	}
+	return interproceduralSummaryTable{summaries: summaries}, work
+}
+
+// cfgBlocksForFunction rebuilds the minimal []cfgBlockSpec shape
+// loanLivenessFixpoint/materializeLoanEndpoints consume from an already-
+// checked core.Function's own serialized Linear body -- reusing the exact
+// shape checkBranch already builds for its own arm blocks, never
+// re-deriving liveness from the AST. A straight-line function's
+// Linear.Blocks stays empty by construction (LinearBody's own doc comment,
+// core.go:715-721): such a function's whole Operations slice is treated as
+// one synthetic, no-successor block, mirroring computeLoanLastUses' own
+// single-block shape (check.go's "shadow:block:straight").
+func cfgBlocksForFunction(function core.Function) []cfgBlockSpec {
+	if function.Linear == nil {
+		return nil
+	}
+	if len(function.Linear.Blocks) == 0 {
+		return []cfgBlockSpec{{id: function.ID + ":block:straight", operations: function.Linear.Operations, successors: nil}}
+	}
+	operationsByID := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		operationsByID[operation.ID] = operation
+	}
+	blocks := make([]cfgBlockSpec, 0, len(function.Linear.Blocks))
+	for _, block := range function.Linear.Blocks {
+		operations := make([]core.LinearOperation, 0, len(block.OperationIDs))
+		for _, id := range block.OperationIDs {
+			if operation, ok := operationsByID[id]; ok {
+				operations = append(operations, operation)
+			}
+		}
+		blocks = append(blocks, cfgBlockSpec{id: block.ID, operations: operations, successors: block.Successors})
+	}
+	return blocks
+}
+
+// checkInterproceduralLoanLiveness is Task 2's new post-acyclicity pass
+// (D-08-12). For every already-checked core.Function it re-derives loan
+// liveness over that function's own serialized core.LinearOperation stream,
+// this time summary-aware, and refuses an OpMove that transfers ownership
+// of a loan's owner place while that loan is still live because a call the
+// summary table proves extends it (a borrow-of-param return) has not yet
+// had its own last use. It reads summaries and spanByOperationID only --
+// never a callee's Linear or Match field (T-08-04). Emits at most one
+// diagnostic per function, choosing the earliest offending OpMove by
+// operation index (deterministic output).
+func checkInterproceduralLoanLiveness(program core.Program, summaries interproceduralSummaryTable, spanByOperationID map[string]diagnostic.Span) []diagnostic.Diagnostic {
+	var diagnostics []diagnostic.Diagnostic
+	for _, function := range program.Functions {
+		if function.Linear == nil || len(function.Linear.Operations) == 0 {
+			continue
+		}
+		blocks := cfgBlocksForFunction(function)
+		fixpoint, err := loanLivenessFixpoint(function.ID, blocks, summaries)
+		if err != nil {
+			// A CFG cycle here would already have been refused by this same
+			// function's own intraprocedural admission, which has already
+			// passed by the time this pass runs (D-08-12) -- unreachable in
+			// production; skip rather than assume-and-panic.
+			continue
+		}
+		edgeID := func(fromBlockID, toBlockID string) string { return fromBlockID + "->" + toBlockID }
+		endpoints := materializeLoanEndpoints(function.ID, blocks, edgeID, fixpoint, summaries)
+
+		operationIndexByID := make(map[string]int, len(function.Linear.Operations))
+		for index, operation := range function.Linear.Operations {
+			operationIndexByID[operation.ID] = index
+		}
+		lastUseIndexByLoan := make(map[string]int, len(endpoints))
+		for _, endpoint := range endpoints {
+			if endpoint.Kind != "point" {
+				continue
+			}
+			index, ok := operationIndexByID[endpoint.AfterOperationID]
+			if !ok {
+				continue
+			}
+			if existing, seen := lastUseIndexByLoan[endpoint.LoanID]; !seen || index > existing {
+				lastUseIndexByLoan[endpoint.LoanID] = index
+			}
+		}
+
+		chain := derivePlaceLoans(function.Linear.Operations, summaries)
+
+		offendingIndex := -1
+		var offendingMove core.LinearOperation
+		var offendingLoanID string
+		for index, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpMove {
+				continue
+			}
+			for loanID, borrow := range chain.borrowOperation {
+				if borrow.SourceID != operation.SourceID {
+					continue
+				}
+				lastUse, ok := lastUseIndexByLoan[loanID]
+				if !ok || index >= lastUse {
+					continue
+				}
+				if offendingIndex == -1 || index < offendingIndex {
+					offendingIndex = index
+					offendingMove = operation
+					offendingLoanID = loanID
+				}
+			}
+		}
+		if offendingIndex == -1 {
+			continue
+		}
+		borrowOperation, hasBorrow := chain.borrowOperation[offendingLoanID]
+		callOperation, extended := chain.extendedByCall[offendingLoanID]
+		if !hasBorrow || !extended {
+			// Never call-extended -- an intraprocedural-only conflict, which
+			// the per-function admission pass this pass runs strictly after
+			// would already have refused (D-08-12); nothing new to report.
+			continue
+		}
+		summary, _ := summaries.lookup(callOperation.CalleeID)
+		diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, callOperation, summary.returnMode, spanByOperationID))
+	}
+	return diagnostics
+}
+
+// interproceduralLoanLivenessDiagnostic builds the
+// check.interprocedural_loan_liveness refusal ratified at this plan's Task 1
+// checkpoint: exactly three causes in the fixed role order
+// borrow_created_here / loan_extended_by_call / callee_return_contract
+// (D-08-23), Primary is the offending OpMove's own span (D-08-22), and
+// Repairs is nil (D-08-25) -- diagnostic.Error, never ErrorWithRepairs.
+func interproceduralLoanLivenessDiagnostic(move, borrow, call core.LinearOperation, returnMode string, spanByOperationID map[string]diagnostic.Span) diagnostic.Diagnostic {
+	borrowSpan := spanByOperationID[borrow.ID]
+	callSpan := spanByOperationID[call.ID]
+	causes := []diagnostic.Cause{
+		{Kind: "borrow_created_here", Span: &borrowSpan},
+		{Kind: "loan_extended_by_call", Span: &callSpan, Detail: call.CalleeID},
+		{Kind: "callee_return_contract", Detail: fmt.Sprintf("%s:return.mode=%s", call.CalleeID, returnMode)},
+	}
+	primary := spanByOperationID[move.ID]
+	return diagnostic.Error(
+		"check.interprocedural_loan_liveness", primary,
+		"cannot transfer ownership while an interprocedurally-extended loan is still live", causes...,
+	)
 }
 
 // checkCallArgumentTypeMismatch is 07-09's ratified check-side code for a
@@ -959,7 +1228,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	// itself is general (see materializeLoanEndpoints's own multi-successor
 	// test coverage in check_test.go).
 	cfgBlocks := append(append([]cfgBlockSpec(nil), armCFGBlocks...), cfgBlockSpec{id: joinBlockID, successors: nil})
-	fixpoint, err := loanLivenessFixpoint(functionID, cfgBlocks)
+	fixpoint, err := loanLivenessFixpoint(functionID, cfgBlocks, interproceduralSummaryTable{})
 	if err != nil {
 		diagnostics = append(diagnostics, diagnostic.Error("check.cfg_back_edge", function.Body.Span, err.Error()))
 		return core.Function{}, diagnostics, work, nil
@@ -970,7 +1239,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		}
 		return fmt.Sprintf("%s:edge:%s:%s", functionID, fromBlockID, toBlockID)
 	}
-	linear.LoanEndpoints = materializeLoanEndpoints(functionID, cfgBlocks, edgeIDLookup, fixpoint)
+	linear.LoanEndpoints = materializeLoanEndpoints(functionID, cfgBlocks, edgeIDLookup, fixpoint, interproceduralSummaryTable{})
 	work += fixpoint.work
 
 	return core.Function{
@@ -1044,20 +1313,57 @@ type loanLivenessResult struct {
 type placeLoanChain struct {
 	latestLoan map[string]string
 	parentLoan map[string]string
+	// borrowOperation and extendedByCall are Task 2's D-08-20..25 bookkeeping
+	// for the interprocedural loan-liveness refusal: every other consumer of
+	// placeLoanChain (materializeLoanEndpoints, computeLoanLastUses' shadow
+	// path, blockLoanLiveness) ignores both fields, so their cost is confined
+	// to checkInterproceduralLoanLiveness/interproceduralLoanLivenessDiagnostic.
+	borrowOperation map[string]core.LinearOperation // loanID -> the OpBorrowShared/OpBorrowExclusive operation that created it (cause 1's span source)
+	extendedByCall  map[string]core.LinearOperation // loanID -> the OpCall operation whose interprocedural summary propagated it past a call boundary (absent if the loan was never call-extended)
 }
 
-func derivePlaceLoans(operations []core.LinearOperation) placeLoanChain {
+// derivePlaceLoans is D-08-07's FORWARD canonicalization pass: the
+// interprocedural alias fact (an OpCall whose callee summary reports
+// returnsBorrowOfParam) is established HERE, in this forward scan, never in
+// blockLoanLiveness's backward transfer function (08-CONTEXT.md D-08-07;
+// spike S-006 iteration 2 got this wrong and every accept-case test still
+// passed). summaries' zero value (interproceduralSummaryTable{}) means "no
+// interprocedural facts" -- every pre-Phase-08 call site passes it
+// unchanged, reproducing today's behaviour exactly.
+func derivePlaceLoans(operations []core.LinearOperation, summaries interproceduralSummaryTable) placeLoanChain {
 	chain := placeLoanChain{
-		latestLoan: make(map[string]string, len(operations)),
-		parentLoan: make(map[string]string, len(operations)),
+		latestLoan:      make(map[string]string, len(operations)),
+		parentLoan:      make(map[string]string, len(operations)),
+		borrowOperation: make(map[string]core.LinearOperation, len(operations)),
+		extendedByCall:  make(map[string]core.LinearOperation, len(operations)),
 	}
 	for _, operation := range operations {
 		inherited := chain.latestLoan[operation.SourceID]
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			chain.parentLoan[operation.LoanID] = inherited
+			chain.borrowOperation[operation.LoanID] = operation
 			if operation.TargetID != "" {
 				chain.latestLoan[operation.TargetID] = operation.LoanID
 			}
+			continue
+		}
+		if operation.Kind == core.OpCall {
+			if summary, ok := summaries.lookup(operation.CalleeID); ok && summary.returnsBorrowOfParam {
+				chain.latestLoan[operation.TargetID] = chain.latestLoan[operation.SourceID]
+				if inherited != "" {
+					chain.extendedByCall[inherited] = operation
+				}
+				continue
+			}
+			// The callee is absent from the table or does not report
+			// returnsBorrowOfParam (Mode == "owned"): give the call's result
+			// a fresh identity by explicitly refusing to propagate. This
+			// `continue` is load-bearing -- the generic inherit fallthrough
+			// below already propagates `inherited` for an OpCall today, so
+			// omitting this false-direction arm would leave that
+			// over-approximation in place and the safe twin would never
+			// admit (D-08-07 Task 2).
+			delete(chain.latestLoan, operation.TargetID)
 			continue
 		}
 		if inherited != "" && operation.TargetID != "" {
@@ -1093,7 +1399,13 @@ type loanBlockUse struct {
 // (the Θ(N²) shape this pass replaces) would show up here as work growing
 // faster than operation count, which TestReborrowChainWorkIsLinear asserts
 // directly against.
-func blockLoanLiveness(operations []core.LinearOperation, chain placeLoanChain, liveOut map[string]bool) ([]loanBlockUse, map[string]bool, int) {
+//
+// summaries is threaded through for signature consistency with
+// derivePlaceLoans and loanLivenessFixpoint (D-08-07 Task 2); this transfer
+// function itself needs no interprocedural fact of its own this task --
+// every reference this function walks already resolves through chain,
+// which derivePlaceLoans has already made summary-aware.
+func blockLoanLiveness(operations []core.LinearOperation, chain placeLoanChain, liveOut map[string]bool, summaries interproceduralSummaryTable) ([]loanBlockUse, map[string]bool, int) {
 	live := make(map[string]bool, len(liveOut))
 	for loan := range liveOut {
 		live[loan] = true
@@ -1139,7 +1451,7 @@ func loanSetsEqual(a, b map[string]bool) bool {
 // successor ID must resolve to a block in the same slice. A cycle (a block
 // reachable from itself by following successors) is rejected fail-closed --
 // OWN-03 is scoped to acyclic CFGs this phase (T-03-11).
-func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec) (loanLivenessResult, error) {
+func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec, summaries interproceduralSummaryTable) (loanLivenessResult, error) {
 	byID := make(map[string]cfgBlockSpec, len(blocks))
 	order := make([]string, 0, len(blocks))
 	var allOps []core.LinearOperation
@@ -1148,7 +1460,7 @@ func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec) (loanLivenes
 		order = append(order, block.id)
 		allOps = append(allOps, block.operations...)
 	}
-	placeLoan := derivePlaceLoans(allOps)
+	placeLoan := derivePlaceLoans(allOps, summaries)
 
 	const (
 		unvisited = 0
@@ -1211,7 +1523,7 @@ func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec) (loanLivenes
 				liveOut[loan] = true
 			}
 		}
-		_, newLiveIn, transferWork := blockLoanLiveness(block.operations, placeLoan, liveOut)
+		_, newLiveIn, transferWork := blockLoanLiveness(block.operations, placeLoan, liveOut, summaries)
 		work += transferWork
 		if !loanSetsEqual(liveIn[id], newLiveIn) {
 			liveIn[id] = newLiveIn
@@ -1252,12 +1564,12 @@ func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec) (loanLivenes
 // before a real fan-out, which today's arm-body lowering does not yet
 // produce from real source (D-10; proven possible in the general case by
 // TestEdgeSpecificLiveOut).
-func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID func(fromBlockID, toBlockID string) string, result loanLivenessResult) []core.LoanEndpoint {
+func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID func(fromBlockID, toBlockID string) string, result loanLivenessResult, summaries interproceduralSummaryTable) []core.LoanEndpoint {
 	var placeLoanAll []core.LinearOperation
 	for _, block := range blocks {
 		placeLoanAll = append(placeLoanAll, block.operations...)
 	}
-	placeLoan := derivePlaceLoans(placeLoanAll)
+	placeLoan := derivePlaceLoans(placeLoanAll, summaries)
 
 	var endpoints []core.LoanEndpoint
 	for _, block := range blocks {
@@ -1282,7 +1594,7 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 			}
 		}
 
-		uses, _, _ := blockLoanLiveness(block.operations, placeLoan, liveOut)
+		uses, _, _ := blockLoanLiveness(block.operations, placeLoan, liveOut, summaries)
 		for _, use := range uses {
 			if liveOut[use.loanID] {
 				continue // survives past this block; its endpoint lives elsewhere
@@ -1512,10 +1824,22 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 		}
 		result.Places = append(result.Places, target)
 		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
-		result.Operations = append(result.Operations, core.LinearOperation{
+		operation := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
 			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanID(loan), TypeID: source.place.TypeID,
-		})
+		}
+		result.Operations = append(result.Operations, operation)
+		// D-08-22: widen the SAME program-wide span channel D-07-35 built for
+		// call spans to also carry every take/borrow/borrow_mut operation's
+		// own span, so Task 2's interprocedural loan-liveness diagnostic can
+		// project its Primary (the offending take) and cause 1
+		// (borrow_created_here) spans from spanByOperationID exactly as
+		// checkCallGraphAcyclic already does for call spans -- never a
+		// second span-carrying channel.
+		if result.CallSpans == nil {
+			result.CallSpans = map[string]diagnostic.Span{}
+		}
+		result.CallSpans[operation.ID] = binding.RHS.Span
 		endLoans(index)
 		result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 	}
@@ -2723,10 +3047,16 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 		}
 		result.Places = append(result.Places, target)
 		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
-		result.Operations = append(result.Operations, core.LinearOperation{
+		operation := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index),
 			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanID(loan), TypeID: source.place.TypeID,
-		})
+		}
+		result.Operations = append(result.Operations, operation)
+		// D-08-22: see analyzeArmBody's identical span-widening comment.
+		if result.CallSpans == nil {
+			result.CallSpans = map[string]diagnostic.Span{}
+		}
+		result.CallSpans[operation.ID] = binding.RHS.Span
 		endLoans(index)
 		result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 	}
@@ -2870,12 +3200,12 @@ const (
 // computeLoanLastUses' own single-block construction.
 func aliasFactEndpoints(functionID string, operations []core.LinearOperation) ([]core.LoanEndpoint, int) {
 	block := cfgBlockSpec{id: functionID + ":block:straight", operations: operations, successors: nil}
-	fixpoint, err := loanLivenessFixpoint(functionID, []cfgBlockSpec{block})
+	fixpoint, err := loanLivenessFixpoint(functionID, []cfgBlockSpec{block}, interproceduralSummaryTable{})
 	if err != nil {
 		return nil, 0
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }
-	endpoints := materializeLoanEndpoints(functionID, []cfgBlockSpec{block}, edgeID, fixpoint)
+	endpoints := materializeLoanEndpoints(functionID, []cfgBlockSpec{block}, edgeID, fixpoint, interproceduralSummaryTable{})
 	return endpoints, fixpoint.work
 }
 
@@ -3025,12 +3355,12 @@ func computeLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]lo
 	blockID := "shadow:block:straight"
 	block := cfgBlockSpec{id: blockID, operations: operations, successors: nil}
 	uses := make(map[int]loanUse, len(loanIndexByLoanID))
-	fixpoint, err := loanLivenessFixpoint("shadow", []cfgBlockSpec{block})
+	fixpoint, err := loanLivenessFixpoint("shadow", []cfgBlockSpec{block}, interproceduralSummaryTable{})
 	if err != nil {
 		return uses, 0
 	}
 	edgeID := func(from, to string) string { return from + "->" + to }
-	endpoints := materializeLoanEndpoints("shadow", []cfgBlockSpec{block}, edgeID, fixpoint)
+	endpoints := materializeLoanEndpoints("shadow", []cfgBlockSpec{block}, edgeID, fixpoint, interproceduralSummaryTable{})
 
 	operationIndexByID := make(map[string]int, len(operations))
 	for opIndex, operation := range operations {

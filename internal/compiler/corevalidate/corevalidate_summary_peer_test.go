@@ -249,8 +249,18 @@ func TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed(t *
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
-	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("expected check to admit the fixture (the D-03-02 finding), got %+v", checked.Diagnostics)
+	// Phase 08 closes the interprocedural half of D-03-02: check now
+	// independently refuses this fixture via
+	// check.interprocedural_loan_liveness (TestRelayEscortWitnessRefusesInterproceduralLiveness,
+	// check package). check never clears result.Program on this refusal
+	// (unlike the call-graph-cycle gate), so checked.Program is still the
+	// real checked core.Program below -- corevalidate's OWN, independently
+	// written peer (peerJoinForeignReach-style re-derivation, never a
+	// shared helper) must still refuse it too, via a DIFFERENT code
+	// (core.move_while_borrowed), proving the two derivations agree without
+	// sharing logic.
+	if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+		t.Fatalf("expected check to refuse via check.interprocedural_loan_liveness only, got %+v", checked.Diagnostics)
 	}
 	if checked.Program.Module != relayEscortWitnessModule {
 		t.Fatalf("expected module %s, got %s", relayEscortWitnessModule, checked.Program.Module)

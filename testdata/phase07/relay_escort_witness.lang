@@ -30,23 +30,27 @@
 // `phase07.relay_escort_witness` module namespace since calls resolve only
 // within a single parsed program, D-07-01).
 //
-// D-07-44 (finding, not failure): this witness checks CLEAN under Phase
-// 07's rules. `check`'s own loan-liveness law (computeLoanLastUses) builds
-// its shadow use-chain from each binding's RHS.Source; a "call" binding
-// carries RHS.Arguments, not RHS.Source, so the call at
-// `let aliased = relay(borrowed)` is invisible to that chain as a use of
-// `borrowed` -- the exclusive loan on `buffer` is treated as ending at its
-// own creation point, with no visible use surviving into or past the call.
-// `take buffer` on the next line therefore sees no active loan and is
-// admitted, even though `aliased` (the call's own return, standing in for
-// the borrowed view `relay` actually returns) remains live afterward. This
-// is exactly the INTERPROCEDURAL half of D-03-02 -- calls do not yet
-// propagate loan liveness across the function boundary -- and it stays
-// open until Phase 08/09's interprocedural loan-liveness work closes it
-// (D-03-02, D-05-32/D-05-33). The clean outcome is asserted explicitly
-// below by `TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness`
-// (check_test.go) precisely so a future phase's change to this behavior is
-// visible, never silently re-broken or silently re-fixed.
+// D-07-44 (finding, historical): this witness USED TO check CLEAN under
+// Phase 07's rules alone. `check`'s intraprocedural loan-liveness law
+// (computeLoanLastUses) builds its shadow use-chain from each binding's
+// RHS.Source; a "call" binding carries RHS.Arguments, not RHS.Source, so
+// the call at `let aliased = relay(borrowed)` was invisible to that chain
+// as a use of `borrowed` -- the exclusive loan on `buffer` was treated as
+// ending at its own creation point, with no visible use surviving into or
+// past the call, and `take buffer` on the next line was admitted even
+// though `aliased` (the call's own return, standing in for the borrowed
+// view `relay` actually returns) remained live afterward. This was the
+// INTERPROCEDURAL half of D-03-02.
+//
+// CLOSED in Phase 08: `derivePlaceLoans`'s forward canonicalization pass
+// (D-08-07) now consults `relay`'s declared return contract
+// (`-> borrow mut(buffer) Buffer`, Mode == "exclusive") via the in-memory
+// interprocedural summary table, and propagates `buffer`'s loan across the
+// OpCall boundary onto `aliased`. `take buffer` is now refused with
+// `check.interprocedural_loan_liveness`, asserted explicitly by
+// `TestRelayEscortWitnessRefusesInterproceduralLiveness` (check_test.go),
+// which replaces the retired
+// `TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness`.
 //
 // The pre-existing `fn relay` in testdata/phase3/shared_shared_accept.lang
 // (module owned.shared_shared_accept) is a DIFFERENT fixture: an owned
