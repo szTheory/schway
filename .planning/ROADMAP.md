@@ -427,7 +427,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 09-03-PLAN.md — OWN-08: the peer re-derives all four `PublishProblemsFor` classes; D-03-02 closed in both admission layers
+- [x] 09-03-PLAN.md — OWN-08: the peer re-derives all four `PublishProblemsFor` classes; D-03-02 closed in both admission layers
 - [ ] 09-04-PLAN.md — TRU-04 shapes: the synthetic-shape zero-divergence differential and the cycle-peer differential with witness agreement
 - [ ] 09-05-PLAN.md — OWN-05: call-site transfer has one meaning; override non-expressible in source and fail-closed in core
 
