@@ -1,0 +1,41 @@
+// Phase 08 Task 1 -- Pattern B (UsesParam), ACCEPTING member.
+// Twin of twin_b_refuse.lang: escort's own body is byte-identical to the
+// refusing member (verified by TestInterproceduralTwinPairsDifferOnlyInTheCallee).
+// probe declares the IDENTICAL signature (`fn probe(buffer: Buffer) ->
+// Buffer`) and differs from the refusing member ONLY in its body: here probe
+// never touches its own parameter beyond forwarding it to its own return
+// (`taken = take buffer; taken`) -- deriveFunctionUsesParam's own
+// leaf-forwards-to-its-own-return exemption (D-08-01) means probe's
+// `usesParam` bit is false.
+//
+// At the checked-core level (08-02's TestInterproceduralLivenessTwinPatternB,
+// extended by this plan against this exact fixture), the backward D-08-08
+// gate stays CLOSED for a non-using callee: the earlier `take buffer` is
+// admitted, contract-driven, not shape-driven.
+//
+// See twin_b_refuse.lang's header for the full, load-bearing explanation of
+// why the real ast.Program -> check.Program pipeline cannot observe this
+// contract-driven difference end to end for either member of this pair: the
+// caller's own `borrow; move; call` shape is refused INTRAPROCEDURALLY
+// (ownership.move_while_borrowed) for BOTH members alike, before the
+// interprocedural pass this plan's fixtures exist to exercise ever runs --
+// computeLoanLastUses' AST-shadow path is summary-blind by construction
+// (08-02's own documented finding), not a defect newly introduced here.
+
+module phase08.twin_b_accept
+
+export {
+  fn escort
+}
+
+fn probe(buffer: Buffer) -> Buffer {
+  let taken = take buffer
+  taken
+}
+
+fn escort(buffer: Buffer) -> Buffer {
+  let borrowed = borrow buffer
+  let delivered = take buffer
+  let observed = probe(borrowed)
+  observed
+}

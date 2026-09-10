@@ -4326,3 +4326,166 @@ func TestCallArgumentConsumeOverRefusalMutationKilled(t *testing.T) {
 		t.Fatalf("expected the Byte double-call to check clean once the seam is disengaged, got %+v", restored.Diagnostics)
 	}
 }
+
+// ---------------------------------------------------------------------
+// Phase 08 Task 1 (08-03): the real .lang twin corpus and the harness that
+// enforces the twin discipline.
+// ---------------------------------------------------------------------
+
+// readPhase08Fixture reads a testdata/phase08 fixture, mirroring
+// readPhase07Fixture exactly.
+func readPhase08Fixture(t *testing.T, name string) []byte {
+	t.Helper()
+	source, err := os.ReadFile("../../../testdata/phase08/" + name)
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", name, err)
+	}
+	return source
+}
+
+// callerLinearBody locates and returns the named function's own
+// ast.LinearBody within parsed -- the fixed caller-identity witness
+// TestInterproceduralTwinPairsDifferOnlyInTheCallee compares between twin
+// members.
+func callerLinearBody(t *testing.T, parsed ast.Program, name string) *ast.LinearBody {
+	t.Helper()
+	for _, function := range parsed.Funcs {
+		if function.Name == name && function.Body.Linear != nil {
+			return function.Body.Linear
+		}
+	}
+	t.Fatalf("expected a linear-bodied function named %q", name)
+	return nil
+}
+
+// stringSlicesEqual is assertIdenticalCallerBodies' own small element-wise
+// comparison for RHS.Arguments -- reflect.DeepEqual would also work, but an
+// explicit loop keeps the failure message's own comparison logic legible
+// without importing reflect just for this one call site.
+func stringSlicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// assertIdenticalCallerBodies is T-08-09's mitigation, mechanically
+// enforced: the two members of a twin pair must differ ONLY in the callee's
+// own declaration/body, never in the CALLER's own shape -- a caller-varying
+// pair would pass with the interprocedural law entirely deleted, since the
+// existing intraprocedural ownership.* law already refuses same-function
+// violations (08-CONTEXT.md's single most actionable finding). Compares
+// binding count, then each binding's Name/RHS.Kind/RHS.Source/RHS.Callee/
+// RHS.Arguments (never RHS.Span, which legitimately differs since the two
+// members are different source files), then the body's own Result.
+func assertIdenticalCallerBodies(t *testing.T, pairName string, a, b *ast.LinearBody) {
+	t.Helper()
+	if len(a.Bindings) != len(b.Bindings) {
+		t.Fatalf("%s: caller binding count differs: %d vs %d", pairName, len(a.Bindings), len(b.Bindings))
+	}
+	for i := range a.Bindings {
+		left, right := a.Bindings[i], b.Bindings[i]
+		if left.Name != right.Name {
+			t.Fatalf("%s: binding %d name differs: %q vs %q", pairName, i, left.Name, right.Name)
+		}
+		if left.RHS.Kind != right.RHS.Kind {
+			t.Fatalf("%s: binding %d RHS.Kind differs: %q vs %q", pairName, i, left.RHS.Kind, right.RHS.Kind)
+		}
+		if left.RHS.Source != right.RHS.Source {
+			t.Fatalf("%s: binding %d RHS.Source differs: %q vs %q", pairName, i, left.RHS.Source, right.RHS.Source)
+		}
+		if left.RHS.Callee != right.RHS.Callee {
+			t.Fatalf("%s: binding %d RHS.Callee differs: %q vs %q", pairName, i, left.RHS.Callee, right.RHS.Callee)
+		}
+		if !stringSlicesEqual(left.RHS.Arguments, right.RHS.Arguments) {
+			t.Fatalf("%s: binding %d RHS.Arguments differs: %v vs %v", pairName, i, left.RHS.Arguments, right.RHS.Arguments)
+		}
+	}
+	if a.Result != b.Result {
+		t.Fatalf("%s: caller Result differs: %q vs %q", pairName, a.Result, b.Result)
+	}
+}
+
+// TestInterproceduralTwinPairsDifferOnlyInTheCallee is Task 1's mechanical
+// enforcement of the twin discipline (T-08-09): for both real .lang twin
+// pairs, the CALLER function's own ast.LinearBody is structurally identical
+// between members. A pair whose caller varies fails this test, which is
+// exactly the falsifier that stops a caller-varying (decorative) pair from
+// silently passing.
+func TestInterproceduralTwinPairsDifferOnlyInTheCallee(t *testing.T) {
+	pairs := []struct {
+		name, refuse, accept, caller string
+	}{
+		{"pattern A", "twin_a_refuse.lang", "twin_a_accept.lang", "escort"},
+		{"pattern B", "twin_b_refuse.lang", "twin_b_accept.lang", "escort"},
+	}
+	for _, pair := range pairs {
+		t.Run(pair.name, func(t *testing.T) {
+			refuseParsed := mustParseProgram(t, readPhase08Fixture(t, pair.refuse))
+			acceptParsed := mustParseProgram(t, readPhase08Fixture(t, pair.accept))
+			refuseCaller := callerLinearBody(t, refuseParsed, pair.caller)
+			acceptCaller := callerLinearBody(t, acceptParsed, pair.caller)
+			assertIdenticalCallerBodies(t, pair.name, refuseCaller, acceptCaller)
+		})
+	}
+}
+
+// TestInterproceduralLivenessTwinPatternA drives twin_a_refuse.lang and
+// twin_a_accept.lang through the real ast.Program -> check.Program
+// pipeline: the refusing member produces exactly one diagnostic with code
+// check.interprocedural_loan_liveness; the accepting member produces zero
+// diagnostics (package check alone -- see twin_a_accept.lang's own header
+// for the separate, documented corevalidate residual this test does not
+// claim to resolve).
+func TestInterproceduralLivenessTwinPatternA(t *testing.T) {
+	refuseSource := readPhase08Fixture(t, "twin_a_refuse.lang")
+	refuseResult := Program(mustParseProgram(t, refuseSource))
+	if len(refuseResult.Diagnostics) != 1 || refuseResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+		t.Fatalf("expected exactly one check.interprocedural_loan_liveness diagnostic for twin_a_refuse.lang, got %+v", refuseResult.Diagnostics)
+	}
+
+	acceptSource := readPhase08Fixture(t, "twin_a_accept.lang")
+	acceptResult := Program(mustParseProgram(t, acceptSource))
+	if len(acceptResult.Diagnostics) != 0 {
+		t.Fatalf("expected zero diagnostics for twin_a_accept.lang, got %+v", acceptResult.Diagnostics)
+	}
+}
+
+// TestInterproceduralLivenessTwinPatternBRealFixtures extends 08-02's own
+// synthetic-core.Program twin (TestInterproceduralLivenessTwinPatternB
+// above) to also drive the real twin_b_refuse.lang/twin_b_accept.lang
+// fixtures landed by this plan. See both fixtures' own headers for the full
+// explanation: the caller's `borrow; move; call` shape is refused
+// INTRAPROCEDURALLY (ownership.move_while_borrowed), identically for BOTH
+// members, by computeLoanLastUses' summary-blind AST-shadow admission path
+// -- before check's own interprocedural pass (the one under test) ever
+// runs. This is 08-02's own documented, carried-forward finding
+// (08-02-SUMMARY.md, "Next Phase Readiness"), not a defect newly
+// discovered here. This test asserts the TRUE, empirically-verified
+// end-to-end verdict for each real fixture (both refuse identically at the
+// intraprocedural layer) -- the CONTRACT-DRIVEN differentiation Pattern B's
+// law actually performs is proven at the checked-core level by
+// TestInterproceduralLivenessTwinPatternB above, against a REAL
+// interprocedural summary table.
+func TestInterproceduralLivenessTwinPatternBRealFixtures(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		want string
+	}{
+		{"twin_b_refuse.lang", "ownership.move_while_borrowed"},
+		{"twin_b_accept.lang", "ownership.move_while_borrowed"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := readPhase08Fixture(t, tc.name)
+			result := Program(mustParseProgram(t, source))
+			if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != tc.want {
+				t.Fatalf("expected exactly one %s diagnostic, got %+v", tc.want, result.Diagnostics)
+			}
+		})
+	}
+}

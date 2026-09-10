@@ -1,0 +1,47 @@
+// Phase 08 Task 1 -- Pattern A (ReturnsBorrowOfParam), ACCEPTING member.
+// Twin of twin_a_refuse.lang: escort's own body is byte-identical to the
+// refusing member (verified by TestInterproceduralTwinPairsDifferOnlyInTheCallee).
+// The ONE thing that differs is escortee's DECLARED return type: here,
+// `-> Buffer` (an ordinary owned return, body `let taken = take buffer;
+// taken`), giving `core.FunctionSignature.Return.Mode == "owned"` and
+// `returnsBorrowOfParam == false` in the interprocedural summary table --
+// derivePlaceLoans' OpCall branch therefore does NOT propagate buffer's loan
+// across the call boundary onto `aliased`, and `check.Program` (package
+// check alone) admits this program with zero diagnostics: the refusal above
+// is contract-driven, not shape-driven (must_haves backstop truth), proven by
+// TestInterproceduralLivenessTwinPatternA against this exact fixture pair.
+//
+// KNOWN RESIDUAL (recorded in 08-03-SUMMARY.md's Deviations, NOT fixed here
+// -- out of this plan's file scope and Phase 09's own charter, D-03-02's
+// interprocedural peer half): running this fixture through the full `lang
+// check` CLI additionally consults corevalidate.Validate as a peer once
+// `check` itself passes (session.CheckCommandFile's fixed precedence,
+// 07-10). corevalidate's own loan-liveness re-derivation
+// (loanChainIndex.carriedLoans) sets `parent[operation.TargetID] =
+// operation.SourceID` for EVERY operation kind, including OpCall -- so
+// `aliased` (the call's own target) is treated as carrying buffer's loan
+// forever, regardless of what escortee's own declared contract says.
+// corevalidate therefore ALSO refuses this fixture (core.move_while_borrowed),
+// even though `check`'s own interprocedural law -- the one Phase 08 builds --
+// correctly admits it. This is corevalidate's still-intraprocedural
+// summary-blindness (unmodified this phase, explicitly Phase 09's charter:
+// "peer re-derivation and D-03-02 closure"), not a defect in this fixture or
+// in the interprocedural law under test.
+
+module phase08.twin_a_accept
+
+export {
+  fn escort
+}
+
+fn escortee(buffer: Buffer) -> Buffer {
+  let taken = take buffer
+  taken
+}
+
+fn escort(buffer: Buffer) -> Buffer {
+  let borrowed = borrow buffer
+  let aliased = escortee(borrowed)
+  let delivered = take buffer
+  aliased
+}
