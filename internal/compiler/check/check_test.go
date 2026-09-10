@@ -2573,6 +2573,175 @@ fn escort(buffer: Buffer) -> Buffer {
 	}
 }
 
+// ---------------------------------------------------------------------
+// Phase 08 Task 1 (08-02): deriveFunctionUsesParam / buildInterproceduralSummaries.
+// ---------------------------------------------------------------------
+
+// TestDeriveFunctionUsesParamBehaviors is 08-02 Task 1's table-driven
+// coverage of every case named in the task's own <behavior> block, each
+// exercised directly against deriveFunctionUsesParam (never through the
+// full ast.Program pipeline, since this is a pure core-level derivation).
+func TestDeriveFunctionUsesParamBehaviors(t *testing.T) {
+	parameter := core.Parameter{ID: "fn:place:0", Name: "value", Type: "Byte"}
+	cases := []struct {
+		name       string
+		operations []core.LinearOperation
+		summaries  interproceduralSummaryTable
+		want       bool
+	}{
+		{
+			name: "a leaf function whose body reads its parameter",
+			operations: []core.LinearOperation{
+				{ID: "op:0", Kind: core.OpCopy, SourceID: "fn:place:0", TargetID: "fn:place:1"},
+				{ID: "op:1", Kind: core.OpReturn, SourceID: "fn:place:1"},
+			},
+			want: true,
+		},
+		{
+			name: "a leaf function whose body only forwards its parameter to its own return",
+			operations: []core.LinearOperation{
+				{ID: "op:0", Kind: core.OpReturn, SourceID: "fn:place:0"},
+			},
+			want: false,
+		},
+		{
+			name: "a relay whose only parameter contact is passing it to a usesParam callee",
+			operations: []core.LinearOperation{
+				{ID: "op:0", Kind: core.OpCall, SourceID: "fn:place:0", TargetID: "fn:place:1", CalleeID: "fn:leaf"},
+				{ID: "op:1", Kind: core.OpReturn, SourceID: "fn:place:1"},
+			},
+			summaries: interproceduralSummaryTable{summaries: map[string]interproceduralSummary{"fn:leaf": {usesParam: true}}},
+			want:      true,
+		},
+		{
+			name: "the same relay pointed at a non-usesParam callee",
+			operations: []core.LinearOperation{
+				{ID: "op:0", Kind: core.OpCall, SourceID: "fn:place:0", TargetID: "fn:place:1", CalleeID: "fn:leaf"},
+				{ID: "op:1", Kind: core.OpReturn, SourceID: "fn:place:1"},
+			},
+			summaries: interproceduralSummaryTable{summaries: map[string]interproceduralSummary{"fn:leaf": {usesParam: false}}},
+			want:      false,
+		},
+		{
+			name: "a call to a callee absent from summaries counts as usesParam (refusing direction)",
+			operations: []core.LinearOperation{
+				{ID: "op:0", Kind: core.OpCall, SourceID: "fn:place:0", TargetID: "fn:place:1", CalleeID: "fn:absent"},
+				{ID: "op:1", Kind: core.OpReturn, SourceID: "fn:place:1"},
+			},
+			summaries: interproceduralSummaryTable{},
+			want:      true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			function := core.Function{
+				ID: "fn:under_test", Name: "under_test", Parameter: parameter,
+				Linear: &core.LinearBody{ID: "fn:linear", Operations: tc.operations},
+			}
+			got, work := deriveFunctionUsesParam(function, tc.summaries)
+			if got != tc.want {
+				t.Fatalf("usesParam = %v, want %v", got, tc.want)
+			}
+			if work <= 0 {
+				t.Fatalf("expected positive counted work, got %d", work)
+			}
+		})
+	}
+}
+
+// TestSummaryDerivationTwoHopChainPropagates is 08-02 Task 1's three-deep
+// chain case: caller -> relay -> leaf, where only the leaf's body genuinely
+// reads its own parameter. Asserts buildInterproceduralSummaries' own
+// callee-before-caller traversal lets the leaf's bit propagate all the way
+// to the caller in one build.
+func TestSummaryDerivationTwoHopChainPropagates(t *testing.T) {
+	leaf := core.Function{
+		ID: "fn:leaf", Name: "leaf", Parameter: core.Parameter{ID: "leaf:place:0", Name: "v", Type: "Byte"},
+		Linear: &core.LinearBody{ID: "leaf:linear", Operations: []core.LinearOperation{
+			{ID: "leaf:op:0", Kind: core.OpCopy, SourceID: "leaf:place:0", TargetID: "leaf:place:1"},
+			{ID: "leaf:op:1", Kind: core.OpReturn, SourceID: "leaf:place:1"},
+		}},
+	}
+	relay := core.Function{
+		ID: "fn:relay", Name: "relay", Parameter: core.Parameter{ID: "relay:place:0", Name: "v", Type: "Byte"},
+		Linear: &core.LinearBody{ID: "relay:linear", Operations: []core.LinearOperation{
+			{ID: "relay:op:0", Kind: core.OpCall, SourceID: "relay:place:0", TargetID: "relay:place:1", CalleeID: "fn:leaf"},
+			{ID: "relay:op:1", Kind: core.OpReturn, SourceID: "relay:place:1"},
+		}},
+	}
+	caller := core.Function{
+		ID: "fn:caller", Name: "caller", Parameter: core.Parameter{ID: "caller:place:0", Name: "v", Type: "Byte"},
+		Linear: &core.LinearBody{ID: "caller:linear", Operations: []core.LinearOperation{
+			{ID: "caller:op:0", Kind: core.OpCall, SourceID: "caller:place:0", TargetID: "caller:place:1", CalleeID: "fn:relay"},
+			{ID: "caller:op:1", Kind: core.OpReturn, SourceID: "caller:place:1"},
+		}},
+	}
+	program := core.Program{Functions: []core.Function{caller, relay, leaf}}
+	summaries, _ := buildInterproceduralSummaries(program, callSignatureTable{})
+	for id, want := range map[string]bool{"fn:leaf": true, "fn:relay": true, "fn:caller": true} {
+		summary, ok := summaries.lookup(id)
+		if !ok {
+			t.Fatalf("%s: expected a summary entry", id)
+		}
+		if summary.usesParam != want {
+			t.Fatalf("%s: usesParam = %v, want %v (the leaf's own bit must propagate through both hops)", id, summary.usesParam, want)
+		}
+	}
+}
+
+// TestSummaryDerivationIsOnePassPerFunction is 08-02 Task 1's own falsifier
+// for the one-derivation-per-function claim: a diamond call graph (one
+// caller, two relays, one shared leaf reached through BOTH relays) must
+// derive every function -- including the shared leaf -- exactly once,
+// instrumented via deriveFunctionUsesParamObserved rather than merely
+// asserted from the summary's own final content.
+func TestSummaryDerivationIsOnePassPerFunction(t *testing.T) {
+	leaf := core.Function{
+		ID: "fn:leaf", Name: "leaf", Parameter: core.Parameter{ID: "leaf:place:0", Name: "v", Type: "Byte"},
+		Linear: &core.LinearBody{ID: "leaf:linear", Operations: []core.LinearOperation{
+			{ID: "leaf:op:0", Kind: core.OpCopy, SourceID: "leaf:place:0", TargetID: "leaf:place:1"},
+			{ID: "leaf:op:1", Kind: core.OpReturn, SourceID: "leaf:place:1"},
+		}},
+	}
+	relay := func(id string) core.Function {
+		return core.Function{
+			ID: id, Name: id, Parameter: core.Parameter{ID: id + ":place:0", Name: "v", Type: "Byte"},
+			Linear: &core.LinearBody{ID: id + ":linear", Operations: []core.LinearOperation{
+				{ID: id + ":op:0", Kind: core.OpCall, SourceID: id + ":place:0", TargetID: id + ":place:1", CalleeID: "fn:leaf"},
+				{ID: id + ":op:1", Kind: core.OpReturn, SourceID: id + ":place:1"},
+			}},
+		}
+	}
+	relay1 := relay("fn:relay1")
+	relay2 := relay("fn:relay2")
+	caller := core.Function{
+		ID: "fn:caller", Name: "caller", Parameter: core.Parameter{ID: "caller:place:0", Name: "v", Type: "Byte"},
+		Linear: &core.LinearBody{ID: "caller:linear", Operations: []core.LinearOperation{
+			{ID: "caller:op:0", Kind: core.OpCall, SourceID: "caller:place:0", TargetID: "caller:place:1", CalleeID: "fn:relay1"},
+			{ID: "caller:op:1", Kind: core.OpCall, SourceID: "caller:place:1", TargetID: "caller:place:2", CalleeID: "fn:relay2"},
+			{ID: "caller:op:2", Kind: core.OpReturn, SourceID: "caller:place:2"},
+		}},
+	}
+	program := core.Program{Functions: []core.Function{caller, relay1, relay2, leaf}}
+
+	defer func() { deriveFunctionUsesParamObserved = nil }()
+	counts := map[string]int{}
+	deriveFunctionUsesParamObserved = func(functionID string) { counts[functionID]++ }
+
+	summaries, _ := buildInterproceduralSummaries(program, callSignatureTable{})
+	deriveFunctionUsesParamObserved = nil
+
+	for _, id := range []string{"fn:caller", "fn:relay1", "fn:relay2", "fn:leaf"} {
+		if counts[id] != 1 {
+			t.Fatalf("function %s was derived %d times, want exactly 1 (got %+v)", id, counts[id], counts)
+		}
+	}
+	callerSummary, ok := summaries.lookup("fn:caller")
+	if !ok || !callerSummary.usesParam {
+		t.Fatalf("expected fn:caller's usesParam to be true (transitive through both relays to the shared leaf), got %+v ok=%v", callerSummary, ok)
+	}
+}
+
 // TestRelayEscortWitnessBothFunctionsAreCallable independently confirms
 // (via originvalidate.PublishProblemsFor, not by re-deriving a second
 // predicate) that BOTH `relay` and `escort` are Callable -- the call this

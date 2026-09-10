@@ -497,8 +497,12 @@ func checkCallGraphAcyclic(program core.Program, spanByOperationID map[string]di
 // core.FunctionSignature -- which structurally carries no Linear/Match
 // field -- so consuming it can never reach a callee body (SEM-05, T-08-04).
 type interproceduralSummary struct {
-	// usesParam is 08-02's own derivation; left at its fail-closed zero
-	// value (false) by this plan.
+	// usesParam is 08-02's own derivation (D-08-01/D-08-02/D-08-03): true
+	// iff the function's own checked body reads through its parameter (or a
+	// place transitively derived from it) other than merely forwarding it
+	// to its own terminating OpReturn, OR calls a callee whose OWN usesParam
+	// is true (or is absent from summaries, the refusing direction) with a
+	// parameter-derived argument. See deriveFunctionUsesParam.
 	usesParam bool
 	// returnsBorrowOfParam is true iff the callee's declared
 	// core.FunctionSignature.Return.Mode is "shared" or "exclusive", false
@@ -510,6 +514,13 @@ type interproceduralSummary struct {
 	// (T-08-03): it is copied verbatim from the callee's DECLARED type, so
 	// disclosure reveals nothing about the callee's control flow.
 	returnMode string
+	// parameterMode is the callee's own declared
+	// core.FunctionSignature.Parameters[0].Mode string (08-02 Task 2),
+	// consulted ONLY to build the backward-direction third cause's Detail
+	// (<calleeID>:parameters[0].mode=<Mode>). Same disclosure-safety
+	// argument as returnMode: copied verbatim from the callee's DECLARED
+	// contract.
+	parameterMode string
 }
 
 // interproceduralSummaryTable is a same-package, read-only view over every
@@ -544,32 +555,168 @@ const TruncatedInterproceduralLoanBound = "check.interprocedural_loan_bound"
 
 // buildInterproceduralSummaries derives, for every declared function,
 // exactly one interproceduralSummary entry -- read from table's already-
-// published core.FunctionSignature, never from a callee body. It iterates
-// callgraph.Order(program)'s reverse postorder (callee before caller,
-// D-08-12) for a deterministic, one-derivation-per-function build. program
-// is, by the time check.Program calls this, already proven acyclic
-// (checkCallGraphAcyclic runs strictly before this); a callgraph.Order
-// failure here is therefore unreachable in production and is handled
-// defensively -- "no interprocedural facts" for every function -- rather
-// than by panicking.
+// published core.FunctionSignature for returnsBorrowOfParam/returnMode/
+// parameterMode, and from the function's OWN checked body (once, via
+// deriveFunctionUsesParam) for usesParam. program is, by the time
+// check.Program calls this, already proven acyclic (checkCallGraphAcyclic
+// runs strictly before this); a callgraph.Order failure here is therefore
+// unreachable in production and is handled defensively -- "no
+// interprocedural facts" for every function -- rather than by panicking.
+//
+// callgraph.Order's own doc comment names its result "reverse postorder",
+// but empirically (TestOrderSortsAdjacencyByCalleeID, and this package's
+// own TestSummaryDerivationIsOnePassPerFunction) that order lists a CALLER
+// before every function it calls -- the opposite of what D-08-03's
+// callee-before-caller transitivity requires: deriveFunctionUsesParam's
+// OpCall case reads summaries.lookup(calleeID) and needs that entry
+// ALREADY FINAL, which is only true if every callee has been derived
+// before its caller. This loop therefore walks callgraph.Order's result
+// BACKWARD (last-visited-first), which is the genuine callee-before-caller
+// traversal Phase 08 needs -- iterating Order's raw output forward here
+// would silently leave every transitive UsesParam bit false (or fail-safe
+// true only for the immediately-unresolved case), an entry-order bug this
+// package's own summary consumers would never surface as a build failure.
 func buildInterproceduralSummaries(program core.Program, table callSignatureTable) (interproceduralSummaryTable, int) {
+	if buildInterproceduralSummariesObserved != nil {
+		buildInterproceduralSummariesObserved()
+	}
 	summaries := make(map[string]interproceduralSummary, len(program.Functions))
+	result := interproceduralSummaryTable{summaries: summaries}
 	order, err := callgraph.Order(program)
 	if err != nil {
-		return interproceduralSummaryTable{summaries: summaries}, 0
+		return result, 0
+	}
+	functionByID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		functionByID[function.ID] = function
 	}
 	work := 0
-	for _, functionID := range order {
+	for i := len(order) - 1; i >= 0; i-- {
+		functionID := order[i]
 		work++
 		var summary interproceduralSummary
 		if signature, ok := table.lookup(functionID); ok {
 			summary.returnMode = signature.Return.Mode
 			summary.returnsBorrowOfParam = signature.Return.Mode == "shared" || signature.Return.Mode == "exclusive"
+			if len(signature.Parameters) > 0 {
+				summary.parameterMode = signature.Parameters[0].Mode
+			}
+		}
+		if function, ok := functionByID[functionID]; ok {
+			usesParam, usesWork := deriveFunctionUsesParam(function, result)
+			summary.usesParam = usesParam
+			work += usesWork
 		}
 		summaries[functionID] = summary
 	}
-	return interproceduralSummaryTable{summaries: summaries}, work
+	return result, work
 }
+
+// buildInterproceduralSummariesObserved is Task 3's D-08-12/D-08-37
+// ordering-instrumentation seam, mirroring callSignatureTableBuildObserved:
+// when non-nil, invoked once, synchronously, at the start of every
+// buildInterproceduralSummaries call -- before it does anything else -- so
+// a same-package test can prove a fresh memo is built on EVERY
+// check.Program invocation (never persisted or reused across calls). nil in
+// production: zero cost, zero allocation.
+var buildInterproceduralSummariesObserved func()
+
+// deriveFunctionUsesParam is 08-02 Task 1's own derivation (D-08-01/D-08-02):
+// whether function's checked body uses its own declared parameter, computed
+// exactly once here (never re-walked at a call site -- summaries is
+// consulted, never recursed into) and transitive through relays via
+// summaries, which by the time this runs already carries the FINAL entry
+// for every callee (buildInterproceduralSummaries' own callee-before-caller
+// traversal, D-08-03).
+//
+// Operations MUST be consumed in PROGRAM order for this to stay linear
+// (D-08-11): a place is added to the parameter-derived set the first time
+// an already-derived operation names it as a TARGET, so program order lets
+// every downstream operation see its own antecedent already derived by the
+// time the scan reaches it -- one full pass propagates the WHOLE chain, and
+// a second pass then confirms no further insertion is possible (a fixpoint
+// in exactly two passes). Reversed, an operation's antecedent has not yet
+// been derived when the scan first reaches it, so the propagation can only
+// advance by one additional place PER PASS -- O(n) passes of O(n) work
+// each, quadratic in body length. Spike S-006 iteration 5 measured this
+// directly: 4.0 work units per operation, flat from k=8 to k=512, in
+// program order, against 12.4 -> 767.0 per operation for the identical
+// chain listed in reverse -- a 192x penalty at k=512
+// (TestSummaryDerivationRequiresProgramOrder pins both halves of this
+// claim). This bound is inherited from today's emission order, not a
+// property of the mechanism: any future pass that reorders operations
+// before summary derivation hands the bound back.
+//
+// An operation whose SourceID is already parameter-derived counts as a USE
+// of the parameter when it is anything other than an OpCall or the
+// function's own terminating OpReturn (a plain read, or a read of
+// something derived from the parameter), or when it IS an OpCall whose
+// callee's own usesParam (via summaries.lookup) is true -- a callee absent
+// from summaries counts as usesParam == true, the refusing direction, never
+// the permitting one (an unresolved callee must never look "safer" than a
+// resolved one). A plain forward of the parameter to the function's own
+// OpReturn, with nothing else touching it, does NOT count as a use --
+// that's the leaf-forwards-to-its-own-return case D-08-01's own
+// over-approximation falsification names.
+//
+// Returns the derived bit and the total counted work: one unit per
+// operation inspected per pass, plus one unit per genuine new set
+// insertion -- honest, per-operation counting (D-05), never a flat
+// per-function unit, so a reintroduced re-walk shows up here as work
+// growing faster than operation count.
+func deriveFunctionUsesParam(function core.Function, summaries interproceduralSummaryTable) (bool, int) {
+	if deriveFunctionUsesParamObserved != nil {
+		deriveFunctionUsesParamObserved(function.ID)
+	}
+	if function.Linear == nil {
+		return false, 0
+	}
+	derived := make(map[string]bool, len(function.Linear.Operations)+1)
+	if function.Parameter.ID != "" {
+		derived[function.Parameter.ID] = true
+	}
+	usesParam := false
+	work := 0
+	for {
+		changed := false
+		for _, operation := range function.Linear.Operations {
+			work++ // one unit per operation inspected, every pass
+			if !derived[operation.SourceID] {
+				continue
+			}
+			switch operation.Kind {
+			case core.OpCall:
+				if summary, ok := summaries.lookup(operation.CalleeID); !ok || summary.usesParam {
+					usesParam = true
+				}
+			case core.OpReturn:
+				// A plain forward of a parameter-derived place to the
+				// function's own terminating return is not itself a use
+				// (D-08-01's leaf-forwards-to-its-own-return case).
+			default:
+				usesParam = true
+			}
+			if operation.TargetID != "" && !derived[operation.TargetID] {
+				derived[operation.TargetID] = true
+				work++ // one unit per genuine new set insertion
+				changed = true
+			}
+		}
+		if !changed {
+			break
+		}
+	}
+	return usesParam, work
+}
+
+// deriveFunctionUsesParamObserved is Task 1's own D-08-03 ordering
+// instrumentation seam: when non-nil, invoked once, synchronously, at the
+// start of every deriveFunctionUsesParam call, naming the function being
+// derived -- so a same-package test can prove each function is derived
+// EXACTLY ONCE per check.Program invocation regardless of how many callers
+// it has (a shared leaf reached through a diamond-shaped call graph, for
+// instance). nil in production: zero cost, zero allocation.
+var deriveFunctionUsesParamObserved func(functionID string)
 
 // cfgBlocksForFunction rebuilds the minimal []cfgBlockSpec shape
 // loanLivenessFixpoint/materializeLoanEndpoints consume from an already-
