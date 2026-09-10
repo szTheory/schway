@@ -365,7 +365,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 08-06-PLAN.md — The mandatory mid-phase gate, its adjudications, the cost bound ratified at the gate, and the liveness law declared final
+- [x] 08-06-PLAN.md — The mandatory mid-phase gate, its adjudications, the cost bound ratified at the gate, and the liveness law declared final
 
 ### Phase 09: Peer Re-Derivation and D-03-02 Closure
 
