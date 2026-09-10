@@ -213,9 +213,19 @@ func TestAttributeValidatorImportsStayIndependent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Phase 09 (D-09-05): also scan corevalidate_peer_liveness.go, the new
+	// sibling production file (D-09-04) -- never assume a new file is
+	// automatically covered by an existing literal-file-list scan.
+	peerLivenessSource, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "corevalidate", "corevalidate_peer_liveness.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, forbidden := range []string{"compiler/check", "compiler/cgen"} {
 		if strings.Contains(string(source), forbidden) {
 			t.Fatalf("corevalidate.go must never reference %s", forbidden)
+		}
+		if strings.Contains(string(peerLivenessSource), forbidden) {
+			t.Fatalf("corevalidate_peer_liveness.go must never reference %s", forbidden)
 		}
 	}
 }

@@ -3,7 +3,7 @@ phase: 09-peer-re-derivation-and-d-03-02-closure
 recorded: 2026-09-10
 status: accepted
 disposition: planning-time
-items: 13
+items: 14
 blocking: 0
 ---
 
@@ -43,6 +43,7 @@ name the superseded text so no future reader has to discover the change.
 | D-09-45 | 09-CONTEXT.md (D-09-45), 09-RESEARCH.md Pitfall 5 | QLT-01, OWN-07 | info | Phase 09 — plans 09-01 and 09-09 record the corrections; the spike-registry row closes opportunistically in 09-09 | STALE PLANNING-DOCUMENT REFERENCES, corrected here rather than left to mislead. (a) `08-CONTEXT.md`'s D-08-09 cites `computeLoanLastUses` at `check.go:2979`; it is at `check.go:3743`. (b) `08-CONTEXT.md`'s D-08-03 asserts `callgraph.Order` is callee-before-caller; it is caller-before-callee (already D-08-42). (c) An earlier revision of D-09-03 wrote the two retiring fixtures under `testdata/phase07/`; the shipped map keys are under `testdata/phase08/`. (d) D-08-43's `.planning/spikes` registry gap (spike 006 has a directory and no registry row, so `TestQLT01RegistryCoversAllFiveSpikes` fails) is still open and still un-owned; it is cheap to close while Phase 09 touches the spike table under D-09-39 and is recommended, not required |
 | D-09-46 | 09-CONTEXT.md (D-09-46), 09-RESEARCH.md Pitfall 3 | TRU-04 | info | Phase 09 — plan 09-02 Task 1 (Wave 0 prerequisite, blocks TRU-04's vehicle) | CORPUS-VISIBILITY PREREQUISITE. `generateCallGraphCorpus` is unexported inside `internal/compiler/check/costcorpus_test.go:50`, so Go's package-visibility rules make it structurally uncallable from any other package's test binary. D-09-23's "same generator, disjoint consumers" cannot be satisfied until it is made reachable. Resolution chosen at planning time: RELOCATE it (not duplicate it) to `internal/compiler/testsupport`, which imports only stdlib today and therefore cannot become a route by which `session` or `corevalidate` gains a production import of `check` |
 | D-09-50 | 09-PLAN planning pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | TRU-04 | warning | Phase 09 — plan 09-01 hosts the synthetic-shape differential; plan 09-07's gate reviews the split | D-09-23 prescribes feeding the synthetic call-graph shapes into `session_peer_gate_test.go`'s existing corpus-wide gate. VERIFIED AT PLANNING TIME THAT THIS IS NOT POSSIBLE AS WRITTEN: `check`'s only exported entry point is `check.Program(ast.Program)` (`check.go:46`), so no package outside `check` can compute a `check`-side verdict for a synthetically constructed `core.Program`. The `.lang` corpus gate therefore stays exactly where it is (and is where the two D-09-03 retirements are proven), while the SYNTHETIC-shape differential must live inside package `check`, which alone can reach both the unexported post-assembly pass and `corevalidate.Validate`. This is a split of VEHICLE, never of TRUTH: the synthetic differential must reuse the same both-directions exactness discipline and cross-reference `peerDivergenceExpected`'s doc comment, and must never define "divergence" a second way |
+| D-09-51 | 09-01 execution pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | OWN-07, TRU-04 | warning | Discovered plan 09-01; NOT landed there — out of that plan's file scope (`originvalidate.go` untouched); no landing phase yet named | NEWLY DISCOVERED, PREVIOUSLY-MASKED DEFECT in a THIRD validator. Once `buildLoanChainIndex`'s peer-derived OpCall consult (D-09-03) lands and `corevalidate.Validate` correctly stops refusing `testdata/phase08/twin_a_accept.lang` and `testdata/phase08/relay_depth2_accept.lang`, running either fixture through the FULL `lang check` CLI (`session.CheckCommandFile`, which additionally consults `originvalidate.ValidatePublished` after `check` and `corevalidate` both pass) surfaces a DIFFERENT, PRE-EXISTING refusal: `core.origin_omitted`. Root cause verified directly: `originvalidate.walkReturnOrigin` (`originvalidate.go:171-218`) has no `case core.OpCall` in its backward-walk switch, so it treats a call boundary as fully transparent, walking straight through `operation.SourceID` into the CALL'S ARGUMENT's own provenance — it never consults the CALLEE's own declared return contract the way `check`'s `derivePlaceLoans`/`corevalidate`'s new `derivePeerLoanCarry` both now do. For `twin_a_accept.lang`, `escortee` declares a plain owned return (`-> Buffer`), so `escort`'s own return is genuinely a fresh owned value with no live alias risk — but `originvalidate` still reports it as borrow-derived (walking through the call to the pre-call exclusive borrow) and refuses the exported, origin-undeclared `escort` with `core.origin_omitted`. This is NOT a defect introduced by this plan's change: confirmed directly (`check.Program` alone returns zero diagnostics for this fixture; `originvalidate.ValidatePublished(checked.Program)` independently returns the `core.origin_omitted` problem regardless of what corevalidate does) that this refusal has been latent since Phase 07/08, simply unreachable through the full CLI because `corevalidate`'s own (now-fixed) unconditional-propagation bug always refused FIRST in `CheckCommandFile`'s fixed precedence (check, then corevalidate, then originvalidate) — this is the exact "one validator's own defect masks another's" shape D-09-08 names for `check`, discovered here one layer further down the pipeline than any Phase 08/09 planning document anticipated. `TestNoUndeclaredCheckPeerDivergenceAcrossCorpus` (the actual mechanically-enforced gate for D-09-03's retirement) is UNAFFECTED and passes cleanly: it compares `check.Program` diagnostics against `corevalidate.Validate` only, never invoking `originvalidate.ValidatePublished` at all. A real fix requires threading callee-return-contract lookups through `RecomputeOriginPerReturn`/`walkReturnOrigin`'s signatures (currently `func(function core.Function) ...`, no whole-`core.Program` access) — a cross-cutting signature change touching `BuildInterface`, `ValidatePublished`, and every existing `originvalidate_test.go` call site, judged out of bounds for this plan's declared `files_modified` and Rule 4 territory (significant structural modification), not a bounded inline fix. Landing phase and vehicle: not yet decided; needs its own scoped plan or a Phase 09 mid-phase gate (09-07/09-08) agenda item |
 
 ## Detail
 
@@ -349,8 +350,64 @@ own doc comment, and must never define "divergence" a second way. If a future
 reader finds two different definitions of divergence in this tree, this row is
 where the intent was recorded and the intent was violated.
 
+### D-09-51 — `originvalidate`'s own OpCall-transparent origin walk, unmasked by D-09-03's fix
+
+`originvalidate.walkReturnOrigin` (`originvalidate.go:171-218`) walks backward
+from a function's own `OpReturn` through a `sourceOf` map built from every
+operation's `TargetID`, regardless of kind. Its `switch operation.Kind` names
+`OpBorrowExclusive`, `OpBorrowShared`, and `OpForeignCall` explicitly, but has
+no `case core.OpCall` at all — an `OpCall` simply falls through to
+`current = operation.SourceID`, exactly like an ordinary pass-through hop,
+never consulting the CALLEE's own declared return contract.
+
+Verified directly (`internal/compiler/session`, ad hoc probe against
+`testdata/phase08/twin_a_accept.lang`, removed after verification):
+`check.Program` returns zero diagnostics; `originvalidate.ValidatePublished`
+called independently on that same checked program returns exactly one
+problem, `core.origin_omitted`, for `escort`. The same result reproduces for
+`testdata/phase08/relay_depth2_accept.lang`'s `caller`. Both are the exact two
+fixtures D-09-03 retires from `peerDivergenceExpected` — this plan's fix is
+correct and complete for corevalidate's own loan-liveness re-derivation; the
+CLI-level refusal that remains afterward is a wholly different validator's
+wholly different, pre-existing bug, simply never observable before because
+corevalidate's own defect refused first.
+
+Confirmed NOT a regression introduced by this plan: `TestNoUndeclaredCheckPeerDivergenceAcrossCorpus`
+(`session_peer_gate_test.go`) — the actual mechanically-enforced gate behind
+D-09-03's retirement — computes its verdict from `check.Program` and
+`corevalidate.Validate` only. It never calls `originvalidate.ValidatePublished`,
+so it is blind to this finding by construction and passes cleanly once the two
+entries are removed, exactly as D-09-03 requires.
+
+The plan's own literal `<verify>`/`<acceptance_criteria>` text additionally
+asserts `go run ./cmd/lang --json check testdata/phase08/twin_a_accept.lang`
+(the FULL CLI, which does call `originvalidate.ValidatePublished` after
+`corevalidate.Validate` passes, per `session.CheckCommandFile`'s fixed
+precedence) reports a clean check. That literal claim is NOT satisfied after
+this plan: the full CLI now reports `core.origin_omitted` instead of
+`core.move_while_borrowed` for both fixtures — a different validator, a
+different (pre-existing) root cause, and objectively closer to correct (the
+corevalidate-side divergence this phase exists to close is genuinely gone),
+but not a clean check. Recorded here rather than silently declared satisfied.
+
+Not fixed in this plan: a real fix requires `RecomputeOriginPerReturn`/
+`walkReturnOrigin`/`RecomputeOrigin` to gain access to the whole
+`core.Program` (or a precomputed callee-return-mode table), so an `OpCall`
+hop can consult its callee's own declared origin/return contract the same
+way `check`'s `derivePlaceLoans` and this plan's own `derivePeerLoanCarry`
+already do — a signature change to originvalidate's own exported API,
+touching `BuildInterface`, `ValidatePublished`, and every existing
+`originvalidate_test.go` call site that constructs these calls directly
+against a bare `core.Function`. `internal/compiler/originvalidate/originvalidate.go`
+is not in this plan's `files_modified`, and the blast radius (an exported-API
+signature change across a validator with its own extensive same-package test
+suite) is judged Rule 4 territory (significant structural modification), not
+a bounded inline fix available to an executor mid-task.
+
 ---
 
 *Register written at Phase 09 planning time, 2026-09-10.*
+*D-09-51 appended during plan 09-01 execution, 2026-09-10 (execution-time
+finding, not a planning-time item).*
 *Shape validated by `TestDebtRegistersAreWellFormed`
 (`internal/compiler/session/session_test.go`).*

@@ -54,8 +54,16 @@ var peerDivergenceExpected = map[string]string{
 	// call's own result as still carrying the argument's loan, regardless
 	// of what the callee's declared contract says, and refuses. See
 	// twin_a_accept.lang's own header for the full argument.
-	"testdata/phase08/twin_a_accept.lang":       "core.move_while_borrowed",
-	"testdata/phase08/relay_depth2_accept.lang": "core.move_while_borrowed",
+	//
+	// RETIRED (Phase 09, D-09-03): corevalidate's own interprocedural
+	// loan-carry peer (corevalidate_peer_liveness.go) now consults the
+	// callee's declared return contract before propagating a loan across
+	// an OpCall boundary, exactly like check's own interprocedural law
+	// does -- so both "testdata/phase08/twin_a_accept.lang" and
+	// "testdata/phase08/relay_depth2_accept.lang" no longer diverge here.
+	// See PHASE-09-DEBT.md D-09-51 for a SEPARATE, pre-existing
+	// originvalidate finding this retirement unmasked -- one this test is
+	// structurally blind to (it never calls originvalidate.ValidatePublished).
 }
 
 // phase07SpotCheckRegression is 07-VERIFICATION.md's own pre-07-10

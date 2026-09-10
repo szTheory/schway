@@ -145,9 +145,21 @@ func TestArbitraryMaskCannotEnterCoreValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Phase 09 (D-09-05): corevalidate_peer_liveness.go is a sibling
+	// production file in this same package (D-09-04) -- scanned here too,
+	// not assumed automatically covered, so a forbidden import landing
+	// there is caught by every guard that would have caught it in
+	// corevalidate.go.
+	peerLivenessSource, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "corevalidate", "corevalidate_peer_liveness.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, forbidden := range []string{"compiler/ast", "compiler/check", "compiler/interp", "compiler/cgen", "compiler/session", "compiler/ability"} {
 		if strings.Contains(string(source), forbidden) {
 			t.Fatalf("validator imports forbidden producer/engine package %q", forbidden)
+		}
+		if strings.Contains(string(peerLivenessSource), forbidden) {
+			t.Fatalf("corevalidate_peer_liveness.go imports forbidden producer/engine package %q", forbidden)
 		}
 	}
 }

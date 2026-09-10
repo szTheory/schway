@@ -136,6 +136,15 @@ type validator struct {
 	// callgraph's or originvalidate's.
 	peerAdjacency map[string][]string
 	peerPostorder []string
+
+	// peerLoanCarry is Phase 09's own interprocedural loan-liveness fact
+	// (D-09-01/D-09-02), folded into this SAME postorder substrate:
+	// chainPeerLoanCarry (corevalidate_peer_liveness.go) populates this map
+	// by walking v.peerPostorder callee-before-caller, exactly like
+	// chainPeerClosureDigests above. Consulted by buildLoanChainIndex's
+	// OpCall branch before propagating a loan across a call boundary. Never
+	// persisted across Validate calls (D-09-06).
+	peerLoanCarry map[string]peerLoanCarryFact
 }
 
 func (v *validator) check(ok bool, code, detail string) bool {
@@ -247,6 +256,16 @@ func (v *validator) run() {
 		if !v.checkCallGraphAcyclic() {
 			return
 		}
+		// D-09-01: chainPeerLoanCarry must run here, immediately after
+		// v.peerPostorder is proven acyclic and populated, and strictly
+		// BEFORE the pending-replay loop below -- unlike
+		// chainPeerClosureDigests (which only needs to run after every
+		// function's peer signature is recorded), buildLoanChainIndex
+		// already reads v.peerLoanCarry from INSIDE replayStraightLine/
+		// replayBlocks/recomputeLoanEndpoints, all of which execute as part
+		// of the pending-replay loop immediately below. Calling this any
+		// later would read a nil map and fail closed on every call.
+		v.chainPeerLoanCarry()
 	}
 
 	for _, entry := range pending {
@@ -1130,7 +1149,17 @@ type loanChainIndex struct {
 	checks *int
 }
 
-func buildLoanChainIndex(operations []core.LinearOperation, checks *int) *loanChainIndex {
+// buildLoanChainIndex builds the parent-pointer chain used by
+// carriedLoans. loanCarry is Phase 09's own peer-derived interprocedural
+// loan-liveness fact (D-09-03): before this unconditionally sets
+// idx.parent[operation.TargetID] = operation.SourceID for an OpCall, it
+// first consults loanCarry[operation.CalleeID] -- if the callee's own
+// forward-derived fact reports it does NOT return a borrow of its own
+// parameter, the call's result is a fresh, owned identity, and the chain
+// deliberately breaks at this call boundary (the target's entry is simply
+// never written, so carriedLoans can never walk past it into the
+// argument's own loan ancestry). Every other operation kind is untouched.
+func buildLoanChainIndex(operations []core.LinearOperation, checks *int, loanCarry map[string]peerLoanCarryFact) *loanChainIndex {
 	idx := &loanChainIndex{
 		bornAt: make(map[string]string, len(operations)),
 		parent: make(map[string]string, len(operations)),
@@ -1140,6 +1169,13 @@ func buildLoanChainIndex(operations []core.LinearOperation, checks *int) *loanCh
 	for _, operation := range operations {
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			idx.bornAt[operation.TargetID] = operation.LoanID
+		}
+		if operation.Kind == core.OpCall && !disablePeerLoanCarryConsultForTest && !forcePeerLoanCarryTrueForTest && !loanCarry[operation.CalleeID].ReturnsBorrowOfParam {
+			// The callee's own declared contract does not return a borrow
+			// of its parameter (or the callee is unknown -- a corrupted
+			// artifact fails closed to "does not carry", T-09-02): do not
+			// chain this call's target back to its argument at all.
+			continue
 		}
 		if operation.TargetID != "" {
 			idx.parent[operation.TargetID] = operation.SourceID
@@ -1292,7 +1328,7 @@ func (v *validator) recomputeLoanEndpoints(function *core.Function) []core.LoanE
 		}
 	}
 
-	chain := buildLoanChainIndex(linear.Operations, &v.checks)
+	chain := buildLoanChainIndex(linear.Operations, &v.checks, v.peerLoanCarry)
 
 	type birthFact struct {
 		blockIdx int
@@ -1453,7 +1489,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	// that with a memoized parent-pointer chain walked at most once per
 	// place across the whole function.
 	loanLastUse := make(map[string]int)
-	chain := buildLoanChainIndex(operations, &v.checks)
+	chain := buildLoanChainIndex(operations, &v.checks, v.peerLoanCarry)
 	for index, operation := range operations {
 		v.checks++ // inspect each operation once while finding final loan uses
 		for _, loanID := range chain.carriedLoans(operation.SourceID) {
@@ -1721,7 +1757,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	// parent-pointer chain (loanChainIndex), not a per-operation copy of the
 	// accumulated loan list, computes loanLastUse here (D-02-03/Q2(b)).
 	loanLastUse := make(map[string]int)
-	chain := buildLoanChainIndex(operations, &v.checks)
+	chain := buildLoanChainIndex(operations, &v.checks, v.peerLoanCarry)
 	for index, operation := range operations {
 		v.checks++ // inspect each operation once while finding final loan uses
 		for _, loanID := range chain.carriedLoans(operation.SourceID) {
