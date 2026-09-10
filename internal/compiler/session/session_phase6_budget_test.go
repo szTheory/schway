@@ -299,7 +299,7 @@ func TestNoFunctionWritesTheBudgetManifest(t *testing.T) {
 
 // --- Task 3: the blocking rule -----------------------------------------
 
-func TestRecomputedWorkIsTheOnlyHardGate(t *testing.T) {
+func TestRecomputedWorkHardGateBoundComparison(t *testing.T) {
 	row := QLT02BudgetRow{MachineID: "machine:aaa", Metric: "recomputed_work", GateType: "hard", ValueOrBound: 10, Unit: "count"}
 	below := deterministicSummary(9)
 	exact := deterministicSummary(10)
@@ -411,7 +411,7 @@ func TestEvaluateBudgetAgreesWithDemote(t *testing.T) {
 // TestGrowthExponentIsAlsoAHardGate is D-08-32's Rule 1 fix, made
 // affirmative: recomputed_work_growth_exponent -- the SECOND gate-eligible
 // metric -- gets the exact same strict value-vs-bound treatment
-// TestRecomputedWorkIsTheOnlyHardGate already pins for recomputed_work
+// TestRecomputedWorkHardGateBoundComparison already pins for recomputed_work
 // (below/exact/above the ceiling), and high CoV never masks a genuine
 // regression for it either, mirroring TestRecomputedWorkBlockingIgnoresHighCoV.
 // Before the Rule 1 fix in EvaluateBudget, this metric fell through to the

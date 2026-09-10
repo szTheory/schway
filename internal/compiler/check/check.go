@@ -863,6 +863,20 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 
 		chain := derivePlaceLoans(function.Linear.Operations, summaries)
 
+		// Iterate borrowed loans in sorted ID order, never in Go map order.
+		// This language permits multiple concurrent SHARED borrows of the same
+		// owner place, so two distinct loans can tie on the same offending
+		// OpMove index; the strict `index < offendingIndex` tie-break below
+		// then keeps whichever the range happened to yield first. Sorting here
+		// is the same guarantee conflictingLoan already makes for the
+		// intraprocedural diagnostics -- so two runs never disagree about
+		// which loan a diagnostic blames.
+		borrowedLoanIDs := make([]string, 0, len(chain.borrowOperation))
+		for loanID := range chain.borrowOperation {
+			borrowedLoanIDs = append(borrowedLoanIDs, loanID)
+		}
+		sort.Strings(borrowedLoanIDs)
+
 		offendingIndex := -1
 		var offendingMove core.LinearOperation
 		var offendingLoanID string
@@ -870,7 +884,8 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 			if operation.Kind != core.OpMove {
 				continue
 			}
-			for loanID, borrow := range chain.borrowOperation {
+			for _, loanID := range borrowedLoanIDs {
+				borrow := chain.borrowOperation[loanID]
 				if borrow.SourceID != operation.SourceID {
 					continue
 				}
