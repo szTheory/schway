@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 08
 current_phase_name: Interprocedural Loan Liveness in `check`
 status: executing
-stopped_at: Completed 08-03-PLAN.md
-last_updated: "2026-09-10T01:58:33.596Z"
+stopped_at: Completed 08-04-PLAN.md
+last_updated: "2026-09-10T02:34:43.291Z"
 last_activity: 2026-09-09
 last_activity_desc: Phase 08 execution started
-state_head: 7ad156ae39eb556eb99a596bb152cb800c2f97b7
+state_head: 83eaeeb3e84def4234538d7983c74915d1d8f87f
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 08 (Interprocedural Loan Liveness in `check`) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-09-09 — Phase 08 execution started
 
@@ -160,6 +160,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 08 P01 | ~33min | 3 tasks | 5 files |
 | Phase 08 P02 | ~50 min | 3 tasks | 2 files |
 | Phase 08 P03 | 30 min | 3 tasks | 12 files |
+| Phase 08 P04 | ~55min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,7 @@ Standing architectural commitments carried into M002:
 - [Phase 08]: 08-02: fixed a real callgraph.Order ordering-direction bug in buildInterproceduralSummaries (its result is caller-before-callee, not callee-before-caller as previously assumed) -- required for UsesParam transitivity to hold; deriveFunctionUsesParam's fixpoint-loop shape makes the program-order-vs-reversed cost claim genuinely falsifiable (171.3x observed multiplier at k=512, matching spike S-006's 192x finding).
 - [Phase 08]: 08-03: fixture-header + peerDivergenceExpected register the corevalidate residual for the two ACCEPT twins (check admits, corevalidate's still-intraprocedural loanChainIndex refuses via core.move_while_borrowed) as concrete input for Phase 09's peer re-derivation.
 - [Phase 08]: 08-03: Pattern B's real .lang twin pair cannot demonstrate a differing end-to-end CLI verdict (computeLoanLastUses' summary-blind AST-shadow path refuses both members identically, ownership.move_while_borrowed) -- tests assert the TRUE observed outcome; the contract-driven backward gate itself stays proven at the checked-core level (08-02's own synthetic test).
+- [Phase 08]: 08-04: loanLivenessFixpoint's cycle pre-walk converted to an explicit-stack DFS ported from callgraph.Order, its cycle refusal promoted to a coded check.cfg_back_edge diagnostic, and the worklist given a derived fail-closed bound (factor*blocks*(loans+1), the +1 floor a Rule 1 auto-fix over the plan's literal formula) with a named check.loan_liveness_bound_exceeded refusal, mutation-killed via loanLivenessBoundSeam and proven identity-stable against its own retuning — Success criterion 2 required the only genuinely iterative fixpoint in Phase 08 to terminate under a fail-closed bound with a named refusal rather than a hang or silent truncation; the literal blockCount*distinctLoanCount formula computes zero for any loan-free function and would have refused nearly every legal program, caught by reasoning through the existing suite before committing
 
 ### Pending Todos
 
@@ -276,8 +278,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-10T01:58:23.599Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-09-10T02:34:43.129Z
+Stopped at: Completed 08-04-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

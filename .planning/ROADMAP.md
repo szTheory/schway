@@ -357,7 +357,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 08-04-PLAN.md — Criterion 2: the derived fail-closed iteration bound, its named refusal, the seeded mutation-kill, and the explicit-stack pre-walk hardening
+- [x] 08-04-PLAN.md — Criterion 2: the derived fail-closed iteration bound, its named refusal, the seeded mutation-kill, and the explicit-stack pre-walk hardening
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
