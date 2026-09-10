@@ -39,7 +39,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [x] **OWN-06**: `check` derives interprocedural loan liveness from callee
       signatures only — never by re-walking callee bodies — and terminates
       under a fail-closed iteration bound.
-- [x] **OWN-07**: `corevalidate` independently re-derives the same
+- [ ] **OWN-07**: `corevalidate` independently re-derives the same
       interprocedural loan-liveness facts without sharing an implementation
       with `check`; a seeded endpoint-level fault makes the two peers diverge.
 - [ ] **OWN-08**: D-03-02 is closed — an exported borrow-derived return with no
@@ -68,7 +68,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       `OpCall`, mirroring the already-proven `OpForeignCall` hop.
 - [ ] **TRU-03**: `pathoracle` independently re-derives the cross-function
       loan-chain rule without importing `check` or `corevalidate`.
-- [x] **TRU-04**: A shadow-run differential over recursion, diamond, and
+- [ ] **TRU-04**: A shadow-run differential over recursion, diamond, and
       deep-chain call graphs shows zero divergence between every peer that
       derives a given interprocedural fact, before either peer ships.
 
@@ -168,7 +168,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | SEM-09 | Phase 10 | Pending |
 | OWN-05 | Phase 09 | Pending |
 | OWN-06 | Phase 08 | Complete |
-| OWN-07 | Phase 09 | Complete |
+| OWN-07 | Phase 09 | Pending |
 | OWN-08 | Phase 09 | Pending |
 | OWN-09 | Phase 09 | Pending |
 | NAT-04 | Phase 11 | Pending |
@@ -177,7 +177,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | NAT-07 | Phase 11 | Pending |
 | TRU-02 | Phase 10 | Pending |
 | TRU-03 | Phase 10 | Pending |
-| TRU-04 | Phase 09 | Complete |
+| TRU-04 | Phase 09 | Pending |
 | QLT-03 | Phase 11 | Pending |
 | QLT-04 | Phase 10 | Pending |
 | QLT-05 | Phase 11 | Pending |
