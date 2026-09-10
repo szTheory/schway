@@ -1,0 +1,51 @@
+// Phase 08 Task 2(c) -- match-arm regression (D-08-28.5, recommended, NOT
+// gate-blocking). A match-bodied function calling the SAME callee from BOTH
+// arms -- the exact shape testdata/phase07/call_from_both_match_arms.lang
+// already proves for D-07-28's own concern (call-graph EDGE DISCOVERY: is a
+// call inside a match arm enumerated at all). This fixture restates that
+// same shape under the phase08 module namespace so
+// TestInterproceduralLivenessMatchArmRegression can assert its OWN, narrower
+// claim: the verdict here is identical to an equivalent STRAIGHT-LINE
+// program's verdict for the same call pattern (both check clean; this
+// program has no borrow/take at all, only Choice-typed OpCopy/OpCall/
+// OpReturn, so neither law has any loan-liveness fact to disagree about).
+// D-07-28's own guard was about call-graph EDGE DISCOVERY; this plan's
+// liveness admission is per-call-site and arity-1 regardless of which match
+// arm a call sits in, and `check` already walks both arms uniformly (the
+// same per-block/per-arm summary consultation applies), so this is
+// regression coverage recording that fact under test, not a new gate this
+// plan's success criteria require.
+
+module phase08.match_arm_call
+
+export {
+  fn main
+}
+
+data Choice =
+  | A
+  | B
+
+fn helper(value: Choice) -> Choice {
+  match value {
+    A => {
+      value
+    }
+    B => {
+      value
+    }
+  }
+}
+
+fn main(flag: Choice) -> Choice {
+  match flag {
+    A => {
+      let result = helper(flag)
+      result
+    }
+    B => {
+      let result = helper(flag)
+      result
+    }
+  }
+}

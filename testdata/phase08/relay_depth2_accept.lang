@@ -1,0 +1,41 @@
+// Phase 08 Task 2(a) -- composition depth >= 2 (D-08-28.2), ACCEPTING member.
+// Twin of relay_depth2_refuse.lang: caller's own body is byte-identical
+// (verified by structural comparison in check_test.go). leaf declares an
+// OWNED return (`-> Buffer`, body `let taken = take buffer; taken`) instead
+// of a borrow; relay forwards leaf's owned result directly (no local borrow
+// needed -- relay's own declared return is also plain `-> Buffer`, an
+// ordinary owned pass-through, needing no origin declaration at all).
+// `check.Program` (package check alone) admits this program with zero
+// diagnostics -- the composition-depth-2 refusal above is contract-driven at
+// EVERY hop, not merely at depth 1.
+//
+// KNOWN RESIDUAL: see twin_a_accept.lang's header. The full `lang check` CLI
+// additionally consults corevalidate.Validate once `check` itself passes;
+// corevalidate's own loan-liveness re-derivation is still intraprocedural
+// (unmodified this phase, Phase 09's own charter) and unconditionally treats
+// an OpCall's target as inheriting every loan its SourceID carries, so it
+// also refuses this fixture (core.move_while_borrowed) even though `check`'s
+// own interprocedural law -- the one under test -- correctly admits it.
+
+module phase08.relay_depth2_accept
+
+export {
+  fn caller
+}
+
+fn leaf(buffer: Buffer) -> Buffer {
+  let taken = take buffer
+  taken
+}
+
+fn relay(buffer: Buffer) -> Buffer {
+  let forwarded = leaf(buffer)
+  forwarded
+}
+
+fn caller(buffer: Buffer) -> Buffer {
+  let borrowed = borrow buffer
+  let aliased = relay(borrowed)
+  let delivered = take buffer
+  aliased
+}

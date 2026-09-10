@@ -4489,3 +4489,160 @@ func TestInterproceduralLivenessTwinPatternBRealFixtures(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------
+// Phase 08 Task 2 (08-03): composition depth >= 2, the negative control,
+// and the match-arm regression.
+// ---------------------------------------------------------------------
+
+// functionIDByName locates a checked core.Function's own semantic ID by its
+// source-level Name within an already-checked core.Program -- used to pull
+// the RIGHT summary-table entry out of two independently built
+// interproceduralSummaryTables whose IDs are module-qualified (and
+// therefore differ syntactically) even when they name "the same" function
+// across two different negative-control programs.
+func functionIDByName(t *testing.T, program core.Program, name string) string {
+	t.Helper()
+	for _, function := range program.Functions {
+		if function.Name == name {
+			return function.ID
+		}
+	}
+	t.Fatalf("expected a checked function named %q", name)
+	return ""
+}
+
+// TestInterproceduralLivenessRelayDepth2 is Task 2(a)'s D-08-28.2 pin: a
+// composition-depth-2 relay chain (caller -> relay -> leaf) refuses when
+// relay's OWN declared return contract reports a borrow of its parameter,
+// and admits when it does not -- generalizing 08-01/08-03's depth-1 twin
+// (twin_a_*.lang) to prove the derivation genuinely reads a callee's
+// declared signature rather than merely working for the one-hop case. The
+// emitted causes name RELAY's own function ID and RELAY's own
+// return.mode -- never leaf's -- proving the caller's admission consulted
+// relay's OWN interprocedural summary entry, not leaf's (leaf is never
+// named anywhere in the diagnostic).
+func TestInterproceduralLivenessRelayDepth2(t *testing.T) {
+	refuseSource := readPhase08Fixture(t, "relay_depth2_refuse.lang")
+	refuseResult := Program(mustParseProgram(t, refuseSource))
+	if len(refuseResult.Diagnostics) != 1 || refuseResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+		t.Fatalf("expected exactly one check.interprocedural_loan_liveness diagnostic, got %+v", refuseResult.Diagnostics)
+	}
+	diag := refuseResult.Diagnostics[0]
+	if len(diag.Causes) != 3 || diag.Causes[1].Kind != "loan_extended_by_call" {
+		t.Fatalf("expected cause 2 kind loan_extended_by_call, got %+v", diag.Causes)
+	}
+	if !strings.HasSuffix(diag.Causes[1].Detail, ":fn:relay") {
+		t.Fatalf("expected cause 2 to name relay's own function ID (not leaf's), got %q", diag.Causes[1].Detail)
+	}
+	if diag.Causes[2].Kind != "callee_return_contract" || !strings.HasSuffix(diag.Causes[2].Detail, ":fn:relay:return.mode=shared") {
+		t.Fatalf("expected cause 3 to name relay's own return.mode (not leaf's), got %+v", diag.Causes[2])
+	}
+
+	acceptSource := readPhase08Fixture(t, "relay_depth2_accept.lang")
+	acceptResult := Program(mustParseProgram(t, acceptSource))
+	if len(acceptResult.Diagnostics) != 0 {
+		t.Fatalf("expected relay_depth2_accept.lang to check clean, got %+v", acceptResult.Diagnostics)
+	}
+}
+
+// TestInterproceduralLivenessNegativeControl is Task 2(b)'s D-08-28.4 pin,
+// the "which fields are NOT named" half of criterion 4: two programs whose
+// relay differs ONLY in its own transitively-inherited Fails/ForeignReach
+// (negative_control_fails.lang's relay calls a genuinely foreign-fallible
+// leaf; negative_control_infallible.lang's relay calls a wholly ordinary
+// one) produce (a) the identical check verdict -- both refuse with
+// check.interprocedural_loan_liveness, same cause shape, both citing
+// relay's own return.mode=shared -- and (b) field-for-field identical
+// interproceduralSummary entries for relay, proving the liveness law's
+// silence on Fails/ForeignReach was demonstrated by actually varying them,
+// not merely by never having tried.
+func TestInterproceduralLivenessNegativeControl(t *testing.T) {
+	failsResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_fails.lang")))
+	infallibleResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_infallible.lang")))
+
+	if len(failsResult.Diagnostics) != 1 || failsResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+		t.Fatalf("expected negative_control_fails.lang to refuse with check.interprocedural_loan_liveness, got %+v", failsResult.Diagnostics)
+	}
+	if len(infallibleResult.Diagnostics) != 1 || infallibleResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
+		t.Fatalf("expected negative_control_infallible.lang to refuse with check.interprocedural_loan_liveness, got %+v", infallibleResult.Diagnostics)
+	}
+
+	failsCauses := failsResult.Diagnostics[0].Causes
+	infallibleCauses := infallibleResult.Diagnostics[0].Causes
+	if len(failsCauses) != 3 || len(infallibleCauses) != 3 {
+		t.Fatalf("expected exactly 3 causes on each member, got %d and %d", len(failsCauses), len(infallibleCauses))
+	}
+	for i, wantKind := range []string{"borrow_created_here", "loan_extended_by_call", "callee_return_contract"} {
+		if failsCauses[i].Kind != wantKind || infallibleCauses[i].Kind != wantKind {
+			t.Fatalf("cause %d kind mismatch: got %q (fails) / %q (infallible), want %q", i, failsCauses[i].Kind, infallibleCauses[i].Kind, wantKind)
+		}
+	}
+	if !strings.HasSuffix(failsCauses[2].Detail, ":fn:relay:return.mode=shared") || !strings.HasSuffix(infallibleCauses[2].Detail, ":fn:relay:return.mode=shared") {
+		t.Fatalf("expected both members' cause 3 to name relay's own return.mode=shared, got %q (fails) / %q (infallible)", failsCauses[2].Detail, infallibleCauses[2].Detail)
+	}
+
+	failsTable, err := buildCallSignatureTable(failsResult.Program)
+	if err != nil {
+		t.Fatalf("buildCallSignatureTable (fails): %v", err)
+	}
+	infallibleTable, err := buildCallSignatureTable(infallibleResult.Program)
+	if err != nil {
+		t.Fatalf("buildCallSignatureTable (infallible): %v", err)
+	}
+	failsSummaries, _ := buildInterproceduralSummaries(failsResult.Program, failsTable)
+	infallibleSummaries, _ := buildInterproceduralSummaries(infallibleResult.Program, infallibleTable)
+
+	failsRelaySummary, ok := failsSummaries.lookup(functionIDByName(t, failsResult.Program, "relay"))
+	if !ok {
+		t.Fatal("expected a summary entry for relay in negative_control_fails.lang")
+	}
+	infallibleRelaySummary, ok := infallibleSummaries.lookup(functionIDByName(t, infallibleResult.Program, "relay"))
+	if !ok {
+		t.Fatal("expected a summary entry for relay in negative_control_infallible.lang")
+	}
+	if failsRelaySummary != infallibleRelaySummary {
+		t.Fatalf("expected relay's interproceduralSummary to be field-for-field identical between the fails and infallible members (differing only in Fails/ForeignReach, which this table structurally never reads), got %+v vs %+v", failsRelaySummary, infallibleRelaySummary)
+	}
+}
+
+// TestInterproceduralLivenessMatchArmRegression is Task 2(c)'s D-08-28.5
+// regression coverage (recommended, explicitly NOT gate-blocking, per
+// match_arm_call.lang's own header): a match-bodied function calling the
+// same callee from both arms checks exactly as clean as an equivalent
+// straight-line program calling that callee once. D-07-28's own guard was
+// about call-graph EDGE DISCOVERY (is a call inside a match arm enumerated
+// at all); this plan's liveness admission is per-call-site and arity-1
+// regardless of which arm a call sits in, and `check` already walks both
+// arms uniformly -- this test records that fact under test, it does not
+// assert a new gate this plan's success criteria require.
+func TestInterproceduralLivenessMatchArmRegression(t *testing.T) {
+	matchSource := readPhase08Fixture(t, "match_arm_call.lang")
+	matchResult := Program(mustParseProgram(t, matchSource))
+	if len(matchResult.Diagnostics) != 0 {
+		t.Fatalf("expected match_arm_call.lang to check clean, got %+v", matchResult.Diagnostics)
+	}
+
+	straightLineSource := []byte(`module phase08.match_arm_call_straight_line
+
+export {
+  fn main
+}
+
+fn helper(value: Byte) -> Byte {
+  value
+}
+
+fn main(flag: Byte) -> Byte {
+  let result = helper(flag)
+  result
+}
+`)
+	straightLineResult := Program(mustParseProgram(t, straightLineSource))
+	if len(straightLineResult.Diagnostics) != 0 {
+		t.Fatalf("expected the straight-line equivalent to check clean, got %+v", straightLineResult.Diagnostics)
+	}
+	if len(matchResult.Diagnostics) != len(straightLineResult.Diagnostics) {
+		t.Fatalf("expected the match-arm shape's verdict (%d diagnostics) to match the straight-line equivalent's (%d diagnostics)", len(matchResult.Diagnostics), len(straightLineResult.Diagnostics))
+	}
+}

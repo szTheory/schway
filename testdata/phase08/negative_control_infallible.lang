@@ -1,0 +1,31 @@
+// Phase 08 Task 2(b) -- negative control (D-08-28.4), "infallible" member.
+// Twin of negative_control_fails.lang: relay and caller are byte-identical
+// to that program's own relay/caller pair. leaf here is an ordinary,
+// wholly infallible Lang function (no foreign declaration, no Fails, no
+// ForeignReach at all) instead of a foreign-fallible wrapper -- the ONLY
+// difference between the two programs. See negative_control_fails.lang's
+// header for the full argument this pair exists to make.
+
+module phase08.negative_control_infallible
+
+export {
+  fn caller
+}
+
+fn leaf(buffer: Buffer) -> Buffer {
+  let taken = take buffer
+  taken
+}
+
+fn relay(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let forwarded = leaf(borrowed)
+  forwarded
+}
+
+fn caller(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let aliased = relay(borrowed)
+  let delivered = take buffer
+  aliased
+}
