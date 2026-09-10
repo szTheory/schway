@@ -182,6 +182,72 @@ func TestCyclePeerRefusesSelfEdge(t *testing.T) {
 	}
 }
 
+// TestCyclePeerRefusesIndirectCycle is Phase 09 Plan 04's own D-09-22
+// extension: an indirect (3-hop) cycle (a -> b -> c -> a), the one shape
+// this file did not previously cover. Built with the SAME syntheticProgram
+// helper every other cycle case above uses -- never a second synthetic-
+// program builder.
+//
+// This IS TRU-04's "recursion" shape (D-09-22's disposition): both `check`
+// and corevalidate must independently refuse any call-graph cycle, self,
+// mutual, or indirect, BEFORE any liveness derivation ever runs. A
+// *liveness* differential over an admitted recursive program cannot exist
+// in this language, because `callgraph`'s three-color DFS (and this peer's
+// own independent one) refuse every cycle outright -- there is no admitted
+// recursive program for a liveness law to ever see. No artifact in this
+// phase may claim liveness was exercised over recursion; the honest claim
+// is this cycle-peer agreement, proven with its own witness comparison in
+// package check's TestCyclePeerAgreesWithCheckOnIndirectCycleWitness.
+func TestCyclePeerRefusesIndirectCycle(t *testing.T) {
+	program := syntheticProgram(map[string][]string{
+		"a": {"b"},
+		"b": {"c"},
+		"c": {"a"},
+	})
+	result := Validate(program)
+	if result.Valid {
+		t.Fatalf("expected a synthetic 3-hop indirect cycle to be refused, got valid: %+v", result)
+	}
+	if !hasProblem(result.Problems, core.CallGraphCycle) {
+		t.Fatalf("expected %s, got %+v", core.CallGraphCycle, result.Problems)
+	}
+	witness := result.Problems[0].Detail
+	members := map[string]bool{syntheticFunctionID("a"): true, syntheticFunctionID("b"): true, syntheticFunctionID("c"): true}
+	if !members[witness] {
+		t.Fatalf("expected the reported witness to be a genuine member of the 3-hop cycle {a,b,c}, got %q", witness)
+	}
+}
+
+// TestCyclePeerRefusesFourHopIndirectCycle widens the indirect case to a
+// 4-hop ring (a -> b -> c -> d -> a), so "indirect" is proven for more than
+// the minimal 3-hop case. Same disposition as
+// TestCyclePeerRefusesIndirectCycle above: this is TRU-04's "recursion"
+// shape settled as a cycle-peer differential, never a liveness one, because
+// no recursive program is ever admitted past this refusal.
+func TestCyclePeerRefusesFourHopIndirectCycle(t *testing.T) {
+	program := syntheticProgram(map[string][]string{
+		"a": {"b"},
+		"b": {"c"},
+		"c": {"d"},
+		"d": {"a"},
+	})
+	result := Validate(program)
+	if result.Valid {
+		t.Fatalf("expected a synthetic 4-hop indirect cycle to be refused, got valid: %+v", result)
+	}
+	if !hasProblem(result.Problems, core.CallGraphCycle) {
+		t.Fatalf("expected %s, got %+v", core.CallGraphCycle, result.Problems)
+	}
+	witness := result.Problems[0].Detail
+	members := map[string]bool{
+		syntheticFunctionID("a"): true, syntheticFunctionID("b"): true,
+		syntheticFunctionID("c"): true, syntheticFunctionID("d"): true,
+	}
+	if !members[witness] {
+		t.Fatalf("expected the reported witness to be a genuine member of the 4-hop cycle {a,b,c,d}, got %q", witness)
+	}
+}
+
 // TestCyclePeerRefusesCycleWithNoEntryPoint proves roots are ALL declared
 // functions, never merely an entry point check happens to reach: the
 // cyclic pair here is never named as a callee by any OTHER function in the
