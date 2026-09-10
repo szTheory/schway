@@ -176,6 +176,30 @@ func TestBudgetAuditRefusesUnknownMetricVocabulary(t *testing.T) {
 	}
 }
 
+// TestGateEligibleMetricSetsAgreeAcrossChokepoints is Task 2(d)'s own
+// point (D-08-32/T-08-17): session.QLT02GateEligibleMetrics() and
+// measure.GateEligibleMetrics() are two INDEPENDENT declarations of the
+// same set (measure cannot import session, so they cannot share a
+// constant) -- this test is what makes a future one-sided widening of only
+// one chokepoint a test failure instead of a silently decorative manifest
+// row that reads gate_type: hard but can never actually block.
+func TestGateEligibleMetricSetsAgreeAcrossChokepoints(t *testing.T) {
+	sessionSet := QLT02GateEligibleMetrics()
+	measureSet := measure.GateEligibleMetrics()
+	if len(sessionSet) != len(measureSet) {
+		t.Fatalf("QLT02GateEligibleMetrics() = %v, measure.GateEligibleMetrics() = %v -- not set-equal", sessionSet, measureSet)
+	}
+	seen := make(map[string]bool, len(measureSet))
+	for _, metric := range measureSet {
+		seen[metric] = true
+	}
+	for _, metric := range sessionSet {
+		if !seen[metric] {
+			t.Errorf("QLT02GateEligibleMetrics() contains %q, not in measure.GateEligibleMetrics() %v", metric, measureSet)
+		}
+	}
+}
+
 func TestUndeclaredMachineRunsObservationOnly(t *testing.T) {
 	rows, err := LoadQLT02BudgetManifest()
 	if err != nil {
@@ -302,10 +326,23 @@ func TestBlockingRegressionCitesStageWorkDelta(t *testing.T) {
 	}
 }
 
+// TestEvaluateBudgetAgreesWithDemote, widened by Phase 08 Plan 05 (D-08-32):
+// over every metric OUTSIDE QLT02GateEligibleMetrics() (now a two-element
+// set, not merely "everything but recomputed_work"), EvaluateBudget's
+// verdict must equal measure.Demote's own verdict, and neither may ever be
+// blocking. Gate-eligible metrics are deliberately excluded from this loop
+// -- they go through EvaluateBudget's OWN strict value-vs-bound comparison
+// (see TestGrowthExponentIsAlsoAHardGate below), not through Demote, so
+// asserting parity with Demote for them would be asserting the wrong
+// contract.
 func TestEvaluateBudgetAgreesWithDemote(t *testing.T) {
 	summary := measure.Summary{P50: 10, P95: 10, Mean: 10, StdDev: 0, CoV: 0, Count: 20}
+	eligible := make(map[string]bool, len(QLT02GateEligibleMetrics()))
+	for _, metric := range QLT02GateEligibleMetrics() {
+		eligible[metric] = true
+	}
 	for _, metric := range QLT02MetricVocabulary() {
-		if metric == "recomputed_work" {
+		if eligible[metric] {
 			continue
 		}
 		row := QLT02BudgetRow{MachineID: "machine:aaa", Metric: metric, GateType: "observed", ValueOrBound: 1}
@@ -315,8 +352,40 @@ func TestEvaluateBudgetAgreesWithDemote(t *testing.T) {
 			t.Errorf("metric %q: EvaluateBudget verdict %q != measure.Demote verdict %q", metric, verdict, demoted)
 		}
 		if verdict == measure.VerdictBlocking {
-			t.Errorf("metric %q: verdict blocking, but only recomputed_work is gate-eligible", metric)
+			t.Errorf("metric %q: verdict blocking, but only QLT02GateEligibleMetrics() are gate-eligible", metric)
 		}
+	}
+}
+
+// TestGrowthExponentIsAlsoAHardGate is D-08-32's Rule 1 fix, made
+// affirmative: recomputed_work_growth_exponent -- the SECOND gate-eligible
+// metric -- gets the exact same strict value-vs-bound treatment
+// TestRecomputedWorkIsTheOnlyHardGate already pins for recomputed_work
+// (below/exact/above the ceiling), and high CoV never masks a genuine
+// regression for it either, mirroring TestRecomputedWorkBlockingIgnoresHighCoV.
+// Before the Rule 1 fix in EvaluateBudget, this metric fell through to the
+// Demote-only branch and reported VerdictBlocking unconditionally whenever
+// requested (regardless of value vs bound) -- this test is what would have
+// caught that.
+func TestGrowthExponentIsAlsoAHardGate(t *testing.T) {
+	row := QLT02BudgetRow{MachineID: "machine:aaa", Metric: "recomputed_work_growth_exponent", GateType: "hard", ValueOrBound: 1200}
+	below := deterministicSummary(1199)
+	exact := deterministicSummary(1200)
+	above := deterministicSummary(1201)
+
+	if v, obs := EvaluateBudget(row, below, nil); v != measure.VerdictObserved || obs != nil {
+		t.Errorf("below ceiling: verdict=%q obs=%+v, want observed/nil", v, obs)
+	}
+	if v, obs := EvaluateBudget(row, exact, nil); v != measure.VerdictObserved || obs != nil {
+		t.Errorf("exactly at ceiling: verdict=%q obs=%+v, want observed/nil (exactly-equal is not a regression)", v, obs)
+	}
+	if v, obs := EvaluateBudget(row, above, nil); v != measure.VerdictBlocking || obs != nil {
+		t.Errorf("above ceiling: verdict=%q obs=%+v, want blocking/nil", v, obs)
+	}
+
+	noisy := measure.Summary{P50: 1201, P95: 1201, Mean: 1201, StdDev: 400, CoV: 0.9, Count: 20}
+	if v, _ := EvaluateBudget(row, noisy, nil); v != measure.VerdictBlocking {
+		t.Errorf("growth-exponent regression with high CoV verdict = %q, want blocking (deterministic, no noise floor)", v)
 	}
 }
 

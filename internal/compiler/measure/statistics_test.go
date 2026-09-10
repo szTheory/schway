@@ -267,20 +267,31 @@ func TestCoVBelowThresholdPassesThroughUnchanged(t *testing.T) {
 	}
 }
 
-func TestOnlyRecomputedWorkIsGateEligible(t *testing.T) {
-	metrics := []string{"elapsed_ns", "output_bytes", "peak_rss", "cache_inputs_reused_count"}
-	for _, metric := range metrics {
+// TestOnlyGateEligibleMetricsPassThrough is TestOnlyRecomputedWorkIsGateEligible
+// widened (D-08-32) to GateEligibleMetrics()'s two-element set: every
+// metric NOT in that set still demotes to observed, and EVERY metric IN
+// that set (both recomputed_work and recomputed_work_growth_exponent) now
+// passes through to blocking, for contrast. Renamed from
+// TestOnlyRecomputedWorkIsGateEligible because "only recomputed_work" no
+// longer describes what this test asserts.
+func TestOnlyGateEligibleMetricsPassThrough(t *testing.T) {
+	ineligible := []string{"elapsed_ns", "output_bytes", "peak_rss", "cache_inputs_reused_count"}
+	for _, metric := range ineligible {
 		t.Run(metric, func(t *testing.T) {
 			got := Demote(VerdictBlocking, metric, lowCoVSummary(), nil)
 			if got != VerdictObserved {
-				t.Fatalf("Demote(%q, %q, low-CoV, nil) = %q, want %q -- only recomputed_work is gate-eligible", VerdictBlocking, metric, got, VerdictObserved)
+				t.Fatalf("Demote(%q, %q, low-CoV, nil) = %q, want %q -- only GateEligibleMetrics() are gate-eligible", VerdictBlocking, metric, got, VerdictObserved)
 			}
 		})
 	}
-	// The one eligible metric, for contrast.
-	got := Demote(VerdictBlocking, "recomputed_work", lowCoVSummary(), nil)
-	if got != VerdictBlocking {
-		t.Fatalf("Demote(%q, \"recomputed_work\", low-CoV, nil) = %q, want %q", VerdictBlocking, got, VerdictBlocking)
+	// Every eligible metric, for contrast.
+	for _, metric := range GateEligibleMetrics() {
+		t.Run(metric, func(t *testing.T) {
+			got := Demote(VerdictBlocking, metric, lowCoVSummary(), nil)
+			if got != VerdictBlocking {
+				t.Fatalf("Demote(%q, %q, low-CoV, nil) = %q, want %q", VerdictBlocking, metric, got, VerdictBlocking)
+			}
+		})
 	}
 }
 
@@ -330,10 +341,16 @@ func TestCoVDemotionNeverPromotesToBlocking(t *testing.T) {
 }
 
 // TestDemoteHasExactlyOnePromotionPassthrough is D-06-19/D-06-22's
-// structural guard: a go/ast scan of Demote's body asserting
-// "return VerdictBlocking" appears in exactly one return position -- the
-// pass-through -- so a future edit cannot add a second promotion path
-// without failing this test.
+// structural guard, re-derived (not merely re-run) by Phase 08 Plan 05
+// (D-08-32) for the presence of GateEligibleMetrics() as a SET rather than
+// a single hardcoded metric name: a go/ast scan of Demote's body still
+// asserts "return VerdictBlocking" appears in exactly one return position
+// -- the pass-through -- so widening the gate-eligible set to admit a
+// second metric name cannot smuggle in a second promotion path. It also
+// now asserts, by direct execution rather than AST inspection, that the
+// demotion branch this guard protects is genuinely reached for a metric
+// OUTSIDE the eligible set -- proving the branch is live, not merely
+// structurally singular.
 func TestDemoteHasExactlyOnePromotionPassthrough(t *testing.T) {
 	fileSet := token.NewFileSet()
 	file, err := parser.ParseFile(fileSet, "statistics.go", nil, 0)
@@ -365,5 +382,14 @@ func TestDemoteHasExactlyOnePromotionPassthrough(t *testing.T) {
 	})
 	if count != 1 {
 		t.Fatalf("Demote contains %d `return VerdictBlocking` statements, want exactly 1 (the pass-through)", count)
+	}
+
+	// The demotion branch this structural guard protects must be genuinely
+	// reached for a metric outside GateEligibleMetrics() -- proving the
+	// branch is live, not merely structurally singular.
+	got := Demote(VerdictBlocking, "a-metric-outside-the-eligible-set", lowCoVSummary(), nil)
+	if got != VerdictObserved {
+		t.Fatalf("Demote(%q, %q, low-CoV, nil) = %q, want %q -- the ineligible-metric demotion branch must fire",
+			VerdictBlocking, "a-metric-outside-the-eligible-set", got, VerdictObserved)
 	}
 }

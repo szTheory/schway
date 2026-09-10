@@ -112,6 +112,33 @@ func Verdicts() []string {
 	return []string{VerdictBlocking, VerdictObserved, VerdictNotRatified}
 }
 
+// GateEligibleMetrics is the closed set of metric names Demote's rule 2
+// treats as gate-eligible at all (D-06-14/D-06-22, widened by Phase 08
+// Plan 05's D-08-31/D-08-32 to a two-element set): "recomputed_work" is
+// deterministic and machine-independent, and so is
+// "recomputed_work_growth_exponent" -- both require zero statistics to
+// gate on. Every OTHER metric (wall clock, output bytes, ...) is never
+// blocking on its own.
+//
+// measure must not import session (session imports measure), so this is
+// deliberately a SECOND, independent declaration of the same two names
+// session.QLT02GateEligibleMetrics() returns -- never a shared constant.
+// TestGateEligibleMetricSetsAgreeAcrossChokepoints (package session) proves
+// the two chokepoints agree as sets; a future one-sided widening of only
+// one of them fails that test rather than silently shipping a manifest row
+// that can never block (T-08-17).
+func GateEligibleMetrics() []string {
+	return []string{"recomputed_work", "recomputed_work_growth_exponent"}
+}
+
+func gateEligibleMetricSet() map[string]bool {
+	set := make(map[string]bool, len(GateEligibleMetrics()))
+	for _, metric := range GateEligibleMetrics() {
+		set[metric] = true
+	}
+	return set
+}
+
 // Demote is D-06-19's mechanical, one-directional quarantine rule: it only
 // ever demotes a requested gate type toward observed/not_ratified, never
 // promotes one toward blocking. The rule, in this order, with no other
@@ -119,8 +146,10 @@ func Verdicts() []string {
 //
 //  1. A refused sample set (err != nil) is undeterminable -- not_ratified,
 //     never a silent pass and never blocking.
-//  2. Only recomputed_work is gate-eligible at all (D-06-14/D-06-22): wall
-//     clock and output bytes are never blocking on their own.
+//  2. Only a metric in GateEligibleMetrics() is gate-eligible at all
+//     (D-06-14/D-06-22, widened to a SET by D-08-31/D-08-32): wall clock
+//     and output bytes are never blocking on their own, and neither is any
+//     future metric this function has not been told about.
 //  3. A CoV above the fixed threshold demotes to observed, regardless of
 //     the caller's requested gate type.
 //  4. Otherwise, requested passes through unchanged -- and the ONLY
@@ -132,7 +161,7 @@ func Demote(requested string, metric string, summary Summary, err error) string 
 	if err != nil {
 		return VerdictNotRatified
 	}
-	if metric != "recomputed_work" {
+	if !gateEligibleMetricSet()[metric] {
 		return VerdictObserved
 	}
 	if summary.CoV > CoVDemotionThreshold {

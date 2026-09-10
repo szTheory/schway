@@ -44,16 +44,37 @@ const (
 // candidate plus the two loose, never-blocking-on-their-own observations.
 // A row naming a metric outside this set is malformed.
 func QLT02MetricVocabulary() []string {
-	return []string{"recomputed_work", "elapsed_ns", "output_bytes"}
+	return []string{"recomputed_work", "elapsed_ns", "output_bytes", "recomputed_work_growth_exponent"}
 }
 
-// QLT02GateEligibleMetrics is the closed one-element set of metrics that
-// may ever carry gate_type "hard" (D-06-14, D-06-22): recomputed_work is
-// deterministic and machine-independent, so it alone requires zero
-// statistics to gate on. Supplied by the caller (not hardcoded inside the
-// audit) so the audit itself carries no opinion of its own.
+// QLT02GateEligibleMetrics is the closed set of metrics that may ever
+// carry gate_type "hard" (D-06-14, D-06-22, widened to two elements by
+// Phase 08 Plan 05's D-08-31/D-08-32): recomputed_work and
+// recomputed_work_growth_exponent are both deterministic and
+// machine-independent, so each requires zero statistics to gate on.
+// Supplied by the caller (not hardcoded inside the audit) so the audit
+// itself carries no opinion of its own.
+//
+// This is deliberately a SECOND, independent declaration of the same two
+// names measure.GateEligibleMetrics() returns -- session imports measure,
+// so it COULD read that slice directly, but the two chokepoints are kept
+// independent on purpose (T-08-17): TestGateEligibleMetricSetsAgreeAcrossChokepoints
+// proves they agree as sets, so a future one-sided widening of only one of
+// them is a test failure, not a silently decorative manifest row.
 func QLT02GateEligibleMetrics() []string {
-	return []string{"recomputed_work"}
+	return []string{"recomputed_work", "recomputed_work_growth_exponent"}
+}
+
+// qlt02GateEligibleMetricSet is QLT02GateEligibleMetrics() as a membership
+// set, consulted by EvaluateBudget (D-08-32's Rule 1 fix, see its own doc
+// comment) so the strict value-vs-bound comparison applies to EVERY
+// gate-eligible metric, not merely a hardcoded literal.
+func qlt02GateEligibleMetricSet() map[string]bool {
+	set := make(map[string]bool, len(QLT02GateEligibleMetrics()))
+	for _, metric := range QLT02GateEligibleMetrics() {
+		set[metric] = true
+	}
+	return set
 }
 
 // LoadQLT02BudgetManifest parses the embedded QLT-02 budget manifest.
@@ -313,19 +334,37 @@ func stageWorkDelta(stageDeltas []protocol.StageTiming) (int64, bool) {
 }
 
 // EvaluateBudget implements D-06-22's blocking rule exactly: a regression is
-// blocking if and only if recomputed_work strictly exceeds its ratified
-// ceiling -- exact, deterministic, and independent of measure.Demote's CoV
-// quarantine, which exists for noisy metrics that recomputed_work is not.
-// Exactly equal to the ceiling is NOT a regression (FND-04's adjacency
-// edge). Every other metric is routed through measure.Demote, which already
-// refuses to return blocking for a non-recomputed_work metric -- the two
-// mechanisms agree by construction on metric eligibility
-// (TestEvaluateBudgetAgreesWithDemote) -- and an observation exceeding its
-// loose bound is flagged, never blocking on its own.
+// blocking if and only if a GATE-ELIGIBLE metric (QLT02GateEligibleMetrics(),
+// widened by D-08-31/D-08-32 to also admit recomputed_work_growth_exponent)
+// strictly exceeds its ratified ceiling -- exact, deterministic, and
+// independent of measure.Demote's CoV quarantine, which exists for noisy
+// metrics that a gate-eligible metric is not. Exactly equal to the ceiling
+// is NOT a regression (FND-04's adjacency edge).
+//
+// [Rule 1 deviation, Phase 08 Plan 05 Task 2]: this branch used to test the
+// single literal string "recomputed_work" rather than membership in
+// QLT02GateEligibleMetrics(). That was equivalent while exactly one metric
+// was ever gate-eligible, but widening Demote's own eligible set (this
+// plan's own change) exposed the latent bug TestEvaluateBudgetAgreesWithDemote
+// already existed to catch: a second gate-eligible metric NOT named
+// "recomputed_work" would fall through to the else branch below, where
+// requestedVerdict is computed from measure.Demote alone -- which knows
+// nothing about row.ValueOrBound -- so EvaluateBudget would report
+// VerdictBlocking for every low-CoV observation of that metric regardless
+// of whether value was actually under or over its bound. Testing set
+// membership instead of a literal closes that gap and keeps this function
+// consulting the SAME chokepoint (QLT02GateEligibleMetrics()) Task 2
+// widened, rather than inventing a third, independent one.
+//
+// Every other (non-gate-eligible) metric is routed through measure.Demote,
+// which already refuses to return blocking for it -- the two mechanisms
+// agree by construction on metric eligibility (TestEvaluateBudgetAgreesWithDemote)
+// -- and an observation exceeding its loose bound is flagged, never
+// blocking on its own.
 func EvaluateBudget(row QLT02BudgetRow, observed measure.Summary, stageDeltas []protocol.StageTiming) (verdict string, flagged *Observation) {
 	value := observed.P50
 
-	if row.Metric == "recomputed_work" {
+	if qlt02GateEligibleMetricSet()[row.Metric] {
 		if value > row.ValueOrBound {
 			return measure.VerdictBlocking, nil
 		}
@@ -334,8 +373,8 @@ func EvaluateBudget(row QLT02BudgetRow, observed measure.Summary, stageDeltas []
 
 	// Non-gate-eligible metrics can never be blocking on their own
 	// (D-06-14/D-06-22): route through Demote, which refuses blocking for
-	// any metric other than recomputed_work regardless of what verdict is
-	// requested.
+	// any metric outside QLT02GateEligibleMetrics() regardless of what
+	// verdict is requested.
 	requestedVerdict := measure.Demote(measure.VerdictBlocking, row.Metric, observed, nil)
 
 	if value <= row.ValueOrBound {
