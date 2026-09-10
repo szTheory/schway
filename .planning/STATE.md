@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 09
 current_phase_name: Peer Re-Derivation and D-03-02 Closure
 status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-09-10T21:22:38.735Z"
+stopped_at: Completed 09-04-PLAN.md
+last_updated: "2026-09-10T21:48:37.734Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 09 execution started
-state_head: 82fb37ab6450fb5e367789689653cd358c63875a
+state_head: 2685e03d6246e2dc06ea72dd50853b352b1df2c3
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 09 (Peer Re-Derivation and D-03-02 Closure) — EXECUTING
-Plan: 4 of 10
+Plan: 5 of 10
 Status: Ready to execute
 Last activity: 2026-09-10 — Phase 09 execution started
 
@@ -167,6 +167,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 09 P01 | 33min | 3 tasks | 9 files |
 | Phase 09 P02 | 45min | 3 tasks | 7 files |
 | Phase 09 P03 | 55min | 3 tasks | 5 files |
+| Phase 09 P04 | 55min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,7 @@ Standing architectural commitments carried into M002:
 - [Phase 09]: 09-01: corevalidate's own forward-derived interprocedural loan-carry peer (derivePeerLoanCarry/chainPeerLoanCarry) folded into the existing v.peerPostorder substrate; buildLoanChainIndex's OpCall consult retires both peerDivergenceExpected accept-twin divergences (D-08-40 resolved); bidirectional seeded-fault companion assertions prove the agreement load-bearing. Discovered and documented (not fixed) a pre-existing originvalidate OpCall-transparency defect this fix unmasks (PHASE-09-DEBT.md D-09-51) -- the full CLI's clean-check claim for both fixtures is not satisfied end-to-end, a separate validator's pre-existing bug.
 - [Phase 09]: [Phase 09]: 09-02: generateCallGraphCorpus relocated verbatim from check's costcorpus_test.go to testsupport.GenerateCallGraphCorpus/CallGraphCorpusShapes (D-09-46), unblocking session/corevalidate consumption with zero production import of check; a third gate-eligible metric (peer_closure_recomputed_work_growth_exponent) declared at both chokepoints plus the QLT-02 vocabulary with no manifest row yet (D-09-28); spike-006's QLT-01 registry gap closed (waived, since AllShippedControlIDs predates Phase 08), making go test ./... unconditionally green for the rest of Phase 09 (D-08-43 resolved).
 - [Phase 09]: [Phase 09] 09-03: peerDeriveOriginFacts adds an access-mode payload to peerReturnDerivesFromBorrow's existing forward walk; peerOriginContained performs a containment check (never a recomputation of originvalidate's backward combination law); peerForeignOriginOmitted independently re-derives the fourth class with a bounded, function-local walk. peerCallable now consults all four PublishProblemsFor classes, closing D-07-33; TestPeerDoesNotRederiveNarrowedClasses flipped to TestPeerRederivesFormerlyNarrowedClasses. D-09-21's fallback did not fire. OWN-08 stays Pending in REQUIREMENTS.md since 09-08's mid-phase gate also carries it.
+- [Phase 09]: [Phase 09]: 09-04: synthetic-shape zero-divergence differential (package check, D-09-50's vehicle split) proves TRU-04 criterion 1 over diamond/deep-chain/dense/parser-shaped/forward shapes; discovered the five shapes never contain a borrow op, making the natural sweep provably vacuous, so Task 3's mutation-kill hand-built a twin_a_accept.lang-shaped fixture instead. TRU-04's 'recursion' shape settled as a cycle-peer witness-agreement differential (self/mutual/indirect), never a liveness one -- category-error disposition recorded in code (D-09-22).
 
 ### Pending Todos
 
@@ -289,8 +291,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-10T21:22:38.533Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-09-10T21:48:37.612Z
+Stopped at: Completed 09-04-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
