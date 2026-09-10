@@ -383,6 +383,52 @@ func TestCFGBackEdgeWalkIsIterative(t *testing.T) {
 	}
 }
 
+// TestLoanLivenessBoundScalesWithBlockCount is Task 2's D-08-14 scaling
+// falsifier: loanLivenessBound must scale with its own input -- doubling
+// the block count must double the computed bound (holding the loan count
+// fixed), ruling out a flat magic constant masquerading as a derived one.
+func TestLoanLivenessBoundScalesWithBlockCount(t *testing.T) {
+	base := loanLivenessBound(4, 2)
+	doubled := loanLivenessBound(8, 2)
+	if doubled != base*2 {
+		t.Fatalf("doubling block count did not double the bound: base=%d doubled=%d", base, doubled)
+	}
+}
+
+// TestLoanLivenessBoundExceededRefusesRatherThanTruncates is Task 2's
+// D-08-14 refusal-shape falsifier: with loanLivenessBoundSeam engaged, the
+// fixpoint returns the named check.loan_liveness_bound_exceeded diagnostic
+// AND a ZERO-VALUED loanLivenessResult -- never a partial live-in map,
+// which would be exactly the silent under-approximation criterion 2
+// forbids. Its Primary span is the function's own declaration span (no
+// single offending operation exists for a whole-function property), and
+// its Repairs list is empty.
+func TestLoanLivenessBoundExceededRefusesRatherThanTruncates(t *testing.T) {
+	defer func() { loanLivenessBoundSeam = false }()
+	loanLivenessBoundSeam = true
+
+	loanOp := core.LinearOperation{ID: "fn:op:0", Kind: core.OpBorrowShared, SourceID: "fn:place:0", TargetID: "fn:place:1", LoanID: "fn:loan:0"}
+	block := cfgBlockSpec{id: "fn:block:straight", operations: []core.LinearOperation{loanOp}, successors: nil}
+	declSpan := diagnostic.Span{Start: 5, End: 9}
+
+	result, diag := loanLivenessFixpoint("fn", []cfgBlockSpec{block}, interproceduralSummaryTable{}, declSpan)
+	if diag == nil {
+		t.Fatal("expected the seam to force the named bound refusal")
+	}
+	if diag.Code != "check.loan_liveness_bound_exceeded" {
+		t.Fatalf("expected code check.loan_liveness_bound_exceeded, got %q", diag.Code)
+	}
+	if diag.Primary != declSpan {
+		t.Fatalf("expected Primary to be the function's own declaration span %+v, got %+v", declSpan, diag.Primary)
+	}
+	if len(diag.Repairs) != 0 {
+		t.Fatalf("expected no repairs for a whole-function bound refusal, got %+v", diag.Repairs)
+	}
+	if len(result.liveIn) != 0 || result.work != 0 {
+		t.Fatalf("expected a zero-valued result on the bound refusal, got %+v", result)
+	}
+}
+
 // TestStraightLineEndpointsUnchanged pins the shipped straight-line
 // reborrow-while-moved fixture's answer against the NEW backward dataflow,
 // run here as a single synthetic block (a straight-line body IS one block —

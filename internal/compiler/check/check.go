@@ -1751,14 +1751,97 @@ func cfgBackEdgeDiagnostic(functionID, blockID string, span diagnostic.Span) dia
 	)
 }
 
+// loanLivenessBoundFactor is Task 2's derived iteration-bound multiplier
+// (D-08-14). loanLivenessFixpoint's worklist loop is a monotone dataflow
+// over a finite lattice of live-loan sets per block boundary, so it
+// provably converges within lattice-height iterations -- the bound below is
+// therefore an INTERNAL-CONSISTENCY ASSERTION, never a DoS defense: no
+// `.lang` program can force divergence, only an implementation bug can (a
+// non-monotone transfer function, a mutated lattice, or a lost `queued`
+// flag reintroducing infinite reinsertion -- see PHASE-08-DEBT.md D-08-15).
+// A flat magic constant was rejected: it is equally unprovokable from
+// source (buying no additional safety over a derived bound), it carries no
+// derivation trail an auditor can check, and it would eventually
+// false-positive the day a legitimate program's block/loan count grows
+// past whatever constant was picked. The bound is computed in ordinary Go
+// `int` arithmetic as a product of small terms; at the sizes this language
+// can express today (LANGUAGE-MATURITY.md: 58 programs, ~28 lines, one CFG
+// block per match arm, arity 1) `blocks * loans` cannot approach
+// math.MaxInt, so no overflow contract is specified and none is tested --
+// this is a PLANNER ASSUMPTION (08-04-PLAN.md OWN-06/precision) that must be
+// re-opened if a later milestone makes block or loan counts
+// program-controlled (iteration, loops, collections) before this bound is
+// trusted again.
+const loanLivenessBoundFactor = 4
+
+// loanLivenessBound derives the fixpoint's fail-closed iteration ceiling
+// from the CFG's own shape (D-08-14): loanLivenessBoundFactor times the
+// function's own block count times (its distinct loan count + 1). The "+1"
+// is load-bearing, not decorative: a function with zero loans still costs
+// one transfer-function evaluation per block (blockLoanLiveness inspects
+// every operation regardless of whether any loan is involved), so a bound
+// of exactly `factor * blocks * 0` would refuse every loan-free multi-block
+// function on its very first non-trivial iteration -- the silent
+// under-approximation criterion 2 forbids, inflicted on the MOST common
+// case. With the "+1" floor this formula reduces, for the single-block
+// reborrow-chain shape TestLivenessWorkScale/TestReborrowChainWorkIsLinear
+// already pin at `4*n+4`, to exactly that same bound -- not a coincidence:
+// both were independently derived from the same per-operation accounting.
+// It scales with the input by construction (doubling blockCount doubles
+// the bound, holding loans fixed), unlike a flat constant.
+func loanLivenessBound(blockCount, distinctLoanCount int) int {
+	return loanLivenessBoundFactor * blockCount * (distinctLoanCount + 1)
+}
+
+// loanLivenessBoundSeam is Task 2's own D-08-16/QLT-08 fault-injection seam:
+// when true, loanLivenessFixpoint's worklist loop trips the named bound
+// refusal on its very first iteration regardless of the actually-computed
+// bound, proving the control has been SEEN TO FAIL, not merely to exist
+// (TestLoanLivenessBoundMutationKilled). Unexported, false in production,
+// set only from a same-package test that defers the restore immediately --
+// the same shape callReturnTypeDerivationSeam above already uses. It must
+// never become the exported pathoracle.TerminatorKindsOverride shape:
+// D-07-42 forbids multiplying exported mutable globals across production
+// check/corevalidate paths on -race and test-order grounds, and
+// loanLivenessFixpoint's own []cfgBlockSpec parameter is itself unexported,
+// so any test exercising this seam is same-package by construction.
+var loanLivenessBoundSeam = false
+
+// loanLivenessBoundExceededDiagnostic builds the
+// check.loan_liveness_bound_exceeded refusal (Task 2, D-08-14/D-08-18):
+// Primary is the function's OWN declaration span, since exceeding the
+// bound is a whole-function property with no single offending operation to
+// point at (unlike cfgBackEdgeDiagnostic above, which can at least name a
+// block). Causes name the function itself and flag that the derived bound
+// is block-count-scaled -- but NEVER the bound's own computed integer
+// value, in either a Cause or the Message (D-08-18): retuning
+// loanLivenessBoundFactor must never move this diagnostic's own published
+// ID for two runs that both happen to exceed their (possibly different)
+// bound -- TestLoanLivenessBoundValueIsNotInDiagnosticIdentity asserts this
+// directly by varying block count and confirming identical diagnostic IDs.
+// Repairs is nil: this is not one of lang-repair's five defect classes
+// (matching Phase 07's non-repairable disposition for a whole-program
+// call-graph cycle, the analogous whole-topology defect).
+func loanLivenessBoundExceededDiagnostic(functionID string, span diagnostic.Span) diagnostic.Diagnostic {
+	return diagnostic.Error(
+		"check.loan_liveness_bound_exceeded", span,
+		"loan-liveness fixpoint exceeded its derived, block-count-scaled iteration bound",
+		diagnostic.Cause{Kind: "function", Detail: functionID},
+		diagnostic.Cause{Kind: "block_count"},
+	)
+}
+
 // loanLivenessFixpoint computes backward monotone dataflow over the finite
 // lattice of live loan IDs per block boundary (Q2), iterated with a
 // worklist to a fixpoint. blocks must be given in a stable order; every
 // successor ID must resolve to a block in the same slice. A cycle (a block
 // reachable from itself by following successors) is rejected fail-closed --
 // OWN-03 is scoped to acyclic CFGs this phase (T-03-11) -- via the coded
-// check.cfg_back_edge diagnostic (D-08-19b); span is the caller's own
-// function-level span, attached to that refusal.
+// check.cfg_back_edge diagnostic (D-08-19b). The worklist loop itself is
+// bounded by loanLivenessBound (D-08-14): reaching it returns the named
+// check.loan_liveness_bound_exceeded refusal and a ZERO-VALUED
+// loanLivenessResult, never a truncated live-in map -- span is the caller's
+// own function-level span, attached to whichever of the two refusals fires.
 func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec, summaries interproceduralSummaryTable, span diagnostic.Span) (loanLivenessResult, *diagnostic.Diagnostic) {
 	byID := make(map[string]cfgBlockSpec, len(blocks))
 	order := make([]string, 0, len(blocks))
@@ -1793,8 +1876,15 @@ func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec, summaries in
 		queued[id] = true
 	}
 
+	distinctLoanCount := len(placeLoan.borrowOperation)
+	bound := loanLivenessBound(len(blocks), distinctLoanCount)
+
 	work := 0
 	for len(queue) > 0 {
+		if loanLivenessBoundSeam || work >= bound {
+			diag := loanLivenessBoundExceededDiagnostic(functionID, span)
+			return loanLivenessResult{}, &diag
+		}
 		id := queue[0]
 		queue = queue[1:]
 		queued[id] = false
