@@ -39,20 +39,31 @@ func findFunctionIDByName(t *testing.T, program core.Program, name string) strin
 
 // callBasicVariant returns testdata/phase07/call_basic.lang's checked
 // program, optionally with `identity` (the callee `main` calls) carrying a
-// declared PublicOrigin it did not have before -- a signature-affecting
+// declared ForeignContract it did not have before -- a signature-affecting
 // change to the callee's OWN published facts, which corevalidate's peer
-// derivation (derivePeerSignature) reads directly from function.PublicOrigin,
-// exactly like originvalidate.BuildInterface does.
-func callBasicVariant(t *testing.T, calleeHasDeclaredOrigin bool) (program core.Program, mainID, identityID string) {
+// derivation (derivePeerSignature) reads directly from
+// function.ForeignContract, exactly like originvalidate.BuildInterface
+// does. This deliberately mutates ForeignContract rather than PublicOrigin
+// (Phase 07's original choice): identity's body is an ordinary owned
+// passthrough with no borrow at all, so fabricating a PublicOrigin the body
+// never derives is now (Phase 09, D-09-16) correctly refused by
+// peerOriginContained -- exactly the false-agreement class this phase
+// closes, not a shape this helper should exercise by accident. No
+// core.OpForeignCall operation exists in identity's body, so none of
+// corevalidate's ForeignContract field-shape checks (all gated on an
+// actual OpForeignCall being present) fire for this synthetic contract; it
+// exists purely to make Foreign (part of the peer's signature and
+// ClosureDigest preimage) differ between variants.
+func callBasicVariant(t *testing.T, calleeHasDeclaredForeign bool) (program core.Program, mainID, identityID string) {
 	t.Helper()
 	program = loadCheckedProgram(t, "phase07", "call_basic.lang")
 	mainID = findFunctionIDByName(t, program, "main")
 	identityID = findFunctionIDByName(t, program, "identity")
-	if calleeHasDeclaredOrigin {
+	if calleeHasDeclaredForeign {
 		program = cloneCheckedProgramForTest(t, program)
 		for i := range program.Functions {
 			if program.Functions[i].ID == identityID {
-				program.Functions[i].PublicOrigin = &core.PublicOrigin{Paths: []string{program.Functions[i].Parameter.Name}, Access: "shared"}
+				program.Functions[i].ForeignContract = &core.ForeignContract{Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden"}
 			}
 		}
 	}

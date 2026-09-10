@@ -2116,25 +2116,70 @@ func peerParameterEscapesOwned(function *core.Function) bool {
 }
 
 // peerReturnDerivesFromBorrow is peerCallable's independent re-derivation of
-// the core.origin_omitted refusal class ONLY (D-07-33's narrowed scope), by
-// a materially different mechanism (D-07-22) from
+// the core.origin_omitted refusal class (the PublicOrigin == nil branch),
+// by a materially different mechanism (D-07-22) from
 // originvalidate.RecomputeOriginPerReturn's backward per-return walk:
 // FORWARD set-propagation from the parameter over
 // function.Linear.Operations, marking a place borrow-derived when it is the
 // target of an OpBorrowShared/OpBorrowExclusive hop from an already-tracked
 // place, or of a plain OpMove/OpCopy hop from one. It reports presence only
 // (does this function return SOME borrow-derived place), never an access
-// mode -- narrowed Callable only needs presence, not the mode
-// RecomputeOrigin's first-hop-wins rule additionally derives.
+// mode; it is now a thin wrapper over peerDeriveOriginFacts (D-09-17), which
+// Phase 09 extended with the access-mode payload peerOriginContained
+// consumes for the declared-origin branch (see peerCallable's doc comment
+// and TestPeerRederivesFormerlyNarrowedClasses, which closes D-07-33).
 //
-// D-07-33: this deliberately does NOT walk through OpForeignCall the way
+// This deliberately does NOT walk through OpForeignCall the way
 // originvalidate.checkForeignOriginOmitted/RecomputeOriginPerReturn do for a
-// declared borrow/retain foreign contract. foreign-origin-omitted is one of
-// the three classes this peer does not independently re-derive this phase
-// (see peerCallable's doc comment and TestPeerDoesNotRederiveNarrowedClasses).
+// declared borrow/retain foreign contract (D-09-20): that class is decided
+// separately, by peerForeignOriginOmitted's own bounded, function-local
+// check.
 func peerReturnDerivesFromBorrow(function *core.Function) bool {
+	return peerDeriveOriginFacts(function).Derived
+}
+
+// peerOriginFact is peerDeriveOriginFacts' single-place answer for one
+// function: whether its returned place is derived from the parameter
+// through a borrow hop, and if so, which access mode the hop that produced
+// the RETURNED PLACE ITSELF established (empty when nothing is derived).
+type peerOriginFact struct {
+	Derived bool
+	Access  string
+}
+
+// peerDeriveOriginFacts is peerReturnDerivesFromBorrow's access-mode-
+// carrying generalization (D-09-17): the SAME single forward pass over
+// function.Linear.Operations that function already performs, with its
+// `derived map[string]bool` widened to `derived map[string]string`
+// carrying the access mode ("shared" or "exclusive") a place was derived
+// with. This remains an INDEPENDENT re-derivation by a materially
+// different mechanism from originvalidate's RecomputeOriginPerReturn /
+// walkReturnOrigin (originvalidate.go:130-218): that is a BACKWARD walk
+// from each return, combined across returns by a separate combination law;
+// this is a single FORWARD set-propagation pass with no backward walk and
+// no combination law across returns at all. Equivalence to
+// RecomputeOriginPerReturn's own documented "first-seen-hop-wins" rule (the
+// hop NEAREST the return decides) falls out structurally here rather than
+// by an explicit backward scan: every borrow op writes its OWN kind into
+// its OWN freshly-produced target place (guarded so an already-set place's
+// mode is never overwritten -- first-hop-wins per place), so the mode read
+// back at the return is always the mode of whichever operation most
+// recently PRODUCED the returned place -- exactly the hop nearest the
+// return, never an earlier one a later reborrow superseded.
+// TestPeerFirstHopWinsMatchesRecomputeOriginPerReturn proves this
+// equivalence directly against real fixtures rather than assuming it
+// (D-09-19).
+//
+// peerCallable's peerOriginContained (below) then performs a CONTAINMENT
+// check of the DECLARED origin against this fact -- never a recomputation
+// of originvalidate's backward combination law -- which is what preserves
+// the peer's independence from a third layer (originvalidate) that already
+// exists (D-09-19). This walk also deliberately never crosses an
+// OpForeignCall hop (D-09-20): the foreign class is decided separately, by
+// peerForeignOriginOmitted's own bounded, function-local check.
+func peerDeriveOriginFacts(function *core.Function) peerOriginFact {
 	if function.Linear == nil {
-		return false
+		return peerOriginFact{}
 	}
 	// paramTrace tracks places that are the parameter itself, or reach it
 	// through a pure Move/Copy chain -- check.go's arm lowering copies the
@@ -2142,39 +2187,172 @@ func peerReturnDerivesFromBorrow(function *core.Function) bool {
 	// borrows it, so the borrow hop's SourceID is usually a copy of the
 	// parameter, never the parameter's own place ID directly.
 	paramTrace := map[string]bool{function.Parameter.ID: true}
-	derived := make(map[string]bool)
+	derived := make(map[string]string)
 	for _, operation := range function.Linear.Operations {
 		switch operation.Kind {
-		case core.OpBorrowShared, core.OpBorrowExclusive:
-			if paramTrace[operation.SourceID] || derived[operation.SourceID] {
-				derived[operation.TargetID] = true
+		case core.OpBorrowShared:
+			if paramTrace[operation.SourceID] || derived[operation.SourceID] != "" {
+				if derived[operation.TargetID] == "" {
+					derived[operation.TargetID] = "shared"
+				}
+			}
+		case core.OpBorrowExclusive:
+			if paramTrace[operation.SourceID] || derived[operation.SourceID] != "" {
+				if derived[operation.TargetID] == "" {
+					derived[operation.TargetID] = "exclusive"
+				}
 			}
 		case core.OpMove, core.OpCopy:
 			if paramTrace[operation.SourceID] {
 				paramTrace[operation.TargetID] = true
 			}
-			if derived[operation.SourceID] {
-				derived[operation.TargetID] = true
+			if mode := derived[operation.SourceID]; mode != "" && derived[operation.TargetID] == "" {
+				derived[operation.TargetID] = mode
 			}
 		}
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpReturn && derived[operation.SourceID] {
+		if operation.Kind != core.OpReturn {
+			continue
+		}
+		if mode := derived[operation.SourceID]; mode != "" {
+			return peerOriginFact{Derived: true, Access: mode}
+		}
+	}
+	return peerOriginFact{}
+}
+
+// disablePeerOriginContainmentForTest is Task 1's D-09-19 fault-injection
+// seam, the origin-containment counterpart of forcePeerCallableAlwaysTrue:
+// when true, peerCallable's declared-origin branch skips
+// peerOriginContained entirely and falls back to the old unconditional
+// agreement, reproducing D-07-33's pre-Phase-09 false agreement on the
+// three formerly-narrowed classes. Unexported, false in production, set
+// only via SetDisablePeerOriginContainmentForTest (export_test.go) by a
+// same-package test that defers the restore immediately -- QLT-08's proof
+// that the containment check is load-bearing, not vacuous
+// (TestPeerOriginContainmentDisabledFalselyAgreesAgain).
+var disablePeerOriginContainmentForTest bool
+
+// peerOriginContained is peerCallable's independent CONTAINMENT check for a
+// function with a DECLARED PublicOrigin (D-09-19): it derives the peer's
+// OWN facts via peerDeriveOriginFacts, then checks that the DECLARATION
+// covers them, rather than recomputing originvalidate's backward
+// combination law -- the distinction that preserves independence from a
+// third layer (originvalidate) that already exists. It reaches the same
+// VERDICT as originvalidate.PublishProblemsFor's three declared-origin
+// checks (domain, path containment, access agreement) without copying
+// their exact order, since the peer is under no obligation to reach the
+// verdict the same way.
+func peerOriginContained(function *core.Function) bool {
+	declared := function.PublicOrigin
+	if declared.Access != "shared" && declared.Access != "exclusive" {
+		// Domain check: a declared Access outside the closed set can never
+		// be matched by any derivation, so a mutated summary cannot declare
+		// a conflicting value and have it pass by accident.
+		return false
+	}
+	fact := peerDeriveOriginFacts(function)
+	if !fact.Derived {
+		return false
+	}
+	// Under arity 1, PublicOrigin.Paths has exactly one possible legal
+	// value (function.Parameter.Name) whenever anything is derivable at
+	// all (D-09-18), so path containment degenerates to a membership test
+	// -- written as containment (a loop over declared.Paths) rather than a
+	// single equality, so widening arity past 1 (D-07-07) does not
+	// silently change this function's semantics.
+	covered := false
+	for _, path := range declared.Paths {
+		if path == function.Parameter.Name {
+			covered = true
+			break
+		}
+	}
+	if !covered {
+		return false
+	}
+	return declared.Access == fact.Access
+}
+
+// disablePeerForeignOriginPeerForTest is Task 2's D-09-20 fault-injection
+// seam: when true, peerCallable skips peerForeignOriginOmitted entirely.
+// Unexported, false in production, set only via
+// SetDisableForeignOriginPeerForTest (export_test.go) by a same-package
+// test that defers the restore immediately -- QLT-08's proof that the
+// foreign class is load-bearing, not vacuous
+// (TestPeerOriginContainmentDisabledFalselyAgreesAgain's foreign-class
+// half).
+var disablePeerForeignOriginPeerForTest bool
+
+// peerForeignOriginOmitted is peerCallable's independent, BOUNDED
+// re-derivation of the core.foreign_origin_omitted class (D-09-20): it
+// consults ONLY this one function's own function.ForeignContract, never
+// originvalidate's checkForeignOriginOmitted, never a whole-program
+// callee-contract table. originvalidate's own checkForeignOriginOmitted
+// (originvalidate.go:282-345) is already a ~55-line backward walk scoped to
+// one function's own ForeignContract.Alias -- proof by existence that a
+// narrow, function-local foreign-crossing check is possible without
+// depending on spike 005's PARTIAL FFI-provenance surface. This function
+// performs the SAME bounded check with the peer's own FORWARD propagation
+// shape instead: seeded from the foreign call's own target place,
+// propagated through OpMove/OpCopy/OpBorrowShared/OpBorrowExclusive hops,
+// read at OpReturn -- never a backward sourceOf walk, and never by
+// importing or calling originvalidate. Crossing the OpForeignCall hop HERE
+// does not reopen the general-propagation prohibition
+// peerDeriveOriginFacts observes: this check is function-local, bounded to
+// one function's own declared contract, not a general cross-function walk.
+func peerForeignOriginOmitted(function *core.Function) bool {
+	if function.ForeignContract == nil {
+		return false
+	}
+	alias := function.ForeignContract.Alias
+	if alias != "borrow" && alias != "retain" {
+		return false
+	}
+	if function.Linear == nil || function.PublicOrigin != nil {
+		return false
+	}
+	fromForeign := make(map[string]bool)
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpForeignCall {
+			fromForeign[operation.TargetID] = true
+			continue
+		}
+		switch operation.Kind {
+		case core.OpMove, core.OpCopy, core.OpBorrowShared, core.OpBorrowExclusive:
+			if fromForeign[operation.SourceID] {
+				fromForeign[operation.TargetID] = true
+			}
+		}
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpReturn && fromForeign[operation.SourceID] {
 			return true
 		}
 	}
 	return false
 }
 
-// peerCallable is D-07-33's narrowed independent re-derivation of Callable.
-// It only independently answers the core.origin_omitted class: when no
-// public origin is declared, it reports Callable false iff the body itself
-// returns a borrow-derived place. When a public origin IS declared, this
-// peer does not check whether the declaration is understated, access-
-// mismatched, or a foreign-origin omission -- it reports Callable true
-// unconditionally, which is only ever a FALSE agreement with the producer
-// for those three classes (D-07-33, declared in PHASE-07-DEBT.md, closed in
-// Phase 09).
+// peerCallable is corevalidate's independent re-derivation of Callable
+// (D-04-03's full publication-safety predicate). D-07-33 originally
+// narrowed this to the core.origin_omitted class alone, leaving the other
+// three of PublishProblemsFor's four refusal classes as a provable FALSE
+// agreement; Phase 09 closes that narrowing (D-09-16: the literal OWN-08
+// reading that stops at origin_omitted is rejected -- Callable is defined
+// project-wide as the full predicate). It now independently re-derives all
+// four classes:
+//  1. Foreign-origin-omitted (peerForeignOriginOmitted, D-09-20), consulted
+//     first, matching PublishProblemsFor's own early return.
+//  2. core.origin_omitted, when no public origin is declared: Callable is
+//     false iff the body itself returns a borrow-derived place
+//     (peerReturnDerivesFromBorrow).
+//  3 and 4. Path containment (core.origin_understated) and access
+//     agreement (core.origin_access_mismatch), when a public origin IS
+//     declared: peerOriginContained compares the declaration against the
+//     peer's own forward-derived facts (D-09-19) -- a containment check,
+//     never a recomputation of originvalidate's backward combination law.
+//
 // disableSummaryPeerAtReplayBlocksForTest is fault 2's D-07-42 fault-
 // injection seam (07-02 Task 3): production always wires the summary peer
 // into replayBlocks (D-07-21); the test temporarily disables ONLY this
@@ -2386,10 +2564,13 @@ func peerCallable(function *core.Function) bool {
 	if forcePeerCallableAlwaysTrue {
 		return true
 	}
+	if !disablePeerForeignOriginPeerForTest && peerForeignOriginOmitted(function) {
+		return false
+	}
 	if function.PublicOrigin == nil {
 		return !peerReturnDerivesFromBorrow(function)
 	}
-	return true
+	return disablePeerOriginContainmentForTest || peerOriginContained(function)
 }
 
 // checkReleaseOrder independently rederives the reverse-order release

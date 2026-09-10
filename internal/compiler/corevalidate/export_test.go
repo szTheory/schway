@@ -110,3 +110,21 @@ func SetDisableFailsClosureJoinPeerForTest(disable bool) (restore func()) {
 	disableFailsClosureJoinPeerForTest = disable
 	return func() { disableFailsClosureJoinPeerForTest = previous }
 }
+
+// SetDisablePeerOriginContainmentForTest installs Task 1's D-09-19
+// origin-containment-disable seam and returns a restore func. Callers MUST
+// defer the restore immediately.
+func SetDisablePeerOriginContainmentForTest(disable bool) (restore func()) {
+	previous := disablePeerOriginContainmentForTest
+	disablePeerOriginContainmentForTest = disable
+	return func() { disablePeerOriginContainmentForTest = previous }
+}
+
+// SetDisableForeignOriginPeerForTest installs Task 2's D-09-20
+// foreign-origin-omitted-disable seam and returns a restore func. Callers
+// MUST defer the restore immediately.
+func SetDisableForeignOriginPeerForTest(disable bool) (restore func()) {
+	previous := disablePeerForeignOriginPeerForTest
+	disablePeerForeignOriginPeerForTest = disable
+	return func() { disablePeerForeignOriginPeerForTest = previous }
+}
