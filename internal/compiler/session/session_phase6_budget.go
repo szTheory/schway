@@ -40,29 +40,35 @@ const (
 )
 
 // QLT02MetricVocabulary is the closed set of metrics a budget row may
-// declare (D-06-14, D-06-15, D-06-21): the one deterministic hard-gate
-// candidate plus the two loose, never-blocking-on-their-own observations.
-// A row naming a metric outside this set is malformed.
+// declare (D-06-14, D-06-15, D-06-21, widened by Phase 09 Plan 02's
+// D-09-28): the two deterministic hard-gate candidates plus the two loose,
+// never-blocking-on-their-own observations. "peer_closure_recomputed_work_growth_exponent"
+// is declared here (Task 2), measured in a later plan, and ratified at the
+// mid-phase gate -- this plan adds no manifest row for it. A row naming a
+// metric outside this set is malformed.
 func QLT02MetricVocabulary() []string {
-	return []string{"recomputed_work", "elapsed_ns", "output_bytes", "recomputed_work_growth_exponent"}
+	return []string{"recomputed_work", "elapsed_ns", "output_bytes", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent"}
 }
 
 // QLT02GateEligibleMetrics is the closed set of metrics that may ever
 // carry gate_type "hard" (D-06-14, D-06-22, widened to two elements by
-// Phase 08 Plan 05's D-08-31/D-08-32): recomputed_work and
-// recomputed_work_growth_exponent are both deterministic and
-// machine-independent, so each requires zero statistics to gate on.
-// Supplied by the caller (not hardcoded inside the audit) so the audit
-// itself carries no opinion of its own.
+// Phase 08 Plan 05's D-08-31/D-08-32, and to three by Phase 09 Plan 02's
+// D-09-28): recomputed_work and recomputed_work_growth_exponent are both
+// deterministic and machine-independent, so each requires zero statistics
+// to gate on; peer_closure_recomputed_work_growth_exponent is the peer's
+// own distinct bound for its own distinct (reachability-closure) cost
+// curve, never check's ratified bound reused under a new name. Supplied by
+// the caller (not hardcoded inside the audit) so the audit itself carries
+// no opinion of its own.
 //
-// This is deliberately a SECOND, independent declaration of the same two
+// This is deliberately a SECOND, independent declaration of the same three
 // names measure.GateEligibleMetrics() returns -- session imports measure,
 // so it COULD read that slice directly, but the two chokepoints are kept
-// independent on purpose (T-08-17): TestGateEligibleMetricSetsAgreeAcrossChokepoints
+// independent on purpose (T-08-17, T-09-04): TestGateEligibleMetricSetsAgreeAcrossChokepoints
 // proves they agree as sets, so a future one-sided widening of only one of
 // them is a test failure, not a silently decorative manifest row.
 func QLT02GateEligibleMetrics() []string {
-	return []string{"recomputed_work", "recomputed_work_growth_exponent"}
+	return []string{"recomputed_work", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent"}
 }
 
 // qlt02GateEligibleMetricSet is QLT02GateEligibleMetrics() as a membership

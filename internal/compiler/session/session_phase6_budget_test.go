@@ -176,13 +176,48 @@ func TestBudgetAuditRefusesUnknownMetricVocabulary(t *testing.T) {
 	}
 }
 
-// TestGateEligibleMetricSetsAgreeAcrossChokepoints is Task 2(d)'s own
-// point (D-08-32/T-08-17): session.QLT02GateEligibleMetrics() and
+// gateEligibleMetricsAgree is the shared two-way set-equality predicate
+// TestGateEligibleMetricSetsAgreeAcrossChokepoints and
+// TestOneSidedChokepointWideningIsRejected both consult -- a genuine
+// membership check in both directions, not merely a length comparison plus
+// one-way membership (D-09-28's re-derivation, not a re-run).
+func gateEligibleMetricsAgree(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	setA := make(map[string]bool, len(a))
+	for _, metric := range a {
+		setA[metric] = true
+	}
+	setB := make(map[string]bool, len(b))
+	for _, metric := range b {
+		setB[metric] = true
+	}
+	for metric := range setA {
+		if !setB[metric] {
+			return false
+		}
+	}
+	for metric := range setB {
+		if !setA[metric] {
+			return false
+		}
+	}
+	return true
+}
+
+// TestGateEligibleMetricSetsAgreeAcrossChokepoints is Task 2(c)'s own
+// point (D-08-32/T-08-17, re-derived rather than merely re-run by Phase 09
+// Plan 02's D-09-28): session.QLT02GateEligibleMetrics() and
 // measure.GateEligibleMetrics() are two INDEPENDENT declarations of the
 // same set (measure cannot import session, so they cannot share a
 // constant) -- this test is what makes a future one-sided widening of only
 // one chokepoint a test failure instead of a silently decorative manifest
-// row that reads gate_type: hard but can never actually block.
+// row that reads gate_type: hard but can never actually block. The
+// re-derivation makes the comparison a genuine two-way membership check
+// (not merely length-plus-one-way) and additionally asserts an exact
+// three-member count, naming all three, so a FOURTH name added silently on
+// one side is caught by count as well as by membership.
 // TestQLT02InterproceduralGrowthExponent is Task 3(a)'s own falsifier
 // (D-08-33): the checked-in manifest carries EXACTLY ONE
 // recomputed_work_growth_exponent row, it is gate_type "hard", its metric
@@ -237,17 +272,79 @@ func TestQLT02InterproceduralGrowthExponent(t *testing.T) {
 func TestGateEligibleMetricSetsAgreeAcrossChokepoints(t *testing.T) {
 	sessionSet := QLT02GateEligibleMetrics()
 	measureSet := measure.GateEligibleMetrics()
-	if len(sessionSet) != len(measureSet) {
+	if !gateEligibleMetricsAgree(sessionSet, measureSet) {
 		t.Fatalf("QLT02GateEligibleMetrics() = %v, measure.GateEligibleMetrics() = %v -- not set-equal", sessionSet, measureSet)
 	}
-	seen := make(map[string]bool, len(measureSet))
-	for _, metric := range measureSet {
-		seen[metric] = true
+
+	const wantCount = 3
+	wantMembers := []string{"recomputed_work", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent"}
+	if len(sessionSet) != wantCount {
+		t.Fatalf("QLT02GateEligibleMetrics() has %d members, want exactly %d (%v): got %v", len(sessionSet), wantCount, wantMembers, sessionSet)
 	}
-	for _, metric := range sessionSet {
-		if !seen[metric] {
-			t.Errorf("QLT02GateEligibleMetrics() contains %q, not in measure.GateEligibleMetrics() %v", metric, measureSet)
+	if !gateEligibleMetricsAgree(sessionSet, wantMembers) {
+		t.Fatalf("QLT02GateEligibleMetrics() = %v, want exactly the three named members %v", sessionSet, wantMembers)
+	}
+}
+
+// TestOneSidedChokepointWideningIsRejected is Task 2(d)'s own mutation-kill
+// (QLT-08, D-08-32): it proves the agreement test above would ACTUALLY
+// catch a one-sided widening, rather than assuming it would. It constructs
+// the two chokepoints' real sets in-test, removes the new name from
+// exactly ONE of the two copies, and asserts gateEligibleMetricsAgree
+// (the same predicate the agreement test above uses) correctly reports
+// them unequal.
+func TestOneSidedChokepointWideningIsRejected(t *testing.T) {
+	sessionSet := QLT02GateEligibleMetrics()
+	measureSet := measure.GateEligibleMetrics()
+
+	// Sanity: the real, unmutated sets must agree before this test proves
+	// anything about a mutated copy.
+	if !gateEligibleMetricsAgree(sessionSet, measureSet) {
+		t.Fatalf("precondition failed: real chokepoints already disagree: session=%v measure=%v", sessionSet, measureSet)
+	}
+
+	oneSidedSession := removeMetric(sessionSet, "peer_closure_recomputed_work_growth_exponent")
+	if gateEligibleMetricsAgree(oneSidedSession, measureSet) {
+		t.Fatalf("gateEligibleMetricsAgree reported agreement after removing the new name from ONLY the session-side copy (session=%v, measure=%v) -- the agreement test would NOT have caught a one-sided widening", oneSidedSession, measureSet)
+	}
+
+	oneSidedMeasure := removeMetric(measureSet, "peer_closure_recomputed_work_growth_exponent")
+	if gateEligibleMetricsAgree(sessionSet, oneSidedMeasure) {
+		t.Fatalf("gateEligibleMetricsAgree reported agreement after removing the new name from ONLY the measure-side copy (session=%v, measure=%v) -- the agreement test would NOT have caught a one-sided widening", sessionSet, oneSidedMeasure)
+	}
+}
+
+// removeMetric returns a fresh copy of metrics with every occurrence of
+// name removed, never mutating the caller's own slice (both
+// QLT02GateEligibleMetrics() and measure.GateEligibleMetrics() are
+// package-level literals returned fresh on each call, but this stays
+// defensive regardless).
+func removeMetric(metrics []string, name string) []string {
+	out := make([]string, 0, len(metrics))
+	for _, metric := range metrics {
+		if metric == name {
+			continue
 		}
+		out = append(out, metric)
+	}
+	return out
+}
+
+// TestPeerClosureMetricIsNotDecorative is Task 2(e)'s own falsifier
+// (T-09-04): a newly-named gate-eligible metric that is present in the
+// GateEligibleMetrics() set but never actually consulted by Demote would be
+// silently demoted to VerdictObserved, producing a control that can never
+// block -- exactly the trap D-08-32 caught once for the prior widening.
+// This asserts Demote returns VerdictBlocking (not VerdictObserved) for
+// peer_closure_recomputed_work_growth_exponent given a low-CoV summary and
+// a blocking request, proving the name is genuinely gate-eligible in
+// practice, not merely present in a slice.
+func TestPeerClosureMetricIsNotDecorative(t *testing.T) {
+	summary := measure.Summary{CoV: 0}
+	got := measure.Demote(measure.VerdictBlocking, "peer_closure_recomputed_work_growth_exponent", summary, nil)
+	if got != measure.VerdictBlocking {
+		t.Fatalf("Demote(VerdictBlocking, %q, low-CoV summary, nil) = %q, want %q -- the new metric name is being silently demoted to observed (T-09-04)",
+			"peer_closure_recomputed_work_growth_exponent", got, measure.VerdictBlocking)
 	}
 }
 

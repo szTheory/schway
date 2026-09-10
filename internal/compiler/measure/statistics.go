@@ -114,21 +114,25 @@ func Verdicts() []string {
 
 // GateEligibleMetrics is the closed set of metric names Demote's rule 2
 // treats as gate-eligible at all (D-06-14/D-06-22, widened by Phase 08
-// Plan 05's D-08-31/D-08-32 to a two-element set): "recomputed_work" is
-// deterministic and machine-independent, and so is
-// "recomputed_work_growth_exponent" -- both require zero statistics to
-// gate on. Every OTHER metric (wall clock, output bytes, ...) is never
-// blocking on its own.
+// Plan 05's D-08-31/D-08-32 to a two-element set, and by Phase 09 Plan 02's
+// D-09-28 to a third): "recomputed_work" is deterministic and
+// machine-independent, and so is "recomputed_work_growth_exponent" -- both
+// require zero statistics to gate on. "peer_closure_recomputed_work_growth_exponent"
+// is the peer's OWN distinct bound for its OWN distinct cost curve (a
+// reachability closure, not a bounded worklist fixpoint) -- it must never
+// be conflated with check's ratified bound, so it is declared and widened
+// here as its own name. Every OTHER metric (wall clock, output bytes, ...)
+// is never blocking on its own.
 //
 // measure must not import session (session imports measure), so this is
-// deliberately a SECOND, independent declaration of the same two names
+// deliberately a SECOND, independent declaration of the same three names
 // session.QLT02GateEligibleMetrics() returns -- never a shared constant.
 // TestGateEligibleMetricSetsAgreeAcrossChokepoints (package session) proves
 // the two chokepoints agree as sets; a future one-sided widening of only
 // one of them fails that test rather than silently shipping a manifest row
-// that can never block (T-08-17).
+// that can never block (T-08-17, T-09-04).
 func GateEligibleMetrics() []string {
-	return []string{"recomputed_work", "recomputed_work_growth_exponent"}
+	return []string{"recomputed_work", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent"}
 }
 
 func gateEligibleMetricSet() map[string]bool {
