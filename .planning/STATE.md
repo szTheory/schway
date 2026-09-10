@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
 current_phase: 08
-current_phase_name: Interprocedural Loan Liveness in `check`
-status: planning
+current_phase_name: interprocedural-loan-liveness-in-check
+status: executing
 stopped_at: Phase 08 context gathered
-last_updated: "2026-09-09T21:47:14.798Z"
+last_updated: "2026-09-10T00:10:59.416Z"
 last_activity: 2026-09-09
 last_activity_desc: Phase 07 complete, transitioned to Phase 08
-state_head: 975fcdcb6e326a49b73100700c277a379c9d0857
+state_head: 8c0e6a5b44069b7bda8335bd123bf19e7bed6eb5
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 12
+  total_plans: 18
   completed_plans: 12
 ---
 
@@ -39,9 +39,9 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 08 — Interprocedural Loan Liveness in `check`
+Phase: 08 (interprocedural-loan-liveness-in-check) — READY TO EXECUTE
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-09 — Phase 07 complete, transitioned to Phase 08
 
 Progress: [--------------------] 0% (0/7 phases)
@@ -281,3 +281,13 @@ Next command: `/gsd-discuss-phase 07`
   research-reconciled 6-phase order, and the pre-phase spike decision).
 - S-006 is answered; Phase 08 planning is unblocked. Kick off S-007 alongside Phase 07.
 - Discuss and plan Phase 07 with /gsd-discuss-phase.
+
+### Gate override — Phase 08 decision coverage (2026-09-09)
+
+`check.decision-coverage-plan` returned `passed: false` during `/gsd-plan-phase 08` with
+`total: 32, covered: 0, uncovered: []` and the message "decisions could not be fully parsed".
+This is a parser false-negative, not a dropped decision: 08-CONTEXT.md carries 40 `D-08-NN`
+decisions and all 40 are cited across `08-01..08-06-PLAN.md` + `PHASE-08-DEBT.md` (verified by
+direct set difference; zero uncovered). The parser rejects bullets whose `:` sits inside the bold
+span, e.g. `- **D-08-01 (the falsification that decides the area):**`. Override accepted by the
+user; verify-phase should re-surface it.

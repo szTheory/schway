@@ -343,11 +343,28 @@ Phase 09 is meaningful.
 **Plans**: 6 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 08-01-PLAN.md — Tracer: one interprocedural refusal end-to-end (summary bit → forward canonicalization → diagnostic → CLI) plus D-07-49's entry defect in both admission paths
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 08-02-PLAN.md — The summary mechanism: `UsesParam` derived once per function in reverse postorder, memoized and transitive; the backward `OpCall` gate; program-order and never-persisted invariants
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 08-03-PLAN.md — Criterion 1's adversarial corpus: both twin pairs, depth-≥2 relay chain, negative control, match-arm regression, and criterion 4's consulted-field-set assertion
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 08-04-PLAN.md — Criterion 2: the derived fail-closed iteration bound, its named refusal, the seeded mutation-kill, and the explicit-stack pre-walk hardening
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 08-05-PLAN.md — Criterion 3 (EFF-02): the synthetic four-shape corpus, the growth-exponent fit, both gate chokepoints widened together, the manifest row and the risk lane
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 08-06-PLAN.md — The mandatory mid-phase gate, its adjudications, the cost bound ratified at the gate, and the liveness law declared final
 
 ### Phase 09: Peer Re-Derivation and D-03-02 Closure
