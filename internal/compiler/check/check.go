@@ -780,6 +780,51 @@ func cfgBlocksForFunction(function core.Function) []cfgBlockSpec {
 // never a callee's Linear or Match field (T-08-04). Emits at most one
 // diagnostic per function, choosing the earliest offending OpMove by
 // operation index (deterministic output).
+//
+// The liveness law is declared FINAL as of Phase 08's mandatory mid-phase
+// gate (08-06-PLAN.md, PHASE-08-DEBT.md): criterion 1's nine-fixture
+// adversarial corpus plus relay_escort_witness.lang, and criterion 3's
+// measured <=1.2 growth exponent across five call-graph shapes (ratified in
+// internal/compiler/session/qlt02_budget_manifest.json), were both
+// adjudicated from code-level evidence before this scope was closed. Four
+// facts make up that final scope, and a reviewer should be able to find all
+// four here rather than reconstructing them from the phase's plan history:
+//
+//  1. The law consults EXACTLY two callee-signature bits and nothing else:
+//     the callee's declared core.FunctionSignature.ReturnsBorrowOfParam
+//     (`return.mode`) and its derived interproceduralSummary.UsesParam
+//     (`parameters[0].mode`). No other field of the callee's signature, and
+//     no field outside the signature, ever participates in the liveness
+//     answer (TestInterproceduralDisclosedFieldSet asserts this as a closed
+//     set, table-driven over the whole testdata/phase08 corpus).
+//  2. Consumption at each call site (this function, and
+//     interproceduralLoanConflict) reads ONLY the summary table and
+//     core.FunctionSignature -- both of which are structurally body-free by
+//     construction (OWN-06's recorded interpretation, D-08-05). The callee's
+//     own core.Function.Linear or .Match is never read at a call site; a
+//     caller can never "see" a callee's body through this law.
+//  3. Production of those same two bits (buildInterproceduralSummaries)
+//     walks each callee's OWN already-checked body exactly once,
+//     callee-before-caller, strictly before any caller's admission consults
+//     it -- a one-pass, two-tier production/consumption split, not a
+//     re-walk triggered per call site.
+//  4. This code lives in the check.* namespace, not core.*. It is scheduled
+//     for promotion to core.* in Phase 09 at the moment corevalidate
+//     independently re-derives the same interprocedural fact (D-08-21) --
+//     promoting it earlier, before a second derivation exists to validate
+//     against, would ship an unvalidated single-source-of-truth move.
+//
+// The intraprocedural ownership.* loan-liveness law is deliberately NOT
+// retired in this phase (D-08-27's interim rule, reconfirmed at the
+// mid-phase gate): this pass runs LAST, as a separate walk over the
+// completed core.Program after every function's intraprocedural admission
+// has already passed, so no program is ever judged by both laws for the
+// same fact. Retirement is Phase 09's charter, alongside corevalidate's
+// independent peer. PHASE-08-DEBT.md is the register carrying this phase's
+// declared deferrals (the accepted-program disclosure vehicle, the OWN-09
+// document conflict, the two accepted-program peer-divergence fixtures, and
+// Pattern B's real-fixture scope limit) -- consult it before assuming any
+// open question here was silently dropped.
 func checkInterproceduralLoanLiveness(program core.Program, summaries interproceduralSummaryTable, spanByOperationID map[string]diagnostic.Span) []diagnostic.Diagnostic {
 	var diagnostics []diagnostic.Diagnostic
 	for _, function := range program.Functions {
