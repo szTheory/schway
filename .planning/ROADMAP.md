@@ -24,7 +24,7 @@ where a *gate* becomes meaningful, not where implementation could parallelize.
 ## Phases
 
 - [x] **Phase 07: Calls, Signatures, and Call-Graph Refusal** - `OpCall` becomes real at all six dispatch sites; cycles are refused, never hung. (completed 2026-09-09)
-- [ ] **Phase 08: Interprocedural Loan Liveness in `check`** - The checker derives cross-function loan liveness from signatures alone, under a measured, bounded cost.
+- [x] **Phase 08: Interprocedural Loan Liveness in `check`** - The checker derives cross-function loan liveness from signatures alone, under a measured, bounded cost. (completed 2026-09-10)
 - [ ] **Phase 09: Peer Re-Derivation and D-03-02 Closure** - `corevalidate` independently reaches the same interprocedural answer; the milestone's carried debt item closes.
 - [ ] **Phase 10: Trusted Interprocedural Oracle** - `originvalidate`, `pathoracle`, and a bounded interpreter call stack make cross-function execution trustworthy before anything is lowered.
 - [ ] **Phase 11: Multi-Function Native Emission and Interprocedural Equivalence** - `cgen` emits multi-function C17 and the five-axis comparator agrees across `-O0`/`-O3`/`-flto`.
@@ -591,7 +591,7 @@ whatever does ship.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 07. Calls, Signatures, and Call-Graph Refusal | 12/12 | Complete    | 2026-09-09 |
-| 08. Interprocedural Loan Liveness in `check` | 0/? | Not started | - |
+| 08. Interprocedural Loan Liveness in `check` | 6/6 | Complete    | 2026-09-10 |
 | 09. Peer Re-Derivation and D-03-02 Closure | 0/? | Not started | - |
 | 10. Trusted Interprocedural Oracle | 0/? | Not started | - |
 | 11. Multi-Function Native Emission and Equivalence | 0/? | Not started | - |

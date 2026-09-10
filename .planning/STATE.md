@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
-current_phase: 08
-current_phase_name: Interprocedural Loan Liveness in `check`
-status: verifying
-stopped_at: Completed 08-06-PLAN.md — Phase 08 complete
-last_updated: "2026-09-10T03:39:04.670Z"
-last_activity: 2026-09-09
-last_activity_desc: Phase 08 execution started
-state_head: 29861c3e9e6c0326a09a30bfb81742769492f44b
+current_phase: 09
+current_phase_name: Peer Re-Derivation and D-03-02 Closure
+status: planning
+stopped_at: Phase 08 complete, ready to plan Phase 09
+last_updated: "2026-09-10T04:02:24.685Z"
+last_activity: 2026-09-10
+last_activity_desc: Phase 08 complete, transitioned to Phase 09
+state_head: fbd03aeadb47f105c0f01f844d193c901c4ed3fa
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 18
   completed_plans: 18
 ---
@@ -39,10 +39,10 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 08 (Interprocedural Loan Liveness in `check`) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-09-09 — Phase 08 execution started
+Phase: 09 — Peer Re-Derivation and D-03-02 Closure
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-10 — Phase 08 complete, transitioned to Phase 09
 
 Progress: [--------------------] 0% (0/7 phases)
 
@@ -65,7 +65,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 
 **Velocity:**
 
-- Total plans completed: 71
+- Total plans completed: 77
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -79,6 +79,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | 05 | 14 | - | - |
 | 06 | 15 | - | - |
 | 07 | 12 | - | - |
+| 08 | 6 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -283,7 +284,7 @@ answered before Phase 12 is planned.
 ## Session Continuity
 
 Last session: 2026-09-10T03:39:04.575Z
-Stopped at: Completed 08-06-PLAN.md — Phase 08 complete
+Stopped at: Phase 08 complete, ready to plan Phase 09
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
