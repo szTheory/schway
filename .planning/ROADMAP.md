@@ -422,7 +422,7 @@ green, and only then does the deletion land (D-09-10, build-then-delete).
 Plans:
 **Wave 1**
 
-- [ ] 09-01-PLAN.md — TRACER: `corevalidate`'s own interprocedural loan-liveness derivation, its `OpCall` consult, the differential authored red-first, and seeded faults in both directions
+- [x] 09-01-PLAN.md — TRACER: `corevalidate`'s own interprocedural loan-liveness derivation, its `OpCall` consult, the differential authored red-first, and seeded faults in both directions
 - [ ] 09-02-PLAN.md — Enablement: relocate the call-graph corpus generator, widen the third gate-eligible metric chokepoint, and close the one pre-existing test failure
 
 **Wave 2** *(blocked on Wave 1 completion)*

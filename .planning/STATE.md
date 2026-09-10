@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 09
 current_phase_name: Peer Re-Derivation and D-03-02 Closure
 status: executing
-stopped_at: Phase 09 context gathered
-last_updated: "2026-09-10T19:58:09.694Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-09-10T20:33:07.496Z"
 last_activity: 2026-09-10
-last_activity_desc: Phase 08 complete, transitioned to Phase 09
-state_head: 476ba9766aad1ea5bf0cd035b0971f7da623e3e3
+last_activity_desc: Phase 09 execution started
+state_head: 8ed01d0c0863671bc94ba6ca72ea9f674146ae4f
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 18
+  completed_plans: 19
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 08 — Interprocedural Loan Liveness in `check`
+**Current focus:** Phase 09 — Peer Re-Derivation and D-03-02 Closure
 six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 **Durable context (survives context clears — read before re-deriving):**
@@ -39,10 +39,10 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 09 (Peer Re-Derivation and D-03-02 Closure) — READY TO EXECUTE
-Plan: Not started
+Phase: 09 (Peer Re-Derivation and D-03-02 Closure) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
-Last activity: 2026-09-10 — Phase 08 complete, transitioned to Phase 09
+Last activity: 2026-09-10 — Phase 09 execution started
 
 Progress: [--------------------] 0% (0/7 phases)
 
@@ -164,6 +164,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 08 P04 | ~55min | 3 tasks | 3 files |
 | Phase 08 P05 | 65min | 3 tasks | 8 files |
 | Phase 08 P06 | ~45min | 3 tasks | 4 files |
+| Phase 09 P01 | 33min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -203,6 +204,7 @@ Standing architectural commitments carried into M002:
 - [Phase 08]: 08-04: loanLivenessFixpoint's cycle pre-walk converted to an explicit-stack DFS ported from callgraph.Order, its cycle refusal promoted to a coded check.cfg_back_edge diagnostic, and the worklist given a derived fail-closed bound (factor*blocks*(loans+1), the +1 floor a Rule 1 auto-fix over the plan's literal formula) with a named check.loan_liveness_bound_exceeded refusal, mutation-killed via loanLivenessBoundSeam and proven identity-stable against its own retuning — Success criterion 2 required the only genuinely iterative fixpoint in Phase 08 to terminate under a fail-closed bound with a named refusal rather than a hang or silent truncation; the literal blockCount*distinctLoanCount formula computes zero for any loan-free function and would have refused nearly every legal program, caught by reasoning through the existing suite before committing
 - [Phase 08]: 08-05: interprocedural cost gate shipped -- five-shape synthetic call-graph corpus fits buildInterproceduralSummaries' own deterministic work counter to <=1.2 growth exponent against operation count; both hardcoded gate-eligibility chokepoints (measure.Demote, session.QLT02GateEligibleMetrics) widened together and proven to agree; a latent EvaluateBudget bug (literal-string gating instead of set membership) surfaced by that widening was Rule-1-fixed so the new metric genuinely blocks on its bound; ratified hard manifest row + lane:interprocedural-cost-scaling changed-risk lane land the gate in the feedback-budget ledger
 - [Phase 08]: 08-06: Mid-phase gate adjudicated all four agenda items from re-run evidence (a/b carried as named debt, c/d resolved), scope-cut trigger did not fire, liveness law declared final; debt register expanded 5->9 items; manifest row re-ratified at gate's own commit; OWN-06/EFF-02 confirmed complete (found already marked by 08-03/08-05 ahead of the gate, a process-ordering deviation documented, not reverted since correct in substance).
+- [Phase 09]: 09-01: corevalidate's own forward-derived interprocedural loan-carry peer (derivePeerLoanCarry/chainPeerLoanCarry) folded into the existing v.peerPostorder substrate; buildLoanChainIndex's OpCall consult retires both peerDivergenceExpected accept-twin divergences (D-08-40 resolved); bidirectional seeded-fault companion assertions prove the agreement load-bearing. Discovered and documented (not fixed) a pre-existing originvalidate OpCall-transparency defect this fix unmasks (PHASE-09-DEBT.md D-09-51) -- the full CLI's clean-check claim for both fixtures is not satisfied end-to-end, a separate validator's pre-existing bug.
 
 ### Pending Todos
 
@@ -283,10 +285,10 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-10T19:00:33.017Z
-Stopped at: Phase 09 context gathered
+Last session: 2026-09-10T20:33:07.375Z
+Stopped at: Completed 09-01-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
-Resume file: .planning/phases/09-peer-re-derivation-and-d-03-02-closure/09-CONTEXT.md
+Resume file: None
 Next command: `/gsd-discuss-phase 07`
 
 ## Operator Next Steps
