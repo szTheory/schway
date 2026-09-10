@@ -244,5 +244,17 @@
       "control_id": "control:foreign.nonlocal_exit_undetected"
     },
     "waived": null
+  },
+  {
+    "spike_id": "006",
+    "control_id": "spike-006-unmemoized-summary-recomputation-quadratic-blowup",
+    "control_mechanism": "an interprocedural loan-liveness derivation that re-walks callee bodies at every consultation instead of consulting a memoized per-function summary scales quadratically (and worse) in call-graph size instead of linearly, exhausting a bounded work budget on realistically-shared call graphs",
+    "live_descendant": null,
+    "waived": {
+      "reason": "spike 006 is a pre-Phase-08 cost-scaling PROBE, not a defect-injection workbench with its own control:-registry identifier (AllShippedControlIDs() is built only from Phase4RequiredControls()/Phase5RequiredControls(), which predate Phase 08 entirely) -- so this row cannot cite a live_descendant.control_id without failing the stale-control-reference audit. The identical hazard the spike priced (unmemoized per-call-site recomputation of interprocedural summaries) is guarded in shipped production code by buildInterproceduralSummaries' memoized callee-before-caller derivation (D-08-02), gated by the checked-in growth-exponent bound in qlt02_budget_manifest.json and re-swept on every relevant change by lane:interprocedural-cost-scaling -- both mechanisms the spike's own finding (memoized: linear; unmemoized: quadratic, 76x the memoized cost at 512 functions) directly motivated.",
+      "citation": "internal/compiler/check/costcorpus_test.go's TestInterproceduralSummaryGrowthExponentInOps (the shipped growth-exponent gate, <= 1.2 milli-exponent bound against operation count), internal/compiler/check/check.go's buildInterproceduralSummaries (the memoized callee-before-caller derivation itself), and internal/compiler/session/risk_lanes.json's lane:interprocedural-cost-scaling",
+      "owner": "compiler-frontend",
+      "phase": "09"
+    }
   }
 ]
