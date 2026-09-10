@@ -345,7 +345,7 @@ Phase 09 is meaningful.
 Plans:
 **Wave 1**
 
-- [ ] 08-01-PLAN.md — Tracer: one interprocedural refusal end-to-end (summary bit → forward canonicalization → diagnostic → CLI) plus D-07-49's entry defect in both admission paths
+- [x] 08-01-PLAN.md — Tracer: one interprocedural refusal end-to-end (summary bit → forward canonicalization → diagnostic → CLI) plus D-07-49's entry defect in both admission paths
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

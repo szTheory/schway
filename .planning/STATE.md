@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
 current_phase: 08
-current_phase_name: interprocedural-loan-liveness-in-check
+current_phase_name: Interprocedural Loan Liveness in `check`
 status: executing
-stopped_at: Phase 08 context gathered
-last_updated: "2026-09-10T00:10:59.416Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-09-10T00:46:09.489Z"
 last_activity: 2026-09-09
-last_activity_desc: Phase 07 complete, transitioned to Phase 08
-state_head: 8c0e6a5b44069b7bda8335bd123bf19e7bed6eb5
+last_activity_desc: Phase 08 execution started
+state_head: 6b7cdc82db2a762172591108962ae841e7072645
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 18
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 07 — Calls, Signatures, and Call-Graph Refusal
+**Current focus:** Phase 08 — Interprocedural Loan Liveness in `check`
 six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 **Durable context (survives context clears — read before re-deriving):**
@@ -39,10 +39,10 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 08 (interprocedural-loan-liveness-in-check) — READY TO EXECUTE
-Plan: Not started
+Phase: 08 (Interprocedural Loan Liveness in `check`) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-09-09 — Phase 07 complete, transitioned to Phase 08
+Last activity: 2026-09-09 — Phase 08 execution started
 
 Progress: [--------------------] 0% (0/7 phases)
 
@@ -157,6 +157,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 07 P10 | 105min | 3 tasks | 9 files |
 | Phase 07 P11 | 90 min | 3 tasks | 12 files |
 | Phase 07 P12 | 55min | 3 tasks | 12 files |
+| Phase 08 P01 | ~33min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,7 @@ Standing architectural commitments carried into M002:
 - [Phase 07]: 07-10: CheckCommandFile consults corevalidate.Validate (refusing union, fixed precedence check-then-peer-then-originvalidate); interface export/core report a peer refusal as StatusInvalid with the peer's own code instead of tool.operation_failed. Closes 07-REVIEW.md CR-04/PVG-03.
 - [Phase 07]: 07-11: consume-on-call closes CR-01/PVG-01 -- resolveCallBinding consumes call arguments (ability-decided), corevalidate independently re-derives from the core artifact alone; D-07-07 corrected, D-07-52 records the accepted implicit-transfer residual — Checkpoint auto-ratified under auto_advance/yolo mode
 - [Phase 07]: 07-12: Foreign/Fails made closure-derived over the proven-acyclic call graph in both originvalidate (joinForeignReach/joinFails) and corevalidate (peerJoinForeignReach/peerJoinFails, independently written, no shared helper beyond core.ForeignReachConflict); closes 07-REVIEW.md CR-03/PVG-02 and incidentally IN-01 (index-coupling fix). Phase 07 has no open post-verification gaps.
+- [Phase 08]: 08-01: interprocedural fact enters through derivePlaceLoans' forward canonicalization pass (D-08-07), never the backward transfer function; new post-acyclicity check.interprocedural_loan_liveness law closes D-03-02's interprocedural half on relay_escort_witness.lang, with both admission paths proven to agree via a mutation-tested differential (D-08-09).
 
 ### Pending Todos
 
@@ -269,10 +271,10 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-09T21:47:14.546Z
-Stopped at: Phase 08 context gathered
+Last session: 2026-09-10T00:46:09.415Z
+Stopped at: Completed 08-01-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
-Resume file: .planning/phases/08-interprocedural-loan-liveness-in-check/08-CONTEXT.md
+Resume file: None
 Next command: `/gsd-discuss-phase 07`
 
 ## Operator Next Steps

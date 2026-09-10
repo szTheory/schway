@@ -6,7 +6,7 @@
     {
       "number": "07",
       "name": "Calls, Signatures, and Call-Graph Refusal",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "08",
@@ -42,7 +42,7 @@
   "next": {
     "command": "/gsd:progress --next",
     "label": "Advance to the next step",
-    "reason": "Phase 7 of 7 · executing"
+    "reason": "Phase 8 of 7 · executing"
   },
-  "updated_at": "2026-09-09T14:49:40.726Z"
+  "updated_at": "2026-09-10T00:46:03.989Z"
 }
