@@ -36,7 +36,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [ ] **OWN-05**: Ownership transfer at a call site (move vs borrow, per the
       callee's declared parameter convention) has one meaning, derived
       independently by `check`, `corevalidate`, and `interp`.
-- [ ] **OWN-06**: `check` derives interprocedural loan liveness from callee
+- [x] **OWN-06**: `check` derives interprocedural loan liveness from callee
       signatures only — never by re-walking callee bodies — and terminates
       under a fail-closed iteration bound.
 - [ ] **OWN-07**: `corevalidate` independently re-derives the same
@@ -167,7 +167,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | SEM-08 | Phase 10 | Pending |
 | SEM-09 | Phase 10 | Pending |
 | OWN-05 | Phase 09 | Pending |
-| OWN-06 | Phase 08 | Pending |
+| OWN-06 | Phase 08 | Complete |
 | OWN-07 | Phase 09 | Pending |
 | OWN-08 | Phase 09 | Pending |
 | OWN-09 | Phase 09 | Pending |

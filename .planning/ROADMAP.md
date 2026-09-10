@@ -353,7 +353,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 08-03-PLAN.md — Criterion 1's adversarial corpus: both twin pairs, depth-≥2 relay chain, negative control, match-arm regression, and criterion 4's consulted-field-set assertion
+- [x] 08-03-PLAN.md — Criterion 1's adversarial corpus: both twin pairs, depth-≥2 relay chain, negative control, match-arm regression, and criterion 4's consulted-field-set assertion
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
