@@ -48,10 +48,13 @@ exceed that bound"* is therefore **unsatisfiable from source in this language**.
 
 This is the exact disposition D-07-47 already established for
 `check.call_return_type_unrepresentable`. The control ships with a living
-witness — the unexported `loanLivenessBoundSeam` package-level var, false in
-production, flipped and deferred-restored by a same-package test that asserts
-the named refusal fires — so it is never a control that has never been seen to
-fail.
+witness — the unexported `loanLivenessBoundSeam` package-level var
+(`internal/compiler/check/check.go`), false in production, flipped and
+deferred-restored by `TestLoanLivenessBoundMutationKilled`
+(`internal/compiler/check/check_test.go`), which asserts BOTH directions: the
+named `check.loan_liveness_bound_exceeded` refusal fires with the seam up, and
+the same otherwise-clean input admits cleanly with the seam down — so it is
+never a control that has never been seen to fail.
 
 **Reopen when:** the language gains iteration, loops, collections, or arity
 past 1 — any of which makes the lattice height program-controlled and the

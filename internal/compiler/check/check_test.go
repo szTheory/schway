@@ -429,6 +429,88 @@ func TestLoanLivenessBoundExceededRefusesRatherThanTruncates(t *testing.T) {
 	}
 }
 
+// TestLoanLivenessBoundMutationKilled is Task 3's D-08-16/QLT-08 kill for
+// the bound control itself, following TestCallReturnTypeDerivationMutationKilled's
+// exact shape (defer-restore declared BEFORE the flip): with the seam
+// engaged, an otherwise-clean input is refused with the named bound
+// diagnostic; with it disengaged, the SAME input is admitted cleanly. The
+// control has been SEEN TO FAIL, not merely shown to exist -- no control
+// ships having never been seen to fail.
+func TestLoanLivenessBoundMutationKilled(t *testing.T) {
+	defer func() { loanLivenessBoundSeam = false }()
+
+	loanOp := core.LinearOperation{ID: "fn:op:0", Kind: core.OpBorrowShared, SourceID: "fn:place:0", TargetID: "fn:place:1", LoanID: "fn:loan:0"}
+	useOp := core.LinearOperation{ID: "fn:op:1", Kind: core.OpReturn, SourceID: "fn:place:1"}
+	block := cfgBlockSpec{id: "fn:block:straight", operations: []core.LinearOperation{loanOp, useOp}, successors: nil}
+
+	loanLivenessBoundSeam = true
+	_, tripped := loanLivenessFixpoint("fn", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if tripped == nil || tripped.Code != "check.loan_liveness_bound_exceeded" {
+		t.Fatalf("expected the seam to force the named bound refusal, got %+v", tripped)
+	}
+
+	loanLivenessBoundSeam = false
+	clean, notTripped := loanLivenessFixpoint("fn", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if notTripped != nil {
+		t.Fatalf("expected a clean result with the seam disengaged, got %+v", notTripped)
+	}
+	if clean.work == 0 {
+		t.Fatalf("expected nonzero counted work for the clean run")
+	}
+}
+
+// TestLoanLivenessBoundValueIsNotInDiagnosticIdentity is Task 3(b)'s
+// D-08-18 identity-stability falsifier: two bound refusals constructed with
+// the SAME functionID and span but DIFFERING computed bounds (varied by
+// block count, seam-forced so both trip regardless of the actual bound
+// reached) must carry the IDENTICAL diagnostic ID, and neither the
+// Message nor any Cause's Detail may contain either run's own computed
+// bound value as a substring. Retuning loanLivenessBoundFactor must never
+// silently move this diagnostic's published ID.
+func TestLoanLivenessBoundValueIsNotInDiagnosticIdentity(t *testing.T) {
+	defer func() { loanLivenessBoundSeam = false }()
+	loanLivenessBoundSeam = true
+
+	loanOp := core.LinearOperation{ID: "fn:op:0", Kind: core.OpBorrowShared, SourceID: "fn:place:0", TargetID: "fn:place:1", LoanID: "fn:loan:0"}
+	oneBlock := []cfgBlockSpec{{id: "fn:block:a", operations: []core.LinearOperation{loanOp}, successors: nil}}
+	threeBlocks := []cfgBlockSpec{
+		{id: "fn:block:a", operations: []core.LinearOperation{loanOp}, successors: []string{"fn:block:b", "fn:block:c"}},
+		{id: "fn:block:b", successors: nil},
+		{id: "fn:block:c", successors: nil},
+	}
+
+	_, diagA := loanLivenessFixpoint("fn", oneBlock, interproceduralSummaryTable{}, diagnostic.Span{})
+	_, diagB := loanLivenessFixpoint("fn", threeBlocks, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diagA == nil || diagB == nil {
+		t.Fatalf("expected the seam to force the bound refusal on both runs, got diagA=%+v diagB=%+v", diagA, diagB)
+	}
+
+	boundA := loanLivenessBound(len(oneBlock), 1)
+	boundB := loanLivenessBound(len(threeBlocks), 1)
+	if boundA == boundB {
+		t.Fatalf("test setup did not actually vary the computed bound: %d == %d", boundA, boundB)
+	}
+
+	if diagA.ID != diagB.ID {
+		t.Fatalf("the bound refusal's own identity moved across two differing computed bounds (%d vs %d) -- retuning the bound must never move a published diagnostic ID (D-08-18): %q vs %q", boundA, boundB, diagA.ID, diagB.ID)
+	}
+
+	for _, entry := range []struct {
+		diag  *diagnostic.Diagnostic
+		bound int
+	}{{diagA, boundA}, {diagB, boundB}} {
+		boundText := strconv.Itoa(entry.bound)
+		if strings.Contains(entry.diag.Message, boundText) {
+			t.Fatalf("message %q contains the computed bound value %d", entry.diag.Message, entry.bound)
+		}
+		for _, cause := range entry.diag.Causes {
+			if strings.Contains(cause.Detail, boundText) {
+				t.Fatalf("cause detail %q contains the computed bound value %d", cause.Detail, entry.bound)
+			}
+		}
+	}
+}
+
 // TestStraightLineEndpointsUnchanged pins the shipped straight-line
 // reborrow-while-moved fixture's answer against the NEW backward dataflow,
 // run here as a single synthetic block (a straight-line body IS one block —
