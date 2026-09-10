@@ -434,7 +434,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 09-06-PLAN.md — The peer's own closure cost curve, its bound and mutation-kill, and the two-way disclosed-field-set identity
-- [ ] 09-07-PLAN.md — The three pre-deletion gates: diagnostic ordering stability, D-09-49 Q1's enumeration, and the AST-shadow-path subsumption corpus
+- [x] 09-07-PLAN.md — The three pre-deletion gates: diagnostic ordering stability, D-09-49 Q1's enumeration, and the AST-shadow-path subsumption corpus
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
