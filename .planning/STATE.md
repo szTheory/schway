@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 09
 current_phase_name: Peer Re-Derivation and D-03-02 Closure
 status: executing
-stopped_at: Completed 09-06-PLAN.md
-last_updated: "2026-09-10T22:56:59.060Z"
+stopped_at: Completed 09-08-PLAN.md
+last_updated: "2026-09-10T23:46:52.000Z"
 last_activity: 2026-09-10
-last_activity_desc: Phase 09 execution started
-state_head: 7574cd7cc731f4a0905ecc01c295ba3b1046654e
+last_activity_desc: Phase 09 mandatory mid-phase gate adjudicated; computeLoanLastUses deletion AUTHORIZED for plan 09-09
+state_head: fbcf182
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 25
+  completed_plans: 27
 ---
 
 # Project State
@@ -40,9 +40,9 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 09 (Peer Re-Derivation and D-03-02 Closure) — EXECUTING
-Plan: 8 of 10
-Status: Ready to execute
-Last activity: 2026-09-10 — Phase 09 execution started
+Plan: 9 of 10
+Status: Ready to execute — computeLoanLastUses deletion AUTHORIZED by plan 09-08's gate
+Last activity: 2026-09-10 — Completed 09-08-PLAN.md (mandatory mid-phase gate)
 
 Progress: [--------------------] 0% (0/7 phases)
 

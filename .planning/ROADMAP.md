@@ -438,7 +438,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 09-08-PLAN.md — MANDATORY MID-PHASE GATE at the build-then-delete boundary; the peer's bound ratified at the gate's own commit
+- [x] 09-08-PLAN.md — MANDATORY MID-PHASE GATE at the build-then-delete boundary; the peer's bound ratified at the gate's own commit
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -623,7 +623,7 @@ whatever does ship.
 |-------|----------------|--------|-----------|
 | 07. Calls, Signatures, and Call-Graph Refusal | 12/12 | Complete    | 2026-09-09 |
 | 08. Interprocedural Loan Liveness in `check` | 6/6 | Complete    | 2026-09-10 |
-| 09. Peer Re-Derivation and D-03-02 Closure | 0/? | Not started | - |
+| 09. Peer Re-Derivation and D-03-02 Closure | 8/10 | In progress | - |
 | 10. Trusted Interprocedural Oracle | 0/? | Not started | - |
 | 11. Multi-Function Native Emission and Equivalence | 0/? | Not started | - |
 | 12. `Result` Payloads | 0/? | Not started | - |

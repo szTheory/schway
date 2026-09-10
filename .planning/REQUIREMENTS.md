@@ -39,7 +39,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [x] **OWN-06**: `check` derives interprocedural loan liveness from callee
       signatures only — never by re-walking callee bodies — and terminates
       under a fail-closed iteration bound.
-- [ ] **OWN-07**: `corevalidate` independently re-derives the same
+- [x] **OWN-07**: `corevalidate` independently re-derives the same
       interprocedural loan-liveness facts without sharing an implementation
       with `check`; a seeded endpoint-level fault makes the two peers diverge.
 - [ ] **OWN-08**: D-03-02 is closed — an exported borrow-derived return with no
@@ -168,7 +168,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | SEM-09 | Phase 10 | Pending |
 | OWN-05 | Phase 09 | Pending |
 | OWN-06 | Phase 08 | Complete |
-| OWN-07 | Phase 09 | Pending |
+| OWN-07 | Phase 09 | Complete |
 | OWN-08 | Phase 09 | Pending |
 | OWN-09 | Phase 09 | Pending |
 | NAT-04 | Phase 11 | Pending |
