@@ -25,7 +25,7 @@ where a *gate* becomes meaningful, not where implementation could parallelize.
 
 - [x] **Phase 07: Calls, Signatures, and Call-Graph Refusal** - `OpCall` becomes real at all six dispatch sites; cycles are refused, never hung. (completed 2026-09-09)
 - [x] **Phase 08: Interprocedural Loan Liveness in `check`** - The checker derives cross-function loan liveness from signatures alone, under a measured, bounded cost. (completed 2026-09-10)
-- [ ] **Phase 09: Peer Re-Derivation and D-03-02 Closure** - `corevalidate` independently reaches the same interprocedural answer; the milestone's carried debt item closes.
+- [x] **Phase 09: Peer Re-Derivation and D-03-02 Closure** - `corevalidate` independently reaches the same interprocedural answer; the milestone's carried debt item closes. (completed 2026-09-10)
 - [ ] **Phase 10: Trusted Interprocedural Oracle** - `originvalidate`, `pathoracle`, and a bounded interpreter call stack make cross-function execution trustworthy before anything is lowered.
 - [ ] **Phase 11: Multi-Function Native Emission and Interprocedural Equivalence** - `cgen` emits multi-function C17 and the five-axis comparator agrees across `-O0`/`-O3`/`-flto`.
 - [ ] **Phase 12: `Result` Payloads** - Payload-carrying alternatives are storable, matchable, and affine-correct in all three engines.
@@ -42,7 +42,7 @@ answered**). None of them is production code and none carries a requirement.
 |-------|-------------------------|--------|------|
 | **S-006 Interprocedural liveness cost-scaling probe** — **ANSWERED (VALIDATED, 2026-09-09)**: memoized is linear in program size on every shape; unmemoized is quadratic-to-exponential. The cache is the mechanism, not an optimization. Phase 08 planning unblocked. | Does summary-based liveness stay linear/sub-quadratic in call-graph size, or must a memoized summary cache be designed in from the start? | **Planning of Phase 08** (hard entry gate) — released | Alongside Phase 07 |
 | **S-007 Recursive / mutually-recursive stress corpus** | Do a bounded call stack and cycle refusal distinguish legal deep recursion from illegal cycles without false positives on parser-shaped programs? Is the stack ceiling a fixed constant or a declared budget? | Nothing (informs Phase 07's design) | Alongside Phase 07, non-blocking |
-| **S-008 Nyquist fold-in cost measurement** | Is closing M001 Phase 3's Nyquist debt genuinely cheap when folded into code Phase 09 already has open? | **QLT-07's commitment status** in Phase 09 | Before Phase 09 planning; hours, not days |
+| **S-008 Nyquist fold-in cost measurement** — **REPLACED (2026-09-10, before Phase 09 planning)**: a bounded inventory/estimation pre-flight pass, not a formal spike, ran instead and returned QLT-07 **COMMITTED** against a threshold pre-registered before the count was taken (D-09-40/D-09-40a). See the amendment note below the table. | Is closing M001 Phase 3's Nyquist debt genuinely cheap when folded into code Phase 09 already has open? | **QLT-07's commitment status** in Phase 09 — answered by the replacement pass | Before Phase 09 planning; hours, not days |
 
 ### Decision: the cost-scaling probe is a pre-phase spike, not a phase and not a Phase 07 gate
 
@@ -68,6 +68,44 @@ Deliberate choice, stated per instruction:
 
 A spike is finished when its gate is answered. Expanding one into production
 code is an explicit anti-pattern here.
+
+### Amendment: S-008 replaced by a bounded inventory pre-flight pass, not run as a formal spike (D-09-39)
+
+Recorded as an explicit process amendment, not a silent substitution — a
+future reader must not find this spike table quietly disagreeing with what
+actually happened.
+
+S-008 asked "is closing M001 Phase 3's Nyquist debt genuinely cheap when
+folded into code Phase 09 already has open?" That question fails this
+project's own spike discipline (`.planning/spikes/CONVENTIONS.md`) on two
+independent grounds:
+
+- **Category error.** It has no named competing mechanisms and no oracle
+  independent of the mechanism under test — it is a scoping/estimation
+  question, identical in kind to the sizing `plan-phase` already does at
+  every phase boundary, not a validity question like S-006's
+  memoized-versus-unmemoized cost-scaling comparison. Forcing spike shape
+  onto it would mean inventing artificial arms, which `CONVENTIONS.md` itself
+  argues against.
+- **Would reproduce an already-open registry gap a second time.** Standing up
+  a `.planning/spikes/008-*` directory would have reproduced D-08-43's
+  already-open, un-owned `.planning/spikes` registry-maintenance gap a
+  second time (`TestQLT01RegistryCoversAllFiveSpikes` already failed before
+  Phase 09 touched anything, because spike 006 had a directory and no
+  registry row).
+
+**Replacement:** a bounded inventory/estimation pre-flight pass, run
+2026-09-10 during Phase 09 planning, before any `09-PLAN.md` was drafted.
+The pass enumerated only the loan-liveness-scoped rows of
+`03-VALIDATION.md` (03-03/03-04/03-05, excluding OWN-04's 03-06/03-07 rows)
+against a threshold **pre-registered before the count was taken** (D-09-40):
+QLT-07 is committed iff the inventory requires ≤ 1 additional plan and opens
+zero packages/files that OWN-07/OWN-08's own work does not already touch.
+Finding: all 33 named tests already existed and passed
+(`go test ./internal/compiler/check ./internal/compiler/corevalidate ./internal/compiler/pathoracle`,
+all three `ok`). **Verdict: QLT-07 COMMITTED** (D-09-40a). The closure itself
+landed in Phase 09's own `09-VALIDATION.md`, "M001 Phase 3 Debt Closure
+(loan-liveness subset)" section, ratified at plan 09-10.
 
 ## Departure from the Research-Reconciled Build Order
 
@@ -446,7 +484,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 09-10-PLAN.md — QLT-07's scoped closure, the OWN-05a/OWN-05b split, and the requirement and roadmap corrections
+- [x] 09-10-PLAN.md — QLT-07's scoped closure, the OWN-05a/OWN-05b split, and the requirement and roadmap corrections
 
 ### Phase 10: Trusted Interprocedural Oracle
 
