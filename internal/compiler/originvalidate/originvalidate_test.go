@@ -9,6 +9,7 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,6 +21,96 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// originValidateForbiddenImports is D-10-16's closed forbidden set for
+// BOTH guards below: `check` and `ast` (the pre-existing set) PLUS
+// `corevalidate` -- Criterion 1 requires the OpCall walk to import
+// "neither check NOR corevalidate," and before this plan neither guard's
+// forbidden list could catch a corevalidate import at all. Deliberately
+// NOT `/compiler/callgraph`: originvalidate's own callgraph import (line
+// 18) is real and kept (D-10-19, PHASE-10-DEBT.md); the asymmetry with
+// corevalidate's own guard (which does forbid callgraph) is recorded, not
+// resolved, in that debt row.
+//
+// TestOriginValidatorImportsStayIndependent and
+// TestOriginValidateImportsNeitherCheckNorAst deliberately stay two
+// near-identical guards rather than one shared table (D-10-18): the
+// existing redundancy across four-plus such guards in this codebase means
+// blinding the mechanism requires multiple coordinated deletions, not one
+// — that redundancy is worth more here than the maintainability win a
+// single shared table would buy. Do not "clean this up" into one table.
+var originValidateForbiddenImports = []string{"/compiler/check", "/compiler/ast", "/compiler/corevalidate"}
+
+// directImportViolation is the go/parser ImportsOnly directory scan shared
+// by both guards below: it reads originvalidate's own Go source files'
+// import lists (never assumed from a doc comment) and returns the first
+// forbidden import path found, or "" if none. Kept as a direct-import scan
+// even though assertTransitiveImportsStayIndependent below also runs a
+// transitive check over the SAME forbidden set -- the redundancy is
+// deliberate (D-10-17): this scan catches a forbidden import added
+// directly to this package; the transitive check catches one added
+// indirectly, through a helper package that itself imports something
+// forbidden.
+func directImportViolation(t *testing.T, dir string, forbidden []string) string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileSet := token.NewFileSet()
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fileSet, filepath.Join(dir, entry.Name()), nil, parser.ImportsOnly)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, imported := range file.Imports {
+			path := strings.Trim(imported.Path.Value, `"`)
+			for _, bad := range forbidden {
+				if strings.HasSuffix(path, bad) {
+					return entry.Name() + " imports " + path
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// transitiveImportViolation is D-10-17's own suffix-matching predicate,
+// factored out so BOTH the real `go list -deps` scan below and its own
+// negative control (TestTransitiveImportsGuardCanFail) exercise the
+// IDENTICAL logic -- proving the negative control is testing the real
+// predicate, not a second, drifting copy of it.
+func transitiveImportViolation(deps []string, forbidden []string) string {
+	for _, dep := range deps {
+		for _, bad := range forbidden {
+			if strings.HasSuffix(dep, bad) {
+				return dep
+			}
+		}
+	}
+	return ""
+}
+
+// transitiveImportsViolation is D-10-17's hardening of the direct-import
+// scan above: nobody adds an import of `check` to a re-deriver on purpose;
+// they add a helper package that itself imports `check`. This shells out
+// to `go list -deps`, which ships with the toolchain CI already requires
+// (adds no dependency), and asserts no line of originvalidate's own
+// transitive dependency closure has a forbidden suffix.
+func transitiveImportsViolation(t *testing.T, forbidden []string) string {
+	t.Helper()
+	cmd := exec.Command("go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/originvalidate")
+	cmd.Dir = testsupport.ProjectPath()
+	output, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("go list -deps: %v", err)
+	}
+	deps := strings.Split(strings.TrimSpace(string(output)), "\n")
+	return transitiveImportViolation(deps, forbidden)
+}
 
 // TestOriginValidateImportsNeitherCheckNorAst is 03-06-01's structural
 // falsifier for the plan's binding prohibition: originvalidate decides from
@@ -33,51 +124,51 @@ import (
 // core artifact alone, exactly like every other check in this package --
 // this re-runs the identical file-scan so the new function is covered by
 // construction rather than by a second, drifting assertion.
+//
+// 10-02 Task 3 (D-10-16/D-10-17): both guards now ALSO forbid corevalidate,
+// and both ALSO run the transitive go/list-deps scan below the direct scan
+// -- the direct `go/parser` ImportsOnly scan is hardened, not replaced
+// (both still run).
+//
+// Residual weakness (D-10-20, deliberately stated rather than papered
+// over): this guard lives in the package it polices, so a single commit
+// could add a forbidden import here and edit this very assertion in the
+// same commit. Transitive checking does not fix that; neither would
+// consolidating the two guards into one table.
 func TestOriginValidatorImportsStayIndependent(t *testing.T) {
 	dir := testsupport.ProjectPath("internal", "compiler", "originvalidate")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal(err)
+	if violation := directImportViolation(t, dir, originValidateForbiddenImports); violation != "" {
+		t.Fatalf("%s, which originvalidate (including the foreign-origin path) must never depend on", violation)
 	}
-	fileSet := token.NewFileSet()
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
-			continue
-		}
-		file, err := parser.ParseFile(fileSet, filepath.Join(dir, entry.Name()), nil, parser.ImportsOnly)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, imported := range file.Imports {
-			path := strings.Trim(imported.Path.Value, `"`)
-			if strings.HasSuffix(path, "/compiler/check") || strings.HasSuffix(path, "/compiler/ast") {
-				t.Fatalf("%s imports %s, which originvalidate (including the foreign-origin path) must never depend on", entry.Name(), path)
-			}
-		}
+	if violation := transitiveImportsViolation(t, originValidateForbiddenImports); violation != "" {
+		t.Fatalf("originvalidate transitively imports %s, which it must never depend on", violation)
 	}
 }
 
 func TestOriginValidateImportsNeitherCheckNorAst(t *testing.T) {
 	dir := testsupport.ProjectPath("internal", "compiler", "originvalidate")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal(err)
+	if violation := directImportViolation(t, dir, originValidateForbiddenImports); violation != "" {
+		t.Fatalf("%s, which originvalidate must never depend on", violation)
 	}
-	fileSet := token.NewFileSet()
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
-			continue
-		}
-		file, err := parser.ParseFile(fileSet, filepath.Join(dir, entry.Name()), nil, parser.ImportsOnly)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, imported := range file.Imports {
-			path := strings.Trim(imported.Path.Value, `"`)
-			if strings.HasSuffix(path, "/compiler/check") || strings.HasSuffix(path, "/compiler/ast") {
-				t.Fatalf("%s imports %s, which originvalidate must never depend on", entry.Name(), path)
-			}
-		}
+	if violation := transitiveImportsViolation(t, originValidateForbiddenImports); violation != "" {
+		t.Fatalf("originvalidate transitively imports %s, which it must never depend on", violation)
+	}
+}
+
+// TestTransitiveImportsGuardCanFail is D-10-17's negative control: the
+// suffix-matching predicate both guards' transitive checks share
+// (transitiveImportViolation) must actually report a violation over a
+// synthetic dependency list containing a forbidden path -- proving the
+// transitive guard can go red, not merely that it has never yet found
+// anything.
+func TestTransitiveImportsGuardCanFail(t *testing.T) {
+	synthetic := []string{
+		"github.com/codename-lang/lang/internal/compiler/originvalidate",
+		"github.com/codename-lang/lang/internal/compiler/core",
+		"github.com/codename-lang/lang/internal/compiler/corevalidate",
+	}
+	if got := transitiveImportViolation(synthetic, originValidateForbiddenImports); got == "" {
+		t.Fatal("expected the synthetic dependency list's forbidden corevalidate entry to be flagged")
 	}
 }
 
