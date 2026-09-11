@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
 
@@ -178,6 +181,24 @@ func interpOracleCorpus(t *testing.T) []oracleCorpusProgram {
 // commit only the resulting golden-file changes with a stated rationale.
 // This keeps regeneration a reviewed, deliberate act every time, never a
 // switch a CI rerun can silently absorb.
+//
+// DETERMINISM (D-10-57 clause 3): see TestInterpOracleCorpusDeterministic,
+// which drives this SAME corpus repeatedly and asserts byte-identical
+// output, run externally at `-count=10` per this plan's own <verify>.
+//
+// ESCALATION (D-10-57 clause 4, Phase 11): the ONLY sanctioned way to change
+// what this corpus freezes is a three-part named procedure: (1) a VERSIONED
+// SCHEMA BUMP -- execution.Schema1 already exists alongside execution.Schema0
+// as the precedent for versioning rather than mutating in place; (2)
+// REGENERATED GOLDENS committed in the SAME commit as the bump; (3) an
+// EXPLICIT DECISION ENTRY (a new D-11-NN row in whatever debt/decision
+// register Phase 11 uses) recording why the schema changed. An IN-PLACE EDIT
+// to a frozen golden without a version bump is FORBIDDEN -- that is exactly
+// the silent semantic drift this freeze exists to prevent, since Phase 11's
+// five-axis comparator would faithfully reproduce an unversioned drift as
+// "agreement" rather than catch it. TestInterpSchemaMatchesGoldenCorpus
+// enforces the schema half of this mechanically: a bump with no matching
+// golden regeneration fails it immediately.
 func TestInterpOracleGoldenCorpus(t *testing.T) {
 	for _, entry := range interpOracleCorpus(t) {
 		entry := entry
@@ -197,6 +218,99 @@ func TestInterpOracleGoldenCorpus(t *testing.T) {
 			}
 			if !bytes.Equal(want, got) {
 				t.Fatalf("%s: interp's emitted bytes DRIFTED from the committed golden %s\n--- golden ---\n%s\n--- got ---\n%s", entry.name, goldenPath, want, got)
+			}
+		})
+	}
+}
+
+// oracleSchemaFieldPattern extracts every `"schema":"..."` occurrence from a
+// golden file's raw bytes -- both the top-level Execution.Schema and every
+// per-Event Schema field, without needing a second, parallel JSON-decoding
+// path that could itself drift from CanonicalBytes' own encoding.
+var oracleSchemaFieldPattern = regexp.MustCompile(`"schema":"([^"]*)"`)
+
+// TestInterpSchemaMatchesGoldenCorpus (D-10-57 clause 4's own enforcement
+// mechanism, Task 2) asserts that EVERY schema string recorded anywhere in
+// the committed golden corpus is a member of the package's own currently
+// declared closed set -- Schema (execution.Schema0) and execution.Schema1 --
+// so a schema bump can never land without the goldens being regenerated in
+// the SAME commit: bumping either constant's literal value, with no golden
+// regeneration, fails THIS test immediately (the old goldens still contain
+// the OLD literal, which is no longer a member of the new declared set),
+// before TestInterpOracleGoldenCorpus's own byte-for-byte comparison even
+// runs.
+func TestInterpSchemaMatchesGoldenCorpus(t *testing.T) {
+	known := map[string]bool{Schema: true, execution.Schema1: true}
+	dir := oracleGoldenDir()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read golden dir %s: %v", dir, err)
+	}
+	sawSchema1 := false
+	checkedAny := false
+	for _, de := range entries {
+		if de.IsDir() || !strings.HasSuffix(de.Name(), ".golden.json") {
+			continue
+		}
+		checkedAny = true
+		path := filepath.Join(dir, de.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, match := range oracleSchemaFieldPattern.FindAllSubmatch(data, -1) {
+			value := string(match[1])
+			if !known[value] {
+				t.Fatalf("%s: golden records schema %q, which matches neither the package's own Schema constant (%q) nor execution.Schema1 (%q) -- if a schema was bumped, the golden corpus must be regenerated in the SAME commit (D-10-57 clause 4)", de.Name(), value, Schema, execution.Schema1)
+			}
+			if value == execution.Schema1 {
+				sawSchema1 = true
+			}
+		}
+	}
+	if !checkedAny {
+		t.Fatalf("expected at least one committed golden file under %s, found none", dir)
+	}
+	if !sawSchema1 {
+		t.Fatalf("expected at least one committed golden to record schema %q (execution.Schema1, the schema virtually every terminal path emits), got none", execution.Schema1)
+	}
+}
+
+// TestInterpOracleCorpusDeterministic is Task 2's D-10-57 clause 3
+// determinism assertion, extended to the FULL golden corpus (never a single
+// fixture): every entry in interpOracleCorpus, run twice, must produce
+// byte-identical CanonicalBytes. Go randomizes map iteration order, so
+// repeated runs are genuinely informative here rather than ceremonial --
+// this test is run externally at `-count=10` per this plan's own <verify>,
+// multiplying the number of independent map-iteration seeds exercised
+// across separate process invocations. Assertions go through
+// interp.CanonicalBytes / execution.Equal exclusively, never a frame field
+// or a live map.
+func TestInterpOracleCorpusDeterministic(t *testing.T) {
+	for _, entry := range interpOracleCorpus(t) {
+		entry := entry
+		t.Run(entry.name, func(t *testing.T) {
+			first, err := entry.run(t)
+			if err != nil {
+				t.Fatalf("first run: unexpected error: %v", err)
+			}
+			firstBytes, err := CanonicalBytes(first)
+			if err != nil {
+				t.Fatalf("CanonicalBytes (first): %v", err)
+			}
+			second, err := entry.run(t)
+			if err != nil {
+				t.Fatalf("second run: unexpected error: %v", err)
+			}
+			secondBytes, err := CanonicalBytes(second)
+			if err != nil {
+				t.Fatalf("CanonicalBytes (second): %v", err)
+			}
+			if !bytes.Equal(firstBytes, secondBytes) {
+				t.Fatalf("%s: two runs of the same program diverged:\nrun 1: %s\nrun 2: %s", entry.name, firstBytes, secondBytes)
+			}
+			if !execution.Equal(first, second) {
+				t.Fatalf("%s: execution.Equal reported divergence between two runs of the same program", entry.name)
 			}
 		})
 	}
