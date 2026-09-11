@@ -531,14 +531,34 @@ merely working, before Phase 11 starts.
 **Plans**: 9 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 10-01-PLAN.md — TRACER: one call boundary executed end to end on an explicit heap frame stack, plus the OWN-05b guard (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 10-02-PLAN.md — `originvalidate` walks published origins across `OpCall`, closing D-09-51, with transitive import-guard hardening (wave 2)
 - [ ] 10-03-PLAN.md — `pathoracle` composes callee path enumerations across `OpCall`, with its own declared depth cap and the discriminating per-path-borrow fixture (wave 2)
 - [ ] 10-04-PLAN.md — `MaxCallDepth` with its inverted rationale, the depth-exceeded refusal as comparable data, and the Pitfall-4 subprocess stack probe (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 10-05-PLAN.md — SEM-09 drop/cleanup ordering across frames on normal return and every nonlocal exit, plus the `corevalidate` drain-before-pop signature invariant (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 10-06-PLAN.md — MID-PHASE GATE: measure the D-10-59 scope-cut trigger, confirm the four hard ordering constraints, land the D-09-53 reversal's artifact correction (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 10-07-PLAN.md — QLT-04's declared composition depth of 3, the first depth-3 corpus in the tree, and the bidirectional depth gate (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 10-08-PLAN.md — Criterion 4's cross-function loan-endpoint differential: three-way on refuse, four-way on accept, with an accountable divergence register and seeded faults (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 10-09-PLAN.md — The `interp` stability freeze: golden corpus, determinism at `-count=10`, named escalation path, and the structural coverage floor (wave 7)
 
 ### Phase 11: Multi-Function Native Emission and Interprocedural Equivalence

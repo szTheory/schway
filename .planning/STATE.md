@@ -4,16 +4,16 @@ milestone: M002
 milestone_name: Interprocedural Semantic Spine
 current_phase: 10
 current_phase_name: Trusted Interprocedural Oracle
-status: planning
+status: executing
 stopped_at: Phase 10 context gathered
-last_updated: "2026-09-11T04:31:19.695Z"
+last_updated: "2026-09-11T17:06:23.395Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 09 complete, transitioned to Phase 10
-state_head: 9c145d76e33cbef4d543121904334d7b3be74466
+state_head: 9f56bbaaf4e9d1c20cdac522feda8772bba0dc0a
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 28
+  total_plans: 37
   completed_plans: 28
 ---
 
@@ -39,9 +39,9 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 10 — Trusted Interprocedural Oracle
+Phase: 10 (Trusted Interprocedural Oracle) — READY TO EXECUTE
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-10 — Phase 09 complete, transitioned to Phase 10
 
 Progress: [--------------------] 0% (0/7 phases)
@@ -327,3 +327,5 @@ decisions and all 40 are cited across `08-01..08-06-PLAN.md` + `PHASE-08-DEBT.md
 direct set difference; zero uncovered). The parser rejects bullets whose `:` sits inside the bold
 span, e.g. `- **D-08-01 (the falsification that decides the area):**`. Override accepted by the
 user; verify-phase should re-surface it.
+
+- Phase 10 decision-coverage gate: OVERRIDDEN at plan time (user: "Proceed anyway"). The gate could not parse `10-CONTEXT.md`'s `- **D-10-NN (title):**` bullets (reported 0/56). Direct check: 59/61 D-10-NN decisions are cited in `10-01..10-09-PLAN.md`; D-10-60 and D-10-61 are discharged by `PHASE-10-DEBT.md`. Re-surface at /gsd-verify-phase 10.
