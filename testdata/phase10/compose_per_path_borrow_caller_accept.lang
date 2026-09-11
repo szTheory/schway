@@ -1,0 +1,51 @@
+// Phase 10 Plan 3 (D-10-14): the discriminating per-path-borrow fixture's
+// CALLER half. `passthrough` is an ordinary, always-owned, genuinely
+// Callable match-bodied function (never derives a live borrow on any arm,
+// mirroring call_from_both_match_arms.lang's own helper/main precedent) --
+// `caller` borrows its own parameter and calls passthrough with it, exactly
+// like twin_a_accept.lang's escort/escortee shape. pathoracle_test.go's
+// TestCompositionDiscriminatesPerPathBorrow checks this file through the
+// real syntax.Parse -> check.Program pipeline on its own (getting a
+// genuine, pipeline-produced core.Function for `caller` and its own real
+// OpCall operation), then swaps that OpCall's CalleeID onto
+// compose_per_path_borrow_callee_accept.lang's own separately-checked
+// `callee` -- see that file's header for why the two halves cannot be
+// checked as one joint program (the callee's own two-arm borrow divergence
+// makes it un-Callable under SEM-06, a genuine grammar/checker limit the
+// plan's own action text anticipates falling back around).
+
+module phase10.compose_per_path_borrow_caller
+
+export {
+  fn caller
+}
+
+data Switch =
+  | On
+  | Off
+
+fn passthrough(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      flag
+    }
+    Off => {
+      flag
+    }
+  }
+}
+
+fn caller(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let borrowed = borrow flag
+      let result = passthrough(borrowed)
+      result
+    }
+    Off => {
+      let borrowed = borrow flag
+      let result = passthrough(borrowed)
+      result
+    }
+  }
+}

@@ -13,6 +13,7 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -387,6 +388,158 @@ func TestCompositionCycleGuardFailsClosed(t *testing.T) {
 	}
 	if _, ok := pathoracle.CompositionCycleError(err); !ok {
 		t.Fatalf("want a composition-cycle error, got: %v", err)
+	}
+}
+
+// checkedProgram drives fixture through the real syntax.Parse ->
+// check.Program pipeline and returns the WHOLE checked core.Program (never
+// a hand-built core.Function/core.Program), requiring zero diagnostics --
+// the multi-function sibling of checkedFunction above, needed here because
+// this test's caller and callee halves each live in their own two-function
+// (or one-function) fixture.
+func checkedProgram(t *testing.T, dir, fixture string) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", dir, fixture))
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", fixture, err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("fixture %q failed to parse: %+v", fixture, parsed.Diagnostics)
+	}
+	result := check.Program(parsed.Program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("fixture %q unexpectedly rejected: %+v", fixture, result.Diagnostics)
+	}
+	return result.Program
+}
+
+func functionNamed(t *testing.T, program core.Program, name string) core.Function {
+	t.Helper()
+	for _, function := range program.Functions {
+		if function.Name == name {
+			return function
+		}
+	}
+	t.Fatalf("program has no function named %q (has: %+v)", name, program.Functions)
+	return core.Function{}
+}
+
+// withCalleeIDRewritten returns a COPY of caller whose one core.OpCall
+// operation's CalleeID is rewritten to newCalleeID, leaving every other
+// operation, block, and edge byte-identical. Used to stitch
+// compose_per_path_borrow_caller_accept.lang's own genuinely-Callable call
+// (to `passthrough`) onto compose_per_path_borrow_callee_accept.lang's
+// separately-checked, deliberately-un-Callable `callee` -- see both
+// fixtures' own header comments for why they cannot be checked as one
+// joint program (D-10-14's own grammar/checker limit, anticipated by the
+// plan's own action text).
+func withCalleeIDRewritten(caller core.Function, newCalleeID string) core.Function {
+	rewritten := caller
+	operations := append([]core.LinearOperation(nil), caller.Linear.Operations...)
+	for i, operation := range operations {
+		if operation.Kind == core.OpCall {
+			operation.CalleeID = newCalleeID
+			operations[i] = operation
+		}
+	}
+	linear := *caller.Linear
+	linear.Operations = operations
+	rewritten.Linear = &linear
+	return rewritten
+}
+
+// endpointKinds returns the set of distinct Kind values present in
+// endpoints, for asserting "contains both edge and point" without
+// depending on exact IDs.
+func endpointKinds(endpoints []core.LoanEndpoint) map[string]bool {
+	kinds := map[string]bool{}
+	for _, endpoint := range endpoints {
+		kinds[endpoint.Kind] = true
+	}
+	return kinds
+}
+
+// TestCompositionDiscriminatesPerPathBorrow is D-10-14's own falsifier: a
+// callee with two distinct concrete paths where only ONE borrows its own
+// parameter into its return must cause the caller's composed endpoint set
+// to genuinely split into an edge-kind and a point-kind endpoint --
+// something a per-function contract hop (peerLoanCarryFact.
+// ReturnsBorrowOfParam) cannot express, since that fact is declared once
+// per function, not per path. Engaging the D-10-55 seeded contract-hop
+// fault collapses the split to a single, uniform endpoint kind, proving the
+// real composition path (not merely this test's own scaffolding) is what
+// produces the split -- and the companion assertion proves check's and
+// corevalidate's own independently-derived answers for the SAME two
+// fixtures never move, since the fault seam is unreachable from outside
+// package pathoracle.
+func TestCompositionDiscriminatesPerPathBorrow(t *testing.T) {
+	callerProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_caller_accept.lang")
+	calleeProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_callee_accept.lang")
+	caller := functionNamed(t, callerProgram, "caller")
+	callee := functionNamed(t, calleeProgram, "callee")
+
+	// Companion peer snapshot (D-10-55): check's own stored endpoints for
+	// caller, and corevalidate's own agreement with them, BEFORE the seam
+	// is ever engaged.
+	callerBefore := append([]core.LoanEndpoint(nil), caller.Linear.LoanEndpoints...)
+	peerBefore := corevalidate.Validate(callerProgram)
+	if !peerBefore.Valid {
+		t.Fatalf("corevalidate unexpectedly rejected the caller fixture before the fault: %+v", peerBefore.Problems)
+	}
+
+	stitched := withCalleeIDRewritten(caller, callee.ID)
+	lookup := pathoracle.BuildCalleeLookup(core.Program{Functions: []core.Function{stitched, callee}})
+
+	endpoints, work, err := pathoracle.RecomputeEndpoints(stitched, lookup)
+	if err != nil {
+		t.Fatalf("unexpected composition error: %v", err)
+	}
+	if work == 0 {
+		t.Fatalf("composition reported zero work")
+	}
+	kinds := endpointKinds(endpoints)
+	if !kinds["point"] || !kinds["edge"] {
+		t.Fatalf("want both a point-kind and an edge-kind composed endpoint, got kinds=%v endpoints=%+v", kinds, endpoints)
+	}
+
+	// Seeded fault (D-10-55): replace composition with a stubbed
+	// per-function contract hop reporting the SAME answer for every one of
+	// callee's own paths, regardless of which is actually taken.
+	restore := pathoracle.SetForceContractHopForTest(func(calleeID string) bool { return false })
+	defer restore()
+
+	seededEndpoints, seededWork, err := pathoracle.RecomputeEndpoints(stitched, lookup)
+	if err != nil {
+		t.Fatalf("unexpected composition error under the seeded fault: %v", err)
+	}
+	if seededWork == 0 {
+		t.Fatalf("composition reported zero work under the seeded fault")
+	}
+	seededKinds := endpointKinds(seededEndpoints)
+	if len(seededKinds) != 1 {
+		t.Fatalf("want the seeded fault to collapse every composed endpoint to ONE uniform kind, got kinds=%v endpoints=%+v", seededKinds, seededEndpoints)
+	}
+	if seededKinds["edge"] {
+		t.Fatalf("want the seeded fault (forced false) to collapse to point-only, got an edge endpoint: %+v", seededEndpoints)
+	}
+
+	// Companion assertion (D-10-55): with the fault engaged, check's own
+	// stored answer for the caller fixture, and corevalidate's own
+	// agreement with it, are byte-for-byte unchanged -- only pathoracle
+	// disagrees, because the seam is unreachable from outside this
+	// package.
+	callerAfterProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_caller_accept.lang")
+	callerAfter := functionNamed(t, callerAfterProgram, "caller")
+	if !reflect.DeepEqual(callerBefore, callerAfter.Linear.LoanEndpoints) {
+		t.Fatalf("check's own stored endpoints for the caller fixture changed while the seam was engaged:\n before: %+v\n after:  %+v", callerBefore, callerAfter.Linear.LoanEndpoints)
+	}
+	peerAfter := corevalidate.Validate(callerAfterProgram)
+	if !peerAfter.Valid {
+		t.Fatalf("corevalidate rejected the caller fixture while the seam was engaged: %+v", peerAfter.Problems)
+	}
+	if !reflect.DeepEqual(peerBefore.Problems, peerAfter.Problems) {
+		t.Fatalf("corevalidate's own problem set for the caller fixture changed while the seam was engaged")
 	}
 }
 
