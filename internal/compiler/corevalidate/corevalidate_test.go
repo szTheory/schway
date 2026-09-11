@@ -935,8 +935,17 @@ func TestReleaseOrderMutationMatrix(t *testing.T) {
 			}
 		}
 		result := corevalidate.Validate(mutated)
-		if result.Valid || result.Problems[0].Code != "core.release_order_mismatch" {
-			t.Fatalf("expected core.release_order_mismatch, got %+v", result)
+		// Plan 10-05 Task 2 (D-10-34) added a SECOND independent knower --
+		// peerCalleeFrameDrained, checked earlier in the same replay than
+		// checkReleaseOrder -- that also observes this exact corruption
+		// (the acquisition releases[0] used to discharge is now genuinely
+		// unreleased): v.check's first-problem-wins convention means either
+		// code can legitimately win the race. Any fail-closed rejection is
+		// the evidence, never one pinned code -- the same reasoning
+		// "dropped"/"duplicated" below already state for an identical
+		// reason.
+		if result.Valid || (result.Problems[0].Code != "core.release_order_mismatch" && result.Problems[0].Code != "core.callee_frame_not_drained") {
+			t.Fatalf("expected core.release_order_mismatch or core.callee_frame_not_drained, got %+v", result)
 		}
 	})
 
@@ -1037,10 +1046,69 @@ func TestReleaseOrderMutationMatrix(t *testing.T) {
 			}
 		}
 		result := corevalidate.Validate(mutated)
-		if result.Valid || result.Problems[0].Code != "core.release_order_mismatch" {
-			t.Fatalf("expected core.release_order_mismatch, got %+v", result)
+		// See the identical "moved" subtest's own comment above: Plan
+		// 10-05's peerCalleeFrameDrained independently observes this same
+		// corruption too.
+		if result.Valid || (result.Problems[0].Code != "core.release_order_mismatch" && result.Problems[0].Code != "core.callee_frame_not_drained") {
+			t.Fatalf("expected core.release_order_mismatch or core.callee_frame_not_drained, got %+v", result)
 		}
 	})
+}
+
+// TestPeerCalleeFrameDrainedRefusesGenuinelyAbandonedAcquisition is Plan
+// 10-05 Task 2's own dedicated end-to-end proof (D-10-33/D-10-34), driven
+// off a REAL checked fixture (session.Check via resourceLifecycleProgram,
+// never a hand-built core.Program): all three of
+// acquire_three_success.lang's tracked acquisitions are repointed to a
+// FABRICATED, non-existent ReleasesOperationID, making each one genuinely
+// unreleased -- peerCalleeFrameDrained runs INSIDE derivePeerSignature,
+// called at recordSummaryPeer's own entry point, strictly BEFORE
+// checkReleaseOrder's own later rederivation in the same replay -- so
+// core.CalleeFrameNotDrained is the exact FIRST problem, proving this
+// invariant is genuinely wired into the validator's own pipeline, not
+// merely a passing unit test of the bare predicate.
+func TestPeerCalleeFrameDrainedRefusesGenuinelyAbandonedAcquisition(t *testing.T) {
+	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	mutated := cloneProgram(t, valid)
+	function := &mutated.Functions[0]
+	successBlockID := function.ID + ":block:success"
+	releases := releaseOperations(*function, successBlockID)
+	if len(releases) == 0 {
+		t.Fatal("expected at least one release in the success block")
+	}
+	fabricated := map[string]bool{}
+	for _, release := range releases {
+		fabricated[release.ID] = true
+	}
+	for index := range function.Linear.Operations {
+		if fabricated[function.Linear.Operations[index].ID] {
+			function.Linear.Operations[index].ReleasesOperationID = "s1:invented:op:absent:" + function.Linear.Operations[index].ID
+		}
+	}
+	result := corevalidate.Validate(mutated)
+	if result.Valid {
+		t.Fatalf("expected a rejection for a genuinely abandoned acquisition, got valid: %+v", result)
+	}
+	if result.Problems[0].Code != core.CalleeFrameNotDrained {
+		t.Fatalf("expected %s as the FIRST problem, got %+v", core.CalleeFrameNotDrained, result.Problems)
+	}
+}
+
+// TestPeerCalleeFrameDrainedAdmitsFullyDrainedFixtures proves the invariant
+// does not move a single ALREADY-ADMITTED Phase 4 fixture to refused
+// (this plan's own must_have): every combination of try/discard already
+// covered by TestValidatorRederivesReleaseOrder still validates once this
+// invariant is wired in.
+func TestPeerCalleeFrameDrainedAdmitsFullyDrainedFixtures(t *testing.T) {
+	for _, fixture := range []string{
+		"acquire_three_success.lang", "acquire_three_fail_second.lang", "acquire_three_fail_third.lang",
+		"discard_because.lang", "foreign_acquire_one.lang", "nonlocal_exit_probe.lang",
+	} {
+		program := resourceLifecycleProgram(t, fixture)
+		if result := corevalidate.Validate(program); !result.Valid {
+			t.Fatalf("%s: expected a fully drained fixture to validate, got %+v", fixture, result)
+		}
+	}
 }
 
 // TestReleaseOrderValidationWorkSeries proves the validator's release-order
@@ -1455,7 +1523,12 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// per operation): the whole-program cycle peer (checkCallGraphAcyclic)
 	// runs exactly once, moving the pin a final time to 425+1=426 (measured
 	// from the built code, not assumed).
-	const acquireThreeSuccessChecks = 426
+	//
+	// Plan 10-05 Task 2 (D-10-33/D-10-34) adds one FLAT new accepting-path
+	// v.check PER FUNCTION DECLARATION (peerCalleeFrameDrained, called once
+	// inside derivePeerSignature): acquire_three_success.lang declares
+	// exactly one function, moving the pin a final time to 426+1=427.
+	const acquireThreeSuccessChecks = 427
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {

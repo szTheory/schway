@@ -46,7 +46,15 @@ const KnownEscape = "escape:coordinated-source-core-lie"
 // addition regardless of facts -- mechanical, expected, and not a
 // per-operation work-formula change (mirrors the precedent already
 // recorded at this file's own TestCoreValidationWorkSeries call site).
-func LinearWorkLimit(facts int) int { return 17*facts + 15 }
+//
+// The further +1 flat term (from 17*facts+15 to 17*facts+16) is Plan
+// 10-05 Task 2's own peerCalleeFrameDrained invariant (D-10-33/D-10-34): one
+// v.check call inside derivePeerSignature, run exactly ONCE PER FUNCTION
+// DECLARATION (this file's own scale fixtures declare exactly one
+// function), never once per fact/operation -- the identical "constant
+// addition, not a per-operation change" reasoning as 07-07's own entry
+// immediately above.
+func LinearWorkLimit(facts int) int { return 17*facts + 16 }
 
 type Problem struct {
 	Code   string `json:"code"`
@@ -2096,6 +2104,16 @@ var SummaryPeerControls = []string{
 // accessor, not a test-only observation.
 var peerConsultObserved func(calleeID, field string)
 
+// peerCalleeFrameDrainedObserved is Plan 10-05 Task 2's own disclosure-proof
+// instrumentation seam, mirroring peerConsultObserved's identical shape
+// (D-09-30): when non-nil, invoked with the function's own ID at every
+// derivePeerSignature call, immediately before peerCalleeFrameDrained's own
+// predicate runs -- letting a same-package test assert this invariant is
+// evaluated EXACTLY ONCE PER DECLARED FUNCTION, independent of call-site
+// count (D-10-33's own must_have). nil in production: zero cost, zero
+// allocation.
+var peerCalleeFrameDrainedObserved func(functionID string)
+
 // recordPeerConsult is the single choke point every consult of a
 // callee-signature-shaped field must pass through: it accumulates field
 // into v.peerConsultedFields (surfaced production-side via
@@ -2142,6 +2160,19 @@ func (v *validator) derivePeerSignature(function *core.Function, types map[strin
 	// callee").
 	v.recordPeerConsult(function.ID, "parameters[0].mode")
 	v.recordPeerConsult(function.ID, "return.mode")
+
+	// Plan 10-05 Task 2 (D-10-33/D-10-34, SEM-09): promote "the callee's
+	// frame is drained of live resources before it pops" to a
+	// corevalidate-checked invariant on the callee's own SIGNATURE, checked
+	// HERE -- once per function declaration, in the same place as this
+	// function's other per-declaration checks -- never re-derived by a
+	// caller per call site. See core.CalleeFrameNotDrained's own doc
+	// comment for why this is a materially different, coarser fact than
+	// checkReleaseOrder's existing path-sensitive reordering check.
+	if peerCalleeFrameDrainedObserved != nil {
+		peerCalleeFrameDrainedObserved(function.ID)
+	}
+	v.check(peerCalleeFrameDrained(function), core.CalleeFrameNotDrained, function.ID)
 
 	var abilities []core.Ability
 	if fact, ok := types[function.ID+":type:0"]; ok {
@@ -2671,6 +2702,98 @@ func (v *validator) checkCallTypeContract(callee core.Function, source core.Plac
 	}
 	targetTypeMatches := targetConstructor != "" && callee.ReturnType != "" && targetConstructor == callee.ReturnType
 	return v.check(disableCallReturnTypePeerForTest || targetTypeMatches, core.CallReturnTypeMismatch, operation.ID)
+}
+
+// peerCalleeFrameDrained is Plan 10-05 Task 2's per-function-declaration
+// predicate (D-10-33/D-10-34, core.CalleeFrameNotDrained's own doc comment
+// has the full rationale). Every OpForeignCall acquisition this function's
+// own body declares is exempt from the drain obligation entirely when its
+// own OkEdgeID/ErrEdgeID resolve to the SAME ToBlockID -- checkResourceLifecycle's
+// own structural encoding (D-04-06) of `discard ... because`: converging
+// ok/err edges are check's own declaration that this acquisition's outcome,
+// and by extension its resource, is deliberately advisory and untracked,
+// mirroring checkReleaseOrder's own identical "only a call whose ok and err
+// edges target DIFFERENT blocks is tracked" convention exactly (never a
+// SEPARATE signal this peer invented). Every other (tracked) acquisition
+// must be either (a) released by SOME OpRelease anywhere in the function,
+// or (b) ownership-transferred OUT via a terminating OpReturn --
+// foreign_acquire_one.lang's own `handle` shape, where the acquired value
+// is returned directly and needs no release at all, since the resource
+// becomes the CALLER's obligation the instant it crosses the return
+// boundary. (b) is traced forward through a pure Move/Copy chain, seeded
+// from the acquisition's own TARGET place, mirroring
+// peerParameterEscapesOwned's own established forward set-propagation shape
+// exactly (D-07-22) -- just seeded from an acquisition's target instead of
+// the function's own parameter. A tracked acquisition satisfying NEITHER
+// (a) nor (b) is reported false: it is genuinely abandoned, live in this
+// frame at every one of its own terminating returns.
+//
+// A function with no Linear body at all (a pure lang.core/0 match function)
+// trivially drains (it acquires nothing), and a straight-line body with no
+// OpForeignCall at all is likewise trivially true, matching every
+// pre-Phase-4 function's own admitted shape (D-04-23: this invariant
+// changes nothing for a program that never acquires a foreign resource).
+// This is deliberately DIFFERENT from checkReleaseOrder's own path-
+// sensitive backward-walk reordering (which only orders releases that
+// ALREADY exist somewhere in the function): the two checks are independent
+// and neither subsumes the other.
+func peerCalleeFrameDrained(function *core.Function) bool {
+	if function.Linear == nil {
+		return true
+	}
+	linear := function.Linear
+
+	edgesByID := make(map[string]core.Edge, len(linear.Edges))
+	for _, edge := range linear.Edges {
+		edgesByID[edge.ID] = edge
+	}
+
+	released := make(map[string]bool, len(linear.Operations))
+	returnedSources := make(map[string]bool)
+	for _, operation := range linear.Operations {
+		switch operation.Kind {
+		case core.OpRelease:
+			if operation.ReleasesOperationID != "" {
+				released[operation.ReleasesOperationID] = true
+			}
+		case core.OpReturn:
+			returnedSources[operation.SourceID] = true
+		}
+	}
+
+	for _, acquisition := range linear.Operations {
+		if acquisition.Kind != core.OpForeignCall {
+			continue
+		}
+		if okEdge, okKnown := edgesByID[acquisition.OkEdgeID]; okKnown {
+			if errEdge, errKnown := edgesByID[acquisition.ErrEdgeID]; errKnown && okEdge.ToBlockID == errEdge.ToBlockID {
+				continue
+			}
+		}
+		if released[acquisition.ID] {
+			continue
+		}
+		reaches := map[string]bool{acquisition.TargetID: true}
+		for _, operation := range linear.Operations {
+			if operation.Kind != core.OpMove && operation.Kind != core.OpCopy {
+				continue
+			}
+			if reaches[operation.SourceID] {
+				reaches[operation.TargetID] = true
+			}
+		}
+		escapesViaReturn := false
+		for source := range returnedSources {
+			if reaches[source] {
+				escapesViaReturn = true
+				break
+			}
+		}
+		if !escapesViaReturn {
+			return false
+		}
+	}
+	return true
 }
 
 func peerCallable(function *core.Function) bool {

@@ -637,6 +637,34 @@ const CallArgumentTypeMismatch = "core.call_argument_type_mismatch"
 // distinct namespace for the same independence reason.
 const CallReturnTypeMismatch = "core.call_return_type_mismatch"
 
+// CalleeFrameNotDrained is Plan 10-05 Task 2's stable code (D-10-33/D-10-34,
+// SEM-09) for corevalidate's own per-function-declaration invariant: a
+// function whose body acquires a TRACKED resource (an OpForeignCall whose
+// own OkEdgeID/ErrEdgeID resolve to DIFFERENT blocks -- checkResourceLifecycle's
+// own structural encoding of a `try`, distinct from a `discard ... because`,
+// whose converging ok/err edges exempt it from this obligation entirely)
+// that is NEITHER (a) released by some OpRelease anywhere in its own
+// Operations list NOR (b) ownership-transferred out via a terminating
+// OpReturn (the acquired value, or something reachable from it through a
+// pure Move/Copy chain, is itself returned -- foreign_acquire_one.lang's
+// own `handle` shape, which needs no release since the resource becomes the
+// CALLER's obligation the instant it crosses the return boundary) leaves
+// that acquisition's frame undrained. This is checked ONCE PER FUNCTION
+// DECLARATION, never re-derived by a caller per call site, and its verdict
+// never depends on any caller -- a function with zero call sites and a
+// function with many produce the identical verdict.
+// Distinct from core.release_order_mismatch/core.release_order_indeterminate
+// (checkReleaseOrder's own PATH-SENSITIVE reordering of releases that
+// already exist somewhere in the function): an acquisition with NO release
+// anywhere and no return-escape is invisible to that check, since its own
+// "tracked" set is built from existing OpRelease operations. This code is
+// this validator's SECOND independent knower (alongside interp's own now-
+// observable drain order, Plan 10-05 Task 1) that a callee's frame is
+// drained before it pops (D-10-34) -- the still-absent third, cgen's own
+// multi-frame landing pad, is a named gap in PHASE-10-DEBT.md's D-10-34
+// entry.
+const CalleeFrameNotDrained = "core.callee_frame_not_drained"
+
 // AllOperationKinds returns every declared OperationKind, in declaration
 // order. This is the single table every dispatch site (check, corevalidate,
 // interp, cgen, pathoracle, originvalidate) is tested against (D-04-22): a
