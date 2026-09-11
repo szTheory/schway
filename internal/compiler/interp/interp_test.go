@@ -1,6 +1,7 @@
 package interp
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -93,5 +94,65 @@ func TestOpCallGroupedArmMutationKilled(t *testing.T) {
 	// bearing rather than incidentally true.
 	if execution.Outcome.Kind != "returned" {
 		t.Fatalf("expected the mutated run's outcome kind to be %q, got %q", "returned", execution.Outcome.Kind)
+	}
+}
+
+// TestCallExecutesAcrossOneFrame is Task 1's tracer test (SEM-08, OWN-05b,
+// D-10-21/D-10-26): call_basic.lang's main calls identity across a real
+// heap frame boundary and gets back identity's own returned value, with at
+// least one emitted event attributed to the callee's own function ID
+// (D-10-32) -- proof the callee frame genuinely ran rather than being
+// faked by a pass-through. The same program run twice must produce
+// byte-identical CanonicalBytes (D-10-26): every ordered output the frame
+// stack produces comes from an ordered slice, never a Go map range.
+func TestCallExecutesAcrossOneFrame(t *testing.T) {
+	program := checkedCallBasicProgram(t)
+
+	var calleeID string
+	for _, function := range program.Functions {
+		if function.Name == "identity" {
+			calleeID = function.ID
+		}
+	}
+	if calleeID == "" {
+		t.Fatalf("call_basic.lang's checked program has no function named %q", "identity")
+	}
+
+	execution, err := Run(program, "main", "7")
+	if err != nil {
+		t.Fatalf("Run(main, %q) returned an unexpected error: %v", "7", err)
+	}
+	if execution.Outcome.Kind != "returned" {
+		t.Fatalf("expected outcome kind %q, got %q", "returned", execution.Outcome.Kind)
+	}
+	if execution.Outcome.Value != "7" {
+		t.Fatalf("expected the callee's own returned value %q, got %q", "7", execution.Outcome.Value)
+	}
+
+	foundCalleeEvent := false
+	for _, event := range execution.Events {
+		if event.FunctionID == calleeID {
+			foundCalleeEvent = true
+			break
+		}
+	}
+	if !foundCalleeEvent {
+		t.Fatalf("expected at least one event attributed to the callee's own function ID %q; events: %+v", calleeID, execution.Events)
+	}
+
+	firstBytes, err := CanonicalBytes(execution)
+	if err != nil {
+		t.Fatalf("CanonicalBytes: %v", err)
+	}
+	secondExecution, err := Run(program, "main", "7")
+	if err != nil {
+		t.Fatalf("second Run(main, %q) returned an unexpected error: %v", "7", err)
+	}
+	secondBytes, err := CanonicalBytes(secondExecution)
+	if err != nil {
+		t.Fatalf("CanonicalBytes (second run): %v", err)
+	}
+	if !bytes.Equal(firstBytes, secondBytes) {
+		t.Fatalf("expected two runs of the same program to produce byte-identical CanonicalBytes, got:\n%s\nvs\n%s", firstBytes, secondBytes)
 	}
 }
