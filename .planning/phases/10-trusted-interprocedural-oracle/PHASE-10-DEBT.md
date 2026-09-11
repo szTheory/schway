@@ -53,7 +53,7 @@ reverted and `git diff internal/compiler/check/check.go` is empty.
 | D-10-34 | 10-CONTEXT.md (D-10-34) | SEM-09, NAT-06 | warning | Phase 11 — `cgen`'s multi-frame nonlocal pad, IF it does not land in Phase 10 plan 10-05; the gap is named at that plan's own commit, never silently accepted | NAMED TEMPORARY SINGLE-AUTHORITY GAP. `interp` must not be the sole authority on cross-frame drop order. Two peers are supposed to know the order independently: the `corevalidate`-checked callee-signature invariant (D-10-33, landing in plan 10-05) and `cgen`'s multi-frame version of its existing single-frame `emitNonlocalPad`. If `cgen`'s multi-frame pad slips to Phase 11 — the expected outcome, since multi-function C emission is Phase 11's own charter (NAT-04 through NAT-07) — then between Phase 10's end and that landing, `interp` plus the `corevalidate` signature invariant are the only two authorities, and the third (the emitted-native one) is absent. That is a NAMED gap recorded here, not a silent acceptance |
 | D-10-37 | 10-CONTEXT.md (D-10-37) | OWN-05b, TRU-03 | warning | Phase 10 — plan 10-01 writes the narrowed claim into the guard test's doc comment; recorded here so no artifact restates it unqualified | THE OWN-05b INDEPENDENCE CLAIM IS NARROWER THAN `check`/`corevalidate`'s, and must never stand unqualified. `interp` imports `corevalidate` (`interp.go:3-10`) and `Run`'s first act is `corevalidate.Validate(program)` (`interp.go:38`). This is NOT the mutual non-import independence `check` and `corevalidate` have from each other. The defensible claim is INDEPENDENCE OF DERIVATION MECHANISM FOR THE OWNERSHIP FACT SPECIFICALLY, NESTED INSIDE A SHARED, UNRELATED VALIDATION DEPENDENCY. A bug in `corevalidate.Validate` would feed `interp` bad input too — Knight and Leveson's correlated-fault result. The import is deliberately KEPT (hoisting `Validate` to the caller would weaken `interp`'s fail-closed posture and touch every call site for an import-graph purity the current one-value domain does not need); the mitigation is a guard test that fails the moment `interp` reads an ownership-bearing field of `corevalidate.Result` |
 | D-10-40 | 10-CONTEXT.md (D-10-40) | OWN-05a, OWN-05b, QLT-04 | warning | Phase 10 — plan 10-08 documents criterion 4 this way in the shipped artifact; reopens only when the parameter-mode domain gains a second reachable value | THE ONE-VALUE DOMAIN MAKES NATURAL-INPUT AGREEMENT ON THE OWNERSHIP FACT NEAR-VACUOUS — say it rather than let the differential imply more than it proves. `ParameterContract.Mode` is hardcoded `"owned"` everywhere (`corevalidate.go:2163`, whose own comment cites D-07-01: today's grammar has exactly one parameter form), and `core.LinearOperation` has no override field. A natural-input four-way differential on this fact CANNOT DISAGREE BY CONSTRUCTION. What makes criterion 4 non-vacuous is the seeded-fault harness: a synthetic `core.Program` with `Mode` flipped to `"shared"`, proving (a) the closed-set decode check refuses it before any peer sees it, and (b) if that gate were bypassed, exactly which peer diverges. NOTE: 09-CONTEXT.md's citation of this mechanism at `corevalidate.go:2011-2015` is STALE; the mechanism is at `:2163` and is otherwise unchanged |
-| D-10-59 | 10-CONTEXT.md (D-10-59), ROADMAP.md:198-200 (whose 2x trigger is scoped to Phases 08 and 09 ONLY) | all six phase requirements | info | Phase 10 — plan 10-06, the mandatory mid-phase gate, scheduled after the parallel wave and BEFORE criterion 4's differential work | DECLARED SCOPE-CUT TRIGGER, fixed in writing before planning finished. TRIGGER: if Phase 10's actual token cost summed across completed plans exceeds ~2x the initial per-plan token-estimate baseline for the same plans, measured at plan 10-06's gate. CUT ORDER: (1) QLT-04's declared composition depth reduced from 3 to 2, with the reduced depth stated VERBATIM in the shipped artifact and the remaining depth landing as named Phase 11 debt; then (2) the `OpForeignCall`-adjacent slice of TRU-02, deferred with a named Phase 11 fallback, mirroring D-09-21; then, only if still over budget, (3) OWN-05b's assertion folded into criterion 4's differential rather than standing alone, permitted ONLY after coverage is provably preserved. NEVER CUT: criterion 4's differential EXISTENCE; the `interp` stability freeze at full declared strength; the Pitfall-4 stack probe; D-09-51's `originvalidate` `OpCall` fix (it is Success Criterion 1 verbatim, not carried scope); and the seeded faults with their companion assertions (D-10-14, D-10-41, D-10-55). Any cut is a deferral with a named landing phase recorded here at the gate's own commit, never a silent drop. Phase 09's own trigger measured 0.17x (76,385 actual vs ~460,000 estimated) — a TOKEN-COST ratio, never a plan-count ratio |
+| D-10-59 | 10-CONTEXT.md (D-10-59), ROADMAP.md:198-200 (whose 2x trigger is scoped to Phases 08 and 09 ONLY) | all six phase requirements | info | Resolved at plan 10-06's mid-phase gate, 2026-09-11 — trigger did NOT fire (0.19x) | DECLARED SCOPE-CUT TRIGGER, fixed in writing before planning finished. TRIGGER: if Phase 10's actual token cost summed across completed plans exceeds ~2x the initial per-plan token-estimate baseline for the same plans, measured at plan 10-06's gate. CUT ORDER: (1) QLT-04's declared composition depth reduced from 3 to 2, with the reduced depth stated VERBATIM in the shipped artifact and the remaining depth landing as named Phase 11 debt; then (2) the `OpForeignCall`-adjacent slice of TRU-02, deferred with a named Phase 11 fallback, mirroring D-09-21; then, only if still over budget, (3) OWN-05b's assertion folded into criterion 4's differential rather than standing alone, permitted ONLY after coverage is provably preserved. NEVER CUT: criterion 4's differential EXISTENCE; the `interp` stability freeze at full declared strength; the Pitfall-4 stack probe; D-09-51's `originvalidate` `OpCall` fix (it is Success Criterion 1 verbatim, not carried scope); and the seeded faults with their companion assertions (D-10-14, D-10-41, D-10-55). Any cut is a deferral with a named landing phase recorded here at the gate's own commit, never a silent drop. Phase 09's own trigger measured 0.17x (76,385 actual vs ~460,000 estimated) — a TOKEN-COST ratio, never a plan-count ratio |
 | D-10-60 | 10-CONTEXT.md (D-10-60) | milestone-wide process rule | info | Milestone-wide — declared here, enforced by review; NOT enforced by the suite | NEW MILESTONE-WIDE DISCIPLINE, declared at Phase 10 planning. An item that would be deferred a SECOND time — any `D-NN-xx` row whose `Landing phase` cell would be rewritten to point past the phase it already named — must either be cut from the milestone explicitly via a REQUIREMENTS.md amendment, or becomes automatically never-cut. It cannot silently acquire a third landing phase. Verified at planning time that the suite will NOT catch this: `TestDebtRegistersAreWellFormed` (`session/session_test.go:2613-2671`) enforces the register's FORMAT ONLY — an `items:` count matching the table, one detail section per row, a closed severity vocabulary, and a non-empty landing phase — and does not track deferral hop count. This is therefore a declared rule enforced by review, and the gap in mechanical enforcement is stated rather than assumed closed |
 
 ## Detail
@@ -321,6 +321,43 @@ gate's own commit, never a silent drop.
 actual against ~460,000 estimated (`09-08-SUMMARY.md:151`). That is a
 **token-cost** ratio. Phase 09 ran 10 plans against an initial estimate of fewer,
 so a naive plan-count reading would have misfired. Plan 10-06 must measure tokens.
+
+**Amendment — measured at plan 10-06's gate, 2026-09-11.** Summed the
+`estimate.tokens` frontmatter of plans 10-01 through 10-05 (the declared
+baseline) against the `actuals.tokens` frontmatter each plan's own SUMMARY.md
+recorded (the realized cost, same chars/4 scale, never a harness token count):
+
+| Plan | Estimate (tokens) | Actual (tokens) |
+|---|---|---|
+| 10-01 | 70,000 | 17,016 |
+| 10-02 | 75,000 | 16,082 |
+| 10-03 | 80,000 | 15,200 |
+| 10-04 | 70,000 | 6,588 |
+| 10-05 | 80,000 | 16,887 |
+| **Sum** | **375,000** | **71,773** |
+
+Ratio: 71,773 / 375,000 = **0.19x**. Date: 2026-09-11.
+
+**Verdict: TRIGGER DID NOT FIRE.** 0.19x is well under the ~2x trigger
+threshold. No cut is taken; plans 10-07 and 10-08 are admitted unchanged.
+
+**Ordering constraints confirmed at this gate** (see 10-06-SUMMARY.md for the
+full evidence trail):
+
+1. SEM-09 landed (plan 10-05) before the stability freeze (plan 10-09) —
+   CONFIRMED: plan 10-09 has no `*-SUMMARY.md`, only its `*-PLAN.md` exists.
+2. This gate precedes criterion 4's differential work — CONFIRMED: plan 10-08
+   has no `*-SUMMARY.md`, only its `*-PLAN.md` exists.
+3. `originvalidate`'s widen-then-use landed as two separate commits —
+   CONFIRMED: `git log --oneline -- internal/compiler/originvalidate/originvalidate.go`
+   shows `bb4aa02` (widen, behavior-neutral) then `6648b72` (use, the actual
+   behavior change), both from plan 10-02.
+4. Each differential landed in the same plan as the peer it tests — CONFIRMED:
+   plan 10-02's origin-walk differential and plan 10-03's path-composition
+   differential each ship their own peer's test in the same plan
+   (10-02-SUMMARY.md, 10-03-SUMMARY.md).
+
+All four hard ordering constraints held.
 
 ### D-10-60 — the no-third-deferral rule
 
