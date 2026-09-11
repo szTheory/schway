@@ -38,13 +38,21 @@ import (
 // verifies this set is exhaustive (via testMoveWhileBorrowedCorpusIsExhaustive,
 // which independently re-derives the same set from the corpus dynamically)
 // and applies the positive per-fixture property to each entry.
+//
+// Plan 09-09 (D-09-08's authorized deletion): the phase08/twin_b_accept.lang
+// and phase08/twin_b_refuse.lang entries plan 09-07 recorded here are
+// REMOVED. Both fixtures now report check.interprocedural_loan_liveness
+// instead of ownership.move_while_borrowed (see
+// check_ordering_stability_test.go's twin_b_accept/refuse baseline comment
+// and check_test.go's TestInterproceduralLivenessTwinPatternBRealFixtures
+// for the full, diagnosed explanation -- a pre-existing deriveFunctionUsesParam
+// defect this deletion stopped masking, recorded as new debt, not fixed
+// here) -- they are no longer members of the set THIS enumeration is about.
 var moveWhileBorrowedFixtures = []struct {
 	path      string
 	function  string
 	parameter string
 }{
-	{"phase08/twin_b_accept.lang", "escort", "buffer"},
-	{"phase08/twin_b_refuse.lang", "escort", "buffer"},
 	{"phase2/move_while_borrowed.lang", "relay", "buffer"},
 	{"phase2/reborrow_while_moved.lang", "relay", "code"},
 	{"phase3/branch_one_arm_shared_reject.lang", "choose", "flag"},
@@ -427,54 +435,64 @@ func TestTimingIndependentOwnershipCodesFireFromPerBindingFacts(t *testing.T) {
 // D-07-07). Any claim below is scoped to the language this generator can
 // express, not to a hypothetical superset of it.
 //
-// Operational definition of "reachable through the AST-shadow path
-// SPECIFICALLY" (as opposed to "raised inside the same function that also
-// calls computeLoanLastUses", which is true of all five codes and proves
-// nothing): a code counts as shadow-path-reachable if and only if its own
-// raise site's guarding condition CONSULTS `activeLoans` or `loanUses` --
-// the state computeLoanLastUses' loanUses output populates and expires.
+// Operational definition, RE-DERIVED for the surviving pass (plan 09-09,
+// D-09-08's authorized deletion): the AST-shadow path (computeLoanLastUses
+// and its two summary-blind lowering-time call sites) is GONE. A code now
+// counts as reachable through the SURVIVING post-assembly timing law
+// (checkInterproceduralLoanLiveness's extension to the purely-intraprocedural
+// case) if and only if its own raise site's guarding logic consults
+// `lastUseIndexByLoan` -- the surviving pass's OWN last-use derivation
+// (materializeLoanEndpoints' output, mapped to operation index), playing
+// exactly the role the deleted activeLoans/loanUses state used to play.
 // `ownership.use_after_move`, `ownership.borrow_requires_share`, and
-// `ownership.transfer_requires_take` are raised by the very same
-// analyzeArmBody/analyzeStraightLine functions that call
-// computeLoanLastUses, but their OWN guards (`!source.initialized`,
-// `hasTypeAbility`) never consult its output -- Task 2(b)'s fence already
-// makes this checkable. This register cross-references that same technique
-// from the reachable side: `ownership.move_while_borrowed` guards on
-// `activeLoans[source.place.ID]` directly, and `ownership.borrow_conflict`
-// guards on `conflictingLoan(activeLoans[source.place.ID], ...)`.
+// `ownership.transfer_requires_take` are unaffected: they still fire inline
+// during lowering from immediate per-binding facts that never consult any
+// loan-timing state (Task 2(b)'s fence, TestTimingIndependentOwnershipCodesFireFromPerBindingFacts,
+// still applies unchanged). The PRE-DELETION sets plan 09-07 recorded are
+// retained below as historical record, immediately followed by the
+// re-derived, currently-checked register.
+//
+// HISTORICAL (plan 09-07, pre-deletion): shadowPathReachableCodes =
+// {ownership.move_while_borrowed: guarded by `if loans :=
+// activeLoans[source.place.ID]; len(loans) > 0`, analyzeArmBody/
+// analyzeStraightLine's `take` case; ownership.borrow_conflict: guarded by
+// `conflictingLoan(activeLoans[source.place.ID], ...)`, the `borrow`/
+// `borrow_mut` cases} -- both driven by computeLoanLastUses' loanUses
+// output, both now DELETED call sites.
 
-// shadowPathReachableCodes is the set of `ownership.*` codes whose OWN
-// admission decision is genuinely gated by the AST-shadow path's timing
-// index (activeLoans/loanUses, fed by computeLoanLastUses). Both entries
-// are the two codes D-09-47 predicted; TestShadowPathSubsumptionCorpus
-// verifies the generator's ACTUAL reach agrees, rather than assuming the
-// prediction.
+// shadowPathReachableCodes is the set of `ownership.*` codes whose admission
+// decision is genuinely gated by the SURVIVING pass's own loan-timing
+// derivation (lastUseIndexByLoan, checkInterproceduralLoanLiveness). Both
+// entries are the two codes D-09-47 predicted and plan 09-07 already proved
+// reachable through the (now-deleted) shadow path; TestShadowPathSubsumptionCorpus
+// verifies the SURVIVING pass's actual reach still agrees.
 var shadowPathReachableCodes = map[string]string{
-	"ownership.move_while_borrowed": "guarded by `if loans := activeLoans[source.place.ID]; len(loans) > 0` (check.go, analyzeArmBody/analyzeStraightLine's `take` case) -- activeLoans is populated and expired using loanUses[index].index, computeLoanLastUses' own output",
-	"ownership.borrow_conflict":     "guarded by `conflictingLoan(activeLoans[source.place.ID], ...)` (check.go, the `borrow`/`borrow_mut` cases) -- the SAME activeLoans state move_while_borrowed's guard reads",
+	"ownership.move_while_borrowed": "guarded by `lastUseIndexByLoan[loanID]` inline in moveWhileBorrowedDiagnosticPostAssembly's own call site (check.go, checkInterproceduralLoanLiveness) -- lastUseIndexByLoan is materializeLoanEndpoints' own last-use derivation over the assembled function, the surviving pass's replacement for the deleted activeLoans/loanUses state",
+	"ownership.borrow_conflict":     "guarded by `lastUseIndexByLoan` in the new-loan-vs-existing-loan conflict scan (check.go, checkInterproceduralLoanLiveness) immediately preceding borrowConflictDiagnosticPostAssembly's own call site -- the SAME lastUseIndexByLoan state move_while_borrowed's guard reads",
 }
 
-// shadowPathUnreachableCodes is the set of `ownership.*` codes the shadow
-// path does NOT decide: each fires from an immediate per-binding fact that
-// never consults activeLoans or loanUses, verified by the identical
+// shadowPathUnreachableCodes is the set of `ownership.*` codes the surviving
+// pass does NOT decide: each still fires inline during lowering from an
+// immediate per-binding fact that never consults lastUseIndexByLoan (or the
+// deleted activeLoans/loanUses before it), verified by the identical
 // source-scan technique TestTimingIndependentOwnershipCodesFireFromPerBindingFacts
 // applies to the same three raise sites.
 var shadowPathUnreachableCodes = map[string]string{
-	"ownership.use_after_move":         "guard is `!source.initialized` only -- a per-binding fact set the instant a prior `take` runs; never consults activeLoans or loanUses",
-	"ownership.borrow_requires_share":  "guard is `hasTypeAbility(typeFact, core.AbilityShare)` only -- a declared-type fact; never consults activeLoans or loanUses",
-	"ownership.transfer_requires_take": "guard is `hasTypeAbility(typeFact, core.AbilityCopy)` only -- a declared-type fact; never consults activeLoans or loanUses",
+	"ownership.use_after_move":         "guard is `!source.initialized` only -- a per-binding fact set the instant a prior `take` runs; never consults lastUseIndexByLoan or the deleted activeLoans/loanUses",
+	"ownership.borrow_requires_share":  "guard is `hasTypeAbility(typeFact, core.AbilityShare)` only -- a declared-type fact; never consults lastUseIndexByLoan or the deleted activeLoans/loanUses",
+	"ownership.transfer_requires_take": "guard is `hasTypeAbility(typeFact, core.AbilityCopy)` only -- a declared-type fact; never consults lastUseIndexByLoan or the deleted activeLoans/loanUses",
 }
 
 var (
-	activeLoansSourceGuardPattern = regexp.MustCompile(`activeLoans\[source\.place\.ID\]`)
-	conflictingLoanGuardPattern   = regexp.MustCompile(`conflictingLoan\(activeLoans`)
-	borrowConflictCallPattern     = regexp.MustCompile(`borrowConflictDiagnostic\(`)
+	lastUseIndexByLoanGuardPattern       = regexp.MustCompile(`lastUseIndexByLoan`)
+	moveWhileBorrowedPostAssemblyPattern = regexp.MustCompile(`moveWhileBorrowedDiagnosticPostAssembly\(`)
+	borrowConflictPostAssemblyPattern    = regexp.MustCompile(`borrowConflictDiagnosticPostAssembly\(`)
 )
 
 // reachableGuardWindows is timingIndependentGuardWindows' mirror image for
-// the two shadow-path-DEPENDENT codes: it locates each raise site's own
+// the two SURVIVING-pass-DEPENDENT codes: it locates each raise site's own
 // guarding condition and returns the text window from guard to raise site,
-// so the caller can assert the window DOES consult activeLoans (the
+// so the caller can assert the window DOES consult lastUseIndexByLoan (the
 // opposite assertion Task 2(b)'s fence makes for the three independent
 // codes).
 func reachableGuardWindows(t *testing.T, code string) []string {
@@ -485,28 +503,32 @@ func reachableGuardWindows(t *testing.T, code string) []string {
 	switch code {
 	case "ownership.move_while_borrowed":
 		for index, line := range lines {
-			if !strings.Contains(line, `"ownership.move_while_borrowed"`) {
+			if strings.HasPrefix(strings.TrimSpace(line), "func ") {
 				continue
 			}
-			guardIndex, ok := findGuardAbove(lines, index, activeLoansSourceGuardPattern, 20)
+			if !moveWhileBorrowedPostAssemblyPattern.MatchString(line) {
+				continue
+			}
+			guardIndex, ok := findGuardAbove(lines, index, lastUseIndexByLoanGuardPattern, 20)
 			if !ok {
-				t.Fatalf("check.go:%d: ownership.move_while_borrowed raise has no activeLoans[source.place.ID] guard within 20 lines above", index+1)
+				t.Fatalf("check.go:%d: moveWhileBorrowedDiagnosticPostAssembly(...) call has no lastUseIndexByLoan guard within 20 lines above", index+1)
 			}
 			windows = append(windows, strings.Join(lines[guardIndex:index+1], "\n"))
 		}
 	case "ownership.borrow_conflict":
 		for index, line := range lines {
 			if strings.HasPrefix(strings.TrimSpace(line), "func ") {
-				// Skip borrowConflictDiagnostic's own definition line: its
-				// guard lives at each CALL site, not at its own signature.
+				// Skip borrowConflictDiagnosticPostAssembly's own definition
+				// line: its guard lives at each CALL site, not at its own
+				// signature.
 				continue
 			}
-			if !borrowConflictCallPattern.MatchString(line) {
+			if !borrowConflictPostAssemblyPattern.MatchString(line) {
 				continue
 			}
-			guardIndex, ok := findGuardAbove(lines, index, conflictingLoanGuardPattern, 5)
+			guardIndex, ok := findGuardAbove(lines, index, lastUseIndexByLoanGuardPattern, 20)
 			if !ok {
-				t.Fatalf("check.go:%d: borrowConflictDiagnostic(...) call has no conflictingLoan(activeLoans...) guard within 5 lines above", index+1)
+				t.Fatalf("check.go:%d: borrowConflictDiagnosticPostAssembly(...) call has no lastUseIndexByLoan guard within 20 lines above", index+1)
 			}
 			windows = append(windows, strings.Join(lines[guardIndex:index+1], "\n"))
 		}
@@ -616,11 +638,11 @@ func TestShadowPathSubsumptionCorpus(t *testing.T) {
 		}
 	})
 
-	t.Run("structural: reachable codes' guards actually consult activeLoans", func(t *testing.T) {
+	t.Run("structural: reachable codes' guards actually consult lastUseIndexByLoan", func(t *testing.T) {
 		for code := range shadowPathReachableCodes {
 			for _, window := range reachableGuardWindows(t, code) {
-				if !strings.Contains(window, "activeLoans") {
-					t.Fatalf("%s: guarding window does not consult activeLoans, contradicting its shadowPathReachableCodes classification:\n%s", code, window)
+				if !strings.Contains(window, "lastUseIndexByLoan") {
+					t.Fatalf("%s: guarding window does not consult lastUseIndexByLoan, contradicting its shadowPathReachableCodes classification:\n%s", code, window)
 				}
 			}
 		}
@@ -669,6 +691,11 @@ func TestShadowPathSubsumptionCorpus(t *testing.T) {
 	})
 
 	t.Run("pre-deletion refusal baseline reproduces", func(t *testing.T) {
+		// Plan 09-09 (D-09-08's authorized deletion): re-run at the MOVED
+		// contract -- production evaluated through
+		// straightLineSupportAtDecisionPoint (lowering, then the extended
+		// post-assembly pass), never analyzeStraightLine directly, which no
+		// longer decides either timing-dependent code (D-09-09).
 		byteFact := byteTypeFact()
 		seen := map[string]bool{}
 		for length := 0; length <= shadowPathGeneratorDepth; length++ {
@@ -678,7 +705,7 @@ func TestShadowPathSubsumptionCorpus(t *testing.T) {
 			}
 			for encoded := 0; encoded < cases; encoded++ {
 				body := generatedOwnershipBody(encoded, length, shadowPathAlphabet)
-				got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, byteFact, &body, nil, nil)
+				got := straightLineSupportAtDecisionPoint("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, byteFact, &body, nil, nil)
 				identity := fmt.Sprintf("len=%d:encoded=%d", length, encoded)
 				want, tracked := shadowPathRefusalBaseline[identity]
 				if !tracked {
