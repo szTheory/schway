@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 10
 current_phase_name: Trusted Interprocedural Oracle
 status: executing
-stopped_at: Completed 10-04-PLAN.md
-last_updated: "2026-09-11T19:16:15.631Z"
+stopped_at: Completed 10-05-PLAN.md
+last_updated: "2026-09-11T20:04:22.620Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 10 execution started
-state_head: b7b88851a3bec3a6567c4b15f95125ec4e9c814c
+state_head: 6c274815269538cc9bc014b06241ab1dd1443848
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 37
-  completed_plans: 32
+  completed_plans: 33
 ---
 
 # Project State
@@ -41,7 +41,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 10 (Trusted Interprocedural Oracle) — EXECUTING
-Plan: 5 of 9
+Plan: 6 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 10 execution started
 
@@ -179,6 +179,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 10 P02 | 95min | 3 tasks | 11 files |
 | Phase 10-trusted-interprocedural-oracle P03 | 100min | 3 tasks | 10 files |
 | Phase 10-trusted-interprocedural-oracle P04 | 45min | 3 tasks | 3 files |
+| Phase 10 P05 | 85 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -237,6 +238,7 @@ Standing architectural commitments carried into M002:
 - [Phase 10]: Corrected two check-package negative-control fixtures/tests (negative_control_fails.lang, negative_control_infallible.lang) whose expected diagnostic depended on the same pre-existing D-09-51 transparent-walk defect — relay's declared borrow(buffer) return was never honestly derivable given leaf's genuinely owned return; check's own SEM-06 Callable gate now correctly fires first with core.callee_not_callable
 - [Phase ?]: 10-03: pathoracle composes callee paths across OpCall via its own EnumeratePaths (composeCall/composeCarriesOwnLoan), re-deriving per-path (never per-function-contract) whether a loan survives the call; MaxCompositionDepth + compositionCycleError guard recursion independently of MaxPaths/EnumeratePaths' own back-edge guard; D-10-14 discriminating fixture (two-arm callee, one borrows one owns) proven via the D-10-55 seeded contract-hop fault, stitched across two separately-checked fixtures since the shape cannot be one joint Callable program
 - [Phase 10]: [Phase 10]: 10-04: MaxCallDepth = 128 declared deliberately BELOW the real 1024-function structural ceiling (inverse of pathoracle.MaxPaths' above-maximum direction); depth-exceeded refusal modeled as a typed Outcome/Event (never a bare error); a subprocess probe (first in this repo) directly observes the host-stack limit and the language-level call-depth bound are structurally unrelated
+- [Phase 10]: 10-05: interp's cross-frame drain order (D-10-33/D-10-35) plus corevalidate's per-declaration callee-frame-drain invariant (D-10-34) are the two independent knowers of drop order; cgen's multi-frame pad stays named Phase 11 debt
 
 ### Pending Todos
 
@@ -329,8 +331,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-11T19:15:41.319Z
-Stopped at: Completed 10-04-PLAN.md
+Last session: 2026-09-11T20:04:22.404Z
+Stopped at: Completed 10-05-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

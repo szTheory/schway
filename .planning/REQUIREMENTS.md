@@ -33,7 +33,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       documented fixed ceiling; exceeding it is a named refusal, not a host
       stack overflow.
 
-- [ ] **SEM-09**: Drop and cleanup obligations run in the defined order on
+- [x] **SEM-09**: Drop and cleanup obligations run in the defined order on
       normal return and on every nonlocal exit across a call boundary.
 
 ### Ownership Across Boundaries
@@ -221,7 +221,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | SEM-06 | Phase 07 | Complete |
 | SEM-07 | Phase 07 | Complete |
 | SEM-08 | Phase 10 | Pending |
-| SEM-09 | Phase 10 | Pending |
+| SEM-09 | Phase 10 | Complete |
 | OWN-05a | Phase 09 | Complete |
 | OWN-05b | Phase 10 | Pending |
 | OWN-06 | Phase 08 | Complete |

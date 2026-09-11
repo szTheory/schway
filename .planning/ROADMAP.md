@@ -564,7 +564,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 10-05-PLAN.md — SEM-09 drop/cleanup ordering across frames on normal return and every nonlocal exit, plus the `corevalidate` drain-before-pop signature invariant (wave 3)
+- [x] 10-05-PLAN.md — SEM-09 drop/cleanup ordering across frames on normal return and every nonlocal exit, plus the `corevalidate` drain-before-pop signature invariant (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
