@@ -3,7 +3,7 @@ phase: 09-peer-re-derivation-and-d-03-02-closure
 recorded: 2026-09-10
 status: accepted
 disposition: planning-time
-items: 14
+items: 15
 blocking: 0
 ---
 
@@ -44,6 +44,7 @@ name the superseded text so no future reader has to discover the change.
 | D-09-46 | 09-CONTEXT.md (D-09-46), 09-RESEARCH.md Pitfall 3 | TRU-04 | info | Phase 09 — plan 09-02 Task 1 (Wave 0 prerequisite, blocks TRU-04's vehicle) | CORPUS-VISIBILITY PREREQUISITE. `generateCallGraphCorpus` is unexported inside `internal/compiler/check/costcorpus_test.go:50`, so Go's package-visibility rules make it structurally uncallable from any other package's test binary. D-09-23's "same generator, disjoint consumers" cannot be satisfied until it is made reachable. Resolution chosen at planning time: RELOCATE it (not duplicate it) to `internal/compiler/testsupport`, which imports only stdlib today and therefore cannot become a route by which `session` or `corevalidate` gains a production import of `check` |
 | D-09-50 | 09-PLAN planning pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | TRU-04 | warning | Phase 09 — plan 09-01 hosts the synthetic-shape differential; plan 09-07's gate reviews the split | D-09-23 prescribes feeding the synthetic call-graph shapes into `session_peer_gate_test.go`'s existing corpus-wide gate. VERIFIED AT PLANNING TIME THAT THIS IS NOT POSSIBLE AS WRITTEN: `check`'s only exported entry point is `check.Program(ast.Program)` (`check.go:46`), so no package outside `check` can compute a `check`-side verdict for a synthetically constructed `core.Program`. The `.lang` corpus gate therefore stays exactly where it is (and is where the two D-09-03 retirements are proven), while the SYNTHETIC-shape differential must live inside package `check`, which alone can reach both the unexported post-assembly pass and `corevalidate.Validate`. This is a split of VEHICLE, never of TRUTH: the synthetic differential must reuse the same both-directions exactness discipline and cross-reference `peerDivergenceExpected`'s doc comment, and must never define "divergence" a second way |
 | D-09-51 | 09-01 execution pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | OWN-07, TRU-04 | warning | Phase 10 — Trusted Interprocedural Oracle, Success Criterion 1 (`originvalidate` walks published origins across `OpCall`); recorded as DEBT at plan 09-08's mid-phase gate, 2026-09-10, not fixed in Phase 09 | NEWLY DISCOVERED, PREVIOUSLY-MASKED DEFECT in a THIRD validator. Once `buildLoanChainIndex`'s peer-derived OpCall consult (D-09-03) lands and `corevalidate.Validate` correctly stops refusing `testdata/phase08/twin_a_accept.lang` and `testdata/phase08/relay_depth2_accept.lang`, running either fixture through the FULL `lang check` CLI (`session.CheckCommandFile`, which additionally consults `originvalidate.ValidatePublished` after `check` and `corevalidate` both pass) surfaces a DIFFERENT, PRE-EXISTING refusal: `core.origin_omitted`. Root cause verified directly: `originvalidate.walkReturnOrigin` (`originvalidate.go:171-218`) has no `case core.OpCall` in its backward-walk switch, so it treats a call boundary as fully transparent, walking straight through `operation.SourceID` into the CALL'S ARGUMENT's own provenance — it never consults the CALLEE's own declared return contract the way `check`'s `derivePlaceLoans`/`corevalidate`'s new `derivePeerLoanCarry` both now do. For `twin_a_accept.lang`, `escortee` declares a plain owned return (`-> Buffer`), so `escort`'s own return is genuinely a fresh owned value with no live alias risk — but `originvalidate` still reports it as borrow-derived (walking through the call to the pre-call exclusive borrow) and refuses the exported, origin-undeclared `escort` with `core.origin_omitted`. This is NOT a defect introduced by this plan's change: confirmed directly (`check.Program` alone returns zero diagnostics for this fixture; `originvalidate.ValidatePublished(checked.Program)` independently returns the `core.origin_omitted` problem regardless of what corevalidate does) that this refusal has been latent since Phase 07/08, simply unreachable through the full CLI because `corevalidate`'s own (now-fixed) unconditional-propagation bug always refused FIRST in `CheckCommandFile`'s fixed precedence (check, then corevalidate, then originvalidate) — this is the exact "one validator's own defect masks another's" shape D-09-08 names for `check`, discovered here one layer further down the pipeline than any Phase 08/09 planning document anticipated. `TestNoUndeclaredCheckPeerDivergenceAcrossCorpus` (the actual mechanically-enforced gate for D-09-03's retirement) is UNAFFECTED and passes cleanly: it compares `check.Program` diagnostics against `corevalidate.Validate` only, never invoking `originvalidate.ValidatePublished` at all. A real fix requires threading callee-return-contract lookups through `RecomputeOriginPerReturn`/`walkReturnOrigin`'s signatures (currently `func(function core.Function) ...`, no whole-`core.Program` access) — a cross-cutting signature change touching `BuildInterface`, `ValidatePublished`, and every existing `originvalidate_test.go` call site, judged out of bounds for this plan's declared `files_modified` and Rule 4 territory (significant structural modification), not a bounded inline fix. Landing phase and vehicle: not yet decided; needs its own scoped plan or a Phase 09 mid-phase gate (09-07/09-08) agenda item |
+| D-09-52 | 09-09 execution halt 2026-09-10 (planning defect, caught before any edit) | OWN-09 | warning | Phase 09 — plan 09-09, rewritten in place 2026-09-10; the contract change lands with the deletion itself | PLANNING DEFECT IN THIS PHASE'S OWN PLAN, and the oracle-contract change it forced. `09-09-PLAN.md`'s original Task 1 and Task 2 CONTRADICTED EACH OTHER. Task 1's must-have truth ("Lowering makes no loan-liveness decisions") and its instruction to remove the `activeLoans`/`expiringLoans` raises from `analyzeArmBody` and `analyzeStraightLine` are incompatible with Task 2's acceptance criterion that `TestOwnershipSequenceExhaustive` "passes unchanged": that test calls `analyzeStraightLine` DIRECTLY (never through `Program`, never through the post-assembly pass) and asserts via `assertSupportEqual` that production's `DiagnosticCode` is byte-identical to `oracleStraightLine`'s, an independent oracle that decides `ownership.move_while_borrowed` / `ownership.borrow_conflict` SYNCHRONOUSLY and inline during its own forward walk (`check_test.go:1573`, `:1588`, `:1600`). Defer production and the oracle still flags where production is now clean. CAUGHT AT EXECUTION, BEFORE ANY EDIT: the executor halted on its own read of the two tasks, reproduced the contradiction empirically with a scratch edit (`length=2 case=198 support mismatch`), reverted cleanly (`git diff` on `check.go` empty), and reported rather than completing — the plan's own retained stop condition working as designed. The orchestrator independently verified the finding. RESOLUTION (human-chosen): re-point the test's production side through a composed helper that runs lowering AND the extended post-assembly pass, and defer `oracleStraightLine`'s two timing-dependent decisions to the matching point, so BOTH sides move together — never one alone, which would silently change what is being compared. `09-09-PLAN.md` was rewritten in place with the test-contract move as an explicit first-class Task 1 sequenced BEFORE the deletion it unblocks. CONSEQUENCE A FUTURE READER MUST KNOW: the exhaustive oracle's CONTRACT CHANGED. It no longer proves agreement at lowering time; it proves the same agreement, over the same full 225,890-case enumeration, with the same byte-identical `assertSupportEqual`, evaluated at the post-assembly decision point. A new precedence rule is now load-bearing on both sides: a timing-independent inline refusal (`name.unknown`, `ownership.use_after_move`, `ownership.borrow_requires_share`, `ownership.transfer_requires_take`) WINS over a deferred loan-liveness refusal, because production's lowering fails the function before the post-assembly pass ever sees it — so a body that once reported `ownership.move_while_borrowed` may now report `ownership.use_after_move`. `TestBranchSequenceExhaustive` is NOT affected and its source stays byte-identical: it already runs `Program(...)` end-to-end and asserts only a boolean admit/reject, so it tolerates the decision moving later — and it thereby becomes the end-to-end evidence that the surviving pass covers the branch-ARM path too |
 
 ## Detail
 
@@ -535,6 +536,89 @@ than convention." This is the correct, already-declared home for the fix —
 no new phase needs to be invented. This row stays open (severity: warning)
 until Phase 10 lands it.
 
+### D-09-52 — 09-09's own Task 1/Task 2 contradiction, and the oracle contract it moved
+
+**What was wrong.** The pre-rewrite `09-09-PLAN.md` asserted two things that
+cannot both hold. Task 1 required lowering to stop deciding loan liveness —
+removing the `activeLoans`/`expiringLoans` bookkeeping and the
+`ownership.move_while_borrowed` / `ownership.borrow_conflict` raises from both
+`analyzeArmBody` (`check.go:2190`) and `analyzeStraightLine` (`check.go:3406`).
+Task 2 required `TestOwnershipSequenceExhaustive` to "pass unchanged".
+
+Those are incompatible because of how that test is wired.
+`TestOwnershipSequenceExhaustive` (`check_test.go:51-138`) calls
+`analyzeStraightLine` **directly** — not through `Program`, not through
+`checkInterproceduralLoanLiveness` — and compares the returned
+`ownershipSupport` against `oracleStraightLine` (`check_test.go:1531-1654`) via
+`assertSupportEqual` (`check_test.go:1713`), whose comparison includes exact
+`DiagnosticCode` equality. The oracle reaches both timing-dependent codes
+**synchronously and inline** during its own forward walk, returning early at the
+offending binding (`check_test.go:1573`, `:1588`, `:1600`). Stop production
+deciding at that point and production returns a clean `DiagnosticCode` exactly
+where the oracle still flags one.
+
+**How it was caught.** At execution, **before the first edit**. The executor read
+both tasks, found the contradiction, reproduced it empirically with a scratch
+edit — `length=2 case=198 support mismatch` — reverted cleanly (verified: `git
+diff` on `check.go` empty), and halted with a report instead of completing. That
+is the plan's own retained stop condition working exactly as intended, and it is
+why this row records a planning defect rather than a code regression. The
+orchestrator independently verified the finding before acting on it.
+
+**Resolution (human-chosen).** Move BOTH sides of the differential together, to
+the same later decision point:
+
+- **Production side:** a test-local composed helper
+  (`straightLineSupportAtDecisionPoint`) runs `analyzeStraightLine` and then, if
+  lowering admitted, the extended post-assembly pass over a one-function
+  assembled `core.Program`.
+- **Oracle side:** `oracleStraightLine` keeps its name and signature (the branch
+  test calls it), drops its three inline early returns for the two
+  timing-dependent codes, runs its walk to completion, and applies a deferred
+  verdict computed by its own post-hoc helper over its own recorded loan facts.
+
+Moving only one side would have silently changed *what is being compared* — the
+specific failure mode the rewrite is designed against. The oracle's deferred
+verdict must never call or transcribe production machinery; a differential whose
+two sides share a derivation agrees perfectly and proves nothing (the
+D-02-03/D-03-01 hazard this project already paid for once).
+
+**The contract change, stated for future readers.** The exhaustive oracle no
+longer proves production/oracle agreement *at lowering time*. It proves the same
+agreement, over the same full enumeration (**225,890 `assertSupportEqual` calls**
+— two sweeps × `48^0 + 48^1 + 48^2 + 48^3` = 2 × 112,945, now asserted by an
+explicit case counter the test previously lacked), with `assertSupportEqual`
+unrelaxed, **evaluated at the post-assembly decision point**.
+
+A new precedence rule is load-bearing on both sides and is a real behavioral
+change: a timing-independent inline refusal (`name.unknown`,
+`ownership.use_after_move`, `ownership.borrow_requires_share`,
+`ownership.transfer_requires_take`) **wins** over a deferred loan-liveness
+refusal, because production's lowering fails the function before the
+post-assembly pass ever sees it. A body that once reported
+`ownership.move_while_borrowed` may now report `ownership.use_after_move`. This
+is the intraprocedural face of D-09-13, and D-09-49 Q1's enumeration (plan
+09-07's `TestUseAfterMoveUnchangedByDeferredMoveWhileBorrowed`) already settled
+that no committed fixture exhibits the interaction.
+
+**`TestBranchSequenceExhaustive` is genuinely unaffected** and its source stays
+byte-identical — recorded here so no future reader assumes it was overlooked. Its
+production side already runs `Program(program)` end-to-end
+(`check_test.go:915`), and it asserts only `gotReject != wantReject`, consuming
+the oracle solely as `DiagnosticCode != ""`, a value the deferred oracle still
+reports. It consequently becomes the end-to-end evidence that the surviving pass
+also covers the branch-ARM path.
+
+**Prohibitions carried into the rewritten plan**, unchanged in force: the
+enumeration must never be reduced to make the move pass; `assertSupportEqual`
+must never be relaxed; plan 09-07's baseline tables must never be regenerated
+wholesale (D-09-13); and the stop condition that caught this defect is retained
+verbatim.
+
+**Status:** resolved at planning time by rewriting `09-09-PLAN.md` in place
+(2026-09-10). The row stays open (severity: warning) until plan 09-09 executes
+and its SUMMARY records the moved contract and the precedence rule as landed.
+
 ---
 
 *Register written at Phase 09 planning time, 2026-09-10.*
@@ -544,6 +628,10 @@ finding, not a planning-time item).*
 item above (D-09-08, D-09-13, D-09-21, D-09-31, D-09-37, D-09-40a, D-09-43,
 D-09-45, D-09-51) from code-level evidence and AUTHORIZED the
 `computeLoanLastUses` deletion (D-09-08) for plan 09-09. No new `D-09-NN`
-item was opened at this gate; the frontmatter `items:` count stays 14.*
+item was opened at this gate; the frontmatter `items:` count stayed 14
+through that gate.*
+*D-09-52 appended 2026-09-10 during the targeted rewrite of `09-09-PLAN.md`
+(a planning defect caught at execution before any edit); the frontmatter
+`items:` count is now 15.*
 *Shape validated by `TestDebtRegistersAreWellFormed`
 (`internal/compiler/session/session_test.go`).*
