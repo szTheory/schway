@@ -6,15 +6,15 @@ current_phase: 09
 current_phase_name: Peer Re-Derivation and D-03-02 Closure
 status: executing
 stopped_at: Completed 09-08-PLAN.md
-last_updated: "2026-09-10T23:46:52.000Z"
+last_updated: "2026-09-11T00:01:08.342Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 09 mandatory mid-phase gate adjudicated; computeLoanLastUses deletion AUTHORIZED for plan 09-09
-state_head: fbcf182
+state_head: b4a17fb6bae91d08a2bd8a24f0c1ae8915e7abf1
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 27
+  completed_plans: 26
 ---
 
 # Project State
@@ -265,6 +265,7 @@ answered before Phase 12 is planned.
   mutation-kill every differential, interrogate what inputs a property test
   actually reaches, and drive the shipped binary on hand-written programs
   rather than only the gate's own corpus.
+- Plan 09-09 HALTED before any code change: TestOwnershipSequenceExhaustive (check_test.go) calls analyzeStraightLine directly and asserts DiagnosticCode==ownership.move_while_borrowed/borrow_conflict synchronously against an oracle that computes those codes inline. This contradicts Task 1's must_have truth 'Lowering makes no loan-liveness decisions' and Task 2's acceptance criterion that this same test 'pass unchanged'. Empirically confirmed via a reverted experimental edit (length=2 case=198): removing the move_while_borrowed raise from analyzeStraightLine made production return DiagnosticCode:"" while the oracle still returned ownership.move_while_borrowed, failing assertSupportEqual. Needs an architectural decision (Rule 4) on how TestOwnershipSequenceExhaustive's contract is meant to change before the computeLoanLastUses deletion can proceed. Tree left green, no commits made.
 
 ### Roadmap Evolution
 
