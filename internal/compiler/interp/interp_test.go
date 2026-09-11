@@ -705,6 +705,613 @@ func runCallDepthProbeChild(t *testing.T) {
 // ceiling is ever approached, at the SAME chain depth. See
 // runCallDepthProbeChild's own doc comment for the full framing and its
 // recorded observation for Assumption A1.
+// --- Plan 10-05: cross-frame drain ordering (SEM-09 clause 2, D-10-33) ---
+
+// drainByteType is the shared, ability-free (non-copyable) TypeFact every
+// Task 1 drain-order fixture below uses: none of these fixtures depend on
+// OWN-05b's copy-vs-move distinction, so a single non-copyable type keeps
+// every builder uniform.
+var drainByteType = core.TypeFact{ID: "drain:type:byte"}
+
+// newDrainAcquireReleaseBlocks builds the two-block shape every synthetic
+// resource-lifecycle function below shares: an entry block with exactly one
+// OpForeignCall acquisition (never itself a terminator: the ok edge always
+// leads to a second block), and a second block holding whatever operations
+// the caller supplies (a release+return, or a call to another function, or
+// nothing at all before a defect fires). The acquisition is always made
+// TRACKED (D-04-07's convention) by a same-named, always-present OpRelease
+// operation appended to the function's own Operations list -- present for
+// newBlockFrame's tracked-map scan (which walks ALL declared operations,
+// never only the reachable ones) even when that release operation itself
+// never executes, mirroring cgen's own newResourceLedger scan.
+func newDrainAcquireReleaseBlocks(functionID, paramID, acquireTargetID string, afterAcquireOps []string, extraOperations []core.LinearOperation) *core.LinearBody {
+	acquireOp := functionID + ":op:acquire"
+	releaseOp := functionID + ":op:release_for_tracking"
+	entryBlock := functionID + ":block:entry"
+	afterBlock := functionID + ":block:after_acquire"
+	okEdge := functionID + ":edge:ok"
+
+	operations := []core.LinearOperation{
+		{ID: acquireOp, Kind: core.OpForeignCall, SourceID: paramID, TargetID: acquireTargetID, ErrTargetID: functionID + ":place:err", TypeID: drainByteType.ID, OkEdgeID: okEdge},
+	}
+	operations = append(operations, extraOperations...)
+	// The tracking release: appended to Operations (so newBlockFrame's scan
+	// sees it and marks acquireOp live) but deliberately NOT referenced by
+	// any block's OperationIDs -- it never actually executes on any path
+	// these fixtures drive, exactly as PHASE-10-DEBT.md's D-10-31 finding
+	// requires: only the two named abrupt constructs ever observe this
+	// acquisition's fate here, never a normal release.
+	operations = append(operations, core.LinearOperation{
+		ID: releaseOp, Kind: core.OpRelease, SourceID: acquireTargetID, TypeID: drainByteType.ID, ReleasesOperationID: acquireOp,
+	})
+
+	return &core.LinearBody{
+		ID:    functionID + ":linear",
+		Types: []core.TypeFact{drainByteType},
+		Places: []core.Place{
+			{ID: paramID, Name: "value", TypeID: drainByteType.ID},
+			{ID: acquireTargetID, Name: "acquired", TypeID: drainByteType.ID},
+		},
+		Operations: operations,
+		Blocks: []core.Block{
+			{ID: entryBlock, OperationIDs: []string{acquireOp}, Successors: []string{afterBlock}},
+			{ID: afterBlock, OperationIDs: afterAcquireOps},
+		},
+		Edges: []core.Edge{{ID: okEdge, FromBlockID: entryBlock, ToBlockID: afterBlock}},
+	}
+}
+
+// frameDrainNormalReturnProgram hand-builds a synthetic two-function
+// core.Program (never fed through the parser or corevalidate, following
+// moveAsCopyProbeProgram's own established precedent for isolating interp's
+// mechanism directly): "caller" acquires its own resource, calls "callee"
+// (which acquires and releases ITS OWN resource before returning normally),
+// then releases its own resource and returns. On normal return, the
+// callee's frame is drained (its own release event emitted) entirely before
+// it pops -- and therefore entirely before the caller's own release event,
+// which can only happen after control resumes in the caller's frame. This
+// composes for free (no interp code change required for this path): it is
+// simply the natural consequence of frames executing their own operations,
+// in order, before the terminator that pops them.
+func frameDrainNormalReturnProgram() (program core.Program, entry core.Function) {
+	calleeID := "drain:normal:callee"
+	calleeParam := calleeID + ":place:param"
+	calleeAcquired := calleeID + ":place:acquired"
+	calleeReturn := calleeID + ":op:return"
+	callee := core.Function{
+		ID: calleeID, Name: "callee", Parameter: core.Parameter{ID: calleeParam, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: newDrainAcquireReleaseBlocks(calleeID, calleeParam, calleeAcquired,
+			[]string{calleeID + ":op:real_release", calleeReturn}, nil),
+	}
+	// Append the REAL (reachable) release+return pair into the "after
+	// acquire" block -- distinct from newDrainAcquireReleaseBlocks' own
+	// always-unreached tracking release, this one genuinely executes.
+	callee.Linear.Operations = append(callee.Linear.Operations,
+		core.LinearOperation{ID: calleeID + ":op:real_release", Kind: core.OpRelease, SourceID: calleeAcquired, TypeID: drainByteType.ID, ReleasesOperationID: calleeID + ":op:acquire"},
+		core.LinearOperation{ID: calleeReturn, Kind: core.OpReturn, SourceID: calleeParam, TypeID: drainByteType.ID},
+	)
+
+	callerID := "drain:normal:caller"
+	callerParam := callerID + ":place:param"
+	callerAcquired := callerID + ":place:acquired"
+	callResult := callerID + ":place:call_result"
+	callOp := callerID + ":op:call"
+	callerRelease := callerID + ":op:real_release"
+	callerReturn := callerID + ":op:return"
+	caller := core.Function{
+		ID: callerID, Name: "caller", Parameter: core.Parameter{ID: callerParam, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: newDrainAcquireReleaseBlocks(callerID, callerParam, callerAcquired,
+			[]string{callOp, callerRelease, callerReturn}, nil),
+	}
+	caller.Linear.Places = append(caller.Linear.Places, core.Place{ID: callResult, Name: "call_result", TypeID: drainByteType.ID})
+	caller.Linear.Operations = append(caller.Linear.Operations,
+		core.LinearOperation{ID: callOp, Kind: core.OpCall, SourceID: callerParam, TargetID: callResult, TypeID: drainByteType.ID, CalleeID: calleeID},
+		core.LinearOperation{ID: callerRelease, Kind: core.OpRelease, SourceID: callerAcquired, TypeID: drainByteType.ID, ReleasesOperationID: callerID + ":op:acquire"},
+		core.LinearOperation{ID: callerReturn, Kind: core.OpReturn, SourceID: callResult, TypeID: drainByteType.ID},
+	)
+
+	return core.Program{Schema: core.Schema1, Module: "drain.normal_return", Functions: []core.Function{callee, caller}}, caller
+}
+
+// frameDrainSingleFrameBaselineProgram is the pre-phase single-frame shape
+// (no call at all): one function that acquires and releases its own
+// resource before returning. Used to prove drop ordering at a single frame
+// is byte-identical whether or not the multi-frame drain machinery exists
+// at all -- composing frames must change nothing about within-frame
+// ordering.
+func frameDrainSingleFrameBaselineProgram() (program core.Program, entry core.Function) {
+	id := "drain:baseline:fn"
+	param := id + ":place:param"
+	acquired := id + ":place:acquired"
+	releaseOp := id + ":op:real_release"
+	returnOp := id + ":op:return"
+	fn := core.Function{
+		ID: id, Name: "baseline", Parameter: core.Parameter{ID: param, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: newDrainAcquireReleaseBlocks(id, param, acquired, []string{releaseOp, returnOp}, nil),
+	}
+	fn.Linear.Operations = append(fn.Linear.Operations,
+		core.LinearOperation{ID: releaseOp, Kind: core.OpRelease, SourceID: acquired, TypeID: drainByteType.ID, ReleasesOperationID: id + ":op:acquire"},
+		core.LinearOperation{ID: returnOp, Kind: core.OpReturn, SourceID: param, TypeID: drainByteType.ID},
+	)
+	return core.Program{Schema: core.Schema1, Module: "drain.single_frame_baseline", Functions: []core.Function{fn}}, fn
+}
+
+// frameDrainZeroAcquisitionCalleeProgram: "caller" acquires its own
+// resource, calls a callee that acquires NOTHING and returns immediately
+// (a flat body, no blocks at all), then releases its own resource and
+// returns. Proves a zero-acquisition callee frame pops emitting zero drop
+// events and leaves the caller's own drop sequence unchanged -- and, since
+// the callee acquires nothing, that its own popped Execution-shape
+// (exercised indirectly here through the caller's own event stream) never
+// reports a null live_resources.
+func frameDrainZeroAcquisitionCalleeProgram() (program core.Program, entry core.Function) {
+	calleeID := "drain:zero:callee"
+	calleeParam := calleeID + ":place:param"
+	callee := core.Function{
+		ID: calleeID, Name: "callee", Parameter: core.Parameter{ID: calleeParam, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: &core.LinearBody{
+			ID:     calleeID + ":linear",
+			Types:  []core.TypeFact{drainByteType},
+			Places: []core.Place{{ID: calleeParam, Name: "value", TypeID: drainByteType.ID}},
+			Operations: []core.LinearOperation{
+				{ID: calleeID + ":op:return", Kind: core.OpReturn, SourceID: calleeParam, TypeID: drainByteType.ID},
+			},
+		},
+	}
+
+	callerID := "drain:zero:caller"
+	callerParam := callerID + ":place:param"
+	callerAcquired := callerID + ":place:acquired"
+	callResult := callerID + ":place:call_result"
+	callOp := callerID + ":op:call"
+	callerRelease := callerID + ":op:real_release"
+	callerReturn := callerID + ":op:return"
+	caller := core.Function{
+		ID: callerID, Name: "caller", Parameter: core.Parameter{ID: callerParam, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: newDrainAcquireReleaseBlocks(callerID, callerParam, callerAcquired,
+			[]string{callOp, callerRelease, callerReturn}, nil),
+	}
+	caller.Linear.Places = append(caller.Linear.Places, core.Place{ID: callResult, Name: "call_result", TypeID: drainByteType.ID})
+	caller.Linear.Operations = append(caller.Linear.Operations,
+		core.LinearOperation{ID: callOp, Kind: core.OpCall, SourceID: callerParam, TargetID: callResult, TypeID: drainByteType.ID, CalleeID: calleeID},
+		core.LinearOperation{ID: callerRelease, Kind: core.OpRelease, SourceID: callerAcquired, TypeID: drainByteType.ID, ReleasesOperationID: callerID + ":op:acquire"},
+		core.LinearOperation{ID: callerReturn, Kind: core.OpReturn, SourceID: callResult, TypeID: drainByteType.ID},
+	)
+
+	return core.Program{Schema: core.Schema1, Module: "drain.zero_acquisition_callee", Functions: []core.Function{callee, caller}}, caller
+}
+
+// frameDrainNoAcquisitionProgram is a single function with NO acquisitions
+// at all -- proves live_resources serializes as [] (never null) for a
+// function whose live-tracking map and liveOrder slice both stay empty for
+// its entire execution.
+func frameDrainNoAcquisitionProgram() (program core.Program, entry core.Function) {
+	id := "drain:noacquire:fn"
+	param := id + ":place:param"
+	fn := core.Function{
+		ID: id, Name: "noacquire", Parameter: core.Parameter{ID: param, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: &core.LinearBody{
+			ID:         id + ":linear",
+			Types:      []core.TypeFact{drainByteType},
+			Places:     []core.Place{{ID: param, Name: "value", TypeID: drainByteType.ID}},
+			Operations: []core.LinearOperation{{ID: id + ":op:return", Kind: core.OpReturn, SourceID: param, TypeID: drainByteType.ID}},
+		},
+	}
+	return core.Program{Schema: core.Schema1, Module: "drain.no_acquisition", Functions: []core.Function{fn}}, fn
+}
+
+// frameDrainNonlocalMultiFrameProgram is the ABRUPT-path fixture (D-10-31's
+// foreign process-root landing pad, extended to N > 1 frames): "caller"
+// acquires its own resource A and calls "callee"; callee's OWN
+// ForeignContract declares nonlocal_exit "possible" and its body performs
+// TWO OpForeignCall operations -- the first acquires callee's own resource
+// B (tracked, live), the second is callee's own SECOND foreign call within
+// its own frame, which triggers the process-root landing pad per this
+// engine's existing single-frame convention (nonlocalExitCalls == 2). At
+// that moment the stack holds exactly two live frames: callee (innermost,
+// resource B still live) and caller (outermost, resource A still live --
+// its own release, guarded behind the call, never executes because control
+// never returns to it). This is the genuine N-frame nonlocal-exit shape
+// PHASE-10-DEBT.md's D-10-31 names -- never only a single-frame exercise of
+// OpForeignCall's own existing landing pad.
+func frameDrainNonlocalMultiFrameProgram() (program core.Program, entry core.Function) {
+	calleeID := "drain:nonlocal:callee"
+	calleeParam := calleeID + ":place:param"
+	calleeAcquired := calleeID + ":place:acquired"
+	calleeTrigger := calleeID + ":op:trigger"
+	entryBlock := calleeID + ":block:entry"
+	afterBlock := calleeID + ":block:after_acquire"
+	okEdge := calleeID + ":edge:ok"
+	callee := core.Function{
+		ID: calleeID, Name: "callee", Parameter: core.Parameter{ID: calleeParam, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		ForeignContract: &core.ForeignContract{Symbol: "lang_nonlocal_probe", Allocator: "libc_malloc", NonlocalExit: "possible", Fails: "ProbeError"},
+		Linear: &core.LinearBody{
+			ID:    calleeID + ":linear",
+			Types: []core.TypeFact{drainByteType},
+			Places: []core.Place{
+				{ID: calleeParam, Name: "value", TypeID: drainByteType.ID},
+				{ID: calleeAcquired, Name: "acquired", TypeID: drainByteType.ID},
+			},
+			Operations: []core.LinearOperation{
+				{ID: calleeID + ":op:acquire", Kind: core.OpForeignCall, SourceID: calleeParam, TargetID: calleeAcquired, ErrTargetID: calleeID + ":place:err", TypeID: drainByteType.ID, OkEdgeID: okEdge},
+				// The trigger: callee's OWN second OpForeignCall. Its
+				// OkEdgeID/ErrTargetID are never consulted -- the
+				// nonlocalExitCalls==2 branch returns before reaching that
+				// logic (interp.go's runFrameStack), exactly like
+				// nonlocal_exit_probe.lang's own second `try` call.
+				{ID: calleeTrigger, Kind: core.OpForeignCall, SourceID: calleeParam, TargetID: calleeID + ":place:trigger_unused", TypeID: drainByteType.ID},
+				// Tracking release for callee's own acquisition, unreached
+				// on this path exactly like newDrainAcquireReleaseBlocks'
+				// own convention.
+				{ID: calleeID + ":op:release_for_tracking", Kind: core.OpRelease, SourceID: calleeAcquired, TypeID: drainByteType.ID, ReleasesOperationID: calleeID + ":op:acquire"},
+			},
+			Blocks: []core.Block{
+				{ID: entryBlock, OperationIDs: []string{calleeID + ":op:acquire"}, Successors: []string{afterBlock}},
+				{ID: afterBlock, OperationIDs: []string{calleeTrigger}},
+			},
+			Edges: []core.Edge{{ID: okEdge, FromBlockID: entryBlock, ToBlockID: afterBlock}},
+		},
+	}
+
+	callerID := "drain:nonlocal:caller"
+	callerParam := callerID + ":place:param"
+	callerAcquired := callerID + ":place:acquired"
+	callResult := callerID + ":place:call_result"
+	callOp := callerID + ":op:call"
+	caller := core.Function{
+		ID: callerID, Name: "caller", Parameter: core.Parameter{ID: callerParam, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: newDrainAcquireReleaseBlocks(callerID, callerParam, callerAcquired, []string{callOp}, nil),
+	}
+	caller.Linear.Places = append(caller.Linear.Places, core.Place{ID: callResult, Name: "call_result", TypeID: drainByteType.ID})
+	caller.Linear.Operations = append(caller.Linear.Operations,
+		core.LinearOperation{ID: callOp, Kind: core.OpCall, SourceID: callerParam, TargetID: callResult, TypeID: drainByteType.ID, CalleeID: calleeID},
+	)
+
+	return core.Program{Schema: core.Schema1, Module: "drain.nonlocal_multi_frame", Functions: []core.Function{callee, caller}}, caller
+}
+
+// frameDrainDepthRefusalMultiFrameProgram is the SECOND abrupt-path fixture
+// (the SEM-08 depth refusal, D-10-31's second named construct): a synthetic
+// three-function chain, each acquiring its OWN resource before calling the
+// next. Driven with maxCallDepthOverride pinned to 2 (restored by the
+// caller via defer), pushing the third frame exceeds the cap: at that
+// moment the stack holds exactly two live frames (fn0 outermost, fn1
+// innermost), each with its own still-live resource, and fn2 is never
+// reached at all. This proves the SAME LIFO flattening applies on this
+// construct as on the nonlocal landing pad, independently of it.
+func frameDrainDepthRefusalMultiFrameProgram() (program core.Program, entry core.Function) {
+	build := func(id, calleeID string) core.Function {
+		param := id + ":place:param"
+		acquired := id + ":place:acquired"
+		callOp := id + ":op:call"
+		fn := core.Function{
+			ID: id, Name: id, Parameter: core.Parameter{ID: param, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+			Linear: newDrainAcquireReleaseBlocks(id, param, acquired, []string{callOp}, nil),
+		}
+		if calleeID != "" {
+			callResult := id + ":place:call_result"
+			fn.Linear.Places = append(fn.Linear.Places, core.Place{ID: callResult, Name: "call_result", TypeID: drainByteType.ID})
+			fn.Linear.Operations = append(fn.Linear.Operations,
+				core.LinearOperation{ID: callOp, Kind: core.OpCall, SourceID: param, TargetID: callResult, TypeID: drainByteType.ID, CalleeID: calleeID},
+			)
+		} else {
+			// fn2 is never reached (the cap refuses before its own push),
+			// but it must still be a structurally closed function.
+			returnOp := id + ":op:return"
+			fn.Linear.Blocks[1].OperationIDs = []string{returnOp}
+			fn.Linear.Operations = append(fn.Linear.Operations,
+				core.LinearOperation{ID: returnOp, Kind: core.OpReturn, SourceID: param, TypeID: drainByteType.ID},
+			)
+		}
+		return fn
+	}
+
+	fn2 := build("drain:depth:fn2", "")
+	fn1 := build("drain:depth:fn1", fn2.ID)
+	fn0 := build("drain:depth:fn0", fn1.ID)
+
+	return core.Program{Schema: core.Schema1, Module: "drain.depth_refusal_multi_frame", Functions: []core.Function{fn0, fn1, fn2}}, fn0
+}
+
+// runDrainProgram runs a builder's entry function directly through
+// runFrameStack (bypassing Run's own corevalidate.Validate gate, following
+// moveAsCopyProbeProgram's established precedent): every fixture above is a
+// deliberately synthetic core.Program these Task 1 tests use to isolate
+// interp's OWN cross-frame drain mechanism from check/corevalidate/parse.
+func runDrainProgram(program core.Program, entry core.Function, input string) (Execution, error) {
+	values := map[string]string{entry.Parameter.ID: input}
+	var base frame
+	if len(entry.Linear.Blocks) == 0 {
+		base = newFlatFrame(entry, values)
+	} else {
+		base = newBlockFrame(entry, values, entry.Linear.Blocks[0].ID)
+	}
+	return runFrameStack(program, base)
+}
+
+// eventKindSequence extracts the ordered Kind sequence from an Execution's
+// Events -- the shape every ordering assertion below compares, exactly as
+// this plan's must_haves require: NEVER a frame field or a live map read
+// directly, only interp.CanonicalBytes / the ordered Events slice itself.
+func eventKindSequence(result Execution) []string {
+	kinds := make([]string, len(result.Events))
+	for i, event := range result.Events {
+		kinds[i] = event.Kind + ":" + event.FunctionID
+	}
+	return kinds
+}
+
+// indexOfEvent finds functionID/kind's own event and returns its BYTE OFFSET
+// within interp.CanonicalBytes' serialized Events array -- never an index
+// into the Events slice directly. JSON array element order is byte order, so
+// comparing two such offsets is exactly "comparing interp.CanonicalBytes
+// output" (this plan's own mandatory observation channel), never a read of
+// result.Events' own slice position (which, while not a `frame`-internal
+// field, this helper avoids entirely to keep every ordering assertion on
+// the single sanctioned channel).
+func indexOfEvent(t *testing.T, result Execution, functionID, kind string) int {
+	t.Helper()
+	var id string
+	for _, event := range result.Events {
+		if event.FunctionID == functionID && event.Kind == kind {
+			id = event.ID
+			break
+		}
+	}
+	if id == "" {
+		t.Fatalf("expected an event with FunctionID %q and Kind %q, got: %+v", functionID, kind, eventKindSequence(result))
+	}
+	encoded, err := CanonicalBytes(result)
+	if err != nil {
+		t.Fatalf("CanonicalBytes: %v", err)
+	}
+	offset := bytes.Index(encoded, []byte(`"id":"`+id+`"`))
+	if offset < 0 {
+		t.Fatalf("expected canonical bytes to contain event id %q, got: %s", id, encoded)
+	}
+	return offset
+}
+
+// assertCanonicalOrder asserts that eventIDs appear, in the GIVEN order, as
+// strictly increasing byte offsets inside interp.CanonicalBytes' own
+// serialized output -- the sanctioned observation channel for every
+// ordering assertion in this test (never a read of result.Events' own slice
+// position, and never a frame-internal field or live map).
+func assertCanonicalOrder(t *testing.T, result Execution, eventIDs ...string) {
+	t.Helper()
+	encoded, err := CanonicalBytes(result)
+	if err != nil {
+		t.Fatalf("CanonicalBytes: %v", err)
+	}
+	previousOffset := -1
+	previousID := ""
+	for _, id := range eventIDs {
+		offset := bytes.Index(encoded, []byte(`"id":"`+id+`"`))
+		if offset < 0 {
+			t.Fatalf("expected canonical bytes to contain event id %q, got: %s", id, encoded)
+		}
+		if offset <= previousOffset {
+			t.Fatalf("expected event id %q to follow %q in canonical bytes order, got offsets %d then %d: %s", id, previousID, previousOffset, offset, encoded)
+		}
+		previousOffset, previousID = offset, id
+	}
+}
+
+// TestFrameDrainOrder is Plan 10-05's Task 1 test (SEM-09 clause 2,
+// D-10-33/D-10-35): drop and cleanup obligations run in a DEFINED order
+// across frames, on both the normal-return and the abrupt path, observed
+// exclusively through interp.CanonicalBytes / the Events slice -- never
+// against a frame's own live map or values map.
+func TestFrameDrainOrder(t *testing.T) {
+	t.Run("normal_return_across_one_boundary", func(t *testing.T) {
+		program, entry := frameDrainNormalReturnProgram()
+		result, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Outcome.Kind != "returned" {
+			t.Fatalf("expected outcome kind %q, got %q: %+v", "returned", result.Outcome.Kind, result)
+		}
+		calleeReleaseIdx := indexOfEvent(t, result, "drain:normal:callee", "resource.released")
+		callerReleaseIdx := indexOfEvent(t, result, "drain:normal:caller", "resource.released")
+		if calleeReleaseIdx >= callerReleaseIdx {
+			t.Fatalf("expected the callee's own drop event to precede the caller's first drop event, got sequence: %v", eventKindSequence(result))
+		}
+	})
+
+	t.Run("single_frame_baseline_equivalence", func(t *testing.T) {
+		program, entry := frameDrainSingleFrameBaselineProgram()
+		result, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result.Events) != 3 {
+			t.Fatalf("expected exactly 3 events (pre-phase single-frame baseline), got %d: %v", len(result.Events), eventKindSequence(result))
+		}
+		assertCanonicalOrder(t, result,
+			"drain:baseline:fn:op:acquire:event",
+			"drain:baseline:fn:op:real_release:event",
+			"drain:baseline:fn:op:return:event:returned",
+		)
+	})
+
+	t.Run("zero_acquisition_callee_frame", func(t *testing.T) {
+		program, entry := frameDrainZeroAcquisitionCalleeProgram()
+		result, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for _, event := range result.Events {
+			if event.FunctionID == "drain:zero:callee" && (event.Kind == "resource.released" || event.Kind == "resource.leaked") {
+				t.Fatalf("expected the zero-acquisition callee frame to emit zero DROP events, got: %+v", event)
+			}
+		}
+		if len(result.Events) != 4 {
+			t.Fatalf("expected exactly 4 events (caller's own sequence unreordered/unmerged), got %d: %v", len(result.Events), eventKindSequence(result))
+		}
+		assertCanonicalOrder(t, result,
+			"drain:zero:caller:op:acquire:event",
+			"drain:zero:callee:op:return:event:returned",
+			"drain:zero:caller:op:real_release:event",
+			"drain:zero:caller:op:return:event:returned",
+		)
+	})
+
+	t.Run("live_resources_empty_array_never_null", func(t *testing.T) {
+		program, entry := frameDrainNoAcquisitionProgram()
+		result, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.LiveResources == nil {
+			t.Fatalf("expected a non-nil, empty LiveResources slice, got nil")
+		}
+		if len(result.LiveResources) != 0 {
+			t.Fatalf("expected zero live resources, got: %v", result.LiveResources)
+		}
+		encoded, err := CanonicalBytes(result)
+		if err != nil {
+			t.Fatalf("CanonicalBytes: %v", err)
+		}
+		if !bytes.Contains(encoded, []byte(`"live_resources":[]`)) {
+			t.Fatalf("expected CanonicalBytes to serialize live_resources as [], never null, got: %s", encoded)
+		}
+		if bytes.Contains(encoded, []byte(`"live_resources":null`)) {
+			t.Fatalf("live_resources serialized as null: %s", encoded)
+		}
+	})
+
+	t.Run("foreign_nonlocal_landing_pad_across_multiple_frames", func(t *testing.T) {
+		program, entry := frameDrainNonlocalMultiFrameProgram()
+		result, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Outcome.Kind != execution.OutcomeDefect {
+			t.Fatalf("expected outcome kind %q, got %q: %+v", execution.OutcomeDefect, result.Outcome.Kind, result)
+		}
+		// LIFO flattening: innermost (callee, resource B) leaked first,
+		// then outward to the caller's own resource A -- proven against
+		// the ordered Events slice, never against frame.live directly.
+		calleeLeakIdx := indexOfEvent(t, result, "drain:nonlocal:callee", "resource.leaked")
+		callerLeakIdx := indexOfEvent(t, result, "drain:nonlocal:caller", "resource.leaked")
+		if calleeLeakIdx >= callerLeakIdx {
+			t.Fatalf("expected the innermost frame's (callee) leak event to precede the outer frame's (caller), got sequence: %v", eventKindSequence(result))
+		}
+		wantLive := []string{"drain:nonlocal:callee:place:acquired", "drain:nonlocal:caller:place:acquired"}
+		if len(result.LiveResources) != len(wantLive) {
+			t.Fatalf("expected live_resources %v, got %v", wantLive, result.LiveResources)
+		}
+		for i := range wantLive {
+			if result.LiveResources[i] != wantLive[i] {
+				t.Fatalf("expected live_resources[%d] = %q (innermost first), got %q (full: %v)", i, wantLive[i], result.LiveResources[i], result.LiveResources)
+			}
+		}
+	})
+
+	t.Run("depth_refusal_with_live_resources_in_multiple_frames", func(t *testing.T) {
+		previous := maxCallDepthOverride
+		maxCallDepthOverride = func() int { return 2 }
+		defer func() { maxCallDepthOverride = previous }()
+
+		program, entry := frameDrainDepthRefusalMultiFrameProgram()
+		result, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Outcome.Kind != execution.OutcomeDefect {
+			t.Fatalf("expected outcome kind %q, got %q: %+v", execution.OutcomeDefect, result.Outcome.Kind, result)
+		}
+		found := false
+		for _, event := range result.Events {
+			if event.Output == callDepthExceededDefectReason {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("expected an event carrying the named depth-limit reason %q, got: %v", callDepthExceededDefectReason, eventKindSequence(result))
+		}
+		fn1LeakIdx := indexOfEvent(t, result, "drain:depth:fn1", "resource.leaked")
+		fn0LeakIdx := indexOfEvent(t, result, "drain:depth:fn0", "resource.leaked")
+		if fn1LeakIdx >= fn0LeakIdx {
+			t.Fatalf("expected the innermost frame's (fn1) leak event to precede the outer frame's (fn0), got sequence: %v", eventKindSequence(result))
+		}
+		wantLive := []string{"drain:depth:fn1:place:acquired", "drain:depth:fn0:place:acquired"}
+		if len(result.LiveResources) != len(wantLive) {
+			t.Fatalf("expected live_resources %v, got %v", wantLive, result.LiveResources)
+		}
+		for i := range wantLive {
+			if result.LiveResources[i] != wantLive[i] {
+				t.Fatalf("expected live_resources[%d] = %q (innermost first), got %q (full: %v)", i, wantLive[i], result.LiveResources[i], result.LiveResources)
+			}
+		}
+	})
+
+	t.Run("frame_drain_order_seam_flips_canonical_bytes", func(t *testing.T) {
+		program, entry := frameDrainNonlocalMultiFrameProgram()
+
+		clean, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("clean run: unexpected error: %v", err)
+		}
+		cleanBytes, err := CanonicalBytes(clean)
+		if err != nil {
+			t.Fatalf("CanonicalBytes (clean): %v", err)
+		}
+
+		previous := frameDrainOrderForTest
+		frameDrainOrderForTest = func() bool { return true }
+		defer func() { frameDrainOrderForTest = previous }()
+
+		flipped, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("flipped run: unexpected error: %v", err)
+		}
+		flippedBytes, err := CanonicalBytes(flipped)
+		if err != nil {
+			t.Fatalf("CanonicalBytes (flipped): %v", err)
+		}
+
+		if bytes.Equal(cleanBytes, flippedBytes) {
+			t.Fatalf("expected frameDrainOrderForTest to change interp's canonical bytes, but clean and flipped runs matched: %s", cleanBytes)
+		}
+		if execution.Equal(clean, flipped) {
+			t.Fatalf("expected execution.Equal to also observe the flipped drain order as a genuine divergence")
+		}
+	})
+}
+
+// TestInterpDeterministicAcrossRuns is Task 1's determinism assertion
+// (D-10-26/D-10-57 clause 3): repeated runs of the SAME multi-frame program
+// must produce byte-identical CanonicalBytes, proving drop ordering derives
+// from ordered slices (the frame stack itself, each frame's own liveOrder)
+// rather than Go map iteration order. Looped internally (25x) so a single
+// process invocation already exercises Go's per-range map-iteration
+// randomization repeatedly; run at `-count=10` externally (per this task's
+// own <verify>) multiplies that further across separate process runs.
+func TestInterpDeterministicAcrossRuns(t *testing.T) {
+	program, entry := frameDrainNonlocalMultiFrameProgram()
+
+	var first []byte
+	for i := 0; i < 25; i++ {
+		result, err := runDrainProgram(program, entry, "7")
+		if err != nil {
+			t.Fatalf("run %d: unexpected error: %v", i, err)
+		}
+		encoded, err := CanonicalBytes(result)
+		if err != nil {
+			t.Fatalf("run %d: CanonicalBytes: %v", i, err)
+		}
+		if i == 0 {
+			first = encoded
+			continue
+		}
+		if !bytes.Equal(first, encoded) {
+			t.Fatalf("run %d diverged from run 0's canonical bytes:\nrun 0: %s\nrun %d: %s", i, first, i, encoded)
+		}
+	}
+}
+
 func TestNativeStackHeadroomIndependentOfCallDepth(t *testing.T) {
 	if os.Getenv(probeChildEnv) != "" {
 		runCallDepthProbeChild(t)

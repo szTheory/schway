@@ -58,6 +58,83 @@ func maxCallDepth() int {
 	return MaxCallDepth
 }
 
+// frameDrainOrderForTest is Task 1's D-10-35 observation seam, following
+// maxCallDepthOverride's nil-default discipline: nil in production,
+// consulted only through frameDrainOrder(). When set and returning true, it
+// REVERSES the stack-traversal order drainStackForAbruptExit walks
+// (outermost-first instead of the defined innermost-first, D-10-33) --
+// proving via interp.CanonicalBytes divergence that this plan's ordering is
+// genuinely OBSERVED by the emitted event stream, never merely computed and
+// silently discarded. Unexported, exercised only by same-package tests.
+var frameDrainOrderForTest func() bool
+
+// frameDrainOrder reports the stack-INDEX traversal order for draining every
+// live frame on an abrupt exit (D-10-33): a strict LIFO flattening,
+// innermost frame (the top of stack, the highest index) first, then outward
+// to the base frame (index 0) last. This is what makes the abrupt-path
+// composition "free": call frames are already a LIFO stack, so walking it
+// from the top down IS the innermost-first rule, for any number of live
+// frames. frameDrainOrderForTest (D-10-35), when engaged, reverses this to
+// outermost-first.
+func frameDrainOrder(n int) []int {
+	order := make([]int, n)
+	for i := 0; i < n; i++ {
+		order[i] = n - 1 - i
+	}
+	if frameDrainOrderForTest != nil && frameDrainOrderForTest() {
+		for i, j := 0, len(order)-1; i < j; i, j = i+1, j-1 {
+			order[i], order[j] = order[j], order[i]
+		}
+	}
+	return order
+}
+
+// drainStackForAbruptExit flattens EVERY live resource across the whole
+// frame stack for an abrupt exit -- the foreign process-root landing pad
+// extended to N frames, and the SEM-08 depth refusal (PHASE-10-DEBT.md
+// D-10-31: these are the ONLY two constructs that skip more than one frame,
+// since OpCall is never a terminator and Lang has no exceptions or
+// unwinding).
+//
+// D-10-31 FINDING (stated here, not only in PHASE-10-DEBT.md): core.go:559-564
+// documents OpCall as never a terminator, and this language has no
+// exceptions and no unwinding -- OpFail is an ordinary typed value
+// propagated ONE boundary at a time, never unwinding through several. SEM-09's
+// second clause therefore covers EXACTLY these two constructs -- the foreign
+// landing pad above, extended here to N frames, and the depth refusal at
+// runFrameStack's core.OpCall arm -- and nothing else. A test exercising
+// only OpReturn/OpFail popping proves SEM-09's FIRST clause only; it says
+// nothing about this function.
+//
+// Per frameDrainOrder's LIFO flattening, within each frame the
+// order is the existing single-frame rule (liveResourcePlaces' own
+// first-acquired-order iteration, UNCHANGED by this plan): composing frames
+// changes nothing about within-frame ordering. Returns both the ordered
+// "resource.leaked" events and the flattened live_resources place list,
+// both an empty (never nil) slice when nothing is live anywhere on the
+// stack. Every event's FunctionID is the OWNING frame's own function ID
+// (D-10-32) -- never a depth value -- so this is sound only as long as
+// recursion stays refused by callgraph (a function cannot appear twice on
+// the stack, so no two live frames ever share a FunctionID).
+func drainStackForAbruptExit(stack []frame) ([]Event, []string) {
+	events := []Event{}
+	liveResources := []string{}
+	leakIndex := 0
+	for _, frameIndex := range frameDrainOrder(len(stack)) {
+		f := &stack[frameIndex]
+		places := liveResourcePlaces(f.operations, f.live, f.liveOrder)
+		for _, place := range places {
+			events = append(events, Event{
+				Schema: execution.Schema1, ID: fmt.Sprintf("%s:event:leaked:%d", f.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: f.function.ID,
+				SourcePlace: place,
+			})
+			leakIndex++
+		}
+		liveResources = append(liveResources, places...)
+	}
+	return events, liveResources
+}
+
 // moveAsCopyForTest is Task 2's D-10-41 fault-injection seam (QLT-08): when
 // true, partitionFrameForCall skips the caller-side delete of the argument
 // place, turning a move into a copy -- the caller's moved-from place stays
@@ -575,22 +652,16 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				events = append(events, Event{
 					Schema: execution.Schema1, ID: top.function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: top.function.ID,
 				})
-				leakIndex := 0
-				for _, liveID := range top.liveOrder {
-					if !top.live[liveID] {
-						continue
-					}
-					events = append(events, Event{
-						Schema: execution.Schema1, ID: fmt.Sprintf("%s:event:leaked:%d", top.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: top.function.ID,
-						SourcePlace: top.operations[liveID].TargetID,
-					})
-					leakIndex++
-				}
+				// D-10-33: drain EVERY live frame on the stack, not only
+				// top -- this landing pad is one of the two constructs
+				// (D-10-31) that genuinely skip more than one frame.
+				leakEvents, liveResources := drainStackForAbruptExit(stack)
+				events = append(events, leakEvents...)
 				events = append(events, Event{
 					Schema: execution.Schema1, ID: top.function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: top.function.ID,
 					SourcePlace: top.function.Parameter.ID, TypeID: top.placeTypes[top.function.Parameter.ID], Output: nonlocalExitDefectReason,
 				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourcePlaces(top.operations, top.live, top.liveOrder)}, nil
+				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResources}, nil
 			}
 			top.values[operation.TargetID] = value
 			top.values[operation.ErrTargetID] = "err"
@@ -630,13 +701,20 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				// before), because a bare match-arm callee needs no frame
 				// at all and must never be refused for depth it would not
 				// actually consume.
+				//
+				// D-10-33: the depth refusal is the SECOND construct
+				// (D-10-31) that skips more than one frame at once -- drain
+				// every live frame currently on the stack, same LIFO
+				// flattening the nonlocal landing pad uses.
+				leakEvents, liveResources := drainStackForAbruptExit(stack)
+				events = append(events, leakEvents...)
 				event := Event{
 					Schema: execution.Schema1, ID: operation.ID + ":event:call_depth_exceeded", Kind: "function.defected",
 					FunctionID: top.function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: callDepthExceededDefectReason,
 				}
 				return Execution{
 					Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
-					Events: append(events, event), LiveResources: []string{},
+					Events: append(events, event), LiveResources: liveResources,
 				}, nil
 			}
 			stack = append(stack, *result.frame)
