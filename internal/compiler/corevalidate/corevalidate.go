@@ -77,11 +77,54 @@ type Result struct {
 	// peerConsultedFields carries Phase 09 Plan 06's own D-09-30 disclosure
 	// fact -- see PeerConsultedFields below.
 	peerConsultedFields map[string]bool
+
+	// peerLoanEndpoints carries plan 10-08's own D-10-52 seam: the SAME
+	// []core.LoanEndpoint value loanEndpointsMatch already computed via
+	// recomputeLoanEndpoints during this Validate call, keyed by function
+	// ID -- never re-derived a second way -- see LoanEndpoints below.
+	peerLoanEndpoints map[string][]core.LoanEndpoint
 }
 
 // Program returns a content-owned copy of the validated program. Callers can
 // neither mutate the validator's copy nor race validation by retaining slices.
 func (r Result) Program() core.Program { return cloneProgram(r.program) }
+
+// LoanEndpoints returns corevalidate's own independently-recomputed
+// core.LoanEndpoint set for every function in the validated program, keyed
+// by function ID -- the missing seam D-10-52 names. `check` already
+// materializes the identical shape via materializeLoanEndpoints
+// (check.go:1726) and pathoracle.RecomputeEndpoints is already exported, so
+// this was the only unreachable-from-outside computation among the three
+// static peers; comparing only admit/refuse in a differential would be a
+// regression from information already in this codebase.
+//
+// This is NOT a second derivation: every value here is the SAME
+// recomputeLoanEndpoints result loanEndpointsMatch already computed and
+// checked, byte-for-byte, during this same Validate call -- captured into
+// v.peerLoanEndpoints as it was produced, never recomputed afterward
+// against a fresh, unpopulated validator (which would silently drop
+// v.peerLoanCarry's interprocedural OpCall facts and diverge from what
+// Validate actually checked).
+//
+// A function with no Blocks (a straight-line linear body, or a match-only
+// function with no Linear body at all) has an empty (nil) slice rather
+// than panicking or being omitted -- every function ID in the program gets
+// an entry.
+//
+// Built by iterating r.program.Functions -- the checker's own
+// deterministically-ordered slice -- rather than ranging any Go map to
+// construct the result, so the output is byte-identical across repeated
+// calls (TestLoanEndpointsAccessorStableAcrossRepeatedCalls). Callers get a
+// fresh copy on every call; mutating the returned map or its slices never
+// affects this Result.
+func (r Result) LoanEndpoints() map[string][]core.LoanEndpoint {
+	out := make(map[string][]core.LoanEndpoint, len(r.program.Functions))
+	for _, function := range r.program.Functions {
+		endpoints := r.peerLoanEndpoints[function.ID]
+		out[function.ID] = append([]core.LoanEndpoint(nil), endpoints...)
+	}
+	return out
+}
 
 // PeerSignatures returns corevalidate's own independent (D-07-20/D-07-22)
 // structural re-derivation of every function's lang.interface/1 signature
@@ -144,6 +187,7 @@ func Validate(input core.Program) Result {
 		peerRanStraightLine: v.peerRanStraightLine,
 		peerRanBlocks:       v.peerRanBlocks,
 		peerConsultedFields: v.peerConsultedFields,
+		peerLoanEndpoints:   v.peerLoanEndpoints,
 	}
 }
 
@@ -164,6 +208,12 @@ type validator struct {
 	// Validate call (D-09-30) -- see recordPeerConsult and
 	// Result.PeerConsultedFields.
 	peerConsultedFields map[string]bool
+
+	// peerLoanEndpoints carries plan 10-08's own D-10-52 seam: the SAME
+	// []core.LoanEndpoint value loanEndpointsMatch already computed via
+	// recomputeLoanEndpoints during this Validate call, keyed by function
+	// ID -- never re-derived a second way -- see Result.LoanEndpoints.
+	peerLoanEndpoints map[string][]core.LoanEndpoint
 
 	// peerAdjacency/peerPostorder are checkCallGraphAcyclic's own byproduct
 	// (07-08, D-07-38/D-07-22): the SAME deduped adjacency it already
@@ -1508,6 +1558,12 @@ func (v *validator) recomputeLoanEndpoints(function *core.Function) []core.LoanE
 
 func (v *validator) loanEndpointsMatch(function *core.Function) bool {
 	recomputed := v.recomputeLoanEndpoints(function)
+	// D-10-52: capture the SAME recomputed value Result.LoanEndpoints later
+	// exposes, as it is produced -- never a second, freshly re-derived call.
+	if v.peerLoanEndpoints == nil {
+		v.peerLoanEndpoints = make(map[string][]core.LoanEndpoint)
+	}
+	v.peerLoanEndpoints[function.ID] = recomputed
 	return v.check(reflect.DeepEqual(recomputed, function.Linear.LoanEndpoints), "core.loan_endpoint_mismatch", function.ID)
 }
 
