@@ -2,9 +2,13 @@ package interp
 
 import (
 	"bytes"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
@@ -254,4 +258,118 @@ func TestCallExecutesAcrossOneFrame(t *testing.T) {
 	if !bytes.Equal(firstBytes, secondBytes) {
 		t.Fatalf("expected two runs of the same program to produce byte-identical CanonicalBytes, got:\n%s\nvs\n%s", firstBytes, secondBytes)
 	}
+}
+
+// forbiddenOwnershipAccessors is corevalidate.Result's own ownership-bearing
+// accessor set (D-10-36/D-10-37): PeerSignatures and PeerSiteCoverage both
+// expose the summary peer's own call-site derivation contract. Validate,
+// Valid, Problems, and Program stay permitted -- they are the fail-closed
+// precondition Run's own corevalidate.Validate(program) call already relies
+// on, never the ownership fact itself.
+var forbiddenOwnershipAccessors = []string{"PeerSignatures", "PeerSiteCoverage"}
+
+// scanForForbiddenOwnershipAccessors parses source with go/parser and
+// reports every forbidden accessor name (forbiddenOwnershipAccessors)
+// referenced anywhere as a selector expression (`x.Name`), regardless of
+// x's own static type -- a purely syntactic scan, matching this repo's
+// established import/reference-scanning guard-test technique (see
+// originvalidate_test.go's TestOriginValidatorImportsStayIndependent).
+func scanForForbiddenOwnershipAccessors(filename string, source []byte) ([]string, error) {
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, filename, source, 0)
+	if err != nil {
+		return nil, err
+	}
+	var found []string
+	ast.Inspect(file, func(n ast.Node) bool {
+		selector, ok := n.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		for _, forbidden := range forbiddenOwnershipAccessors {
+			if selector.Sel.Name == forbidden {
+				found = append(found, forbidden)
+			}
+		}
+		return true
+	})
+	return found, nil
+}
+
+// TestInterpDoesNotReadCorevalidateOwnershipFields is Task 3's OWN-05b
+// guard (D-10-36/D-10-37, QLT-08): today interp references neither
+// corevalidate.Result.PeerSignatures nor .PeerSiteCoverage, but that is
+// true by OMISSION, not by enforcement (D-10-36) -- nothing today converts
+// a future reference into a build failure or a red test. This test
+// converts it into "cannot without a red test": it scans every non-test
+// .go file in this package via go/parser, resolved through the existing
+// interpProjectRoot() helper (never testsupport, which pulls in session,
+// which imports interp -- a cycle), and fails if any references either
+// forbidden accessor.
+//
+// NARROWED CLAIM (D-10-37, PHASE-10-DEBT.md): this proves independence of
+// DERIVATION MECHANISM for the ownership-transfer fact specifically,
+// nested inside a shared, unrelated validation dependency -- NOT the
+// mutual non-import independence check and corevalidate have from each
+// other. interp's Run still calls corevalidate.Validate(program) as its
+// own fail-closed precondition (import kept deliberately: hoisting
+// Validate to Run's own callers would weaken interp's fail-closed posture
+// and touch every call site, for an import-graph purity the current
+// one-value domain does not need), so a bug in Validate's own derivation
+// would feed interp bad input too (Knight and Leveson's correlated-fault
+// result). The claim this test proves is narrower: interp never
+// additionally CONSULTS corevalidate's own ownership-bearing verdict to
+// decide its OWN runtime behavior -- OWN-05b's fact falls out of interp's
+// own execution alone.
+//
+// The negative control proves the guard is load-bearing rather than
+// vacuously green: it runs the identical scan over a small synthetic
+// source string containing a forbidden accessor reference and asserts the
+// scan reports it -- a guard that has never been seen to fire is not
+// evidence.
+func TestInterpDoesNotReadCorevalidateOwnershipFields(t *testing.T) {
+	t.Run("real_scan", func(t *testing.T) {
+		dir := filepath.Join(interpProjectRoot(), "internal", "compiler", "interp")
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+				continue
+			}
+			path := filepath.Join(dir, entry.Name())
+			source, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found, err := scanForForbiddenOwnershipAccessors(path, source)
+			if err != nil {
+				t.Fatalf("parse %s: %v", path, err)
+			}
+			if len(found) > 0 {
+				t.Fatalf("%s references forbidden ownership-bearing accessor(s) %v -- interp must derive OWN-05b from its own observable execution, never by reading corevalidate's verdict", entry.Name(), found)
+			}
+		}
+	})
+
+	t.Run("negative_control", func(t *testing.T) {
+		const synthetic = `package fake
+
+type result struct{}
+
+func (result) PeerSignatures() int { return 0 }
+
+func probe(r result) int {
+	return r.PeerSignatures()
+}
+`
+		found, err := scanForForbiddenOwnershipAccessors("synthetic.go", []byte(synthetic))
+		if err != nil {
+			t.Fatalf("parse synthetic source: %v", err)
+		}
+		if len(found) == 0 {
+			t.Fatal("expected the scan to report a violation on synthetic source containing a forbidden accessor reference -- the guard has never been observed to fire")
+		}
+	})
 }
