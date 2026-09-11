@@ -3,7 +3,7 @@ phase: 09-peer-re-derivation-and-d-03-02-closure
 recorded: 2026-09-10
 status: accepted
 disposition: planning-time
-items: 15
+items: 16
 blocking: 0
 ---
 
@@ -45,6 +45,7 @@ name the superseded text so no future reader has to discover the change.
 | D-09-50 | 09-PLAN planning pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | TRU-04 | warning | Phase 09 — plan 09-01 hosts the synthetic-shape differential; plan 09-07's gate reviews the split | D-09-23 prescribes feeding the synthetic call-graph shapes into `session_peer_gate_test.go`'s existing corpus-wide gate. VERIFIED AT PLANNING TIME THAT THIS IS NOT POSSIBLE AS WRITTEN: `check`'s only exported entry point is `check.Program(ast.Program)` (`check.go:46`), so no package outside `check` can compute a `check`-side verdict for a synthetically constructed `core.Program`. The `.lang` corpus gate therefore stays exactly where it is (and is where the two D-09-03 retirements are proven), while the SYNTHETIC-shape differential must live inside package `check`, which alone can reach both the unexported post-assembly pass and `corevalidate.Validate`. This is a split of VEHICLE, never of TRUTH: the synthetic differential must reuse the same both-directions exactness discipline and cross-reference `peerDivergenceExpected`'s doc comment, and must never define "divergence" a second way |
 | D-09-51 | 09-01 execution pass 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | OWN-07, TRU-04 | warning | Phase 10 — Trusted Interprocedural Oracle, Success Criterion 1 (`originvalidate` walks published origins across `OpCall`); recorded as DEBT at plan 09-08's mid-phase gate, 2026-09-10, not fixed in Phase 09 | NEWLY DISCOVERED, PREVIOUSLY-MASKED DEFECT in a THIRD validator. Once `buildLoanChainIndex`'s peer-derived OpCall consult (D-09-03) lands and `corevalidate.Validate` correctly stops refusing `testdata/phase08/twin_a_accept.lang` and `testdata/phase08/relay_depth2_accept.lang`, running either fixture through the FULL `lang check` CLI (`session.CheckCommandFile`, which additionally consults `originvalidate.ValidatePublished` after `check` and `corevalidate` both pass) surfaces a DIFFERENT, PRE-EXISTING refusal: `core.origin_omitted`. Root cause verified directly: `originvalidate.walkReturnOrigin` (`originvalidate.go:171-218`) has no `case core.OpCall` in its backward-walk switch, so it treats a call boundary as fully transparent, walking straight through `operation.SourceID` into the CALL'S ARGUMENT's own provenance — it never consults the CALLEE's own declared return contract the way `check`'s `derivePlaceLoans`/`corevalidate`'s new `derivePeerLoanCarry` both now do. For `twin_a_accept.lang`, `escortee` declares a plain owned return (`-> Buffer`), so `escort`'s own return is genuinely a fresh owned value with no live alias risk — but `originvalidate` still reports it as borrow-derived (walking through the call to the pre-call exclusive borrow) and refuses the exported, origin-undeclared `escort` with `core.origin_omitted`. This is NOT a defect introduced by this plan's change: confirmed directly (`check.Program` alone returns zero diagnostics for this fixture; `originvalidate.ValidatePublished(checked.Program)` independently returns the `core.origin_omitted` problem regardless of what corevalidate does) that this refusal has been latent since Phase 07/08, simply unreachable through the full CLI because `corevalidate`'s own (now-fixed) unconditional-propagation bug always refused FIRST in `CheckCommandFile`'s fixed precedence (check, then corevalidate, then originvalidate) — this is the exact "one validator's own defect masks another's" shape D-09-08 names for `check`, discovered here one layer further down the pipeline than any Phase 08/09 planning document anticipated. `TestNoUndeclaredCheckPeerDivergenceAcrossCorpus` (the actual mechanically-enforced gate for D-09-03's retirement) is UNAFFECTED and passes cleanly: it compares `check.Program` diagnostics against `corevalidate.Validate` only, never invoking `originvalidate.ValidatePublished` at all. A real fix requires threading callee-return-contract lookups through `RecomputeOriginPerReturn`/`walkReturnOrigin`'s signatures (currently `func(function core.Function) ...`, no whole-`core.Program` access) — a cross-cutting signature change touching `BuildInterface`, `ValidatePublished`, and every existing `originvalidate_test.go` call site, judged out of bounds for this plan's declared `files_modified` and Rule 4 territory (significant structural modification), not a bounded inline fix. Landing phase and vehicle: not yet decided; needs its own scoped plan or a Phase 09 mid-phase gate (09-07/09-08) agenda item |
 | D-09-52 | 09-09 execution halt 2026-09-10 (planning defect, caught before any edit) | OWN-09 | warning | Phase 09 — plan 09-09, rewritten in place 2026-09-10; the contract change lands with the deletion itself | PLANNING DEFECT IN THIS PHASE'S OWN PLAN, and the oracle-contract change it forced. `09-09-PLAN.md`'s original Task 1 and Task 2 CONTRADICTED EACH OTHER. Task 1's must-have truth ("Lowering makes no loan-liveness decisions") and its instruction to remove the `activeLoans`/`expiringLoans` raises from `analyzeArmBody` and `analyzeStraightLine` are incompatible with Task 2's acceptance criterion that `TestOwnershipSequenceExhaustive` "passes unchanged": that test calls `analyzeStraightLine` DIRECTLY (never through `Program`, never through the post-assembly pass) and asserts via `assertSupportEqual` that production's `DiagnosticCode` is byte-identical to `oracleStraightLine`'s, an independent oracle that decides `ownership.move_while_borrowed` / `ownership.borrow_conflict` SYNCHRONOUSLY and inline during its own forward walk (`check_test.go:1573`, `:1588`, `:1600`). Defer production and the oracle still flags where production is now clean. CAUGHT AT EXECUTION, BEFORE ANY EDIT: the executor halted on its own read of the two tasks, reproduced the contradiction empirically with a scratch edit (`length=2 case=198 support mismatch`), reverted cleanly (`git diff` on `check.go` empty), and reported rather than completing — the plan's own retained stop condition working as designed. The orchestrator independently verified the finding. RESOLUTION (human-chosen): re-point the test's production side through a composed helper that runs lowering AND the extended post-assembly pass, and defer `oracleStraightLine`'s two timing-dependent decisions to the matching point, so BOTH sides move together — never one alone, which would silently change what is being compared. `09-09-PLAN.md` was rewritten in place with the test-contract move as an explicit first-class Task 1 sequenced BEFORE the deletion it unblocks. CONSEQUENCE A FUTURE READER MUST KNOW: the exhaustive oracle's CONTRACT CHANGED. It no longer proves agreement at lowering time; it proves the same agreement, over the same full 225,890-case enumeration, with the same byte-identical `assertSupportEqual`, evaluated at the post-assembly decision point. A new precedence rule is now load-bearing on both sides: a timing-independent inline refusal (`name.unknown`, `ownership.use_after_move`, `ownership.borrow_requires_share`, `ownership.transfer_requires_take`) WINS over a deferred loan-liveness refusal, because production's lowering fails the function before the post-assembly pass ever sees it — so a body that once reported `ownership.move_while_borrowed` may now report `ownership.use_after_move`. `TestBranchSequenceExhaustive` is NOT affected and its source stays byte-identical: it already runs `Program(...)` end-to-end and asserts only a boolean admit/reject, so it tolerates the decision moving later — and it thereby becomes the end-to-end evidence that the surviving pass covers the branch-ARM path too |
+| D-09-53 | 09-09 execution 2026-09-10 (new finding, not in 09-CONTEXT.md or 09-RESEARCH.md) | OWN-09 | warning | Not yet decided — needs a scoped plan touching `deriveFunctionUsesParam` (check.go), out of this plan's declared scope; candidate landing: Phase 10 or a dedicated Phase 09 follow-up | NEWLY DISCOVERED, PREVIOUSLY-MASKED DEFECT in `deriveFunctionUsesParam` (check.go, pre-existing since Phase 08, untouched by plan 09-09). D-09-08's authorized deletion correctly let BOTH `testdata/phase08/twin_b_accept.lang` and `twin_b_refuse.lang` reach `checkInterproceduralLoanLiveness` for the first time (the summary-blind lowering-time gate that used to mask both identically with `ownership.move_while_borrowed` is gone) — but Pattern B's promised SPLIT (refuse refused, accept ADMITTED, D-08-41's whole recorded justification for authorizing the deletion) does NOT materialize: both are now refused identically with `check.interprocedural_loan_liveness`. Root cause, diagnosed directly: `deriveFunctionUsesParam`'s `default: usesParam = true` branch (the case arm covering every `core.OperationKind` other than `OpCall`/`OpReturn`) fires for a plain `OpMove`/`OpCopy` forward of the parameter-derived place, even when the WHOLE reference chain leads directly to the function's own terminating `OpReturn` — contradicting the function's OWN doc comment ("true UNLESS the entire parameter-derived reference chain leads directly to its own terminating OpReturn"). `twin_b_accept.lang`'s `probe` (`taken = take buffer; taken`) is exactly this case: intended `usesParam=false` per the fixture's own header, actually derived `usesParam=true` because the `take` (OpMove) trips the default arm before ever reaching the `OpReturn` exemption. This collapses the interprocedural distinguishing signal Pattern B depends on, for BOTH twins alike. NOT a defect introduced by this plan: `deriveFunctionUsesParam` predates Phase 09 entirely and was simply never exercised through the real `ast.Program -> check.Program` pipeline for this shape until this plan's authorized deletion stopped masking it — the exact "one gate's own defect masks another's" shape D-09-08/D-09-51 both already name, discovered here one layer further down than any prior planning document anticipated. Fixing it (excluding `OpMove`/`OpCopy` identity-forwards from the `default` arm, or an equivalent narrowing) is judged OUT OF BOUNDS for plan 09-09: it is Phase-08-vintage code outside Task 2's authorized scope (extending `checkInterproceduralLoanLiveness`, never `deriveFunctionUsesParam`), and changing it risks moving `usesParam` for OTHER, already-committed Phase 08 fixtures this plan has not audited. `TestInterproceduralLivenessTwinPatternB` (08-02's synthetic-`core.Program` twin, constructing a REAL summary table directly rather than through the buggy derivation) is UNAFFECTED and still proves the contract-driven law Pattern B is DESIGNED to enforce; only the REAL end-to-end fixture pair fails to demonstrate it. `TestInterproceduralLivenessTwinPatternBRealFixtures` and `check_ordering_stability_test.go`'s `twin_b_accept.lang`/`twin_b_refuse.lang` baseline entries were both updated to assert the OBSERVED (`check.interprocedural_loan_liveness`, both twins) rather than the INTENDED (split) verdict, per this plan's own Task 4(b) contingency ("if the split does NOT materialize... report it, do not adjust the fixtures, and record it against D-09-08 in the debt register") |
 
 ## Detail
 
@@ -616,8 +617,72 @@ wholesale (D-09-13); and the stop condition that caught this defect is retained
 verbatim.
 
 **Status:** resolved at planning time by rewriting `09-09-PLAN.md` in place
-(2026-09-10). The row stays open (severity: warning) until plan 09-09 executes
-and its SUMMARY records the moved contract and the precedence rule as landed.
+(2026-09-10), and executed as rewritten — plan 09-09's SUMMARY records the
+moved contract and the precedence rule as landed. Closed.
+
+### D-09-53 — Pattern B's split does not materialize: a `deriveFunctionUsesParam` defect
+
+Plan 09-09 executed the `computeLoanLastUses` deletion D-09-08 authorized.
+`checkInterproceduralLoanLiveness` was extended, exactly as Task 2 scoped, to
+decide the purely-intraprocedural case (no summary-blind call site left to
+mask it). Every one of plan 09-07's three pre-deletion gates reproduces or is
+justified in writing (see plan 09-09's own SUMMARY), the 225,890-case
+exhaustive differential still holds byte-identically at the moved decision
+point, and Pattern A's twin pair (`twin_a_refuse.lang`/`twin_a_accept.lang`)
+DOES split correctly end to end (`TestInterproceduralLivenessTwinPatternA`).
+
+Pattern B's twin pair does not. `twin_b_refuse.lang` and `twin_b_accept.lang`
+both now reach `checkInterproceduralLoanLiveness` (the summary-blind mask is
+gone, as authorized) but both are refused identically with
+`check.interprocedural_loan_liveness` — the SAME code Pattern A's split
+correctly distinguishes. D-08-41's own recorded harm (this twin pair "could
+not demonstrate a differing end-to-end CLI verdict") is NOT removed by this
+deletion, contrary to D-09-08's stated justification for authorizing it.
+
+**Root cause, verified directly (not merely suspected):** `deriveFunctionUsesParam`
+(`check.go`, 08-01/08-02 vintage, untouched by plan 09-09) derives `usesParam`
+by forward-propagating a "derived" mark from the function's own parameter
+place, and its `switch operation.Kind` has exactly two named cases —
+`OpCall` (consults the callee's own summary) and `OpReturn` (the documented
+"forwards to its own return, not a use" exemption) — with every OTHER kind,
+including `OpMove` and `OpCopy`, falling into `default: usesParam = true`.
+`twin_b_accept.lang`'s `probe` body is `let taken = take buffer; taken`: the
+`take` (an `OpMove`, not `OpReturn`) trips the `default` arm and sets
+`usesParam = true` BEFORE the walk ever reaches the immediately-following
+`OpReturn` that the doc comment's own exemption is about. The intended
+`usesParam = false` (stated in the fixture's own header, written at Phase 08)
+is never reached. `twin_b_refuse.lang`'s `probe` genuinely uses its parameter
+(`let seen = borrow buffer` before the same take/return), so its
+`usesParam = true` is correct for a different reason — both twins land on
+`usesParam = true`, one correctly and one not, collapsing the distinguishing
+signal.
+
+**Why this plan does not fix it.** `deriveFunctionUsesParam` is Phase 08
+production code outside plan 09-09's authorized scope (Task 2 authorizes
+extending `checkInterproceduralLoanLiveness`, never this function), and a
+narrowing fix (excluding pure identity-forwarding `OpMove`/`OpCopy` from the
+`default` arm) could change `usesParam` for OTHER already-shipped Phase 08
+fixtures this plan has not audited — exactly the kind of un-audited blast
+radius Rule 4 (architectural changes) exists to route around a same-plan
+inline fix.
+
+**What still stands, unaffected:** `TestInterproceduralLivenessTwinPatternB`
+(08-02's own synthetic-`core.Program` twin, which constructs a REAL
+`interproceduralSummaryTable` directly rather than through
+`deriveFunctionUsesParam`) still proves Pattern B's law does the right thing
+GIVEN a correct summary — this defect is in the DERIVATION feeding the law,
+not the law itself. `TestInterproceduralLivenessTwinPatternBRealFixtures` and
+`check_ordering_stability_test.go`'s baseline entries for both real fixtures
+were updated to assert the OBSERVED verdict (both `check.interprocedural_loan_liveness`),
+per this plan's own Task 4(b) contingency for exactly this outcome ("report
+it, do not adjust the fixtures, and record it against D-09-08 in the debt
+register").
+
+**Status:** OPEN. Landing phase not yet decided — needs its own scoped plan
+(likely Phase 10, alongside D-09-51's `originvalidate` fix, since both are
+"a validator's own pre-existing defect masked by another's" discoveries this
+phase's deletions unmasked one layer at a time) or a dedicated Phase 09
+follow-up if one is opened before Phase 10 begins.
 
 ---
 
@@ -633,5 +698,8 @@ through that gate.*
 *D-09-52 appended 2026-09-10 during the targeted rewrite of `09-09-PLAN.md`
 (a planning defect caught at execution before any edit); the frontmatter
 `items:` count is now 15.*
+*D-09-53 appended 2026-09-10 during plan 09-09's own execution (an
+execution-time finding: Pattern B's split does not materialize); the
+frontmatter `items:` count is now 16.*
 *Shape validated by `TestDebtRegistersAreWellFormed`
 (`internal/compiler/session/session_test.go`).*
