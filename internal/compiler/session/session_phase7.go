@@ -2,7 +2,6 @@ package session
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"time"
 
@@ -346,23 +345,6 @@ func phase07LaneRequiredKinds() []core.OperationKind {
 	return []core.OperationKind{core.OpCall}
 }
 
-// phase07FunctionHasOpCall mirrors core_test.go's functionHasOpCall (a
-// deliberate, small duplication across the in-process and CLI-observable
-// controls, matching A-05's requirement that each control carry its own
-// literal fixture/logic rather than share a single implementation two
-// independent proofs could both silently rot alongside).
-func phase07FunctionHasOpCall(function core.Function) bool {
-	if function.Linear == nil {
-		return false
-	}
-	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpCall {
-			return true
-		}
-	}
-	return false
-}
-
 // phase07LinearProbeInput mirrors core_test.go's linearProbeInput: a
 // straight-line function's sole declared parameter type selects a fixed,
 // hand-picked probe input string for interp.Run. Both testdata/phase07
@@ -386,10 +368,12 @@ func phase07LinearProbeInput(function core.Function) (string, bool) {
 // core_test.go's in-process control, and requires core.OpCall to be
 // encountered by at least one operation across the corpus.
 //
-// D-07-39 -- recognition, not execution: where a function contains a
-// core.OpCall, interp.Run returning the named interp.ErrCallUnsupported is
-// treated as "handled" (recognized), never as a lane failure. Any OTHER
-// interp error still fails this lane.
+// Phase 10 (D-10-21/D-10-39) made core.OpCall a real, executed operation:
+// a function containing a call is dispatched through interp.Run exactly
+// like any other, and any interp error -- including one from a call --
+// fails this lane. There is no longer a "recognized, not executed"
+// tolerance here (D-07-39's original tolerance applied only while calls
+// had no execution semantics).
 //
 // A-02 -- cgen's runtime behaviour for core.OpCall is exercised by NEITHER
 // this lane NOR core_test.go's in-process control, because cgen.Emit hard-
@@ -455,17 +439,12 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			_ = originvalidate.RecomputeOriginPerReturn(function)
 			dispatchWork++
 
-			hasCall := phase07FunctionHasOpCall(function)
 			switch {
 			case function.Match != nil:
 				for _, arm := range function.Match.Arms {
 					if _, interpErr := interp.Run(dispatchProgram, function.Name, arm.Pattern); interpErr != nil {
-						// D-07-39: recognized, not executed -- see the
-						// doc comment above.
-						if !hasCall || !errors.Is(interpErr, interp.ErrCallUnsupported) {
-							addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
-							return fail(protocol.StatusOperational, "verify.control_incomplete", "interp dispatch error for "+fixtureName)
-						}
+						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+						return fail(protocol.StatusOperational, "verify.control_incomplete", "interp dispatch error for "+fixtureName)
 					}
 					dispatchWork++
 				}
@@ -473,12 +452,8 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 				input, ok := phase07LinearProbeInput(function)
 				if ok {
 					if _, interpErr := interp.Run(dispatchProgram, function.Name, input); interpErr != nil {
-						// D-07-39: recognized, not executed -- see the
-						// doc comment above.
-						if !hasCall || !errors.Is(interpErr, interp.ErrCallUnsupported) {
-							addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
-							return fail(protocol.StatusOperational, "verify.control_incomplete", "interp dispatch error for "+fixtureName)
-						}
+						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+						return fail(protocol.StatusOperational, "verify.control_incomplete", "interp dispatch error for "+fixtureName)
 					}
 					dispatchWork++
 				}

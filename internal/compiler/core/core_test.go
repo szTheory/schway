@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -254,23 +253,6 @@ func TestTerminatorKindsIsSubsetOfAll(t *testing.T) {
 	}
 }
 
-// functionHasOpCall reports whether function's flat Operations list carries
-// at least one core.OpCall -- used only to grant TestAllOperationKindsHandledAtEverySite's
-// interp step the single documented exception (D-07-39): interp.Run
-// returning ErrCallUnsupported for such a function is recognition, not a
-// crash or a silent fake success.
-func functionHasOpCall(function core.Function) bool {
-	if function.Linear == nil {
-		return false
-	}
-	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpCall {
-			return true
-		}
-	}
-	return false
-}
-
 func linearProbeInput(function core.Function) (string, bool) {
 	switch function.Parameter.Type {
 	case "Byte":
@@ -374,41 +356,21 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 			switch {
 			case function.Match != nil:
 				for _, arm := range function.Match.Arms {
+					// Phase 10 (D-10-21/D-10-39) made core.OpCall a real,
+					// executed operation, including from inside a match
+					// arm's own block (e.g.
+					// testdata/phase07/call_from_both_match_arms.lang) --
+					// any interp error, including one from a call, fails
+					// this control.
 					if _, err := interp.Run(program, function.Name, arm.Pattern); err != nil {
-						// D-07-39: recognized, not executed. A match arm
-						// whose block body carries a core.OpCall (e.g.
-						// testdata/phase07/call_from_both_match_arms.lang)
-						// is recognized at the interp site via the
-						// dedicated interp.ErrCallUnsupported -- never a
-						// crash, never a silently faked success -- the
-						// same single documented exception
-						// functionHasOpCall grants the function.Linear
-						// branch below. function.Linear is also populated
-						// for an arm-bodied match function (its arm
-						// blocks lower into the same flat Operations
-						// list), so functionHasOpCall sees the same
-						// core.OpCall this arm's interp.Run just hit. Any
-						// OTHER error still fails this control.
-						if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
-							return fmt.Errorf("%s/%s/%s: interp error: %w", path, function.Name, arm.Pattern, err)
-						}
+						return fmt.Errorf("%s/%s/%s: interp error: %w", path, function.Name, arm.Pattern, err)
 					}
 				}
 			case function.Linear != nil:
 				input, ok := linearProbeInput(function)
 				if ok {
 					if _, err := interp.Run(program, function.Name, input); err != nil {
-						// D-07-39: a function containing an OpCall is
-						// RECOGNIZED at the interp site (never crashes, never
-						// falls into the unknown-kind default arm), but
-						// Phase 07 defines no call-stack execution semantics
-						// for it yet (SEM-08 is Phase 10) -- so interp.Run
-						// returning the dedicated ErrCallUnsupported for such
-						// a function is "handled", not a control failure.
-						// Any OTHER error still fails this control.
-						if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
-							return fmt.Errorf("%s/%s: interp error: %w", path, function.Name, err)
-						}
+						return fmt.Errorf("%s/%s: interp error: %w", path, function.Name, err)
 					}
 				}
 			}
@@ -486,12 +448,10 @@ func TestLinearProbeInputExercisesCallBasicFixture(t *testing.T) {
 			t.Fatalf("%s: linearProbeInput returned ok == false -- the interp site would be SILENTLY SKIPPED for this function, not exercised", function.Name)
 		}
 		if _, err := interp.Run(program, function.Name, input); err != nil {
-			// D-07-39: recognized, not executed. main's OpCall is
-			// recognized via the named interp.ErrCallUnsupported; any
-			// OTHER error is a genuine failure.
-			if !functionHasOpCall(function) || !errors.Is(err, interp.ErrCallUnsupported) {
-				t.Fatalf("%s: interp error: %v", function.Name, err)
-			}
+			// Phase 10 made core.OpCall a real, executed operation: main's
+			// call to identity now actually runs, so any interp error here
+			// is a genuine failure.
+			t.Fatalf("%s: interp error: %v", function.Name, err)
 		}
 		exercised++
 	}

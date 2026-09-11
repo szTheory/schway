@@ -1,7 +1,6 @@
 package interp
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -11,24 +10,15 @@ import (
 
 const Schema = execution.Schema0
 
-// ErrCallUnsupported is returned when the interpreter recognizes a
-// core.OpCall operation but Phase 07 defines no call-stack execution
-// semantics for it yet (SEM-08's call-stack machinery is Phase 10). D-07-39:
-// OpCall gets its own explicit, dedicated case at each of the three
-// switches below, returning this named error, rather than being folded into
-// a grouped copy/move/borrow arm -- a pass-through value would make a call
-// look executed when no callee ever ran.
-var ErrCallUnsupported = errors.New("interp: OpCall is recognized but has no execution semantics in Phase 07")
-
-// opCallGroupedArmForTest is Task 3's D-07-41/D-07-42 fault-injection seam
-// (QLT-08): when true, runLinear's core.OpCall arm is folded into the
-// SAME grouped behaviour core.OpCopy uses -- exactly the stub-certification
-// failure D-07-39 exists to prevent, since a call would then look
-// executed (a successful "returned" outcome) when no callee ever ran.
-// Unexported, false by default, exercised only by the same-package test
-// TestOpCallGroupedArmMutationKilled (interp_test.go): never an exported
-// package-level mutable var on a production path.
-var opCallGroupedArmForTest = false
+// moveAsCopyForTest is Task 2's D-10-41 fault-injection seam (QLT-08): when
+// true, partitionFrameForCall skips the caller-side delete of the argument
+// place, turning a move into a copy -- the caller's moved-from place stays
+// readable after the call, exactly the OWN-05b violation this seam proves
+// only interp itself (never check or corevalidate, which execute nothing)
+// can catch. Unexported, false by default, exercised only by the
+// same-package test TestMoveAsCopyMutationKilled (interp_test.go): never an
+// exported package-level mutable var on a production path.
+var moveAsCopyForTest = false
 
 type Outcome = execution.Outcome
 type Event = execution.Event
@@ -64,301 +54,45 @@ func Run(program core.Program, functionName, input string) (Execution, error) {
 				Events: []Event{event}, LiveResources: []string{},
 			}, nil
 		}
-		return runBranchArm(function, arm, input)
+		return runBranchArm(program, function, arm, input)
 	}
 	return Execution{}, fmt.Errorf("checked match %q has no arm for %q", function.Match.ID, input)
 }
 
-// runBranchArm walks only the operations of the selected arm's block, in
-// core order, and emits their events — the D-12a consumer this phase adds
-// alongside check, corevalidate, and cgen. The unselected arms' operations
-// are never visited, so they produce no events (03-01-02's behavior clause).
-func runBranchArm(function core.Function, arm core.MatchArm, input string) (Execution, error) {
-	var block core.Block
+// runBranchArm executes the selected match arm's own block on interp's
+// explicit frame stack (D-10-21/D-10-39): the unselected arms' operations
+// are never visited, so they produce no events (03-01-02's behavior
+// clause). Its own core.OpCall arm now routes through partitionFrameForCall
+// and runFrameStack -- the same helper and driver runLinear uses -- rather
+// than a hand-copied loop (D-10-39 permits this ONE in-package helper
+// across all three execution paths).
+func runBranchArm(program core.Program, function core.Function, arm core.MatchArm, input string) (Execution, error) {
 	found := false
 	for _, candidate := range function.Linear.Blocks {
 		if candidate.ID == arm.BlockID {
-			block, found = candidate, true
+			found = true
 			break
 		}
 	}
 	if !found {
 		return Execution{}, fmt.Errorf("branch arm %q references unknown block %q", arm.ID, arm.BlockID)
 	}
-	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
-	for _, operation := range function.Linear.Operations {
-		operations[operation.ID] = operation
-	}
-	values := map[string]string{function.Parameter.ID: input}
-	events := make([]Event, 0, len(block.OperationIDs))
-	for _, operationID := range block.OperationIDs {
-		operation, known := operations[operationID]
-		if !known {
-			return Execution{}, fmt.Errorf("block %q references unknown operation %q", block.ID, operationID)
-		}
-		value, initialized := values[operation.SourceID]
-		if !initialized {
-			return Execution{}, fmt.Errorf("operation %q reads uninitialized place %q", operation.ID, operation.SourceID)
-		}
-		switch operation.Kind {
-		case core.OpCopy:
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.copied"))
-		case core.OpMove:
-			delete(values, operation.SourceID)
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.transferred"))
-		case core.OpBorrowShared:
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.borrowed"))
-		case core.OpBorrowExclusive:
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
-		case core.OpForeignCall:
-			// No match arm can produce a foreign call this phase (checkBranch
-			// does not admit `try` inside an arm body) -- this case exists
-			// solely so control:kind.exhaustive_dispatch's six-site table
-			// finds every kind handled at every site, per D-04-22.
-			values[operation.TargetID] = value
-			values[operation.ErrTargetID] = "err"
-			events = append(events, Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: function.ID,
-				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
-			})
-		case core.OpFail:
-			events = append(events, Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event:failed", Kind: "function.failed",
-				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
-			})
-			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "typed_failure", Value: value}, Events: events, LiveResources: []string{}}, nil
-		case core.OpReturn:
-			events = append(events, Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
-				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
-			})
-			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: []string{}}, nil
-		case core.OpRelease:
-			// No match arm can produce a release this phase either -- named
-			// here for the same six-site exhaustive-dispatch reason as
-			// OpForeignCall above.
-			events = append(events, ownedEvent(function, operation, "resource.released"))
-		case core.OpDefect:
-			// D-04-15: a real, reachable, abort-only terminal outcome. It
-			// performs no release and reads no live-resource accounting this
-			// phase (no arm can carry a foreign acquisition), so
-			// LiveResources stays the same empty-but-never-nil shape every
-			// other arm terminator here uses.
-			events = append(events, Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event:defected", Kind: "function.defected",
-				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
-			})
-			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: []string{}}, nil
-		case core.OpCall:
-			// D-07-39: recognized, never faked. See ErrCallUnsupported.
-			return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, ErrCallUnsupported)
-		default:
-			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
-		}
-	}
-	return Execution{}, fmt.Errorf("branch arm %q has no return operation", arm.ID)
+	base := newArmFrame(function, map[string]string{function.Parameter.ID: input}, arm.BlockID)
+	return runFrameStack(program, base)
 }
 
-// runLinearBlocks walks a fallible-call function's Blocks/Edges (D-04-04),
-// starting at the entry block, executing each block's operations in order.
-// An OpForeignCall never terminates its block by itself -- per Claude's
-// Discretion (04-PATTERNS Pattern 3 note), the interpreter cannot actually
-// call C, so it models the call as a fixed literal-outcome stub that always
-// succeeds this phase, unconditionally following the ok edge. Proving
-// engine disagreement on a genuine failure path is deferred to a later
-// plan; this phase proves the dispatch shape exists and both engines agree
-// on the success path the shipped fixture actually exercises.
-func runLinearBlocks(function core.Function, input string) (Execution, error) {
-	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
-	for _, operation := range function.Linear.Operations {
-		operations[operation.ID] = operation
-	}
-	blocks := make(map[string]core.Block, len(function.Linear.Blocks))
-	for _, block := range function.Linear.Blocks {
-		blocks[block.ID] = block
-	}
-	edges := make(map[string]core.Edge, len(function.Linear.Edges))
-	for _, edge := range function.Linear.Edges {
-		edges[edge.ID] = edge
-	}
-	// tracked names exactly the acquisitions this function's own OpRelease
-	// operations discharge somewhere (D-04-07): computed once, up front, so
-	// a function with no OpRelease at all (the 04-01 tracer shape, and a
-	// `discard`'s own untracked acquisition) never populates LiveResources,
-	// preserving that shape's pre-plan-02 empty-slice behavior exactly.
-	tracked := make(map[string]bool)
-	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpRelease && operation.ReleasesOperationID != "" {
-			tracked[operation.ReleasesOperationID] = true
-		}
-	}
-	placeTypes := make(map[string]string, len(function.Linear.Places))
-	for _, place := range function.Linear.Places {
-		placeTypes[place.ID] = place.TypeID
-	}
-	// nonlocalExitPolicy/nonlocalExitCalls model D-04-17's process-root
-	// landing pad WITHOUT the interpreter ever calling real C (it cannot):
-	// a foreign contract whose declared nonlocal_exit policy is anything
-	// other than "forbidden" is, by this phase's own shared, documented
-	// convention with native/lang_foreign_nonlocal.c's static call counter,
-	// understood to perform a genuine nonlocal exit on its SECOND call
-	// within one function execution -- never its first, so at least one
-	// acquisition is already live when it fires. This is Claude's Discretion
-	// (04-PATTERNS Pattern 3 note: the interpreter cannot actually call C),
-	// kept in lockstep with the native TU by comment on both sides rather
-	// than by any real cross-engine mechanism.
-	nonlocalExitPolicy := function.ForeignContract != nil && function.ForeignContract.NonlocalExit != "" && function.ForeignContract.NonlocalExit != "forbidden"
-	nonlocalExitCalls := 0
-
-	values := map[string]string{function.Parameter.ID: input}
-	events := make([]Event, 0, len(function.Linear.Operations))
-	// live is Phase 4 plan 02's real resource accounting (D-04-07),
-	// replacing the hardcoded empty LiveResources slice: a resource is
-	// tracked live the moment its acquisition's ok edge is taken, and
-	// discharged when the OpRelease naming it (by ReleasesOperationID) runs.
-	// liveOrder preserves first-acquired order so a leaked-resource report
-	// is deterministic rather than a function of map iteration.
-	live := make(map[string]bool)
-	var liveOrder []string
-	currentID := function.ID + ":block:entry"
-	for {
-		block, known := blocks[currentID]
-		if !known {
-			return Execution{}, fmt.Errorf("block %q is unknown", currentID)
-		}
-		var forked *core.LinearOperation
-		for _, operationID := range block.OperationIDs {
-			operation, known := operations[operationID]
-			if !known {
-				return Execution{}, fmt.Errorf("block %q references unknown operation %q", block.ID, operationID)
-			}
-			value, initialized := values[operation.SourceID]
-			if !initialized {
-				return Execution{}, fmt.Errorf("operation %q reads uninitialized place %q", operation.ID, operation.SourceID)
-			}
-			switch operation.Kind {
-			case core.OpCopy:
-				values[operation.TargetID] = value
-				events = append(events, ownedEvent(function, operation, "value.copied"))
-			case core.OpMove:
-				delete(values, operation.SourceID)
-				values[operation.TargetID] = value
-				events = append(events, ownedEvent(function, operation, "value.transferred"))
-			case core.OpBorrowShared:
-				values[operation.TargetID] = value
-				events = append(events, ownedEvent(function, operation, "value.borrowed"))
-			case core.OpBorrowExclusive:
-				values[operation.TargetID] = value
-				events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
-			case core.OpForeignCall:
-				nonlocalExitCalls++
-				if nonlocalExitPolicy && nonlocalExitCalls == 2 {
-					// D-04-17/D-04-18: this call models a real foreign
-					// nonlocal exit reaching the process-root landing pad.
-					// No "foreign.called" event is produced for it -- the
-					// real native call never returns far enough to record
-					// one either (cgen.go's emitLinearForeign records that
-					// event only AFTER the call returns) -- and no release
-					// runs: every still-live acquisition is reported leaked
-					// instead, exactly mirroring the generated pad's own
-					// event sequence (foreign.nonlocal_exit, one
-					// resource.leaked per live acquisition in first-acquired
-					// order, then the function.defected terminator).
-					// Event IDs below are formed from function.ID, not
-					// operation.ID -- matching cgen.go's emitNonlocalPad
-					// convention EXACTLY, byte for byte, since it also has no
-					// per-call handle on which specific operation triggered
-					// the pad (the pad is a process-root construct, reachable
-					// identically regardless of which call transferred
-					// control to it) and execution.Equal is a literal,
-					// canonical-bytes comparison with no ID normalization.
-					events = append(events, Event{
-						Schema: execution.Schema1, ID: function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: function.ID,
-					})
-					leakIndex := 0
-					for _, liveID := range liveOrder {
-						if !live[liveID] {
-							continue
-						}
-						events = append(events, Event{
-							Schema: execution.Schema1, ID: fmt.Sprintf("%s:event:leaked:%d", function.ID, leakIndex), Kind: "resource.leaked", FunctionID: function.ID,
-							SourcePlace: operations[liveID].TargetID,
-						})
-						leakIndex++
-					}
-					events = append(events, Event{
-						Schema: execution.Schema1, ID: function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: function.ID,
-						SourcePlace: function.Parameter.ID, TypeID: placeTypes[function.Parameter.ID], Output: nonlocalExitDefectReason,
-					})
-					return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourcePlaces(operations, live, liveOrder)}, nil
-				}
-				values[operation.TargetID] = value
-				values[operation.ErrTargetID] = "err"
-				events = append(events, Event{
-					Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: function.ID,
-					SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
-				})
-				// The interpreter always simulates success this phase (a
-				// documented discretionary stub -- it cannot actually call
-				// C), so the acquisition unconditionally becomes live here,
-				// on the ok path, exactly mirroring D-04-07's rule that only
-				// a completed acquisition is ever tracked for release.
-				if tracked[operation.ID] && !live[operation.ID] {
-					live[operation.ID] = true
-					liveOrder = append(liveOrder, operation.ID)
-				}
-				forkedOperation := operation
-				forked = &forkedOperation
-			case core.OpRelease:
-				live[operation.ReleasesOperationID] = false
-				events = append(events, ownedEvent(function, operation, "resource.released"))
-			case core.OpReturn:
-				events = append(events, Event{
-					Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
-					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
-				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
-			case core.OpFail:
-				events = append(events, Event{
-					Schema: execution.Schema1, ID: operation.ID + ":event:failed", Kind: "function.failed",
-					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
-				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "typed_failure", Value: value}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
-			case core.OpDefect:
-				// D-04-15/D-04-18: a defect path populates LiveResources with
-				// every still-live acquisition and performs no release -- the
-				// SAME liveResourceList accounting OpFail/OpReturn use, just
-				// never followed by a release call.
-				events = append(events, Event{
-					Schema: execution.Schema1, ID: operation.ID + ":event:defected", Kind: "function.defected",
-					FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
-				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(live, liveOrder)}, nil
-			case core.OpCall:
-				// D-07-39: recognized, never faked. See ErrCallUnsupported.
-				return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, ErrCallUnsupported)
-			default:
-				return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
-			}
-		}
-		if forked != nil {
-			edge, known := edges[forked.OkEdgeID]
-			if !known {
-				return Execution{}, fmt.Errorf("foreign call %q references unknown ok edge %q", forked.ID, forked.OkEdgeID)
-			}
-			currentID = edge.ToBlockID
-			continue
-		}
-		if len(block.Successors) == 1 {
-			currentID = block.Successors[0]
-			continue
-		}
-		return Execution{}, fmt.Errorf("block %q has no terminator and an ambiguous successor set", block.ID)
-	}
+// runLinearBlocks executes a fallible-call function's Blocks/Edges
+// (D-04-04) on interp's explicit frame stack (D-10-21/D-10-39), starting at
+// the entry block. An OpForeignCall never terminates its block by itself --
+// per Claude's Discretion (04-PATTERNS Pattern 3 note), the interpreter
+// cannot actually call C, so it models the call as a fixed literal-outcome
+// stub that always succeeds this phase, unconditionally following the ok
+// edge. Its own core.OpCall arm routes through the SAME
+// partitionFrameForCall helper and runFrameStack driver runLinear and
+// runBranchArm use, rather than a third hand-copied loop.
+func runLinearBlocks(program core.Program, function core.Function, input string) (Execution, error) {
+	base := newBlockFrame(function, map[string]string{function.Parameter.ID: input}, function.ID+":block:entry")
+	return runFrameStack(program, base)
 }
 
 // nonlocalExitDefectReason is duplicated VERBATIM from cgen.go's own
@@ -422,58 +156,10 @@ func runLinear(program core.Program, function core.Function, input string) (Exec
 	// only checkFallibleLinear ever populates it for a Match-less function --
 	// so this branch changes nothing for any existing program.
 	if len(function.Linear.Blocks) > 0 {
-		return runLinearBlocks(function, input)
-	}
-	if opCallGroupedArmForTest {
-		return runLinearFlatMutated(function, input)
+		return runLinearBlocks(program, function, input)
 	}
 	base := newFlatFrame(function, map[string]string{function.Parameter.ID: input})
 	return runFrameStack(program, base)
-}
-
-// runLinearFlatMutated is D-07-42 Test 3's mutation path, preserved
-// verbatim behind opCallGroupedArmForTest (Task 2 replaces this whole seam
-// with D-10-41's move-as-copy mutant; kept here only for the duration of
-// Task 1's commit).
-func runLinearFlatMutated(function core.Function, input string) (Execution, error) {
-	values := map[string]string{function.Parameter.ID: input}
-	events := make([]Event, 0, len(function.Linear.Operations))
-	for _, operation := range function.Linear.Operations {
-		value, initialized := values[operation.SourceID]
-		if !initialized {
-			return Execution{}, fmt.Errorf("operation %q reads uninitialized place %q", operation.ID, operation.SourceID)
-		}
-		switch operation.Kind {
-		case core.OpCopy:
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.copied"))
-		case core.OpMove:
-			delete(values, operation.SourceID)
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.transferred"))
-		case core.OpBorrowShared:
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.borrowed"))
-		case core.OpBorrowExclusive:
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.borrowed_exclusive"))
-		case core.OpReturn:
-			events = append(events, Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
-				FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
-			})
-			return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: "returned", Value: value}, Events: events, LiveResources: []string{}}, nil
-		case core.OpCall:
-			// D-07-42 Test 3 mutation: fold into OpCopy's grouped
-			// behaviour, proving a stub fold would otherwise pass
-			// unnoticed.
-			values[operation.TargetID] = value
-			events = append(events, ownedEvent(function, operation, "value.copied"))
-		default:
-			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
-		}
-	}
-	return Execution{}, fmt.Errorf("linear body %q has no return operation", function.Linear.ID)
 }
 
 // frame is one activation record on interp's own explicit call stack
@@ -523,15 +209,22 @@ type frame struct {
 	// a terminator is an error, exactly as before this plan.
 	singleBlockOnly bool
 
-	// tracked/placeTypes/nonlocalExitPolicy/nonlocalExitCalls are
-	// runLinearBlocks' own fallible-call resource bookkeeping (D-04-07),
-	// carried per-frame so a callee's own resource accounting never leaks
-	// into its caller's. Zero-valued and unused by a flat or
-	// single-block-arm frame.
+	// tracked/nonlocalExitPolicy/nonlocalExitCalls are runLinearBlocks' own
+	// fallible-call resource bookkeeping (D-04-07), carried per-frame so a
+	// callee's own resource accounting never leaks into its caller's.
+	// Zero-valued and unused by a flat or single-block-arm frame.
 	tracked            map[string]bool
-	placeTypes         map[string]string
 	nonlocalExitPolicy bool
 	nonlocalExitCalls  int
+
+	// placeTypes and types index this frame's OWN function's declared
+	// places and type facts by ID -- present on every frame shape (not
+	// just a block-based one), since partitionFrameForCall consults them
+	// on every core.OpCall to decide whether the argument place is
+	// consumed (D-07-11: a copyable argument is COPIED, the caller's
+	// place stays live; a non-copyable one is MOVED).
+	placeTypes map[string]string
+	types      map[string]core.TypeFact
 }
 
 // newFlatFrame builds a frame for a flat (non-block) linear body: the
@@ -543,7 +236,10 @@ func newFlatFrame(function core.Function, values map[string]string) frame {
 		ops[operation.ID] = operation
 		ids[i] = operation.ID
 	}
-	return frame{function: function, values: values, live: map[string]bool{}, operations: ops, ids: ids}
+	return frame{
+		function: function, values: values, live: map[string]bool{}, operations: ops, ids: ids,
+		placeTypes: placeTypeIndex(function), types: typeFactIndex(function),
+	}
 }
 
 // newBlockFrame builds a frame for a block-based linear body (Blocks/Edges
@@ -569,16 +265,33 @@ func newBlockFrame(function core.Function, values map[string]string, startBlockI
 			tracked[operation.ReleasesOperationID] = true
 		}
 	}
-	placeTypes := make(map[string]string, len(function.Linear.Places))
-	for _, place := range function.Linear.Places {
-		placeTypes[place.ID] = place.TypeID
-	}
 	nonlocalExitPolicy := function.ForeignContract != nil && function.ForeignContract.NonlocalExit != "" && function.ForeignContract.NonlocalExit != "forbidden"
 	return frame{
 		function: function, values: values, live: map[string]bool{},
 		operations: ops, blocks: blocks, edges: edges, currentBlockID: startBlockID,
-		tracked: tracked, placeTypes: placeTypes, nonlocalExitPolicy: nonlocalExitPolicy,
+		tracked: tracked, nonlocalExitPolicy: nonlocalExitPolicy,
+		placeTypes: placeTypeIndex(function), types: typeFactIndex(function),
 	}
+}
+
+// placeTypeIndex and typeFactIndex build the ID-keyed lookups every frame
+// shape carries: a place's own declared TypeID, and a type ID's own
+// TypeFact (abilities included) -- both read off the function's own
+// Linear body, never re-derived.
+func placeTypeIndex(function core.Function) map[string]string {
+	placeTypes := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		placeTypes[place.ID] = place.TypeID
+	}
+	return placeTypes
+}
+
+func typeFactIndex(function core.Function) map[string]core.TypeFact {
+	types := make(map[string]core.TypeFact, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact
+	}
+	return types
 }
 
 // newArmFrame builds a frame for a single selected match arm's own block
@@ -592,38 +305,104 @@ func newArmFrame(function core.Function, values map[string]string, blockID strin
 	return f
 }
 
-// newFrameForFunction builds a freshly seeded callee frame, returning into
-// the caller's own returnTarget place on pop. A match-based callee is not
-// supported by this phase's frame stack (a documented functionality gap,
-// never an architectural one: no fixture calls one yet).
-func newFrameForFunction(callee core.Function, seededValues map[string]string, returnTarget string) (frame, error) {
-	if callee.Linear == nil || callee.Match != nil {
-		return frame{}, fmt.Errorf("function %q: calling a match-based function is not supported by this phase's frame stack", callee.ID)
-	}
-	var f frame
-	if len(callee.Linear.Blocks) > 0 {
-		f = newBlockFrame(callee, seededValues, callee.ID+":block:entry")
-	} else {
-		f = newFlatFrame(callee, seededValues)
-	}
-	f.returnTarget = returnTarget
-	f.hasCaller = true
-	return f, nil
+// pushResult is partitionFrameForCall's outcome: either a genuine callee
+// frame to push onto the stack (Frame non-nil), or an immediate
+// resolution. A bare match arm (core.MatchArm.BlockID == "") needs no
+// execution at all -- only its own declared literal value and event,
+// exactly mirroring Run's own top-level immediate-arm shortcut -- so a
+// callee whose selected arm is bare never grows the stack at all (D-10-26:
+// this is not a special case of the frame model; it is simply the zero-
+// operations-to-run case, same as the top-level entry point already
+// handled before this plan).
+type pushResult struct {
+	frame          *frame
+	immediateValue string
+	immediateEvent Event
 }
 
 // partitionFrameForCall is the ONE frame-partition helper D-10-39 permits
 // across all three of interp's execution paths (runBranchArm,
 // runLinearBlocks, runLinear): given the CALLER frame and the OpCall
-// operation, it removes the argument place from the caller's own values
-// map and returns a freshly seeded callee frame whose only populated place
-// is the callee's own parameter. This realizes the OWN-05b ownership-
-// transfer fact as observable execution behavior (D-10-26): the moved-from
-// place is genuinely gone from the caller for the call's duration, never
-// merely a Mode string consulted after the fact.
-func partitionFrameForCall(caller *frame, operation core.LinearOperation, callee core.Function) (frame, error) {
+// operation, it resolves the callee, consumes the argument place from the
+// caller's own values map -- deleting it only when the argument is NOT
+// copyable (D-07-11: a copyable argument is COPIED, so the caller's place
+// stays live, mirroring resolveCallBinding's own consume predicate at the
+// check layer exactly) -- and dispatches the callee's own body shape
+// (flat, block-based, or match-arm-selected) exactly as Run's own
+// top-level entry point does. This realizes the OWN-05b ownership-transfer
+// fact as observable execution behavior (D-10-26): a genuinely moved-from
+// place is gone from the caller for the call's duration, never merely a
+// Mode string consulted after the fact.
+func partitionFrameForCall(program core.Program, caller *frame, operation core.LinearOperation) (pushResult, error) {
+	callee, ok := findFunctionByID(program, operation.CalleeID)
+	if !ok {
+		return pushResult{}, fmt.Errorf("call to unresolved callee %q", operation.CalleeID)
+	}
+	if !callee.HasClosedBody() {
+		return pushResult{}, fmt.Errorf("callee %q has invalid body union", callee.ID)
+	}
+
 	argument := caller.values[operation.SourceID]
-	delete(caller.values, operation.SourceID)
-	return newFrameForFunction(callee, map[string]string{callee.Parameter.ID: argument}, operation.TargetID)
+	if !moveAsCopyForTest && !argumentIsCopyable(caller, operation) {
+		delete(caller.values, operation.SourceID)
+	}
+	seeded := map[string]string{callee.Parameter.ID: argument}
+
+	if callee.Match != nil {
+		for _, arm := range callee.Match.Arms {
+			if arm.Pattern != argument {
+				continue
+			}
+			if arm.BlockID == "" {
+				return pushResult{
+					immediateValue: arm.Value,
+					immediateEvent: Event{
+						Schema: Schema, ID: arm.ID + ":event:returned", Kind: "function.returned",
+						FunctionID: callee.ID, Input: argument, Output: arm.Value,
+					},
+				}, nil
+			}
+			f := newArmFrame(callee, seeded, arm.BlockID)
+			f.returnTarget = operation.TargetID
+			f.hasCaller = true
+			return pushResult{frame: &f}, nil
+		}
+		return pushResult{}, fmt.Errorf("checked match %q has no arm for %q", callee.Match.ID, argument)
+	}
+
+	var f frame
+	if len(callee.Linear.Blocks) > 0 {
+		f = newBlockFrame(callee, seeded, callee.ID+":block:entry")
+	} else {
+		f = newFlatFrame(callee, seeded)
+	}
+	f.returnTarget = operation.TargetID
+	f.hasCaller = true
+	return pushResult{frame: &f}, nil
+}
+
+// argumentIsCopyable reports whether operation's own SourceID place carries
+// core.AbilityCopy in the CALLER's declared type facts -- the exact
+// predicate resolveCallBinding (check.go) applies when deciding whether a
+// call argument is copied (place stays live) or moved (place consumed). An
+// argument whose type fact cannot be resolved at all is treated as
+// non-copyable (fail-closed), matching check's own "empty ability list is
+// never the permitting default" rule.
+func argumentIsCopyable(caller *frame, operation core.LinearOperation) bool {
+	typeID, known := caller.placeTypes[operation.SourceID]
+	if !known {
+		return false
+	}
+	fact, known := caller.types[typeID]
+	if !known {
+		return false
+	}
+	for _, ability := range fact.Abilities {
+		if ability == core.AbilityCopy {
+			return true
+		}
+	}
+	return false
 }
 
 // findFunctionByID resolves an OpCall's CalleeID against the whole
@@ -763,7 +542,7 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 					Schema: execution.Schema1, ID: top.function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: top.function.ID,
 					SourcePlace: top.function.Parameter.ID, TypeID: top.placeTypes[top.function.Parameter.ID], Output: nonlocalExitDefectReason,
 				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourcePlaces(top.operations, top.live, top.liveOrder)}, nil
 			}
 			top.values[operation.TargetID] = value
 			top.values[operation.ErrTargetID] = "err"
@@ -782,16 +561,20 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			top.currentBlockID = edge.ToBlockID
 			top.idx = 0
 		case core.OpCall:
-			callee, ok := findFunctionByID(program, operation.CalleeID)
-			if !ok {
-				return Execution{}, fmt.Errorf("operation %q: call to unresolved callee %q", operation.ID, operation.CalleeID)
-			}
 			top.idx++
-			calleeFrame, err := partitionFrameForCall(top, operation, callee)
+			result, err := partitionFrameForCall(program, top, operation)
 			if err != nil {
 				return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, err)
 			}
-			stack = append(stack, calleeFrame)
+			if result.frame == nil {
+				// Immediate arm resolution (a bare match arm): nothing to
+				// push, no callee frame ever ran -- bind directly into the
+				// caller's own TargetID place.
+				events = append(events, result.immediateEvent)
+				top.values[operation.TargetID] = result.immediateValue
+				continue
+			}
+			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:
 			outcome, event := terminalOutcome(top.function, operation, value)
 			events = append(events, event)
