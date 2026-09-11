@@ -1,6 +1,9 @@
 package pathoracle_test
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"go/parser"
 	"go/token"
 	"os"
@@ -19,6 +22,36 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// maxGoListDepsOutputBytes bounds transitiveImportsViolation's captured
+// `go list -deps` output (native_test.go's own scanUnboundedSpawns lint
+// forbids CombinedOutput/Output's unbounded merged-buffer shape for every
+// process this repo spawns, Task 3's own change here included -- Rule 1,
+// this bound plus the exec.CommandContext deadline below are the fix, kept
+// local to this file rather than reusing testsupport's own unexported
+// boundedWriter).
+const maxGoListDepsOutputBytes = 1 << 20 // 1 MiB: far more than any real dependency-path listing
+
+// boundedGoListWriter caps the bytes captured from `go list -deps`,
+// mirroring testsupport's own boundedWriter shape without depending on its
+// unexported type.
+type boundedGoListWriter struct {
+	buffer     bytes.Buffer
+	overflowed bool
+}
+
+func (w *boundedGoListWriter) Write(data []byte) (int, error) {
+	if w.buffer.Len()+len(data) > maxGoListDepsOutputBytes {
+		w.overflowed = true
+		remaining := maxGoListDepsOutputBytes - w.buffer.Len()
+		if remaining > 0 {
+			w.buffer.Write(data[:remaining])
+		}
+		return len(data), nil
+	}
+	w.buffer.Write(data)
+	return len(data), nil
+}
 
 func readFixture(t *testing.T, name string) []byte {
 	t.Helper()
@@ -116,13 +149,23 @@ func transitiveImportViolation(deps []string, forbidden []string) string {
 // dependency closure has a forbidden suffix.
 func transitiveImportsViolation(t *testing.T, forbidden []string) string {
 	t.Helper()
-	cmd := exec.Command("go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/pathoracle")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/pathoracle")
 	cmd.Dir = testsupport.ProjectPath()
-	output, err := cmd.Output()
+	var stdout boundedGoListWriter
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		t.Fatalf("go list -deps: timed out")
+	}
 	if err != nil {
 		t.Fatalf("go list -deps: %v", err)
 	}
-	deps := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if stdout.overflowed {
+		t.Fatalf("go list -deps: output exceeded the %d-byte bound", maxGoListDepsOutputBytes)
+	}
+	deps := strings.Split(strings.TrimSpace(stdout.buffer.String()), "\n")
 	return transitiveImportViolation(deps, forbidden)
 }
 
