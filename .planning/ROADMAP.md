@@ -560,7 +560,7 @@ Plans:
 
 - [x] 10-02-PLAN.md — `originvalidate` walks published origins across `OpCall`, closing D-09-51, with transitive import-guard hardening (wave 2)
 - [x] 10-03-PLAN.md — `pathoracle` composes callee path enumerations across `OpCall`, with its own declared depth cap and the discriminating per-path-borrow fixture (wave 2)
-- [ ] 10-04-PLAN.md — `MaxCallDepth` with its inverted rationale, the depth-exceeded refusal as comparable data, and the Pitfall-4 subprocess stack probe (wave 2)
+- [x] 10-04-PLAN.md — `MaxCallDepth` with its inverted rationale, the depth-exceeded refusal as comparable data, and the Pitfall-4 subprocess stack probe (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
