@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: M002
-milestone_name: Interprocedural Semantic Spine
+milestone_name: — Interprocedural Semantic Spine
 current_phase: 10
 current_phase_name: Trusted Interprocedural Oracle
 status: executing
-stopped_at: Completed 10-02-PLAN.md
-last_updated: "2026-09-11T18:26:24.694Z"
+stopped_at: Completed 10-03-PLAN.md
+last_updated: "2026-09-11T19:01:31.249Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 10 execution started
-state_head: 7d7553ba8faffaf1bd671dff05781373fb92b64d
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 37
-  completed_plans: 30
+  completed_plans: 31
+  percent: 43
 ---
 
 # Project State
@@ -34,13 +34,14 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 - `.planning/LANGUAGE-MATURITY.md` — the language is far less expressive than
   the roadmap vocabulary implies: no arithmetic, no iteration, no Lang-to-Lang
   calls yet. Assurance stack ~60-70% built; language surface ~5-10%.
+
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
 
 ## Current Position
 
 Phase: 10 (Trusted Interprocedural Oracle) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 10 execution started
 
@@ -176,6 +177,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 09 P10 | 50min | 3 tasks | 5 files |
 | Phase 10-trusted-interprocedural-oracle P01 | 55 min | 3 tasks | 4 files |
 | Phase 10 P02 | 95min | 3 tasks | 11 files |
+| Phase 10-trusted-interprocedural-oracle P03 | 100min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -190,11 +192,14 @@ Standing architectural commitments carried into M002:
 - Vertical source-to-native slices, not layered compiler construction.
 - Go 1.24 stdlib for Stage 0; readable C17 through Clang as the reversible
   native path.
+
 - The deterministic interpreter is the semantic oracle.
 - Syntax stays provisional; stable typed-core, diagnostic, and evidence
   identities are the asset.
+
 - Trust-crossing facts are re-derived independently (`corevalidate`,
   `originvalidate`), never trusted from the producer.
+
 - [Phase 07]: 07-01: DecodeInterface routes CheckSummary; /0 stays decodable but never admissible for a call — D-07-36 closes codex's HIGH finding that strict /1 decoding was unspecified and /0 dispatch was unwired
 - [Phase 07]: Callable is publication safety (D-04-03), not export membership: PublishProblemsFor extracted, corevalidate summary peer wired at both replay sites, narrowed to core.origin_omitted (D-07-33) — 07-02 review-driven decisions D-07-31/D-07-32/D-07-33/D-07-20/D-07-21/D-07-22 landed exactly as ratified at the checkpoint
 - [Phase 07]: core.LinearOperation.CalleeID added additive+omitempty per D-07-29; the parser change and the foreign-bare-call refusal relocation to check (D-07-40) landed together in Task 1 since they are inseparable within one green commit.
@@ -229,6 +234,7 @@ Standing architectural commitments carried into M002:
 - [Phase 10]: 10-01: interp executes calls across an explicit []frame heap stack (D-10-21); OWN-05b falls out of observable execution, ability-aware per D-07-11; move-as-copy mutant proven via a synthetic core.Program since no legal Lang source can express the shape
 - [Phase 10]: OpCall origin walk now consults a callee's DECLARED PublicOrigin via a narrow, unexported calleeOriginFact map built by exported BuildCalleeOriginFacts — Closes D-09-51; mirrors corevalidate.buildLoanChainIndex's shipped peerLoanCarry precedent, threaded through RecomputeOriginPerReturn/RecomputeOrigin/PublishProblemsFor without widening ValidatePublished/BuildInterface's own signatures
 - [Phase 10]: Corrected two check-package negative-control fixtures/tests (negative_control_fails.lang, negative_control_infallible.lang) whose expected diagnostic depended on the same pre-existing D-09-51 transparent-walk defect — relay's declared borrow(buffer) return was never honestly derivable given leaf's genuinely owned return; check's own SEM-06 Callable gate now correctly fires first with core.callee_not_callable
+- [Phase ?]: 10-03: pathoracle composes callee paths across OpCall via its own EnumeratePaths (composeCall/composeCarriesOwnLoan), re-deriving per-path (never per-function-contract) whether a loan survives the call; MaxCompositionDepth + compositionCycleError guard recursion independently of MaxPaths/EnumeratePaths' own back-edge guard; D-10-14 discriminating fixture (two-arm callee, one borrows one owns) proven via the D-10-55 seeded contract-hop fault, stitched across two separately-checked fixtures since the shape cannot be one joint Callable program
 
 ### Pending Todos
 
@@ -248,9 +254,11 @@ Three bounded pre-phase spikes, recorded in ROADMAP.md ("Pre-Phase Spikes"):
   penalty, quadratic in body length), and a persistent CROSS-run summary cache
   must not be assumed (one leaf edit invalidates 92% worst / 43% mean on the
   parser-shaped graph).
+
 - **S-007 recursive / mutually-recursive stress corpus** — runs alongside
   Phase 07, non-blocking; informs whether the call-stack ceiling is a fixed
   constant or a declared budget.
+
 - **S-008 Nyquist fold-in cost measurement** — runs before Phase 09 planning;
   determines whether QLT-07 stays committed or becomes a declared stretch item.
 
@@ -263,27 +271,34 @@ answered before Phase 12 is planned.
   declared origin exports indistinguishable from a fully-owned return, in the
   INTERPROCEDURAL half of the hazard. The single-function half closed in
   Phase 3. Owned by M002's `OpCall` charter (D-05-32/D-05-33).
+
 - **M001 ships without Lang-to-Lang calls.** Interprocedural `-O3` equivalence
   is outside M001's proof scope by construction, not by omission.
+
 - Remaining Phase 2/4 debt is registered in the archived `*-DEBT.md` files and
   summarized in `.planning/milestones/M001-MILESTONE-AUDIT.md`: five open
   Phase 2 items (info/warning level), D-04-30 (storable/matchable `Result`
   values, deferred to M002), and D-04-31's four accepted residual limitations.
+
 - Nyquist validation is compliant for Phases 1, 2, and 4; Phases 3, 5, and 6
   are not-validated. Overall status: partial.
+
 - **Standing process rules** adopted after three M001 gate failures that shared
   one shape — a green test whose reachable input space omitted the hard case:
   mutation-kill every differential, interrogate what inputs a property test
   actually reaches, and drive the shipped binary on hand-written programs
   rather than only the gate's own corpus.
+
 - Plan 09-09 HALTED before any code change: TestOwnershipSequenceExhaustive (check_test.go) calls analyzeStraightLine directly and asserts DiagnosticCode==ownership.move_while_borrowed/borrow_conflict synchronously against an oracle that computes those codes inline. This contradicts Task 1's must_have truth 'Lowering makes no loan-liveness decisions' and Task 2's acceptance criterion that this same test 'pass unchanged'. Empirically confirmed via a reverted experimental edit (length=2 case=198): removing the move_while_borrowed raise from analyzeStraightLine made production return DiagnosticCode:"" while the oracle still returned ownership.move_while_borrowed, failing assertSupportEqual. Needs an architectural decision (Rule 4) on how TestOwnershipSequenceExhaustive's contract is meant to change before the computeLoanLastUses deletion can proceed. Tree left green, no commits made.
 
 ### Roadmap Evolution
 
 - Phase 1 edited: removed generic web-app MVP mode; retained tracer-first
   vertical planning.
+
 - `OpCall` and interprocedural equivalence deferred out of M001 (Phase 5,
   D-05-32) and promoted to M002's lead charter.
+
 - **M002 roadmap (2026-09-08):** adopted `research/SUMMARY.md`'s reconciled
   build order with **one documented departure** — SUMMARY's Phase 4 is split
   into Phases 10 and 11 at the ARCHITECTURE.md Stage 6 / Stage 7 boundary.
@@ -293,10 +308,12 @@ answered before Phase 12 is planned.
   milestone's central risk unadjudicated for its whole length. The "cgen must
   differential-test against a trusted interpreter" dependency SUMMARY itself
   names is a gate, so it is used as one.
+
 - **Scope-cut order carried into the roadmap up front** (Phase 12 → QLT-07 →
   Phase 13 narrowing), with the explicit trigger: if Phase 08 or 09 exceeds
   ~2x its initial plan estimate, renegotiate Phase 12 out to M003 immediately
   rather than adding plans.
+
 - **Two mandatory mid-phase gates** recorded, following M001 Phase 3's
   precedent: Phase 08 (interprocedural loan liveness) and Phase 11
   (multi-function C emission before alias-attribute call lowering).
@@ -310,8 +327,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-11T18:26:13.642Z
-Stopped at: Completed 10-02-PLAN.md
+Last session: 2026-09-11T19:01:31.244Z
+Stopped at: Completed 10-03-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
@@ -320,6 +337,7 @@ Next command: `/gsd-discuss-phase 07`
 
 - Review `.planning/ROADMAP.md` (note the documented departure from the
   research-reconciled 6-phase order, and the pre-phase spike decision).
+
 - S-006 is answered; Phase 08 planning is unblocked. Kick off S-007 alongside Phase 07.
 - Discuss and plan Phase 07 with /gsd-discuss-phase.
 

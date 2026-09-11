@@ -52,10 +52,12 @@ Deliberate choice, stated per instruction:
   workbench code, and a requirement-less phase would violate this roadmap's own
   100%-coverage/one-phase-per-requirement discipline while adding a phase whose
   success criteria could only read as task completions.
+
 - **Not a gate inside Phase 07.** Its finding is *Phase 08*-blocking, not
   Phase 07-blocking — Phase 07's gate must be about call-graph refusal, and
   attaching a liveness-cost question to it would let a Phase 07 pass imply a
   liveness answer it never tested.
+
 - **Therefore: a pre-phase spike, recorded here, executed alongside Phase 07,
   and a hard entry gate on Phase 08's *planning***. Phase 08 may not be planned
   until S-006 has answered whether `loanLivenessFixpoint` extends directly or
@@ -87,6 +89,7 @@ independent grounds:
   memoized-versus-unmemoized cost-scaling comparison. Forcing spike shape
   onto it would mean inventing artificial arms, which `CONVENTIONS.md` itself
   argues against.
+
 - **Would reproduce an already-open registry gap a second time.** Standing up
   a `.planning/spikes/008-*` directory would have reproduced D-08-43's
   already-open, un-owned `.planning/spikes` registry-maintenance gap a
@@ -126,6 +129,7 @@ and neither survives the cost model:
    not the ~10 min/plan of single-consumer work. A 12-requirement, 4-stage phase
    at that base rate is a 20-plan phase — larger than any M001 phase, and it
    would hold the milestone's central risk unadjudicated for its entire length.
+
 2. **The dependency SUMMARY names is itself a gate.** "cgen must differential-
    test against a working, trusted interpreter" is precisely a phase boundary:
    the oracle's trustworthiness is a claim that can be gated *before* anything
@@ -133,6 +137,7 @@ and neither survives the cost model:
    verifiable — *the interpreter is a trustworthy interprocedural oracle,
    independently corroborated by `originvalidate` and `pathoracle`* — and
    Phase 11 keeps SUMMARY's headline claim intact.
+
 3. **SUMMARY's own mid-phase-gate requirement is better served.** It names Stage
    4 and Stage 7 as the two highest-risk integration points, each deserving its
    own mid-phase gate. Under the split, Stage 7 gets a mid-phase gate inside a
@@ -186,10 +191,12 @@ the moment it is decided).
 1. **First cut — Phase 12 (`Result` payloads, RES-02/RES-03).** Structurally
    independent of the call machinery. Slip to M003 *explicitly*; do not silently
    absorb as extra plans on committed scope.
+
 2. **Second cut — QLT-07 (Nyquist fold-in, Phase 09).** If spike S-008 shows the
    fold-in is not actually cheap, re-scope it to a declared stretch item and
    carry it as disclosed debt alongside QLT-09, rather than discovering the cost
    mid-phase.
+
 3. **Third cut — Phase 13 scope narrowing (DX-05/06/07).** Narrow to the two
    highest-value defect classes (cross-function borrow escape, cycle refusal)
    rather than cutting the mutation-kill / repair-then-re-check discipline for
@@ -212,6 +219,7 @@ for a second consecutive milestone.
   record is a hard constraint), design anti-features, process anti-patterns, and
   load-bearing facts about the six dispatch sites, `cgen`'s single-function hard
   fail, and why `-flto` is load-bearing. Reopen an entry only on new evidence.
+
 - `.planning/LANGUAGE-MATURITY.md` — what the language can actually express
   today. Guards against planning as if arithmetic, iteration, or collections
   exist. They do not.
@@ -239,15 +247,18 @@ package + cycle refusal)
      exhaustive-dispatch controls (`core_test.go`'s in-process
      `control:kind.exhaustive_dispatch` and `session.go`'s CLI-observable lane)
      green.
+
   2. No caller admission path reads a callee body — the callee's digest-bound
      signature summary is the only input — and a call to a non-publishable
      callee (violating callable ⊆ publishable, D-04-03) is refused with a stable
      diagnostic code.
+
   3. Direct, mutual, and indirect call cycles are each refused with a named
      refusal code and never hang. **Gate (Pitfall 4):** an indirect-cycle corpus
      and a pathological-depth-but-acyclic corpus both return bounded verdicts,
      and the traversal is explicit-worklist / visited-set-guarded from day one
      rather than native Go recursion.
+
   4. Every new interprocedural control introduced in this phase has been
      observed to fail against a seeded mutation in the plan that introduced it.
 
@@ -353,12 +364,15 @@ Pitfalls 1 and 4; `wiki/compute-efficiency-constitution.md`;
      loan state diverges across a call boundary, and accepts its safe twin —
      with the derivation reading callee signatures only, never re-walking a
      callee body.
+
   2. **Gate (Pitfall 4):** the liveness fixpoint terminates under a fail-closed
      iteration bound; a program engineered to exceed that bound produces a named
      refusal, not a hang and not a silent under-approximation.
+
   3. Interprocedural admission cost on realistic call-graph fan-out is measured
      under the existing p50/p95/CoV protocol, stays inside a declared bound, and
      is recorded in the feedback-budget manifest.
+
   4. A human can read, from the shipped artifact, which callee-signature fields
      the liveness answer depended on for a given call site.
 
@@ -424,16 +438,20 @@ Lesson 2
      call-graph shapes shows **zero divergence** between every peer that derives
      a given interprocedural fact, **before either peer ships**, landed in the
      same plan.
+
   2. A deliberately seeded endpoint-level fault in one peer makes the two
      diverge — proving criterion 1's agreement is load-bearing, not vacuous —
      and a counted-work lane shows linear-or-declared-bounded cost for the
      re-derivation.
+
   3. An exported borrow-derived return with no declared origin is refused in the
      **interprocedural** case by **both** admission layers. D-03-02 is closed.
+
   4. Ownership transfer at a call site (move vs. borrow, per the callee's
      declared convention) has exactly one meaning, derived independently by
      `check` and `corevalidate`; call-site override of a callee's declared
      convention is not expressible.
+
   5. Exactly one loan-liveness law exists in the checker at end of phase — the
      intraprocedural law is **deleted**, not left coexisting — and Nyquist
      validation reports compliant for the loan-liveness surface.
@@ -504,14 +522,17 @@ Stage 8
      cross-function loan-chain rule — with neither importing `check` or
      `corevalidate`, enforced by a build- or test-level import control rather
      than convention.
+
   2. The interpreter executes a multi-function program on a bounded call stack
      with a documented fixed ceiling; exceeding it is a **named refusal**, not a
      host stack overflow. **Gate (Pitfall 4):** a native-stack-overflow probe,
      distinct from the language-level bound, confirms the two limits are not the
      same limit.
+
   3. Drop and cleanup obligations run in the defined order on normal return
      **and on every nonlocal exit** across a call boundary, observed as ordered
      events, not asserted.
+
   4. **Gate:** cross-function loan-endpoint differentials rebuild M001 Phase 3's
      exhaustive endpoint enumeration at a **declared, bounded composition
      depth**, with that depth stated in the shipped artifact rather than implied
@@ -538,7 +559,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 10-02-PLAN.md — `originvalidate` walks published origins across `OpCall`, closing D-09-51, with transitive import-guard hardening (wave 2)
-- [ ] 10-03-PLAN.md — `pathoracle` composes callee path enumerations across `OpCall`, with its own declared depth cap and the discriminating per-path-borrow fixture (wave 2)
+- [x] 10-03-PLAN.md — `pathoracle` composes callee path enumerations across `OpCall`, with its own declared depth cap and the discriminating per-path-borrow fixture (wave 2)
 - [ ] 10-04-PLAN.md — `MaxCallDepth` with its inverted rationale, the depth-exceeded refusal as comparable data, and the Pitfall-4 subprocess stack probe (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -578,17 +599,21 @@ Pitfalls 3, 5, 6; M001 Phase 5's `control:alias.false_no_alias` precedent
      `len(Functions) != 1` — and every aliasing or capture promise emitted at a
      call boundary (`restrict`, noalias-shaped attributes) **names the checked
      fact it derives from** in the emitted artifact.
+
   2. Interpreter, native `-O0`, native `-O3`, and `-O3 -flto` produce equivalent
      semantic outcomes and events for the interprocedural corpus on the existing
      five-axis comparator.
+
   3. **Gate (Pitfall 3):** at least one **engineered composition-only** negative
      control — the harder `-flto` sequel to `false_no_alias` — reproduces an
      `interpreter == -O0 != -O3` divergence and **fails red before its fix**.
      The interprocedural `-O3`/LTO tier is proven non-inert, not assumed.
+
   4. **Gate (Pitfall 5):** a call-graph-shape reachability register records which
      cross-function shapes the generator actually reaches and **names shapes it
      provably does not**; HDD reducer output on multi-function programs is
      re-verified to reproduce the same property as its input.
+
   5. **Gate (Pitfall 6):** no interprocedural fact is marked cacheable until a
      callee-changes-invalidates-caller regression test gates it, and
      interprocedural cache keys derive from the call-graph closure, not per-unit
@@ -629,10 +654,12 @@ plan; Rust's tagged-union/niche RFC as precedent
   1. A `Result` value with a payload-carrying alternative is stored and matched,
      and moving out of a matched payload obeys the affine drop obligation — the
      unmoved alternative's payload is still dropped exactly once.
+
   2. `Result` layout — tagged union, with niche optimization applied **only**
      where a checked ability fact permits it — has one meaning in the core IR,
      the interpreter, and emitted C17, verified on the five-axis comparator
      rather than asserted per engine.
+
   3. **Gate (pre-flight probe):** payload origin and ownership reduce to
      already-proven Phase 08-11 machinery. If the probe surfaces a hidden need
      for a *new* interprocedural rule, this phase is replanned or moved to M003
@@ -665,9 +692,11 @@ applicability, and DX-04's held-out/derivation-split fixture methodology
   1. `lang explain`'s cause DAG stays bounded when causes span functions and
      **names the function each cause step belongs to**, with the existing
      `truncated:explain.*` codes still stable.
+
   2. `lang-repair` reaches and fixes at least **three** new interprocedural
      defect classes through the JSON protocol alone, proven on a **held-out**
      fixture split — not on the fixtures the repairs were derived from.
+
   3. **Gate (Pitfall 7):** a repair-then-re-check regression covers cases where
      the **non-obvious** function is the correct fix location, and the repair
      applied there makes the program check clean.
@@ -693,7 +722,7 @@ whatever does ship.
 | 07. Calls, Signatures, and Call-Graph Refusal | 12/12 | Complete    | 2026-09-09 |
 | 08. Interprocedural Loan Liveness in `check` | 6/6 | Complete    | 2026-09-10 |
 | 09. Peer Re-Derivation and D-03-02 Closure | 10/10 | Complete    | 2026-09-10 |
-| 10. Trusted Interprocedural Oracle | 0/? | Not started | - |
+| 10. Trusted Interprocedural Oracle | 3/9 | In Progress|  |
 | 11. Multi-Function Native Emission and Equivalence | 0/? | Not started | - |
 | 12. `Result` Payloads | 0/? | Not started | - |
 | 13. Agent Loop for Interprocedural Defects | 0/? | Not started | - |

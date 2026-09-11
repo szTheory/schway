@@ -16,18 +16,23 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       real `core.OperationKind` handled at all six dispatch sites (`check`,
       `corevalidate`, `interp`, `cgen`, `pathoracle`, `originvalidate`) with
       both exhaustive-dispatch controls green.
+
 - [x] **SEM-05**: A callee signature summary — extending `core.Interface` /
       `core.FunctionSignature` — is a digest-bound artifact carrying everything
       a caller needs for admission; no caller admission reads a callee body.
+
 - [x] **SEM-06**: A call is admitted only when the callee is callable ⊆
       publishable (D-04-03); a call to a non-publishable target is refused with
       a stable diagnostic code.
+
 - [x] **SEM-07**: The compiler constructs a call graph and refuses cycles —
       direct, mutual, and indirect (including cycles through `Result` matching)
       — with a named refusal code, never a hang.
+
 - [ ] **SEM-08**: The interpreter executes calls on a bounded call stack with a
       documented fixed ceiling; exceeding it is a named refusal, not a host
       stack overflow.
+
 - [ ] **SEM-09**: Drop and cleanup obligations run in the defined order on
       normal return and on every nonlocal exit across a call boundary.
 
@@ -38,6 +43,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       independently by `check` and `corevalidate`; call-site override of a
       callee's declared convention is not expressible in source and is
       fail-closed at the core layer.
+
 - [ ] **OWN-05b**: The same call-site ownership-transfer fact is derived
       independently by `interp` — the third of OWN-05's original three
       derivers — verified there by TRU-03 and in Phase 11 by NAT-06. Split
@@ -45,15 +51,19 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       on two of three derivers, because Phase 09 ships only `check` and
       `corevalidate`; a single-row overclaim is exactly the requirement-vs-code
       failure the debt registers exist to catch.
+
 - [x] **OWN-06**: `check` derives interprocedural loan liveness from callee
       signatures only — never by re-walking callee bodies — and terminates
       under a fail-closed iteration bound.
+
 - [x] **OWN-07**: `corevalidate` independently re-derives the same
       interprocedural loan-liveness facts without sharing an implementation
       with `check`; a seeded endpoint-level fault makes the two peers diverge.
+
 - [x] **OWN-08**: D-03-02 is closed — an exported borrow-derived return with no
       declared origin is refused in the interprocedural case, in both admission
       layers.
+
 - [x] **OWN-09**: The intraprocedural loan-liveness DECISION POINT is retired in
       Phase 09, one phase after the interprocedural law landed in Phase 08 —
       not the same phase, by deliberate decision: retiring the sole decision
@@ -69,12 +79,15 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 - [ ] **NAT-04**: `cgen` emits multi-function C17; `Emit` / `EmitNative` no
       longer refuse programs with more than one function.
+
 - [ ] **NAT-05**: Every aliasing or capture promise emitted at a call boundary
       (`restrict`, noalias-shaped attributes) derives from a checked fact, and
       the deriving fact is named in the emitted artifact.
+
 - [ ] **NAT-06**: Interpreter, native `-O0`, native `-O3`, and `-O3 -flto`
       produce equivalent semantic outcomes and events for the interprocedural
       corpus on the five-axis comparator.
+
 - [ ] **NAT-07**: The interprocedural `-O3`/LTO tier is proven non-inert by at
       least one engineered composition-only negative control that reproduces an
       `interpreter == -O0 != -O3` divergence and fails red before its fix.
@@ -83,8 +96,10 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 - [x] **TRU-02**: `originvalidate` extends its published-origin walk across
       `OpCall`, mirroring the already-proven `OpForeignCall` hop.
-- [ ] **TRU-03**: `pathoracle` independently re-derives the cross-function
+
+- [x] **TRU-03**: `pathoracle` independently re-derives the cross-function
       loan-chain rule without importing `check` or `corevalidate`.
+
 - [x] **TRU-04**: A shadow-run differential over recursion, diamond, and
       deep-chain call graphs shows zero divergence between every peer that
       derives a given interprocedural fact, before either peer ships.
@@ -104,13 +119,17 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [ ] **QLT-03**: A call-graph-shape reachability register records which
       cross-function shapes the generator actually reaches, and names shapes it
       provably does not.
+
 - [ ] **QLT-04**: Cross-function loan-endpoint differentials rebuild Phase 3's
       exhaustive endpoint enumeration at a declared, bounded composition depth.
+
 - [ ] **QLT-05**: HDD reducer output on multi-function programs is re-verified
       to reproduce the same property as its input.
+
 - [ ] **QLT-06**: No interprocedural fact is marked cacheable until a
       callee-changes-invalidates-caller regression test gates it; interprocedural
       cache keys derive from the call-graph closure, not per-unit hashes.
+
 - [x] **QLT-07**: Nyquist validation is compliant for the loan-liveness surface,
       closing M001 Phase 3's validation debt. Closed for exactly the
       loan-liveness-scoped rows (03-03/03-04/03-05) in
@@ -119,6 +138,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       exclusion stay explicitly outside this closure and
       `03-VALIDATION.md`'s own `nyquist_compliant: false` is unchanged
       (D-09-40a, D-09-41, D-09-42).
+
 - [x] **QLT-08**: Every new interprocedural control is mutation-killed in the
       plan that introduces it — no control ships having never been seen to fail.
 
@@ -133,6 +153,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [ ] **RES-02**: `Result` values with payload-carrying alternatives are
       storable and matchable; moving out of a matched payload obeys the affine
       drop obligation (D-04-30).
+
 - [ ] **RES-03**: `Result` layout — tagged union, with niche optimization where
       a checked ability fact permits it — has one meaning in the core IR, the
       interpreter, and emitted C17.
@@ -141,9 +162,11 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 - [ ] **DX-05**: `lang explain`'s cause DAG stays bounded when causes span
       functions, and names the function each cause step belongs to.
+
 - [ ] **DX-06**: Cross-function blame attribution points at the correct fix
       location; a repair-then-re-check regression covers cases where the
       non-obvious function is the right one.
+
 - [ ] **DX-07**: `lang-repair` reaches and fixes at least three new
       interprocedural defect classes through the JSON protocol alone, proven on
       a held-out fixture split.
@@ -210,7 +233,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | NAT-06 | Phase 11 | Pending |
 | NAT-07 | Phase 11 | Pending |
 | TRU-02 | Phase 10 | Complete |
-| TRU-03 | Phase 10 | Pending |
+| TRU-03 | Phase 10 | Complete |
 | TRU-04 | Phase 09 | Complete |
 | QLT-03 | Phase 11 | Pending |
 | QLT-04 | Phase 10 | Pending |
@@ -246,12 +269,14 @@ at the moment it is decided (Key Lesson 4):
 
 1. **RES-02, RES-03** (`Result` payloads) — structurally independent of the call
    machinery. Slip to M003; do not silently absorb as extra plans.
+
 2. **QLT-07** (Nyquist fold-in) — if the pre-flight cost probe shows the fold-in
    is not cheap, re-scope to a stretch item and carry it as disclosed debt
    alongside QLT-09. **Not triggered:** the pre-flight inventory (D-09-40a,
    run 2026-09-10) found the fold-in cost within both pre-registered bounds
    (≤ 1 additional plan, zero new production files); QLT-07 shipped
    COMMITTED, closed in Phase 09's own `09-VALIDATION.md`.
+
 3. **DX-05, DX-06, DX-07** (agent loop) — narrow to the two highest-value defect
    classes rather than cutting the mutation-kill / repair-then-re-check
    discipline for what does ship.
