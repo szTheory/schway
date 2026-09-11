@@ -497,3 +497,35 @@ func TestCallDepthAtAndOverTheCap(t *testing.T) {
 		}
 	})
 }
+
+// TestCallDepthExceeded is Task 2's pipeline-conformance test (SEM-08): a
+// genuine 129-function chain -- one function past MaxCallDepth -- is
+// generated, parsed, checked, and corevalidated
+// (generateAndCheckCallDepthChain, which itself asserts a clean result at
+// each of those three stages), and interp.Run on the checked program must
+// reach the named depth-exceeded refusal, never a parse/check/corevalidate
+// diagnostic mistaken for it. See
+// testdata/phase10/call_depth_chain_generator.md for the generator's full
+// contract. D-10-24: this NEVER hand-builds a core.Program -- the whole
+// point is that the compiler's real pipeline genuinely admits this program.
+func TestCallDepthExceeded(t *testing.T) {
+	const n = MaxCallDepth + 1
+	program := generateAndCheckCallDepthChain(t, n)
+
+	result, err := Run(program, "link0", "9")
+	if err != nil {
+		t.Fatalf("Run(%d-function chain): unexpected error: %v", n, err)
+	}
+	if result.Outcome.Kind != execution.OutcomeDefect {
+		t.Fatalf("expected the depth-exceeded refusal's outcome kind %q, got %q", execution.OutcomeDefect, result.Outcome.Kind)
+	}
+	found := false
+	for _, event := range result.Events {
+		if event.Output == callDepthExceededDefectReason {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected an event carrying the named depth-limit reason %q, got events: %+v", callDepthExceededDefectReason, result.Events)
+	}
+}
