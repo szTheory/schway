@@ -10,6 +10,54 @@ import (
 
 const Schema = execution.Schema0
 
+// MaxCallDepth bounds interp's own explicit []frame call stack (D-10-21) at
+// a genuinely reachable ceiling -- the exact INVERSE of
+// pathoracle.MaxPaths' direction (pathoracle.go:56-67). MaxPaths (4096)
+// sits well ABOVE its real reachable maximum (64) so it never fires on any
+// program the parser can produce today, a deliberately generous ceiling
+// held in reserve for a future CFG shape. MaxCallDepth must sit BELOW the
+// real structural ceiling instead: the parser's own maxFunctions (1024,
+// syntax/parser.go:16) combined with callgraph's cycle refusal (every
+// admitted call graph is acyclic, so a program has strictly no more
+// distinct functions to call through than it declares) bounds the deepest
+// possible call chain at 1024. A bound set anywhere near that ceiling would
+// be decorative -- indistinguishable in practice from never firing at all.
+// 128 is comfortably below 1024 (a 129-function chain fixture leaves ample
+// headroom for scaffolding) and orders of magnitude above any depth
+// today's fixtures exercise, so it genuinely fires on a program the
+// compiler legitimately admits (D-10-23), never only on a program the
+// compiler would already have refused for an unrelated reason. This
+// direction is deliberately OPPOSITE MaxPaths': a reader who pattern-
+// matches the two constants will otherwise draw the wrong conclusion.
+const MaxCallDepth = 128
+
+// callDepthExceededDefectReason is the stable named reason a depth-exceeded
+// refusal carries: exceeding MaxCallDepth (or its test-only override)
+// produces this Outcome/Event as comparable execution DATA -- modeled like
+// the existing core.OpDefect arm (terminalOutcome, below), never a bare Go
+// error (D-10-25) -- because Phase 11's five-axis comparator needs the
+// refusal as data when diffing against native's structurally different
+// limit-hit behavior.
+const callDepthExceededDefectReason = "language call depth exceeded MaxCallDepth"
+
+// maxCallDepthOverride is Task 3's Pitfall-4 subprocess-probe seam,
+// following TerminatorKindsOverride's discipline (pathoracle.go:69-77):
+// nil in production, consulted only through maxCallDepth(). Unlike
+// TerminatorKindsOverride, this seam is deliberately unexported -- only a
+// same-package test may temporarily raise or disable MaxCallDepth to drive
+// the probe's cap-disabled arm; it is never a production-mutable exported
+// global.
+var maxCallDepthOverride func() int
+
+// maxCallDepth reports the effective call-depth ceiling: maxCallDepthOverride()
+// when set (test-only), else the production MaxCallDepth constant.
+func maxCallDepth() int {
+	if maxCallDepthOverride != nil {
+		return maxCallDepthOverride()
+	}
+	return MaxCallDepth
+}
+
 // moveAsCopyForTest is Task 2's D-10-41 fault-injection seam (QLT-08): when
 // true, partitionFrameForCall skips the caller-side delete of the argument
 // place, turning a move into a copy -- the caller's moved-from place stays
@@ -573,6 +621,23 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				events = append(events, result.immediateEvent)
 				top.values[operation.TargetID] = result.immediateValue
 				continue
+			}
+			if len(stack) >= maxCallDepth() {
+				// Pushing this callee frame would exceed the depth ceiling
+				// (D-10-21/D-10-23): refuse as a named, comparable Outcome
+				// rather than growing the stack further. This is checked
+				// AFTER partitionFrameForCall resolves the callee (never
+				// before), because a bare match-arm callee needs no frame
+				// at all and must never be refused for depth it would not
+				// actually consume.
+				event := Event{
+					Schema: execution.Schema1, ID: operation.ID + ":event:call_depth_exceeded", Kind: "function.defected",
+					FunctionID: top.function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: callDepthExceededDefectReason,
+				}
+				return Execution{
+					Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
+					Events: append(events, event), LiveResources: []string{},
+				}, nil
 			}
 			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:

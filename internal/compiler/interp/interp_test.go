@@ -2,6 +2,7 @@ package interp
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -14,6 +15,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
 
@@ -370,6 +372,128 @@ func probe(r result) int {
 		}
 		if len(found) == 0 {
 			t.Fatal("expected the scan to report a violation on synthetic source containing a forbidden accessor reference -- the guard has never been observed to fire")
+		}
+	})
+}
+
+// generateCallDepthChainSource emits a genuine `.lang` module of n chained
+// single-call functions, generalizing testdata/phase07/call_basic.lang's
+// two-function template to n links (Task 2): link0 calls link1 calls
+// link2 ... calls link(n-1), which is the base case with no call and simply
+// returns its own parameter. link0 is the sole exported entry point. The
+// full contract (module shape, per-link template, entry point name, and
+// why the chain is generated rather than committed as a 129-function
+// `.lang` file) is recorded in
+// testdata/phase10/call_depth_chain_generator.md so a future reader can
+// reconstruct the fixture without reading this function.
+func generateCallDepthChainSource(n int) []byte {
+	var b strings.Builder
+	b.WriteString("module phase10.call_depth_chain\n\n")
+	b.WriteString("export {\n  fn link0\n}\n\n")
+	for i := n - 1; i >= 0; i-- {
+		if i == n-1 {
+			fmt.Fprintf(&b, "fn link%d(value: Byte) -> Byte {\n  value\n}\n\n", i)
+			continue
+		}
+		fmt.Fprintf(&b, "fn link%d(value: Byte) -> Byte {\n  let result = link%d(value)\n  result\n}\n\n", i, i+1)
+	}
+	return []byte(b.String())
+}
+
+// generateAndCheckCallDepthChain generates an n-link call-depth chain
+// (generateCallDepthChainSource) and drives it through the REAL pipeline --
+// syntax.Parse -> check.Program -> corevalidate.Validate -- asserting a
+// clean result at EACH stage before returning the checked core.Program, so
+// a failure at an earlier stage is reported as itself rather than being
+// mistaken for a depth refusal (Task 2, D-10-24: never a hand-built
+// core.Program). Parameterized by n so this ONE helper drives Task 1's
+// both-directions boundary test (n = MaxCallDepth, n = MaxCallDepth+1),
+// Task 2's pipeline-conformance test, and Task 3's subprocess probe.
+func generateAndCheckCallDepthChain(t *testing.T, n int) core.Program {
+	t.Helper()
+	source := generateCallDepthChainSource(n)
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("parse (n=%d): unexpected diagnostics: %v", n, parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) > 0 {
+		t.Fatalf("check (n=%d): unexpected diagnostics: %v", n, checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("corevalidate (n=%d) rejected: %v", n, validated.Problems)
+	}
+	return validated.Program()
+}
+
+// TestCallDepthAtAndOverTheCap is Task 1's boundary test (SEM-08,
+// D-10-23): a chain of exactly MaxCallDepth functions must execute to
+// completion and return normally, while a chain one function deeper must
+// terminate in the named depth-exceeded refusal -- both driven through the
+// REAL pipeline via generateAndCheckCallDepthChain, never a hand-built
+// core.Program.
+func TestCallDepthAtAndOverTheCap(t *testing.T) {
+	t.Run("at_the_cap", func(t *testing.T) {
+		program := generateAndCheckCallDepthChain(t, MaxCallDepth)
+		result, err := Run(program, "link0", "7")
+		if err != nil {
+			t.Fatalf("Run at MaxCallDepth (%d): unexpected error: %v", MaxCallDepth, err)
+		}
+		if result.Outcome.Kind != "returned" {
+			t.Fatalf("expected outcome kind %q at the cap, got %q", "returned", result.Outcome.Kind)
+		}
+		if result.Outcome.Value != "7" {
+			t.Fatalf("expected the chain's own base-case value %q, got %q", "7", result.Outcome.Value)
+		}
+	})
+
+	t.Run("over_the_cap", func(t *testing.T) {
+		program := generateAndCheckCallDepthChain(t, MaxCallDepth+1)
+		result, err := Run(program, "link0", "7")
+		if err != nil {
+			t.Fatalf("Run over MaxCallDepth: unexpected error: %v", err)
+		}
+
+		validKind := false
+		for _, kind := range execution.TerminalOutcomeKinds() {
+			if result.Outcome.Kind == kind {
+				validKind = true
+				break
+			}
+		}
+		if !validKind {
+			t.Fatalf("expected the refusal's outcome kind %q to be a member of execution.TerminalOutcomeKinds()", result.Outcome.Kind)
+		}
+
+		foundReason := false
+		for _, event := range result.Events {
+			if event.Output == callDepthExceededDefectReason {
+				foundReason = true
+			}
+		}
+		if !foundReason {
+			t.Fatalf("expected an event carrying the named depth-limit reason %q, got events: %+v", callDepthExceededDefectReason, result.Events)
+		}
+
+		firstBytes, err := CanonicalBytes(result)
+		if err != nil {
+			t.Fatalf("CanonicalBytes (first): %v", err)
+		}
+		if !bytes.Contains(firstBytes, []byte(callDepthExceededDefectReason)) {
+			t.Fatalf("expected CanonicalBytes to contain the named depth-limit reason %q, got: %s", callDepthExceededDefectReason, firstBytes)
+		}
+
+		second, err := Run(program, "link0", "7")
+		if err != nil {
+			t.Fatalf("second Run over MaxCallDepth: unexpected error: %v", err)
+		}
+		secondBytes, err := CanonicalBytes(second)
+		if err != nil {
+			t.Fatalf("CanonicalBytes (second): %v", err)
+		}
+		if !bytes.Equal(firstBytes, secondBytes) {
+			t.Fatalf("expected two runs of the same over-depth program to produce byte-identical CanonicalBytes, got:\n%s\nvs\n%s", firstBytes, secondBytes)
 		}
 	})
 }
