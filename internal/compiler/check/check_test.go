@@ -4824,35 +4824,60 @@ func TestInterproceduralLivenessRelayDepth2(t *testing.T) {
 // relay differs ONLY in its own transitively-inherited Fails/ForeignReach
 // (negative_control_fails.lang's relay calls a genuinely foreign-fallible
 // leaf; negative_control_infallible.lang's relay calls a wholly ordinary
-// one) produce (a) the identical check verdict -- both refuse with
-// check.interprocedural_loan_liveness, same cause shape, both citing
-// relay's own return.mode=shared -- and (b) field-for-field identical
-// interproceduralSummary entries for relay, proving the liveness law's
-// silence on Fails/ForeignReach was demonstrated by actually varying them,
-// not merely by never having tried.
+// one) produce (a) the identical check verdict, and (b) field-for-field
+// identical interproceduralSummary entries for relay, proving the
+// liveness law's silence on Fails/ForeignReach was demonstrated by
+// actually varying them, not merely by never having tried.
+//
+// 10-02 DEVIATION (Rule 1 - bug, see 10-02-SUMMARY.md): both fixtures'
+// `relay` declares `-> borrow(buffer) Buffer`, but `leaf` in EITHER member
+// returns a genuinely OWNED value (an ordinary Lang function in the
+// infallible member, a freshly-allocated foreign-call result in the fails
+// member) -- neither leaf's body nor its declared contract derives from a
+// borrow of its own parameter at all. Before this plan's Task 2 fix,
+// originvalidate's walkReturnOrigin walked TRANSPARENTLY through relay's
+// `leaf(borrowed)` OpCall (D-09-51), so relay's dishonest borrow(buffer)
+// declaration was never caught, and this test could observe the check
+// package's SEPARATE check.interprocedural_loan_liveness law (which trusts
+// a callee's declared contract, corevalidate/check.go's own forward
+// derivation, D-09-03) refuse `caller` for a genuine loan-extension
+// concern. With the fix, originvalidate.PublishProblemsFor now correctly
+// recomputes relay's origin as core.origin_understated (leaf's OWN
+// declared/derived contract says it does NOT return a borrow of its
+// parameter), so check's OWN self-consistency gate (SEM-06's
+// verifyCallableRefusal, D-07-31/D-07-34) refuses `caller`'s call to
+// `relay` with core.callee_not_callable BEFORE the interprocedural
+// loan-liveness law ever runs (check.Program's own diagnostic-accumulation
+// order: verifyCallableRefusal always precedes checkInterproceduralLoanLiveness,
+// each gated on `len(result.Diagnostics) == 0`). This is a genuinely
+// correct consequence of closing D-09-51, not a regression: relay's
+// declared origin was NEVER honestly derivable in either fixture, and it
+// is now caught precisely where D-07-31 says it should be caught. The
+// test's ORIGINAL claim -- that Fails/ForeignReach do not affect the
+// verdict -- still holds and is still demonstrated below, just via
+// core.callee_not_callable rather than check.interprocedural_loan_liveness
+// (neither diagnostic's cause depends on Fails/ForeignReach either).
 func TestInterproceduralLivenessNegativeControl(t *testing.T) {
 	failsResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_fails.lang")))
 	infallibleResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_infallible.lang")))
 
-	if len(failsResult.Diagnostics) != 1 || failsResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
-		t.Fatalf("expected negative_control_fails.lang to refuse with check.interprocedural_loan_liveness, got %+v", failsResult.Diagnostics)
+	if len(failsResult.Diagnostics) != 1 || failsResult.Diagnostics[0].Code != "core.callee_not_callable" {
+		t.Fatalf("expected negative_control_fails.lang to refuse with core.callee_not_callable (relay's borrow(buffer) declaration is dishonest given leaf's genuinely owned return), got %+v", failsResult.Diagnostics)
 	}
-	if len(infallibleResult.Diagnostics) != 1 || infallibleResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
-		t.Fatalf("expected negative_control_infallible.lang to refuse with check.interprocedural_loan_liveness, got %+v", infallibleResult.Diagnostics)
+	if len(infallibleResult.Diagnostics) != 1 || infallibleResult.Diagnostics[0].Code != "core.callee_not_callable" {
+		t.Fatalf("expected negative_control_infallible.lang to refuse with core.callee_not_callable, got %+v", infallibleResult.Diagnostics)
 	}
 
 	failsCauses := failsResult.Diagnostics[0].Causes
 	infallibleCauses := infallibleResult.Diagnostics[0].Causes
-	if len(failsCauses) != 3 || len(infallibleCauses) != 3 {
-		t.Fatalf("expected exactly 3 causes on each member, got %d and %d", len(failsCauses), len(infallibleCauses))
+	if len(failsCauses) != 1 || len(infallibleCauses) != 1 {
+		t.Fatalf("expected exactly 1 cause on each member, got %d and %d", len(failsCauses), len(infallibleCauses))
 	}
-	for i, wantKind := range []string{"borrow_created_here", "loan_extended_by_call", "callee_return_contract"} {
-		if failsCauses[i].Kind != wantKind || infallibleCauses[i].Kind != wantKind {
-			t.Fatalf("cause %d kind mismatch: got %q (fails) / %q (infallible), want %q", i, failsCauses[i].Kind, infallibleCauses[i].Kind, wantKind)
-		}
+	if failsCauses[0].Kind != "callee" || infallibleCauses[0].Kind != "callee" {
+		t.Fatalf("cause kind mismatch: got %q (fails) / %q (infallible), want %q", failsCauses[0].Kind, infallibleCauses[0].Kind, "callee")
 	}
-	if !strings.HasSuffix(failsCauses[2].Detail, ":fn:relay:return.mode=shared") || !strings.HasSuffix(infallibleCauses[2].Detail, ":fn:relay:return.mode=shared") {
-		t.Fatalf("expected both members' cause 3 to name relay's own return.mode=shared, got %q (fails) / %q (infallible)", failsCauses[2].Detail, infallibleCauses[2].Detail)
+	if !strings.HasSuffix(failsCauses[0].Detail, ":fn:relay") || !strings.HasSuffix(infallibleCauses[0].Detail, ":fn:relay") {
+		t.Fatalf("expected both members' cause to name relay's own function ID, got %q (fails) / %q (infallible)", failsCauses[0].Detail, infallibleCauses[0].Detail)
 	}
 
 	failsTable, err := buildCallSignatureTable(failsResult.Program)

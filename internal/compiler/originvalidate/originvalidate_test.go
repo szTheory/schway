@@ -16,6 +16,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
+	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -918,9 +919,10 @@ func TestPublishProblemsForMatchesValidatePublishedAcrossCorpus(t *testing.T) {
 				continue
 			}
 			checkedAny = true
+			calleeContracts := originvalidate.BuildCalleeOriginFacts(checked.Program)
 			var expected []originvalidate.Problem
 			for _, function := range checked.Program.Functions {
-				if problems := originvalidate.PublishProblemsFor(function, nil); len(problems) > 0 {
+				if problems := originvalidate.PublishProblemsFor(function, calleeContracts); len(problems) > 0 {
 					expected = problems
 					break
 				}
@@ -1123,6 +1125,69 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 			t.Fatal("expected the UNFORCED peer to still independently refuse (Callable == false) -- diverging from the forced producer")
 		}
 	})
+}
+
+// TestOpCallOriginWalkGateIsLoadBearing is D-10-08's mutation-kill gate for
+// Task 2's core.OpCall case: engaging the nil-default seam
+// (disableOpCallOriginConsultForTest, exposed via
+// SetDisableOpCallOriginConsultForTest) must regress twin_a_accept.lang to
+// its pre-fix core.origin_omitted refusal -- proving the case decides
+// something, not merely that it is syntactically present (D-10-08). Runs
+// through the FULL session.CheckCommandFile pipeline (check ->
+// corevalidate -> originvalidate's fixed precedence, session.go:719),
+// never a direct package-level call: that precedence chain is exactly what
+// masked D-09-51 for two phases.
+func TestOpCallOriginWalkGateIsLoadBearing(t *testing.T) {
+	fixture := testsupport.ProjectPath("testdata", "phase08", "twin_a_accept.lang")
+
+	// Beat 1: the fixture now admits cleanly through the full CLI.
+	result, err := session.CheckCommandFile(fixture)
+	if err != nil {
+		t.Fatalf("CheckCommandFile: %v", err)
+	}
+	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
+		t.Fatalf("expected twin_a_accept.lang to admit cleanly, got status=%q diagnostics=%+v", result.Status, result.Diagnostics)
+	}
+
+	// Beat 2: engage the seam, restored via defer.
+	restore := originvalidate.SetDisableOpCallOriginConsultForTest(true)
+	defer restore()
+
+	// Beats 3-4: the fixture regresses to its pre-fix refusal, and the
+	// EXACT diagnostic code is asserted, never merely that some refusal
+	// occurred.
+	regressed, err := session.CheckCommandFile(fixture)
+	if err != nil {
+		t.Fatalf("CheckCommandFile (seam engaged): %v", err)
+	}
+	if regressed.Status != protocol.StatusInvalid || len(regressed.Diagnostics) != 1 || regressed.Diagnostics[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected the seam to regress twin_a_accept.lang to exactly core.origin_omitted, got status=%q diagnostics=%+v", regressed.Status, regressed.Diagnostics)
+	}
+}
+
+// TestOpCallOriginWalkPropagatesGenuineBorrowingCallee is Task 2's
+// positive-direction falsifier: the fix NARROWS the walk, it does not
+// disable it. A callee whose declared return contract genuinely IS a
+// borrow of its own parameter still propagates that borrow-derived origin
+// across the OpCall hop, all the way back to a caller that directly
+// forwards its own parameter into the call -- reusing
+// straightLineCallProgramForTest's (originvalidate_closure_chain_test.go)
+// caller-calls-callee shape with calleeHasDeclaredOrigin=true.
+func TestOpCallOriginWalkPropagatesGenuineBorrowingCallee(t *testing.T) {
+	program := straightLineCallProgramForTest(true)
+	caller := findByName(t, program, "caller")
+	calleeContracts := originvalidate.BuildCalleeOriginFacts(program)
+
+	paths, access, ok := originvalidate.RecomputeOrigin(caller, calleeContracts)
+	if !ok {
+		t.Fatal("expected caller's return to be recognised as borrow-derived once its callee genuinely declares a borrow-of-parameter return")
+	}
+	if access != "shared" {
+		t.Fatalf("expected access shared (matching the callee's declared access), got %q", access)
+	}
+	if len(paths) != 1 || paths[0] != caller.Parameter.Name {
+		t.Fatalf("expected origin path [%s] (caller's own parameter), got %+v", caller.Parameter.Name, paths)
+	}
 }
 
 // bodyBlindnessViolations scans every function declaration in file named by

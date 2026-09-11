@@ -211,6 +211,19 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 	return results
 }
 
+// disableOpCallOriginConsultForTest is D-10-08's fault-injection seam for
+// TestOpCallOriginWalkGateIsLoadBearing: production always consults
+// calleeContracts at an OpCall hop (the case below); the test temporarily
+// forces that case to no-op, reproducing the pre-fix behavior of walking
+// straight through a call boundary into the argument's own provenance, so a
+// regression test can prove the case is genuinely load-bearing by observing
+// twin_a_accept.lang regress to its old core.origin_omitted refusal --
+// never merely that the case is syntactically present (D-10-08). Mirrors
+// export_test.go's existing SetTypeFactExactIDMatchOverrideForTest seam
+// shape (D-09-25/D-09-26's disablePeerLoanCarryConsultForTest precedent).
+// false (the production default) means "consult calleeContracts for real".
+var disableOpCallOriginConsultForTest bool
+
 // walkReturnOrigin performs exactly one backward walk, from one return
 // operation, using the shared sourceOf map RecomputeOriginPerReturn built
 // once for the whole function.
@@ -252,6 +265,36 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 					derivedAccess = "shared"
 				case "retain":
 					derivedAccess = "exclusive"
+				}
+			}
+		case core.OpCall:
+			// D-10-01/D-10-07: consult the CALLEE's DECLARED return
+			// contract, mirroring D-09-03's shipped precedent
+			// (corevalidate.buildLoanChainIndex's own loanCarry consult).
+			// Real but NOT EXACT mirror of the OpForeignCall case above:
+			// OpForeignCall's contract lives on the CURRENT function
+			// (function.ForeignContract, no lookup at all), while OpCall's
+			// contract lives on a DIFFERENT function and requires this
+			// cross-function calleeContracts lookup instead. If the
+			// callee's declared contract does NOT say it returns a borrow
+			// of its own parameter -- including an unknown CalleeID, which
+			// fails closed to "does not carry" for a corrupted artifact
+			// (T-09-02's precedent) -- the call's result is a fresh, owned
+			// identity from this walk's perspective, and the chain
+			// deliberately BREAKS at this call boundary: return
+			// non-derived immediately instead of falling through to walk
+			// past it into the argument's own provenance, which is exactly
+			// the pre-fix D-09-51 defect this case closes.
+			// disableOpCallOriginConsultForTest (D-10-08) forces this
+			// entire case to no-op, restoring that pre-fix transparent
+			// walk-through so a test can observe the case is load-bearing.
+			if !disableOpCallOriginConsultForTest {
+				fact, known := calleeContracts[operation.CalleeID]
+				if !known || !fact.Derived {
+					return ReturnOrigin{OperationID: returnOp.ID}
+				}
+				if derivedAccess == "" {
+					derivedAccess = fact.Access
 				}
 			}
 		}

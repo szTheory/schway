@@ -54,3 +54,12 @@ func SetClosureDigestComputationOrderObservedForTest(observer func(functionID st
 	closureDigestComputationOrderObserved = observer
 	return func() { closureDigestComputationOrderObserved = previous }
 }
+
+// SetDisableOpCallOriginConsultForTest installs/lifts 10-02 Task 2's
+// D-10-08 OpCall-origin-consult gate seam and returns a restore func.
+// Callers MUST defer the restore immediately.
+func SetDisableOpCallOriginConsultForTest(disable bool) (restore func()) {
+	previous := disableOpCallOriginConsultForTest
+	disableOpCallOriginConsultForTest = disable
+	return func() { disableOpCallOriginConsultForTest = previous }
+}

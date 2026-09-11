@@ -366,6 +366,37 @@ func TestUnrelatedFunctionChangeDoesNotInvalidateCallerClosureDigest(t *testing.
 	}
 }
 
+// foreignReachOnlyCallProgramForTest is a 10-02 (D-10-01) variant of
+// straightLineCallProgramForTest that isolates the SAME
+// caller-calls-callee shape but toggles ONLY callee's ForeignContract
+// (never PublicOrigin): once walkReturnOrigin gained a real core.OpCall
+// case, toggling callee's declared origin ALSO flips caller's own
+// Callable bit (caller's body directly forwards its own parameter into
+// the call, so a callee that genuinely declares a borrow-of-parameter
+// return makes caller's own undeclared return newly derived, hence
+// core.origin_omitted) -- a second, uncontrolled variable
+// straightLineCallProgramForTest's own doc comment did not anticipate
+// when it was authored (it predates this plan's cross-call propagation).
+// Toggling ForeignContract instead changes callee's published Foreign/Fails
+// (and therefore its own ClosureDigest) while leaving PublicOrigin nil in
+// both variants, so calleeContracts never carries callee at all and
+// caller's own Callable/Return.Mode stay constant across both variants --
+// exactly the isolation TestClosureDigestEmptyCalleesMutationKilled needs.
+func foreignReachOnlyCallProgramForTest(calleeHasForeignReach bool) core.Program {
+	const callerID, calleeID = "s1:test:fn:caller", "s1:test:fn:callee"
+	caller := straightLineFunction(callerID, calleeID)
+	callee := straightLineFunction(calleeID, "")
+	if calleeHasForeignReach {
+		callee.ForeignContract = &core.ForeignContract{
+			Symbol: "probe", Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden",
+		}
+	}
+	return core.Program{
+		Schema: core.Schema1, Module: "test.closure_chain_empty_callees", ModuleID: "s1:test:module:closure_chain_empty_callees",
+		Functions: []core.Function{caller, callee},
+	}
+}
+
 // TestClosureDigestEmptyCalleesMutationKilled is Task 2 Test 4 (QLT-08,
 // D-07-41): with closureDigestEmptyCalleesOverride engaged, the
 // callee-changes-invalidates-caller property (the previous test) goes
@@ -373,8 +404,8 @@ func TestUnrelatedFunctionChangeDoesNotInvalidateCallerClosureDigest(t *testing.
 // because the caller's own preimage never referenced any callee pair to
 // begin with. Restoring the seam restores the property.
 func TestClosureDigestEmptyCalleesMutationKilled(t *testing.T) {
-	base := straightLineCallProgramForTest(false)
-	mutatedCallee := straightLineCallProgramForTest(true)
+	base := foreignReachOnlyCallProgramForTest(false)
+	mutatedCallee := foreignReachOnlyCallProgramForTest(true)
 	callerFunction := findByName(t, base, "caller")
 
 	restore := originvalidate.SetClosureDigestEmptyCalleesOverrideForTest(true)

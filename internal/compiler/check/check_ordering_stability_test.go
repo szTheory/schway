@@ -191,8 +191,31 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	"phase07/cycle_unreachable.lang":           {"core.call_graph_cycle", "diagnostic:03edcf9d691da106106c2fc0"},
 	"phase07/foreign_symbol_shadowing.lang":    {"core.call_graph_cycle", "diagnostic:3fa66ee8773176867ffb9b4e"},
 	"phase07/relay_escort_witness.lang":        {"check.interprocedural_loan_liveness", "diagnostic:58c1b5b2072cda60f77d721e"},
-	"phase08/negative_control_fails.lang":      {"check.interprocedural_loan_liveness", "diagnostic:893138210397ed2cd76b7655"},
-	"phase08/negative_control_infallible.lang": {"check.interprocedural_loan_liveness", "diagnostic:c0950895fc782a3440902dfd"},
+	// phase08/negative_control_fails.lang and phase08/negative_control_infallible.lang,
+	// plan 10-02 (D-09-51 closure): IDENTITY change, code changed. Both
+	// fixtures' `relay` declares `-> borrow(buffer) Buffer`, but in EITHER
+	// member `leaf` returns a genuinely OWNED value (an ordinary Lang
+	// function in the infallible member, a freshly-allocated foreign-call
+	// result in the fails member) -- neither leaf's body nor its declared
+	// contract derives from a borrow of its own parameter. Before this
+	// plan's Task 2, originvalidate.walkReturnOrigin walked TRANSPARENTLY
+	// through relay's `leaf(borrowed)` OpCall (D-09-51), so relay's
+	// dishonest borrow(buffer) declaration was never independently caught,
+	// and check.interprocedural_loan_liveness (a SEPARATE law, trusting
+	// relay's declared contract) was the first diagnostic reported. With
+	// the fix, originvalidate.PublishProblemsFor correctly re-derives
+	// relay's origin as core.origin_understated, so check's own
+	// self-consistency gate (SEM-06's verifyCallableRefusal, D-07-31/
+	// D-07-34) now refuses `caller`'s call to `relay` with
+	// core.callee_not_callable BEFORE the interprocedural loan-liveness
+	// law ever runs (check.Program's diagnostic-accumulation order:
+	// verifyCallableRefusal always precedes checkInterproceduralLoanLiveness).
+	// This is a genuinely correct consequence of closing D-09-51, not a
+	// regression: relay's declared origin was never honestly derivable in
+	// either fixture. See TestInterproceduralLivenessNegativeControl's own
+	// updated doc comment and 10-02-SUMMARY.md for the full account.
+	"phase08/negative_control_fails.lang":      {"core.callee_not_callable", "diagnostic:79999a6354e9192f2578c976"},
+	"phase08/negative_control_infallible.lang": {"core.callee_not_callable", "diagnostic:d5d34a1946a3587c54c6177f"},
 	"phase08/relay_depth2_refuse.lang":         {"check.interprocedural_loan_liveness", "diagnostic:300248748c05f20eb1fe3948"},
 	"phase08/twin_a_refuse.lang":               {"check.interprocedural_loan_liveness", "diagnostic:e01ad6316e27899deeb610f7"},
 	// phase08/twin_b_accept.lang and phase08/twin_b_refuse.lang, plan 09-09:
