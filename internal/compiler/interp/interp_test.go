@@ -1338,3 +1338,252 @@ func TestNativeStackHeadroomIndependentOfCallDepth(t *testing.T) {
 		}
 	})
 }
+
+// --- Plan 10-09 Task 3: closing the structural coverage floor's real gaps ---
+
+// oracleBorrowSequenceType is the shared TypeFact oracleBorrowSequenceProgram
+// uses: interp performs no ability check of its own (that is
+// corevalidate's/check's job), so a single bare TypeFact is enough to
+// exercise core.OpBorrowShared/core.OpBorrowExclusive/core.OpCopy/
+// core.OpMove uniformly.
+var oracleBorrowSequenceType = core.TypeFact{ID: "oracle:coverage:type:value"}
+
+// oracleBorrowSequenceProgram hand-builds a synthetic single-function
+// core.Program (never fed through the parser, following
+// moveAsCopyProbeProgram's own established precedent) exercising, in order,
+// core.OpBorrowShared, core.OpBorrowExclusive, core.OpCopy, and core.OpMove
+// before a terminal core.OpReturn. shape selects which of interp's three
+// body shapes wraps this SAME operation sequence: "flat" (runLinear, no
+// Blocks at all), "block" (runLinearBlocks' own two-block-free single-block
+// shape, entered via newBlockFrame), or "arm" (runBranchArm's shape, the
+// identical block marked singleBlockOnly via newArmFrame). This closes the
+// Operation-kind coverage matrix's real gaps (D-10-58): before this test,
+// core.OpBorrowShared and core.OpBorrowExclusive were never exercised by
+// ANY interp test at ANY path, and core.OpCopy/core.OpMove were each
+// exercised at only one of the three paths (defect_terminal.lang's "Go" arm,
+// runBranchArm only; TestMoveAsCopyMutationKilled's mutated run, runLinear
+// only) rather than at every path a structural floor requires.
+func oracleBorrowSequenceProgram(shape string) (program core.Program, entry core.Function, blockID string) {
+	id := "oracle:coverage:" + shape
+	param := id + ":place:param"
+	sharedTarget := id + ":place:shared"
+	exclusiveTarget := id + ":place:exclusive"
+	copyTarget := id + ":place:copy"
+	moveTarget := id + ":place:move"
+
+	operations := []core.LinearOperation{
+		{ID: id + ":op:0", Kind: core.OpBorrowShared, SourceID: param, TargetID: sharedTarget, TypeID: oracleBorrowSequenceType.ID},
+		{ID: id + ":op:1", Kind: core.OpBorrowExclusive, SourceID: param, TargetID: exclusiveTarget, TypeID: oracleBorrowSequenceType.ID},
+		{ID: id + ":op:2", Kind: core.OpCopy, SourceID: sharedTarget, TargetID: copyTarget, TypeID: oracleBorrowSequenceType.ID},
+		{ID: id + ":op:3", Kind: core.OpMove, SourceID: exclusiveTarget, TargetID: moveTarget, TypeID: oracleBorrowSequenceType.ID},
+		{ID: id + ":op:4", Kind: core.OpReturn, SourceID: moveTarget, TypeID: oracleBorrowSequenceType.ID},
+	}
+	places := []core.Place{
+		{ID: param, Name: "value", TypeID: oracleBorrowSequenceType.ID},
+		{ID: sharedTarget, Name: "shared", TypeID: oracleBorrowSequenceType.ID},
+		{ID: exclusiveTarget, Name: "exclusive", TypeID: oracleBorrowSequenceType.ID},
+		{ID: copyTarget, Name: "copy", TypeID: oracleBorrowSequenceType.ID},
+		{ID: moveTarget, Name: "move", TypeID: oracleBorrowSequenceType.ID},
+	}
+	linear := &core.LinearBody{ID: id + ":linear", Types: []core.TypeFact{oracleBorrowSequenceType}, Places: places}
+
+	switch shape {
+	case "flat":
+		linear.Operations = operations
+	case "block", "arm":
+		blockID = id + ":block:entry"
+		linear.Operations = operations
+		linear.Blocks = []core.Block{{ID: blockID, OperationIDs: []string{
+			id + ":op:0", id + ":op:1", id + ":op:2", id + ":op:3", id + ":op:4",
+		}}}
+	default:
+		panic("oracleBorrowSequenceProgram: unknown shape " + shape)
+	}
+
+	entry = core.Function{ID: id + ":fn", Name: shape, Parameter: core.Parameter{ID: param, Name: "value", Type: "Byte"}, ReturnType: "Byte", Linear: linear}
+	return core.Program{Schema: core.Schema1, Module: "oracle.coverage." + shape, Functions: []core.Function{entry}}, entry, blockID
+}
+
+// TestOperationKindCoverageAcrossAllThreePaths is Task 3's structural
+// coverage-floor closer (D-10-58): drives the IDENTICAL
+// OpBorrowShared/OpBorrowExclusive/OpCopy/OpMove/OpReturn sequence through
+// all three of interp's own body shapes -- flat (runLinear), block-based
+// (runLinearBlocks), and match-arm (runBranchArm) -- proving every one of
+// these five operation kinds is genuinely reachable and correctly handled
+// at every path, not merely at whichever single path happened to exercise
+// it first.
+func TestOperationKindCoverageAcrossAllThreePaths(t *testing.T) {
+	for _, shape := range []string{"flat", "block", "arm"} {
+		shape := shape
+		t.Run(shape, func(t *testing.T) {
+			program, entry, blockID := oracleBorrowSequenceProgram(shape)
+			values := map[string]string{entry.Parameter.ID: "V"}
+			var base frame
+			switch shape {
+			case "flat":
+				base = newFlatFrame(entry, values)
+			case "block":
+				base = newBlockFrame(entry, values, blockID)
+			case "arm":
+				base = newArmFrame(entry, values, blockID)
+			}
+			result, err := runFrameStack(program, base)
+			if err != nil {
+				t.Fatalf("%s: unexpected error: %v", shape, err)
+			}
+			if result.Outcome.Kind != "returned" || result.Outcome.Value != "V" {
+				t.Fatalf("%s: expected outcome {returned, V}, got %+v", shape, result.Outcome)
+			}
+			wantKinds := []string{
+				"value.borrowed", "value.borrowed_exclusive", "value.copied", "value.transferred", "function.returned",
+			}
+			if len(result.Events) != len(wantKinds) {
+				t.Fatalf("%s: expected exactly %d events (one per non-terminal operation), got %d: %v", shape, len(wantKinds), len(result.Events), eventKindSequence(result))
+			}
+			for i, kind := range wantKinds {
+				if result.Events[i].Kind != kind {
+					t.Fatalf("%s: expected event[%d].Kind = %q, got %q (full sequence: %v)", shape, i, kind, result.Events[i].Kind, eventKindSequence(result))
+				}
+			}
+		})
+	}
+}
+
+// --- Plan 10-09 Task 3: closing the refusal-path table's untested rows ---
+
+// TestRunRefusesCorevalidateInvalidProgram is the refusal-path table's
+// "corevalidate precondition failure" row: Run's own first act
+// (corevalidate.Validate) refuses an empty core.Program (no declared
+// Schema) before ever attempting to find or execute a function, reported
+// as a plain Go error naming corevalidate's own problem code -- this guard
+// was previously untested at the interp layer, relying entirely on
+// corevalidate's own test suite to prove the underlying check works.
+func TestRunRefusesCorevalidateInvalidProgram(t *testing.T) {
+	_, err := Run(core.Program{}, "main", "x")
+	if err == nil {
+		t.Fatal("expected Run to refuse an empty, corevalidate-invalid core.Program, got success")
+	}
+	if !strings.Contains(err.Error(), "core validation failed") {
+		t.Fatalf("expected an error naming corevalidate's own refusal, got: %v", err)
+	}
+}
+
+// TestRunRefusesAbsentFunction is the refusal-path table's "absent
+// function" row: Run refuses a functionName absent from the checked
+// program's own declared Functions, a lookup-failure guard distinct from
+// every operation-level refusal runFrameStack itself can produce.
+func TestRunRefusesAbsentFunction(t *testing.T) {
+	program := checkedCallBasicProgram(t)
+	_, err := Run(program, "does_not_exist", "x")
+	if err == nil {
+		t.Fatal("expected Run to refuse an absent function name, got success")
+	}
+	if !strings.Contains(err.Error(), "is absent from checked core") {
+		t.Fatalf("expected an error naming the absent-function refusal, got: %v", err)
+	}
+}
+
+// TestRunRefusesInvalidBodyUnion documents the refusal-path table's
+// "invalid body union" row and its own finding: Run's own
+// `!function.HasClosedBody()` guard is PROVABLY UNREACHABLE via Run() for
+// any input, because Run's own first act (corevalidate.Validate,
+// unconditional, called before the guard is ever reached) already refuses
+// a function with neither Linear nor Match set as its own independent
+// structural code core.invalid_body -- confirmed here directly rather than
+// assumed. Run's own guard is defense-in-depth: fail-closed redundancy
+// against a hypothetically-differently-checked corevalidate.Result, never
+// a path this test (or any other) can drive through Run itself. A
+// function with neither Linear nor Match still resolves by name and
+// reports HasClosedBody() == false, proving the shape is real; only the
+// ORDER Run calls its two checks in (corevalidate first, always) makes the
+// second one unreachable.
+func TestRunRefusesInvalidBodyUnion(t *testing.T) {
+	program := checkedCallBasicProgram(t)
+	for i, function := range program.Functions {
+		if function.Name == "main" {
+			program.Functions[i].Linear = nil
+			program.Functions[i].Match = nil
+		}
+	}
+	function, ok := findFunction(program, "main")
+	if !ok {
+		t.Fatal("expected main to still resolve by name after clearing its body union")
+	}
+	if function.HasClosedBody() {
+		t.Fatal("expected a function with neither Linear nor Match set to report HasClosedBody() == false")
+	}
+	_, err := Run(program, "main", "7")
+	if err == nil {
+		t.Fatal("expected Run to refuse a program carrying an invalid body union, got success")
+	}
+	if !strings.Contains(err.Error(), "core validation failed") {
+		t.Fatalf("expected corevalidate.Validate (Run's own first act) to catch this shape FIRST, reported as \"core validation failed\" -- proving Run's own HasClosedBody guard is unreachable in practice; got: %v", err)
+	}
+}
+
+// TestRunFrameStackRefusesUnknownOperationKind is the refusal-path table's
+// "unknown operation kind" row: runFrameStack's own switch default case
+// refuses an operation whose Kind is not a member of
+// core.AllOperationKinds() -- a synthetic, hand-built core.LinearOperation
+// with a bogus Kind string, since no real .lang source or check.go emission
+// path can produce one (check.go only ever emits from the closed
+// core.OperationKind set).
+func TestRunFrameStackRefusesUnknownOperationKind(t *testing.T) {
+	id := "oracle:refusal:unknown_kind"
+	param := id + ":place:param"
+	fn := core.Function{
+		ID: id + ":fn", Name: "bogus", Parameter: core.Parameter{ID: param, Name: "value", Type: "Byte"}, ReturnType: "Byte",
+		Linear: &core.LinearBody{
+			ID:     id + ":linear",
+			Types:  []core.TypeFact{oracleBorrowSequenceType},
+			Places: []core.Place{{ID: param, Name: "value", TypeID: oracleBorrowSequenceType.ID}},
+			Operations: []core.LinearOperation{
+				{ID: id + ":op:0", Kind: core.OperationKind("bogus_kind"), SourceID: param, TypeID: oracleBorrowSequenceType.ID},
+			},
+		},
+	}
+	base := newFlatFrame(fn, map[string]string{param: "V"})
+	_, err := runFrameStack(core.Program{Schema: core.Schema1, Module: "oracle.refusal.unknown_kind", Functions: []core.Function{fn}}, base)
+	if err == nil {
+		t.Fatal("expected runFrameStack to refuse an operation with an unknown Kind, got success")
+	}
+	if !strings.Contains(err.Error(), "unknown kind") {
+		t.Fatalf("expected an error naming the unknown-kind refusal, got: %v", err)
+	}
+}
+
+// TestCallFromBothMatchArmsAcrossFrames closes the Operation-kind coverage
+// matrix's remaining core.OpCall gap (D-10-58): testdata/phase07/
+// call_from_both_match_arms.lang (D-07-28) was checked/corevalidated by
+// earlier phases but never previously driven through interp.Run at all --
+// core.OpCall was exercised at runLinear (call_basic.lang) and at a
+// synthetic runLinear-shaped probe (moveAsCopyProbeProgram), but never at
+// runBranchArm, where a match arm's own block itself contains the
+// core.OpCall to another match-arm-bodied function. Both real arms are
+// driven, proving the callee dispatch this arm's block reaches (itself
+// match-bodied, D-10-26/partitionFrameForCall) executes identically to
+// Run's own top-level match dispatch.
+func TestCallFromBothMatchArmsAcrossFrames(t *testing.T) {
+	program := checkedProgramFromFixture(t, "phase07", "call_from_both_match_arms.lang")
+	for _, input := range []string{"A", "B"} {
+		input := input
+		t.Run(input, func(t *testing.T) {
+			result, err := Run(program, "main", input)
+			if err != nil {
+				t.Fatalf("Run(main, %q): unexpected error: %v", input, err)
+			}
+			if result.Outcome.Kind != "returned" || result.Outcome.Value != input {
+				t.Fatalf("expected outcome {returned, %s}, got %+v", input, result.Outcome)
+			}
+			foundHelperReturn := false
+			for _, event := range result.Events {
+				if event.Kind == "function.returned" && strings.HasSuffix(event.FunctionID, ":fn:helper") {
+					foundHelperReturn = true
+				}
+			}
+			if !foundHelperReturn {
+				t.Fatalf("expected an event proving helper's own callee frame genuinely ran (a function.returned event attributed to helper's own FunctionID), got: %v", eventKindSequence(result))
+			}
+		})
+	}
+}
