@@ -361,11 +361,12 @@ func TestSummaryPeerRunsAtBothReplaySites(t *testing.T) {
 // either derivation under test.
 func classifyPublicationProblem(t *testing.T, program core.Program, functionID string) string {
 	t.Helper()
+	calleeContracts := originvalidate.BuildCalleeOriginFacts(program)
 	for _, function := range program.Functions {
 		if function.ID != functionID {
 			continue
 		}
-		if problems := originvalidate.PublishProblemsFor(function); len(problems) > 0 {
+		if problems := originvalidate.PublishProblemsFor(function, calleeContracts); len(problems) > 0 {
 			return problems[0].Code
 		}
 		return ""
@@ -456,7 +457,7 @@ func TestPeerRederivesFormerlyNarrowedClasses(t *testing.T) {
 		// does, into a copy of the paths slice this function alone owns.
 		function.PublicOrigin.Paths = []string{}
 
-		if problems := originvalidate.PublishProblemsFor(*function); len(problems) != 1 || problems[0].Code != "core.origin_understated" {
+		if problems := originvalidate.PublishProblemsFor(*function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 1 || problems[0].Code != "core.origin_understated" {
 			t.Fatalf("expected the mutated declaration to be refused as core.origin_understated, got %+v", problems)
 		}
 		result := corevalidate.Validate(program)
@@ -485,7 +486,7 @@ func TestPeerRederivesFormerlyNarrowedClasses(t *testing.T) {
 		}
 		function.PublicOrigin.Access = "exclusive"
 
-		if problems := originvalidate.PublishProblemsFor(*function); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		if problems := originvalidate.PublishProblemsFor(*function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
 			t.Fatalf("expected the mutated declaration to be refused as core.origin_access_mismatch, got %+v", problems)
 		}
 		result := corevalidate.Validate(program)
@@ -509,7 +510,7 @@ func TestPeerRederivesFormerlyNarrowedClasses(t *testing.T) {
 		}
 		program := checked.Program
 		function := program.Functions[0]
-		problems := originvalidate.PublishProblemsFor(function)
+		problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program))
 		if len(problems) != 1 || problems[0].Code != "core.foreign_origin_omitted" {
 			t.Fatalf("expected core.foreign_origin_omitted, got %+v", problems)
 		}

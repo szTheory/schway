@@ -424,6 +424,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 		}
 		dispatchWork += fixtureValidated.Checks
 		dispatchProgram := fixtureValidated.Program()
+		dispatchCalleeContracts := originvalidate.BuildCalleeOriginFacts(dispatchProgram)
 		for _, function := range dispatchProgram.Functions {
 			if function.Linear != nil {
 				for _, operation := range function.Linear.Operations {
@@ -436,7 +437,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 					}
 				}
 			}
-			_ = originvalidate.RecomputeOriginPerReturn(function)
+			_ = originvalidate.RecomputeOriginPerReturn(function, dispatchCalleeContracts)
 			dispatchWork++
 
 			switch {

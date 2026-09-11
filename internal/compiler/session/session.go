@@ -2626,6 +2626,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		}
 		dispatchWork += fixtureValidated.Checks
 		dispatchProgram := fixtureValidated.Program()
+		dispatchCalleeContracts := originvalidate.BuildCalleeOriginFacts(dispatchProgram)
 		for _, function := range dispatchProgram.Functions {
 			if function.Linear != nil {
 				for _, operation := range function.Linear.Operations {
@@ -2638,7 +2639,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 					}
 				}
 			}
-			_ = originvalidate.RecomputeOriginPerReturn(function)
+			_ = originvalidate.RecomputeOriginPerReturn(function, dispatchCalleeContracts)
 			dispatchWork++
 			if function.Match != nil {
 				for _, arm := range function.Match.Arms {

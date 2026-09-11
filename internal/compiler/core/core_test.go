@@ -336,6 +336,7 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 			return fmt.Errorf("%s: corevalidate rejected: %v", path, validated.Problems)
 		}
 		program = validated.Program()
+		calleeContracts := originvalidate.BuildCalleeOriginFacts(program)
 
 		for _, function := range program.Functions {
 			if function.Linear != nil {
@@ -350,7 +351,7 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 				}
 			}
 			// originvalidate site: must not crash while walking.
-			_ = originvalidate.RecomputeOriginPerReturn(function)
+			_ = originvalidate.RecomputeOriginPerReturn(function, calleeContracts)
 
 			// interp site.
 			switch {

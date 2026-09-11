@@ -2576,12 +2576,13 @@ func TestBuildCallSignatureTableCallableMatchesPublishProblemsFor(t *testing.T) 
 	if err != nil {
 		t.Fatalf("buildCallSignatureTable: %v", err)
 	}
+	originContracts := originvalidate.BuildCalleeOriginFacts(program)
 	for _, function := range functions {
 		entry, ok := table.lookup(function.ID)
 		if !ok {
 			t.Fatalf("expected a table entry for %s", function.ID)
 		}
-		want := len(originvalidate.PublishProblemsFor(function)) == 0
+		want := len(originvalidate.PublishProblemsFor(function, originContracts)) == 0
 		if entry.Callable != want {
 			t.Fatalf("%s: expected Callable == %v (PublishProblemsFor), got %v", function.Name, want, entry.Callable)
 		}

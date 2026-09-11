@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"go/ast"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"os"
 	"path/filepath"
@@ -133,7 +135,7 @@ func TestOriginAccessMismatchRejected(t *testing.T) {
 // isolation.
 func TestMixedAccessChainDerivesShared(t *testing.T) {
 	program := honestProgram(t, "public_view_mixed_access.lang")
-	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0], nil)
 	if !ok {
 		t.Fatalf("expected RecomputeOrigin to succeed")
 	}
@@ -187,7 +189,7 @@ fn view(buffer: Buffer) -> borrow mut(buffer) Buffer {
 	if len(checkedReverse.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics on reverse-ordering fixture: %+v", checkedReverse.Diagnostics)
 	}
-	if paths, access, ok := originvalidate.RecomputeOrigin(checkedReverse.Program.Functions[0]); !ok || access != "exclusive" || len(paths) != 1 || paths[0] != "buffer" {
+	if paths, access, ok := originvalidate.RecomputeOrigin(checkedReverse.Program.Functions[0], nil); !ok || access != "exclusive" || len(paths) != 1 || paths[0] != "buffer" {
 		t.Fatalf("expected reverse-ordering chain to derive exclusive, got paths=%+v access=%q ok=%v", paths, access, ok)
 	}
 	reverseProblems := originvalidate.ValidatePublished(checkedReverse.Program)
@@ -275,7 +277,7 @@ func honestOmittedProgram(t testing.TB, fixture string) core.Program {
 // per arm, and only the second (the borrow-returning arm) is borrow-derived.
 func TestPerReturnOriginsCoverEveryArm(t *testing.T) {
 	straightLine := honestProgram(t, "public_view.lang")
-	straightOrigins := originvalidate.RecomputeOriginPerReturn(straightLine.Functions[0])
+	straightOrigins := originvalidate.RecomputeOriginPerReturn(straightLine.Functions[0], nil)
 	if len(straightOrigins) != 1 {
 		t.Fatalf("expected exactly 1 per-return origin for a straight-line function, got %+v", straightOrigins)
 	}
@@ -284,7 +286,7 @@ func TestPerReturnOriginsCoverEveryArm(t *testing.T) {
 	}
 
 	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.lang")
-	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 	if len(origins) != 2 {
 		t.Fatalf("expected exactly 2 per-return origins (one per arm), got %+v", origins)
 	}
@@ -309,7 +311,7 @@ func TestPerReturnOriginsCoverEveryArm(t *testing.T) {
 // silently accepted because RecomputeOrigin only looked at the first arm.
 func TestMultiArmOmittedOriginRejected(t *testing.T) {
 	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.lang")
-	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0], nil)
 	if !ok {
 		t.Fatalf("expected RecomputeOrigin to succeed on the multi-arm leak")
 	}
@@ -343,7 +345,7 @@ func TestOwnedArmsStillPublish(t *testing.T) {
 // (not duplicated) — neither arm's own answer wins.
 func TestMultiArmAccessConflictDerivesNeitherArm(t *testing.T) {
 	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
-	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 	if len(origins) != 2 {
 		t.Fatalf("expected exactly 2 per-return origins, got %+v", origins)
 	}
@@ -362,7 +364,7 @@ func TestMultiArmAccessConflictDerivesNeitherArm(t *testing.T) {
 	if !seenShared || !seenExclusive {
 		t.Fatalf("expected one shared and one exclusive arm, got %+v", origins)
 	}
-	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0], nil)
 	if !ok || access != originvalidate.AccessConflicting {
 		t.Fatalf("expected AccessConflicting, got access=%q ok=%v", access, ok)
 	}
@@ -375,7 +377,7 @@ func TestMultiArmAccessConflictDerivesNeitherArm(t *testing.T) {
 // directly, independent of the access-mode assertions above.
 func TestUnionPathsAreNotDuplicated(t *testing.T) {
 	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
-	paths, _, ok := originvalidate.RecomputeOrigin(program.Functions[0])
+	paths, _, ok := originvalidate.RecomputeOrigin(program.Functions[0], nil)
 	if !ok {
 		t.Fatalf("expected RecomputeOrigin to succeed")
 	}
@@ -484,7 +486,7 @@ func TestPublishedOriginConsistentWithEveryReturn(t *testing.T) {
 		}
 		for _, function := range checked.Program.Functions {
 			checkedAny = true
-			perReturn := originvalidate.RecomputeOriginPerReturn(function)
+			perReturn := originvalidate.RecomputeOriginPerReturn(function, nil)
 			var wantPaths []string
 			pathSeen := make(map[string]bool)
 			wantAccess := ""
@@ -507,7 +509,7 @@ func TestPublishedOriginConsistentWithEveryReturn(t *testing.T) {
 					}
 				}
 			}
-			gotPaths, gotAccess, gotOK := originvalidate.RecomputeOrigin(function)
+			gotPaths, gotAccess, gotOK := originvalidate.RecomputeOrigin(function, nil)
 			if derivedCount == 0 {
 				if gotOK {
 					t.Fatalf("%s/%s: expected not-ok for an owned function, got paths=%+v access=%q", entry.Name(), function.ID, gotPaths, gotAccess)
@@ -717,7 +719,7 @@ func TestForeignBorrowDerivedReturnRecognised(t *testing.T) {
 	}
 	program.Functions[0].ForeignContract.Alias = "borrow"
 
-	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 	found := false
 	for _, origin := range origins {
 		if origin.Derived {
@@ -762,13 +764,13 @@ func TestForeignOriginOmittedRejected(t *testing.T) {
 // single-terminator condition would have missed entirely.
 func TestOriginWalksEveryTerminator(t *testing.T) {
 	defectProgram := phase4Program(t, "defect_terminal.lang")
-	defectOrigins := originvalidate.RecomputeOriginPerReturn(defectProgram.Functions[0])
+	defectOrigins := originvalidate.RecomputeOriginPerReturn(defectProgram.Functions[0], nil)
 	if len(defectOrigins) != 2 {
 		t.Fatalf("expected one origin entry per terminator (return + defect), got %d: %+v", len(defectOrigins), defectOrigins)
 	}
 
 	foreignProgram := phase4Program(t, "foreign_acquire_one.lang")
-	foreignOrigins := originvalidate.RecomputeOriginPerReturn(foreignProgram.Functions[0])
+	foreignOrigins := originvalidate.RecomputeOriginPerReturn(foreignProgram.Functions[0], nil)
 	if len(foreignOrigins) != 2 {
 		t.Fatalf("expected one origin entry per terminator (return + fail), got %d: %+v", len(foreignOrigins), foreignOrigins)
 	}
@@ -797,14 +799,14 @@ func TestTerminatorSetReadFromRegistry(t *testing.T) {
 // not merely that a differential stays green.
 func TestTerminatorWalkMutationKilled(t *testing.T) {
 	program := phase4Program(t, "foreign_acquire_one.lang")
-	full := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	full := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 
 	original := originvalidate.TerminatorKindsOverride
 	originvalidate.TerminatorKindsOverride = func() []core.OperationKind {
 		return []core.OperationKind{core.OpReturn, core.OpDefect} // OpFail deleted
 	}
 	defer func() { originvalidate.TerminatorKindsOverride = original }()
-	mutated := originvalidate.RecomputeOriginPerReturn(program.Functions[0])
+	mutated := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 
 	if len(mutated) >= len(full) {
 		t.Fatalf("mutation (deleting OpFail) had no observable effect: full=%d mutated=%d", len(full), len(mutated))
@@ -918,7 +920,7 @@ func TestPublishProblemsForMatchesValidatePublishedAcrossCorpus(t *testing.T) {
 			checkedAny = true
 			var expected []originvalidate.Problem
 			for _, function := range checked.Program.Functions {
-				if problems := originvalidate.PublishProblemsFor(function); len(problems) > 0 {
+				if problems := originvalidate.PublishProblemsFor(function, nil); len(problems) > 0 {
 					expected = problems
 					break
 				}
@@ -1121,4 +1123,91 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 			t.Fatal("expected the UNFORCED peer to still independently refuse (Callable == false) -- diverging from the forced producer")
 		}
 	})
+}
+
+// bodyBlindnessViolations scans every function declaration in file named by
+// targetFuncs and reports, for each parameter OTHER than the function under
+// analysis's own leading `function core.Function` parameter, whether its
+// rendered type text names core.Function or core.Program -- either of
+// which would make a callee's BODY reachable from inside the walk (T-10-05).
+// The leading `function core.Function` parameter is legitimately
+// core.Function-shaped: it is the function the walk analyzes, never a
+// callee. Shared between the real-file scan and the negative control below
+// so both exercise the identical predicate.
+func bodyBlindnessViolations(t *testing.T, fset *token.FileSet, file *ast.File, targetFuncs map[string]bool) []string {
+	t.Helper()
+	var violations []string
+	checked := 0
+	ast.Inspect(file, func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || !targetFuncs[fn.Name.Name] || fn.Type.Params == nil {
+			return true
+		}
+		checked++
+		for _, field := range fn.Type.Params.List {
+			var buf bytes.Buffer
+			if err := printer.Fprint(&buf, fset, field.Type); err != nil {
+				t.Fatalf("%s: render parameter type: %v", fn.Name.Name, err)
+			}
+			text := buf.String()
+			if len(field.Names) == 1 && field.Names[0].Name == "function" && text == "core.Function" {
+				// The function under analysis itself -- legitimate, not a
+				// callee's body becoming reachable.
+				continue
+			}
+			if strings.Contains(text, "core.Function") || strings.Contains(text, "core.Program") {
+				violations = append(violations, fn.Name.Name+": parameter type "+text)
+			}
+		}
+		return true
+	})
+	if checked == 0 {
+		t.Fatal("bodyBlindnessViolations: no target function declarations found to scan")
+	}
+	return violations
+}
+
+// TestWalkReturnOriginSignatureStaysBodyBlind is D-10-04's mechanical,
+// build-or-test-level falsifier for T-10-05: walkReturnOrigin,
+// RecomputeOriginPerReturn, and RecomputeOrigin gained an added
+// callee-contract parameter in this plan's Task 1, and this test asserts
+// that parameter -- and every other parameter besides the function each of
+// these already analyzes -- never names core.Function or core.Program.
+// Nothing about the walk's OWN production behavior needs a callee's body;
+// this test makes that a property of the TYPE SIGNATURE a future editor
+// cannot silently violate, not a claim resting on a doc comment.
+func TestWalkReturnOriginSignatureStaysBodyBlind(t *testing.T) {
+	fset := token.NewFileSet()
+	path := testsupport.ProjectPath("internal", "compiler", "originvalidate", "originvalidate.go")
+	file, err := parser.ParseFile(fset, path, nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	targets := map[string]bool{"walkReturnOrigin": true, "RecomputeOriginPerReturn": true, "RecomputeOrigin": true}
+	if violations := bodyBlindnessViolations(t, fset, file, targets); len(violations) != 0 {
+		t.Fatalf("body-blindness violated: %+v", violations)
+	}
+
+	// Negative control (D-10-04's own bar: a mechanical assertion must be
+	// observed to go red, never merely assumed to). A synthetic
+	// walkReturnOrigin signature that leaks a core.Program parameter must
+	// be flagged by the identical scan -- proving this is a real scanner,
+	// not a vacuous one that always reports clean.
+	syntheticSource := `package originvalidate
+
+import "github.com/codename-lang/lang/internal/compiler/core"
+
+func walkReturnOrigin(function core.Function, calleeContracts map[string]calleeOriginFact, leaked core.Program) ReturnOrigin {
+	return ReturnOrigin{}
+}
+`
+	syntheticFset := token.NewFileSet()
+	syntheticFile, err := parser.ParseFile(syntheticFset, "synthetic_leak.go", syntheticSource, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	violations := bodyBlindnessViolations(t, syntheticFset, syntheticFile, map[string]bool{"walkReturnOrigin": true})
+	if len(violations) == 0 {
+		t.Fatal("expected the negative control's leaked core.Program parameter to be flagged -- the scan can never go red")
+	}
 }

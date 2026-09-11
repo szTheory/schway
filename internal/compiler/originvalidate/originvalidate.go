@@ -120,6 +120,48 @@ type ReturnOrigin struct {
 // match a conflicting recomputation.
 const AccessConflicting = "conflicting"
 
+// calleeOriginFact is the narrow origin fact walkReturnOrigin consults at
+// an OpCall hop (D-10-01/D-10-04/T-10-05): only the callee's declared
+// return access mode and whether it derives from the callee's own
+// parameter at all — never anything core.Function- or core.Program-shaped,
+// so a callee's BODY is never reachable from inside this walk. Mirrors
+// corevalidate.peerLoanCarryFact's minimal one-field shape (D-09-03's
+// shipped precedent this task mirrors), widened by exactly the field this
+// walk needs beyond a bare bool: the access mode a propagated borrow
+// carries.
+type calleeOriginFact struct {
+	// Access is the callee's declared core.PublicOrigin.Access ("shared" or
+	// "exclusive") when Derived is true. Empty when Derived is false.
+	Access string
+	// Derived reports whether the callee's DECLARED return contract says it
+	// returns a borrow of its own parameter at all.
+	Derived bool
+}
+
+// BuildCalleeOriginFacts builds the callee-contract map walkReturnOrigin
+// consults at an OpCall hop, from EVERY function's declared PublicOrigin
+// alone — never a callee body (D-10-02/D-10-04). ValidatePublished and
+// BuildInterface both build this ONCE per program and thread it down (D-10-
+// 03); it is exported so a caller outside this package that holds its own
+// core.Program (session.go's and session_phase7.go's exhaustive-dispatch
+// sites, core_test.go's own probe, and this package's own external test
+// binary) can build the identical map to call RecomputeOriginPerReturn /
+// RecomputeOrigin / PublishProblemsFor directly. calleeOriginFact itself
+// stays unexported (T-10-05): a caller can hold and pass this map straight
+// back into this package's functions via `:=` type inference, but can
+// never spell out a field on its element type, because that element type
+// carries no core.Function- or core.Program-shaped field to spell.
+func BuildCalleeOriginFacts(program core.Program) map[string]calleeOriginFact {
+	facts := make(map[string]calleeOriginFact, len(program.Functions))
+	for _, function := range program.Functions {
+		if function.PublicOrigin == nil {
+			continue
+		}
+		facts[function.ID] = calleeOriginFact{Access: function.PublicOrigin.Access, Derived: true}
+	}
+	return facts
+}
+
 // RecomputeOriginPerReturn is the package's SOLE backward-walk site (Task
 // 03-10-01's binding decision: exactly one such loop may exist in this
 // file). It walks backward from EVERY core.OpReturn in
@@ -132,7 +174,11 @@ const AccessConflicting = "conflicting"
 // can ever cross into a sibling arm's operations. Each walk independently
 // preserves 03-08's first-seen-hop-wins rule: the hop nearest the returned
 // place decides that return's derived access mode, per return.
-func RecomputeOriginPerReturn(function core.Function) []ReturnOrigin {
+//
+// calleeContracts is D-10-01/D-10-03's callee-contract map (see
+// BuildCalleeOriginFacts): the walk consults it, keyed by CalleeID, at an
+// OpCall hop, and never reads anything else about a callee.
+func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string]calleeOriginFact) []ReturnOrigin {
 	if function.Linear == nil || len(function.Linear.Operations) == 0 {
 		return nil
 	}
@@ -160,7 +206,7 @@ func RecomputeOriginPerReturn(function core.Function) []ReturnOrigin {
 	}
 	results := make([]ReturnOrigin, 0, len(returnOps))
 	for _, returnOp := range returnOps {
-		results = append(results, walkReturnOrigin(function, sourceOf, returnOp))
+		results = append(results, walkReturnOrigin(function, sourceOf, returnOp, calleeContracts))
 	}
 	return results
 }
@@ -168,7 +214,7 @@ func RecomputeOriginPerReturn(function core.Function) []ReturnOrigin {
 // walkReturnOrigin performs exactly one backward walk, from one return
 // operation, using the shared sourceOf map RecomputeOriginPerReturn built
 // once for the whole function.
-func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOperation, returnOp *core.LinearOperation) ReturnOrigin {
+func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOperation, returnOp *core.LinearOperation, calleeContracts map[string]calleeOriginFact) ReturnOrigin {
 	current := returnOp.SourceID
 	visited := make(map[string]bool)
 	derivedAccess := ""
@@ -233,8 +279,8 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 //
 // This function performs no backward walk itself; RecomputeOriginPerReturn
 // is the only place that does.
-func RecomputeOrigin(function core.Function) (paths []string, access string, ok bool) {
-	perReturn := RecomputeOriginPerReturn(function)
+func RecomputeOrigin(function core.Function, calleeContracts map[string]calleeOriginFact) (paths []string, access string, ok bool) {
+	perReturn := RecomputeOriginPerReturn(function, calleeContracts)
 	var derived []ReturnOrigin
 	for _, origin := range perReturn {
 		if origin.Derived {
@@ -354,11 +400,11 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 // entire program to its first offending function. It never reads an export
 // list: the word "export" does not appear on this path, because publication
 // safety and export membership are different rules (D-07-31).
-func PublishProblemsFor(function core.Function) []Problem {
+func PublishProblemsFor(function core.Function, calleeContracts map[string]calleeOriginFact) []Problem {
 	if problem := checkForeignOriginOmitted(function); problem != nil {
 		return []Problem{*problem}
 	}
-	recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function)
+	recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function, calleeContracts)
 	if function.PublicOrigin == nil {
 		if ok {
 			return []Problem{{
@@ -403,8 +449,9 @@ func PublishProblemsFor(function core.Function) []Problem {
 // whole-program first-problem contract exactly, byte-for-byte, by returning
 // the first non-empty PublishProblemsFor result it encounters.
 func ValidatePublished(program core.Program) []Problem {
+	calleeContracts := BuildCalleeOriginFacts(program)
 	for _, function := range program.Functions {
-		if problems := PublishProblemsFor(function); len(problems) > 0 {
+		if problems := PublishProblemsFor(function, calleeContracts); len(problems) > 0 {
 			return problems
 		}
 	}
@@ -785,6 +832,11 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 	for _, function := range program.Functions {
 		programFunctionByID[function.ID] = function
 	}
+	// D-10-03: built once, from program's own declared PublicOrigin facts
+	// only, mirroring ValidatePublished's own single build -- BuildInterface
+	// strips bodies but the callee-contract map itself was never
+	// body-derived to begin with.
+	calleeContracts := BuildCalleeOriginFacts(program)
 	indexByID := make(map[string]int, len(program.Functions))
 	for _, function := range program.Functions {
 		abilities := []core.Ability{}
@@ -839,7 +891,7 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 		// Callable is publication safety, not export membership (D-07-31):
 		// true exactly when PublishProblemsFor(function) reports zero
 		// problems. No export list is consulted anywhere on this path.
-		callable := len(PublishProblemsFor(function)) == 0
+		callable := len(PublishProblemsFor(function, calleeContracts)) == 0
 		if forceCallableAlwaysTrue {
 			callable = true
 		}

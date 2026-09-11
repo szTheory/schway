@@ -86,7 +86,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 		if function.PublicOrigin == nil || function.PublicOrigin.Access != "shared" {
 			t.Fatalf("expected an honest shared PublicOrigin, got %+v", function.PublicOrigin)
 		}
-		if problems := originvalidate.PublishProblemsFor(function); len(problems) != 0 {
+		if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 0 {
 			t.Fatalf("expected the producer to admit this honest declaration, got %+v", problems)
 		}
 		if !peerCallableFor(t, program, function.ID) {
@@ -112,7 +112,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 		if relay.PublicOrigin == nil || relay.PublicOrigin.Access != "exclusive" {
 			t.Fatalf("expected relay's honest declaration to be exclusive, got %+v", relay.PublicOrigin)
 		}
-		if problems := originvalidate.PublishProblemsFor(relay); len(problems) != 0 {
+		if problems := originvalidate.PublishProblemsFor(relay, originvalidate.BuildCalleeOriginFacts(checked.Program)); len(problems) != 0 {
 			t.Fatalf("expected the producer to admit relay's honest declaration, got %+v", problems)
 		}
 		program := singleFunctionOriginProgram("test.exclusive_hop", relay)
@@ -145,14 +145,15 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 	t.Run("two-hop reborrow chain: closest-to-return hop wins, matching RecomputeOrigin", func(t *testing.T) {
 		program := loadCheckedProgram(t, "phase3", "public_view_mixed_access.lang")
 		function := functionByName(t, program, "view")
-		recomputedPaths, recomputedAccess, ok := originvalidate.RecomputeOrigin(function)
+		calleeContracts := originvalidate.BuildCalleeOriginFacts(program)
+		recomputedPaths, recomputedAccess, ok := originvalidate.RecomputeOrigin(function, calleeContracts)
 		if !ok || recomputedAccess != "shared" {
 			t.Fatalf("expected RecomputeOrigin to derive a shared access for this fixture's own body, got paths=%v access=%q ok=%v", recomputedPaths, recomputedAccess, ok)
 		}
 		if function.PublicOrigin.Access != "exclusive" {
 			t.Fatalf("expected the fixture's own declaration to be exclusive (the mismatch this fixture exists to exercise), got %q", function.PublicOrigin.Access)
 		}
-		if problems := originvalidate.PublishProblemsFor(function); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		if problems := originvalidate.PublishProblemsFor(function, calleeContracts); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
 			t.Fatalf("expected the producer to refuse this honest-but-mismatched declaration with core.origin_access_mismatch, got %+v", problems)
 		}
 		if peerCallableFor(t, program, function.ID) {
@@ -179,7 +180,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 		program := loadCheckedProgram(t, "phase3", "public_view_understated.lang")
 		program.Functions[0].PublicOrigin.Paths = []string{}
 		function := program.Functions[0]
-		if problems := originvalidate.PublishProblemsFor(function); len(problems) != 1 || problems[0].Code != "core.origin_understated" {
+		if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 1 || problems[0].Code != "core.origin_understated" {
 			t.Fatalf("expected the mutated declaration to be refused as core.origin_understated, got %+v", problems)
 		}
 		if peerCallableFor(t, program, function.ID) {
@@ -191,7 +192,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 		program := loadCheckedProgram(t, "phase3", "public_view_impossible.lang")
 		program.Functions[0].PublicOrigin.Access = "exclusive"
 		function := program.Functions[0]
-		if problems := originvalidate.PublishProblemsFor(function); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
+		if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
 			t.Fatalf("expected the mutated declaration to be refused as core.origin_access_mismatch, got %+v", problems)
 		}
 		if peerCallableFor(t, program, function.ID) {
@@ -207,19 +208,24 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 // forward-derived access agrees with originvalidate.RecomputeOrigin's
 // combined access -- proven by declaring EXACTLY the recomputed answer and
 // observing the peer's containment check accept it, never assumed. A
-// function whose body crosses an OpCall is excluded (D-09-51): originvalidate's
-// own walkReturnOrigin has no core.OpCall case and walks transparently
-// through a call boundary, so RecomputeOrigin is not a reliable oracle for
-// a cross-function-derived declaration -- this equivalence proof is
-// intraprocedural by construction, matching peerDeriveOriginFacts' own
-// deliberate choice never to cross an OpCall in its general propagation
-// (D-09-20's function-local boundary is reserved for the foreign class
-// alone). If any intraprocedural fixture disagreed, that would falsify the
-// equivalence claim; this test reports such a disagreement via t.Fatalf
-// rather than adjusting the peer to match by construction.
+// function whose body crosses an OpCall is excluded: this equivalence
+// proof compares originvalidate.RecomputeOrigin's answer for ONE function
+// against corevalidate's peer, which propagates across a call boundary
+// using its OWN forward-derived peerLoanCarryFact map (D-09-03), never
+// originvalidate's declared-contract map (D-10-01/D-10-03/D-10-06) -- the
+// two packages' cross-function propagation mechanisms are independent by
+// design (T-03-02/T-03-03), so a cross-call comparison here would not be
+// testing the SAME derivation twice, only two different ones that happen
+// to often agree. Matching peerDeriveOriginFacts' own deliberate choice
+// never to cross an OpCall in its general propagation (D-09-20's
+// function-local boundary is reserved for the foreign class alone). If any
+// intraprocedural fixture disagreed, that would falsify the equivalence
+// claim; this test reports such a disagreement via t.Fatalf rather than
+// adjusting the peer to match by construction.
 func TestPeerFirstHopWinsMatchesRecomputeOriginPerReturn(t *testing.T) {
 	checkedAny := false
 	for _, program := range corpusFixtures(t) {
+		calleeContracts := originvalidate.BuildCalleeOriginFacts(program)
 		for i := range program.Functions {
 			function := &program.Functions[i]
 			if function.PublicOrigin == nil {
@@ -229,7 +235,7 @@ func TestPeerFirstHopWinsMatchesRecomputeOriginPerReturn(t *testing.T) {
 				continue
 			}
 			checkedAny = true
-			recomputedPaths, recomputedAccess, ok := originvalidate.RecomputeOrigin(*function)
+			recomputedPaths, recomputedAccess, ok := originvalidate.RecomputeOrigin(*function, calleeContracts)
 			if !ok {
 				t.Fatalf("function %s declares a PublicOrigin but RecomputeOrigin reports not-derived -- an inconsistent corpus fixture", function.ID)
 			}
@@ -257,7 +263,7 @@ func TestPeerForeignOriginOmittedIsRederived(t *testing.T) {
 	if function.ForeignContract == nil || function.ForeignContract.Alias != "borrow" {
 		t.Fatalf("expected the fixture's own foreign contract to declare alias \"borrow\", got %+v", function.ForeignContract)
 	}
-	if problems := originvalidate.PublishProblemsFor(function); len(problems) != 1 || problems[0].Code != "core.foreign_origin_omitted" {
+	if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 1 || problems[0].Code != "core.foreign_origin_omitted" {
 		t.Fatalf("expected the producer to refuse with core.foreign_origin_omitted, got %+v", problems)
 	}
 	if peerCallableFor(t, program, function.ID) {
@@ -273,7 +279,7 @@ func TestPeerForeignOriginOmittedDoesNotOverRefuse(t *testing.T) {
 	program := loadCheckedProgram(t, "phase4", "foreign_origin_omitted.lang")
 	program.Functions[0].ForeignContract.Alias = ""
 	function := program.Functions[0]
-	if problems := originvalidate.PublishProblemsFor(function); len(problems) != 0 {
+	if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 0 {
 		t.Fatalf("expected the producer to admit an alias-less foreign contract, got %+v", problems)
 	}
 	if !peerCallableFor(t, program, function.ID) {
