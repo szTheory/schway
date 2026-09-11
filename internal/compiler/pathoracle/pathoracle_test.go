@@ -465,6 +465,14 @@ func chainCallFunction(id, calleeID string) core.Function {
 // never silently truncated, and never MaxPaths's own
 // pathoracle.path_count_exceeded code -- the two caps report which limit
 // fired independently (D-10-12).
+//
+// This synthetic chain -- like every fixture this gate corpus exercises --
+// lives inside QLT-04's own small, genuinely exhaustible product space
+// declared alongside MaxCompositionDepth (pathoracle_compose.go):
+// ParameterContract.Mode is a NAMED EXCLUSION collapsed to cardinality 1
+// (unreachable at anything but "owned"; arity fixed at 1, D-07-01), never a
+// silently pruned dimension; ReturnContract.Mode carries 3 legal values;
+// LoanEndpoint.Kind carries 2 ("point"/"edge"); verdict is accept/refuse.
 func TestCompositionDepthCapRejects(t *testing.T) {
 	const chainLength = pathoracle.MaxCompositionDepth + 2 // top + MaxCompositionDepth+1 callees
 	ids := make([]string, chainLength)

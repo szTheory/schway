@@ -18,20 +18,71 @@ import (
 // decision): least-privilege parameter passing at both re-derivers.
 type CalleeLookup func(functionID string) (core.Function, bool)
 
-// MaxCompositionDepth bounds how many call frames deep composition will
-// recurse before refusing (T-10-04). Distinct from MaxPaths (D-10-12): that
-// constant bounds the number of acyclic paths within ONE function; this one
-// bounds call-frame DEPTH across composition, so the two limits report
-// which one fired independently. Unlike MaxPaths -- deliberately declared
-// well above its real reachable maximum so it never fires today -- this cap
-// sits AT a genuinely reachable declared bound: every additional
-// composition level multiplies the enumerated-path count of the level
-// below it, so an unbounded recursion depth is a real denial-of-service
-// surface the moment a caller composes across more than a few frames.
-// Plan 10-07 tunes this constant's numeric value against its own
-// bidirectional corpus; this task only declares the constant, its typed
-// refusal, and its enforcement.
-const MaxCompositionDepth = 8
+// MaxCompositionDepth is QLT-04's declared, bounded composition depth: the
+// number of core.OpCall hops a single loan-or-published-origin's carry
+// relation crosses before reaching its terminal use -- a chain of d+1
+// functions (D-10-45). This definition is ADOPTED, not invented: it is
+// already load-bearing at corevalidate_peer_liveness.go:64-77
+// (derivePeerLoanCarry's own doc comment, "depth-2, depth-3, and beyond all
+// resolve correctly from the SAME single forward pass") and in the
+// relay_depthN_* fixture-naming convention Phases 08 and 09 established.
+//
+// Why not less than 2 (D-10-46): depth 2 is the established NECESSITY
+// FLOOR. D-09-49 Q2 (09-CONTEXT.md) proved depth-1-only evidence is
+// insufficient to demonstrate transitivity across an arbitrary number of
+// call hops -- a depth-1 corpus cannot distinguish "the derivation reads a
+// callee's own recursively-composed answer" from "it happens to work for
+// the one-hop case" (the same generalization Phase 07's own
+// diamond-vs-chain cycle-mutation finding required, 07-06-SUMMARY.md).
+// QLT-04 cannot declare less than 2 without contradicting that prior
+// finding.
+//
+// Why 3, not merely 2 (D-10-46): necessity-minimum plus one sufficiency
+// margin, in the spirit of CBMC's `--unwind N` plus an unwinding assertion
+// -- a bound AND a check that raising it finds nothing new. What forced 3
+// specifically (D-10-47): before this phase there was NO depth-3 fixture
+// anywhere in this tree (`grep -rn 'depth3\|depth_3'` over testdata/ and
+// internal/ returned nothing), while corevalidate_peer_liveness.go's own
+// prose already asserted depth-2, depth-3, and beyond all resolve from the
+// same pass -- prose with no fixture behind it until plan 10-07's own
+// relay_depth3_accept.lang/relay_depth3_refuse.lang pair and
+// TestCompositionDepthCorpusReachesDeclaredBound's bidirectional gate
+// (D-10-50) closed that gap.
+//
+// The direction, contrasted with MaxPaths (D-10-12): MaxPaths (pathoracle.go)
+// sits deliberately ABOVE its real reachable maximum (4096 declared against
+// a 64-arm real ceiling) so it never fires on any program the parser can
+// produce today -- a purely defensive ceiling. MaxCompositionDepth sits AT
+// the declared depth instead: a genuinely reachable bound, not a ceiling
+// held safely out of reach. The two constants therefore report which one
+// fired independently (distinct Code()s), and a reader must not
+// pattern-match one constant's rationale onto the other.
+//
+// The product space this constant's corpus exercises is small and
+// genuinely exhaustible today (T-10-04's boundary-crossing case space):
+//
+//	Dimension                  | Cardinality | Note
+//	ParameterContract.Mode     | 1           | NAMED EXCLUSION (D-07-01):
+//	                                           unreachable at anything but
+//	                                           "owned"; arity fixed at 1
+//	                                           (core.go:245-256, the plan's
+//	                                           own 191-198 citation is stale
+//	                                           against the current file --
+//	                                           corrected here, mirroring
+//	                                           D-10-40's own stale-citation
+//	                                           precedent). The whole
+//	                                           dimension collapses -- this is
+//	                                           STATED, never a silently
+//	                                           pruned dimension.
+//	ReturnContract.Mode        | 3           | three legal values
+//	                                           (core.go:270-285)
+//	LoanEndpoint.Kind          | 2           | "point" / "edge"
+//	                                           (core.go:790-797)
+//	verdict                    | 2           | accept / refuse
+//
+// Roughly a dozen structurally distinct boundary-crossing cases, not
+// thousands.
+const MaxCompositionDepth = 3
 
 // compositionDepthError is returned when composing across core.OpCall would
 // recurse deeper than MaxCompositionDepth call frames. Mirrors
