@@ -2170,6 +2170,33 @@ var peerConsultObserved func(calleeID, field string)
 // allocation.
 var peerCalleeFrameDrainedObserved func(functionID string)
 
+// parameterContractModeOverrideForTest is plan 10-08 Task 3's own D-10-41
+// seeded-fault seam: the COMPLEMENTARY half of the mutant pairing plan
+// 10-01 landed for interp's own move-as-copy mutation (moveAsCopyForTest,
+// interp.go) -- that seam proves ONLY interp can catch a mutation
+// invisible to both static peers; this one proves the inverse direction,
+// that criterion 4's differential against corevalidate's own declared
+// contract catches a corrupted signature interp is structurally blind to,
+// because interp never consults a mode string at all. Production always
+// derives parameterContract.Mode as the hardcoded "owned" literal
+// (D-07-01: today's grammar has exactly one parameter form, so a natural
+// input can never disagree by construction -- D-10-40). When this func is
+// non-nil, a same-package test may substitute a wrong value instead.
+// Deliberately unexported with no exported Set/Force name in this file:
+// package corevalidate_test (or any other importer) cannot reach it
+// directly, only this package's own export_test.go bridge can.
+var parameterContractModeOverrideForTest func() string
+
+// parameterContractMode reports the effective parameter contract mode:
+// parameterContractModeOverrideForTest() when set (test-only), else the
+// production "owned" literal.
+func parameterContractMode() string {
+	if parameterContractModeOverrideForTest != nil {
+		return parameterContractModeOverrideForTest()
+	}
+	return "owned"
+}
+
 // recordPeerConsult is the single choke point every consult of a
 // callee-signature-shaped field must pass through: it accumulates field
 // into v.peerConsultedFields (surfaced production-side via
@@ -2247,7 +2274,7 @@ func (v *validator) derivePeerSignature(function *core.Function, types map[strin
 	parameterContract := core.ParameterContract{
 		ID: function.Parameter.ID, Name: function.Parameter.Name, Type: function.Parameter.Type,
 		// D-07-01: today's grammar has exactly one parameter form.
-		Mode:  "owned",
+		Mode:  parameterContractMode(),
 		Drops: hasDropAbility && !peerParameterEscapesOwned(function),
 	}
 

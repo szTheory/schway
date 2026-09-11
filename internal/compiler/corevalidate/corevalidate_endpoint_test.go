@@ -6,6 +6,8 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/interp"
+	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -180,4 +182,114 @@ func TestLoanEndpointsAccessorEmptyForLoanFreeFunction(t *testing.T) {
 			t.Fatalf("LoanEndpoints()[%s] = %+v, want empty (loan-free function)", function.ID, got)
 		}
 	}
+}
+
+// TestDerivePeerSignatureModeMutantPairing is plan 10-08 Task 3's own
+// D-10-41 mutant pairing, the COMPLEMENTARY half of plan 10-01's own
+// move-as-copy test (interp_test.go#TestMoveAsCopyMutationKilled). Naming
+// which peer alone catches which mutant, in both directions, is what makes
+// "independent" falsifiable rather than rhetorical:
+//
+//	| Mutant                                                                        | Catches                                                                              | Blind, and why                                                                                          |
+//	|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+//	| interp: a Move treated as a Copy (plan 10-01, interp.go's moveAsCopyForTest)     | interp only (TestMoveAsCopyMutationKilled)                                            | check/corevalidate execute nothing; a Move's own STATIC type is unaffected by whether the RUNTIME treats it as a copy |
+//	| corevalidate: parameterContract.Mode hardcoded to the wrong value (this test, corevalidate.go's parameterContractModeOverrideForTest) | the criterion-4 differential (corevalidate's own peer signature vs. originvalidate's declared contract) | interp, which never reads a mode string at all -- it executes core.Operations, never contract metadata    |
+//
+// This is D-10-40's own escape hatch made concrete: ParameterContract.Mode
+// is hardcoded "owned" everywhere in production (D-07-01's cardinality-1
+// grammar), so a NATURAL input can never disagree by construction. This
+// seeded fault is what makes criterion 4's ownership-fact half non-vacuous.
+//
+// Reachable only from package corevalidate_test (this file): the seam
+// (corevalidate.SetParameterContractModeOverrideForTest, export_test.go)
+// is a _test.go-only symbol, invisible to any OTHER package's own test
+// binary -- session_peer_gate_test.go's own doc comment cross-references
+// this test rather than duplicating it for that reason.
+func TestDerivePeerSignatureModeMutantPairing(t *testing.T) {
+	fixture := testsupport.ProjectPath("testdata", "phase07", "call_basic.lang")
+	checked, err := session.CheckFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("call_basic.lang unexpectedly refused: %+v", checked.Diagnostics)
+	}
+	var function core.Function
+	for _, candidate := range checked.Program.Functions {
+		if candidate.Name == "main" {
+			function = candidate
+		}
+	}
+	if function.ID == "" {
+		t.Fatal("call_basic.lang has no function named main")
+	}
+
+	declared, err := originvalidate.BuildInterface(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var declaredMode string
+	for _, signature := range declared.Functions {
+		if signature.ID == function.ID {
+			declaredMode = signature.Parameters[0].Mode
+		}
+	}
+	if declaredMode == "" {
+		t.Fatalf("declared contract has no parameter mode for %s", function.ID)
+	}
+
+	baseline := corevalidate.Validate(checked.Program)
+	if !baseline.Valid {
+		t.Fatalf("call_basic.lang unexpectedly corevalidate-rejected: %+v", baseline.Problems)
+	}
+	baselinePeer, ok := baseline.PeerSignatures()[function.ID]
+	if !ok {
+		t.Fatalf("peer signatures missing %s", function.ID)
+	}
+	if baselinePeer.Parameters[0].Mode != declaredMode {
+		t.Fatalf("baseline: peer mode %q disagrees with the declared contract %q before any fault -- this test's own fixture assumption is wrong", baselinePeer.Parameters[0].Mode, declaredMode)
+	}
+
+	baselineExecution, err := interp.Run(checked.Program, function.Name, "7")
+	if err != nil {
+		t.Fatalf("interp.Run before the fault: %v", err)
+	}
+	baselineBytes, err := interp.CanonicalBytes(baselineExecution)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("seeded fault: the differential against the declared contract catches it", func(t *testing.T) {
+		restore := corevalidate.SetParameterContractModeOverrideForTest(func() string { return "shared" })
+		defer restore()
+
+		mutated := corevalidate.Validate(checked.Program)
+		if !mutated.Valid {
+			t.Fatalf("mutated: corevalidate unexpectedly rejected the program outright: %+v", mutated.Problems)
+		}
+		mutatedPeer, ok := mutated.PeerSignatures()[function.ID]
+		if !ok {
+			t.Fatal("mutated: peer signatures missing the function")
+		}
+		if mutatedPeer.Parameters[0].Mode == declaredMode {
+			t.Fatal("seeded fault did not change the peer's reported parameter mode -- the differential has nothing to catch")
+		}
+	})
+
+	t.Run("interp stays blind: canonical bytes unchanged under the same fault", func(t *testing.T) {
+		restore := corevalidate.SetParameterContractModeOverrideForTest(func() string { return "shared" })
+		defer restore()
+
+		mutatedExecution, err := interp.Run(checked.Program, function.Name, "7")
+		if err != nil {
+			t.Fatalf("interp.Run under the fault: %v", err)
+		}
+		mutatedBytes, err := interp.CanonicalBytes(mutatedExecution)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(baselineBytes, mutatedBytes) {
+			t.Fatal("interp's canonical bytes changed under a fault it never consults (a mode string) -- interp should be structurally blind to this")
+		}
+	})
 }

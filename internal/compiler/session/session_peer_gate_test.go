@@ -16,15 +16,31 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
+// peerDivergenceEntry is plan 10-08 Task 3's own D-10-54 upgrade: an
+// ACCOUNTABLE register value, replacing a bare code string. An allowlist
+// entry that names no debt row is how a gate dies silently -- every
+// declared divergence must be traceable to an open decision, not a bare
+// exemption. code is the peer's reported Problems[0].Code (T-07-10-05's
+// original field); debtID names the PHASE-NN-DEBT.md row that owns this
+// divergence's disposition; landingPhase mirrors that row's own Landing
+// phase cell for a human reading this file without also opening the
+// register. TestPeerDivergenceRegisterDebtIDsAreAccountable is the
+// companion test asserting every debtID here resolves to a STILL-OPEN row.
+type peerDivergenceEntry struct {
+	code         string
+	debtID       string
+	landingPhase string
+}
+
 // peerDivergenceExpected is 07-10's named, commented, hand-maintained
 // register of every fixture under testdata/ where `check` ADMITS (zero
 // checked.Diagnostics) but corevalidate.Validate REFUSES independently.
 // TestNoUndeclaredCheckPeerDivergenceAcrossCorpus asserts this is the
 // EXACT set, in both directions (T-07-10-05): an undeclared new divergence
 // fails, and a stale entry that no longer diverges also fails. Keyed by
-// project-relative path (forward slashes); value is the peer's reported
-// Problems[0].Code.
-var peerDivergenceExpected = map[string]string{
+// project-relative path (forward slashes); value is D-10-54's accountable
+// peerDivergenceEntry.
+var peerDivergenceExpected = map[string]peerDivergenceEntry{
 	// D-03-02's interprocedural half (PVG-04/CR-02) was carried here as
 	// PHASE-07-DEBT.md D-07-49: check.computeLoanLastUses had no "call"
 	// case, so the exclusive loan on `buffer` was treated as ending before
@@ -44,7 +60,11 @@ var peerDivergenceExpected = map[string]string{
 	// one semanticID; check's buildCalleeContracts silently resolves the
 	// call to the LAST declaration, so check itself stays clean, but
 	// corevalidate's function-ID uniqueness check refuses independently.
-	"testdata/phase07/duplicate_function_name.lang": "core.duplicate_function_id",
+	"testdata/phase07/duplicate_function_name.lang": {
+		code:         "core.duplicate_function_id",
+		debtID:       "D-07-50",
+		landingPhase: "Not scheduled -- needs its own ratified diagnostic code",
+	},
 
 	// 08-03's ACCEPTING twin members (D-03-02's interprocedural half,
 	// producer side): check's own new interprocedural loan-liveness law
@@ -399,6 +419,28 @@ func assertInterpFrameModelAgreesWithStaticVerdict(t *testing.T, fixture string,
 // this walk proves the endpoint/execution facts above, never "three
 // engines agree" on the ownership fact.
 //
+// D-10-54's accountable divergence register (peerDivergenceEntry, above)
+// and its companion test (TestPeerDivergenceRegisterDebtIDsAreAccountable,
+// below) are this file's own contribution to Task 3. The two D-10-55/
+// D-10-41 seeded-fault-and-companion-assertion pairs Task 3 also lands
+// CANNOT live in this file or this package: both fault seams
+// (pathoracle.SetForceContractHopForTest, corevalidate's own
+// parameterContractModeOverrideForTest) are _test.go-only symbols, and Go
+// never compiles another package's _test.go files into ITS OWN test
+// binary -- reachable only from within their OWN package's test binary,
+// which is the exact "package boundary is the actual independence proof"
+// property forceContractHopForTest's own doc comment already states. They
+// are landed instead where they are reachable:
+//
+//	| Mutant                                                                        | Catches                                                                              | Blind, and why                                                                                             | Lands in                                                                          |
+//	|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+//	| pathoracle: a stubbed per-function contract hop replacing real per-path composition (plan 10-03's forceContractHopForTest, D-10-55) | pathoracle only                                                                        | check/corevalidate never call into pathoracle at all -- the seam is unreachable from outside package pathoracle | pathoracle_test.go#TestCompositionDiscriminatesPerPathBorrow (plan 10-08 Task 3 extends its companion assertion to also cover Result.LoanEndpoints, Task 1's accessor) |
+//	| interp: a Move treated as a Copy (plan 10-01, interp.go's moveAsCopyForTest)     | interp only                                                                            | check/corevalidate execute nothing; a Move's own STATIC type is unaffected by whether the RUNTIME treats it as a copy | interp_test.go#TestMoveAsCopyMutationKilled                                          |
+//	| corevalidate: parameterContract.Mode hardcoded to the wrong value (this plan's parameterContractModeOverrideForTest, D-10-41's complementary half) | the criterion-4 differential (corevalidate's own peer signature vs. originvalidate's declared contract) | interp, which never reads a mode string at all -- it executes core.Operations, never contract metadata          | corevalidate_endpoint_test.go#TestDerivePeerSignatureModeMutantPairing               |
+//
+// Naming which peer alone catches which mutant, in both directions, is
+// what makes "independent" falsifiable rather than rhetorical.
+//
 // `interp`'s OWN independence claim is also narrower than `check`'s and
 // `corevalidate`'s mutual non-import independence (D-10-37): `interp`
 // imports `corevalidate` and `Run`'s first act is
@@ -455,14 +497,14 @@ func TestNoUndeclaredCheckPeerDivergenceAcrossCorpus(t *testing.T) {
 		t.Fatalf("walking %s: %v", root, err)
 	}
 
-	for path, wantCode := range peerDivergenceExpected {
+	for path, wantEntry := range peerDivergenceExpected {
 		gotCode, ok := found[path]
 		if !ok {
 			t.Errorf("declared divergence %s no longer diverges (check admits, peer no longer refuses, or the fixture is missing) -- stale entry in peerDivergenceExpected", path)
 			continue
 		}
-		if gotCode != wantCode {
-			t.Errorf("%s: peer code = %q, want declared %q", path, gotCode, wantCode)
+		if gotCode != wantEntry.code {
+			t.Errorf("%s: peer code = %q, want declared %q", path, gotCode, wantEntry.code)
 		}
 	}
 	for path, gotCode := range found {
@@ -670,4 +712,83 @@ func phase07Fixture(t testing.TB, name string) string {
 		t.Fatalf("phase07Fixture expects a bare filename, got %q", name)
 	}
 	return testsupport.ProjectPath("testdata", "phase07", name)
+}
+
+// peerDivergenceDebtIDResolvesToOpenRow resolves debtID against every
+// discovered *-DEBT.md register's own `## Items` table (D-10-54), reusing
+// session_test.go's existing phaseArtifactGlob/debtRegisterTable parsing --
+// never a second parser, following D-10-51's own "extend, don't duplicate"
+// discipline applied to register-reading too. Returns found=false if no
+// register names debtID at all; open=false if the row's own Landing phase
+// cell reads as already resolved/closed (a leading "Resolved" or a
+// "Superseded, closed" marker, the two closure conventions already used
+// across this tree's own registers, e.g. PHASE-09-DEBT.md D-09-21/D-09-31).
+func peerDivergenceDebtIDResolvesToOpenRow(t *testing.T, debtID string) (open bool, found bool) {
+	t.Helper()
+	registers, err := phaseArtifactGlob("*", "*-DEBT.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range registers {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(data)
+		columns, rows := debtRegisterTable(t, filepath.Base(path), text)
+		idColumn, hasID := columns["ID"]
+		if !hasID {
+			continue
+		}
+		landingColumn, hasLanding := columns["Landing phase"]
+		for _, row := range rows {
+			if row[idColumn] != debtID {
+				continue
+			}
+			if !hasLanding {
+				// A legacy register exempted from the Landing phase column
+				// (debtRegisterLandingPhaseExemptions in session_test.go)
+				// carries no closure signal at all -- treat as open rather
+				// than guessing.
+				return true, true
+			}
+			landing := strings.ToLower(strings.TrimSpace(row[landingColumn]))
+			closed := strings.HasPrefix(landing, "resolved") || strings.Contains(landing, "superseded, closed")
+			return !closed, true
+		}
+	}
+	return false, false
+}
+
+// TestPeerDivergenceRegisterDebtIDsAreAccountable is plan 10-08 Task 3's
+// own D-10-54 companion: every debtID peerDivergenceExpected declares must
+// resolve to a row in some PHASE-NN-DEBT.md register, and that row must
+// still be OPEN. An allowlist entry naming a nonexistent or already-closed
+// debt row is exactly how a gate dies silently -- this test is the
+// mechanical backstop. Includes a negative control over a synthetic
+// unresolvable ID, proving the resolver can genuinely go red rather than
+// vacuously reporting "open" for anything it cannot find.
+func TestPeerDivergenceRegisterDebtIDsAreAccountable(t *testing.T) {
+	for path, entry := range peerDivergenceExpected {
+		path, entry := path, entry
+		t.Run(path, func(t *testing.T) {
+			open, found := peerDivergenceDebtIDResolvesToOpenRow(t, entry.debtID)
+			if !found {
+				t.Fatalf("declared divergence %s names debt ID %s, which resolves to no row in any *-DEBT.md register", path, entry.debtID)
+			}
+			if !open {
+				t.Fatalf("declared divergence %s names debt ID %s, which resolves to an already-closed row -- promote or retire this entry", path, entry.debtID)
+			}
+		})
+	}
+
+	t.Run("negative control: a synthetic unresolvable ID fails closed", func(t *testing.T) {
+		open, found := peerDivergenceDebtIDResolvesToOpenRow(t, "D-99-99")
+		if found {
+			t.Fatal("synthetic debt ID D-99-99 unexpectedly resolved to a real row -- this negative control's own ID collided with a real one, pick a different synthetic ID")
+		}
+		if open {
+			t.Fatal("an unresolved debt ID must never report open=true")
+		}
+	})
 }

@@ -687,6 +687,18 @@ func TestCompositionDiscriminatesPerPathBorrow(t *testing.T) {
 	if !reflect.DeepEqual(peerBefore.Problems, peerAfter.Problems) {
 		t.Fatalf("corevalidate's own problem set for the caller fixture changed while the seam was engaged")
 	}
+
+	// Plan 10-08 Task 1/3 (D-10-52/D-10-55): the companion direction is
+	// now checked at the core.LoanEndpoint SET level too, not merely the
+	// Problems slice -- Result.LoanEndpoints (plan 10-08's own exported
+	// accessor) exposes corevalidate's own independently-recomputed
+	// endpoint set, and it must stay byte-for-byte unchanged while
+	// pathoracle's seam is engaged, exactly like check's own materialized
+	// set above. This is the same fixture/fault this test already used for
+	// D-10-14's per-path-split falsifier; only the assertion is new.
+	if !reflect.DeepEqual(peerBefore.LoanEndpoints()[caller.ID], peerAfter.LoanEndpoints()[caller.ID]) {
+		t.Fatalf("corevalidate's own recomputed LoanEndpoints for the caller fixture changed while pathoracle's seam was engaged:\n before: %+v\n after:  %+v", peerBefore.LoanEndpoints()[caller.ID], peerAfter.LoanEndpoints()[caller.ID])
+	}
 }
 
 func itoa(n int) string {

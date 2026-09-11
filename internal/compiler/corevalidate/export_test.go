@@ -155,3 +155,16 @@ func SetPeerConsultObservedForTest(observer func(calleeID, field string)) (resto
 	peerConsultObserved = observer
 	return func() { peerConsultObserved = previous }
 }
+
+// SetParameterContractModeOverrideForTest installs plan 10-08 Task 3's own
+// D-10-41 seeded-fault seam (parameterContractModeOverrideForTest,
+// corevalidate.go, beside derivePeerSignature) and returns a restore func.
+// Callers MUST defer the restore immediately. Reachable from package
+// session_test (this plan's own criterion-4 differential lives there),
+// not only corevalidate_test, mirroring pathoracle's own
+// SetForceContractHopForTest cross-package bridge shape.
+func SetParameterContractModeOverrideForTest(force func() string) (restore func()) {
+	previous := parameterContractModeOverrideForTest
+	parameterContractModeOverrideForTest = force
+	return func() { parameterContractModeOverrideForTest = previous }
+}
