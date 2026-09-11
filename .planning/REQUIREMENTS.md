@@ -33,9 +33,18 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Ownership Across Boundaries
 
-- [ ] **OWN-05**: Ownership transfer at a call site (move vs borrow, per the
+- [x] **OWN-05a**: Ownership transfer at a call site (move vs borrow, per the
       callee's declared parameter convention) has one meaning, derived
-      independently by `check`, `corevalidate`, and `interp`.
+      independently by `check` and `corevalidate`; call-site override of a
+      callee's declared convention is not expressible in source and is
+      fail-closed at the core layer.
+- [ ] **OWN-05b**: The same call-site ownership-transfer fact is derived
+      independently by `interp` — the third of OWN-05's original three
+      derivers — verified there by TRU-03 and in Phase 11 by NAT-06. Split
+      from OWN-05a (D-09-37) rather than left as a single row flipped Complete
+      on two of three derivers, because Phase 09 ships only `check` and
+      `corevalidate`; a single-row overclaim is exactly the requirement-vs-code
+      failure the debt registers exist to catch.
 - [x] **OWN-06**: `check` derives interprocedural loan liveness from callee
       signatures only — never by re-walking callee bodies — and terminates
       under a fail-closed iteration bound.
@@ -45,8 +54,16 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [ ] **OWN-08**: D-03-02 is closed — an exported borrow-derived return with no
       declared origin is refused in the interprocedural case, in both admission
       layers.
-- [ ] **OWN-09**: The intraprocedural loan-liveness law is retired in the same
-      phase the interprocedural law lands. One law, not two.
+- [x] **OWN-09**: The intraprocedural loan-liveness DECISION POINT is retired in
+      Phase 09, one phase after the interprocedural law landed in Phase 08 —
+      not the same phase, by deliberate decision: retiring the sole decision
+      point before a second, independently-implemented detector existed would
+      have violated Key Lesson 2 (never fix the one detector that catches a
+      class of bug without first having a second one watching). "Decision
+      point," not "law," because there was never a second law: one algorithm
+      (`loanLivenessFixpoint`) had two callers, one of them deliberately
+      summary-blind (`computeLoanLastUses`, deleted in Phase 09) — a reader who
+      searches for a second law will not find one.
 
 ### Native Lowering and Equivalence
 
@@ -68,9 +85,19 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       `OpCall`, mirroring the already-proven `OpForeignCall` hop.
 - [ ] **TRU-03**: `pathoracle` independently re-derives the cross-function
       loan-chain rule without importing `check` or `corevalidate`.
-- [ ] **TRU-04**: A shadow-run differential over recursion, diamond, and
+- [x] **TRU-04**: A shadow-run differential over recursion, diamond, and
       deep-chain call graphs shows zero divergence between every peer that
       derives a given interprocedural fact, before either peer ships.
+      **"Recursion" is satisfied as a cycle-peer differential, not a liveness
+      differential (D-09-22):** `callgraph`'s three-color DFS refuses
+      `core.call_graph_cycle` before any liveness derivation runs, so a
+      *liveness* differential over an admitted recursive program cannot exist
+      in this language. Both `check`'s and `corevalidate`'s cycle-refusal
+      layers must independently agree on refusal-or-not AND on the witness,
+      for self, mutual, and indirect (3-or-more-hop) cycles. A future reader
+      must not infer from "recursion" that this compiler admits recursive
+      programs and go hunting for a liveness fact that structurally cannot
+      exist.
 
 ### Evidence and Quality
 
@@ -84,8 +111,14 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [ ] **QLT-06**: No interprocedural fact is marked cacheable until a
       callee-changes-invalidates-caller regression test gates it; interprocedural
       cache keys derive from the call-graph closure, not per-unit hashes.
-- [ ] **QLT-07**: Nyquist validation is compliant for the loan-liveness surface,
-      closing M001 Phase 3's validation debt.
+- [x] **QLT-07**: Nyquist validation is compliant for the loan-liveness surface,
+      closing M001 Phase 3's validation debt. Closed for exactly the
+      loan-liveness-scoped rows (03-03/03-04/03-05) in
+      `09-VALIDATION.md`'s "M001 Phase 3 Debt Closure (loan-liveness subset)"
+      section; OWN-04's rows (03-06/03-07) and the loop-carried-liveness
+      exclusion stay explicitly outside this closure and
+      `03-VALIDATION.md`'s own `nyquist_compliant: false` is unchanged
+      (D-09-40a, D-09-41, D-09-42).
 - [x] **QLT-08**: Every new interprocedural control is mutation-killed in the
       plan that introduces it — no control ships having never been seen to fail.
 
@@ -166,23 +199,24 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | SEM-07 | Phase 07 | Complete |
 | SEM-08 | Phase 10 | Pending |
 | SEM-09 | Phase 10 | Pending |
-| OWN-05 | Phase 09 | Pending |
+| OWN-05a | Phase 09 | Complete |
+| OWN-05b | Phase 10 | Pending |
 | OWN-06 | Phase 08 | Complete |
 | OWN-07 | Phase 09 | Complete |
-| OWN-08 | Phase 09 | Pending |
-| OWN-09 | Phase 09 | Pending |
+| OWN-08 | Phase 09 | Complete |
+| OWN-09 | Phase 09 | Complete |
 | NAT-04 | Phase 11 | Pending |
 | NAT-05 | Phase 11 | Pending |
 | NAT-06 | Phase 11 | Pending |
 | NAT-07 | Phase 11 | Pending |
 | TRU-02 | Phase 10 | Pending |
 | TRU-03 | Phase 10 | Pending |
-| TRU-04 | Phase 09 | Pending |
+| TRU-04 | Phase 09 | Complete |
 | QLT-03 | Phase 11 | Pending |
 | QLT-04 | Phase 10 | Pending |
 | QLT-05 | Phase 11 | Pending |
 | QLT-06 | Phase 11 | Pending |
-| QLT-07 | Phase 09 | Pending |
+| QLT-07 | Phase 09 | Complete |
 | QLT-08 | Phase 07 | Complete |
 | EFF-02 | Phase 08 | Complete |
 | RES-02 | Phase 12 | Pending |
@@ -193,11 +227,13 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 
 **Coverage:**
 
-- M002 requirements: 30 total
-- Mapped to phases: 30 ✓
+- M002 requirements: 31 total (OWN-05 split into OWN-05a/OWN-05b, D-09-37)
+- Mapped to phases: 31 ✓
 - Unmapped: 0
 
-**Per-phase counts:** 07 → 5, 08 → 2, 09 → 6, 10 → 5, 11 → 7, 12 → 2, 13 → 3.
+**Per-phase counts:** 07 → 5, 08 → 2, 09 → 6, 10 → 6, 11 → 7, 12 → 2, 13 → 3.
+(Phase 10 gains OWN-05b, the `interp` peer split from OWN-05, D-09-37; Phase
+09 stays at 6 since OWN-05a fills the row OWN-05 previously occupied.)
 
 **Note on QLT-08:** mapped to Phase 07, the phase that establishes it, but it is
 a standing discipline enforced in every phase 07-13. Listed once so coverage
@@ -212,7 +248,10 @@ at the moment it is decided (Key Lesson 4):
    machinery. Slip to M003; do not silently absorb as extra plans.
 2. **QLT-07** (Nyquist fold-in) — if the pre-flight cost probe shows the fold-in
    is not cheap, re-scope to a stretch item and carry it as disclosed debt
-   alongside QLT-09.
+   alongside QLT-09. **Not triggered:** the pre-flight inventory (D-09-40a,
+   run 2026-09-10) found the fold-in cost within both pre-registered bounds
+   (≤ 1 additional plan, zero new production files); QLT-07 shipped
+   COMMITTED, closed in Phase 09's own `09-VALIDATION.md`.
 3. **DX-05, DX-06, DX-07** (agent loop) — narrow to the two highest-value defect
    classes rather than cutting the mutation-kill / repair-then-re-check
    discipline for what does ship.
