@@ -533,7 +533,7 @@ merely working, before Phase 11 starts.
 Plans:
 **Wave 1**
 
-- [ ] 10-01-PLAN.md — TRACER: one call boundary executed end to end on an explicit heap frame stack, plus the OWN-05b guard (wave 1)
+- [x] 10-01-PLAN.md — TRACER: one call boundary executed end to end on an explicit heap frame stack, plus the OWN-05b guard (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

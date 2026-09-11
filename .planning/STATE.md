@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 10
 current_phase_name: Trusted Interprocedural Oracle
 status: executing
-stopped_at: Phase 10 context gathered
-last_updated: "2026-09-11T17:06:23.395Z"
-last_activity: 2026-09-10
-last_activity_desc: Phase 09 complete, transitioned to Phase 10
-state_head: 9f56bbaaf4e9d1c20cdac522feda8772bba0dc0a
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-09-11T17:41:50.676Z"
+last_activity: 2026-09-11
+last_activity_desc: Phase 10 execution started
+state_head: 7f37ffb6bae440ae69952fce8f47cc83e6879cfa
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 37
-  completed_plans: 28
+  completed_plans: 29
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 09 — Peer Re-Derivation and D-03-02 Closure
+**Current focus:** Phase 10 — Trusted Interprocedural Oracle
 six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 **Durable context (survives context clears — read before re-deriving):**
@@ -39,10 +39,10 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 10 (Trusted Interprocedural Oracle) — READY TO EXECUTE
-Plan: Not started
+Phase: 10 (Trusted Interprocedural Oracle) — EXECUTING
+Plan: 2 of 9
 Status: Ready to execute
-Last activity: 2026-09-10 — Phase 09 complete, transitioned to Phase 10
+Last activity: 2026-09-11 — Phase 10 execution started
 
 Progress: [--------------------] 0% (0/7 phases)
 
@@ -174,6 +174,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 09 P06 | 50min | 3 tasks | 7 files |
 | Phase 09 P09 | ~5h | 4 tasks | 10 files |
 | Phase 09 P10 | 50min | 3 tasks | 5 files |
+| Phase 10-trusted-interprocedural-oracle P01 | 55 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -224,6 +225,7 @@ Standing architectural commitments carried into M002:
 - [Phase 09]: Deleted computeLoanLastUses; checkInterproceduralLoanLiveness is now the sole loan-liveness decision point (D-09-07/D-09-08/D-09-09)
 - [Phase 09]: Pattern B's twin split does not materialize; recorded as new debt D-09-53 (pre-existing deriveFunctionUsesParam defect), not fixed in this plan
 - [Phase 09]: OWN-05 split into OWN-05a (Phase 09, Complete) and OWN-05b (Phase 10, Pending); QLT-07 closed for the loan-liveness subset, ratified in 09-VALIDATION.md; OWN-09/TRU-04 requirement texts corrected in place
+- [Phase 10]: 10-01: interp executes calls across an explicit []frame heap stack (D-10-21); OWN-05b falls out of observable execution, ability-aware per D-07-11; move-as-copy mutant proven via a synthetic core.Program since no legal Lang source can express the shape
 
 ### Pending Todos
 
@@ -305,10 +307,10 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-11T04:31:19.267Z
-Stopped at: Phase 10 context gathered
+Last session: 2026-09-11T17:41:50.494Z
+Stopped at: Completed 10-01-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
-Resume file: .planning/phases/10-trusted-interprocedural-oracle/10-CONTEXT.md
+Resume file: None
 Next command: `/gsd-discuss-phase 07`
 
 ## Operator Next Steps
