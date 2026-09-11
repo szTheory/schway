@@ -580,7 +580,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 10-09-PLAN.md — The `interp` stability freeze: golden corpus, determinism at `-count=10`, named escalation path, and the structural coverage floor (wave 7)
+- [x] 10-09-PLAN.md — The `interp` stability freeze: golden corpus, determinism at `-count=10`, named escalation path, and the structural coverage floor (wave 7)
 
 ### Phase 11: Multi-Function Native Emission and Interprocedural Equivalence
 
