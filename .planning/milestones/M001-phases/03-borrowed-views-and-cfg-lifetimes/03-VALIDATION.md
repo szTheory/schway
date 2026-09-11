@@ -215,3 +215,4 @@ If the caps, schema, timeout, output ceiling, or honest-absence reporting cannot
 - [ ] `nyquist_compliant: true` and `wave_0_complete: true` are set only after execution supplies the evidence above.
 
 **Approval:** not granted. This document is the contract to be satisfied, not a record of satisfaction.
+> **Superseded (partial):** This document's loan-liveness subset (Per-Task Verification Map rows 03-03-01 through 03-05-03, plus the corresponding Mutation-Kill Register and Generator Reachability Register rows) is superseded by `.planning/phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md`, section "M001 Phase 3 Debt Closure (loan-liveness subset)", as of 2026-09-10; this document's own `nyquist_compliant: false`, its unticked checkboxes, and its OWN-04/loop-carried-liveness scope limitation are unchanged and remain the record of record for everything outside that subset.
