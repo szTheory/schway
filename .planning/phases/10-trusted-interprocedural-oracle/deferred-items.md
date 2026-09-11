@@ -31,3 +31,51 @@ gate). `transitiveImportsViolation` in `originvalidate_test.go` now uses
 matching the pattern `pathoracle_test.go` established in commit `9241354`.
 `go test ./internal/compiler/native/... -run TestSourceNeverSpawnsUnboundedProcesses`
 passes.
+
+## From Plan 10-07
+
+- **`corevalidate.peerDeriveOriginFacts` (`internal/compiler/corevalidate/corevalidate.go`)
+  has no `core.OpCall` case, so ANY function declaring a borrow-returning
+  `PublicOrigin` whose return value is sourced from forwarding a callee's
+  own result (rather than a direct local `borrow`) is unconditionally
+  reported as NOT `Callable` by `corevalidate`'s own independent origin
+  peer -- regardless of whether the callee's own body actually returns a
+  borrow, and regardless of what the calling function does afterward.**
+  Discovered while attempting Task 1's ideal accept fixture (a genuine
+  3-hop declared-borrow carry, forwarded leaf-to-f2-to-f1-to-caller with no
+  conflicting use): `check.Program` admits that shape with ZERO
+  diagnostics, but `session.CheckCommandFile`'s next consult,
+  `corevalidate.Validate`, independently refuses it with
+  `core.callee_not_callable` for the middle hop. Root cause confirmed by
+  direct inspection of `peerDeriveOriginFacts`
+  (`corevalidate.go:2324-2354`): its forward walk only ever extends
+  `derived[...]` through `core.OpBorrowShared`/`core.OpBorrowExclusive`/
+  `core.OpMove`/`core.OpCopy` -- there is no `core.OpCall` arm at all, so a
+  call's own `TargetID` never enters `derived`, and `peerOriginContained`
+  (which consults `peerDeriveOriginFacts` for any function with a declared
+  `PublicOrigin`) always reports "not derived" for such a function.
+  **This is NOT specific to the new depth-3 fixture: `relay_depth2_refuse.lang`
+  (Phase 08, unmodified) is refused for the SAME independent reason today
+  -- confirmed directly by removing its own `take buffer` conflict and
+  re-running `corevalidate.Validate` in isolation, which still reports
+  `core.callee_not_callable` for `relay`.** It has simply never been
+  OBSERVABLE on that fixture, because `check`'s own
+  `check.interprocedural_loan_liveness` refusal fires first and
+  `CheckCommandFile`'s fixed check-then-peer precedence never reaches
+  corevalidate for it. Structurally analogous to D-10-28 (a second
+  detector missing a `core.OpCall` case) but for corevalidate's ORIGIN
+  peer rather than its `usesParam` peer. Not fixed here: `corevalidate.go`
+  is outside plan 10-07's `files_modified`, and widening
+  `peerDeriveOriginFacts` to consult a callee's own declared/derived
+  origin fact (mirroring `originvalidate.walkReturnOrigin`'s own
+  `core.OpCall` case, or `corevalidate_peer_liveness.go`'s own
+  `derivePeerLoanCarry` postorder-consult pattern) is a genuine,
+  independent semantic change with its own blast radius, not a fixture
+  fix. Reported per plan 10-07 Task 1's own escape-hatch instruction rather
+  than silently falling back to an owned pass-through; see
+  `testdata/phase10/relay_depth3_accept.lang`'s own header for the full
+  empirical trail. A future plan (candidate: wherever D-10-28 lands, since
+  both are "corevalidate's peer missing an OpCall case") should widen
+  `peerDeriveOriginFacts` and add a companion mutation-kill test proving
+  the new case load-bearing, mirroring `TestOpCallOriginWalkGateIsLoadBearing`'s
+  own precedent for `originvalidate`'s equivalent case.

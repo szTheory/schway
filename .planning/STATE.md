@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 10
 current_phase_name: Trusted Interprocedural Oracle
 status: executing
-stopped_at: Completed 10-06-PLAN.md
-last_updated: "2026-09-11T20:19:18.239Z"
+stopped_at: Completed 10-07-PLAN.md
+last_updated: "2026-09-11T20:53:04.334Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 10 execution started
-state_head: 3d3e28643b76e019d9dc5dffc3b381e945eeafa9
+state_head: 81e109a60948e613074ad215151e98a78f1d23c8
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 37
-  completed_plans: 34
+  completed_plans: 35
 ---
 
 # Project State
@@ -41,7 +41,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 10 (Trusted Interprocedural Oracle) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 10 execution started
 
@@ -181,6 +181,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 10-trusted-interprocedural-oracle P04 | 45min | 3 tasks | 3 files |
 | Phase 10 P05 | 85 min | 2 tasks | 5 files |
 | Phase 10-trusted-interprocedural-oracle P06 | 40min | 3 tasks | 4 files |
+| Phase 10-trusted-interprocedural-oracle P07 | 65 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -241,6 +242,7 @@ Standing architectural commitments carried into M002:
 - [Phase 10]: [Phase 10]: 10-04: MaxCallDepth = 128 declared deliberately BELOW the real 1024-function structural ceiling (inverse of pathoracle.MaxPaths' above-maximum direction); depth-exceeded refusal modeled as a typed Outcome/Event (never a bare error); a subprocess probe (first in this repo) directly observes the host-stack limit and the language-level call-depth bound are structurally unrelated
 - [Phase 10]: 10-05: interp's cross-frame drain order (D-10-33/D-10-35) plus corevalidate's per-declaration callee-frame-drain invariant (D-10-34) are the two independent knowers of drop order; cgen's multi-frame pad stays named Phase 11 debt
 - [Phase 10]: D-10-59 trigger measured at plan 10-06's gate: 0.19x (71,773 actual vs 375,000 estimated across plans 10-01-10-05) — DID NOT FIRE, no cut taken — All four hard ordering constraints confirmed against git history; plans 10-07/10-08 proceed unchanged
+- [Phase 10-trusted-interprocedural-oracle]: Composition depth declared at 3 (D-10-46) with a bidirectional gate (D-10-50); a previously-undocumented corevalidate peerDeriveOriginFacts gap (no OpCall case) discovered and reported per plan 10-07's own escape hatch.
 
 ### Pending Todos
 
@@ -333,8 +335,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-11T20:19:18.063Z
-Stopped at: Completed 10-06-PLAN.md
+Last session: 2026-09-11T20:52:58.037Z
+Stopped at: Completed 10-07-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

@@ -572,7 +572,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 10-07-PLAN.md — QLT-04's declared composition depth of 3, the first depth-3 corpus in the tree, and the bidirectional depth gate (wave 5)
+- [x] 10-07-PLAN.md — QLT-04's declared composition depth of 3, the first depth-3 corpus in the tree, and the bidirectional depth gate (wave 5)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
