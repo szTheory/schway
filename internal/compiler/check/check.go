@@ -877,14 +877,43 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 
 		chain := derivePlaceLoans(function.Linear.Operations, summaries)
 
+		// D-09-08/D-09-09/Task 2(d): testOnlyForceUniformLoanJoin re-attached
+		// here, gated to branch-bodied (arm) functions ONLY -- mirroring the
+		// seam's pre-restructure scope (analyzeArmBody, never
+		// analyzeStraightLine). Force every loan's last use to its OWN arm
+		// block's own last operation (the arm's own join point), exactly as
+		// if edge-specific placement had been deleted and every loan ended
+		// uniformly at the join regardless of which edge actually needs it.
+		if testOnlyForceUniformLoanJoin && function.Match != nil {
+			blockOfOperationID := make(map[string]string, len(function.Linear.Operations))
+			blockLastIndex := make(map[string]int, len(blocks))
+			for _, block := range blocks {
+				maxIndex := -1
+				for _, operation := range block.operations {
+					blockOfOperationID[operation.ID] = block.id
+					if index, ok := operationIndexByID[operation.ID]; ok && index > maxIndex {
+						maxIndex = index
+					}
+				}
+				blockLastIndex[block.id] = maxIndex
+			}
+			for loanID, borrow := range chain.borrowOperation {
+				if blockID, ok := blockOfOperationID[borrow.ID]; ok {
+					if last, ok2 := blockLastIndex[blockID]; ok2 && last >= 0 {
+						lastUseIndexByLoan[loanID] = last
+					}
+				}
+			}
+		}
+
 		// Iterate borrowed loans in sorted ID order, never in Go map order.
 		// This language permits multiple concurrent SHARED borrows of the same
 		// owner place, so two distinct loans can tie on the same offending
 		// OpMove index; the strict `index < offendingIndex` tie-break below
 		// then keeps whichever the range happened to yield first. Sorting here
-		// is the same guarantee conflictingLoan already makes for the
-		// intraprocedural diagnostics -- so two runs never disagree about
-		// which loan a diagnostic blames.
+		// is the same guarantee the deleted lowering-time gate already made
+		// for the intraprocedural diagnostics -- so two runs never disagree
+		// about which loan a diagnostic blames.
 		borrowedLoanIDs := make([]string, 0, len(chain.borrowOperation))
 		for loanID := range chain.borrowOperation {
 			borrowedLoanIDs = append(borrowedLoanIDs, loanID)
@@ -913,6 +942,70 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 					offendingLoanID = loanID
 				}
 			}
+		}
+
+		// D-09-08/D-09-09/Task 2(a): the earliest new loan (OpBorrowShared/
+		// OpBorrowExclusive) whose owner already carries an unexpired,
+		// access-conflicting loan -- ownership.borrow_conflict's own
+		// extension into this pass, using the SAME lastUseIndexByLoan the
+		// move scan above already derived (D-09-07: never a second liveness
+		// law). "Unexpired at index" mirrors the deleted lowering-time
+		// activeLoans' own expiry threshold exactly: a loan born at an
+		// earlier index survives through (and including) the index equal to
+		// its own last use.
+		borrowConflictIndex := -1
+		var offendingBorrow, blockingBorrow core.LinearOperation
+		for index, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpBorrowShared && operation.Kind != core.OpBorrowExclusive {
+				continue
+			}
+			newLoanID := operation.LoanID
+			if newLoanID == "" {
+				continue
+			}
+			var conflicting []string
+			for _, loanID := range borrowedLoanIDs {
+				if loanID == newLoanID {
+					continue
+				}
+				existing := chain.borrowOperation[loanID]
+				if existing.SourceID != operation.SourceID {
+					continue
+				}
+				birthIndex, ok := operationIndexByID[existing.ID]
+				if !ok || birthIndex >= index {
+					continue
+				}
+				lastUse, ok2 := lastUseIndexByLoan[loanID]
+				if !ok2 || lastUse < index {
+					continue
+				}
+				if operation.Kind == core.OpBorrowShared && existing.Kind == core.OpBorrowShared {
+					continue
+				}
+				conflicting = append(conflicting, loanID)
+			}
+			if len(conflicting) == 0 {
+				continue
+			}
+			sort.Strings(conflicting)
+			if borrowConflictIndex == -1 || index < borrowConflictIndex {
+				borrowConflictIndex = index
+				offendingBorrow = operation
+				blockingBorrow = chain.borrowOperation[conflicting[0]]
+			}
+		}
+
+		// Earliest offending event wins overall, mirroring the single forward
+		// admission walk the deleted lowering-time code used to perform
+		// before D-09-08's authorized deletion moved this decision here
+		// (D-09-13).
+		if borrowConflictIndex != -1 && (offendingIndex == -1 || borrowConflictIndex < offendingIndex) {
+			blockingLastUse := lastUseIndexByLoan[blockingBorrow.LoanID]
+			diagnostics = append(diagnostics, borrowConflictDiagnosticPostAssembly(
+				offendingBorrow, blockingBorrow, lastUseSpanAt(function, blockingLastUse, spanByOperationID), placesByID(function), spanByOperationID,
+			))
+			continue
 		}
 		if offendingIndex == -1 {
 			continue
@@ -947,11 +1040,113 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 				continue
 			}
 		}
-		// Neither direction fired -- an intraprocedural-only conflict, which
-		// the per-function admission pass this pass runs strictly after
-		// would already have refused (D-08-12); nothing new to report.
+		// Neither direction fired: a plain intraprocedural conflict. Before
+		// D-09-08's authorized deletion, this was already caught at lowering
+		// time by analyzeStraightLine/analyzeArmBody's own activeLoans state
+		// machine; this pass is now the SOLE decision point (D-09-09) and
+		// raises the identical ownership.move_while_borrowed diagnostic.
+		diagnostics = append(diagnostics, moveWhileBorrowedDiagnosticPostAssembly(
+			offendingMove, borrowOperation, lastUseSpanAt(function, lastUseIndexByLoan[offendingLoanID], spanByOperationID), spanByOperationID,
+		))
 	}
 	return diagnostics
+}
+
+// lastUseSpanAt projects a loan's last-use OPERATION INDEX back to a span,
+// reconstructed from the program-wide span channel D-07-35/D-08-22 already
+// built (spanByOperationID) -- never from AST, which this pass never reads.
+// A last use at the function's own terminator (OpReturn/OpDefect) has no
+// CallSpans entry (lowering never records one for the terminator), so it
+// falls back to the function's own span, mirroring the deleted lowering-time
+// derivation's identical "used at result position" fallback.
+func lastUseSpanAt(function core.Function, lastUseIndex int, spanByOperationID map[string]diagnostic.Span) diagnostic.Span {
+	if function.Linear == nil || lastUseIndex < 0 || lastUseIndex >= len(function.Linear.Operations) {
+		return function.Span
+	}
+	operation := function.Linear.Operations[lastUseIndex]
+	if operation.Kind == core.OpReturn || operation.Kind == core.OpDefect {
+		return function.Span
+	}
+	if span, ok := spanByOperationID[operation.ID]; ok {
+		return span
+	}
+	return function.Span
+}
+
+// placesByID indexes a function's own Linear.Places by ID, so a post-assembly
+// diagnostic can recover a place's SOURCE-LEVEL surface name (core.Place.Name
+// preserves it) without reading AST -- needed only for
+// borrowConflictDiagnosticPostAssembly's narrow_to_shared_borrow repair text.
+func placesByID(function core.Function) map[string]core.Place {
+	if function.Linear == nil {
+		return nil
+	}
+	byID := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		byID[place.ID] = place
+	}
+	return byID
+}
+
+// moveWhileBorrowedDiagnosticPostAssembly builds ownership.move_while_borrowed
+// at the post-assembly decision point, reproducing exactly the cause/repair
+// shape analyzeStraightLine/analyzeArmBody used to build inline before
+// D-09-08's authorized deletion moved this decision here.
+func moveWhileBorrowedDiagnosticPostAssembly(move, borrow core.LinearOperation, lastUseSpan diagnostic.Span, spanByOperationID map[string]diagnostic.Span) diagnostic.Diagnostic {
+	causes := []diagnostic.Cause{
+		{Kind: "borrow_created_here", Span: spanPointer(spanByOperationID[borrow.ID])},
+		{Kind: "borrow_used_later", Span: spanPointer(lastUseSpan)},
+		{Kind: "loan", Detail: borrow.LoanID},
+		{Kind: "owner", Detail: move.SourceID},
+		{Kind: "type", Detail: move.TypeID},
+	}
+	primary := spanByOperationID[move.ID]
+	return diagnostic.ErrorWithRepairs(
+		"ownership.move_while_borrowed", primary, "cannot transfer ownership while a future-used shared loan is live", causes,
+		diagnostic.Repair{Kind: "move_after_last_borrow_use"},
+	)
+}
+
+// borrowConflictDiagnosticPostAssembly builds ownership.borrow_conflict at the
+// post-assembly decision point, preserving the same cause shape and the same
+// conditional narrow_to_shared_borrow repair (attached only when the NEW loan
+// is exclusive) the deleted lowering-time gate used to build. The repair's
+// Replacement text is reconstructed from core.Place.Name (a source-level fact
+// core.Place already preserves), never from AST.
+func borrowConflictDiagnosticPostAssembly(newBorrow, blockingBorrow core.LinearOperation, blockingLastUseSpan diagnostic.Span, places map[string]core.Place, spanByOperationID map[string]diagnostic.Span) diagnostic.Diagnostic {
+	causes := []diagnostic.Cause{
+		{Kind: "borrow_created_here", Span: spanPointer(spanByOperationID[blockingBorrow.ID])},
+		{Kind: "borrow_used_later", Span: spanPointer(blockingLastUseSpan)},
+		{Kind: "loan", Detail: blockingBorrow.LoanID},
+		{Kind: "owner", Detail: newBorrow.SourceID},
+		{Kind: "type", Detail: newBorrow.TypeID},
+	}
+	repairs := []diagnostic.Repair{{Kind: "create_loan_after_conflicting_loan_ends"}}
+	if newBorrow.Kind == core.OpBorrowExclusive {
+		// The repair's own Span must cover the WHOLE "let NAME = borrow mut
+		// SOURCE" statement (Replacement rewrites all of it), never just the
+		// RHS token spanByOperationID[newBorrow.ID] carries for the
+		// diagnostic's own Primary/causes -- see the ":stmt"-suffixed entry
+		// analyzeStraightLine/analyzeArmBody populate in the SAME channel.
+		newBorrowSpan, ok := spanByOperationID[newBorrow.ID+":stmt"]
+		if !ok {
+			newBorrowSpan = spanByOperationID[newBorrow.ID]
+		}
+		targetName, sourceName := "", ""
+		if places != nil {
+			targetName = places[newBorrow.TargetID].Name
+			sourceName = places[newBorrow.SourceID].Name
+		}
+		repairs = append(repairs, diagnostic.Repair{
+			Kind: "narrow_to_shared_borrow", Span: &newBorrowSpan,
+			Replacement:   "let " + targetName + " = borrow " + sourceName,
+			Applicability: diagnostic.ApplicabilityMachineApplicable,
+		})
+	}
+	return diagnostic.ErrorWithRepairs(
+		"ownership.borrow_conflict", spanByOperationID[newBorrow.ID], "cannot create a loan while a conflicting loan is live", causes,
+		repairs...,
+	)
 }
 
 // interproceduralLoanLivenessDiagnostic builds the
@@ -2074,32 +2269,32 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // analyzeStraightLine, duplicating rather than reusing it, so the Phase 1/2
 // straight-line path (checkLinear) carries zero risk from this addition.
 //
-// D-05-35(d): computeLoanLastUses (loanLivenessFixpoint's own last-use
-// derivation) is now the sole law deciding conflict/expiry here --
-// discoverLoanLastUses is retired, authorized by D-05-35(b)/(c)'s recorded
-// zero-divergence shadow run over the full TestOwnershipSequenceExhaustive/
-// TestBranchSequenceExhaustive enumeration (225,890 + 4,802 comparisons, see
-// the retired shadow test's own history).
+// D-09-08/D-09-09: loan-liveness admission (conflict/expiry) is no longer
+// decided here. lowering emits core.OpMove/OpBorrowShared/OpBorrowExclusive
+// unconditionally and makes no timing decision; checkInterproceduralLoanLiveness's
+// post-assembly pass, extended to the purely-intraprocedural case, is now the
+// SOLE decision point for `ownership.move_while_borrowed` /
+// `ownership.borrow_conflict` (D-09-07: one algorithm -- loanLivenessFixpoint/
+// materializeLoanEndpoints -- two callers, never two laws). The summary-blind
+// early call site (computeLoanLastUses, its shadow:place/shadow:loan
+// scaffolding, and its own loanLivenessFixpoint("shadow", ...) call) that used
+// to feed this function's own admission decision was DELETED under D-09-08's
+// authorization at plan 09-08's mid-phase gate.
+//
+// LoanFinalUses/States below stay populated -- both are test-visible evidence
+// surfaces with NO production reader (grep-verified), computed UP FRONT by
+// loanFinalUseEvidence (this file) exactly as before, so they still answer
+// for the FULL declared body even when a later per-binding fact fails and
+// the walk below never reaches every binding -- an independent oracle
+// populates the same fields the same way, over the same full body,
+// regardless of which fact fails first.
 func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
 	}
-	loanUses, discoveryWork := computeLoanLastUses(parameterName, body)
+	loanUses, discoveryWork := loanFinalUseEvidence(parameterName, body)
 	result.Work += discoveryWork
-	if testOnlyForceUniformLoanJoin {
-		// Fault-injection seam for TestUniformJoinPlacementFlipsBothVerdicts
-		// (03-03-02): force every loan's computed last use to the arm's own
-		// join point (len(body.Bindings)), exactly as if edge-specific
-		// placement had been deleted and every loan ended uniformly at the
-		// join regardless of which edge actually needs it. See the doc
-		// comment on testOnlyForceUniformLoanJoin for why this is falsified
-		// by direct mutation rather than a production revert.
-		for index, use := range loanUses {
-			use.index = len(body.Bindings)
-			loanUses[index] = use
-		}
-	}
 	for index, binding := range body.Bindings {
 		if binding.RHS.Kind == "borrow" || binding.RHS.Kind == "borrow_mut" {
 			result.LoanFinalUses = append(result.LoanFinalUses, loanFinalUseFact{
@@ -2110,12 +2305,15 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	places := map[string]*placeState{
 		parameterName: {place: core.Place{ID: parameterPlaceID, Name: parameterName, TypeID: typeFact.ID}, declared: parameterSpan, initialized: true},
 	}
-	activeLoans := make(map[string]map[string]*loanState)
-	expiringLoans := make(map[int][]*loanState)
+	activeLoans := make(map[string]map[string]int) // ownerID -> loanID -> lastUse (evidence only, D-09-08/D-09-09)
+	expiringLoans := make(map[int][]struct {
+		ownerID string
+		loanID  string
+	})
 	endLoans := func(index int) {
 		for _, loan := range expiringLoans[index] {
 			if loans := activeLoans[loan.ownerID]; loans != nil {
-				delete(loans, loan.id)
+				delete(loans, loan.loanID)
 				if len(loans) == 0 {
 					delete(activeLoans, loan.ownerID)
 				}
@@ -2169,28 +2367,14 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 		}
 		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: binding.Name, TypeID: source.place.TypeID}
 		kind := core.OpCopy
-		var loan *loanState
+		loanIDStr := ""
+		var newLoanOwnerID string
+		var newLoanLastUse int
 		switch binding.RHS.Kind {
 		case "take":
-			if loans := activeLoans[source.place.ID]; len(loans) > 0 {
-				loanIDs := make([]string, 0, len(loans))
-				for loanID := range loans {
-					loanIDs = append(loanIDs, loanID)
-				}
-				sort.Strings(loanIDs)
-				blocking := loans[loanIDs[0]]
-				causes := []diagnostic.Cause{
-					{Kind: "borrow_created_here", Span: spanPointer(blocking.borrowedAt)},
-					{Kind: "borrow_used_later", Span: spanPointer(blocking.lastUseSpan)},
-					{Kind: "loan", Detail: blocking.id},
-					{Kind: "owner", Detail: source.place.ID},
-					{Kind: "type", Detail: source.place.TypeID},
-				}
-				return fail(diagnostic.ErrorWithRepairs(
-					"ownership.move_while_borrowed", binding.RHS.Span, "cannot transfer ownership while a future-used shared loan is live", causes,
-					diagnostic.Repair{Kind: "move_after_last_borrow_use"},
-				))
-			}
+			// D-09-08/D-09-09: no activeLoans conflict check here -- lowering
+			// emits core.OpMove unconditionally, and the post-assembly pass
+			// decides ownership.move_while_borrowed (D-09-07).
 			kind = core.OpMove
 			source.initialized = false
 			source.movedAt = spanPointer(binding.RHS.Span)
@@ -2208,20 +2392,13 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 					diagnostic.Repair{Kind: "use_take_instead"},
 				))
 			}
-			if blocking := conflictingLoan(activeLoans[source.place.ID], "shared"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
-			}
+			// D-09-08/D-09-09: no conflictingLoan check here -- lowering
+			// emits core.OpBorrowShared unconditionally, and the post-assembly
+			// pass decides ownership.borrow_conflict (D-09-07). activeLoans
+			// below is EVIDENCE bookkeeping only (feeds States.ActiveLoans).
 			kind = core.OpBorrowShared
-			use := loanUses[index]
-			loan = &loanState{
-				id: fmt.Sprintf("%s:loan:%d", functionID, global), ownerID: source.place.ID, access: "shared",
-				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
-			}
-			if activeLoans[source.place.ID] == nil {
-				activeLoans[source.place.ID] = make(map[string]*loanState)
-			}
-			activeLoans[source.place.ID][loan.id] = loan
-			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+			loanIDStr = fmt.Sprintf("%s:loan:%d", functionID, global)
+			newLoanOwnerID, newLoanLastUse = source.place.ID, loanUses[index].index
 		case "borrow_mut":
 			// An exclusive loan is gated on the same share-ability requirement
 			// as a shared loan: the ability that permits observation without
@@ -2242,20 +2419,9 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 					diagnostic.Repair{Kind: "use_take_instead"},
 				))
 			}
-			if blocking := conflictingLoan(activeLoans[source.place.ID], "exclusive"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
-			}
 			kind = core.OpBorrowExclusive
-			use := loanUses[index]
-			loan = &loanState{
-				id: fmt.Sprintf("%s:loan:%d", functionID, global), ownerID: source.place.ID, access: "exclusive",
-				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
-			}
-			if activeLoans[source.place.ID] == nil {
-				activeLoans[source.place.ID] = make(map[string]*loanState)
-			}
-			activeLoans[source.place.ID][loan.id] = loan
-			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+			loanIDStr = fmt.Sprintf("%s:loan:%d", functionID, global)
+			newLoanOwnerID, newLoanLastUse = source.place.ID, loanUses[index].index
 		default:
 			if !hasTypeAbility(typeFact, core.AbilityCopy) {
 				causes := []diagnostic.Cause{
@@ -2270,11 +2436,21 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 				))
 			}
 		}
+		if loanIDStr != "" {
+			if activeLoans[newLoanOwnerID] == nil {
+				activeLoans[newLoanOwnerID] = make(map[string]int)
+			}
+			activeLoans[newLoanOwnerID][loanIDStr] = newLoanLastUse
+			expiringLoans[newLoanLastUse] = append(expiringLoans[newLoanLastUse], struct {
+				ownerID string
+				loanID  string
+			}{ownerID: newLoanOwnerID, loanID: loanIDStr})
+		}
 		result.Places = append(result.Places, target)
 		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
 		operation := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
-			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanID(loan), TypeID: source.place.TypeID,
+			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanIDStr, TypeID: source.place.TypeID,
 		}
 		result.Operations = append(result.Operations, operation)
 		// D-08-22: widen the SAME program-wide span channel D-07-35 built for
@@ -2288,6 +2464,14 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 			result.CallSpans = map[string]diagnostic.Span{}
 		}
 		result.CallSpans[operation.ID] = binding.RHS.Span
+		// D-09-08/D-09-09: also record the WHOLE binding statement's span
+		// under a synthesized ":stmt" suffix key, in the SAME channel
+		// (merged into spanByOperationID exactly like every other CallSpans
+		// entry) -- needed ONLY by borrowConflictDiagnosticPostAssembly's
+		// narrow_to_shared_borrow repair, whose Replacement text rewrites
+		// the ENTIRE "let NAME = borrow mut SOURCE" statement, never just
+		// the RHS token binding.RHS.Span already carries.
+		result.CallSpans[operation.ID+":stmt"] = binding.Span
 		endLoans(index)
 		result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 	}
@@ -3298,7 +3482,17 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 		Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: typeNodeCount(typeFact.Shape) + len(body.Bindings) + 1,
 	}
-	loanUses, fixpointWork := computeLoanLastUses(parameterName, body)
+	// D-09-08/D-09-09: no admission decision is made here anymore (see
+	// analyzeArmBody's identical doc comment above). loanUses/FixpointWork
+	// come from loanFinalUseEvidence -- the deleted computeLoanLastUses'
+	// evidence-only replacement -- called UP FRONT exactly as before, so
+	// LoanFinalUses stays populated for the FULL declared body even when a
+	// later per-binding fact fails partway through. Work keeps the SAME
+	// historical flat len(body.Bindings)+1 accounting convention
+	// TestOwnershipSequenceExhaustive/TestOwnershipWorkSeries pin exactly
+	// against an independent oracle; the fixpoint's real, honestly-varying
+	// cost is counted separately via FixpointWork (see its own doc comment).
+	loanUses, fixpointWork := loanFinalUseEvidence(parameterName, body)
 	result.FixpointWork = fixpointWork
 	result.Work += len(body.Bindings) + 1
 	for index, binding := range body.Bindings {
@@ -3311,12 +3505,15 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	places := map[string]*placeState{
 		parameterName: {place: result.Places[0], declared: parameterSpan, initialized: true},
 	}
-	activeLoans := make(map[string]map[string]*loanState)
-	expiringLoans := make(map[int][]*loanState)
+	activeLoans := make(map[string]map[string]int) // ownerID -> loanID -> lastUse (evidence only, D-09-08/D-09-09)
+	expiringLoans := make(map[int][]struct {
+		ownerID string
+		loanID  string
+	})
 	endLoans := func(index int) {
 		for _, loan := range expiringLoans[index] {
 			if loans := activeLoans[loan.ownerID]; loans != nil {
-				delete(loans, loan.id)
+				delete(loans, loan.loanID)
 				if len(loans) == 0 {
 					delete(activeLoans, loan.ownerID)
 				}
@@ -3385,28 +3582,14 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 		}
 		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, index+1), Name: binding.Name, TypeID: source.place.TypeID}
 		kind := core.OpCopy
-		var loan *loanState
+		loanIDStr := ""
+		var newLoanOwnerID string
+		var newLoanLastUse int
 		switch binding.RHS.Kind {
 		case "take":
-			if loans := activeLoans[source.place.ID]; len(loans) > 0 {
-				loanIDs := make([]string, 0, len(loans))
-				for loanID := range loans {
-					loanIDs = append(loanIDs, loanID)
-				}
-				sort.Strings(loanIDs)
-				blocking := loans[loanIDs[0]]
-				causes := []diagnostic.Cause{
-					{Kind: "borrow_created_here", Span: spanPointer(blocking.borrowedAt)},
-					{Kind: "borrow_used_later", Span: spanPointer(blocking.lastUseSpan)},
-					{Kind: "loan", Detail: blocking.id},
-					{Kind: "owner", Detail: source.place.ID},
-					{Kind: "type", Detail: source.place.TypeID},
-				}
-				return fail(diagnostic.ErrorWithRepairs(
-					"ownership.move_while_borrowed", binding.RHS.Span, "cannot transfer ownership while a future-used shared loan is live", causes,
-					diagnostic.Repair{Kind: "move_after_last_borrow_use"},
-				))
-			}
+			// D-09-08/D-09-09: no activeLoans conflict check here -- lowering
+			// emits core.OpMove unconditionally, and the post-assembly pass
+			// decides ownership.move_while_borrowed (D-09-07).
 			kind = core.OpMove
 			source.initialized = false
 			source.movedAt = spanPointer(binding.RHS.Span)
@@ -3430,20 +3613,13 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 					diagnostic.Repair{Kind: "use_take_instead"},
 				))
 			}
-			if blocking := conflictingLoan(activeLoans[source.place.ID], "shared"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
-			}
+			// D-09-08/D-09-09: no conflictingLoan check here -- lowering
+			// emits core.OpBorrowShared unconditionally, and the post-assembly
+			// pass decides ownership.borrow_conflict (D-09-07). activeLoans
+			// below is EVIDENCE bookkeeping only (feeds States.ActiveLoans).
 			kind = core.OpBorrowShared
-			use := loanUses[index]
-			loan = &loanState{
-				id: fmt.Sprintf("%s:loan:%d", functionID, index), ownerID: source.place.ID, access: "shared",
-				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
-			}
-			if activeLoans[source.place.ID] == nil {
-				activeLoans[source.place.ID] = make(map[string]*loanState)
-			}
-			activeLoans[source.place.ID][loan.id] = loan
-			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+			loanIDStr = fmt.Sprintf("%s:loan:%d", functionID, index)
+			newLoanOwnerID, newLoanLastUse = source.place.ID, loanUses[index].index
 		case "borrow_mut":
 			// An exclusive loan is gated on the same share-ability requirement
 			// as a shared loan (see the comment on the identical gate above).
@@ -3459,20 +3635,9 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 					diagnostic.Repair{Kind: "use_take_instead"},
 				))
 			}
-			if blocking := conflictingLoan(activeLoans[source.place.ID], "exclusive"); blocking != nil {
-				return fail(borrowConflictDiagnostic(binding.RHS.Span, blocking, source.place.ID, source.place.TypeID, binding))
-			}
 			kind = core.OpBorrowExclusive
-			use := loanUses[index]
-			loan = &loanState{
-				id: fmt.Sprintf("%s:loan:%d", functionID, index), ownerID: source.place.ID, access: "exclusive",
-				borrowedAt: binding.RHS.Span, lastUse: use.index, lastUseSpan: use.span,
-			}
-			if activeLoans[source.place.ID] == nil {
-				activeLoans[source.place.ID] = make(map[string]*loanState)
-			}
-			activeLoans[source.place.ID][loan.id] = loan
-			expiringLoans[loan.lastUse] = append(expiringLoans[loan.lastUse], loan)
+			loanIDStr = fmt.Sprintf("%s:loan:%d", functionID, index)
+			newLoanOwnerID, newLoanLastUse = source.place.ID, loanUses[index].index
 		default:
 			if !hasTypeAbility(typeFact, core.AbilityCopy) {
 				causes := []diagnostic.Cause{
@@ -3493,11 +3658,21 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 				))
 			}
 		}
+		if loanIDStr != "" {
+			if activeLoans[newLoanOwnerID] == nil {
+				activeLoans[newLoanOwnerID] = make(map[string]int)
+			}
+			activeLoans[newLoanOwnerID][loanIDStr] = newLoanLastUse
+			expiringLoans[newLoanLastUse] = append(expiringLoans[newLoanLastUse], struct {
+				ownerID string
+				loanID  string
+			}{ownerID: newLoanOwnerID, loanID: loanIDStr})
+		}
 		result.Places = append(result.Places, target)
 		places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
 		operation := core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index),
-			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanID(loan), TypeID: source.place.TypeID,
+			Kind: kind, SourceID: source.place.ID, TargetID: target.ID, LoanID: loanIDStr, TypeID: source.place.TypeID,
 		}
 		result.Operations = append(result.Operations, operation)
 		// D-08-22: see analyzeArmBody's identical span-widening comment.
@@ -3505,6 +3680,14 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 			result.CallSpans = map[string]diagnostic.Span{}
 		}
 		result.CallSpans[operation.ID] = binding.RHS.Span
+		// D-09-08/D-09-09: also record the WHOLE binding statement's span
+		// under a synthesized ":stmt" suffix key, in the SAME channel
+		// (merged into spanByOperationID exactly like every other CallSpans
+		// entry) -- needed ONLY by borrowConflictDiagnosticPostAssembly's
+		// narrow_to_shared_borrow repair, whose Replacement text rewrites
+		// the ENTIRE "let NAME = borrow mut SOURCE" statement, never just
+		// the RHS token binding.RHS.Span already carries.
+		result.CallSpans[operation.ID+":stmt"] = binding.Span
 		endLoans(index)
 		result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 	}
@@ -3531,79 +3714,115 @@ type loanUse struct {
 	span  diagnostic.Span
 }
 
-type loanState struct {
-	id      string
-	ownerID string
-	// access is "shared" or "exclusive" (Phase 3). It decides which rows of
-	// the five-row conflict matrix apply when a new loan is created on the
-	// same owner: shared-vs-shared never conflicts, every other combination
-	// does. See conflictingLoan.
-	access      string
-	borrowedAt  diagnostic.Span
-	lastUse     int
-	lastUseSpan diagnostic.Span
-}
-
-// conflictingLoan selects the loan (if any) among an owner's currently active
-// loans that conflicts with a newly-created loan of newAccess, using the same
-// deterministic-first-by-sorted-ID selection the existing move_while_borrowed
-// gate already uses (so two runs never disagree on which loan a diagnostic
-// blames). Shared-plus-shared overlap is never a conflict; every other
-// combination (shared+exclusive, exclusive+shared, exclusive+exclusive) is.
-func conflictingLoan(candidates map[string]*loanState, newAccess string) *loanState {
-	if len(candidates) == 0 {
-		return nil
+// loanFinalUseEvidence is D-09-08/D-09-09's evidence-only replacement for the
+// deleted computeLoanLastUses. It derives, for every loan, its last
+// transitively-derived use (binding index -> last use), via
+// loanLivenessFixpoint's backward worklist dataflow -- the SAME shared
+// machinery checkBranch's arm blocks and checkInterproceduralLoanLiveness's
+// post-assembly pass already use (D-09-07: one algorithm, never a second
+// law). It is called UNCONDITIONALLY, before any admission outcome is known,
+// because LoanFinalUses/States are test-visible evidence fields
+// (TestOwnershipSequenceExhaustive's byte-identical comparison) that an
+// independent oracle populates from the FULL declared body regardless of
+// which per-binding fact later fails -- so this function must be able to
+// answer for the whole raw body too, not merely a truncated prefix an early
+// `fail()` return happened to build real operations for.
+//
+// Unlike the deleted function, this one NEVER decides anything: no caller
+// consults its output to accept or reject a binding (D-09-08's authorized
+// reversal removed the last such consultation). It builds the identical
+// synthetic, single-block "shadow:*" operation stream from body's bindings
+// (kind/source only) that the deleted function built, then runs
+// loanLivenessFixpoint/materializeLoanEndpoints over it to recover each
+// loan's last-use binding index -- mechanically unchanged from before, only
+// its role (evidence, not law) and its name have changed.
+func loanFinalUseEvidence(parameterName string, body *ast.LinearBody) (map[int]loanUse, int) {
+	const parameterPlaceID = "evidence:place:parameter"
+	visible := map[string]string{parameterName: parameterPlaceID}
+	operations := make([]core.LinearOperation, 0, len(body.Bindings)+1)
+	loanIndexByLoanID := make(map[string]int, len(body.Bindings))
+	for index, binding := range body.Bindings {
+		var sourcePlaceID string
+		if binding.RHS.Kind == "call" {
+			// A call binding carries RHS.Arguments, not RHS.Source: resolve
+			// from the call's own sole argument (arity 1) so the call becomes
+			// a visible reference to that argument's loan chain in
+			// blockLoanLiveness's backward walk.
+			sourcePlaceID = fmt.Sprintf("evidence:place:unknown:%d", index)
+			if len(binding.RHS.Arguments) == 1 {
+				if placeID, ok := visible[binding.RHS.Arguments[0]]; ok {
+					sourcePlaceID = placeID
+				}
+			}
+		} else if placeID, ok := visible[binding.RHS.Source]; ok {
+			sourcePlaceID = placeID
+		} else {
+			// An out-of-scope/unknown source is a real-admission rejection
+			// (name.unknown): give it a place ID no other binding can ever
+			// produce so the chain simply carries no inherited loan through
+			// it.
+			sourcePlaceID = fmt.Sprintf("evidence:place:unknown:%d", index)
+		}
+		targetPlaceID := fmt.Sprintf("evidence:place:%d", index)
+		kind := core.OpCopy
+		loanID := ""
+		switch binding.RHS.Kind {
+		case "take":
+			kind = core.OpMove
+		case "borrow":
+			kind = core.OpBorrowShared
+			loanID = fmt.Sprintf("evidence:loan:%d", index)
+		case "borrow_mut":
+			kind = core.OpBorrowExclusive
+			loanID = fmt.Sprintf("evidence:loan:%d", index)
+		case "call":
+			kind = core.OpCall
+		}
+		operations = append(operations, core.LinearOperation{
+			ID: fmt.Sprintf("evidence:op:%d", index), Kind: kind, SourceID: sourcePlaceID, TargetID: targetPlaceID, LoanID: loanID,
+		})
+		if loanID != "" {
+			loanIndexByLoanID[loanID] = index
+		}
+		visible[binding.Name] = targetPlaceID
 	}
-	ids := make([]string, 0, len(candidates))
-	for id, loan := range candidates {
-		if newAccess == "shared" && loan.access == "shared" {
+	resultOperationIndex := len(body.Bindings)
+	resultSourceID := parameterPlaceID
+	if placeID, ok := visible[body.Result]; ok {
+		resultSourceID = placeID
+	}
+	operations = append(operations, core.LinearOperation{
+		ID: fmt.Sprintf("evidence:op:%d", resultOperationIndex), Kind: core.OpReturn, SourceID: resultSourceID,
+	})
+
+	blockID := "evidence:block:straight"
+	block := cfgBlockSpec{id: blockID, operations: operations, successors: nil}
+	uses := make(map[int]loanUse, len(loanIndexByLoanID))
+	fixpoint, diag := loanLivenessFixpoint("evidence", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
+		return uses, 0
+	}
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints("evidence", []cfgBlockSpec{block}, edgeID, fixpoint, interproceduralSummaryTable{})
+
+	operationIndexByID := make(map[string]int, len(operations))
+	for opIndex, operation := range operations {
+		operationIndexByID[operation.ID] = opIndex
+	}
+	for _, endpoint := range endpoints {
+		loanIndex, ok := loanIndexByLoanID[endpoint.LoanID]
+		if !ok {
 			continue
 		}
-		ids = append(ids, id)
+		lastOperationIndex := operationIndexByID[endpoint.AfterOperationID]
+		bindingIndex := lastOperationIndex
+		span := body.Span
+		if bindingIndex < len(body.Bindings) {
+			span = body.Bindings[bindingIndex].RHS.Span
+		}
+		uses[loanIndex] = loanUse{index: bindingIndex, span: span}
 	}
-	if len(ids) == 0 {
-		return nil
-	}
-	sort.Strings(ids)
-	return candidates[ids[0]]
-}
-
-// borrowConflictDiagnostic builds the ownership.borrow_conflict rejection:
-// span-bearing causes first (mirroring move_while_borrowed's construction),
-// then ID-bearing detail causes (loan/owner/type), then a repair — the exact
-// shape check.go's other ownership diagnostics already use.
-func borrowConflictDiagnostic(span diagnostic.Span, blocking *loanState, ownerID, ownerTypeID string, binding ast.Binding) diagnostic.Diagnostic {
-	causes := []diagnostic.Cause{
-		{Kind: "borrow_created_here", Span: spanPointer(blocking.borrowedAt)},
-		{Kind: "borrow_used_later", Span: spanPointer(blocking.lastUseSpan)},
-		{Kind: "loan", Detail: blocking.id},
-		{Kind: "owner", Detail: ownerID},
-		{Kind: "type", Detail: ownerTypeID},
-	}
-	repairs := []diagnostic.Repair{{Kind: "create_loan_after_conflicting_loan_ends"}}
-	// A NEW exclusive loan conflicting against an already-live loan has one
-	// mechanical, source-level fix a driver can apply without deeper
-	// program understanding: downgrade the new loan from exclusive back to
-	// shared, replacing the whole "let NAME = borrow mut SOURCE" statement
-	// with its shared-borrow equivalent (D-06-24/D-06-25's borrow injector
-	// target). The symmetric case -- a new SHARED loan conflicting against
-	// an already-live EXCLUSIVE one -- has no equally mechanical fix
-	// (narrowing an already-shared loan further does not resolve an
-	// exclusive conflict), so it stays classification-only, exactly like
-	// analyzeArmBody's own use_after_move repair stays classification-only.
-	if binding.RHS.Kind == "borrow_mut" {
-		bindingSpan := binding.Span
-		repairs = append(repairs, diagnostic.Repair{
-			Kind:          "narrow_to_shared_borrow",
-			Span:          &bindingSpan,
-			Replacement:   "let " + binding.Name + " = borrow " + binding.RHS.Source,
-			Applicability: diagnostic.ApplicabilityMachineApplicable,
-		})
-	}
-	return diagnostic.ErrorWithRepairs(
-		"ownership.borrow_conflict", span, "cannot create a loan while a conflicting loan is live", causes,
-		repairs...,
-	)
+	return uses, fixpoint.work
 }
 
 // AliasFact is D-05-01's optimizer-facing alias-lattice fact: an
@@ -3734,141 +3953,26 @@ func deriveAliasFacts(function core.Function, linear *core.LinearBody, endpoints
 	return nil, work
 }
 
-// computeLoanLastUses is D-05-35(d)'s sole liveness law: it derives, for
-// every loan, its last transitively-derived use (binding index -> last use),
-// via loanLivenessFixpoint's backward worklist dataflow -- the same
-// machinery checkBranch's arm blocks and materializeLoanEndpoints already
-// use, now the ONLY law computing loan expiry for admission anywhere in this
-// package. discoverLoanLastUses (the forward chain-inheritance scan this
-// function replaces) is retired: D-05-35(b)/(c)'s shadow-mode migration
-// recorded a zero-divergence run of the two laws over the full
-// TestOwnershipSequenceExhaustive/TestBranchSequenceExhaustive enumeration
-// (225,890 + 4,802 admission-site comparisons) before this deletion was
-// authorized -- never merely a green suite (D-05-35e).
-//
-// It builds a synthetic, single-block operation stream directly from body's
-// bindings (kind/source only -- there is no other operation stream to derive
-// from yet, since this function's OWN answer is what decides whether the
-// real admission walk accepts or rejects; synthetic place/loan IDs are
-// deterministic per binding index, since only RELATIVE identity matters for
-// a liveness computation, never a real production ID), then runs
-// loanLivenessFixpoint/materializeLoanEndpoints over it to recover each
-// loan's last-use binding index.
-func computeLoanLastUses(parameterName string, body *ast.LinearBody) (map[int]loanUse, int) {
-	const parameterPlaceID = "shadow:place:parameter"
-	visible := map[string]string{parameterName: parameterPlaceID}
-	operations := make([]core.LinearOperation, 0, len(body.Bindings)+1)
-	loanIndexByLoanID := make(map[string]int, len(body.Bindings))
-	for index, binding := range body.Bindings {
-		var sourcePlaceID string
-		if binding.RHS.Kind == "call" {
-			// D-08-09/D-07-49 (closed here, Task 3): a call binding carries
-			// RHS.Arguments, not RHS.Source -- resolving sourcePlaceID from
-			// binding.RHS.Source (as the default branch below does) always
-			// misses for a call binding, which is the literal entry defect
-			// testdata/phase07/relay_escort_witness.lang's own header used
-			// to describe: the call became invisible to this chain as a use
-			// of its argument. Resolve from the call's own sole argument
-			// instead (arity 1, mirroring resolveCallBinding's own
-			// check.call_arity_unsupported guard on the real admission
-			// path) so the call becomes a visible reference to that
-			// argument's loan chain in blockLoanLiveness's backward walk.
-			sourcePlaceID = fmt.Sprintf("shadow:place:unknown:%d", index)
-			if len(binding.RHS.Arguments) == 1 {
-				if placeID, ok := visible[binding.RHS.Arguments[0]]; ok {
-					sourcePlaceID = placeID
-				}
-			}
-		} else if placeID, ok := visible[binding.RHS.Source]; ok {
-			sourcePlaceID = placeID
-		} else {
-			// An out-of-scope/unknown source is a real-admission rejection
-			// (name.unknown) that discoverLoanLastUses never has to reason
-			// about either -- give it a place ID no other binding can ever
-			// produce so the chain simply carries no inherited loan through
-			// it, matching discoverLoanLastUses' own "not found -> no
-			// inheritance" behavior.
-			sourcePlaceID = fmt.Sprintf("shadow:place:unknown:%d", index)
-		}
-		targetPlaceID := fmt.Sprintf("shadow:place:%d", index)
-		kind := core.OpCopy
-		loanID := ""
-		switch binding.RHS.Kind {
-		case "take":
-			kind = core.OpMove
-		case "borrow":
-			kind = core.OpBorrowShared
-			loanID = fmt.Sprintf("shadow:loan:%d", index)
-		case "borrow_mut":
-			kind = core.OpBorrowExclusive
-			loanID = fmt.Sprintf("shadow:loan:%d", index)
-		case "call":
-			// Kind stays core.OpCall (not OpCopy): this routes the operation
-			// through derivePlaceLoans' own OpCall branch (D-08-07), whose
-			// FALSE direction (summaries is the zero-value
-			// interproceduralSummaryTable{} on this shadow path, so every
-			// lookup misses) explicitly refuses to propagate the argument's
-			// loan onto the call's target place -- keeping this path's
-			// result identity exactly as conservative as the real,
-			// summary-blind admission path's own answer. The interprocedural
-			// alias is established ONLY by Task 2's summary-aware pass, over
-			// real core.LinearOperations, never here.
-			kind = core.OpCall
-		}
-		operations = append(operations, core.LinearOperation{
-			ID: fmt.Sprintf("shadow:op:%d", index), Kind: kind, SourceID: sourcePlaceID, TargetID: targetPlaceID, LoanID: loanID,
-		})
-		if loanID != "" {
-			loanIndexByLoanID[loanID] = index
-		}
-		visible[binding.Name] = targetPlaceID
-	}
-	resultOperationIndex := len(body.Bindings)
-	resultSourceID := parameterPlaceID
-	if placeID, ok := visible[body.Result]; ok {
-		resultSourceID = placeID
-	}
-	operations = append(operations, core.LinearOperation{
-		ID: fmt.Sprintf("shadow:op:%d", resultOperationIndex), Kind: core.OpReturn, SourceID: resultSourceID,
-	})
+// D-09-08 (authorized at plan 09-08's mid-phase gate): the summary-blind
+// early call site formerly named here -- built from raw AST straight into a
+// single synthetic "shadow:*" block, fed a permanent zero-value
+// interproceduralSummaryTable{}, and consulted by analyzeArmBody/
+// analyzeStraightLine to DECIDE ownership.move_while_borrowed/
+// ownership.borrow_conflict before any core.Function existed -- is DELETED.
+// It was never a second LAW (D-09-07): it called the SAME
+// loanLivenessFixpoint/materializeLoanEndpoints that survive below, fed
+// synthetic operations instead of real ones. checkInterproceduralLoanLiveness's
+// post-assembly pass, extended to the purely-intraprocedural case, is now the
+// SOLE decision point. loanFinalUseEvidence (below) re-derives the two
+// test-visible evidence fields this deleted function used to feed, kept as
+// pure evidence rather than an admission-deciding consultation.
 
-	blockID := "shadow:block:straight"
-	block := cfgBlockSpec{id: blockID, operations: operations, successors: nil}
-	uses := make(map[int]loanUse, len(loanIndexByLoanID))
-	fixpoint, diag := loanLivenessFixpoint("shadow", []cfgBlockSpec{block}, interproceduralSummaryTable{}, diagnostic.Span{})
-	if diag != nil {
-		return uses, 0
-	}
-	edgeID := func(from, to string) string { return from + "->" + to }
-	endpoints := materializeLoanEndpoints("shadow", []cfgBlockSpec{block}, edgeID, fixpoint, interproceduralSummaryTable{})
-
-	operationIndexByID := make(map[string]int, len(operations))
-	for opIndex, operation := range operations {
-		operationIndexByID[operation.ID] = opIndex
-	}
-	// A closed single-block CFG (no successors) never produces an edge
-	// endpoint -- every loan it creates ends inside the same block -- so
-	// exactly one "point" endpoint exists per loan here; translate its
-	// AfterOperationID back to the binding index that operation corresponds
-	// to (the synthetic Return operation's index maps to len(body.Bindings),
-	// matching discoverLoanLastUses' own "used at result position" encoding).
-	for _, endpoint := range endpoints {
-		loanIndex, ok := loanIndexByLoanID[endpoint.LoanID]
-		if !ok {
-			continue
-		}
-		lastOperationIndex := operationIndexByID[endpoint.AfterOperationID]
-		bindingIndex := lastOperationIndex
-		span := body.Span
-		if bindingIndex < len(body.Bindings) {
-			span = body.Bindings[bindingIndex].RHS.Span
-		}
-		uses[loanIndex] = loanUse{index: bindingIndex, span: span}
-	}
-	return uses, fixpoint.work
-}
-
-func ownershipSnapshot(index int, places map[string]*placeState, activeLoans map[string]map[string]*loanState) ownershipStateFact {
+// ownershipSnapshot captures a straight-line/arm-body walk's InitializedPlaces
+// and ActiveLoans at operation index. activeLoans is EVIDENCE bookkeeping
+// only (D-09-08/D-09-09): it never gates an admission decision here -- the
+// post-assembly pass decides ownership.move_while_borrowed/borrow_conflict
+// independently, over its own last-use derivation.
+func ownershipSnapshot(index int, places map[string]*placeState, activeLoans map[string]map[string]int) ownershipStateFact {
 	initialized := make([]string, 0, len(places))
 	for _, place := range places {
 		if place.initialized {
@@ -3923,13 +4027,6 @@ func missingAbilityDetail(fact core.TypeFact, requested core.Ability) string {
 		}
 	}
 	return string(requested)
-}
-
-func loanID(loan *loanState) string {
-	if loan == nil {
-		return ""
-	}
-	return loan.id
 }
 
 func spanPointer(span diagnostic.Span) *diagnostic.Span {

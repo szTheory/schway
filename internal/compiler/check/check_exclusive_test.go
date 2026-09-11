@@ -23,7 +23,7 @@ export {
 fn relay(buffer: Buffer) -> Buffer {
   let view = borrow mut buffer
   let delivered = take buffer
-  let observed = view
+  let observed = take view
   delivered
 }
 `
@@ -37,6 +37,17 @@ fn relay(buffer: Buffer) -> Buffer {
 // is source-unreachable, exactly like the shared case beside it). The
 // existing move_while_borrowed law still fires generically for the
 // exclusive loan (it is not re-derived per access mode).
+//
+// Plan 09-09 (D-09-08's authorized deletion): `observed = view` (an implicit
+// copy) is now `observed = take view` instead. Buffer withholds Copy, so
+// once lowering stops deciding ownership.move_while_borrowed inline and
+// proceeds through every binding unconditionally (D-09-09), the OLD implicit
+// copy of `view` would newly fail with the timing-INDEPENDENT
+// ownership.transfer_requires_take BEFORE the post-assembly pass ever
+// decides the timing-dependent code this test exists to exercise -- the
+// precedence rule (D-09-13) working exactly as designed, just not what this
+// specific test is about. `take view` preserves the loan's later reference
+// (still extending its last use past the move) without requiring Copy.
 func TestExclusiveBorrowLowersToCore(t *testing.T) {
 	checked := session.Check([]byte(exclusiveBorrowSource))
 	if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != "ownership.move_while_borrowed" {

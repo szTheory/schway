@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -48,6 +49,49 @@ func mustParseProgram(t *testing.T, source []byte) ast.Program {
 	return parsed.Program
 }
 
+// straightLineSupportAtDecisionPoint is plan 09-09 Task 1's composed
+// production-side helper: it lowers a straight-line body via
+// analyzeStraightLine UNCHANGED (lowering still lowers, and a
+// timing-INDEPENDENT code -- name.unknown, ownership.use_after_move,
+// ownership.borrow_requires_share, ownership.transfer_requires_take -- still
+// decides and wins during lowering, exactly as production's own Program()
+// behaves: a function whose lowering fails never reaches the post-assembly
+// pass), then -- only when lowering admits cleanly -- assembles a one-function
+// core.Program from the support's own Places/Operations (mirroring the shape
+// checkLinear assembles) and runs the extended checkInterproceduralLoanLiveness
+// over it, folding the first resulting diagnostic (if any) into DiagnosticCode/
+// Diagnostic. This is the SAME later decision point production's real
+// Program() pipeline reaches for ownership.move_while_borrowed/
+// ownership.borrow_conflict after D-09-08's authorized deletion (D-09-07: one
+// algorithm, one decision point). LoanFinalUses/States/Work/FixpointWork are
+// untouched -- they are analyzeStraightLine's own evidence, unaffected by
+// where the timing verdict is decided.
+func straightLineSupportAtDecisionPoint(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
+	support := analyzeStraightLine(functionID, parameterName, parameterSpan, typeFact, body, calleeContracts, foreignSymbols)
+	if support.DiagnosticCode != "" {
+		return support
+	}
+	function := core.Function{
+		ID: functionID, Name: functionID,
+		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter:  core.Parameter{ID: functionID + ":place:0", Name: parameterName, Type: typeFact.Shape.Constructor},
+		ReturnType: typeFact.Shape.Constructor,
+		Linear: &core.LinearBody{
+			ID: functionID + ":linear", Types: []core.TypeFact{typeFact},
+			Places: support.Places, Operations: support.Operations,
+		},
+		Span: parameterSpan,
+	}
+	program := core.Program{Functions: []core.Function{function}}
+	diagnostics := checkInterproceduralLoanLiveness(program, interproceduralSummaryTable{}, support.CallSpans)
+	if len(diagnostics) > 0 {
+		diag := diagnostics[0]
+		support.DiagnosticCode = diag.Code
+		support.Diagnostic = &diag
+	}
+	return support
+}
+
 func TestOwnershipSequenceExhaustive(t *testing.T) {
 	// Forty-eight symbols span three declaration names, FOUR operation kinds
 	// (implicit copy, take, shared borrow, exclusive borrow -- 03-05-03/D-10
@@ -56,7 +100,19 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 	// this depth) plus an out-of-scope boundary. This exhausts shadowing,
 	// multi-owner shapes, AND every shared/exclusive overlap combination the
 	// five-row conflict matrix distinguishes.
+	//
+	// Plan 09-09 Task 1 moved this differential's contract to the
+	// post-assembly decision point (D-09-08's authorized deletion of the
+	// summary-blind computeLoanLastUses early call site): production is now
+	// evaluated through straightLineSupportAtDecisionPoint (lowering, THEN --
+	// only if lowering admits cleanly -- the extended
+	// checkInterproceduralLoanLiveness pass), and the oracle's own two
+	// timing-dependent decisions (ownership.move_while_borrowed/
+	// ownership.borrow_conflict) are deferred to a matching point via
+	// oracleDeferredLoanLiveness below. Same 225,890 cases, same
+	// byte-identical assertSupportEqual comparison, same alphabet.
 	const alphabet = 48
+	totalCases := 0
 	for length := 0; length <= 3; length++ {
 		cases := 1
 		for index := 0; index < length; index++ {
@@ -64,9 +120,10 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		}
 		for encoded := 0; encoded < cases; encoded++ {
 			body := generatedOwnershipBody(encoded, length, alphabet)
-			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &body, nil, nil)
+			got := straightLineSupportAtDecisionPoint("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &body, nil, nil)
 			want := oracleStraightLine("test:fn", "owner", byteTypeFact(), &body)
 			assertSupportEqual(t, fmt.Sprintf("length=%d case=%d", length, encoded), got, want)
+			totalCases++
 		}
 	}
 
@@ -80,17 +137,35 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		}
 		for encoded := 0; encoded < cases; encoded++ {
 			body := generatedOwnershipBody(encoded, length, alphabet)
-			got := analyzeStraightLine("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &body, nil, nil)
+			got := straightLineSupportAtDecisionPoint("test:fn", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &body, nil, nil)
 			want := oracleStraightLine("test:fn", "owner", nonShareableTypeFact(), &body)
 			assertSupportEqual(t, fmt.Sprintf("no-share length=%d case=%d", length, encoded), got, want)
+			totalCases++
 		}
 	}
+
+	// T-09-31/Task 1(e): an explicit case counter, derived in code from the
+	// alphabet and length bounds rather than hardcoded alone, so a generator
+	// that silently stops early -- reducing this phase's strongest existing
+	// evidence -- fails HERE rather than being silently absorbed.
+	perSweep := 0
+	for length := 0; length <= 3; length++ {
+		cases := 1
+		for index := 0; index < length; index++ {
+			cases *= alphabet
+		}
+		perSweep += cases
+	}
+	if want := 2 * perSweep; totalCases != want {
+		t.Fatalf("exhaustive enumeration ran %d cases, want %d (2 sweeps * (48^0+48^1+48^2+48^3)) -- a generator that silently stops early must fail this assertion", totalCases, want)
+	}
+
 	denied := ast.LinearBody{
 		Bindings: []ast.Binding{binding("view", "borrow", "owner", 10)},
 		Result:   "view",
 		Span:     diagnostic.Span{Start: 10, End: 20},
 	}
-	refused := analyzeStraightLine("test:no-share", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &denied, nil, nil)
+	refused := straightLineSupportAtDecisionPoint("test:no-share", "owner", diagnostic.Span{Start: 1, End: 6}, nonShareableTypeFact(), &denied, nil, nil)
 	if refused.DiagnosticCode != "ownership.borrow_requires_share" || refused.Diagnostic == nil {
 		t.Fatalf("borrow of a type without share was admitted: %+v", refused)
 	}
@@ -111,6 +186,20 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		t.Fatalf("borrow gate causes diverged from the copy gate shape: %v", causeKinds)
 	}
 
+	// The four-step witness: `view = borrow owner`, `moved = take owner`,
+	// `observed = read view` (`view` read AFTER the move). Production now
+	// LOWERS all three bindings unconditionally (no early lowering-time
+	// stop for the timing-dependent code) and the post-assembly pass decides
+	// ownership.move_while_borrowed -- so Operations now carries all THREE
+	// emitted operations, not the one lowering used to stop after. Uses
+	// byteTypeFact (not bufferTypeFact): bufferTypeFact withholds Copy, and
+	// since lowering no longer stops at the move, it would now ALSO reach
+	// binding 2's implicit-copy admission and fail there first with
+	// ownership.transfer_requires_take -- a timing-INDEPENDENT code that
+	// correctly wins under the precedence rule (D-09-13), but which is not
+	// what this witness exists to exercise. byteTypeFact grants both Share
+	// (needed for the borrow) and Copy (needed for the observation), so the
+	// witness reaches its intended deferred loan-liveness verdict.
 	witness := ast.LinearBody{
 		Bindings: []ast.Binding{
 			binding("view", "borrow", "owner", 10),
@@ -120,8 +209,8 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 		Result: "moved",
 		Span:   diagnostic.Span{Start: 10, End: 38},
 	}
-	got := analyzeStraightLine("test:witness", "owner", diagnostic.Span{Start: 1, End: 6}, bufferTypeFact(), &witness, nil, nil)
-	if got.DiagnosticCode != "ownership.move_while_borrowed" || len(got.Operations) != 1 {
+	got := straightLineSupportAtDecisionPoint("test:witness", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &witness, nil, nil)
+	if got.DiagnosticCode != "ownership.move_while_borrowed" || len(got.Operations) != 4 {
 		t.Fatalf("four-step witness changed: %+v", got)
 	}
 	if len(got.LoanFinalUses) != 1 || got.LoanFinalUses[0].OperationIndex != 2 {
@@ -131,7 +220,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 	withoutLaterRead.Bindings = withoutLaterRead.Bindings[:2]
 	withoutLaterRead.Result = "moved"
 	withoutLaterRead.Span.End = 28
-	legal := analyzeStraightLine("test:unused", "owner", diagnostic.Span{Start: 1, End: 6}, bufferTypeFact(), &withoutLaterRead, nil, nil)
+	legal := straightLineSupportAtDecisionPoint("test:unused", "owner", diagnostic.Span{Start: 1, End: 6}, byteTypeFact(), &withoutLaterRead, nil, nil)
 	if legal.DiagnosticCode != "" {
 		t.Fatalf("unused loan did not end before move: %+v", legal)
 	}
@@ -1070,7 +1159,15 @@ func TestCheckerVerdictsUnchanged(t *testing.T) {
 // contiguous literal) so this test's own source line does not trip its own
 // scan.
 func TestSingleLoanLivenessLaw(t *testing.T) {
-	retiredIdentifier := "discover" + "LoanLastUses"
+	// Plan 09-09 (D-09-08's authorized deletion): a SECOND retired identifier
+	// joins discoverLoanLastUses' -- computeLoanLastUses (D-09-52/D-09-07),
+	// the summary-blind early call site deleted from analyzeArmBody/
+	// analyzeStraightLine. Built by string concatenation, same technique, so
+	// this test's own source line does not trip its own scan.
+	retiredIdentifiers := []string{
+		"discover" + "LoanLastUses",
+		"compute" + "LoanLastUses",
+	}
 	entries, err := os.ReadDir(".")
 	if err != nil {
 		t.Fatalf("read package dir: %v", err)
@@ -1088,14 +1185,63 @@ func TestSingleLoanLivenessLaw(t *testing.T) {
 			if strings.HasPrefix(strings.TrimSpace(line), "//") {
 				continue
 			}
-			if strings.Contains(line, retiredIdentifier) {
-				t.Fatalf("%s:%d: retired identifier reappeared outside a comment: %q", entry.Name(), lineNumber+1, line)
+			for _, retiredIdentifier := range retiredIdentifiers {
+				if strings.Contains(line, retiredIdentifier) {
+					t.Fatalf("%s:%d: retired identifier reappeared outside a comment: %q", entry.Name(), lineNumber+1, line)
+				}
 			}
 		}
 		found = true
 	}
 	if !found {
 		t.Fatalf("scanned zero .go files -- the source-scan itself is broken")
+	}
+
+	// Plan 09-09 Task 4(a): assert an exact, NAMED count of loanLivenessFixpoint
+	// call sites in check.go, so a future undocumented second caller --
+	// reintroducing coexisting admission laws -- fails HERE rather than
+	// silently. Count check.go only (never a _test.go file): Task 1's
+	// test-local straightLineSupportAtDecisionPoint legitimately calls
+	// checkInterproceduralLoanLiveness (itself one of the four sites below)
+	// FROM a _test.go file to OBSERVE the surviving pass, which must not be
+	// miscounted as a second production caller.
+	content, err := os.ReadFile("check.go")
+	if err != nil {
+		t.Fatalf("read check.go: %v", err)
+	}
+	callSitePattern := regexp.MustCompile(`\bloanLivenessFixpoint\(`)
+	definitionPattern := regexp.MustCompile(`^func loanLivenessFixpoint\(`)
+	var callSiteLines []int
+	for lineNumber, line := range strings.Split(string(content), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "//") {
+			continue
+		}
+		if definitionPattern.MatchString(line) {
+			continue // the function's own declaration is not a call site
+		}
+		if callSitePattern.MatchString(line) {
+			callSiteLines = append(callSiteLines, lineNumber+1)
+		}
+	}
+	// Exactly four, each named so a fifth (or a changed role for one of
+	// these four) is investigated rather than silently absorbed:
+	//   1. checkInterproceduralLoanLiveness -- the SOLE admission-deciding
+	//      call, over the assembled program, summary-aware (D-09-07/D-09-09).
+	//   2. checkBranch -- retained ONLY for its own check.cfg_back_edge/
+	//      check.loan_liveness_bound_exceeded refusals and to populate
+	//      linear.LoanEndpoints; it decides NO ownership.* timing code after
+	//      this plan (that decision moved to call site 1).
+	//   3. aliasFactEndpoints -- pre-existing (Phase 05), non-deciding,
+	//      post-hoc evidence for deriveAliasFacts.
+	//   4. loanFinalUseEvidence -- this plan's own non-deciding evidence
+	//      replacement for the deleted computeLoanLastUses, feeding
+	//      LoanFinalUses/States (test-visible evidence, no production
+	//      reader).
+	// Only site 1 ever DECIDES an ownership.move_while_borrowed/
+	// ownership.borrow_conflict admission outcome -- sites 2-4 either decide
+	// an unrelated code or decide nothing at all.
+	if want := 4; len(callSiteLines) != want {
+		t.Fatalf("check.go has %d non-comment loanLivenessFixpoint(...) call sites at lines %v, want exactly %d (checkInterproceduralLoanLiveness, checkBranch, aliasFactEndpoints, loanFinalUseEvidence) -- an undocumented caller may have reintroduced a coexisting admission law", len(callSiteLines), callSiteLines, want)
 	}
 }
 
@@ -1129,7 +1275,13 @@ func TestLivenessLawsStayIndependent(t *testing.T) {
 	}
 	code := strings.Join(codeLines, "\n")
 	sharedHelperNames := []string{
-		"computeLoanLastUses", "loanLivenessFixpoint", "materializeLoanEndpoints",
+		// computeLoanLastUses (retired under D-09-08/D-09-52, plan 09-09) is
+		// deliberately absent from this list: TestSingleLoanLivenessLaw's own
+		// retired-identifier scan already forbids it from reappearing
+		// anywhere in this package outside a comment, making a duplicate
+		// check here both redundant and a false-positive risk against this
+		// literal's own line.
+		"loanLivenessFixpoint", "materializeLoanEndpoints",
 		"blockLoanLiveness", "derivePlaceLoans", "cfgBlockSpec", "loanBlockUse",
 		// Phase 08 Task 3: the new interprocedural liveness helpers must stay
 		// equally independent from corevalidate.go's own peer re-derivation
@@ -1140,202 +1292,6 @@ func TestLivenessLawsStayIndependent(t *testing.T) {
 	for _, name := range sharedHelperNames {
 		if strings.Contains(code, name) {
 			t.Fatalf("corevalidate.go calls check.go's own liveness helper %q outside a comment -- the two loan-endpoint derivations must share no helper", name)
-		}
-	}
-}
-
-// TestComputeLoanLastUsesAndDerivePlaceLoansAgree is Task 3(c)/D-08-09's
-// differential: computeLoanLastUses (the AST-shadow admission path) and
-// derivePlaceLoans/blockLoanLiveness (the real core.LinearOperation path)
-// must derive the SAME loan last-use operation index for every loan in a
-// call-bearing body, position for position. Each sub-test independently
-// builds its own []core.LinearOperation stream (a distinct "indep:"
-// place/loan/op ID namespace from computeLoanLastUses' own "shadow:"
-// namespace, mirroring the real admission path's own place-numbering shape
-// rather than reusing computeLoanLastUses' internal construction) and runs
-// derivePlaceLoans/blockLoanLiveness over it directly, then compares against
-// computeLoanLastUses' reported last-use binding index for the same loan.
-// Reverting EITHER path's own "call" handling alone makes this fail: the
-// shadow path's case "call" (computeLoanLastUses) or the independent
-// derivation's own OpCall construction below (which models the real
-// resolveCallBinding-built operation) -- see the two one-line reversions and
-// the exact failures they produce, recorded in 08-01-SUMMARY.md.
-func TestComputeLoanLastUsesAndDerivePlaceLoansAgree(t *testing.T) {
-	cases := []struct {
-		name string
-		body *ast.LinearBody
-	}{
-		{
-			name: "borrow_then_call",
-			body: &ast.LinearBody{
-				Bindings: []ast.Binding{
-					{Name: "v", RHS: ast.RHS{Kind: "borrow_mut", Source: "buffer"}},
-					{Name: "r", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"v"}}},
-				},
-				Result: "r",
-			},
-		},
-		{
-			name: "borrow_call_take",
-			body: &ast.LinearBody{
-				Bindings: []ast.Binding{
-					{Name: "v", RHS: ast.RHS{Kind: "borrow_mut", Source: "buffer"}},
-					{Name: "r", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"v"}}},
-					{Name: "t", RHS: ast.RHS{Kind: "take", Source: "buffer"}},
-				},
-				Result: "r",
-			},
-		},
-		{
-			name: "call_then_borrow",
-			body: &ast.LinearBody{
-				Bindings: []ast.Binding{
-					{Name: "c", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"buffer"}}},
-					{Name: "w", RHS: ast.RHS{Kind: "borrow", Source: "buffer"}},
-				},
-				Result: "w",
-			},
-		},
-		{
-			name: "call_argument_is_reborrow",
-			body: &ast.LinearBody{
-				Bindings: []ast.Binding{
-					{Name: "v", RHS: ast.RHS{Kind: "borrow_mut", Source: "buffer"}},
-					{Name: "w", RHS: ast.RHS{Kind: "borrow", Source: "v"}},
-					{Name: "r", RHS: ast.RHS{Kind: "call", Callee: "relay", Arguments: []string{"w"}}},
-				},
-				Result: "r",
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			shadowUses, _ := computeLoanLastUses("buffer", tc.body)
-
-			const parameterPlaceID = "indep:place:parameter"
-			visible := map[string]string{"buffer": parameterPlaceID}
-			operations := make([]core.LinearOperation, 0, len(tc.body.Bindings)+1)
-			loanIndexByLoanID := map[string]int{}
-			for index, binding := range tc.body.Bindings {
-				targetPlaceID := fmt.Sprintf("indep:place:%d", index)
-				kind := core.OpCopy
-				loanID := ""
-				sourceID := parameterPlaceID
-				switch binding.RHS.Kind {
-				case "take":
-					kind = core.OpMove
-					sourceID = visible[binding.RHS.Source]
-				case "borrow":
-					kind = core.OpBorrowShared
-					loanID = fmt.Sprintf("indep:loan:%d", index)
-					sourceID = visible[binding.RHS.Source]
-				case "borrow_mut":
-					kind = core.OpBorrowExclusive
-					loanID = fmt.Sprintf("indep:loan:%d", index)
-					sourceID = visible[binding.RHS.Source]
-				case "call":
-					// Mirrors resolveCallBinding's own OpCall construction
-					// (check.go): Kind is OpCall and SourceID is the call's
-					// sole argument's own place. This is the ONE line-pair
-					// that, if reverted to "kind = core.OpCopy; sourceID =
-					// parameterPlaceID" (the pre-D-08-09 shape), makes this
-					// test fail -- the independent derivation would then
-					// disagree with computeLoanLastUses' own "call" case.
-					kind = core.OpCall
-					sourceID = visible[binding.RHS.Arguments[0]]
-				default:
-					sourceID = visible[binding.RHS.Source]
-				}
-				operations = append(operations, core.LinearOperation{
-					ID: fmt.Sprintf("indep:op:%d", index), Kind: kind, SourceID: sourceID, TargetID: targetPlaceID, LoanID: loanID,
-				})
-				if loanID != "" {
-					loanIndexByLoanID[loanID] = index
-				}
-				visible[binding.Name] = targetPlaceID
-			}
-			resultSourceID := parameterPlaceID
-			if placeID, ok := visible[tc.body.Result]; ok {
-				resultSourceID = placeID
-			}
-			returnIndex := len(tc.body.Bindings)
-			operations = append(operations, core.LinearOperation{
-				ID: fmt.Sprintf("indep:op:%d", returnIndex), Kind: core.OpReturn, SourceID: resultSourceID,
-			})
-
-			chain := derivePlaceLoans(operations, interproceduralSummaryTable{})
-			uses, _, _ := blockLoanLiveness(operations, chain, map[string]bool{}, interproceduralSummaryTable{})
-
-			independentLastUse := make(map[int]int, len(loanIndexByLoanID))
-			seen := make(map[string]bool)
-			for _, use := range uses {
-				if seen[use.loanID] {
-					continue // blockLoanLiveness walks backward; the FIRST occurrence found IS the loan's LAST use in forward program order.
-				}
-				seen[use.loanID] = true
-				bindingIndex, ok := loanIndexByLoanID[use.loanID]
-				if !ok {
-					continue
-				}
-				independentLastUse[bindingIndex] = use.operationIndex
-			}
-			if len(independentLastUse) == 0 {
-				t.Fatal("expected at least one loan in this fixture")
-			}
-			for bindingIndex, wantLastUseIndex := range independentLastUse {
-				got, ok := shadowUses[bindingIndex]
-				if !ok {
-					t.Fatalf("loan at binding %d: computeLoanLastUses reported no use at all, independent derivePlaceLoans/blockLoanLiveness says last-use index %d", bindingIndex, wantLastUseIndex)
-				}
-				if got.index != wantLastUseIndex {
-					t.Fatalf("loan at binding %d: computeLoanLastUses last-use index = %d, independent derivePlaceLoans/blockLoanLiveness last-use index = %d -- the two admission paths disagree", bindingIndex, got.index, wantLastUseIndex)
-				}
-			}
-		})
-	}
-}
-
-// TestLastUseDiscoveryWorkIsCounted is D-04-25's basic falsifier, repointed
-// at computeLoanLastUses (D-05-35(d)'s sole liveness law, replacing
-// discoverLoanLastUses): it must report nonzero work for a body with at
-// least one binding, closing the metric-honesty gap where a transitive
-// last-use scan's own cost was invisible to every caller's Work total.
-func TestLastUseDiscoveryWorkIsCounted(t *testing.T) {
-	body := ast.LinearBody{
-		Bindings: []ast.Binding{binding("view", "borrow", "owner", -1)},
-		Result:   "view",
-	}
-	_, work := computeLoanLastUses("owner", &body)
-	if work == 0 {
-		t.Fatalf("expected nonzero discovery work, got 0")
-	}
-}
-
-// TestLastUseDiscoveryWorkSeries is D-04-25's growth falsifier, repointed at
-// computeLoanLastUses: reported work over a chain of increasing length must
-// grow with the real scan cost rather than stay flat -- the metric-honesty
-// property this series has pinned since D-04-25, now proven against
-// loanLivenessFixpoint's own counted cost instead of discoverLoanLastUses'.
-func TestLastUseDiscoveryWorkSeries(t *testing.T) {
-	series := []int{10, 100, 1_000}
-	work := make([]int, len(series))
-	for index, length := range series {
-		bindings := make([]ast.Binding, length)
-		for i := range bindings {
-			source := "owner"
-			if i > 0 {
-				source = fmt.Sprintf("copy%d", i-1)
-			}
-			bindings[i] = binding(fmt.Sprintf("copy%d", i), "read", source, i*2)
-		}
-		body := ast.LinearBody{Bindings: bindings, Result: fmt.Sprintf("copy%d", length-1)}
-		_, w := computeLoanLastUses("owner", &body)
-		work[index] = w
-	}
-	for index := 1; index < len(work); index++ {
-		if work[index] <= work[index-1] {
-			t.Fatalf("expected discovery work to grow with chain length: %v", work)
 		}
 	}
 }
@@ -1569,10 +1525,18 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 			result.DiagnosticCode = "ownership.use_after_move"
 			return result
 		}
-		if candidate.RHS.Kind == "take" && hasFutureLoanOracle(activeLoans, source.id, index) {
-			result.DiagnosticCode = "ownership.move_while_borrowed"
-			return result
-		}
+		// D-09-08/D-09-09: the three inline early returns for
+		// ownership.move_while_borrowed/ownership.borrow_conflict that used
+		// to sit here are REMOVED (plan 09-09 Task 1(b)) -- the walk now
+		// continues past an offending binding exactly as an admitted one
+		// (recording the loan, emitting the operation), matching production's
+		// own lowering, which now makes the same two decisions no earlier.
+		// oracleDeferredLoanLiveness (below) applies the deferred verdict
+		// after the walk completes, at the matching later point. The three
+		// inline early returns for name.unknown/ownership.use_after_move/
+		// ownership.borrow_requires_share/ownership.transfer_requires_take
+		// stay exactly where they are (D-09-47: per-binding facts, not timing
+		// facts).
 		kind := core.OpCopy
 		loanID := ""
 		switch candidate.RHS.Kind {
@@ -1584,20 +1548,12 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 				result.DiagnosticCode = "ownership.borrow_requires_share"
 				return result
 			}
-			if oracleConflictingLoan(activeLoans, source.id, "shared") {
-				result.DiagnosticCode = "ownership.borrow_conflict"
-				return result
-			}
 			kind = core.OpBorrowShared
 			loanID = fmt.Sprintf("%s:loan:%d", functionID, index)
 			activeLoans[loanID] = testOracleLoan{ownerID: source.id, access: "shared", lastUse: lastUses[index]}
 		case "borrow_mut":
 			if !oracleHasAbility(typeFact.Abilities, core.AbilityShare) {
 				result.DiagnosticCode = "ownership.borrow_requires_share"
-				return result
-			}
-			if oracleConflictingLoan(activeLoans, source.id, "exclusive") {
-				result.DiagnosticCode = "ownership.borrow_conflict"
 				return result
 			}
 			kind = core.OpBorrowExclusive
@@ -1650,7 +1606,87 @@ func oracleStraightLine(functionID, parameterName string, typeFact core.TypeFact
 		}
 	}
 	result.States = append(result.States, oracleSnapshot(ordinal, visiblePlaces, activeLoans))
+	if result.DiagnosticCode == "" {
+		if code := oracleDeferredLoanLiveness(parameterName, body, lastUses); code != "" {
+			result.DiagnosticCode = code
+		}
+	}
 	return result
+}
+
+// oracleDeferredLoanLiveness is plan 09-09 Task 1(b)/(c)'s own, independently
+// derived deferred verdict: applied only after oracleStraightLine's walk
+// completes with no per-binding fact having already failed, it scans the
+// oracle's OWN already-independent lastUses (oracleLoanLastUses' BFS
+// reachability result) and the oracle's own access-mode rule
+// (oracleConflictingLoan's five-row matrix, restated here rather than
+// called) to find the EARLIEST offending event in binding order -- a `take`
+// of an owner some loan on it still needs (mirroring hasFutureLoanOracle's
+// own `lastUse > index` rule), or a new loan whose owner already carries an
+// unexpired, access-conflicting loan (mirroring oracleConflictingLoan's own
+// membership rule) -- and returns its code, or "" if neither ever fires. It
+// must NEVER call, import, or transcribe checkInterproceduralLoanLiveness,
+// loanLivenessFixpoint, materializeLoanEndpoints, derivePlaceLoans, or
+// conflictingLoan: a differential whose two sides share a derivation agrees
+// perfectly and proves nothing (D-02-03/D-03-01's "fix one of two peers"
+// hazard).
+func oracleDeferredLoanLiveness(parameterName string, body *ast.LinearBody, lastUses map[int]int) string {
+	type loanRecord struct {
+		ownerID string
+		access  string
+		lastUse int
+	}
+	active := map[string]loanRecord{}
+	ownerOf := func(index int) string {
+		sourceBinding, _ := oracleResolveBinding(parameterName, body, body.Bindings[index].RHS.Source, index)
+		if sourceBinding >= 0 {
+			return fmt.Sprintf("place:%d", sourceBinding+1)
+		}
+		return "place:parameter"
+	}
+	for index, candidate := range body.Bindings {
+		ownerID := ownerOf(index)
+		switch candidate.RHS.Kind {
+		case "take":
+			var blocking []string
+			for loanID, loan := range active {
+				if loan.ownerID == ownerID && loan.lastUse > index {
+					blocking = append(blocking, loanID)
+				}
+			}
+			if len(blocking) > 0 {
+				sort.Strings(blocking)
+				return "ownership.move_while_borrowed"
+			}
+		case "borrow", "borrow_mut":
+			access := "shared"
+			if candidate.RHS.Kind == "borrow_mut" {
+				access = "exclusive"
+			}
+			var conflicting []string
+			for loanID, loan := range active {
+				if loan.ownerID != ownerID {
+					continue
+				}
+				if access == "shared" && loan.access == "shared" {
+					continue
+				}
+				conflicting = append(conflicting, loanID)
+			}
+			if len(conflicting) > 0 {
+				sort.Strings(conflicting)
+				return "ownership.borrow_conflict"
+			}
+			loanID := fmt.Sprintf("evidence:loan:%d", index)
+			active[loanID] = loanRecord{ownerID: ownerID, access: access, lastUse: lastUses[index]}
+		}
+		for loanID, loan := range active {
+			if loan.lastUse <= index {
+				delete(active, loanID)
+			}
+		}
+	}
+	return ""
 }
 
 // oracleResolveBinding is intentionally a different implementation from the
@@ -4685,26 +4721,36 @@ func TestInterproceduralLivenessTwinPatternA(t *testing.T) {
 // TestInterproceduralLivenessTwinPatternBRealFixtures extends 08-02's own
 // synthetic-core.Program twin (TestInterproceduralLivenessTwinPatternB
 // above) to also drive the real twin_b_refuse.lang/twin_b_accept.lang
-// fixtures landed by this plan. See both fixtures' own headers for the full
-// explanation: the caller's `borrow; move; call` shape is refused
-// INTRAPROCEDURALLY (ownership.move_while_borrowed), identically for BOTH
-// members, by computeLoanLastUses' summary-blind AST-shadow admission path
-// -- before check's own interprocedural pass (the one under test) ever
-// runs. This is 08-02's own documented, carried-forward finding
-// (08-02-SUMMARY.md, "Next Phase Readiness"), not a defect newly
-// discovered here. This test asserts the TRUE, empirically-verified
-// end-to-end verdict for each real fixture (both refuse identically at the
-// intraprocedural layer) -- the CONTRACT-DRIVEN differentiation Pattern B's
-// law actually performs is proven at the checked-core level by
+// fixtures landed under Phase 08.
+//
+// Plan 09-09 (D-09-08's authorized deletion) removed the summary-blind
+// lowering-time gate that used to mask BOTH fixtures identically with
+// ownership.move_while_borrowed before check's own interprocedural pass
+// ever ran (08-02's documented, carried-forward finding). With that gate
+// gone, BOTH fixtures now correctly reach the interprocedural pass -- but
+// Pattern B's promised split (twin_b_refuse refused, twin_b_accept ADMITTED)
+// does NOT materialize: both are refused identically with
+// check.interprocedural_loan_liveness. Root cause, diagnosed and NOT fixed
+// by this plan (out of scope; see check_ordering_stability_test.go's own
+// twin_b_accept/refuse baseline comment for the full explanation):
+// deriveFunctionUsesParam (check.go, pre-existing since Phase 08) treats a
+// plain OpMove forward of the parameter to its own terminating return as a
+// "use", so twin_b_accept's `probe` is ALSO derived as usesParam=true,
+// collapsing the interprocedural signal Pattern B depends on. Recorded as
+// new debt (this plan's SUMMARY, PHASE-09-DEBT.md) rather than adjusted
+// here or in the fixtures themselves -- Task 4(b)'s own contingency for
+// exactly this outcome. The CONTRACT-DRIVEN differentiation Pattern B's law
+// is DESIGNED to perform is still proven at the checked-core level by
 // TestInterproceduralLivenessTwinPatternB above, against a REAL
-// interprocedural summary table.
+// interprocedural summary table constructed directly (not derived by the
+// buggy function) -- that proof is unaffected by this finding.
 func TestInterproceduralLivenessTwinPatternBRealFixtures(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		want string
 	}{
-		{"twin_b_refuse.lang", "ownership.move_while_borrowed"},
-		{"twin_b_accept.lang", "ownership.move_while_borrowed"},
+		{"twin_b_refuse.lang", "check.interprocedural_loan_liveness"},
+		{"twin_b_accept.lang", "check.interprocedural_loan_liveness"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			source := readPhase08Fixture(t, tc.name)

@@ -7,6 +7,6 @@ export {
 fn relay(buffer: Buffer) -> Buffer {
   let view = borrow buffer
   let delivered = take buffer
-  let observed = view
+  let observed = take view
   delivered
 }

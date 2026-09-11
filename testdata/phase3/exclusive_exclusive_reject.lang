@@ -10,6 +10,6 @@ export {
 fn relay(buffer: Buffer) -> Buffer {
   let first = borrow mut buffer
   let second = borrow mut buffer
-  let observed = first
+  let observed = take first
   second
 }
