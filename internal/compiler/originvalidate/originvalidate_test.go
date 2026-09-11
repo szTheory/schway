@@ -2,6 +2,7 @@ package originvalidate_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"go/ast"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
@@ -100,15 +102,58 @@ func transitiveImportViolation(deps []string, forbidden []string) string {
 // to `go list -deps`, which ships with the toolchain CI already requires
 // (adds no dependency), and asserts no line of originvalidate's own
 // transitive dependency closure has a forbidden suffix.
+// maxGoListDepsOutputBytes bounds transitiveImportsViolation's captured
+// `go list -deps` output. native_test.go's scanUnboundedSpawns lint (D-02-01)
+// forbids the Output()/CombinedOutput() unbounded merged-buffer shape for
+// every process this repo spawns; Plan 10-02 introduced this call site with
+// that shape and Plan 10-03 logged it to deferred-items.md after fixing the
+// identical pattern it had introduced in pathoracle_test.go. This is that
+// deferred fix, applied at the Phase 10 Wave 2 post-merge gate. The bound and
+// the exec.CommandContext deadline below are kept local to this file, mirroring
+// pathoracle_test.go's own choice rather than reusing testsupport's unexported
+// boundedWriter.
+const maxGoListDepsOutputBytes = 1 << 20 // 1 MiB: far more than any real dependency-path listing
+
+// goListDepsTimeout bounds the spawn itself, satisfying the lint's
+// exec.CommandContext requirement.
+const goListDepsTimeout = 2 * time.Minute
+
+// boundedGoListWriter caps the bytes captured from `go list -deps`,
+// mirroring testsupport's own boundedWriter shape without depending on its
+// unexported type.
+type boundedGoListWriter struct {
+	buffer     bytes.Buffer
+	overflowed bool
+}
+
+func (w *boundedGoListWriter) Write(data []byte) (int, error) {
+	if w.buffer.Len()+len(data) > maxGoListDepsOutputBytes {
+		w.overflowed = true
+		remaining := maxGoListDepsOutputBytes - w.buffer.Len()
+		if remaining > 0 {
+			w.buffer.Write(data[:remaining])
+		}
+		return len(data), nil
+	}
+	w.buffer.Write(data)
+	return len(data), nil
+}
+
 func transitiveImportsViolation(t *testing.T, forbidden []string) string {
 	t.Helper()
-	cmd := exec.Command("go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/originvalidate")
+	ctx, cancel := context.WithTimeout(context.Background(), goListDepsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/originvalidate")
 	cmd.Dir = testsupport.ProjectPath()
-	output, err := cmd.Output()
-	if err != nil {
+	stdout := &boundedGoListWriter{}
+	cmd.Stdout = stdout
+	if err := cmd.Run(); err != nil {
 		t.Fatalf("go list -deps: %v", err)
 	}
-	deps := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if stdout.overflowed {
+		t.Fatalf("go list -deps produced more than %d bytes; dependency listing is implausibly large", maxGoListDepsOutputBytes)
+	}
+	deps := strings.Split(strings.TrimSpace(stdout.buffer.String()), "\n")
 	return transitiveImportViolation(deps, forbidden)
 }
 

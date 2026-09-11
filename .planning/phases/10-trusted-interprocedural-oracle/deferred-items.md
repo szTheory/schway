@@ -21,3 +21,13 @@ changes).
   for this one reason. A future plan (or a small standalone fix) should
   apply the same `exec.CommandContext` + bounded-writer pattern to
   originvalidate's copy.
+
+### RESOLVED at the Wave 2 post-merge gate
+
+Fixed by the orchestrator during Phase 10's Wave 2 post-merge test gate
+(`TestSourceNeverSpawnsUnboundedProcesses` was failing on `main`, blocking the
+gate). `transitiveImportsViolation` in `originvalidate_test.go` now uses
+`exec.CommandContext` with a 2-minute deadline and a bounded stdout writer,
+matching the pattern `pathoracle_test.go` established in commit `9241354`.
+`go test ./internal/compiler/native/... -run TestSourceNeverSpawnsUnboundedProcesses`
+passes.
