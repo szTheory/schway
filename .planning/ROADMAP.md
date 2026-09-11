@@ -412,7 +412,7 @@ interprocedural answer as the first — and the one debt item M001 knowingly
 carried forward is closed in both layers.
 **Depends on**: Phase 08; **spike S-008 answered** (determines QLT-07's
 committed-vs-stretch status)
-**Requirements**: OWN-05, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07
+**Requirements**: OWN-05a, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07
 **Maps to**: ARCHITECTURE Stage 3 (corevalidate independent re-derivation) +
 the `corevalidate` half of Stage 4, with M001 Phase 3's Nyquist closure folded in
 **Canonical refs**: `research/PITFALLS.md` Pitfall 2 ("land both peers in the
@@ -491,7 +491,7 @@ Plans:
 **Goal**: Cross-function execution and origin/path re-derivation are trustworthy
 enough to be the authority everything native is differential-tested against.
 **Depends on**: Phase 09
-**Requirements**: SEM-08, SEM-09, TRU-02, TRU-03, QLT-04
+**Requirements**: SEM-08, SEM-09, TRU-02, TRU-03, QLT-04, OWN-05b
 **Maps to**: ARCHITECTURE Stage 5 (`originvalidate` Site 3 ∥ `pathoracle`
 Site 6) + Stage 6 (interpreter call stack, Site 4) + the loan-endpoint half of
 Stage 8
@@ -661,7 +661,7 @@ whatever does ship.
 |-------|----------------|--------|-----------|
 | 07. Calls, Signatures, and Call-Graph Refusal | 12/12 | Complete    | 2026-09-09 |
 | 08. Interprocedural Loan Liveness in `check` | 6/6 | Complete    | 2026-09-10 |
-| 09. Peer Re-Derivation and D-03-02 Closure | 8/10 | In progress | - |
+| 09. Peer Re-Derivation and D-03-02 Closure | 10/10 | Complete    | 2026-09-10 |
 | 10. Trusted Interprocedural Oracle | 0/? | Not started | - |
 | 11. Multi-Function Native Emission and Equivalence | 0/? | Not started | - |
 | 12. `Result` Payloads | 0/? | Not started | - |
@@ -676,8 +676,8 @@ duplicates. Full traceability table lives in `REQUIREMENTS.md`.
 |-------|--------------|-------|
 | 07 | SEM-04, SEM-05, SEM-06, SEM-07, QLT-08 | 5 |
 | 08 | OWN-06, EFF-02 | 2 |
-| 09 | OWN-05, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07 | 6 |
-| 10 | SEM-08, SEM-09, TRU-02, TRU-03, QLT-04 | 5 |
+| 09 | OWN-05a, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07 | 6 |
+| 10 | SEM-08, SEM-09, TRU-02, TRU-03, QLT-04, OWN-05b | 6 |
 | 11 | NAT-04, NAT-05, NAT-06, NAT-07, QLT-03, QLT-05, QLT-06 | 7 |
 | 12 | RES-02, RES-03 | 2 |
 | 13 | DX-05, DX-06, DX-07 | 3 |
