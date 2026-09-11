@@ -79,3 +79,35 @@ passes.
   `peerDeriveOriginFacts` and add a companion mutation-kill test proving
   the new case load-bearing, mirroring `TestOpCallOriginWalkGateIsLoadBearing`'s
   own precedent for `originvalidate`'s equivalent case.
+
+## From Plan 10-08
+
+- **`corevalidate.Result.LoanEndpoints()` (plan 10-08's own Task 1
+  accessor) is naturally INCOMPLETE for a branched (CFG-carrying) function
+  when `corevalidate.Validate` refuses the program for a reason unrelated
+  to that function's own loan-endpoint recomputation, discovered by
+  `testdata/phase3/branch_one_arm_shared_reject.lang` while building
+  plan 10-08 Task 2's three-way endpoint comparator.** `corevalidate.Validate`
+  is a fail-fast, first-problem-wins replayer (`v.check` short-circuits
+  `v.run()` the instant any problem is recorded), unlike `check`'s own
+  `materializeLoanEndpoints` or `pathoracle.RecomputeEndpoints`, neither of
+  which ever short-circuits on an unrelated problem elsewhere in the
+  program. A branched function corevalidate refuses for a reason caught
+  during an earlier structural or per-operation replay step -- before
+  `v.loanEndpointsMatch` is ever reached for that function -- legitimately
+  has an empty entry in `Result.LoanEndpoints`, diverging from `check`'s
+  and `pathoracle`'s structurally-complete sets, for a reason that has
+  nothing to do with any of the three peers' endpoint-derivation logic
+  disagreeing. Not a bug in any of the three peers' own loan-endpoint
+  algorithms. Plan 10-08's own three-way comparator (`session_peer_gate_test.go`'s
+  `assertThreeWayEndpointAgreement`) is scoped around this: it skips the
+  comparison only for a CFG-carrying function whose program corevalidate
+  did not fully validate (`!validated.Valid`), stated in that function's
+  own doc comment rather than papered over. Not fixed here (no code change
+  is possible without altering `corevalidate.Validate`'s own fail-fast
+  architecture, a genuine, independent semantic change outside this plan's
+  scope) -- a future plan wanting a COMPLETE per-function endpoint record
+  from a refused program would need `corevalidate` to keep validating past
+  its first problem (or record endpoints eagerly, before any check that
+  could short-circuit), which is a materially different validator
+  architecture, not a narrow fix.

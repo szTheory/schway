@@ -576,7 +576,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 10-08-PLAN.md — Criterion 4's cross-function loan-endpoint differential: three-way on refuse, four-way on accept, with an accountable divergence register and seeded faults (wave 6)
+- [x] 10-08-PLAN.md — Criterion 4's cross-function loan-endpoint differential: three-way on refuse, four-way on accept, with an accountable divergence register and seeded faults (wave 6)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 

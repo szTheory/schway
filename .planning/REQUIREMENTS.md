@@ -44,7 +44,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       callee's declared convention is not expressible in source and is
       fail-closed at the core layer.
 
-- [ ] **OWN-05b**: The same call-site ownership-transfer fact is derived
+- [x] **OWN-05b**: The same call-site ownership-transfer fact is derived
       independently by `interp` — the third of OWN-05's original three
       derivers — verified there by TRU-03 and in Phase 11 by NAT-06. Split
       from OWN-05a (D-09-37) rather than left as a single row flipped Complete
@@ -120,7 +120,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       cross-function shapes the generator actually reaches, and names shapes it
       provably does not.
 
-- [ ] **QLT-04**: Cross-function loan-endpoint differentials rebuild Phase 3's
+- [x] **QLT-04**: Cross-function loan-endpoint differentials rebuild Phase 3's
       exhaustive endpoint enumeration at a declared, bounded composition depth.
 
 - [ ] **QLT-05**: HDD reducer output on multi-function programs is re-verified
@@ -223,7 +223,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | SEM-08 | Phase 10 | Pending |
 | SEM-09 | Phase 10 | Complete |
 | OWN-05a | Phase 09 | Complete |
-| OWN-05b | Phase 10 | Pending |
+| OWN-05b | Phase 10 | Complete |
 | OWN-06 | Phase 08 | Complete |
 | OWN-07 | Phase 09 | Complete |
 | OWN-08 | Phase 09 | Complete |
@@ -236,7 +236,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | TRU-03 | Phase 10 | Complete |
 | TRU-04 | Phase 09 | Complete |
 | QLT-03 | Phase 11 | Pending |
-| QLT-04 | Phase 10 | Pending |
+| QLT-04 | Phase 10 | Complete |
 | QLT-05 | Phase 11 | Pending |
 | QLT-06 | Phase 11 | Pending |
 | QLT-07 | Phase 09 | Complete |
