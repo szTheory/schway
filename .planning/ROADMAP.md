@@ -588,6 +588,15 @@ Plans:
 identically under the interpreter, `-O0`, `-O3`, and `-O3 -flto` — with the
 optimizer proven to have actually been given something to optimize.
 **Depends on**: Phase 10 (a stabilized interpreter oracle is a hard precondition)
+**Carried from Phase 10**: the oracle ships with five disclosed residual trust
+gaps that are Phase 11 INPUTS, not closed history — most notably
+`corevalidate.peerDeriveOriginFacts` having no `core.OpCall` case (constrains
+which fixtures are expressible), the `callgraph` import asymmetry that makes
+peer independence review-enforced rather than mechanism-enforced (NAT-06 leans
+on that independence), and an unreviewed negative-control verdict flip from
+D-09-51. Full list with anchors: STATE.md § Blockers/Concerns "Phase 10
+carry-forward"; detail in `.planning/phases/10-trusted-interprocedural-oracle/`
+(`PHASE-10-DEBT.md`, `deferred-items.md`, `10-REVIEW.md`, `10-VERIFICATION.md`).
 **Requirements**: NAT-04, NAT-05, NAT-06, NAT-07, QLT-03, QLT-05, QLT-06
 **Maps to**: ARCHITECTURE Stage 7 (multi-function C emission + call lowering —
 "the second-highest-risk integration point") + Stage 8's closing verification

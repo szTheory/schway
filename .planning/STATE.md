@@ -306,6 +306,57 @@ answered before Phase 12 is planned.
 
 - Plan 09-09 HALTED before any code change: TestOwnershipSequenceExhaustive (check_test.go) calls analyzeStraightLine directly and asserts DiagnosticCode==ownership.move_while_borrowed/borrow_conflict synchronously against an oracle that computes those codes inline. This contradicts Task 1's must_have truth 'Lowering makes no loan-liveness decisions' and Task 2's acceptance criterion that this same test 'pass unchanged'. Empirically confirmed via a reverted experimental edit (length=2 case=198): removing the move_while_borrowed raise from analyzeStraightLine made production return DiagnosticCode:"" while the oracle still returned ownership.move_while_borrowed, failing assertSupportEqual. Needs an architectural decision (Rule 4) on how TestOwnershipSequenceExhaustive's contract is meant to change before the computeLoanLastUses deletion can proceed. Tree left green, no commits made.
 
+- **Phase 10 carry-forward — READ BEFORE PLANNING PHASE 11.** Phase 11 lowers
+  multi-function Lang to C and differential-tests it against the Phase 10
+  oracle, so the oracle's residual trust gaps are Phase 11 inputs, not closed
+  history. At this project's 200k context window the planner does NOT auto-load
+  prior-phase SUMMARY/CONTEXT/DEBT files (that cross-phase block is gated on
+  `CONTEXT_WINDOW >= 500000`), so these are restated here rather than left only
+  in the phase directory. Authoritative detail lives in
+  `.planning/phases/10-trusted-interprocedural-oracle/`: `PHASE-10-DEBT.md`
+  (debt register + D-10-59 gate verdict), `deferred-items.md` (open findings),
+  `10-REVIEW.md` (code review), `10-VERIFICATION.md` (goal verdict),
+  `10-VALIDATION.md` (coverage floor). Five open items:
+
+  1. **`corevalidate.peerDeriveOriginFacts` has no `core.OpCall` case.** Any
+     function declaring a borrow-returning `PublicOrigin` sourced from
+     forwarding a callee's result is refused as not-`Callable` by corevalidate
+     independently of `check` — which admits the same shape with zero
+     diagnostics. Pre-existing; silently affects Phase 08's
+     `relay_depth2_refuse.lang` too. Fail-closed (conservative, not unsound),
+     but it CONSTRAINED which fixtures plans 10-07 and 10-08 could express, so
+     any Phase 11 fixture needing that shape will hit the same wall.
+
+  2. **10-REVIEW.md WR-01 — `corevalidate.peerCalleeFrameDrained`** detects
+     resource escape via return with a single FORWARD pass over
+     `linear.Operations`, correct only under an unstated and unenforced
+     assumption that operations are declaration-ordered by dependency. Its own
+     cited precedent `peerParameterEscapesOwned` walks BACKWARD and is
+     order-independent. Disclosed residual risk, not a blocker.
+
+  3. **10-REVIEW.md WR-02 / D-10-19 — the independence guards disagree.**
+     `originvalidate` permits importing `internal/compiler/callgraph`;
+     `corevalidate`'s equivalent forbidden list forbids it. The four peers'
+     independence is enforced by hand-curated per-package import lists, so this
+     asymmetry is defensible by REVIEW, not by MECHANISM. Phase 11's NAT-06
+     leans on that independence.
+
+  4. **Plan 10-02's D-09-51 fix flipped two negative controls.**
+     `negative_control_fails.lang` and `negative_control_infallible.lang` moved
+     from `check.interprocedural_loan_liveness` to `core.callee_not_callable`,
+     because closing the `OpCall` transparent-walk defect also flows through
+     `check`'s SEM-06 Callable gate. The executor documented the reasoning
+     chain and explicitly flagged it for human review. **That review has not
+     happened.** See `10-02-SUMMARY.md` Deviations.
+
+  5. **`interp.Run`'s `!function.HasClosedBody()` guard is provably
+     unreachable** — `corevalidate.Validate` always catches that shape first
+     (found by 10-09). Dead defensive code, harmless, recorded so a future
+     reader does not mistake it for live protection.
+
+  Also: Phase 10 ran with `workflow.security_enforcement=true` but produced no
+  `10-SECURITY.md`; `/gsd-secure-phase 10` was never run.
+
 ### Roadmap Evolution
 
 - Phase 1 edited: removed generic web-app MVP mode; retained tracer-first
@@ -346,7 +397,7 @@ Last session: 2026-09-11T22:13:45.102Z
 Stopped at: Phase 10 complete, ready to plan Phase 11
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
-Next command: `/gsd-discuss-phase 07`
+Next command: `/gsd-plan-phase 11`
 
 ## Operator Next Steps
 
