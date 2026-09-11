@@ -3,10 +3,14 @@ package session_test
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/interp"
+	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -215,14 +219,194 @@ func TestDuplicateFunctionDeclarationRefusedAtCLI(t *testing.T) {
 	}
 }
 
+// peerGateLinearProbeInput mirrors core_test.go's linearProbeInput and
+// session_phase7.go's phase07LinearProbeInput exactly in spirit -- a third,
+// independent copy of the SAME probe-input convention already established
+// twice in this tree. This is NOT a re-derivation of any fact under test:
+// it only synthesizes a runnable literal argument for interp.Run from a
+// straight-line function's own declared parameter type, so plan 10-08's
+// accept-side interp dispatch can reuse the identical convention rather
+// than inventing a fourth one. A function whose parameter type has no
+// known literal probe form is simply not dispatched through interp here,
+// mirroring the existing corpus-wide dispatch lanes' own skip-not-fail
+// convention.
+func peerGateLinearProbeInput(function core.Function) (string, bool) {
+	switch function.Parameter.Type {
+	case "Byte":
+		return "7", true
+	case "Buffer":
+		return "01020304", true
+	default:
+		return "", false
+	}
+}
+
+// assertThreeWayEndpointAgreement is plan 10-08 Task 2's core proof
+// (D-10-52): for every function in a checked core.Program, `check`'s own
+// materialized core.LoanEndpoint set (function.Linear.LoanEndpoints),
+// corevalidate's independently-recomputed set (Result.LoanEndpoints,
+// D-10-52), and pathoracle's independently-recomputed set
+// (RecomputeEndpoints, composition-aware since plan 10-03) must agree
+// EXACTLY. This runs for EVERY corpus fixture with a structurally real
+// core.Program -- check's own admission diagnostics never gate it, because
+// pathoracle's own composition-depth definition is check/corevalidate-
+// verdict-agnostic by design (session_composition_depth_test.go's own
+// precedent): a fixture check itself refuses, like
+// testdata/phase10/relay_depth3_refuse.lang, still has a fully-formed
+// core.Program whose declared core.OpCall chain genuinely reaches the
+// declared composition depth, and all three static peers must still agree
+// on its structure. This is the "three-way" half of "three-way on refuse,
+// four-way on accept" -- it never varies by admit/refuse verdict, only the
+// fourth (interp) participant does; see
+// assertInterpFrameModelAgreesWithStaticVerdict.
+//
+// SCOPING FINDING (empirically discovered while building this gate, stated
+// rather than papered over): corevalidate.Validate is a FAIL-FAST,
+// first-problem-wins replayer (v.check short-circuits v.run() the instant
+// any problem is recorded), unlike check's own materializeLoanEndpoints or
+// pathoracle.RecomputeEndpoints, neither of which ever short-circuits on an
+// unrelated problem elsewhere in the program. A branched (CFG-carrying)
+// function that corevalidate refuses for a reason UNRELATED to its own
+// loan-endpoint recomputation -- one caught during an earlier structural or
+// per-operation replay step, before v.loanEndpointsMatch is ever reached
+// for that function -- legitimately has an EMPTY entry in
+// Result.LoanEndpoints, diverging from check's and pathoracle's
+// structurally-complete sets, for a reason that has nothing to do with any
+// of the three peers' endpoint-derivation logic disagreeing. This is a
+// property of corevalidate's own fail-fast architecture, not an endpoint
+// bug, so the comparison is skipped for a function with CFG Blocks whose
+// program corevalidate itself did not fully validate (!validated.Valid);
+// see testdata/phase3/branch_one_arm_shared_reject.lang for the fixture
+// that surfaced this while building the gate. It is NEVER skipped for a
+// function with no Blocks at all (every peer trivially reports empty
+// there, corevalidate included, regardless of fail-fast completion) or for
+// any function once corevalidate.Validate is fully Valid.
+func assertThreeWayEndpointAgreement(t *testing.T, fixture string, program core.Program, validated corevalidate.Result) {
+	t.Helper()
+	if len(program.Functions) == 0 {
+		return // e.g. a fixture whose own check.Work exceeded MaxCheckWork before a real core.Program was ever built.
+	}
+	calleeLookup := pathoracle.BuildCalleeLookup(program)
+	corevalidateEndpoints := validated.LoanEndpoints()
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue // a match-only function (no Linear body) has no core.LoanEndpoint concept for any of the three peers.
+		}
+		if !validated.Valid && len(function.Linear.Blocks) > 0 {
+			// See the scoping finding above: corevalidate's fail-fast
+			// replay may never have reached this function's own
+			// loanEndpointsMatch call, so its endpoint entry is not
+			// meaningfully comparable here.
+			continue
+		}
+		checkSet := function.Linear.LoanEndpoints
+		coreSet := corevalidateEndpoints[function.ID]
+		pathSet, _, oracleErr := pathoracle.RecomputeEndpoints(function, calleeLookup)
+		if oracleErr != nil {
+			t.Errorf("%s: pathoracle.RecomputeEndpoints(%s): %v", fixture, function.ID, oracleErr)
+			continue
+		}
+		if reflect.DeepEqual(checkSet, coreSet) && reflect.DeepEqual(checkSet, pathSet) {
+			continue
+		}
+		t.Errorf(
+			"%s: function %s -- three-way-on-refuse/four-way-on-accept endpoint differential found an UNDECLARED divergence: check=%+v corevalidate=%+v pathoracle=%+v",
+			fixture, function.ID, checkSet, coreSet, pathSet,
+		)
+	}
+}
+
+// assertInterpFrameModelAgreesWithStaticVerdict is plan 10-08 Task 2's
+// fourth, ACCEPT-ONLY participant (D-10-53). `interp` cannot produce a
+// core.LoanEndpoint set -- its answer is an ordered Execution -- so this is
+// deliberately NOT an equality comparison against the three static peers'
+// sets, and it never runs on the refuse side (a refused program's declared
+// contract is exactly what interp's own Run re-validates via
+// corevalidate.Validate before executing anything, so running it there
+// would prove nothing new). The comparison is METAMORPHIC: the static
+// verdict already said ADMIT (both check and corevalidate agree), so
+// interp actually executing the SAME checked core.Program cleanly, for
+// every function and every reachable input, is this phase's riskiest
+// assumption -- that interp's frame model agrees with the two admission
+// layers about what is legal across a call boundary -- made falsifiable.
+// interp's ONE genuine contribution here is named as its own separate
+// claim, frame-model/static-verdict agreement, never folded into a peer
+// count: this function proves that claim, and nothing here ever asks
+// interp for a LoanEndpoint.
+func assertInterpFrameModelAgreesWithStaticVerdict(t *testing.T, fixture string, program core.Program) {
+	t.Helper()
+	for _, function := range program.Functions {
+		switch {
+		case function.Match != nil:
+			for _, arm := range function.Match.Arms {
+				if _, err := interp.Run(program, function.Name, arm.Pattern); err != nil {
+					t.Errorf("%s: interp.Run(%s, %q) disagreed with the static ACCEPT verdict (D-10-53's frame-model/static-verdict agreement claim): %v", fixture, function.Name, arm.Pattern, err)
+				}
+			}
+		case function.Linear != nil:
+			input, ok := peerGateLinearProbeInput(function)
+			if !ok {
+				continue
+			}
+			if _, err := interp.Run(program, function.Name, input); err != nil {
+				t.Errorf("%s: interp.Run(%s, %q) disagreed with the static ACCEPT verdict (D-10-53's frame-model/static-verdict agreement claim): %v", fixture, function.Name, input, err)
+			}
+		}
+	}
+}
+
 // TestNoUndeclaredCheckPeerDivergenceAcrossCorpus is Task 1 Test 7
-// (T-07-10-05): walks every .lang file under testdata/, computes both
-// verdicts (check's own diagnostics, and corevalidate.Validate on the
-// checked core.Program when check itself admits), and asserts the set of
-// files where check admits but the peer refuses equals peerDivergenceExpected
-// EXACTLY, in both directions. An undeclared new divergence fails this test
-// rather than passing silently; a stale entry that no longer diverges also
-// fails it.
+// (T-07-10-05)'s original verdict-divergence walk, extended by plan 10-08
+// Task 2 (D-10-51: EXTENDED, never a second harness -- D-09-23 already
+// ratified this tradeoff) into the phase's own criterion-4 gate. It walks
+// every .lang file under testdata/ and, for every fixture, runs THREE
+// independent comparisons:
+//
+//  1. The ORIGINAL verdict-divergence walk (T-07-10-05, unchanged): when
+//     check admits but corevalidate.Validate independently refuses, the
+//     set of such fixtures must equal peerDivergenceExpected EXACTLY, in
+//     both directions -- an undeclared new divergence fails, and a stale
+//     entry that no longer diverges also fails.
+//  2. THREE-WAY, on every fixture regardless of admit/refuse: `check`,
+//     `corevalidate`, and `pathoracle`'s independently-derived
+//     core.LoanEndpoint sets must agree exactly (D-10-52,
+//     assertThreeWayEndpointAgreement) -- rebuilding M001 Phase 3's
+//     exhaustive endpoint enumeration (03-VALIDATION.md's own five-row
+//     conflict matrix) at the declared, bounded composition depth of 3
+//     (QLT-04; testdata/phase10/relay_depth3_accept.lang and
+//     relay_depth3_refuse.lang, plan 10-07, are both walked here and
+//     agree).
+//  3. FOUR-WAY, on the ACCEPT side only (both check and corevalidate
+//     admit): `interp`'s ordered Execution additionally participates,
+//     compared METAMORPHICALLY rather than by equality
+//     (assertInterpFrameModelAgreesWithStaticVerdict, D-10-53).
+//
+// This gate is billed EVERYWHERE as exactly what it proves: THREE-WAY ON
+// REFUSE, FOUR-WAY ON ACCEPT -- never unqualified "four-way" (D-09-37's
+// recorded overclaim precedent). `interp`'s one genuine contribution,
+// frame-model/static-verdict agreement, is its own separate claim, never a
+// fourth equality peer, because it cannot produce a core.LoanEndpoint at
+// all.
+//
+// Criterion 4's ownership-fact (call-site parameter mode) half is
+// documented here, honestly, as NEAR-VACUOUS by construction (D-10-40):
+// core.ParameterContract.Mode is hardcoded "owned" everywhere
+// (corevalidate.go:2163, whose own comment cites D-07-01's cardinality-1
+// grammar), and core.LinearOperation carries no override field, so a
+// natural-input differential on this fact CANNOT DISAGREE BY CONSTRUCTION.
+// What makes it non-vacuous is Task 3's seeded-fault harness (a synthetic
+// core.Program with Mode flipped), NOT this natural-corpus walk agreeing --
+// this walk proves the endpoint/execution facts above, never "three
+// engines agree" on the ownership fact.
+//
+// `interp`'s OWN independence claim is also narrower than `check`'s and
+// `corevalidate`'s mutual non-import independence (D-10-37): `interp`
+// imports `corevalidate` and `Run`'s first act is
+// `corevalidate.Validate(program)`, so a bug in `corevalidate.Validate`
+// would feed `interp` bad input too. The defensible claim this gate relies
+// on is independence of DERIVATION MECHANISM for the frame-model fact
+// specifically, nested inside a shared, unrelated validation dependency --
+// never the stronger mutual-non-import claim.
 func TestNoUndeclaredCheckPeerDivergenceAcrossCorpus(t *testing.T) {
 	root := testsupport.ProjectPath("testdata")
 	found := make(map[string]string)
@@ -237,24 +421,34 @@ func TestNoUndeclaredCheckPeerDivergenceAcrossCorpus(t *testing.T) {
 		if checkErr != nil {
 			t.Fatalf("CheckFile(%s): %v", path, checkErr)
 		}
-		if len(checked.Diagnostics) > 0 {
-			// check itself refuses -- not a check-admits/peer-refuses
-			// divergence, regardless of what the peer would say.
-			return nil
-		}
-		validated := corevalidate.Validate(checked.Program)
-		if validated.Valid {
-			return nil
-		}
-		code := session.PeerRefusalUnnamedCodeForTest
-		if len(validated.Problems) > 0 {
-			code = validated.Problems[0].Code
-		}
 		relative, relErr := filepath.Rel(testsupport.ProjectPath("."), path)
 		if relErr != nil {
 			t.Fatalf("filepath.Rel: %v", relErr)
 		}
-		found[filepath.ToSlash(relative)] = code
+		relative = filepath.ToSlash(relative)
+
+		checkAdmits := len(checked.Diagnostics) == 0
+		validated := corevalidate.Validate(checked.Program)
+
+		if checkAdmits && !validated.Valid {
+			// check admits but the peer independently refuses -- the
+			// ORIGINAL verdict-divergence fact (T-07-10-05), unchanged.
+			code := session.PeerRefusalUnnamedCodeForTest
+			if len(validated.Problems) > 0 {
+				code = validated.Problems[0].Code
+			}
+			found[relative] = code
+		}
+
+		// D-10-52: three-way endpoint agreement, on every fixture,
+		// regardless of admit/refuse.
+		assertThreeWayEndpointAgreement(t, relative, checked.Program, validated)
+
+		// D-10-53: interp participates on the ACCEPT side only -- both
+		// admission layers must agree the program is admitted.
+		if checkAdmits && validated.Valid {
+			assertInterpFrameModelAgreesWithStaticVerdict(t, relative, checked.Program)
+		}
 		return nil
 	})
 	if err != nil {
