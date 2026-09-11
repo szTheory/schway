@@ -2,15 +2,19 @@ package interp
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -528,4 +532,202 @@ func TestCallDepthExceeded(t *testing.T) {
 	if !found {
 		t.Fatalf("expected an event carrying the named depth-limit reason %q, got events: %+v", callDepthExceededDefectReason, result.Events)
 	}
+}
+
+// probeReducedCallDepthCap and probeCallDepthMultiplier are Task 3's
+// Pitfall-4 probe constants (D-10-44): the production MaxCallDepth (128)
+// times a multiplier large enough to meaningfully exercise a pinned small
+// host stack would exceed the parser's own maxFunctions ceiling (1024,
+// syntax/parser.go:16), so the probe expresses its multiplier against this
+// smaller, in-test-only cap instead. Both constants -- and the derived
+// probeChainDepth -- are fixed in source BEFORE this probe's first passing
+// run, so the "threshold chosen after seeing the result" attack is
+// foreclosed; the commit that first makes TestNativeStackHeadroomIndependentOfCallDepth
+// pass states in its own message that these constants predate that first
+// green run, so review can confirm the ordering from git history alone.
+const (
+	probeReducedCallDepthCap  = 8
+	probeCallDepthMultiplier  = 100
+	probeChainDepth           = probeReducedCallDepthCap * probeCallDepthMultiplier // 800, held well under maxFunctions=1024
+	probeMaxStackBytes        = 1 << 20                                            // 1 MiB: a deliberately small, pinned host ceiling
+	probeSubprocessTimeout    = 30 * time.Second
+	probeChildEnv             = "LANG_INTERP_CALL_DEPTH_PROBE_CHILD"
+	probeArmEnv               = "LANG_INTERP_CALL_DEPTH_PROBE_ARM"
+	probeArmCapDisabled       = "cap_disabled"
+	probeArmCapEnabled        = "cap_enabled"
+	probeMaxCapturedOutputLen = 1 << 16
+)
+
+// probeBoundedWriter caps captured child-process output at
+// probeMaxCapturedOutputLen, mirroring testsupport.boundedWriter's shape
+// (internal/compiler/testsupport/testsupport.go) without depending on its
+// unexported type -- an interp test cannot import testsupport (it pulls in
+// session, which imports interp: a cycle). Excess bytes are discarded, never
+// buffered, so a runaway child cannot exhaust test memory.
+type probeBoundedWriter struct {
+	buffer bytes.Buffer
+	total  int
+}
+
+func (w *probeBoundedWriter) Write(data []byte) (int, error) {
+	w.total += len(data)
+	remaining := probeMaxCapturedOutputLen - w.buffer.Len()
+	if remaining > 0 {
+		if len(data) > remaining {
+			w.buffer.Write(data[:remaining])
+		} else {
+			w.buffer.Write(data)
+		}
+	}
+	return len(data), nil
+}
+
+func (w *probeBoundedWriter) bytes() []byte { return w.buffer.Bytes() }
+
+// runCallDepthProbeSubprocess re-execs the current test binary
+// (os.Args[0]) restricted to this one test via -test.run, guarded by
+// probeChildEnv so the child branches into runCallDepthProbeChild instead
+// of recursing, with probeArmEnv selecting which arm the child runs.
+// exec.CommandContext with a real deadline (never context.Background()) and
+// two independently bounded probeBoundedWriter streams (never .Output() or
+// .CombinedOutput()'s unbounded merge, and never .StdoutPipe()'s unbounded
+// pipe read) -- this repository's own TestSourceNeverSpawnsUnboundedProcesses
+// guard (internal/compiler/native/native_test.go, D-02-01) forbids both.
+func runCallDepthProbeSubprocess(t *testing.T, arm string) (stdout, stderr []byte, err error) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), probeSubprocessTimeout)
+	defer cancel()
+
+	command := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestNativeStackHeadroomIndependentOfCallDepth$", "-test.v")
+	command.Env = append(os.Environ(), probeChildEnv+"=1", probeArmEnv+"="+arm)
+
+	var stdoutWriter, stderrWriter probeBoundedWriter
+	command.Stdout = &stdoutWriter
+	command.Stderr = &stderrWriter
+
+	runErr := command.Run()
+	return stdoutWriter.bytes(), stderrWriter.bytes(), runErr
+}
+
+// runCallDepthProbeChild is the re-exec'd child's own logic (Task 3,
+// D-10-42/D-10-43): it pins runtime/debug.SetMaxStack to a small, fixed
+// ceiling (probeMaxStackBytes) for determinism across platforms and across
+// the Linux and macOS CI runners, then drives a genuine probeChainDepth-
+// function chain -- generated and checked through the real pipeline exactly
+// like every other test in this file -- under one of two arms selected by
+// probeArmEnv.
+//
+// This is genuinely NEW machinery for this repository: no subprocess,
+// SetMaxStack, or TestMain re-exec pattern existed anywhere in this
+// codebase before this test (10-RESEARCH.md's "No Analog Found" note). It
+// converts Assumption A1 ([ASSUMED], 10-RESEARCH.md Assumptions Log) --
+// that Go's stack-exhaustion runtime.throw is fatal and unrecoverable via
+// recover() -- from an assumption into a directly observed result for this
+// repository's toolchain: this test never exercises that path at all,
+// because it exists precisely to demonstrate the STRONGER, honest finding
+// (D-10-43) that language call depth never touches host stack in the first
+// place. Because interp's call stack is an explicit heap []frame slice
+// (D-10-21), Lang-level call depth costs O(1) host stack; the result below
+// is therefore not a safety-margin ratio or a near-miss stress test -- it
+// is a direct measurement that the host-stack limit and the language-level
+// call-depth bound are two STRUCTURALLY UNRELATED limits, never one limit
+// wearing two names (Roadmap criterion 2's Pitfall-4 Gate).
+func runCallDepthProbeChild(t *testing.T) {
+	t.Helper()
+	debug.SetMaxStack(probeMaxStackBytes)
+
+	switch arm := os.Getenv(probeArmEnv); arm {
+	case probeArmCapDisabled:
+		// Cap lifted through the nil-default maxCallDepthOverride seam
+		// (never a production-mutable exported global): the chain runs
+		// probeChainDepth deep -- many multiples past MaxCallDepth -- and
+		// must exit cleanly despite the pinned small host ceiling, because
+		// language call depth was never consuming host stack to begin
+		// with.
+		previous := maxCallDepthOverride
+		maxCallDepthOverride = func() int { return probeChainDepth + 1 }
+		defer func() { maxCallDepthOverride = previous }()
+
+		program := generateAndCheckCallDepthChain(t, probeChainDepth)
+		result, err := Run(program, "link0", "1")
+		if err != nil {
+			t.Fatalf("cap-disabled arm: unexpected error at chain depth %d under a %d-byte host stack ceiling: %v", probeChainDepth, probeMaxStackBytes, err)
+		}
+		if result.Outcome.Kind != "returned" {
+			t.Fatalf("cap-disabled arm: expected outcome kind %q, got %q", "returned", result.Outcome.Kind)
+		}
+		fmt.Println("cap_disabled: ok")
+
+	case probeArmCapEnabled:
+		// The cap stays at its declared production value (MaxCallDepth,
+		// maxCallDepthOverride left nil): the SAME probeChainDepth chain is
+		// driven under the identical pinned small host stack ceiling, and
+		// the named depth-exceeded refusal must fire well before the
+		// chain's own end -- the language-level bound is what stops
+		// execution, never a host stack limit that was never actually
+		// threatened.
+		program := generateAndCheckCallDepthChain(t, probeChainDepth)
+		result, err := Run(program, "link0", "1")
+		if err != nil {
+			t.Fatalf("cap-enabled arm: unexpected error: %v", err)
+		}
+		if result.Outcome.Kind != execution.OutcomeDefect {
+			t.Fatalf("cap-enabled arm: expected the depth-exceeded refusal's outcome kind %q, got %q", execution.OutcomeDefect, result.Outcome.Kind)
+		}
+		found := false
+		for _, event := range result.Events {
+			if event.Output == callDepthExceededDefectReason {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("cap-enabled arm: expected an event carrying the named depth-limit reason %q, got events: %+v", callDepthExceededDefectReason, result.Events)
+		}
+		fmt.Println("cap_enabled: ok")
+
+	default:
+		t.Fatalf("unknown or missing probe arm %q (%s)", arm, probeArmEnv)
+	}
+}
+
+// TestNativeStackHeadroomIndependentOfCallDepth is Task 3's Pitfall-4 gate
+// (Roadmap criterion 2, D-10-42/D-10-43/D-10-44): a SUBPROCESS probe, never
+// an in-process headroom-ratio measurement -- an in-process measurement is
+// an assertion wearing observation's clothes and is REJECTED as this gate's
+// evidence, usable only as a supplementary fast sanity check. The parent
+// asserts on the child's own EXIT STATUS and STDOUT/STDERR, never on an
+// in-process value.
+//
+// Two arms, both required: cap_disabled proves the language-level call
+// stack survives probeChainDepth (many multiples past MaxCallDepth) under a
+// pinned small host stack ceiling with no host collapse; cap_enabled proves
+// the named depth-exceeded refusal fires FIRST, before that same host
+// ceiling is ever approached, at the SAME chain depth. See
+// runCallDepthProbeChild's own doc comment for the full framing and its
+// recorded observation for Assumption A1.
+func TestNativeStackHeadroomIndependentOfCallDepth(t *testing.T) {
+	if os.Getenv(probeChildEnv) != "" {
+		runCallDepthProbeChild(t)
+		return
+	}
+
+	t.Run(probeArmCapDisabled, func(t *testing.T) {
+		stdout, stderr, err := runCallDepthProbeSubprocess(t, probeArmCapDisabled)
+		if err != nil {
+			t.Fatalf("cap-disabled child exited with error: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+		}
+		if !bytes.Contains(stdout, []byte("cap_disabled: ok")) {
+			t.Fatalf("expected the cap-disabled child to report success on its own stdout; stdout: %s\nstderr: %s", stdout, stderr)
+		}
+	})
+
+	t.Run(probeArmCapEnabled, func(t *testing.T) {
+		stdout, stderr, err := runCallDepthProbeSubprocess(t, probeArmCapEnabled)
+		if err != nil {
+			t.Fatalf("cap-enabled child exited with error: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+		}
+		if !bytes.Contains(stdout, []byte("cap_enabled: ok")) {
+			t.Fatalf("expected the cap-enabled child to report the depth refusal fired first on its own stdout; stdout: %s\nstderr: %s", stdout, stderr)
+		}
+	})
 }
