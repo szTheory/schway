@@ -4,6 +4,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -45,13 +46,26 @@ func checkedFunction(t *testing.T, fixture string) core.Function {
 	return result.Program.Functions[0]
 }
 
-// TestOracleImportsStayIndependent reads pathoracle's own Go import list
-// (parsed from source, never assumed) and fails if it imports check,
-// corevalidate, or ast — the T-03-13 import-independence falsifier, in the
-// style of corevalidate's own TestValidatorImportsStayIndependent and
-// originvalidate's TestOriginValidateImportsNeitherCheckNorAst.
-func TestOracleImportsStayIndependent(t *testing.T) {
-	dir := testsupport.ProjectPath("internal", "compiler", "pathoracle")
+// pathOracleForbiddenImports is pathoracle's own five-entry forbidden set
+// (T-03-13): the repo's most complete such list, covering check,
+// corevalidate, ast, interp, and cgen. 10-03 Task 3 hardens the MECHANISM
+// checking against it (adding a transitive go/list-deps scan below the
+// existing direct scan); no entry is added, removed, or otherwise touched
+// (D-10-17's own scope, mirroring originvalidate's identical restraint).
+var pathOracleForbiddenImports = []string{"/compiler/check", "/compiler/corevalidate", "/compiler/ast", "/compiler/interp", "/compiler/cgen"}
+
+// directImportViolation is the go/parser ImportsOnly directory scan this
+// package already ran before 10-03: it reads pathoracle's own Go source
+// files' import lists (never assumed from a doc comment) and returns the
+// first forbidden import path found, or "" if none. Kept as a direct-import
+// scan even though transitiveImportsViolation below also runs a transitive
+// check over the SAME forbidden set -- the redundancy is deliberate
+// (D-10-17, mirroring originvalidate_test.go's own identical choice): this
+// scan catches a forbidden import added directly to this package; the
+// transitive check catches one added indirectly, through a helper package
+// that itself imports something forbidden.
+func directImportViolation(t *testing.T, dir string, forbidden []string) string {
+	t.Helper()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -67,13 +81,94 @@ func TestOracleImportsStayIndependent(t *testing.T) {
 		}
 		for _, imported := range file.Imports {
 			path := strings.Trim(imported.Path.Value, `"`)
-			forbidden := []string{"/compiler/check", "/compiler/corevalidate", "/compiler/ast", "/compiler/interp", "/compiler/cgen"}
 			for _, bad := range forbidden {
 				if strings.HasSuffix(path, bad) {
-					t.Fatalf("%s imports %s, which pathoracle must never depend on", entry.Name(), path)
+					return entry.Name() + " imports " + path
 				}
 			}
 		}
+	}
+	return ""
+}
+
+// transitiveImportViolation is D-10-17's own suffix-matching predicate,
+// factored out so BOTH the real `go list -deps` scan below and
+// TestTransitiveImportsGuardCanFail's own negative control exercise the
+// IDENTICAL logic -- proving the negative control is testing the real
+// predicate, not a second, drifting copy of it (mirrors
+// originvalidate_test.go's own identical shape exactly).
+func transitiveImportViolation(deps []string, forbidden []string) string {
+	for _, dep := range deps {
+		for _, bad := range forbidden {
+			if strings.HasSuffix(dep, bad) {
+				return dep
+			}
+		}
+	}
+	return ""
+}
+
+// transitiveImportsViolation is D-10-17's hardening of the direct-import
+// scan above: nobody adds an import of `check` to a re-deriver on purpose;
+// they add a helper package that itself imports `check`. This shells out to
+// `go list -deps`, which ships with the toolchain CI already requires (adds
+// no dependency), and asserts no line of pathoracle's own transitive
+// dependency closure has a forbidden suffix.
+func transitiveImportsViolation(t *testing.T, forbidden []string) string {
+	t.Helper()
+	cmd := exec.Command("go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/pathoracle")
+	cmd.Dir = testsupport.ProjectPath()
+	output, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("go list -deps: %v", err)
+	}
+	deps := strings.Split(strings.TrimSpace(string(output)), "\n")
+	return transitiveImportViolation(deps, forbidden)
+}
+
+// TestOracleImportsStayIndependent reads pathoracle's own Go import list
+// (parsed from source, never assumed) and fails if it imports check,
+// corevalidate, ast, interp, or cgen — the T-03-13 import-independence
+// falsifier, in the style of corevalidate's own
+// TestValidatorImportsStayIndependent and originvalidate's
+// TestOriginValidateImportsNeitherCheckNorAst.
+//
+// 10-03 Task 3 (D-10-17): ALSO runs the transitive go/list-deps scan below
+// the direct scan -- the direct go/parser ImportsOnly scan is hardened, not
+// replaced (both still run).
+//
+// Residual weakness (D-10-20, deliberately stated rather than papered
+// over, cited from PHASE-10-DEBT.md): this guard lives in the package it
+// polices, so a single commit could add a forbidden import here and edit
+// this very assertion in the same commit. Transitive checking does not fix
+// that; neither would consolidating multiple such guards across the repo
+// into one shared table. Accepted: Success Criterion 1 asks for a build- or
+// test-level mechanism, and `go test` already fails CI's `checks` job.
+func TestOracleImportsStayIndependent(t *testing.T) {
+	dir := testsupport.ProjectPath("internal", "compiler", "pathoracle")
+	if violation := directImportViolation(t, dir, pathOracleForbiddenImports); violation != "" {
+		t.Fatalf("%s, which pathoracle must never depend on", violation)
+	}
+	if violation := transitiveImportsViolation(t, pathOracleForbiddenImports); violation != "" {
+		t.Fatalf("pathoracle transitively imports %s, which it must never depend on", violation)
+	}
+}
+
+// TestTransitiveImportsGuardCanFail is D-10-17's negative control: the
+// suffix-matching predicate the transitive check shares
+// (transitiveImportViolation) must actually report a violation over a
+// synthetic dependency list containing a forbidden path -- proving the
+// transitive guard can go red, not merely that it has never yet found
+// anything (mirrors originvalidate_test.go's own
+// TestTransitiveImportsGuardCanFail).
+func TestTransitiveImportsGuardCanFail(t *testing.T) {
+	synthetic := []string{
+		"github.com/codename-lang/lang/internal/compiler/pathoracle",
+		"github.com/codename-lang/lang/internal/compiler/core",
+		"github.com/codename-lang/lang/internal/compiler/corevalidate",
+	}
+	if got := transitiveImportViolation(synthetic, pathOracleForbiddenImports); got == "" {
+		t.Fatal("expected the synthetic dependency list's forbidden corevalidate entry to be flagged")
 	}
 }
 
