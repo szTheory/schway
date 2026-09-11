@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 10
 current_phase_name: Trusted Interprocedural Oracle
 status: executing
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-09-11T17:41:50.676Z"
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-09-11T18:26:24.694Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 10 execution started
-state_head: 7f37ffb6bae440ae69952fce8f47cc83e6879cfa
+state_head: 7d7553ba8faffaf1bd671dff05781373fb92b64d
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 37
-  completed_plans: 29
+  completed_plans: 30
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 10 (Trusted Interprocedural Oracle) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 10 execution started
 
@@ -175,6 +175,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 09 P09 | ~5h | 4 tasks | 10 files |
 | Phase 09 P10 | 50min | 3 tasks | 5 files |
 | Phase 10-trusted-interprocedural-oracle P01 | 55 min | 3 tasks | 4 files |
+| Phase 10 P02 | 95min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -226,6 +227,8 @@ Standing architectural commitments carried into M002:
 - [Phase 09]: Pattern B's twin split does not materialize; recorded as new debt D-09-53 (pre-existing deriveFunctionUsesParam defect), not fixed in this plan
 - [Phase 09]: OWN-05 split into OWN-05a (Phase 09, Complete) and OWN-05b (Phase 10, Pending); QLT-07 closed for the loan-liveness subset, ratified in 09-VALIDATION.md; OWN-09/TRU-04 requirement texts corrected in place
 - [Phase 10]: 10-01: interp executes calls across an explicit []frame heap stack (D-10-21); OWN-05b falls out of observable execution, ability-aware per D-07-11; move-as-copy mutant proven via a synthetic core.Program since no legal Lang source can express the shape
+- [Phase 10]: OpCall origin walk now consults a callee's DECLARED PublicOrigin via a narrow, unexported calleeOriginFact map built by exported BuildCalleeOriginFacts — Closes D-09-51; mirrors corevalidate.buildLoanChainIndex's shipped peerLoanCarry precedent, threaded through RecomputeOriginPerReturn/RecomputeOrigin/PublishProblemsFor without widening ValidatePublished/BuildInterface's own signatures
+- [Phase 10]: Corrected two check-package negative-control fixtures/tests (negative_control_fails.lang, negative_control_infallible.lang) whose expected diagnostic depended on the same pre-existing D-09-51 transparent-walk defect — relay's declared borrow(buffer) return was never honestly derivable given leaf's genuinely owned return; check's own SEM-06 Callable gate now correctly fires first with core.callee_not_callable
 
 ### Pending Todos
 
@@ -307,8 +310,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-11T17:41:50.494Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-09-11T18:26:13.642Z
+Stopped at: Completed 10-02-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`

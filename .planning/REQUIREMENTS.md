@@ -81,7 +81,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Independent Re-Derivation
 
-- [ ] **TRU-02**: `originvalidate` extends its published-origin walk across
+- [x] **TRU-02**: `originvalidate` extends its published-origin walk across
       `OpCall`, mirroring the already-proven `OpForeignCall` hop.
 - [ ] **TRU-03**: `pathoracle` independently re-derives the cross-function
       loan-chain rule without importing `check` or `corevalidate`.
@@ -209,7 +209,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | NAT-05 | Phase 11 | Pending |
 | NAT-06 | Phase 11 | Pending |
 | NAT-07 | Phase 11 | Pending |
-| TRU-02 | Phase 10 | Pending |
+| TRU-02 | Phase 10 | Complete |
 | TRU-03 | Phase 10 | Pending |
 | TRU-04 | Phase 09 | Complete |
 | QLT-03 | Phase 11 | Pending |
