@@ -442,7 +442,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 09-09-PLAN.md — OWN-09: extend the post-assembly pass, remove the lowering-time emission, delete the shadow scaffolding — one commit
+- [x] 09-09-PLAN.md — OWN-09: extend the post-assembly pass, remove the lowering-time emission, delete the shadow scaffolding — one commit
 
 **Wave 6** *(blocked on Wave 5 completion)*
 

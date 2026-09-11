@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 09
 current_phase_name: Peer Re-Derivation and D-03-02 Closure
 status: executing
-stopped_at: Completed 09-08-PLAN.md
-last_updated: "2026-09-11T00:01:08.342Z"
+stopped_at: Completed 09-09-PLAN.md
+last_updated: "2026-09-11T02:28:01.619Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 09 mandatory mid-phase gate adjudicated; computeLoanLastUses deletion AUTHORIZED for plan 09-09
-state_head: b4a17fb6bae91d08a2bd8a24f0c1ae8915e7abf1
+state_head: cc327d5241050f731e6907e1c4d842219a66febd
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # Project State
@@ -40,7 +40,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 09 (Peer Re-Derivation and D-03-02 Closure) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute — computeLoanLastUses deletion AUTHORIZED by plan 09-08's gate
 Last activity: 2026-09-10 — Completed 09-08-PLAN.md (mandatory mid-phase gate)
 
@@ -171,6 +171,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 09 P05 | 55min | 3 tasks | 3 files |
 | Phase 09 P07 | 55min | 3 tasks | 2 files |
 | Phase 09 P06 | 50min | 3 tasks | 7 files |
+| Phase 09 P09 | ~5h | 4 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -218,6 +219,8 @@ Standing architectural commitments carried into M002:
 - [Phase 09]: No new seam minted for core-layer convention override (D-09-35): existing ParameterContract.Mode closed-set decode check confirmed as the fail-closed control
 - [Phase 09]: [Phase 09] 09-07: D-09-49 Q1 settled by enumeration (no fixture exhibits the interaction across all 6 move_while_borrowed fixtures); shadowPathReachableCodes={move_while_borrowed,borrow_conflict} proven by source scan + testOnlyForceUniformLoanJoin perturbation, not merely predicted
 - [Phase 09]: [Phase 09]: 09-06: peer's cost sweep injects a genuine borrow into every generated function (raw corpus has none, D-09-04) via injectBorrowForLoanCarry, fits flat-linear against a self-derived 1300 milli-exponent bound (all five shapes ~999-1000), and mutation-kills it via peerClosureUnmemoizedSeamForTest (foldChain memo-write skip) on the 'forward' shape (0.999->1.396 exponent, 4.58x checks at n=512); Result.PeerConsultedFields() closes D-08-26's positive half, proven identical to check's set (D-09-30). No qlt02_budget_manifest.json row added (D-09-28 -- ratified at 09-08's gate).
+- [Phase 09]: Deleted computeLoanLastUses; checkInterproceduralLoanLiveness is now the sole loan-liveness decision point (D-09-07/D-09-08/D-09-09)
+- [Phase 09]: Pattern B's twin split does not materialize; recorded as new debt D-09-53 (pre-existing deriveFunctionUsesParam defect), not fixed in this plan
 
 ### Pending Todos
 
@@ -299,8 +302,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-10T22:56:58.947Z
-Stopped at: Completed 09-06-PLAN.md
+Last session: 2026-09-11T02:28:01.220Z
+Stopped at: Completed 09-09-PLAN.md
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
 Next command: `/gsd-discuss-phase 07`
