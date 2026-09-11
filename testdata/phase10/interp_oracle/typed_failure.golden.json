@@ -1,0 +1,1 @@
+{"schema":"lang.execution/1","outcome":{"kind":"typed_failure","value":"err_value"},"events":[{"schema":"lang.execution/1","id":"oracle:fail:op:0:event:failed","kind":"function.failed","function_id":"oracle:fail:fn","source_place":"oracle:fail:place:param","type_id":"oracle:fail:type:err"}],"live_resources":[]}
