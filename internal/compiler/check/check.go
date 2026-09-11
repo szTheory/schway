@@ -822,11 +822,22 @@ func cfgBlocksForFunction(function core.Function) []cfgBlockSpec {
 //     callee-before-caller, strictly before any caller's admission consults
 //     it -- a one-pass, two-tier production/consumption split, not a
 //     re-walk triggered per call site.
-//  4. This code lives in the check.* namespace, not core.*. It is scheduled
-//     for promotion to core.* in Phase 09 at the moment corevalidate
-//     independently re-derives the same interprocedural fact (D-08-21) --
-//     promoting it earlier, before a second derivation exists to validate
-//     against, would ship an unvalidated single-source-of-truth move.
+//  4. This code lives in the check.* namespace, not core.*, and it STAYS
+//     there. D-08-21 once scheduled it for promotion to core.* in Phase 09,
+//     conditioned on both peers agreeing on-code. D-09-31 formally
+//     SUPERSEDED that commitment: the trigger was never achievable, because
+//     the two mechanisms cannot fail the same way (D-08-17) -- check runs a
+//     backward worklist, corevalidate a forward reachability closure. The
+//     corpus shows it directly: corevalidate refuses the relay-escort
+//     witness via core.move_while_borrowed while check refuses the same
+//     program via check.interprocedural_loan_liveness, and session's peer
+//     gate treats that as two honest independent refusals. Promoting would
+//     force check's three-role cause template onto a closure that has no
+//     natural "call that extended the loan" -- reverse-engineering one
+//     peer's shape into the other, the exact anti-pattern this phase
+//     exists to prevent. Divergent codes per peer are already shipped
+//     precedent (check.call_argument_type_mismatch /
+//     core.CallArgumentTypeMismatch, D-07-46).
 //
 // The intraprocedural ownership.* loan-liveness law is deliberately NOT
 // retired in this phase (D-08-27's interim rule, reconfirmed at the

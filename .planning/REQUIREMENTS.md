@@ -51,7 +51,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [x] **OWN-07**: `corevalidate` independently re-derives the same
       interprocedural loan-liveness facts without sharing an implementation
       with `check`; a seeded endpoint-level fault makes the two peers diverge.
-- [ ] **OWN-08**: D-03-02 is closed — an exported borrow-derived return with no
+- [x] **OWN-08**: D-03-02 is closed — an exported borrow-derived return with no
       declared origin is refused in the interprocedural case, in both admission
       layers.
 - [x] **OWN-09**: The intraprocedural loan-liveness DECISION POINT is retired in
