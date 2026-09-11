@@ -241,7 +241,15 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// checkInterproceduralLoanLiveness only) and is recorded as new debt
 	// (see this plan's SUMMARY and PHASE-09-DEBT.md) rather than adjusted
 	// here.
-	"phase08/twin_b_accept.lang":   {"check.interprocedural_loan_liveness", "diagnostic:5fe0501da5249e177b0ada39"},
+	//
+	// Updated 2026-09-11 (Phase 10 plan 10-06, D-10-27/D-10-29): the
+	// diagnostic ID here is content-derived and shifted when
+	// twin_b_accept.lang's header comment was corrected to state the
+	// observed (not intended-split) verdict. The CODE is byte-identical
+	// (check.interprocedural_loan_liveness) -- only the source file's bytes
+	// changed, never check.go's derivation logic or this fixture's observed
+	// verdict.
+	"phase08/twin_b_accept.lang":   {"check.interprocedural_loan_liveness", "diagnostic:9077559bb65dc5fe33cb57bb"},
 	"phase08/twin_b_refuse.lang":   {"check.interprocedural_loan_liveness", "diagnostic:d15b65a04fd8515f92e999e2"},
 	"phase1/malformed.lang":        {"syntax.unexpected_byte", "diagnostic:ccb9bcd29f3e8d96fa0368b6"},
 	"phase1/non_exhaustive.lang":   {"match.non_exhaustive", "diagnostic:f9582fb8c4ad9f90fbe75fa8"},

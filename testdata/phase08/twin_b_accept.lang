@@ -1,20 +1,34 @@
-// Phase 08 Task 1 -- Pattern B (UsesParam), ACCEPTING member.
-// Twin of twin_b_refuse.lang: escort's own body is byte-identical to the
-// refusing member (verified by TestInterproceduralTwinPairsDifferOnlyInTheCallee).
-// probe declares the IDENTICAL signature (`fn probe(buffer: Buffer) ->
-// Buffer`) and differs from the refusing member ONLY in its body: here probe
-// never touches its own parameter beyond forwarding it to its own return
-// (`taken = take buffer; taken`) -- deriveFunctionUsesParam's own
-// leaf-forwards-to-its-own-return exemption (D-08-01) means probe's
-// `usesParam` bit is false.
+// Phase 08 Task 1 -- Pattern B (UsesParam), "ACCEPTING" member in name only.
 //
-// At the checked-core level (08-02's TestInterproceduralLivenessTwinPatternB,
-// extended by this plan against this exact fixture), the backward D-08-08
-// gate stays CLOSED for a non-using callee: the earlier `take buffer` is
-// admitted, contract-driven, not shape-driven.
+// OBSERVED VERDICT (as of Phase 10 plan 10-06, PHASE-10-DEBT.md D-10-27/
+// D-10-28/D-10-29): this fixture is refused, IDENTICALLY to twin_b_refuse.lang,
+// with `check.interprocedural_loan_liveness`. The intended split (this member
+// admitted, the refusing member refused) does NOT materialize, and per D-10-27
+// that is NOT a `deriveFunctionUsesParam` defect to fix in Phase 10 -- six
+// independently-authored, currently-passing Phase 08/09 tests pin the current
+// derivation semantics as intended, and applying the narrowing D-09-53
+// proposed was re-executed and found to break them, including this fixture's
+// own test.
+//
+// WHY: probe's body (`taken = take buffer; taken`) is a ONE-HOP identity
+// forward, not the zero-hop direct return `deriveFunctionUsesParam`'s OpReturn
+// exemption actually covers (check.go's doc comment, corrected alongside this
+// header) -- the intermediate `take` (OpMove) trips the default arm and sets
+// `usesParam = true` before the scan ever reaches the OpReturn. So `check`
+// itself, correctly per its own contract, derives probe's `usesParam` as true.
+//
+// The REAL gap, re-filed as D-10-28 rather than re-pointing D-09-53: even a
+// callee that genuinely never uses its parameter (usesParam == false) could
+// not demonstrate Pattern B's split end to end here, because `corevalidate`
+// has NO `usesParam` peer at all (`corevalidate_peer_liveness.go`'s
+// `peerLoanCarryFact` carries only `ReturnsBorrowOfParam`, Pattern A's fact).
+// `corevalidate`'s own liveness walk treats every OpCall argument
+// unconditionally as a use, so it refuses escort's call to probe regardless
+// of what `check` derives -- a missing second detector, not a broken existing
+// one. D-10-28's landing phase is open (Phase 11 or M003 are candidate homes).
 //
 // See twin_b_refuse.lang's header for the full, load-bearing explanation of
-// why the real ast.Program -> check.Program pipeline cannot observe this
+// why the real ast.Program -> check.Program pipeline cannot observe a
 // contract-driven difference end to end for either member of this pair: the
 // caller's own `borrow; move; call` shape is refused INTRAPROCEDURALLY
 // (ownership.move_while_borrowed) for BOTH members alike, before the

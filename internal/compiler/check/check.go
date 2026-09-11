@@ -687,10 +687,22 @@ var interproceduralConsultObserved func(calleeID, field string)
 // callee's own usesParam (via summaries.lookup) is true -- a callee absent
 // from summaries counts as usesParam == true, the refusing direction, never
 // the permitting one (an unresolved callee must never look "safer" than a
-// resolved one). A plain forward of the parameter to the function's own
-// OpReturn, with nothing else touching it, does NOT count as a use --
-// that's the leaf-forwards-to-its-own-return case D-08-01's own
-// over-approximation falsification names.
+// resolved one).
+//
+// The OpReturn exemption below (D-10-27/D-10-29) covers a ZERO-HOP DIRECT
+// return of the parameter-derived place ONLY -- the switch below matches on
+// operation.Kind per operation, so it exempts only the terminating
+// `case core.OpReturn:` arm itself, never an arbitrary identity chain that
+// merely happens to end in one. An intermediate OpMove/OpCopy hop (e.g.
+// `taken = take param; taken`) hits the `default:` arm on its OWN pass and
+// sets usesParam = true before the scan ever reaches the OpReturn --
+// PHASE-10-DEBT.md's D-10-27 re-executed the narrower reading this comment
+// once claimed (excluding OpMove/OpCopy identity-forwards from the default
+// arm) and found it falsified by eight currently-passing tests, including
+// TestInterproceduralLivenessTwinPatternB itself. Only a literal
+// `return param` with nothing between them is exempt; every real
+// intermediate hop is a use. D-08-01's leaf-forwards-to-its-own-return case
+// is this exact zero-hop shape, not a multi-hop one.
 //
 // Returns the derived bit and the total counted work: one unit per
 // operation inspected per pass, plus one unit per genuine new set
