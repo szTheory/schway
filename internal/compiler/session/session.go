@@ -2047,7 +2047,7 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 		return fail(0) // nothing to disagree about -- the honest program carries no branch loan
 	}
 
-	recomputed, work, err := pathoracle.RecomputeEndpoints(branchFunction)
+	recomputed, work, err := pathoracle.RecomputeEndpoints(branchFunction, nil)
 	if err != nil {
 		return fail(work)
 	}
@@ -2064,7 +2064,7 @@ func PathOracleDisagreementLane(honest core.Program) protocol.Lane {
 		Operations: branchFunction.Linear.Operations, Blocks: branchFunction.Linear.Blocks, Edges: branchFunction.Linear.Edges,
 		LoanEndpoints: corrupted,
 	}
-	reconfirmed, reconfirmedWork, err := pathoracle.RecomputeEndpoints(mutatedFunction)
+	reconfirmed, reconfirmedWork, err := pathoracle.RecomputeEndpoints(mutatedFunction, nil)
 	if err != nil {
 		return fail(work + reconfirmedWork)
 	}
@@ -2633,7 +2633,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 					encounteredKinds[operation.Kind] = true
 				}
 				if function.Linear.ID != "" {
-					if _, _, oracleErr := pathoracle.RecomputeEndpoints(function); oracleErr != nil {
+					if _, _, oracleErr := pathoracle.RecomputeEndpoints(function, nil); oracleErr != nil {
 						addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, len(fixtureSource), laneStarted)
 						return fail(protocol.StatusOperational, "verify.control_incomplete", "pathoracle dispatch error for "+fixtureName)
 					}

@@ -345,7 +345,7 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 				}
 				// pathoracle site: must not error while walking.
 				if function.Linear.ID != "" {
-					if _, _, err := pathoracle.RecomputeEndpoints(function); err != nil {
+					if _, _, err := pathoracle.RecomputeEndpoints(function, nil); err != nil {
 						return fmt.Errorf("%s/%s: pathoracle error: %w", path, function.Name, err)
 					}
 				}

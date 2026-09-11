@@ -26,6 +26,24 @@
 //     divergence across paths at a fan-out block is what earns a loan its
 //     edge endpoint instead of a point endpoint. No shared helper, no
 //     queue, and no relation-closure step exists anywhere in this file.
+//
+// The property this package's identity claim actually rests on (D-10-11) is
+// NOT "touches only its own function" -- that is impossible for any correct
+// interprocedural analysis, and both other laws also cross into
+// callee-derived facts (check's own fixpoint, corevalidate's own closure).
+// The property is: this package never converges, never closes a relation,
+// only enumerates and replays concrete paths. Composing across a
+// core.OpCall (pathoracle_compose.go, D-10-09) preserves that property
+// under call-crossing, because composition recurses into the callee via
+// this package's OWN EnumeratePaths/linearizePath and splices its concrete
+// paths into the caller's, running the SAME forward replay once over the
+// spliced result. A contract hop -- the pattern check.go and
+// corevalidate.go both already use at core.OpCall -- would NOT preserve it:
+// a hop collapses a callee's own per-path distinctions into one summary
+// fact BEFORE replay ever runs, which is precisely the join/reduction step
+// this package never performs anywhere else. This is the first thing a
+// reviewer should probe, since the touches-only-its-own-function property
+// is the one they will likely assume instead.
 package pathoracle
 
 import (
@@ -340,18 +358,41 @@ type pathResult struct {
 	neededBeyond map[string]map[string]bool // blockID -> loanID -> true
 }
 
+// BuildCalleeLookup builds the narrowest callee-resolution capability
+// RecomputeEndpoints's composition arm needs (CalleeLookup,
+// pathoracle_compose.go) from a whole core.Program: a callee-indexed map,
+// never the bare core.Program itself (D-10-13) -- kept in this file, not
+// pathoracle_compose.go, so that file's own composition machinery never
+// itself needs to know what a core.Program is.
+func BuildCalleeLookup(program core.Program) CalleeLookup {
+	byID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		byID[function.ID] = function
+	}
+	return func(functionID string) (core.Function, bool) {
+		function, ok := byID[functionID]
+		return function, ok
+	}
+}
+
 // RecomputeEndpoints is the oracle's single entry point: independently
 // decide loan endpoints for a checked function from the typed core alone.
 // A straight-line function (no declared Blocks) has nothing for this
 // package to enumerate -- production itself never populates LoanEndpoints
 // outside a branch-shaped function (03-03's documented scope decision), so
 // this mirrors that scope rather than inventing a disagreement against an
-// artifact production never claims to produce. Returns the recomputed
-// endpoints, the oracle's own counted work (one unit per operation
-// inspected across every enumerated path), and an error if the function's
-// CFG is cyclic, exceeds MaxPaths, or a linearized path fails the late
-// terminal guard.
-func RecomputeEndpoints(function core.Function) ([]core.LoanEndpoint, int, error) {
+// artifact production never claims to produce. lookupCallee is the
+// narrowest possible callee-resolution capability (D-10-13) a
+// core.OpCall on the enumerated path composes across (D-10-09,
+// pathoracle_compose.go); nil is safe to pass for any function with no
+// OpCall on its enumerated paths (every pre-10-03 caller), and composition
+// fails closed to "does not carry" for an OpCall it cannot resolve.
+// Returns the recomputed endpoints, the oracle's own counted work (one unit
+// per operation inspected across every enumerated path, plus every
+// composed callee path), and an error if the function's CFG is cyclic,
+// exceeds MaxPaths, composition exceeds MaxCompositionDepth or hits a
+// composition cycle, or a linearized path fails the late terminal guard.
+func RecomputeEndpoints(function core.Function, lookupCallee CalleeLookup) ([]core.LoanEndpoint, int, error) {
 	if function.Linear == nil || len(function.Linear.Blocks) == 0 {
 		return nil, 0, nil
 	}
@@ -376,12 +417,40 @@ func RecomputeEndpoints(function core.Function) ([]core.LoanEndpoint, int, error
 	work := 0
 	results := make([]pathResult, len(blockPaths))
 	deaths := map[string]loanState{}
+	var endpoints []core.LoanEndpoint
 	for pi, blockIDs := range blockPaths {
-		states, w, err := linearizePath(function.ID, idx, blockIDs)
-		if err != nil {
-			return nil, work, err
+		var variantStates []map[string]loanState
+		if hasOpCall(idx, blockIDs) {
+			variants, w, err := composeLinearizeCaller(function.ID, idx, blockIDs, lookupCallee)
+			if err != nil {
+				return nil, work, err
+			}
+			work += w
+			for _, variant := range variants {
+				variantStates = append(variantStates, variant.states)
+			}
+		} else {
+			states, w, err := linearizePath(function.ID, idx, blockIDs)
+			if err != nil {
+				return nil, work, err
+			}
+			work += w
+			variantStates = []map[string]loanState{states}
 		}
-		work += w
+
+		if len(variantStates) != 1 {
+			// Composition produced more than one concrete continuation for
+			// this caller path (D-10-14): a loan whose composed variants
+			// disagree on its death position is handled directly below,
+			// never fed into the single-answer `deaths` bookkeeping this
+			// loop otherwise uses (that bookkeeping's own disagreement
+			// guard, pathoracle.inconsistent_path_death, exists to catch a
+			// genuine bug elsewhere -- a load-bearing composed divergence
+			// is not that).
+			endpoints = append(endpoints, synthesizeComposedEndpoints(function.ID, blockIDs, variantStates)...)
+			continue
+		}
+		states := variantStates[0]
 
 		neededBeyond := map[string]map[string]bool{}
 		for loanID, state := range states {
@@ -416,7 +485,6 @@ func RecomputeEndpoints(function core.Function) ([]core.LoanEndpoint, int, error
 		results[pi] = pathResult{blockIDs: blockIDs, states: states, neededBeyond: neededBeyond}
 	}
 
-	var endpoints []core.LoanEndpoint
 	for loanID, state := range deaths {
 		endpoints = append(endpoints, core.LoanEndpoint{
 			ID:               fmt.Sprintf("%s:point:%s:%d:%s", function.ID, state.lastBlockID, state.lastIndex, loanID),

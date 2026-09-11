@@ -744,7 +744,7 @@ func TestOracleDisagreesWithUniformJoinFault(t *testing.T) {
 		})
 	}
 
-	oracleEndpoints, work, err := pathoracle.RecomputeEndpoints(function)
+	oracleEndpoints, work, err := pathoracle.RecomputeEndpoints(function, nil)
 	if err != nil {
 		t.Fatalf("unexpected oracle error: %v", err)
 	}
@@ -855,7 +855,7 @@ func TestOracleMetamorphicTrials(t *testing.T) {
 			t.Fatalf("seed=%d: want exactly 2 loan endpoints (both independent shared loans), got %+v", seed, function.Linear.LoanEndpoints)
 		}
 		want := append([]core.LoanEndpoint(nil), function.Linear.LoanEndpoints...)
-		got, work, err := pathoracle.RecomputeEndpoints(function)
+		got, work, err := pathoracle.RecomputeEndpoints(function, nil)
 		if err != nil {
 			t.Fatalf("seed=%d: unexpected oracle error: %v", seed, err)
 		}

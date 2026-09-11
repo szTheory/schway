@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -82,7 +83,7 @@ func TestOracleImportsStayIndependent(t *testing.T) {
 // declared Blocks/Edges, not against any production liveness answer.
 func TestOracleEnumeratesAllAcyclicPaths(t *testing.T) {
 	function := checkedFunction(t, "branch_one_arm_shared_accept.lang")
-	endpoints, _, err := pathoracle.RecomputeEndpoints(function)
+	endpoints, _, err := pathoracle.RecomputeEndpoints(function, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -109,7 +110,7 @@ func TestOracleAgreesWithProduction(t *testing.T) {
 		function := checkedFunction(t, fixture)
 		want := append([]core.LoanEndpoint(nil), function.Linear.LoanEndpoints...)
 		sort.Slice(want, func(i, j int) bool { return want[i].ID < want[j].ID })
-		got, work, err := pathoracle.RecomputeEndpoints(function)
+		got, work, err := pathoracle.RecomputeEndpoints(function, nil)
 		if err != nil {
 			t.Fatalf("%s: unexpected error: %v", fixture, err)
 		}
@@ -141,7 +142,7 @@ func TestOracleFailsOnUnterminatedLoan(t *testing.T) {
 			},
 		},
 	}
-	_, _, err := pathoracle.RecomputeEndpoints(function)
+	_, _, err := pathoracle.RecomputeEndpoints(function, nil)
 	if err == nil {
 		t.Fatalf("expected a late-terminal-guard rejection, got none")
 	}
@@ -171,7 +172,7 @@ func TestOraclePathCountCapRejects(t *testing.T) {
 		Parameter: core.Parameter{ID: "s1:fn:overcap:place:0", Name: "value", Type: "Buffer"},
 		Linear:    &core.LinearBody{ID: "s1:fn:overcap:linear", Blocks: blocks},
 	}
-	_, _, err := pathoracle.RecomputeEndpoints(function)
+	_, _, err := pathoracle.RecomputeEndpoints(function, nil)
 	if err == nil {
 		t.Fatalf("expected a path-count-cap rejection, got none")
 	}
@@ -212,7 +213,7 @@ func failOnlyTerminatedFunction(terminatorOpID string, terminatorKind core.Opera
 func TestPathOracleClosesOnEveryTerminator(t *testing.T) {
 	for _, terminator := range []core.OperationKind{core.OpFail, core.OpDefect} {
 		function := failOnlyTerminatedFunction("op:1", terminator)
-		endpoints, work, err := pathoracle.RecomputeEndpoints(function)
+		endpoints, work, err := pathoracle.RecomputeEndpoints(function, nil)
 		if err != nil {
 			t.Fatalf("terminator=%s: unexpected error (path incorrectly treated as malformed): %v", terminator, err)
 		}
@@ -246,7 +247,7 @@ func TestFailureOnlyPathIsChecked(t *testing.T) {
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("fixture unexpectedly rejected: %+v", result.Diagnostics)
 	}
-	if _, _, err := pathoracle.RecomputeEndpoints(result.Program.Functions[0]); err != nil {
+	if _, _, err := pathoracle.RecomputeEndpoints(result.Program.Functions[0], nil); err != nil {
 		t.Fatalf("expected the fail-only err path to be checked without error, got: %v", err)
 	}
 }
@@ -273,7 +274,7 @@ func TestTerminatorSetReadFromRegistry(t *testing.T) {
 // widening actually bites.
 func TestTerminatorWalkMutationKilled(t *testing.T) {
 	function := failOnlyTerminatedFunction("op:1", core.OpFail)
-	if _, _, err := pathoracle.RecomputeEndpoints(function); err != nil {
+	if _, _, err := pathoracle.RecomputeEndpoints(function, nil); err != nil {
 		t.Fatalf("unexpected error before mutation: %v", err)
 	}
 
@@ -283,7 +284,7 @@ func TestTerminatorWalkMutationKilled(t *testing.T) {
 	}
 	defer func() { pathoracle.TerminatorKindsOverride = original }()
 
-	_, _, err := pathoracle.RecomputeEndpoints(function)
+	_, _, err := pathoracle.RecomputeEndpoints(function, nil)
 	if err == nil {
 		t.Fatalf("mutation (deleting OpFail) had no observable effect: expected an unterminated-loan rejection")
 	}
@@ -291,6 +292,101 @@ func TestTerminatorWalkMutationKilled(t *testing.T) {
 	code, ok := err.(coded)
 	if !ok || code.Code() != "pathoracle.unterminated_loan" {
 		t.Fatalf("want pathoracle.unterminated_loan after mutation, got: %v", err)
+	}
+}
+
+// chainCallFunction builds a minimal synthetic single-block function whose
+// only operations are a core.OpCall to calleeID followed by a core.OpReturn
+// of the call's own result -- the smallest shape composeCall needs to
+// recurse one frame deeper, used by both TestCompositionDepthCapRejects and
+// TestCompositionCycleGuardFailsClosed to build a synthetic call chain
+// directly against core.Function values (mirroring
+// TestOraclePathCountCapRejects' own synthetic-construction style) rather
+// than through a real .lang program neither test needs.
+func chainCallFunction(id, calleeID string) core.Function {
+	return core.Function{
+		ID: id, EntryPointID: id + ":point:entry",
+		Parameter: core.Parameter{ID: id + ":place:0", Name: "value", Type: "Buffer"},
+		Linear: &core.LinearBody{
+			ID: id + ":linear",
+			Operations: []core.LinearOperation{
+				{ID: id + ":op:call", Kind: core.OpCall, SourceID: id + ":place:0", TargetID: id + ":place:1", CalleeID: calleeID},
+				{ID: id + ":op:return", Kind: core.OpReturn, SourceID: id + ":place:1"},
+			},
+			Blocks: []core.Block{
+				{ID: id + ":block:only", PointID: id + ":point:entry", OperationIDs: []string{id + ":op:call", id + ":op:return"}, Successors: nil},
+			},
+		},
+	}
+}
+
+// TestCompositionDepthCapRejects is T-10-04's falsifier: a synthetic call
+// chain one frame deeper than pathoracle.MaxCompositionDepth must be
+// refused fail-closed with the composition-depth-cap's OWN typed error,
+// never silently truncated, and never MaxPaths's own
+// pathoracle.path_count_exceeded code -- the two caps report which limit
+// fired independently (D-10-12).
+func TestCompositionDepthCapRejects(t *testing.T) {
+	const chainLength = pathoracle.MaxCompositionDepth + 2 // top + MaxCompositionDepth+1 callees
+	ids := make([]string, chainLength)
+	for i := range ids {
+		ids[i] = "s10:fn:chain:" + itoa(i)
+	}
+	functions := make([]core.Function, 0, chainLength)
+	for i := 0; i < chainLength-1; i++ {
+		functions = append(functions, chainCallFunction(ids[i], ids[i+1]))
+	}
+	// The final function in the built chain is never itself defined --
+	// composeCall's depth check fires strictly before it would ever be
+	// looked up, so its absence is never observed.
+	program := core.Program{Functions: functions}
+	lookup := pathoracle.BuildCalleeLookup(program)
+
+	_, _, err := pathoracle.RecomputeEndpoints(functions[0], lookup)
+	if err == nil {
+		t.Fatalf("expected a composition-depth-cap rejection, got none")
+	}
+	depthErr, ok := pathoracle.CompositionDepthError(err)
+	if !ok {
+		t.Fatalf("want a composition-depth-cap error, got: %v", err)
+	}
+	if depthErr.Code() == "pathoracle.path_count_exceeded" {
+		t.Fatalf("composition-depth-cap error must not share MaxPaths' code")
+	}
+	if depthErr.Code() != "pathoracle.composition_depth_exceeded" {
+		t.Fatalf("want pathoracle.composition_depth_exceeded, got %q", depthErr.Code())
+	}
+}
+
+// TestCompositionCycleGuardFailsClosed is D-10-15's falsifier: a synthetic
+// core.Program presenting a call cycle across two functions (A calls B,
+// B calls A) -- the exact shape callgraph.Order already refuses before a
+// real core.Program is ever admitted, reproduced here directly against a
+// corrupted/synthetic artifact this package must not trust -- must be
+// refused fail-closed by composition's OWN cycle guard within a bounded
+// number of steps, never recursing forever.
+func TestCompositionCycleGuardFailsClosed(t *testing.T) {
+	a := chainCallFunction("s10:fn:cycle:a", "s10:fn:cycle:b")
+	b := chainCallFunction("s10:fn:cycle:b", "s10:fn:cycle:a")
+	program := core.Program{Functions: []core.Function{a, b}}
+	lookup := pathoracle.BuildCalleeLookup(program)
+
+	done := make(chan struct{})
+	var err error
+	go func() {
+		_, _, err = pathoracle.RecomputeEndpoints(a, lookup)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("composition cycle guard did not fail closed within a bounded time -- it looped")
+	}
+	if err == nil {
+		t.Fatalf("expected a composition-cycle rejection, got none")
+	}
+	if _, ok := pathoracle.CompositionCycleError(err); !ok {
+		t.Fatalf("want a composition-cycle error, got: %v", err)
 	}
 }
 

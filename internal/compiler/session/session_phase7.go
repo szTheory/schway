@@ -431,7 +431,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 					encounteredKinds[operation.Kind] = true
 				}
 				if function.Linear.ID != "" {
-					if _, _, oracleErr := pathoracle.RecomputeEndpoints(function); oracleErr != nil {
+					if _, _, oracleErr := pathoracle.RecomputeEndpoints(function, nil); oracleErr != nil {
 						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 						return fail(protocol.StatusOperational, "verify.control_incomplete", "pathoracle dispatch error for "+fixtureName)
 					}
