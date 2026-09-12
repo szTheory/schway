@@ -78,7 +78,7 @@ func phase11CheckedFixture(t *testing.T, fixture string) (core.Program, string) 
 // D-11-25: because every Lang function this phase's cgen.emitProgram
 // emits lands in ONE translation unit (D-11-24, native.Runner's single
 // generated program.c, deliberately not widened this phase), `-flto` is
-// INERT BY CONSTRUCTION for Lang-to-Lang code in this corpus -- it is run
+// inert by construction for Lang-to-Lang code in this corpus -- it is run
 // here because running it costs nothing and a future translation-unit
 // split would make it live, NOT because this differential exercises real
 // cross-TU LTO inlining. The existing LTO lane's own non-inertness
