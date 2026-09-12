@@ -632,9 +632,17 @@ Pitfalls 3, 5, 6; M001 Phase 5's `control:alias.false_no_alias` precedent
      five-axis comparator.
 
   3. **Gate (Pitfall 3):** at least one **engineered composition-only** negative
-     control — the harder `-flto` sequel to `false_no_alias` — reproduces an
-     `interpreter == -O0 != -O3` divergence and **fails red before its fix**.
-     The interprocedural `-O3`/LTO tier is proven non-inert, not assumed.
+     control — the harder `-flto` sequel to `false_no_alias` — reproduces a
+     divergence in which the interpreter and `-O0` agree and at least one
+     optimized tier disagrees, with the `-flto` tier required to be the
+     disagreeing one (D-11-20, ratified 2026-09-12 against
+     `11-NAT07-EVIDENCE.md`'s measured matrix). The control is demonstrated red
+     under its injected mutation and green unmutated, with a full mutation-kill
+     matrix over each injection site independently; an all-green matrix is a
+     lane failure, not a pass (D-11-21). The control's red cell is re-measured
+     against a recorded `clang --version`; a toolchain change that extinguishes
+     the divergence is an escalation, not a pass (D-11-22). The interprocedural
+     `-O3`/LTO tier is proven non-inert, not assumed.
 
   4. **Gate (Pitfall 5):** a call-graph-shape reachability register records which
      cross-function shapes the generator actually reaches and **names shapes it
