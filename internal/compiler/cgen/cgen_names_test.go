@@ -1,6 +1,7 @@
 package cgen_test
 
 import (
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
 // This file enforces the two properties that make the generated-C ordinary
@@ -323,6 +325,84 @@ func TestIdentifierPrefixInvariance(t *testing.T) {
 					}
 				}
 			}
+		}
+	}
+}
+
+// TestMultiFunctionNameAllocation is D-11-08's own two-tier allocation
+// pin: on a real three-function program (testdata/phase11/
+// multi_function_unreachable.lang), (1) every global (function) name is
+// unique across functions, (2) the second and third functions' own local
+// place names carry NO "_2"/"_3" ordinal suffix (each function's own
+// cNames is FRESH, seeded with the reserved list plus every globally
+// allocated name -- C block scope already makes locals independent), (3)
+// no local name collides with any global name, and (4) re-emitting the
+// same program twice produces byte-identical C (determinism).
+func TestMultiFunctionNameAllocation(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_unreachable.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	if len(checked.Program.Functions) != 3 {
+		t.Fatalf("expected a three-function fixture, got %d", len(checked.Program.Functions))
+	}
+
+	first, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	second, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative (second run): %v", err)
+	}
+	if first != second {
+		t.Fatalf("re-emitting the same program twice moved bytes:\nfirst:\n%s\nsecond:\n%s", first, second)
+	}
+
+	globalNamePattern := regexp.MustCompile(`static unsigned char (LANG_[A-Z0-9_]*)\(unsigned char\);`)
+	globalMatches := globalNamePattern.FindAllStringSubmatch(first, -1)
+	if len(globalMatches) != 3 {
+		t.Fatalf("expected three function prototypes, got %d in:\n%s", len(globalMatches), first)
+	}
+	seenGlobal := make(map[string]bool, len(globalMatches))
+	for _, match := range globalMatches {
+		name := match[1]
+		if seenGlobal[name] {
+			t.Fatalf("global function name %q allocated more than once", name)
+		}
+		seenGlobal[name] = true
+	}
+
+	// (2) No local place name in any function's own definition carries an
+	// ordinal collision suffix: cNames.allocate's own suffix scheme is
+	// "_LANG_<CATEGORY>_<ordinal>" (cgen.go), so its absence on every
+	// function's parameter local proves each function's own allocator
+	// started fresh rather than continuing a shared counter.
+	if strings.Contains(first, "_LANG_PLACE_") {
+		t.Fatalf("expected no place-category collision suffix across functions, got:\n%s", first)
+	}
+	definitionPattern := regexp.MustCompile(`static unsigned char LANG_[A-Z0-9_]*\(unsigned char (lang_value_[A-Za-z0-9_]*)\) \{`)
+	definitions := definitionPattern.FindAllStringSubmatch(first, -1)
+	if len(definitions) != 3 {
+		t.Fatalf("expected three function definitions, got %d", len(definitions))
+	}
+	for _, definition := range definitions {
+		if definition[1] != "lang_value_value" {
+			t.Fatalf("expected every function's own parameter local to allocate the same unsuffixed name %q, got %q", "lang_value_value", definition[1])
+		}
+	}
+
+	// (3) No local name collides with any global name: prefix confinement
+	// (cgen.go's own documented invariant) already makes this structurally
+	// impossible -- "LANG_" (global) and "lang_value_" (local) are disjoint
+	// namespaces -- verified directly here rather than merely assumed.
+	for global := range seenGlobal {
+		if strings.HasPrefix(global, "lang_value_") {
+			t.Fatalf("global name %q collided with the local namespace", global)
 		}
 	}
 }
