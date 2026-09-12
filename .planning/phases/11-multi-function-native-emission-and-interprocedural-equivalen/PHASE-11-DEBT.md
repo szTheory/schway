@@ -3,7 +3,7 @@ phase: 11-multi-function-native-emission-and-interprocedural-equivalen
 recorded: 2026-09-11
 status: accepted
 disposition: planning-time
-items: 14
+items: 16
 blocking: 0
 ---
 
@@ -53,6 +53,8 @@ was never run. See the Notes section at the end of this file.
 | D-10-C03 | STATE.md "Phase 10 carry-forward" item 3; 10-REVIEW.md WR-02, D-10-19 | TRU-02, TRU-03 | info | Phase 11 and beyond — Phase 11's NAT-06 leans on this independence; revisit only if `callgraph` gains a compiler-internal dependency beyond `core` | INPUT TO PHASE 11, NOT CLOSED HISTORY. The independence guards disagree: `originvalidate` permits importing `internal/compiler/callgraph`; `corevalidate`'s equivalent forbidden list forbids it. The four peers' independence is enforced by hand-curated per-package import lists, so this asymmetry is defensible by REVIEW, not by MECHANISM. Phase 11's NAT-06 leans on that independence holding |
 | D-10-C04 | STATE.md "Phase 10 carry-forward" item 4; 10-02-SUMMARY.md Deviations (D-09-51 fix) | OWN-09, TRU-02 | warning | OPEN and UNOWNED — Phase 11 does not claim this review (see D-11-27 above); human review required | INPUT TO PHASE 11, NOT CLOSED HISTORY. Plan 10-02's D-09-51 fix flipped two negative controls: `negative_control_fails.lang` and `negative_control_infallible.lang` moved from `check.interprocedural_loan_liveness` to `core.callee_not_callable`, because closing the `OpCall` transparent-walk defect also flows through `check`'s SEM-06 Callable gate. The executor documented the reasoning chain and explicitly flagged it for human review. **That review has not happened.** D-11-27 records that NAT-07's design does not depend on it, but the review itself remains open |
 | D-10-C05 | STATE.md "Phase 10 carry-forward" item 5 | none — dead code, not a live risk | info | No landing phase required — recorded so a future reader does not mistake this for live protection | INPUT TO PHASE 11, NOT CLOSED HISTORY (informational). `interp.Run`'s `!function.HasClosedBody()` guard is provably unreachable: `corevalidate.Validate` always catches that shape first (found by Phase 10 plan 10-09). Dead defensive code, harmless, recorded here so a future Phase 11 reader does not mistake it for live protection when reasoning about `interp`'s refusal surface |
+| D-11-51 | 11-05 Task 2 (`session_phase11_differential_test.go`'s `DiamondSharedLeaf` subtest, discovered against `testdata/phase11/multi_function_diamond_call.lang`) | NAT-06 | warning | OPEN and UNOWNED — requires touching `interp.go` and `cgen_program.go`, neither in plan 11-05's own `files_modified`; needs its own reviewed plan, not a same-task patch | NEWLY DISCOVERED, NOT FIXED. A callee invoked from TWO OR MORE distinct static call sites in one run (a genuine "diamond, shared leaf" call graph) emits its own `function.returned` event with the IDENTICAL event ID on every invocation, because both `interp.Run` (`terminalOutcome`) and `cgen.emitProgram` (`emitProgramFunction`) derive that ID from the callee's OWN STATIC OpReturn operation ID — a per-DECLARATION identity, not a per-INVOCATION one. `interp.Run` performs no duplicate-ID validation and returns such a document successfully; `native.go`'s own decode-time validator (`validateExecution`, "duplicate execution event id") correctly refuses to trust it, identically and consistently across `-O0`, `-O3`, and `-O3 -flto` (the refusal is structural, not optimizer-dependent). No prior fixture in this repository ever executed a shared-leaf diamond — `testdata/phase07/deep_diamond_acyclic.lang`'s own shared-leaf diamond is check-only, never driven through `interp.Run` or native emission — so this gap was never previously observable. |
+| D-11-52 | 11-05 Task 2 (`session_phase11_differential_test.go`'s `DivergingCallee` subtest) | NAT-06 | info | OPEN — same landing condition as D-11-02 (Phase 12, once `emitMatch`'s multi-function generalization or deletion is undertaken) | NOT EXPRESSIBLE THIS PHASE, extends D-11-02. Every existing `defect` terminator in this codebase is reached through a `core.Match` arm (no arithmetic, no `if`, no loops exist at this maturity to reach `defect` any other way), and `cgen.emitProgram` explicitly refuses any Match-bodied function inside a multi-function program ("multi-function branch bodies are not supported by native emission this phase"). A diverging callee therefore cannot be lowered to native in a multi-function program this phase — a direct structural consequence of D-11-02's own scope decision (the six single-function emitters, including `emitMatch`, are deliberately not deleted or generalized this phase), not a fixture-authoring gap. |
 
 ## Spike verdicts
 
@@ -283,3 +285,53 @@ so this guard inside `interp.Run` is provably unreachable dead defensive
 code. Harmless, but recorded here so a future Phase 11 reader tracing
 `interp`'s refusal surface does not mistake this line for live protection
 against a shape `corevalidate` has already excluded upstream.
+
+### D-11-51 — shared-leaf diamond call graphs collide on event identity
+
+Plan 11-05 Task 2's own `DiamondSharedLeaf` subtest is the first fixture in
+this repository to actually EXECUTE (not merely check) a call graph where
+the SAME callee is invoked from two or more distinct static call sites
+(`multi_function_diamond_call.lang`: `main` calls both `left` and `right`,
+each of which calls the shared leaf `leaf`). Both engines derive an
+executed function's `function.returned` event ID from that function's own
+STATIC `OpReturn` operation ID (`interp.go`'s `terminalOutcome`,
+`cgen_program.go`'s `emitProgramFunction`) — a per-declaration identity,
+never a per-invocation one. `leaf` therefore emits the identical event ID
+twice in one run. `interp.Run` performs no duplicate-ID validation and
+returns the document successfully anyway; `native.go`'s own decode-time
+validator (`validateExecution`) correctly refuses to trust any decoded
+document carrying two events with the same ID ("duplicate execution event
+id"), consistently across all three native tiers (the refusal is
+structural, not optimizer-dependent, so there is no CROSS-TIER
+disagreement — but no four-tier agreement on a comparable document either,
+since three of the four tiers never produce one).
+
+Fixing this for real requires giving each function's events a
+per-invocation-unique identity — e.g. threading a call-site-qualified
+suffix through both `interp.Run`'s frame stack and `cgen.emitProgram`'s
+per-function event-ID derivation, independently, so the two engines' own
+identity schemes keep agreeing byte-for-byte. That is a change to
+`interp.go` and `cgen_program.go`, neither of which is in plan 11-05's own
+declared `files_modified`, and large enough to the two engines' shared
+event-identity convention that it needs its own reviewed plan. Plan
+11-05's own `DiamondSharedLeaf` subtest asserts the HONEST, consistent
+refusal (interpreter succeeds with a duplicate-ID document; all three
+native tiers refuse identically) rather than silently weakening the test
+or picking an easier "diamond" that never actually re-invokes the shared
+leaf, which would misreport a narrower proof as a wider one.
+
+### D-11-52 — a diverging callee is not expressible in a multi-function program this phase
+
+Extends D-11-02. Every existing `defect` terminator in this codebase
+(`defect_terminal.lang`, `defect_dies_by_signal.lang`) is reached through a
+`core.Match` arm — no arithmetic, no `if`, no loops exist at this maturity
+to reach `defect` any other way. `cgen.emitProgram` explicitly refuses any
+Match-bodied function inside a multi-function program ("multi-function
+branch bodies are not supported by native emission this phase"), so a
+diverging callee cannot be lowered to native in a multi-function program
+this phase at all. This is a direct structural consequence of D-11-02's
+own scope decision (the six single-function emitters, including
+`emitMatch`, are deliberately not deleted or generalized this phase), not
+a fixture-authoring gap plan 11-05 could have engineered around. Plan
+11-05's own `DivergingCallee` subtest is an honest, named `t.Skip`, not a
+silently absent case.
