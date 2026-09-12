@@ -77,10 +77,10 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Native Lowering and Equivalence
 
-- [ ] **NAT-04**: `cgen` emits multi-function C17; `Emit` / `EmitNative` no
+- [x] **NAT-04**: `cgen` emits multi-function C17; `Emit` / `EmitNative` no
       longer refuse programs with more than one function.
 
-- [ ] **NAT-05**: Every aliasing or capture promise emitted at a call boundary
+- [x] **NAT-05**: Every aliasing or capture promise emitted at a call boundary
       (`restrict`, noalias-shaped attributes) derives from a checked fact, and
       the deriving fact is named in the emitted artifact.
 
@@ -228,8 +228,8 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | OWN-07 | Phase 09 | Complete |
 | OWN-08 | Phase 09 | Complete |
 | OWN-09 | Phase 09 | Complete |
-| NAT-04 | Phase 11 | Pending |
-| NAT-05 | Phase 11 | Pending |
+| NAT-04 | Phase 11 | Complete |
+| NAT-05 | Phase 11 | Complete |
 | NAT-06 | Phase 11 | Pending |
 | NAT-07 | Phase 11 | Complete |
 | TRU-02 | Phase 10 | Complete |

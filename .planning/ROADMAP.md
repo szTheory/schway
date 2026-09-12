@@ -685,7 +685,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 11-04-PLAN.md — NAT-05's explicit empty attribute set and the mid-phase gate (four-part conjunction, mutation-killed, adjudicated)
+- [x] 11-04-PLAN.md — NAT-05's explicit empty attribute set and the mid-phase gate (four-part conjunction, mutation-killed, adjudicated)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

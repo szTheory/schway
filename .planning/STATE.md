@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 11
 current_phase_name: Multi-Function Native Emission and Interprocedural Equivalence
 status: executing
-stopped_at: Completed 11-03-PLAN.md
-last_updated: "2026-09-12T05:30:40.997Z"
+stopped_at: Completed 11-04-PLAN.md
+last_updated: "2026-09-12T06:42:34.450Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 11 execution started
-state_head: 6bdbdfe68a2cbf4d50b6ecd90698161e9fc23a3d
+state_head: ab8d1af4d0804e71b5ab0ea99c9f334e436325dd
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 46
-  completed_plans: 40
+  completed_plans: 41
 ---
 
 # Project State
@@ -47,7 +47,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 11 (Multi-Function Native Emission and Interprocedural Equivalence) — EXECUTING
-Plan: 4 of 9
+Plan: 5 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 11 execution started
 
@@ -194,6 +194,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 11 P01 | 25 min | 3 tasks | 3 files |
 | Phase 11 P02 | 55min | 3 tasks | 3 files |
 | Phase 11 P03 | 70 min | 3 tasks | 13 files |
+| Phase 11-multi-function-native-emission-and-interprocedural-equivalen P04 | 95min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -263,6 +264,7 @@ Standing architectural commitments carried into M002:
 - [Phase 11]: Q-04 topology found empirically: composition-only LTO divergence requires a 4-way TU split (callee, writer, a SEPARATE coordination wrapper calling the callee twice, caller) -- merging wrapper+main lets the compiler prove pointer identity and refuse the hoist at every tier — Five of six tried topologies either diverged without LTO or never diverged at all on Apple clang 21.0.0
 - [Phase 11]: Task 3 ratification auto-selected Option A (approve all five items: D-11-20/21/22 roadmap amendments, D-11-09/10 zero-attribute terminal state, D-11-39 QLT-06 split) since it carried no gate=blocking-human — Auto-mode checkpoint protocol; flagged human_judgment:true in SUMMARY coverage for human review
 - [Phase 11]: 11-03: callgraph.EntryFunction resolves via in-degree-zero roots with a closure-size tie-break (never Functions[0]); emitProgram is the new whole-program C17 assembler with emitCall as sole Lang-to-Lang call writer — Reconciles the plan's own conflicting must_haves (unreachable function must not block resolution vs never guess); native.go's execution validator widened (Rule 3) for legitimate multi-FunctionID/non-terminal-return events, a pre-existing single-function assumption Phase 11 first exercises
+- [Phase 11]: Mid-phase gate ratified PASS (11-MIDPHASE-GATE.md): zero-attribute state terminal for Phase 11, NAT-05 written up as requirement weakened by evidence; waves 4-6 admitted.
 
 ### Pending Todos
 
@@ -406,8 +408,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-12T05:30:40.765Z
-Stopped at: Completed 11-03-PLAN.md
+Last session: 2026-09-12T06:42:34.209Z
+Stopped at: Completed 11-04-PLAN.md
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
 Resume file: None
