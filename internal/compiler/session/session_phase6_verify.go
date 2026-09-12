@@ -105,8 +105,22 @@ func phase6SelfSourcePath() string {
 	return thisFile
 }
 
-// phase6ArtifactSpec builds spec's seven declared inputs for one fixture's
-// compiled-binary artifact.
+// phase6CgenSourceDir returns internal/compiler/cgen's absolute directory
+// path, resolved via runtime.Caller(0) relative to THIS file -- the same
+// technique phase6SelfSourcePath already uses -- rather than a relative
+// path that would depend on the caller's own working directory. This is
+// the eighth declared cache input's source directory (D-11-41): editing
+// cgen's own *.go files must move phase6ArtifactSpec's computed Key.
+func phase6CgenSourceDir() string {
+	_, thisFile, _, _ := runtime.Caller(0)
+	// thisFile: .../internal/compiler/session/session_phase6_verify.go
+	return filepath.Join(filepath.Dir(thisFile), "..", "cgen")
+}
+
+// phase6ArtifactSpec builds spec's eight declared inputs for one fixture's
+// compiled-binary artifact: the original seven (D-06-07) plus D-11-41's
+// cgen_source, so a rewritten cgen genuinely moves the computed Key.ID
+// instead of merely being declared without a mechanism.
 func phase6ArtifactSpec(source []byte, clangPath string) cache.ArtifactSpec {
 	return cache.ArtifactSpec{
 		Kind:                     cache.KindCompiledBinary,
@@ -117,6 +131,7 @@ func phase6ArtifactSpec(source []byte, clangPath string) cache.ArtifactSpec {
 		ForeignTranslationUnit:   []byte("none"),
 		MutationRunnerSourcePath: phase6SelfSourcePath(),
 		GoToolchain:              runtime.Version(),
+		CgenSourceDir:            phase6CgenSourceDir(),
 	}
 }
 

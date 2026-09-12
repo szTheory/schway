@@ -277,6 +277,13 @@ func newArtifactSpecFixture(t *testing.T, seed string) cache.ArtifactSpec {
 	if err := os.WriteFile(runnerPath, []byte("package fake\n// mutation runner fixture: "+seed+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	cgenDir := filepath.Join(dir, "cgen")
+	if err := os.MkdirAll(cgenDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cgenDir, "cgen.go"), []byte("package cgen\n// cgen source fixture: "+seed+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	return cache.ArtifactSpec{
 		Kind:                     cache.KindCompiledBinary,
 		FixtureSource:            []byte("fn main() { " + seed + "() }\n"),
@@ -286,6 +293,7 @@ func newArtifactSpecFixture(t *testing.T, seed string) cache.ArtifactSpec {
 		ForeignTranslationUnit:   []byte("// frozen TU: " + seed + "\n"),
 		MutationRunnerSourcePath: runnerPath,
 		GoToolchain:              "go1.24.0",
+		CgenSourceDir:            cgenDir,
 	}
 }
 

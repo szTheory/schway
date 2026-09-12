@@ -143,20 +143,29 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 	t.Logf("Q-02 verdict: BRANCH A (hole reproduces) -- key %s unchanged, cache served the STALE artifact even though the C source cgen would emit for this fixture has since changed", secondOutcome.Key.ID)
 }
 
-// TestQ02DeclaredInputNamesStillSevenNoCgen pins the static half of Q-02
-// that is not branch-dependent: cache.DeclaredInputNames() returns exactly
-// the seven names in their documented order, and none names cgen. This is
-// the exact list plan 11-07 will widen if BRANCH A held above -- pinning it
-// here makes that widening visible as a diff rather than a silent addition.
+// TestQ02DeclaredInputNamesStillSevenNoCgen pins Q-02's post-fix state now
+// that plan 11-07 landed BRANCH A: cache.DeclaredInputNames() returns eight
+// names -- the original seven, byte-identical and in their original order
+// (D-11-41's additive-sibling discipline), plus an eighth naming cgen. This
+// was the exact list this test asserted was still seven, pre-fix; the diff
+// here IS the widening the pinned assertion existed to make visible, not a
+// silent addition.
 func TestQ02DeclaredInputNamesStillSevenNoCgen(t *testing.T) {
 	names := cache.DeclaredInputNames()
-	if len(names) != 7 {
-		t.Fatalf("expected exactly 7 declared input names, got %d: %v", len(names), names)
+	want := []string{
+		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
+		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
 	}
-	for _, name := range names {
-		if strings.Contains(name, "cgen") {
-			t.Fatalf("declared input name %q already names cgen -- the eighth input has been added; update this pinned expectation deliberately", name)
+	if len(names) != 8 {
+		t.Fatalf("expected exactly 8 declared input names (seven original plus D-11-41's cgen_source), got %d: %v", len(names), names)
+	}
+	for i, name := range want {
+		if names[i] != name {
+			t.Fatalf("declared input name[%d] = %q, want %q -- the original seven must stay byte-identical and in order", i, names[i], name)
 		}
+	}
+	if !strings.Contains(names[7], "cgen") {
+		t.Fatalf("expected the eighth declared input name to name cgen, got %q", names[7])
 	}
 }
 

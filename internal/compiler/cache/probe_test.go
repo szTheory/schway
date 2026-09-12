@@ -29,6 +29,19 @@ func writeMutationRunnerFixture(t *testing.T, dir, content string) string {
 	return path
 }
 
+// writeCgenSourceFixture materializes a tiny synthetic "cgen source
+// directory" containing one .go file with the given content, standing in
+// for internal/compiler/cgen/*.go without this test depending on the real
+// package's current contents.
+func writeCgenSourceFixture(t *testing.T, content string) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "cgen.go"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
 func baseArtifactSpec(t *testing.T) ArtifactSpec {
 	t.Helper()
 	dir := t.TempDir()
@@ -41,6 +54,7 @@ func baseArtifactSpec(t *testing.T) ArtifactSpec {
 		ForeignTranslationUnit:   []byte("// frozen TU v1\n"),
 		MutationRunnerSourcePath: writeMutationRunnerFixture(t, dir, "package fake\n// mutation runner fixture v1\n"),
 		GoToolchain:              "go1.24.0",
+		CgenSourceDir:            writeCgenSourceFixture(t, "package cgen\n// cgen source fixture v1\n"),
 	}
 }
 
@@ -49,6 +63,7 @@ func TestCacheKeyCoversEveryDeclaredInput(t *testing.T) {
 	want := []string{
 		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
 		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
+		"cgen_source",
 	}
 	if len(names) != len(want) {
 		t.Fatalf("DeclaredInputNames() = %v, want %v", names, want)
@@ -95,6 +110,9 @@ func TestCacheKeyCoversEveryDeclaredInput(t *testing.T) {
 		}},
 		{"go_toolchain", func(t *testing.T, spec *ArtifactSpec) {
 			spec.GoToolchain = "go1.99.0"
+		}},
+		{"cgen_source", func(t *testing.T, spec *ArtifactSpec) {
+			spec.CgenSourceDir = writeCgenSourceFixture(t, "package cgen\n// cgen source fixture CHANGED\n")
 		}},
 	}
 	for _, testCase := range cases {
@@ -237,3 +255,4 @@ func TestCacheProbeHelper(t *testing.T) {
 	}
 	os.Exit(0)
 }
+

@@ -37,6 +37,20 @@ const EscapeCacheNondeterministicCodegen = "escape:cache-nondeterministic-codege
 // identity, never proof.
 const EscapeCacheDirectoryHandEdited = "escape:cache-directory-hand-edited"
 
+// A fifth D-06-13 cache hole existed and is now CLOSED, not declared here:
+// internal/compiler/cgen/*.go -- Phase 11's own code generator's source --
+// was not a declared cache input, so an edited cgen could serve a stale
+// binary for an unchanged .lang fixture (confirmed reproducing end-to-end
+// by Phase 11 plan 11-01's Q-02 spike, BRANCH A). Phase 11 plan 11-07
+// closed it by appending cgen_source as cache.DeclaredInputNames()'s eighth
+// entry (see internal/compiler/cache/probe.go's own hole-comment item 5).
+// It is deliberately absent from Phase6ExpectedEscapes below: an escape
+// constant here would mis-declare a closed hole as still-open residual
+// risk, which TestPhase6EscapesAreNeverPresentedAsControls's own
+// intersection check exists to prevent in the other direction (closed
+// controls never named as escapes; a fixed escape must not remain named
+// either).
+
 // EscapeRepairHeldoutCorpusResidualOverfitting names D-06-29's residual:
 // the held-out defect-corpus discipline (testdata/phase6's heldout_*/
 // derivation_* split) blunts, but cannot eliminate, the automated-program-
