@@ -597,6 +597,24 @@ on that independence), and an unreviewed negative-control verdict flip from
 D-09-51. Full list with anchors: STATE.md § Blockers/Concerns "Phase 10
 carry-forward"; detail in `.planning/phases/10-trusted-interprocedural-oracle/`
 (`PHASE-10-DEBT.md`, `deferred-items.md`, `10-REVIEW.md`, `10-VERIFICATION.md`).
+**Scope input verified at the planning gate (2026-09-11)**: criterion 1 names
+`cgen`'s `Emit`/`EmitNative`, but the single-function assumption is **not two
+sites — it is 32 non-test `len(Functions) != 1` guards across 6 files in 3
+packages** (55 including tests): `session` 26 (incl. `RunInterpreter`,
+`RunNative`, `interpreterInputs` — so a multi-function program checks clean but
+is unrunnable from the CLI on *either* engine today — plus `verifyBorrowedCorpus`
+×9 and the Phase 5/6/7 verification lanes), `cgen` 4 (`Emit`, `EmitNative`,
+`emitLinear`, `emitBranchOperations`), `reduce` 2. **`reduce` is the one that
+changes planning**: `reduce.Reduce` hard-errors on a multi-function seed and
+`ProjectSource` returns an unsupported-projection string, so **criterion 4's
+"HDD reducer output on multi-function programs is re-verified" cannot be met by
+widening `cgen` alone** — the reducer is a first-class subject of this phase, not
+a downstream consumer of it. Likewise the 26 `session` guards include the lanes
+that *are* the five-axis equivalence proof: "runnable" and "provable" are
+separate costs here. Re-verify with
+`awk '/^func /{f=$0;l=NR} /Functions\) != 1/{print FILENAME": "f}' $(find internal cmd -name '*.go' -not -name '*_test.go')`.
+Inventory detail: `.planning/LANGUAGE-MATURITY.md` § "The single-function guard
+inventory".
 **Requirements**: NAT-04, NAT-05, NAT-06, NAT-07, QLT-03, QLT-05, QLT-06
 **Maps to**: ARCHITECTURE Stage 7 (multi-function C emission + call lowering —
 "the second-highest-risk integration point") + Stage 8's closing verification

@@ -1,11 +1,19 @@
 # Language Maturity — Where Codename Lang Actually Stands
 
 **Assessed:** 2026-09-08, at the start of M002.
+**Re-assessed:** 2026-09-11, after Phase 10, at the Phase 11 planning gate.
 **Purpose:** stop re-discovering the gap between how sophisticated the
 verification stack sounds and how little the language can currently express.
 Planning vocabulary ("semantic spine", "interprocedural equivalence") describes
 the assurance machinery, not the language surface. Read this before believing a
 roadmap makes the language usable.
+
+**Second trap, same shape:** `wiki/example-tour.md` shows effect rows
+(`with { Inventory, Payments }`), `?` propagation, `defer ... unless`, generics,
+named arguments, and inline `spec`/`property` blocks. **None of those tokens are
+in the lexer.** It is a design target and the README says so ("candidate designs,
+not settled specifications"), but it reads like a language description. When
+calibrating what exists, read `internal/compiler/syntax/token.go`, never the tour.
 
 ## The two axes
 
@@ -51,7 +59,7 @@ What that list does **not** contain, and what therefore does not exist:
 | `if` / `else` | `match` is the only control flow |
 | `while` / `for` / `loop` | **no iteration of any kind** |
 | Arithmetic operators (`+ - * / %`) | **you cannot add two numbers** |
-| Lang-to-Lang calls | every program is one function; M002 adds this |
+| Lang-to-Lang calls | **partially landed** — multi-function programs now *check* (Phases 07-10) but cannot *run* on either engine; see "The single-function guard inventory" below |
 | Recursion | refused by design in M002 (cycle refusal) |
 | Numeric types beyond `Byte` | no integers, no floats |
 | Strings, arrays, collections | absent as value types |
@@ -61,8 +69,50 @@ What that list does **not** contain, and what therefore does not exist:
 print without calling out to C. Hello-world is only reachable through a
 `foreign C` declaration.
 
-Corpus at assessment time: 58 `.lang` programs, 1,633 lines total (~28 lines
-average, 193-line maximum), all single-function.
+Corpus at first assessment (2026-09-08): 58 `.lang` programs, 1,633 lines
+total (~28 lines average, 193-line maximum), all single-function.
+
+Corpus at re-assessment (2026-09-11): **89 programs, 3,096 lines** (~35 lines
+average, 167-line maximum). No longer all single-function — the largest is a
+13-function call-graph fixture (`testdata/phase07/deep_diamond_acyclic.lang`),
+and multi-function fixtures now exist for Phases 07, 08, and 10. The shape is
+still fixtures, not programs: every one exists to exercise one admission rule,
+and the biggest file is mostly comment.
+
+## The single-function guard inventory (verified 2026-09-11)
+
+Phases 07-10 made `OpCall` real in `check`, `corevalidate`, `originvalidate`,
+`pathoracle`, and (internally, via Go tests) `interp`. A two-function program
+now passes `lang check` clean:
+
+```bash
+go run ./cmd/lang check testdata/phase07/call_basic.lang        # check pass
+go run ./cmd/lang run --engine=interpreter testdata/…/call_basic.lang  # operational_failure
+go run ./cmd/lang run --engine=native      testdata/…/call_basic.lang  # operational_failure
+```
+
+It cannot be executed by either engine. The refusal is **not** confined to the
+two `cgen` entry points the roadmap names. A non-test scan finds
+**32 `len(Functions) != 1` guards across 6 files in 3 packages** (55 including
+tests):
+
+| Package | Guards | Notable sites |
+|---|---|---|
+| `session` | 26 | `RunInterpreter`, `RunNative`, `interpreterInputs` (the CLI run path); `verifyBorrowedCorpus` (×9); Phase 5/6/7 verification lanes; `VerifyAliasFalseNoAlias` |
+| `cgen` | 4 | `Emit`, `EmitNative`, `emitLinear`, `emitBranchOperations` |
+| `reduce` | 2 | `Reduce` (hard error on a multi-function seed), `ProjectSource` (returns an unsupported-projection string) |
+
+Re-verify: `awk '/^func /{f=$0;l=NR} /Functions\) != 1/{print FILENAME": "f}' $(find internal cmd -name '*.go' -not -name '*_test.go')`
+
+Two consequences worth carrying into planning:
+
+- **The reducer is single-function.** `reduce.Reduce` refuses a multi-function
+  seed outright. Any phase that promises HDD reducer behaviour on
+  multi-function programs must widen `reduce` as well as `cgen`.
+- **The comparator and gate scaffolding are single-function.** The 26 `session`
+  guards include the verification lanes that *are* the five-axis equivalence
+  proof. Making multi-function programs runnable and making them *provable* are
+  separate costs.
 
 ### Re-verify cheaply — do this rather than trusting this file
 
@@ -84,7 +134,7 @@ Judgments, not measurements — useful for calibration, not for reporting:
 
 | # | Capability | Status |
 |---|---|---|
-| 1 | Lang-to-Lang calls | **M002, in progress** (Phases 07-13) |
+| 1 | Lang-to-Lang calls | **M002, partially landed** — admitted and checked (07-10); *executable* is Phase 11 |
 | 2 | Arithmetic + real numeric types | **not started, not scheduled** |
 | 3 | Iteration (loops, or admitted bounded recursion) | not started; M002 actively refuses recursion |
 | 4 | Strings, arrays, collections | not started |
@@ -120,7 +170,9 @@ regression and Rust's Polonius performance wall are the named precedents.
 
 Rewrite the snapshot when any of these happen:
 
-- Lang-to-Lang calls land (M002 Phase 07) — the "single function" framing dies.
+- ~~Lang-to-Lang calls land (M002 Phase 07) — the "single function" framing dies.~~
+  **FIRED 2026-09-09; snapshot refreshed 2026-09-11.** Calls are admitted and
+  checked but not executable, so the framing narrowed rather than died.
 - Arithmetic or iteration is added — the proportions move materially.
 - The corpus stops being dominated by <50-line single-function programs.
 - Any milestone closes.

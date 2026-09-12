@@ -5,10 +5,10 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 11
 current_phase_name: Multi-Function Native Emission and Interprocedural Equivalence
 status: planning
-stopped_at: Phase 10 complete, ready to plan Phase 11
+stopped_at: Phase 11 planning halted at CONTEXT gate; run /gsd-discuss-phase 11
 last_updated: "2026-09-11T22:30:17.210Z"
 last_activity: 2026-09-11
-last_activity_desc: Phase 10 complete, transitioned to Phase 11
+last_activity_desc: Maturity stock-taking at Phase 11 gate; 32-guard scope input recorded
 state_head: 1a925c73ec0f7fadf5f701686673b970e1850544
 progress:
   total_phases: 7
@@ -32,8 +32,14 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 **Durable context (survives context clears — read before re-deriving):**
 
 - `.planning/LANGUAGE-MATURITY.md` — the language is far less expressive than
-  the roadmap vocabulary implies: no arithmetic, no iteration, no Lang-to-Lang
-  calls yet. Assurance stack ~60-70% built; language surface ~5-10%.
+  the roadmap vocabulary implies: no arithmetic, no iteration, no `if`, no
+  strings/arrays, `Byte`/`Buffer` only. Lang-to-Lang calls are *admitted and
+  checked* (Phases 07-10) but **not executable** — `lang run` refuses a
+  multi-function program on both engines. Assurance stack ~60-70% built;
+  language surface ~5-10%. Re-assessed 2026-09-11; includes the 32-site
+  single-function guard inventory that scopes Phase 11.
+  Do not read `wiki/example-tour.md` as a description of the language — its
+  effect rows, `?`, generics, and `spec` blocks are unimplemented design target.
 
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
@@ -393,11 +399,30 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-11T22:13:45.102Z
-Stopped at: Phase 10 complete, ready to plan Phase 11
+Last session: 2026-09-11 (stock-taking pass at the Phase 11 planning gate)
+Stopped at: Phase 10 complete; `/gsd-plan-phase 11` halted at its CONTEXT gate
+by operator choice — Phase 11's directory exists and is empty.
 durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
 Resume file: None
-Next command: `/gsd-plan-phase 11`
+Next command: `/gsd-discuss-phase 11`, then `/gsd-plan-phase 11`
+
+### Stock-taking pass — 2026-09-11 (no code changed)
+
+An expressiveness/maturity review ran at the Phase 11 gate. Everything it found
+is recorded in the two durable files above; the three non-derivative findings:
+
+1. **32 single-function guards, not 2.** Phase 11's real scope. Recorded in
+   ROADMAP.md § Phase 11 "Scope input verified at the planning gate".
+2. **`reduce` is a Phase 11 subject, not a consumer.** `reduce.Reduce` hard-errors
+   on multi-function seeds, so success criterion 4 is unreachable by widening
+   `cgen` alone. Same ROADMAP anchor.
+3. **`LANGUAGE-MATURITY.md` had gone stale by its own triggers** (reported 58
+   programs/1,633 lines; actual 89/3,096) and is now refreshed. Its strategic
+   read held up; only the snapshot was wrong.
+
+Unchanged by this pass: arithmetic, iteration, and strings/arrays remain **on no
+roadmap at all** — the maturity file's most important standing entry. M003 does
+not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
