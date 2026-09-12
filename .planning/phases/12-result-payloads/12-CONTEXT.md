@@ -1,7 +1,7 @@
 # Phase 12: `Result` Payloads - Context
 
 **Gathered:** 2026-09-12
-**Status:** Ready for planning
+**Status:** Ready for planning — **criterion 3's pre-flight probe is ANSWERED: BRANCH A (accepted), 2026-09-12. See D-12-04a.**
 
 <domain>
 ## Phase Boundary
@@ -150,6 +150,105 @@ that deviation is stated as a deviation, with the superseded text named
   — **Reversibility:** one-way in spirit — once BRANCH B fires, the phase's
   scope decision is made by the pre-registration, not renegotiated; the point of
   pre-registering is that the verdict cannot be rationalized afterward.
+
+- **D-12-04a (PROBE RUN — VERDICT: BRANCH A (accepted). Phase 12 proceeds.):**
+  run 2026-09-12, **after** D-12-01..D-12-04 were committed (`97a7c03`) and
+  **before** any planning — so the pre-registration is timestamped in git ahead
+  of the result and the verdict cannot be back-fitted.
+  **Artifact:**
+  `internal/compiler/corevalidate/corevalidate_result_payload_probe_test.go` —
+  four tests, committed and permanent:
+  `TestC03ResultPayloadOriginAcrossOpCall` (the probe, two subtests),
+  `TestC03PeerDeriveOriginFactsOpCallGapStillOpen` (pins the gap the attribution
+  depends on), `TestC03ProbeFixturesAreUnmodified` (companion clean-edit
+  assertion). Full suite, `go vet`, and `gofmt` all green.
+
+  **How the two reduction shapes were chosen.** Payload-carrying alternatives do
+  not exist yet, so no real payload fixture can be run. The probe drives the two
+  shapes the payload question *reduces* to, both already expressible:
+  `testdata/phase07/call_from_both_match_arms.lang` (the match-arm-with-a-call
+  half — whose own header already names it **"Phase 12's forward guard, since a
+  future `Result` match arm's own call must be picked up the same way"**, i.e. it
+  was authored for this phase), and
+  `testdata/phase08/relay_depth2_accept.lang` (the forwarded-callee-result half).
+  All four peers were driven **directly**, never through `session`, so no peer is
+  consulted through another peer: `check` via `loadCheckedProgram` (which fails on
+  any diagnostic, so a clean load *is* check's verdict), `corevalidate.Validate`,
+  `originvalidate.ValidatePublished`, and `pathoracle.BuildCalleeLookup` +
+  `RecomputeEndpoints`.
+
+  **Result, shape by shape:**
+  - **Match-arm-call shape:** all four peers clean — `check` zero diagnostics,
+    `corevalidate.Valid == true`, zero `originvalidate` problems, no `pathoracle`
+    error. No divergence at all.
+  - **Forwarded-callee-result shape:** all four peers clean. Note this is itself a
+    **change from the fixture's recorded state** — see D-12-04c.
+  - **Synthesized D-10-C01 shape** (the darkest corner, built because it is
+    *inexpressible* in committed testdata — see D-12-04b): refused by two peers
+    with **two already-catalogued codes**:
+    - `corevalidate` → **`core.callee_not_callable`** (`core.CalleeNotCallable`,
+      `core/core.go:587`) — D-10-C01's signature refusal, and D-10-C04's own flip
+      target.
+    - `originvalidate` → **`core.origin_understated`**
+      (`originvalidate/originvalidate.go:473`) with the detail *"declared origin
+      [buffer] does not cover the body-derived origin **[]**"*. The empty
+      body-derived origin is D-10-C01's mechanism **made directly visible**:
+      `peerDeriveOriginFacts` cannot walk through the `OpCall`, so it derives
+      *nothing* and the declared origin is reported as uncovered.
+    Both codes were verified **pre-existing** in the tree, not introduced by this
+    probe.
+
+  **Why this is BRANCH A and not BRANCH B.** Every verdict is fully attributable
+  to **D-10-C01**, an already-catalogued carry-forward item. No refusal traces to
+  an uncatalogued root cause (clause (a) not triggered), and closing either
+  refusal means **filling `peerDeriveOriginFacts`'s existing empty switch with a
+  `case core.OpCall:` arm** — which D-12-04's clause (b) explicitly excludes as
+  *"in-scope maintenance, not a new interprocedural rule"*. No new
+  `OperationKind` and no new dispatch site is implied. The refusals are
+  **fail-closed and conservative, not unsound**, which is exactly why D-12-27 and
+  D-12-28 defer resource-carrying payloads rather than this phase slipping.
+
+  **Two findings the probe produced that plans must carry forward:**
+  1. The payload-forwarding fixture shape is **blocked**, confirmed empirically
+     rather than inferred — any Phase 12 fixture needing a forwarded payload
+     origin hits `core.callee_not_callable` / `core.origin_understated`. This is
+     D-12-28's premise, now measured.
+  2. `peerDivergenceExpected`
+     (`internal/compiler/session/session_peer_gate_test.go:43`) has exactly **one
+     live entry** left (`testdata/phase07/duplicate_function_name.lang` →
+     `core.duplicate_function_id`), and its own comment records that D-09-51's
+     retirement **"unmasked a SEPARATE, pre-existing `originvalidate` finding —
+     one this test is structurally blind to (it never calls
+     `originvalidate.ValidatePublished`)"**. The probe **does** call it, so it
+     sees what that gate cannot. Plans should not treat the peer-gate register as
+     a complete divergence inventory.
+
+- **D-12-04b (the darkest-corner fixture is INEXPRESSIBLE in testdata, and that
+  is part of the finding):** no committed fixture declares a borrow-returning
+  `PublicOrigin` sourced from forwarding a callee's result — **because the gap is
+  open**. D-10-C01's own text says it "constrained which fixtures Phase 10 plans
+  10-07/10-08 could express". So the probe **synthesizes** the shape at core
+  level, Q-01 style: clone `relay_depth2_accept.lang`'s checked program (where
+  `relay` forwards `leaf`'s result and declares no origin at all) and attach
+  `&core.PublicOrigin{Paths: []string{"buffer"}, Access: "shared"}` to `relay`.
+  A **clean baseline is asserted first** (both peers admit the unmodified
+  fixture), and `assertOnlyPublicOriginChanged` proves the edit is a single
+  additive field — function count, every function ID/Name/ReturnType, every
+  operation count, and every operation ID **and Kind** unchanged. That is what
+  makes the verdict attributable to the added declared origin alone.
+
+- **D-12-04c (TREE CORRECTION — `relay_depth2_accept.lang`'s own header is
+  stale):** the fixture's header states that "corevalidate ... also refuses this
+  fixture (`core.move_while_borrowed`) even though `check`'s own interprocedural
+  law ... correctly admits it". **Verified no longer true**: the probe measured
+  `corevalidate.Valid == true` on the unmodified fixture. Phase 09's **D-09-03**
+  closed it deliberately — retiring `relay_depth2_accept.lang` and
+  `twin_a_accept.lang` from `peerDivergenceExpected` was a *required assertion* of
+  Phase 09 — and the register's retirement comment says so, but the fixture's own
+  header was never updated. The probe's first draft pinned D-10-C01 against this
+  fixture and went red for exactly this reason; the fixture was not wrong, the
+  header was. Recorded per D-09-45 rather than silently fixed. **A plan touching
+  this fixture should correct its header.**
 
 ### Core IR payload representation
 
