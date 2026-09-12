@@ -126,7 +126,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [ ] **QLT-05**: HDD reducer output on multi-function programs is re-verified
       to reproduce the same property as its input.
 
-- [ ] **QLT-06**: No interprocedural fact is marked cacheable until a
+- [x] **QLT-06**: No interprocedural fact is marked cacheable until a
       callee-changes-invalidates-caller regression test gates it; interprocedural
       cache keys derive from the call-graph closure, not per-unit hashes.
 
@@ -238,7 +238,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | QLT-03 | Phase 11 | Complete |
 | QLT-04 | Phase 10 | Complete |
 | QLT-05 | Phase 11 | Pending |
-| QLT-06 | Phase 11 | Pending |
+| QLT-06 | Phase 11 | Complete |
 | QLT-07 | Phase 09 | Complete |
 | QLT-08 | Phase 07 | Complete |
 | EFF-02 | Phase 08 | Complete |

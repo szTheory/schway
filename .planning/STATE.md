@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 11
 current_phase_name: Multi-Function Native Emission and Interprocedural Equivalence
 status: executing
-stopped_at: Completed 11-08-PLAN.md
-last_updated: "2026-09-12T08:58:52.848Z"
+stopped_at: Completed 11-07-PLAN.md
+last_updated: "2026-09-12T09:25:37.093Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 11 execution started
-state_head: 9bbaffeddeff807863703551e74d14977183bb95
+state_head: 108a4b18be2d6db4ce945cca6586558d56955125
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 46
-  completed_plans: 44
+  completed_plans: 45
 ---
 
 # Project State
@@ -47,7 +47,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 11 (Multi-Function Native Emission and Interprocedural Equivalence) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 11 execution started
 
@@ -198,6 +198,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 11 P05 | 100min | 3 tasks | 12 files |
 | Phase 11 P06 | 105min | 3 tasks | 4 files |
 | Phase 11 P08 | 70min | 3 tasks | 6 files |
+| Phase 11 P07 | 45 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -271,6 +272,7 @@ Standing architectural commitments carried into M002:
 - [Phase 11]: 11-05: session's three CLI run sites were already widened at plan 11-03; Task 1 re-verified the 29-site baseline and KEPT every remaining single-function guard as legitimately fixed-fixture-bound (Phase 2-7) or deferred to plan 11-08 -- zero additional widening needed. — Guard ledger's mechanical awk re-verification (29, not the ROADMAP's expected 32) plus row-by-row disposition in 11-GUARD-LEDGER.md
 - [Phase 11]: 11-05: DiamondSharedLeaf discovered a genuine event-ID collision (D-11-51) when a callee is invoked from two static call sites; DivergingCallee is not expressible in a multi-function program this phase (D-11-52, extends D-11-02). Both recorded as new PHASE-11-DEBT.md debt, not silently fixed or narrowed. — Real fixes touch interp.go/cgen_program.go/emitMatch's multi-function generalization, outside this plan's files_modified and each large enough to need its own reviewed plan
 - [Phase 11]: Q-01 BRANCH A: drop-call-site ships as a live whole-program reduce move, not narrowed behind RefusedShapes(). — corevalidate accepts the core-level OpCall-to-OpCopy rewrite (11-01 spike).
+- [Phase 11]: 11-07: cache.DeclaredInputNames() widened to eight (cgen_source appended, D-11-41 closed); QLT-06 split QLT-06a/QLT-06b recorded in 11-QLT06-ABSTENTION.md per OWN-05a/05b precedent — Q-02 BRANCH A confirmed the stale-cgen cache-reuse hole reproduces; whole-program FixtureSource hash strictly dominates any closure key so QLT-06b is discharged by abstention, structurally gated by dual import scans
 
 ### Pending Todos
 
@@ -414,8 +416,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-12T08:58:52.621Z
-Stopped at: Completed 11-08-PLAN.md
+Last session: 2026-09-12T09:25:36.811Z
+Stopped at: Completed 11-07-PLAN.md
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
 Resume file: None

@@ -694,7 +694,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 11-07-PLAN.md — QLT-06: `cgen` as the eighth declared cache input, plus the structural complete-by-abstention discharge
+- [x] 11-07-PLAN.md — QLT-06: `cgen` as the eighth declared cache input, plus the structural complete-by-abstention discharge
 - [x] 11-08-PLAN.md — QLT-05 part 1: `reduce`'s multi-function `Seed`, two whole-program moves, derived bound, `RefusedShapes()`
 
 **Wave 6** *(blocked on Wave 5 completion)*
