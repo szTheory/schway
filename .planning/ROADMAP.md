@@ -690,7 +690,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 11-05-PLAN.md — NAT-06's four-tier interprocedural differential and the 32-guard disposition ledger
-- [ ] 11-06-PLAN.md — QLT-03's call-graph-shape reachability register and its drift protections
+- [x] 11-06-PLAN.md — QLT-03's call-graph-shape reachability register and its drift protections
 
 **Wave 5** *(blocked on Wave 4 completion)*
 

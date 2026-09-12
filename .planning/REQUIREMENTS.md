@@ -116,7 +116,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Evidence and Quality
 
-- [ ] **QLT-03**: A call-graph-shape reachability register records which
+- [x] **QLT-03**: A call-graph-shape reachability register records which
       cross-function shapes the generator actually reaches, and names shapes it
       provably does not.
 
@@ -235,7 +235,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | TRU-02 | Phase 10 | Complete |
 | TRU-03 | Phase 10 | Complete |
 | TRU-04 | Phase 09 | Complete |
-| QLT-03 | Phase 11 | Pending |
+| QLT-03 | Phase 11 | Complete |
 | QLT-04 | Phase 10 | Complete |
 | QLT-05 | Phase 11 | Pending |
 | QLT-06 | Phase 11 | Pending |
