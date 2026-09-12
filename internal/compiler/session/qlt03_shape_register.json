@@ -1,0 +1,441 @@
+[
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "move",
+      "return_origin": "fresh_owned"
+    },
+    "reached": {
+      "occurrences": 544,
+      "distinct_shapes": 4,
+      "max_depth": 1
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "move",
+      "return_origin": "param_forwarded"
+    },
+    "reached": {
+      "occurrences": 145,
+      "distinct_shapes": 5,
+      "max_depth": 47
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "move",
+      "return_origin": "borrow_of_own_param"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "move",
+      "return_origin": "borrow_of_callee_result"
+    },
+    "unreachable": {
+      "mechanism": "refused",
+      "diagnostic": "core.callee_not_callable",
+      "rationale": "corevalidate.peerDeriveOriginFacts has no core.OpCall case: a function declaring a borrow-returning PublicOrigin sourced from forwarding a callee's own result is refused as not-Callable by corevalidate independently of check, which admits the same shape with zero diagnostics (D-10-C01, PHASE-11-DEBT.md). Pre-existing since Phase 09/10; not introduced by this register.",
+      "falsifier_test": "TestQLT03BorrowOfCalleeResultIsRefused"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "move",
+      "return_origin": "foreign_derived"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "copy",
+      "return_origin": "fresh_owned"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport's own corpus builders (corpusRelay, corpusChain, corpusLayered, corpusParserShaped, corpusForward) always source an OpCall's argument from either the function's own parameter directly or a prior OpCall's own target -- never from an OpCopy target -- a declared property of those builders' own construction, re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "copy",
+      "return_origin": "param_forwarded"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport's own corpus builders (corpusRelay, corpusChain, corpusLayered, corpusParserShaped, corpusForward) always source an OpCall's argument from either the function's own parameter directly or a prior OpCall's own target -- never from an OpCopy target -- a declared property of those builders' own construction, re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "copy",
+      "return_origin": "borrow_of_own_param"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "copy",
+      "return_origin": "borrow_of_callee_result"
+    },
+    "unreachable": {
+      "mechanism": "refused",
+      "diagnostic": "core.callee_not_callable",
+      "rationale": "corevalidate.peerDeriveOriginFacts has no core.OpCall case: a function declaring a borrow-returning PublicOrigin sourced from forwarding a callee's own result is refused as not-Callable by corevalidate independently of check, which admits the same shape with zero diagnostics (D-10-C01, PHASE-11-DEBT.md). Pre-existing since Phase 09/10; not introduced by this register.",
+      "falsifier_test": "TestQLT03BorrowOfCalleeResultIsRefused"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "copy",
+      "return_origin": "foreign_derived"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_shared",
+      "return_origin": "fresh_owned"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_shared",
+      "return_origin": "param_forwarded"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_shared",
+      "return_origin": "borrow_of_own_param"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_shared",
+      "return_origin": "borrow_of_callee_result"
+    },
+    "unreachable": {
+      "mechanism": "refused",
+      "diagnostic": "core.callee_not_callable",
+      "rationale": "corevalidate.peerDeriveOriginFacts has no core.OpCall case: a function declaring a borrow-returning PublicOrigin sourced from forwarding a callee's own result is refused as not-Callable by corevalidate independently of check, which admits the same shape with zero diagnostics (D-10-C01, PHASE-11-DEBT.md). Pre-existing since Phase 09/10; not introduced by this register.",
+      "falsifier_test": "TestQLT03BorrowOfCalleeResultIsRefused"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_shared",
+      "return_origin": "foreign_derived"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_exclusive",
+      "return_origin": "fresh_owned"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_exclusive",
+      "return_origin": "param_forwarded"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_exclusive",
+      "return_origin": "borrow_of_own_param"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_exclusive",
+      "return_origin": "borrow_of_callee_result"
+    },
+    "unreachable": {
+      "mechanism": "refused",
+      "diagnostic": "core.callee_not_callable",
+      "rationale": "corevalidate.peerDeriveOriginFacts has no core.OpCall case: a function declaring a borrow-returning PublicOrigin sourced from forwarding a callee's own result is refused as not-Callable by corevalidate independently of check, which admits the same shape with zero diagnostics (D-10-C01, PHASE-11-DEBT.md). Pre-existing since Phase 09/10; not introduced by this register.",
+      "falsifier_test": "TestQLT03BorrowOfCalleeResultIsRefused"
+    }
+  },
+  {
+    "axis_set": "argument_mode_x_return_origin",
+    "axes": {
+      "argument_mode": "borrow_exclusive",
+      "return_origin": "foreign_derived"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "testsupport.GenerateCallGraphCorpus never emits core.OpBorrowShared, core.OpBorrowExclusive, or core.OpForeignCall -- pinned by QLT03CommittedGeneratorOpKinds()'s committed literal ({call, copy, return}) and re-verified every run by TestQLT03GeneratorOpKindClosure, which goes red the instant any of these op-kinds appears.",
+      "falsifier_test": "TestQLT03GeneratorOpKindClosure"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "relay",
+      "composition_depth_bucket": "depth_1",
+      "edge_topology": "chain"
+    },
+    "reached": {
+      "occurrences": 74,
+      "distinct_shapes": 1,
+      "max_depth": 1
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_use",
+      "composition_depth_bucket": "depth_2_3",
+      "edge_topology": "chain"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_pass",
+      "composition_depth_bucket": "depth_4_plus",
+      "edge_topology": "chain"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "relay",
+      "composition_depth_bucket": "depth_2_3",
+      "edge_topology": "diamond"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_use",
+      "composition_depth_bucket": "depth_4_plus",
+      "edge_topology": "diamond"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_pass",
+      "composition_depth_bucket": "depth_1",
+      "edge_topology": "diamond"
+    },
+    "reached": {
+      "occurrences": 6,
+      "distinct_shapes": 1,
+      "max_depth": 1
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "relay",
+      "composition_depth_bucket": "depth_4_plus",
+      "edge_topology": "dense"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_use",
+      "composition_depth_bucket": "depth_1",
+      "edge_topology": "dense"
+    },
+    "reached": {
+      "occurrences": 9,
+      "distinct_shapes": 1,
+      "max_depth": 1
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_pass",
+      "composition_depth_bucket": "depth_2_3",
+      "edge_topology": "dense"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "relay",
+      "composition_depth_bucket": "depth_1",
+      "edge_topology": "parser-shaped"
+    },
+    "reached": {
+      "occurrences": 148,
+      "distinct_shapes": 1,
+      "max_depth": 1
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_use",
+      "composition_depth_bucket": "depth_2_3",
+      "edge_topology": "parser-shaped"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_pass",
+      "composition_depth_bucket": "depth_4_plus",
+      "edge_topology": "parser-shaped"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "relay",
+      "composition_depth_bucket": "depth_2_3",
+      "edge_topology": "forward"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_use",
+      "composition_depth_bucket": "depth_4_plus",
+      "edge_topology": "forward"
+    },
+    "unreachable": {
+      "mechanism": "generator",
+      "rationale": "Every testsupport corpus builder except corpusForward sources each of its own OpCall arguments directly from its function's own parameter, never from a prior OpCall's own target within the same function, so no topology other than \"forward\" ever produces a composition depth greater than 1; corpusForward's own callees are, in turn, always built via corpusLeafPass, never corpusRelay or corpusLeafUse. Re-derived from a live sweep by TestQLT03StructuralGeneratorLimits.",
+      "falsifier_test": "TestQLT03StructuralGeneratorLimits"
+    }
+  },
+  {
+    "axis_set": "edge_topology_x_callee_body_shape_x_composition_depth",
+    "axes": {
+      "callee_body_shape": "leaf_pass",
+      "composition_depth_bucket": "depth_1",
+      "edge_topology": "forward"
+    },
+    "reached": {
+      "occurrences": 3,
+      "distinct_shapes": 1,
+      "max_depth": 1
+    }
+  }
+]
