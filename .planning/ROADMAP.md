@@ -666,14 +666,31 @@ M003 scope, not M002.
 ratification checkpoint between waves 3 and 4)
 
 Plans:
+**Wave 1**
+
 - [ ] 11-01-PLAN.md — Wave 0 spikes Q-01 (core-level `OpCall`→`OpCopy` rewrite) and Q-02 (live `cgen` cache hole); open `PHASE-11-DEBT.md`
 - [ ] 11-02-PLAN.md — NAT-07's hand-written-C 4×3 composition-only LTO control (Q-04), toolchain pin, and ratification of the criterion-3 amendments
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 11-03-PLAN.md — TRACER: `callgraph.EntryFunction` + `cgen.emitProgram`/`emitCall` + `session`'s three run sites; a two-function program runs on both engines at `-O0`
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 11-04-PLAN.md — NAT-05's explicit empty attribute set and the mid-phase gate (four-part conjunction, mutation-killed, adjudicated)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 11-05-PLAN.md — NAT-06's four-tier interprocedural differential and the 32-guard disposition ledger
 - [ ] 11-06-PLAN.md — QLT-03's call-graph-shape reachability register and its drift protections
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 11-07-PLAN.md — QLT-06: `cgen` as the eighth declared cache input, plus the structural complete-by-abstention discharge
 - [ ] 11-08-PLAN.md — QLT-05 part 1: `reduce`'s multi-function `Seed`, two whole-program moves, derived bound, `RefusedShapes()`
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 11-09-PLAN.md — QLT-05 part 2: strict-field-equality re-verification, the foreign-call-sequence second knower, and the anti-vacuity gate
 
 ### Phase 12: `Result` Payloads
