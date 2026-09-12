@@ -139,6 +139,10 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 		markFail(protocol.StatusOperational)
 	default:
 		restrictChecked := Check(restrictSource)
+		// Phase 11 (11-GUARD-LEDGER.md): KEPT. Bound to the fixed Phase 5
+		// fixture restrict_borrow.lang, genuinely single-function by
+		// construction; unrelated to the multi-function corpus this
+		// phase widens.
 		if len(restrictChecked.Diagnostics) != 0 || len(restrictChecked.Program.Functions) != 1 {
 			addLane("lane:foreign-no-unproven-attributes", protocol.StatusInvalid, nil, 1, attributesStarted)
 			addLane("lane:attribute-unjustified", protocol.StatusInvalid, nil, 1, attributesStarted)
@@ -347,6 +351,12 @@ func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) 
 		return protocol.StatusInvalid, nil, 1
 	}
 	program := validated.Program()
+	// Phase 11 (11-GUARD-LEDGER.md): KEPT. Bound to the fixed Phase 5
+	// fixture inline_across_foreign.lang, genuinely single-function by
+	// construction -- its own cross-TU LTO opportunity is the foreign
+	// boundary, not the multi-function corpus this phase widens. The
+	// comparator this lane calls (Phase5CompareEngines) is unaffected;
+	// only this caller's own admission stays scoped to one function.
 	if len(program.Functions) != 1 {
 		return protocol.StatusInvalid, nil, 1
 	}

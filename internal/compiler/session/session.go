@@ -322,6 +322,10 @@ func TransposeReleaseOrder(program core.Program) (core.Program, error) {
 	if err := json.Unmarshal(encoded, &mutated); err != nil {
 		return core.Program{}, err
 	}
+	// Phase 11 (11-GUARD-LEDGER.md): KEPT. This mutation targets a
+	// SPECIFIC single-function core artifact's success block by design --
+	// widening it to N>1 would change what it attacks, not what it
+	// accepts, so it stays scoped to the fixture it mutates.
 	if len(mutated.Functions) != 1 {
 		return core.Program{}, fmt.Errorf("release transposition expects one function")
 	}
@@ -1589,6 +1593,10 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "owned_transfer.lang")
 	}
 	checked := Check(validSource)
+	// Phase 11 (11-GUARD-LEDGER.md): KEPT. verifyOwnedCorpus is bound to
+	// the fixed Phase 2 fixture owned_transfer.lang, genuinely
+	// single-function by construction; it is unrelated to the
+	// multi-function corpus this phase widens.
 	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
 		return fail(protocol.StatusInvalid, "verify.owned_invalid", "owned transfer fixture is invalid")
 	}
@@ -1679,6 +1687,14 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 // Every lane uses the Phase 1 addLane shape (an explicit status on every
 // path, PATTERNS I-1), so a failing lane is still returned rather than
 // silently dropped the way Phase 2's verifyOwnedCorpus would drop one.
+//
+// Phase 11 (11-GUARD-LEDGER.md): every single-function guard in this
+// function is KEPT. Each is bound to a fixed, named Phase 3 fixture
+// (borrowed_view.lang, public_view*.lang) that is genuinely
+// single-function by construction -- these fixtures are unrelated to the
+// multi-function corpus this phase widens, and narrowing what any of them
+// check would be exactly the "weaker proof reported as a wider one"
+// Task 1's own prohibition forbids.
 func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
 	started := time.Now()
 	result := protocol.New("verify", protocol.StatusPass)
@@ -2165,6 +2181,11 @@ func Phase4RequiredControls() []string {
 // the explicit-status addLane shape (Phase 1's VerifyCorpus.addLane form,
 // not the Phase 2 hardcoded-"pass" shape) so a lane's own failure still
 // carries partial-work evidence.
+//
+// Phase 11 (11-GUARD-LEDGER.md): this function's own single-function
+// guard is KEPT -- it is bound to the fixed Phase 4 fixture
+// defect_terminal.lang, genuinely single-function by construction and
+// unrelated to the multi-function corpus this phase widens.
 func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
 	started := time.Now()
 	result := protocol.New("verify", protocol.StatusPass)

@@ -272,6 +272,15 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 		return protocol.Lane{}, cache.Outcome{}, err
 	}
 	checked := check.Program(parsed.Program)
+	// Phase 11 (11-GUARD-LEDGER.md): KEPT. verifyPhase6NativeDifferentialLane
+	// is Phase 6's own cache-backed differential, driven only over
+	// testdata/phase1's single-function toggle.lang (Phase6RequiredControls'
+	// control:interpreter-o0-o3). NAT-06's own four-tier interprocedural
+	// differential is a separate, new lane
+	// (session_phase11_differential_test.go) that does not call this
+	// function; widening it would also require extending
+	// SelectLanesForFixture's change-state to a shape D-11-42 explicitly
+	// declines to add without the same scrutiny D-11-41 demands.
 	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
 		return protocol.Lane{}, cache.Outcome{}, fmt.Errorf("phase6.fixture_invalid: checker rejected the native-differential fixture")
 	}

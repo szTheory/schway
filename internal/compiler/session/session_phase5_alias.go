@@ -362,6 +362,11 @@ func VerifyAliasFalseNoAlias(ctx context.Context, runner *AliasFactMutationRunne
 		return fmt.Errorf("fixture %s rejected by corevalidate: %+v", runner.fixturePath, validated.Problems)
 	}
 	program := validated.Program()
+	// Phase 11 (11-GUARD-LEDGER.md): KEPT. VerifyAliasFalseNoAlias attacks
+	// a specific by-pointer parameter marker (byPointerParamMarker) on a
+	// fixed Phase 5 fixture (false_restrict_hoist.lang), genuinely
+	// single-function by construction -- unrelated to the multi-function
+	// corpus this phase widens.
 	if len(program.Functions) != 1 {
 		return fmt.Errorf("fixture %s must declare exactly one function", runner.fixturePath)
 	}

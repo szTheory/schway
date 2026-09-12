@@ -101,6 +101,11 @@ func admitPhase5Candidate(source string) (core.Program, bool) {
 		return core.Program{}, false
 	}
 	program := validated.Program()
+	// Phase 11 (11-GUARD-LEDGER.md): KEPT. D-05-18b's own enumerated
+	// closure grammar is scoped to "one parameter" straight-line/branch
+	// programs by definition -- this is a single-function generator, not
+	// a guard that could admit the multi-function corpus this phase
+	// widens, so there is nothing to widen here.
 	if len(program.Functions) != 1 {
 		return core.Program{}, false
 	}

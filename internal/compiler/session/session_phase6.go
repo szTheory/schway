@@ -285,6 +285,10 @@ func phase6RunCleanupInjectionLane() (status, control string, work int) {
 		return protocol.StatusOperational, "", 1
 	}
 	checked := Check(source)
+	// Phase 11 (11-GUARD-LEDGER.md): KEPT. Bound to the fixed Phase 4
+	// fixture phase6CleanupFixture (acquire_three_success.lang),
+	// genuinely single-function by construction; unrelated to the
+	// multi-function corpus this phase widens.
 	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
 		return protocol.StatusInvalid, "", 1
 	}

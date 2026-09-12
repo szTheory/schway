@@ -461,7 +461,11 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			}
 		}
 		// A-02: this gate is never taken for either phase07 fixture -- see
-		// the doc comment above.
+		// the doc comment above. Phase 11 (11-GUARD-LEDGER.md): KEPT --
+		// this lane's own phase07DispatchFixtures corpus is defined as
+		// single-function by construction (D-07-39's own scope), so
+		// widening this gate would not exercise anything new; NAT-06's
+		// own multi-function differential is a separate, new lane.
 		if len(dispatchProgram.Functions) == 1 {
 			if _, cgenErr := cgen.Emit(dispatchProgram); cgenErr != nil {
 				addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
