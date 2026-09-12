@@ -41,6 +41,17 @@ const (
 	ControlReduceNoProgress        = "control:reduce.no_progress"
 	ControlReducePredicateTooLoose = "control:reduce.predicate_too_loose"
 	ControlReduceNondeterministic  = "control:reduce.nondeterministic"
+	// ControlReduceReverified is D-11-37's fourth control, alongside the
+	// three above: QLT-05's strict, cold-start re-verification (see
+	// QLT05Reverify) reports this control on LaneMismatchReduce whenever
+	// re-verification actually ran, regardless of its verdict -- the
+	// control names that the CHECK executed, matching this file's own
+	// "declared, not yet gate-wired" precedent (see the comment above)
+	// rather than double-encoding pass/fail into the control set itself.
+	// Declaring this control never bumps MismatchDocument's own schema
+	// (lang.mismatch/0 stays pinned, D-05-39): QLT-05 is a gate claim
+	// about the reducer's own output, not a document field.
+	ControlReduceReverified = "control:reduce.reverified"
 )
 
 // mismatchReduceFixture is the seeded, reproducible mismatch source this
@@ -65,26 +76,124 @@ func SignatureFromDisagreement(disagreement *Phase5EngineDisagreement, foreignCa
 	}
 }
 
-// foreignCallSequenceFor extracts the ordered foreign symbol invocations a
-// program's own function makes, for Signature.ForeignCallSequence --
-// nil for a program with no ForeignContract (e.g. this plan's own seed
-// fixture, a plain borrow chain), matching Signature's own documented
-// zero-value semantics.
-func foreignCallSequenceFor(program core.Program) []string {
-	if len(program.Functions) != 1 {
-		return nil
+// staticForeignCallSequenceFor is Knower 1 (D-11-33): it derives the
+// ordered foreign symbol invocation sequence across the WHOLE program by
+// walking every function -- never just program.Functions[0] -- in
+// callgraph.Order's own deterministic reverse-postorder over the
+// proven-acyclic call graph (session may import callgraph; reduce may
+// not). It reads only program's own declared structure, never an
+// execution document. This is the fix for the silent-slippage hole this
+// plan closes: the old single-function-only walk returned nil for ANY
+// multi-function program, so a dropped call to a callee containing a
+// foreign acquisition compared nil to nil and was invisible.
+func staticForeignCallSequenceFor(program core.Program) ([]string, error) {
+	order, err := callgraph.Order(program)
+	if err != nil {
+		return nil, fmt.Errorf("mismatch-reduce: deriving static foreign-call sequence: %w", err)
 	}
-	function := program.Functions[0]
-	if function.ForeignContract == nil || function.Linear == nil {
-		return nil
+	byID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		byID[function.ID] = function
 	}
 	var sequence []string
-	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpForeignCall {
-			sequence = append(sequence, function.ForeignContract.Symbol)
+	for _, functionID := range order {
+		function, ok := byID[functionID]
+		if !ok || function.ForeignContract == nil || function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpForeignCall {
+				sequence = append(sequence, function.ForeignContract.Symbol)
+			}
+		}
+	}
+	return sequence, nil
+}
+
+// dynamicForeignCallSequenceFor is Knower 2 (D-11-33): the SAME fact,
+// independently derived from a real -O0 run's own event stream, which
+// already carries FunctionID per event ("foreign.called", shared verbatim
+// across the interpreter/native engines -- see execution.Event). It shares
+// no helper with staticForeignCallSequenceFor beyond the execution.Event
+// type itself: it reads the execution document's own chronological event
+// order, never program's declared function order, and never calls the
+// static walk.
+func dynamicForeignCallSequenceFor(program core.Program, run execution.Execution) []string {
+	symbolByFunctionID := make(map[string]string, len(program.Functions))
+	for _, function := range program.Functions {
+		if function.ForeignContract != nil {
+			symbolByFunctionID[function.ID] = function.ForeignContract.Symbol
+		}
+	}
+	var sequence []string
+	for _, event := range run.Events {
+		if event.Kind != foreignCalledEventKind {
+			continue
+		}
+		if symbol, ok := symbolByFunctionID[event.FunctionID]; ok {
+			sequence = append(sequence, symbol)
 		}
 	}
 	return sequence
+}
+
+// foreignCalledEventKind is the event.Kind every engine (interp, native)
+// emits for one completed foreign acquisition -- see
+// internal/compiler/interp/interp.go's own "foreign.called" event and
+// native.go's event-kind allowlist, which both share this literal.
+const foreignCalledEventKind = "foreign.called"
+
+// foreignCallSequenceDisagreementForTest is this plan's own fault-injection
+// seam (mirrors this repository's testOnlyMoves/grayVsVisitedMutationForTest
+// shape, D-07-42): when non-nil, it perturbs the DYNAMIC derivation's
+// result immediately before foreignCallSequenceFor's own comparison runs,
+// proving the agreement check is load-bearing rather than trivially true.
+// Unexported, nil in production, set only by a same-package test
+// (export_test.go) that defers the restore immediately.
+var foreignCallSequenceDisagreementForTest func([]string) []string
+
+// foreignCallSequenceFor is D-11-33's two-knower guard against reduction
+// slippage: the ordered foreign symbol invocation sequence, derived
+// TWICE independently (staticForeignCallSequenceFor, program structure;
+// dynamicForeignCallSequenceFor, the -O0 run's own event stream) and
+// compared. A candidate that silently dropped a call to a foreign-
+// acquiring callee -- or a genuine reducer bug that perturbed one
+// derivation but not the other -- fails this comparison rather than
+// being compared nil-to-nil, which is exactly the slippage hole this
+// plan closes ("never one derivation read twice" applied to the one fact
+// that guards against it). nil, nil for a program with no ForeignContract
+// anywhere (e.g. this plan's own seed fixture, a plain borrow chain),
+// matching Signature's own documented zero-value semantics.
+func foreignCallSequenceFor(program core.Program, o0Run execution.Execution) ([]string, error) {
+	static, err := staticForeignCallSequenceFor(program)
+	if err != nil {
+		return nil, err
+	}
+	dynamic := dynamicForeignCallSequenceFor(program, o0Run)
+	if foreignCallSequenceDisagreementForTest != nil {
+		dynamic = foreignCallSequenceDisagreementForTest(dynamic)
+	}
+	if !equalStringSlices(static, dynamic) {
+		return nil, fmt.Errorf("reduce.foreign_call_sequence_disagreement: static derivation %v disagrees with dynamic derivation %v -- a real reducer bug, never silently ignored", static, dynamic)
+	}
+	return static, nil
+}
+
+// equalStringSlices reports whether a and b hold the same strings in the
+// same order -- treating a nil slice and an empty slice as equal, which is
+// the comparison foreignCallSequenceFor's own agreement check needs (a
+// program with no foreign acquisitions anywhere yields nil from both
+// derivations).
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // causalChainFor derives the ordered acquisition/borrow/control-edge steps
@@ -200,7 +309,14 @@ func mismatchPredicate(baseRunner native.Runner, fixturePath, fallbackInput stri
 		if !ok {
 			return reduce.Signature{}, false, nil
 		}
-		candidateSignature := SignatureFromDisagreement(disagreement, foreignCallSequenceFor(candidateProgram))
+		candidateForeignSequence, err := foreignCallSequenceFor(candidateProgram, o0.Pairs[0].Execution)
+		if err != nil {
+			// A disagreement between the two independent foreign-call-
+			// sequence derivations is a real reducer bug (D-11-33), never a
+			// silently-rejected candidate -- surface it as a hard failure.
+			return reduce.Signature{}, false, err
+		}
+		candidateSignature := SignatureFromDisagreement(disagreement, candidateForeignSequence)
 		return candidateSignature, reduce.Interesting(seed, candidateSignature), nil
 	}
 }
@@ -261,7 +377,11 @@ func ReduceSeededAliasMismatch(ctx context.Context) (reduce.MismatchDocument, er
 		return reduce.MismatchDocument{}, fmt.Errorf("mismatch-reduce: %s produced no real divergence to reduce -- the seed mutation was not exercised", ControlAliasFalseNoAlias)
 	}
 
-	seedSignature := SignatureFromDisagreement(disagreement, foreignCallSequenceFor(program))
+	seedForeignSequence, err := foreignCallSequenceFor(program, o0.Pairs[0].Execution)
+	if err != nil {
+		return reduce.MismatchDocument{}, fmt.Errorf("mismatch-reduce: %w", err)
+	}
+	seedSignature := SignatureFromDisagreement(disagreement, seedForeignSequence)
 	predicate := mismatchPredicate(baseRunner, fixturePath, nativeInput, seedSignature)
 	entryFunction, err := callgraph.EntryFunction(program)
 	if err != nil {
@@ -323,4 +443,169 @@ func VerifyMismatchReduceLane(ctx context.Context) (protocol.Result, error) {
 	result.Metrics.RecomputedWork += work
 	result.Metrics.ElapsedNS = time.Since(started).Nanoseconds()
 	return result.Finalize(), nil
+}
+
+// ---------------------------------------------------------------------
+// QLT-05 strict, cold-start re-verification (D-11-32/D-11-37).
+// ---------------------------------------------------------------------
+
+// QLT05SignatureDeriver computes a FRESH reduce.Signature for a candidate
+// program, entirely independently of anything Reduce's own search already
+// computed: ok reports whether the candidate reproduces ANY observable
+// divergence at all (a different failure mode from a strict-field
+// mismatch, which QLT05Reverify itself decides). Production wiring
+// (qlt05RealSignatureDeriver) mirrors mismatchPredicate's own real
+// validate/emit/compile/run pipeline byte for byte, but is invoked
+// completely independently -- it never calls mismatchPredicate, never
+// consults reduce.Interesting, and shares no cached artifact with the
+// search that produced the reduced program in the first place. This is
+// the exported seam a caller supplies QLT05Reverify with; it is exported
+// only so this file's own doc comment can name it as the trust boundary,
+// not because a second production implementation is expected.
+type QLT05SignatureDeriver func(ctx context.Context, candidate core.Program) (reduce.Signature, bool, error)
+
+// QLT05Reverification is QLT-05's strict, cold-start re-verification
+// verdict (D-11-32): Verified is true only when EVERY strictly-compared
+// field agrees; Reason is empty on success and otherwise names which
+// field drifted, always prefixed with the reduce.reverification_signature_drift
+// refusal ID reduce.RefusedShapes() already reserves for this exact
+// purpose (11-08-SUMMARY.md). Control is always ControlReduceReverified
+// once re-verification actually ran, independently of Verified -- the
+// control names that the CHECK executed, matching this file's own
+// "control declared, not double-encoding pass/fail" convention.
+type QLT05Reverification struct {
+	Verified bool
+	Reason   string
+	Control  string
+}
+
+// qlt05ReverificationSignatureDrift is the stable refusal ID
+// reduce.RefusalReverificationSignatureDrift names verbatim
+// (reduce.reverification_signature_drift, reduce.go's own reserved
+// constant) -- session cannot reference reduce's constant directly without
+// creating a second spelling risk, so it is duplicated here as a plain
+// string literal, matching this file's own established
+// byPointerParamMarker-style verbatim-duplication precedent
+// (session_phase5_alias.go).
+const qlt05ReverificationSignatureDrift = "reduce.reverification_signature_drift"
+
+// QLT05Reverify implements QLT-05's strict, cold-start re-verification
+// (D-11-32): it re-derives a candidate's Signature via deriver -- a FRESH
+// check+validate+emit+compile+run cycle, never any artifact or verdict
+// computed during Reduce's own search -- and compares it against seed by
+// STRICT FIELD EQUALITY: Axis, EnginePair, OperationID, and the foreign-
+// call sequence (Task 1's two-knower guard). There is deliberately no
+// fallback to a shifted-position acceptance path here.
+//
+// predicate.go's Interesting (predicate.go lines 63-66) permits exactly
+// one such fallback DURING the search, to tolerate an operation whose
+// POSITION shifted under reduction but whose role in the program did not
+// -- that relaxation is what lets the search keep narrowing past a move
+// that renumbers or repositions the diverging operation. Inheriting it
+// HERE, at re-verification, would satisfy QLT-05 by construction: any
+// candidate the search already accepted trivially carries a matching
+// role fact, so re-checking it under the SAME relaxation proves nothing
+// new. Forbidding the fallback at re-verification is SAFE, not merely
+// stricter-for-its-own-sake: every operation ID in this project is
+// function-ID-prefixed (the "…:fn:main:op:0" form), and neither
+// whole-program move (drop-call-site, drop-orphan-function) renumbers a
+// surviving operation's own ID (11-08-SUMMARY.md's own
+// TestOperationIDsUnchangedByWholeProgramMoves). A genuine ID shift is
+// therefore structurally impossible under this reducer's own moves, so
+// observing one here can only mean a real reducer bug -- reported as
+// qlt05ReverificationSignatureDrift, never silently tolerated.
+//
+// cacheRoot is accepted ONLY to make QLT-05's cold-start property
+// demonstrable in a test (TestQLT05ReverificationIsColdStart): this
+// function and deriver's own real production wiring never read or write
+// anything under it. Every fact QLT05Reverify's own comparison consults
+// is freshly recomputed inside deriver's own call, on this call alone --
+// there is no persistent cache anywhere on this path to consult in the
+// first place (native.Runner's own compile step always uses a fresh
+// os.MkdirTemp per run, never a shared directory).
+func QLT05Reverify(ctx context.Context, seed reduce.Signature, reducedProgram core.Program, deriver QLT05SignatureDeriver, cacheRoot string) (QLT05Reverification, error) {
+	_ = cacheRoot // never read; see doc comment above.
+	candidate, ok, err := deriver(ctx, reducedProgram)
+	if err != nil {
+		return QLT05Reverification{}, err
+	}
+	if !ok {
+		return QLT05Reverification{
+			Verified: false,
+			Reason:   qlt05ReverificationSignatureDrift + ": reduced program no longer reproduces any observable divergence",
+			Control:  ControlReduceReverified,
+		}, nil
+	}
+	if seed.Axis == "" || seed.Axis != candidate.Axis {
+		return QLT05Reverification{Verified: false, Reason: qlt05ReverificationSignatureDrift + ": Axis differs", Control: ControlReduceReverified}, nil
+	}
+	if seed.EnginePair == "" || seed.EnginePair != candidate.EnginePair {
+		return QLT05Reverification{Verified: false, Reason: qlt05ReverificationSignatureDrift + ": EnginePair differs", Control: ControlReduceReverified}, nil
+	}
+	// STRICT field equality on OperationID alone -- see the doc comment
+	// above for why the search-time shifted-position fallback is both
+	// forbidden and safe to forbid here.
+	if seed.OperationID == "" || seed.OperationID != candidate.OperationID {
+		return QLT05Reverification{Verified: false, Reason: qlt05ReverificationSignatureDrift + ": OperationID differs (no positional fallback permitted at re-verification)", Control: ControlReduceReverified}, nil
+	}
+	if !equalStringSlices(seed.ForeignCallSequence, candidate.ForeignCallSequence) {
+		return QLT05Reverification{Verified: false, Reason: qlt05ReverificationSignatureDrift + ": ForeignCallSequence differs", Control: ControlReduceReverified}, nil
+	}
+	return QLT05Reverification{Verified: true, Control: ControlReduceReverified}, nil
+}
+
+// qlt05RealSignatureDeriver builds a production QLT05SignatureDeriver that
+// mirrors mismatchPredicate's own real pipeline (corevalidate.Validate,
+// cgen.EmitNative, the same runner's -O0/-O3 pair, Phase5CompareEngines)
+// but is invoked completely independently: it never calls
+// mismatchPredicate itself and applies NO reduce.Interesting conjunction
+// -- ok is false only when the candidate fails to validate, fails to
+// emit or compile, or produces no real engine disagreement at all;
+// QLT05Reverify's own strict comparison is solely responsible for
+// deciding whether an observed disagreement still matches seed.
+func qlt05RealSignatureDeriver(runner native.Runner, fixturePath, fallbackInput string) QLT05SignatureDeriver {
+	return func(ctx context.Context, candidate core.Program) (reduce.Signature, bool, error) {
+		if err := ctx.Err(); err != nil {
+			return reduce.Signature{}, false, err
+		}
+		validated := corevalidate.Validate(candidate)
+		if !validated.Valid {
+			return reduce.Signature{}, false, nil
+		}
+		candidateProgram := validated.Program()
+		cSource, err := cgen.EmitNative(candidateProgram)
+		if err != nil {
+			return reduce.Signature{}, false, nil
+		}
+		input := fallbackInput
+		if candidateInputs, ok := interpreterInputs(candidateProgram); ok && len(candidateInputs) > 0 {
+			input = candidateInputs[0]
+		}
+		candidateRunner := NewAliasFactMutationRunner(runner, fixturePath)
+		o0, err := candidateRunner.Run(ctx, cSource, "-O0", []string{input})
+		if err != nil {
+			return reduce.Signature{}, false, nil
+		}
+		o3, err := candidateRunner.Run(ctx, cSource, "-O3", []string{input})
+		if err != nil {
+			return reduce.Signature{}, false, nil
+		}
+		if len(o0.Pairs) != 1 || len(o3.Pairs) != 1 {
+			return reduce.Signature{}, false, nil
+		}
+		engines := map[string]execution.Execution{"O0": o0.Pairs[0].Execution, "O3": o3.Pairs[0].Execution}
+		compareErr := Phase5CompareEngines("qlt05-reverify-candidate", engines)
+		if compareErr == nil {
+			return reduce.Signature{}, false, nil
+		}
+		disagreement, ok := compareErr.(*Phase5EngineDisagreement)
+		if !ok {
+			return reduce.Signature{}, false, nil
+		}
+		foreignSequence, err := foreignCallSequenceFor(candidateProgram, o0.Pairs[0].Execution)
+		if err != nil {
+			return reduce.Signature{}, false, err
+		}
+		return SignatureFromDisagreement(disagreement, foreignSequence), true, nil
+	}
 }
