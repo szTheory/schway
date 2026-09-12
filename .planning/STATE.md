@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 11
 current_phase_name: Multi-Function Native Emission and Interprocedural Equivalence
 status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-09-12T03:32:54.964Z"
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-09-12T04:00:45.823Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 11 execution started
-state_head: 7162966aa849c6cef96ef11ddbd5e4bfbdafbc71
+state_head: bc7b949589d381a14a036ce0767f06472a389597
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 46
-  completed_plans: 38
+  completed_plans: 39
 ---
 
 # Project State
@@ -47,7 +47,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 11 (Multi-Function Native Emission and Interprocedural Equivalence) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 11 execution started
 
@@ -192,6 +192,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 10 P08 | 140min | 3 tasks | 5 files |
 | Phase 10-trusted-interprocedural-oracle P09 | 70min | 3 tasks | 9 files |
 | Phase 11 P01 | 25 min | 3 tasks | 3 files |
+| Phase 11 P02 | 55min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -258,6 +259,8 @@ Standing architectural commitments carried into M002:
 - [Phase 10]: D-10-55/D-10-41 seeded-fault companion tests landed in pathoracle_test.go and corevalidate_endpoint_test.go respectively (not session_peer_gate_test.go) because both fault seams are _test.go-only symbols invisible outside their own package's test binary
 - [Phase 10]: Phase 10 plan 10-09: interp is STABLE per the roadmap's Phase 11 precondition -- a 6-program byte-for-byte golden corpus (testdata/phase10/interp_oracle/), determinism proven at -count=10 over the full corpus, and the structural coverage floor (D-10-58) shipped as three enumerated tables in 10-VALIDATION.md with zero blank cells. SEM-08/SEM-09/OWN-05b all complete; Phase 10 done.
 - [Phase 11]: 11-01: Q-01=BRANCH A (accepted), Q-02=BRANCH A (hole reproduces) -- committed single-branch verdict tests decide plan 11-08's reducer proceeds unnarrowed and plan 11-07 ships a real eighth cache input — Both spikes settled as committed Go tests, not prose, per D-11-29/D-11-41; PHASE-11-DEBT.md opened at phase start with nine recorded-not-built decisions and five Phase 10 carry-forward items
+- [Phase 11]: Q-04 topology found empirically: composition-only LTO divergence requires a 4-way TU split (callee, writer, a SEPARATE coordination wrapper calling the callee twice, caller) -- merging wrapper+main lets the compiler prove pointer identity and refuse the hoist at every tier — Five of six tried topologies either diverged without LTO or never diverged at all on Apple clang 21.0.0
+- [Phase 11]: Task 3 ratification auto-selected Option A (approve all five items: D-11-20/21/22 roadmap amendments, D-11-09/10 zero-attribute terminal state, D-11-39 QLT-06 split) since it carried no gate=blocking-human — Auto-mode checkpoint protocol; flagged human_judgment:true in SUMMARY coverage for human review
 
 ### Pending Todos
 
@@ -401,8 +404,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-12T03:32:47.458Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-09-12T04:00:45.558Z
+Stopped at: Completed 11-02-PLAN.md
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
 Resume file: None

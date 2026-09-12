@@ -88,7 +88,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       produce equivalent semantic outcomes and events for the interprocedural
       corpus on the five-axis comparator.
 
-- [ ] **NAT-07**: The interprocedural `-O3`/LTO tier is proven non-inert by at
+- [x] **NAT-07**: The interprocedural `-O3`/LTO tier is proven non-inert by at
       least one engineered composition-only negative control that reproduces an
       `interpreter == -O0 != -O3` divergence and fails red before its fix.
 
@@ -231,7 +231,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | NAT-04 | Phase 11 | Pending |
 | NAT-05 | Phase 11 | Pending |
 | NAT-06 | Phase 11 | Pending |
-| NAT-07 | Phase 11 | Pending |
+| NAT-07 | Phase 11 | Complete |
 | TRU-02 | Phase 10 | Complete |
 | TRU-03 | Phase 10 | Complete |
 | TRU-04 | Phase 09 | Complete |
