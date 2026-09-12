@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 11
 current_phase_name: Multi-Function Native Emission and Interprocedural Equivalence
 status: executing
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-09-12T06:42:34.450Z"
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-09-12T07:35:49.919Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 11 execution started
-state_head: ab8d1af4d0804e71b5ab0ea99c9f334e436325dd
+state_head: 42526a57fb4a8d7b1f544db11324d7a38fb7eb6e
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 46
-  completed_plans: 41
+  completed_plans: 42
 ---
 
 # Project State
@@ -47,7 +47,7 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 ## Current Position
 
 Phase: 11 (Multi-Function Native Emission and Interprocedural Equivalence) — EXECUTING
-Plan: 5 of 9
+Plan: 6 of 9
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 11 execution started
 
@@ -195,6 +195,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 11 P02 | 55min | 3 tasks | 3 files |
 | Phase 11 P03 | 70 min | 3 tasks | 13 files |
 | Phase 11-multi-function-native-emission-and-interprocedural-equivalen P04 | 95min | 3 tasks | 9 files |
+| Phase 11 P05 | 100min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -265,6 +266,8 @@ Standing architectural commitments carried into M002:
 - [Phase 11]: Task 3 ratification auto-selected Option A (approve all five items: D-11-20/21/22 roadmap amendments, D-11-09/10 zero-attribute terminal state, D-11-39 QLT-06 split) since it carried no gate=blocking-human — Auto-mode checkpoint protocol; flagged human_judgment:true in SUMMARY coverage for human review
 - [Phase 11]: 11-03: callgraph.EntryFunction resolves via in-degree-zero roots with a closure-size tie-break (never Functions[0]); emitProgram is the new whole-program C17 assembler with emitCall as sole Lang-to-Lang call writer — Reconciles the plan's own conflicting must_haves (unreachable function must not block resolution vs never guess); native.go's execution validator widened (Rule 3) for legitimate multi-FunctionID/non-terminal-return events, a pre-existing single-function assumption Phase 11 first exercises
 - [Phase 11]: Mid-phase gate ratified PASS (11-MIDPHASE-GATE.md): zero-attribute state terminal for Phase 11, NAT-05 written up as requirement weakened by evidence; waves 4-6 admitted.
+- [Phase 11]: 11-05: session's three CLI run sites were already widened at plan 11-03; Task 1 re-verified the 29-site baseline and KEPT every remaining single-function guard as legitimately fixed-fixture-bound (Phase 2-7) or deferred to plan 11-08 -- zero additional widening needed. — Guard ledger's mechanical awk re-verification (29, not the ROADMAP's expected 32) plus row-by-row disposition in 11-GUARD-LEDGER.md
+- [Phase 11]: 11-05: DiamondSharedLeaf discovered a genuine event-ID collision (D-11-51) when a callee is invoked from two static call sites; DivergingCallee is not expressible in a multi-function program this phase (D-11-52, extends D-11-02). Both recorded as new PHASE-11-DEBT.md debt, not silently fixed or narrowed. — Real fixes touch interp.go/cgen_program.go/emitMatch's multi-function generalization, outside this plan's files_modified and each large enough to need its own reviewed plan
 
 ### Pending Todos
 
@@ -408,8 +411,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-12T06:42:34.209Z
-Stopped at: Completed 11-04-PLAN.md
+Last session: 2026-09-12T07:35:49.690Z
+Stopped at: Completed 11-05-PLAN.md
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
 Resume file: None

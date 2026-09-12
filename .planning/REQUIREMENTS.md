@@ -84,7 +84,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
       (`restrict`, noalias-shaped attributes) derives from a checked fact, and
       the deriving fact is named in the emitted artifact.
 
-- [ ] **NAT-06**: Interpreter, native `-O0`, native `-O3`, and `-O3 -flto`
+- [x] **NAT-06**: Interpreter, native `-O0`, native `-O3`, and `-O3 -flto`
       produce equivalent semantic outcomes and events for the interprocedural
       corpus on the five-axis comparator.
 
@@ -230,7 +230,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | OWN-09 | Phase 09 | Complete |
 | NAT-04 | Phase 11 | Complete |
 | NAT-05 | Phase 11 | Complete |
-| NAT-06 | Phase 11 | Pending |
+| NAT-06 | Phase 11 | Complete |
 | NAT-07 | Phase 11 | Complete |
 | TRU-02 | Phase 10 | Complete |
 | TRU-03 | Phase 10 | Complete |
