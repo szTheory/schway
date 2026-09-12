@@ -571,9 +571,17 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 		return fmt.Errorf("unsupported expected terminal outcome %q", expect)
 	}
 	seenIDs := make(map[string]struct{}, len(value.Events))
-	functionID := value.Events[0].FunctionID
 	for index, event := range value.Events {
-		if event.Schema != value.Schema || event.ID == "" || event.FunctionID == "" || event.FunctionID != functionID {
+		// D-11-05/Phase 11: a multi-function execution's own events span
+		// more than one function -- a callee's own function.returned event
+		// is recorded under the CALLEE's function ID, never the caller's
+		// (interp.terminalOutcome's identical rule, D-10-32) -- so this no
+		// longer requires every event to share ONE FunctionID with the
+		// first event. Every pre-Phase-11 single-function execution still
+		// has exactly one function ID across every event by construction
+		// (there is nothing else to attribute an event to), so this widening
+		// changes no existing document's admissibility.
+		if event.Schema != value.Schema || event.ID == "" || event.FunctionID == "" {
 			return errors.New("execution event identity or schema mismatch")
 		}
 		if _, duplicate := seenIDs[event.ID]; duplicate {
@@ -583,8 +591,20 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 		isLast := index == len(value.Events)-1
 		switch event.Kind {
 		case "function.returned":
-			if !isLast || event.TargetPlace != "" {
-				return errors.New("return event must be last and have no target")
+			// D-11-05/Phase 11: a multi-function execution pops more than
+			// one frame, and interp.terminalOutcome (D-10-32) records a
+			// "function.returned" event for EVERY popped frame, not only
+			// the outermost one -- an intermediate callee's own return is
+			// therefore no longer required to be the document's last
+			// event. The outermost (base) frame's own terminal event is
+			// still always the actual last event written (cgen's `main`
+			// and interp's runFrameStack both write/return only after
+			// every callee frame has already popped), so this widening
+			// changes no existing single-function document's
+			// admissibility -- there, the sole function.returned event was
+			// already last by construction.
+			if event.TargetPlace != "" {
+				return errors.New("return event must have no target")
 			}
 			if value.Schema == execution.Schema0 {
 				if event.Input == "" || event.Output == "" || event.SourcePlace != "" || event.TypeID != "" {

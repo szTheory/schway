@@ -1,12 +1,15 @@
 // Package callgraph is Phase 07 Stage 2a's whole-program call-graph
-// acyclicity check (SEM-07, D-07-14/D-07-17/D-07-18). It is consumed by
-// check, in production, immediately before check.Program returns a
-// core.Program -- never by corevalidate, ast, interp, or cgen.
-// corevalidate runs its own, independently implemented traversal (07-07);
-// this package restates nothing from it. Unlike pathoracle (consumed only
-// by tests and the verify harness), callgraph sits on check's own
-// production admission path, so every fault-injection seam this package
-// declares is unexported (D-07-42).
+// acyclicity check (SEM-07, D-07-14/D-07-17/D-07-18), extended in Phase 11
+// (D-11-05) with EntryFunction, the single program-entry resolver. It is
+// consumed in production by check (immediately before check.Program returns
+// a core.Program), by cgen (its whole-program TU assembler resolves the
+// function `main` invokes through EntryFunction), and by session (every run
+// site resolves which function to execute the same way) -- never by
+// corevalidate, ast, interp, or reduce. corevalidate runs its own,
+// independently implemented traversal (07-07); this package restates
+// nothing from it. Unlike pathoracle (consumed only by tests and the verify
+// harness), callgraph sits on check's own production admission path, so
+// every fault-injection seam this package declares is unexported (D-07-42).
 //
 // It reads nothing but a core.Program's own declared Functions and their
 // Linear.Operations. It imports neither corevalidate, ast, interp, cgen,
@@ -198,6 +201,169 @@ func (e *unresolvedCalleeError) Code() string { return core.CallCalleeUnresolved
 func UnresolvedCalleeError(err error) (*unresolvedCalleeError, bool) {
 	e, ok := err.(*unresolvedCalleeError)
 	return e, ok
+}
+
+// entryAmbiguousError is D-11-05's fail-closed refusal for EntryFunction: a
+// program whose call graph has zero or more than one in-degree-zero root.
+// Mirrors unresolvedCalleeError's own shape (an Error() string, a Code()
+// method, and an accessor exposing the refusal's own witness data) so
+// callers can dispatch on either refusal the same way. roots is stored
+// pre-sorted (lexicographically by function ID) so Error()'s formatted
+// message is byte-stable regardless of the order the caller's own program
+// declared its functions in.
+type entryAmbiguousError struct {
+	roots []string
+}
+
+func (e *entryAmbiguousError) Error() string {
+	return fmt.Sprintf(
+		"callgraph.entry_ambiguous: program has %d in-degree-zero root(s), expected exactly one: %v",
+		len(e.roots), e.roots,
+	)
+}
+
+// Code reports core.EntryAmbiguous, D-11-05's stable identity for this
+// refusal.
+func (e *entryAmbiguousError) Code() string { return core.EntryAmbiguous }
+
+// EntryAmbiguousError type-asserts err as callgraph's own entry-ambiguity
+// refusal, mirroring the errors.As-style accessor convention this package
+// and session.EngineMismatch already use.
+func EntryAmbiguousError(err error) (*entryAmbiguousError, bool) {
+	e, ok := err.(*entryAmbiguousError)
+	return e, ok
+}
+
+// Roots reports the candidate in-degree-zero root function IDs, sorted
+// lexicographically (D-11-05's byte-stability guarantee).
+func (e *entryAmbiguousError) Roots() []string {
+	return append([]string(nil), e.roots...)
+}
+
+// EntryFunction is D-11-05's single program-entry resolver, consumed by
+// both cgen's whole-program TU assembler (which function `main` invokes)
+// and every session run site (which function the interpreter and the
+// native binary each execute) -- one resolver so the two engines can never
+// silently disagree about which function IS the program. It computes the
+// same adjacency buildAdjacency already derives for Order, inverts it into
+// an in-degree count per declared function, and starts from the set of
+// in-degree-zero candidates -- the functions nothing else calls.
+//
+// A single in-degree-zero candidate resolves immediately: that function IS
+// the program.
+//
+// CONTRACT for a declared-but-never-called function (D-11-05,
+// TestEntryFunctionEmitsUnreachableFunctions): such a function's own
+// in-degree is also zero, so it becomes a SECOND in-degree-zero candidate
+// alongside the genuine entry. EntryFunction does not treat these two
+// candidates as equally uncertain: it computes each candidate's own
+// transitive reachable closure (the set of functions it calls, directly or
+// transitively) and prefers the candidate with a STRICTLY LARGER closure
+// than every other candidate. A function nothing calls purely because it is
+// dead code calls nothing itself either (an empty closure); the genuine
+// entry point drives the program's actual call chain (a non-empty
+// closure), so this comparison is a real structural fact about the
+// program -- never an arbitrary tie-break like Functions[0] -- and never
+// widens to prefer a merely LARGER-OR-EQUAL closure, which would silently
+// pick one of two genuinely equal candidates by iteration order. When no
+// candidate's closure is strictly largest (including the all-empty case:
+// two or more functions that call nothing and are called by nothing, or
+// two or more genuinely separate call chains of equal reach), the refusal
+// is exactly as fail-closed as the single-candidate check: never a guess.
+//
+// Zero declared functions, or a call graph with no in-degree-zero node at
+// all (every function has at least one caller -- only possible together
+// with a cycle, which Order/check already refuse before this ever runs),
+// are refused with the identical *entryAmbiguousError, never a guess and
+// never a panic or index-out-of-range.
+func EntryFunction(program core.Program) (core.Function, error) {
+	adjacency, _, err := buildAdjacency(program)
+	if err != nil {
+		return core.Function{}, err
+	}
+
+	inDegree := make(map[string]int, len(adjacency))
+	for id := range adjacency {
+		inDegree[id] = 0
+	}
+	for _, callees := range adjacency {
+		for _, callee := range callees {
+			inDegree[callee]++
+		}
+	}
+
+	var roots []string
+	for id, degree := range inDegree {
+		if degree == 0 {
+			roots = append(roots, id)
+		}
+	}
+	sort.Strings(roots)
+
+	byID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		byID[function.ID] = function
+	}
+
+	resolve := func(id string) (core.Function, error) {
+		function, ok := byID[id]
+		if !ok {
+			// Structurally unreachable: buildAdjacency's declared set is
+			// built directly from program.Functions, so every adjacency
+			// key names a real function.
+			return core.Function{}, &entryAmbiguousError{roots: roots}
+		}
+		return function, nil
+	}
+
+	if len(roots) == 1 {
+		return resolve(roots[0])
+	}
+	if len(roots) == 0 {
+		return core.Function{}, &entryAmbiguousError{roots: roots}
+	}
+
+	// More than one in-degree-zero candidate: break the tie by each
+	// candidate's own reachable-closure size (an iterative BFS over
+	// adjacency, bounded by the declared function count -- never native Go
+	// recursion, consistent with this package's own traversal discipline).
+	bestSize, bestCount := -1, 0
+	bestID := ""
+	for _, root := range roots {
+		size := reachableClosureSize(adjacency, root)
+		switch {
+		case size > bestSize:
+			bestSize, bestCount, bestID = size, 1, root
+		case size == bestSize:
+			bestCount++
+		}
+	}
+	if bestCount != 1 {
+		return core.Function{}, &entryAmbiguousError{roots: roots}
+	}
+	return resolve(bestID)
+}
+
+// reachableClosureSize counts the functions reachable from root (excluding
+// root itself), via an explicit-stack BFS over adjacency -- the same
+// iterative-traversal discipline Order uses, never native Go recursion.
+func reachableClosureSize(adjacency map[string][]string, root string) int {
+	visited := map[string]bool{root: true}
+	queue := []string{root}
+	count := 0
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		for _, callee := range adjacency[current] {
+			if visited[callee] {
+				continue
+			}
+			visited[callee] = true
+			count++
+			queue = append(queue, callee)
+		}
+	}
+	return count
 }
 
 // buildAdjacency enumerates every declared function as a node (D-07-30:

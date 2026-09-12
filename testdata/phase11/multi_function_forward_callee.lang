@@ -1,0 +1,18 @@
+// Phase 11 (D-11-03): `main` calls `later`, a function declared AFTER it in
+// source order. emitProgram must write every function's prototype before
+// any function's definition so this forward reference is legal C17.
+
+module phase11.multi_function_forward_callee
+
+export {
+  fn main
+}
+
+fn main(value: Byte) -> Byte {
+  let result = later(value)
+  result
+}
+
+fn later(value: Byte) -> Byte {
+  value
+}

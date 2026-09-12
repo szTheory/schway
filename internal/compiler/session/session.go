@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/callgraph"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -504,10 +505,14 @@ func Phase4CheckedProgram(corpus, fixture string) (core.Program, string, error) 
 		return core.Program{}, "", fmt.Errorf("%s: core validation failed: %+v", fixture, validated.Problems)
 	}
 	program := validated.Program()
-	if len(program.Functions) != 1 {
-		return core.Program{}, "", fmt.Errorf("%s: expected exactly one function", fixture)
+	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction is
+	// the single resolver of "which function IS this program", replacing
+	// the old len(program.Functions) != 1 guard plus Functions[0] index.
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return core.Program{}, "", fmt.Errorf("%s: %w", fixture, err)
 	}
-	return program, program.Functions[0].Name, nil
+	return program, entry.Name, nil
 }
 
 // DefectHasNoReleaseAfter is control:defect.no_release_on_defect (D-04-18):
@@ -756,21 +761,25 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	if len(checked.Diagnostics) > 0 {
 		return nil, checked.Diagnostics, nil
 	}
-	if len(checked.Program.Functions) != 1 {
-		return nil, nil, os.ErrInvalid
-	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
 		return nil, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
 	}
 	checked.Program = validated.Program()
+	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction
+	// replaces the old len(...Functions) != 1 guard, requiring a uniquely
+	// resolvable entry rather than exactly one declared function.
+	entry, err := callgraph.EntryFunction(checked.Program)
+	if err != nil {
+		return nil, nil, err
+	}
 	inputs, ok := interpreterInputs(checked.Program)
 	if !ok {
 		return nil, nil, os.ErrInvalid
 	}
 	executions := make([]interp.Execution, 0, len(inputs))
 	for _, input := range inputs {
-		execution, err := interp.Run(checked.Program, checked.Program.Functions[0].Name, input)
+		execution, err := interp.Run(checked.Program, entry.Name, input)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -779,11 +788,22 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	return executions, nil, nil
 }
 
+// interpreterInputs derives the single-Byte/Buffer synthetic input this
+// project's differential lanes drive every fixture with, reading the
+// PARAMETER TYPE from the program's own resolved entry function
+// (callgraph.EntryFunction, D-11-05) rather than indexing
+// program.Functions[0] -- the TestSessionRunSitesDoNotIndexFunctionsZero
+// invariant this phase adopts. The single-Byte/Buffer synthesis logic
+// itself is unchanged; only which function it reads the parameter from
+// changes. Kept as a same-signature helper (not widened to accept the
+// caller's own already-resolved entry) so its many existing single-function
+// callers across this package are unaffected -- EntryFunction resolves
+// trivially to that sole function for every one of them.
 func interpreterInputs(program core.Program) ([]string, bool) {
-	if len(program.Functions) != 1 {
+	function, err := callgraph.EntryFunction(program)
+	if err != nil {
 		return nil, false
 	}
-	function := program.Functions[0]
 	if function.Linear != nil && function.Match == nil {
 		switch function.Parameter.Type {
 		case "Byte":
@@ -869,21 +889,24 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 	if len(checked.Diagnostics) > 0 {
 		return NativeResult{}, checked.Diagnostics, nil
 	}
-	if len(checked.Program.Functions) != 1 {
-		return NativeResult{}, nil, os.ErrInvalid
-	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
 		return NativeResult{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
 	}
 	checked.Program = validated.Program()
+	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction
+	// replaces the old len(...Functions) != 1 guard.
+	entry, err := callgraph.EntryFunction(checked.Program)
+	if err != nil {
+		return NativeResult{}, nil, err
+	}
 	inputs, ok := interpreterInputs(checked.Program)
 	if !ok {
 		return NativeResult{}, nil, os.ErrInvalid
 	}
 	interpreted := make([]interp.Execution, 0, len(inputs))
 	for _, input := range inputs {
-		execution, err := interp.Run(checked.Program, checked.Program.Functions[0].Name, input)
+		execution, err := interp.Run(checked.Program, entry.Name, input)
 		if err != nil {
 			return NativeResult{}, nil, err
 		}
@@ -898,7 +921,7 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 	// value specifically -- a caller-supplied NativeRunner of any other
 	// concrete type (e.g. a mutation runner) is passed through unmodified,
 	// since none of those exercise a foreign-call program today.
-	if contract := checked.Program.Functions[0].ForeignContract; contract != nil {
+	if contract := entry.ForeignContract; contract != nil {
 		if concrete, ok := runner.(native.Runner); ok {
 			// D-04-17 added a second frozen foreign TU: resolve by the
 			// function's OWN declared symbol (native.ForeignSourcePathForSymbol)

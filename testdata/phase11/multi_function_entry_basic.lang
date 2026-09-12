@@ -1,0 +1,19 @@
+// Phase 11 tracer (D-11-01/D-11-03/D-11-04/D-11-05): the thinnest program
+// that exercises the whole multi-function native emission path end to end.
+// Exactly two functions, exactly one call edge, `main` exported per the
+// existing convention. Shaped after testdata/phase07/call_basic.lang.
+
+module phase11.multi_function_entry_basic
+
+export {
+  fn main
+}
+
+fn identity(value: Byte) -> Byte {
+  value
+}
+
+fn main(value: Byte) -> Byte {
+  let result = identity(value)
+  result
+}

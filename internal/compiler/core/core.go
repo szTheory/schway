@@ -602,6 +602,19 @@ const CalleeNotCallable = "core.callee_not_callable"
 // either.
 const CallGraphCycle = "core.call_graph_cycle"
 
+// EntryAmbiguous is Phase 11's D-11-05 stable code for
+// callgraph.EntryFunction's fail-closed refusal: a program whose call graph
+// has zero or more than one in-degree-zero root. EntryFunction is the
+// single resolver both cgen's whole-program assembler and session's run
+// sites consult to answer "which function IS this program" -- a guessed
+// entry (e.g. falling back to Functions[0]) is exactly how the interpreter
+// oracle and the compiled binary could come to disagree about which
+// function they ran. Distinct from CallGraphCycle (the graph has a cycle at
+// all) and from CallCalleeUnresolved/CalleeNotCallable (a specific OpCall's
+// callee is bad) -- this is a whole-PROGRAM-level fact about root count,
+// never about any one operation or edge.
+const EntryAmbiguous = "core.entry_ambiguous"
+
 // CallArgumentTypeMismatch is 07-09's peer-side stable code for
 // corevalidate's OWN, independently-derived refusal of an OpCall whose
 // SOURCE place's own TypeFact.Shape.Constructor does not equal

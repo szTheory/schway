@@ -33,7 +33,7 @@ func Emit(program core.Program) (string, error) {
 	}
 	program = validated.Program()
 	if len(program.Functions) != 1 {
-		return "", fmt.Errorf("C emitter expects one function")
+		return emitProgram(program, false)
 	}
 	function := program.Functions[0]
 	if function.Match != nil && function.Linear != nil {
@@ -63,7 +63,7 @@ func EmitNative(program core.Program) (string, error) {
 	}
 	program = validated.Program()
 	if len(program.Functions) != 1 {
-		return "", fmt.Errorf("C emitter expects one function")
+		return emitProgram(program, true)
 	}
 	function := program.Functions[0]
 	if function.Match != nil && function.Linear != nil {
@@ -336,13 +336,27 @@ func emitLinear(function core.Function) (string, error) {
 				declared[operation.TargetID] = true
 				continue
 			}
-			// D-07-39/A-02: OpCall is registered but not lowered by native
-			// emission this phase. Emit/EmitNative hard-fail on
-			// len(program.Functions) != 1 (cgen.go:22,52) before this arm
-			// could ever run -- no legal OpCall-bearing program has exactly
-			// one function -- so this is forward hygiene for Phase 11's
-			// multi-function C emission, not a live gap.
-			return "", fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
+			// D-07-39/A-02/D-11-04: emitLinear is reached only for a
+			// single-function program (Emit/EmitNative's dispatch,
+			// cgen.go), and a one-function program can never legally
+			// contain an OpCall -- self-recursion is refused as a
+			// core.call_graph_cycle before check ever returns the program
+			// (07-06). This arm is therefore provably unreachable in
+			// production; it exists only as forward hygiene, wired through
+			// the SAME emitCall helper (D-11-04) Phase 11's multi-function
+			// assembler (cgen_program.go) uses on its real, reachable path,
+			// so there is exactly one writer of a Lang-to-Lang call
+			// anywhere in this package, never a second copy of the logic.
+			target, exists := places[operation.TargetID]
+			if !exists || declared[operation.TargetID] {
+				return "", fmt.Errorf("operation %q has invalid target", operation.ID)
+			}
+			calleeName, calleeTypeName, ok := (*emitCallLookup)(nil).resolve(operation.CalleeID)
+			if !ok {
+				return "", fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase (unresolved callee %q)", operation.ID, operation.CalleeID)
+			}
+			emitCall(&out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], operation)
+			declared[operation.TargetID] = true
 		default:
 			return "", fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
@@ -1772,12 +1786,22 @@ func emitBranchOperations(out *strings.Builder, function core.Function, places m
 			// rather than an unknown one (D-04-22).
 			return fmt.Errorf("operation %q: foreign calls inside a match arm body are not supported this phase", operation.ID)
 		case core.OpCall:
-			// D-07-39/A-02: OpCall is registered but not lowered by native
-			// emission this phase. Emit/EmitNative hard-fail on
-			// len(program.Functions) != 1 (cgen.go:22,52) before this arm
-			// could ever run, so this is forward hygiene for Phase 11's
-			// multi-function C emission, not a live gap.
-			return fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
+			// D-07-39/A-02/D-11-04: emitBranch (and this helper) is reached
+			// only for a single-function branch-shaped program, which can
+			// never legally contain an OpCall for the same reason
+			// emitLinear's own OpCall arm documents -- provably
+			// unreachable forward hygiene, wired through the same emitCall
+			// helper Phase 11's multi-function assembler uses on its real
+			// path (D-11-04: exactly one writer of a Lang-to-Lang call).
+			target, exists := places[operation.TargetID]
+			if !exists {
+				return fmt.Errorf("operation %q has invalid target", operation.ID)
+			}
+			calleeName, calleeTypeName, ok := (*emitCallLookup)(nil).resolve(operation.CalleeID)
+			if !ok {
+				return fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase (unresolved callee %q)", operation.ID, operation.CalleeID)
+			}
+			emitCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], operation)
 		default:
 			return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}

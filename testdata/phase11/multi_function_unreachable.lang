@@ -1,0 +1,29 @@
+// Phase 11 (D-11-05): three functions -- `main` calls `callee`, and
+// `orphan` is declared but never called and never exported. `orphan`'s own
+// in-degree is zero too (nothing calls it), exactly like main's, so
+// EntryFunction must not treat the two in-degree-zero candidates as
+// equally uncertain: main's own reachable closure ({callee}, size 1)
+// is strictly larger than orphan's (empty, size 0), so main resolves as
+// the unique entry. `orphan` is still emitted as a real C definition
+// (dead code, never invoked from `main`) and does not change the entry
+// resolution or the execution document (see callgraph.EntryFunction's own
+// doc comment, D-11-05, and this phase's PLAN.md must_haves).
+
+module phase11.multi_function_unreachable
+
+export {
+  fn main
+}
+
+fn callee(value: Byte) -> Byte {
+  value
+}
+
+fn main(value: Byte) -> Byte {
+  let result = callee(value)
+  result
+}
+
+fn orphan(value: Byte) -> Byte {
+  value
+}

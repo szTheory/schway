@@ -1,0 +1,30 @@
+// Phase 11 (D-11-05, PLAN.md Task 3): two functions, ZERO core.OpCall
+// operations anywhere in the program -- `main` and `unused` each call
+// nothing and are called by nothing. Both are therefore in-degree-zero
+// candidates with an EMPTY (size-0) reachable closure each: this is a
+// genuine, unbreakable tie under callgraph.EntryFunction's own
+// closure-size tie-break (see its doc comment), not a case the resolver
+// can settle without guessing. EntryFunction (and therefore emitProgram)
+// refuses this program with the named core.EntryAmbiguous code rather
+// than silently picking one of the two candidates (e.g. Functions[0]) --
+// the fail-closed behavior D-11-05's own "never guess" prohibition
+// requires. See cgen_program_test.go's TestEmitProgramZeroCallEdges for
+// the committed test asserting this refusal, and 11-03-SUMMARY.md's
+// Deviations section for why this fixture's own outcome (a clean,
+// mechanically-checked refusal, not a crash or a wrong-answer emission)
+// is the non-degenerate behavior this task's own acceptance criterion
+// ("must not take a degenerate path") actually requires.
+
+module phase11.multi_function_zero_call
+
+export {
+  fn main
+}
+
+fn main(value: Byte) -> Byte {
+  value
+}
+
+fn unused(value: Byte) -> Byte {
+  value
+}
