@@ -699,7 +699,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 11-09-PLAN.md — QLT-05 part 2: strict-field-equality re-verification, the foreign-call-sequence second knower, and the anti-vacuity gate
+- [x] 11-09-PLAN.md — QLT-05 part 2: strict-field-equality re-verification, the foreign-call-sequence second knower, and the anti-vacuity gate
 
 ### Phase 12: `Result` Payloads
 

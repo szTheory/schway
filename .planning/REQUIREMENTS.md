@@ -123,7 +123,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 - [x] **QLT-04**: Cross-function loan-endpoint differentials rebuild Phase 3's
       exhaustive endpoint enumeration at a declared, bounded composition depth.
 
-- [ ] **QLT-05**: HDD reducer output on multi-function programs is re-verified
+- [x] **QLT-05**: HDD reducer output on multi-function programs is re-verified
       to reproduce the same property as its input.
 
 - [x] **QLT-06**: No interprocedural fact is marked cacheable until a
@@ -237,7 +237,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | TRU-04 | Phase 09 | Complete |
 | QLT-03 | Phase 11 | Complete |
 | QLT-04 | Phase 10 | Complete |
-| QLT-05 | Phase 11 | Pending |
+| QLT-05 | Phase 11 | Complete |
 | QLT-06 | Phase 11 | Complete |
 | QLT-07 | Phase 09 | Complete |
 | QLT-08 | Phase 07 | Complete |
