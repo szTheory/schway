@@ -266,6 +266,24 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	for index := range functions {
 		fmt.Fprintf(&out, "  (void)%s;\n", functionNames[index])
 	}
+	// lang_write_buffer_hex/lang_write_byte (emitProgramBufferWriter/
+	// emitProgramByteWriter above) are emitted whenever ANY function in the
+	// program declares that parameter type -- not only when the RESOLVED
+	// ENTRY function does. A declared-but-never-called Buffer/Byte
+	// function (D-11-05's own unreachable-function contract) whose type
+	// differs from the entry's own type would otherwise leave the
+	// corresponding writer genuinely unreferenced, failing this project's
+	// -Werror -Wunused-function build (Rule 1: a real, reachable bug this
+	// gate corpus's own touch function, declared Buffer-typed and never
+	// called, first exposed). The same harmless, side-effect-free
+	// address-taking reference used for user functions above applies here
+	// too.
+	if needsBuffer {
+		out.WriteString("  (void)lang_write_buffer_hex;\n")
+	}
+	if needsByte {
+		out.WriteString("  (void)lang_write_byte;\n")
+	}
 	out.WriteString("  if (argc != 2) return 64;\n")
 	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
 	fmt.Fprintf(&out, "  %s lang_entry_input = %s;\n", entryTypeName, initializer)

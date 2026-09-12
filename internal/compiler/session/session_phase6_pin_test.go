@@ -61,9 +61,10 @@ var expectedLaneSchemaLiteralSitesByFile = map[string]int{
 	"session_phase6.go":          1,
 	"session_phase6_verify.go":   3,
 	"session_phase7.go":          1,
+	"session_phase11_gate.go":    1,
 }
 
-const expectedLaneSchemaLiteralSiteTotal = 17
+const expectedLaneSchemaLiteralSiteTotal = 18
 
 // TestLaneSchemaLiteralSiteCountIsPinned pins the exact count and per-file
 // location of every protocol.LaneSchema1 reference in

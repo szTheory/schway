@@ -447,6 +447,68 @@ func selectsByPointerLowering(function core.Function, linear *core.LinearBody) b
 	return terminatorIndex == len(operations)-1
 }
 
+// AttributeSuppressionProfile is D-11-16/D-11-17's PERMANENT suppression
+// control for the one optimizer-visible qualifier this package ever
+// writes on a by-pointer parameter (byPointerQualifier below).
+type AttributeSuppressionProfile int
+
+const (
+	// AttributesJustified is this package's zero value and its
+	// pre-Phase-11 default: emitLinearBorrowedByPointer's own qualifier is
+	// written exactly as it always has been (D-05-01..D-05-04), completely
+	// unaffected by Phase 11's call-boundary zero-attribute claim
+	// (D-11-09), which is scoped to Lang-to-Lang calls and never to this
+	// pre-existing FFI by-pointer boundary. Every production caller that
+	// never touches AttributeSuppressionProfile observes this value.
+	AttributesJustified AttributeSuppressionProfile = iota
+	// AttributesSuppressed withholds the qualifier even when the
+	// structural by-pointer condition would otherwise justify it. It
+	// exists ONLY as the mid-phase gate's own bisection tool (D-11-18):
+	// proving cgen.ScanForBannedAttributes' conjunct is not vacuous by
+	// re-running the same corpus through the same code path and watching
+	// the scan's own verdict move. Declared PERMANENT, never scheduled for
+	// removal: the attributes-off vs attributes-on vs
+	// interpreter-inertness differential at -O3/-flto is a standing,
+	// repeatable test of the qualifier's own semantic-inertness claim, and
+	// this project's own bisection tool for "our promise, or Clang?" --
+	// precisely the shape LLVM's own -opt-bisect-limit/OptPassGate ships
+	// as a permanent transformation control, never a temporary flag
+	// scheduled for deletion.
+	AttributesSuppressed
+)
+
+// attributeSuppressionProfile is the package-level active profile.
+// Production code paths never mutate this directly; only
+// SetAttributeSuppressionProfileForTest does, and only from a test.
+var attributeSuppressionProfile = AttributesJustified
+
+// SetAttributeSuppressionProfileForTest installs profile as the active
+// AttributeSuppressionProfile and returns a restore func; callers MUST
+// defer it immediately. This is a real, production export (not
+// export_test.go) because session's own mid-phase gate tests, in a
+// different package, are this helper's only caller -- mirroring
+// SelectsByPointerLowering's own cross-package promotion precedent
+// (D-12).
+func SetAttributeSuppressionProfileForTest(profile AttributeSuppressionProfile) (restore func()) {
+	previous := attributeSuppressionProfile
+	attributeSuppressionProfile = profile
+	return func() { attributeSuppressionProfile = previous }
+}
+
+// byPointerQualifier is the one place this package ever returns the
+// literal "restrict" token as generated output text: a single helper
+// feeding the single Fprintf call site in emitLinearBorrowedByPointer, so
+// token-local suppression can never diverge from where the token is
+// actually written. wouldCarryRestrict is the caller's own
+// selectsByPointerLowering result (always true at emitLinearBorrowedByPointer's
+// one call site, since that emitter is reached only through that gate).
+func byPointerQualifier(wouldCarryRestrict bool) string {
+	if wouldCarryRestrict && attributeSuppressionProfile != AttributesSuppressed {
+		return "restrict "
+	}
+	return ""
+}
+
 // emitLinearBorrowedByPointer is D-05-02's additive by-pointer lowering: the
 // thin vertical slice proving a Buffer parameter whose exclusive loan
 // structurally covers the whole body (selectsByPointerLowering above) can
@@ -506,10 +568,11 @@ func emitLinearBorrowedByPointer(function core.Function) (string, error) {
 	// selectsByPointerLowering's own gate (Emit/EmitNative's dispatch), and
 	// TestAliasFactAgreesWithByPointerSelection (check package) proves that
 	// gate is the EXACT SAME condition as check's independently-derived
-	// AliasFact -- so `restrict` is legal here unconditionally, without cgen
-	// importing check's AliasFact type or re-deriving liveness itself
-	// (D-12: zero shared helpers between the three derivations).
-	fmt.Fprintf(&out, "static %s %s(%s *restrict %s) { %s\n", typeName, functionName, typeName, parameterName, borrowByPointerMarker)
+	// AliasFact -- so the qualifier byPointerQualifier returns below is
+	// legal here unconditionally, without cgen importing check's AliasFact
+	// type or re-deriving liveness itself (D-12: zero shared helpers
+	// between the three derivations).
+	fmt.Fprintf(&out, "static %s %s(%s *%s%s) { %s\n", typeName, functionName, typeName, byPointerQualifier(true), parameterName, borrowByPointerMarker)
 
 	declared := map[string]bool{parameter.ID: true}
 	returnLocal := ""
