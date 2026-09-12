@@ -203,6 +203,15 @@ func Reduce(ctx context.Context, seed Seed, interesting Predicate) (Result, erro
 	if interesting == nil {
 		return Result{}, fmt.Errorf("reduce: interesting predicate must not be nil")
 	}
+	// WR-01: fail closed BEFORE any move runs. dropOrphanFunction exempts
+	// exactly one function from deletion by ID, and a program's real entry
+	// is by construction in-degree-zero -- so an unmatched EntryFunctionID
+	// would let this reducer silently delete the very function the seed is
+	// about. Seed.Validate (seed_validate.go) refuses instead; see its doc
+	// comment for why single-function seeds are exempt.
+	if err := seed.Validate(); err != nil {
+		return Result{}, err
+	}
 
 	current := cloneProgram(seed.Program)
 	entryFunctionID = seed.EntryFunctionID

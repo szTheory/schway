@@ -368,12 +368,30 @@ func TestTruncateToMinimalPrefixShortensStraightLineTail(t *testing.T) {
 // reduce_multifunction_test.go's TestReduceMultiFunctionSeed and
 // TestReduceSingleFunctionOutputUnchanged carry the real Phase 11
 // coverage; this smoke test just proves the old hard error is gone.
+//
+// WR-01: this test formerly passed Seed{Program: seed} with
+// EntryFunctionID left at its zero value and asserted only err == nil,
+// which is precisely the usage hazard Seed.Validate now refuses -- and it
+// never inspected result.Program.Functions to confirm the nominated entry
+// survived. It now supplies a real entry ID and asserts survival, so the
+// test witnesses the property it always claimed to.
 func TestReduceRejectsMultiFunctionSeed(t *testing.T) {
 	seed := borrowChainSeed()
 	second := foreignChainSeed()
 	seed.Functions = append(seed.Functions, second.Functions...)
-	if _, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(reduce.Signature{})); err != nil {
+	entryID := seed.Functions[0].ID
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed, EntryFunctionID: entryID}, alwaysInteresting(reduce.Signature{}))
+	if err != nil {
 		t.Fatalf("expected no error for a multi-function seed (D-11-30), got %v", err)
+	}
+	found := false
+	for _, fn := range result.Program.Functions {
+		if fn.ID == entryID {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected the nominated entry function %q to survive reduction, got %d function(s)", entryID, len(result.Program.Functions))
 	}
 }
 

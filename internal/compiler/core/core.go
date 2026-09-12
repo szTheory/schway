@@ -615,6 +615,22 @@ const CallGraphCycle = "core.call_graph_cycle"
 // never about any one operation or edge.
 const EntryAmbiguous = "core.entry_ambiguous"
 
+// SeedEntryInvalid is WR-01's stable code for reduce.Seed.Validate's
+// fail-closed refusal: a MULTI-function reduction seed whose
+// EntryFunctionID is empty or names no declared function in
+// Seed.Program.Functions. It is the reducer-side peer of EntryAmbiguous --
+// where EntryAmbiguous refuses because the program itself cannot say which
+// function is the entry, SeedEntryInvalid refuses because the CALLER did
+// not say, or said something the program does not contain. Both exist for
+// the same reason: reduce's drop-orphan-function move exempts exactly one
+// function from deletion by ID, and a program's genuine entry point is by
+// construction in-degree-zero, so an unmatched entry ID means the move
+// would silently delete the very function the reduction is about. Distinct
+// from EntryAmbiguous (a whole-program fact about root count, derived by
+// callgraph) -- this is a fact about the SEED a caller constructed, never
+// about the program's own graph shape.
+const SeedEntryInvalid = "core.seed_entry_invalid"
+
 // CallArgumentTypeMismatch is 07-09's peer-side stable code for
 // corevalidate's OWN, independently-derived refusal of an OpCall whose
 // SOURCE place's own TypeFact.Shape.Constructor does not equal
