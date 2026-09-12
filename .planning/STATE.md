@@ -5,11 +5,11 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 11
 current_phase_name: Multi-Function Native Emission and Interprocedural Equivalence
 status: planning
-stopped_at: Phase 11 planning halted at CONTEXT gate; run /gsd-discuss-phase 11
-last_updated: "2026-09-11T22:30:17.210Z"
+stopped_at: Phase 11 context gathered
+last_updated: "2026-09-12T02:13:53.269Z"
 last_activity: 2026-09-11
 last_activity_desc: Maturity stock-taking at Phase 11 gate; 32-guard scope input recorded
-state_head: 1a925c73ec0f7fadf5f701686673b970e1850544
+state_head: e6bd71ead5afec68164e75172f1904e85d1a70cc
 progress:
   total_phases: 7
   completed_phases: 4
@@ -399,12 +399,68 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-11 (stock-taking pass at the Phase 11 planning gate)
-Stopped at: Phase 10 complete; `/gsd-plan-phase 11` halted at its CONTEXT gate
-by operator choice — Phase 11's directory exists and is empty.
-durable context recorded in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md
-Resume file: None
-Next command: `/gsd-discuss-phase 11`, then `/gsd-plan-phase 11`
+Last session: 2026-09-12T02:13:52.726Z
+Stopped at: Phase 11 context gathered — 50 decisions locked in 11-CONTEXT.md from a
+seven-way parallel research fan-out with adversarial passes. Durable maturity
+context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
+Resume file: .planning/phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-CONTEXT.md
+Next command: `/gsd-plan-phase 11`
+
+### Phase 11 discussion — 2026-09-11 (no code changed)
+
+`11-CONTEXT.md` is the authority; these are the items a context-cleared planner
+must not re-derive, restated here because at this project's 200k window the
+planner does NOT auto-load prior-phase files.
+
+1. **Critical path: `corevalidate.peerDeriveOriginFacts` has no `core.OpCall`
+   case.** Entered as one of five Phase 10 carry-forwards; four independent
+   researchers hit it from four directions (reducer blocker, gate second-knower
+   risk, shape-register headline row, negative-control route). **Experiment Q-01
+   in 11-CONTEXT.md decides whether QLT-05 is reducer work or Phase 10 debt
+   work. Plan for both branches.**
+
+2. **LIVE CACHE SOUNDNESS HOLE — `internal/compiler/cgen/*.go` is not a declared
+   cache input.** Edit `cgen`, re-run with unchanged `.lang` fixtures, and
+   `cache.Consult` (`session_phase6_verify.go:307`) can serve a binary built by
+   the OLD cgen against the NEW interpreter. Not among D-06-13's four declared
+   escapes (hole 3 is *nondeterministic* codegen, not *changed* codegen).
+   **Phase 11 is the phase that rewrites cgen.** Claimed, not yet confirmed —
+   experiment Q-02 settles it in an afternoon. Fix before any cache work.
+
+3. **Three ROADMAP amendments to Phase 11 criterion 3, evidence-backed, NOT yet
+   applied to ROADMAP.md** (deliberately left for human ratification at the
+   planning checkpoint): the divergence signature `interpreter == -O0 != -O3` is
+   factually wrong for the interprocedural sequel — measured on this host it is
+   `interp == -O0 == -O3 != (-O3 -flto)`; "fails red before its fix" presupposes a
+   constructible shipped defect that M002 cannot express; and a toolchain-pinned
+   re-measurement clause is missing (exploitation is non-monotonic in inlining
+   aggressiveness). See D-11-20/21/22.
+
+4. **Phase 11 emits ZERO call-boundary alias attributes (D-11-09).** Two pointers
+   to one object cannot exist across a Lang call boundary in M002 — one parameter
+   per function, no globals, no callbacks, no address-escaping foreign contracts,
+   and `check` already refuses passing one place to two calls. A call-boundary
+   `restrict` would promise about a hazard that cannot exist. The mid-phase gate's
+   zero-attribute state becomes terminal, not a waypoint. **Consequence: NAT-05 is
+   satisfied by an explicit empty set — a requirement weakened by evidence
+   (D-11-10), and `-flto` is inert by construction over the corpus (D-11-25).**
+   Both must be stated in 11-VERIFICATION.md, not implied.
+
+5. **QLT-06 splits a/b on the OWN-05 precedent (D-11-39).** 06a Complete at
+   Phase 07 (`ClosureDigest`, mutation-killed by two independent knowers); 06b
+   Complete-by-abstention at Phase 11 — nothing interprocedural is cached because
+   `ArtifactSpec.FixtureSource` already hashes the whole program, which strictly
+   dominates any closure key in a single-unit language. A closure key here would
+   be a soundness-LOOSENING change. Do not wire `ClosureDigest` into `cache.Input`.
+
+6. **S-006's eviction figures (100%/92%/43%) are an upper bound on a model, not a
+   measurement** (D-11-40). `ClosureDigest` chains over signature summaries, never
+   bodies, so a body-only edit does not move a caller's digest. Do not re-quote
+   them as measured.
+
+7. **Seven pre-planning experiments (Q-01..Q-07) are defined in 11-CONTEXT.md**,
+   each under an hour, each able to invalidate a decision before a planner spends
+   real time. Q-01 and Q-02 must run before any plan is written.
 
 ### Stock-taking pass — 2026-09-11 (no code changed)
 
