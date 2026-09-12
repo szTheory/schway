@@ -16,6 +16,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/callgraph"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
@@ -262,7 +263,11 @@ func ReduceSeededAliasMismatch(ctx context.Context) (reduce.MismatchDocument, er
 
 	seedSignature := SignatureFromDisagreement(disagreement, foreignCallSequenceFor(program))
 	predicate := mismatchPredicate(baseRunner, fixturePath, nativeInput, seedSignature)
-	result, err := reduce.Reduce(ctx, program, predicate)
+	entryFunction, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return reduce.MismatchDocument{}, fmt.Errorf("mismatch-reduce: resolving entry function: %w", err)
+	}
+	result, err := reduce.Reduce(ctx, reduce.Seed{Program: program, EntryFunctionID: entryFunction.ID}, predicate)
 	if err != nil {
 		return reduce.MismatchDocument{}, fmt.Errorf("mismatch-reduce: %w", err)
 	}

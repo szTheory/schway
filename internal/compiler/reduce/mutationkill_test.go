@@ -55,7 +55,7 @@ func TestNoOpReducerGoesRed(t *testing.T) {
 			seedSize := operationCount(entry.seed)
 
 			// Green path: the REAL reducer strictly decreases size.
-			real, err := reduce.Reduce(context.Background(), entry.seed, alwaysInteresting(sig))
+			real, err := reduce.Reduce(context.Background(), reduce.Seed{Program: entry.seed}, alwaysInteresting(sig))
 			if err != nil {
 				t.Fatalf("real reduce: %v", err)
 			}
@@ -70,7 +70,7 @@ func TestNoOpReducerGoesRed(t *testing.T) {
 			reduce.SetTestOnlyMoves(func() []reduce.Move {
 				return []reduce.Move{{Name: "no-op", Apply: func(p core.Program) (core.Program, bool) { return p, true }}}
 			})
-			mutated, err := reduce.Reduce(context.Background(), entry.seed, alwaysInteresting(sig))
+			mutated, err := reduce.Reduce(context.Background(), reduce.Seed{Program: entry.seed}, alwaysInteresting(sig))
 			reduce.ResetTestOnlyMoves()
 			if err != nil {
 				t.Fatalf("no-op reduce: %v", err)
@@ -109,7 +109,7 @@ func TestPredicateTooLooseGoesRed(t *testing.T) {
 	realPredicate := func(_ context.Context, _ core.Program) (reduce.Signature, bool, error) {
 		return seedB, reduce.Interesting(seedA, seedB), nil
 	}
-	resultReal, err := reduce.Reduce(context.Background(), programA, realPredicate)
+	resultReal, err := reduce.Reduce(context.Background(), reduce.Seed{Program: programA}, realPredicate)
 	if err != nil {
 		t.Fatalf("real predicate reduce: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestPredicateTooLooseGoesRed(t *testing.T) {
 	tooLoose := func(_ context.Context, _ core.Program) (reduce.Signature, bool, error) {
 		return seedB, true, nil
 	}
-	resultMutated, err := reduce.Reduce(context.Background(), programA, tooLoose)
+	resultMutated, err := reduce.Reduce(context.Background(), reduce.Seed{Program: programA}, tooLoose)
 	if err != nil {
 		t.Fatalf("too-loose predicate reduce: %v", err)
 	}
@@ -143,11 +143,11 @@ func TestReducerNonDeterminismGoesRed(t *testing.T) {
 	seed := threeArmMatchSeedWithUnusedBindings()
 	sig := reduce.Signature{Axis: "a", EnginePair: "p"}
 
-	first, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	first, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("first real reduce: %v", err)
 	}
-	second, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	second, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("second real reduce: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestReducerNonDeterminismGoesRed(t *testing.T) {
 			randomSource.Shuffle(len(moves), func(i, j int) { moves[i], moves[j] = moves[j], moves[i] })
 			return moves
 		})
-		result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+		result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 		reduce.ResetTestOnlyMoves()
 		if err != nil {
 			t.Fatalf("randomized-order reduce (seed=%d): %v", rngSeed, err)

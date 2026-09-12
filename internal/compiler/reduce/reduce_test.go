@@ -175,12 +175,20 @@ func (c *countingPredicate) predicate() reduce.Predicate {
 // Task 1 tests
 // ---------------------------------------------------------------------
 
+// TestReduceHasExactlyFiveMoves is Phase 11's own flip of this test's
+// former name (D-11-29): the two whole-program moves are now PREPENDED to
+// the original five, so Moves() returns exactly seven entries. The name
+// is kept (not renamed) so this test's own git history stays attached to
+// the assertion it has always made -- "Moves() returns a fixed, named
+// order" -- even as the fixed order itself grows by two.
 func TestReduceHasExactlyFiveMoves(t *testing.T) {
 	moves := reduce.Moves()
-	if len(moves) != 5 {
-		t.Fatalf("expected exactly 5 moves, got %d", len(moves))
+	if len(moves) != 7 {
+		t.Fatalf("expected exactly 7 moves (2 new whole-program + 5 original), got %d", len(moves))
 	}
 	want := []string{
+		"drop-call-site",
+		"drop-orphan-function",
 		"drop-unused-binding",
 		"drop-unmatched-arm",
 		"drop-offpath-foreign-stage",
@@ -198,11 +206,11 @@ func TestReduceIsDeterministic(t *testing.T) {
 	seed := borrowChainSeed()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "interpreter-vs-O0", OperationID: seed.Functions[0].Linear.Operations[3].ID}
 
-	first, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	first, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("first reduce: %v", err)
 	}
-	second, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	second, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("second reduce: %v", err)
 	}
@@ -229,15 +237,15 @@ func TestReduceIsDeterministic(t *testing.T) {
 // spent.
 func TestReduceRespectsBudget(t *testing.T) {
 	seed := foreignChainSeedWithSteps(100)
-	result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(reduce.Signature{Axis: "a", EnginePair: "p", CausalRole: "c"}))
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(reduce.Signature{Axis: "a", EnginePair: "p", CausalRole: "c"}))
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
 	if result.Minimality != reduce.MinimalityBudgetExhausted {
 		t.Fatalf("expected budget_exhausted, got %q", result.Minimality)
 	}
-	if result.Attempts != reduce.MaxReductionAttempts {
-		t.Fatalf("expected Attempts == %d, got %d", reduce.MaxReductionAttempts, result.Attempts)
+	if result.Attempts != reduce.AttemptsPerFunction {
+		t.Fatalf("expected Attempts == %d, got %d", reduce.AttemptsPerFunction, result.Attempts)
 	}
 }
 
@@ -246,7 +254,7 @@ func TestReduceCountsWork(t *testing.T) {
 	counting := &countingPredicate{delegate: func(_ context.Context, _ core.Program) (reduce.Signature, bool, error) {
 		return reduce.Signature{}, false, nil
 	}}
-	result, err := reduce.Reduce(context.Background(), seed, counting.predicate())
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, counting.predicate())
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
@@ -279,7 +287,7 @@ func TestReducePackageNeverTouchesSourceText(t *testing.T) {
 func TestDropUnusedBindingRemovesOnlyUnreadOperation(t *testing.T) {
 	seed := borrowChainSeed()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", OperationID: seed.Functions[0].Linear.Operations[3].ID}
-	result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
@@ -296,7 +304,7 @@ func TestDropUnusedBindingRemovesOnlyUnreadOperation(t *testing.T) {
 func TestDropOffpathForeignStageRemovesACompletedPair(t *testing.T) {
 	seed := foreignChainSeed()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "does-not-move"}
-	result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
@@ -318,7 +326,7 @@ func TestDropOffpathForeignStageRemovesACompletedPair(t *testing.T) {
 func TestDropUnmatchedArmNeverDropsBelowTwoArms(t *testing.T) {
 	seed := threeArmMatchSeed()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "any"}
-	result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
@@ -330,7 +338,7 @@ func TestDropUnmatchedArmNeverDropsBelowTwoArms(t *testing.T) {
 func TestCollapseBranchToDivergingArmProducesStraightLineBody(t *testing.T) {
 	seed := twoArmMatchSeed()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "arm-0"}
-	result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
@@ -346,7 +354,7 @@ func TestCollapseBranchToDivergingArmProducesStraightLineBody(t *testing.T) {
 func TestTruncateToMinimalPrefixShortensStraightLineTail(t *testing.T) {
 	seed := borrowChainSeedNoUnusedTail()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "first-borrow"}
-	result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
@@ -355,11 +363,17 @@ func TestTruncateToMinimalPrefixShortensStraightLineTail(t *testing.T) {
 	}
 }
 
+// TestReduceRejectsMultiFunctionSeed is Phase 11's own flip of this test's
+// former name (D-11-30): a multi-function seed is no longer rejected --
+// reduce_multifunction_test.go's TestReduceMultiFunctionSeed and
+// TestReduceSingleFunctionOutputUnchanged carry the real Phase 11
+// coverage; this smoke test just proves the old hard error is gone.
 func TestReduceRejectsMultiFunctionSeed(t *testing.T) {
 	seed := borrowChainSeed()
-	seed.Functions = append(seed.Functions, seed.Functions[0])
-	if _, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(reduce.Signature{})); err == nil {
-		t.Fatal("expected an error for a multi-function seed")
+	second := foreignChainSeed()
+	seed.Functions = append(seed.Functions, second.Functions...)
+	if _, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(reduce.Signature{})); err != nil {
+		t.Fatalf("expected no error for a multi-function seed (D-11-30), got %v", err)
 	}
 }
 
@@ -653,7 +667,7 @@ func TestProjectedSourceCorrespondsToReducedCore(t *testing.T) {
 		// up, not just the unreduced seed.
 		seed := recheck(t, realForeignChainSource)
 		sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "does-not-move"}
-		result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+		result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 		if err != nil {
 			t.Fatalf("reduce: %v", err)
 		}
@@ -677,7 +691,7 @@ func TestProjectedSourceCorrespondsToReducedCore(t *testing.T) {
 		// reduce.go's ProjectSource doc comment and 05-10-SUMMARY.md).
 		seed := recheck(t, realMatchSource)
 		sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "go-arm"}
-		result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+		result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 		if err != nil {
 			t.Fatalf("reduce: %v", err)
 		}
@@ -702,7 +716,7 @@ func TestProjectedSourceIsDeterministic(t *testing.T) {
 func TestResultSourceAlwaysMatchesResultProgram(t *testing.T) {
 	seed := foreignChainSeed()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "does-not-move"}
-	result, err := reduce.Reduce(context.Background(), seed, alwaysInteresting(sig))
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(sig))
 	if err != nil {
 		t.Fatalf("reduce: %v", err)
 	}
