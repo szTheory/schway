@@ -1,0 +1,31 @@
+// Phase 11 plan 11-09 (D-11-34): the anti-vacuity gate fixture for
+// QLT-05's reducer.
+//
+// `helper` is the PROVABLY REMOVABLE function. `main`'s sole call site to
+// `helper` is a same-type passthrough (Byte -> Byte, the call's own
+// result type equals the argument's declared type), which is exactly
+// reduce.dropCallSite's own eligibility condition (reduce.go:279-294): it
+// rewrites the OpCall to a plain OpCopy without changing any type. Once
+// that call is dropped, `helper` has zero remaining callers and zero
+// in-degree over core.OpCall.CalleeID and is not the entry function, so
+// reduce.dropOrphanFunction (reduce.go:320-347) removes it entirely on
+// the very next pass. A reduction that drops zero calls and zero
+// functions on this fixture would therefore be a vacuous reduction: this
+// fixture exists so TestQLT05GateIsNonVacuous can assert AppliedMoves
+// actually contains "drop-orphan-function", not merely that some move
+// COULD have applied.
+
+module phase11.reduce_gate
+
+export {
+  fn main
+}
+
+fn main(value: Byte) -> Byte {
+  let result = helper(value)
+  result
+}
+
+fn helper(value: Byte) -> Byte {
+  value
+}
