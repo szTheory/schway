@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
-current_phase: 11
-current_phase_name: Multi-Function Native Emission and Interprocedural Equivalence
-status: verifying
-stopped_at: Completed 11-09-PLAN.md
-last_updated: "2026-09-12T09:46:26.273Z"
-last_activity: 2026-09-11
-last_activity_desc: Phase 11 execution started
-state_head: e886ac5fded9debca452d1b7d80109a556511b29
+current_phase: 12
+current_phase_name: "`Result` Payloads"
+status: planning
+stopped_at: Phase 11 complete, ready to plan Phase 12
+last_updated: "2026-09-12T16:39:01.258Z"
+last_activity: 2026-09-12
+last_activity_desc: Phase 11 complete, transitioned to Phase 12
+state_head: d019cb0a0741311dff8e89481487190ccc7a2777
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 46
   completed_plans: 46
 ---
@@ -26,8 +26,10 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 11 — Multi-Function Native Emission and Interprocedural Equivalence
-six dispatch sites and prove every M001 guarantee survives a function boundary.
+**Current focus:** Phase 12 — `Result` Payloads. Phase 11 closed 2026-09-12:
+multi-function native emission and interprocedural equivalence proven, with
+zero outstanding human verification (both UAT items were converted into
+committed tests rather than answered once — see `11-UAT.md`).
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -46,12 +48,12 @@ six dispatch sites and prove every M001 guarantee survives a function boundary.
 
 ## Current Position
 
-Phase: 11 (Multi-Function Native Emission and Interprocedural Equivalence) — EXECUTING
-Plan: 9 of 9
-Status: Phase complete — ready for verification
-Last activity: 2026-09-11 — Phase 11 execution started
+Phase: 12 — `Result` Payloads
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-12 — Phase 11 complete, transitioned to Phase 12
 
-Progress: [--------------------] 0% (0/7 phases)
+Progress: [##############------] 71% (5/7 phases) · 46/46 plans
 
 ## M002 Phase Map
 
@@ -72,7 +74,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 
 **Velocity:**
 
-- Total plans completed: 96
+- Total plans completed: 105
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -89,6 +91,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | 08 | 6 | - | - |
 | 09 | 10 | - | - |
 | 10 | 9 | - | - |
+| 11 | 9 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -275,6 +278,8 @@ Standing architectural commitments carried into M002:
 - [Phase 11]: Q-01 BRANCH A: drop-call-site ships as a live whole-program reduce move, not narrowed behind RefusedShapes(). — corevalidate accepts the core-level OpCall-to-OpCopy rewrite (11-01 spike).
 - [Phase 11]: 11-07: cache.DeclaredInputNames() widened to eight (cgen_source appended, D-11-41 closed); QLT-06 split QLT-06a/QLT-06b recorded in 11-QLT06-ABSTENTION.md per OWN-05a/05b precedent — Q-02 BRANCH A confirmed the stale-cgen cache-reuse hole reproduces; whole-program FixtureSource hash strictly dominates any closure key so QLT-06b is discharged by abstention, structurally gated by dual import scans
 - [Phase 11]: 11-09: foreignCallSequenceFor widened to a two-independent-knower guard (static callgraph.Order walk + dynamic -O0 event-stream walk), closing the multi-function nil-compares-nil slippage hole (D-11-33); QLT05Reverify implements strict, cold-start re-verification with no positional/causal-role fallback, reported as control:reduce.reverified (D-11-32/D-11-37); anti-vacuity gate proven on both sides via testdata/phase11/multi_function_reduce_gate.lang (D-11-34); 11-VERIFICATION-INPUTS.md collects the phase's four evidence-weakened claims. QLT-05 closed. Phase 11 complete (last plan, wave 6).
+- [Phase 11]: Phase 11 UAT closed with ZERO human verification: both items 11-VERIFICATION.md routed to a human were converted into committed tests instead of being answered once. WR-01 is FIXED not accepted — reduce.Seed.Validate (internal/compiler/reduce/seed_validate.go) refuses a multi-function seed whose EntryFunctionID is empty or unmatched with core.seed_entry_invalid, mirroring callgraph.EntryFunction's own fail-closed shape; TestSeedEntryHazardIsReal is an anti-vacuity control that fails if the deletion hazard ever stops existing. The 11-MIDPHASE-GATE.md CLI-check divergence is PINNED not filed as debt — session_admission_divergence_test.go sweeps every committed .lang fixture through both admission surfaces and asserts the divergence set exactly, failing on a new divergence AND on a silently resolved one (mutation-checked both ways). — Operator directive: shift left, automate the world, target 0 human UAT, in CI only where value recurs. Both land in CI unchanged (`go test ./...` already runs on both hosts); no debt rows added, because a debt note is read once and a test is checked forever.
+- [Phase 11]: 11-SECURITY.md written at phase close: 28 threats (T-11-01..T-11-27 plus T-11-SC), all closed, threats_open 0 at ASVS L1 with block_on high. Register was authored at plan time (all 9 plans carry <threat_model>), so this verified a pre-declared register rather than reconstructing one. Every mitigate row was closed by locating its named control and RUNNING it, not by reading mitigation prose — the Verification Evidence table names each one, so deleting or renaming a control breaks the audit. Note: Phase 10 by contrast ran with security_enforcement=true and never produced 10-SECURITY.md.
 
 ### Pending Todos
 
@@ -331,7 +336,7 @@ answered before Phase 12 is planned.
 
 - Plan 09-09 HALTED before any code change: TestOwnershipSequenceExhaustive (check_test.go) calls analyzeStraightLine directly and asserts DiagnosticCode==ownership.move_while_borrowed/borrow_conflict synchronously against an oracle that computes those codes inline. This contradicts Task 1's must_have truth 'Lowering makes no loan-liveness decisions' and Task 2's acceptance criterion that this same test 'pass unchanged'. Empirically confirmed via a reverted experimental edit (length=2 case=198): removing the move_while_borrowed raise from analyzeStraightLine made production return DiagnosticCode:"" while the oracle still returned ownership.move_while_borrowed, failing assertSupportEqual. Needs an architectural decision (Rule 4) on how TestOwnershipSequenceExhaustive's contract is meant to change before the computeLoanLastUses deletion can proceed. Tree left green, no commits made.
 
-- **Phase 10 carry-forward — READ BEFORE PLANNING PHASE 11.** Phase 11 lowers
+- **Phase 10 carry-forward — CONSUMED BY PHASE 11 (complete 2026-09-12); retained as M002 context.** Phase 11 lowers
   multi-function Lang to C and differential-tests it against the Phase 10
   oracle, so the oracle's residual trust gaps are Phase 11 inputs, not closed
   history. At this project's 200k context window the planner does NOT auto-load
@@ -418,12 +423,13 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-12T09:46:19.377Z
-Stopped at: Completed 11-09-PLAN.md
+Last session: 2026-09-12T16:39:01Z
+Stopped at: Phase 11 complete and VERIFIED (UAT 2/2 passed, 0 issues;
+11-SECURITY.md threats_open: 0), ready to plan Phase 12
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
 Resume file: None
-Next command: `/gsd-plan-phase 11`
+Next command: `/gsd-plan-phase 12`
 
 ### Phase 11 discussion — 2026-09-11 (no code changed)
 

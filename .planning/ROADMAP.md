@@ -27,7 +27,7 @@ where a *gate* becomes meaningful, not where implementation could parallelize.
 - [x] **Phase 08: Interprocedural Loan Liveness in `check`** - The checker derives cross-function loan liveness from signatures alone, under a measured, bounded cost. (completed 2026-09-10)
 - [x] **Phase 09: Peer Re-Derivation and D-03-02 Closure** - `corevalidate` independently reaches the same interprocedural answer; the milestone's carried debt item closes. (completed 2026-09-10)
 - [x] **Phase 10: Trusted Interprocedural Oracle** - `originvalidate`, `pathoracle`, and a bounded interpreter call stack make cross-function execution trustworthy before anything is lowered. (completed 2026-09-11)
-- [ ] **Phase 11: Multi-Function Native Emission and Interprocedural Equivalence** - `cgen` emits multi-function C17 and the five-axis comparator agrees across `-O0`/`-O3`/`-flto`.
+- [x] **Phase 11: Multi-Function Native Emission and Interprocedural Equivalence** - `cgen` emits multi-function C17 and the five-axis comparator agrees across `-O0`/`-O3`/`-flto`. (completed 2026-09-12)
 - [ ] **Phase 12: `Result` Payloads** - Payload-carrying alternatives are storable, matchable, and affine-correct in all three engines.
 - [ ] **Phase 13: Agent Loop for Interprocedural Defects** - `lang explain` and `lang-repair` reach and fix cross-function defect classes through the JSON protocol alone.
 
@@ -787,7 +787,7 @@ whatever does ship.
 | 08. Interprocedural Loan Liveness in `check` | 6/6 | Complete    | 2026-09-10 |
 | 09. Peer Re-Derivation and D-03-02 Closure | 10/10 | Complete    | 2026-09-10 |
 | 10. Trusted Interprocedural Oracle | 9/9 | Complete    | 2026-09-11 |
-| 11. Multi-Function Native Emission and Equivalence | 0/? | Not started | - |
+| 11. Multi-Function Native Emission and Equivalence | 9/9 | Complete    | 2026-09-12 |
 | 12. `Result` Payloads | 0/? | Not started | - |
 | 13. Agent Loop for Interprocedural Defects | 0/? | Not started | - |
 
