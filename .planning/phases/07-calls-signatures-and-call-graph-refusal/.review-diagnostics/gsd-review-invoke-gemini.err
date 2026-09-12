@@ -1,0 +1,1 @@
+gsd-tools: warning: ~/.gsd/defaults.json sets model_profile, commit_docs, parallelization, resolve_model_ids, granularity, runtime, model_policy but a project config takes precedence here — those global keys are ignored for model resolution. (#3532)
