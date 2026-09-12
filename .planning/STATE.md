@@ -5,11 +5,11 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 12
 current_phase_name: "`Result` Payloads"
 status: planning
-stopped_at: Phase 12 context gathered
-last_updated: "2026-09-12T20:43:21.224Z"
+stopped_at: Phase 12 context gathered; criterion 3 pre-flight probe answered BRANCH A (accepted)
+last_updated: "2026-09-12T23:20:44.348Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 11 complete, transitioned to Phase 12
-state_head: 97a7c03537956dcca8167f54a533919d152e436f
+state_head: 3f9ceee586d2d719b958eb8886cc04781699b697
 progress:
   total_phases: 7
   completed_phases: 5
@@ -423,8 +423,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-12T20:43:20.647Z
-Stopped at: Phase 12 context gathered
+Last session: 2026-09-12T23:20:43.772Z
+Stopped at: Phase 12 context gathered; criterion 3 pre-flight probe answered BRANCH A (accepted)
 11-SECURITY.md threats_open: 0), ready to plan Phase 12
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
