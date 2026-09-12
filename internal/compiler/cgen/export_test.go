@@ -37,3 +37,13 @@ func SetOpCallGroupedArmForTest(mutate bool) (restore func()) {
 	opCallGroupedArmForTest = mutate
 	return func() { opCallGroupedArmForTest = previous }
 }
+
+// SetCallBoundaryAttributeSetForTest installs
+// TestEmittedAttributeSetCommentIsDerivedNotLiteral's own derivation
+// seam (D-04-12/D-11-09) and returns a restore func. Callers MUST defer
+// it immediately.
+func SetCallBoundaryAttributeSetForTest(set []string) (restore func()) {
+	previous := callBoundaryAttributeSetForTest
+	callBoundaryAttributeSetForTest = set
+	return func() { callBoundaryAttributeSetForTest = previous }
+}

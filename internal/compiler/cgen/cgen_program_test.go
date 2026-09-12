@@ -247,3 +247,131 @@ func mustRead(t *testing.T, fixture string) []byte {
 	}
 	return source
 }
+
+// attributeSetCommentLine returns the generated call-boundary
+// attribute-set comment line from generated, failing the test if absent.
+func attributeSetCommentLine(t *testing.T, generated string) string {
+	t.Helper()
+	for _, line := range strings.Split(generated, "\n") {
+		if strings.Contains(line, "call-boundary attribute set") {
+			return line
+		}
+	}
+	t.Fatalf("no call-boundary attribute set comment found in:\n%s", generated)
+	return ""
+}
+
+// TestEmittedAttributeSetIsExplicitlyEmpty is NAT-05's own satisfaction
+// test (D-11-09/D-11-10): the emitted C for the tracer fixture names its
+// call-boundary attribute set as explicitly empty, cites D-11-09, and
+// cgen.ScanForBannedAttributes agrees the emitted artifact carries no
+// banned token at all.
+func TestEmittedAttributeSetIsExplicitlyEmpty(t *testing.T) {
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	generated, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+
+	comment := attributeSetCommentLine(t, generated)
+	if !strings.Contains(comment, "EMPTY") {
+		t.Fatalf("expected the comment to name the set as EMPTY, got: %q", comment)
+	}
+	if !strings.Contains(comment, "D-11-09") {
+		t.Fatalf("expected the comment to cite D-11-09, got: %q", comment)
+	}
+	if found := cgen.ScanForBannedAttributes(generated); len(found) != 0 {
+		t.Fatalf("expected no banned attributes in the emitted artifact, found: %v", found)
+	}
+}
+
+// TestEmittedAttributeSetCommentIsDerivedNotLiteral proves the rendered
+// comment tracks emitCallBoundaryAttributeSet's own derivation rather than
+// restating a hand-written literal beside it (D-04-12): injecting a
+// non-empty set through the derivation's own test seam changes the
+// rendered comment's content.
+func TestEmittedAttributeSetCommentIsDerivedNotLiteral(t *testing.T) {
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+
+	baseline, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative (baseline): %v", err)
+	}
+	baselineComment := attributeSetCommentLine(t, baseline)
+
+	restore := cgen.SetCallBoundaryAttributeSetForTest([]string{"probe:injected-attribute"})
+	defer restore()
+	mutated, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative (mutated derivation): %v", err)
+	}
+	mutatedComment := attributeSetCommentLine(t, mutated)
+
+	if baselineComment == mutatedComment {
+		t.Fatalf("expected the rendered comment to change when the derivation returns a non-empty set, got identical comment: %q", baselineComment)
+	}
+	if !strings.Contains(mutatedComment, "probe:injected-attribute") {
+		t.Fatalf("expected the injected derivation's entry to appear in the rendered comment, got: %q", mutatedComment)
+	}
+}
+
+// TestEmittedAttributeSetOrderIsStable proves the attribute-set statement
+// is byte-identical across a same-program re-emission and a declaration-
+// order-permuted variant of the same program (must_have: byte-stable
+// order regardless of function declaration order).
+func TestEmittedAttributeSetOrderIsStable(t *testing.T) {
+	program := phase11CheckedProgram(t, "multi_function_gate_corpus.lang")
+
+	first, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative (first): %v", err)
+	}
+	second, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative (second): %v", err)
+	}
+	if first != second {
+		t.Fatal("expected re-emitting the same program twice to be byte-identical")
+	}
+
+	permuted := core.Program{Schema: program.Schema, Module: program.Module, ModuleID: program.ModuleID}
+	for index := len(program.Functions) - 1; index >= 0; index-- {
+		permuted.Functions = append(permuted.Functions, program.Functions[index])
+	}
+	permutedGenerated, err := cgen.EmitNative(permuted)
+	if err != nil {
+		t.Fatalf("EmitNative (permuted): %v", err)
+	}
+
+	firstComment := attributeSetCommentLine(t, first)
+	permutedComment := attributeSetCommentLine(t, permutedGenerated)
+	if firstComment != permutedComment {
+		t.Fatalf("expected the same attribute-set statement regardless of declaration order:\nfirst=%q\npermuted=%q", firstComment, permutedComment)
+	}
+}
+
+// TestCallSitesEmitNoArithmeticConversion is NAT-05's precision backstop:
+// Lang parameters are Byte/Buffer by value with no arithmetic in the
+// language, so no call site in the gate corpus's emitted C may introduce
+// an arithmetic conversion.
+func TestCallSitesEmitNoArithmeticConversion(t *testing.T) {
+	program := phase11CheckedProgram(t, "multi_function_gate_corpus.lang")
+	generated, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+
+	arithmeticTokens := []string{"+", "-", "*", "/", "%", "<<", ">>", "(int)", "(unsigned", "(signed", "(double)", "(float)"}
+	for _, line := range strings.Split(generated, "\n") {
+		commentIndex := strings.Index(line, "/* call:")
+		if commentIndex < 0 {
+			continue
+		}
+		code := line[:commentIndex]
+		for _, token := range arithmeticTokens {
+			if strings.Contains(code, token) {
+				t.Fatalf("call site emits an arithmetic-conversion token %q: %q", token, line)
+			}
+		}
+	}
+}
