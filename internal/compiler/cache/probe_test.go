@@ -1,14 +1,19 @@
 package cache
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"go/parser"
+	"go/token"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
 func writeExecutableFixture(t *testing.T, dir, content string) string {
@@ -256,3 +261,289 @@ func TestCacheProbeHelper(t *testing.T) {
 	os.Exit(0)
 }
 
+// ---------------------------------------------------------------------
+// QLT-06b's structural discharge (D-11-39): two independent, individually
+// falsifiable import scans -- a direct go/parser scan and a transitive
+// go list -deps scan -- plus their own negative controls, plus a
+// mechanical proof that nothing interprocedural is ever cached. Copies
+// originvalidate_test.go's three-part shape verbatim rather than inventing
+// a new one (D-10-17's own precedent).
+// ---------------------------------------------------------------------
+
+// cacheForbiddenImports is QLT-06b's closed forbidden set: cache is a
+// dependency-free leaf (cache.go's own package doc) and must never import
+// core, corevalidate or originvalidate to obtain a digest -- doing so
+// would let a trust-crossing derivation leak into this package through
+// exactly the back door D-11-41's cgen_source input might otherwise tempt
+// someone to open (asking core for a "compiled form" digest instead of
+// hashing cgen's own source bytes directly).
+var cacheForbiddenImports = []string{"/compiler/core", "/compiler/originvalidate", "/compiler/corevalidate"}
+
+// cacheDirectImportViolation mirrors originvalidate_test.go's own
+// directImportViolation verbatim: it reads dir's own non-test Go source
+// files' import lists via go/parser's ImportsOnly mode (never assumed from
+// a doc comment) and returns the first forbidden import found, or "" if
+// none.
+func cacheDirectImportViolation(t *testing.T, dir string, forbidden []string) string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileSet := token.NewFileSet()
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fileSet, filepath.Join(dir, entry.Name()), nil, parser.ImportsOnly)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, imported := range file.Imports {
+			path := strings.Trim(imported.Path.Value, `"`)
+			for _, bad := range forbidden {
+				if strings.HasSuffix(path, bad) {
+					return entry.Name() + " imports " + path
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// cacheMaxGoListDepsOutputBytes and cacheGoListDepsTimeout mirror
+// originvalidate_test.go's own bounded-writer/timeout convention for the
+// `go list -deps` spawn (D-02-01's spawn-safety lint).
+const cacheMaxGoListDepsOutputBytes = 1 << 20
+const cacheGoListDepsTimeout = 2 * time.Minute
+
+type cacheBoundedGoListWriter struct {
+	buffer     bytes.Buffer
+	overflowed bool
+}
+
+func (w *cacheBoundedGoListWriter) Write(data []byte) (int, error) {
+	if w.buffer.Len()+len(data) > cacheMaxGoListDepsOutputBytes {
+		w.overflowed = true
+		remaining := cacheMaxGoListDepsOutputBytes - w.buffer.Len()
+		if remaining > 0 {
+			w.buffer.Write(data[:remaining])
+		}
+		return len(data), nil
+	}
+	w.buffer.Write(data)
+	return len(data), nil
+}
+
+// cacheTransitiveImportViolation is the shared suffix-matching predicate
+// BOTH the real `go list -deps` scan and its own negative control
+// exercise, so the negative control proves the real predicate can fail,
+// not a second, drifting copy of it (mirroring
+// transitiveImportViolation's own precedent).
+func cacheTransitiveImportViolation(deps []string, forbidden []string) string {
+	for _, dep := range deps {
+		for _, bad := range forbidden {
+			if strings.HasSuffix(dep, bad) {
+				return dep
+			}
+		}
+	}
+	return ""
+}
+
+// cacheTransitiveImportsViolation hardens the direct-import scan above:
+// nobody adds a forbidden import to cache on purpose; they add a helper
+// package that itself imports one. Bounded at 1 MiB and 2 minutes,
+// matching this repo's own spawn-safety convention.
+func cacheTransitiveImportsViolation(t *testing.T, forbidden []string) string {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), cacheGoListDepsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/cache")
+	cmd.Dir = testsupport.ProjectPath()
+	stdout := &cacheBoundedGoListWriter{}
+	cmd.Stdout = stdout
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("go list -deps: %v", err)
+	}
+	if stdout.overflowed {
+		t.Fatalf("go list -deps produced more than %d bytes; dependency listing is implausibly large", cacheMaxGoListDepsOutputBytes)
+	}
+	deps := strings.Split(strings.TrimSpace(stdout.buffer.String()), "\n")
+	return cacheTransitiveImportViolation(deps, forbidden)
+}
+
+// TestDeclaredInputNamesStableAndNoInterproceduralImport is QLT-06b's
+// primary discharge test (D-11-39), asserting four independent knowers in
+// one place:
+//
+// Knower 1 -- the declared-name list: the first seven names stay
+// byte-identical and in their original order (exact-string, order-
+// sensitive: a reordering is a failure, never an equivalent list). Under
+// BRANCH A the eighth entry exists and names cgen; under BRANCH B the list
+// is still exactly seven.
+//
+// Knowers 2 and 3 -- the direct go/parser scan AND the transitive
+// go list -deps scan, both run (the repo's own convention states the
+// direct scan is HARDENED by the transitive one, never replaced by it).
+func TestDeclaredInputNamesStableAndNoInterproceduralImport(t *testing.T) {
+	names := DeclaredInputNames()
+	originalSeven := []string{
+		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
+		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
+	}
+	if len(names) < len(originalSeven) {
+		t.Fatalf("expected at least the original seven declared names, got %d: %v", len(names), names)
+	}
+	for i, want := range originalSeven {
+		if names[i] != want {
+			t.Fatalf("declared input name[%d] = %q, want %q -- the original seven must stay byte-identical and in order (D-11-41's additive-sibling discipline)", i, names[i], want)
+		}
+	}
+	switch len(names) {
+	case len(originalSeven):
+		// BRANCH B: the D-11-41 fix was withdrawn; the list stays seven.
+	case len(originalSeven) + 1:
+		if !strings.Contains(names[len(originalSeven)], "cgen") {
+			t.Fatalf("expected the eighth declared input to name cgen, got %q", names[len(originalSeven)])
+		}
+	default:
+		t.Fatalf("expected exactly %d (BRANCH B) or %d (BRANCH A) declared input names, got %d: %v", len(originalSeven), len(originalSeven)+1, len(names), names)
+	}
+
+	dir := testsupport.ProjectPath("internal", "compiler", "cache")
+	if violation := cacheDirectImportViolation(t, dir, cacheForbiddenImports); violation != "" {
+		t.Fatalf("%s, which cache (a dependency-free leaf) must never depend on", violation)
+	}
+	if violation := cacheTransitiveImportsViolation(t, cacheForbiddenImports); violation != "" {
+		t.Fatalf("cache transitively imports %s, which it must never depend on", violation)
+	}
+}
+
+// TestCacheDirectImportGuardCanFail is the direct scan's own negative
+// control: a synthetic file containing a forbidden import must actually be
+// flagged, proving the guard can go red, not merely that it has never yet
+// found anything.
+func TestCacheDirectImportGuardCanFail(t *testing.T) {
+	dir := t.TempDir()
+	content := "package cache\n\nimport (\n\t\"github.com/codename-lang/lang/internal/compiler/core\"\n)\n\nvar _ = core.Program{}\n"
+	if err := os.WriteFile(filepath.Join(dir, "synthetic.go"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if violation := cacheDirectImportViolation(t, dir, cacheForbiddenImports); violation == "" {
+		t.Fatal("expected the synthetic forbidden-import file to be flagged")
+	}
+}
+
+// TestCacheTransitiveImportGuardCanFail is the transitive scan's own
+// negative control: a synthetic dependency list containing
+// internal/compiler/originvalidate must be flagged.
+func TestCacheTransitiveImportGuardCanFail(t *testing.T) {
+	synthetic := []string{
+		"github.com/codename-lang/lang/internal/compiler/cache",
+		"github.com/codename-lang/lang/internal/compiler/originvalidate",
+	}
+	if got := cacheTransitiveImportViolation(synthetic, cacheForbiddenImports); got == "" {
+		t.Fatal("expected the synthetic dependency list's forbidden originvalidate entry to be flagged")
+	}
+}
+
+// TestNoClosureDigestInCache is Knower 4, the mechanical form of D-11-38's
+// "cache nothing new": no PRODUCTION file under internal/compiler/cache
+// mentions core.FunctionSignature's interprocedural per-function digest
+// field (the "Closure"+"Digest" identifier, deliberately built by
+// concatenation immediately below rather than spelled as a literal, so
+// this very test's own source does not itself trip a source-text scan for
+// that identifier), and no declared input name looks closure- or
+// call-graph-derived. A whole-program FixtureSource hash strictly
+// dominates any call-graph-closure key in a single-unit language, so a
+// closure key here could only ever admit MORE cache hits on strictly LESS
+// evidence -- a soundness-loosening change this test exists to prevent by
+// construction, not by review.
+//
+// Scoped to non-test files (nonTestGoFiles's own convention, mirrored
+// locally): this test's own name and doc comment necessarily discuss the
+// forbidden identifier by name, so a whole-directory literal scan
+// (including this very _test.go file) would trip on its own assertion
+// machinery. The binding guarantee is that PRODUCTION code never keys on
+// it; scanning production sources only is what actually proves that,
+// where a blanket scan would produce a permanent, unfixable false
+// positive from this test's own name.
+func TestNoClosureDigestInCache(t *testing.T) {
+	forbiddenIdentifier := "Closure" + "Digest"
+	dir := testsupport.ProjectPath("internal", "compiler", "cache")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), forbiddenIdentifier) {
+			t.Fatalf("%s mentions the forbidden interprocedural digest identifier -- no interprocedural fact may ever be marked cacheable (D-11-38)", entry.Name())
+		}
+	}
+	for _, name := range DeclaredInputNames() {
+		lower := strings.ToLower(name)
+		if strings.Contains(lower, "closure") || strings.Contains(lower, "call_graph") || strings.Contains(lower, "callgraph") {
+			t.Fatalf("declared input %q looks closure- or call-graph-derived, which cache must never key on (D-11-38)", name)
+		}
+	}
+}
+
+// TestCacheKeyIsIdempotent asserts D-11-39's idempotency truth: computing
+// the key twice for identical inputs yields a byte-identical Key.ID, and a
+// second Consult on unchanged inputs reports reuse rather than
+// recomputing.
+func TestCacheKeyIsIdempotent(t *testing.T) {
+	ctx := context.Background()
+	spec := baseArtifactSpec(t)
+
+	inputsA, err := InputsFor(ctx, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyA, err := ComputeKey(inputsA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputsB, err := InputsFor(ctx, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyB, err := ComputeKey(inputsB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if keyA.ID != keyB.ID {
+		t.Fatalf("computing the key twice for identical inputs produced different IDs: %s vs %s", keyA.ID, keyB.ID)
+	}
+
+	store := &Store{Root: t.TempDir()}
+	firstOutcome, err := Consult(ctx, store, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if firstOutcome.Status != StatusArtifactRecomputed {
+		t.Fatalf("expected the first Consult on an empty store to recompute, got %s", firstOutcome.Status)
+	}
+	if err := store.Put(firstOutcome.Key, []byte("artifact-bytes")); err != nil {
+		t.Fatal(err)
+	}
+
+	secondOutcome, err := Consult(ctx, store, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if secondOutcome.Status != StatusArtifactReused {
+		t.Fatalf("expected the second Consult on unchanged inputs to reuse, got %s", secondOutcome.Status)
+	}
+	if secondOutcome.Key.ID != firstOutcome.Key.ID {
+		t.Fatal("second Consult computed a different key for identical inputs")
+	}
+}
