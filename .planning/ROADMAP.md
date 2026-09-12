@@ -681,7 +681,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 11-03-PLAN.md — TRACER: `callgraph.EntryFunction` + `cgen.emitProgram`/`emitCall` + `session`'s three run sites; a two-function program runs on both engines at `-O0`
+- [x] 11-03-PLAN.md — TRACER: `callgraph.EntryFunction` + `cgen.emitProgram`/`emitCall` + `session`'s three run sites; a two-function program runs on both engines at `-O0`
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
