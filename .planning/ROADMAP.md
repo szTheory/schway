@@ -668,7 +668,7 @@ ratification checkpoint between waves 3 and 4)
 Plans:
 **Wave 1**
 
-- [ ] 11-01-PLAN.md — Wave 0 spikes Q-01 (core-level `OpCall`→`OpCopy` rewrite) and Q-02 (live `cgen` cache hole); open `PHASE-11-DEBT.md`
+- [x] 11-01-PLAN.md — Wave 0 spikes Q-01 (core-level `OpCall`→`OpCopy` rewrite) and Q-02 (live `cgen` cache hole); open `PHASE-11-DEBT.md`
 - [ ] 11-02-PLAN.md — NAT-07's hand-written-C 4×3 composition-only LTO control (Q-04), toolchain pin, and ratification of the criterion-3 amendments
 
 **Wave 2** *(blocked on Wave 1 completion)*
