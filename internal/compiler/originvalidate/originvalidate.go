@@ -199,6 +199,18 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 			returnOps = append(returnOps, &operations[index])
 			continue
 		}
+		// D-12-10: an OpDestructurePayload names its produced place via
+		// PayloadTargetID, never the ordinary TargetID (which stays empty --
+		// corevalidate's matchBranchStructural already checks this).
+		// Indexing sourceOf by TargetID alone would key this operation under
+		// "" and make its produced place permanently unreachable by a
+		// backward walk starting from a later operation's SourceID -- no
+		// case arm in walkReturnOrigin's switch below could ever compensate
+		// for a produced place the map never recorded in the first place.
+		if operation.Kind == core.OpDestructurePayload {
+			sourceOf[operation.PayloadTargetID] = operation
+			continue
+		}
 		sourceOf[operation.TargetID] = operation
 	}
 	if len(returnOps) == 0 {
@@ -249,6 +261,22 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 			if derivedAccess == "" {
 				derivedAccess = "shared"
 			}
+		case core.OpDestructurePayload:
+			// Task 1 (Phase 12, plan 04): walk through a NEW kind's OWN
+			// semantics -- a destructure's produced place (indexed above by
+			// PayloadTargetID rather than the ordinary TargetID) carries no
+			// access-mode fact of its own; the payload's origin is whatever
+			// its SourceID (the scrutinee alias) already carries. This is
+			// categorically different from filling core.OpCall's missing
+			// case in peerDeriveOriginFacts (D-10-C01) -- that gap MUST stay
+			// open per D-12-28/Pitfall 3, since D-12-27's resource-payload
+			// refusal depends on it. Deriving through a kind this walk has
+			// never seen before is ordinary in-scope extension of THIS
+			// switch's own coverage, not a resolution of a different peer's
+			// open gap. No derivedAccess assignment is needed here: the
+			// unconditional `current = operation.SourceID` below already
+			// continues the walk into the borrow (or further chain) that
+			// produced the destructured alias.
 		case core.OpForeignCall:
 			// D-04-28: a foreign declaration is itself a signature carrying
 			// origin and access facts -- declaring a call foreign-only does

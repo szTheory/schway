@@ -282,6 +282,28 @@ func (v *validator) run() {
 				return
 			}
 		}
+		// D-12-09's second mechanism: core.NewDataType is the only permitted
+		// constructor for a DataType carrying payload alternatives, and it
+		// enforces name-set equality between Alternatives and
+		// AlternativeDetails AT CONSTRUCTION. That guard cannot protect a
+		// program that arrives already built -- decoded from JSON, produced
+		// by a future pass, or assembled in a test -- bypassing the
+		// constructor entirely. This arm re-asserts the SAME invariant
+		// corpus-wide, independently of whether NewDataType was ever called:
+		// every AlternativeDetails entry must name an alternative present in
+		// Alternatives, and no name may be named twice. Protobuf's oneof and
+		// FlatBuffers' union-type-vector pairing are kept in sync by
+		// generated accessors for exactly this reason -- a name present in
+		// one list and absent from the other is representable but invalid.
+		detailNames := make(map[string]struct{}, len(dataType.AlternativeDetails))
+		for _, detail := range dataType.AlternativeDetails {
+			if _, present := alternatives[detail.Name]; !v.check(present, "core.alternative_details_desynchronized", detail.Name) {
+				return
+			}
+			if !v.unique(detailNames, detail.Name, "core.alternative_details_desynchronized") {
+				return
+			}
+		}
 		dataNames[dataType.Name] = dataType
 	}
 	functionIDs := make(map[string]struct{}, len(v.program.Functions))
