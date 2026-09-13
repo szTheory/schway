@@ -31,7 +31,7 @@ by plan 01's Task 2 checkpoint outcome (D-12-36).
 | D-12-30 | 12-CONTEXT.md (D-12-30), extends D-12-27/D-12-28/D-12-29 | RES-02 | warning | OPEN — lands only when all three of D-10-C01, D-10-C02, and D-10-C04 are resolved; no phase currently owns closing all three | THE FULL RESOURCE-IN-PAYLOAD RULE IS DEFERRED, refused this phase by a named fail-closed diagnostic. Criterion 1's *resource* half is deferred, not met; criterion 1 is satisfied with `Byte`, `Buffer`, and nullary-ADT payloads only. The landing condition is three-part and ALL THREE are jointly required: D-10-C01 closed (the missing `OpCall` arm added to `peerDeriveOriginFacts`) AND D-10-C02 proven order-independent or fixed AND D-10-C04 reviewed |
 | D-12-21 | 12-CONTEXT.md (D-12-21), flags interaction with D-11-51 | NAT-06 | warning | OPEN and UNOWNED — D-11-51 remains open and unowned; its fix needs both `interp.go` and `cgen_program.go` and therefore its own reviewed plan, which Phase 12 does not claim | D-11-51's PER-INVOCATION EVENT IDENTITY GAP IS FLAGGED AS LIKELY TO BE TRIPPED FIRST BY THIS PHASE'S FIXTURES. A multi-call-site fixture exercising a payload-carrying return may surface `validateExecution`'s duplicate-execution-event-id refusal for the first time. This is an anticipated constraint, not a mystery — Phase 12 does not attempt to fix D-11-51 |
 | D-12-42 | 12-CONTEXT.md (D-12-42) | QLT-09 | info | Phase 13 or end-of-Phase-12 (decided against a pre-registered threshold in the QLT-07/D-09-40 style once Phase 12's layout work is frozen) | QLT-09's PHASE-5 NYQUIST PORTION IS NOT CLOSED MID-PHASE. Phase 12 is the native-tier change QLT-09 was waiting on, but the change is still in flight within Phase 12; closing it mid-phase would conflate a fresh semantic-verification commit with a Nyquist-debt closure (D-11-01's digest-conflation concern). `12-VALIDATION.md` scopes itself to criterion 2's new control and explicitly declines to close QLT-09's Phase-5 portion |
-| D-12-04c | 12-CONTEXT.md (D-12-04c) | none — stale documentation, not a live risk | info | Phase 12, plan 04 (the header correction) | `testdata/phase08/relay_depth2_accept.lang`'s HEADER IS STALE. It claims `corevalidate` refuses the fixture with `core.move_while_borrowed`, which D-09-03 closed; the pre-flight probe measured `corevalidate.Valid == true` on the unmodified fixture. Recorded per D-09-45 rather than silently fixed |
+| D-12-04c | 12-CONTEXT.md (D-12-04c) | none — stale documentation, not a live risk | info | CLOSED — Phase 12, plan 04 (header corrected; see this file's `### D-12-04c` section) | `testdata/phase08/relay_depth2_accept.lang`'s HEADER WAS STALE. It claimed `corevalidate` refuses the fixture with `core.move_while_borrowed`, which D-09-03 closed; the pre-flight probe measured `corevalidate.Valid == true` on the unmodified fixture. Plan 04 replaced the stale claim with the correction, naming D-09-03 as the closing decision and D-12-04c as the correction, per D-09-45's record-corrections-never-silently-fix discipline |
 | D-12-36 | 12-CONTEXT.md (D-12-36), RATIFIED at plan 01 Task 2, `12-01-SUMMARY.md` | NAT-04..NAT-07 | warning | OPEN and UNOWNED — re-deferred; no phase currently claims porting branch bodies, foreign-call block bodies, and both by-pointer lowering variants into `emitProgram`, converging the preamble, and re-pinning the four frozen golden-C digests | THE INHERITED D-11-02 SIX-EMITTER DELETION IS RE-DEFERRED WITH A STATED REVERSAL, gated on the N=1 convergence differential per `TestN1ConvergenceDifferential` (`internal/compiler/cgen/cgen_n1_convergence_test.go`). The measured five-shape table shows `emitProgram` refuses four of five single-function shapes outright and diverges textually and structurally on the fifth (`owned_transfer.lang`); making the differential green requires ~1,500 lines of `cgen.go` emitter porting work, which is not "cheap" under any reading — D-12-36's single named trigger. The superseded PHASE-11-DEBT.md landing-phase text ("Phase 12 — a green N=1 convergence differential (Q-05), landing inside Phase 12's per-dispatch-site `Result` plans, never as a second sweep") is withdrawn; see PHASE-11-DEBT.md's `### D-11-02` section for the full stated reversal |
 
 ## Detail
@@ -115,9 +115,9 @@ making end-of-Phase-12 or Phase 13 the defensible home, decided against a
 pre-registered threshold in the QLT-07/D-09-40 style rather than folded
 silently into this criterion.
 
-### D-12-04c — `relay_depth2_accept.lang`'s stale header
+### D-12-04c — `relay_depth2_accept.lang`'s stale header — CLOSED (plan 04)
 
-The fixture's header states that "corevalidate ... also refuses this
+The fixture's header stated that "corevalidate ... also refuses this
 fixture (`core.move_while_borrowed`) even though `check`'s own
 interprocedural law ... correctly admits it." Verified no longer true: the
 Phase 12 pre-flight probe measured `corevalidate.Valid == true` on the
@@ -125,8 +125,15 @@ unmodified fixture. Phase 09's D-09-03 closed it deliberately — retiring
 `relay_depth2_accept.lang` and `twin_a_accept.lang` from
 `peerDivergenceExpected` was a required assertion of Phase 09, and the
 register's retirement comment says so — but the fixture's own header was
-never updated. Recorded per D-09-45 rather than silently fixed. Plan 04
-corrects the header.
+never updated. Recorded per D-09-45 rather than silently fixed.
+
+**Closed by plan 04, Task 3.** `testdata/phase08/relay_depth2_accept.lang`'s
+header comment block was replaced with a dated D-12-04c correction naming
+D-09-03 as the closing decision, quoting the superseded text verbatim (never
+silently erased, per D-09-45), and recording that the pre-flight probe's
+first draft went red for exactly this reason — the fixture was not wrong,
+the header was. Not one line of Lang source below the header changed
+(verified by `git diff --stat`).
 
 ### D-12-36 — the inherited D-11-02 deletion is re-deferred with a stated reversal
 

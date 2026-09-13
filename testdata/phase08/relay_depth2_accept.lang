@@ -9,13 +9,29 @@
 // diagnostics -- the composition-depth-2 refusal above is contract-driven at
 // EVERY hop, not merely at depth 1.
 //
-// KNOWN RESIDUAL: see twin_a_accept.lang's header. The full `lang check` CLI
-// additionally consults corevalidate.Validate once `check` itself passes;
-// corevalidate's own loan-liveness re-derivation is still intraprocedural
-// (unmodified this phase, Phase 09's own charter) and unconditionally treats
-// an OpCall's target as inheriting every loan its SourceID carries, so it
-// also refuses this fixture (core.move_while_borrowed) even though `check`'s
-// own interprocedural law -- the one under test -- correctly admits it.
+// D-12-04c CORRECTION (2026-09-12, recorded per D-09-45 -- never silently
+// fixed): this header used to claim the KNOWN RESIDUAL below still held --
+// that corevalidate ALSO refuses this fixture with core.move_while_borrowed
+// even though check's own interprocedural law correctly admits it. That
+// claim is STALE and was VERIFIED NO LONGER TRUE by Phase 12's pre-flight
+// probe (12-CONTEXT.md D-12-04a/D-12-04c): corevalidate.Valid == true on
+// this unmodified fixture. The closing decision is Phase 09's D-09-03,
+// which deliberately retired this fixture (and twin_a_accept.lang) from
+// session_peer_gate_test.go's peerDivergenceExpected register -- the
+// register's own retirement comment says so, but this fixture's own header
+// was never updated to match, until now. The probe's first draft pinned
+// D-10-C01 against this fixture expecting the old divergence and went red
+// for exactly this reason: the fixture was not wrong, the header was.
+//
+// ORIGINAL (superseded) KNOWN RESIDUAL text, quoted verbatim so the
+// correction is auditable rather than silently erased: "see
+// twin_a_accept.lang's header. The full `lang check` CLI additionally
+// consults corevalidate.Validate once `check` itself passes; corevalidate's
+// own loan-liveness re-derivation is still intraprocedural (unmodified this
+// phase, Phase 09's own charter) and unconditionally treats an OpCall's
+// target as inheriting every loan its SourceID carries, so it also refuses
+// this fixture (core.move_while_borrowed) even though `check`'s own
+// interprocedural law -- the one under test -- correctly admits it."
 
 module phase08.relay_depth2_accept
 
