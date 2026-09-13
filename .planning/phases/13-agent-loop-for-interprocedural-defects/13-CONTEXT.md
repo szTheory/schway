@@ -169,6 +169,36 @@ else is available.
   `lang.diagnostic/1`'s identity-bearing `RepairKinds`, so removing one later
   churns that diagnostic's ID.
 
+- **D-13-02a (OPEN RISK, raised by the orchestrator after 13-02 landed
+  2026-09-13 — must be settled by 13-06, not deferred past it):** 13-02 built
+  `resolveBlame` / `resolveCycleBlame` / `classifyDeclaredCause` and tested them
+  exhaustively, but deliberately did **not wire them into any of the eight
+  existing diagnostic emission sites**, on the grounds that D-13-04 (verified
+  empirically) shows all eight already select the Primary span B2 would compute,
+  so wiring would be a present-day no-op with real risk to identity-bearing
+  spans. `grep -c 'resolveBlame(' internal/compiler/check/check.go` returns 1 —
+  the definition only.
+
+  That reasoning is sound for the eight shipped codes. The risk it creates is
+  downstream: **if no production path ever consults the resolver, then criterion
+  3's twin pair tests the repair emission's span choice rather than the blame
+  rule, and DX-06's "blame attribution points at the correct fix location" is
+  satisfied by coincidence rather than by a rule.** A gate that cannot observe
+  the thing it is gating is not a gate.
+
+  **Required resolution — one of these, decided explicitly and recorded, not
+  left implicit:**
+  (a) 13-05's new classes, or 13-04/13-06's twin-pair fixture, produce a
+      **B1-shaped** diagnostic, and the resolver is wired on that path so the
+      twin pair genuinely discriminates B1 from B2; or
+  (b) it is demonstrated that no B1-shaped defect is constructible at this
+      language maturity — in which case that is a **terminal finding about the
+      phase's riskiest assumption** and must be recorded as such (the way
+      D-12-43 was for Phase 12), not quietly absorbed. Criterion 3 would then be
+      honestly reported as partially unmet rather than passed.
+
+  13-06 must state which of (a) or (b) holds and show the evidence.
+
 - **D-13-09b (NARROWING, found empirically by the 13-01 tracer 2026-09-13 —
   amends D-13-09.1):** the "swap the move and call statements" repair is
   semantics-preserving only for the **backward** direction of
