@@ -759,7 +759,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 12-03-PLAN.md — RES-02 expansion: the three named pattern refusals, D-12-27's resource-payload refusal, the affine drop obligation, and real exhaustive-dispatch coverage
+- [x] 12-03-PLAN.md — RES-02 expansion: the three named pattern refusals, D-12-27's resource-payload refusal, the affine drop obligation, and real exhaustive-dispatch coverage
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
