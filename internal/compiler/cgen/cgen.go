@@ -27,6 +27,53 @@ const Schema = "lang.c17/0"
 // path.
 var opCallGroupedArmForTest = false
 
+// payloadSlotSwapForTest is D-12-38 Task 2's fault-injection seam
+// (session_payload_control_test.go's TestPayloadSlotSwapMutationKilled):
+// when true, OpConstructPayload's case in emitBranchOperations writes the
+// source payload into a DIFFERENT alternative's struct field than the one
+// the (correct) tag names -- reads or writes the wrong alternative's
+// payload slot for a correct tag, never touching which tag constant is
+// written. Unexported, false by default, exercised only via the exported
+// test-only wrapper SetPayloadSlotSwapForTest (export_test.go) from the
+// external session_test package: never an exported package-level mutable
+// var on a production path, following opCallGroupedArmForTest's own shape
+// exactly.
+var payloadSlotSwapForTest = false
+
+// SetPayloadSlotSwapForTest installs/restores payloadSlotSwapForTest. Callers
+// MUST defer the returned restore func immediately. This is a
+// PRODUCTION-VISIBLE function (never an export_test.go symbol) because the
+// D-12-38 mutation-kill test lives in a DIFFERENT package
+// (internal/compiler/session's session_test), and Go's _test.go export
+// trick (as SetOpCallGroupedArmForTest above uses) is visible only within
+// cgen's OWN test binary -- following corevalidate.SetDisableCyclePeerForTest
+// / interp.SetDisableEmptyTagSerializationForTest's own D-07-42/D-12-38
+// cross-package precedent exactly (12-04-SUMMARY.md). A documented,
+// clearly-named, test-only no-op; never called from any production code
+// path in this repository.
+func SetPayloadSlotSwapForTest(mutate bool) (restore func()) {
+	previous := payloadSlotSwapForTest
+	payloadSlotSwapForTest = mutate
+	return func() { payloadSlotSwapForTest = previous }
+}
+
+// wrongPayloadSlot picks a DIFFERENT alternative's own struct field name
+// and C type than altName's, for D-12-38's fault-injection seam above. It
+// returns ok == false when dataType has no other payload-carrying
+// alternative to misdirect into (the seam then falls back to the correct
+// write, a documented no-op rather than a silent skip).
+func wrongPayloadSlot(dataType core.DataType, payloadFieldBySource map[string]string, altName string) (field, cType string, ok bool) {
+	for _, detail := range dataType.AlternativeDetails {
+		if detail.Name == altName || detail.PayloadType == "" {
+			continue
+		}
+		if wrongField, known := payloadFieldBySource[detail.Name]; known {
+			return wrongField, payloadCTypeName(detail.PayloadType), true
+		}
+	}
+	return "", "", false
+}
+
 func Emit(program core.Program) (string, error) {
 	validated := corevalidate.Validate(program)
 	if !validated.Valid {
@@ -2065,7 +2112,32 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 			}
 			fmt.Fprintf(out, "      %s %s; /* payload construct: %s */\n", typeName, locals[target.ID], operation.ID)
 			fmt.Fprintf(out, "      %s.tag = %s;\n", locals[target.ID], tagConstant)
-			fmt.Fprintf(out, "      %s.%s = %s;\n", locals[target.ID], field, locals[source.ID])
+			if payloadSlotSwapForTest {
+				// D-12-38 Task 2's fault-injection seam: write the source
+				// payload into a DIFFERENT alternative's struct field than
+				// the one the (correct) tag names -- reads or writes the
+				// WRONG alternative's payload slot for a correct tag. The
+				// assignment stays type-safe (truncating/widening through a
+				// scalar or a compound literal) rather than an out-of-bounds
+				// memcpy, so any observed engine disagreement is attributable
+				// to the wrong SLOT alone, never to separately-introduced
+				// undefined behavior.
+				if wrongField, wrongCType, ok := wrongPayloadSlot(dataType, payloadFieldBySource, altName); ok {
+					srcCType := payloadCTypeName(operation.PayloadType)
+					switch {
+					case wrongCType == srcCType:
+						fmt.Fprintf(out, "      %s.%s = %s; /* D-12-38 mutation: wrong-slot write */\n", locals[target.ID], wrongField, locals[source.ID])
+					case wrongCType == "LANG_BUFFER":
+						fmt.Fprintf(out, "      %s.%s = (LANG_BUFFER){{%s}, 1u}; /* D-12-38 mutation: wrong-slot write, widened */\n", locals[target.ID], wrongField, locals[source.ID])
+					default:
+						fmt.Fprintf(out, "      %s.%s = %s.bytes[0]; /* D-12-38 mutation: wrong-slot write, truncated */\n", locals[target.ID], wrongField, locals[source.ID])
+					}
+				} else {
+					fmt.Fprintf(out, "      %s.%s = %s;\n", locals[target.ID], field, locals[source.ID])
+				}
+			} else {
+				fmt.Fprintf(out, "      %s.%s = %s;\n", locals[target.ID], field, locals[source.ID])
+			}
 			fmt.Fprintf(out, "      (void)%s;\n", locals[target.ID])
 			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
 				strconv.Quote("value.payload_constructed"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),

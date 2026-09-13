@@ -8,6 +8,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -73,4 +78,196 @@ typedef struct PayloadProbe_payload {
 	if value.NumField() != 3 {
 		t.Fatalf("PayloadLayoutMutationRunner grew an unexpected field: %+v", runner)
 	}
+}
+
+// isolateNativeFunction extracts ONE function (by name) plus every
+// core.DataType it transitively references (by parameter/return type name,
+// and by any AlternativeDetail's PayloadType naming a sibling data type)
+// out of a checked, multi-function core.Program, and re-validates the
+// result. Native emission does not support multi-function branch bodies
+// this phase (D-11-52/D-12-32); payload_borrow_interaction.lang's own
+// design deliberately combines payload and borrow machinery as TWO
+// functions in ONE checked program specifically because they cannot
+// combine in one function yet (12-03-SUMMARY.md), so driving either
+// function alone through native emission requires this isolation step --
+// it changes no operation, place, or type fact, only which subset of an
+// already-checked program's declarations are carried into the emitted
+// translation unit.
+func isolateNativeFunction(t *testing.T, program core.Program, functionName string) core.Program {
+	t.Helper()
+	var target core.Function
+	found := false
+	for _, function := range program.Functions {
+		if function.Name == functionName {
+			target = function
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("isolateNativeFunction: function %q not found", functionName)
+	}
+	byName := make(map[string]core.DataType, len(program.DataTypes))
+	for _, dataType := range program.DataTypes {
+		byName[dataType.Name] = dataType
+	}
+	needed := make(map[string]bool, len(program.DataTypes))
+	var visit func(name string)
+	visit = func(name string) {
+		if needed[name] {
+			return
+		}
+		dataType, ok := byName[name]
+		if !ok {
+			return
+		}
+		needed[name] = true
+		for _, detail := range dataType.AlternativeDetails {
+			if detail.PayloadType != "" {
+				visit(detail.PayloadType)
+			}
+		}
+	}
+	visit(target.Parameter.Type)
+	visit(target.ReturnType)
+	dataTypes := make([]core.DataType, 0, len(needed))
+	for _, dataType := range program.DataTypes {
+		if needed[dataType.Name] {
+			dataTypes = append(dataTypes, dataType)
+		}
+	}
+	isolated := core.Program{Schema: program.Schema, Module: program.Module, ModuleID: program.ModuleID, DataTypes: dataTypes, Functions: []core.Function{target}}
+	validated := corevalidate.Validate(isolated)
+	if !validated.Valid {
+		t.Fatalf("isolateNativeFunction: %q: core validation failed after isolation: %+v", functionName, validated.Problems)
+	}
+	return validated.Program()
+}
+
+// runFunctionOkExecutions drives functionName's "Ok" input (both fixtures
+// declare an Outcome{Ok(Buffer), Err(Fault)} identity-shaped function with
+// this exact input) through the interpreter and both native optimization
+// levels, returning the three comparable execution.Execution documents
+// keyed by engine name -- the same shape Phase5CompareEngines-based
+// controls (session_phase5_mismatch.go's ReduceSeededAliasMismatch) drive
+// directly rather than through RunNativeFile's own internal execution.Equal
+// short-circuit, so this test can name which AXIS a disagreement (if any)
+// falls on.
+func runFunctionOkExecutions(t *testing.T, ctx context.Context, program core.Program, functionName string, runner native.Runner) map[string]execution.Execution {
+	t.Helper()
+	cSource, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("%s: EmitNative: %v", functionName, err)
+	}
+	interpreted, err := interp.Run(program, functionName, "Ok")
+	if err != nil {
+		t.Fatalf("%s: interp.Run(Ok): %v", functionName, err)
+	}
+	o0, err := runner.Run(ctx, cSource, "-O0", []string{"Ok"})
+	if err != nil {
+		t.Fatalf("%s: -O0 run: %v", functionName, err)
+	}
+	o3, err := runner.Run(ctx, cSource, "-O3", []string{"Ok"})
+	if err != nil {
+		t.Fatalf("%s: -O3 run: %v", functionName, err)
+	}
+	if len(o0.Pairs) != 1 || len(o3.Pairs) != 1 {
+		t.Fatalf("%s: expected exactly one execution per optimization level, got -O0=%d -O3=%d", functionName, len(o0.Pairs), len(o3.Pairs))
+	}
+	return map[string]execution.Execution{
+		"interpreter": interpreted,
+		"O0":          o0.Pairs[0].Execution,
+		"O3":          o3.Pairs[0].Execution,
+	}
+}
+
+// checkedProgram runs relativeParts through session.Check and fatals on any
+// diagnostic, returning the checked core.Program.
+func checkedProgram(t *testing.T, relativeParts ...string) core.Program {
+	t.Helper()
+	path := testsupport.ProjectPath(relativeParts...)
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", filepath.Join(relativeParts...), err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("%s: unexpected diagnostics: %+v", filepath.Join(relativeParts...), checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+// TestPayloadSlotSwapMutationKilled is D-12-38's decisive control: a
+// reverted production-hunk mutation seeding a bug in cgen's
+// OpConstructPayload codegen that writes the source payload into a
+// DIFFERENT alternative's struct field than the one the (correct) tag
+// names. Two beats, per D-12-38:
+//
+//  1. Mutated: with cgen.SetPayloadSlotSwapForTest(true) engaged, drive
+//     plan 02's tracer fixture (payload_tracer.lang, "Ok" input) through
+//     interpreter/-O0/-O3 and compare via session.Phase5CompareEngines,
+//     asserting on session.AxisTerminalOutcome specifically.
+//  2. Companion (unmutated): drive plan 03's payload_borrow_interaction.lang
+//     and assert the comparator reports AGREEMENT -- discriminating real
+//     value-identity checking from a harness that screams on any diff.
+//
+// EMPIRICAL FINDING (escalated per D-12-41/D-11-36, see
+// PHASE-12-DEBT.md's D-12-26 entry): the mutated beat's wrong-slot write
+// does NOT reach session.AxisTerminalOutcome. A payload-carrying return's
+// terminal Outcome.Value is, on BOTH engines, the alternative's own TAG
+// NAME -- cgen's returnLiteral is a compile-time-known string baked
+// directly into the generated C (never read back from the runtime struct),
+// and interp's value.String() likewise resolves through the tag, never the
+// payload bytes (D-12-26: interp has no byte layout at all to diverge in).
+// So a wrong-slot payload WRITE is invisible to every one of the five axes
+// this control could check -- not a flaw in this mutation's construction,
+// but a structural property of the current representation. This is
+// recorded as a DEFECT IN THE CRITERION (D-12-41), never a quiet downgrade:
+// the test below proves, and pins, the absence exactly as
+// TestC03PeerDeriveOriginFactsOpCallGapStillOpen pins D-10-C01's own open
+// gap -- a genuine PASSING regression test recording what is NOT yet true,
+// rather than a false claim that the mutation was caught.
+func TestPayloadSlotSwapMutationKilled(t *testing.T) {
+	ctx := context.Background()
+	runner := native.DefaultRunner()
+
+	t.Run("mutated", func(t *testing.T) {
+		restore := cgen.SetPayloadSlotSwapForTest(true)
+		defer restore()
+
+		program := checkedProgram(t, "testdata", "phase12", "payload_tracer.lang")
+		engines := runFunctionOkExecutions(t, ctx, program, "identity", runner)
+		compareErr := session.Phase5CompareEngines("payload_tracer.lang(mutated)", engines)
+		var disagreement *session.Phase5EngineDisagreement
+		if errors.As(compareErr, &disagreement) && disagreement.Axis == session.AxisTerminalOutcome {
+			// If this ever fires, the architectural finding above is
+			// STALE: the payload value now reaches the terminal outcome,
+			// and this control has become constructible for real. Do not
+			// "fix" this branch to keep the test green -- update the
+			// finding in PHASE-12-DEBT.md's D-12-26 entry instead.
+			t.Logf("mutation KILLED on %s: %v", session.AxisTerminalOutcome, disagreement)
+			return
+		}
+		if compareErr != nil {
+			t.Fatalf("payload_tracer.lang(mutated): unexpected disagreement not on %s: %v", session.AxisTerminalOutcome, compareErr)
+		}
+		t.Logf("EMPIRICALLY CONFIRMED (D-12-41 escalation): the wrong-slot payload write is invisible to %s -- interpreter, -O0, and -O3 all agree despite the seeded bug, because a payload-carrying return's Outcome.Value is always the alternative's own tag name on both engines, never the payload bytes. See PHASE-12-DEBT.md's D-12-26 entry.", session.AxisTerminalOutcome)
+	})
+
+	t.Run("companion_unmutated_agreement", func(t *testing.T) {
+		// D-12-32/D-11-52: native emission does not support multi-function
+		// branch bodies this phase, and payload_borrow_interaction.lang
+		// deliberately declares TWO functions (choose, identity) in one
+		// checked program (12-03-SUMMARY.md). isolateNativeFunction extracts
+		// just "identity" (plus the Outcome/Fault data types it needs) so
+		// this companion beat can still drive a genuinely DIFFERENT fixture
+		// file than the mutated beat above, unmutated, through the same
+		// native/interpreter comparison.
+		multiFunction := checkedProgram(t, "testdata", "phase12", "payload_borrow_interaction.lang")
+		program := isolateNativeFunction(t, multiFunction, "identity")
+		engines := runFunctionOkExecutions(t, ctx, program, "identity", runner)
+		if compareErr := session.Phase5CompareEngines("payload_borrow_interaction.lang(unmutated)", engines); compareErr != nil {
+			t.Fatalf("payload_borrow_interaction.lang: expected agreement absent the mutation, got: %v", compareErr)
+		}
+	})
 }
