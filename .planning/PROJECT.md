@@ -62,6 +62,14 @@ established intraprocedurally still holds across function boundaries.
   relevant — M001 (Phase 6; `risk_lanes.json` changed-risk lane selection,
   `internal/compiler/measure` p50/p95/CoV protocol, `qlt02_budget_manifest.json`).
 
+- ✓ Storable/matchable `Result` values with payload-carrying alternatives —
+  M002 (Phase 12; `OpConstructPayload`/`OpDestructurePayload` with a single
+  shared `core.AlternativeNameForPayloadType` derivation read by `check`,
+  `interp`, and `cgen`, and affine drop obligation held on the unmoved
+  alternative). Closes D-04-30, deferred from M001 Phase 4. Scope note: a
+  `data` declaration whose alternatives collide on payload type is refused
+  (`check.duplicate_payload_type`) rather than resolved — see D-12-44.
+
 ### Active
 
 - [ ] Lang-to-Lang calls: `OpCall` as a real `OperationKind` at all six dispatch
@@ -74,8 +82,6 @@ established intraprocedurally still holds across function boundaries.
 - [ ] Cross-function rebuild of Phase 3's exhaustive loan-endpoint differentials.
 - [ ] Interprocedural `-O3` equivalence, which M001 could not claim because it
       ships without calls.
-- [ ] Storable/matchable `Result` values and payload-carrying alternatives
-      (D-04-30, deferred from Phase 4).
 
 ### Out of Scope
 
@@ -188,6 +194,7 @@ Canonical planning inputs:
 | Keep syntax provisional but canonical | Enables real parser/formatter evidence without freezing decorative choices early | ✓ Good — losslessness and idempotence held through generated programs and malformed AI edits |
 | Treat structured diagnostics and evidence as a versioned product API | AI effectiveness depends more on precise verifier feedback than exotic syntax | ✓ Good — the `/0`→`/1` schema bump landed across 12 literal sites with `/0` bytes provably frozen; `cmd/lang-repair` repairs 5 defect classes through the JSON protocol alone |
 | Defer `OpCall` and interprocedural equivalence out of M001 | Landing a new `OperationKind` at six dispatch sites alongside alias facts, sanitizers, the reducer, and the QLT-01 registry matched the fingerprint of the failures that cost Phases 2-4 extra remediation rounds | ⚠️ Revisit — correct for M001's risk budget, but it is the reason M001 ships without Lang-to-Lang calls; M002's lead charter |
+| Ratify D-12-43: accept that the decisive wrong-slot value-divergence control is unconstructible at this language maturity | The hazard is independently policed at compile time by D-12-37, and the current grammar never lets a match arm's result expose raw payload bytes — so a wrong-slot write is invisible to every comparator axis by construction, not by weak testing. Escalated as a defect in the criterion rather than a downgraded assertion (D-12-41/D-11-36 precedent) | ⚠️ Revisit when the grammar widens to expose bound payload content, or when a payload-value-aware harness observation channel exists; ratified at a blocking-human checkpoint on 2026-09-13, no owning phase named |
 
 ## Evolution
 
@@ -207,4 +214,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-08 after recording M002 durable context*
+*Last updated: 2026-09-13 after Phase 12*
