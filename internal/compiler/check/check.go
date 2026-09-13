@@ -592,6 +592,269 @@ func checkCallGraphAcyclic(program core.Program, spanByOperationID map[string]di
 }
 
 // ---------------------------------------------------------------------
+// Phase 13: contract-boundary blame (D-13-01..D-13-08, D-13-06/D-13-07).
+//
+// Blame is computed HERE, in check, ONLY -- corevalidate never re-derives
+// it (D-13-06; D-08-17/D-09-31 already establish the two admission peers
+// cannot fail the same way, and reverse-engineering one peer's cause shape
+// into the other is the antipattern the peer discipline exists to
+// prevent). The peer gate agrees on refusal, never on blame site.
+//
+// D-13-04 (empirically verified by TestBlameMovesNoPrimarySpanToday, a
+// same-package test in check_blame_test.go): all eight currently-shipped
+// interprocedural codes land in B2 today, so adopting this rule moves
+// ZERO Primary spans -- this resolver is new, tested infrastructure ready
+// for a future B1-shaped defect class; it does not change any of the
+// eight codes' existing hand-written Primary-span expressions, which
+// already select the caller side B2 would select.
+// ---------------------------------------------------------------------
+
+// declaredContractField enumerates D-13-02's five declared-contract facts a
+// B1 violation can be about: FunctionSignature's Parameters[].Mode,
+// Parameters[].Drops, Return, Callable, and Abilities -- nothing else.
+// numDeclaredContractFields is a compile-time constant (the iota block's
+// own trailing sentinel) consumed ONLY by blameFieldWitness's
+// exhaustiveness guard immediately below.
+type declaredContractField int
+
+const (
+	declaredFieldParameterMode declaredContractField = iota
+	declaredFieldParameterDrops
+	declaredFieldReturn
+	declaredFieldCallable
+	declaredFieldAbilities
+	numDeclaredContractFields
+)
+
+// blameFieldWitness is D-13-07's MANDATORY compile-time exhaustiveness
+// guard. The right-hand side is a keyed array literal using "..." for its
+// length: Go's spec computes that length as the HIGHEST key present plus
+// one. The left-hand side's declared type is the FIXED size
+// [numDeclaredContractFields]struct{} (numDeclaredContractFields is a
+// compile-time constant from the const block above). Assigning a
+// shorter-length literal to a fixed-size array variable is a genuine Go
+// type error ("cannot use ... (value of type [4]struct{}) as
+// [5]struct{} value in variable declaration") -- so deleting any one
+// keyed entry below (the scratch-copy demonstration D-13-07 requires; see
+// 13-02-SUMMARY.md for the verbatim compiler error this produces) makes
+// `go build` fail. This is the difference between this rule and a
+// heuristic: a deleted case in an ordinary switch would silently compile.
+var blameFieldWitness [numDeclaredContractFields]struct{} = [...]struct{}{
+	declaredFieldParameterMode:  {},
+	declaredFieldParameterDrops: {},
+	declaredFieldReturn:         {},
+	declaredFieldCallable:       {},
+	declaredFieldAbilities:      {},
+}
+
+// blameFact is one classified input to resolveBlame: either a USE fact (an
+// operation, D-13-02) -- which resolveBlame always skips, since a use fact
+// is never itself a B1 blame source, only ever the implicit B2 default --
+// or a DECLARED fact (one of the five declaredContractField values,
+// D-13-02), resolved to its declaring function.
+type blameFact struct {
+	// FunctionID is the fact's owning function: for a DECLARED fact, the
+	// function whose signature declares the field.
+	FunctionID string
+	// Declared is true for a DECLARED fact; false for a USE fact.
+	Declared bool
+	// Classified is meaningful only when Declared is true: false means the
+	// cause was recognizably ABOUT one of the five declaredContractField
+	// values but could not be parsed/classified further (D-13-07's
+	// fail-open-closure trigger -- routes to blame_undetermined, never
+	// falls through to B2). Always true for a USE fact.
+	Classified bool
+	// Field is meaningful only when Declared && Classified.
+	Field declaredContractField
+	// Violated is true when Declared && Classified && the owning
+	// function's own checked body contradicts this declared field (a B1
+	// violation). Meaningless otherwise. No currently-shipped diagnostic
+	// sets this true (D-13-04): B1 is new infrastructure with no shipped
+	// example yet.
+	Violated bool
+}
+
+// blameKind is resolveBlame's/resolveCycleBlame's closed outcome
+// vocabulary.
+type blameKind int
+
+const (
+	blameCaller       blameKind = iota // B2: default, caller blamed at the call operation.
+	blameFunction                      // B1 (or B3's tie-break winner among several B1 candidates).
+	blameCycle                         // D-13-05: core.call_graph_cycle is exempt from B1/B2/B3 entirely.
+	blameUndetermined                  // D-13-07: an unclassified declared fact -- never silently B2.
+)
+
+// blameOutcome is resolveBlame's/resolveCycleBlame's result.
+type blameOutcome struct {
+	Kind blameKind
+	// FunctionID is the blamed function's ID -- set for blameFunction and
+	// blameCaller.
+	FunctionID string
+	// UndeterminedSites is set for blameUndetermined (exactly two entries,
+	// callee then caller -- D-13-07's "both sites published" requirement)
+	// and for blameCycle (every cycle member, D-13-05).
+	UndeterminedSites []string
+}
+
+// BlameUndeterminedCode is D-13-07's typed refusal code for an outcome the
+// blame resolver could not classify, modeled on ExplainError's {Code}-only
+// shape (session_phase6_explain.go:15-20, 13-PATTERNS.md).
+const BlameUndeterminedCode = "check.blame_undetermined"
+
+// classifyDeclaredCause classifies one diagnostic.Cause into D-13-02's
+// declared-fact model. It recognizes exactly the cause shapes that are
+// ABOUT one of the five declaredContractField values today -- every other
+// cause kind (borrow_created_here, loan_extended_by_call, declared_arity,
+// argument_type, declared_parameter_type, place, cycle_member, and so on)
+// names a DIFFERENT contract dimension entirely (a type contract, an
+// arity contract, a use-site fact) that D-13-02's five-field ownership-
+// contract vocabulary was never written to cover, so classifyDeclaredCause
+// reports ok == false for those -- out of scope for this resolver, never
+// silently folded into "unclassified" (D-13-07's closure is specifically
+// for a cause recognizably about one of the five fields whose own shape
+// this classifier fails to parse, not for every cause the package emits).
+//
+//   - "callee_return_contract" (interproceduralLoanLivenessDiagnostic,
+//     check.go): Detail is "<calleeID>:return.mode=<Mode>" (D-08-20/23).
+//     PARSED here, never re-derived, per D-13-02's own instruction.
+//   - "callee" ON core.callee_not_callable ONLY: Detail is the callee's own
+//     ID. 13-CONTEXT.md's "Claude's Discretion" list settles a
+//     non-Callable callee as CALLER MISUSE (B2) -- see the settled-decision
+//     comment at verifyCallableRefusal's own emission site -- so this cause
+//     is classified as declared/Callable but reported un-Violated: the
+//     callee's own declaration is not internally self-contradictory merely
+//     by being non-Callable, so no B1 case is manufactured here.
+func classifyDeclaredCause(diagnosticCode string, cause diagnostic.Cause) (fact blameFact, ok bool) {
+	switch {
+	case cause.Kind == "callee_return_contract":
+		calleeID, parsed := parseCalleeReturnContractOwner(cause.Detail)
+		if !parsed {
+			return blameFact{Declared: true, Classified: false}, true
+		}
+		return blameFact{FunctionID: calleeID, Declared: true, Classified: true, Field: declaredFieldReturn, Violated: false}, true
+	case cause.Kind == "callee" && diagnosticCode == core.CalleeNotCallable:
+		return blameFact{FunctionID: cause.Detail, Declared: true, Classified: true, Field: declaredFieldCallable, Violated: false}, true
+	default:
+		return blameFact{}, false
+	}
+}
+
+// parseCalleeReturnContractOwner parses "<calleeID>:return.mode=<Mode>"
+// (D-08-20/23's fixed Detail shape) and returns calleeID. Returns
+// ok == false for any Detail not matching that shape -- fail-closed, never
+// a best-effort guess.
+func parseCalleeReturnContractOwner(detail string) (calleeID string, ok bool) {
+	const marker = ":return.mode="
+	index := strings.Index(detail, marker)
+	if index == -1 {
+		return "", false
+	}
+	return detail[:index], true
+}
+
+// resolveBlame implements D-13-03's B1/B2/B3 rule plus D-13-07's mandatory
+// blame_undetermined closure. facts is every blame fact the diagnostic's
+// causes were classified into; callerFunctionID is the function owning the
+// call operation this diagnostic is about (B2's default target); order is
+// calleeBeforeCallerOrder's result (B3's tie-break authority);
+// program.Functions supplies B3's residual tie-break (declaration index).
+//
+//   - Any Declared && !Classified fact short-circuits to blame_undetermined
+//     immediately (D-13-07: NEVER falls through to B2).
+//   - Otherwise, every Declared && Classified && Violated fact names a B1
+//     candidate function. Zero candidates -> B2 (blameCaller). One or more
+//     -> B3: the minimum in calleeBeforeCallerOrder (order), ties broken by
+//     program.Functions declaration index.
+func resolveBlame(program core.Program, order []string, facts []blameFact, callerFunctionID string) blameOutcome {
+	orderIndex := make(map[string]int, len(order))
+	for i, functionID := range order {
+		orderIndex[functionID] = i
+	}
+	declarationIndex := make(map[string]int, len(program.Functions))
+	for i, function := range program.Functions {
+		declarationIndex[function.ID] = i
+	}
+
+	var undeterminedFunctionID string
+	var undeterminedFound bool
+	var b1Candidates []string
+	seenB1 := map[string]bool{}
+	for _, fact := range facts {
+		if !fact.Declared {
+			continue
+		}
+		if !fact.Classified {
+			if !undeterminedFound {
+				undeterminedFunctionID = fact.FunctionID
+				undeterminedFound = true
+			}
+			continue
+		}
+		if fact.Violated && !seenB1[fact.FunctionID] {
+			seenB1[fact.FunctionID] = true
+			b1Candidates = append(b1Candidates, fact.FunctionID)
+		}
+	}
+	if undeterminedFound {
+		return blameOutcome{Kind: blameUndetermined, UndeterminedSites: []string{undeterminedFunctionID, callerFunctionID}}
+	}
+	if len(b1Candidates) > 0 {
+		sort.SliceStable(b1Candidates, func(i, j int) bool {
+			left, right := b1Candidates[i], b1Candidates[j]
+			leftOrder, leftOK := orderIndex[left]
+			rightOrder, rightOK := orderIndex[right]
+			if leftOK != rightOK {
+				// A candidate present in calleeBeforeCallerOrder always
+				// outranks one absent from it -- the absent case is a
+				// defensive fallback (order is built from the SAME
+				// program.Functions every B1 candidate is drawn from, so
+				// this branch is unreached in production), never a signal
+				// to prefer the unordered candidate.
+				return leftOK
+			}
+			if leftOK && rightOK && leftOrder != rightOrder {
+				return leftOrder < rightOrder
+			}
+			return declarationIndex[left] < declarationIndex[right]
+		})
+		return blameOutcome{Kind: blameFunction, FunctionID: b1Candidates[0]}
+	}
+	return blameOutcome{Kind: blameCaller, FunctionID: callerFunctionID}
+}
+
+// resolveCycleBlame implements D-13-05's exemption: core.call_graph_cycle
+// NEVER enters resolveBlame's B1/B2/B3 rule at all -- the blame set is the
+// whole cycle, published as secondary causes, Primary unchanged at the
+// closing operation. A separate, NAMED function (rather than a
+// code-conditioned branch inside resolveBlame) so the exemption can never
+// silently widen to cover another code by accident.
+func resolveCycleBlame(members []string) blameOutcome {
+	return blameOutcome{Kind: blameCycle, UndeterminedSites: append([]string(nil), members...)}
+}
+
+// blameUndeterminedRepairs builds D-13-07/D-13-08's two-site repair pair
+// for a blameUndetermined outcome: one candidate repair per site (callee
+// then caller), each carrying Applicability = RequiresConfirmation so
+// diagnostic.DriverEligible refuses to auto-apply either -- NEVER
+// MachineApplicable. This is also D-13-08's prescribed mitigation for
+// "mutual consistency with incompatible intent" (an ACCEPTED LIMITATION:
+// repair-then-re-check cannot falsify the choice between weakening the
+// caller and strengthening the callee, since both make the program check
+// clean -- so both are offered, disclosed, and neither is auto-applied).
+// Returns nil unless outcome.Kind == blameUndetermined with exactly the two
+// published sites resolveBlame always produces.
+func blameUndeterminedRepairs(outcome blameOutcome, calleeSpan, callerSpan diagnostic.Span) []diagnostic.Repair {
+	if outcome.Kind != blameUndetermined || len(outcome.UndeterminedSites) != 2 {
+		return nil
+	}
+	return []diagnostic.Repair{
+		{Kind: "blame_undetermined", Detail: outcome.UndeterminedSites[0], Span: &calleeSpan, Applicability: diagnostic.ApplicabilityRequiresConfirmation},
+		{Kind: "blame_undetermined", Detail: outcome.UndeterminedSites[1], Span: &callerSpan, Applicability: diagnostic.ApplicabilityRequiresConfirmation},
+	}
+}
+
+// ---------------------------------------------------------------------
 // Phase 08 Task 2: interprocedural loan liveness.
 //
 // The end-to-end tracer -- one interprocedural loan-liveness refusal
@@ -1767,6 +2030,25 @@ func verifyCallableRefusal(functions []core.Function, table callSignatureTable) 
 				callable = true
 			}
 			if !callable {
+				// D-13-XX (settled, Phase 13): a non-Callable callee is
+				// CALLER MISUSE (B2), not a callee contract violation (B1).
+				// 13-CONTEXT.md's own "Claude's Discretion" list named this
+				// as "the one field where both readings are defensible" --
+				// settled here in the caller's favor because the caller's
+				// OWN choice to call an unpublishable function is what is
+				// actually wrong; the callee's declaration is not
+				// internally self-contradictory merely by being
+				// non-Callable. classifyDeclaredCause (check.go, Phase 13's
+				// blame resolver) encodes this same settled choice: it
+				// classifies this "callee" cause as declared/Callable but
+				// reports it un-Violated, so resolveBlame's B1 candidate
+				// set never contains this callee and the diagnostic's
+				// existing Primary (function.Span, the CALLER's own
+				// declaration) already matches what B2 would select --
+				// D-13-04's zero-Primary-movement claim for this code, now
+				// a considered decision rather than an artifact of
+				// implementation order (13-RESEARCH.md's own note on this
+				// site).
 				diag := diagnostic.Error(
 					core.CalleeNotCallable, function.Span, "call target is not callable",
 					diagnostic.Cause{Kind: "callee", Detail: operation.CalleeID},
