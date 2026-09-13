@@ -827,7 +827,7 @@ rules are written in wave 3 — that ordering is the anti-overfitting control
 Plans:
 
 - [x] 13-01-PLAN.md — Tracer: `move_after_interprocedural_loan` end-to-end through the unmodified `lang-repair` driver, plus the `antitheater_test.go` acceptance contract
-- [ ] 13-02-PLAN.md — Contract-boundary blame rule (B1/B2/B3), `blame_undetermined` with a compile-time exhaustiveness guard, empirical zero-Primary-movement proof
+- [x] 13-02-PLAN.md — Contract-boundary blame rule (B1/B2/B3), `blame_undetermined` with a compile-time exhaustiveness guard, empirical zero-Primary-movement proof
 - [ ] 13-03-PLAN.md — `lang explain` function attribution (peer re-derived), the `narrows` function-scope guard, and the D-13-20 schema-bump observation
 - [ ] 13-04-PLAN.md — Held-out/derivation corpus incl. the D-13-28 twin pair (both halves), interprocedural injectors, topology-disjointness control, sealed `HELDOUT.sha256`
 - [ ] 13-05-PLAN.md — `wrap_call_in_try` and `use_matching_argument` with D-13-10's uniqueness gate; final two re-pinned diagnostic IDs

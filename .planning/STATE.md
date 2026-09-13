@@ -4,17 +4,17 @@ milestone: M002
 milestone_name: Interprocedural Semantic Spine
 current_phase: 13
 current_phase_name: Agent Loop for Interprocedural Defects
-status: in-progress
-stopped_at: Completed 13-01-PLAN.md (interprocedural-loan-liveness repair tracer); ready for 13-02
-last_updated: "2026-09-13T18:50:44.000Z"
+status: executing
+stopped_at: Completed 13-02-PLAN.md (contract-boundary blame resolver); ready for 13-03
+last_updated: "2026-09-13T19:22:49.119Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 13 plan 01 executed (tracer slice for DX-07)
-state_head: c4ee457
+state_head: 3a13274bb57cb65e3a797c4eb8325a1485b9a476
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 55
+  completed_plans: 56
 ---
 
 # Project State
@@ -52,8 +52,8 @@ terminal finding. No outstanding human verification.
 ## Current Position
 
 Phase: 13 — Agent Loop for Interprocedural Defects
-Plan: 1 of 7 (complete)
-Status: In progress
+Plan: 2 of 7 (complete)
+Status: Ready to execute
 Last activity: 2026-09-13 — Plan 13-01 (interprocedural-loan-liveness repair tracer) executed
 
 Progress: [#################---] 86% (6/7 phases) · 55/61 plans
@@ -216,6 +216,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 12-result-payloads P07 | 45min | 3 tasks | 6 files |
 | Phase 12 P08 | 25 min | 3 tasks | 1 files |
 | Phase 13-agent-loop-for-interprocedural-defects P01 | 27 min | 3 tasks | 7 files |
+| Phase 13 P02 | 58min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -307,6 +308,8 @@ Standing architectural commitments carried into M002:
 - [Phase 12]: D-12-44 recorded: CR-01's disposition is FIX (check.duplicate_payload_type + shared core resolver), restriction on the source language, lifting condition named as GEN-01 — CR-01 was the code review's sole CRITICAL finding and the verifier's only hard gap
 - [Phase 12]: D-12-45 recorded: WR-01/WR-02/IN-01 dispositions, all closed, none deferred — Every secondary review finding must have an explicit recorded disposition
 - [Phase 13]: 13-01: check.interprocedural_loan_liveness's move_after_interprocedural_loan repair is emitted ONLY for the BACKWARD direction (call is the loan's own recorded last use) — the FORWARD direction (loan propagated through the call onto a place read still later) is not fixed by swapping the move and call statements, discovered empirically by splicing the repair onto real testdata/phase07-08 fixtures both ways. A `callIsLastUse` gate added to `interproceduralLoanLivenessDiagnostic`. Re-pinned FIVE (not the plan's stated four) check_ordering_stability_test.go rows — phase08/twin_b_accept.lang also carries this code. Fixed a latent syntax/parser.go call-binding Span truncation (Rule 1) the new repair's :stmt span channel exposed.
+- [Phase 13]: Blame resolver (resolveBlame/resolveCycleBlame) built and exhaustively tested but not wired into the eight existing diagnostic emission sites -- D-13-04 verified empirically that all eight already select B2's Primary span, so wiring is a no-op today; the resolver is ready infrastructure for the first B1-shaped defect class. — Avoids touching identity-bearing Primary spans on published diagnostics for zero behavioral gain, per D-13-04's empirical verification (TestBlameMovesNoPrimarySpanToday).
+- [Phase 13]: checkCallGraphAcyclic routed through the new calleeBeforeCallerOrder helper instead of calling callgraph.Order directly, making it check.go's sole callgraph.Order call site. — Required to satisfy the plan's 'exactly one non-comment callgraph.Order call site' acceptance criterion, and strengthens D-13-03's 'no new ordering authority' claim by construction; behavior-preserving since only the error is ever consulted.
 
 ### Pending Todos
 
@@ -450,8 +453,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:50:44.000Z
-Stopped at: Completed 13-01-PLAN.md (interprocedural-loan-liveness repair tracer)
+Last session: 2026-09-13T19:22:40.160Z
+Stopped at: Completed 13-02-PLAN.md (contract-boundary blame resolver); ready for 13-03
 Resume file: None
 Next command: `/gsd-execute-phase 13` (plan 13-02)
 
