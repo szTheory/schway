@@ -830,7 +830,7 @@ Plans:
 - [x] 13-02-PLAN.md — Contract-boundary blame rule (B1/B2/B3), `blame_undetermined` with a compile-time exhaustiveness guard, empirical zero-Primary-movement proof
 - [x] 13-03-PLAN.md — `lang explain` function attribution (peer re-derived), the `narrows` function-scope guard, and the D-13-20 schema-bump observation
 - [x] 13-04-PLAN.md — Held-out/derivation corpus incl. the D-13-28 twin pair (both halves), interprocedural injectors, topology-disjointness control, sealed `HELDOUT.sha256`
-- [ ] 13-05-PLAN.md — `wrap_call_in_try` and `use_matching_argument` with D-13-10's uniqueness gate; final two re-pinned diagnostic IDs
+- [x] 13-05-PLAN.md — `wrap_call_in_try` and `use_matching_argument` with D-13-10's uniqueness gate; final two re-pinned diagnostic IDs
 - [ ] 13-06-PLAN.md — Criterion 3: twin-pair repair-then-re-check with the detection-site mutation kill; held-out integration across all three classes
 - [ ] 13-07-PLAN.md — D-13-33 retro-strengthening of `testdata/phase6` distinctness (blocking developer adjudication) and the QLT-08 completeness matrix
 

@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 13
 current_phase_name: Agent Loop for Interprocedural Defects
 status: executing
-stopped_at: Completed 13-04-PLAN.md
-last_updated: "2026-09-13T20:20:12.760Z"
+stopped_at: Completed 13-05-PLAN.md
+last_updated: "2026-09-13T20:48:15.775Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 13 plan 01 executed (tracer slice for DX-07)
-state_head: 47302f13019893f534dc4c7c082818040cc59f15
+state_head: e4bf130763056032ca41e3df54f6e9b671733bf2
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 58
+  completed_plans: 59
 ---
 
 # Project State
@@ -52,7 +52,7 @@ terminal finding. No outstanding human verification.
 ## Current Position
 
 Phase: 13 — Agent Loop for Interprocedural Defects
-Plan: 4 of 7 (complete)
+Plan: 5 of 7 (complete)
 Status: Ready to execute
 Last activity: 2026-09-13 — Plan 13-01 (interprocedural-loan-liveness repair tracer) executed
 
@@ -219,6 +219,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 13 P02 | 58min | 3 tasks | 2 files |
 | Phase 13 P03 | 62min | 3 tasks | 5 files |
 | Phase 13 P04 | 60min | 3 tasks | 12 files |
+| Phase 13 P05 | 55min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -314,6 +315,7 @@ Standing architectural commitments carried into M002:
 - [Phase 13]: checkCallGraphAcyclic routed through the new calleeBeforeCallerOrder helper instead of calling callgraph.Order directly, making it check.go's sole callgraph.Order call site. — Required to satisfy the plan's 'exactly one non-comment callgraph.Order call site' acceptance criterion, and strengthens D-13-03's 'no new ordering authority' claim by construction; behavior-preserving since only the error is ever consulted.
 - [Phase 13]: 13-03: peer-disagreement refusal scoped to core-claims-and-AST-disagrees, not core's mere absence — core.Program.Functions only includes cleanly-checked functions; treating absence as disagreement broke most of the existing explain corpus
 - [Phase 13]: D-13-02a resolved: no B1-shaped interprocedural diagnostic is constructible at this language maturity (sameType is a precondition of every interprocedural pass, checked before any call site is reached).
+- [Phase 13]: Set A repair-emission logic implemented with the uniqueness-gate comparison target changed from contract.ParameterType to the caller's own type fact — the literal plan-specified comparison is mathematically unsatisfiable at this language's single-type-per-function maturity.
 
 ### Pending Todos
 
@@ -457,8 +459,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-13T20:20:12.611Z
-Stopped at: Completed 13-04-PLAN.md
+Last session: 2026-09-13T20:48:09.509Z
+Stopped at: Completed 13-05-PLAN.md
 Resume file: None
 Next command: `/gsd-execute-phase 13` (plan 13-02)
 
