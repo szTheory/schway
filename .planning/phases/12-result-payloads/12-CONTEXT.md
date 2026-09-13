@@ -118,7 +118,7 @@ that deviation is stated as a deviation, with the superseded text named
   import allowlist, so none of them is its own oracle and none reuses the
   mechanism under test.
 
-- **D-12-03 (the injected defect, which is what makes the oracle non-vacuous):**
+- **D-12-03 [informational] (the injected defect, which is what makes the oracle non-vacuous):**
   inject at D-10-C01's boundary and verify the peers **diverge in the
   already-known, already-attributed way** — `corevalidate`'s
   `peerDeriveOriginFacts` refusing the shape as not-`Callable` while `check`
@@ -130,7 +130,7 @@ that deviation is stated as a deviation, with the superseded text named
   — and **no `case core.OpCall`**. D-10-C01 is still open; the probe's premise
   holds.
 
-- **D-12-04 (BRANCH A / BRANCH B pre-registered, and the M003 slip trigger stated so it cannot be argued away after the fact):** write both branches down
+- **D-12-04 [informational] (BRANCH A / BRANCH B pre-registered, and the M003 slip trigger stated so it cannot be argued away after the fact):** write both branches down
   **before** running.
   - **BRANCH A (accepted, phase proceeds):** every peer's verdict on the fixture
     is **fully attributable** to an already-catalogued carry-forward gap —
@@ -149,7 +149,7 @@ that deviation is stated as a deviation, with the superseded text named
   scope decision is made by the pre-registration, not renegotiated; the point of
   pre-registering is that the verdict cannot be rationalized afterward.
 
-- **D-12-04a (PROBE RUN — VERDICT: BRANCH A (accepted). Phase 12 proceeds.):**
+- **D-12-04a [informational] (PROBE RUN — VERDICT: BRANCH A (accepted). Phase 12 proceeds.):**
   run 2026-09-12, **after** D-12-01..D-12-04 were committed (`97a7c03`) and
   **before** any planning — so the pre-registration is timestamped in git ahead
   of the result and the verdict cannot be back-fitted.
@@ -221,7 +221,7 @@ that deviation is stated as a deviation, with the superseded text named
      sees what that gate cannot. Plans should not treat the peer-gate register as
      a complete divergence inventory.
 
-- **D-12-04b (the darkest-corner fixture is INEXPRESSIBLE in testdata, and that is part of the finding):** no committed fixture declares a borrow-returning
+- **D-12-04b [informational] (the darkest-corner fixture is INEXPRESSIBLE in testdata, and that is part of the finding):** no committed fixture declares a borrow-returning
   `PublicOrigin` sourced from forwarding a callee's result — **because the gap is
   open**. D-10-C01's own text says it "constrained which fixtures Phase 10 plans
   10-07/10-08 could express". So the probe **synthesizes** the shape at core
@@ -285,7 +285,7 @@ that deviation is stated as a deviation, with the superseded text named
   `AllOperationKinds()` and unwinding the arms at all six dispatch sites plus
   the exhaustive-dispatch control's own fixtures.
 
-- **D-12-06 (argue from affine obligations, not edit count — the reason the hybrid was also rejected):** destructuring **mints a fresh place carrying a fresh ownership obligation** that no existing kind models, so it must get a new
+- **D-12-06 [informational] (argue from affine obligations, not edit count — the reason the hybrid was also rejected):** destructuring **mints a fresh place carrying a fresh ownership obligation** that no existing kind models, so it must get a new
   kind under every candidate considered. Once that is conceded, giving
   construction the same treatment costs one more kind's 8-10 edits and removes
   the conditional-meaning hazard on `OpCopy`/`OpMove` **entirely**. D-04-22's
@@ -391,7 +391,7 @@ that deviation is stated as a deviation, with the superseded text named
   namespace, layered **on top of** the existing set-membership exhaustiveness
   check rather than replacing it.
 
-- **D-12-16 (rejected — bare tag plus body-level `take`):** recorded so it is not
+- **D-12-16 [informational] (rejected — bare tag plus body-level `take`):** recorded so it is not
   relitigated. `Ok => { let v = take flag }` keeps `MatchArm.Pattern` a bare
   string and is the smallest grammar diff, but it needs **flow-sensitive
   narrowing the checker does not have** (inside the `Ok` arm, `flag`'s type must
@@ -763,6 +763,27 @@ that deviation is stated as a deviation, with the superseded text named
 </decisions>
 
 <canonical_refs>
+### Decisions tagged `[informational]` (not tracked for plan coverage)
+
+Six decisions in this section carry an `[informational]` tag. They are recorded
+history or argument rather than phase-12 deliverables, so the decision-coverage
+gate does not require a plan to cite them. Reason per decision:
+
+- **D-12-03** — describes the pre-flight probe's injected defect. The probe was
+  built and committed at `3f9ceee`, before this phase was planned.
+- **D-12-04** — pre-registration of the probe's BRANCH A / BRANCH B branches.
+  The probe ran and returned BRANCH A; the pre-registration is spent.
+- **D-12-04a** — the probe run record itself. Committed evidence, not build work.
+- **D-12-04b** — records how the probe synthesized a fixture that is
+  inexpressible in `testdata`. Part of the completed probe.
+- **D-12-06** — the rationale behind D-12-05, which *is* covered by a plan.
+  Argument for a decision, not a separate deliverable.
+- **D-12-16** — an explicitly rejected alternative, recorded so it is not
+  relitigated. There is nothing to build.
+
+D-12-33 is deliberately **not** tagged: it is a live tree correction that plan 01
+must use, and it is cited there.
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**

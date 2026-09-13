@@ -749,10 +749,24 @@ D-11-02 debt-closure work serving NAT-04..NAT-07, not RES-* (D-12-34); plans
 02-05 carry RES-02 and RES-03.
 
 Plans:
+**Wave 1**
+
 - [ ] 12-01-PLAN.md — Inherited D-11-02 gate: the N=1 convergence differential, the D-12-36 branch decision, and PHASE-12-DEBT.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 12-02-PLAN.md — Tracer: a payload constructed, bound, and re-constructed end to end through parser, core IR, check, corevalidate, interp, and cgen, proven on three engines
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 12-03-PLAN.md — RES-02 expansion: the three named pattern refusals, D-12-27's resource-payload refusal, the affine drop obligation, and real exhaustive-dispatch coverage
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 12-04-PLAN.md — Independent peers, the corpus characterization replay proving the interp widening moved no bytes, and the D-12-04c header correction
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 12-05-PLAN.md — Criterion 2's two anti-vacuity controls, and the niche clause recorded as uninstantiable
 
 ### Phase 13: Agent Loop for Interprocedural Defects
