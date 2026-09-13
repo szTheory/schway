@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 12
 current_phase_name: "`Result` Payloads"
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-09-13T01:47:21.636Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-09-13T02:28:30.783Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 12 execution started
-state_head: 5a94b42a6ea5a62a7407f1c520c98d05bdbc7f79
+state_head: 2a59b1ac990c3848f3b8bb65e1e3651f207fc837
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 51
-  completed_plans: 47
+  completed_plans: 48
 ---
 
 # Project State
@@ -49,7 +49,7 @@ committed tests rather than answered once — see `11-UAT.md`).
 ## Current Position
 
 Phase: 12 (`Result` Payloads) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 12 execution started
 
@@ -204,6 +204,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 11 P07 | 45 min | 3 tasks | 7 files |
 | Phase 11-multi-function-native-emission-and-interprocedural-equivalen P09 | 65min | 3 tasks | 6 files |
 | Phase 12 P01 | 38 min | 3 tasks | 3 files |
+| Phase 12 P02 | 95min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -284,6 +285,7 @@ Standing architectural commitments carried into M002:
 - [Phase 12]: D-12-31 branch ratified as RE-DEFER: the measured N=1 differential shows emitProgram refuses 4/5 single-function shapes and diverges on the 5th, so D-12-36's fallback trigger fired.
 - [Phase 12]: PHASE-11-DEBT.md's D-11-02 landing-phase commitment is superseded with a stated reversal quoting the original text verbatim, per the D-09-08/D-09-30/D-10-27 precedent.
 - [Phase 12]: The six legacy cgen emitters stay in cgen.go, byte-untouched, with no currently-owned landing phase for their eventual deletion.
+- [Phase 12]: Ratified as proposed: source spelling Ok(Buffer)/Ok(v)=>/Ok(v), six diagnostic codes, one-globbing-test D-12-19 replay
 
 ### Pending Todos
 
@@ -427,8 +429,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-13T01:47:21.187Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-09-13T02:28:30.452Z
+Stopped at: Completed 12-02-PLAN.md
 11-SECURITY.md threats_open: 0), ready to plan Phase 12
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.

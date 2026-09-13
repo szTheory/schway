@@ -755,7 +755,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 12-02-PLAN.md — Tracer: a payload constructed, bound, and re-constructed end to end through parser, core IR, check, corevalidate, interp, and cgen, proven on three engines
+- [x] 12-02-PLAN.md — Tracer: a payload constructed, bound, and re-constructed end to end through parser, core IR, check, corevalidate, interp, and cgen, proven on three engines
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
