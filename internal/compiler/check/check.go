@@ -3228,20 +3228,27 @@ func PayloadRecordLayout(dataType core.DataType) *core.RecordLayout {
 }
 
 // analyzePayloadArm is the bare-value-arm sibling of analyzeArmBody
-// (D-12-05): built directly from the arm's own Pattern/Value/Binder
-// fields, never by parsing an ast.LinearBody, since a payload-carrying bare
-// arm (`Ok(v) => Ok(v)`) has no braces to parse. It emits, in the SAME
-// nextIndex-minting-authority shape analyzeArmBody's own per-binding loop
-// uses (one operation per step, its target place at "place:{step+1}"):
-//  1. core.OpDestructurePayload, when the matched alternative carries a
+// (D-12-05): built directly from the arm's own Pattern/Value/Binder/
+// ConstructBinder fields, never by parsing an ast.LinearBody, since a
+// payload-carrying bare arm (`Ok(v) => Ok(v)`) has no braces to parse. It
+// emits, in the SAME nextIndex-minting-authority shape analyzeArmBody's own
+// per-binding loop uses (one operation per step, its target place at
+// "place:{step+1}"):
+//  1. D-12-15's third named refusal (check.payload_arity_mismatch), when
+//     the pattern-side and value-side binders are BOTH present and differ
+//     -- D-12-14 provides exactly one shared payload place per arm this
+//     phase, so two DIFFERENT names is a genuine arity mismatch, not a
+//     stylistic choice (Plan 03; Plan 02's original shape silently let the
+//     value-side name override the pattern-side one, masking this);
+//  2. core.OpDestructurePayload, when the matched alternative carries a
 //     payload (D-12-14: this MOVES the payload out of aliasPlaceID, exactly
 //     like OpMove clears its own source);
-//  2. core.OpConstructPayload, when the arm's value alternative carries a
-//     payload (constructing from the place named by arm.Binder -- D-12-14's
-//     single-place-available consequence: the constructed argument and the
-//     pattern's own destructured binder are the same declared place this
-//     phase);
-//  3. a terminating core.OpReturn reading whichever place holds the arm's
+//  3. core.OpConstructPayload, when the arm's value alternative carries a
+//     payload (constructing from the place named by the arm's one shared
+//     binder -- D-12-14's single-place-available consequence: the
+//     constructed argument and the pattern's own destructured binder are
+//     the same declared place this phase);
+//  4. a terminating core.OpReturn reading whichever place holds the arm's
 //     final value.
 func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceID, typeID string, dataType core.DataType, arm ast.MatchArm, sealed map[string]bool) ownershipSupport {
 	result := ownershipSupport{Places: []core.Place{}, Operations: []core.LinearOperation{}, Types: []core.TypeFact{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: 1}
@@ -3249,6 +3256,17 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 		result.DiagnosticCode = problem.Code
 		result.Diagnostic = &problem
 		return result
+	}
+
+	if arm.Binder != "" && arm.ConstructBinder != "" && arm.Binder != arm.ConstructBinder {
+		return fail(diagnostic.Error("check.payload_arity_mismatch", arm.Span, fmt.Sprintf(
+			"arm binds two different payload names (pattern binder %q, construction binder %q) but this phase provides exactly one shared payload place per arm",
+			arm.Binder, arm.ConstructBinder,
+		)))
+	}
+	binder := arm.Binder
+	if binder == "" {
+		binder = arm.ConstructBinder
 	}
 
 	patternDetail := lookupAlternativeDetail(dataType, arm.Pattern)
@@ -3259,7 +3277,7 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 	currentSourceTypeID := typeID
 
 	if patternDetail.PayloadType != "" {
-		if arm.Binder == "" {
+		if binder == "" {
 			return fail(diagnostic.Error("check.missing_payload_binder", arm.Span, "payload-carrying alternative matched with no binder"))
 		}
 		global := startIndex + step
@@ -3281,17 +3299,17 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
 			Kind: core.OpDestructurePayload, SourceID: aliasPlaceID, PayloadTargetID: binderPlaceID, PayloadType: patternDetail.PayloadType, TypeID: typeID,
 		})
-		result.Places = append(result.Places, core.Place{ID: binderPlaceID, Name: arm.Binder, TypeID: payloadTypeID})
+		result.Places = append(result.Places, core.Place{ID: binderPlaceID, Name: binder, TypeID: payloadTypeID})
 		currentSourceID = binderPlaceID
 		currentSourceTypeID = payloadTypeID
 		step++
-	} else if arm.Binder != "" {
+	} else if binder != "" {
 		return fail(diagnostic.Error("check.binder_on_nullary_alternative", arm.Span, "binder present on an alternative declared with no payload"))
 	}
 
 	returnSourceID := aliasPlaceID
 	if valueDetail.PayloadType != "" {
-		if arm.Binder == "" {
+		if binder == "" {
 			return fail(diagnostic.Error("check.missing_payload_binder", arm.Span, "payload-carrying alternative constructed with no argument"))
 		}
 		global := startIndex + step

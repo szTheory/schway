@@ -529,7 +529,7 @@ func (p *parser) matchExpr() ast.MatchExpr {
 	for !p.atAny(TokenRBrace, TokenData, TokenFn, TokenEOF) {
 		startPosition := p.position
 		pattern := p.identifier("syntax.expected_pattern")
-		binder := p.optionalPayloadBinder()
+		patternBinder := p.optionalPayloadBinder()
 		if !p.accept(TokenFatArrow) {
 			p.problem("syntax.expected_fat_arrow", p.peek(), "expected `=>`")
 			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF)
@@ -547,7 +547,7 @@ func (p *parser) matchExpr() ast.MatchExpr {
 			body := p.linearBody()
 			end := p.expect(TokenRBrace, "syntax.expected_rbrace")
 			if pattern.Kind == TokenIdentifier {
-				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Body: &body, Binder: binder, Span: spanFrom(pattern, end)})
+				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Body: &body, Binder: patternBinder, Span: spanFrom(pattern, end)})
 				expression.Span.End = end.Span.End
 			}
 		} else {
@@ -556,16 +556,16 @@ func (p *parser) matchExpr() ast.MatchExpr {
 			// place name is the construction site (`Ok(v)`). Per this
 			// language's move-on-bind semantics (D-12-14), the constructed
 			// argument and the pattern's own destructuring binder are the
-			// same declared place this phase (there is no second place
-			// available to construct from), so a non-empty value-side
-			// binder overrides (and, in every legal program, simply
-			// restates) the pattern-side binder captured above.
+			// same declared place this phase -- but Plan 03 (D-12-15's
+			// third refusal) keeps the two names SEPARATE here rather than
+			// having one silently override the other: check.go's
+			// analyzePayloadArm is the single place that decides whether a
+			// differing pattern-side/value-side name is the arity-mismatch
+			// refusal or (when they agree, or one is empty) the one shared
+			// place D-12-14 describes.
 			valueBinder := p.optionalPayloadBinder()
-			if valueBinder != "" {
-				binder = valueBinder
-			}
 			if pattern.Kind == TokenIdentifier && value.Kind == TokenIdentifier {
-				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Binder: binder, Span: spanFrom(pattern, value)})
+				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Binder: patternBinder, ConstructBinder: valueBinder, Span: spanFrom(pattern, value)})
 				expression.Span.End = value.Span.End
 			}
 		}

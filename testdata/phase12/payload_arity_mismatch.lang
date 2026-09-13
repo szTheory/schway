@@ -1,0 +1,33 @@
+// Phase 12 Plan 03, Task 1 (D-12-15's third named refusal): the sole
+// difference from testdata/phase12/payload_tracer.lang is the FIRST arm's
+// construction binder -- `Ok(v) => Ok(w)` instead of `Ok(v) => Ok(v)`.
+//
+// D-12-14 provides exactly one shared payload place per arm this phase:
+// the constructed argument and the pattern's own destructuring binder are
+// the same declared place. Naming it "v" on the pattern side and "w" on
+// the construction side asks for TWO distinct places where only one
+// exists -- refused as check.payload_arity_mismatch, not silently resolved
+// by picking one name over the other (which is what Plan 02's original
+// parser shape would have done).
+
+module result.payload_arity_mismatch
+
+export {
+  type Fault
+  type Outcome
+  fn identity
+}
+
+data Fault =
+  | Broken
+
+data Outcome =
+  | Ok(Buffer)
+  | Err(Fault)
+
+fn identity(result: Outcome) -> Outcome {
+  match result {
+    Ok(v) => Ok(w)
+    Err(e) => Err(e)
+  }
+}

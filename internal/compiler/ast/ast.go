@@ -122,14 +122,25 @@ type MatchArm struct {
 	// Body.HasClosedVariant (03-PATTERNS inconsistency I-7).
 	Body *LinearBody
 	// Binder is Phase 12's additive field (D-12-13): the identifier written
-	// inside `( ... )` in this arm's pattern position (a destructuring
-	// binder, e.g. `Ok(v) =>`) or in its bare value position (a
-	// construction argument, e.g. `=> Ok(v)`) -- "" when the arm neither
-	// binds nor constructs a payload. Binder is orthogonal to the
-	// Value/Body exclusivity above: an arm may carry a binder alongside
-	// either form.
+	// inside `( ... )` in this arm's PATTERN position (a destructuring
+	// binder, e.g. `Ok(v) =>`) -- "" when the pattern position carries no
+	// parenthesized identifier. Binder is orthogonal to the Value/Body
+	// exclusivity above: an arm may carry a binder alongside either form.
 	Binder string
-	Span   diagnostic.Span
+	// ConstructBinder is Phase 12 Plan 03's additive field (D-12-15's third
+	// refusal): the identifier written inside `( ... )` in this arm's bare
+	// VALUE position (a construction argument, e.g. `=> Ok(w)`) -- ""
+	// when the value position carries no parenthesized identifier, or when
+	// the arm has no Value at all (a Body arm). Kept SEPARATE from Binder
+	// rather than collapsed at parse time (the earlier Plan 02 shape
+	// silently let a non-empty value-side name override an empty or
+	// DIFFERING pattern-side one) precisely so check.go can compare the two
+	// names: D-12-14 provides exactly one shared payload place per arm this
+	// phase, so an arm naming two DIFFERENT places (Binder != "" &&
+	// ConstructBinder != "" && Binder != ConstructBinder) is a genuine
+	// arity mismatch, not a stylistic choice -- check.payload_arity_mismatch.
+	ConstructBinder string
+	Span            diagnostic.Span
 }
 
 // HasClosedVariant reports whether exactly one of the arm's two value forms
