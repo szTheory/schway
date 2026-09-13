@@ -3,7 +3,7 @@ phase: 12-result-payloads
 recorded: 2026-09-12
 status: accepted
 disposition: planning-time
-items: 8
+items: 10
 blocking: 0
 ---
 
@@ -21,6 +21,12 @@ This register carries Phase 12's own recorded-not-built decisions
 (D-12-24, D-12-30, D-12-21, D-12-42, D-12-04c) plus one re-filed item created
 by plan 01's Task 2 checkpoint outcome (D-12-36).
 
+**Amended at phase close (plan 08).** D-12-44 (CR-01's FIX disposition,
+closed by plans 06-07) and D-12-45 (the WR-01/WR-02/IN-01 secondary-finding
+dispositions, all closed) were added as new rows. D-12-43 was amended with
+a dated paragraph recording plan 08 Task 1's blocking-human checkpoint
+outcome; its original measurement narrative is unchanged.
+
 ---
 
 ## Items
@@ -35,6 +41,8 @@ by plan 01's Task 2 checkpoint outcome (D-12-36).
 | D-12-36 | 12-CONTEXT.md (D-12-36), RATIFIED at plan 01 Task 2, `12-01-SUMMARY.md` | NAT-04..NAT-07 | warning | OPEN and UNOWNED — re-deferred; no phase currently claims porting branch bodies, foreign-call block bodies, and both by-pointer lowering variants into `emitProgram`, converging the preamble, and re-pinning the four frozen golden-C digests | THE INHERITED D-11-02 SIX-EMITTER DELETION IS RE-DEFERRED WITH A STATED REVERSAL, gated on the N=1 convergence differential per `TestN1ConvergenceDifferential` (`internal/compiler/cgen/cgen_n1_convergence_test.go`). The measured five-shape table shows `emitProgram` refuses four of five single-function shapes outright and diverges textually and structurally on the fifth (`owned_transfer.lang`); making the differential green requires ~1,500 lines of `cgen.go` emitter porting work, which is not "cheap" under any reading — D-12-36's single named trigger. The superseded PHASE-11-DEBT.md landing-phase text ("Phase 12 — a green N=1 convergence differential (Q-05), landing inside Phase 12's per-dispatch-site `Result` plans, never as a second sweep") is withdrawn; see PHASE-11-DEBT.md's `### D-11-02` section for the full stated reversal |
 | D-12-26 | 12-CONTEXT.md (D-12-26), plan 05 Task 3 | RES-03 | info | CLOSED — Phase 12, plan 05 (the claim is recorded at the strength it can actually be held, permanently; there is no future work to land) | CRITERION 2'S "ONE MEANING" CLAIM IS OBSERVABLE-BEHAVIOR AGREEMENT, NOT BYTE-IDENTICAL LAYOUT. `interp` has no byte layout at all — its value model carries no size, alignment, or offset anywhere — so "one meaning in the core IR, the interpreter, and emitted C17" cannot mean byte-identical layout across all three engines, because that claim cannot be true. It means: the same alternative is live, the same payload value is extracted, and the same events are emitted in the same order, with layout-as-bytes a C-only obligation policed by `_Static_assert`/`offsetof` pairs (plan 05 Task 1's `PayloadLayoutMutationRunner`) for internal self-consistency. Byte-identical layout across `interp`, the core IR, and emitted C17 is explicitly NOT claimed |
 | D-12-43 | plan 05 Task 2's empirical measurement, extends D-12-38/D-12-39/D-12-41 | RES-03 | warning | OPEN and UNOWNED — reopens if a future plan changes how a payload-carrying return's terminal value is derived (e.g. exposing payload bytes on a match arm's return path); no phase currently owns this | D-12-38's DECISIVE WRONG-SLOT VALUE-DIVERGENCE CONTROL IS UNCONSTRUCTIBLE AGAINST THE CURRENT REPRESENTATION — an absence-of-applicable-channel finding, not a failed engineering attempt. `TestPayloadSlotSwapMutationKilled` seeds a real, type-safe bug in `cgen`'s `OpConstructPayload` codegen (a correct tag, but the payload written into a DIFFERENT alternative's struct field, via the new `cgen.SetPayloadSlotSwapForTest` seam) and drives it through interpreter/-O0/-O3 comparison. Measured result: NO disagreement on any of the five axes. A payload-carrying return's `Outcome.Value` is, on BOTH engines, always the alternative's own compile-time-known TAG NAME — `cgen`'s `returnLiteral` is a literal string baked into the generated C at emission time (never read back from the runtime struct), and `interp`'s `value.String()` resolves through the tag field, never the payload bytes (D-12-26: `interp` has no byte layout to diverge in). So a wrong-SLOT payload write is structurally invisible to every axis `session_phase5_compare.go` compares today. Per D-12-41/D-11-36 this is escalated as a defect in the criterion, not a quiet downgrade to a weaker (e.g. compile-failure-only) assertion: `TestPayloadSlotSwapMutationKilled` pins the absence as a genuine PASSING regression test, mirroring `TestC03PeerDeriveOriginFactsOpCallGapStillOpen`'s own gap-pinning precedent, rather than falsely claiming the mutation was caught |
+| D-12-44 | `12-REVIEW.md` CR-01, `12-VERIFICATION.md` gap 1, disposition recorded in `12-06-PLAN.md`'s `<cr01_disposition>` | RES-02, RES-03 | blocker | CLOSED — Phase 12, plans 06 and 07 | CR-01'S DISPOSITION IS FIX, RECORDED AS A DECISION, NOT AN INFERRED OUTCOME. `cgen` and `interp` each resolved a payload operation's declaring alternative via an ambiguous first-match linear scan, with no refusal anywhere in the pipeline for the colliding-`PayloadType` case that triggers it — the review's sole CRITICAL finding and the verifier's only hard gap. Closed by a fail-closed `check.duplicate_payload_type` declaration-time refusal (plan 06) plus a shared, ambiguity-detecting `core.AlternativeNameForPayloadType`/`core.LookupAlternativeDetail` resolver replacing both engines' independent copies (plan 07). Imposes a RESTRICTION on the source language: two alternatives of one data type may not declare the same payload type. Lifting condition: GEN-01's real generic `Result<T, E>` (M003) collides by construction at `T == E`; lifting the refusal requires promoting the alternative name to a first-class fact on the operation |
+| D-12-45 | `12-REVIEW.md` WR-01, WR-02, IN-01 | RES-02 | info | CLOSED — Phase 12, plans 06 and 07 | THE THREE SECONDARY REVIEW FINDINGS ARE EACH CLOSED; NONE WAS DEFERRED. WR-01 (misleading binder-source message) fixed plan 06 Task 3. WR-02 (fault-injection seam could no-op vacuously) fixed plan 07 Task 3, now asserting an injected wrong-slot write count of at least 1 (observed: 2). IN-01 (`emitBranch`'s local reimplementation of alternative-detail lookup) fixed plan 07 Task 1 via `core.LookupAlternativeDetail` |
 
 ## Detail
 
@@ -265,3 +273,138 @@ return's terminal value is derived (for example, permitting a match arm to
 return the bound payload directly rather than only reconstructing an
 alternative), making payload bytes reachable from `Outcome.Value` for the
 first time.
+
+**Ratified 2026-09-13 at plan 12-08 Task 1's `gate="blocking-human"`
+checkpoint.** The developer was presented with three options — `ratify`,
+`slip`, and `ratify-with-owner` — and replied with the option id `ratify`
+verbatim: **"ratify"**, selecting "RATIFY — D-12-43 is criterion 2's
+terminal state as worded." No enabling work is scheduled and no future
+phase is named as the owner of reopening this finding; `.planning/ROADMAP.md`
+gains no new phase and no new scope from this decision. This checkpoint
+exists precisely because `12-VERIFICATION.md`'s human-verification item 2
+objected that this finding was reached by measurement inside plan 05
+without a blocking human checkpoint — unlike D-12-31's comparable branch
+decision, which did get one. That process gap is now closed: the finding's
+merit is unchanged, but its acceptance is now an explicit, dated, verbatim
+human decision rather than an inference from a passing test suite.
+
+The landing phase above remains **OPEN and UNOWNED**, governed by the same
+reopening condition stated before this ratification — ratifying the finding
+as terminal does not itself constitute new work, so no phase is committed.
+WR-02's anti-vacuity assertion (plan 07 Task 3, observed injected wrong-slot
+write count: 2 on a real run) now guards `TestPayloadSlotSwapMutationKilled`
+against ever passing vacuously — the absence this control measures is a
+genuine, exercised absence, not an unexercised no-op.
+
+### D-12-44 — CR-01's disposition is FIX, recorded as a decision — CLOSED (plans 06, 07)
+
+**The disposition chosen was FIX, not ratified debt, and why.** `12-06-PLAN.md`'s
+`<cr01_disposition>` records this explicitly rather than leaving it implicit
+in the existence of the plan, because `12-VERIFICATION.md`'s
+human-verification item 1 routed the disposition itself to a human, with
+two named branches: "committed fix + re-verification" versus "explicit debt
+entry with a named landing condition." Invoking this gap-closure run already
+chose FIX; this row is the record, not the choice.
+
+The verifier named two candidate closures: (a) a fail-closed `check.*`
+diagnostic, and (b) carrying an `AlternativeName` fact directly on the
+operation so resolution never round-trips through `PayloadType`. The chosen
+disposition is **(a), plus a narrowed form of (b)'s intent** — not (b) as
+literally described. (b) as literally described is an IR-schema change:
+adding a field to `core.LinearOperation` touches the JSON wire shape,
+`corevalidate`'s replay laws, all six dispatch sites, and the explicitly
+enumerated field set `core_convention_absence_test.go`'s
+`linearOperationExpectedFields` pins as a tripwire — and the phase's
+must-not-regress list requires `TestPayloadCorpusCharacterizationReplay` to
+stay byte-identical across the whole pre-Phase-12 corpus, a bar an IR field
+addition is the single most likely change in this space to fail. A
+check-time refusal cannot move those bytes, and plan 06 Task 2 measured
+that directly rather than assuming it. (a) alone is not sufficient on its
+own — two independent first-match derivations left in `cgen` and `interp`
+is exactly the defect class D-12-25 exists to prevent, and `check`'s
+refusal only governs programs that cross the parser (`session.PayloadProbeDataType`
+proves a `core.DataType` can be hand-built and never see `check` at all).
+So plan 07 additionally collapsed both engine copies into one shared,
+ambiguity-reporting resolver in `core` — (b)'s intent, without its
+IR-schema blast radius.
+
+**What closed it.**
+- Plan 06: `check.duplicate_payload_type`, a declaration-time refusal added
+  to `check.Program`'s `program.Data` walk (`internal/compiler/check/check.go`),
+  positioned in the same region as `check.resource_payload_refused` and
+  before its early return. Shipped message, verified on
+  `testdata/phase12/payload_duplicate_payload_type.lang`:
+  > `alternative "Failed" shares payload type "Buffer" with alternative "Ok": a construct/destructure operation cannot be resolved to a declaring alternative unambiguously while two alternatives of one data type collide on payload type (D-12-44, see PHASE-12-DEBT.md)`
+- Plan 07: `core.AlternativeNameForPayloadType` and `core.LookupAlternativeDetail`
+  (`internal/compiler/core/core.go`) — the single shared, ambiguity-reporting
+  derivation, replacing `cgen.alternativeNameForPayloadType` and
+  `interp.alternativeNameForPayloadType` (both deleted). Ambiguity error
+  text observed on the colliding fixture:
+  > `data type "Colliding": payload type "Byte" is ambiguous between alternatives [First Second]`
+
+**What the evidence is — a convergence test is NOT the evidence.** Two
+controls go red if the fix is reverted:
+- `TestDuplicatePayloadTypeRefused` (plan 06 Task 2). Observed RED (walk
+  disabled): `check_payload_test.go:228: expected at least one diagnostic,
+  got none`. Observed GREEN (walk restored): all four subtests PASS.
+- `TestPayloadAlternativeResolutionHasExactlyOneDerivation` (plan 07 Task 2).
+  Observed RED (a stub `alternativeNameForPayloadType` reintroduced into
+  `cgen.go`): `core_single_derivation_test.go:194: internal/compiler/cgen/cgen.go:
+  found a local declaration of "alternativeNameForPayloadType" -- the shared
+  core.AlternativeNameForPayloadType derivation must not be reimplemented
+  locally (CR-01/D-12-25)`. Observed GREEN (stub removed): all four
+  subtests PASS. Neither demonstration was committed; both `git diff --stat`
+  showed zero change to the affected file after restoration.
+
+**The restriction this imposes on the source language, stated plainly:**
+two alternatives of one data type may not declare the same payload type.
+
+**The named lifting condition:** GEN-01's real generic `Result<T, E>`
+(M003) collides by construction at `T == E` — `Ok(T)`/`Err(T)` share a
+payload type whenever the two type parameters are instantiated identically.
+Lifting the refusal to admit that case requires promoting the alternative
+name to a first-class fact on the operation (the IR-schema change (b)
+described, deferred above on corpus-byte-stability grounds). Until GEN-01
+lands and that promotion is done, the refusal stands.
+
+**Measured corpus-neutrality result:** `TestPayloadCorpusCharacterizationReplay`
+green with the refusal in place — 97 subtests total (62 PASS, 35 SKIP)
+across all 10 pre-Phase-12 corpus directories, byte-identical, no golden
+re-pinned (`12-06-SUMMARY.md`).
+
+### D-12-45 — the three secondary review findings are each closed — CLOSED (plans 06, 07)
+
+None of `12-REVIEW.md`'s three secondary findings was silently dropped.
+
+**WR-01** (`check.go`, `analyzePayloadArm`'s "binder on nullary alternative"
+diagnostic conflated pattern-side and construction-side binders) — fixed
+plan 06 Task 3. The fix took the review's second suggested shape: a
+conditional message branching on whether `arm.Binder` (pattern side) or
+`arm.ConstructBinder` (construction side) supplied the binder, naming the
+offending binder identifier and both alternatives on the construction-side
+branch. The diagnostic code `check.binder_on_nullary_alternative` was
+deliberately left unchanged — no new code was introduced, so no existing
+fixture's expected code moves. Pattern-side wording is untouched; the new
+construction-side wording, verified on the `Empty => Ok(w)` shape:
+> `construction binder "w" names a payload source for alternative "Ok", but this arm's pattern alternative "Empty" declares no payload to bind it from`
+
+**WR-02** (`cgen.go`, `wrongPayloadSlot`'s fault-injection seam could
+silently fall back to the correct write with no signal that it had no-oped)
+— fixed plan 07 Task 3. `cgen.PayloadSlotSwapInjectedWriteCount()`, a
+production-visible counter reader following `SetPayloadSlotSwapForTest`'s
+own cross-package precedent, is asserted `>= 1` inside
+`TestPayloadSlotSwapMutationKilled`'s mutated subtest before the engines are
+compared. Observed on a real run: **2** wrong-slot writes injected
+(`12-07-SUMMARY.md`). D-12-43's recorded finding and measurement narrative
+are unchanged by this fix — WR-02 guards the control against vacuous
+passing; it does not alter what the control measures.
+
+**IN-01** (`cgen.go`, `emitBranch`'s per-alternative `detail` lookup was a
+third independent reimplementation of alternative-detail resolution) —
+fixed plan 07 Task 1. `emitBranch`'s loop now calls
+`core.LookupAlternativeDetail` directly, the same helper `check`'s own
+`lookupAlternativeDetail` delegates to. All three consumers (`check`,
+`cgen`, `interp`) now read one derivation.
+
+No review finding — WR-01, WR-02, or IN-01 — was deferred to this or any
+future phase; all three closed within plans 06-07.
