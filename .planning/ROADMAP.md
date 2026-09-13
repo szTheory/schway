@@ -767,7 +767,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 12-05-PLAN.md — Criterion 2's two anti-vacuity controls, and the niche clause recorded as uninstantiable
+- [x] 12-05-PLAN.md — Criterion 2's two anti-vacuity controls, and the niche clause recorded as uninstantiable
 
 ### Phase 13: Agent Loop for Interprocedural Defects
 
