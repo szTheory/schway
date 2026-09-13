@@ -233,6 +233,47 @@ else is available.
   checkpoint rather than absorbing it. Do the same here — report it, do not
   paper over it, and do not weaken any other control to compensate.
 
+- **D-13-10a (OPEN — threatens criterion 2's "three classes"; raised by the
+  orchestrator after 13-05 landed 2026-09-13, from 13-05's own reported
+  finding, independently confirmed by reading the emission site):**
+  `use_matching_argument` emits a `MachineApplicable` repair whose
+  `Replacement` is **byte-identical to the text already at its `Span`** on every
+  real trigger. A no-op splice cannot make a mismatched program re-check clean,
+  so the driver will report `reverify_failed`, never `repaired`.
+
+  **Why, and why it is the same root cause as D-13-02b:** the branch's own guard
+  establishes `typeFact.Shape.Constructor != contract.ParameterType` before the
+  gate runs, so no in-scope place can ever equal `contract.ParameterType` —
+  comparing against it makes the gate vacuously refuse and ship nothing. 13-05
+  therefore compared against the caller's own `typeFact.ID` instead (recorded as
+  a Rule 1 deviation). But **every Lang function has exactly one parameter and
+  one type fact**, so every initialized place in the caller shares that one
+  constructor, and the unique match is always the argument's own already-passed
+  place. The replacement reproduces the original token.
+
+  This is the single-type-per-function invariant — the same structural property
+  that makes B1 unreachable in D-13-02b — surfacing a second time. At this
+  language maturity an argument-type mismatch has **no span-local fix**: all
+  in-scope places share one type, so the only real repairs are changing the
+  callee or changing the function's type, neither of which is a local edit.
+
+  **Consequence, stated honestly:** criterion 2 currently has **two** genuinely
+  repairable classes (`move_after_interprocedural_loan`, backward direction per
+  D-13-09b; and `wrap_call_in_try`), not three. ROADMAP's scope-cut note already
+  sanctions narrowing to "the two highest-value defect classes" — though its
+  stated trigger (phases 07-12 overrunning) did not occur; this is a different
+  and better reason.
+
+  **13-06 must establish the verdict empirically and MUST NOT fudge it:** run the
+  class through the real driver on a held-out fixture and report the actual
+  outcome string. Do not relax `use_matching_argument` to a non-`MachineApplicable`
+  applicability merely to avoid a red test — if it cannot repair, the honest
+  outcomes are either `unrepairable` (emit no repair at all) or a recorded
+  finding that the class is not machine-repairable at this maturity. Either is
+  acceptable; a green test that hides a no-op is not. The choice of whether to
+  substitute a different third class is the USER's, to be raised at 13-07's
+  checkpoint with this evidence.
+
 - **D-13-09b (NARROWING, found empirically by the 13-01 tracer 2026-09-13 —
   amends D-13-09.1):** the "swap the move and call statements" repair is
   semantics-preserving only for the **backward** direction of
