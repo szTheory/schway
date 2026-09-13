@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -118,4 +120,115 @@ fn identity(w: Wrapper) -> Wrapper {
 			t.Fatalf("expected zero diagnostics (no foreign block, nothing is resource-derived), got %+v", result.Diagnostics)
 		}
 	})
+}
+
+// TestPayloadDropObligation is Phase 12 Plan 03 Task 3's own witness for
+// criterion 1's affine drop obligation (D-12-29): the checked program
+// contains EXACTLY the expected number of destructure_payload operations
+// -- one per payload-carrying alternative (Ok, Err), zero for the nullary
+// Nope -- proving a lowering that silently skipped either payload arm's
+// own obligation would be caught, which an interp-only run (exactly one
+// arm executes per invocation) cannot catch on its own. corevalidate's
+// own independent re-derivation (replayBlocks' OpConstructPayload/
+// OpDestructurePayload cases) is asserted separately from check's own
+// verdict, per D-12-29's "derived independently by check and
+// corevalidate."
+func TestPayloadDropObligation(t *testing.T) {
+	source := readPhase12Fixture(t, "payload_drop_obligation.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("expected zero diagnostics, got %+v", result.Diagnostics)
+	}
+
+	validated := corevalidate.Validate(result.Program)
+	if !validated.Valid {
+		t.Fatalf("corevalidate independently rejected the checked program: %+v", validated.Problems)
+	}
+
+	destructureCount := 0
+	for _, function := range result.Program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpDestructurePayload {
+				destructureCount++
+			}
+		}
+	}
+	const expectedDestructureCount = 2
+	if destructureCount != expectedDestructureCount {
+		t.Fatalf("expected exactly %d destructure_payload operations (one per payload-carrying alternative), got %d", expectedDestructureCount, destructureCount)
+	}
+}
+
+// TestPayloadBindConsumes is Phase 12 Plan 03 Task 3's mechanical proof of
+// D-12-14's "bind MOVES": an in-test core-level mutation (per the plan's
+// own "a negative fixture OR an in-test core-level edit" allowance --
+// there is no bare-value-arm SOURCE SYNTAX that could author a second read
+// of an already-destructured place, so a .lang fixture cannot express
+// this). Starting from the tracer's own CHECKED, corevalidate-accepted
+// program, the "Ok" arm's OpConstructPayload is mutated to read the
+// SCRUTINEE ALIAS PLACE directly (the place the arm's own
+// OpDestructurePayload already cleared) instead of the properly
+// destructured payload place. If binding merely NAMED the payload rather
+// than consuming it, this would still validate; corevalidate must refuse
+// it, proving the destructure genuinely moved the alias away.
+func TestPayloadBindConsumes(t *testing.T) {
+	source := readPhase12Fixture(t, "payload_tracer.lang")
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("fixture failed to check: %+v", result.Diagnostics)
+	}
+	if valid := corevalidate.Validate(result.Program); !valid.Valid {
+		t.Fatalf("fixture rejected by corevalidate before mutation: %+v", valid.Problems)
+	}
+
+	if len(result.Program.Functions) != 1 {
+		t.Fatalf("expected exactly one function, got %d", len(result.Program.Functions))
+	}
+	function := &result.Program.Functions[0]
+	if function.Linear == nil {
+		t.Fatal("expected a Linear body on the checked function")
+	}
+
+	var aliasOp, constructOp *core.LinearOperation
+	for i := range function.Linear.Operations {
+		operation := &function.Linear.Operations[i]
+		switch operation.Kind {
+		case core.OpCopy:
+			if aliasOp == nil {
+				aliasOp = operation
+			}
+		case core.OpConstructPayload:
+			if constructOp == nil {
+				constructOp = operation
+			}
+		}
+	}
+	if aliasOp == nil || constructOp == nil {
+		t.Fatal("expected to find both an alias OpCopy and an OpConstructPayload in the checked program")
+	}
+
+	// The mutation: point the construction at the ALREADY-CLEARED
+	// scrutinee alias (aliasOp's own TargetID) instead of the properly
+	// destructured payload place, carrying the alias's own TypeID so the
+	// generic source.TypeID == operation.TypeID gate passes and the
+	// mutation is caught by the initialized[] liveness gate specifically,
+	// not by an unrelated type mismatch.
+	constructOp.SourceID = aliasOp.TargetID
+	constructOp.TypeID = aliasOp.TypeID
+
+	mutated := corevalidate.Validate(result.Program)
+	if mutated.Valid {
+		t.Fatal("expected corevalidate to refuse constructing from the already-moved scrutinee alias, but it validated")
+	}
+	if len(mutated.Problems) == 0 {
+		t.Fatal("expected at least one problem from the mutated program")
+	}
+	if mutated.Problems[0].Code != "core.place_uninitialized" {
+		t.Fatalf("expected core.place_uninitialized, got %q (%+v)", mutated.Problems[0].Code, mutated.Problems[0])
+	}
 }

@@ -300,6 +300,8 @@ var exhaustiveDispatchFixtures = []string{
 	"testdata/phase07/call_basic.lang",
 	"testdata/phase07/call_from_both_match_arms.lang",
 	"testdata/phase12/payload_tracer.lang",
+	"testdata/phase12/payload_drop_obligation.lang",
+	"testdata/phase12/payload_borrow_interaction.lang",
 }
 
 // runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's

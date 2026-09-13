@@ -1,0 +1,48 @@
+// Phase 12 Plan 03, Task 3 (D-12-29): criterion 1's own witness for the
+// affine drop obligation.
+//
+// D-12-29's precise meaning, stated here so the criterion's own wording is
+// never misread as implying a destructor count that does not exist: with
+// NO core.OpDrop in AllOperationKinds() and "drop" being the TYPE-LEVEL
+// ability core.AbilityDrop, "dropped exactly once" is NOT a countable
+// runtime event. It is a STATIC by-function-end accounting property that
+// check's worklist and corevalidate's set-propagation each derive
+// INDEPENDENTLY, for EVERY alternative -- including whichever ones are
+// NOT taken on a given run (a sum type executes exactly one arm; the
+// "unmoved" alternatives' own payload obligations are still proven
+// statically, never executed).
+//
+// `Ok` and `Err` each independently bind their own payload and consume it
+// (destructure then reconstruct, D-12-14's single shared place, moved out
+// and moved back in exactly once). `Nope` is genuinely nullary -- nothing
+// to bind, nothing to move, the scrutinee alias returned untouched.
+// TestPayloadDropObligation asserts the checked program contains exactly
+// two destructure_payload operations (one per payload-carrying
+// alternative, zero for `Nope`) -- proving a lowering that silently
+// skipped either payload arm's own obligation would be caught, which an
+// interp-only run (exactly one arm per invocation) cannot catch on its
+// own.
+
+module result.payload_drop_obligation
+
+export {
+  type Fault
+  type Outcome
+  fn identity
+}
+
+data Fault =
+  | Broken
+
+data Outcome =
+  | Ok(Buffer)
+  | Err(Fault)
+  | Nope
+
+fn identity(result: Outcome) -> Outcome {
+  match result {
+    Ok(v) => Ok(v)
+    Err(e) => Err(e)
+    Nope => Nope
+  }
+}
