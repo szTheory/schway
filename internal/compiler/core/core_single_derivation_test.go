@@ -9,11 +9,13 @@
 package core_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
 // collidingPayloadDataType mirrors session.PayloadProbeDataType's own
@@ -124,5 +126,80 @@ func TestLookupAlternativeDetailMatchesCheckSemantics(t *testing.T) {
 		if detail.Name != "Nonexistent" || detail.PayloadType != "" {
 			t.Fatalf("got %+v, want Name=Nonexistent PayloadType=\"\"", detail)
 		}
+	})
+}
+
+// engineSourceHasNoLocalResolverDeclaration asserts, per file, that no
+// line BEGINS WITH a func declaration of resolverName. The scan is
+// anchored at the start of the line (after trimming leading whitespace) so
+// a doc comment merely mentioning the identifier -- e.g. this very file's
+// own comments naming "alternativeNameForPayloadType" -- can never trip it;
+// only an actual `func alternativeNameForPayloadType(...)` declaration
+// does. This mirrors core_convention_absence_test.go's own precedent of
+// explaining why a check is a tripwire (line-anchored) rather than a
+// heuristic (an unanchored substring scan, which prose can trip).
+func engineSourceHasNoLocalResolverDeclaration(t *testing.T, relativePath, resolverName string) {
+	t.Helper()
+	path := testsupport.ProjectPath(relativePath)
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", relativePath, err)
+	}
+	prefix := "func " + resolverName
+	for _, line := range strings.Split(string(source), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), prefix) {
+			t.Fatalf("%s: found a local declaration of %q -- the shared core.AlternativeNameForPayloadType derivation must not be reimplemented locally (CR-01/D-12-25)", relativePath, resolverName)
+		}
+	}
+}
+
+// engineSourceUsesSharedHelper asserts POSITIVELY that relativePath
+// contains at least one reference to the exported core helper named --
+// so this tripwire cannot be satisfied by simply deleting payload
+// resolution altogether. Both directions (absence of the local copy AND
+// presence of the shared one) are required for the test to mean anything.
+func engineSourceUsesSharedHelper(t *testing.T, relativePath, helperReference string) {
+	t.Helper()
+	path := testsupport.ProjectPath(relativePath)
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", relativePath, err)
+	}
+	if !strings.Contains(string(source), helperReference) {
+		t.Fatalf("%s: expected at least one reference to %q -- payload alternative resolution must read the shared core derivation, not be silently deleted", relativePath, helperReference)
+	}
+}
+
+// TestPayloadAlternativeResolutionHasExactlyOneDerivation is plan 12-07's
+// reverted-fix control, the way TestDuplicatePayloadTypeRefused is plan
+// 12-06's: it goes red if either engine re-grows a local
+// alternativeNameForPayloadType declaration, or if either engine stops
+// reading the shared core.AlternativeNameForPayloadType.
+//
+// This test protects a defect class the project's own three-engine
+// convergence tests (TestPayloadTracerThreeEngineAgreement,
+// TestN1ConvergenceDifferential) CANNOT catch by construction: cgen and
+// interp previously carried the SAME ambiguous derivation, independently
+// reimplemented. Convergence testing only detects DISAGREEMENT between
+// engines -- two engines silently agreeing on the same wrong guess at
+// "which alternative does this belong to" produces perfect agreement, and
+// a comparison-based control sees nothing wrong. A reviewer re-adding a
+// local copy "for convenience" must turn THIS test red, in that
+// reviewer's own diff, not rely on a convergence test that structurally
+// cannot see the regression.
+func TestPayloadAlternativeResolutionHasExactlyOneDerivation(t *testing.T) {
+	const resolverName = "alternativeNameForPayloadType"
+
+	t.Run("cgen: no local declaration", func(t *testing.T) {
+		engineSourceHasNoLocalResolverDeclaration(t, "internal/compiler/cgen/cgen.go", resolverName)
+	})
+	t.Run("cgen: uses the shared core helper", func(t *testing.T) {
+		engineSourceUsesSharedHelper(t, "internal/compiler/cgen/cgen.go", "core.AlternativeNameForPayloadType")
+	})
+	t.Run("interp: no local declaration", func(t *testing.T) {
+		engineSourceHasNoLocalResolverDeclaration(t, "internal/compiler/interp/interp.go", resolverName)
+	})
+	t.Run("interp: uses the shared core helper", func(t *testing.T) {
+		engineSourceUsesSharedHelper(t, "internal/compiler/interp/interp.go", "core.AlternativeNameForPayloadType")
 	})
 }
