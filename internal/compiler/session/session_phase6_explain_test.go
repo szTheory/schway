@@ -526,7 +526,13 @@ var wantExplainEdgeKindsBeforeGuard = map[string][]string{
 	"phase3/exclusive_exclusive_reject.lang|diagnostic:6a3d8582000b05e32a575ebf":      {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
 	"phase3/exclusive_move_reject.lang|diagnostic:8038bd1955c8b4cbd98b445d":           {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
 	"phase3/shared_exclusive_reject.lang|diagnostic:2ac14b431c0d5a98db75e10d":         {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase4/fallible_call_unconsumed.lang|diagnostic:91c8b8c7a5d359d9a14fe6a8":        {},
+	// 13-05 Task 1/3 (D-13-09a): re-pinned. syntax.fallible_call_not_consumed
+	// now builds via diagnostic.ErrorWithRepairs unconditionally (schema
+	// lang.diagnostic/0 -> /1), which churns this diagnostic's ID; edge
+	// kinds are unaffected (still zero edges -- this diagnostic carries no
+	// Causes, only a wrap_call_in_try Repair, and Repairs never produce
+	// explain edges).
+	"phase4/fallible_call_unconsumed.lang|diagnostic:7bbbfdcb7eed322ff4e695ca":        {},
 	"phase4/foreign_call_target_not_foreign.lang|diagnostic:8ee0be5e21030f21f990f9f6": {"caused_by"},
 	"phase4/foreign_policy_value_injection.lang|diagnostic:204a40c7d8537f0809622fbb":  {},
 	"phase4/foreign_unwind_undeclared.lang|diagnostic:e9e51b10ac76db2d660d791b":       {"caused_by", "caused_by"},

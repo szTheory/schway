@@ -182,7 +182,14 @@ var interproceduralOrderingBaselineDirs = []string{
 // built to prevent.
 var interproceduralOrderingBaseline = map[string][2]string{
 	"phase07/call_argument_used_twice.lang":    {"ownership.use_after_move", "diagnostic:8e3116d77bcb23bd6b84396b"},
-	"phase07/call_type_mismatch.lang":          {"check.call_argument_type_mismatch", "diagnostic:eec74c3869e957e7eccaafb8"},
+	// 13-05 Task 3 (D-13-09a): re-pinned. This code now builds via
+	// diagnostic.ErrorWithRepairs unconditionally (schema lang.diagnostic/0
+	// -> /1), and this fixture's call is main's own first binding -- only
+	// the parameter is in scope, landing it in D-13-10's one-match
+	// partition -- so it also carries a use_matching_argument repair.
+	// Neither the source bytes nor the code changed; only the schema
+	// switch and the new repair, both deliberate.
+	"phase07/call_type_mismatch.lang":          {"check.call_argument_type_mismatch", "diagnostic:890ade363685588b544db988"},
 	"phase07/call_uncallable_callee.lang":      {"core.callee_not_callable", "diagnostic:5735171812e7ad4920c3bb72"},
 	"phase07/cycle_indirect.lang":              {"core.call_graph_cycle", "diagnostic:1e6c260432c9010ac6a196a9"},
 	"phase07/cycle_mutual.lang":                {"core.call_graph_cycle", "diagnostic:39bb0a1a48d08fc9674307a4"},
@@ -325,7 +332,12 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	"phase3/exclusive_exclusive_reject.lang":      {"ownership.borrow_conflict", "diagnostic:6a3d8582000b05e32a575ebf"},
 	"phase3/exclusive_move_reject.lang":           {"ownership.move_while_borrowed", "diagnostic:8038bd1955c8b4cbd98b445d"},
 	"phase3/shared_exclusive_reject.lang":         {"ownership.borrow_conflict", "diagnostic:2ac14b431c0d5a98db75e10d"},
-	"phase4/fallible_call_unconsumed.lang":        {"syntax.fallible_call_not_consumed", "diagnostic:91c8b8c7a5d359d9a14fe6a8"},
+	// 13-05 Task 1/3 (D-13-09a): re-pinned. This code now builds via
+	// diagnostic.ErrorWithRepairs unconditionally (schema lang.diagnostic/0
+	// -> /1) and carries a wrap_call_in_try repair when the callee name and
+	// its single argument name are both non-empty (true here). Source bytes
+	// unchanged; only the schema switch and the new repair, both deliberate.
+	"phase4/fallible_call_unconsumed.lang":        {"syntax.fallible_call_not_consumed", "diagnostic:7bbbfdcb7eed322ff4e695ca"},
 	"phase4/foreign_call_target_not_foreign.lang": {"core.call_target_not_foreign", "diagnostic:8ee0be5e21030f21f990f9f6"},
 	"phase4/foreign_policy_value_injection.lang":  {"check.foreign_policy_value_unsafe", "diagnostic:204a40c7d8537f0809622fbb"},
 	"phase4/foreign_unwind_undeclared.lang":       {"foreign.unwind_policy_undeclared", "diagnostic:e9e51b10ac76db2d660d791b"},
