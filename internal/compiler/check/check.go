@@ -3481,7 +3481,66 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 				{Kind: "argument_type", Detail: typeFact.Shape.Constructor},
 				{Kind: "declared_parameter_type", Detail: contract.ParameterType},
 			}
-			diag := diagnostic.Error(checkCallArgumentTypeMismatch, binding.RHS.Span, "call argument type does not match the callee's declared parameter type", causes...)
+			// 13-05 Task 2 (D-13-10): the uniqueness gate IS the safety
+			// argument for this class -- rustc's "there is a value of
+			// this type in scope" MaybeIncorrect downgrade, converted
+			// into a PRECONDITION rather than an applicability downgrade
+			// (NormalizeApplicability never defaults toward
+			// driver-eligible). `places` (this function's own parameter)
+			// is already the in-scope enumeration the gate needs --
+			// 13-RESEARCH.md Code Example 5, no plumbing required.
+			//
+			// The comparison target is deliberately typeFact.ID (this
+			// CALLER's own, single type fact -- D-07-09: every Lang
+			// function has exactly one parameter and one type fact, so
+			// every initialized place in THIS function shares typeFact's
+			// own constructor), never contract.ParameterType: this
+			// branch's own guard above already establishes
+			// typeFact.Shape.Constructor != contract.ParameterType, so
+			// no in-scope place's constructor can ever equal
+			// contract.ParameterType when this diagnostic fires --
+			// comparing against it would make the gate permanently,
+			// vacuously refuse and use_matching_argument would never
+			// ship a single repair, contradicting this plan's own
+			// acceptance criteria. 13-RESEARCH.md Pitfall 3 records the
+			// same finding: "the matches set is naturally either every
+			// initialized place, or the single parameter if nothing else
+			// is in scope yet" -- language possible ONLY when the
+			// comparison target is the caller's own type. Counting ALL
+			// initialized in-scope places sharing that type is also the
+			// LARGER, more conservative set (parameter alone, or
+			// parameter plus every prior `let`), so the gate refuses
+			// MORE often on multi-binding bodies -- the correct direction
+			// for a fail-closed precondition.
+			matchCount := 0
+			matchName := ""
+			for name, state := range places {
+				if state == nil || !state.initialized {
+					continue
+				}
+				if state.place.TypeID == typeFact.ID {
+					matchCount++
+					matchName = name
+				}
+			}
+			var repairs []diagnostic.Repair
+			// The gate is a PRECONDITION, not an applicability downgrade:
+			// on zero or two-or-more matches, emit NO repair at all --
+			// never a RequiresConfirmation repair on ambiguity. This is
+			// the one D-13-09 class where a clean-checking-but-
+			// semantically-different program is reachable, and the
+			// resulting `unrepairable` driver outcome on zero/2+ matches
+			// is CORRECT behavior (D-13-10), asserted by this plan's own
+			// positive test, not worked around.
+			if matchCount == 1 && matchName != "" && binding.RHS.Callee != "" {
+				repairSpan := binding.RHS.Span
+				repairs = append(repairs, diagnostic.Repair{
+					Kind: "use_matching_argument", Span: &repairSpan,
+					Replacement:   binding.RHS.Callee + "(" + matchName + ")",
+					Applicability: diagnostic.ApplicabilityMachineApplicable,
+				})
+			}
+			diag := diagnostic.ErrorWithRepairs(checkCallArgumentTypeMismatch, binding.RHS.Span, "call argument type does not match the callee's declared parameter type", causes, repairs...)
 			return core.LinearOperation{}, core.Place{}, &diag
 		}
 		// 07-09 T-07-09-02: the target place's type is derived from the

@@ -3819,7 +3819,16 @@ func bilateralCallGraphFaultReport(checkRefused, corevalidateRefused bool) (repo
 // error-severity diagnostic carrying the ratified
 // check.call_argument_type_mismatch code, whose Primary span is the call
 // site and whose ordered Causes are callee / argument_type (Buffer) /
-// declared_parameter_type (Byte), with no repairs.
+// declared_parameter_type (Byte).
+//
+// 13-05 Task 2 (D-13-10/D-13-09a): this fixture's call is `main`'s own
+// first binding, so only the parameter (`buffer`) is in scope when the
+// mismatch fires -- exactly the uniqueness gate's one-match partition, per
+// 13-RESEARCH.md Pitfall 3. The diagnostic now carries a single
+// use_matching_argument repair as a deliberate, reviewable consequence of
+// shipping D-13-09's class 3 (13-05-SUMMARY.md's Task 3 names this fixture
+// as one of the two remaining re-pinned rows D-13-09a predicted); it no
+// longer carries zero repairs.
 func TestCallArgumentTypeMismatchRefused(t *testing.T) {
 	source := readPhase07Fixture(t, "call_type_mismatch.lang")
 	result := Program(mustParseProgram(t, source))
@@ -3851,8 +3860,15 @@ func TestCallArgumentTypeMismatchRefused(t *testing.T) {
 	if diag.Causes[2].Detail != "Byte" {
 		t.Fatalf("expected declared_parameter_type detail Byte, got %q", diag.Causes[2].Detail)
 	}
-	if diag.Repairs != nil {
-		t.Fatalf("expected no repairs, got %+v", diag.Repairs)
+	if len(diag.Repairs) != 1 {
+		t.Fatalf("expected exactly one repair (use_matching_argument), got %+v", diag.Repairs)
+	}
+	repair := diag.Repairs[0]
+	if repair.Kind != "use_matching_argument" {
+		t.Fatalf("expected kind use_matching_argument, got %q", repair.Kind)
+	}
+	if !diagnostic.DriverEligible(repair) {
+		t.Fatalf("expected DriverEligible to return true for %+v", repair)
 	}
 }
 
