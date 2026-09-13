@@ -340,6 +340,28 @@ func explainBlameSpanSet(diag diagnostic.Diagnostic) map[[2]int]bool {
 // ordering edge) — this is part of the contract, not a convenience, and is
 // pinned by TestExplainNodeOrderIsStableOnTies.
 func buildExplainGraph(diag diagnostic.Diagnostic, maxDepth int, table explainFunctionTable) ([]protocol.ExplainNode, []protocol.ExplainEdge, []protocol.ExplainFunction, string, int, error) {
+	return buildExplainGraphWithGuard(diag, maxDepth, table, true)
+}
+
+// buildExplainGraphSkippingNarrowsGuard is
+// TestNarrowsFunctionScopeGuardIsNotInert's guard-DISABLED twin, in this
+// repo's established fault-injection shape
+// (session_phase6_injectors.go's matchInjectSkippingGuard): identical to
+// buildExplainGraph except D-13-19's function-scope narrows guard (both the
+// whole-function-span exclusion and the same-function_id requirement) is
+// never applied, existing solely so a test can prove concretely that the
+// guard is load-bearing -- without it, a cause whose span exactly equals a
+// function declaration span DOES become the narrowest containing ancestor
+// of a later in-body cause, exactly the sleeper bug D-13-19 fixes. Never
+// called from any production code path.
+func buildExplainGraphSkippingNarrowsGuard(diag diagnostic.Diagnostic, maxDepth int, table explainFunctionTable) ([]protocol.ExplainNode, []protocol.ExplainEdge, []protocol.ExplainFunction, string, int, error) {
+	return buildExplainGraphWithGuard(diag, maxDepth, table, false)
+}
+
+// buildExplainGraphWithGuard is the shared implementation
+// buildExplainGraph and buildExplainGraphSkippingNarrowsGuard both call,
+// differing only in enforceGuard.
+func buildExplainGraphWithGuard(diag diagnostic.Diagnostic, maxDepth int, table explainFunctionTable, enforceGuard bool) ([]protocol.ExplainNode, []protocol.ExplainEdge, []protocol.ExplainFunction, string, int, error) {
 	rootSpan := diag.Primary
 	rootFunction, rootHasFunction, err := resolveExplainFunction(table, &rootSpan)
 	if err != nil {
@@ -383,40 +405,60 @@ func buildExplainGraph(diag diagnostic.Diagnostic, maxDepth int, table explainFu
 			}
 		}
 		if edgeKind == protocol.EdgeCausedBy && cause.Span != nil {
-			best := -1
+			// D-13-19: two separate candidate pools. bestNarrows is the
+			// narrowest strictly-containing ancestor eligible to be a
+			// narrows parent (when enforceGuard: never a whole-function
+			// node, and only when it resolves to the SAME function_id as
+			// the cause). bestFunctionScopeCausedBy is, ONLY when
+			// enforceGuard excluded a candidate for being a whole-function
+			// node (never for a function_id mismatch -- a whole-function
+			// node's own function_id is always its own function, which by
+			// construction matches any cause genuinely inside its body),
+			// the narrowest such candidate: still "may be a caused_by
+			// parent" per D-13-19's own wording, just never a narrows
+			// parent. Falls back to the pre-existing root default only
+			// when NEITHER pool has a candidate.
+			bestNarrows := -1
+			bestFunctionScopeCausedBy := -1
 			for candidate := range items {
 				candidateNode := items[candidate].node
 				parentSpan := candidateNode.Span
 				if !explainSpanStrictlyContains(parentSpan, cause.Span) {
 					continue
 				}
-				// D-13-19: a node whose span exactly equals a
-				// core.Function.Span is a function-scope node and may only
-				// be a caused_by parent -- pure byte containment alone
-				// would otherwise make it the narrowest containing
-				// ancestor of every later cause anywhere in its body,
-				// asserting a containment relation the rule was never
-				// written to mean once causes cross functions.
-				if parentSpan != nil && wholeFunctionSpans[[2]int{parentSpan.Start, parentSpan.End}] {
+				isWholeFunctionSpan := enforceGuard && parentSpan != nil && wholeFunctionSpans[[2]int{parentSpan.Start, parentSpan.End}]
+				if isWholeFunctionSpan {
+					if candidateNode.FunctionID != causeFunctionID {
+						continue
+					}
+					if bestFunctionScopeCausedBy == -1 || explainSpanWidth(parentSpan) < explainSpanWidth(items[bestFunctionScopeCausedBy].node.Span) {
+						bestFunctionScopeCausedBy = candidate
+					}
 					continue
 				}
-				// D-13-19: narrows additionally requires parent and child
-				// to resolve to the SAME function_id -- cross-function
-				// parenting stays caused_by, keeping the closed
-				// three-value edge vocabulary intact. Both sides empty
-				// (no function data available, e.g. a synthetic
-				// diagnostic with an empty table) compares equal, so
-				// single-function-context behavior is unperturbed.
-				if candidateNode.FunctionID != causeFunctionID {
+				if enforceGuard && candidateNode.FunctionID != causeFunctionID {
+					// D-13-19: narrows additionally requires parent and
+					// child to resolve to the SAME function_id --
+					// cross-function parenting stays caused_by, keeping
+					// the closed three-value edge vocabulary intact. Both
+					// sides empty (no function data available, e.g. a
+					// synthetic diagnostic with an empty table) compares
+					// equal, so single-function-context behavior is
+					// unperturbed.
 					continue
 				}
-				if best == -1 || explainSpanWidth(parentSpan) < explainSpanWidth(items[best].node.Span) {
-					best = candidate
+				if bestNarrows == -1 || explainSpanWidth(parentSpan) < explainSpanWidth(items[bestNarrows].node.Span) {
+					bestNarrows = candidate
 				}
 			}
-			if best != -1 {
-				parent = best
+			if bestNarrows != -1 {
+				parent = bestNarrows
 				edgeKind = protocol.EdgeNarrows
+			} else if bestFunctionScopeCausedBy != -1 {
+				parent = bestFunctionScopeCausedBy
+				// edgeKind stays protocol.EdgeCausedBy: a node whose span
+				// exactly equals a core.Function.Span may be a caused_by
+				// parent but never a narrows parent (D-13-19).
 			}
 		}
 

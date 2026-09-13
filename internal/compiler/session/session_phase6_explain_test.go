@@ -699,6 +699,184 @@ func TestExplainSynthesisOpensNoWritePath(t *testing.T) {
 	}
 }
 
+// --- Plan 03 Task 3: the D-13-19 function-scope narrows guard -----------
+
+// findExplainFunction locates a real function by name in a table built by
+// explainRealFunctionTable, failing the test if it is missing.
+func findExplainFunction(t *testing.T, table explainFunctionTable, name string) explainFunctionRef {
+	t.Helper()
+	for _, candidate := range table.coreFuncs {
+		if candidate.Name == name {
+			return candidate
+		}
+	}
+	t.Fatalf("function %q not present in the real core table", name)
+	return explainFunctionRef{}
+}
+
+// TestNarrowsFunctionScopeGuard is D-13-23's guard-mutation test: over the
+// real three-function-plus-decoy fixture, a synthetic diagnostic exercises
+// all three of D-13-19's guard conditions at once --
+//
+//   - cause 1's span exactly equals relay's whole declaration span (cause
+//     0's own span): pure byte containment alone would make cause 0 the
+//     narrowest ancestor for cause 2 below, but cause 0 must never become a
+//     NARROWS parent (only caused_by) -- so cause 1, geometrically inside
+//     relay but NOT equal to its whole span, is what actually narrows onto
+//     cause 0 as caused_by.
+//   - cause 2 nests strictly inside cause 1 (both resolve to relay, neither
+//     is a whole-function span): the guard must NOT disable this ordinary,
+//     same-function narrows relationship.
+//   - cause 4's span sits inside leaf, and the only span that would
+//     otherwise geometrically contain it (cause 3, an artificial span
+//     running from leaf's start through relay's end -- wider than any
+//     single function, so it resolves to no function.function_id) fails
+//     the guard's same-function_id requirement, so cause 4 is NOT narrowed
+//     by it.
+func TestNarrowsFunctionScopeGuard(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	table, _ := explainRealFunctionTable(t, path)
+	relay := findExplainFunction(t, table, "relay")
+	leaf := findExplainFunction(t, table, "leaf")
+
+	fileSpan := diagnostic.Span{Start: 0, End: relay.Span.End + 1000}
+	wholeFunctionSpan := diagnostic.Span{Start: relay.Span.Start, End: relay.Span.End}
+	innerRelaySpan := diagnostic.Span{Start: relay.Span.Start + 5, End: relay.Span.End - 5}
+	nestedRelaySpan := diagnostic.Span{Start: relay.Span.Start + 8, End: relay.Span.Start + 10}
+	crossFunctionSpan := diagnostic.Span{Start: leaf.Span.Start, End: relay.Span.End}
+	innerLeafSpan := diagnostic.Span{Start: leaf.Span.Start + 3, End: leaf.Span.Start + 5}
+
+	root := diagnostic.Diagnostic{
+		ID: "diagnostic:guard", Code: "test.code", Primary: fileSpan,
+		Causes: []diagnostic.Cause{
+			{Kind: "declared_here", Span: &wholeFunctionSpan}, // 0: whole-function span (relay itself)
+			{Kind: "declared_here", Span: &innerRelaySpan},    // 1: inside relay, not equal to its whole span
+			{Kind: "declared_here", Span: &nestedRelaySpan},   // 2: nested inside cause 1, same function
+			{Kind: "declared_here", Span: &crossFunctionSpan}, // 3: spans leaf..relay, resolves to no function
+			{Kind: "declared_here", Span: &innerLeafSpan},     // 4: inside leaf
+		},
+	}
+
+	_, edges, _, truncated, _, err := buildExplainGraph(root, protocol.ExplainDefaultDepth, table)
+	if err != nil {
+		t.Fatalf("buildExplainGraph: %v", err)
+	}
+	if truncated != "" {
+		t.Fatalf("unexpected truncation: %q", truncated)
+	}
+	kindTo := map[string]string{}
+	for _, edge := range edges {
+		kindTo[edge.To] = edge.Kind
+	}
+	causeID := func(index int) string { return fmt.Sprintf("%s:cause:%d", root.ID, index) }
+
+	if got := kindTo[causeID(1)]; got != protocol.EdgeCausedBy {
+		t.Fatalf("cause 1 (contained only by cause 0, a whole-function-span node): edge kind = %q, want %q", got, protocol.EdgeCausedBy)
+	}
+	if got := kindTo[causeID(2)]; got != protocol.EdgeNarrows {
+		t.Fatalf("cause 2 (nested inside cause 1, an ordinary same-function node): edge kind = %q, want %q", got, protocol.EdgeNarrows)
+	}
+	if got := kindTo[causeID(4)]; got != protocol.EdgeCausedBy {
+		t.Fatalf("cause 4 (only cross-function candidate cause 3 contains it): edge kind = %q, want %q", got, protocol.EdgeCausedBy)
+	}
+}
+
+// TestNarrowsFunctionScopeGuardIsNotInert runs the EXACT SAME diagnostic as
+// TestNarrowsFunctionScopeGuard through buildExplainGraphSkippingNarrowsGuard
+// and asserts both guarded edges FLIP to narrows -- concrete proof the
+// guard is load-bearing, not decorative (mirrors
+// matchInjectSkippingGuard/TestInjectorMarkerCountGuardIsNotInert's
+// established shape, session_phase6_injectors.go).
+func TestNarrowsFunctionScopeGuardIsNotInert(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	table, _ := explainRealFunctionTable(t, path)
+	relay := findExplainFunction(t, table, "relay")
+	leaf := findExplainFunction(t, table, "leaf")
+
+	fileSpan := diagnostic.Span{Start: 0, End: relay.Span.End + 1000}
+	wholeFunctionSpan := diagnostic.Span{Start: relay.Span.Start, End: relay.Span.End}
+	innerRelaySpan := diagnostic.Span{Start: relay.Span.Start + 5, End: relay.Span.End - 5}
+	nestedRelaySpan := diagnostic.Span{Start: relay.Span.Start + 8, End: relay.Span.Start + 10}
+	crossFunctionSpan := diagnostic.Span{Start: leaf.Span.Start, End: relay.Span.End}
+	innerLeafSpan := diagnostic.Span{Start: leaf.Span.Start + 3, End: leaf.Span.Start + 5}
+
+	root := diagnostic.Diagnostic{
+		ID: "diagnostic:guard", Code: "test.code", Primary: fileSpan,
+		Causes: []diagnostic.Cause{
+			{Kind: "declared_here", Span: &wholeFunctionSpan},
+			{Kind: "declared_here", Span: &innerRelaySpan},
+			{Kind: "declared_here", Span: &nestedRelaySpan},
+			{Kind: "declared_here", Span: &crossFunctionSpan},
+			{Kind: "declared_here", Span: &innerLeafSpan},
+		},
+	}
+
+	_, edges, _, _, _, err := buildExplainGraphSkippingNarrowsGuard(root, protocol.ExplainDefaultDepth, table)
+	if err != nil {
+		t.Fatalf("buildExplainGraphSkippingNarrowsGuard: %v", err)
+	}
+	kindTo := map[string]string{}
+	for _, edge := range edges {
+		kindTo[edge.To] = edge.Kind
+	}
+	causeID := func(index int) string { return fmt.Sprintf("%s:cause:%d", root.ID, index) }
+
+	if got := kindTo[causeID(1)]; got != protocol.EdgeNarrows {
+		t.Fatalf("guard disabled: cause 1's edge kind = %q, want %q (the guard is not inert)", got, protocol.EdgeNarrows)
+	}
+	if got := kindTo[causeID(4)]; got != protocol.EdgeNarrows {
+		t.Fatalf("guard disabled: cause 4's edge kind = %q, want %q (the guard is not inert)", got, protocol.EdgeNarrows)
+	}
+}
+
+// TestExplainTruncationCodesStable asserts the emitted truncation-code set,
+// across the whole in-tree rejecting-fixture corpus PLUS the new
+// cross-function three-function-chain fixture, is exactly the two existing
+// codes (D-13-21) -- cross-function expansion adds entries to the same flat
+// causes list ExplainMaxNodes already bounds, so no new, third bounding
+// code is ever introduced for it.
+func TestExplainTruncationCodesStable(t *testing.T) {
+	validTruncationCodes := map[string]bool{
+		"": true, "truncated:explain.depth": true, "truncated:explain.node_budget": true,
+	}
+	checked := 0
+	for _, dir := range []string{"phase2", "phase3", "phase4", "phase5"} {
+		for _, fixture := range rejectingFixtures(t, dir) {
+			for _, diagID := range fixtureDiagnosticIDs(t, fixture) {
+				result, err := ExplainCommandFile(fixture, diagID, 0)
+				if err != nil {
+					t.Fatalf("%s %s: %v", fixture, diagID, err)
+				}
+				if result.Explain == nil {
+					t.Fatalf("%s %s: Explain is nil", fixture, diagID)
+				}
+				checked++
+				if !validTruncationCodes[result.Explain.Truncated] {
+					t.Fatalf("%s %s: truncated = %q outside the two-code closed set", fixture, diagID, result.Explain.Truncated)
+				}
+			}
+		}
+	}
+
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	diagID := firstDiagnosticID(t, path)
+	result, err := ExplainCommandFile(path, diagID, 0)
+	if err != nil {
+		t.Fatalf("%s: %v", path, err)
+	}
+	if result.Explain == nil {
+		t.Fatalf("%s: Explain is nil", path)
+	}
+	checked++
+	if !validTruncationCodes[result.Explain.Truncated] {
+		t.Fatalf("%s: truncated = %q outside the two-code closed set", path, result.Explain.Truncated)
+	}
+
+	if checked == 0 {
+		t.Fatalf("no fixtures checked")
+	}
+}
+
 // --- shared fixture-corpus helpers --------------------------------------
 
 // rejectingFixtures returns the absolute paths of every .lang fixture under
