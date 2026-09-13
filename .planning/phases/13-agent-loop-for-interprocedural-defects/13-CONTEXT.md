@@ -199,6 +199,40 @@ else is available.
 
   13-06 must state which of (a) or (b) holds and show the evidence.
 
+- **D-13-02b (TERMINAL FINDING — resolves D-13-02a as option (b), established by
+  13-04 2026-09-13 and independently verified by the orchestrator):** **no
+  B1-shaped interprocedural diagnostic is constructible at this language's
+  current maturity.** `sameType(function.ReturnType, function.Parameter.Type)` is
+  enforced as a precondition of every function's admission
+  (`internal/compiler/check/check.go:255`, and again at `:3148` and `:3399`),
+  **independent of any call**. A callee whose own body contradicts its own
+  declared contract is therefore refused *before* the interprocedural pass could
+  ever reach it. This is a structural property of the checker's ordering, not a
+  gap in the fixture corpus — no amount of fixture authoring can produce one.
+
+  **What this means for the phase's riskiest assumption, stated plainly:**
+  - B1 (contract-violation blame) is **unreachable in production** today. The
+    branch is implemented, exhaustively unit-tested, and correct — but nothing in
+    the shipped language can trigger it.
+  - Every constructible interprocedural defect is B2 (caller misuse), and for
+    those, B2 selects the right fix site — which is why D-13-04's zero-span-
+    movement result held.
+  - Criterion 3's twin pair therefore discriminates **detection-site blame from
+    caller blame**, which is a real and useful discrimination, but it does **not**
+    exercise the contract-boundary rule's distinctive claim. Criterion 3 must be
+    reported as **partially met**: the repair-then-re-check regression exists and
+    is sound, while the specific "non-obvious function is the callee that broke
+    its own contract" case is unconstructible and untested.
+  - The contract-boundary rule remains the right design and is ready for the
+    first B1-shaped class. It becomes reachable when the language gains a
+    signature whose return type may differ from its parameter type — i.e. when
+    `sameType` stops being an admission precondition.
+
+  **Precedent for how to hold this:** D-12-43 (Phase 12) ratified an
+  unconstructible decisive control as a terminal finding at a blocking human
+  checkpoint rather than absorbing it. Do the same here — report it, do not
+  paper over it, and do not weaken any other control to compensate.
+
 - **D-13-09b (NARROWING, found empirically by the 13-01 tracer 2026-09-13 —
   amends D-13-09.1):** the "swap the move and call statements" repair is
   semantics-preserving only for the **backward** direction of
