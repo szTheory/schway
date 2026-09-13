@@ -31,7 +31,7 @@
     {
       "number": "12",
       "name": "`Result` Payloads",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "13",
@@ -41,8 +41,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 12 of 7 · executing"
+    "label": "Advance to the next step (plan phase 13)",
+    "reason": "Phase 13 of 7 — needs a plan"
   },
-  "updated_at": "2026-09-13T14:22:40.497Z"
+  "updated_at": "2026-09-13T14:38:17.170Z"
 }
