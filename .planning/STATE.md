@@ -21,15 +21,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-07)
+See: .planning/PROJECT.md (updated 2026-09-13)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 12 — `Result` Payloads
-multi-function native emission and interprocedural equivalence proven, with
-zero outstanding human verification (both UAT items were converted into
-committed tests rather than answered once — see `11-UAT.md`).
+**Current focus:** Phase 13 — Agent Loop for Interprocedural Defects. Phase 12
+closed `Result` payloads: payload-carrying alternatives are storable, matchable,
+and affine-correct in all three engines, with one shared derivation resolving an
+operation's declaring alternative. D-12-43 was ratified at a blocking-human
+checkpoint on 2026-09-13 — criterion 2's decisive wrong-slot value-divergence
+control is unconstructible at this language maturity and is accepted as the
+terminal finding. No outstanding human verification.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -53,18 +56,18 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-09-13 — Phase 12 complete, transitioned to Phase 13
 
-Progress: [##############------] 71% (5/7 phases) · 46/46 plans
+Progress: [#################---] 86% (6/7 phases) · 54/54 plans
 
 ## M002 Phase Map
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 07 | Calls, Signatures, and Call-Graph Refusal | 5 | Not started |
-| 08 | Interprocedural Loan Liveness in `check` | 2 | Not started |
-| 09 | Peer Re-Derivation and D-03-02 Closure | 6 | Not started |
-| 10 | Trusted Interprocedural Oracle | 5 | Not started |
-| 11 | Multi-Function Native Emission and Equivalence | 7 | Not started |
-| 12 | `Result` Payloads | 2 | Not started |
+| 07 | Calls, Signatures, and Call-Graph Refusal | 5 | Complete |
+| 08 | Interprocedural Loan Liveness in `check` | 2 | Complete |
+| 09 | Peer Re-Derivation and D-03-02 Closure | 6 | Complete |
+| 10 | Trusted Interprocedural Oracle | 5 | Complete |
+| 11 | Multi-Function Native Emission and Equivalence | 7 | Complete |
+| 12 | `Result` Payloads | 2 | Complete |
 | 13 | Agent Loop for Interprocedural Defects | 3 | Not started |
 
 Phase numbering continues from M001 (which ended at Phase 06). Full detail:
