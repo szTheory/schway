@@ -9,13 +9,16 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	langast "github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -141,6 +144,180 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 		if bytes.Equal(heldoutBytes, derivationBytes) {
 			t.Fatalf("%s class: heldout and derivation fixtures are byte-identical", class)
 		}
+	}
+
+	// D-13-33: retro-strengthen with an identifier-independent STRUCTURAL
+	// predicate. Byte-inequality alone (above) is defeated by a pure
+	// alpha-rename -- exactly the weakness M001's own heldout_move_defect.lang
+	// / derivation_move_defect.lang pair has (item -> buffer,
+	// moved_once -> delivered), and the reason this phase exists. A pair is
+	// genuinely distinct only when its structural summary -- (binding count,
+	// match arm count, borrow count, take count, max block nesting depth),
+	// computed from the parsed program, identifier-independent by
+	// construction -- differs in at least one component. testdata/phase6 has
+	// ZERO interprocedural fixtures (13-RESEARCH.md Sec.7, verified by
+	// directory listing), so D-13-26's topology triple degenerates completely
+	// here; this intraprocedural predicate is what D-13-33 requires instead.
+	//
+	// A FAIL below is not a task failure -- it is the escalation D-13-33
+	// mandates: a real hole in shipped M001 evidence, surfaced rather than
+	// weakened away. See 13-07-SUMMARY.md for the adjudicated disposition.
+	for _, class := range []string{"match", "move", "borrow"} {
+		heldoutSource := phase6Fixture(t, "heldout_"+class+"_defect.lang")
+		derivationSource := phase6Fixture(t, "derivation_"+class+"_defect.lang")
+		heldoutSummary := computePhase6StructuralSummary(t, heldoutSource)
+		derivationSummary := computePhase6StructuralSummary(t, derivationSource)
+		t.Logf("%s class structural summary: heldout=%+v derivation=%+v", class, heldoutSummary, derivationSummary)
+		if heldoutSummary == derivationSummary {
+			t.Errorf("%s class: heldout and derivation fixtures are structurally IDENTICAL (%+v) -- byte-inequality alone would have passed this pair, which is the exact M001 weakness D-13-33 exists to close; escalating per D-13-33 rather than weakening this predicate or editing the shipped fixtures", class, heldoutSummary)
+		}
+	}
+}
+
+// phase6StructuralSummary is D-13-33's identifier-independent structural
+// predicate for testdata/phase6's distinctness control: alpha-renaming a
+// fixture (module name, function name, parameter/binding names, alternative
+// names) leaves every one of these components unchanged, so -- unlike
+// byte-inequality -- structural equality here is undefeated by a pure
+// rename. testdata/phase6 has zero interprocedural fixtures, so this
+// intentionally omits the D-13-26 topology triple (function count / call-edge
+// count / hop distance), which degenerates to a constant across the whole
+// corpus and would tell us nothing.
+type phase6StructuralSummary struct {
+	bindingCount  int
+	matchArmCount int
+	borrowCount   int
+	takeCount     int
+	maxDepth      int
+}
+
+// summarizePhase6LinearBody counts bindings, takes, and borrows in one flat
+// linear body (this language's LinearBody has no nested-block construct of
+// its own; nesting arises only from a match arm carrying a body, handled by
+// the caller).
+func summarizePhase6LinearBody(body *langast.LinearBody) (bindingCount, takeCount, borrowCount int) {
+	if body == nil {
+		return 0, 0, 0
+	}
+	bindingCount = len(body.Bindings)
+	for _, binding := range body.Bindings {
+		switch binding.RHS.Kind {
+		case "take":
+			takeCount++
+		case "borrow":
+			borrowCount++
+		}
+	}
+	return bindingCount, takeCount, borrowCount
+}
+
+// computePhase6StructuralSummary parses source independently (never
+// consulting a cached/shared program) and aggregates phase6StructuralSummary
+// across every declared function, so a multi-function fixture (none exist in
+// testdata/phase6 today, but the predicate must not silently assume
+// single-function input) is summarized correctly too.
+func computePhase6StructuralSummary(t *testing.T, source []byte) phase6StructuralSummary {
+	t.Helper()
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("computePhase6StructuralSummary: parse failed: %+v", parsed.Diagnostics)
+	}
+	var summary phase6StructuralSummary
+	for _, function := range parsed.Program.Funcs {
+		if function.Body.Linear != nil {
+			bindingCount, takeCount, borrowCount := summarizePhase6LinearBody(function.Body.Linear)
+			summary.bindingCount += bindingCount
+			summary.takeCount += takeCount
+			summary.borrowCount += borrowCount
+			if summary.maxDepth < 1 {
+				summary.maxDepth = 1
+			}
+			continue
+		}
+		summary.matchArmCount += len(function.Body.MatchExpr.Arms)
+		depth := 1
+		for _, arm := range function.Body.MatchExpr.Arms {
+			if arm.Body != nil {
+				bindingCount, takeCount, borrowCount := summarizePhase6LinearBody(arm.Body)
+				summary.bindingCount += bindingCount
+				summary.takeCount += takeCount
+				summary.borrowCount += borrowCount
+				if depth < 2 {
+					depth = 2
+				}
+			}
+		}
+		if summary.maxDepth < depth {
+			summary.maxDepth = depth
+		}
+	}
+	return summary
+}
+
+// alphaRenamePhase6MatchDefect returns a byte-for-byte structural copy of
+// derivation_match_defect.lang with every identifier renamed (module suffix,
+// data type name, alternative names, function name, parameter name) --
+// exactly M001's documented weakness shape (item -> buffer,
+// moved_once -> delivered): a rename that changes no structural component at
+// all, so its structural summary must come out IDENTICAL to the original.
+func alphaRenamePhase6MatchDefect(source []byte) []byte {
+	renamed := string(source)
+	replacements := []struct{ from, to string }{
+		{"derivation_match_defect", "alpha_renamed_derivation_match_defect"},
+		{"Mode", "Status"},
+		{"Idle", "Dormant"},
+		{"Active", "Running"},
+		{"relay", "route"},
+		{"state", "condition"},
+	}
+	for _, replacement := range replacements {
+		pattern := regexp.MustCompile(`\b` + regexp.QuoteMeta(replacement.from) + `\b`)
+		renamed = pattern.ReplaceAllString(renamed, replacement.to)
+	}
+	return []byte(renamed)
+}
+
+// TestPhase6DefectCorpusDistinctnessGuardIsNotInert is D-13-33's required
+// mutation kill, mirroring 13-04's TestCorpusTopologyGuardIsNotInert
+// (session_phase13_injectors_test.go) at intraprocedural scale: alpha-
+// renaming a derivation fixture must not change its structural summary,
+// proving that had the renamed copy been submitted as the held-out member in
+// its place, TestPhase6DefectCorpusIsHeldOut's structural-equality check
+// above would have caught it -- exactly the discrimination byte-inequality
+// alone could never make. derivation_match_defect.lang is the vehicle
+// because the match class's real heldout/derivation pair is the one class
+// whose structural summaries genuinely differ today (2 arms vs 3), so this
+// test also proves the predicate discriminates the real pair, not merely
+// that it fails to reject a rename.
+func TestPhase6DefectCorpusDistinctnessGuardIsNotInert(t *testing.T) {
+	original := phase6Fixture(t, "derivation_match_defect.lang")
+	renamed := alphaRenamePhase6MatchDefect(original)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "alpha_renamed_derivation_match_defect.lang")
+	if err := os.WriteFile(path, renamed, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	renamedSource, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(renamedSource, original) {
+		t.Fatal("alpha-rename produced byte-identical output -- rename did not actually happen")
+	}
+	originalSummary := computePhase6StructuralSummary(t, original)
+	renamedSummary := computePhase6StructuralSummary(t, renamedSource)
+	if renamedSummary != originalSummary {
+		t.Fatalf("control is INERT in the wrong direction: alpha-renaming changed the structural summary (original=%+v, renamed=%+v) -- rename must preserve structure for this test to demonstrate anything", originalSummary, renamedSummary)
+	}
+	// This IS the not-inert proof: had this renamed copy been submitted as
+	// the held-out member of the match class in place of the real
+	// heldout_match_defect.lang, TestPhase6DefectCorpusIsHeldOut's
+	// `heldoutSummary == derivationSummary` check above would have fired on
+	// exactly this pair -- demonstrated here by showing the renamed copy's
+	// summary is identical to the original derivation fixture's summary.
+	heldoutSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "heldout_match_defect.lang"))
+	if heldoutSummary == originalSummary {
+		t.Fatalf("predicate is not discriminating: the real heldout_match_defect.lang pair is already structurally equal to derivation (%+v) -- this test cannot demonstrate a violation on a pair the predicate cannot tell apart in the first place", heldoutSummary)
 	}
 }
 
