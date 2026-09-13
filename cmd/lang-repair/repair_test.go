@@ -591,3 +591,81 @@ func TestRepairSelectionIsSpecifiedOnTies(t *testing.T) {
 		t.Fatalf("selection rule is document order (first eligible repair encountered); got %q, want %q", first.Kind, "second_choice")
 	}
 }
+
+// TestRepairDriverFixesInterproceduralLoanLivenessSinglePass is 13-01
+// Task 3's own regression, protecting the tracer path this plan's Task 1
+// shipped: check.interprocedural_loan_liveness now carries a real,
+// driver-eligible move_after_interprocedural_loan repair for the BACKWARD
+// direction (D-08-08), and the untouched cmd/lang-repair driver applies it
+// through the JSON protocol alone -- no kind-to-edit table, no source
+// change to repair.go/main.go (D-13-32, mechanically asserted by this
+// plan's <verify> blocks via `git diff --quiet`).
+//
+// D-13-13's own reasoning for reusing NO existing repair kind: this test
+// asserts all four Outcome fields by EXACT string equality, never substring
+// or prefix, so a future accidental reuse of move_after_last_borrow_use (or
+// any other kind) fails loudly here rather than passing on a
+// coincidental substring match.
+//
+// This plan's own 13-ANTITHEATER-CONTRACT.md (Task 2, "Obligations for
+// plans 13-03, 13-05 and 13-06", item 6) records that registering a new
+// defect class's coverage in antitheater_test.go's own hardcoded class
+// lists is the one MANDATORY per-class obligation there; this repair_test.go
+// function is the analogous registration for
+// TestRepairDriverFixesEveryDefectClassSinglePass's OWN class list
+// (repair_test.go:430-447) -- that list stays untouched by this plan
+// because it drives session.Injector-mutated testdata/phase6/heldout_*
+// fixtures, a shape this plan's real testdata/phase13/ source fixture does
+// not share; this stands as its own, separate single-pass proof instead.
+func TestRepairDriverFixesInterproceduralLoanLivenessSinglePass(t *testing.T) {
+	langBinary := testsupport.BuildCLI(t)
+
+	fixturePath := testsupport.ProjectPath("testdata", "phase13", "derivation_interprocedural_loan_defect.lang")
+	original, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "derivation_interprocedural_loan_defect.lang")
+	mustWriteFile(t, sourcePath, original)
+
+	outcome, err := Repair(context.Background(), langBinary, sourcePath)
+	if err != nil {
+		t.Fatalf("Repair: %v", err)
+	}
+	if outcome.Status != OutcomeRepaired {
+		t.Fatalf("got status %q, want %q", outcome.Status, OutcomeRepaired)
+	}
+	if outcome.DiagnosisCode != "check.interprocedural_loan_liveness" {
+		t.Fatalf("got diagnosis code %q, want %q", outcome.DiagnosisCode, "check.interprocedural_loan_liveness")
+	}
+	if outcome.RepairKind != "move_after_interprocedural_loan" {
+		t.Fatalf("got repair kind %q, want %q", outcome.RepairKind, "move_after_interprocedural_loan")
+	}
+	if outcome.SubprocessCount != 2 {
+		t.Fatalf("got subprocess count %d, want 2 (single pass: one diagnose, one reverify)", outcome.SubprocessCount)
+	}
+
+	// Independent re-verification: a SECOND, wholly separate `lang --json
+	// check` subprocess invocation, outside the driver's own internal
+	// reverify, reports the post-repair source clean.
+	verify := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+	decoded := decodeCheckJSON(t, verify.Stdout)
+	if decoded.Status != statusPass {
+		t.Fatalf("independent re-verification reports status %q, want %q", decoded.Status, statusPass)
+	}
+	if len(decoded.Diagnostics) != 0 {
+		t.Fatalf("independent re-verification reports %d diagnostics, want 0: %+v", len(decoded.Diagnostics), decoded.Diagnostics)
+	}
+
+	// The driver operates on the TempDir copy only -- the checked-in
+	// corpus fixture must be byte-unchanged by this test.
+	afterTest, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(afterTest, original) {
+		t.Fatal("testdata/phase13/derivation_interprocedural_loan_defect.lang was modified by this test -- the driver must operate on the TempDir copy only")
+	}
+}
