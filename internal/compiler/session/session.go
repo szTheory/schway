@@ -600,6 +600,71 @@ func (r LayoutMutationRunner) Run(ctx context.Context) error {
 	return r.Runner.CompileConformanceUnit(ctx, source)
 }
 
+// PayloadProbeDataType is control:payload.layout_mismatch's own purpose-built
+// core.DataType (D-12-37), independent of testdata/phase12/payload_tracer.lang's
+// production Outcome/Fault shape, specifically so the mutation-kill
+// demonstration exercises a genuine field TRANSPOSITION with plain
+// single-byte fields (mirroring LayoutProbeContract's own two-one-byte-field
+// design) rather than pulling in LANG_BUFFER's own real (padded, platform-
+// dependent) struct layout, which check.PayloadRecordLayout's own
+// payloadFieldShape declares as size 8/alignment 1 -- a deliberately
+// informational approximation this control has no need to depend on.
+func PayloadProbeDataType() core.DataType {
+	dataType, err := core.NewDataType("phase12.payload_layout_probe:type:PayloadProbe", "PayloadProbe",
+		[]string{"First", "Second"},
+		[]core.AlternativeDetail{
+			{Name: "First", PayloadType: "Byte"},
+			{Name: "Second", PayloadType: "Byte"},
+		}, diagnostic.Span{})
+	if err != nil {
+		panic(fmt.Sprintf("PayloadProbeDataType: %v", err))
+	}
+	return dataType
+}
+
+// PayloadLayoutMutationRunner is D-12-37's payload-side sibling of
+// LayoutMutationRunner (control:foreign.layout_mismatch's precedent): it
+// compiles a generated payload conformance unit against a FROZEN FIXTURE
+// file path -- never a generated source -- and expects the compile to be
+// refused. Per D-10 ("the two mutation directions attack different
+// artifacts"), this attacks the frozen boundary fixture declaring the
+// payload struct's alternative slots transposed or resized relative to what
+// check.PayloadRecordLayout(DataType) derives -- a different artifact than
+// LayoutMutationRunner's own foreign-contract-keyed fixture. It carries no
+// field of a generated-source shape at all -- its only per-run inputs are
+// the checker-derived DataType and FixturePath -- so "never opens a
+// generated source" is a structural property of this type, not merely a
+// runtime behavior.
+//
+// This control is NECESSARY for the C-side layout obligation and
+// STRUCTURALLY INCAPABLE of catching the real bug a struct-shaped
+// declaration cannot express: a _Static_assert polices only the struct
+// DECLARATION's sizeof/_Alignof/offsetof, never WHICH FIELD a given match
+// arm actually reads for a correct tag. D-12-38's decisive control --
+// TestPayloadSlotSwapMutationKilled, a reverted production-hunk slot-swap
+// mutation proving a genuine interpreter-vs-native value divergence -- is
+// what covers that gap. Do not mistake this control for sufficient on its
+// own.
+type PayloadLayoutMutationRunner struct {
+	Runner      native.Runner
+	DataType    core.DataType
+	FixturePath string
+}
+
+// Run assembles the payload conformance unit for r.DataType against
+// r.FixturePath and compiles it as its own separate, bounded invocation. A
+// nil error means the fixture at FixturePath conforms to
+// check.PayloadRecordLayout(r.DataType)'s declared layout; a
+// *native.ToolError with code "native.conformance_failed" means it was
+// refused at compile time.
+func (r PayloadLayoutMutationRunner) Run(ctx context.Context) error {
+	source, err := cgen.EmitPayloadConformance(r.DataType, r.FixturePath)
+	if err != nil {
+		return err
+	}
+	return r.Runner.CompileConformanceUnit(ctx, source)
+}
+
 func (e *EngineMismatch) Error() string {
 	return fmt.Sprintf("native %s mismatch for %s: expected %s, got %s", e.Optimization, e.Input, e.Expected, e.Actual)
 }
