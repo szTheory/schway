@@ -169,6 +169,19 @@ else is available.
   `lang.diagnostic/1`'s identity-bearing `RepairKinds`, so removing one later
   churns that diagnostic's ID.
 
+- **D-13-09a (CORRECTION, found by research 2026-09-13 — supersedes the
+  optimistic reading of D-13-17):** all three target codes currently build via
+  `diagnostic.Error` (schema `lang.diagnostic/0`). Attaching a `Repair` forces a
+  switch to `diagnostic.ErrorWithRepairs` (schema `/1`), and the `Schema` string
+  itself is inside the hashed identity struct — so **their IDs change
+  unconditionally**, whether or not a repair actually fires on a given program.
+  **Six specific rows in `internal/compiler/check/check_ordering_stability_test.go`
+  will churn and must be re-pinned as an explicit, called-out plan task**, not
+  discovered mid-execution. This does **not** weaken D-13-17: D-13-17's claim is
+  scoped to D-13-14 (the explain-side fields), which touches no identity payload
+  and remains zero-churn. The two churn sources are independent; only this one is
+  real, and it is a deliberate, reviewable consequence of shipping repairs.
+
 - **D-13-10 (the safety gate on class 3):** emit `use_matching_argument`
   **only when exactly one initialized in-scope place matches**. On zero or ≥2
   matches emit **no repair at all** (`diagnostic.Error`; driver returns
@@ -242,10 +255,12 @@ else is available.
   struct (`diagnostic.go:109-117`), so populating it would churn effectively
   every diagnostic ID in the project.
 
-- **D-13-17:** **Diagnostic IDs definitively do not churn.** Nothing in the
-  identity payload (`{Schema, Code, Span, Causes}` / `+RepairKinds`) is touched
-  by D-13-14. The `cmd/lang-repair/testdata/*_capture.json` corpus stays valid
-  and needs no regeneration.
+- **D-13-17:** **The explain-side change churns no diagnostic IDs.** Nothing in
+  the identity payload (`{Schema, Code, Span, Causes}` / `+RepairKinds`) is
+  touched by D-13-14. **Scope this claim to D-13-14 only** — D-13-09a records a
+  separate, real churn caused by the `/0 → /1` schema switch when repairs are
+  attached. The `cmd/lang-repair/testdata/*_capture.json` corpus is unaffected by
+  D-13-14; whether it is affected by D-13-09a is a plan-task question.
 
 - **D-13-18:** `lang.explain/0` does **not** bump for the fields — additive,
   `omitempty`, `ExplainSummary` carries no identity hash, and `corevalidate`
