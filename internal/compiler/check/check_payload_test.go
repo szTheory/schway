@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -60,4 +61,61 @@ func TestPayloadPatternRefusals(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestResourcePayloadRefused is Phase 12 Plan 03 Task 2's proof of D-12-27's
+// fail-closed resource-payload refusal: a companion case (payloads that do
+// NOT structurally contain a Phase-4 tracked-resource-derived value) is
+// what stops the refusal from reading as a blanket payload ban.
+func TestResourcePayloadRefused(t *testing.T) {
+	t.Run("resource-carrying payload refused", func(t *testing.T) {
+		source := readPhase12Fixture(t, "payload_resource_refused.lang")
+		program := mustParseProgram(t, source)
+		result := Program(program)
+		if len(result.Diagnostics) != 1 {
+			t.Fatalf("expected exactly one diagnostic, got %d: %+v", len(result.Diagnostics), result.Diagnostics)
+		}
+		if result.Diagnostics[0].Code != "check.resource_payload_refused" {
+			t.Fatalf("expected check.resource_payload_refused, got %q (%+v)", result.Diagnostics[0].Code, result.Diagnostics[0])
+		}
+	})
+
+	// Companion: a program with NO foreign declarations at all has nothing
+	// payloadTypeNamesForeignReturnType can match, so Byte, Buffer, and a
+	// nullary-ADT payload -- the three payload shapes this maturity
+	// supports (LANGUAGE-MATURITY.md) -- all stay accepted.
+	t.Run("companion: Byte, Buffer, and nullary-ADT payloads with no matching foreign return type stay accepted", func(t *testing.T) {
+		source := []byte(`module result.payload_resource_companion
+
+export {
+  type Fault
+  type Wrapper
+  fn identity
+}
+
+data Fault =
+  | Broken
+
+data Wrapper =
+  | HoldsByte(Byte)
+  | HoldsBuffer(Buffer)
+  | HoldsFault(Fault)
+
+fn identity(w: Wrapper) -> Wrapper {
+  match w {
+    HoldsByte(v) => HoldsByte(v)
+    HoldsBuffer(v) => HoldsBuffer(v)
+    HoldsFault(v) => HoldsFault(v)
+  }
+}
+`)
+		parsed := syntax.Parse(source)
+		if len(parsed.Diagnostics) != 0 {
+			t.Fatalf("companion fixture failed to parse: %+v", parsed.Diagnostics)
+		}
+		result := Program(parsed.Program)
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("expected zero diagnostics (no foreign block, nothing is resource-derived), got %+v", result.Diagnostics)
+		}
+	})
 }

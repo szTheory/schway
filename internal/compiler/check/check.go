@@ -100,6 +100,43 @@ func Program(program ast.Program) Result {
 		result.Diagnostics = append(result.Diagnostics, foreignDiagnostics...)
 		return result
 	}
+
+	// D-12-27: refuse, at DECLARATION time (before any function body is
+	// checked, so no downstream pass ever sees a resource-carrying
+	// payload), every alternative whose payload type structurally
+	// contains a Phase-4 tracked-resource-derived value. This project's
+	// release-obligated foreign-acquired values carry no distinguishing
+	// TYPE marker of their own -- checkResourceLifecycle/checkForeignTracer
+	// track a resource by VALUE PROVENANCE (a `try` binding's own call
+	// site), never by ability or type shape (Byte/Buffer/a nullary ADT are
+	// exactly as available to an ordinary value as to a foreign
+	// acquisition's result; see payloadStructurallyContainsResource's own
+	// doc comment). The only structurally-derivable signal available this
+	// phase is therefore whether the payload type NAMES a type some
+	// declared foreign symbol returns -- deliberately over-inclusive
+	// rather than provenance-exact: fail-closed and conservative, per
+	// D-12-28's own precedent for the sibling D-10-C01 refusal, never
+	// unsound.
+	resourceWork := 0
+	for _, declaration := range program.Data {
+		for _, alternative := range declaration.Alternatives {
+			if alternative.PayloadType == "" {
+				continue
+			}
+			if payloadStructurallyContainsResource(alternative.PayloadType, types, foreignSymbols, &resourceWork, map[string]bool{}) {
+				result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
+					"check.resource_payload_refused", alternative.Span,
+					fmt.Sprintf(
+						"alternative %q's payload type %q is refused this phase: resource-carrying payloads are refused until the three-part landing condition lands (D-10-C01, D-10-C02, and D-10-C04 all resolved, see PHASE-12-DEBT.md)",
+						alternative.Name, alternative.PayloadType,
+					),
+				))
+			}
+		}
+	}
+	if len(result.Diagnostics) > 0 {
+		return result
+	}
 	functionNames := make(map[string]bool, len(program.Funcs))
 	// calleeContracts is 07-09's pre-body callee-contract table
 	// (superseding Phase 07's original functionIDs table): the same
@@ -3166,6 +3203,75 @@ func lookupAlternativeDetail(dataType core.DataType, name string) core.Alternati
 		}
 	}
 	return core.AlternativeDetail{Name: name}
+}
+
+// maxResourcePayloadWalkNodes bounds payloadStructurallyContainsResource's
+// recursive walk (D-12-27): a cyclic or deeply nested payload-type
+// declaration chain must refuse fail-closed rather than recurse
+// unboundedly. This is the walk's OWN cap, sized generously above any
+// nesting depth a fixture this phase could plausibly declare, deliberately
+// mirroring ability.go's maxAbilityNodes rather than reusing that
+// unexported constant across a package boundary.
+const maxResourcePayloadWalkNodes = 4096
+
+// payloadTypeNamesForeignReturnType reports whether payloadType is the
+// exact type name some declared foreign symbol in this program returns.
+// This is D-12-27's structurally-derivable proxy for "is a Phase-4
+// tracked-resource-derived value": checkResourceLifecycle/
+// checkForeignTracer track a resource by the VALUE's own provenance (it
+// came from a `try`-bound foreign call), never by a distinguishing ability
+// or type shape -- Byte, Buffer, and a nullary ADT are exactly as
+// available to an ordinary value as to a foreign acquisition's result, so
+// there is no ability-derived predicate (AbilityDrop or otherwise) that
+// distinguishes them (verified against ability.go: every sealed leaf,
+// Byte, and Buffer already grants AbilityDrop unconditionally). Matching
+// on the declared foreign return type NAME is therefore deliberately
+// over-inclusive rather than provenance-exact -- fail-closed and
+// conservative per D-12-28's own precedent, never unsound.
+func payloadTypeNamesForeignReturnType(payloadType string, foreignSymbols map[string]foreignSymbolInfo) bool {
+	for _, symbol := range foreignSymbols {
+		if symbol.ReturnType.Constructor == payloadType {
+			return true
+		}
+	}
+	return false
+}
+
+// payloadStructurallyContainsResource walks payloadType -- and, when it
+// names a declared data type, that type's own AlternativeDetails,
+// recursively -- looking for any type payloadTypeNamesForeignReturnType
+// recognises. *work is the walk's own SHARED node budget (D-12-27's
+// declared-cap discipline): every recursive call increments it, and the
+// walk refuses to continue once maxResourcePayloadWalkNodes is exceeded,
+// treating budget exhaustion as "not proven safe" so a pathological
+// declaration chain fails closed rather than escaping the walk. visited
+// guards against a cyclic type-name chain (A's payload names B, B's names
+// A) recursing forever within the same budget.
+func payloadStructurallyContainsResource(payloadType string, types map[string]core.DataType, foreignSymbols map[string]foreignSymbolInfo, work *int, visited map[string]bool) bool {
+	if payloadType == "" {
+		return false
+	}
+	*work++
+	if *work > maxResourcePayloadWalkNodes {
+		return true
+	}
+	if payloadTypeNamesForeignReturnType(payloadType, foreignSymbols) {
+		return true
+	}
+	if visited[payloadType] {
+		return false
+	}
+	visited[payloadType] = true
+	nested, ok := types[payloadType]
+	if !ok {
+		return false
+	}
+	for _, detail := range nested.AlternativeDetails {
+		if payloadStructurallyContainsResource(detail.PayloadType, types, foreignSymbols, work, visited) {
+			return true
+		}
+	}
+	return false
 }
 
 // dataTypeHasPayload reports whether dataType declares any payload-carrying
