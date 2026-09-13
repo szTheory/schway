@@ -3,7 +3,7 @@ phase: 12-result-payloads
 recorded: 2026-09-12
 status: accepted
 disposition: planning-time
-items: 6
+items: 8
 blocking: 0
 ---
 
@@ -33,6 +33,8 @@ by plan 01's Task 2 checkpoint outcome (D-12-36).
 | D-12-42 | 12-CONTEXT.md (D-12-42) | QLT-09 | info | Phase 13 or end-of-Phase-12 (decided against a pre-registered threshold in the QLT-07/D-09-40 style once Phase 12's layout work is frozen) | QLT-09's PHASE-5 NYQUIST PORTION IS NOT CLOSED MID-PHASE. Phase 12 is the native-tier change QLT-09 was waiting on, but the change is still in flight within Phase 12; closing it mid-phase would conflate a fresh semantic-verification commit with a Nyquist-debt closure (D-11-01's digest-conflation concern). `12-VALIDATION.md` scopes itself to criterion 2's new control and explicitly declines to close QLT-09's Phase-5 portion |
 | D-12-04c | 12-CONTEXT.md (D-12-04c) | none — stale documentation, not a live risk | info | CLOSED — Phase 12, plan 04 (header corrected; see this file's `### D-12-04c` section) | `testdata/phase08/relay_depth2_accept.lang`'s HEADER WAS STALE. It claimed `corevalidate` refuses the fixture with `core.move_while_borrowed`, which D-09-03 closed; the pre-flight probe measured `corevalidate.Valid == true` on the unmodified fixture. Plan 04 replaced the stale claim with the correction, naming D-09-03 as the closing decision and D-12-04c as the correction, per D-09-45's record-corrections-never-silently-fix discipline |
 | D-12-36 | 12-CONTEXT.md (D-12-36), RATIFIED at plan 01 Task 2, `12-01-SUMMARY.md` | NAT-04..NAT-07 | warning | OPEN and UNOWNED — re-deferred; no phase currently claims porting branch bodies, foreign-call block bodies, and both by-pointer lowering variants into `emitProgram`, converging the preamble, and re-pinning the four frozen golden-C digests | THE INHERITED D-11-02 SIX-EMITTER DELETION IS RE-DEFERRED WITH A STATED REVERSAL, gated on the N=1 convergence differential per `TestN1ConvergenceDifferential` (`internal/compiler/cgen/cgen_n1_convergence_test.go`). The measured five-shape table shows `emitProgram` refuses four of five single-function shapes outright and diverges textually and structurally on the fifth (`owned_transfer.lang`); making the differential green requires ~1,500 lines of `cgen.go` emitter porting work, which is not "cheap" under any reading — D-12-36's single named trigger. The superseded PHASE-11-DEBT.md landing-phase text ("Phase 12 — a green N=1 convergence differential (Q-05), landing inside Phase 12's per-dispatch-site `Result` plans, never as a second sweep") is withdrawn; see PHASE-11-DEBT.md's `### D-11-02` section for the full stated reversal |
+| D-12-26 | 12-CONTEXT.md (D-12-26), plan 05 Task 3 | RES-03 | info | CLOSED — Phase 12, plan 05 (the claim is recorded at the strength it can actually be held, permanently; there is no future work to land) | CRITERION 2'S "ONE MEANING" CLAIM IS OBSERVABLE-BEHAVIOR AGREEMENT, NOT BYTE-IDENTICAL LAYOUT. `interp` has no byte layout at all — its value model carries no size, alignment, or offset anywhere — so "one meaning in the core IR, the interpreter, and emitted C17" cannot mean byte-identical layout across all three engines, because that claim cannot be true. It means: the same alternative is live, the same payload value is extracted, and the same events are emitted in the same order, with layout-as-bytes a C-only obligation policed by `_Static_assert`/`offsetof` pairs (plan 05 Task 1's `PayloadLayoutMutationRunner`) for internal self-consistency. Byte-identical layout across `interp`, the core IR, and emitted C17 is explicitly NOT claimed |
+| D-12-43 | plan 05 Task 2's empirical measurement, extends D-12-38/D-12-39/D-12-41 | RES-03 | warning | OPEN and UNOWNED — reopens if a future plan changes how a payload-carrying return's terminal value is derived (e.g. exposing payload bytes on a match arm's return path); no phase currently owns this | D-12-38's DECISIVE WRONG-SLOT VALUE-DIVERGENCE CONTROL IS UNCONSTRUCTIBLE AGAINST THE CURRENT REPRESENTATION — an absence-of-applicable-channel finding, not a failed engineering attempt. `TestPayloadSlotSwapMutationKilled` seeds a real, type-safe bug in `cgen`'s `OpConstructPayload` codegen (a correct tag, but the payload written into a DIFFERENT alternative's struct field, via the new `cgen.SetPayloadSlotSwapForTest` seam) and drives it through interpreter/-O0/-O3 comparison. Measured result: NO disagreement on any of the five axes. A payload-carrying return's `Outcome.Value` is, on BOTH engines, always the alternative's own compile-time-known TAG NAME — `cgen`'s `returnLiteral` is a literal string baked into the generated C at emission time (never read back from the runtime struct), and `interp`'s `value.String()` resolves through the tag field, never the payload bytes (D-12-26: `interp` has no byte layout to diverge in). So a wrong-SLOT payload write is structurally invisible to every axis `session_phase5_compare.go` compares today. Per D-12-41/D-11-36 this is escalated as a defect in the criterion, not a quiet downgrade to a weaker (e.g. compile-failure-only) assertion: `TestPayloadSlotSwapMutationKilled` pins the absence as a genuine PASSING regression test, mirroring `TestC03PeerDeriveOriginFactsOpCallGapStillOpen`'s own gap-pinning precedent, rather than falsely claiming the mutation was caught |
 
 ## Detail
 
@@ -59,6 +61,13 @@ enumerated bit-pattern space — explicitly NOT a hand-declared ability.
 **Reopening condition:** a payload type is added whose declared
 representation has a provably invalid bit pattern (a non-null-guaranteed
 pointer, or a range-restricted integer).
+
+**Confirmed and sharpened by plan 05 (Tasks 1-2).** Building D-12-37's
+frozen-fixture layout control and D-12-38's decisive slot-swap mutation
+control surfaced nothing that changes this finding: neither control needed,
+nor could construct, a niche bit pattern for `Byte` or `Buffer`. The finding
+stands unchanged — niche optimization remains **uninstantiable**, not merely
+undischarged, at this maturity.
 
 ### D-12-30 — the resource-payload rule's three-part landing condition
 
@@ -171,3 +180,88 @@ for the full quoted supersession. The six emitters (`emitLinear`,
 `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`,
 `emitLinearForeign`, `emitBranch`, `emitMatch`) remain in `cgen`, byte-untouched
 by this decision.
+
+### D-12-26 — criterion 2's "one meaning" claim is observable-behavior agreement — CLOSED (plan 05)
+
+`interp` has no byte layout at all — its value model (`interp.value{tag,
+payload string}`, D-12-17) carries no size, alignment, or offset anywhere.
+So criterion 2's "one meaning in the core IR, the interpreter, and emitted
+C17" **cannot** mean byte-identical layout across all three engines, because
+that stronger claim cannot be true — there is no `interp` layout for a C
+layout to be identical to.
+
+**What is actually claimed and proven:** the same alternative is live, the
+same payload value is extracted, and the same events are emitted in the
+same order, across the core IR, `interp`, and emitted C17. Layout-as-bytes
+is a **C-only** obligation, policed for internal self-consistency by
+`_Static_assert`/`offsetof` pairs — plan 05 Task 1's
+`cgen.EmitPayloadConformance`/`session.PayloadLayoutMutationRunner`, proving
+a committed, deliberately-transposed fixture is refused at compile time
+under `-Werror`.
+
+**What is explicitly NOT claimed:** byte-identical layout across `interp`,
+the core IR, and emitted C17. `interp` has nothing to be byte-identical
+*to*. A weaker claim stated precisely is worth more than a stronger claim
+that cannot be true (12-CONTEXT.md, D-12-26).
+
+Task 1's control (`PayloadLayoutMutationRunner`) is the C-side policing
+named above. Task 2's control (`TestPayloadSlotSwapMutationKilled`) is the
+observable-behavior policing D-12-26 also requires — see D-12-43 below for
+what it actually measured and why the decisive form of that policing is
+presently unconstructible.
+
+### D-12-43 — D-12-38's decisive value-divergence control is unconstructible against the current representation
+
+D-12-38 requires a genuine interpreter-vs-native **value** divergence from a
+seeded wrong-alternative-payload-slot bug, checked via
+`session_phase5_compare.go`'s existing `axis:terminal-outcome`
+(D-12-39 measured that this channel already exists and needs no harness
+extension). Plan 05 Task 2 built this control for real:
+`cgen.SetPayloadSlotSwapForTest` seeds a type-safe wrong-slot write in
+`OpConstructPayload`'s codegen (a correct tag, but the payload written into
+a **different** alternative's own struct field), and
+`TestPayloadSlotSwapMutationKilled` drives plan 02's tracer fixture
+(mutated) and plan 03's `payload_borrow_interaction.lang` (unmutated
+companion) through interpreter/-O0/-O3 comparison.
+
+**Measured result: no disagreement, on any of the five axes.** A
+payload-carrying return's `Outcome.Value` is, on BOTH engines, always the
+alternative's own compile-time-known TAG NAME:
+
+- `cgen`'s `returnLiteral` (the `main`'s emitted JSON `"value"` field) is a
+  literal string baked into the generated C **at emission time**, from
+  `arm.Pattern` — it is never read back from the runtime struct the mutated
+  code writes into. No amount of struct-memory corruption can move this
+  string.
+- `interp`'s `value.String()` (D-12-18) resolves through the value's own
+  `tag` field when non-empty, never through `payload` — and
+  `OpConstructPayload`'s interp case sets `tag` from
+  `alternativeNameForPayloadType`, a structural fact independent of the
+  seeded bug entirely (D-12-26: `interp` has no byte layout to corrupt in
+  the first place).
+
+So a wrong-SLOT payload write is **structurally invisible** to every axis
+`session_phase5_compare.go` compares today — not because the mutation was
+built wrong, but because the current grammar (`analyzePayloadArm`, D-12-05)
+only ever permits a bare-value match arm's result to be an alternative
+*name*, never the raw payload content, so no execution document this phase
+can produce ever carries payload bytes in its terminal outcome.
+
+**Per D-12-41/D-11-36, this is escalated as a defect in the criterion**,
+never a quiet downgrade to a weaker assertion (e.g. a compile-failure-only
+check, which would conflate this control with D-12-37's already-necessary
+but already-insufficient one).
+`TestPayloadSlotSwapMutationKilled` pins the absence as a genuine PASSING
+regression test — mirroring `TestC03PeerDeriveOriginFactsOpCallGapStillOpen`'s
+own gap-pinning precedent (D-12-04a) — rather than falsely reporting the
+mutation as caught. If this control ever needs to become load-bearing for
+real, it requires either widening the grammar to let a match arm's result
+expose payload content directly, or adding a payload-value-aware
+observation channel to the differential harness — both are new, reviewable
+work, not a fix to this plan's own scope.
+
+**Reopening condition:** a future plan changes how a payload-carrying
+return's terminal value is derived (for example, permitting a match arm to
+return the bound payload directly rather than only reconstructing an
+alternative), making payload bytes reachable from `Outcome.Value` for the
+first time.
