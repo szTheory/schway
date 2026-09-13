@@ -286,7 +286,8 @@ func (p *parser) dataDecl() ast.DataDecl {
 	decl := ast.DataDecl{Name: name.Text, Span: spanFrom(start, name)}
 	for p.accept(TokenPipe) {
 		alternative := p.identifier("syntax.expected_alternative")
-		decl.Alternatives = append(decl.Alternatives, ast.Alternative{Name: alternative.Text, Span: alternative.Span})
+		payloadType := p.optionalPayloadBinder()
+		decl.Alternatives = append(decl.Alternatives, ast.Alternative{Name: alternative.Text, PayloadType: payloadType, Span: alternative.Span})
 		decl.Span.End = alternative.Span.End
 	}
 	if len(decl.Alternatives) == 0 {
@@ -528,6 +529,7 @@ func (p *parser) matchExpr() ast.MatchExpr {
 	for !p.atAny(TokenRBrace, TokenData, TokenFn, TokenEOF) {
 		startPosition := p.position
 		pattern := p.identifier("syntax.expected_pattern")
+		binder := p.optionalPayloadBinder()
 		if !p.accept(TokenFatArrow) {
 			p.problem("syntax.expected_fat_arrow", p.peek(), "expected `=>`")
 			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF)
@@ -545,13 +547,25 @@ func (p *parser) matchExpr() ast.MatchExpr {
 			body := p.linearBody()
 			end := p.expect(TokenRBrace, "syntax.expected_rbrace")
 			if pattern.Kind == TokenIdentifier {
-				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Body: &body, Span: spanFrom(pattern, end)})
+				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Body: &body, Binder: binder, Span: spanFrom(pattern, end)})
 				expression.Span.End = end.Span.End
 			}
 		} else {
 			value := p.identifier("syntax.expected_value")
+			// D-12-11: the arm-value position's own optional parenthesized
+			// place name is the construction site (`Ok(v)`). Per this
+			// language's move-on-bind semantics (D-12-14), the constructed
+			// argument and the pattern's own destructuring binder are the
+			// same declared place this phase (there is no second place
+			// available to construct from), so a non-empty value-side
+			// binder overrides (and, in every legal program, simply
+			// restates) the pattern-side binder captured above.
+			valueBinder := p.optionalPayloadBinder()
+			if valueBinder != "" {
+				binder = valueBinder
+			}
 			if pattern.Kind == TokenIdentifier && value.Kind == TokenIdentifier {
-				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Span: spanFrom(pattern, value)})
+				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Value: value.Text, Binder: binder, Span: spanFrom(pattern, value)})
 				expression.Span.End = value.Span.End
 			}
 		}
@@ -601,6 +615,30 @@ func (p *parser) expect(kind Kind, code string) Token {
 
 func (p *parser) identifier(code string) Token {
 	return p.expect(TokenIdentifier, code)
+}
+
+// optionalPayloadBinder parses an optional "(identifier)" immediately
+// following a pattern or alternative name (D-12-11/D-12-13): shared by a
+// data declaration's payload type, a match arm's destructuring binder, and
+// a match arm's construction argument. Returns "" when no parenthesis
+// follows (the nullary case) -- never consumed, so callers see zero token
+// movement. Reports syntax.expected_binder when the parentheses are empty
+// and syntax.expected_rparen when unclosed, using the same p.problem shape
+// every other named refusal in this file uses.
+func (p *parser) optionalPayloadBinder() string {
+	if !p.accept(TokenLParen) {
+		return ""
+	}
+	if p.peek().Kind != TokenIdentifier {
+		p.problem("syntax.expected_binder", p.peek(), "expected an identifier inside `(...)`")
+		p.accept(TokenRParen)
+		return ""
+	}
+	name := p.advance()
+	if !p.accept(TokenRParen) {
+		p.problem("syntax.expected_rparen", p.peek(), "expected `)`")
+	}
+	return name.Text
 }
 
 func (p *parser) problem(code string, token Token, message string) {

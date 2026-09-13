@@ -225,7 +225,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 10 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall
+	const declaredCount = 12 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConstructPayload, OpDestructurePayload
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -299,6 +299,7 @@ var exhaustiveDispatchFixtures = []string{
 	"testdata/phase4/defect_terminal.lang",
 	"testdata/phase07/call_basic.lang",
 	"testdata/phase07/call_from_both_match_arms.lang",
+	"testdata/phase12/payload_tracer.lang",
 }
 
 // runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's

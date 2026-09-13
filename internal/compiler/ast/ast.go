@@ -58,7 +58,12 @@ type DataDecl struct {
 
 type Alternative struct {
 	Name string
-	Span diagnostic.Span
+	// PayloadType is Phase 12's additive field (D-12-11/D-12-13): the bare
+	// type name written inside `( ... )` following the alternative's own
+	// name (e.g. `Ok(Buffer)`), or "" for a nullary alternative -- mirrors
+	// DataType.PayloadType's bare-string convention.
+	PayloadType string
+	Span        diagnostic.Span
 }
 
 type FuncDecl struct {
@@ -116,7 +121,15 @@ type MatchArm struct {
 	// and Body is populated — see HasClosedVariant, the arm-level analog of
 	// Body.HasClosedVariant (03-PATTERNS inconsistency I-7).
 	Body *LinearBody
-	Span diagnostic.Span
+	// Binder is Phase 12's additive field (D-12-13): the identifier written
+	// inside `( ... )` in this arm's pattern position (a destructuring
+	// binder, e.g. `Ok(v) =>`) or in its bare value position (a
+	// construction argument, e.g. `=> Ok(v)`) -- "" when the arm neither
+	// binds nor constructs a payload. Binder is orthogonal to the
+	// Value/Body exclusivity above: an arm may carry a binder alongside
+	// either form.
+	Binder string
+	Span   diagnostic.Span
 }
 
 // HasClosedVariant reports whether exactly one of the arm's two value forms

@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 )
@@ -24,6 +25,48 @@ type DataType struct {
 	Name         string          `json:"name"`
 	Alternatives []string        `json:"alternatives"`
 	Span         diagnostic.Span `json:"span"`
+	// AlternativeDetails is Phase 12's additive omitempty fact (D-12-07): the
+	// payload declaration for each alternative that carries one. Empty for
+	// every pre-Phase-12 DataType, so no pre-Phase-12 artifact moves a byte
+	// (D-12-08 -- no schema bump). Per D-12-09 the name set here must be a
+	// subset of Alternatives with no duplicates; NewDataType below is the
+	// only permitted constructor once payload alternatives are involved, so
+	// that invariant is enforced by mechanism rather than by comment.
+	AlternativeDetails []AlternativeDetail `json:"alternative_details,omitempty"`
+}
+
+// AlternativeDetail is Phase 12's per-alternative payload declaration
+// (D-12-07): Name must appear in the owning DataType's Alternatives list
+// exactly once; PayloadType is "" for a nullary alternative (never a
+// type-ID reference -- a bare string, matching Function.ReturnType/
+// Parameter.Type/MatchArm.Pattern).
+type AlternativeDetail struct {
+	Name        string `json:"name"`
+	PayloadType string `json:"payload_type"`
+}
+
+// NewDataType is Phase 12's D-12-09 name-set-invariant constructor: the
+// only permitted way to build a DataType carrying payload alternatives. It
+// returns an error unless every AlternativeDetail's Name appears in
+// alternatives and no name appears more than once -- the parallel-array
+// desynchronization hazard between Alternatives and AlternativeDetails is
+// closed by mechanism, not by comment.
+func NewDataType(id, name string, alternatives []string, details []AlternativeDetail, span diagnostic.Span) (DataType, error) {
+	alternativeSet := make(map[string]bool, len(alternatives))
+	for _, alternative := range alternatives {
+		alternativeSet[alternative] = true
+	}
+	seen := make(map[string]bool, len(details))
+	for _, detail := range details {
+		if !alternativeSet[detail.Name] {
+			return DataType{}, fmt.Errorf("alternative detail %q names an alternative absent from %q", detail.Name, name)
+		}
+		if seen[detail.Name] {
+			return DataType{}, fmt.Errorf("alternative detail %q is declared more than once for %q", detail.Name, name)
+		}
+		seen[detail.Name] = true
+	}
+	return DataType{ID: id, Name: name, Alternatives: alternatives, AlternativeDetails: details, Span: span}, nil
 }
 
 type Function struct {
@@ -562,6 +605,23 @@ const (
 	// callee's function ID. It is never a terminator (see TerminatorKinds)
 	// -- a call is an ordinary binding, not a block-ending outcome.
 	OpCall OperationKind = "call"
+	// OpConstructPayload is Phase 12's payload-construction operation
+	// (D-12-05): unlike OpCopy's plain value duplication, it builds a NEW
+	// tagged value from a source place and a declared alternative's payload
+	// type, carrying the PayloadType fact below and an ordinary TargetID
+	// (exactly like OpCopy). A new kind, rather than a conditionally-
+	// populated field on OpCopy, specifically so
+	// TestAllOperationKindsHandledAtEverySite cannot pass vacuously for this
+	// new affine semantics.
+	OpConstructPayload OperationKind = "construct_payload"
+	// OpDestructurePayload is Phase 12's payload-extraction operation
+	// (D-12-05): unlike OpMove's plain ownership transfer, it extracts a
+	// tagged value's payload field into a freshly-minted place named by
+	// PayloadTargetID below (never the ordinary TargetID, which stays
+	// empty on this kind). A new kind, rather than a conditionally-
+	// populated field on OpMove, for the same anti-vacuity reason as
+	// OpConstructPayload.
+	OpDestructurePayload OperationKind = "destructure_payload"
 )
 
 // CallCalleeUnresolved is Phase 07's typed identity for an OpCall whose
@@ -701,7 +761,7 @@ const CalleeFrameNotDrained = "core.callee_frame_not_drained"
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConstructPayload, OpDestructurePayload}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
@@ -762,6 +822,21 @@ type LinearOperation struct {
 	// declared function (its own typed identity, distinct from the cycle
 	// code -- D-07-45).
 	CalleeID string `json:"callee_id,omitempty"`
+	// PayloadType is Phase 12's additive omitempty fact (D-12-07): populated
+	// only on an OpConstructPayload or OpDestructurePayload operation, it
+	// names the payload type of the alternative being constructed or
+	// destructured -- a bare string, matching Function.ReturnType/
+	// Parameter.Type/MatchArm.Pattern, never a type-ID reference. Every
+	// pre-Phase-12 operation, and every operation kind other than these two,
+	// leaves this empty.
+	PayloadType string `json:"payload_type,omitempty"`
+	// PayloadTargetID is Phase 12's additive omitempty fact (D-12-10,
+	// naming follows ErrTargetID exactly): populated only on an
+	// OpDestructurePayload operation, it names the freshly-minted place the
+	// extracted payload value is written into. Every pre-Phase-12
+	// operation, and every operation kind other than OpDestructurePayload,
+	// leaves this empty.
+	PayloadTargetID string `json:"payload_target_id,omitempty"`
 }
 
 type LinearBody struct {

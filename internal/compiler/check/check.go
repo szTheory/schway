@@ -74,10 +74,18 @@ func Program(program ast.Program) Result {
 	types := make(map[string]core.DataType)
 	for _, declaration := range program.Data {
 		alternatives := make([]string, 0, len(declaration.Alternatives))
+		var details []core.AlternativeDetail
 		for _, alternative := range declaration.Alternatives {
 			alternatives = append(alternatives, alternative.Name)
+			if alternative.PayloadType != "" {
+				details = append(details, core.AlternativeDetail{Name: alternative.Name, PayloadType: alternative.PayloadType})
+			}
 		}
-		dataType := core.DataType{ID: semanticID(program.Module, "type", declaration.Name), Name: declaration.Name, Alternatives: alternatives, Span: declaration.Span}
+		dataType, err := core.NewDataType(semanticID(program.Module, "type", declaration.Name), declaration.Name, alternatives, details, declaration.Span)
+		if err != nil {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("check.invalid_data_type", declaration.Span, err.Error()))
+			return result
+		}
 		types[declaration.Name] = dataType
 		result.Program.DataTypes = append(result.Program.DataTypes, dataType)
 	}
