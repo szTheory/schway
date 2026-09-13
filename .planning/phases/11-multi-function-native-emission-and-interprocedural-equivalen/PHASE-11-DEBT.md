@@ -39,7 +39,7 @@ was never run. See the Notes section at the end of this file.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
-| D-11-02 | 11-CONTEXT.md (D-11-02) | NAT-04..NAT-07 | info | Phase 12 — a green N=1 convergence differential (Q-05), landing inside Phase 12's per-dispatch-site `Result` plans, never as a second sweep | THE SIX SINGLE-FUNCTION EMITTERS ARE NOT DELETED THIS PHASE. `emitLinear`, `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, `emitLinearForeign`, `emitBranch`, and `emitMatch` remain in `cgen` unchanged by Phase 11's multi-function emission work. Their deletion is gated on Q-05's green N=1 convergence differential landing as part of Phase 12's own per-dispatch-site `Result` plans |
+| D-11-02 | 11-CONTEXT.md (D-11-02), RE-DEFERRED 2026-09-12 (D-12-36, `12-01-SUMMARY.md`) | NAT-04..NAT-07 | info | OPEN and UNOWNED — re-deferred; no phase currently claims porting branch bodies, foreign-call block bodies, and both by-pointer lowering variants into `emitProgram`, converging the preamble, and re-pinning the four frozen golden-C digests (~1,500 lines of `cgen.go` emitter logic per `TestN1ConvergenceDifferential`'s measurement) | THE SIX SINGLE-FUNCTION EMITTERS ARE NOT DELETED THIS PHASE. `emitLinear`, `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, `emitLinearForeign`, `emitBranch`, and `emitMatch` remain in `cgen` unchanged by Phase 11's multi-function emission work. Their deletion was gated on Q-05's green N=1 convergence differential landing as part of Phase 12's own per-dispatch-site `Result` plans; that gate fired RE-DEFER, not DELETE — see the dated sub-paragraph below |
 | D-11-07 | 11-CONTEXT.md (D-11-07) | NAT-04, FFI-01 | warning | Phase 11 — `singleForeignFunction`/`singleManifestFunction` land generalized-by-refusal this phase; `lang.foreign/0` widening is OPEN, unowned | `singleForeignFunction` AND `singleManifestFunction` STAY SINGLE-FUNCTION AND GENERALIZE BY REFUSING a program with two foreign contracts, rather than being rewritten to support multiple. `lang.foreign/0` is NOT widened. These are single-function assumptions the phase's own `len(Functions) != 1` grep inventory does not catch, since they gate on foreign-contract count, not function count |
 | D-11-11 | 11-CONTEXT.md (D-11-11) | NAT-05 | info | OPEN — designed this phase, built in a future phase once a call-boundary alias attribute has a real non-empty case to discharge (see D-11-09, item D-11-42 below) | THE `EmittedAttribute` DISCHARGE-PAIR DESIGN IS DESIGNED AND RECORDED, NOT BUILT. Callee-side `justified_by` plus caller-side `discharged_by`, refused on EQUALITY (never containment), is a complete design this phase writes down but does not implement, because Phase 11 emits zero call-boundary alias attributes by construction (D-11-09) |
 | D-11-12 | 11-CONTEXT.md (D-11-12) | NAT-05 | info | OPEN — same landing condition as D-11-11; the sidecar schema verdict and the discharge-pair design are one artifact | THE SIDECAR-NORMATIVE-PLUS-INLINE-COMMENT CHANNEL, WITH THE `lang.attributes/0` SCHEMA VERDICT, IS DESIGNED AND RECORDED, NOT BUILT. Companion to D-11-11: the channel a discharge pair would be published through is specified, not shipped, for the same reason (zero attributes to discharge this phase) |
@@ -126,6 +126,43 @@ convergence differential (proving the new multi-function path produces
 identical output to the old single-function path at N=1) landing as part of
 Phase 12's per-dispatch-site `Result` plans — never as a second sweep back
 through `cgen` after Phase 11 closes.
+
+**2026-09-12 — RATIFIED: RE-DEFERRED (D-12-36), superseding the text above.**
+Phase 12 plan 01 landed the gate: `TestN1ConvergenceDifferential`
+(`internal/compiler/cgen/cgen_n1_convergence_test.go`, committed `1bac938`)
+drove both the legacy single-function `Emit` path and `emitProgram` over the
+same five representative single-function shapes. Measured result:
+`emitProgram` refuses four of the five outright — `testdata/phase1/toggle.lang`
+(match-only), `testdata/phase3/borrowed_view.lang` (branch/match+linear),
+`testdata/phase4/foreign_acquire_one.lang` (foreign-call blocks), and
+`testdata/phase4/defect_terminal.lang` (branch with a defect terminator) all
+fail with "multi-function branch bodies are not supported" or "multi-function
+foreign-call bodies are not supported" — and on the fifth,
+`testdata/phase2/owned_transfer.lang`, both paths succeed but their outputs
+DIFFER, both textually (a call-boundary attribute comment and an extra
+`#include` shift the preamble) and structurally (`emitProgram` writes a
+`static` function plus a separate `main`; `emitLinear` writes one inline
+`main`). The differential is therefore red-by-measurement, not merely
+unproven, and making it green requires porting branch bodies, foreign-call
+block bodies, and both by-pointer lowering variants into `emitProgram`,
+converging the preamble, and re-pinning the four frozen golden-C digests —
+roughly 1,500 lines of `cgen.go` emitter logic. That is not "cheap" under any
+reading, which is D-12-36's single named trigger.
+
+The developer ratified **RE-DEFER** at Phase 12 plan 01's Task 2 checkpoint
+(recorded verbatim in `.planning/phases/12-result-payloads/12-01-SUMMARY.md`),
+reasoning that the "two coexisting laws" tax D-12-31 feared does not
+materialize for payload `case` arms specifically: `emitProgram` cannot express
+a match body at all, so the payload match surface stays exclusively
+legacy-family territory this phase, and the payload arms are still written
+exactly once. This **supersedes** the landing-phase text this section
+originally recorded — verbatim, from the Items table's original `Landing
+phase` cell: *"Phase 12 — a green N=1 convergence differential (Q-05), landing
+inside Phase 12's per-dispatch-site `Result` plans, never as a second sweep."*
+That commitment is withdrawn. The six emitters remain undeleted with **no
+currently-owned landing phase** — see the Items table's updated `Landing
+phase` cell above and `PHASE-12-DEBT.md`'s `D-12-36` row for the re-filed
+debt item.
 
 ### D-11-07 — `singleForeignFunction`/`singleManifestFunction` generalize by refusal
 
