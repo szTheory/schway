@@ -220,12 +220,28 @@ const ExplainMaxNodes = 4096
 // of its Causes. Availability reuses the existing debugmap.Availability
 // vocabulary (available/optimized_out/not_captured) rather than fabricating
 // a value the compiler does not hold (D-06-02).
+//
+// FunctionID, FunctionName, and Blame are Phase 13 D-13-14/D-13-22 additive
+// fields (omitempty): a node whose span lies inside exactly one Lang
+// function declaration carries that function's ID and name (peer-re-derived
+// per D-13-15); a node with a nil span, or whose span lies in no Lang
+// function declaration (foreign-C boundary territory), carries neither
+// field rather than a fabricated sentinel. Blame marks the node the
+// contract-boundary blame resolver (check package, D-13-01) names as the
+// blamed site -- absent (false, therefore omitted) on every other node.
+// Documented with the same additive-omitempty rationale
+// core.Function.ForeignContract already carries (D-04-23/D-13-18): absent
+// fields leave serialized bytes unchanged, and ExplainSummary carries no
+// identity hash, so ExplainSchema does not bump for these fields.
 type ExplainNode struct {
 	ID           string           `json:"id"`
 	Kind         string           `json:"kind"`
 	Detail       string           `json:"detail,omitempty"`
 	Span         *diagnostic.Span `json:"span,omitempty"`
 	Availability string           `json:"availability"`
+	FunctionID   string           `json:"function_id,omitempty"`
+	FunctionName string           `json:"function_name,omitempty"`
+	Blame        bool             `json:"blame,omitempty"`
 }
 
 // ExplainEdge is one typed relation between two ExplainNode IDs. Kind is one
@@ -236,18 +252,34 @@ type ExplainEdge struct {
 	Kind string `json:"kind"`
 }
 
+// ExplainFunction is one entry in ExplainSummary.Functions: a function
+// whose declaration span was consulted while resolving node attribution
+// (D-13-14). ID and Name mirror the values inlined on every ExplainNode;
+// Span is the function's WHOLE declaration span, published here (and only
+// here) because repair targeting needs it -- ExplainNode's own Span is the
+// node's own, narrower span, never widened to the whole function.
+type ExplainFunction struct {
+	ID   string          `json:"id"`
+	Name string          `json:"name"`
+	Span diagnostic.Span `json:"span"`
+}
+
 // ExplainSummary is the `lang explain` command projection: a bounded,
 // deterministic cause DAG synthesized fresh per cold invocation from a
 // diagnostic's existing flat Causes list (D-06-02, D-06-04). Truncated
 // carries a stable code ("truncated:explain.depth" or
 // "truncated:explain.node_budget") when either bound is hit, and is empty
-// otherwise.
+// otherwise. Functions is Phase 13's D-13-14 additive field (omitempty):
+// every function whose declaration span was consulted during node
+// attribution, or absent entirely when no function data was available for
+// this diagnostic (D-13-18).
 type ExplainSummary struct {
-	Schema    string        `json:"schema"`
-	RootID    string        `json:"root_id"`
-	Nodes     []ExplainNode `json:"nodes"`
-	Edges     []ExplainEdge `json:"edges"`
-	Truncated string        `json:"truncated,omitempty"`
+	Schema    string            `json:"schema"`
+	RootID    string            `json:"root_id"`
+	Nodes     []ExplainNode     `json:"nodes"`
+	Edges     []ExplainEdge     `json:"edges"`
+	Truncated string            `json:"truncated,omitempty"`
+	Functions []ExplainFunction `json:"functions,omitempty"`
 }
 
 // QuerySchema versions `lang query`'s joined-addressing-surface projection

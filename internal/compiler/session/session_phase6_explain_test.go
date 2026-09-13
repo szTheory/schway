@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/debugmap"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
@@ -99,6 +100,250 @@ func TestExplainDiagnosticNotFoundIsOperational(t *testing.T) {
 	}
 }
 
+// --- Task 1: peer-re-derived function attribution (D-13-14/15/22/23) ----
+
+// explainRealFunctionTable parses and checks a real .lang fixture, returning
+// the real explainFunctionTable buildExplainFunctionTable derives from it
+// (four real functions with real, non-overlapping spans for
+// explain_three_function_chain.lang) alongside the raw parsed ast.Program,
+// which callers use to write their OWN independent test-side resolution
+// (D-13-23) rather than reusing anything production-side.
+func explainRealFunctionTable(t *testing.T, path string) (explainFunctionTable, ast.Program) {
+	t.Helper()
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("%s: unexpected parse diagnostics: %+v", path, parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 1 {
+		t.Fatalf("%s: want exactly one check diagnostic (check.interprocedural_loan_liveness), got %+v", path, checked.Diagnostics)
+	}
+	return buildExplainFunctionTable(checked.Program, parsed.Program), parsed.Program
+}
+
+// innerSpan returns a span strictly inside function's own whole-declaration
+// span (never equal to it), roughly a third of the way through the body --
+// deliberately not the Start/End boundary, so containment tests exercise a
+// genuine "inside the body" cause span rather than an edge coordinate.
+func innerSpan(function explainFunctionRef) *diagnostic.Span {
+	width := function.Span.End - function.Span.Start
+	start := function.Span.Start + width/3
+	return &diagnostic.Span{Start: start, End: start + 2}
+}
+
+// testResolveFunctionOverAST is D-13-23's REQUIRED independent test-side
+// resolver: innermost containing function, computed directly over
+// ast.Program.Funcs by this test file's own loop -- it must never call
+// (and does not call) narrowestContainingFunction/resolveExplainFunction,
+// the production resolvers under test.
+func testResolveFunctionOverAST(program ast.Program, span *diagnostic.Span) (string, bool) {
+	best := -1
+	for index, function := range program.Funcs {
+		if function.Span.Start > span.Start || function.Span.End < span.End {
+			continue
+		}
+		if best == -1 {
+			best = index
+			continue
+		}
+		bestWidth := program.Funcs[best].Span.End - program.Funcs[best].Span.Start
+		candidateWidth := function.Span.End - function.Span.Start
+		if candidateWidth < bestWidth {
+			best = index
+		}
+	}
+	if best == -1 {
+		return "", false
+	}
+	return program.Funcs[best].Name, true
+}
+
+// TestExplainFunctionAttribution is D-13-23's falsifiable test: over the
+// real four-function fixture (leaf, decoy, relay, caller -- decoy's byte
+// range lies between leaf's and relay's), a synthetic diagnostic carries
+// one cause per real function, each cause's span computed from that
+// function's own real span. Each resulting node's function_id/function_name
+// must equal the innermost AST function containing its span, verified
+// against testResolveFunctionOverAST's independently-written resolver, not
+// a read-back of the production node itself.
+func TestExplainFunctionAttribution(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	table, astProgram := explainRealFunctionTable(t, path)
+
+	names := []string{"leaf", "decoy", "relay", "caller"}
+	causes := make([]diagnostic.Cause, len(names))
+	wantByIndex := make([]string, len(names))
+	for index, name := range names {
+		var function explainFunctionRef
+		found := false
+		for _, candidate := range table.coreFuncs {
+			if candidate.Name == name {
+				function, found = candidate, true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("function %q not present in the real core table -- fixture regressed", name)
+		}
+		span := innerSpan(function)
+		causes[index] = diagnostic.Cause{Kind: "declared_here", Span: span}
+
+		wantName, ok := testResolveFunctionOverAST(astProgram, span)
+		if !ok {
+			t.Fatalf("independent test resolver found no function for %q's own inner span", name)
+		}
+		if wantName != name {
+			t.Fatalf("independent test resolver itself disagrees: span for %q resolved to %q -- fixture spans overlap", name, wantName)
+		}
+		wantByIndex[index] = name
+	}
+
+	root := diagnostic.Diagnostic{
+		ID: "diagnostic:attribution", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 1}, Causes: causes,
+	}
+	nodes, _, functions, truncated, _, err := buildExplainGraph(root, protocol.ExplainDefaultDepth, table)
+	if err != nil {
+		t.Fatalf("buildExplainGraph: %v", err)
+	}
+	if truncated != "" {
+		t.Fatalf("unexpected truncation: %q", truncated)
+	}
+
+	byID := make(map[string]protocol.ExplainNode, len(nodes))
+	for _, node := range nodes {
+		byID[node.ID] = node
+	}
+	for index, wantName := range wantByIndex {
+		causeID := fmt.Sprintf("%s:cause:%d", root.ID, index)
+		node, ok := byID[causeID]
+		if !ok {
+			t.Fatalf("cause %d (%s): node missing from graph", index, wantName)
+		}
+		if node.FunctionName != wantName {
+			t.Fatalf("cause %d: function_name = %q, want %q", index, node.FunctionName, wantName)
+		}
+		if node.FunctionID == "" {
+			t.Fatalf("cause %d: function_id is empty for a real, resolvable function", index)
+		}
+	}
+
+	if len(functions) != len(table.coreFuncs) {
+		t.Fatalf("ExplainSummary.Functions has %d entries, want %d (every consulted function)", len(functions), len(table.coreFuncs))
+	}
+}
+
+// TestExplainNilSpanOmitsFunction covers D-13-23's nil-span rule: a cause
+// with Span == nil emits NO function field and availability: not_captured,
+// never a guessed function from a sibling or the root.
+func TestExplainNilSpanOmitsFunction(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	table, _ := explainRealFunctionTable(t, path)
+
+	root := diagnostic.Diagnostic{
+		ID: "diagnostic:nilspan", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 1},
+		Causes: []diagnostic.Cause{{Kind: "callee_return_contract", Detail: "no-span-cause"}},
+	}
+	nodes, _, _, _, _, err := buildExplainGraph(root, protocol.ExplainDefaultDepth, table)
+	if err != nil {
+		t.Fatalf("buildExplainGraph: %v", err)
+	}
+	found := false
+	for _, node := range nodes {
+		if node.ID == root.ID {
+			continue
+		}
+		found = true
+		if node.Span != nil {
+			t.Fatalf("test constructed a nil-span cause but node has a span: %+v", node)
+		}
+		if node.FunctionID != "" || node.FunctionName != "" {
+			t.Fatalf("nil-span node carries a function field: %+v", node)
+		}
+		if node.Availability != string(debugmap.NotCaptured) {
+			t.Fatalf("nil-span node availability = %q, want %q", node.Availability, debugmap.NotCaptured)
+		}
+	}
+	if !found {
+		t.Fatalf("no cause node produced")
+	}
+}
+
+// TestExplainFunctionIdentitySurvivesReorder is D-13-23's discriminating
+// mutation: explain_three_function_chain_reordered.lang declares the SAME
+// four functions in a different source order, so every byte offset shifts.
+// A cause built from each fixture's own real inner span for the SAME
+// function name must resolve to that SAME function_name in both fixtures,
+// even though the spans themselves differ -- defeating any shortcut that
+// hardcodes a position (e.g. "the first function", "the root's function")
+// instead of genuinely resolving from the span.
+func TestExplainFunctionIdentitySurvivesReorder(t *testing.T) {
+	originalPath := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	reorderedPath := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain_reordered.lang")
+	originalTable, _ := explainRealFunctionTable(t, originalPath)
+	reorderedTable, _ := explainRealFunctionTable(t, reorderedPath)
+
+	originalByName := map[string]explainFunctionRef{}
+	for _, function := range originalTable.coreFuncs {
+		originalByName[function.Name] = function
+	}
+	reorderedByName := map[string]explainFunctionRef{}
+	for _, function := range reorderedTable.coreFuncs {
+		reorderedByName[function.Name] = function
+	}
+
+	spanChanged := false
+	for _, name := range []string{"leaf", "decoy", "relay", "caller"} {
+		original, ok := originalByName[name]
+		if !ok {
+			t.Fatalf("function %q missing from original fixture", name)
+		}
+		reordered, ok := reorderedByName[name]
+		if !ok {
+			t.Fatalf("function %q missing from reordered fixture", name)
+		}
+		if original.Span != reordered.Span {
+			spanChanged = true
+		}
+
+		for _, trial := range []struct {
+			table explainFunctionTable
+			span  *diagnostic.Span
+		}{
+			{originalTable, innerSpan(original)},
+			{reorderedTable, innerSpan(reordered)},
+		} {
+			root := diagnostic.Diagnostic{
+				ID: "diagnostic:reorder", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 1},
+				Causes: []diagnostic.Cause{{Kind: "declared_here", Span: trial.span}},
+			}
+			nodes, _, _, _, _, err := buildExplainGraph(root, protocol.ExplainDefaultDepth, trial.table)
+			if err != nil {
+				t.Fatalf("buildExplainGraph: %v", err)
+			}
+			found := false
+			for _, node := range nodes {
+				if node.ID == root.ID {
+					continue
+				}
+				found = true
+				if node.FunctionName != name {
+					t.Fatalf("function %q: resolved function_name = %q", name, node.FunctionName)
+				}
+			}
+			if !found {
+				t.Fatalf("function %q: no cause node produced", name)
+			}
+		}
+	}
+	if !spanChanged {
+		t.Fatalf("reordered fixture did not actually shift any function's span -- mutation is not discriminating")
+	}
+}
+
 // --- Task 2: typed edges, depth/node budget, stable truncation ---------
 
 // TestExplainRespectsDepthAndNodeBudget covers Tests 1-3 of the plan's
@@ -112,7 +357,7 @@ func TestExplainRespectsDepthAndNodeBudget(t *testing.T) {
 				{Kind: "declared_here", Span: spanPtr(20, 80)}, // depth 2: narrows cause 0
 			},
 		}
-		nodes, edges, truncated, _ := buildExplainGraph(root, 1)
+		nodes, edges, _, truncated, _, _ := buildExplainGraph(root, 1, explainFunctionTable{})
 		if truncated != "truncated:explain.depth" {
 			t.Fatalf("truncated = %q, want truncated:explain.depth", truncated)
 		}
@@ -142,7 +387,7 @@ func TestExplainRespectsDepthAndNodeBudget(t *testing.T) {
 			causes[index] = diagnostic.Cause{Kind: "detail", Detail: fmt.Sprintf("d%d", index)}
 		}
 		root := diagnostic.Diagnostic{ID: "diagnostic:budget", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 1}, Causes: causes}
-		nodes, _, truncated, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+		nodes, _, _, truncated, _, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth, explainFunctionTable{})
 		if truncated != "truncated:explain.node_budget" {
 			t.Fatalf("truncated = %q, want truncated:explain.node_budget", truncated)
 		}
@@ -162,7 +407,7 @@ func TestExplainTruncationCodeIsStable(t *testing.T) {
 			{Kind: "declared_here", Span: spanPtr(20, 80)},
 		},
 	}
-	if _, _, truncated, _ := buildExplainGraph(depthCase, 1); truncated != "truncated:explain.depth" {
+	if _, _, _, truncated, _, _ := buildExplainGraph(depthCase, 1, explainFunctionTable{}); truncated != "truncated:explain.depth" {
 		t.Fatalf("depth truncation code = %q, want truncated:explain.depth", truncated)
 	}
 
@@ -171,7 +416,7 @@ func TestExplainTruncationCodeIsStable(t *testing.T) {
 		budgetCauses[index] = diagnostic.Cause{Kind: "detail", Detail: fmt.Sprintf("d%d", index)}
 	}
 	budgetCase := diagnostic.Diagnostic{ID: "diagnostic:budget", Code: "test.code", Primary: diagnostic.Span{Start: 0, End: 1}, Causes: budgetCauses}
-	if _, _, truncated, _ := buildExplainGraph(budgetCase, protocol.ExplainDefaultDepth); truncated != "truncated:explain.node_budget" {
+	if _, _, _, truncated, _, _ := buildExplainGraph(budgetCase, protocol.ExplainDefaultDepth, explainFunctionTable{}); truncated != "truncated:explain.node_budget" {
 		t.Fatalf("node budget truncation code = %q, want truncated:explain.node_budget", truncated)
 	}
 }
@@ -180,7 +425,7 @@ func TestExplainTruncationCodeIsStable(t *testing.T) {
 // empty result, never an error and never a fabricated cause (FND-04).
 func TestExplainZeroCauseDiagnosticReturnsSingleNode(t *testing.T) {
 	root := diagnostic.Diagnostic{ID: "diagnostic:lonely", Code: "test.code", Primary: diagnostic.Span{Start: 5, End: 6}}
-	nodes, edges, truncated, work := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+	nodes, edges, _, truncated, work, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth, explainFunctionTable{})
 	if len(nodes) != 1 {
 		t.Fatalf("nodes = %+v, want exactly 1 (the root)", nodes)
 	}
@@ -212,7 +457,7 @@ func TestExplainEdgeKindVocabularyIsClosed(t *testing.T) {
 				{Kind: "type", Detail: "p:type:0"},             // 3: caused_by (no correlation, no span)
 			},
 		}
-		_, edges, truncated, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+		_, edges, _, truncated, _, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth, explainFunctionTable{})
 		if truncated != "" {
 			t.Fatalf("unexpected truncation: %q", truncated)
 		}
@@ -323,7 +568,7 @@ func TestExplainNodeOrderIsStableOnTies(t *testing.T) {
 				{Kind: "declared_here", Span: spanPtr(10, 90)}, // 2: narrows root, depth 1
 			},
 		}
-		nodes, edges, _, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth)
+		nodes, edges, _, _, _, _ := buildExplainGraph(root, protocol.ExplainDefaultDepth, explainFunctionTable{})
 		ids := make([]string, len(nodes))
 		for index, node := range nodes {
 			ids[index] = node.ID
