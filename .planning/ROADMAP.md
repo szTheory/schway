@@ -819,7 +819,19 @@ check clean.
 two highest-value defect classes (cross-function borrow escape, cycle refusal)
 rather than relaxing the mutation-kill or repair-then-re-check discipline for
 whatever does ship.
-**Plans**: TBD
+**Plans**: 7 plans, in four waves; tracer-first. Wave 2 runs three plans in
+parallel. The held-out corpus is sealed in wave 2, BEFORE the remaining repair
+rules are written in wave 3 — that ordering is the anti-overfitting control
+(D-13-27), not a convenience.
+
+Plans:
+- [ ] 13-01-PLAN.md — Tracer: `move_after_interprocedural_loan` end-to-end through the unmodified `lang-repair` driver, plus the `antitheater_test.go` acceptance contract
+- [ ] 13-02-PLAN.md — Contract-boundary blame rule (B1/B2/B3), `blame_undetermined` with a compile-time exhaustiveness guard, empirical zero-Primary-movement proof
+- [ ] 13-03-PLAN.md — `lang explain` function attribution (peer re-derived), the `narrows` function-scope guard, and the D-13-20 schema-bump observation
+- [ ] 13-04-PLAN.md — Held-out/derivation corpus incl. the D-13-28 twin pair (both halves), interprocedural injectors, topology-disjointness control, sealed `HELDOUT.sha256`
+- [ ] 13-05-PLAN.md — `wrap_call_in_try` and `use_matching_argument` with D-13-10's uniqueness gate; final two re-pinned diagnostic IDs
+- [ ] 13-06-PLAN.md — Criterion 3: twin-pair repair-then-re-check with the detection-site mutation kill; held-out integration across all three classes
+- [ ] 13-07-PLAN.md — D-13-33 retro-strengthening of `testdata/phase6` distinctness (blocking developer adjudication) and the QLT-08 completeness matrix
 
 ## Progress
 
