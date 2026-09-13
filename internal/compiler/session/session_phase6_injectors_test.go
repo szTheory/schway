@@ -488,6 +488,73 @@ func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 	if !strings.Contains(string(borrowFirst), "let a = borrow buffer") || !strings.Contains(string(borrowFirst), "let b = borrow mut buffer") {
 		t.Fatalf("BorrowInjector.Inject did not escalate the LAST marked borrow: %q", borrowFirst)
 	}
+
+	// interprocedural_loan (Phase 13, D-13-30a extension): two marked
+	// take-statements, each immediately preceded by a call; the LAST
+	// marked statement is swapped with its own predecessor, the FIRST
+	// marked pair is left untouched.
+	loanSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = sink(buffer)\n  let b = take buffer // lang:interprocedural-loan-target\n  let c = sink(buffer)\n  let d = take buffer // lang:interprocedural-loan-target\n  d\n}")
+	loanFirst, err := InterproceduralLoanInjector{}.Inject(loanSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loanSecond, err := InterproceduralLoanInjector{}.Inject(loanSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(loanFirst, loanSecond) {
+		t.Fatal("InterproceduralLoanInjector.Inject is not deterministic across repeated invocations on the same ambiguous input")
+	}
+	loanText := string(loanFirst)
+	if strings.Index(loanText, "let d = take buffer") == -1 || strings.Index(loanText, "let d = take buffer") > strings.Index(loanText, "let c = sink(buffer)") {
+		t.Fatalf("InterproceduralLoanInjector.Inject did not swap the LAST marked statement ahead of its predecessor: %q", loanFirst)
+	}
+	if strings.Index(loanText, "let a = sink(buffer)") == -1 || strings.Index(loanText, "let a = sink(buffer)") > strings.Index(loanText, "let b = take buffer") {
+		t.Fatalf("InterproceduralLoanInjector.Inject disturbed the FIRST marked pair, which should be untouched: %q", loanFirst)
+	}
+
+	// fallible_consume (Phase 13, D-13-30a extension): two marked `= try`
+	// bindings; the LAST is stripped of `try`, the FIRST is untouched.
+	consumeSource := []byte("fn main(request: Byte) -> Byte {\n  let a = try open(request) // lang:fallible-consume-target\n  let b = try open(request) // lang:fallible-consume-target\n  b\n}")
+	consumeFirst, err := FallibleConsumeInjector{}.Inject(consumeSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	consumeSecond, err := FallibleConsumeInjector{}.Inject(consumeSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(consumeFirst, consumeSecond) {
+		t.Fatal("FallibleConsumeInjector.Inject is not deterministic across repeated invocations on the same ambiguous input")
+	}
+	if !strings.Contains(string(consumeFirst), "let a = try open(request)") || strings.Contains(string(consumeFirst), "let b = try open(request)") {
+		t.Fatalf("FallibleConsumeInjector.Inject did not strip `try` from the LAST marked binding: %q", consumeFirst)
+	}
+	if !strings.Contains(string(consumeFirst), "let b = open(request)") {
+		t.Fatalf("FallibleConsumeInjector.Inject did not leave the LAST marked binding as a bare call: %q", consumeFirst)
+	}
+
+	// call_argument_type (Phase 13, D-13-30a extension): two marked `fn`
+	// declaration lines; the LAST has Byte/Buffer toggled, the FIRST is
+	// untouched.
+	typeSource := []byte("fn first(value: Byte) -> Byte { // lang:call-argument-target\n  value\n}\n\nfn second(value: Byte) -> Byte { // lang:call-argument-target\n  value\n}")
+	typeFirst, err := CallArgumentTypeInjector{}.Inject(typeSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	typeSecond, err := CallArgumentTypeInjector{}.Inject(typeSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(typeFirst, typeSecond) {
+		t.Fatal("CallArgumentTypeInjector.Inject is not deterministic across repeated invocations on the same ambiguous input")
+	}
+	if !strings.Contains(string(typeFirst), "fn first(value: Byte) -> Byte {") {
+		t.Fatalf("CallArgumentTypeInjector.Inject disturbed the FIRST marked declaration, which should be untouched: %q", typeFirst)
+	}
+	if !strings.Contains(string(typeFirst), "fn second(value: Buffer) -> Buffer {") {
+		t.Fatalf("CallArgumentTypeInjector.Inject did not toggle the LAST marked declaration: %q", typeFirst)
+	}
 }
 
 // markerAbsentInput builds, for each of the five injectors, an input shaped
@@ -516,6 +583,12 @@ func markerAbsentInput(t *testing.T, name string) []byte {
 		return []byte(strings.ReplaceAll(cSource, releaseMarker, ""))
 	case "stale_evidence":
 		return bytes.ReplaceAll(phase6Fixture(t, "stale_evidence_subject.lang"), []byte(evidenceSubjectMarker), []byte(""))
+	case "interprocedural_loan":
+		return bytes.ReplaceAll(phase13InjectorLoanBase, []byte(loanTargetMarker), []byte(""))
+	case "fallible_consume":
+		return bytes.ReplaceAll(phase13InjectorConsumeBase, []byte(fallibleConsumeTargetMarker), []byte(""))
+	case "call_argument_type":
+		return bytes.ReplaceAll(phase13InjectorArgumentBase, []byte(callArgumentTargetMarker), []byte(""))
 	default:
 		t.Fatalf("markerAbsentInput: unhandled injector %q -- add a case here (this IS the test AllInjectors() drives)", name)
 		return nil

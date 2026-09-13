@@ -311,6 +311,13 @@ func AllInjectors() []Injector {
 		BorrowInjector{},
 		CleanupInjector{},
 		StaleEvidenceInjector{},
+		// Phase 13 (D-13-24, D-13-30a): the three interprocedural defect
+		// injectors, defined in session_phase13_injectors.go, registered
+		// here so TestEveryInjectorRefusesWhenMarkerDisappears and
+		// TestInjectorTargetChoiceIsSpecified pick them up automatically.
+		InterproceduralLoanInjector{},
+		FallibleConsumeInjector{},
+		CallArgumentTypeInjector{},
 	}
 }
 
