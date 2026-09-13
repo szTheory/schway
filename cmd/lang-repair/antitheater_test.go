@@ -203,7 +203,7 @@ func captureFile(t testing.TB, name string) []byte {
 // eligible repairs would make every downstream guard vacuous, since there
 // would be nothing for the driver to apply either scrambled or intact.
 func TestBaselineCaptureContainsEligibleRepair(t *testing.T) {
-	for _, class := range []string{"match", "move", "borrow"} {
+	for _, class := range []string{"match", "move", "borrow", "interprocedural_loan"} {
 		t.Run(class, func(t *testing.T) {
 			raw := captureFile(t, class+"_diagnose_capture.json")
 			decoded := decodeCheckJSON(t, raw)
@@ -431,7 +431,7 @@ func assertOnlyProseDiffers(t testing.TB, before, after interface{}, path string
 // difference can be attributed to the mutation, never to the re-marshal
 // step (the plan's own instruction for the "identity" mode).
 func TestMutateCaptureIdentityRoundTripIsByteStable(t *testing.T) {
-	for _, class := range []string{"match", "move", "borrow"} {
+	for _, class := range []string{"match", "move", "borrow", "interprocedural_loan"} {
 		t.Run(class, func(t *testing.T) {
 			raw := captureFile(t, class+"_diagnose_capture.json")
 			first := mutateCaptureOrFatal(t, raw, "identity")
@@ -646,6 +646,54 @@ func TestProseScrambleLeavesRepairBehaviourIdentical(t *testing.T) {
 	t.Run("stale_evidence", func(t *testing.T) {
 		testStaleEvidenceClassIsProseIndependent(t)
 	})
+	// 13-06 Task 3 (13-ANTITHEATER-CONTRACT.md obligation 6, the one
+	// MANDATORY registration step): move_after_interprocedural_loan is the
+	// first interprocedural class to receive real captures and be
+	// registered across all four contract-named lists.
+	// wrap_call_in_try/use_matching_argument are DELIBERATELY not
+	// registered here -- see 13-06-SUMMARY.md's "Antitheater obligations
+	// discharged" section for the recorded decision (contract obligation
+	// 2 requires naming a skip explicitly, not silently leaving it
+	// uncovered).
+	t.Run("interprocedural_loan", func(t *testing.T) {
+		testInterproceduralClassProseScramble(t, standinBinary, session.InterproceduralLoanInjector{}, "heldout_shared_callee_twin_alpha.lang", "interprocedural_loan")
+	})
+}
+
+// testInterproceduralClassProseScramble is testSourceClassProseScramble's
+// phase13 sibling: identical mechanism, but reads its held-out fixture
+// from testdata/phase13 (via testsupport.ProjectPath) rather than
+// testdata/phase6 (phase6Fixture) -- the two corpora are deliberately
+// disjoint by directory (D-13-24), so this cannot simply reuse the
+// existing helper.
+func testInterproceduralClassProseScramble(t *testing.T, standinBinary string, injector session.Injector, fixture, class string) {
+	t.Helper()
+	original, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase13", fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutated, err := injector.Inject(original)
+	if err != nil {
+		t.Fatalf("injecting %s defect: %v", class, err)
+	}
+	diagnoseCapture := captureFile(t, class+"_diagnose_capture.json")
+	reverifyCapture := captureFile(t, class+"_reverify_capture.json")
+
+	identityExit, identityOutcome, identityRepaired := runViaStandin(t, standinBinary, mutated, diagnoseCapture, reverifyCapture, "identity")
+	scrambledExit, scrambledOutcome, scrambledRepaired := runViaStandin(t, standinBinary, mutated, diagnoseCapture, reverifyCapture, "scramble_prose")
+
+	if identityOutcome.Status != OutcomeRepaired {
+		t.Fatalf("%s: identity-mode control run did not even report %q (got %q) -- test harness is broken, not exercising the guard", class, OutcomeRepaired, identityOutcome.Status)
+	}
+	if scrambledExit != identityExit {
+		t.Fatalf("%s: exit codes differ under prose scramble: identity=%d scrambled=%d", class, identityExit, scrambledExit)
+	}
+	if scrambledOutcome != identityOutcome {
+		t.Fatalf("%s: reported outcome differs under prose scramble: identity=%+v scrambled=%+v", class, identityOutcome, scrambledOutcome)
+	}
+	if !bytes.Equal(scrambledRepaired, identityRepaired) {
+		t.Fatalf("%s: repaired bytes differ under prose scramble", class)
+	}
 }
 
 // ---------------------------------------------------------------------
@@ -776,7 +824,7 @@ func TestVocabularyRemovalGuardIsNotInert(t *testing.T) {
 // scrambler that accidentally touched a span would make the guard fail
 // for the wrong reason). Both failure modes are refused explicitly.
 func TestProseScrambleFixtureKeepsStructuredFieldsIntact(t *testing.T) {
-	for _, class := range []string{"match", "move", "borrow"} {
+	for _, class := range []string{"match", "move", "borrow", "interprocedural_loan"} {
 		for _, kind := range []string{"diagnose", "reverify"} {
 			name := class + "_" + kind
 			t.Run(name, func(t *testing.T) {

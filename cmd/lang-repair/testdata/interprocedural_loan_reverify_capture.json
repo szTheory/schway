@@ -1,0 +1,1 @@
+{"schema":"lang.command/1","command":"check","status":"pass","id":"result:6fc61781fecd29e0ec77e5b3","module_id":"s1:phase13.heldout_shared_callee_twin_alpha:module:phase13.heldout_shared_callee_twin_alpha","diagnostics":[],"executions":[],"lanes":[],"metrics":{"elapsed_ns":0,"peak_rss_status":"unavailable","output_bytes":351,"recomputed_work":407}}

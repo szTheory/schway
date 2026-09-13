@@ -181,7 +181,7 @@ var interproceduralOrderingBaselineDirs = []string{
 // mode a golden-file replay would have permitted and this literal table is
 // built to prevent.
 var interproceduralOrderingBaseline = map[string][2]string{
-	"phase07/call_argument_used_twice.lang":    {"ownership.use_after_move", "diagnostic:8e3116d77bcb23bd6b84396b"},
+	"phase07/call_argument_used_twice.lang": {"ownership.use_after_move", "diagnostic:8e3116d77bcb23bd6b84396b"},
 	// 13-05 Task 3 (D-13-09a): re-pinned once (schema lang.diagnostic/0 ->
 	// /1, plus a use_matching_argument repair on the one-match partition).
 	// 13-06 (D-13-10a) re-pins it a SECOND time: the use_matching_argument
@@ -191,14 +191,14 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// carrying zero repairs. Neither the source bytes nor the code
 	// changed; only the repair-emission decision, deliberate and
 	// documented in 13-06-SUMMARY.md.
-	"phase07/call_type_mismatch.lang":          {"check.call_argument_type_mismatch", "diagnostic:ba4d0e27cd0eb33c08abbde9"},
-	"phase07/call_uncallable_callee.lang":      {"core.callee_not_callable", "diagnostic:5735171812e7ad4920c3bb72"},
-	"phase07/cycle_indirect.lang":              {"core.call_graph_cycle", "diagnostic:1e6c260432c9010ac6a196a9"},
-	"phase07/cycle_mutual.lang":                {"core.call_graph_cycle", "diagnostic:39bb0a1a48d08fc9674307a4"},
-	"phase07/cycle_self.lang":                  {"core.call_graph_cycle", "diagnostic:6e836fd6f98202bf58f1dfdb"},
-	"phase07/cycle_through_match_arm.lang":     {"core.call_graph_cycle", "diagnostic:0fe333002fca961ebee8f00a"},
-	"phase07/cycle_unreachable.lang":           {"core.call_graph_cycle", "diagnostic:03edcf9d691da106106c2fc0"},
-	"phase07/foreign_symbol_shadowing.lang":    {"core.call_graph_cycle", "diagnostic:3fa66ee8773176867ffb9b4e"},
+	"phase07/call_type_mismatch.lang":       {"check.call_argument_type_mismatch", "diagnostic:ba4d0e27cd0eb33c08abbde9"},
+	"phase07/call_uncallable_callee.lang":   {"core.callee_not_callable", "diagnostic:5735171812e7ad4920c3bb72"},
+	"phase07/cycle_indirect.lang":           {"core.call_graph_cycle", "diagnostic:1e6c260432c9010ac6a196a9"},
+	"phase07/cycle_mutual.lang":             {"core.call_graph_cycle", "diagnostic:39bb0a1a48d08fc9674307a4"},
+	"phase07/cycle_self.lang":               {"core.call_graph_cycle", "diagnostic:6e836fd6f98202bf58f1dfdb"},
+	"phase07/cycle_through_match_arm.lang":  {"core.call_graph_cycle", "diagnostic:0fe333002fca961ebee8f00a"},
+	"phase07/cycle_unreachable.lang":        {"core.call_graph_cycle", "diagnostic:03edcf9d691da106106c2fc0"},
+	"phase07/foreign_symbol_shadowing.lang": {"core.call_graph_cycle", "diagnostic:3fa66ee8773176867ffb9b4e"},
 	// Updated 13-01 (D-13-09a): re-pinned, not an ordering change. Attaching
 	// a repair to check.interprocedural_loan_liveness forces the emission
 	// site to switch from diagnostic.Error (schema lang.diagnostic/0) to
@@ -211,7 +211,7 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// NOT end the conflict (empirically verified: the swapped program still
 	// refuses with this same code), so interproceduralLoanLivenessDiagnostic
 	// emits zero repairs here; only the schema switch changed this ID.
-	"phase07/relay_escort_witness.lang":        {"check.interprocedural_loan_liveness", "diagnostic:d2cf7924b65040bc45087f56"},
+	"phase07/relay_escort_witness.lang": {"check.interprocedural_loan_liveness", "diagnostic:d2cf7924b65040bc45087f56"},
 	// phase08/negative_control_fails.lang and phase08/negative_control_infallible.lang,
 	// plan 10-02 (D-09-51 closure): IDENTITY change, code changed. Both
 	// fixtures' `relay` declares `-> borrow(buffer) Buffer`, but in EITHER
@@ -240,11 +240,11 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// Updated 13-01 (D-13-09a): same schema-switch re-pin as
 	// relay_escort_witness.lang above. FORWARD direction (loan_extended_by_
 	// call named via the returnsBorrowOfParam propagation), zero repairs.
-	"phase08/relay_depth2_refuse.lang":         {"check.interprocedural_loan_liveness", "diagnostic:fe60f351f59fde945c197f06"},
+	"phase08/relay_depth2_refuse.lang": {"check.interprocedural_loan_liveness", "diagnostic:fe60f351f59fde945c197f06"},
 	// Updated 13-01 (D-13-09a): same schema-switch re-pin. FORWARD
 	// direction, zero repairs -- see relay_escort_witness.lang's comment
 	// above for why the swap does not end the conflict here.
-	"phase08/twin_a_refuse.lang":               {"check.interprocedural_loan_liveness", "diagnostic:be6861698bff25a7076dca8f"},
+	"phase08/twin_a_refuse.lang": {"check.interprocedural_loan_liveness", "diagnostic:be6861698bff25a7076dca8f"},
 	// phase08/twin_b_accept.lang and phase08/twin_b_refuse.lang, plan 09-09:
 	// BOTH now report check.interprocedural_loan_liveness instead of
 	// ownership.move_while_borrowed -- an IDENTITY change compounded with a
@@ -331,9 +331,9 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// TestBorrowConflictCauseChain/TestExclusiveMoveRejected (out of this
 	// plan's file scope), which independently confirm the intended CODE
 	// still fires after the rewrite.
-	"phase3/exclusive_exclusive_reject.lang":      {"ownership.borrow_conflict", "diagnostic:6a3d8582000b05e32a575ebf"},
-	"phase3/exclusive_move_reject.lang":           {"ownership.move_while_borrowed", "diagnostic:8038bd1955c8b4cbd98b445d"},
-	"phase3/shared_exclusive_reject.lang":         {"ownership.borrow_conflict", "diagnostic:2ac14b431c0d5a98db75e10d"},
+	"phase3/exclusive_exclusive_reject.lang": {"ownership.borrow_conflict", "diagnostic:6a3d8582000b05e32a575ebf"},
+	"phase3/exclusive_move_reject.lang":      {"ownership.move_while_borrowed", "diagnostic:8038bd1955c8b4cbd98b445d"},
+	"phase3/shared_exclusive_reject.lang":    {"ownership.borrow_conflict", "diagnostic:2ac14b431c0d5a98db75e10d"},
 	// 13-05 Task 1/3 (D-13-09a): re-pinned. This code now builds via
 	// diagnostic.ErrorWithRepairs unconditionally (schema lang.diagnostic/0
 	// -> /1) and carries a wrap_call_in_try repair when the callee name and

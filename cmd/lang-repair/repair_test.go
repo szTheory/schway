@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -183,27 +184,106 @@ func TestRepairDriverBoundedReaderRejectsOversizedStdout(t *testing.T) {
 	}
 }
 
-// TestRepairDriverSourceNeverReferencesHeldoutFixtures asserts, by go/ast,
-// that no non-test file under cmd/lang-repair names any heldout_ fixture
-// path -- the driver's kind-to-edit mapping (README's rule) may consult
-// only derivation_ fixtures, if it consults any fixture at all. The
-// shipped driver consults none (it is fully generic over Span/Replacement),
-// which trivially satisfies this, but the test still stands as a live
-// falsifier against a future regression that hardcodes a heldout_ path.
-func TestRepairDriverSourceNeverReferencesHeldoutFixtures(t *testing.T) {
-	forEachNonTestFile(t, repairPackageDir(t), func(name string, fset *token.FileSet, file *ast.File) {
-		ast.Inspect(file, func(n ast.Node) bool {
-			lit, isLit := n.(*ast.BasicLit)
-			if !isLit || lit.Kind != token.STRING {
-				return true
-			}
-			if strings.Contains(lit.Value, "heldout_") {
-				t.Fatalf("%s:%s references a heldout_ fixture path %s -- the driver's mapping may consult only derivation_ fixtures",
-					name, fset.Position(lit.Pos()), lit.Value)
-			}
+// heldoutReferenceViolation inspects one parsed Go file for any string
+// literal containing "heldout_" -- the pure predicate shared by
+// TestRepairDriverSourceNeverReferencesHeldoutFixtures (which fails the
+// real scan on it) and TestRepairDriverSourceHeldoutScanIsNotInert (which
+// asserts it fires on a planted scratch copy, D-13-30's own "not inert"
+// discipline extended to this scan). Returns the first violation found and
+// a human-readable location string, or ok==false if none.
+func heldoutReferenceViolation(fset *token.FileSet, file *ast.File) (violated bool, detail string) {
+	ast.Inspect(file, func(n ast.Node) bool {
+		if violated {
+			return false
+		}
+		lit, isLit := n.(*ast.BasicLit)
+		if !isLit || lit.Kind != token.STRING {
 			return true
-		})
+		}
+		if strings.Contains(lit.Value, "heldout_") {
+			violated = true
+			detail = fmt.Sprintf("%s references a heldout_ fixture path %s", fset.Position(lit.Pos()), lit.Value)
+			return false
+		}
+		return true
 	})
+	return violated, detail
+}
+
+// TestRepairDriverSourceNeverReferencesHeldoutFixtures asserts, by go/ast,
+// that no non-test file names any heldout_ fixture path -- the driver's
+// kind-to-edit mapping (README's rule) may consult only derivation_
+// fixtures, if it consults any fixture at all. The shipped driver
+// consults none (it is fully generic over Span/Replacement), which
+// trivially satisfies this, but the test still stands as a live falsifier
+// against a future regression that hardcodes a heldout_ path.
+//
+// 13-06 Task 3 (D-13-27): the scan root set is widened beyond
+// cmd/lang-repair to every non-test .go file under internal/compiler/check
+// -- D-13-27 requires the scan to cover "any non-test file in the
+// blame-rule path", not just the driver, since check.go is where a repair
+// kind's Span/Replacement is actually constructed and is therefore where a
+// held-out-fixture-derived overfit would actually live. Resolved relative
+// to the repository root via testsupport.ProjectPath from the test's own
+// working directory, never by importing anything from internal/ into a
+// non-test file (this file is itself a _test.go file, exempt from
+// import_boundary_test.go's lint by construction).
+func TestRepairDriverSourceNeverReferencesHeldoutFixtures(t *testing.T) {
+	scanRoots := []string{
+		repairPackageDir(t),
+		testsupport.ProjectPath("internal", "compiler", "check"),
+	}
+	for _, dir := range scanRoots {
+		forEachNonTestFile(t, dir, func(name string, fset *token.FileSet, file *ast.File) {
+			if violated, detail := heldoutReferenceViolation(fset, file); violated {
+				t.Fatalf("%s (in %s): %s -- the driver's mapping may consult only derivation_ fixtures", name, dir, detail)
+			}
+		})
+	}
+}
+
+// TestRepairDriverSourceHeldoutScanIsNotInert is 13-06 Task 3's non-inert
+// proof for the widened scan (D-13-27): a scratch copy of one REAL file
+// scanned by TestRepairDriverSourceNeverReferencesHeldoutFixtures -- here,
+// check.go itself -- with a held-out fixture path reference planted into
+// it in a t.TempDir() (never the real source file), must be reported as a
+// violation by the exact same predicate the production scan uses. Without
+// this, the widened scan could be silently vacuous (e.g. a directory-walk
+// typo that scans zero files) and never be caught.
+func TestRepairDriverSourceHeldoutScanIsNotInert(t *testing.T) {
+	checkDir := testsupport.ProjectPath("internal", "compiler", "check")
+	realFile, err := os.ReadFile(filepath.Join(checkDir, "check.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	planted := append(append([]byte{}, realFile...), []byte("\n\nconst plantedHeldoutReference = \"testdata/phase13/heldout_evil_example.lang\"\n")...)
+
+	dir := t.TempDir()
+	mustWriteFile(t, filepath.Join(dir, "check.go"), planted)
+
+	violationFound := false
+	var violationDetail string
+	forEachNonTestFile(t, dir, func(name string, fset *token.FileSet, file *ast.File) {
+		if violated, detail := heldoutReferenceViolation(fset, file); violated {
+			violationFound = true
+			violationDetail = detail
+		}
+	})
+	if !violationFound {
+		t.Fatal("expected the widened scan to report a violation on a planted heldout_ reference in a scratch copy of check.go, got none -- the scan may be inert")
+	}
+	if !strings.Contains(violationDetail, "heldout_evil_example.lang") {
+		t.Fatalf("violation detail does not name the planted reference: %q", violationDetail)
+	}
+
+	// The real check.go must be completely untouched by this test.
+	afterTest, err := os.ReadFile(filepath.Join(checkDir, "check.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(afterTest, realFile) {
+		t.Fatal("internal/compiler/check/check.go was modified by this test -- the scan must operate on the scratch copy only")
+	}
 }
 
 // testSourceClassRepair drives one source-granularity defect class (match,
@@ -831,32 +911,155 @@ func TestStaleEvidenceRepairRebindsManifest(t *testing.T) {
 	}
 }
 
+// assertUnrepairable is the shared assertion body every
+// TestUnrepairableDefectFailsTheGate subtest applies: the driver reports
+// the EXACT outcome string `unrepairable` with SubprocessCount 1 -- never
+// skipped, never counted as a pass (FND-04 empty-input edge, D-13-29).
+func assertUnrepairable(t *testing.T, langBinary, sourcePath string) Outcome {
+	t.Helper()
+	outcome, err := Repair(context.Background(), langBinary, sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Status != OutcomeUnrepairable {
+		t.Fatalf("got status %q, want exactly %q -- a defect with zero driver-eligible repairs must never be silently skipped or counted as a pass", outcome.Status, OutcomeUnrepairable)
+	}
+	if outcome.SubprocessCount != 1 {
+		t.Fatalf("expected exactly 1 subprocess invocation for an unrepairable defect, got %d", outcome.SubprocessCount)
+	}
+	return outcome
+}
+
 // TestUnrepairableDefectFailsTheGate: a defect for which the binary emits
 // zero driver-eligible repairs is reported unrepairable, never skipped and
 // never counted as a pass (FND-04 empty-input edge). testdata/phase1's own
 // non_exhaustive.lang is exactly this case -- its arms don't self-map
 // (Off => On), so check.go attaches no repair at all, per the comment in
 // check.go's analyzeMatchArms.
+//
+// 13-06 Task 3 (D-13-29): extended with one class-specific subtest per new
+// interprocedural class, following 13-RESEARCH.md Open Question 1's own
+// recommendation of dedicated fixtures over reuse of this single generic
+// one.
+//
+// call_argument_type is the class D-13-10's uniqueness gate was ALWAYS
+// designed to positively refuse on ambiguity --
+// heldout_call_argument_ambiguous.lang's prior `let` puts two initialized
+// places of the mismatched type in scope, the 2+-match partition.
+//
+// interprocedural_loan's unrepairable case is the FORWARD direction
+// (D-13-09b): testdata/phase07/relay_escort_witness.lang, an existing,
+// already-checked-in fixture check.go's own doc comment names as
+// empirically verified to refuse a repair -- used here UNMUTATED (it
+// already carries the diagnostic in its checked-in form; no injector is
+// involved, unlike the twin pair's backward-direction case).
+//
+// fallible_consume has NO class-specific subtest here, and that omission is
+// deliberate, not an oversight: wrap_call_in_try's zero-repair guard
+// (len(binding.RHS.Arguments) == 1 && binding.RHS.Callee != "" &&
+// argumentName != "") is, per check.go's own doc comment, "defensive
+// rather than reachable from real parsed source" -- arity is fixed at 1
+// and a callee/argument name is always non-empty for anything the parser
+// actually admits, so no real .lang source can trigger this class's
+// zero-repair path. TestWrapCallInTryEmitsNoRepairOnMalformedCall
+// (check_repair_emission_test.go) already covers the guard directly, at
+// the correct (emission-level, synthetically-constructed) granularity;
+// fabricating a driver-level held-out fixture for an admission-time
+// guard reachable only via direct unit construction would misrepresent
+// what is actually being tested.
 func TestUnrepairableDefectFailsTheGate(t *testing.T) {
 	langBinary := testsupport.BuildCLI(t)
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := t.TempDir()
-	sourcePath := filepath.Join(dir, "non_exhaustive.lang")
-	mustWriteFile(t, sourcePath, source)
 
-	outcome, err := Repair(context.Background(), langBinary, sourcePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if outcome.Status != OutcomeUnrepairable {
-		t.Fatalf("got status %q, want %q -- a defect with zero driver-eligible repairs must never be silently skipped or counted as a pass", outcome.Status, OutcomeUnrepairable)
-	}
-	if outcome.SubprocessCount != 1 {
-		t.Fatalf("expected exactly 1 subprocess invocation for an unrepairable defect, got %d", outcome.SubprocessCount)
-	}
+	t.Run("non_exhaustive_match", func(t *testing.T) {
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		dir := t.TempDir()
+		sourcePath := filepath.Join(dir, "non_exhaustive.lang")
+		mustWriteFile(t, sourcePath, source)
+		assertUnrepairable(t, langBinary, sourcePath)
+	})
+
+	t.Run("call_argument_type_ambiguous", func(t *testing.T) {
+		fixturePath := testsupport.ProjectPath("testdata", "phase13", "heldout_call_argument_ambiguous.lang")
+		original, err := os.ReadFile(fixturePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mutated, err := session.CallArgumentTypeInjector{}.Inject(original)
+		if err != nil {
+			t.Fatalf("injecting: %v", err)
+		}
+		dir := t.TempDir()
+		sourcePath := filepath.Join(dir, "heldout_call_argument_ambiguous.lang")
+		mustWriteFile(t, sourcePath, mutated)
+
+		// Independent pre-check: confirm the expected diagnostic actually
+		// fires with zero repairs BEFORE trusting Repair()'s outcome --
+		// selectRepair returns "" for its code on the not-found path
+		// (repair.go), so Outcome.DiagnosisCode is always empty for an
+		// unrepairable result and cannot itself confirm which diagnostic
+		// caused it.
+		diagnosis := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+		decoded := decodeCheckJSON(t, diagnosis.Stdout)
+		found := false
+		for _, d := range decoded.Diagnostics {
+			if d.Code == "check.call_argument_type_mismatch" {
+				found = true
+				if len(d.Repairs) != 0 {
+					t.Fatalf("test construction error: expected zero repairs on the 2+-match partition, got %+v", d.Repairs)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("test construction error: expected check.call_argument_type_mismatch among %+v", decoded.Diagnostics)
+		}
+
+		assertUnrepairable(t, langBinary, sourcePath)
+		afterTest, err := os.ReadFile(fixturePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(afterTest, original) {
+			t.Fatal("heldout_call_argument_ambiguous.lang was modified by this test")
+		}
+	})
+
+	t.Run("interprocedural_loan_forward_direction", func(t *testing.T) {
+		fixturePath := testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.lang")
+		original, err := os.ReadFile(fixturePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dir := t.TempDir()
+		sourcePath := filepath.Join(dir, "relay_escort_witness.lang")
+		mustWriteFile(t, sourcePath, original)
+
+		diagnosis := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+		decoded := decodeCheckJSON(t, diagnosis.Stdout)
+		found := false
+		for _, d := range decoded.Diagnostics {
+			if d.Code == "check.interprocedural_loan_liveness" {
+				found = true
+				if len(d.Repairs) != 0 {
+					t.Fatalf("test construction error: expected zero repairs on the forward-direction case, got %+v", d.Repairs)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("test construction error: expected check.interprocedural_loan_liveness among %+v", decoded.Diagnostics)
+		}
+
+		assertUnrepairable(t, langBinary, sourcePath)
+		afterTest, err := os.ReadFile(fixturePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(afterTest, original) {
+			t.Fatal("testdata/phase07/relay_escort_witness.lang was modified by this test")
+		}
+	})
 }
 
 // TestRepairSelectionIsSpecifiedOnTies: when a diagnostic carries two
