@@ -40,6 +40,7 @@ func TestPayloadPatternRefusals(t *testing.T) {
 		{name: "binder on nullary alternative", fixture: "payload_binder_on_nullary.lang", expectedCode: "check.binder_on_nullary_alternative"},
 		{name: "missing payload binder", fixture: "payload_missing_binder.lang", expectedCode: "check.missing_payload_binder"},
 		{name: "tracer fixture stays clean", fixture: "payload_tracer.lang", expectedCode: ""},
+		{name: "duplicate payload type", fixture: "payload_duplicate_payload_type.lang", expectedCode: "check.duplicate_payload_type"},
 	}
 
 	for _, tc := range cases {
@@ -120,6 +121,117 @@ fn identity(w: Wrapper) -> Wrapper {
 			t.Fatalf("expected zero diagnostics (no foreign block, nothing is resource-derived), got %+v", result.Diagnostics)
 		}
 	})
+}
+
+// TestDuplicatePayloadTypeRefused is Phase 12 Plan 06 Task 2's control for
+// CR-01/D-12-44's check.duplicate_payload_type refusal. It asserts the
+// diagnostic CODE directly, in the same style as TestPayloadPatternRefusals,
+// because interp.alternativeNameForPayloadType and
+// cgen.alternativeNameForPayloadType independently reimplement the SAME
+// flawed first-match-by-PayloadType derivation -- the phase's own
+// three-engine convergence tests are structurally incapable of catching this
+// defect class, since both engines would agree on the same wrong answer. A
+// convergence test is not evidence here; only a direct code assertion is.
+// Reverting Task 1's check.go walk must turn this test red (observed and
+// recorded in 12-06-SUMMARY.md).
+func TestDuplicatePayloadTypeRefused(t *testing.T) {
+	cases := []struct {
+		name         string
+		fixture      string
+		source       string
+		expectedCode string
+	}{
+		{name: "colliding payload types refused", fixture: "payload_duplicate_payload_type.lang", expectedCode: "check.duplicate_payload_type"},
+		{name: "tracer fixture stays clean (distinct payload types)", fixture: "payload_tracer.lang", expectedCode: ""},
+		{
+			name: "three nullary alternatives on one data type stay clean",
+			source: `module result.duplicate_payload_type_nullary_companion
+
+export {
+  type Outcome
+  fn identity
+}
+
+data Outcome =
+  | First
+  | Second
+  | Third
+
+fn identity(result: Outcome) -> Outcome {
+  match result {
+    First => First
+    Second => Second
+    Third => Third
+  }
+}
+`,
+			expectedCode: "",
+		},
+		{
+			name: "one Buffer payload in each of two different data types stays clean",
+			source: `module result.duplicate_payload_type_cross_type_companion
+
+export {
+  type Left
+  type Right
+  fn identityLeft
+  fn identityRight
+}
+
+data Left =
+  | HoldsLeft(Buffer)
+
+data Right =
+  | HoldsRight(Buffer)
+
+fn identityLeft(l: Left) -> Left {
+  match l {
+    HoldsLeft(v) => HoldsLeft(v)
+  }
+}
+
+fn identityRight(r: Right) -> Right {
+  match r {
+    HoldsRight(v) => HoldsRight(v)
+  }
+}
+`,
+			expectedCode: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var source []byte
+			if tc.fixture != "" {
+				source = readPhase12Fixture(t, tc.fixture)
+			} else {
+				source = []byte(tc.source)
+			}
+			program := mustParseProgram(t, source)
+			result := Program(program)
+
+			if tc.expectedCode == "" {
+				duplicateCount := 0
+				for _, diag := range result.Diagnostics {
+					if diag.Code == "check.duplicate_payload_type" {
+						duplicateCount++
+					}
+				}
+				if duplicateCount != 0 {
+					t.Fatalf("expected zero check.duplicate_payload_type diagnostics, got %d: %+v", duplicateCount, result.Diagnostics)
+				}
+				return
+			}
+
+			if len(result.Diagnostics) == 0 {
+				t.Fatalf("expected at least one diagnostic, got none")
+			}
+			if result.Diagnostics[0].Code != tc.expectedCode {
+				t.Fatalf("expected first diagnostic code %q, got %q (%+v)", tc.expectedCode, result.Diagnostics[0].Code, result.Diagnostics[0])
+			}
+		})
+	}
 }
 
 // TestPayloadDropObligation is Phase 12 Plan 03 Task 3's own witness for
