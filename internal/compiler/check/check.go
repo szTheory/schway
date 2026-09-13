@@ -3538,7 +3538,41 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		return op, target, nil
 	}
 	if _, isForeign := foreignSymbols[binding.RHS.Callee]; isForeign {
-		diag := diagnostic.Error("syntax.fallible_call_not_consumed", binding.RHS.Span, "a fallible call must be the operand of `try`")
+		// 13-05 Task 1 (D-13-09.2, D-13-09a): interprocedural by
+		// construction -- only the CALLEE's own declaration, via the
+		// foreignSymbols table built from every OTHER function's
+		// signature, makes this call fallible; nothing in the caller's
+		// own body says so. This diagnostic is syntax-CODED (it fires
+		// before any type-checking pass runs), but the fact that makes
+		// it fire crosses the function boundary, which is why it counts
+		// toward DX-07's interprocedural requirement.
+		//
+		// Unconditional diagnostic.ErrorWithRepairs, even on the
+		// zero-repair fallback path, mirrors 13-01's deliberate,
+		// reviewable lang.diagnostic/0 -> /1 schema switch (D-13-09a):
+		// this code's sha256 ID churns on every fixture whether or not a
+		// repair fires. check_ordering_stability_test.go's affected row
+		// is re-pinned in this plan's Task 3.
+		var repairs []diagnostic.Repair
+		// Fail-closed (D-13-11's posture, mirroring 13-01's
+		// callIsLastUse gate): calls are arity-1 in this language and
+		// the arity check at the top of this function already refuses
+		// anything else, so this guard is defensive rather than
+		// reachable from real parsed source -- it exists so a future
+		// change to the arity precondition cannot silently start
+		// emitting a malformed repair here.
+		if len(binding.RHS.Arguments) == 1 && binding.RHS.Callee != "" && argumentName != "" {
+			repairSpan := binding.RHS.Span
+			repairs = append(repairs, diagnostic.Repair{
+				Kind: "wrap_call_in_try", Span: &repairSpan,
+				Replacement:   "try " + binding.RHS.Callee + "(" + argumentName + ")",
+				Applicability: diagnostic.ApplicabilityMachineApplicable,
+			})
+		}
+		diag := diagnostic.ErrorWithRepairs(
+			"syntax.fallible_call_not_consumed", binding.RHS.Span, "a fallible call must be the operand of `try`", nil,
+			repairs...,
+		)
 		return core.LinearOperation{}, core.Place{}, &diag
 	}
 	if verifyCallInvariantsSeam {
