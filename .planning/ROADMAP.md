@@ -777,7 +777,7 @@ Plans:
 
 **Gap-closure Wave 2** *(blocked on Gap-closure Wave 1)*
 
-- [ ] 12-07-PLAN.md — CR-01 engine-layer closure: one shared ambiguity-detecting resolver in `core`, both engine copies deleted, IN-01 absorbed, and WR-02's anti-vacuity assertion on the D-12-38 seam
+- [x] 12-07-PLAN.md — CR-01 engine-layer closure: one shared ambiguity-detecting resolver in `core`, both engine copies deleted, IN-01 absorbed, and WR-02's anti-vacuity assertion on the D-12-38 seam
 
 **Gap-closure Wave 3** *(blocked on Gap-closure Wave 2)*
 

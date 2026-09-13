@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 12
 current_phase_name: "`Result` Payloads"
 status: executing
-stopped_at: Completed 12-06-PLAN.md
-last_updated: "2026-09-13T13:55:09.824Z"
+stopped_at: Completed 12-07-PLAN.md
+last_updated: "2026-09-13T14:09:00.921Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 12 execution started
-state_head: 5a3f70367273f2ce6ff2ce4063c96c15ef2c0135
+state_head: 5b630b0c0db1fb5a1c47e2c3ae61124f5b73119c
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 54
-  completed_plans: 52
+  completed_plans: 53
 ---
 
 # Project State
@@ -49,8 +49,8 @@ committed tests rather than answered once — see `11-UAT.md`).
 ## Current Position
 
 Phase: 12 (`Result` Payloads) — EXECUTING
-Plan: 6 of 8 (12-06 complete; 12-07, 12-08 remain)
-Status: Executing Phase 12
+Plan: 7 of 8 (12-06 complete; 12-07, 12-08 remain)
+Status: Ready to execute
 Last activity: 2026-09-13 — Completed 12-06-PLAN.md (CR-01 source-layer closure + WR-01)
 
 Progress: [##############------] 71% (5/7 phases) · 46/46 plans
@@ -209,6 +209,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 12 P04 | 24 min | 3 tasks | 9 files |
 | Phase 12-result-payloads P05 | 55min | 3 tasks | 6 files |
 | Phase 12-result-payloads P06 | 35 min | 3 tasks | 3 files |
+| Phase 12-result-payloads P07 | 45min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -295,6 +296,7 @@ Standing architectural commitments carried into M002:
 - [Phase 12]: originvalidate's RecomputeOriginPerReturn needed a sourceOf-indexing fix (PayloadTargetID, not TargetID) for OpDestructurePayload before its new origin-walk arm could be reachable at all
 - [Phase 12]: Cross-package test-only mutation-kill seams must be production-visible functions (corevalidate.SetDisableCyclePeerForTest's D-07-42 shape), never export_test.go symbols, which are invisible outside the defining package's own test binary
 - [Phase 12]: 12-06: check.duplicate_payload_type closes CR-01's source-layer half (D-12-44); a control asserts the code directly since interp/cgen share the flawed derivation; WR-01's nullary-binder message now names the construction side, code unchanged.
+- [Phase 12]: PayloadSlotSwapInjectedWriteCount is production-visible (cgen.go), not export_test.go — cross-package need mirrors SetPayloadSlotSwapForTest's own precedent
 
 ### Pending Todos
 
@@ -438,8 +440,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-13T13:55:09.469Z
-Stopped at: Completed 12-06-PLAN.md
+Last session: 2026-09-13T14:09:00.367Z
+Stopped at: Completed 12-07-PLAN.md
 11-SECURITY.md threats_open: 0), ready to plan Phase 12
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
