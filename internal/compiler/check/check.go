@@ -137,6 +137,46 @@ func Program(program ast.Program) Result {
 	if len(result.Diagnostics) > 0 {
 		return result
 	}
+
+	// CR-01 / D-12-44: refuse, at DECLARATION time (before any function body
+	// is checked, in the SAME program.Data walk region as the
+	// check.resource_payload_refused refusal above), a data declaration
+	// whose alternatives collide on payload type. This refusal exists
+	// because both cgen.alternativeNameForPayloadType and
+	// interp.alternativeNameForPayloadType independently resolve a
+	// construct/destructure operation's declaring alternative from
+	// PayloadType alone, by first-match linear scan -- and because both
+	// engines reimplemented the SAME flawed derivation, the phase's own
+	// three-engine convergence tests are structurally incapable of catching
+	// this defect class: they would report cheerful agreement on a wrong
+	// answer. The restriction is per-declaration (never across data types)
+	// and skips nullary alternatives (PayloadType == ""), which do not
+	// collide with each other. Its named lifting condition is a first-class
+	// alternative-name fact on the operation itself, rather than a
+	// re-derivation from PayloadType (GEN-01's real generic Result<T, E> in
+	// M003 is the obvious future case that would need it).
+	for _, declaration := range program.Data {
+		firstAlternativeByPayloadType := map[string]string{}
+		for _, alternative := range declaration.Alternatives {
+			if alternative.PayloadType == "" {
+				continue
+			}
+			if firstName, seen := firstAlternativeByPayloadType[alternative.PayloadType]; seen {
+				result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
+					"check.duplicate_payload_type", alternative.Span,
+					fmt.Sprintf(
+						"alternative %q shares payload type %q with alternative %q: a construct/destructure operation cannot be resolved to a declaring alternative unambiguously while two alternatives of one data type collide on payload type (D-12-44, see PHASE-12-DEBT.md)",
+						alternative.Name, alternative.PayloadType, firstName,
+					),
+				))
+				continue
+			}
+			firstAlternativeByPayloadType[alternative.PayloadType] = alternative.Name
+		}
+	}
+	if len(result.Diagnostics) > 0 {
+		return result
+	}
 	functionNames := make(map[string]bool, len(program.Funcs))
 	// calleeContracts is 07-09's pre-body callee-contract table
 	// (superseding Phase 07's original functionIDs table): the same
