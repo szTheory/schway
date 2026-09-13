@@ -2,9 +2,12 @@ package session
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/syntax"
@@ -410,5 +413,159 @@ func TestHeldoutBaselinesAreFailClosed(t *testing.T) {
 				t.Fatalf("%s: got code %q, want %q", tc.file, result.Diagnostics[0].Code, tc.wantCode)
 			}
 		})
+	}
+}
+
+// -----------------------------------------------------------------------
+// Task 3 -- sealing the held-out corpus (D-13-27) and proving the seal
+// is not inert (D-13-30(c)).
+// -----------------------------------------------------------------------
+
+// heldoutManifestPath is testdata/phase13/HELDOUT.sha256's own path.
+func heldoutManifestPath() string {
+	return testsupport.ProjectPath("testdata", "phase13", "HELDOUT.sha256")
+}
+
+// parseHeldoutManifest reads and parses a sha256sum-shaped manifest file
+// (one "<hex digest>  <path>" line per entry) into an ordered slice.
+func parseHeldoutManifest(t *testing.T, path string) []struct{ digest, relPath string } {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read manifest %s: %v", path, err)
+	}
+	var entries []struct{ digest, relPath string }
+	for _, line := range strings.Split(strings.TrimRight(string(raw), "\n"), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		fields := strings.SplitN(line, "  ", 2)
+		if len(fields) != 2 {
+			t.Fatalf("manifest line does not match '<digest>  <path>': %q", line)
+		}
+		entries = append(entries, struct{ digest, relPath string }{digest: fields[0], relPath: fields[1]})
+	}
+	return entries
+}
+
+// TestHeldoutCorpusSealed is D-13-27's central assertion: the manifest
+// lists exactly the heldout_*.lang files present under testdata/phase13,
+// and every listed digest matches the file's current bytes. No
+// regenerate helper, bless flag, or environment-variable escape exists
+// anywhere in this path -- editing a held-out fixture after this test is
+// written is a loud, reviewable diff, never a silent pass.
+func TestHeldoutCorpusSealed(t *testing.T) {
+	repoRoot := testsupport.ProjectPath()
+	manifestPath := heldoutManifestPath()
+	entries := parseHeldoutManifest(t, manifestPath)
+
+	listed := map[string]bool{}
+	for _, entry := range entries {
+		listed[entry.relPath] = true
+		fullPath := filepath.Join(repoRoot, entry.relPath)
+		data, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Fatalf("manifest lists %s but it does not exist: %v", entry.relPath, err)
+		}
+		sum := sha256.Sum256(data)
+		got := hex.EncodeToString(sum[:])
+		if got != entry.digest {
+			t.Fatalf("%s: digest mismatch -- manifest says %s, current bytes hash to %s (a sealed held-out fixture was edited)", entry.relPath, entry.digest, got)
+		}
+	}
+
+	corpusDir := testsupport.ProjectPath("testdata", "phase13")
+	dirEntries, err := os.ReadDir(corpusDir)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", corpusDir, err)
+	}
+	for _, dirEntry := range dirEntries {
+		name := dirEntry.Name()
+		if !strings.HasPrefix(name, "heldout_") || !strings.HasSuffix(name, ".lang") {
+			continue
+		}
+		relPath := "testdata/phase13/" + name
+		if !listed[relPath] {
+			t.Fatalf("%s exists on disk but is not listed in HELDOUT.sha256 -- the manifest must list every held-out fixture", relPath)
+		}
+	}
+}
+
+// TestHeldoutCorpusSealGuardIsNotInert is D-13-30(c)'s required mutation
+// kill: flipping exactly one byte in a TEMP COPY of a sealed fixture must
+// make the same digest comparison report a mismatch. The real fixture is
+// never touched.
+func TestHeldoutCorpusSealGuardIsNotInert(t *testing.T) {
+	entries := parseHeldoutManifest(t, heldoutManifestPath())
+	if len(entries) == 0 {
+		t.Fatal("manifest is empty -- nothing to prove the seal guard against")
+	}
+	repoRoot := testsupport.ProjectPath()
+	target := entries[0]
+	original, err := os.ReadFile(filepath.Join(repoRoot, target.relPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dir := t.TempDir()
+	tampered := append([]byte(nil), original...)
+	flipIndex := len(tampered) / 2
+	tampered[flipIndex] ^= 0xFF // exactly one byte flipped
+	tamperedPath := filepath.Join(dir, filepath.Base(target.relPath))
+	if err := os.WriteFile(tamperedPath, tampered, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tamperedBytes, err := os.ReadFile(tamperedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(tamperedBytes)
+	got := hex.EncodeToString(sum[:])
+	if got == target.digest {
+		t.Fatalf("one-byte flip did not change the digest -- seal guard is inert (original=%s, tampered=%s)", target.digest, got)
+	}
+
+	// The real fixture on disk must be untouched.
+	untouched, err := os.ReadFile(filepath.Join(repoRoot, target.relPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(untouched, original) {
+		t.Fatal("the real sealed fixture was mutated -- this test must only ever touch a temp copy")
+	}
+}
+
+// phase13CorpusDispatchMarkers are the marker filenames cmd/lang/main.go's
+// existing isPhase5Corpus/isPhase6Corpus/isPhase7Corpus dispatch functions
+// key on -- a testdata/phase13 file sharing any of these names would cause
+// the directory to be misrouted as an earlier phase's corpus by any tool
+// that walks testdata/ looking for these markers (testdata/phase13/README).
+var phase13CorpusDispatchMarkers = []string{
+	"heldout_match_defect.lang", // isPhase6Corpus
+	"call_basic.lang",           // isPhase7Corpus
+	"restrict_borrow.lang",      // isPhase5Corpus
+}
+
+// TestPhase13CorpusIsNotMisroutedByCorpusDispatch asserts that no file
+// under testdata/phase13 carries a name cmd/lang/main.go's existing
+// marker-file corpus dispatch keys on -- the planner's chosen alternative
+// to adding a fourth isPhaseNCorpus sibling (13-04-PLAN.md's objective):
+// this corpus is consumed by Go tests and by per-file `lang --json check`,
+// never by a corpus-level `lang verify`.
+func TestPhase13CorpusIsNotMisroutedByCorpusDispatch(t *testing.T) {
+	corpusDir := testsupport.ProjectPath("testdata", "phase13")
+	dirEntries, err := os.ReadDir(corpusDir)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", corpusDir, err)
+	}
+	present := map[string]bool{}
+	for _, dirEntry := range dirEntries {
+		present[dirEntry.Name()] = true
+	}
+	for _, marker := range phase13CorpusDispatchMarkers {
+		if present[marker] {
+			t.Fatalf("testdata/phase13 contains %q, which cmd/lang/main.go's existing corpus dispatch would use to misroute this directory", marker)
+		}
 	}
 }
