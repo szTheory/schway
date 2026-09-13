@@ -773,7 +773,7 @@ Plans:
 
 **Gap-closure Wave 1**
 
-- [ ] 12-06-PLAN.md — CR-01 source-layer closure: `check.duplicate_payload_type`, its fixture, the reverted-fix control, measured corpus neutrality, and WR-01's message-precision fix
+- [x] 12-06-PLAN.md — CR-01 source-layer closure: `check.duplicate_payload_type`, its fixture, the reverted-fix control, measured corpus neutrality, and WR-01's message-precision fix
 
 **Gap-closure Wave 2** *(blocked on Gap-closure Wave 1)*
 
