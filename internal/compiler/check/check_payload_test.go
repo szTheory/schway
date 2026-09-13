@@ -2,6 +2,7 @@ package check
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -231,6 +232,48 @@ fn identityRight(r: Right) -> Right {
 				t.Fatalf("expected first diagnostic code %q, got %q (%+v)", tc.expectedCode, result.Diagnostics[0].Code, result.Diagnostics[0])
 			}
 		})
+	}
+}
+
+// TestBinderOnNullaryAlternativeNamesConstructionSide is Phase 12 Plan 06
+// Task 3's control for WR-01: driving the review's own `Empty => Ok(w)`
+// worked example (a nullary pattern alternative matched with a construction
+// binder naming a payload source for a different, payload-carrying value
+// alternative) still yields check.binder_on_nullary_alternative -- the code
+// is unchanged, this is a message-precision fix only -- but the message now
+// names the CONSTRUCTION side rather than the pattern side, so a developer
+// is sent to the right half of the arm. Asserted on a substring of the new
+// wording, not the full message.
+func TestBinderOnNullaryAlternativeNamesConstructionSide(t *testing.T) {
+	source := []byte(`module result.binder_on_nullary_construction_side
+
+export {
+  type Outcome
+  fn identity
+}
+
+data Outcome =
+  | Empty
+  | Ok(Buffer)
+
+fn identity(result: Outcome) -> Outcome {
+  match result {
+    Empty => Ok(w)
+    Ok(v) => Ok(v)
+  }
+}
+`)
+	program := mustParseProgram(t, source)
+	result := Program(program)
+	if len(result.Diagnostics) != 1 {
+		t.Fatalf("expected exactly one diagnostic, got %d: %+v", len(result.Diagnostics), result.Diagnostics)
+	}
+	diag := result.Diagnostics[0]
+	if diag.Code != "check.binder_on_nullary_alternative" {
+		t.Fatalf("expected check.binder_on_nullary_alternative, got %q (%+v)", diag.Code, diag)
+	}
+	if !strings.Contains(diag.Message, "construction binder") {
+		t.Fatalf("expected message to name the construction side, got %q", diag.Message)
 	}
 }
 

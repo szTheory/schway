@@ -3450,7 +3450,24 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 		currentSourceTypeID = payloadTypeID
 		step++
 	} else if binder != "" {
-		return fail(diagnostic.Error("check.binder_on_nullary_alternative", arm.Span, "binder present on an alternative declared with no payload"))
+		// WR-01: the message names WHICH side of the arm the offending
+		// binder was written on, so a developer debugging a
+		// construction-side binder is not sent to look at the pattern's
+		// nullary alternative for a binder that is not textually there.
+		// Kept as the SAME diagnostic code (check.binder_on_nullary_
+		// alternative) per the review's second suggested fix shape -- a
+		// conditional message, not a new code -- so no committed fixture's
+		// expected code changes and no TestPayloadPatternRefusals row
+		// moves. The refusal itself is unchanged in both branches; this is
+		// a message-precision fix only.
+		reason := "binder present on an alternative declared with no payload"
+		if arm.Binder == "" && arm.ConstructBinder != "" {
+			reason = fmt.Sprintf(
+				"construction binder %q names a payload source for alternative %q, but this arm's pattern alternative %q declares no payload to bind it from",
+				arm.ConstructBinder, arm.Value, arm.Pattern,
+			)
+		}
+		return fail(diagnostic.Error("check.binder_on_nullary_alternative", arm.Span, reason))
 	}
 
 	returnSourceID := aliasPlaceID
