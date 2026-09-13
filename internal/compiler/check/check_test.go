@@ -3823,12 +3823,17 @@ func bilateralCallGraphFaultReport(checkRefused, corevalidateRefused bool) (repo
 //
 // 13-05 Task 2 (D-13-10/D-13-09a): this fixture's call is `main`'s own
 // first binding, so only the parameter (`buffer`) is in scope when the
-// mismatch fires -- exactly the uniqueness gate's one-match partition, per
-// 13-RESEARCH.md Pitfall 3. The diagnostic now carries a single
-// use_matching_argument repair as a deliberate, reviewable consequence of
-// shipping D-13-09's class 3 (13-05-SUMMARY.md's Task 3 names this fixture
-// as one of the two remaining re-pinned rows D-13-09a predicted); it no
-// longer carries zero repairs.
+// mismatch fires -- exactly the (former) uniqueness gate's one-match
+// partition, per 13-RESEARCH.md Pitfall 3.
+//
+// 13-06 (D-13-10a): 13-05's use_matching_argument repair on this partition
+// was adjudicated empirically against the real driver and found to be a
+// byte-identical no-op splice on every real trigger (the "unique match" is
+// always the argument's own already-passed place, per D-07-09's single-
+// parameter/single-type-fact invariant) -- it reproduces the identical
+// diagnostic on re-check rather than repairing the program. check.go no
+// longer emits this repair on any partition; the diagnostic is back to
+// carrying zero repairs, as it did before 13-05.
 func TestCallArgumentTypeMismatchRefused(t *testing.T) {
 	source := readPhase07Fixture(t, "call_type_mismatch.lang")
 	result := Program(mustParseProgram(t, source))
@@ -3860,15 +3865,8 @@ func TestCallArgumentTypeMismatchRefused(t *testing.T) {
 	if diag.Causes[2].Detail != "Byte" {
 		t.Fatalf("expected declared_parameter_type detail Byte, got %q", diag.Causes[2].Detail)
 	}
-	if len(diag.Repairs) != 1 {
-		t.Fatalf("expected exactly one repair (use_matching_argument), got %+v", diag.Repairs)
-	}
-	repair := diag.Repairs[0]
-	if repair.Kind != "use_matching_argument" {
-		t.Fatalf("expected kind use_matching_argument, got %q", repair.Kind)
-	}
-	if !diagnostic.DriverEligible(repair) {
-		t.Fatalf("expected DriverEligible to return true for %+v", repair)
+	if len(diag.Repairs) != 0 {
+		t.Fatalf("expected zero repairs (D-13-10a: use_matching_argument is a proven no-op on every real trigger), got %+v", diag.Repairs)
 	}
 }
 

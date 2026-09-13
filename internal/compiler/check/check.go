@@ -3512,34 +3512,33 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 			// parameter plus every prior `let`), so the gate refuses
 			// MORE often on multi-binding bodies -- the correct direction
 			// for a fail-closed precondition.
-			matchCount := 0
-			matchName := ""
-			for name, state := range places {
-				if state == nil || !state.initialized {
-					continue
-				}
-				if state.place.TypeID == typeFact.ID {
-					matchCount++
-					matchName = name
-				}
-			}
+			// 13-06 D-13-10a (adjudicated empirically against the real
+			// driver, not asserted): D-13-10's uniqueness gate over
+			// initialized in-scope places sharing the caller's own
+			// type fact (typeFact.ID) was designed to identify a
+			// genuine alternative argument. But D-07-09's single-
+			// parameter/single-type-fact invariant means every
+			// initialized place in this function ALREADY shares
+			// typeFact's own constructor -- so the "unique match" on
+			// the one-match partition is, in every real (non-synthetic)
+			// trigger, the argument's own place: the same name already
+			// written at binding.RHS.Span. A repair built from that
+			// match (`callee(matchName)`) reproduces the source bytes
+			// already at that span verbatim -- a byte-identical splice.
+			// 13-06's own held-out driver run confirmed the consequence:
+			// applying that splice and re-checking reproduces the
+			// identical diagnostic every time (`reverify_failed`, never
+			// `repaired`).
+			//
+			// No repair is emitted on ANY partition. This is D-13-10's
+			// own fail-closed posture taken to its honest conclusion:
+			// `use_matching_argument` is not machine-repairable at this
+			// language's current maturity (one parameter per function,
+			// no second in-scope value of the callee's declared type can
+			// ever exist), so the driver correctly reports
+			// `unrepairable` for this diagnostic, rather than claiming a
+			// `repaired` outcome no splice can actually produce.
 			var repairs []diagnostic.Repair
-			// The gate is a PRECONDITION, not an applicability downgrade:
-			// on zero or two-or-more matches, emit NO repair at all --
-			// never a RequiresConfirmation repair on ambiguity. This is
-			// the one D-13-09 class where a clean-checking-but-
-			// semantically-different program is reachable, and the
-			// resulting `unrepairable` driver outcome on zero/2+ matches
-			// is CORRECT behavior (D-13-10), asserted by this plan's own
-			// positive test, not worked around.
-			if matchCount == 1 && matchName != "" && binding.RHS.Callee != "" {
-				repairSpan := binding.RHS.Span
-				repairs = append(repairs, diagnostic.Repair{
-					Kind: "use_matching_argument", Span: &repairSpan,
-					Replacement:   binding.RHS.Callee + "(" + matchName + ")",
-					Applicability: diagnostic.ApplicabilityMachineApplicable,
-				})
-			}
 			diag := diagnostic.ErrorWithRepairs(checkCallArgumentTypeMismatch, binding.RHS.Span, "call argument type does not match the callee's declared parameter type", causes, repairs...)
 			return core.LinearOperation{}, core.Place{}, &diag
 		}
@@ -3621,7 +3620,27 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		// change to the arity precondition cannot silently start
 		// emitting a malformed repair here.
 		if len(binding.RHS.Arguments) == 1 && binding.RHS.Callee != "" && argumentName != "" {
-			repairSpan := binding.RHS.Span
+			// 13-06 (Rule 1 bugfix, found empirically by the real
+			// driver on a held-out fixture): binding.RHS.Span for a
+			// "call" RHS is DELIBERATELY the callee identifier's own
+			// span only, never the argument list or closing paren
+			// (syntax/parser.go's own documented Phase 07 choice --
+			// see its "13-01 Task 1 (Rule 1 bugfix)" comment, which
+			// widened binding.Span to the whole statement but left
+			// RHS.Span as the callee token). Splicing a full
+			// "try callee(arg)" Replacement over that callee-only
+			// Span leaves the ORIGINAL, unchanged "(arg)" text sitting
+			// immediately after the splice -- verified by applying
+			// this repair through the real driver and observing a
+			// duplicated argument list
+			// ("try lang_res_open(request)(request)"), a parse
+			// failure, never a clean re-check. binding.Span.End is
+			// the call's own closing paren (the whole "let NAME =
+			// callee(ARGS)" statement's own End, arity is fixed at 1
+			// this phase), so [RHS.Span.Start, binding.Span.End)
+			// covers exactly "callee(arg)" -- the whole call
+			// expression the Replacement re-emits.
+			repairSpan := diagnostic.Span{Start: binding.RHS.Span.Start, End: binding.Span.End}
 			repairs = append(repairs, diagnostic.Repair{
 				Kind: "wrap_call_in_try", Span: &repairSpan,
 				Replacement:   "try " + binding.RHS.Callee + "(" + argumentName + ")",

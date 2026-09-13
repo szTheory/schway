@@ -182,14 +182,16 @@ var interproceduralOrderingBaselineDirs = []string{
 // built to prevent.
 var interproceduralOrderingBaseline = map[string][2]string{
 	"phase07/call_argument_used_twice.lang":    {"ownership.use_after_move", "diagnostic:8e3116d77bcb23bd6b84396b"},
-	// 13-05 Task 3 (D-13-09a): re-pinned. This code now builds via
-	// diagnostic.ErrorWithRepairs unconditionally (schema lang.diagnostic/0
-	// -> /1), and this fixture's call is main's own first binding -- only
-	// the parameter is in scope, landing it in D-13-10's one-match
-	// partition -- so it also carries a use_matching_argument repair.
-	// Neither the source bytes nor the code changed; only the schema
-	// switch and the new repair, both deliberate.
-	"phase07/call_type_mismatch.lang":          {"check.call_argument_type_mismatch", "diagnostic:890ade363685588b544db988"},
+	// 13-05 Task 3 (D-13-09a): re-pinned once (schema lang.diagnostic/0 ->
+	// /1, plus a use_matching_argument repair on the one-match partition).
+	// 13-06 (D-13-10a) re-pins it a SECOND time: the use_matching_argument
+	// repair was adjudicated empirically to be a byte-identical no-op on
+	// every real trigger (never repairs the program) and check.go no
+	// longer emits it on any partition, so this diagnostic reverts to
+	// carrying zero repairs. Neither the source bytes nor the code
+	// changed; only the repair-emission decision, deliberate and
+	// documented in 13-06-SUMMARY.md.
+	"phase07/call_type_mismatch.lang":          {"check.call_argument_type_mismatch", "diagnostic:ba4d0e27cd0eb33c08abbde9"},
 	"phase07/call_uncallable_callee.lang":      {"core.callee_not_callable", "diagnostic:5735171812e7ad4920c3bb72"},
 	"phase07/cycle_indirect.lang":              {"core.call_graph_cycle", "diagnostic:1e6c260432c9010ac6a196a9"},
 	"phase07/cycle_mutual.lang":                {"core.call_graph_cycle", "diagnostic:39bb0a1a48d08fc9674307a4"},

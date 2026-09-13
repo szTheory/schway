@@ -669,3 +669,249 @@ func TestRepairDriverFixesInterproceduralLoanLivenessSinglePass(t *testing.T) {
 		t.Fatal("testdata/phase13/derivation_interprocedural_loan_defect.lang was modified by this test -- the driver must operate on the TempDir copy only")
 	}
 }
+
+// ---------------------------------------------------------------------
+// 13-06 Task 1: D-13-28's twin pair -- criterion 3's re-check-clean gate
+// ---------------------------------------------------------------------
+
+// functionDeclSpan returns the byte range [start, end) of the function
+// declaration named name within source, computed independently from the
+// source bytes by literal-text scanning plus brace matching -- never by
+// reading it back from check's own diagnostic payload (the plan's own
+// acceptance criterion for TestTwinPairBlame's span assertion). start is
+// the byte offset of the "fn " keyword and end is one past the function's
+// own matching closing brace.
+func functionDeclSpan(t testing.TB, source []byte, name string) (int, int) {
+	t.Helper()
+	marker := []byte("fn " + name + "(")
+	start := bytes.Index(source, marker)
+	if start == -1 {
+		t.Fatalf("function %q not found in source", name)
+	}
+	relOpen := bytes.IndexByte(source[start:], '{')
+	if relOpen == -1 {
+		t.Fatalf("function %q has no opening brace", name)
+	}
+	openBrace := start + relOpen
+	depth := 0
+	for i := openBrace; i < len(source); i++ {
+		switch source[i] {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return start, i + 1
+			}
+		}
+	}
+	t.Fatalf("function %q has no matching closing brace", name)
+	return 0, 0
+}
+
+// TestTwinPairBlame is 13-06 Task 1's Test 1 (D-13-28): both halves of the
+// criterion-3 twin pair, driven through the real driver against a real
+// built `lang` binary. Each half proves the repair-then-re-check-clean
+// oracle: `Repair` reports the exact outcome string `repaired`, a wholly
+// separate `lang --json check` invocation confirms zero diagnostics
+// afterward, and the applied repair's own span -- captured independently
+// via a direct diagnose+select BEFORE `Repair` ever touches the file --
+// falls inside the expected function's own declaration span, computed
+// here from the mutated source bytes via functionDeclSpan, never read
+// back from the diagnostic.
+//
+// 13-06 (D-13-28 empirical adjudication -- see 13-06-SUMMARY.md's
+// "Criterion 3 verdict" section for the full argument): the plan's own
+// literal text expected the alpha half's true-fix location to be the
+// SHARED CALLEE (`sink`)'s own declaration span. Verified directly against
+// this exact fixture pair, through the real driver, before writing this
+// test's assertions: the shipped move_after_interprocedural_loan repair
+// (check.go's interproceduralLoanLivenessDiagnostic) operates ENTIRELY on
+// the two statements inside the MUTATED CALLER's own body -- never inside
+// `sink` -- for BOTH halves. This is consistent with, and a second
+// instance of, D-13-02b's terminal finding that no B1-shaped
+// (callee-contract) blame is constructible at this language's current
+// maturity: the fixture shape D-13-28 originally envisioned (a defect
+// whose only whole-program-clean fix lives in the shared callee) requires
+// changing `sink`'s own declared contract independent of any one caller's
+// misuse, which is exactly the shape `sameType`'s admission-time
+// precondition makes unreachable. The twin pair's real, honestly
+// constructible discrimination is DIFFERENT from what the plan's literal
+// text assumed, and is asserted here: the repair is fully DATA-DRIVEN from
+// the diagnostic's own recorded move/call operation IDs, so it correctly
+// names whichever caller (`alpha` or `beta`) the injector actually broke
+// -- never a fixed, hardcoded position. TestTwinPairBlameGuard is this
+// test's own mutation kill, proving that a rule which ignores the
+// diagnostic and always "fixes" a fixed caller instead fails the mirror
+// half.
+func TestTwinPairBlame(t *testing.T) {
+	langBinary := testsupport.BuildCLI(t)
+
+	cases := []struct {
+		subtestName string
+		fixture     string
+		// mutatedFunc is the caller InterproceduralLoanInjector's marker
+		// lives in for this fixture, and therefore the ONLY function this
+		// run mutates -- and, per the empirical finding above, the SAME
+		// function the shipped repair's own span must fall inside.
+		mutatedFunc string
+	}{
+		{"alpha", "heldout_shared_callee_twin_alpha.lang", "alpha"},
+		{"mirror", "heldout_shared_callee_twin_mirror.lang", "beta"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.subtestName, func(t *testing.T) {
+			fixturePath := testsupport.ProjectPath("testdata", "phase13", tc.fixture)
+			original, err := os.ReadFile(fixturePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mutated, err := session.InterproceduralLoanInjector{}.Inject(original)
+			if err != nil {
+				t.Fatalf("%s: injecting: %v", tc.subtestName, err)
+			}
+
+			dir := t.TempDir()
+			sourcePath := filepath.Join(dir, tc.fixture)
+			mustWriteFile(t, sourcePath, mutated)
+
+			// Capture the repair's own span BEFORE Repair() ever writes
+			// to the file -- Repair()'s own Outcome envelope carries no
+			// span field, so this is an independent diagnose+select over
+			// the identical, deterministic protocol Repair() itself uses.
+			diagnosis := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+			decoded := decodeCheckJSON(t, diagnosis.Stdout)
+			repair, code, ok := selectRepair(decoded)
+			if !ok {
+				t.Fatalf("%s: expected a driver-eligible repair, got none (diagnostics: %+v)", tc.subtestName, decoded.Diagnostics)
+			}
+			if code != "check.interprocedural_loan_liveness" {
+				t.Fatalf("%s: expected check.interprocedural_loan_liveness, got %q", tc.subtestName, code)
+			}
+			if repair.Kind != "move_after_interprocedural_loan" {
+				t.Fatalf("%s: expected move_after_interprocedural_loan, got %q", tc.subtestName, repair.Kind)
+			}
+
+			outcome, err := Repair(context.Background(), langBinary, sourcePath)
+			if err != nil {
+				t.Fatalf("%s: Repair: %v", tc.subtestName, err)
+			}
+			if outcome.Status != OutcomeRepaired {
+				t.Fatalf("%s: got status %q, want %q (diagnosis=%q repair=%q)", tc.subtestName, outcome.Status, OutcomeRepaired, outcome.DiagnosisCode, outcome.RepairKind)
+			}
+
+			verify := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+			verifyDecoded := decodeCheckJSON(t, verify.Stdout)
+			if verifyDecoded.Status != statusPass {
+				t.Fatalf("%s: independent re-verification reports status %q, want %q", tc.subtestName, verifyDecoded.Status, statusPass)
+			}
+			if len(verifyDecoded.Diagnostics) != 0 {
+				t.Fatalf("%s: independent re-verification reports %d diagnostics, want 0: %+v", tc.subtestName, len(verifyDecoded.Diagnostics), verifyDecoded.Diagnostics)
+			}
+
+			funcStart, funcEnd := functionDeclSpan(t, mutated, tc.mutatedFunc)
+			if repair.Span == nil || repair.Span.Start < funcStart || repair.Span.End > funcEnd {
+				t.Fatalf("%s: repair span %+v does not fall inside %s's own declaration span [%d,%d)", tc.subtestName, repair.Span, tc.mutatedFunc, funcStart, funcEnd)
+			}
+
+			afterTest, err := os.ReadFile(fixturePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(afterTest, original) {
+				t.Fatalf("%s: %s was modified by this test -- the driver must operate on the TempDir copy only", tc.subtestName, tc.fixture)
+			}
+		})
+	}
+}
+
+// TestTwinPairBlameGuard is 13-06 Task 1's Test 2 (D-13-30d), the
+// criterion-3 mutation kill -- ADAPTED from the plan's literal text per
+// the empirical finding TestTwinPairBlame documents (see
+// 13-06-SUMMARY.md's "Criterion 3 verdict"): since the shipped repair's
+// own span ALWAYS coincides with the diagnostic's detection-site function
+// (never a separate "compiler-named" function such as `sink`), the
+// literal "apply the repair at the detection site instead of the
+// compiler-named function" construction has no discrepancy left to
+// exploit for this diagnostic class. The discrimination the twin pair
+// DOES support, and this test kills, is the one both sealed fixtures'
+// own file-header comments name explicitly: a rule that always "fixes" a
+// FIXED, hardcoded caller position (here, `alpha` -- the first caller
+// declared) regardless of which caller the diagnostic actually names.
+//
+// On the mirror half, `beta` is the actually-broken caller. This test
+// constructs the naive fixed-position edit: it swaps `alpha`'s own two
+// statements (which are clean and already correctly ordered in this
+// fixture) into the SAME wrong order the injector itself produces,
+// leaving `beta`'s real defect completely untouched. Re-checking the
+// result must NOT check clean -- a non-empty diagnostics array is
+// asserted, and the specific surviving code
+// (check.interprocedural_loan_liveness) is named, not just "some
+// difference".
+func TestTwinPairBlameGuard(t *testing.T) {
+	langBinary := testsupport.BuildCLI(t)
+
+	fixturePath := testsupport.ProjectPath("testdata", "phase13", "heldout_shared_callee_twin_mirror.lang")
+	original, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutated, err := session.InterproceduralLoanInjector{}.Inject(original)
+	if err != nil {
+		t.Fatalf("injecting: %v", err)
+	}
+
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "heldout_shared_callee_twin_mirror.lang")
+	mustWriteFile(t, sourcePath, mutated)
+
+	alphaStart, alphaEnd := functionDeclSpan(t, mutated, "alpha")
+	alphaBody := mutated[alphaStart:alphaEnd]
+	const callLine = "let routed = sink(borrowed)"
+	const takeLine = "let delivered = take buffer"
+	callIdx := bytes.Index(alphaBody, []byte(callLine))
+	takeIdx := bytes.Index(alphaBody, []byte(takeLine))
+	if callIdx == -1 || takeIdx == -1 || callIdx >= takeIdx {
+		t.Fatalf("test construction error: expected alpha's own clean call-before-take ordering in the mirror fixture, got callIdx=%d takeIdx=%d", callIdx, takeIdx)
+	}
+	naiveSpan := jsonSpan{Start: alphaStart + callIdx, End: alphaStart + takeIdx + len(takeLine)}
+	// The exact wrong-order shape InterproceduralLoanInjector itself
+	// produces (take before call) -- applied to the WRONG (clean) caller.
+	naiveReplacement := takeLine + "\n  " + callLine
+	naive := jsonRepair{
+		Kind:          "move_after_interprocedural_loan",
+		Span:          &naiveSpan,
+		Replacement:   naiveReplacement,
+		Applicability: applicabilityMachineApplicable,
+	}
+	if err := applyRepair(sourcePath, naive); err != nil {
+		t.Fatalf("applying naive fixed-position edit: %v", err)
+	}
+
+	verify := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+	verifyDecoded := decodeCheckJSON(t, verify.Stdout)
+	if verifyDecoded.Status == statusPass {
+		t.Fatal("naive fixed-position edit (targeting alpha, which the diagnostic never named) unexpectedly re-checked clean -- the mutation kill is not discriminating")
+	}
+	if len(verifyDecoded.Diagnostics) == 0 {
+		t.Fatal("expected a non-empty diagnostics array after the naive fixed-position edit -- beta's own real defect was never addressed")
+	}
+	survives := false
+	for _, d := range verifyDecoded.Diagnostics {
+		if d.Code == "check.interprocedural_loan_liveness" {
+			survives = true
+		}
+	}
+	if !survives {
+		t.Fatalf("expected check.interprocedural_loan_liveness to survive (beta's own defect untouched), got %+v", verifyDecoded.Diagnostics)
+	}
+
+	afterTest, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(afterTest, original) {
+		t.Fatal("heldout_shared_callee_twin_mirror.lang was modified by this test -- the driver must operate on the TempDir copy only")
+	}
+}

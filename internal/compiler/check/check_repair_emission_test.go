@@ -106,10 +106,17 @@ func TestWrapCallInTryEmitsNoRepairOnMalformedCall(t *testing.T) {
 // ---------------------------------------------------------------------
 
 // TestUseMatchingArgumentUniquenessGate is 13-05 Task 2's Test 1
-// (D-13-10): all three partitions of the uniqueness gate, asserted by
-// exact repair count. Zero and two-or-more matches are POSITIVE tests of
-// correct refusal, not workarounds -- the resulting unrepairable driver
-// outcome on those two partitions is exactly what D-13-10 requires.
+// (D-13-10), UPDATED by 13-06 (D-13-10a): all three partitions of the
+// former uniqueness gate, asserted by exact repair count. 13-06
+// adjudicated empirically, against the real driver on a held-out fixture,
+// that the one-match partition's "unique match" is ALWAYS the argument's
+// own already-passed place (D-07-09's single-parameter/single-type-fact
+// invariant leaves no other candidate), so a repair built from it is a
+// byte-identical no-op splice that reproduces the identical diagnostic on
+// re-check (`reverify_failed`, never `repaired`). All three partitions
+// therefore emit NO repair -- `use_matching_argument` no longer ships as a
+// live repair kind; the diagnostic-ID and gate-ambiguity refusal logic are
+// otherwise unchanged and still worth asserting per-partition.
 func TestUseMatchingArgumentUniquenessGate(t *testing.T) {
 	rhsSpan := diagnostic.Span{Start: 10, End: 30}
 	binding := ast.Binding{
@@ -120,7 +127,7 @@ func TestUseMatchingArgumentUniquenessGate(t *testing.T) {
 		"identity": {ID: "s1:m:fn:identity", ParameterType: "Buffer", ReturnType: "Buffer"},
 	}
 
-	t.Run("exactly one match fires the repair", func(t *testing.T) {
+	t.Run("exactly one match still emits no repair (D-13-10a)", func(t *testing.T) {
 		typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Byte"}}
 		places := map[string]*placeState{
 			"value": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: typeFact.ID}, initialized: true},
@@ -129,21 +136,8 @@ func TestUseMatchingArgumentUniquenessGate(t *testing.T) {
 		if diag == nil || diag.Code != checkCallArgumentTypeMismatch {
 			t.Fatalf("expected %s, got %+v", checkCallArgumentTypeMismatch, diag)
 		}
-		if len(diag.Repairs) != 1 {
-			t.Fatalf("expected exactly one repair on the unique-match partition, got %d: %+v", len(diag.Repairs), diag.Repairs)
-		}
-		repair := diag.Repairs[0]
-		if repair.Kind != "use_matching_argument" {
-			t.Fatalf("expected kind use_matching_argument, got %q", repair.Kind)
-		}
-		if repair.Applicability != diagnostic.ApplicabilityMachineApplicable {
-			t.Fatalf("expected MachineApplicable, got %q", repair.Applicability)
-		}
-		if repair.Applicability == diagnostic.ApplicabilityRequiresConfirmation {
-			t.Fatal("use_matching_argument must never be RequiresConfirmation -- the gate is a precondition, not a downgrade")
-		}
-		if !diagnostic.DriverEligible(repair) {
-			t.Fatalf("expected DriverEligible to return true for %+v", repair)
+		if len(diag.Repairs) != 0 {
+			t.Fatalf("expected zero repairs on the (formerly unique-match) partition per D-13-10a, got %d: %+v", len(diag.Repairs), diag.Repairs)
 		}
 	})
 
@@ -186,8 +180,11 @@ func TestUseMatchingArgumentUniquenessGate(t *testing.T) {
 }
 
 // TestUseMatchingArgumentUninitializedPlaceIsNotAMatch is 13-05 Task 2's
-// Test 2: a place that is in scope but not initialized (moved away) never
-// counts as a match, even when its TypeID would otherwise qualify.
+// Test 2, UPDATED by 13-06 (D-13-10a): a place that is in scope but not
+// initialized (moved away) never counted as a match under the old gate;
+// now, per D-13-10a, NO repair is emitted regardless -- this test confirms
+// the uninitialized place's presence does not change that (no crash, no
+// stray repair).
 func TestUseMatchingArgumentUninitializedPlaceIsNotAMatch(t *testing.T) {
 	rhsSpan := diagnostic.Span{Start: 10, End: 30}
 	binding := ast.Binding{
@@ -202,17 +199,15 @@ func TestUseMatchingArgumentUninitializedPlaceIsNotAMatch(t *testing.T) {
 	places := map[string]*placeState{
 		"value": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: typeFact.ID}, initialized: true},
 		// "spare" shares the same TypeID (would otherwise be a second
-		// match) but is NOT initialized -- moved away before this call.
+		// match under the old gate) but is NOT initialized -- moved away
+		// before this call.
 		"spare": {place: core.Place{ID: "s1:m:fn:main:place:1", Name: "spare", TypeID: typeFact.ID}, initialized: false, movedAt: &moved},
 	}
 	_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
 	if diag == nil || diag.Code != checkCallArgumentTypeMismatch {
 		t.Fatalf("expected %s, got %+v", checkCallArgumentTypeMismatch, diag)
 	}
-	if len(diag.Repairs) != 1 {
-		t.Fatalf("expected exactly one repair (the uninitialized place must not count), got %d: %+v", len(diag.Repairs), diag.Repairs)
-	}
-	if diag.Repairs[0].Replacement != "identity(value)" {
-		t.Fatalf("expected the replacement to name the sole initialized match (value), got %q", diag.Repairs[0].Replacement)
+	if len(diag.Repairs) != 0 {
+		t.Fatalf("expected zero repairs per D-13-10a, got %d: %+v", len(diag.Repairs), diag.Repairs)
 	}
 }
