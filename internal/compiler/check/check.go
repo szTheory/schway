@@ -539,7 +539,15 @@ var disableCallGraphCycleRefusalForTest = false
 // span of the closing edge. No repairs (a cycle has no local, mechanical
 // edit). Returns nil when the program is acyclic.
 func checkCallGraphAcyclic(program core.Program, spanByOperationID map[string]diagnostic.Span) *diagnostic.Diagnostic {
-	if _, err := callgraph.Order(program); err != nil {
+	// Phase 13 (D-13-03): routed through calleeBeforeCallerOrder rather
+	// than calling callgraph.Order directly, even though this call site
+	// only ever consults the returned error (never the order itself) --
+	// so calleeBeforeCallerOrder is check.go's ONE non-comment
+	// callgraph.Order call site, proving "no new ordering authority is
+	// introduced" by construction rather than by review. The propagated
+	// error is byte-identical either way (calleeBeforeCallerOrder
+	// forwards callgraph.Order's error unchanged).
+	if _, err := calleeBeforeCallerOrder(program); err != nil {
 		if cycle, ok := callgraph.CycleError(err); ok {
 			members := cycle.Members()
 			edgeOperationIDs := cycle.MemberEdgeOperationIDs()
@@ -657,6 +665,86 @@ const MaxInterproceduralLoanCauses = 32
 // recorded check -> protocol -> interp -> [test] -> check import cycle.
 const TruncatedInterproceduralLoanBound = "check.interprocedural_loan_bound"
 
+// calleeBeforeCallerOrder is Phase 13's D-13-03 shared ordering helper: it
+// calls callgraph.Order(program) exactly once and returns the result
+// reversed, so every callee precedes every caller that calls it -- the
+// SAME authority (callgraph.Order) and the SAME reversal TECHNIQUE
+// buildInterproceduralSummaries below already used inline since Phase 08,
+// now factored into one call site so both buildInterproceduralSummaries
+// and the blame resolver's B3 tie-break (resolveBlame) consume it rather
+// than each reversing callgraph.Order's own result separately --
+// "no new ordering authority is introduced" (D-13-03) therefore holds by
+// CONSTRUCTION (one call site for the technique, two callers), not merely
+// by review. 13-RESEARCH.md Code Example 4 records why this must be new
+// code: buildInterproceduralSummaries kept its own reversed order in a
+// local variable and returned only the summary map and a cost integer, so
+// nothing was available to thread out before this helper existed. Errors
+// (a cyclic program) are propagated unchanged.
+func calleeBeforeCallerOrder(program core.Program) ([]string, error) {
+	order, err := callgraph.Order(program)
+	if err != nil {
+		return nil, err
+	}
+	reversed := make([]string, len(order))
+	for i, functionID := range order {
+		reversed[len(order)-1-i] = functionID
+	}
+	return reversed, nil
+}
+
+// functionOwnerIndex is Phase 13's D-13-02 resolver data structure: an
+// inversion of program.Functions[i].Linear.Operations into operation ID ->
+// owning function ID. Exact and free -- no byte-offset range search, no new
+// core.Function.Span-shaped field -- and it composes directly with the
+// spanByOperationID map check.Program already threads through
+// checkInterproceduralLoanLiveness. Materialized once per check.Program
+// invocation (Claude's Discretion, 13-CONTEXT.md) as a local value; never
+// added to the exported check.Result, which would widen a published type
+// for an internal derivation.
+type functionOwnerIndex struct {
+	owner map[string]string
+	// duplicate records every operation ID claimed by more than one
+	// function while buildFunctionByOperationID built owner: two functions
+	// can never legitimately claim the same operation ID (every
+	// core.LinearOperation.ID is minted as "<functionID>:op:<ordinal>"), so
+	// a program that somehow violates that is a DETECTABLE condition here,
+	// never a silent last-writer-wins overwrite -- lookup refuses (ok ==
+	// false) for a duplicated ID exactly as it does for an unknown one.
+	duplicate map[string]bool
+}
+
+// buildFunctionByOperationID builds functionOwnerIndex from program's own
+// checked core.Program.Functions.
+func buildFunctionByOperationID(program core.Program) functionOwnerIndex {
+	index := functionOwnerIndex{owner: map[string]string{}, duplicate: map[string]bool{}}
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if existing, seen := index.owner[operation.ID]; seen {
+				if existing != function.ID {
+					index.duplicate[operation.ID] = true
+				}
+				continue
+			}
+			index.owner[operation.ID] = function.ID
+		}
+	}
+	return index
+}
+
+// lookup returns the operation's owning function ID and true; an unknown or
+// duplicated operation ID returns ("", false) -- never a guess (D-13-02's
+// own behavior requirement for functionByOperationID).
+func (f functionOwnerIndex) lookup(operationID string) (string, bool) {
+	if f.duplicate[operationID] {
+		return "", false
+	}
+	functionID, ok := f.owner[operationID]
+	return functionID, ok
+}
+
 // buildInterproceduralSummaries derives, for every declared function,
 // exactly one interproceduralSummary entry -- read from table's already-
 // published core.FunctionSignature for returnsBorrowOfParam/returnMode/
@@ -674,19 +762,20 @@ const TruncatedInterproceduralLoanBound = "check.interprocedural_loan_bound"
 // callee-before-caller transitivity requires: deriveFunctionUsesParam's
 // OpCall case reads summaries.lookup(calleeID) and needs that entry
 // ALREADY FINAL, which is only true if every callee has been derived
-// before its caller. This loop therefore walks callgraph.Order's result
-// BACKWARD (last-visited-first), which is the genuine callee-before-caller
-// traversal Phase 08 needs -- iterating Order's raw output forward here
-// would silently leave every transitive UsesParam bit false (or fail-safe
-// true only for the immediately-unresolved case), an entry-order bug this
-// package's own summary consumers would never surface as a build failure.
+// before its caller. This function therefore consumes
+// calleeBeforeCallerOrder's already-reversed result (Phase 13), the
+// genuine callee-before-caller traversal Phase 08 needs -- iterating
+// callgraph.Order's raw output forward here would silently leave every
+// transitive UsesParam bit false (or fail-safe true only for the
+// immediately-unresolved case), an entry-order bug this package's own
+// summary consumers would never surface as a build failure.
 func buildInterproceduralSummaries(program core.Program, table callSignatureTable) (interproceduralSummaryTable, int) {
 	if buildInterproceduralSummariesObserved != nil {
 		buildInterproceduralSummariesObserved()
 	}
 	summaries := make(map[string]interproceduralSummary, len(program.Functions))
 	result := interproceduralSummaryTable{summaries: summaries}
-	order, err := callgraph.Order(program)
+	order, err := calleeBeforeCallerOrder(program)
 	if err != nil {
 		return result, 0
 	}
@@ -695,8 +784,7 @@ func buildInterproceduralSummaries(program core.Program, table callSignatureTabl
 		functionByID[function.ID] = function
 	}
 	work := 0
-	for i := len(order) - 1; i >= 0; i-- {
-		functionID := order[i]
+	for _, functionID := range order {
 		work++
 		var summary interproceduralSummary
 		if signature, ok := table.lookup(functionID); ok {
