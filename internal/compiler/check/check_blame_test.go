@@ -1,10 +1,14 @@
 package check
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/ast"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 )
 
 // ---------------------------------------------------------------------
@@ -487,5 +491,321 @@ func TestBlameTieBreakIsCalleeBeforeCaller(t *testing.T) {
 	outcome2 := resolveBlame(program, order, factsWithAbsent, "s1:m:fn:top")
 	if outcome2.FunctionID != "s1:m:fn:mid" {
 		t.Fatalf("expected the ordered candidate (mid) to win over an unordered one (ghost), got %s", outcome2.FunctionID)
+	}
+}
+
+// ---------------------------------------------------------------------
+// Task 3: D-13-04's "verify this claim empirically" instruction,
+// discharged by a committed test.
+// ---------------------------------------------------------------------
+
+// findBindingSpan independently scans parsed's own AST (never the checked
+// core.Program, never spanByOperationID) for the first binding, in the
+// named function's linear body, satisfying match, and returns its Span.
+// findBindingSpan returns the matching binding's RHS.Span -- what
+// check.go's own analyzeStraightLine/analyzeArmBody record into
+// spanByOperationID for EVERY binding kind (`result.CallSpans[operation.ID]
+// = binding.RHS.Span`, check.go), not the whole statement's Binding.Span
+// (which additionally covers the "let <name> = " prefix and is what
+// check.go separately records under the distinct ":stmt"-suffixed key).
+func findBindingSpan(parsed ast.Program, functionName string, match func(ast.Binding) bool) (diagnostic.Span, bool) {
+	for _, function := range parsed.Funcs {
+		if function.Name != functionName || function.Body.Linear == nil {
+			continue
+		}
+		for _, binding := range function.Body.Linear.Bindings {
+			if match(binding) {
+				return binding.RHS.Span, true
+			}
+		}
+	}
+	return diagnostic.Span{}, false
+}
+
+func findFuncSpan(parsed ast.Program, functionName string) (diagnostic.Span, bool) {
+	for _, function := range parsed.Funcs {
+		if function.Name == functionName {
+			return function.Span, true
+		}
+	}
+	return diagnostic.Span{}, false
+}
+
+func findFuncBodySpan(parsed ast.Program, functionName string) (diagnostic.Span, bool) {
+	for _, function := range parsed.Funcs {
+		if function.Name == functionName && function.Body.Linear != nil {
+			return function.Body.Linear.Span, true
+		}
+	}
+	return diagnostic.Span{}, false
+}
+
+// TestBlameMovesNoPrimarySpanToday is D-13-04's own instruction ("Planner
+// must verify this claim empirically before relying on it"), discharged
+// directly: for each of the eight shipped interprocedural codes, the
+// diagnostic's OWN Primary span is compared against a span computed
+// INDEPENDENTLY from the parsed program -- a fresh AST scan
+// (findBindingSpan/findFuncSpan/findFuncBodySpan above), never read back
+// from the diagnostic's own Causes or internal spanByOperationID map. If
+// any code's Primary span differs from this independent expectation, that
+// is a genuine discrepancy from D-13-04's claim and this test fails loudly
+// rather than silently accepting whatever check.Program happens to emit.
+//
+// The eight-code list itself is asserted exhaustive: a ninth
+// interprocedural code emitted by check.Program without being enumerated
+// here fails this test (see the final assertion below).
+func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
+	knownInterproceduralCodes := map[string]bool{
+		"check.interprocedural_loan_liveness":    true,
+		"core.call_graph_cycle":                  true,
+		"check.call_argument_type_mismatch":      true,
+		"check.call_arity_unsupported":           true,
+		"core.callee_not_callable":               true,
+		"check.call_return_type_unrepresentable": true,
+		"check.foreign_call_shape_unsupported":   true,
+		"syntax.fallible_call_not_consumed":      true,
+	}
+
+	assertPrimary := func(t *testing.T, source []byte, code string, expected func(parsed ast.Program) (diagnostic.Span, bool)) {
+		t.Helper()
+		parsed := mustParseProgram(t, source)
+		result := Program(parsed)
+		var diag diagnostic.Diagnostic
+		found := false
+		for _, d := range result.Diagnostics {
+			if d.Code == code {
+				diag, found = d, true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected code %s among diagnostics, got %+v", code, result.Diagnostics)
+		}
+		want, ok := expected(parsed)
+		if !ok {
+			t.Fatalf("independent span computation failed for code %s", code)
+		}
+		if diag.Primary != want {
+			t.Fatalf("code %s: Primary span moved -- got %+v, independently expected %+v (D-13-04's zero-churn claim does not hold for this code; escalate, do not adjust the test)", code, diag.Primary, want)
+		}
+	}
+
+	// 1. check.interprocedural_loan_liveness: Primary is the offending
+	// move's own span. Independently: escort's own "take buffer" binding.
+	assertPrimary(t, readPhase07Fixture(t, "relay_escort_witness.lang"), "check.interprocedural_loan_liveness",
+		func(parsed ast.Program) (diagnostic.Span, bool) {
+			return findBindingSpan(parsed, "escort", func(b ast.Binding) bool {
+				return b.RHS.Kind == "take" && b.RHS.Source == "buffer"
+			})
+		})
+
+	// 2. core.call_graph_cycle: Primary is the closing edge's own call
+	// span -- one of the cycle's own call-binding spans. Pinpointing WHICH
+	// member is the closing edge independently would require duplicating
+	// callgraph's own DFS tie-break; instead assert Primary is exactly one
+	// of the three call-binding spans belonging to the cyclic functions
+	// (a, b, c) -- a genuine, independent STRUCTURAL bound (D-13-05
+	// exempts this code from B3 blame reasoning; this test only confirms
+	// the Primary MOVEMENT claim, not the tie-break).
+	func() {
+		source := readPhase07Fixture(t, "cycle_indirect.lang")
+		parsed := mustParseProgram(t, source)
+		result := Program(parsed)
+		var diag diagnostic.Diagnostic
+		found := false
+		for _, d := range result.Diagnostics {
+			if d.Code == "core.call_graph_cycle" {
+				diag, found = d, true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected core.call_graph_cycle, got %+v", result.Diagnostics)
+		}
+		var candidates []diagnostic.Span
+		for _, name := range []string{"a", "b", "c"} {
+			if span, ok := findBindingSpan(parsed, name, func(b ast.Binding) bool { return b.RHS.Kind == "call" }); ok {
+				candidates = append(candidates, span)
+			}
+		}
+		if len(candidates) != 3 {
+			t.Fatalf("expected 3 candidate call spans, got %d", len(candidates))
+		}
+		matched := false
+		for _, c := range candidates {
+			if diag.Primary == c {
+				matched = true
+			}
+		}
+		if !matched {
+			t.Fatalf("core.call_graph_cycle: Primary %+v is not one of the cycle's own call-binding spans %+v", diag.Primary, candidates)
+		}
+	}()
+
+	// 3. check.call_argument_type_mismatch: Primary is the call site
+	// token. Independently: main's own "identity(buffer)" call binding.
+	assertPrimary(t, readPhase07Fixture(t, "call_type_mismatch.lang"), "check.call_argument_type_mismatch",
+		func(parsed ast.Program) (diagnostic.Span, bool) {
+			return findBindingSpan(parsed, "main", func(b ast.Binding) bool {
+				return b.RHS.Kind == "call" && b.RHS.Callee == "identity"
+			})
+		})
+
+	// 4. check.call_arity_unsupported: an inline two-argument call fixture
+	// (no dedicated testdata/phase07|phase08|phase4 fixture exists for
+	// this code -- confirmed by corpus search this session). Independently:
+	// main's own "identity(value, value)" call binding.
+	arritySource := []byte("module test.blame_arity\nexport {\n  fn main\n}\nfn identity(value: Byte) -> Byte {\n  value\n}\nfn main(value: Byte) -> Byte {\n  let result = identity(value, value)\n  result\n}\n")
+	assertPrimary(t, arritySource, "check.call_arity_unsupported",
+		func(parsed ast.Program) (diagnostic.Span, bool) {
+			return findBindingSpan(parsed, "main", func(b ast.Binding) bool {
+				return b.RHS.Kind == "call" && b.RHS.Callee == "identity"
+			})
+		})
+
+	// 5. core.callee_not_callable: Primary is the WHOLE calling function's
+	// own declaration span. Independently: main's own function.Span.
+	assertPrimary(t, readPhase07Fixture(t, "call_uncallable_callee.lang"), "core.callee_not_callable",
+		func(parsed ast.Program) (diagnostic.Span, bool) {
+			return findFuncSpan(parsed, "main")
+		})
+
+	// 6. check.call_return_type_unrepresentable: structurally UNREACHABLE
+	// from any legal source program (sameType forces every function's
+	// return type to equal its parameter type -- see checkCallReturnTypeUnrepresentable's
+	// own doc comment) -- mutation-killed through callReturnTypeDerivationSeam
+	// in the package's own established convention
+	// (TestCallReturnTypeDerivationMutationKilled), never through a .lang
+	// fixture. Exercised directly against resolveCallBinding, mirroring
+	// that existing test's own shape; "independently computed" here means
+	// the SAME binding.RHS.Span the test itself constructs and passes in --
+	// there is no live source program to re-parse for this code.
+	func() {
+		typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Byte"}}
+		places := map[string]*placeState{
+			"value": {place: core.Place{ID: "s1:m:fn:main:place:9", Name: "value", TypeID: "s1:m:fn:main:type:9"}, initialized: true},
+		}
+		binding := ast.Binding{
+			Name: "result", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}, Span: diagnostic.Span{Start: 100, End: 120}},
+			Span: diagnostic.Span{Start: 100, End: 120},
+		}
+		contracts := map[string]calleeContract{
+			"identity": {ID: "s1:m:fn:identity", ParameterType: "Byte", ReturnType: "Buffer"},
+		}
+		_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil)
+		if diag == nil || diag.Code != checkCallReturnTypeUnrepresentable {
+			t.Fatalf("expected %s, got %+v", checkCallReturnTypeUnrepresentable, diag)
+		}
+		if diag.Primary != binding.RHS.Span {
+			t.Fatalf("code %s: Primary %+v does not equal the call site's own RHS.Span %+v", checkCallReturnTypeUnrepresentable, diag.Primary, binding.RHS.Span)
+		}
+	}()
+
+	// 7. check.foreign_call_shape_unsupported: Primary is the function's
+	// own body span. Independently: probe's own Body.Linear.Span. Inline
+	// fixture (no dedicated testdata fixture -- confirmed by corpus search):
+	// a try-call not immediately returned, followed by a non-fallible
+	// binding -- neither the tracer shape nor the resource-lifecycle shape.
+	foreignShapeSource := []byte("module test.blame_foreign_shape\nexport {\n  fn probe\n}\n\nforeign C {\n  fn acquire(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: AcquireError\n  }\n}\n\ndata AcquireError =\n  | OpenFailed\n\nfn identity(value: Byte) -> Byte {\n  value\n}\n\nfn probe(value: Byte) -> Byte {\n  let ok = try acquire(value)\n  let unrelated = identity(ok)\n  unrelated\n}\n")
+	assertPrimary(t, foreignShapeSource, "check.foreign_call_shape_unsupported",
+		func(parsed ast.Program) (diagnostic.Span, bool) {
+			return findFuncBodySpan(parsed, "probe")
+		})
+
+	// 8. syntax.fallible_call_not_consumed: Primary is the call site
+	// token. Independently: main's own "lang_res_open(request)" binding.
+	assertPrimary(t, readPhase4Fixture(t, "fallible_call_unconsumed.lang"), "syntax.fallible_call_not_consumed",
+		func(parsed ast.Program) (diagnostic.Span, bool) {
+			return findBindingSpan(parsed, "main", func(b ast.Binding) bool {
+				return b.RHS.Kind == "call" && b.RHS.Callee == "lang_res_open"
+			})
+		})
+
+	// Exhaustiveness: this scan reuses
+	// TestInterproceduralDiagnosticOrderingStability's own corpus walk
+	// (interproceduralOrderingBaselineDirs, check_ordering_stability_test.go)
+	// -- the SAME package's own established "walk every fixture under
+	// testdata/<dir>" convention -- and asserts every diagnostic code the
+	// WHOLE corpus produces is either one of the eight known interprocedural
+	// codes above or on knownNonInterproceduralCodes, a hand-maintained
+	// allowlist of every OTHER code this exact corpus subset is known to
+	// produce (captured this session by an explicit corpus scan). A NINTH
+	// interprocedural code -- or ANY new code at all, interprocedural or
+	// not -- surfacing in this corpus without being added to one of the two
+	// lists fails this test loudly, exactly mirroring
+	// interproceduralOrderingBaseline's own "if this is expected, this
+	// table must be updated" discipline.
+	knownNonInterproceduralCodes := map[string]bool{
+		"check.foreign_policy_value_unsafe": true,
+		"check.unexecutable_shape":          true,
+		"core.call_target_not_foreign":      true,
+		"foreign.unwind_policy_undeclared":  true,
+		"match.non_exhaustive":              true,
+		"ownership.borrow_conflict":         true,
+		"ownership.move_while_borrowed":     true,
+		"ownership.transfer_requires_take":  true,
+		"ownership.use_after_move":          true,
+		"syntax.expected_arrow":             true,
+		"syntax.expected_colon":             true,
+		"syntax.expected_declaration":       true,
+		"syntax.expected_lbrace":            true,
+		"syntax.expected_rbrace":            true,
+		"syntax.expected_rparen":            true,
+		"syntax.expected_type":              true,
+		"syntax.unexpected_byte":            true,
+	}
+
+	seenInterproceduralCode := map[string]bool{}
+	for _, dir := range interproceduralOrderingBaselineDirs {
+		matches, err := filepath.Glob(filepath.Join("../../../testdata", dir, "*.lang"))
+		if err != nil {
+			t.Fatalf("glob testdata/%s: %v", dir, err)
+		}
+		for _, path := range matches {
+			source, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+			parsed := syntax.Parse(source)
+			var codes []string
+			if len(parsed.Diagnostics) > 0 {
+				for _, d := range parsed.Diagnostics {
+					codes = append(codes, d.Code)
+				}
+			} else {
+				result := Program(parsed.Program)
+				for _, d := range result.Diagnostics {
+					codes = append(codes, d.Code)
+				}
+			}
+			for _, code := range codes {
+				switch {
+				case knownInterproceduralCodes[code]:
+					seenInterproceduralCode[code] = true
+				case knownNonInterproceduralCodes[code]:
+					// expected, non-interprocedural -- no action.
+				default:
+					t.Fatalf("%s: emitted code %q not on either known list (interprocedural or non-interprocedural) -- a new code has appeared in this corpus; classify it and add it to the appropriate list in TestBlameMovesNoPrimarySpanToday", path, code)
+				}
+			}
+		}
+	}
+	// Every code this test's eight assertions above independently drove
+	// must ALSO appear somewhere in the corpus walk, EXCEPT the two codes
+	// this test itself proved have no corpus fixture (call_arity_unsupported,
+	// foreign_call_shape_unsupported -- inline sources above) and the one
+	// structurally-unreachable code (call_return_type_unrepresentable).
+	corpusExempt := map[string]bool{
+		"check.call_arity_unsupported":           true,
+		"check.foreign_call_shape_unsupported":   true,
+		"check.call_return_type_unrepresentable": true,
+	}
+	for code := range knownInterproceduralCodes {
+		if corpusExempt[code] {
+			continue
+		}
+		if !seenInterproceduralCode[code] {
+			t.Fatalf("expected code %s to appear somewhere in the walked corpus (testdata/%v), found nowhere", code, interproceduralOrderingBaselineDirs)
+		}
 	}
 }
