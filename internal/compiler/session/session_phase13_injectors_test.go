@@ -3,8 +3,11 @@ package session
 import (
 	"bytes"
 	"os"
+	"path/filepath"
+	"regexp"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -154,6 +157,257 @@ func TestPhase13InjectorGuardsAreNotInert(t *testing.T) {
 			typed := injectorError(err)
 			if typed == nil || typed.Code != InjectorTargetMissingCode {
 				t.Fatalf("%s: guarded Inject did not refuse on marker-free input: %v", tc.name, err)
+			}
+		})
+	}
+}
+
+// -----------------------------------------------------------------------
+// Task 2 -- the corpus, including D-13-28's twin pair, and the
+// topology-disjointness control (D-13-25, D-13-26).
+// -----------------------------------------------------------------------
+
+// corpusTopology is the (function count, call-edge count,
+// detection-to-fix hop distance) triple D-13-26.1 requires TestCorpus
+// TopologyDisjoint to compute independently over ast.Program -- re-derived
+// here, never read from the callgraph package (the planner's own
+// discretion note, 13-04-PLAN.md's objective). Hop distance is defined as
+// the shortest call-graph path, in CALLER -> CALLEE edges, from the
+// program's root/entry function to the function containing the fixture's
+// own marked (detection) statement -- the axis this plan actually varies
+// between held-out and derivation members: a shallow chain (derivation,
+// hop <= 1) versus a chain routed through one or more pure relay
+// functions before reaching the defect (held-out, hop >= 2). This is a
+// call-graph-DEPTH reading of "detection-to-fix hop distance", chosen
+// because D-13-28's twin-pair fixtures deliberately keep detection and
+// the eventual repair-blamed function DIFFERENT identities depending on
+// direction (D-13-02a is still open) -- the axis every fixture in this
+// corpus genuinely varies, and the one a blame rule keyed on call-graph
+// shape could actually overfit, is how deep the defect sits in the call
+// graph, not which specific function a not-yet-written repair rule will
+// eventually point at.
+type corpusTopology struct {
+	functionCount int
+	edgeCount     int
+	hopDistance   int
+}
+
+// callEdges walks every function's own linear body bindings and returns
+// the caller-name -> callee-name adjacency list, counting every "call",
+// "try_call", and "discard_call" RHS kind as one edge -- every Lang-to-Lang
+// or Lang-to-foreign call site this language's grammar can express
+// (internal/compiler/ast/ast.go's own RHS.Kind doc comment).
+func callEdges(t *testing.T, source []byte) (graph map[string][]string, edgeCount int) {
+	t.Helper()
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("callEdges: parse failed: %+v", parsed.Diagnostics)
+	}
+	graph = map[string][]string{}
+	for _, function := range parsed.Program.Funcs {
+		if function.Body.Linear == nil {
+			continue
+		}
+		for _, binding := range function.Body.Linear.Bindings {
+			switch binding.RHS.Kind {
+			case "call", "try_call", "discard_call":
+				graph[function.Name] = append(graph[function.Name], binding.RHS.Callee)
+				edgeCount++
+			}
+		}
+	}
+	return graph, edgeCount
+}
+
+// bfsHopDistance returns the shortest number of edges from root to target
+// in graph, walking CALLER -> CALLEE edges forward.
+func bfsHopDistance(graph map[string][]string, root, target string) (int, bool) {
+	if root == target {
+		return 0, true
+	}
+	visited := map[string]bool{root: true}
+	queue := []string{root}
+	dist := map[string]int{root: 0}
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		for _, next := range graph[current] {
+			if visited[next] {
+				continue
+			}
+			visited[next] = true
+			dist[next] = dist[current] + 1
+			if next == target {
+				return dist[next], true
+			}
+			queue = append(queue, next)
+		}
+	}
+	return 0, false
+}
+
+// computeCorpusTopology parses source independently (never consulting the
+// callgraph package) and returns its (function count, call-edge count,
+// hop distance) triple, where hop distance is the shortest root ->
+// detection path over the re-derived adjacency list.
+func computeCorpusTopology(t *testing.T, source []byte, root, detection string) corpusTopology {
+	t.Helper()
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("computeCorpusTopology: parse failed: %+v", parsed.Diagnostics)
+	}
+	graph, edgeCount := callEdges(t, source)
+	hop, ok := bfsHopDistance(graph, root, detection)
+	if !ok {
+		t.Fatalf("computeCorpusTopology: detection function %q unreachable from root %q", detection, root)
+	}
+	return corpusTopology{functionCount: len(parsed.Program.Funcs), edgeCount: edgeCount, hopDistance: hop}
+}
+
+// TestCorpusTopologyDisjoint is D-13-26.1/D-13-26.2's central assertion:
+// for each interprocedural class with both a held-out and a derivation
+// member, the two members' independently re-derived topology triples are
+// NOT equal, and the held-out member's own hop distance is >= 2 -- this
+// replaces byte-inequality, which alpha-renaming defeats (D-13-24, the
+// M001 lesson).
+func TestCorpusTopologyDisjoint(t *testing.T) {
+	cases := []struct {
+		name             string
+		heldoutFile      string
+		heldoutRoot      string
+		heldoutDetection string
+		derivationFile   string
+		derivationRoot   string
+		derivationDetect string
+	}{
+		{
+			name: "fallible_call_unconsumed",
+			heldoutFile: "heldout_fallible_call_unconsumed.lang", heldoutRoot: "main", heldoutDetection: "acquire",
+			derivationFile: "derivation_fallible_call_unconsumed.lang", derivationRoot: "main", derivationDetect: "main",
+		},
+		{
+			name: "call_argument_type_mismatch",
+			heldoutFile: "heldout_call_argument_mismatch.lang", heldoutRoot: "main", heldoutDetection: "dispatch",
+			derivationFile: "derivation_call_argument_mismatch.lang", derivationRoot: "main", derivationDetect: "main",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			heldout := computeCorpusTopology(t, phase13Fixture(t, tc.heldoutFile), tc.heldoutRoot, tc.heldoutDetection)
+			derivation := computeCorpusTopology(t, phase13Fixture(t, tc.derivationFile), tc.derivationRoot, tc.derivationDetect)
+			if heldout == derivation {
+				t.Fatalf("%s: held-out and derivation topology triples are EQUAL (%+v) -- the split varies nothing a blame rule could overfit", tc.name, heldout)
+			}
+			if heldout.hopDistance < 2 {
+				t.Fatalf("%s: held-out hop distance %d, want >= 2 (D-13-26.2)", tc.name, heldout.hopDistance)
+			}
+			if derivation.hopDistance > 1 {
+				t.Fatalf("%s: derivation hop distance %d, want <= 1", tc.name, derivation.hopDistance)
+			}
+		})
+	}
+}
+
+// alphaRenameDerivationCallArgumentMismatch returns a byte-for-byte
+// structural copy of derivation_call_argument_mismatch.lang with every
+// identifier (module suffix, function names, parameter/binding names)
+// renamed -- exactly M001's documented weakness shape (item -> buffer,
+// moved_once -> delivered): a rename that changes no call-graph shape at
+// all, so its topology triple must come out IDENTICAL to the original.
+func alphaRenameDerivationCallArgumentMismatch(t *testing.T, source []byte) []byte {
+	t.Helper()
+	renamed := string(source)
+	replacements := []struct{ from, to string }{
+		{"derivation_call_argument_mismatch", "alpha_renamed_derivation_call_argument_mismatch"},
+		{"identity", "principal"},
+		{"result", "outcome"},
+		{"value", "payload"},
+		{"main", "entry"},
+	}
+	for _, replacement := range replacements {
+		pattern := regexp.MustCompile(`\b` + regexp.QuoteMeta(replacement.from) + `\b`)
+		renamed = pattern.ReplaceAllString(renamed, replacement.to)
+	}
+	return []byte(renamed)
+}
+
+// TestCorpusTopologyGuardIsNotInert is D-13-30(b)'s required mutation
+// kill -- the topology-distinctness control is the one most in need of a
+// not-inert proof, since it is what proves the split is not ceremonial.
+// An alpha-renamed copy of a derivation fixture, fed through the SAME
+// topology computation TestCorpusTopologyDisjoint uses, must come out
+// topologically EQUAL to the original -- proving that had this renamed
+// copy been submitted in place of a real held-out member, TestCorpus
+// TopologyDisjoint's own `heldout == derivation` fatal would have fired.
+// A control that a pure rename can slip past is exactly the M001
+// weakness this phase exists to close.
+func TestCorpusTopologyGuardIsNotInert(t *testing.T) {
+	original := phase13Fixture(t, "derivation_call_argument_mismatch.lang")
+	dir := t.TempDir()
+	renamed := alphaRenameDerivationCallArgumentMismatch(t, original)
+	path := filepath.Join(dir, "alpha_renamed_derivation_call_argument_mismatch.lang")
+	if err := os.WriteFile(path, renamed, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	renamedSource, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	renamedResult := Check(renamedSource)
+	if len(renamedResult.Diagnostics) != 0 {
+		t.Fatalf("alpha-renamed copy did not check clean: %+v", renamedResult.Diagnostics)
+	}
+	originalTriple := computeCorpusTopology(t, original, "main", "main")
+	renamedTriple := computeCorpusTopology(t, renamedSource, "entry", "entry")
+	if renamedTriple != originalTriple {
+		t.Fatalf("control is INERT in the wrong direction: alpha-renaming changed the topology triple (original=%+v, renamed=%+v) -- rename must preserve topology for this test to demonstrate anything", originalTriple, renamedTriple)
+	}
+	// This IS the violation: had the renamed copy been submitted as the
+	// held-out member, TestCorpusTopologyDisjoint's `heldout == derivation`
+	// fatal above would have fired on exactly this pair. Demonstrating
+	// that the two triples are equal -- already asserted above via
+	// renamedTriple != originalTriple -- is D-13-30(b)'s not-inert proof:
+	// a pure identifier rename cannot escape the disjointness check.
+}
+
+// TestHeldoutBaselinesAreFailClosed is D-13-26.3's central assertion:
+// every heldout_* fixture checks clean unmutated, and produces exactly
+// one diagnostic, of the expected code, once its injector runs. This
+// plan does NOT yet assert the presence of a driver-eligible repair for
+// classes 2 and 3 -- those repair rules land in plan 13-05, and plan
+// 13-06 adds that assertion once they exist.
+func TestHeldoutBaselinesAreFailClosed(t *testing.T) {
+	cases := []struct {
+		name     string
+		file     string
+		injector Injector
+		wantCode string
+	}{
+		{"fallible_call_unconsumed", "heldout_fallible_call_unconsumed.lang", FallibleConsumeInjector{}, "syntax.fallible_call_not_consumed"},
+		{"call_argument_mismatch", "heldout_call_argument_mismatch.lang", CallArgumentTypeInjector{}, "check.call_argument_type_mismatch"},
+		{"call_argument_ambiguous", "heldout_call_argument_ambiguous.lang", CallArgumentTypeInjector{}, "check.call_argument_type_mismatch"},
+		{"shared_callee_twin_alpha", "heldout_shared_callee_twin_alpha.lang", InterproceduralLoanInjector{}, "check.interprocedural_loan_liveness"},
+		{"shared_callee_twin_mirror", "heldout_shared_callee_twin_mirror.lang", InterproceduralLoanInjector{}, "check.interprocedural_loan_liveness"},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			base := phase13Fixture(t, tc.file)
+			baseResult := Check(base)
+			if len(baseResult.Diagnostics) != 0 {
+				t.Fatalf("%s: base did not check clean: %+v", tc.file, baseResult.Diagnostics)
+			}
+			mutated, err := tc.injector.Inject(base)
+			if err != nil {
+				t.Fatalf("%s: Inject failed: %v", tc.file, err)
+			}
+			result := Check(mutated)
+			if len(result.Diagnostics) != 1 {
+				t.Fatalf("%s: got %d diagnostics, want 1: %+v", tc.file, len(result.Diagnostics), result.Diagnostics)
+			}
+			if result.Diagnostics[0].Code != tc.wantCode {
+				t.Fatalf("%s: got code %q, want %q", tc.file, result.Diagnostics[0].Code, tc.wantCode)
 			}
 		})
 	}
