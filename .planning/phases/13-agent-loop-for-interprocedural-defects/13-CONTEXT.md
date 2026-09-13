@@ -169,6 +169,21 @@ else is available.
   `lang.diagnostic/1`'s identity-bearing `RepairKinds`, so removing one later
   churns that diagnostic's ID.
 
+- **D-13-09b (NARROWING, found empirically by the 13-01 tracer 2026-09-13 —
+  amends D-13-09.1):** the "swap the move and call statements" repair is
+  semantics-preserving only for the **backward** direction of
+  `check.interprocedural_loan_liveness`, where the call is the loan's own
+  recorded last use. In the **forward** direction — the loan propagated through
+  the call onto a place that is read still *later* — the true last use lies
+  beyond the call, and the swap does **not** fix the program. Verified by
+  splicing the repair onto real `testdata/phase07` and `testdata/phase08`
+  fixtures in both directions, not by reasoning. `interproceduralLoanLivenessDiagnostic`
+  therefore takes a `callIsLastUse` gate and emits the `MachineApplicable` repair
+  only when the edit is actually correct; the forward direction emits no repair
+  and the driver honestly returns `unrepairable`. This is the fail-closed posture
+  D-13-10 applies to `use_matching_argument`, arrived at independently for a
+  second class. **Downstream plans must not widen this gate.**
+
 - **D-13-09a (CORRECTION, found by research 2026-09-13 — supersedes the
   optimistic reading of D-13-17):** all three target codes currently build via
   `diagnostic.Error` (schema `lang.diagnostic/0`). Attaching a `Repair` forces a
