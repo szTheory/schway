@@ -781,7 +781,7 @@ Plans:
 
 **Gap-closure Wave 3** *(blocked on Gap-closure Wave 2)*
 
-- [ ] 12-08-PLAN.md — D-12-43's blocking-human ratification checkpoint, the recorded CR-01 disposition (D-12-44), the secondary-finding dispositions (D-12-45), and the phase-close evidence sweep
+- [x] 12-08-PLAN.md — D-12-43's blocking-human ratification checkpoint, the recorded CR-01 disposition (D-12-44), the secondary-finding dispositions (D-12-45), and the phase-close evidence sweep
 
 ### Phase 13: Agent Loop for Interprocedural Defects
 
