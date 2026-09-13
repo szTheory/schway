@@ -190,7 +190,19 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	"phase07/cycle_through_match_arm.lang":     {"core.call_graph_cycle", "diagnostic:0fe333002fca961ebee8f00a"},
 	"phase07/cycle_unreachable.lang":           {"core.call_graph_cycle", "diagnostic:03edcf9d691da106106c2fc0"},
 	"phase07/foreign_symbol_shadowing.lang":    {"core.call_graph_cycle", "diagnostic:3fa66ee8773176867ffb9b4e"},
-	"phase07/relay_escort_witness.lang":        {"check.interprocedural_loan_liveness", "diagnostic:58c1b5b2072cda60f77d721e"},
+	// Updated 13-01 (D-13-09a): re-pinned, not an ordering change. Attaching
+	// a repair to check.interprocedural_loan_liveness forces the emission
+	// site to switch from diagnostic.Error (schema lang.diagnostic/0) to
+	// diagnostic.ErrorWithRepairs (schema lang.diagnostic/1) UNCONDITIONALLY
+	// -- the Schema string itself is inside the hashed identity struct, so
+	// every fixture of this code churns its ID whether or not a repair
+	// actually fires here. This fixture is the FORWARD direction (the loan
+	// is propagated THROUGH the call onto `aliased`, itself the function's
+	// own returned result) -- swapping the move and call statements does
+	// NOT end the conflict (empirically verified: the swapped program still
+	// refuses with this same code), so interproceduralLoanLivenessDiagnostic
+	// emits zero repairs here; only the schema switch changed this ID.
+	"phase07/relay_escort_witness.lang":        {"check.interprocedural_loan_liveness", "diagnostic:d2cf7924b65040bc45087f56"},
 	// phase08/negative_control_fails.lang and phase08/negative_control_infallible.lang,
 	// plan 10-02 (D-09-51 closure): IDENTITY change, code changed. Both
 	// fixtures' `relay` declares `-> borrow(buffer) Buffer`, but in EITHER
@@ -216,8 +228,14 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// updated doc comment and 10-02-SUMMARY.md for the full account.
 	"phase08/negative_control_fails.lang":      {"core.callee_not_callable", "diagnostic:79999a6354e9192f2578c976"},
 	"phase08/negative_control_infallible.lang": {"core.callee_not_callable", "diagnostic:d5d34a1946a3587c54c6177f"},
-	"phase08/relay_depth2_refuse.lang":         {"check.interprocedural_loan_liveness", "diagnostic:300248748c05f20eb1fe3948"},
-	"phase08/twin_a_refuse.lang":               {"check.interprocedural_loan_liveness", "diagnostic:e01ad6316e27899deeb610f7"},
+	// Updated 13-01 (D-13-09a): same schema-switch re-pin as
+	// relay_escort_witness.lang above. FORWARD direction (loan_extended_by_
+	// call named via the returnsBorrowOfParam propagation), zero repairs.
+	"phase08/relay_depth2_refuse.lang":         {"check.interprocedural_loan_liveness", "diagnostic:fe60f351f59fde945c197f06"},
+	// Updated 13-01 (D-13-09a): same schema-switch re-pin. FORWARD
+	// direction, zero repairs -- see relay_escort_witness.lang's comment
+	// above for why the swap does not end the conflict here.
+	"phase08/twin_a_refuse.lang":               {"check.interprocedural_loan_liveness", "diagnostic:be6861698bff25a7076dca8f"},
 	// phase08/twin_b_accept.lang and phase08/twin_b_refuse.lang, plan 09-09:
 	// BOTH now report check.interprocedural_loan_liveness instead of
 	// ownership.move_while_borrowed -- an IDENTITY change compounded with a
@@ -249,8 +267,21 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// (check.interprocedural_loan_liveness) -- only the source file's bytes
 	// changed, never check.go's derivation logic or this fixture's observed
 	// verdict.
-	"phase08/twin_b_accept.lang":   {"check.interprocedural_loan_liveness", "diagnostic:9077559bb65dc5fe33cb57bb"},
-	"phase08/twin_b_refuse.lang":   {"check.interprocedural_loan_liveness", "diagnostic:d15b65a04fd8515f92e999e2"},
+	// Updated 13-01 (D-13-09a, plus a plan-scope correction): re-pinned.
+	// twin_b_accept.lang and twin_b_refuse.lang are the BACKWARD direction
+	// (the call IS lastUseIndexByLoan's recorded last use) -- 13-01 Task 1's
+	// own plan text named only four rows (relay_escort_witness.lang,
+	// relay_depth2_refuse.lang, twin_a_refuse.lang, twin_b_refuse.lang) as
+	// expected to churn, omitting this fixture; empirically this row is
+	// ALSO code check.interprocedural_loan_liveness and churns identically
+	// from the same unconditional schema switch, so it is re-pinned here
+	// too (13-01-SUMMARY.md Deviations records the correction). Unlike the
+	// three forward-direction fixtures above, both twins here ALSO gain a
+	// real move_after_interprocedural_loan repair (RepairKinds itself
+	// participates in ErrorWithRepairs' identity) -- verified empirically:
+	// splicing each repair's Replacement over its Span re-checks clean.
+	"phase08/twin_b_accept.lang":   {"check.interprocedural_loan_liveness", "diagnostic:a1c11e453dc440600ad21235"},
+	"phase08/twin_b_refuse.lang":   {"check.interprocedural_loan_liveness", "diagnostic:caa9d8014d5c4260aad15254"},
 	"phase1/malformed.lang":        {"syntax.unexpected_byte", "diagnostic:ccb9bcd29f3e8d96fa0368b6"},
 	"phase1/non_exhaustive.lang":   {"match.non_exhaustive", "diagnostic:f9582fb8c4ad9f90fbe75fa8"},
 	"phase2/ability_shapes.lang":   {"check.unexecutable_shape", "diagnostic:7da7df4418c3945f03ab2d82"},

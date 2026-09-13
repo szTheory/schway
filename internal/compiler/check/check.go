@@ -1142,14 +1142,14 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 		if callOperation, extended := chain.extendedByCall[offendingLoanID]; extended {
 			summary, _ := summaries.lookup(callOperation.CalleeID)
 			detail := fmt.Sprintf("%s:return.mode=%s", callOperation.CalleeID, summary.returnMode)
-			diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, callOperation, detail, spanByOperationID))
+			diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, callOperation, detail, false, placesByID(function), spanByOperationID))
 			continue
 		}
 		if lastUse, ok := lastUseIndexByLoan[offendingLoanID]; ok && lastUse >= 0 && lastUse < len(function.Linear.Operations) {
 			if candidate := function.Linear.Operations[lastUse]; candidate.Kind == core.OpCall {
 				summary, _ := summaries.lookup(candidate.CalleeID)
 				detail := fmt.Sprintf("%s:parameters[0].mode=%s", candidate.CalleeID, summary.parameterMode)
-				diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, candidate, detail, spanByOperationID))
+				diagnostics = append(diagnostics, interproceduralLoanLivenessDiagnostic(offendingMove, borrowOperation, candidate, detail, true, placesByID(function), spanByOperationID))
 				continue
 			}
 		}
@@ -1266,14 +1266,50 @@ func borrowConflictDiagnosticPostAssembly(newBorrow, blockingBorrow core.LinearO
 // check.interprocedural_loan_liveness refusal ratified at this plan's Task 1
 // checkpoint: exactly three causes in the fixed role order
 // borrow_created_here / loan_extended_by_call / callee_return_contract
-// (D-08-23), Primary is the offending OpMove's own span (D-08-22), and
-// Repairs is nil (D-08-25) -- diagnostic.Error, never ErrorWithRepairs.
+// (D-08-23), Primary is the offending OpMove's own span (D-08-22).
 // causeDetail is cause 3's precomputed Detail string, chosen by the caller
 // from a RECORDED fact (which direction fired), never re-derived here
 // (08-02 Task 2): "<calleeID>:return.mode=<Mode>" for the forward direction
 // (D-08-07), "<calleeID>:parameters[0].mode=<Mode>" for the backward
 // direction (D-08-08).
-func interproceduralLoanLivenessDiagnostic(move, borrow, call core.LinearOperation, causeDetail string, spanByOperationID map[string]diagnostic.Span) diagnostic.Diagnostic {
+//
+// 13-01 Task 1 (D-13-09.1/D-13-09a): this now builds via
+// diagnostic.ErrorWithRepairs unconditionally -- including on the
+// zero-repair fallback path below -- which is the deliberate, reviewable
+// schema lang.diagnostic/0 -> /1 switch D-13-09a records. That switch
+// changes the hashed identity struct's Schema string and therefore churns
+// this code's sha256 ID on EVERY fixture, whether or not a repair fires;
+// check_ordering_stability_test.go's four affected rows are re-pinned in
+// this same plan.
+//
+// When eligible, a single move_after_interprocedural_loan repair is
+// attached: D-13-11's argument is why this can honestly be
+// MachineApplicable in Lang where rustc ships the analogous borrowck
+// suggestion as MaybeIncorrect/help-only -- `take` is a pure compile-time
+// ownership transfer with no observable runtime effect, so relocating it
+// past the call that extends the loan cannot change program meaning
+// (reordering in Rust can move a Drop, which is why rustc refuses to
+// auto-fix borrow errors; nothing here is a Drop).
+//
+// callIsLastUse distinguishes the two directions the caller may have found
+// this diagnostic through (08-02 Task 2) and is NOT merely reporting
+// metadata -- it gates whether the swap is actually semantics-preserving.
+// In the BACKWARD direction (call is itself lastUseIndexByLoan's recorded
+// last use, callIsLastUse == true), nothing after the call still needs the
+// loan, so swapping the move to occur after the call genuinely ends the
+// conflict -- empirically verified: swapping testdata/phase13/derivation_
+// interprocedural_loan_defect.lang's two statements re-checks clean. In the
+// FORWARD direction (the loan is propagated THROUGH the call onto a place
+// read STILL LATER, callIsLastUse == false), the true last use is beyond
+// the call -- e.g. the call's own return value used as the function's own
+// result -- so swapping the move and the call does not end the conflict at
+// all; it only moves where in the program `take` sits, and the diagnostic
+// still fires (empirically verified against testdata/phase07/
+// relay_escort_witness.lang and testdata/phase08/twin_a_refuse.lang: the
+// swapped program still refuses with the identical diagnostic). No repair
+// is emitted for the forward direction -- the same fail-closed posture
+// D-13-11 and D-13-10 already establish: never a plausible-but-wrong edit.
+func interproceduralLoanLivenessDiagnostic(move, borrow, call core.LinearOperation, causeDetail string, callIsLastUse bool, places map[string]core.Place, spanByOperationID map[string]diagnostic.Span) diagnostic.Diagnostic {
 	borrowSpan := spanByOperationID[borrow.ID]
 	callSpan := spanByOperationID[call.ID]
 	causes := []diagnostic.Cause{
@@ -1282,10 +1318,80 @@ func interproceduralLoanLivenessDiagnostic(move, borrow, call core.LinearOperati
 		{Kind: "callee_return_contract", Detail: causeDetail},
 	}
 	primary := spanByOperationID[move.ID]
-	return diagnostic.Error(
+
+	var repairs []diagnostic.Repair
+	// D-13-13: a NEW repair kind string, never a reuse of the existing
+	// move_after_last_borrow_use -- that kind is Kind-only and not
+	// driver-eligible today, and reusing it would silently change an
+	// existing diagnostic's driver behavior.
+	moveStmtSpan, moveOK := spanByOperationID[move.ID+":stmt"]
+	callStmtSpan, callOK := spanByOperationID[call.ID+":stmt"]
+	moveTargetName, moveSourceName, callTargetName, callArgumentName := "", "", "", ""
+	if places != nil {
+		moveTargetName = places[move.TargetID].Name
+		moveSourceName = places[move.SourceID].Name
+		callTargetName = places[call.TargetID].Name
+		callArgumentName = places[call.SourceID].Name
+	}
+	calleeName := calleeNameFromID(call.CalleeID)
+	// Fail-closed (NormalizeApplicability/markerGuard's standing posture,
+	// D-13-11): if the direction is not the backward, swap-safe one, or
+	// either statement's ":stmt" span is missing, or any place name is
+	// empty, emit NO repair rather than a plausible-but-wrong edit -- the
+	// diagnostic still fires via the ErrorWithRepairs call below, with a
+	// zero-length Repairs slice.
+	if callIsLastUse && moveOK && callOK && moveTargetName != "" && moveSourceName != "" && callTargetName != "" && callArgumentName != "" && calleeName != "" {
+		repairSpan := unionSpan(moveStmtSpan, callStmtSpan)
+		// Both statements re-emitted in swapped order: the call (which
+		// extends the loan) moves before the take, so the take happens
+		// only after the loan's interprocedurally-extended liveness has
+		// ended.
+		callText := "let " + callTargetName + " = " + calleeName + "(" + callArgumentName + ")"
+		moveText := "let " + moveTargetName + " = take " + moveSourceName
+		repairs = append(repairs, diagnostic.Repair{
+			Kind: "move_after_interprocedural_loan", Span: &repairSpan,
+			Replacement:   callText + "\n  " + moveText,
+			Applicability: diagnostic.ApplicabilityMachineApplicable,
+		})
+	}
+	return diagnostic.ErrorWithRepairs(
 		"check.interprocedural_loan_liveness", primary,
-		"cannot transfer ownership while an interprocedurally-extended loan is still live", causes...,
+		"cannot transfer ownership while an interprocedurally-extended loan is still live", causes,
+		repairs...,
 	)
+}
+
+// unionSpan returns the smallest Span covering both a and b: the minimum
+// Start and the maximum End. Used only by
+// interproceduralLoanLivenessDiagnostic's move_after_interprocedural_loan
+// repair, whose Replacement rewrites both the offending move's own
+// statement and the loan-extending call's own statement as one edit.
+func unionSpan(a, b diagnostic.Span) diagnostic.Span {
+	start, end := a.Start, a.End
+	if b.Start < start {
+		start = b.Start
+	}
+	if b.End > end {
+		end = b.End
+	}
+	return diagnostic.Span{Start: start, End: end}
+}
+
+// calleeNameFromID recovers a callee's source-level function name from its
+// CalleeID, which semanticID (check.go) always builds in the fixed form
+// "s1:<module>:fn:<name>". The function name segment cannot itself contain
+// a colon (the lexer's identifier syntax disallows it), so the RIGHTMOST
+// ":fn:" separator is always the genuine one even in the pathological case
+// of a module name containing the literal substring "fn". Returns "" if
+// CalleeID does not match the expected shape -- the caller treats that as a
+// fail-closed signal to emit no repair, never a fabricated name.
+func calleeNameFromID(calleeID string) string {
+	const separator = ":fn:"
+	index := strings.LastIndex(calleeID, separator)
+	if index == -1 {
+		return ""
+	}
+	return calleeID[index+len(separator):]
 }
 
 // checkCallArgumentTypeMismatch is 07-09's ratified check-side code for a
@@ -2486,6 +2592,15 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 				result.CallSpans = map[string]diagnostic.Span{}
 			}
 			result.CallSpans[op.ID] = binding.RHS.Span
+			// Task 1 (13-01): also record the WHOLE call binding statement's
+			// span under a synthesized ":stmt" suffix key, in the SAME
+			// channel and mirroring D-09-08/D-09-09's identical widening for
+			// take/borrow/borrow_mut bindings above -- needed ONLY by
+			// interproceduralLoanLivenessDiagnostic's move_after_
+			// interprocedural_loan repair, whose Replacement text rewrites
+			// the ENTIRE "let NAME = callee(ARG)" statement, never just the
+			// RHS token binding.RHS.Span already carries.
+			result.CallSpans[op.ID+":stmt"] = binding.Span
 			endLoans(index)
 			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 			continue
@@ -3971,6 +4086,9 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 				result.CallSpans = map[string]diagnostic.Span{}
 			}
 			result.CallSpans[op.ID] = binding.RHS.Span
+			// Task 1 (13-01): see analyzeStraightLine's identical ":stmt"
+			// span-widening comment.
+			result.CallSpans[op.ID+":stmt"] = binding.Span
 			endLoans(index)
 			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
 			continue

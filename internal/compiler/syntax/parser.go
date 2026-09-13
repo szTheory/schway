@@ -421,8 +421,23 @@ func (p *parser) linearBody() ast.LinearBody {
 			// and emits an ast.RHS{Kind: "call"} binding for check to admit
 			// or refuse.
 			arguments, end := p.callArguments()
+			// 13-01 Task 1 (Rule 1 bugfix): Binding.Span for a call binding
+			// must cover the WHOLE "let NAME = callee(ARGS)" statement,
+			// exactly like every other binding kind's Span already does
+			// (spanFrom(bindingStart, source) below, where `source` is the
+			// bound expression's own last token) -- but here `source` is
+			// the CALLEE token, parsed before the "(" is even seen, so
+			// spanFrom(bindingStart, source) previously stopped short of
+			// the arguments and closing paren. `end` (the closing paren's
+			// own End, already computed by callArguments and already used
+			// two lines below for body.Span.End) is the correct bound. This
+			// was latent until check.go's own ":stmt" span-widening (same
+			// plan) started reading Binding.Span for call bindings; no
+			// existing pinned diagnostic ID depends on the old, truncated
+			// value (verified by a full `go test ./...` run before and
+			// after this change).
 			body.Bindings = append(body.Bindings, ast.Binding{
-				Name: name.Text, RHS: ast.RHS{Kind: "call", Callee: source.Text, Arguments: arguments, Span: source.Span}, Span: spanFrom(bindingStart, source),
+				Name: name.Text, RHS: ast.RHS{Kind: "call", Callee: source.Text, Arguments: arguments, Span: source.Span}, Span: diagnostic.Span{Start: bindingStart.Span.Start, End: end},
 			})
 			body.Span.End = end
 			continue

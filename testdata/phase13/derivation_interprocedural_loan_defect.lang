@@ -1,0 +1,43 @@
+// Phase 13 Plan 01 Task 1 -- the tracer defect: a caller borrows its own
+// parameter, calls a callee that genuinely reads through its own parameter
+// (usesParam == true, D-08-02's deriveFunctionUsesParam), then `take`s the
+// owner while that call's own operation is still the recorded LAST USE of
+// the shared loan (the BACKWARD direction, D-08-08 / TestInterprocedural
+// LivenessTwinPatternB's synthetic shape, reproduced here as a real, source-
+// level program). This is exactly the swap-fixable shape (D-13-09.1): the
+// `take` currently happens BEFORE the call that is the loan's true last
+// use, and relocating it to AFTER the call resolves the conflict with no
+// observable behavior change (D-13-11 -- `take` is a pure compile-time
+// ownership transfer, never a Drop).
+//
+// Expected: `check` refuses with exactly one check.interprocedural_loan_
+// liveness diagnostic, whose repair (move_after_interprocedural_loan)
+// swaps the `result = user(borrowed)` and `delivered = take buffer`
+// statements; applying that repair re-checks clean (verified both by this
+// plan's end-to-end CLI check and by
+// TestRepairDriverFixesInterproceduralLoanLivenessSinglePass).
+//
+// `user` cannot merely forward its parameter to its own OpReturn (D-08-01's
+// zero-hop exemption would make usesParam false and this fixture would
+// admit with zero diagnostics, per TestInterproceduralLivenessTwinPatternB's
+// own "callee does not use its parameter" branch) -- it must genuinely
+// route through an intermediate operation, here `take borrowed`, before
+// returning the moved place.
+
+module phase13.derivation
+
+export {
+  fn escort
+}
+
+fn user(borrowed: Buffer) -> Buffer {
+  let moved = take borrowed
+  moved
+}
+
+fn escort(buffer: Buffer) -> Buffer {
+  let borrowed = borrow buffer
+  let delivered = take buffer
+  let result = user(borrowed)
+  result
+}
