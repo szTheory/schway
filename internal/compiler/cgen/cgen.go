@@ -54,7 +54,42 @@ var payloadSlotSwapForTest = false
 func SetPayloadSlotSwapForTest(mutate bool) (restore func()) {
 	previous := payloadSlotSwapForTest
 	payloadSlotSwapForTest = mutate
+	payloadSlotSwapInjectedWriteCount = 0
 	return func() { payloadSlotSwapForTest = previous }
+}
+
+// payloadSlotSwapInjectedWriteCount counts how many times
+// emitBranchOperations' OpConstructPayload case actually took
+// wrongPayloadSlot's successful-target (ok == true) branch and emitted a
+// wrong-slot write, WR-02's anti-vacuity counter. It is incremented ONLY
+// inside that successful branch -- never in the else fallback (the
+// documented no-op path wrongPayloadSlot's own doc comment names) and
+// never on the non-mutated path -- and reset to zero by
+// SetPayloadSlotSwapForTest when the seam is engaged, so
+// TestPayloadSlotSwapMutationKilled can assert a wrong-slot write was
+// ACTUALLY injected rather than trusting that engaging the flag alone
+// proves anything. WR-02 identified that a fixture-shape regression (the
+// data type losing its second payload-carrying alternative) could make
+// wrongPayloadSlot silently fall back to the correct write on every call,
+// letting the mutation-kill control pass while proving nothing. The
+// restore closure returned by SetPayloadSlotSwapForTest deliberately does
+// NOT reset this counter, so a caller can read it after `defer restore()`
+// runs.
+var payloadSlotSwapInjectedWriteCount int
+
+// PayloadSlotSwapInjectedWriteCount reports how many wrong-slot writes
+// D-12-38's fault-injection seam has actually emitted since the seam was
+// last engaged via SetPayloadSlotSwapForTest(true). This is a
+// PRODUCTION-VISIBLE function (never an export_test.go symbol), for the
+// same cross-package reason SetPayloadSlotSwapForTest's own doc comment
+// gives: the assertion reading it lives in
+// internal/compiler/session's session_test package, an external consumer
+// of cgen's normal (non-test) build, for which an export_test.go symbol
+// does not exist at all -- _test.go exports are visible only within
+// cgen's own test binary. A documented, clearly-named, test-only reader;
+// never called from any production code path in this repository.
+func PayloadSlotSwapInjectedWriteCount() int {
+	return payloadSlotSwapInjectedWriteCount
 }
 
 // wrongPayloadSlot picks a DIFFERENT alternative's own struct field name
@@ -2108,6 +2143,7 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 				// to the wrong SLOT alone, never to separately-introduced
 				// undefined behavior.
 				if wrongField, wrongCType, ok := wrongPayloadSlot(dataType, payloadFieldBySource, altName); ok {
+					payloadSlotSwapInjectedWriteCount++
 					srcCType := payloadCTypeName(operation.PayloadType)
 					switch {
 					case wrongCType == srcCType:

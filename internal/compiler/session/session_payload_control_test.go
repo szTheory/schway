@@ -227,6 +227,12 @@ func checkedProgram(t *testing.T, relativeParts ...string) core.Program {
 // TestC03PeerDeriveOriginFactsOpCallGapStillOpen pins D-10-C01's own open
 // gap -- a genuine PASSING regression test recording what is NOT yet true,
 // rather than a false claim that the mutation was caught.
+//
+// WR-02: the mutated beat also asserts, via
+// cgen.PayloadSlotSwapInjectedWriteCount, that engaging the seam actually
+// injected a wrong-slot write at least once. This proves the MUTATION WAS
+// APPLIED; it does not and must not claim the mutation was caught -- that
+// remains the empirical finding recorded above, unchanged.
 func TestPayloadSlotSwapMutationKilled(t *testing.T) {
 	ctx := context.Background()
 	runner := native.DefaultRunner()
@@ -237,6 +243,11 @@ func TestPayloadSlotSwapMutationKilled(t *testing.T) {
 
 		program := checkedProgram(t, "testdata", "phase12", "payload_tracer.lang")
 		engines := runFunctionOkExecutions(t, ctx, program, "identity", runner)
+		injected := cgen.PayloadSlotSwapInjectedWriteCount()
+		if injected < 1 {
+			t.Fatalf("WR-02: the D-12-38 fault-injection seam found no alternative-mismatch target and therefore injected nothing (injected write count = %d), so this beat proved nothing about the mutation -- check whether payload_tracer.lang's data type still declares two payload-carrying alternatives", injected)
+		}
+		t.Logf("WR-02: fault-injection seam injected %d wrong-slot write(s)", injected)
 		compareErr := session.Phase5CompareEngines("payload_tracer.lang(mutated)", engines)
 		var disagreement *session.Phase5EngineDisagreement
 		if errors.As(compareErr, &disagreement) && disagreement.Axis == session.AxisTerminalOutcome {
