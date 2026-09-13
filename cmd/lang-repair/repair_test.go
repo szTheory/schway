@@ -445,6 +445,308 @@ func TestRepairDriverFixesEveryDefectClassSinglePass(t *testing.T) {
 	t.Run("stale_evidence", func(t *testing.T) {
 		testStaleEvidenceClassRepair(t, langBinary)
 	})
+
+	// 13-06 Task 2 (D-13-29): the three interprocedural classes, each
+	// driven from a SEALED held-out fixture (never the derivation fixture
+	// the repair was hand-tuned against). interprocedural_loan reuses
+	// D-13-28's twin pair alpha half -- already exercised end-to-end by
+	// TestTwinPairBlame, but registered here too as this project's own
+	// established per-class registration point (13-ANTITHEATER-CONTRACT.md).
+	//
+	// call_argument_type is INTENTIONALLY excluded from this repaired-only
+	// list: 13-06 (D-13-10a) empirically found use_matching_argument's
+	// Replacement is a byte-identical no-op on every real trigger, so
+	// check.go no longer emits it, and the class's honest driver outcome is
+	// `unrepairable` -- asserted separately by
+	// TestHeldoutOutcomeSetContainsNoLaundering and
+	// TestUnrepairableDefectFailsTheGate, never claimed as `repaired` here.
+	t.Run("interprocedural_loan", func(t *testing.T) {
+		testHeldoutInterproceduralClassRepair(t, langBinary, "heldout_shared_callee_twin_alpha.lang", session.InterproceduralLoanInjector{}, "check.interprocedural_loan_liveness", "move_after_interprocedural_loan")
+	})
+	t.Run("fallible_consume", func(t *testing.T) {
+		testHeldoutInterproceduralClassRepair(t, langBinary, "heldout_fallible_call_unconsumed.lang", session.FallibleConsumeInjector{}, "syntax.fallible_call_not_consumed", "wrap_call_in_try")
+	})
+}
+
+// testHeldoutInterproceduralClassRepair drives one testdata/phase13
+// held-out fixture, mutated by the REAL injector, through the real driver
+// against a real built `lang` binary, and asserts the EXACT outcome
+// string `repaired` (D-13-29 -- never a substring or boolean), the exact
+// diagnosis code, the exact repair kind, and SubprocessCount 2 (single
+// pass). Unlike testSourceClassRepair (phase6), this does NOT require
+// byte-identity with a pre-defect original: an interprocedural repair may
+// legitimately produce a different-but-equally-clean-checking program
+// (D-13-11's semantics-preserving argument for the swap class covers
+// exactly this).
+func testHeldoutInterproceduralClassRepair(t *testing.T, langBinary string, fixture string, injector session.Injector, wantCode, wantKind string) {
+	t.Helper()
+	fixturePath := testsupport.ProjectPath("testdata", "phase13", fixture)
+	original, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutated, err := injector.Inject(original)
+	if err != nil {
+		t.Fatalf("%s: injecting: %v", injector.Name(), err)
+	}
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, fixture)
+	mustWriteFile(t, sourcePath, mutated)
+
+	outcome, err := Repair(context.Background(), langBinary, sourcePath)
+	if err != nil {
+		t.Fatalf("%s: Repair: %v", injector.Name(), err)
+	}
+	if outcome.Status != OutcomeRepaired {
+		t.Fatalf("%s: got status %q, want exactly %q (diagnosis=%q repair=%q)", injector.Name(), outcome.Status, OutcomeRepaired, outcome.DiagnosisCode, outcome.RepairKind)
+	}
+	if outcome.DiagnosisCode != wantCode {
+		t.Fatalf("%s: got diagnosis code %q, want %q", injector.Name(), outcome.DiagnosisCode, wantCode)
+	}
+	if outcome.RepairKind != wantKind {
+		t.Fatalf("%s: got repair kind %q, want %q", injector.Name(), outcome.RepairKind, wantKind)
+	}
+	if outcome.SubprocessCount != 2 {
+		t.Fatalf("%s: got subprocess count %d, want 2 (single pass: one diagnose, one reverify)", injector.Name(), outcome.SubprocessCount)
+	}
+
+	verify := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+	decoded := decodeCheckJSON(t, verify.Stdout)
+	if decoded.Status != statusPass {
+		t.Fatalf("%s: independent re-verification reports status %q, want %q", injector.Name(), decoded.Status, statusPass)
+	}
+	if len(decoded.Diagnostics) != 0 {
+		t.Fatalf("%s: independent re-verification reports %d diagnostics, want 0: %+v", injector.Name(), len(decoded.Diagnostics), decoded.Diagnostics)
+	}
+
+	afterTest, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(afterTest, original) {
+		t.Fatalf("%s: %s was modified by this test -- the driver must operate on the TempDir copy only", injector.Name(), fixture)
+	}
+}
+
+// testHeldoutInterproceduralClassUnrepairable drives one testdata/phase13
+// held-out fixture through the real driver and asserts the EXACT outcome
+// string `unrepairable` with SubprocessCount 1 -- a defect for which
+// check.go emits zero driver-eligible repairs is reported unrepairable,
+// never skipped and never counted as a pass (D-13-29, FND-04).
+func testHeldoutInterproceduralClassUnrepairable(t *testing.T, langBinary string, fixture string, injector session.Injector, wantCode string) {
+	t.Helper()
+	fixturePath := testsupport.ProjectPath("testdata", "phase13", fixture)
+	original, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutated, err := injector.Inject(original)
+	if err != nil {
+		t.Fatalf("%s: injecting: %v", injector.Name(), err)
+	}
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, fixture)
+	mustWriteFile(t, sourcePath, mutated)
+
+	outcome, err := Repair(context.Background(), langBinary, sourcePath)
+	if err != nil {
+		t.Fatalf("%s: Repair: %v", injector.Name(), err)
+	}
+	if outcome.Status != OutcomeUnrepairable {
+		t.Fatalf("%s: got status %q, want exactly %q", injector.Name(), outcome.Status, OutcomeUnrepairable)
+	}
+	if outcome.DiagnosisCode != wantCode {
+		t.Fatalf("%s: got diagnosis code %q, want %q", injector.Name(), outcome.DiagnosisCode, wantCode)
+	}
+	if outcome.SubprocessCount != 1 {
+		t.Fatalf("%s: got subprocess count %d, want 1", injector.Name(), outcome.SubprocessCount)
+	}
+
+	afterTest, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(afterTest, original) {
+		t.Fatalf("%s: %s was modified by this test -- the driver must operate on the TempDir copy only", injector.Name(), fixture)
+	}
+}
+
+// heldoutInterproceduralCase is one row of
+// TestHeldoutOutcomeSetContainsNoLaundering's corpus-wide sweep.
+type heldoutInterproceduralCase struct {
+	name             string
+	fixture          string
+	injector         session.Injector
+	claimedAsReached bool
+}
+
+// TestHeldoutOutcomeSetContainsNoLaundering is 13-06 Task 2's Test 2
+// (D-13-29): collects the outcome string from EVERY held-out
+// interprocedural case in one run and asserts the observed set contains
+// no `already_clean` (an injector going inert) anywhere, and no
+// `unrepairable` for either of the two classes claimed as genuinely
+// reached (interprocedural_loan, fallible_consume).
+//
+// call_argument_type is EXCLUDED from the claimed-as-reached set BY NAME,
+// not a catch-all -- 13-06 (D-13-10a) found use_matching_argument's
+// Replacement is a byte-identical no-op on every real trigger (see this
+// file's TestTwinPairBlame doc comment and 13-06-SUMMARY.md's "D-13-10a
+// adjudication"). check.go no longer emits it on any partition, so BOTH
+// its held-out cases -- the exact-one-match
+// heldout_call_argument_mismatch.lang and the ambiguous-two-match
+// heldout_call_argument_ambiguous.lang -- are EXPECTED to report
+// unrepairable, and asserted as such here: the honest outcome for a class
+// with no span-local fix at this language's current maturity, never
+// laundered into a claimed pass.
+func TestHeldoutOutcomeSetContainsNoLaundering(t *testing.T) {
+	langBinary := testsupport.BuildCLI(t)
+
+	cases := []heldoutInterproceduralCase{
+		{"interprocedural_loan_alpha", "heldout_shared_callee_twin_alpha.lang", session.InterproceduralLoanInjector{}, true},
+		{"interprocedural_loan_mirror", "heldout_shared_callee_twin_mirror.lang", session.InterproceduralLoanInjector{}, true},
+		{"fallible_consume", "heldout_fallible_call_unconsumed.lang", session.FallibleConsumeInjector{}, true},
+		{"call_argument_type_one_match", "heldout_call_argument_mismatch.lang", session.CallArgumentTypeInjector{}, false},
+		{"call_argument_type_ambiguous", "heldout_call_argument_ambiguous.lang", session.CallArgumentTypeInjector{}, false},
+	}
+
+	observed := make(map[string]bool)
+	for _, c := range cases {
+		fixturePath := testsupport.ProjectPath("testdata", "phase13", c.fixture)
+		original, err := os.ReadFile(fixturePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mutated, err := c.injector.Inject(original)
+		if err != nil {
+			t.Fatalf("%s: injecting: %v", c.name, err)
+		}
+		dir := t.TempDir()
+		sourcePath := filepath.Join(dir, c.fixture)
+		mustWriteFile(t, sourcePath, mutated)
+
+		outcome, err := Repair(context.Background(), langBinary, sourcePath)
+		if err != nil {
+			t.Fatalf("%s: Repair: %v", c.name, err)
+		}
+		observed[outcome.Status] = true
+
+		if outcome.Status == OutcomeAlreadyClean {
+			t.Fatalf("%s: outcome was already_clean -- the injector went inert", c.name)
+		}
+		if c.claimedAsReached && outcome.Status != OutcomeRepaired {
+			t.Fatalf("%s: claimed-as-reached class reported %q, want %q", c.name, outcome.Status, OutcomeRepaired)
+		}
+		if !c.claimedAsReached && outcome.Status != OutcomeUnrepairable {
+			t.Fatalf("%s: expected %q for the class excluded from claimed-as-reached (D-13-10a), got %q", c.name, OutcomeUnrepairable, outcome.Status)
+		}
+
+		afterTest, err := os.ReadFile(fixturePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(afterTest, original) {
+			t.Fatalf("%s: %s was modified by this test -- the driver must operate on the TempDir copy only", c.name, c.fixture)
+		}
+	}
+
+	if observed[OutcomeAlreadyClean] {
+		t.Fatal("observed outcome set contains already_clean")
+	}
+}
+
+// TestWrapCallInTryReverifyFailed is 13-06 Task 2's Test 3: the honest
+// negative for wrap_call_in_try. check.go's checkFallibleLinear
+// (check.go:3391) only accepts two body shapes for a function containing a
+// try_call: a single try binding immediately returned, or a sequence where
+// EVERY binding is itself fallible and the result is the function's own
+// parameter. Wrapping a call in `try` inside a function whose body has an
+// ordinary, non-fallible binding ahead of the fallible call satisfies
+// NEITHER shape once re-parsed, so the diagnosis TRADES one diagnostic
+// (syntax.fallible_call_not_consumed) for a DIFFERENT one
+// (check.foreign_call_shape_unsupported) rather than clearing to zero --
+// the driver's single-pass structure means this is reported as failure,
+// never looped. Constructed inline (not from the sealed held-out corpus:
+// this is a structural negative, not a scored held-out case) and verified
+// directly against the real driver before writing these assertions.
+func TestWrapCallInTryReverifyFailed(t *testing.T) {
+	langBinary := testsupport.BuildCLI(t)
+
+	const source = `module phase13.wrap_call_in_try_reverify_failed
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn lang_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn acquire(request: Byte) -> Byte {
+  let extra = request
+  let handle = lang_res_open(request)
+  handle
+}
+
+fn main(request: Byte) -> Byte {
+  let opened = acquire(request)
+  opened
+}
+`
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "wrap_call_in_try_reverify_failed.lang")
+	mustWriteFile(t, sourcePath, []byte(source))
+
+	// Construction check: the un-repaired source must diagnose exactly
+	// syntax.fallible_call_not_consumed with a wrap_call_in_try repair,
+	// confirming the enclosing-shape trap is reached via the SAME path
+	// every other wrap_call_in_try case takes, not a different one.
+	diagnosis := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+	decoded := decodeCheckJSON(t, diagnosis.Stdout)
+	if len(decoded.Diagnostics) != 1 || decoded.Diagnostics[0].Code != "syntax.fallible_call_not_consumed" {
+		t.Fatalf("test construction error: expected exactly one syntax.fallible_call_not_consumed diagnostic, got %+v", decoded.Diagnostics)
+	}
+	_, code, ok := selectRepair(decoded)
+	if !ok || code != "syntax.fallible_call_not_consumed" {
+		t.Fatalf("test construction error: expected a driver-eligible repair on syntax.fallible_call_not_consumed, got code=%q ok=%v", code, ok)
+	}
+
+	outcome, err := Repair(context.Background(), langBinary, sourcePath)
+	if err != nil {
+		t.Fatalf("Repair: %v", err)
+	}
+	if outcome.Status != OutcomeReverifyFailed {
+		t.Fatalf("got status %q, want exactly %q (diagnosis=%q repair=%q)", outcome.Status, OutcomeReverifyFailed, outcome.DiagnosisCode, outcome.RepairKind)
+	}
+	if outcome.DiagnosisCode != "syntax.fallible_call_not_consumed" {
+		t.Fatalf("got diagnosis code %q, want %q", outcome.DiagnosisCode, "syntax.fallible_call_not_consumed")
+	}
+	if outcome.RepairKind != "wrap_call_in_try" {
+		t.Fatalf("got repair kind %q, want %q", outcome.RepairKind, "wrap_call_in_try")
+	}
+	if outcome.SubprocessCount != 2 {
+		t.Fatalf("got subprocess count %d, want 2 (single pass: one diagnose, one reverify)", outcome.SubprocessCount)
+	}
+
+	// The traded-in diagnostic must genuinely be a DIFFERENT code, not the
+	// same one persisting -- confirming this is the enclosing-shape trap,
+	// not a no-op.
+	verify := testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath)
+	verifyDecoded := decodeCheckJSON(t, verify.Stdout)
+	if verifyDecoded.Status == statusPass {
+		t.Fatal("test construction error: post-repair source unexpectedly checks clean")
+	}
+	if len(verifyDecoded.Diagnostics) != 1 || verifyDecoded.Diagnostics[0].Code != "check.foreign_call_shape_unsupported" {
+		t.Fatalf("expected exactly one check.foreign_call_shape_unsupported diagnostic after the repair, got %+v", verifyDecoded.Diagnostics)
+	}
 }
 
 // TestRepairOracleRejectsDeleteTheCode is D-06-26's positive control: a
