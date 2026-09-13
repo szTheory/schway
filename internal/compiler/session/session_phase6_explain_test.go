@@ -500,6 +500,86 @@ func TestExplainEdgeKindVocabularyIsClosed(t *testing.T) {
 	})
 }
 
+// --- Task 2: D-13-20 decision gate ---------------------------------------
+
+// wantExplainEdgeKindsBeforeGuard is D-13-20's committed baseline: the
+// ordered edge-KIND list (root+causes, in the graph's own final sorted
+// order) ExplainCommandFile produces for every diagnostic in the existing
+// rejecting-fixture corpus (testdata/phase2-5), captured BEFORE Task 3's
+// D-13-19 function-scope narrows guard lands. Every entry here is
+// "caused_by" -- none of these diagnostics' Causes ever produce a
+// "narrows" or "same_binding" edge today (confirmed by an actual run, not
+// assumed): 13-RESEARCH.md Pitfall 2's own assessment that the guard's
+// flip risk is nil. TestExplainEdgeKindsAreRecordedForGuardComparison
+// re-captures this same data after the guard lands and asserts it against
+// this literal map -- if ANY entry changes, that is a semantic change to
+// published output the D-13-20 observation, not prediction, must catch.
+var wantExplainEdgeKindsBeforeGuard = map[string][]string{
+	"phase2/ability_shapes.lang|diagnostic:7da7df4418c3945f03ab2d82":                  {"caused_by", "caused_by"},
+	"phase2/ability_shapes.lang|diagnostic:a474f48a5b33d6af23a50c7c":                  {"caused_by", "caused_by"},
+	"phase2/ability_shapes.lang|diagnostic:cacea129ffee380f1f344fb9":                  {"caused_by", "caused_by"},
+	"phase2/implicit_noncopy.lang|diagnostic:040662ef397be67eebb23003":                {"caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase2/move_while_borrowed.lang|diagnostic:3c53a97b806dac0a128d2902":             {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase2/reborrow_while_moved.lang|diagnostic:eeddc92047e60cb51c3fd65a":            {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase2/use_after_move.lang|diagnostic:26c8fdff5f83afd58fb43905":                  {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/branch_one_arm_shared_reject.lang|diagnostic:56f0f78afd023dba87d78a24":    {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/exclusive_exclusive_reject.lang|diagnostic:6a3d8582000b05e32a575ebf":      {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/exclusive_move_reject.lang|diagnostic:8038bd1955c8b4cbd98b445d":           {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/shared_exclusive_reject.lang|diagnostic:2ac14b431c0d5a98db75e10d":         {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase4/fallible_call_unconsumed.lang|diagnostic:91c8b8c7a5d359d9a14fe6a8":        {},
+	"phase4/foreign_call_target_not_foreign.lang|diagnostic:8ee0be5e21030f21f990f9f6": {"caused_by"},
+	"phase4/foreign_policy_value_injection.lang|diagnostic:204a40c7d8537f0809622fbb":  {},
+	"phase4/foreign_unwind_undeclared.lang|diagnostic:e9e51b10ac76db2d660d791b":       {"caused_by", "caused_by"},
+	"phase5/explain_use_after_move.lang|diagnostic:d8b679b47be2fa6555514f78":          {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+}
+
+// TestExplainEdgeKindsAreRecordedForGuardComparison is D-13-20's decision
+// gate, not merely a regression test: it captures the ACTUAL, ordered edge-
+// kind list for every diagnostic in the existing rejecting-fixture corpus
+// and asserts it against wantExplainEdgeKindsBeforeGuard, the literal
+// baseline captured before Task 3's guard landed. Run again after the
+// guard lands (this same test, unchanged), its pass/fail IS the D-13-20
+// observation: if it still passes, zero edge kinds flipped on unchanged
+// single-function input and ExplainSchema stays at lang.explain/0; if it
+// fails, the SUMMARY must record exactly what changed and ExplainSchema
+// must bump to lang.explain/1 in the same commit as the guard (never
+// silently).
+func TestExplainEdgeKindsAreRecordedForGuardComparison(t *testing.T) {
+	got := map[string][]string{}
+	for _, dir := range []string{"phase2", "phase3", "phase4", "phase5"} {
+		for _, fixture := range rejectingFixtures(t, dir) {
+			for _, diagID := range fixtureDiagnosticIDs(t, fixture) {
+				result, err := ExplainCommandFile(fixture, diagID, 0)
+				if err != nil {
+					t.Fatalf("%s %s: %v", fixture, diagID, err)
+				}
+				if result.Explain == nil {
+					t.Fatalf("%s %s: Explain is nil", fixture, diagID)
+				}
+				kinds := make([]string, len(result.Explain.Edges))
+				for index, edge := range result.Explain.Edges {
+					kinds[index] = edge.Kind
+				}
+				key := fmt.Sprintf("%s/%s|%s", dir, filepath.Base(fixture), diagID)
+				got[key] = kinds
+			}
+		}
+	}
+
+	if len(got) != len(wantExplainEdgeKindsBeforeGuard) {
+		t.Fatalf("captured %d (fixture,diagnostic) pairs, baseline has %d -- the corpus itself changed shape; update wantExplainEdgeKindsBeforeGuard deliberately, do not paper over", len(got), len(wantExplainEdgeKindsBeforeGuard))
+	}
+	for key, wantKinds := range wantExplainEdgeKindsBeforeGuard {
+		gotKinds, ok := got[key]
+		if !ok {
+			t.Fatalf("baseline entry %q missing from the current corpus run", key)
+		}
+		if fmt.Sprint(gotKinds) != fmt.Sprint(wantKinds) {
+			t.Fatalf("D-13-20 OBSERVATION: edge kinds changed for %s: got %v, want (pre-guard baseline) %v -- this is a semantic change to published output; ExplainSchema must bump to lang.explain/1 in the same commit as the guard, and the SUMMARY must name this exact change", key, gotKinds, wantKinds)
+		}
+	}
+}
+
 // --- Task 3: the determinism obligation ---------------------------------
 
 // TestExplainCauseGraphIsDeterministic discharges D-06-02's stated
