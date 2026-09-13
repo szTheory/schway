@@ -744,7 +744,7 @@ the same six files. **Superseded by D-12-35** — `OpCall` landed across Phases
 by measurement: planning measured that `emitProgram` cannot express a match body
 at all, so the payload match surface is exclusively the legacy emitter family
 this phase and the payload `case` arms are written exactly once.
-**Plans**: 5 plans, in four waves. Plan 01 is explicitly-labeled inherited
+**Plans**: 5 plans, in four waves, plus 3 gap-closure plans in three further waves (added after verification returned `gaps_found`). Plan 01 is explicitly-labeled inherited
 D-11-02 debt-closure work serving NAT-04..NAT-07, not RES-* (D-12-34); plans
 02-05 carry RES-02 and RES-03.
 
@@ -768,6 +768,20 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [x] 12-05-PLAN.md — Criterion 2's two anti-vacuity controls, and the niche clause recorded as uninstantiable
+
+**Gap closure** *(added after `12-VERIFICATION.md` returned `gaps_found`, 2/3 truths; closes CR-01 plus the two human-judgement items. Waves renumbered from 1 for the gap-closure set.)*
+
+**Gap-closure Wave 1**
+
+- [ ] 12-06-PLAN.md — CR-01 source-layer closure: `check.duplicate_payload_type`, its fixture, the reverted-fix control, measured corpus neutrality, and WR-01's message-precision fix
+
+**Gap-closure Wave 2** *(blocked on Gap-closure Wave 1)*
+
+- [ ] 12-07-PLAN.md — CR-01 engine-layer closure: one shared ambiguity-detecting resolver in `core`, both engine copies deleted, IN-01 absorbed, and WR-02's anti-vacuity assertion on the D-12-38 seam
+
+**Gap-closure Wave 3** *(blocked on Gap-closure Wave 2)*
+
+- [ ] 12-08-PLAN.md — D-12-43's blocking-human ratification checkpoint, the recorded CR-01 disposition (D-12-44), the secondary-finding dispositions (D-12-45), and the phase-close evidence sweep
 
 ### Phase 13: Agent Loop for Interprocedural Defects
 
