@@ -150,7 +150,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Result Values
 
-- [ ] **RES-02**: `Result` values with payload-carrying alternatives are
+- [x] **RES-02**: `Result` values with payload-carrying alternatives are
       storable and matchable; moving out of a matched payload obeys the affine
       drop obligation (D-04-30).
 
@@ -242,7 +242,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | QLT-07 | Phase 09 | Complete |
 | QLT-08 | Phase 07 | Complete |
 | EFF-02 | Phase 08 | Complete |
-| RES-02 | Phase 12 | Pending |
+| RES-02 | Phase 12 | Complete |
 | RES-03 | Phase 12 | Pending |
 | DX-05 | Phase 13 | Pending |
 | DX-06 | Phase 13 | Pending |
