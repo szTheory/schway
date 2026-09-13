@@ -160,7 +160,7 @@ REQ-IDs continue M001's category vocabulary (`SEM`, `OWN`, `NAT`, `TRU`, `QLT`,
 
 ### Agent Loop
 
-- [ ] **DX-05**: `lang explain`'s cause DAG stays bounded when causes span
+- [x] **DX-05**: `lang explain`'s cause DAG stays bounded when causes span
       functions, and names the function each cause step belongs to.
 
 - [ ] **DX-06**: Cross-function blame attribution points at the correct fix
@@ -244,7 +244,7 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | EFF-02 | Phase 08 | Complete |
 | RES-02 | Phase 12 | Complete |
 | RES-03 | Phase 12 | Complete |
-| DX-05 | Phase 13 | Pending |
+| DX-05 | Phase 13 | Complete |
 | DX-06 | Phase 13 | Pending |
 | DX-07 | Phase 13 | Pending |
 

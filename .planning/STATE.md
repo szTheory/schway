@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 13
 current_phase_name: Agent Loop for Interprocedural Defects
 status: executing
-stopped_at: Completed 13-02-PLAN.md (contract-boundary blame resolver); ready for 13-03
-last_updated: "2026-09-13T19:22:49.119Z"
+stopped_at: Completed 13-03-PLAN.md (explain function attribution + D-13-19 narrows guard); ready for 13-04
+last_updated: "2026-09-13T19:51:55.704Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 13 plan 01 executed (tracer slice for DX-07)
-state_head: 3a13274bb57cb65e3a797c4eb8325a1485b9a476
+state_head: e0bc9664008a63435852be68e73869bc8932c96c
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 56
+  completed_plans: 57
 ---
 
 # Project State
@@ -52,7 +52,7 @@ terminal finding. No outstanding human verification.
 ## Current Position
 
 Phase: 13 — Agent Loop for Interprocedural Defects
-Plan: 2 of 7 (complete)
+Plan: 3 of 7 (complete)
 Status: Ready to execute
 Last activity: 2026-09-13 — Plan 13-01 (interprocedural-loan-liveness repair tracer) executed
 
@@ -217,6 +217,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 12 P08 | 25 min | 3 tasks | 1 files |
 | Phase 13-agent-loop-for-interprocedural-defects P01 | 27 min | 3 tasks | 7 files |
 | Phase 13 P02 | 58min | 3 tasks | 2 files |
+| Phase 13 P03 | 62min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -310,6 +311,7 @@ Standing architectural commitments carried into M002:
 - [Phase 13]: 13-01: check.interprocedural_loan_liveness's move_after_interprocedural_loan repair is emitted ONLY for the BACKWARD direction (call is the loan's own recorded last use) — the FORWARD direction (loan propagated through the call onto a place read still later) is not fixed by swapping the move and call statements, discovered empirically by splicing the repair onto real testdata/phase07-08 fixtures both ways. A `callIsLastUse` gate added to `interproceduralLoanLivenessDiagnostic`. Re-pinned FIVE (not the plan's stated four) check_ordering_stability_test.go rows — phase08/twin_b_accept.lang also carries this code. Fixed a latent syntax/parser.go call-binding Span truncation (Rule 1) the new repair's :stmt span channel exposed.
 - [Phase 13]: Blame resolver (resolveBlame/resolveCycleBlame) built and exhaustively tested but not wired into the eight existing diagnostic emission sites -- D-13-04 verified empirically that all eight already select B2's Primary span, so wiring is a no-op today; the resolver is ready infrastructure for the first B1-shaped defect class. — Avoids touching identity-bearing Primary spans on published diagnostics for zero behavioral gain, per D-13-04's empirical verification (TestBlameMovesNoPrimarySpanToday).
 - [Phase 13]: checkCallGraphAcyclic routed through the new calleeBeforeCallerOrder helper instead of calling callgraph.Order directly, making it check.go's sole callgraph.Order call site. — Required to satisfy the plan's 'exactly one non-comment callgraph.Order call site' acceptance criterion, and strengthens D-13-03's 'no new ordering authority' claim by construction; behavior-preserving since only the error is ever consulted.
+- [Phase 13]: 13-03: peer-disagreement refusal scoped to core-claims-and-AST-disagrees, not core's mere absence — core.Program.Functions only includes cleanly-checked functions; treating absence as disagreement broke most of the existing explain corpus
 
 ### Pending Todos
 
@@ -453,8 +455,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-13T19:22:40.160Z
-Stopped at: Completed 13-02-PLAN.md (contract-boundary blame resolver); ready for 13-03
+Last session: 2026-09-13T19:51:55.542Z
+Stopped at: Completed 13-03-PLAN.md (explain function attribution + D-13-19 narrows guard); ready for 13-04
 Resume file: None
 Next command: `/gsd-execute-phase 13` (plan 13-02)
 
