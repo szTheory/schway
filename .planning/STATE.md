@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 12
 current_phase_name: "`Result` Payloads"
 status: executing
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-09-13T03:08:41.790Z"
+stopped_at: Completed 12-04-PLAN.md
+last_updated: "2026-09-13T03:35:35.108Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 12 execution started
-state_head: a067bbe136f30107e3de5ddc7cd4f05d4a1a1963
+state_head: 4e850b00c76d973203fcdc1705f67c5cebc50e41
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 51
-  completed_plans: 49
+  completed_plans: 50
 ---
 
 # Project State
@@ -49,7 +49,7 @@ committed tests rather than answered once — see `11-UAT.md`).
 ## Current Position
 
 Phase: 12 (`Result` Payloads) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 12 execution started
 
@@ -206,6 +206,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 12 P01 | 38 min | 3 tasks | 3 files |
 | Phase 12 P02 | 95min | 3 tasks | 13 files |
 | Phase 12 P03 | 130min | 3 tasks | 11 files |
+| Phase 12 P04 | 24 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -289,6 +290,8 @@ Standing architectural commitments carried into M002:
 - [Phase 12]: Ratified as proposed: source spelling Ok(Buffer)/Ok(v)=>/Ok(v), six diagnostic codes, one-globbing-test D-12-19 replay
 - [Phase 12]: check.payload_arity_mismatch required an additive ast.MatchArm.ConstructBinder field (Rule 2) since the collapsed single Binder field made the refusal structurally unconstructible
 - [Phase 12]: D-12-27's resource-payload refusal matches on foreign-return-type name equality (deliberately over-inclusive, fail-closed) since this project's type system has no ability-derived resource provenance marker
+- [Phase 12]: originvalidate's RecomputeOriginPerReturn needed a sourceOf-indexing fix (PayloadTargetID, not TargetID) for OpDestructurePayload before its new origin-walk arm could be reachable at all
+- [Phase 12]: Cross-package test-only mutation-kill seams must be production-visible functions (corevalidate.SetDisableCyclePeerForTest's D-07-42 shape), never export_test.go symbols, which are invisible outside the defining package's own test binary
 
 ### Pending Todos
 
@@ -432,8 +435,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-13T03:08:41.448Z
-Stopped at: Completed 12-03-PLAN.md
+Last session: 2026-09-13T03:35:34.679Z
+Stopped at: Completed 12-04-PLAN.md
 11-SECURITY.md threats_open: 0), ready to plan Phase 12
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.

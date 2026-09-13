@@ -763,7 +763,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 12-04-PLAN.md — Independent peers, the corpus characterization replay proving the interp widening moved no bytes, and the D-12-04c header correction
+- [x] 12-04-PLAN.md — Independent peers, the corpus characterization replay proving the interp widening moved no bytes, and the D-12-04c header correction
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
