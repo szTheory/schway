@@ -370,9 +370,45 @@ type value struct {
 	payload string
 }
 
+// disableEmptyTagSerializationSeamForTest is Phase 12 plan 04 Task 2's own
+// D-12-38-shaped mutation-kill seam (mirroring cgen's
+// SetOpCallGroupedArmForTest / check's callReturnTypeDerivationSeam shape):
+// when true, value.String() below skips D-12-18's tag=="" special case
+// entirely, so a SCALAR value's own serialized-facing projection stops being
+// byte-identical to today's plain string. This exists to prove
+// TestPayloadCorpusCharacterizationReplay is genuinely load-bearing rather
+// than a self-comparison that would pass regardless of what this file does:
+// disabling the seam must turn the replay red. Exposed to the external
+// session_test package via interp/export_test.go's
+// SetDisableEmptyTagSerializationForTest; never called from any production
+// code path. false (the production default) means "apply D-12-18's
+// special case for real".
+var disableEmptyTagSerializationSeamForTest = false
+
+// SetDisableEmptyTagSerializationForTest installs/restores
+// disableEmptyTagSerializationSeamForTest. Callers MUST defer the returned
+// restore func immediately. Following corevalidate.SetDisableCyclePeerForTest's
+// own D-07-42 precedent exactly: this is production-visible (so the
+// cross-package session_test package can reach it -- a _test.go-only export
+// is invisible outside interp's own test binary), but a documented,
+// clearly-named, test-only no-op unless a test explicitly calls it. Never
+// called from any production code path in this repository.
+func SetDisableEmptyTagSerializationForTest(disabled bool) (restore func()) {
+	previous := disableEmptyTagSerializationSeamForTest
+	disableEmptyTagSerializationSeamForTest = disabled
+	return func() { disableEmptyTagSerializationSeamForTest = previous }
+}
+
 // String returns value's own plain-string projection: tag when the value
 // is payload-tagged, otherwise payload verbatim (D-12-18).
 func (v value) String() string {
+	if disableEmptyTagSerializationSeamForTest {
+		// Seam engaged: every value's projection carries both fields, so a
+		// scalar's serialized bytes move even though nothing else about the
+		// program changed -- exactly the drift
+		// TestPayloadCorpusCharacterizationReplay must catch.
+		return "tag=" + v.tag + "|payload=" + v.payload
+	}
 	if v.tag != "" {
 		return v.tag
 	}
