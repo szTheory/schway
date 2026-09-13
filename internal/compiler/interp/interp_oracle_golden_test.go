@@ -118,7 +118,7 @@ func interpOracleCorpus(t *testing.T) []oracleCorpusProgram {
 			name: "typed_failure",
 			run: func(t *testing.T) (Execution, error) {
 				program, entry := oracleTypedFailureProgram()
-				base := newFlatFrame(entry, map[string]string{entry.Parameter.ID: "err_value"})
+				base := newFlatFrame(entry, map[string]value{entry.Parameter.ID: {tag: "", payload: "err_value"}})
 				return runFrameStack(program, base)
 			},
 		},

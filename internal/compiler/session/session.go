@@ -818,12 +818,21 @@ func interpreterInputs(program core.Program) ([]string, bool) {
 			return nil, false
 		}
 	}
-	if function.Match != nil && len(program.DataTypes) == 1 {
+	if function.Match != nil {
 		// Covers both the Phase 1 bare-arm match (Linear == nil) and the
 		// Phase 3 branch-shaped match whose arms carry linear bodies
 		// (Linear != nil) — both dispatch on every alternative of the
-		// scrutinee's declared type.
-		return append([]string(nil), program.DataTypes[0].Alternatives...), true
+		// scrutinee's declared type. Phase 12 (D-12-05): a payload-carrying
+		// data type's own alternative may itself reference ANOTHER declared
+		// data type as its payload (e.g. Err(Fault)), so program.DataTypes
+		// can legitimately hold more than one entry -- the scrutinee's own
+		// type is resolved BY NAME against function.Parameter.Type, never
+		// by assuming it is the program's only declared type.
+		for _, dataType := range program.DataTypes {
+			if dataType.Name == function.Parameter.Type {
+				return append([]string(nil), dataType.Alternatives...), true
+			}
+		}
 	}
 	return nil, false
 }

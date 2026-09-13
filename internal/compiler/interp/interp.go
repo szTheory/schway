@@ -202,7 +202,7 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 	if !found {
 		return Execution{}, fmt.Errorf("branch arm %q references unknown block %q", arm.ID, arm.BlockID)
 	}
-	base := newArmFrame(function, map[string]string{function.Parameter.ID: input}, arm.BlockID)
+	base := newArmFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}}, arm.BlockID)
 	return runFrameStack(program, base)
 }
 
@@ -216,7 +216,7 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 // partitionFrameForCall helper and runFrameStack driver runLinear and
 // runBranchArm use, rather than a third hand-copied loop.
 func runLinearBlocks(program core.Program, function core.Function, input string) (Execution, error) {
-	base := newBlockFrame(function, map[string]string{function.Parameter.ID: input}, function.ID+":block:entry")
+	base := newBlockFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}}, function.ID+":block:entry")
 	return runFrameStack(program, base)
 }
 
@@ -283,7 +283,7 @@ func runLinear(program core.Program, function core.Function, input string) (Exec
 	if len(function.Linear.Blocks) > 0 {
 		return runLinearBlocks(program, function, input)
 	}
-	base := newFlatFrame(function, map[string]string{function.Parameter.ID: input})
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}})
 	return runFrameStack(program, base)
 }
 
@@ -305,7 +305,7 @@ type frame struct {
 	// in a caller's frame is genuinely absent from this map -- not merely
 	// hidden -- and a callee's frame starts as a disjoint namespace seeded
 	// only by partitionFrameForCall.
-	values    map[string]string
+	values    map[string]value
 	live      map[string]bool
 	liveOrder []string
 
@@ -352,9 +352,36 @@ type frame struct {
 	types      map[string]core.TypeFact
 }
 
+// value is Phase 12's D-12-17 widened place value: tag names the
+// alternative a payload-carrying value was constructed as ("" for every
+// ordinary, non-payload value), and payload carries either the whole
+// scalar value (when tag == "") or the extracted/carried payload content.
+// D-12-18: every non-payload write sets tag: "", and String() below
+// special-cases tag == "" to return payload bare -- a scalar value's own
+// serialized-facing representation is therefore byte-identical to today's
+// plain string BY CONSTRUCTION. Never encode tag and payload into one
+// string (D-12-20's named in-band-signalling anti-pattern: the literal
+// "err" sentinel at this file's OpForeignCall case already shares this
+// same string namespace) and never add parallel tags/payloads maps (the
+// named parallel-map anti-pattern) -- this single struct is the one
+// widened representation every frame.values entry uses.
+type value struct {
+	tag     string
+	payload string
+}
+
+// String returns value's own plain-string projection: tag when the value
+// is payload-tagged, otherwise payload verbatim (D-12-18).
+func (v value) String() string {
+	if v.tag != "" {
+		return v.tag
+	}
+	return v.payload
+}
+
 // newFlatFrame builds a frame for a flat (non-block) linear body: the
 // function's own Operations list, walked once, in order.
-func newFlatFrame(function core.Function, values map[string]string) frame {
+func newFlatFrame(function core.Function, values map[string]value) frame {
 	ops := make(map[string]core.LinearOperation, len(function.Linear.Operations))
 	ids := make([]string, len(function.Linear.Operations))
 	for i, operation := range function.Linear.Operations {
@@ -371,7 +398,7 @@ func newFlatFrame(function core.Function, values map[string]string) frame {
 // populated), starting at startBlockID, with runLinearBlocks' own
 // fallible-call resource bookkeeping seeded from the function's own
 // declared operations.
-func newBlockFrame(function core.Function, values map[string]string, startBlockID string) frame {
+func newBlockFrame(function core.Function, values map[string]value, startBlockID string) frame {
 	ops := make(map[string]core.LinearOperation, len(function.Linear.Operations))
 	for _, operation := range function.Linear.Operations {
 		ops[operation.ID] = operation
@@ -424,7 +451,7 @@ func typeFactIndex(function core.Function) map[string]core.TypeFact {
 // function.Linear.Blocks list a full block-based body uses, so this reuses
 // newBlockFrame and marks the frame singleBlockOnly -- no successor is
 // ever followed past the arm's own block.
-func newArmFrame(function core.Function, values map[string]string, blockID string) frame {
+func newArmFrame(function core.Function, values map[string]value, blockID string) frame {
 	f := newBlockFrame(function, values, blockID)
 	f.singleBlockOnly = true
 	return f
@@ -471,11 +498,12 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 	if !moveAsCopyForTest && !argumentIsCopyable(caller, operation) {
 		delete(caller.values, operation.SourceID)
 	}
-	seeded := map[string]string{callee.Parameter.ID: argument}
+	seeded := map[string]value{callee.Parameter.ID: argument}
 
 	if callee.Match != nil {
+		argumentText := argument.String()
 		for _, arm := range callee.Match.Arms {
-			if arm.Pattern != argument {
+			if arm.Pattern != argumentText {
 				continue
 			}
 			if arm.BlockID == "" {
@@ -483,7 +511,7 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 					immediateValue: arm.Value,
 					immediateEvent: Event{
 						Schema: Schema, ID: arm.ID + ":event:returned", Kind: "function.returned",
-						FunctionID: callee.ID, Input: argument, Output: arm.Value,
+						FunctionID: callee.ID, Input: argumentText, Output: arm.Value,
 					},
 				}, nil
 			}
@@ -492,7 +520,7 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 			f.hasCaller = true
 			return pushResult{frame: &f}, nil
 		}
-		return pushResult{}, fmt.Errorf("checked match %q has no arm for %q", callee.Match.ID, argument)
+		return pushResult{}, fmt.Errorf("checked match %q has no arm for %q", callee.Match.ID, argumentText)
 	}
 
 	var f frame
@@ -619,28 +647,53 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 		if !known {
 			return Execution{}, fmt.Errorf("block or body references unknown operation %q", operationID)
 		}
-		value, initialized := top.values[operation.SourceID]
+		sourceValue, initialized := top.values[operation.SourceID]
 		if !initialized {
 			return Execution{}, fmt.Errorf("operation %q reads uninitialized place %q", operation.ID, operation.SourceID)
 		}
 
 		switch operation.Kind {
 		case core.OpCopy:
-			top.values[operation.TargetID] = value
+			top.values[operation.TargetID] = sourceValue
 			events = append(events, ownedEvent(top.function, operation, "value.copied"))
 			top.idx++
 		case core.OpMove:
 			delete(top.values, operation.SourceID)
-			top.values[operation.TargetID] = value
+			top.values[operation.TargetID] = sourceValue
 			events = append(events, ownedEvent(top.function, operation, "value.transferred"))
 			top.idx++
 		case core.OpBorrowShared:
-			top.values[operation.TargetID] = value
+			top.values[operation.TargetID] = sourceValue
 			events = append(events, ownedEvent(top.function, operation, "value.borrowed"))
 			top.idx++
 		case core.OpBorrowExclusive:
-			top.values[operation.TargetID] = value
+			top.values[operation.TargetID] = sourceValue
 			events = append(events, ownedEvent(top.function, operation, "value.borrowed_exclusive"))
+			top.idx++
+		case core.OpConstructPayload:
+			// D-12-05/D-12-14: builds a NEW tagged value from the source
+			// payload's own content, wrapped with the alternative name this
+			// operation's own PayloadType uniquely resolves to (D-12-25:
+			// alternativeNameForPayloadType reads the SAME checked
+			// core.DataType every other consumer reads, never a second
+			// derivation). Construction consumes its source (the payload
+			// the arm's own binder names), mirroring OpMove's delete.
+			delete(top.values, operation.SourceID)
+			altName := alternativeNameForPayloadType(program, top.function.Parameter.Type, operation.PayloadType)
+			top.values[operation.TargetID] = value{tag: altName, payload: sourceValue.payload}
+			events = append(events, ownedEvent(top.function, operation, "value.payload_constructed"))
+			top.idx++
+		case core.OpDestructurePayload:
+			// D-12-05/D-12-14: extracts the source's own payload content
+			// into PayloadTargetID (never the ordinary TargetID, which this
+			// kind leaves unused), mirroring OpMove's delete of the
+			// scrutinee alias it moves the payload out of.
+			delete(top.values, operation.SourceID)
+			top.values[operation.PayloadTargetID] = value{tag: "", payload: sourceValue.payload}
+			events = append(events, Event{
+				Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "value.payload_destructured", FunctionID: top.function.ID,
+				SourcePlace: operation.SourceID, TargetPlace: operation.PayloadTargetID, TypeID: operation.TypeID,
+			})
 			top.idx++
 		case core.OpRelease:
 			top.live[operation.ReleasesOperationID] = false
@@ -663,8 +716,8 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				})
 				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResources}, nil
 			}
-			top.values[operation.TargetID] = value
-			top.values[operation.ErrTargetID] = "err"
+			top.values[operation.TargetID] = sourceValue
+			top.values[operation.ErrTargetID] = value{tag: "", payload: "err"}
 			events = append(events, Event{
 				Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID,
 				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
@@ -690,7 +743,7 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				// push, no callee frame ever ran -- bind directly into the
 				// caller's own TargetID place.
 				events = append(events, result.immediateEvent)
-				top.values[operation.TargetID] = result.immediateValue
+				top.values[operation.TargetID] = value{tag: "", payload: result.immediateValue}
 				continue
 			}
 			if len(stack) >= maxCallDepth() {
@@ -719,12 +772,12 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			}
 			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:
-			outcome, event := terminalOutcome(top.function, operation, value)
+			outcome, event := terminalOutcome(top.function, operation, sourceValue.String())
 			events = append(events, event)
 			if operation.Kind == core.OpReturn && top.hasCaller {
 				returnTarget, returnValue := top.returnTarget, outcome.Value
 				stack = stack[:len(stack)-1]
-				stack[len(stack)-1].values[returnTarget] = returnValue
+				stack[len(stack)-1].values[returnTarget] = value{tag: "", payload: returnValue}
 				continue
 			}
 			liveResources := []string{}
@@ -736,6 +789,29 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
 	}
+}
+
+// alternativeNameForPayloadType resolves an OpConstructPayload/
+// OpDestructurePayload operation's own PayloadType fact back to the
+// declaring data type's alternative name, reading the SAME checked
+// core.DataType every other consumer of this fact reads (D-12-25) --
+// interp derives no second, independent notion of "which alternative".
+// This resolution is unambiguous only when a data type's alternatives
+// declare distinct payload types (this tracer's own fixture, D-12-41); a
+// data type with two alternatives sharing one payload type is future work,
+// not this plan's scope.
+func alternativeNameForPayloadType(program core.Program, parameterTypeName, payloadType string) string {
+	for _, dataType := range program.DataTypes {
+		if dataType.Name != parameterTypeName {
+			continue
+		}
+		for _, detail := range dataType.AlternativeDetails {
+			if detail.PayloadType == payloadType {
+				return detail.Name
+			}
+		}
+	}
+	return ""
 }
 
 func ownedEvent(function core.Function, operation core.LinearOperation, kind string) Event {

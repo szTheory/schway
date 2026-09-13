@@ -196,7 +196,12 @@ func Program(program ast.Program) Result {
 				break
 			}
 		}
-		if hasArmBody {
+		// D-12-05: a bare-value match whose scrutinee type declares any
+		// payload-carrying alternative needs real Linear IR (the
+		// destructure/construct operations below), so it is routed through
+		// checkBranch's block/edge scaffolding exactly like an arm-body
+		// match, even though no arm carries a `{ ... }` body.
+		if hasArmBody || dataTypeHasPayload(dataType) {
 			checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types), calleeContracts, foreignSymbols)
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
@@ -1632,6 +1637,19 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	armEdgeIDs := make(map[string]string, len(function.Body.Arms))
 	callSpans := map[string]diagnostic.Span{}
 
+	// anyBodyArm records whether ANY arm in this function carries a `{ ... }`
+	// body: per this phase's scope decision, bare and body arms are never
+	// interleaved in the same function. A payload-only function (D-12-05,
+	// every arm bare-value) never sets this true, so its own arms never hit
+	// the core.mixed_arm_forms refusal below.
+	anyBodyArm := false
+	for _, a := range function.Body.Arms {
+		if a.Body != nil {
+			anyBodyArm = true
+			break
+		}
+	}
+
 	for index, arm := range function.Body.Arms {
 		if seen[arm.Pattern] {
 			diagnostics = append(diagnostics, diagnostic.Error("match.subsumed", arm.Span, "alternative is already matched"))
@@ -1641,7 +1659,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 			diagnostics = append(diagnostics, diagnostic.Error("match.unreachable", arm.Span, "pattern is not an alternative of the scrutinee type"))
 			continue
 		}
-		if arm.Body == nil {
+		if anyBodyArm && arm.Body == nil {
 			diagnostics = append(diagnostics, diagnostic.Error(
 				"core.mixed_arm_forms", arm.Span,
 				"a match with any arm body requires every arm to carry a body this phase",
@@ -1668,12 +1686,18 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		nextIndex++
 		work++
 
-		support := analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols)
+		var support ownershipSupport
+		if arm.Body != nil {
+			support = analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols)
+		} else {
+			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, typeID, dataType, arm, sealed)
+		}
 		if support.Diagnostic != nil {
 			diagnostics = append(diagnostics, *support.Diagnostic)
 			continue
 		}
 		linear.Places = append(linear.Places, support.Places...)
+		linear.Types = append(linear.Types, support.Types...)
 		linear.Operations = append(linear.Operations, support.Operations...)
 		for opID, span := range support.CallSpans {
 			callSpans[opID] = span
@@ -3132,6 +3156,171 @@ func standardForeignLayout() *core.RecordLayout {
 	}
 }
 
+// lookupAlternativeDetail finds dataType's own declared AlternativeDetail
+// for name, or the zero value (PayloadType == "", nullary) when name
+// carries no payload declaration. Never mutates dataType.
+func lookupAlternativeDetail(dataType core.DataType, name string) core.AlternativeDetail {
+	for _, detail := range dataType.AlternativeDetails {
+		if detail.Name == name {
+			return detail
+		}
+	}
+	return core.AlternativeDetail{Name: name}
+}
+
+// dataTypeHasPayload reports whether dataType declares any payload-carrying
+// alternative at all -- the D-12-05 gate deciding whether a bare-value
+// match over this type must be lowered through checkBranch's Linear
+// scaffolding rather than the plain Match-only shape every pre-Phase-12
+// data type still takes.
+func dataTypeHasPayload(dataType core.DataType) bool {
+	for _, detail := range dataType.AlternativeDetails {
+		if detail.PayloadType != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// payloadFieldShape returns the size, alignment, and C type name for one
+// payload field of PayloadRecordLayout below. Byte and Buffer are this
+// phase's only executable payload shapes (LANGUAGE-MATURITY.md); any other
+// payload type name (a nullary ADT, e.g. Fault) contributes a one-byte
+// placeholder field, matching standardForeignLayout's existing single-byte
+// "unsigned char" convention -- this tracer's fixture never needs to
+// distinguish between a nullary payload type's own alternatives inside
+// this one field.
+func payloadFieldShape(payloadType string) (size, alignment int, cType string) {
+	switch payloadType {
+	case "Buffer":
+		return 8, 1, "LANG_BUFFER"
+	case "Byte":
+		return 1, 1, "unsigned char"
+	default:
+		return 1, 1, "unsigned char"
+	}
+}
+
+// PayloadRecordLayout is Phase 12's D-12-25 shared derived fact: check
+// derives a payload-carrying data type's C17 layout exactly once, here, and
+// every consumer that emits or reasons about that layout (cgen today;
+// corevalidate/interp read the operation-level PayloadType fact directly
+// and need no C-specific shape) reads THIS function's output rather than
+// re-deriving one independently. Sibling of standardForeignLayout: a
+// one-byte tag field at offset 0, then one field per alternative in
+// Alternatives order, each sized/aligned per payloadFieldShape (a nullary
+// alternative contributes a zero-payload one-byte field). Per D-12-22 this
+// is deliberately a flat struct, never a C `union` -- reading an inactive
+// union member is UB outside C17 6.5.2.3's common-initial-sequence
+// exception, and this project takes no non-checker-derived ABI claim.
+func PayloadRecordLayout(dataType core.DataType) *core.RecordLayout {
+	fields := make([]core.LayoutField, 0, len(dataType.Alternatives)+1)
+	offset := 0
+	fields = append(fields, core.LayoutField{Name: "tag", Size: 1, Alignment: 1, Offset: offset, CType: "unsigned char"})
+	offset++
+	for _, name := range dataType.Alternatives {
+		detail := lookupAlternativeDetail(dataType, name)
+		size, alignment, cType := payloadFieldShape(detail.PayloadType)
+		fields = append(fields, core.LayoutField{Name: "field_" + name, Size: size, Alignment: alignment, Offset: offset, CType: cType})
+		offset += size
+	}
+	return &core.RecordLayout{Size: offset, Alignment: 1, Fields: fields, ForeignTypeName: dataType.Name + "_payload"}
+}
+
+// analyzePayloadArm is the bare-value-arm sibling of analyzeArmBody
+// (D-12-05): built directly from the arm's own Pattern/Value/Binder
+// fields, never by parsing an ast.LinearBody, since a payload-carrying bare
+// arm (`Ok(v) => Ok(v)`) has no braces to parse. It emits, in the SAME
+// nextIndex-minting-authority shape analyzeArmBody's own per-binding loop
+// uses (one operation per step, its target place at "place:{step+1}"):
+//  1. core.OpDestructurePayload, when the matched alternative carries a
+//     payload (D-12-14: this MOVES the payload out of aliasPlaceID, exactly
+//     like OpMove clears its own source);
+//  2. core.OpConstructPayload, when the arm's value alternative carries a
+//     payload (constructing from the place named by arm.Binder -- D-12-14's
+//     single-place-available consequence: the constructed argument and the
+//     pattern's own destructured binder are the same declared place this
+//     phase);
+//  3. a terminating core.OpReturn reading whichever place holds the arm's
+//     final value.
+func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceID, typeID string, dataType core.DataType, arm ast.MatchArm, sealed map[string]bool) ownershipSupport {
+	result := ownershipSupport{Places: []core.Place{}, Operations: []core.LinearOperation{}, Types: []core.TypeFact{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: 1}
+	fail := func(problem diagnostic.Diagnostic) ownershipSupport {
+		result.DiagnosticCode = problem.Code
+		result.Diagnostic = &problem
+		return result
+	}
+
+	patternDetail := lookupAlternativeDetail(dataType, arm.Pattern)
+	valueDetail := lookupAlternativeDetail(dataType, arm.Value)
+
+	step := 0
+	currentSourceID := aliasPlaceID
+	currentSourceTypeID := typeID
+
+	if patternDetail.PayloadType != "" {
+		if arm.Binder == "" {
+			return fail(diagnostic.Error("check.missing_payload_binder", arm.Span, "payload-carrying alternative matched with no binder"))
+		}
+		global := startIndex + step
+		payloadTypeRef := core.TypeRef{Constructor: patternDetail.PayloadType}
+		derivedAbilities, err := ability.DeriveSealed(payloadTypeRef, sealed)
+		if err != nil {
+			return fail(diagnostic.Error("type.unknown", arm.Span, err.Error()))
+		}
+		payloadTypeID := fmt.Sprintf("%s:type:%d", functionID, typeIndex)
+		result.Types = append(result.Types, core.TypeFact{ID: payloadTypeID, Shape: payloadTypeRef, Abilities: derivedAbilities.Granted, NegativeWitnesses: derivedAbilities.NegativeWitnesses})
+		binderPlaceID := fmt.Sprintf("%s:place:%d", functionID, global+1)
+		// D-12-10: the operation's own TypeID names its SOURCE place's type
+		// (aliasPlaceID's own scrutinee type, typeID) -- the universal,
+		// kind-independent pre-switch law every corevalidate replay applies
+		// (source.TypeID == operation.TypeID). The genuinely DIFFERENT
+		// payload type this operation produces lives on the fresh place's
+		// OWN TypeID (payloadTypeID) below, never on the operation.
+		result.Operations = append(result.Operations, core.LinearOperation{
+			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
+			Kind: core.OpDestructurePayload, SourceID: aliasPlaceID, PayloadTargetID: binderPlaceID, PayloadType: patternDetail.PayloadType, TypeID: typeID,
+		})
+		result.Places = append(result.Places, core.Place{ID: binderPlaceID, Name: arm.Binder, TypeID: payloadTypeID})
+		currentSourceID = binderPlaceID
+		currentSourceTypeID = payloadTypeID
+		step++
+	} else if arm.Binder != "" {
+		return fail(diagnostic.Error("check.binder_on_nullary_alternative", arm.Span, "binder present on an alternative declared with no payload"))
+	}
+
+	returnSourceID := aliasPlaceID
+	if valueDetail.PayloadType != "" {
+		if arm.Binder == "" {
+			return fail(diagnostic.Error("check.missing_payload_binder", arm.Span, "payload-carrying alternative constructed with no argument"))
+		}
+		global := startIndex + step
+		targetID := fmt.Sprintf("%s:place:%d", functionID, global+1)
+		// D-12-10: the operation's own TypeID names its SOURCE place's type
+		// (the payload's own type, currentSourceTypeID) -- the same
+		// universal pre-switch law analyzed above. The constructed value's
+		// genuinely DIFFERENT ADT type (typeID) lives on the fresh target
+		// place's OWN TypeID, never on the operation.
+		result.Operations = append(result.Operations, core.LinearOperation{
+			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
+			Kind: core.OpConstructPayload, SourceID: currentSourceID, TargetID: targetID, PayloadType: valueDetail.PayloadType, TypeID: currentSourceTypeID,
+		})
+		result.Places = append(result.Places, core.Place{ID: targetID, Name: "_construct_" + arm.Value, TypeID: typeID})
+		returnSourceID = targetID
+		step++
+	}
+
+	global := startIndex + step
+	result.Operations = append(result.Operations, core.LinearOperation{
+		ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
+		Kind: core.OpReturn, SourceID: returnSourceID, TypeID: typeID,
+	})
+	result.Places = append(result.Places, core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: "_", TypeID: typeID})
+	step++
+	result.Work += step
+	return result
+}
+
 // standardForeignObligations returns this phase's fixed values for the
 // InitializedState/Capture/Retention/Aliasing obligation categories
 // (D-04-12): "fully" because this phase's language has no partial-field
@@ -3444,6 +3633,12 @@ type ownershipSupport struct {
 	Work           int
 	DiagnosticCode string
 	Diagnostic     *diagnostic.Diagnostic
+	// Types is Phase 12's additive field: a payload arm (analyzePayloadArm)
+	// mints its own fresh TypeFact for the destructured payload place,
+	// since a payload's type differs from the scrutinee's own type -- every
+	// pre-Phase-12 caller (analyzeArmBody) leaves this nil, so
+	// linear.Types is unaffected for any function that never derives one.
+	Types []core.TypeFact
 
 	// FixpointWork is loanLivenessFixpoint's own counted cost for this
 	// straight-line body (via computeLoanLastUses, D-05-35(d)'s sole

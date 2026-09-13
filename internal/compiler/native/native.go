@@ -613,7 +613,11 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			} else if event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear return event fields are invalid")
 			}
-		case "value.copied", "value.transferred", "value.borrowed", "value.borrowed_exclusive", "foreign.called":
+		case "value.copied", "value.transferred", "value.borrowed", "value.borrowed_exclusive", "foreign.called", "value.payload_constructed", "value.payload_destructured":
+			// value.payload_constructed/value.payload_destructured are
+			// Phase 12's own linear transition events (D-12-05): shaped
+			// identically to value.copied/value.transferred (a non-terminal
+			// transition naming its own source/target places and type).
 			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear transition event fields are invalid")
 			}

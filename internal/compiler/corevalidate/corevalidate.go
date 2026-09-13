@@ -982,8 +982,20 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		// D-04-15): none of the three ever carries a TargetID, since none
 		// produces an ordinary place -- OpReturn ends the function, OpFail
 		// ends the err block, OpDefect ends an arm block by aborting.
-		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect {
+		// OpDestructurePayload joins the terminator exemption above (Phase
+		// 12, D-12-10): it names its own produced place via PayloadTargetID,
+		// never the ordinary TargetID, which it leaves empty -- checked
+		// separately immediately below.
+		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect && operation.Kind != core.OpDestructurePayload {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
+				return nil, nil, false
+			}
+		}
+		if operation.Kind == core.OpDestructurePayload {
+			if !v.check(operation.TargetID == "", "core.invalid_target", operation.ID) {
+				return nil, nil, false
+			}
+			if _, ok := places[operation.PayloadTargetID]; !v.check(ok, "core.unknown_place", operation.PayloadTargetID) {
 				return nil, nil, false
 			}
 		}
@@ -1974,6 +1986,39 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			initialized[operation.SourceID] = false
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
+		case core.OpConstructPayload:
+			// D-12-14: construction consumes its own source place (the
+			// payload the arm's own binder names), mirroring OpMove's own
+			// SourceID clearing -- independently re-derived here, never
+			// copy-pasted from check's own emission logic (D-09-02).
+			// targetMatches is not reused here: it additionally requires
+			// target.TypeID == operation.TypeID, which does not hold for
+			// this kind BY DESIGN -- operation.TypeID names the SOURCE
+			// payload's type (the universal pre-switch law above), while
+			// the constructed TARGET is genuinely, and deliberately, of the
+			// outer ADT's own different type.
+			expected := fmt.Sprintf("%s:place:%d", function.ID, index+1)
+			if !v.check(operation.TargetID == expected && operation.TargetID != operation.SourceID && !produced[operation.TargetID], "core.invalid_target", operation.TargetID) {
+				return false
+			}
+			initialized[operation.SourceID] = false
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
+		case core.OpDestructurePayload:
+			// D-12-10/D-12-14: this kind names its own produced place via
+			// PayloadTargetID (never the ordinary TargetID, which stays
+			// empty and is already checked absent by matchBranchStructural),
+			// and independently re-derives D-12-29's "dropped exactly once"
+			// static accounting by clearing the scrutinee alias's own
+			// liveness, mirroring OpMove's SourceID-clearing shape.
+			expected := fmt.Sprintf("%s:place:%d", function.ID, index+1)
+			target, exists := places[operation.PayloadTargetID]
+			if !v.check(exists && operation.PayloadTargetID == expected && operation.PayloadTargetID != operation.SourceID && !produced[operation.PayloadTargetID] && target.TypeID != "", "core.invalid_target", operation.PayloadTargetID) {
+				return false
+			}
+			initialized[operation.SourceID] = false
+			initialized[operation.PayloadTargetID] = true
+			produced[operation.PayloadTargetID] = true
 		case core.OpReturn:
 			blockID, known := blockOfOperation[operation.ID]
 			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {

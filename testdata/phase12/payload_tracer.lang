@@ -1,0 +1,47 @@
+// Phase 12 Plan 02's production-quality thinnest end-to-end slice of a
+// payload-carrying alternative (D-12-05): one payload-carrying alternative,
+// one binder, one construction, wired through every layer this phase
+// touches -- parser, AST, core IR, check, corevalidate, interp, cgen -- and
+// verified by real interpreter/-O0/-O3 agreement (TestPayloadTracer*, not a
+// per-layer unit test).
+//
+// Fixture shape forced by three measured constraints
+// (12-02-PLAN.md's <hard_constraints_discovered_during_planning>):
+//  1. A function's return type must equal its parameter type
+//     (type.return_mismatch) -- identity is Outcome -> Outcome.
+//  2. A match cannot mix arm forms (core.mixed_arm_forms) -- both arms use
+//     the bare arm-value form, no braces.
+//  3. Binding a payload MOVES it out of the scrutinee (D-12-14) -- both
+//     arms re-construct rather than handing the scrutinee back whole,
+//     which is exactly what exercises BOTH new operation kinds on one
+//     path.
+//
+// Ok and Err deliberately declare DISTINCT payload types (Buffer, Fault):
+// this is what lets every consumer (interp, cgen) recover which
+// alternative an OpConstructPayload/OpDestructurePayload operation belongs
+// to from PayloadType alone, without a second field naming the alternative
+// -- a general n-alternatives-sharing-one-payload-type design is future
+// work, not this tracer's job (D-12-41: a functionality gap, not an
+// architectural one).
+
+module result.payload_tracer
+
+export {
+  type Fault
+  type Outcome
+  fn identity
+}
+
+data Fault =
+  | Broken
+
+data Outcome =
+  | Ok(Buffer)
+  | Err(Fault)
+
+fn identity(result: Outcome) -> Outcome {
+  match result {
+    Ok(v) => Ok(v)
+    Err(e) => Err(e)
+  }
+}

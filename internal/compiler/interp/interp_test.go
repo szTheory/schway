@@ -137,7 +137,7 @@ func TestMoveAsCopyMutationKilled(t *testing.T) {
 	// Beat 1: assert clean. The unmutated interp deletes the moved-from
 	// argument place, so the stale re-read finds an uninitialized place
 	// and the run correctly refuses.
-	base := newFlatFrame(caller, map[string]string{caller.Parameter.ID: "AB"})
+	base := newFlatFrame(caller, map[string]value{caller.Parameter.ID: {tag: "", payload: "AB"}})
 	cleanExecution, cleanErr := runFrameStack(program, base)
 	if cleanErr == nil {
 		t.Fatalf("expected the clean run to refuse the stale re-read of a moved-from place, got success: %+v", cleanExecution)
@@ -156,7 +156,7 @@ func TestMoveAsCopyMutationKilled(t *testing.T) {
 	// refuses -- it wrongly succeeds, reading the stale value back out,
 	// exactly the OWN-05b violation this mutant proves only interp itself
 	// can catch.
-	mutatedBase := newFlatFrame(caller, map[string]string{caller.Parameter.ID: "AB"})
+	mutatedBase := newFlatFrame(caller, map[string]value{caller.Parameter.ID: {tag: "", payload: "AB"}})
 	mutatedExecution, mutatedErr := runFrameStack(program, mutatedBase)
 	if mutatedErr != nil {
 		t.Fatalf("expected the mutated run to succeed (skipping the caller-side delete), got error: %v", mutatedErr)
@@ -1019,7 +1019,7 @@ func frameDrainDepthRefusalMultiFrameProgram() (program core.Program, entry core
 // deliberately synthetic core.Program these Task 1 tests use to isolate
 // interp's OWN cross-frame drain mechanism from check/corevalidate/parse.
 func runDrainProgram(program core.Program, entry core.Function, input string) (Execution, error) {
-	values := map[string]string{entry.Parameter.ID: input}
+	values := map[string]value{entry.Parameter.ID: {tag: "", payload: input}}
 	var base frame
 	if len(entry.Linear.Blocks) == 0 {
 		base = newFlatFrame(entry, values)
@@ -1417,7 +1417,7 @@ func TestOperationKindCoverageAcrossAllThreePaths(t *testing.T) {
 		shape := shape
 		t.Run(shape, func(t *testing.T) {
 			program, entry, blockID := oracleBorrowSequenceProgram(shape)
-			values := map[string]string{entry.Parameter.ID: "V"}
+			values := map[string]value{entry.Parameter.ID: {tag: "", payload: "V"}}
 			var base frame
 			switch shape {
 			case "flat":
@@ -1542,7 +1542,7 @@ func TestRunFrameStackRefusesUnknownOperationKind(t *testing.T) {
 			},
 		},
 	}
-	base := newFlatFrame(fn, map[string]string{param: "V"})
+	base := newFlatFrame(fn, map[string]value{param: {tag: "", payload: "V"}})
 	_, err := runFrameStack(core.Program{Schema: core.Schema1, Module: "oracle.refusal.unknown_kind", Functions: []core.Function{fn}}, base)
 	if err == nil {
 		t.Fatal("expected runFrameStack to refuse an operation with an unknown Kind, got success")
