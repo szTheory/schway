@@ -92,8 +92,7 @@ that deviation is stated as a deviation, with the superseded text named
 
 ### Criterion 3 — the pre-flight probe (hard entry gate)
 
-- **D-12-01 (form: a committed single-branch Go test, Q-01 shape — not a
-  throwaway spike):** criterion 3's question is **binary** ("does payload origin
+- **D-12-01 (form: a committed single-branch Go test, Q-01 shape — not a throwaway spike):** criterion 3's question is **binary** ("does payload origin
   and ownership reduce to already-proven Phase 08-11 machinery, yes or no"),
   which is structurally identical to Phase 11's Q-01 ("does `corevalidate`
   accept this core-level rewrite") and structurally *unlike* Phase 09's S-008
@@ -131,8 +130,7 @@ that deviation is stated as a deviation, with the superseded text named
   — and **no `case core.OpCall`**. D-10-C01 is still open; the probe's premise
   holds.
 
-- **D-12-04 (BRANCH A / BRANCH B pre-registered, and the M003 slip trigger
-  stated so it cannot be argued away after the fact):** write both branches down
+- **D-12-04 (BRANCH A / BRANCH B pre-registered, and the M003 slip trigger stated so it cannot be argued away after the fact):** write both branches down
   **before** running.
   - **BRANCH A (accepted, phase proceeds):** every peer's verdict on the fixture
     is **fully attributable** to an already-catalogued carry-forward gap —
@@ -223,8 +221,7 @@ that deviation is stated as a deviation, with the superseded text named
      sees what that gate cannot. Plans should not treat the peer-gate register as
      a complete divergence inventory.
 
-- **D-12-04b (the darkest-corner fixture is INEXPRESSIBLE in testdata, and that
-  is part of the finding):** no committed fixture declares a borrow-returning
+- **D-12-04b (the darkest-corner fixture is INEXPRESSIBLE in testdata, and that is part of the finding):** no committed fixture declares a borrow-returning
   `PublicOrigin` sourced from forwarding a callee's result — **because the gap is
   open**. D-10-C01's own text says it "constrained which fixtures Phase 10 plans
   10-07/10-08 could express". So the probe **synthesizes** the shape at core
@@ -237,8 +234,7 @@ that deviation is stated as a deviation, with the superseded text named
   operation count, and every operation ID **and Kind** unchanged. That is what
   makes the verdict attributable to the added declared origin alone.
 
-- **D-12-04c (TREE CORRECTION — `relay_depth2_accept.lang`'s own header is
-  stale):** the fixture's header states that "corevalidate ... also refuses this
+- **D-12-04c (TREE CORRECTION — `relay_depth2_accept.lang`'s own header is stale):** the fixture's header states that "corevalidate ... also refuses this
   fixture (`core.move_while_borrowed`) even though `check`'s own interprocedural
   law ... correctly admits it". **Verified no longer true**: the probe measured
   `corevalidate.Valid == true` on the unmodified fixture. Phase 09's **D-09-03**
@@ -252,8 +248,7 @@ that deviation is stated as a deviation, with the superseded text named
 
 ### Core IR payload representation
 
-- **D-12-05 (TWO NEW `OperationKind`s — an explicit DEVIATION from D-04-30's own
-  named design, stated as a deviation):** payload construction and payload
+- **D-12-05 (TWO NEW `OperationKind`s — an explicit DEVIATION from D-04-30's own named design, stated as a deviation):** payload construction and payload
   destructuring each get a **new `core.OperationKind`**. This **supersedes**
   D-04-30's recorded plan, which the ROADMAP lists as a canonical ref and which
   reads: "add a sibling `alternative_details []Alternative omitempty` field keyed
@@ -290,9 +285,7 @@ that deviation is stated as a deviation, with the superseded text named
   `AllOperationKinds()` and unwinding the arms at all six dispatch sites plus
   the exhaustive-dispatch control's own fixtures.
 
-- **D-12-06 (argue from affine obligations, not edit count — the reason the
-  hybrid was also rejected):** destructuring **mints a fresh place carrying a
-  fresh ownership obligation** that no existing kind models, so it must get a new
+- **D-12-06 (argue from affine obligations, not edit count — the reason the hybrid was also rejected):** destructuring **mints a fresh place carrying a fresh ownership obligation** that no existing kind models, so it must get a new
   kind under every candidate considered. Once that is conceded, giving
   construction the same treatment costs one more kind's 8-10 edits and removes
   the conditional-meaning hazard on `OpCopy`/`OpMove` **entirely**. D-04-22's
@@ -348,8 +341,7 @@ that deviation is stated as a deviation, with the superseded text named
   payload extraction any other way, so the alternatives have **no
   least-surprise precedent to lean on**.
 
-- **D-12-12 (general `data` feature; `Result` is a USER FIXTURE, not a
-  compiler-blessed built-in):** any user-declared `data` type's alternatives may
+- **D-12-12 (general `data` feature; `Result` is a USER FIXTURE, not a compiler-blessed built-in):** any user-declared `data` type's alternatives may
   carry payloads. `data Outcome = | Ok(Buffer) | Err(Fault)` is the feature;
   RES-02 is satisfied by **a real type**, with one canonical fixture named
   `Result`, rather than by special-casing the requirement's wording.
@@ -381,8 +373,7 @@ that deviation is stated as a deviation, with the superseded text named
   Recorded rather than silently fixed, per this project's stale-reference
   discipline (D-09-45). Plans must budget real parser work here.
 
-- **D-12-14 (bind MOVES — via a real `OpMove`, and the diagnostics must be
-  loud):** binding a payload emits a real move at arm entry, from the
+- **D-12-14 (bind MOVES — via a real `OpMove`, and the diagnostics must be loud):** binding a payload emits a real move at arm entry, from the
   scrutinee's payload slot into a fresh, independently-tracked place; moving that
   place further still requires the existing explicit `take`. This matches
   ARCHITECTURE §7's requirement that matching "must produce a fresh,
@@ -400,7 +391,7 @@ that deviation is stated as a deviation, with the superseded text named
   namespace, layered **on top of** the existing set-membership exhaustiveness
   check rather than replacing it.
 
-- **D-12-16 (rejected: bare tag plus body-level `take`):** recorded so it is not
+- **D-12-16 (rejected — bare tag plus body-level `take`):** recorded so it is not
   relitigated. `Ok => { let v = take flag }` keeps `MatchArm.Pattern` a bare
   string and is the smallest grammar diff, but it needs **flow-sensitive
   narrowing the checker does not have** (inside the `Ok` arm, `flag`'s type must
@@ -412,8 +403,7 @@ that deviation is stated as a deviation, with the superseded text named
 
 ### Interpreter value model
 
-- **D-12-17 (widen to a struct: `value{tag, payload string}`,
-  `values map[string]value`):** the Go compiler then forces **every** access site
+- **D-12-17 (widen to a struct — `value{tag, payload string}`, `values map[string]value`):** the Go compiler then forces **every** access site
   to be touched, with no silent misses; a zero-value struct (`tag == ""`) is
   trivially "this is a scalar" with **no nil-interface state** to mishandle; and
   it stays flat and allocation-cheap, matching the package's existing
@@ -453,8 +443,7 @@ that deviation is stated as a deviation, with the superseded text named
   path rather than a hand-picked property. Add a narrow property test that a
   scalar value survives an arbitrary `copy`/`move`/`borrow` sequence unchanged.
 
-- **D-12-20 (two representations REJECTED as this project's own named
-  anti-patterns):** (i) **string-encoding** tag and payload into one string is
+- **D-12-20 (two representations REJECTED as this project's own named anti-patterns):** (i) **string-encoding** tag and payload into one string is
   **in-band signalling** — the literal `"err"` already shares a namespace with
   user values, a payload containing the delimiter is a correctness bug, and the
   interpreter's value space stops being checker-derivable; (ii) **parallel side
@@ -501,8 +490,7 @@ that deviation is stated as a deviation, with the superseded text named
   — **Reversibility:** costly — the emitted C struct shape is what golden files
   and `_Static_assert` conformance pairs are written against.
 
-- **D-12-23 (NICHE OPTIMIZATION IS VACUOUSLY SATISFIABLE — and that is the
-  finding, stated loudly rather than glossed):** niche optimization requires a
+- **D-12-23 (NICHE OPTIMIZATION IS VACUOUSLY SATISFIABLE — and that is the finding, stated loudly rather than glossed):** niche optimization requires a
   provably **uninhabited** bit pattern in the payload type to hide the tag in.
   The only payload types at this maturity are `Byte` and `Buffer`, and `Byte` is
   plausibly **fully inhabited** — every bit pattern of an `unsigned char` is a
@@ -528,8 +516,7 @@ that deviation is stated as a deviation, with the superseded text named
   has a provably invalid bit pattern (a non-null-guaranteed pointer, or a
   range-restricted integer).
 
-- **D-12-25 (layout is ONE shared derived fact, not three independent
-  derivations):** compute layout **once** and have the core IR, `interp`, and
+- **D-12-25 (layout is ONE shared derived fact, not three independent derivations):** compute layout **once** and have the core IR, `interp`, and
   `cgen` all read that single `RecordLayout`-shaped fact. Agreement is then a
   **fact of construction**, and the comparator's job is proving each consumer
   **reads the shared fact correctly** — not proving three derivations coincide.
@@ -540,8 +527,7 @@ that deviation is stated as a deviation, with the superseded text named
   — **Reversibility:** costly — three consumers would have to grow their own
   derivations to reverse it.
 
-- **D-12-26 ("one meaning" means observable-behavior agreement, stated
-  precisely):** `interp` has **no byte layout at all** — `values` is a
+- **D-12-26 ("one meaning" means observable-behavior agreement, stated precisely):** `interp` has **no byte layout at all** — `values` is a
   `map[string]string` with no size, alignment, or offset anywhere. So criterion
   2's "one meaning in the core IR, the interpreter, and emitted C17" **cannot**
   mean byte-identical layout across all three. It means: the same alternative is
@@ -553,8 +539,7 @@ that deviation is stated as a deviation, with the superseded text named
 
 ### The affine hazard — resource payloads
 
-- **D-12-27 (REFUSE resource-carrying payloads this phase, named and
-  fail-closed):** a named refusal rejects any alternative whose payload type
+- **D-12-27 (REFUSE resource-carrying payloads this phase, named and fail-closed):** a named refusal rejects any alternative whose payload type
   **structurally contains** a Phase-4 tracked-resource-derived value. RES-02 and
   criterion 1 are satisfied with `Byte`, `Buffer`, and nullary-ADT payloads —
   ordinary move-by-function-end, no resource involved.
@@ -565,8 +550,7 @@ that deviation is stated as a deviation, with the superseded text named
   — **Reversibility:** reversible — a refusal is removed when the rule lands;
   nothing built on top of it has to be unwound.
 
-- **D-12-28 (why refusal rather than admission — the reason is the two open
-  peer gaps, not timidity):** both sub-hazards land **precisely** on
+- **D-12-28 (why refusal rather than admission — the reason is the two open peer gaps, not timidity):** both sub-hazards land **precisely** on
   `corevalidate`'s two open, unreviewed gaps.
   - **Construction-side** (a resource moved *into* a payload, then returned) is
     "exactly the kind of multi-step dependency chain" **D-10-C02** warns
@@ -593,8 +577,7 @@ that deviation is stated as a deviation, with the superseded text named
   for a new interprocedural rule" criterion 3 says must trigger a slip, not a
   silent absorption.
 
-- **D-12-29 (what "dropped exactly once" can even mean here):** with **no
-  `OpDrop`** in `AllOperationKinds()` and "drop" being a **type-level ability**
+- **D-12-29 (what "dropped exactly once" can even mean here):** with **no `OpDrop`** in `AllOperationKinds()` and "drop" being a **type-level ability**
   (`core.AbilityDrop`, `internal/compiler/core/core.go:505`,
   `internal/compiler/ability/ability.go`), "dropped exactly once" is **not a
   countable runtime event**. It can only mean a static **by-function-end
@@ -645,8 +628,7 @@ that deviation is stated as a deviation, with the superseded text named
   reached through a `core.Match` arm, because no arithmetic, `if`, or loops exist
   to reach it another way.
 
-- **D-12-33 (TREE CORRECTION — `11-CONTEXT.md`'s emitter line numbers are
-  stale):** Phase 11's own work moved them. Verified against the shipped tree
+- **D-12-33 (TREE CORRECTION — `11-CONTEXT.md`'s emitter line numbers are stale):** Phase 11's own work moved them. Verified against the shipped tree
   2026-09-12, as the ledger plans must use:
 
   | Emitter / writer | Recorded in `11-CONTEXT.md` | Verified 2026-09-12 |
@@ -665,7 +647,7 @@ that deviation is stated as a deviation, with the superseded text named
   `emitBranchOperations` at `cgen.go:1762`, `emitProgramFunction` at
   `cgen_program.go:339`. Recorded rather than silently corrected, per D-09-45.
 
-- **D-12-34 (scope hygiene — the deletion is NOT a RES-* success criterion):**
+- **D-12-34 (scope hygiene — the deletion is NOT a RES-NN success criterion):**
   deleting the six emitters serves **NAT-04..NAT-07** (Phase 11's requirements),
   not RES-02/RES-03. Represent it as **explicitly-labeled inherited-debt-closure
   plans** with their own **non-requirement-shaped** verification (differential
@@ -695,8 +677,7 @@ that deviation is stated as a deviation, with the superseded text named
 
 ### Criterion 2 — the anti-vacuity control
 
-- **D-12-37 (two controls, because the obvious one is structurally
-  insufficient):** retain a **frozen-fixture** control in the
+- **D-12-37 (two controls, because the obvious one is structurally insufficient):** retain a **frozen-fixture** control in the
   `control:foreign.layout_mismatch` direction — a committed
   `testdata/phase12/*.golden.c` declaring the payload struct's alternative slots
   transposed or resized relative to the checker-derived layout fact, killed by
@@ -720,8 +701,7 @@ that deviation is stated as a deviation, with the superseded text named
   committed) and deliberately attacks a different artifact than D-12-37's frozen
   fixture.
 
-- **D-12-39 (TREE CORRECTION — no harness extension is needed; the payload-value
-  channel already exists):** the researcher hedged that this "requires the
+- **D-12-39 (TREE CORRECTION — no harness extension is needed; the payload-value channel already exists):** the researcher hedged that this "requires the
   differential harness to compare extracted payload values at match sites, which
   it may not do today... if that channel doesn't exist in the harness yet, adding
   it is itself the fix". **The tree answers it.**
@@ -746,8 +726,7 @@ that deviation is stated as a deviation, with the superseded text named
   scrutiny D-11-41/Q-02 applied to the native-differential lane", because "an
   undeclared input can move silently while the declared set reports no change".
 
-- **D-12-41 (if a control turns out unconstructible, that is a DEFECT IN THE
-  CRITERION):** per **D-11-36**, a control that cannot be built or turns out
+- **D-12-41 (if a control turns out unconstructible, that is a DEFECT IN THE CRITERION):** per **D-11-36**, a control that cannot be built or turns out
   flaky must be **escalated as a defect in the criterion**, never silently
   treated as a tolerance requirement. D-12-23's niche finding is the live
   instance: the niche-specific control is **unconstructible** because there is no
