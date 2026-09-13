@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 12
 current_phase_name: "`Result` Payloads"
 status: executing
-stopped_at: Phase 12 context gathered; criterion 3 pre-flight probe answered BRANCH A (accepted)
-last_updated: "2026-09-13T01:23:08.079Z"
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-09-13T01:47:21.636Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 11 complete, transitioned to Phase 12
-state_head: da42e73093a58c31a4c357eb1967e3ec848f508b
+last_activity_desc: Phase 12 execution started
+state_head: 5a94b42a6ea5a62a7407f1c520c98d05bdbc7f79
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 51
-  completed_plans: 46
+  completed_plans: 47
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 12 — `Result` Payloads. Phase 11 closed 2026-09-12:
+**Current focus:** Phase 12 — `Result` Payloads
 multi-function native emission and interprocedural equivalence proven, with
 zero outstanding human verification (both UAT items were converted into
 committed tests rather than answered once — see `11-UAT.md`).
@@ -48,10 +48,10 @@ committed tests rather than answered once — see `11-UAT.md`).
 
 ## Current Position
 
-Phase: 12 (`Result` Payloads) — READY TO EXECUTE
-Plan: Not started
+Phase: 12 (`Result` Payloads) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-09-12 — Phase 11 complete, transitioned to Phase 12
+Last activity: 2026-09-12 — Phase 12 execution started
 
 Progress: [##############------] 71% (5/7 phases) · 46/46 plans
 
@@ -203,6 +203,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 11 P08 | 70min | 3 tasks | 6 files |
 | Phase 11 P07 | 45 min | 3 tasks | 7 files |
 | Phase 11-multi-function-native-emission-and-interprocedural-equivalen P09 | 65min | 3 tasks | 6 files |
+| Phase 12 P01 | 38 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -280,6 +281,9 @@ Standing architectural commitments carried into M002:
 - [Phase 11]: 11-09: foreignCallSequenceFor widened to a two-independent-knower guard (static callgraph.Order walk + dynamic -O0 event-stream walk), closing the multi-function nil-compares-nil slippage hole (D-11-33); QLT05Reverify implements strict, cold-start re-verification with no positional/causal-role fallback, reported as control:reduce.reverified (D-11-32/D-11-37); anti-vacuity gate proven on both sides via testdata/phase11/multi_function_reduce_gate.lang (D-11-34); 11-VERIFICATION-INPUTS.md collects the phase's four evidence-weakened claims. QLT-05 closed. Phase 11 complete (last plan, wave 6).
 - [Phase 11]: Phase 11 UAT closed with ZERO human verification: both items 11-VERIFICATION.md routed to a human were converted into committed tests instead of being answered once. WR-01 is FIXED not accepted — reduce.Seed.Validate (internal/compiler/reduce/seed_validate.go) refuses a multi-function seed whose EntryFunctionID is empty or unmatched with core.seed_entry_invalid, mirroring callgraph.EntryFunction's own fail-closed shape; TestSeedEntryHazardIsReal is an anti-vacuity control that fails if the deletion hazard ever stops existing. The 11-MIDPHASE-GATE.md CLI-check divergence is PINNED not filed as debt — session_admission_divergence_test.go sweeps every committed .lang fixture through both admission surfaces and asserts the divergence set exactly, failing on a new divergence AND on a silently resolved one (mutation-checked both ways). — Operator directive: shift left, automate the world, target 0 human UAT, in CI only where value recurs. Both land in CI unchanged (`go test ./...` already runs on both hosts); no debt rows added, because a debt note is read once and a test is checked forever.
 - [Phase 11]: 11-SECURITY.md written at phase close: 28 threats (T-11-01..T-11-27 plus T-11-SC), all closed, threats_open 0 at ASVS L1 with block_on high. Register was authored at plan time (all 9 plans carry <threat_model>), so this verified a pre-declared register rather than reconstructing one. Every mitigate row was closed by locating its named control and RUNNING it, not by reading mitigation prose — the Verification Evidence table names each one, so deleting or renaming a control breaks the audit. Note: Phase 10 by contrast ran with security_enforcement=true and never produced 10-SECURITY.md.
+- [Phase 12]: D-12-31 branch ratified as RE-DEFER: the measured N=1 differential shows emitProgram refuses 4/5 single-function shapes and diverges on the 5th, so D-12-36's fallback trigger fired.
+- [Phase 12]: PHASE-11-DEBT.md's D-11-02 landing-phase commitment is superseded with a stated reversal quoting the original text verbatim, per the D-09-08/D-09-30/D-10-27 precedent.
+- [Phase 12]: The six legacy cgen emitters stay in cgen.go, byte-untouched, with no currently-owned landing phase for their eventual deletion.
 
 ### Pending Todos
 
@@ -423,12 +427,12 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-12T23:20:43.772Z
-Stopped at: Phase 12 context gathered; criterion 3 pre-flight probe answered BRANCH A (accepted)
+Last session: 2026-09-13T01:47:21.187Z
+Stopped at: Completed 12-01-PLAN.md
 11-SECURITY.md threats_open: 0), ready to plan Phase 12
 seven-way parallel research fan-out with adversarial passes. Durable maturity
 context remains in LANGUAGE-MATURITY.md and STANDING-VERDICTS.md.
-Resume file: .planning/phases/12-result-payloads/12-CONTEXT.md
+Resume file: None
 Next command: `/gsd-plan-phase 12`
 
 ### Phase 11 discussion — 2026-09-11 (no code changed)

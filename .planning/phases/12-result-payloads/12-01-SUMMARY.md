@@ -155,6 +155,15 @@ None - no external service configuration required.
 - `TestN1ConvergenceDifferential` will flip to a byte-identity assertion automatically whenever future convergence work lands — no test deletion needed, per its own doc comment.
 - The re-deferred D-11-02/D-12-36 deletion has no owning phase. A future phase that wants to revisit this must explicitly claim it; it is not scheduled.
 
+## Self-Check: PASSED
+
+- FOUND: internal/compiler/cgen/cgen_n1_convergence_test.go
+- FOUND: .planning/phases/12-result-payloads/PHASE-12-DEBT.md
+- FOUND: .planning/phases/12-result-payloads/12-01-SUMMARY.md
+- FOUND commit: 1bac938 (Task 1)
+- FOUND commit: 60c16d9 (Task 3)
+- FOUND commit: 5a94b42 (SUMMARY)
+
 ---
 *Phase: 12-result-payloads*
 *Completed: 2026-09-12*

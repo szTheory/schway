@@ -751,7 +751,7 @@ D-11-02 debt-closure work serving NAT-04..NAT-07, not RES-* (D-12-34); plans
 Plans:
 **Wave 1**
 
-- [ ] 12-01-PLAN.md — Inherited D-11-02 gate: the N=1 convergence differential, the D-12-36 branch decision, and PHASE-12-DEBT.md
+- [x] 12-01-PLAN.md — Inherited D-11-02 gate: the N=1 convergence differential, the D-12-36 branch decision, and PHASE-12-DEBT.md
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
