@@ -69,6 +69,61 @@ func NewDataType(id, name string, alternatives []string, details []AlternativeDe
 	return DataType{ID: id, Name: name, Alternatives: alternatives, AlternativeDetails: details, Span: span}, nil
 }
 
+// LookupAlternativeDetail finds dataType's own declared AlternativeDetail
+// for name, or the zero value (PayloadType == "", nullary) when name
+// carries no payload declaration. Never mutates dataType. This is the
+// shared derivation `check.lookupAlternativeDetail` used to reimplement
+// unexported and `cgen`'s emitBranch per-alternative loop reimplemented a
+// second time (IN-01) -- both now delegate here so there is exactly one
+// place this fact is derived.
+func LookupAlternativeDetail(dataType DataType, name string) AlternativeDetail {
+	for _, detail := range dataType.AlternativeDetails {
+		if detail.Name == name {
+			return detail
+		}
+	}
+	return AlternativeDetail{Name: name}
+}
+
+// AlternativeNameForPayloadType is the ONE derivation of "which alternative
+// does this operation belong to" for an OpConstructPayload/
+// OpDestructurePayload operation's own PayloadType fact. It exists because
+// this exact derivation was previously reimplemented independently in both
+// `cgen` and `interp` (D-12-25), which meant the project's three-engine
+// convergence discipline could not catch a defect both copies shared --
+// two engines silently agreeing on the same wrong guess is invisible to a
+// comparison that only checks whether engines agree with each other. It
+// reports ambiguity rather than returning a first match because a silent
+// guess at which alternative an operation belongs to is exactly the defect
+// CR-01 named.
+//
+// For any program that crossed `check`, the ambiguity branch below is
+// unreachable by construction: plan 12-06's check.duplicate_payload_type
+// refuses a data declaration whose alternatives collide on payload type at
+// declaration time, before it ever reaches core IR. This function is the
+// CORE-layer backstop for a hand-built core.Program that never saw the
+// parser -- session.PayloadProbeDataType proves such producers exist
+// in-tree, assembling the colliding shape directly via NewDataType.
+func AlternativeNameForPayloadType(dataType DataType, payloadType string) (string, error) {
+	if payloadType == "" {
+		return "", fmt.Errorf("data type %q: cannot resolve an alternative for the empty payload type", dataType.Name)
+	}
+	var matches []string
+	for _, detail := range dataType.AlternativeDetails {
+		if detail.PayloadType == payloadType {
+			matches = append(matches, detail.Name)
+		}
+	}
+	switch len(matches) {
+	case 0:
+		return "", fmt.Errorf("data type %q: no alternative declares payload type %q", dataType.Name, payloadType)
+	case 1:
+		return matches[0], nil
+	default:
+		return "", fmt.Errorf("data type %q: payload type %q is ambiguous between alternatives %v", dataType.Name, payloadType, matches)
+	}
+}
+
 type Function struct {
 	ID            string      `json:"id"`
 	Name          string      `json:"name"`

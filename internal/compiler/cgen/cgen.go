@@ -1839,12 +1839,7 @@ func emitBranch(program core.Program, function core.Function) (string, error) {
 			prefix = "else if"
 		}
 		if hasPayload {
-			detail := core.AlternativeDetail{}
-			for _, candidate := range dataType.AlternativeDetails {
-				if candidate.Name == alternative {
-					detail = candidate
-				}
-			}
+			detail := core.LookupAlternativeDetail(dataType, alternative)
 			if detail.PayloadType != "" {
 				field := payloadFields[alternative]
 				fmt.Fprintf(&out, "  %s (strcmp(argv[1], %s) == 0) { %s.tag = %s; %s.%s = %s; }\n",
@@ -1928,21 +1923,6 @@ func payloadFieldNames(fields map[string]payloadFieldInfoT) map[string]string {
 		result[alternative] = field.name
 	}
 	return result
-}
-
-// alternativeNameForPayloadType resolves an OpConstructPayload/
-// OpDestructurePayload operation's own PayloadType fact back to the
-// declaring data type's alternative name (D-12-25: reads the SAME checked
-// core.DataType every other consumer reads). Unambiguous only when a data
-// type's alternatives declare distinct payload types (this tracer's own
-// fixture, D-12-41).
-func alternativeNameForPayloadType(dataType core.DataType, payloadType string) string {
-	for _, detail := range dataType.AlternativeDetails {
-		if detail.PayloadType == payloadType {
-			return detail.Name
-		}
-	}
-	return ""
 }
 
 // payloadCTypeName returns the C type name a destructured payload local is
@@ -2072,15 +2052,17 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 			// struct field -- the field name comes from payloadFieldBySource
 			// (D-12-25's shared check.PayloadRecordLayout, never a
 			// cgen-local re-derivation), resolved from the operation's own
-			// PayloadType fact back to an alternative name via
-			// alternativeNameForPayloadType (unambiguous because this
-			// tracer's alternatives declare distinct payload types,
-			// D-12-41).
+			// PayloadType fact back to an alternative name via the ONE
+			// shared, ambiguity-detecting derivation core.
+			// AlternativeNameForPayloadType (IN-01/CR-01, D-12-25).
 			target, exists := places[operation.PayloadTargetID]
 			if !exists {
 				return fmt.Errorf("operation %q has invalid target", operation.ID)
 			}
-			altName := alternativeNameForPayloadType(dataType, operation.PayloadType)
+			altName, altErr := core.AlternativeNameForPayloadType(dataType, operation.PayloadType)
+			if altErr != nil {
+				return fmt.Errorf("operation %q: %w", operation.ID, altErr)
+			}
 			field, knownField := payloadFieldBySource[altName]
 			if !knownField {
 				return fmt.Errorf("operation %q: no struct field for alternative %q", operation.ID, altName)
@@ -2101,7 +2083,10 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 			if !exists {
 				return fmt.Errorf("operation %q has invalid target", operation.ID)
 			}
-			altName := alternativeNameForPayloadType(dataType, operation.PayloadType)
+			altName, altErr := core.AlternativeNameForPayloadType(dataType, operation.PayloadType)
+			if altErr != nil {
+				return fmt.Errorf("operation %q: %w", operation.ID, altErr)
+			}
 			field, knownField := payloadFieldBySource[altName]
 			if !knownField {
 				return fmt.Errorf("operation %q: no struct field for alternative %q", operation.ID, altName)

@@ -3233,16 +3233,11 @@ func standardForeignLayout() *core.RecordLayout {
 	}
 }
 
-// lookupAlternativeDetail finds dataType's own declared AlternativeDetail
-// for name, or the zero value (PayloadType == "", nullary) when name
-// carries no payload declaration. Never mutates dataType.
+// lookupAlternativeDetail delegates to core.LookupAlternativeDetail (moved
+// there in plan 12-07, IN-01/D-12-25) so all three consumers -- check,
+// cgen, and interp -- share one derivation of this fact.
 func lookupAlternativeDetail(dataType core.DataType, name string) core.AlternativeDetail {
-	for _, detail := range dataType.AlternativeDetails {
-		if detail.Name == name {
-			return detail
-		}
-	}
-	return core.AlternativeDetail{Name: name}
+	return core.LookupAlternativeDetail(dataType, name)
 }
 
 // maxResourcePayloadWalkNodes bounds payloadStructurallyContainsResource's

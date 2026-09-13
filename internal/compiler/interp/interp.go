@@ -709,13 +709,29 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 		case core.OpConstructPayload:
 			// D-12-05/D-12-14: builds a NEW tagged value from the source
 			// payload's own content, wrapped with the alternative name this
-			// operation's own PayloadType uniquely resolves to (D-12-25:
-			// alternativeNameForPayloadType reads the SAME checked
-			// core.DataType every other consumer reads, never a second
-			// derivation). Construction consumes its source (the payload
+			// operation's own PayloadType uniquely resolves to via the ONE
+			// shared, ambiguity-detecting derivation core.
+			// AlternativeNameForPayloadType (IN-01/CR-01, D-12-25) --
+			// interp derives no second, independent notion of "which
+			// alternative". Construction consumes its source (the payload
 			// the arm's own binder names), mirroring OpMove's delete.
 			delete(top.values, operation.SourceID)
-			altName := alternativeNameForPayloadType(program, top.function.Parameter.Type, operation.PayloadType)
+			var dataType core.DataType
+			var dataTypeKnown bool
+			for _, candidate := range program.DataTypes {
+				if candidate.Name == top.function.Parameter.Type {
+					dataType = candidate
+					dataTypeKnown = true
+					break
+				}
+			}
+			if !dataTypeKnown {
+				return Execution{}, fmt.Errorf("operation %q: no data type named %q", operation.ID, top.function.Parameter.Type)
+			}
+			altName, altErr := core.AlternativeNameForPayloadType(dataType, operation.PayloadType)
+			if altErr != nil {
+				return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, altErr)
+			}
 			top.values[operation.TargetID] = value{tag: altName, payload: sourceValue.payload}
 			events = append(events, ownedEvent(top.function, operation, "value.payload_constructed"))
 			top.idx++
@@ -825,29 +841,6 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
 	}
-}
-
-// alternativeNameForPayloadType resolves an OpConstructPayload/
-// OpDestructurePayload operation's own PayloadType fact back to the
-// declaring data type's alternative name, reading the SAME checked
-// core.DataType every other consumer of this fact reads (D-12-25) --
-// interp derives no second, independent notion of "which alternative".
-// This resolution is unambiguous only when a data type's alternatives
-// declare distinct payload types (this tracer's own fixture, D-12-41); a
-// data type with two alternatives sharing one payload type is future work,
-// not this plan's scope.
-func alternativeNameForPayloadType(program core.Program, parameterTypeName, payloadType string) string {
-	for _, dataType := range program.DataTypes {
-		if dataType.Name != parameterTypeName {
-			continue
-		}
-		for _, detail := range dataType.AlternativeDetails {
-			if detail.PayloadType == payloadType {
-				return detail.Name
-			}
-		}
-	}
-	return ""
 }
 
 func ownedEvent(function core.Function, operation core.LinearOperation, kind string) Event {
