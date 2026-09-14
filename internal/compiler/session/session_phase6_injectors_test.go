@@ -159,18 +159,36 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 	// directory listing), so D-13-26's topology triple degenerates completely
 	// here; this intraprocedural predicate is what D-13-33 requires instead.
 	//
-	// A FAIL below is not a task failure -- it is the escalation D-13-33
-	// mandates: a real hole in shipped M001 evidence, surfaced rather than
-	// weakened away. See 13-07-SUMMARY.md for the adjudicated disposition.
+	// Escalation was run and adjudicated (D-13-33's mandate, and D-13-34 /
+	// PHASE-13-DEBT.md's record of the adjudication): the move and borrow
+	// class pairs came back structurally IDENTICAL -- a real hole in shipped
+	// M001 evidence -- and the developer ratified Option B at plan 13-07's
+	// checkpoint: keep the strengthened predicate unweakened, do not edit
+	// the shipped fixtures, and carry the two known-identical pairs as named
+	// debt rather than a silent or blanket skip. Each class gets its own
+	// subtest so `match` (the one pair that already discriminates) keeps
+	// running and passing, and a class flipping OUT of knownStructurallyIdentical
+	// (e.g. because someone edits a fixture) fails loudly instead of
+	// silently continuing to skip a debt row that no longer applies.
+	knownStructurallyIdentical := map[string]bool{"move": true, "borrow": true}
 	for _, class := range []string{"match", "move", "borrow"} {
-		heldoutSource := phase6Fixture(t, "heldout_"+class+"_defect.lang")
-		derivationSource := phase6Fixture(t, "derivation_"+class+"_defect.lang")
-		heldoutSummary := computePhase6StructuralSummary(t, heldoutSource)
-		derivationSummary := computePhase6StructuralSummary(t, derivationSource)
-		t.Logf("%s class structural summary: heldout=%+v derivation=%+v", class, heldoutSummary, derivationSummary)
-		if heldoutSummary == derivationSummary {
-			t.Errorf("%s class: heldout and derivation fixtures are structurally IDENTICAL (%+v) -- byte-inequality alone would have passed this pair, which is the exact M001 weakness D-13-33 exists to close; escalating per D-13-33 rather than weakening this predicate or editing the shipped fixtures", class, heldoutSummary)
-		}
+		class := class
+		t.Run(class+"_structural_distinctness", func(t *testing.T) {
+			heldoutSource := phase6Fixture(t, "heldout_"+class+"_defect.lang")
+			derivationSource := phase6Fixture(t, "derivation_"+class+"_defect.lang")
+			heldoutSummary := computePhase6StructuralSummary(t, heldoutSource)
+			derivationSummary := computePhase6StructuralSummary(t, derivationSource)
+			t.Logf("%s class structural summary: heldout=%+v derivation=%+v", class, heldoutSummary, derivationSummary)
+			if knownStructurallyIdentical[class] {
+				if heldoutSummary != derivationSummary {
+					t.Fatalf("%s class is no longer structurally identical (heldout=%+v derivation=%+v) -- PHASE-13-DEBT.md's D-13-34 row is stale: either remove the class from knownStructurallyIdentical here, or the fixtures changed and the debt row needs updating", class, heldoutSummary, derivationSummary)
+				}
+				t.Skipf("D-13-34 (PHASE-13-DEBT.md): %s class heldout/derivation fixtures are structurally identical (%+v) -- an alpha-rename-only pair, the exact M001 weakness D-13-33 exists to close. Ratified as permanent M001 evidence debt (Option B) at plan 13-07's checkpoint rather than fixed inside Phase 13's budget; see PHASE-13-DEBT.md D-13-34 for the full adjudication.", class, heldoutSummary)
+			}
+			if heldoutSummary == derivationSummary {
+				t.Fatalf("%s class: heldout and derivation fixtures are structurally IDENTICAL (%+v) -- byte-inequality alone would have passed this pair, which is the exact M001 weakness D-13-33 exists to close; this class is not in knownStructurallyIdentical, so this is a NEW regression, not known debt", class, heldoutSummary)
+			}
+		})
 	}
 }
 

@@ -245,8 +245,8 @@ M001 (which ended at Phase 06), so M002 runs Phases 07-13.
 | RES-02 | Phase 12 | Complete |
 | RES-03 | Phase 12 | Complete |
 | DX-05 | Phase 13 | Complete |
-| DX-06 | Phase 13 | Pending |
-| DX-07 | Phase 13 | Pending |
+| DX-06 | Phase 13 | Partial — B1 contract-violation blame unreachable at this maturity, ratified terminal finding; see PHASE-13-DEBT.md D-13-02b |
+| DX-07 | Phase 13 | Partial — two of three classes repairable (`use_matching_argument` withdrawn); see PHASE-13-DEBT.md D-13-10a |
 
 **Coverage:**
 
