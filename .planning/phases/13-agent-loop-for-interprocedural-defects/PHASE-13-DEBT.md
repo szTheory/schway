@@ -58,6 +58,24 @@ phase-close ratification.
   contract-boundary rule's distinctive claim — the rule is ready infrastructure
   for the first B1-shaped class, not yet load-bearing in production.
 
+**Addendum (added at phase-close verification, on the verifier's
+recommendation): a third instance of this same structural cause.** D-13-28's
+twin-pair design assumed the true fix would land in the shared callee `sink`.
+Plan 13-06 found empirically that it does not — the shipped repair operates
+entirely **inside the caller** for *both* fixture halves. That is the same root
+cause as this entry (the single-type-per-function / `sameType` invariant),
+surfacing for a third time after D-13-02b itself and D-13-10a.
+
+It was resolved inside 13-06 as a Rule 1 deviation — tests were built around the
+verified behavior rather than the plan's assumed behavior — and is documented in
+that plan's own `## Criterion 3 verdict` section rather than routed through this
+phase's `gate="blocking-human"` checkpoint, which covered only D-13-33/D-13-34.
+Nothing was weakened or concealed, and DX-06's status is unchanged. This
+addendum exists so a reader of the debt register **alone** gets the full picture
+without having to cross-reference the SUMMARYs.
+
+Full detail: `13-06-SUMMARY.md`, `## Criterion 3 verdict`.
+
 **Ratified 2026-09-13 at plan 13-07's `gate="blocking-human"` checkpoint**, on
 the D-12-43 precedent (Phase 12's own unconstructible-decisive-control
 ratification). No enabling work is scheduled and no future phase is named as
