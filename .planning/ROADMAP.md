@@ -848,7 +848,7 @@ Plans:
 
 ## Requirement Coverage
 
-30 of 30 M002 requirements mapped to exactly one phase. No orphans, no
+31 of 31 M002 requirements mapped to exactly one phase. No orphans, no
 duplicates. Full traceability table lives in `REQUIREMENTS.md`.
 
 | Phase | Requirements | Count |
