@@ -21,6 +21,7 @@ changes).
   for this one reason. A future plan (or a small standalone fix) should
   apply the same `exec.CommandContext` + bounded-writer pattern to
   originvalidate's copy.
+  status: acknowledged
 
 ### RESOLVED at the Wave 2 post-merge gate
 
@@ -79,6 +80,7 @@ passes.
   `peerDeriveOriginFacts` and add a companion mutation-kill test proving
   the new case load-bearing, mirroring `TestOpCallOriginWalkGateIsLoadBearing`'s
   own precedent for `originvalidate`'s equivalent case.
+  status: acknowledged
 
 ## From Plan 10-08
 
@@ -111,3 +113,4 @@ passes.
   its first problem (or record endpoints eagerly, before any check that
   could short-circuit), which is a materially different validator
   architecture, not a narrow fix.
+  status: acknowledged

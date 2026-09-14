@@ -36,13 +36,13 @@
     {
       "number": "13",
       "name": "Agent Loop for Interprocedural Defects",
-      "status": "pending"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 13 of 7 · executing"
+    "command": "/gsd:progress",
+    "label": "Show progress",
+    "reason": "Unsure of state — showing progress"
   },
-  "updated_at": "2026-09-14T00:54:10.089Z"
+  "updated_at": "2026-09-14T15:53:18.578Z"
 }

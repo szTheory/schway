@@ -2,47 +2,50 @@
 gsd_state_version: 1.0
 milestone: M002
 milestone_name: Interprocedural Semantic Spine
-current_phase: 13
-current_phase_name: Agent Loop for Interprocedural Defects
-status: executing
+status: Awaiting next milestone
 stopped_at: Phase 13 complete and verified (DX-05 met; DX-06/DX-07 partial, ratified)
-last_updated: "2026-09-14T01:04:44.196Z"
-last_activity: 2026-09-13
-last_activity_desc: Phase 13 plan 01 executed (tracer slice for DX-07)
-state_head: 70487ee64e83e51a08d5a663de5af18bad30ece5
+last_updated: "2026-09-14T15:53:18.562Z"
+last_activity: 2026-09-14
+last_activity_desc: Milestone M002 completed and archived
+state_head: 635ef9c4ab045eb283cbb8ddfb39e054289572e7
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 61
   completed_plans: 61
+current_phase: 13
+current_phase_name: Agent Loop for Interprocedural Defects
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-13)
+See: .planning/PROJECT.md (updated 2026-09-14)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 13 — Agent Loop for Interprocedural Defects. Phase 12
-closed `Result` payloads: payload-carrying alternatives are storable, matchable,
-and affine-correct in all three engines, with one shared derivation resolving an
-operation's declaring alternative. D-12-43 was ratified at a blocking-human
-checkpoint on 2026-09-13 — criterion 2's decisive wrong-slot value-divergence
-control is unconstructible at this language maturity and is accepted as the
-terminal finding. No outstanding human verification.
+**Current focus:** Planning next milestone. M002 shipped 2026-09-14 — 7 phases
+(07-13), 61 plans, 183 tasks. `OpCall` is real at all six dispatch sites, and a
+multi-function program now checks, is independently re-validated by three
+non-importing peers, interprets, lowers to multi-function C17, and agrees across
+interpreter / `-O0` / `-O3` / `-O3 -flto`. Closed as `override_closeout`: 29/31
+requirements satisfied, DX-06 and DX-07 ratified partial, 10 unowned debt items
+carried forward. Next: `/gsd-new-milestone`. No outstanding human verification.
 
 **Durable context (survives context clears — read before re-deriving):**
 
 - `.planning/LANGUAGE-MATURITY.md` — the language is far less expressive than
   the roadmap vocabulary implies: no arithmetic, no iteration, no `if`, no
-  strings/arrays, `Byte`/`Buffer` only. Lang-to-Lang calls are *admitted and
-  checked* (Phases 07-10) but **not executable** — `lang run` refuses a
-  multi-function program on both engines. Assurance stack ~60-70% built;
-  language surface ~5-10%. Re-assessed 2026-09-11; includes the 32-site
-  single-function guard inventory that scopes Phase 11.
+  strings/arrays, `Byte`/`Buffer` only. **Lang-to-Lang calls became executable in
+  Phase 11** — `lang run` no longer refuses a multi-function program on either
+  engine, and the interpreter and all three native tiers agree on the phase-11
+  corpus; the "not executable" note below the 2026-09-11 assessment is
+  superseded. Assurance stack ~70-75% built; language surface still ~5-10%.
+  The file's own 32-site single-function guard inventory is worked through: all
+  29 re-verified guards carry a recorded WIDENED/KEPT disposition. Re-assess
+  before the next "how far along are we" answer.
   Do not read `wiki/example-tour.md` as a description of the language — its
   effect rows, `?`, generics, and `spec` blocks are unimplemented design target.
 
@@ -51,12 +54,10 @@ terminal finding. No outstanding human verification.
 
 ## Current Position
 
-Phase: 13 — Agent Loop for Interprocedural Defects
-Plan: 7 of 7 (complete)
-Status: Ready to execute
-Last activity: 2026-09-13 — Plan 13-01 (interprocedural-loan-liveness repair tracer) executed
-
-Progress: [#################---] 86% (6/7 phases) · 55/61 plans
+Phase: Milestone M002 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-14 — Milestone M002 completed and archived
 
 ## M002 Phase Map
 
@@ -65,13 +66,14 @@ Progress: [#################---] 86% (6/7 phases) · 55/61 plans
 | 07 | Calls, Signatures, and Call-Graph Refusal | 5 | Complete |
 | 08 | Interprocedural Loan Liveness in `check` | 2 | Complete |
 | 09 | Peer Re-Derivation and D-03-02 Closure | 6 | Complete |
-| 10 | Trusted Interprocedural Oracle | 5 | Complete |
+| 10 | Trusted Interprocedural Oracle | 6 | Complete |
 | 11 | Multi-Function Native Emission and Equivalence | 7 | Complete |
 | 12 | `Result` Payloads | 2 | Complete |
-| 13 | Agent Loop for Interprocedural Defects | 3 | Not started |
+| 13 | Agent Loop for Interprocedural Defects | 3 | Complete (DX-06/DX-07 partial) |
 
-Phase numbering continues from M001 (which ended at Phase 06). Full detail:
-`.planning/ROADMAP.md`.
+Phase numbering continues from M001 (which ended at Phase 06). Numbering continues
+into M003 — never restart at 01. Full detail: `.planning/milestones/M002-ROADMAP.md`;
+execution artifacts in `.planning/milestones/M002-phases/`.
 
 ## Performance Metrics
 
@@ -325,109 +327,89 @@ Standing architectural commitments carried into M002:
 
 ### Pending Todos
 
-Three bounded pre-phase spikes, recorded in ROADMAP.md ("Pre-Phase Spikes"):
+Cleared at the M002 close. All three M002 pre-phase spikes (S-006 interprocedural
+liveness cost-scaling, S-007 recursive stress corpus, S-008 Nyquist fold-in cost)
+are answered and their gates released; the `Result` payload / interprocedural-
+origin interaction probe was answered before Phase 12 planning. Archived detail:
+`.planning/spikes/` and `.planning/milestones/M002-ROADMAP.md`.
 
-- **S-006 interprocedural liveness cost-scaling probe** — **ANSWERED
-  2026-09-09, gate released** (`.planning/spikes/006-interprocedural-liveness-cost-scaling/`,
-  VALIDATED). A memoized summary cache must be designed into Phase 08 from the
-  start: memoized derivation is linear in program size on every call-graph
-  shape (~5 work units/op, one derivation per function), while the charitable
-  unmemoized arm is quadratic (76x the memoized cost at 512 functions, and the
-  multiplier doubles with size) and the naive one exhausts a 4M-unit budget at
-  32 functions. `loanLivenessFixpoint` itself extends directly — the new
-  subsystem is the summary table plus its invalidation, not a new dataflow
-  engine — reverse postorder over Phase 07's proven-acyclic call graph
-  suffices, program-order bodies are a load-bearing invariant (reversed: 192x
-  penalty, quadratic in body length), and a persistent CROSS-run summary cache
-  must not be assumed (one leaf edit invalidates 92% worst / 43% mean on the
-  parser-shaped graph).
+Carried into M003 as cheap, unowned cleanup:
 
-- **S-007 recursive / mutually-recursive stress corpus** — runs alongside
-  Phase 07, non-blocking; informs whether the call-stack ceiling is a fixed
-  constant or a declared budget.
-
-- **S-008 Nyquist fold-in cost measurement** — runs before Phase 09 planning;
-  determines whether QLT-07 stays committed or becomes a declared stretch item.
-
-Also: a `Result` payload / interprocedural-origin interaction probe must be
-answered before Phase 12 is planned.
+- `/gsd-validate-phase 07`, `08`, `11`, `12`, `13` — each has a VALIDATION.md
+  that `validate-phase` never reconciled. Phase 13's `nyquist_compliant: true`
+  was genuinely earned (plan 13-07 re-ran every Per-Task Verification Map row
+  and fixed two ungrounded `-run` patterns); only the lifecycle marker is stale.
+- `/gsd-secure-phase 10` — Phase 10 ran with `workflow.security_enforcement=true`
+  but produced no `10-SECURITY.md`.
+- D-13-34 — M001's `testdata/phase6` move and borrow held-out/derivation pairs
+  are alpha-renames of each other, not structurally distinct programs. A hole in
+  *shipped M001* evidence, found only because Phase 13 took the stricter
+  retro-strengthening branch and reported what it found.
 
 ### Blockers/Concerns
 
-- **D-03-02 (open past M001):** an exported borrow-derived return with no
-  declared origin exports indistinguishable from a fully-owned return, in the
-  INTERPROCEDURAL half of the hazard. The single-function half closed in
-  Phase 3. Owned by M002's `OpCall` charter (D-05-32/D-05-33).
+**No open blockers.** M002's only `blocker`-severity item ever filed (D-12-44,
+CR-01's duplicate payload-type ambiguity) closed in plans 12-06 and 12-07.
 
-- **M001 ships without Lang-to-Lang calls.** Interprocedural `-O3` equivalence
-  is outside M001's proof scope by construction, not by omission.
+**Closed at the M002 boundary** — do not re-derive these as open: D-03-02 (closed
+in Phase 09, both admission layers), D-04-30 (`Result` payloads, closed in
+Phase 12), "M001 ships without Lang-to-Lang calls" (closed in Phases 07-11), and
+plan 09-09's architectural halt (resolved; `computeLoanLastUses` deleted under
+D-09-08 authorization).
 
-- Remaining Phase 2/4 debt is registered in the archived `*-DEBT.md` files and
-  summarized in `.planning/milestones/M001-MILESTONE-AUDIT.md`: five open
-  Phase 2 items (info/warning level), D-04-30 (storable/matchable `Result`
-  values, deferred to M002), and D-04-31's four accepted residual limitations.
+**10 open, unowned debt items carry into M003.** Full table and cluster analysis:
+`.planning/milestones/M002-MILESTONE-AUDIT.md` §4. Three clusters, not ten
+independent problems:
 
-- Nyquist validation is compliant for Phases 1, 2, and 4; Phases 3, 5, and 6
-  are not-validated. Overall status: partial.
+1. **Single-function emitter deletion** (D-11-02 → D-12-36, plus D-11-27).
+   Deferred in Phase 11, re-deferred in Phase 12 with the reversal stated openly.
+   **A third deferral would violate D-10-60, a no-third-deferral rule this
+   milestone wrote for itself.** M003 must either land the deletion or retire
+   D-10-60 explicitly.
+2. **Event identity** (D-11-51 → D-12-21). Shared-leaf diamond call graphs
+   collide on event identity; D-12-21 cannot close until D-11-51 does. A real
+   dependency chain sitting unowned across a milestone boundary.
+3. **The single-type-per-function invariant** (D-13-02b, D-13-10a, plus Phase
+   13's twin-pair sub-finding). One root cause:
+   `sameType(ReturnType, Parameter.Type)` is enforced at every function's
+   admission, so a callee cannot contradict its own contract and the real fix
+   always lands in the caller. These close together, automatically, the moment
+   return type may differ from parameter type. The blame resolver and its
+   exhaustiveness guard are already built and waiting.
 
-- **Standing process rules** adopted after three M001 gate failures that shared
-  one shape — a green test whose reachable input space omitted the hard case:
-  mutation-kill every differential, interrogate what inputs a property test
-  actually reaches, and drive the shipped binary on hand-written programs
-  rather than only the gate's own corpus.
+Plus D-10-C04 / D-12-43, and the three acknowledged Phase 10 deferred items
+recorded under `## Deferred Items` below.
 
-- Plan 09-09 HALTED before any code change: TestOwnershipSequenceExhaustive (check_test.go) calls analyzeStraightLine directly and asserts DiagnosticCode==ownership.move_while_borrowed/borrow_conflict synchronously against an oracle that computes those codes inline. This contradicts Task 1's must_have truth 'Lowering makes no loan-liveness decisions' and Task 2's acceptance criterion that this same test 'pass unchanged'. Empirically confirmed via a reverted experimental edit (length=2 case=198): removing the move_while_borrowed raise from analyzeStraightLine made production return DiagnosticCode:"" while the oracle still returned ownership.move_while_borrowed, failing assertSupportEqual. Needs an architectural decision (Rule 4) on how TestOwnershipSequenceExhaustive's contract is meant to change before the computeLoanLastUses deletion can proceed. Tree left green, no commits made.
+**Residual Phase 10 trust gaps still open** (authoritative detail now in
+`.planning/milestones/M002-phases/10-trusted-interprocedural-oracle/`):
 
-- **Phase 10 carry-forward — CONSUMED BY PHASE 11 (complete 2026-09-12); retained as M002 context.** Phase 11 lowers
-  multi-function Lang to C and differential-tests it against the Phase 10
-  oracle, so the oracle's residual trust gaps are Phase 11 inputs, not closed
-  history. At this project's 200k context window the planner does NOT auto-load
-  prior-phase SUMMARY/CONTEXT/DEBT files (that cross-phase block is gated on
-  `CONTEXT_WINDOW >= 500000`), so these are restated here rather than left only
-  in the phase directory. Authoritative detail lives in
-  `.planning/phases/10-trusted-interprocedural-oracle/`: `PHASE-10-DEBT.md`
-  (debt register + D-10-59 gate verdict), `deferred-items.md` (open findings),
-  `10-REVIEW.md` (code review), `10-VERIFICATION.md` (goal verdict),
-  `10-VALIDATION.md` (coverage floor). Five open items:
+- `corevalidate.peerDeriveOriginFacts` has no `core.OpCall` case — fail-closed
+  (conservative, not unsound), but it constrained which fixtures Phases 10-11
+  could express. Acknowledged deferred item.
+- 10-REVIEW.md WR-01 — `corevalidate.peerCalleeFrameDrained` walks FORWARD over
+  `linear.Operations`, correct only under an unstated, unenforced
+  declaration-order assumption; its own cited precedent walks BACKWARD.
+- 10-REVIEW.md WR-02 / D-10-19 — the four peers' independence is enforced by
+  hand-curated per-package import lists, and `originvalidate`'s permits
+  `callgraph` while `corevalidate`'s forbids it. Defensible by review, not by
+  mechanism — and NAT-06 leans on that independence.
+- The D-09-51 negative-control verdict flip (`negative_control_fails.lang`,
+  `negative_control_infallible.lang` moved from
+  `check.interprocedural_loan_liveness` to `core.callee_not_callable`) was
+  flagged for human review and **that review still has not happened** — this is
+  D-10-C04, and D-11-27 records that no phase claims it.
+- `interp.Run`'s `!function.HasClosedBody()` guard is provably unreachable —
+  dead defensive code, harmless, recorded so a future reader does not mistake it
+  for live protection.
 
-  1. **`corevalidate.peerDeriveOriginFacts` has no `core.OpCall` case.** Any
-     function declaring a borrow-returning `PublicOrigin` sourced from
-     forwarding a callee's result is refused as not-`Callable` by corevalidate
-     independently of `check` — which admits the same shape with zero
-     diagnostics. Pre-existing; silently affects Phase 08's
-     `relay_depth2_refuse.lang` too. Fail-closed (conservative, not unsound),
-     but it CONSTRAINED which fixtures plans 10-07 and 10-08 could express, so
-     any Phase 11 fixture needing that shape will hit the same wall.
-
-  2. **10-REVIEW.md WR-01 — `corevalidate.peerCalleeFrameDrained`** detects
-     resource escape via return with a single FORWARD pass over
-     `linear.Operations`, correct only under an unstated and unenforced
-     assumption that operations are declaration-ordered by dependency. Its own
-     cited precedent `peerParameterEscapesOwned` walks BACKWARD and is
-     order-independent. Disclosed residual risk, not a blocker.
-
-  3. **10-REVIEW.md WR-02 / D-10-19 — the independence guards disagree.**
-     `originvalidate` permits importing `internal/compiler/callgraph`;
-     `corevalidate`'s equivalent forbidden list forbids it. The four peers'
-     independence is enforced by hand-curated per-package import lists, so this
-     asymmetry is defensible by REVIEW, not by MECHANISM. Phase 11's NAT-06
-     leans on that independence.
-
-  4. **Plan 10-02's D-09-51 fix flipped two negative controls.**
-     `negative_control_fails.lang` and `negative_control_infallible.lang` moved
-     from `check.interprocedural_loan_liveness` to `core.callee_not_callable`,
-     because closing the `OpCall` transparent-walk defect also flows through
-     `check`'s SEM-06 Callable gate. The executor documented the reasoning
-     chain and explicitly flagged it for human review. **That review has not
-     happened.** See `10-02-SUMMARY.md` Deviations.
-
-  5. **`interp.Run`'s `!function.HasClosedBody()` guard is provably
-     unreachable** — `corevalidate.Validate` always catches that shape first
-     (found by 10-09). Dead defensive code, harmless, recorded so a future
-     reader does not mistake it for live protection.
-
-  Also: Phase 10 ran with `workflow.security_enforcement=true` but produced no
-  `10-SECURITY.md`; `/gsd-secure-phase 10` was never run.
+**Standing process rules** adopted after three M001 gate failures that shared one
+shape — a green test whose reachable input space omitted the hard case:
+mutation-kill every differential, interrogate what inputs a property test
+actually reaches, and drive the shipped binary on hand-written programs rather
+than only the gate's own corpus. M002 added a fourth: **an integration checker
+that grades requirements from wiring will convert an honest partial into a false
+green**, because wiring is exactly what a structurally unreachable defect class
+still has. Grade requirements against the tree, not the wiring diagram.
 
 ### Roadmap Evolution
 
@@ -456,19 +438,35 @@ answered before Phase 12 is planned.
   precedent: Phase 08 (interprocedural loan liveness) and Phase 11
   (multi-function C emission before alias-attribute call lowering).
 
+- **M002 closed 2026-09-14.** The scope-cut trigger never fired: Phase 12 stayed
+  in, QLT-07 closed for its loan-liveness subset, and Phase 13 shipped without
+  narrowing — its two shortfalls (DX-06, DX-07) are structural limits of the
+  current type system, ratified as terminal findings, not scope cuts. Both
+  mandatory mid-phase gates ran and were ratified in writing. ROADMAP.md is now
+  a milestone index; M002's full phase detail lives in
+  `.planning/milestones/M002-ROADMAP.md`.
+
 ## Deferred Items
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| deferred_items | Phase 10/deferred-items.md: originvalidate_test.go transitiveImportsViolation spawns `go list -deps` via bare exec.Command with unbounded .Output() — violates TestSourceNeverSpawnsUnboundedProcesses (D-02-01) | acknowledged | 2026-09-14 | M002 |
+| deferred_items | Phase 10/deferred-items.md: corevalidate.peerDeriveOriginFacts has no core.OpCall case — borrow-returning PublicOrigin forwarded from a callee is always reported NOT Callable by the origin peer | acknowledged | 2026-09-14 | M002 |
+| deferred_items | Phase 10/deferred-items.md: corevalidate.Result.LoanEndpoints() is incomplete for a branched function when Validate fail-fasts on an unrelated problem — three-way endpoint comparator scopes around it | acknowledged | 2026-09-14 | M002 |
 | Runtime | Effects, async, actors, scheduling, managed heaps | Deferred | Initialization | Post-M001 |
 | Ecosystem | Packages and first-party application kits | Deferred | Initialization | Post-M001 |
 
 ## Session Continuity
 
-Last session: 2026-09-14T01:04:44.004Z
-Stopped at: Phase 13 complete and verified (DX-05 met; DX-06/DX-07 partial, ratified)
-Resume file: .planning/phases/13-agent-loop-for-interprocedural-defects/13-VERIFICATION.md
-Next command: `/gsd-execute-phase 13` (plan 13-02)
+Last session: 2026-09-14 — milestone M002 closed and archived
+Stopped at: M002 shipped. All 7 phases verified passed; 29/31 requirements
+satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
+Resume file: .planning/milestones/M002-MILESTONE-AUDIT.md
+Next command: `/clear` then `/gsd-new-milestone`
+
+The notes below predate the close and are kept as durable context a
+context-cleared planner would otherwise re-derive. Their phase-directory paths
+now live under `.planning/milestones/M002-phases/`.
 
 ### Phase 11 discussion — 2026-09-11 (no code changed)
 
@@ -546,11 +544,7 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Review `.planning/ROADMAP.md` (note the documented departure from the
-  research-reconciled 6-phase order, and the pre-phase spike decision).
-
-- S-006 is answered; Phase 08 planning is unblocked. Kick off S-007 alongside Phase 07.
-- Discuss and plan Phase 07 with /gsd-discuss-phase.
+- Start the next milestone with /gsd-new-milestone
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 
