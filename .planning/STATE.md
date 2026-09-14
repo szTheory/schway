@@ -5,16 +5,16 @@ milestone_name: Interprocedural Semantic Spine
 current_phase: 13
 current_phase_name: Agent Loop for Interprocedural Defects
 status: executing
-stopped_at: Completed 13-06-PLAN.md
-last_updated: "2026-09-13T21:21:14.645Z"
+stopped_at: Completed 13-07-PLAN.md
+last_updated: "2026-09-14T00:54:26.022Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 13 plan 01 executed (tracer slice for DX-07)
-state_head: 9275574fa581f4f18adbd586a65b3760ad6f8424
+state_head: aee252c9f285fa63c414bdb0808bb5f106c914d8
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 60
+  completed_plans: 61
 ---
 
 # Project State
@@ -52,7 +52,7 @@ terminal finding. No outstanding human verification.
 ## Current Position
 
 Phase: 13 — Agent Loop for Interprocedural Defects
-Plan: 6 of 7 (complete)
+Plan: 7 of 7 (complete)
 Status: Ready to execute
 Last activity: 2026-09-13 — Plan 13-01 (interprocedural-loan-liveness repair tracer) executed
 
@@ -221,6 +221,7 @@ Phase numbering continues from M001 (which ended at Phase 06). Full detail:
 | Phase 13 P04 | 60min | 3 tasks | 12 files |
 | Phase 13 P05 | 55min | 3 tasks | 5 files |
 | Phase 13 P06 | 95min | 3 tasks | 8 files |
+| Phase 13 P07 | ~25min active | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -318,6 +319,9 @@ Standing architectural commitments carried into M002:
 - [Phase 13]: D-13-02a resolved: no B1-shaped interprocedural diagnostic is constructible at this language maturity (sameType is a precondition of every interprocedural pass, checked before any call site is reached).
 - [Phase 13]: Set A repair-emission logic implemented with the uniqueness-gate comparison target changed from contract.ParameterType to the caller's own type fact — the literal plan-specified comparison is mathematically unsatisfiable at this language's single-type-per-function maturity.
 - [Phase 13]: 13-06: DX-06/DX-07 requirement checkboxes deliberately left unmarked (Pending) despite the plan completing -- D-13-10a resolved use_matching_argument as unrepairable (2 of 3 repairable classes, not 3) and D-13-28's twin pair proved only detection-site-vs-position-hardcoded blame, not the B1-shaped discrimination DX-06's literal text describes (D-13-02b: unconstructible at this maturity). Full evidence in 13-06-SUMMARY.md; final ratification deferred to 13-07's checkpoint per D-13-10a's own closing instruction.
+- [Phase 13]: 13-07: D-13-33 adjudicated Option B (developer, blocking-human checkpoint) -- testdata/phase6 move/borrow pairs are structurally identical (alpha-rename only), predicate kept unweakened, carried as permanent M001 evidence debt (D-13-34, PHASE-13-DEBT.md) rather than fixed or reversed
+- [Phase 13]: 13-07: DX-06 and DX-07 ratified Partial (not Complete) -- B1 contract-violation blame structurally unreachable at this maturity (D-13-02b, D-12-43 precedent); use_matching_argument withdrawn as unrepairable, every Lang function sharing one type fact (D-13-10a). Both recorded in PHASE-13-DEBT.md, REQUIREMENTS.md traceability updated
+- [Phase 13]: 13-07: 13-VALIDATION.md corrected against real test names -- two instances of the same go-test-run-matches-nothing defect class found and fixed (D-13-09a's TestOrderingStability -> TestInterproceduralDiagnosticOrderingStability; import-boundary row's TestImportBoundary pattern, which missed the actual lint TestRepairDriverImportsStayOutsideInternal). wave_0_complete/nyquist_compliant set true from evidence; go test ./... green (25 packages)
 
 ### Pending Todos
 
@@ -461,8 +465,8 @@ answered before Phase 12 is planned.
 
 ## Session Continuity
 
-Last session: 2026-09-13T21:20:34.463Z
-Stopped at: Completed 13-06-PLAN.md
+Last session: 2026-09-14T00:54:25.884Z
+Stopped at: Completed 13-07-PLAN.md
 Resume file: None
 Next command: `/gsd-execute-phase 13` (plan 13-02)
 
