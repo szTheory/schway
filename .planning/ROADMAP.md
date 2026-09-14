@@ -29,7 +29,7 @@ where a *gate* becomes meaningful, not where implementation could parallelize.
 - [x] **Phase 10: Trusted Interprocedural Oracle** - `originvalidate`, `pathoracle`, and a bounded interpreter call stack make cross-function execution trustworthy before anything is lowered. (completed 2026-09-11)
 - [x] **Phase 11: Multi-Function Native Emission and Interprocedural Equivalence** - `cgen` emits multi-function C17 and the five-axis comparator agrees across `-O0`/`-O3`/`-flto`. (completed 2026-09-12)
 - [x] **Phase 12: `Result` Payloads** - Payload-carrying alternatives are storable, matchable, and affine-correct in all three engines. (completed 2026-09-13)
-- [ ] **Phase 13: Agent Loop for Interprocedural Defects** - `lang explain` and `lang-repair` reach and fix cross-function defect classes through the JSON protocol alone.
+- [x] **Phase 13: Agent Loop for Interprocedural Defects** - `lang explain` and `lang-repair` reach and fix cross-function defect classes through the JSON protocol alone. (completed 2026-09-13; DX-05 met, DX-06/DX-07 partial — see `phases/13-agent-loop-for-interprocedural-defects/PHASE-13-DEBT.md`)
 
 ## Pre-Phase Spikes
 
@@ -844,7 +844,7 @@ Plans:
 | 10. Trusted Interprocedural Oracle | 9/9 | Complete    | 2026-09-11 |
 | 11. Multi-Function Native Emission and Equivalence | 9/9 | Complete    | 2026-09-12 |
 | 12. `Result` Payloads | 8/8 | Complete    | 2026-09-13 |
-| 13. Agent Loop for Interprocedural Defects | 0/? | Not started | - |
+| 13. Agent Loop for Interprocedural Defects | 7/7 | Complete    | 2026-09-13 |
 
 ## Requirement Coverage
 
