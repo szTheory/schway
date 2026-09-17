@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "fixtures": [
+    {
+      "name": "branch-local-use-ends-before-join",
+      "program": {
+        "id": "CFG-BRANCH-001",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}], "successors": ["then", "else"]},
+          {"id": "then", "operations": [{"kind": "read_loan", "loan": "view"}], "successors": ["join"]},
+          {"id": "else", "successors": ["join"]},
+          {"id": "join", "operations": [{"kind": "mutate_place", "place": "p"}]}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "owner-mutation-on-unused-arm",
+      "program": {
+        "id": "CFG-BRANCH-002",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}], "successors": ["uses", "mutates"]},
+          {"id": "uses", "operations": [{"kind": "read_loan", "loan": "view"}], "successors": ["done"]},
+          {"id": "mutates", "operations": [{"kind": "mutate_place", "place": "p"}], "successors": ["done"]},
+          {"id": "done"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "owner-mutation-before-later-loan-use",
+      "program": {
+        "id": "CFG-BRANCH-003",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}], "successors": ["bad", "ok"]},
+          {"id": "bad", "operations": [{"kind": "mutate_place", "place": "p"}, {"kind": "read_loan", "loan": "view"}], "successors": ["done"]},
+          {"id": "ok", "operations": [{"kind": "read_loan", "loan": "view"}], "successors": ["done"]},
+          {"id": "done"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.owner_access_conflict"
+    },
+    {
+      "name": "post-join-loan-use-keeps-both-arms-live",
+      "program": {
+        "id": "CFG-JOIN-001",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}], "successors": ["left", "right"]},
+          {"id": "left", "operations": [{"kind": "read_place", "place": "p"}], "successors": ["join"]},
+          {"id": "right", "successors": ["join"]},
+          {"id": "join", "operations": [{"kind": "read_loan", "loan": "view"}, {"kind": "mutate_place", "place": "p"}]}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "nested-branch-edge-ends",
+      "program": {
+        "id": "CFG-NESTED-001",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}], "successors": ["outer-use", "outer-skip"]},
+          {"id": "outer-use", "successors": ["inner-use", "inner-skip"]},
+          {"id": "inner-use", "operations": [{"kind": "read_loan", "loan": "view"}], "successors": ["join"]},
+          {"id": "inner-skip", "operations": [{"kind": "mutate_place", "place": "p"}], "successors": ["join"]},
+          {"id": "outer-skip", "operations": [{"kind": "mutate_place", "place": "p"}], "successors": ["join"]},
+          {"id": "join"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "loan-used-in-zero-or-more-loop",
+      "program": {
+        "id": "CFG-LOOP-001",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}], "successors": ["header"]},
+          {"id": "header", "successors": ["body", "exit"]},
+          {"id": "body", "operations": [{"kind": "read_loan", "loan": "view"}], "successors": ["header"]},
+          {"id": "exit", "operations": [{"kind": "mutate_place", "place": "p"}]}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "loop-owner-conflict-before-next-use",
+      "program": {
+        "id": "CFG-LOOP-002",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}], "successors": ["header"]},
+          {"id": "header", "successors": ["body", "exit"]},
+          {"id": "body", "operations": [{"kind": "mutate_place", "place": "p"}, {"kind": "read_loan", "loan": "view"}], "successors": ["header"]},
+          {"id": "exit"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.owner_access_conflict"
+    },
+    {
+      "name": "unused-loan-ends-at-borrow",
+      "program": {
+        "id": "CFG-UNUSED-001",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "borrow_shared", "place": "p", "loan": "view"}, {"kind": "move", "place": "p", "target": "q"}]}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "two-loans-end-independently",
+      "program": {
+        "id": "CFG-TWO-LOANS-001",
+        "entry": "entry",
+        "blocks": [
+          {"id": "entry", "operations": [{"kind": "declare", "place": "p"}, {"kind": "declare", "place": "q"}, {"kind": "borrow_shared", "place": "p", "loan": "p_view"}, {"kind": "borrow_shared", "place": "q", "loan": "q_view"}], "successors": ["left", "right"]},
+          {"id": "left", "operations": [{"kind": "read_loan", "loan": "p_view"}, {"kind": "mutate_place", "place": "q"}], "successors": ["done"]},
+          {"id": "right", "operations": [{"kind": "read_loan", "loan": "q_view"}, {"kind": "mutate_place", "place": "p"}], "successors": ["done"]},
+          {"id": "done"}
+        ]
+      },
+      "expect_valid": true
+    }
+  ]
+}

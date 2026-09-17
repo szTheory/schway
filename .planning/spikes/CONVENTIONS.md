@@ -66,6 +66,14 @@ spikes follow these unless the question requires otherwise.
   a semantically inert body.
 - A cache is priced on both sides -- what it saves and what one upstream edit
   forces it to throw away.
+- Agreement is compared over ordered semantic traces, not over verdicts and
+  error codes. A result-only comparison hides a support defect whenever the
+  program already fails on an earlier operation.
+- Where an oracle is more precise than the mechanism it checks, the projection
+  scope is written down rather than assumed: which facts project exactly, and
+  which are deliberately excluded because a body-blind analyzer cannot see them.
+- An armed fault-injection run exits unsuccessfully on purpose. The unsuccessful
+  exit is the passing result, and each seam is independently mutation-killed.
 
 ## Tools and libraries
 

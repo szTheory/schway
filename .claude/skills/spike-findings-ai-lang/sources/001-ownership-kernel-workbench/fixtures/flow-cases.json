@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "fixtures": [
+    {
+      "name": "conditional move makes source maybe uninitialized",
+      "program": {
+        "id": "FLOW-MOVE-001",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"branch": {
+            "id": "move-or-keep",
+            "then": [{"operation": {"kind": "move", "place": "p", "target": "q"}}],
+            "else": []
+          }},
+          {"operation": {"kind": "read_place", "place": "p"}}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.maybe_uninitialized"
+    },
+    {
+      "name": "same transfer on both paths initializes target",
+      "program": {
+        "id": "FLOW-MOVE-002",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"branch": {
+            "id": "both-transfer",
+            "then": [{"operation": {"kind": "move", "place": "p", "target": "q"}}],
+            "else": [{"operation": {"kind": "move", "place": "p", "target": "q"}}]
+          }},
+          {"operation": {"kind": "read_place", "place": "q"}}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "dead conditional move is valid",
+      "program": {
+        "id": "FLOW-MOVE-003",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"branch": {
+            "id": "move-or-drop",
+            "then": [{"operation": {"kind": "move", "place": "p", "target": "q"}}],
+            "else": []
+          }}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "move target may already be initialized",
+      "program": {
+        "id": "FLOW-MOVE-004",
+        "steps": [
+          {"branch": {
+            "id": "maybe-create-target",
+            "then": [{"operation": {"kind": "declare", "place": "q"}}],
+            "else": []
+          }},
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"operation": {"kind": "move", "place": "p", "target": "q"}}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.target_maybe_initialized"
+    },
+    {
+      "name": "nested branch paths remain valid when result is dead",
+      "program": {
+        "id": "FLOW-NESTED-001",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"branch": {
+            "id": "outer",
+            "then": [{"branch": {
+              "id": "inner",
+              "then": [{"operation": {"kind": "read_place", "place": "p"}}],
+              "else": [{"operation": {"kind": "move", "place": "p", "target": "q"}}]
+            }}],
+            "else": [{"operation": {"kind": "read_place", "place": "p"}}]
+          }}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "read-only loop preserves live owner",
+      "program": {
+        "id": "FLOW-LOOP-001",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"loop": {
+            "id": "read-many",
+            "body": [{"operation": {"kind": "read_place", "place": "p"}}]
+          }},
+          {"operation": {"kind": "read_place", "place": "p"}}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "repeated move loop is rejected",
+      "program": {
+        "id": "FLOW-LOOP-002",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"loop": {
+            "id": "move-many",
+            "body": [{"operation": {"kind": "move", "place": "p", "target": "q"}}]
+          }}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.maybe_uninitialized"
+    },
+    {
+      "name": "shared loan crosses branch and ends explicitly",
+      "program": {
+        "id": "FLOW-LOAN-001",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"operation": {"kind": "borrow_shared", "place": "p", "loan": "view"}},
+          {"branch": {
+            "id": "read-either-way",
+            "then": [{"operation": {"kind": "read_loan", "loan": "view"}}],
+            "else": [{"operation": {"kind": "read_loan", "loan": "view"}}]
+          }},
+          {"operation": {"kind": "end_loan", "loan": "view"}},
+          {"operation": {"kind": "move", "place": "p", "target": "q"}}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "loan created on one path is maybe inactive after join",
+      "program": {
+        "id": "FLOW-LOAN-002",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"branch": {
+            "id": "maybe-borrow",
+            "then": [{"operation": {"kind": "borrow_shared", "place": "p", "loan": "view"}}],
+            "else": []
+          }},
+          {"operation": {"kind": "read_loan", "loan": "view"}}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.loan_maybe_inactive"
+    },
+    {
+      "name": "loan ended on one path is maybe inactive after join",
+      "program": {
+        "id": "FLOW-LOAN-003",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"operation": {"kind": "borrow_shared", "place": "p", "loan": "view"}},
+          {"branch": {
+            "id": "maybe-end",
+            "then": [{"operation": {"kind": "end_loan", "loan": "view"}}],
+            "else": []
+          }},
+          {"operation": {"kind": "read_loan", "loan": "view"}}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.loan_maybe_inactive"
+    },
+    {
+      "name": "exclusive loan mutates through either branch",
+      "program": {
+        "id": "FLOW-LOAN-004",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"operation": {"kind": "borrow_exclusive", "place": "p", "loan": "writer"}},
+          {"branch": {
+            "id": "mutate-either-way",
+            "then": [{"operation": {"kind": "mutate_loan", "loan": "writer"}}],
+            "else": [{"operation": {"kind": "mutate_loan", "loan": "writer"}}]
+          }},
+          {"operation": {"kind": "end_loan", "loan": "writer"}},
+          {"operation": {"kind": "read_place", "place": "p"}}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "same loan created on both paths remains definite",
+      "program": {
+        "id": "FLOW-LOAN-005",
+        "steps": [
+          {"operation": {"kind": "declare", "place": "p"}},
+          {"branch": {
+            "id": "borrow-either-way",
+            "then": [{"operation": {"kind": "borrow_shared", "place": "p", "loan": "view"}}],
+            "else": [{"operation": {"kind": "borrow_shared", "place": "p", "loan": "view"}}]
+          }},
+          {"operation": {"kind": "read_loan", "loan": "view"}},
+          {"operation": {"kind": "end_loan", "loan": "view"}}
+        ]
+      },
+      "expect_valid": true
+    }
+  ]
+}

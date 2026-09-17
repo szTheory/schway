@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "module": "shop.inventory",
+  "types": [
+    {"name": "Byte", "base": ["copy", "drop", "share", "send", "escape"]},
+    {"name": "File", "base": ["drop", "send", "escape"]},
+    {"name": "View", "parameters": 1, "conditional": {"copy": [0], "drop": [0], "share": [0], "send": [0]}},
+    {"name": "Option", "parameters": 1, "conditional": {"copy": [0], "drop": [0], "share": [0], "send": [0], "escape": [0]}}
+  ],
+  "ability_requests": [
+    {"name": "Option", "args": [{"name": "File"}]},
+    {"name": "View", "args": [{"name": "Byte"}]}
+  ],
+  "functions": [
+    {
+      "id": "head",
+      "return_fact": {"ownership": "borrowed", "access": "shared", "origins": ["input"], "abilities": ["copy", "drop", "share", "send"]},
+      "published": {"ownership": "borrowed", "access": "shared", "origins": ["input"], "abilities": ["copy", "drop", "share", "send"]}
+    },
+    {
+      "id": "choose",
+      "return_fact": {"ownership": "borrowed", "access": "shared", "origins": ["left", "right"], "abilities": ["copy", "drop", "share", "send"]},
+      "published": {"ownership": "borrowed", "access": "shared", "origins": ["right", "left"], "abilities": ["send", "share", "drop", "copy"]}
+    },
+    {
+      "id": "head_mut",
+      "return_fact": {"ownership": "borrowed", "access": "exclusive", "origins": ["input"], "abilities": ["drop"]},
+      "published": {"ownership": "borrowed", "access": "exclusive", "origins": ["input"], "abilities": ["drop"]}
+    }
+  ],
+  "traces": [
+    {
+      "id": "shared_then_move",
+      "places": ["buffer"],
+      "events": [
+        {"id": "e1", "op": "borrow_shared", "place": "buffer", "loan": "l1"},
+        {"id": "e2", "op": "use", "place": "buffer"},
+        {"id": "e3", "op": "end_loan", "place": "buffer", "loan": "l1"},
+        {"id": "e4", "op": "move", "place": "buffer"}
+      ]
+    },
+    {
+      "id": "exclusive_then_destroy",
+      "places": ["file"],
+      "events": [
+        {"id": "e5", "op": "borrow_exclusive", "place": "file", "loan": "l2"},
+        {"id": "e6", "op": "end_loan", "place": "file", "loan": "l2"},
+        {"id": "e7", "op": "destroy", "place": "file"}
+      ]
+    }
+  ]
+}

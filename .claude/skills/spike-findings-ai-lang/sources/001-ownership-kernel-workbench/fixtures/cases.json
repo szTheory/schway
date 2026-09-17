@@ -1,0 +1,373 @@
+{
+  "schema": 1,
+  "fixtures": [
+    {
+      "name": "shared borrow ends at last use",
+      "program": {
+        "id": "OWN-LOCAL-001",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_shared", "place": "buffer", "loan": "view"},
+          {"kind": "read_loan", "loan": "view"},
+          {"kind": "mutate_place", "place": "buffer"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "owner mutation conflicts with future shared use",
+      "program": {
+        "id": "OWN-LOCAL-002",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_shared", "place": "buffer", "loan": "view"},
+          {"kind": "mutate_place", "place": "buffer"},
+          {"kind": "read_loan", "loan": "view"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.owner_access_conflict"
+    },
+    {
+      "name": "multiple shared loans",
+      "program": {
+        "id": "OWN-LOCAL-003",
+        "operations": [
+          {"kind": "declare", "place": "message"},
+          {"kind": "borrow_shared", "place": "message", "loan": "left"},
+          {"kind": "borrow_shared", "place": "message", "loan": "right"},
+          {"kind": "read_loan", "loan": "left"},
+          {"kind": "read_loan", "loan": "right"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "exclusive borrow rejects shared borrow",
+      "program": {
+        "id": "OWN-LOCAL-004",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_exclusive", "place": "buffer", "loan": "writer"},
+          {"kind": "borrow_shared", "place": "buffer", "loan": "reader"},
+          {"kind": "mutate_loan", "loan": "writer"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.loan_conflict"
+    },
+    {
+      "name": "shared loan cannot mutate",
+      "program": {
+        "id": "OWN-LOCAL-005",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_shared", "place": "buffer", "loan": "view"},
+          {"kind": "mutate_loan", "loan": "view"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.mutation_requires_exclusive"
+    },
+    {
+      "name": "move invalidates source",
+      "program": {
+        "id": "OWN-MOVE-001",
+        "operations": [
+          {"kind": "declare", "place": "message"},
+          {"kind": "move", "place": "message", "target": "mailbox"},
+          {"kind": "read_place", "place": "message"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.use_after_move"
+    },
+    {
+      "name": "move target remains usable",
+      "program": {
+        "id": "OWN-MOVE-002",
+        "operations": [
+          {"kind": "declare", "place": "message"},
+          {"kind": "move", "place": "message", "target": "mailbox"},
+          {"kind": "read_place", "place": "mailbox"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "move conflicts with live shared loan",
+      "program": {
+        "id": "OWN-MOVE-003",
+        "operations": [
+          {"kind": "declare", "place": "message"},
+          {"kind": "borrow_shared", "place": "message", "loan": "view"},
+          {"kind": "move", "place": "message", "target": "mailbox"},
+          {"kind": "read_loan", "loan": "view"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.move_while_borrowed"
+    },
+    {
+      "name": "resource transfers and releases at destination",
+      "program": {
+        "id": "OWN-RESOURCE-001",
+        "operations": [
+          {"kind": "declare", "place": "socket", "resource": true},
+          {"kind": "move", "place": "socket", "target": "session"},
+          {"kind": "read_place", "place": "session"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "resources release in reverse acquisition order on error",
+      "program": {
+        "id": "OWN-RESOURCE-002",
+        "operations": [
+          {"kind": "declare", "place": "file", "resource": true},
+          {"kind": "declare", "place": "lock", "resource": true},
+          {"kind": "exit_error"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "explicit release cannot race future loan use",
+      "program": {
+        "id": "OWN-RESOURCE-003",
+        "operations": [
+          {"kind": "declare", "place": "file", "resource": true},
+          {"kind": "borrow_shared", "place": "file", "loan": "metadata"},
+          {"kind": "release", "place": "file"},
+          {"kind": "read_loan", "loan": "metadata"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.release_while_borrowed"
+    },
+    {
+      "name": "double release is rejected",
+      "program": {
+        "id": "OWN-RESOURCE-004",
+        "operations": [
+          {"kind": "declare", "place": "file", "resource": true},
+          {"kind": "release", "place": "file"},
+          {"kind": "release", "place": "file"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.use_after_release"
+    },
+    {
+      "name": "exclusive mutation succeeds",
+      "program": {
+        "id": "OWN-LOCAL-006",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_exclusive", "place": "buffer", "loan": "writer"},
+          {"kind": "mutate_loan", "loan": "writer"},
+          {"kind": "read_place", "place": "buffer"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "explicitly ended loan cannot be reused",
+      "program": {
+        "id": "OWN-LOCAL-007",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_shared", "place": "buffer", "loan": "view"},
+          {"kind": "end_loan", "loan": "view"},
+          {"kind": "read_loan", "loan": "view"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.loan_ended"
+    },
+    {
+      "name": "owner read conflicts with live exclusive loan",
+      "program": {
+        "id": "OWN-LOCAL-008",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_exclusive", "place": "buffer", "loan": "writer"},
+          {"kind": "read_place", "place": "buffer"},
+          {"kind": "mutate_loan", "loan": "writer"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.owner_access_conflict"
+    },
+    {
+      "name": "exclusive loan ends at last use",
+      "program": {
+        "id": "OWN-LOCAL-009",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_exclusive", "place": "buffer", "loan": "writer"},
+          {"kind": "mutate_loan", "loan": "writer"},
+          {"kind": "read_place", "place": "buffer"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "move target cannot already be initialized",
+      "program": {
+        "id": "OWN-MOVE-004",
+        "operations": [
+          {"kind": "declare", "place": "source"},
+          {"kind": "declare", "place": "target"},
+          {"kind": "move", "place": "source", "target": "target"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.target_initialized"
+    },
+    {
+      "name": "loan identity cannot be reused",
+      "program": {
+        "id": "OWN-LOCAL-010",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "borrow_shared", "place": "buffer", "loan": "view"},
+          {"kind": "end_loan", "loan": "view"},
+          {"kind": "borrow_shared", "place": "buffer", "loan": "view"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.duplicate_loan"
+    },
+    {
+      "name": "unknown loan cannot be read",
+      "program": {
+        "id": "OWN-LOCAL-011",
+        "operations": [
+          {"kind": "declare", "place": "buffer"},
+          {"kind": "read_loan", "loan": "missing"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.unknown_loan"
+    },
+    {
+      "name": "cancellation releases lexical resource",
+      "program": {
+        "id": "OWN-RESOURCE-005",
+        "operations": [
+          {"kind": "declare", "place": "socket", "resource": true},
+          {"kind": "exit_cancel"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "contained panic releases lexical resource",
+      "program": {
+        "id": "OWN-RESOURCE-006",
+        "operations": [
+          {"kind": "declare", "place": "mapping", "resource": true},
+          {"kind": "exit_panic"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "resource releases after final loan use",
+      "program": {
+        "id": "OWN-RESOURCE-007",
+        "operations": [
+          {"kind": "declare", "place": "file", "resource": true},
+          {"kind": "borrow_shared", "place": "file", "loan": "metadata"},
+          {"kind": "read_loan", "loan": "metadata"},
+          {"kind": "release", "place": "file"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "nested scope releases inner resources",
+      "program": {
+        "id": "OWN-SCOPE-001",
+        "operations": [
+          {"kind": "declare", "place": "outer", "resource": true},
+          {"kind": "begin_scope", "scope": "inner"},
+          {"kind": "declare", "place": "first", "resource": true},
+          {"kind": "declare", "place": "second", "resource": true},
+          {"kind": "end_scope", "scope": "inner"},
+          {"kind": "read_place", "place": "outer"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "inner value is unavailable after scope exit",
+      "program": {
+        "id": "OWN-SCOPE-002",
+        "operations": [
+          {"kind": "begin_scope", "scope": "inner"},
+          {"kind": "declare", "place": "temporary"},
+          {"kind": "end_scope", "scope": "inner"},
+          {"kind": "read_place", "place": "temporary"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.use_after_release"
+    },
+    {
+      "name": "scope exit must match innermost scope",
+      "program": {
+        "id": "OWN-SCOPE-003",
+        "operations": [
+          {"kind": "begin_scope", "scope": "outer-block"},
+          {"kind": "begin_scope", "scope": "inner-block"},
+          {"kind": "end_scope", "scope": "outer-block"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.scope_mismatch"
+    },
+    {
+      "name": "normal completion rejects an unclosed scope",
+      "program": {
+        "id": "OWN-SCOPE-004",
+        "operations": [
+          {"kind": "begin_scope", "scope": "forgotten"},
+          {"kind": "declare", "place": "temporary"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.unclosed_scope"
+    },
+    {
+      "name": "error exit unwinds all active lexical scopes",
+      "program": {
+        "id": "OWN-SCOPE-005",
+        "operations": [
+          {"kind": "declare", "place": "outer", "resource": true},
+          {"kind": "begin_scope", "scope": "inner"},
+          {"kind": "declare", "place": "inner", "resource": true},
+          {"kind": "exit_error"}
+        ]
+      },
+      "expect_valid": true
+    },
+    {
+      "name": "loan cannot escape its owner's lexical scope",
+      "program": {
+        "id": "OWN-SCOPE-006",
+        "operations": [
+          {"kind": "begin_scope", "scope": "inner"},
+          {"kind": "declare", "place": "temporary"},
+          {"kind": "borrow_shared", "place": "temporary", "loan": "view"},
+          {"kind": "end_scope", "scope": "inner"},
+          {"kind": "read_loan", "loan": "view"}
+        ]
+      },
+      "expect_valid": false,
+      "expect_code": "ownership.release_while_borrowed"
+    }
+  ]
+}
