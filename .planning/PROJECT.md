@@ -34,42 +34,135 @@ across interpreter / `-O0` / `-O3` / `-O3 -flto` on the five-axis comparator.
 `Result` values carry payloads. `lang-repair` fixes interprocedural loan-liveness
 defects through the JSON protocol alone.
 
-**Known gaps carried into M003:**
-- **DX-06 (partial)** — the contract-boundary blame resolver is built, tested,
-  and compile-time exhaustive, but structurally unreachable: no B1-shaped
-  interprocedural diagnostic is constructible while
-  `sameType(ReturnType, Parameter.Type)` is enforced at function admission.
-  See `PHASE-13-DEBT.md` D-13-02b.
+**Known gaps carried into M003** (corrected 2026-09-17 against the tree by the
+M003 research fan-out — `.planning/research/M003/`; three claims previously
+recorded here were wrong and are restated below):
+
+- **DX-06 (partial, and worse than recorded)** — this section previously said
+  the contract-boundary blame resolver was "built, tested, and compile-time
+  exhaustive, but structurally unreachable," and that it would close
+  automatically once `sameType(ReturnType, Parameter.Type)` lifted. **Both
+  halves are wrong.** The *entire* blame subsystem — `resolveBlame`,
+  `resolveCycleBlame`, `classifyDeclaredCause` — is test-only dead code: zero
+  production call sites, and nothing ever sets `blameFact.Violated = true`
+  (`classifyDeclaredCause` hardcodes `false`; `true` occurs only in
+  `check_blame_test.go`). Lifting the invariant does **not** close it: a
+  B1-shaped diagnostic needs a *user-declared* contract field that the
+  declaring function's own admission cannot verify, and every
+  `FunctionSignature` field today is producer-derived. B1's real home is
+  separate compilation (M006). M003 corrects D-13-02b's reopening condition
+  rather than restating the automatic-closure claim a third time.
 - **DX-07 (partial)** — two of three new repairable interprocedural classes
   ship (`move_after_interprocedural_loan`, `wrap_call_in_try`);
   `use_matching_argument` was withdrawn empirically, its repair byte-identical
-  to the original on every real trigger. See `PHASE-13-DEBT.md` D-13-10a.
+  to the original on every real trigger. See `PHASE-13-DEBT.md` D-13-10a. This
+  one *does* close when the invariant lifts.
+- **`-flto` is structurally inert on every cgen-emitted multi-function
+  program** — one translation unit, no `restrict`, foreign refused. Both live
+  non-inertness proofs are non-multi-function: `TestLTOTierIsNotInert` uses a
+  single-function foreign fixture, and NAT-07's composition-only control is
+  hand-written C explicitly not emitted by cgen (D-11-24). D-11-25 names this
+  only in a test doc comment — it has **no debt row** and is **not** among the
+  ten unowned items — while this document's NAT-07 bullet previously read as
+  though the proof covered the interprocedural corpus. It does not.
+- **Nyquist validation is partial, and "cheap to close" was only half true** —
+  Phases 12 and 13 are literal frontmatter flips; Phase 07 is roughly an hour.
+  But Phase 11 has six or more command cells elided with `…` and therefore
+  un-runnable, and **three `go test -run` patterns across the VALIDATION corpus
+  resolve to zero tests and exit 0 with `[no tests to run]`** — two in Phase 08
+  (one naming a mechanism deleted in Phase 09) and one in **Phase 09**, a phase
+  certified `validated` / `nyquist_compliant: true` on a green row whose
+  evidence is a summary's prose. These are provenance defects in the measuring
+  instrument, not coverage holes; the substance is intact.
 - **10 open, unowned debt items** in three clusters: the single-function
-  emitter deletion (D-11-02 → D-12-36, where a third deferral would violate the
-  project's own D-10-60 no-third-deferral rule), event identity
-  (D-11-51 → D-12-21), and the single-type-per-function invariant
-  (D-13-02b, D-13-10a) — which close together the moment return type may
-  differ from parameter type.
-- **Nyquist validation is partial** — Phases 09 and 10 are compliant; 07, 08,
-  11, 12, and 13 have a VALIDATION.md that `validate-phase` never reconciled.
-  Cheap to close: `/gsd-validate-phase 07 08 11 12 13`.
+  emitter work (D-11-02 → D-12-36 — a **port-then-delete**, not a deletion:
+  `emitProgram` is a strict *subset* that refuses `Match`, `Blocks` and
+  `ForeignContract`, emits zero `restrict`, and hardcodes
+  `"live_resources":[]`), event identity (D-11-51 → D-12-21), and the
+  single-type-per-function invariant (D-13-02b, D-13-10a).
 - **D-13-34 points backwards** — M001's `testdata/phase6` move and borrow
-  held-out pairs are alpha-renames of each other, a genuine hole in shipped
-  M001 evidence.
+  held-out pairs are alpha-renames of each other (match genuinely differs).
+  Blast radius determined: DX-04's written claim survives on corpus-independent
+  evidence; what is void is D-06-29's anti-overfitting inference for two of
+  three source classes. M002 is unaffected.
 
-## Next Milestone Goals
+**The systemic finding.** Those are not six unrelated defects. DX-06, the
+`-flto` inertness, the zero-test VALIDATION patterns, and
+`TestEveryMutationMovesItsClaimedAxis` silently skipping two rows are four
+instances of one failure mode: *the instrument reports green because something
+is wired, not because it runs.* It is the same mode the M002 audit caught in
+the integration checker. M003 Phase 14 mechanizes the fix rather than patching
+the instances.
 
-Candidate M003 charter, in the order the debt argues for it:
+## Current Milestone: M003 Computation and Honest Instruments
 
-- Retire the single-function emitter cluster or explicitly retire D-10-60.
-- Own the event-identity chain (D-11-51 → D-12-21) before it crosses a third
-  milestone boundary.
-- Widen the type system so return type may differ from parameter type, which
-  closes the DX-06/DX-07 cluster automatically and makes the already-built
-  blame resolver reachable.
-- Real control flow and arithmetic — loops and operators — so programs stop
-  being single-expression bodies.
-- Close the Nyquist validation debt for Phases 07, 08, 11, 12, 13.
+**Goal:** Prove a meaning survives *computation* — the first value Lang creates
+rather than moves — on instruments that cannot report green for work that is
+merely wired.
+
+**Thesis:** M001 proved one meaning survives lowering. M002 proved it survives a
+function boundary. M003 proves it survives computation, and makes the measuring
+instruments honest enough that the claim means what it says.
+
+**Target features:**
+
+- Evidence instruments that grade at EXERCISED+ or name themselves unreachable —
+  a groundedness lint, a closed evidence vocabulary
+  (`DEFINED | WIRED | REACHABLE | EXERCISED | MUTATION-KILLED`), and
+  `.planning/UNREACHABLE-CLAIMS.md` for criterion-shaped defects. The three
+  wrong claims above are corrected here.
+- Event identity that survives a shared-leaf diamond — context-path invocation
+  identity under a `lang.execution/2` bump, uniqueness moved to
+  `(invocation, id)`, independently re-derivable by a non-importing peer
+  because the call graph is a guaranteed DAG.
+- One emission law instead of two — branch/match ported into `emitProgram`,
+  three emitters deleted, the other three formally cut by a D-10-60 amendment
+  with M004 landings.
+- A function's return type may differ from its parameter type.
+- A branch that can discriminate a **computed** value — today `match` is a
+  whole-function-body form whose scrutinee must be the function's own
+  parameter, so branching on a computed value does not exist and cannot be
+  reached by desugaring. Hard-gated on spike S-010.
+- Literals and `OpConst` — Lang can name a value it was not given.
+- A moved refusal frontier, pinned by a test.
+
+**Explicitly out of this milestone:** `if` as surface syntax, comparison
+operators, `Bool`, `OpBinary`, loops and back edges, arity-N, DX-06 closure,
+the three cut emitter families, and DX-08/09/11/13.
+
+**The governing gate — constructibility precondition.** No requirement is
+admitted unless its `.lang` fixture is checked in *first* as a refused frontier
+fixture with its diagnostic pinned by a test; the phase gate is that the pinned
+diagnostic moved. This is the only gate that fires *before* the work, and it
+would have refused comparison operators on day one — a `Bool` that cannot be
+branched on is the DX-06 failure mode for the fourth time.
+
+**Named risk.** Arithmetic is ownership-inert (~15% redesign risk), but **any
+branch on a computed value is ~60%** against `loanLivenessFixpoint`, the
+comparator, and `corevalidate`. Early warning: a `borrow` created before a
+branch and live in one arm has no `LoanEndpoint` classification today. That is
+why the branch phase is spike-gated, and why the bet is declared lost — with
+M004 becoming an assurance-refactor milestone — if arithmetic forces a
+*redesign* rather than an extension.
+
+**WIP limits.** M003 may not close with more than 5 unowned debt items. Every
+debt item names an owning phase when it is recorded.
+
+## Milestone Arc (M004–M006)
+
+Provisional, revised at each milestone boundary. Recorded here so the M003
+research is not re-derived later.
+
+| Milestone | Charter | Gate that becomes meaningful |
+|---|---|---|
+| M004 | Iteration | Back edges exist. Must first answer what replaces `pathoracle`, which refuses every CFG cycle by name (`pathoracle.cfg_back_edge`) — iteration does not make it expensive, it makes it impossible. A pre-phase spike is mandatory. |
+| M005 | Aggregates and arity-N | D-12-43 finally becomes constructible — via a generalized-scrutinee arm returning a destructured payload, not via arithmetic alone. Arity 2 takes the `pathoracle` case space from ~12 to ~108. |
+| M006 | Modules and separate compilation | DX-06's B1 blame becomes real: the first user-declared contract field the declaring function's own admission cannot verify. |
+
+**First real program:** `examples/checksum.lang` — read a file through foreign
+C, loop-accumulate a byte checksum, print it. Lands end of M005. Checked in
+during M003 as a *refused* frontier fixture with its diagnostic pinned, so each
+milestone must measurably move the refusal forward.
 
 ## Requirements
 
@@ -133,20 +226,36 @@ Candidate M003 charter, in the order the debt argues for it:
 
 ### Active
 
-Provisional until `/gsd-new-milestone` defines M003 requirements.
+M003 scope, confirmed 2026-09-17. Each line is a milestone-level intent;
+`REQUIREMENTS.md` carries the testable REQ-IDs.
 
-- [ ] Retire the six single-function emitters (D-11-02 / D-12-36) or explicitly
-      retire the D-10-60 no-third-deferral rule that forbids deferring again.
+- [ ] Make the instruments honest: grade every shipped claim at EXERCISED+ or
+      record it as unreachable with an unblocking trigger. Correct the DX-06,
+      `-flto`/NAT-07, and Phase 09 Nyquist claims that this document and the
+      M002 audit previously stated wrongly.
 - [ ] Give event identity an owner: shared-leaf diamond call graphs collide
-      (D-11-51), and D-12-21 cannot close until they do.
-- [ ] Allow a function's return type to differ from its parameter type, which
-      makes the already-built contract-boundary blame resolver reachable and
-      closes DX-06/DX-07 together.
-- [ ] Real control flow and arithmetic — loops and operators — so a program can
-      be more than a single-expression body.
-- [ ] Close the Nyquist validation debt for Phases 07, 08, 11, 12, and 13.
-- [ ] Repair M001's `testdata/phase6` held-out/derivation pairs, which are
-      alpha-renames rather than structurally distinct programs (D-13-34).
+      (D-11-51), `OpCall` emits no event at all, and D-12-21 cannot close
+      until both are fixed.
+- [ ] Reduce two emission laws to one: port branch/match into `emitProgram`,
+      delete three emitters, formally cut the other three under a D-10-60
+      amendment rather than a silent third deferral.
+- [ ] Allow a function's return type to differ from its parameter type.
+      Closes DX-07 and D-13-10a. Does **not** close DX-06 — see Current State.
+- [ ] Let a branch discriminate a computed value, by generalizing `match`'s
+      scrutinee beyond the function's own parameter. Spike-gated.
+- [ ] Let Lang name a value it was not given: literals and `OpConst`.
+- [ ] Close the reconcilable Nyquist debt (07, 08, 11) and pin a refused
+      frontier fixture whose diagnostic each milestone must move.
+
+Deferred with a named landing, not dropped:
+
+- Loops and back edges → M004, after a spike answers what replaces
+  `pathoracle`.
+- Arity-N and aggregates → M005, where D-12-43 becomes constructible.
+- DX-06 / B1 blame → M006, with separate compilation.
+- D-13-34's alpha-renamed held-out pairs → attached to the grammar-widening
+  phase; the admissible space is 112 programs, so "structurally distinct" is
+  cosmetic at this maturity.
 
 ### Out of Scope
 
@@ -300,4 +409,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-14 after the M002 milestone*
+*Last updated: 2026-09-17 after the M003 research fan-out and milestone start*

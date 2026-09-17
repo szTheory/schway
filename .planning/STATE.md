@@ -1,20 +1,16 @@
 ---
-gsd_state_version: 1.0
-milestone: M002
-milestone_name: Interprocedural Semantic Spine
-status: Awaiting next milestone
-stopped_at: Phase 13 complete and verified (DX-05 met; DX-06/DX-07 partial, ratified)
-last_updated: "2026-09-14T15:53:18.562Z"
-last_activity: 2026-09-14
-last_activity_desc: Milestone M002 completed and archived
-state_head: 635ef9c4ab045eb283cbb8ddfb39e054289572e7
+gsd_state_version: "1.0"
+milestone: M003
+milestone_name: Computation and Honest Instruments
+status: planning
+last_updated: "2026-09-17T20:16:16.725Z"
+last_activity: 2026-09-17
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 61
-  completed_plans: 61
-current_phase: 13
-current_phase_name: Agent Loop for Interprocedural Defects
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -54,10 +50,10 @@ carried forward. Next: `/gsd-new-milestone`. No outstanding human verification.
 
 ## Current Position
 
-Phase: Milestone M002 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-14 — Milestone M002 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-17 — Milestone M003 started
 
 ## M002 Phase Map
 
