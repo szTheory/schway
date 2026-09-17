@@ -2,15 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
+current_phase: 14
+current_phase_name: Evidence Instrument and Honest Scoping
 status: in_progress
-last_updated: "2026-09-17T21:30:00.000Z"
+stopped_at: Phase 14 context gathered
+last_updated: "2026-09-17T20:39:28.795Z"
 last_activity: 2026-09-17
+last_activity_desc: M003 roadmap created (Phases 14-20, 33/33 requirements mapped)
+state_head: b9ab4864280f39318b0705e943c5562606274930
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 0
 ---
 
 # Project State
@@ -512,10 +516,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-14 — milestone M002 closed and archived
-Stopped at: M002 shipped. All 7 phases verified passed; 29/31 requirements
+Last session: 2026-09-17T20:39:28.781Z
+Stopped at: Phase 14 context gathered
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: .planning/milestones/M002-MILESTONE-AUDIT.md
+Resume file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-CONTEXT.md
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
