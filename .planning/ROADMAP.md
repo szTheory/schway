@@ -217,15 +217,26 @@ eleven requirements decompose into ten single-concern units, each with its own
 non-inertness proof, rather than because scope grew)
 
 Plans:
+**Wave 1**
+
 - [ ] 14-01-PLAN.md — tracer: the groundedness lint end-to-end, with its frontier pinned as an exact literal and three seeded-fault non-inertness proofs (EVD-01)
 - [ ] 14-02-PLAN.md — attach the discarded recovery extent as an identity-bearing cause; distinctness corpus, gate, and frozen pre-fix collision control (DX-08)
 - [ ] 14-03-PLAN.md — an `unrepairable` verdict explains itself: additive decline fields, closed decline vocabulary, guard and non-inertness proof (DX-09)
 - [ ] 14-04-PLAN.md — close the owning-phase vocabulary in the debt-register law, migrate twelve registers, register the `-flto` inertness row (PRC-01, EVD-07)
 - [ ] 14-05-PLAN.md — machine-check the maturity document's counts by independent re-derivation; record a cold suite wall-clock as an observed manifest row (EVD-06, EVD-08)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 14-06-PLAN.md — lint expansion: scope by illocutionary role, executed grep groundedness, per-branch detection, corpus floors, index accuracy control (EVD-01)
 - [ ] 14-07-PLAN.md — closed witness grammar, six executed probes, module-wide suppression enumerator, generated unreachable-claims view (EVD-03, EVD-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 14-08-PLAN.md — one axis-movement law, zero per-row exclusions, the superseded marker guard and its stale markers deleted (EVD-05)
 - [ ] 14-09-PLAN.md — closed grade vocabulary with a mechanically derived ceiling; fourteen verification maps migrated; the freeform status column retired (EVD-02)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 14-10-PLAN.md — reconcile every finding outside the archives under checked verdict obligations; generated reconciliation view; frontier emptied (EVD-03, EVD-01)
 
 ---
