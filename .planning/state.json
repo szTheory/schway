@@ -1,48 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M002 — Interprocedural Semantic Spine",
-  "phases": [
-    {
-      "number": "07",
-      "name": "Calls, Signatures, and Call-Graph Refusal",
-      "status": "complete"
-    },
-    {
-      "number": "08",
-      "name": "Interprocedural Loan Liveness in `check`",
-      "status": "complete"
-    },
-    {
-      "number": "09",
-      "name": "Peer Re-Derivation and D-03-02 Closure",
-      "status": "complete"
-    },
-    {
-      "number": "10",
-      "name": "Trusted Interprocedural Oracle",
-      "status": "complete"
-    },
-    {
-      "number": "11",
-      "name": "Multi-Function Native Emission and Equivalence",
-      "status": "complete"
-    },
-    {
-      "number": "12",
-      "name": "`Result` Payloads",
-      "status": "complete"
-    },
-    {
-      "number": "13",
-      "name": "Agent Loop for Interprocedural Defects",
-      "status": "complete"
-    }
-  ],
+  "milestone": "M003",
+  "phases": [],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
   },
-  "updated_at": "2026-09-14T15:53:18.578Z"
+  "updated_at": "2026-09-17T20:16:16.729Z"
 }
