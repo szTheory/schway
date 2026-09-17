@@ -167,17 +167,73 @@ arithmetic operators, and branching moves to M004.
 
 ## Traceability
 
-Populated during roadmap creation.
+Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
+(which ended at Phase 13); M003 runs Phases 14-20.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (pending roadmap) | — | Pending |
+| EVD-01 | Phase 14 | Pending |
+| EVD-02 | Phase 14 | Pending |
+| EVD-03 | Phase 14 | Pending |
+| EVD-04 | Phase 14 | Pending |
+| EVD-05 | Phase 14 | Pending |
+| EVD-06 | Phase 14 | Pending |
+| EVD-07 | Phase 14 | Pending |
+| EVD-08 | Phase 14 | Pending |
+| OBS-01 | Phase 15 | Pending |
+| OBS-02 | Phase 15 | Pending |
+| OBS-03 | Phase 15 | Pending |
+| OBS-04 | Phase 15 | Pending |
+| NAT-08 | Phase 16 | Pending |
+| NAT-09 | Phase 16 | Pending |
+| NAT-10 | Phase 15 | Pending |
+| TYP-01 | Phase 17 | Pending |
+| TYP-02 | Phase 17 | Pending |
+| TYP-03 | Phase 17 | Pending |
+| TYP-04 | Phase 17 | Pending |
+| TYP-05 | Phase 17 | Pending |
+| CTL-01 | Phase 18 | Pending |
+| CTL-02 | Phase 18 | Pending |
+| CTL-03 | Phase 18 | Pending |
+| VAL-01 | Phase 19 | Pending |
+| VAL-02 | Phase 19 | Pending |
+| VAL-03 | Phase 19 | Pending |
+| QLT-10 | Phase 20 | Pending |
+| QLT-11 | Phase 20 | Pending |
+| QLT-12 | Phase 20 | Pending |
+| DX-08 | Phase 14 | Pending |
+| DX-09 | Phase 14 | Pending |
+| PRC-01 | Phase 14 | Pending |
+| PRC-02 | Phase 20 | Pending |
 
 **Coverage:**
 - M003 requirements: 33 total
-- Mapped to phases: 0
-- Unmapped: 33 ⚠️
+- Mapped to phases: 33 ✓
+- Unmapped: 0
+
+**Per-phase counts:** P14 = 11, P15 = 5, P16 = 2, P17 = 5, P18 = 3, P19 = 3,
+P20 = 4. No orphans, no duplicates.
+
+**Mapping deviations from the natural category grouping** (justified in full in
+`ROADMAP.md` § Requirement Coverage):
+
+- **NAT-10 → Phase 15**, not Phase 16. NAT-10 *is* Phase 15's ratified gate
+  (`multi_function_diamond_call.lang` across all four tiers). Filing it with the
+  emitter port would let Phase 16 claim credit for an already-green row — the
+  exact "green because it is wired" pattern this milestone retires.
+- **PRC-01 → Phase 14, PRC-02 → Phase 20.** PRC-01 is an instrument and must
+  exist before debt accrues; PRC-02 is a close condition adjudicable only at the
+  end.
+- **DX-08 / DX-09 → Phase 14.** Both are shipped-API defects measurable today
+  and instances of the milestone's central theme. Note these two IDs are
+  ADVERSARIAL-SYNTHESIS's DX-10 and DX-12 renumbered; that document's own
+  DX-08/DX-09 (capability manifest, `surface.not_in_language`) are deferred.
+
+**Contingency.** If spike S-010 comes back dirty, Phase 18 is cut: CTL-01,
+CTL-02 and CTL-03 move to the Deferred table with an M004 landing, and new
+`ARI-NN` rows for the replacement arithmetic phase are amended in during the
+same pass. Coverage is re-validated at 33 rows; it does not silently drop to 30.
 
 ---
 *Requirements defined: 2026-09-17*
-*Last updated: 2026-09-17 after the M003 research fan-out*
+*Last updated: 2026-09-17 after M003 roadmap creation (Phases 14-20)*

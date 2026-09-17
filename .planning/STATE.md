@@ -2,11 +2,11 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-status: planning
-last_updated: "2026-09-17T20:16:16.725Z"
+status: in_progress
+last_updated: "2026-09-17T21:30:00.000Z"
 last_activity: 2026-09-17
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -28,7 +28,10 @@ multi-function program now checks, is independently re-validated by three
 non-importing peers, interprets, lowers to multi-function C17, and agrees across
 interpreter / `-O0` / `-O3` / `-O3 -flto`. Closed as `override_closeout`: 29/31
 requirements satisfied, DX-06 and DX-07 ratified partial, 10 unowned debt items
-carried forward. Next: `/gsd-new-milestone`. No outstanding human verification.
+carried forward.
+**M003 — Computation and Honest Instruments is now active**: 7 phases (14-20),
+33 requirements mapped, ~48-57 plans estimated. Next: `/gsd-plan-phase 14`.
+No outstanding human verification.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -50,10 +53,65 @@ carried forward. Next: `/gsd-new-milestone`. No outstanding human verification.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 14 — Evidence Instrument and Honest Scoping (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-17 — Milestone M003 started
+Status: Roadmap complete; Phase 14 not started
+Last activity: 2026-09-17 — M003 roadmap created (Phases 14-20, 33/33 requirements mapped)
+
+**Next:** `/gsd-plan-phase 14`
+
+## M003 Phase Map
+
+Phase numbering **continues** from M002, which ended at Phase 13. M003 runs
+Phases 14-20. Structure is the ratified plan from
+`.planning/research/M003/ADVERSARIAL-SYNTHESIS.md` § "What I would actually do".
+
+| Phase | Name | Requirements | Plans (est.) | Status |
+|-------|------|--------------|--------------|--------|
+| 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Not started |
+| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Not started |
+| 16 | Branch/Match Emitter Port | 2 | 8-10 | Not started |
+| 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Not started |
+| 18 | Branch on a Computed Value | 3 | 8-10 | Not started — **S-010 gate** |
+| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Not started |
+| 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 4-5 | Not started |
+
+**Carry-forward context that must survive a context reset** (restated here
+rather than left only in ROADMAP.md):
+
+- **The governing gate applies to every phase.** No requirement is admitted
+  unless its `.lang` fixture is checked in *first* as a refused frontier fixture
+  with its diagnostic pinned by a test. The phase gate is that the pinned
+  diagnostic **moved**. Every phase opens with a fixture-first plan.
+
+- **Two mandatory pre-phase spikes.** **S-010** (does a loan crossing a branch
+  point force a redesign?) is a **hard entry gate on planning Phase 18**;
+  **S-009** (fresh-agent authoring probe, with M001 Phase 6's lorem-ipsum
+  falsifiability control) runs early, alongside Phase 14.
+
+- **S-010's contingency, recorded so it is not re-litigated.** If a loan created
+  before a branch and live in exactly one arm needs a third `LoanEndpoint` kind
+  or a per-arm ownership-state merge, then Phase 18 is **CUT**; CTL-01/02/03
+  move to M004 with loops; Phase 18 is replaced by `OpBinary` + arithmetic under
+  optimization (which depends on Phase 19, so the two swap order); new `ARI-NN`
+  requirement rows are amended into REQUIREMENTS.md so coverage stays at 33;
+  comparison operators and `Bool` stay out regardless.
+
+- **The load-bearing structural fact (ADVERSARIAL-SYNTHESIS C3).** `match` is a
+  whole-function-body form whose scrutinee must be the function's own parameter,
+  and a linear body has no branch form at all. Branching on a computed value
+  does **not** exist and is **not** reachable by desugaring. Do not plan as if
+  `if` is a parser desugaring.
+
+- **DX-06 does not close in M003.** The entire blame subsystem is test-only dead
+  code; lifting the single-type invariant is necessary-not-sufficient. Phase 14
+  corrects PROJECT.md, the M002 audit, and PHASE-13-DEBT, which all state
+  otherwise. Phase 17 ratifies D-13-02b permanent with a corrected reopening
+  condition (separate compilation, M006).
+
+- **Ordering rationale.** Emitter port (16) before type widening (17), so the
+  two-type model is paid once instead of twice; event identity (15) before the
+  port, so branch-arm event emission is not written twice.
 
 ## M002 Phase Map
 
@@ -540,7 +598,9 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 14 with /gsd-plan-phase 14
+- Run spikes S-009 and S-010 alongside Phase 14; S-010 is a hard entry gate on
+  planning Phase 18
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 
