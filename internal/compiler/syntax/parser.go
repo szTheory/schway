@@ -167,8 +167,14 @@ func (p *parser) parseProgram() ast.Program {
 		case TokenForeign:
 			program.Foreign = append(program.Foreign, p.foreignBlock())
 		default:
-			p.problem("syntax.expected_declaration", p.peek(), "expected `data` or `fn` declaration")
-			p.recoverUntil(TokenData, TokenFn, TokenForeign, TokenEOF)
+			unexpected := p.peek()
+			p.advance()
+			skipped, discarded := p.recoverRegion(TokenData, TokenFn, TokenForeign, TokenEOF)
+			if discarded {
+				p.problem("syntax.expected_declaration", unexpected, "expected `data` or `fn` declaration", diagnostic.Cause{Kind: "skipped_region", Span: &skipped})
+			} else {
+				p.problem("syntax.expected_declaration", unexpected, "expected `data` or `fn` declaration")
+			}
 		}
 	}
 	return program
@@ -656,12 +662,12 @@ func (p *parser) optionalPayloadBinder() string {
 	return name.Text
 }
 
-func (p *parser) problem(code string, token Token, message string) {
+func (p *parser) problem(code string, token Token, message string, causes ...diagnostic.Cause) {
 	if len(p.diagnostics) >= maxPrimaryDiagnostics {
 		p.truncated = true
 		return
 	}
-	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message))
+	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message, causes...))
 }
 
 func (p *parser) atAny(kinds ...Kind) bool {
@@ -707,6 +713,29 @@ func (p *parser) recoverUntil(boundaries ...Kind) {
 	if p.position <= start {
 		panic("parser recovery made no progress")
 	}
+}
+
+// recoverRegion is recoverUntil that additionally records and returns the
+// byte extent it discarded -- from the start offset of the first token it
+// consumes to the end offset of the last -- as a diagnostic.Span, plus
+// whether anything was actually discarded. It keeps recoverUntil's own
+// convention: if already at a caller-owned boundary, it returns without
+// consuming (discarded is false, and the returned span is the zero value --
+// callers must check discarded before attaching it as a cause).
+func (p *parser) recoverRegion(boundaries ...Kind) (diagnostic.Span, bool) {
+	if p.atAny(boundaries...) {
+		return diagnostic.Span{}, false
+	}
+	start := p.position
+	startSpan := p.peek().Span
+	var last Token
+	for !p.atAny(boundaries...) {
+		last = p.advance()
+	}
+	if p.position <= start {
+		panic("parser recovery made no progress")
+	}
+	return diagnostic.Span{Start: startSpan.Start, End: last.Span.End}, true
 }
 
 func (p *parser) assertProgressOrBoundary(start int, boundaries ...Kind) {
