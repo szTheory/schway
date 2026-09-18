@@ -557,16 +557,33 @@ func classifyCommand(index *testIndex, command string) classification {
 	if !classifyRunnability(command) {
 		return classR1
 	}
+	// HasPrefix, not Contains: the command has already matched
+	// verificationCommandPattern's anchored prefix, so this only needs to
+	// discriminate which prefix matched. A substring Contains check here
+	// is a real bug -- "session.go testdata/..." contains the literal
+	// substring "go test" (from ".go test[data]"), which would wrongly
+	// route a `git diff` command into the go-test parser.
 	if strings.HasPrefix(command, "go test") {
 		parsed, ok := parseGoTestCommand(command)
 		if !ok {
 			return classUnparseable
 		}
-		if parsed.Pattern != "" && !classifyGroundedness(index, parsed.Packages, parsed.Pattern) {
-			return classR2
+		if parsed.Pattern != "" {
+			if !classifyGroundedness(index, parsed.Packages, parsed.Pattern) {
+				return classR2
+			}
+			if failing := classifyPerBranchGroundedness(index, parsed.Packages, parsed.Pattern); len(failing) > 0 {
+				return classR2b
+			}
+		}
+		return classOK
+	}
+	if isGrepShaped(command) {
+		if grepClass, _ := classifyGrepGroundedness(index.root, command); grepClass != classOK {
+			return grepClass
 		}
 	}
-	return classOK // RED stub: intentionally missing R2b/R3 wiring
+	return classOK
 }
 
 // classifyDocument runs the classifier over one document path, returning
@@ -1282,7 +1299,7 @@ var pinnedFrontier = []violationRecord{
 func measuredViolations(t testing.TB) []violationRecord {
 	t.Helper()
 	index := buildTestIndex(t)
-	docs := tierADocuments(t) // RED stub: intentionally narrow
+	docs := enforcedTierDocuments(t)
 	var measured []violationRecord
 	for _, doc := range docs {
 		violations, err := classifyDocument(index, doc)
