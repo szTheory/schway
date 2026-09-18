@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -2593,6 +2594,55 @@ var debtRegisterLandingPhaseExemptions = map[string]string{
 // invents a severity outside this set is drifting rather than recording.
 var debtRegisterSeverities = map[string]bool{"blocker": true, "warning": true, "info": true}
 
+// debtRegisterNamingPattern is the naming convention (D-14-24) required of
+// any register created from M003 on: PHASE-<NN>-DEBT.md.
+var debtRegisterNamingPattern = regexp.MustCompile(`^PHASE-\d{2}-DEBT\.md$`)
+
+// debtRegisterNamingExemptions lists every register written before M003's
+// PHASE-<NN>-DEBT.md naming convention existed. Frozen prior art only -- any
+// register created from M003 on must satisfy debtRegisterNamingPattern
+// without an entry here; adding one is a review failure unless the register
+// genuinely predates the convention.
+var debtRegisterNamingExemptions = map[string]string{
+	"02-DEBT.md": "written 2026-09-04, M001, before the PHASE-<NN>-DEBT.md naming convention existed; frozen prior art",
+	"03-DEBT.md": "written 2026-09-04, M001, before the PHASE-<NN>-DEBT.md naming convention existed; frozen prior art",
+	"04-DEBT.md": "written 2026-09-05, M001, before the PHASE-<NN>-DEBT.md naming convention existed; frozen prior art",
+	"05-DEBT.md": "written 2026-09-06, M001, before the PHASE-<NN>-DEBT.md naming convention existed; frozen prior art",
+	"06-DEBT.md": "written 2026-09-07, M001, before the PHASE-<NN>-DEBT.md naming convention existed; frozen prior art",
+}
+
+// The closed three-form owning-phase vocabulary PRC-01 requires (D-14-24):
+// a phase identifier (P<NN>), a closed-with-commit form naming a commit
+// sha, or an unowned-with-witness form naming a witness identifier. Free
+// prose no longer satisfies "non-empty" -- a cell must resolve to exactly
+// one of these three syntactic shapes.
+//
+// The witness identifier inside UNOWNED(...) is NOT required to resolve to
+// an executed probe here -- that resolution check, and the register's own
+// Witness column, land in plan 14-07 (D-14-23/D-14-24's own stated
+// hand-off). This plan mechanizes the SHAPE of the vocabulary only.
+var (
+	debtRegisterPhaseIDPattern = regexp.MustCompile(`^P\d{2}$`)
+	debtRegisterClosedPattern  = regexp.MustCompile(`^CLOSED\([0-9a-fA-F]{7,40}\)$`)
+	debtRegisterUnownedPattern = regexp.MustCompile(`^UNOWNED\([A-Za-z0-9][A-Za-z0-9:_./-]*\)$`)
+)
+
+// debtRegisterOwningPhaseForm reports whether cell -- already trimmed by the
+// caller -- is one of the three closed forms. Trimming happens at the call
+// site so that a whitespace-only cell reduces to "" and is rejected
+// identically to a genuinely absent cell: neither is a distinct valid
+// owner.
+func debtRegisterOwningPhaseForm(cell string) bool {
+	return debtRegisterPhaseIDPattern.MatchString(cell) ||
+		debtRegisterClosedPattern.MatchString(cell) ||
+		debtRegisterUnownedPattern.MatchString(cell)
+}
+
+// debtRegisterFirstRecordedPattern matches the D-14-31 two-milestone-carry
+// guard's per-row metadata line, required in every row's detail section:
+// `first-recorded: M0NN`.
+var debtRegisterFirstRecordedPattern = regexp.MustCompile(`(?m)^first-recorded:\s*(M\d{3})\s*$`)
+
 // TestDebtRegistersAreWellFormed is the mechanical half of the debt-register
 // checkpoint that phase 04-06 recorded as human judgment ("each dated with
 // identifier/severity/source/landing phase"). Register *honesty* -- whether
@@ -2604,7 +2654,10 @@ var debtRegisterSeverities = map[string]bool{"blocker": true, "warning": true, "
 //   - the frontmatter's declared `items:` count matches the Items table,
 //   - every row names an identifier, a source, a threat/requirement, a
 //     severity from the closed vocabulary, and the item itself,
-//   - post-legacy registers additionally name a landing phase, and
+//   - post-legacy registers additionally name a landing phase drawn from
+//     the closed three-form owning-phase vocabulary (PRC-01, D-14-24),
+//   - any register created from M003 on is named PHASE-<NN>-DEBT.md,
+//   - every row's detail section carries a first-recorded: milestone, and
 //   - every identifier in the table has a matching `### <ID>` detail
 //     section, and every detail section has a matching table row.
 //
@@ -2625,21 +2678,46 @@ func TestDebtRegistersAreWellFormed(t *testing.T) {
 	}
 }
 
+// checkDebtRegister is TestDebtRegistersAreWellFormed's *testing.T wrapper:
+// it delegates every check to debtRegisterProblems (a pure, non-fataling
+// function) and fails the test with every problem found, joined together,
+// rather than stopping at the first -- satisfying D-14-24's "report every
+// ownerless row, not just the first, deterministically" requirement in one
+// pass. TestDebtRegisterOwnershipGuardIsNotInert calls debtRegisterProblems
+// directly (the "variant that reports rather than fatals" Task 3 asks for)
+// so a seeded fault's refusal text is inspectable without a nested subtest.
 func checkDebtRegister(t *testing.T, path string) {
 	t.Helper()
-	data, err := os.ReadFile(path)
+	problems, err := debtRegisterProblems(path)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(problems) > 0 {
+		t.Fatalf("%s", strings.Join(problems, "\n"))
+	}
+}
+
+// debtRegisterProblems is the pure, table-order-deterministic core of the
+// debt-register well-formedness law. It returns every problem found (nil
+// means well-formed) instead of failing on the first, so a register with
+// three ownerless rows reports all three, and a caller can inspect the
+// exact refusal text without a *testing.T. A register whose `## Items`
+// table holds zero rows is handled as a vacuous pass, never an index panic,
+// provided the frontmatter's declared items: count also reads 0.
+func debtRegisterProblems(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
 	name := filepath.Base(path)
 	text := string(data)
 
 	if !strings.HasPrefix(text, "---\n") {
-		t.Fatalf("%s: has no frontmatter block", name)
+		return []string{fmt.Sprintf("%s: has no frontmatter block", name)}, nil
 	}
 	frontmatterEnd := strings.Index(text[4:], "\n---")
 	if frontmatterEnd == -1 {
-		t.Fatalf("%s: frontmatter block is unterminated", name)
+		return []string{fmt.Sprintf("%s: frontmatter block is unterminated", name)}, nil
 	}
 	declared := -1
 	for _, line := range strings.Split(text[4:4+frontmatterEnd], "\n") {
@@ -2647,50 +2725,85 @@ func checkDebtRegister(t *testing.T, path string) {
 			continue
 		}
 		if _, scanErr := fmt.Sscanf(strings.TrimSpace(line), "items: %d", &declared); scanErr != nil {
-			t.Fatalf("%s: unreadable `items:` frontmatter line %q", name, line)
+			return []string{fmt.Sprintf("%s: unreadable `items:` frontmatter line %q", name, line)}, nil
 		}
 		break
 	}
 	if declared < 0 {
-		t.Fatalf("%s: frontmatter declares no `items:` count", name)
+		return []string{fmt.Sprintf("%s: frontmatter declares no `items:` count", name)}, nil
 	}
 
-	columns, rows := debtRegisterTable(t, name, text)
+	columns, rows, tableErr := parseDebtRegisterTable(name, text)
+	if tableErr != nil {
+		return []string{tableErr.Error()}, nil
+	}
+	var problems []string
 	if len(rows) != declared {
-		t.Fatalf("%s: frontmatter declares items: %d but the Items table holds %d rows", name, declared, len(rows))
+		problems = append(problems, fmt.Sprintf("%s: frontmatter declares items: %d but the Items table holds %d rows", name, declared, len(rows)))
 	}
 
+	_, landingExempt := debtRegisterLandingPhaseExemptions[name]
 	required := []string{"ID", "Source", "Threat/Req", "Severity", "Item"}
-	if _, exempt := debtRegisterLandingPhaseExemptions[name]; !exempt {
+	if !landingExempt {
 		required = append(required, "Landing phase")
 	}
 	for _, column := range required {
 		if _, present := columns[column]; !present {
-			t.Fatalf("%s: Items table has no %q column (columns: %v)", name, column, columns)
+			problems = append(problems, fmt.Sprintf("%s: Items table has no %q column (columns: %v)", name, column, columns))
+		}
+	}
+	if len(problems) > 0 {
+		// A missing required column makes every row-level check below
+		// meaningless (columns[...] would silently index 0) -- report the
+		// shape defect now rather than cascade into confusing row errors.
+		return problems, nil
+	}
+
+	if !debtRegisterNamingPattern.MatchString(name) {
+		if _, exempt := debtRegisterNamingExemptions[name]; !exempt {
+			problems = append(problems, fmt.Sprintf("%s: register filename does not match the PHASE-<NN>-DEBT.md convention required for any register created from M003 on, and is not on the frozen-prior-art exemption list", name))
 		}
 	}
 
 	identifiers := make(map[string]bool, len(rows))
+	var ownerless []string
 	for _, row := range rows {
 		identifier := row[columns["ID"]]
 		if !strings.HasPrefix(identifier, "D-") || len(identifier) < len("D-00-0") {
-			t.Fatalf("%s: row %q does not name a D-XX-NN identifier", name, identifier)
+			problems = append(problems, fmt.Sprintf("%s: row %q does not name a D-XX-NN identifier", name, identifier))
+			continue
 		}
 		if identifiers[identifier] {
-			t.Fatalf("%s: identifier %s appears in two rows", name, identifier)
+			problems = append(problems, fmt.Sprintf("%s: identifier %s appears in two rows", name, identifier))
+			continue
 		}
 		identifiers[identifier] = true
 		for _, column := range required {
 			value := row[columns[column]]
 			if value == "" || value == "-" {
-				t.Fatalf("%s: row %s has an empty %q cell", name, identifier, column)
+				problems = append(problems, fmt.Sprintf("%s: row %s has an empty %q cell", name, identifier, column))
 			}
 		}
 		if severity := row[columns["Severity"]]; !debtRegisterSeverities[severity] {
-			t.Fatalf("%s: row %s has severity %q outside the closed vocabulary (blocker, warning, info)", name, identifier, severity)
+			problems = append(problems, fmt.Sprintf("%s: row %s has severity %q outside the closed vocabulary (blocker, warning, info)", name, identifier, severity))
+		}
+		if !landingExempt {
+			raw := row[columns["Landing phase"]]
+			cell := strings.TrimSpace(raw)
+			if !debtRegisterOwningPhaseForm(cell) {
+				// Every ownerless row is collected and reported together,
+				// in table order, rather than failing on the first
+				// (D-14-24) -- the join below is what makes the report
+				// deterministic across runs.
+				ownerless = append(ownerless, fmt.Sprintf("row %s has owning-phase cell %q outside the closed P<NN>|CLOSED(<sha>)|UNOWNED(<witness>) vocabulary", identifier, raw))
+			}
 		}
 	}
+	if len(ownerless) > 0 {
+		problems = append(problems, fmt.Sprintf("%s: %d row(s) failed the owning-phase vocabulary: %s", name, len(ownerless), strings.Join(ownerless, "; ")))
+	}
 
+	sections := debtRegisterDetailSections(text)
 	details := make(map[string]bool, len(rows))
 	for _, line := range strings.Split(text, "\n") {
 		if !strings.HasPrefix(line, "### D-") {
@@ -2703,27 +2816,134 @@ func checkDebtRegister(t *testing.T, path string) {
 		}
 		identifier = strings.Trim(identifier, "`")
 		if !identifiers[identifier] {
-			t.Fatalf("%s: detail section %q has no row in the Items table", name, identifier)
+			problems = append(problems, fmt.Sprintf("%s: detail section %q has no row in the Items table", name, identifier))
+			continue
 		}
 		details[identifier] = true
 	}
 	for identifier := range identifiers {
 		if !details[identifier] {
-			t.Fatalf("%s: row %s has no `### %s` detail section", name, identifier, identifier)
+			problems = append(problems, fmt.Sprintf("%s: row %s has no `### %s` detail section", name, identifier, identifier))
 		}
 	}
+
+	// D-14-31: each row's detail section carries a first-recorded:
+	// milestone. The two-milestone-carry ratification requirement is
+	// scoped to the LIVE phase tree only (.planning/phases/**, never
+	// .planning/milestones/**): an archived register from a shipped
+	// milestone is frozen historical record, not an active re-deferral --
+	// requiring a ratification line on it would mean fabricating one that
+	// never happened. A row that is genuinely still being carried forward
+	// reappears, unowned, in a LIVE register instead (the existing
+	// "resolves"/"REVERSES"/"CARRIED" cross-reference convention this
+	// migration followed), which is exactly where this guard is live.
+	archived := strings.Contains(filepath.ToSlash(path), "/milestones/")
+	for identifier := range identifiers {
+		section, ok := sections[identifier]
+		if !ok {
+			continue // already reported above as a missing detail section
+		}
+		m := debtRegisterFirstRecordedPattern.FindStringSubmatch(section)
+		if m == nil {
+			problems = append(problems, fmt.Sprintf("%s: row %s's detail section has no `first-recorded: M0NN` line", name, identifier))
+			continue
+		}
+		if archived {
+			continue
+		}
+		// Live-tree carry check: only an UNOWNED row can be "carried" at
+		// all (a P<NN> or CLOSED row is owned or resolved, not deferred).
+		rowIdx := -1
+		for i, row := range rows {
+			if row[columns["ID"]] == identifier {
+				rowIdx = i
+				break
+			}
+		}
+		if rowIdx == -1 || landingExempt {
+			continue
+		}
+		cell := strings.TrimSpace(rows[rowIdx][columns["Landing phase"]])
+		if !strings.HasPrefix(cell, "UNOWNED(") {
+			continue
+		}
+		firstMilestone := 0
+		fmt.Sscanf(m[1], "M%d", &firstMilestone)
+		currentMilestone := 3 // M003, this milestone -- bump when M004 opens
+		if firstMilestone > 0 && currentMilestone-firstMilestone >= 2 {
+			ratified := strings.Contains(section, "blocking-human") && strings.Contains(strings.ToLower(section), "ratif")
+			if !ratified {
+				problems = append(problems, fmt.Sprintf("%s: row %s was first recorded in %s and is still UNOWNED in the live tree, carried past a second milestone boundary with no recorded blocking-human ratification (D-14-31)", name, identifier, m[1]))
+			}
+		}
+	}
+
+	return problems, nil
+}
+
+// debtRegisterDetailSections splits text's `## Detail` (or any) section into
+// per-identifier substrings, keyed by the bare `D-XX-NN` identifier, each
+// running from its `### D-XX-NN` heading to the next `### ` or `## `
+// heading (or EOF). Used to scope the first-recorded: search to the correct
+// row's own section rather than matching anywhere in the file.
+func debtRegisterDetailSections(text string) map[string]string {
+	sections := make(map[string]string)
+	lines := strings.Split(text, "\n")
+	var currentID string
+	var buf []string
+	flush := func() {
+		if currentID != "" {
+			sections[currentID] = strings.Join(buf, "\n")
+		}
+		buf = nil
+	}
+	for _, line := range lines {
+		if strings.HasPrefix(line, "### D-") {
+			flush()
+			heading := strings.TrimSpace(strings.TrimPrefix(line, "###"))
+			identifier := heading
+			if cut := strings.IndexAny(heading, " \t"); cut != -1 {
+				identifier = heading[:cut]
+			}
+			currentID = strings.Trim(identifier, "`")
+			continue
+		}
+		if strings.HasPrefix(line, "## ") {
+			flush()
+			currentID = ""
+			continue
+		}
+		if currentID != "" {
+			buf = append(buf, line)
+		}
+	}
+	flush()
+	return sections
 }
 
 // debtRegisterTable returns the Items table's column index by header name and
 // its data rows, each row indexed the same way. Only the `## Items` section
 // is read: later sections (closures, process debt) hold their own tables and
-// are not the register.
+// are not the register. Delegates to parseDebtRegisterTable so
+// debtRegisterProblems shares exactly one parser with this *testing.T-based
+// caller (session_peer_gate_test.go's peerDivergenceDebtIDResolvesToOpenRow).
 func debtRegisterTable(t *testing.T, name, text string) (map[string]int, [][]string) {
 	t.Helper()
+	columns, rows, err := parseDebtRegisterTable(name, text)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return columns, rows
+}
+
+// parseDebtRegisterTable is debtRegisterTable's pure core. A zero-row Items
+// table is a valid, non-error result (D-14-24's vacuous-pass requirement) --
+// callers that need at least one row check len(rows) themselves.
+func parseDebtRegisterTable(name, text string) (map[string]int, [][]string, error) {
 	anchor := "\n## Items\n"
 	start := strings.Index(text, anchor)
 	if start == -1 {
-		t.Fatalf("%s: has no `## Items` section", name)
+		return nil, nil, fmt.Errorf("%s: has no `## Items` section", name)
 	}
 	section := text[start+len(anchor):]
 	if end := strings.Index(section, "\n## "); end != -1 {
@@ -2750,15 +2970,12 @@ func debtRegisterTable(t *testing.T, name, text string) (map[string]int, [][]str
 			continue
 		}
 		if len(cells) != len(columns) {
-			t.Fatalf("%s: row %q has %d cells, want %d", name, cells[0], len(cells), len(columns))
+			return nil, nil, fmt.Errorf("%s: row %q has %d cells, want %d", name, cells[0], len(cells), len(columns))
 		}
 		rows = append(rows, cells)
 	}
 	if columns == nil {
-		t.Fatalf("%s: `## Items` section holds no table", name)
+		return nil, nil, fmt.Errorf("%s: `## Items` section holds no table", name)
 	}
-	if len(rows) == 0 {
-		t.Fatalf("%s: `## Items` table holds no data row", name)
-	}
-	return columns, rows
+	return columns, rows, nil
 }
