@@ -7,11 +7,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go/ast"
+	"go/build"
+	"go/parser"
+	"go/token"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -2643,6 +2649,320 @@ func debtRegisterOwningPhaseForm(cell string) bool {
 // `first-recorded: M0NN`.
 var debtRegisterFirstRecordedPattern = regexp.MustCompile(`(?m)^first-recorded:\s*(M\d{3})\s*$`)
 
+// ---------------------------------------------------------------------
+// Plan 14-07: the Grade and Witness columns (EVD-03/EVD-04, D-14-21
+// through D-14-30). Extends checkDebtRegister in place -- same function,
+// same file, no new parser -- with a closed four-kind executed witness
+// grammar and the two D-14-29 closure assertions. A phase identifier is
+// NEVER a witness (D-14-23): it may appear only in the Landing phase cell
+// plan 14-04 closed, because whether a phase lands is a human editing
+// ROADMAP.md, an artifact read, not an executed claim.
+// ---------------------------------------------------------------------
+
+// debtRegisterGradeWitnessExemptions names every register written before
+// the Grade/Witness columns existed. Frozen prior art only: mechanically
+// deriving and witnessing ~113 pre-existing rows this register never
+// claimed a Grade for is out of this plan's budget (recorded as debt in
+// this plan's own SUMMARY, not silently deferred). Any register created
+// or extended to carry Grade/Witness cells must NOT be listed here --
+// PHASE-13-DEBT.md and PHASE-14-DEBT.md are the two this plan migrates in
+// full (every row in both files carries a real Grade and Witness).
+var debtRegisterGradeWitnessExemptions = map[string]string{
+	"02-DEBT.md":         "written 2026-09-04, before Grade/Witness existed; frozen prior art",
+	"03-DEBT.md":         "written 2026-09-04, before Grade/Witness existed; frozen prior art",
+	"04-DEBT.md":         "written 2026-09-05, before Grade/Witness existed; frozen prior art",
+	"05-DEBT.md":         "written 2026-09-06, before Grade/Witness existed; frozen prior art",
+	"06-DEBT.md":         "written 2026-09-07, before Grade/Witness existed; frozen prior art",
+	"PHASE-07-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
+	"PHASE-08-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
+	"PHASE-09-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
+	"PHASE-10-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
+	"PHASE-11-DEBT.md":   "written before Grade/Witness existed (plan 14-07); D-11-02 is witnessed informally in its own Detail section instead -- see PHASE-14-DEBT.md D-14-45's own note and this plan's SUMMARY",
+	"PHASE-12-DEBT.md":   "written before Grade/Witness existed (plan 14-07); D-12-43 is witnessed informally in its own Detail section instead -- see this plan's SUMMARY",
+}
+
+// debtRegisterGrades is the closed grade vocabulary. This plan (EVD-03/04)
+// declares Grade rather than mechanically deriving a ceiling from evidence
+// (EVD-02's D-14-01 cap, a separate law) -- the same vocabulary, reused as
+// a closed-membership check the way Severity already is.
+var debtRegisterGrades = map[string]bool{
+	"DEFINED": true, "WIRED": true, "REACHABLE": true, "EXERCISED": true, "MUTATION-KILLED": true,
+}
+
+// debtRegisterGradeOrdinal ranks the closed grade vocabulary so
+// "below the satisfying bar" (D-14-29) is a numeric comparison, not a
+// string special-case.
+var debtRegisterGradeOrdinal = map[string]int{
+	"DEFINED": 0, "WIRED": 1, "REACHABLE": 2, "EXERCISED": 3, "MUTATION-KILLED": 4,
+}
+
+// debtRegisterSatisfyingGradeOrdinal is EVD-02's own satisfying bar
+// (>= EXERCISED); a row graded below this must carry a witness or be
+// explicitly withdrawn (D-14-29).
+var debtRegisterSatisfyingGradeOrdinal = debtRegisterGradeOrdinal["EXERCISED"]
+
+// debtRegisterGradeCellPattern accepts a bare closed-vocabulary grade, or
+// the same grade suffixed " (withdrawn)" -- the explicit-withdrawal escape
+// hatch D-14-29's closure assertion names for a below-bar row that carries
+// no witness because the claim itself has been retracted, not merely
+// deferred.
+var debtRegisterGradeCellPattern = regexp.MustCompile(`^(DEFINED|WIRED|REACHABLE|EXERCISED|MUTATION-KILLED)( \(withdrawn\))?$`)
+
+// The closed four-kind witness grammar (D-14-23). Free text and a bare
+// phase identifier (P\d\d) both fail by construction: neither matches any
+// of these four patterns.
+var (
+	debtRegisterProbeTokenPattern    = regexp.MustCompile(`^probe:([A-Za-z][A-Za-z0-9_]*)$`)
+	debtRegisterCallsiteTokenPattern = regexp.MustCompile(`^callsite:([A-Za-z0-9_./]+)\.([A-Za-z][A-Za-z0-9_]*)=(\d+)$`)
+	debtRegisterEscapeTokenPattern   = regexp.MustCompile(`^escape:([a-z][a-z0-9-]*)$`)
+	debtRegisterEnvTokenPattern      = regexp.MustCompile(`^env:([a-z][a-z0-9_-]*)$`)
+)
+
+// debtRegisterEscapeRegistry is the closed set of declared escape
+// identifiers an escape: witness token may name (D-14-23/D-14-27). Each
+// entry's own probe: token is independently resolved through
+// debtRegisterWitnessTokenProblem -- an escape is a witnessed admission,
+// never a silent skip.
+var debtRegisterEscapeRegistry = map[string]string{
+	"callback-invocation-unsubjected": "probe:TestRetainedPointerEscapeIsStillUnsubjected",
+}
+
+// debtRegisterEnvironmentalSet is the closed set of env: witness tokens
+// (D-14-23): host/toolchain preconditions that never close and are
+// explicitly not debt, but must still be declared -- never a
+// citation-free skip laundered through a new invented env value.
+var debtRegisterEnvironmentalSet = map[string]bool{
+	"clang": true,
+}
+
+// debtRegisterModuleTestNames scans every *_test.go file in the module
+// (honoring build constraints via go/build.Context.MatchFile, exactly as
+// verification_groundedness_test.go's buildTestIndex does) and returns the
+// flat set of top-level Test/Fuzz/Benchmark/Example identifiers declared
+// anywhere -- a probe: witness token's existence check. Rebuilt on every
+// call rather than cached: the module is small (~7ms per
+// verification_groundedness_test.go's own measurement) and a stale cache
+// across seeded-fixture subtests is a worse failure mode than a rebuild.
+func debtRegisterModuleTestNames() (map[string]bool, error) {
+	names := make(map[string]bool)
+	root := testsupport.ProjectPath()
+	fset := token.NewFileSet()
+	buildCtx := build.Default
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			base := d.Name()
+			if base == ".git" || base == "testdata" || (path != root && strings.HasPrefix(base, ".")) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		dir := filepath.Dir(path)
+		match, matchErr := buildCtx.MatchFile(dir, filepath.Base(path))
+		if matchErr != nil {
+			return matchErr
+		}
+		if !match {
+			return nil
+		}
+		file, parseErr := parser.ParseFile(fset, path, nil, parser.SkipObjectResolution)
+		if parseErr != nil {
+			return parseErr
+		}
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Recv != nil {
+				continue
+			}
+			if isTestLikeFunc(fn) {
+				names[fn.Name.Name] = true
+			}
+		}
+		return nil
+	})
+	return names, err
+}
+
+// debtRegisterProbeExists reports whether name is a top-level Test-shaped
+// function declared anywhere in the module.
+func debtRegisterProbeExists(name string) (bool, error) {
+	names, err := debtRegisterModuleTestNames()
+	if err != nil {
+		return false, err
+	}
+	return names[name], nil
+}
+
+// debtRegisterCallSiteWitnessMatches resolves a callsite: token
+// (pkgPath.Symbol=count) via a stdlib go/ast scan of pkgPath's PRODUCTION
+// (non-test) .go files only, counting exact CALL sites of Symbol -- the
+// anti-source-search rule (D-14-23): a Symbol that is not declared at all
+// in the package is a FAIL, never a count of zero, so a rename is loud
+// instead of silently reading as "zero call sites." Scanning production
+// files only (excluding _test.go) is deliberate: a call site inside a unit
+// test exercising the function directly does not make the function
+// reachable from the production pipeline, which is exactly the claim a
+// row like D-13-02b's `callsite:internal/compiler/check.resolveBlame=0`
+// makes (resolveBlame is unit-tested directly but never called from
+// production code -- see this plan's SUMMARY).
+func debtRegisterCallSiteWitnessMatches(pkgPath, symbol string, want int) (bool, string) {
+	dir := testsupport.ProjectPath(strings.Split(pkgPath, "/")...)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, fmt.Sprintf("callsite package %q does not exist: %v", pkgPath, err)
+	}
+	fset := token.NewFileSet()
+	declared := false
+	count := 0
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		file, parseErr := parser.ParseFile(fset, path, nil, parser.SkipObjectResolution)
+		if parseErr != nil {
+			return false, fmt.Sprintf("callsite scan: parse %s: %v", path, parseErr)
+		}
+		for _, decl := range file.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && fn.Name.Name == symbol {
+				declared = true
+			}
+		}
+		ast.Inspect(file, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			switch fn := call.Fun.(type) {
+			case *ast.Ident:
+				if fn.Name == symbol {
+					count++
+				}
+			case *ast.SelectorExpr:
+				if fn.Sel.Name == symbol {
+					count++
+				}
+			}
+			return true
+		})
+	}
+	if !declared {
+		return false, fmt.Sprintf("callsite symbol %q does not exist in package %q -- absence is never a pass", symbol, pkgPath)
+	}
+	if count != want {
+		return false, fmt.Sprintf("callsite %s.%s: expected %d call site(s), found %d", pkgPath, symbol, want, count)
+	}
+	return true, ""
+}
+
+// debtRegisterWitnessTokenProblem resolves ONE witness token against the
+// closed four-kind grammar (D-14-23) and returns a non-empty problem
+// string when it fails to resolve, "" when it holds. Free text and a bare
+// phase identifier both fall through to the default case and fail --
+// there is no fifth kind.
+func debtRegisterWitnessTokenProblem(tok string) string {
+	switch {
+	case debtRegisterProbeTokenPattern.MatchString(tok):
+		name := debtRegisterProbeTokenPattern.FindStringSubmatch(tok)[1]
+		ok, err := debtRegisterProbeExists(name)
+		if err != nil {
+			return fmt.Sprintf("witness token %q: %v", tok, err)
+		}
+		if !ok {
+			return fmt.Sprintf("witness token %q names a test that does not exist", tok)
+		}
+		return ""
+	case debtRegisterCallsiteTokenPattern.MatchString(tok):
+		m := debtRegisterCallsiteTokenPattern.FindStringSubmatch(tok)
+		pkgPath, symbol, wantStr := m[1], m[2], m[3]
+		want, convErr := strconv.Atoi(wantStr)
+		if convErr != nil {
+			return fmt.Sprintf("witness token %q: unreadable call count: %v", tok, convErr)
+		}
+		if ok, reason := debtRegisterCallSiteWitnessMatches(pkgPath, symbol, want); !ok {
+			return fmt.Sprintf("witness token %q: %s", tok, reason)
+		}
+		return ""
+	case debtRegisterEscapeTokenPattern.MatchString(tok):
+		id := debtRegisterEscapeTokenPattern.FindStringSubmatch(tok)[1]
+		probeToken, known := debtRegisterEscapeRegistry[id]
+		if !known {
+			return fmt.Sprintf("witness token %q names an escape identifier absent from the closed escape registry", tok)
+		}
+		if problem := debtRegisterWitnessTokenProblem(probeToken); problem != "" {
+			return fmt.Sprintf("witness token %q: its registered probe does not resolve: %s", tok, problem)
+		}
+		return ""
+	case debtRegisterEnvTokenPattern.MatchString(tok):
+		id := debtRegisterEnvTokenPattern.FindStringSubmatch(tok)[1]
+		if !debtRegisterEnvironmentalSet[id] {
+			return fmt.Sprintf("witness token %q names an environmental value outside the closed set", tok)
+		}
+		return ""
+	default:
+		return fmt.Sprintf("witness token %q is outside the closed four-kind grammar (probe:/callsite:/escape:/env:) -- free text and bare phase identifiers are never witnesses", tok)
+	}
+}
+
+// debtRegisterWitnessCellProblems splits cell on commas -- several
+// witnesses separated by commas pass only when ALL of them hold (D-14-23)
+// -- and returns every unresolved token's problem, in cell order.
+func debtRegisterWitnessCellProblems(cell string) []string {
+	var problems []string
+	for _, tok := range strings.Split(cell, ",") {
+		tok = strings.TrimSpace(tok)
+		if tok == "" {
+			problems = append(problems, "empty witness token between commas")
+			continue
+		}
+		if problem := debtRegisterWitnessTokenProblem(tok); problem != "" {
+			problems = append(problems, problem)
+		}
+	}
+	return problems
+}
+
+// debtRegisterGradeWitnessRowProblems checks one row's Grade and Witness
+// cells once both columns are known to be present, applying D-14-29's
+// closure assertion: every row graded below the satisfying bar carries a
+// witness (every comma-separated token resolves) or is explicitly
+// withdrawn. "n/a" is the literal, explicit spelling for "no witness
+// declared" -- distinct from an empty cell, which is always a problem --
+// and is only legal at or above the satisfying bar, or on a withdrawn row.
+func debtRegisterGradeWitnessRowProblems(name, identifier, gradeCell, witnessCell string) []string {
+	var problems []string
+	m := debtRegisterGradeCellPattern.FindStringSubmatch(strings.TrimSpace(gradeCell))
+	if m == nil {
+		return []string{fmt.Sprintf("%s: row %s has Grade %q outside the closed vocabulary (%v)", name, identifier, gradeCell, debtRegisterGrades)}
+	}
+	grade := m[1]
+	withdrawn := m[2] != ""
+	if withdrawn && grade != "DEFINED" {
+		problems = append(problems, fmt.Sprintf("%s: row %s: only DEFINED may be marked (withdrawn)", name, identifier))
+	}
+	belowBar := debtRegisterGradeOrdinal[grade] < debtRegisterSatisfyingGradeOrdinal
+	witnessCell = strings.TrimSpace(witnessCell)
+	switch {
+	case witnessCell == "":
+		problems = append(problems, fmt.Sprintf("%s: row %s has an empty Witness cell", name, identifier))
+	case witnessCell == "n/a":
+		if belowBar && !withdrawn {
+			problems = append(problems, fmt.Sprintf("%s: row %s is graded %s (below the satisfying bar) with Witness \"n/a\" and is not explicitly withdrawn -- every below-bar claim must carry a witness or be withdrawn (D-14-29)", name, identifier, grade))
+		}
+	default:
+		for _, problem := range debtRegisterWitnessCellProblems(witnessCell) {
+			problems = append(problems, fmt.Sprintf("%s: row %s: %s", name, identifier, problem))
+		}
+	}
+	return problems
+}
+
 // TestDebtRegistersAreWellFormed is the mechanical half of the debt-register
 // checkpoint that phase 04-06 recorded as human judgment ("each dated with
 // identifier/severity/source/landing phase"). Register *honesty* -- whether
@@ -2676,6 +2996,121 @@ func TestDebtRegistersAreWellFormed(t *testing.T) {
 			checkDebtRegister(t, path)
 		})
 	}
+}
+
+// debtRegisterGlobalIdentifierProblems is D-14-29's closure assertion (ii):
+// "every row of the generated view appears in exactly one register." The
+// generated view (Task 4, .planning/UNREACHABLE-CLAIMS.md) is derived
+// one-to-one from register rows, so this reduces to a checkable invariant
+// over the registers themselves, ahead of the view existing: no D-XX-NN
+// identifier may appear as a table row in more than one *-DEBT.md
+// register. A duplicate would mean the eventual view has two candidate
+// sources for the same row -- an ambiguity the "derived, not authored"
+// topology (D-14-13) forbids by construction.
+func debtRegisterGlobalIdentifierProblems(paths []string) ([]string, error) {
+	owner := make(map[string]string)
+	var problems []string
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		columns, rows, tableErr := parseDebtRegisterTable(filepath.Base(path), string(data))
+		if tableErr != nil {
+			// A malformed table is already reported by
+			// debtRegisterProblems/checkDebtRegister -- do not duplicate
+			// that failure here, but do not silently skip the file either.
+			continue
+		}
+		idIndex, ok := columns["ID"]
+		if !ok {
+			continue
+		}
+		for _, row := range rows {
+			if idIndex >= len(row) {
+				continue
+			}
+			identifier := row[idIndex]
+			if existing, seen := owner[identifier]; seen {
+				if existing != path {
+					problems = append(problems, fmt.Sprintf("identifier %s appears in two registers: %s and %s", identifier, existing, path))
+				}
+				continue
+			}
+			owner[identifier] = path
+		}
+	}
+	return problems, nil
+}
+
+// TestDebtRegisterIdentifiersAreGloballyUnique is D-14-29's closure
+// assertion (ii): "every row of the generated view appears in exactly one
+// register." The generated view (Task 4) is sourced only from registers
+// that carry Grade/Witness cells -- a register on
+// debtRegisterGradeWitnessExemptions has no graded rows to contribute to
+// the view at all -- so this check is scoped to the non-exempt registers.
+// Scoping it to the whole corpus would misfire on the project's own
+// existing, intentional carry-forward pattern (D-03-02 is deliberately
+// re-cited from 03-DEBT.md into PHASE-07-DEBT.md, predating and distinct
+// from this plan's Grade/Witness law), which is not the ambiguity this
+// assertion exists to catch.
+func TestDebtRegisterIdentifiersAreGloballyUnique(t *testing.T) {
+	registers, err := phaseArtifactGlob("*", "*-DEBT.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var graded []string
+	for _, path := range registers {
+		if _, exempt := debtRegisterGradeWitnessExemptions[filepath.Base(path)]; !exempt {
+			graded = append(graded, path)
+		}
+	}
+	problems, err := debtRegisterGlobalIdentifierProblems(graded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) > 0 {
+		t.Fatalf("%s", strings.Join(problems, "\n"))
+	}
+}
+
+// TestDebtRegisterIdentifierUniquenessGuardIsNotInert is D-14-29's closure
+// assertion (ii) proven non-inert: two temp copies of the same real
+// register, sharing every identifier, must be reported as duplicates; the
+// unmodified single-register case must not.
+func TestDebtRegisterIdentifierUniquenessGuardIsNotInert(t *testing.T) {
+	t.Run("single register has no duplicates", func(t *testing.T) {
+		src := debtRegisterOwnershipFixture(t)
+		problems, err := debtRegisterGlobalIdentifierProblems([]string{src})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) != 0 {
+			t.Fatalf("a single register should never self-collide; got: %v", problems)
+		}
+	})
+
+	t.Run("two registers sharing an identifier are flagged", func(t *testing.T) {
+		first := debtRegisterOwnershipFixture(t)
+		data, err := os.ReadFile(first)
+		if err != nil {
+			t.Fatal(err)
+		}
+		second := filepath.Join(filepath.Dir(first), "PHASE-98-DEBT.md")
+		if err := os.WriteFile(second, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		problems, err := debtRegisterGlobalIdentifierProblems([]string{first, second})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("two registers sharing D-14-45 should be flagged as duplicate owners, but nothing was reported")
+		}
+		if !containsSubstring(problems, "D-14-45") {
+			t.Fatalf("refusal does not name the duplicated identifier: %v", problems)
+		}
+	})
 }
 
 // checkDebtRegister is TestDebtRegistersAreWellFormed's *testing.T wrapper:
@@ -2743,9 +3178,13 @@ func debtRegisterProblems(path string) ([]string, error) {
 	}
 
 	_, landingExempt := debtRegisterLandingPhaseExemptions[name]
+	_, gradeWitnessExempt := debtRegisterGradeWitnessExemptions[name]
 	required := []string{"ID", "Source", "Threat/Req", "Severity", "Item"}
 	if !landingExempt {
 		required = append(required, "Landing phase")
+	}
+	if !gradeWitnessExempt {
+		required = append(required, "Grade", "Witness")
 	}
 	for _, column := range required {
 		if _, present := columns[column]; !present {
@@ -2797,6 +3236,9 @@ func debtRegisterProblems(path string) ([]string, error) {
 				// deterministic across runs.
 				ownerless = append(ownerless, fmt.Sprintf("row %s has owning-phase cell %q outside the closed P<NN>|CLOSED(<sha>)|UNOWNED(<witness>) vocabulary", identifier, raw))
 			}
+		}
+		if !gradeWitnessExempt {
+			problems = append(problems, debtRegisterGradeWitnessRowProblems(name, identifier, row[columns["Grade"]], row[columns["Witness"]])...)
 		}
 	}
 	if len(ownerless) > 0 {
@@ -3096,6 +3538,192 @@ func debtRegisterEmptyTableFixture(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return dst
+}
+
+// debtRegisterWitnessGrammarFixture builds a synthetic, otherwise
+// well-formed register with exactly one row (D-99-01), Grade cell
+// gradeCell and Witness cell witnessCell, in t.TempDir(). The filename
+// (PHASE-97-DEBT.md) matches the naming convention and is not on either
+// exemption list, so Grade/Witness enforcement is live against it.
+func debtRegisterWitnessGrammarFixture(t *testing.T, gradeCell, witnessCell string) string {
+	t.Helper()
+	text := "---\n" +
+		"phase: 97-synthetic\n" +
+		"recorded: 2026-09-18\n" +
+		"status: accepted\n" +
+		"disposition: synthetic-fixture\n" +
+		"items: 1\n" +
+		"blocking: 0\n" +
+		"---\n\n" +
+		"# Synthetic Witness Grammar Fixture\n\n" +
+		"## Items\n\n" +
+		"| ID | Source | Threat/Req | Severity | Landing phase | Grade | Witness | Item |\n" +
+		"|---|---|---|---|---|---|---|---|\n" +
+		"| D-99-01 | synthetic | SYN-01 | warning | P17 | " + gradeCell + " | " + witnessCell + " | synthetic claim for TestDebtRegisterWitnessGrammarIsClosed |\n\n" +
+		"## Detail\n\n" +
+		"### D-99-01 -- synthetic claim\n\n" +
+		"first-recorded: M003\n\n" +
+		"Synthetic fixture body.\n"
+	dst := filepath.Join(t.TempDir(), "PHASE-97-DEBT.md")
+	if err := os.WriteFile(dst, []byte(text), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dst
+}
+
+// TestDebtRegisterWitnessGrammarIsClosed is Task 1's own <behavior> cases,
+// each run over synthetic register text in t.TempDir() rather than the
+// live corpus, so a fixture drift in the real registers can never mask a
+// grammar regression. Written failing-first against the unextended law,
+// then made to pass by the grammar this task adds (RED then GREEN, per
+// this task's tdd="true").
+func TestDebtRegisterWitnessGrammarIsClosed(t *testing.T) {
+	t.Run("probe token naming an existing test passes", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "EXERCISED", "probe:TestDebtRegistersAreWellFormed")
+		if problems, err := debtRegisterProblems(path); err != nil || len(problems) != 0 {
+			t.Fatalf("expected a clean pass; got err=%v problems=%v", err, problems)
+		}
+	})
+
+	t.Run("probe token naming a nonexistent test fails", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "EXERCISED", "probe:TestThisTestNameDoesNotExistAnywhereInTheModule")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("a probe: token naming a nonexistent test should fail, but nothing was reported")
+		}
+	})
+
+	t.Run("callsite token with correct symbol and count passes", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "WIRED", "callsite:internal/compiler/check.resolveBlame=0")
+		if problems, err := debtRegisterProblems(path); err != nil || len(problems) != 0 {
+			t.Fatalf("expected a clean pass; got err=%v problems=%v", err, problems)
+		}
+	})
+
+	t.Run("callsite token with wrong count fails", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "WIRED", "callsite:internal/compiler/check.resolveBlame=99")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("a callsite: token with the wrong count should fail, but nothing was reported")
+		}
+	})
+
+	t.Run("callsite token naming a nonexistent symbol fails as missing, not as a count of zero", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "WIRED", "callsite:internal/compiler/check.thisSymbolDoesNotExistAnywhere=0")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("a callsite: token naming a nonexistent symbol should fail, but nothing was reported")
+		}
+		if !containsSubstring(problems, "does not exist in package") {
+			t.Fatalf("refusal did not name the symbol as missing (absence must never read as a pass): %v", problems)
+		}
+	})
+
+	t.Run("escape token resolving in the closed registry with a resolving probe passes", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "DEFINED", "escape:callback-invocation-unsubjected")
+		if problems, err := debtRegisterProblems(path); err != nil || len(problems) != 0 {
+			t.Fatalf("expected a clean pass; got err=%v problems=%v", err, problems)
+		}
+	})
+
+	t.Run("escape token absent from the closed registry fails", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "DEFINED", "escape:this-escape-id-is-not-registered")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("an unregistered escape: token should fail, but nothing was reported")
+		}
+	})
+
+	t.Run("env token in the closed set is declared, never closes, and is explicitly not debt", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "DEFINED (withdrawn)", "env:clang")
+		if problems, err := debtRegisterProblems(path); err != nil || len(problems) != 0 {
+			t.Fatalf("expected a clean pass; got err=%v problems=%v", err, problems)
+		}
+	})
+
+	t.Run("env token outside the closed set fails", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "DEFINED (withdrawn)", "env:some-invented-toolchain")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("an env: token outside the closed set should fail, but nothing was reported")
+		}
+	})
+
+	t.Run("free text fails even though non-empty", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "WIRED", "OPEN and UNOWNED -- reopens only when the language grows")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("free text must never satisfy the witness grammar merely by being non-empty")
+		}
+	})
+
+	t.Run("a bare phase identifier is never a witness", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "WIRED", "P17")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("a bare phase identifier must never satisfy the witness grammar")
+		}
+	})
+
+	t.Run("several comma-separated witnesses pass only when all hold", func(t *testing.T) {
+		allHold := debtRegisterWitnessGrammarFixture(t, "WIRED", "probe:TestDebtRegistersAreWellFormed, callsite:internal/compiler/check.resolveBlame=0")
+		if problems, err := debtRegisterProblems(allHold); err != nil || len(problems) != 0 {
+			t.Fatalf("expected a clean pass when all comma-separated witnesses hold; got err=%v problems=%v", err, problems)
+		}
+
+		oneFails := debtRegisterWitnessGrammarFixture(t, "WIRED", "probe:TestDebtRegistersAreWellFormed, callsite:internal/compiler/check.resolveBlame=99")
+		problems, err := debtRegisterProblems(oneFails)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("one failing token among several comma-separated witnesses must fail the whole cell")
+		}
+	})
+
+	t.Run("a row graded below the satisfying bar with an empty witness cell fails unless withdrawn", func(t *testing.T) {
+		emptyWitness := debtRegisterWitnessGrammarFixture(t, "WIRED", "n/a")
+		problems, err := debtRegisterProblems(emptyWitness)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("a below-bar row with Witness \"n/a\" and no withdrawal should fail")
+		}
+
+		withdrawn := debtRegisterWitnessGrammarFixture(t, "DEFINED (withdrawn)", "n/a")
+		if problems, err := debtRegisterProblems(withdrawn); err != nil || len(problems) != 0 {
+			t.Fatalf("an explicitly withdrawn row should pass with no witness; got err=%v problems=%v", err, problems)
+		}
+	})
+
+	t.Run("a row graded at or above the satisfying bar may declare Witness n/a", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "MUTATION-KILLED", "n/a")
+		if problems, err := debtRegisterProblems(path); err != nil || len(problems) != 0 {
+			t.Fatalf("expected a clean pass; got err=%v problems=%v", err, problems)
+		}
+	})
 }
 
 // TestDebtRegisterOwnershipGuardIsNotInert demonstrates concretely that the
