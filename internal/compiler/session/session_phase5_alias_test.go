@@ -284,10 +284,12 @@ func TestAssertMutationMovesAnAxisFailsOnAMislabeledAxis(t *testing.T) {
 	}
 }
 
-// TestNAT03TableCitesPending0508FixturePaths is the plan's own literal
+// TestNAT03TableCitesPending0508FixturePaths is D-05-07's own literal
 // grep-shaped acceptance criterion, re-asserted here as a compiled check:
-// rows 6-7 cite plan 05-08's FINAL fixture paths (never a placeholder),
-// and are both marked PENDING-05-08.
+// the sanitizer allocator-mismatch row cites plan 05-08's FINAL fixture
+// path (never a placeholder) -- now handled directly by the single
+// surviving axis-movement law (EVD-05, plan 14-08 collapse) rather than
+// excluded pending a since-closed cross-plan gate.
 func TestNAT03TableCitesPending0508FixturePaths(t *testing.T) {
 	rows := session.NAT03Mutations()
 	found := false

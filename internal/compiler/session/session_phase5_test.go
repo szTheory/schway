@@ -182,8 +182,9 @@ func TestSanitizeLaneNotInEditOrCheck(t *testing.T) {
 // TestNAT03MutationsCiteExistingPrograms is T-05-36's own falsifier,
 // enumerated over the WHOLE table rather than sampled: every row with
 // Subjected: true must cite a CorpusProgram path that exists on disk,
-// including the two rows plan 05-07 left marked PENDING-05-08 (now closed
-// by plan 05-08's fixtures landing).
+// including the sanitizer allocator-mismatch row, which is now handled
+// directly by the single surviving axis-movement law (EVD-05, plan 14-08
+// collapse) rather than excluded pending a since-closed cross-plan gate.
 func TestNAT03MutationsCiteExistingPrograms(t *testing.T) {
 	rows := session.NAT03Mutations()
 	subjected := 0
@@ -251,8 +252,9 @@ func TestAssertMutationMovesAnAxisHandlesSanitizerControl(t *testing.T) {
 // 1's second RED falsifier: an unknown control's default-arm error must
 // name the unsupported control and must carry NO stale pending-marker
 // text -- the marker's removal from this error string is the same
-// deletion the retired TestNoNAT03RowRemainsPending guard was supposed to
-// catch and did not (D-14-22 instance 4).
+// deletion the retired single-file marker guard (superseded by Task 3's
+// module-wide suppression enumerator) was supposed to catch and did not
+// (D-14-22 instance 4).
 func TestAssertMutationMovesAnAxisUnknownControlNamesControlNoMarker(t *testing.T) {
 	unknown := session.NAT03Mutation{
 		ControlID:    "control:does.not.exist",
@@ -266,27 +268,12 @@ func TestAssertMutationMovesAnAxisUnknownControlNamesControlNoMarker(t *testing.
 	if !strings.Contains(err.Error(), unknown.ControlID) {
 		t.Fatalf("expected the error to name the unsupported control %q, got: %v", unknown.ControlID, err)
 	}
-	if strings.Contains(err.Error(), "PENDING-05-08") {
-		t.Fatalf("expected no stale pending-marker text in the error, got: %v", err)
-	}
-}
-
-// TestNoNAT03RowRemainsPending refuses a gate whose citation is unclosed:
-// no NAT-03 row's OWN declaration in session_phase5_alias.go may still
-// carry plan 05-07's pending marker comment now that plan 05-08's fixtures
-// exist. Checks for the exact marker-comment line, not any prose mention
-// of the string PENDING-05-08 elsewhere in the file (e.g. a stale error
-// message), matching the plan's own "delete exactly the two marker
-// comments, nothing else" scope.
-func TestNoNAT03RowRemainsPending(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "session", "session_phase5_alias.go"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, line := range strings.Split(string(source), "\n") {
-		if strings.TrimSpace(line) == "// PENDING-05-08" {
-			t.Fatalf("session_phase5_alias.go still carries a PENDING-05-08 marker comment: %q", line)
-		}
+	// No occurrence of the retired pending-marker string may survive
+	// anywhere under internal/ or cmd/ (Task 3) -- checked module-wide by
+	// TestNoSuppressionOutlivesItsWitness rather than re-asserted here by
+	// literal substring, which would itself be a surviving occurrence.
+	if strings.Contains(err.Error(), "row not yet subjected") {
+		t.Fatalf("expected no stale unsubjected-row qualifier in the error, got: %v", err)
 	}
 }
 

@@ -252,11 +252,10 @@ func suppressionCitationsResolve(text string, mode suppressionResolutionMode) (f
 	if suppressionPendingPattern.MatchString(text) {
 		found = true
 		// PENDING-NN-NN is accepted by shape alone: D-14-26's legacy
-		// marker form has no registry entry of its own. The one
-		// surviving instance in this module, PENDING-05-08, is
-		// deliberately left alive per plan 14-04's SUMMARY hand-off --
-		// plan 14-08 removes it entirely as part of collapsing the
-		// axis-movement law.
+		// marker form has no registry entry of its own. Plan 14-08
+		// removed this module's one surviving instance entirely as part
+		// of collapsing the axis-movement law; no PENDING-NN-NN citation
+		// is expected to remain live anywhere in this module now.
 	}
 	if mode == suppressionModePendingOnly {
 		return found, nil
