@@ -628,7 +628,7 @@ assurance-refactor milestone rather than a feature milestone.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 14. Evidence Instrument and Honest Scoping | 10/10 | Complete | 2026-09-18 |
+| 14. Evidence Instrument and Honest Scoping | 13/13 | Complete    | 2026-09-18 |
 | 15. Event Identity (`lang.execution/2`) | 0/? | Not started | - |
 | 16. Branch/Match Emitter Port | 0/? | Not started | - |
 | 17. Return Type ≠ Parameter Type | 0/? | Not started | - |

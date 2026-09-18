@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 14
-current_phase_name: evidence-instrument-and-honest-scoping
-status: executing
+current_phase: 15
+current_phase_name: Event Identity (`lang.execution/2`)
+status: planning
 stopped_at: Completed 14-12-PLAN.md
-last_updated: "2026-09-18T14:59:20.862Z"
+last_updated: "2026-09-18T15:37:09.884Z"
 last_activity: 2026-09-18
 last_activity_desc: Phase 14 execution complete — all 10 plans done
 progress:
@@ -57,10 +57,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 14 (evidence-instrument-and-honest-scoping) — EXECUTING
-Plan: 4 of 13
-Status: Ready to execute
-Last activity: 2026-09-18 — Phase 14 execution started
+Phase: 15 — Event Identity (`lang.execution/2`)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-18 — Phase 14 complete, transitioned to Phase 15
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -145,7 +145,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 113
+- Total plans completed: 126
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -164,6 +164,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 10 | 9 | - | - |
 | 11 | 9 | - | - |
 | 12 | 8 | - | - |
+| 14 | 13 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
