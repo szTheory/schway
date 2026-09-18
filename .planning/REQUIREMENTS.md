@@ -41,11 +41,11 @@ branched on and would have become the fifth instance.
       the closed vocabulary `DEFINED | WIRED | REACHABLE | EXERCISED |
       MUTATION-KILLED`, and is satisfiable only at EXERCISED or above.
 
-- [ ] **EVD-03**: A claim that is built but structurally unreachable is recorded
+- [x] **EVD-03**: A claim that is built but structurally unreachable is recorded
       in `.planning/UNREACHABLE-CLAIMS.md` with its unblocking trigger, rather
       than graded as satisfied or silently downgraded.
 
-- [ ] **EVD-04**: No test skip or row exclusion outlives the trigger it cites; a
+- [x] **EVD-04**: No test skip or row exclusion outlives the trigger it cites; a
       guard fails when a cited gate has already closed.
 
 - [ ] **EVD-05**: The mutation axis-movement law has exactly one implementation
@@ -204,8 +204,8 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 |-------------|-------|--------|
 | EVD-01 | Phase 14 | Complete |
 | EVD-02 | Phase 14 | Pending |
-| EVD-03 | Phase 14 | Pending |
-| EVD-04 | Phase 14 | Pending |
+| EVD-03 | Phase 14 | Complete |
+| EVD-04 | Phase 14 | Complete |
 | EVD-05 | Phase 14 | Pending |
 | EVD-06 | Phase 14 | Complete |
 | EVD-07 | Phase 14 | Complete |
