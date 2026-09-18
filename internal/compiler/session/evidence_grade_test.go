@@ -292,13 +292,31 @@ var evidenceRunRecordScriptRelPath = []string{"scripts", "evidence-run-record.sh
 // (package, pattern) pairs the caller asks for -- not a whole-module
 // `go test ./...` re-run. corpusRunRecord's consolidatePkgPatterns call
 // (below) folds every pair sharing a package into one alternation before
-// this budget is spent, so the corpus-wide caller -- the most expensive one
-// -- measured at ~136s wall-clock; 300s leaves ample margin under this
-// package's own share of Go's 10-minute default per-package test timeout
-// (that whole-binary ceiling is NOT overridable from in-process code, only
-// via `go test -timeout`, so this budget must stay well under it, not just
-// under some number of its own choosing).
-const evidenceRunRecordTimeout = 300 * time.Second
+// this budget is spent.
+//
+// WR-01 (14-REVIEW.md): the previous 300s value's doc comment claimed a
+// measured ~136s corpus-wide run, which was stale and false -- commit
+// 0dcb460 actually measured corpus-wide runs ranging 269s to 347s, and
+// PHASE-14-DEBT.md row D-14-121 recorded a 300.11s run against the
+// then-300s ceiling, a near-miss with no real margin. 480s keeps the
+// deadline clear of that worst-observed case (347s) while staying under
+// Go's 600s default per-package binary ceiling (that whole-binary ceiling
+// is NOT overridable from in-process code, only via `go test -timeout`, so
+// this budget must stay well under it, not just under some number of its
+// own choosing) -- which is exactly why Task 3's cost reduction (anchored,
+// resolved-name batching instead of raw markdown pattern text) is
+// load-bearing, not optional: it is what keeps the measured elapsed inside
+// evidenceRunRecordMarginFraction of this budget.
+const evidenceRunRecordTimeout = 480 * time.Second
+
+// evidenceRunRecordMarginFraction is the fraction of evidenceRunRecordTimeout
+// a run may consume before corpusRunRecord refuses to grade from it. A run
+// that finishes but consumed more than three quarters of its own deadline
+// is exactly the false outcome EVD-02 exists to refuse: a result produced by
+// a near-timeout run is not distinguishable, from the outside, from a run
+// that got lucky this one time and will time out the next. Reported as a
+// named budget failure rather than allowed to produce grades.
+const evidenceRunRecordMarginFraction = 0.75
 
 // generateRunRecord invokes scripts/evidence-run-record.sh once, batching
 // every requested (package, pattern) pair into a single process spawn, and
@@ -1023,7 +1041,38 @@ var validationGradeBarExemptions = map[string]string{
 var (
 	evidenceRunRecordOnce   sync.Once
 	evidenceRunRecordCached *runRecord
+	evidenceRunRecordFatal  string
 )
+
+// runRecordAdmissible is the ONE shared law between corpusRunRecord's fatal
+// gate and its own non-inertness proof
+// (TestRunRecordCompletenessGuardIsNotInert) -- never a second copy of the
+// predicate. A record is admissible (nil error) only when it positively
+// demonstrates it covered every requested pair AND its measured elapsed
+// does not exceed evidenceRunRecordMarginFraction of
+// evidenceRunRecordTimeout. Both failure messages name the measured
+// numbers, never just "failed", so a CI log always carries the evidence a
+// human needs without re-running anything.
+func runRecordAdmissible(record *runRecord, requested []pkgPattern) error {
+	complete, missing := record.complete(requested)
+	if !complete {
+		var elapsed time.Duration
+		if record != nil {
+			elapsed = record.elapsed
+		}
+		names := make([]string, 0, len(missing))
+		for _, p := range missing {
+			names = append(names, p.Package+" "+p.Pattern)
+		}
+		return fmt.Errorf("evidence run record is incomplete -- uncovered pairs %v (measured elapsed %v)", names, elapsed)
+	}
+	budget := time.Duration(float64(evidenceRunRecordTimeout) * evidenceRunRecordMarginFraction)
+	if record.elapsed > budget {
+		fraction := float64(record.elapsed) / float64(evidenceRunRecordTimeout)
+		return fmt.Errorf("evidence run record consumed %.1f%% of its %v budget (measured elapsed %v, margin %.0f%%) -- a near-timeout run may not produce grades", fraction*100, evidenceRunRecordTimeout, record.elapsed, evidenceRunRecordMarginFraction*100)
+	}
+	return nil
+}
 
 func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validationRawRow) *runRecord {
 	t.Helper()
@@ -1041,8 +1090,20 @@ func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validati
 				}
 			}
 		}
-		evidenceRunRecordCached = generateRunRecord(t, consolidatePkgPatterns(pairs))
+		requested := consolidatePkgPatterns(pairs)
+		record := generateRunRecord(t, requested)
+		if err := runRecordAdmissible(record, requested); err != nil {
+			evidenceRunRecordFatal = err.Error()
+			return
+		}
+		if record != nil {
+			t.Logf("evidence run record measured elapsed: %v (budget %v)", record.elapsed, evidenceRunRecordTimeout)
+		}
+		evidenceRunRecordCached = record
 	})
+	if evidenceRunRecordFatal != "" {
+		t.Fatalf("%s", evidenceRunRecordFatal)
+	}
 	return evidenceRunRecordCached
 }
 
@@ -1074,6 +1135,76 @@ func consolidatePkgPatterns(pairs []pkgPattern) []pkgPattern {
 		})
 	}
 	return consolidated
+}
+
+// syntheticCompleteRunRecord builds a runRecord that reports complete for
+// exactly requested, with the given elapsed -- the unmodified control this
+// file's seeded-fault subtests each mutate one way.
+func syntheticCompleteRunRecord(requested []pkgPattern, elapsed time.Duration) *runRecord {
+	r := &runRecord{
+		passed:         map[string]bool{},
+		failed:         map[string]bool{},
+		skipped:        map[string]bool{},
+		coveredPairs:   map[string]bool{},
+		batchComplete:  true,
+		requestedPairs: len(requested),
+		elapsed:        elapsed,
+	}
+	for _, p := range requested {
+		r.coveredPairs[p.Package+"\x00"+p.Pattern] = true
+	}
+	return r
+}
+
+// TestRunRecordCompletenessGuardIsNotInert seeds one fault per
+// mechanizable kind into a synthetic record and asserts runRecordAdmissible
+// refuses each, plus the unmodified control that must accept (D-14-11's own
+// non-inertness discipline, mirrored from TestValidationGradeCapIsNotInert).
+func TestRunRecordCompletenessGuardIsNotInert(t *testing.T) {
+	requested := []pkgPattern{{Package: "./internal/compiler/core", Pattern: "^TestSeeded$"}}
+
+	t.Run("batch sentinel absent fails naming incompleteness", func(t *testing.T) {
+		r := syntheticCompleteRunRecord(requested, time.Second)
+		r.batchComplete = false
+		err := runRecordAdmissible(r, requested)
+		if err == nil {
+			t.Fatal("expected an error when the batch-completion sentinel is absent")
+		}
+		if !strings.Contains(err.Error(), "incomplete") {
+			t.Fatalf("error %q does not name incompleteness", err.Error())
+		}
+	})
+
+	t.Run("one missing pair sentinel fails naming exactly that pair", func(t *testing.T) {
+		r := syntheticCompleteRunRecord(requested, time.Second)
+		delete(r.coveredPairs, requested[0].Package+"\x00"+requested[0].Pattern)
+		err := runRecordAdmissible(r, requested)
+		if err == nil {
+			t.Fatal("expected an error when a requested pair's completion sentinel is missing")
+		}
+		if !strings.Contains(err.Error(), requested[0].Package) || !strings.Contains(err.Error(), requested[0].Pattern) {
+			t.Fatalf("error %q does not name the missing pair %v", err.Error(), requested[0])
+		}
+	})
+
+	t.Run("elapsed just over the margin fails naming the fraction", func(t *testing.T) {
+		overMargin := time.Duration(float64(evidenceRunRecordTimeout)*evidenceRunRecordMarginFraction) + time.Second
+		r := syntheticCompleteRunRecord(requested, overMargin)
+		err := runRecordAdmissible(r, requested)
+		if err == nil {
+			t.Fatal("expected an error when elapsed exceeds the margin")
+		}
+		if !strings.Contains(err.Error(), "%") {
+			t.Fatalf("error %q does not name the consumed fraction", err.Error())
+		}
+	})
+
+	t.Run("the unmodified control stays green", func(t *testing.T) {
+		r := syntheticCompleteRunRecord(requested, 10*time.Second)
+		if err := runRecordAdmissible(r, requested); err != nil {
+			t.Fatalf("unmodified complete record inside margin should be admissible, got: %v", err)
+		}
+	})
 }
 
 // TestValidationRowGradesAreEarnedOverArchivedCorpus is D-14-06's real
