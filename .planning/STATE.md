@@ -4,15 +4,15 @@ milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 14
 current_phase_name: Evidence Instrument and Honest Scoping
-status: verifying
+status: executing
 stopped_at: Completed 14-10-PLAN.md
-last_updated: "2026-09-18T08:00:00.000Z"
+last_updated: "2026-09-18T13:09:35.264Z"
 last_activity: 2026-09-18
 last_activity_desc: Phase 14 execution complete — all 10 plans done
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 10
+  total_plans: 13
   completed_plans: 10
 state_head: 0dcb460c202ca570e4552967f0ceb0c717c7a54b
 ---
@@ -59,7 +59,7 @@ No outstanding human verification.
 
 Phase: 14 (Evidence Instrument and Honest Scoping) — COMPLETE
 Plan: 10 of 10 (all complete)
-Status: Phase complete — ready for verification
+Status: Ready to execute
 Last activity: 2026-09-18 — Plan 14-10 (Nyquist reconciliation) closed the phase:
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/

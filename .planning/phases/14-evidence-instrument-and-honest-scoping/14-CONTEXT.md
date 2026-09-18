@@ -70,8 +70,7 @@ literal and D-14-22's frozen collision control.
   — **Reversibility:** costly — the derivation engine and the retired `Status`
   column touch all 13 archived `*-VALIDATION.md` files plus every new one.
 
-- **D-14-02 (the argument the plan MUST make, because it is the first objection
-  a reviewer will raise):** `TestDebtRegistersAreWellFormed`'s doc comment draws
+- **D-14-02 (the argument the plan MUST make, because it is the first objection a reviewer will raise):** `TestDebtRegistersAreWellFormed`'s doc comment draws
   a deliberate line — *"Register honesty — whether a deferral is truthfully
   described — stays a human reading and is deliberately not claimed here."*
   D-14-01 does **not** cross that line. A grade is an honesty property in
@@ -142,8 +141,7 @@ literal and D-14-22's frozen collision control.
   that is a real hole in shipped M001 evidence being surfaced, not a regression to
   suppress; escalate rather than weaken the predicate."
 
-- **D-14-08a (honest residual, stated in the test's own doc comment — do NOT
-  claim otherwise):** `func TestX(t *testing.T) {}` resolves, passes, never skips,
+- **D-14-08a (honest residual, stated in the test's own doc comment — do NOT claim otherwise):** `func TestX(t *testing.T) {}` resolves, passes, never skips,
   and derives `EXERCISED`. The cap cannot see this. **`EXERCISED` certifies
   resolution and execution, not assertion strength.** Assertion strength is what
   `MUTATION-KILLED` and peer re-derivation buy. A second, partially-open gaming
@@ -298,8 +296,7 @@ literal and D-14-22's frozen collision control.
   `PROJECT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `LANGUAGE-MATURITY.md` and
   `research/M003/**` contribute **zero** matches despite being full of `…`.
 
-- **D-14-16 (per-branch groundedness — R2b, and the phase-sizing decision made
-  explicitly rather than silently):** split R2's first segment on top-level `|`
+- **D-14-16 (per-branch groundedness — R2b, and the phase-sizing decision made explicitly rather than silently):** split R2's first segment on top-level `|`
   and require **every alternation branch** to match >= 1 name. This turns
   `-run 'PeerLiveness|LoanChainIndex'` from a pass into a finding and is where the
   defect mass actually is: `09-VALIDATION.md` alone yields further findings at
@@ -412,8 +409,7 @@ literal and D-14-22's frozen collision control.
   frozen M001 files, listed the way `debtRegisterLandingPhaseExemptions` already
   lists them.
 
-- **D-14-25 (EVD-04's guard scope — all suppression surfaces, including the two
-  that instance 4 missed):** `TestNoSuppressionOutlivesItsWitness` parses **every**
+- **D-14-25 (EVD-04's guard scope — all suppression surfaces, including the two that instance 4 missed):** `TestNoSuppressionOutlivesItsWitness` parses **every**
   package with `go/parser` in `ParseComments` mode, **including `_test.go` files**,
   and enumerates:
   - every `*ast.CallExpr` whose selector is `Skip`/`Skipf`/`SkipNow` on a `testing.TB`;
@@ -446,8 +442,7 @@ literal and D-14-22's frozen collision control.
   **EVD-05's "zero per-row exclusions" is thereby satisfied honestly** — the row is
   not excluded from the law, it is admitted *with a witnessed declared escape*.
 
-- **D-14-28 (non-inertness for the suppression guard — three seeded faults, not
-  one):** `TestSuppressionWitnessGuardIsNotInert`, following
+- **D-14-28 (non-inertness for the suppression guard — three seeded faults, not one):** `TestSuppressionWitnessGuardIsNotInert`, following
   `TestInjectorMarkerCountGuardIsNotInert`'s temp-copy pattern, seeds one fault
   per mechanizable kind and asserts red for each: (a) inject `t.Skip("no reason")`
   into a copied package ⇒ uncited suppression flagged; (b) flip a `callsite:`
@@ -483,8 +478,7 @@ literal and D-14-22's frozen collision control.
   was carried past M001; carrying it past M002 would be a pattern, not a decision"
   — and the cluster-A base rate of **0 for 2**.
 
-- **D-14-32 (accepted residual friction, stated in the plan rather than
-  discovered):** one written probe per claim is real cost, and a probe can
+- **D-14-32 (accepted residual friction, stated in the plan rather than discovered):** one written probe per claim is real cost, and a probe can
   **over-fit to current diagnostic text**, producing a red on a benign message
   rewording. Mitigation: assert on the **structural** refusal (admission rejected
   at the `sameType` precondition) rather than on the message string. Note also
@@ -505,8 +499,7 @@ literal and D-14-22's frozen collision control.
   `syntax.expected_declaration`; in-repo churn is measured at zero, but external
   consumers pinning IDs get no version signal.
 
-- **D-14-34 (a CORRECTION to the research's framing that the plan must carry —
-  do not treat span relocation as the fix):** "the first diagnostic is one token
+- **D-14-34 (a CORRECTION to the research's framing that the plan must carry — do not treat span relocation as the fix):** "the first diagnostic is one token
   late" is **not a defect**. `if` is not in `keywords` (`lexer.go:10-22`), so it
   lexes as `TokenIdentifier`; `funcDecl()` (`parser.go:299`) sees no `match`,
   calls `linearBody()`, and `if` is consumed as the terminal result identifier via
@@ -582,8 +575,7 @@ literal and D-14-22's frozen collision control.
   `parseProgram`'s `default` arm at all — i.e. are already syntactically broken —
   and had >= 1 token discarded.
 
-- **D-14-39 (gate vs fix — both, one plan, ambiguity resolved by splitting the
-  role):** ROADMAP criterion 5 requires the trio to mint distinct IDs, so a fix is
+- **D-14-39 (gate vs fix — both, one plan, ambiguity resolved by splitting the role):** ROADMAP criterion 5 requires the trio to mint distinct IDs, so a fix is
   mandatory and a pinned failure does not satisfy it. But "negative control" does
   mean the thing that must FAIL. Both are satisfied at once:
   - **Positive regression pin (must PASS):** the live spiral trio in
@@ -625,8 +617,7 @@ literal and D-14-22's frozen collision control.
   stray `;`, an `else` with no `if`, an empty file, and **a program whose skipped
   region is one token** (the hard case that nearly collides with `c`).
 
-- **D-14-41 (the gate — `internal/compiler/check/diagnostic_distinctness_test.go`,
-  ~60 lines, three assertions):**
+- **D-14-41 (the gate — `internal/compiler/check/diagnostic_distinctness_test.go`, ~60 lines, three assertions):**
   1. `TestDistinctnessCorpusMembersAreStructurallyDistinct` — pairwise
      kind-sequence inequality. **Fails the corpus, not the compiler**, if someone
      adds a near-duplicate.
@@ -698,8 +689,7 @@ literal and D-14-22's frozen collision control.
   pattern to emit an `unrepairable` with an empty `diagnosis_code` and assert the
   guard FAILS.
 
-- **D-14-43 (the case for deferral, argued fairly, and why it still loses — plus
-  the debt it creates):** `if` is not in the language and will not be for
+- **D-14-43 (the case for deferral, argued fairly, and why it still loses — plus the debt it creates):** `if` is not in the language and will not be for
   milestones; the phase's other four criteria are markdown instruments; this work
   is genuinely foreign to its host phase; and the research's own "what would
   change my mind" concedes the spiral is a hand-simulated proxy, not a measured
