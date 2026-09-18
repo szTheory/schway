@@ -154,7 +154,7 @@ arithmetic operators, and branching moves to M004.
       diagnostic IDs and an identical result ID, so an editing agent gets no
       convergence signal.
 
-- [ ] **DX-09**: An `unrepairable` verdict explains itself; the `diagnosis` field
+- [x] **DX-09**: An `unrepairable` verdict explains itself; the `diagnosis` field
       is never empty.
 
 ### Process
@@ -226,7 +226,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | QLT-11 | Phase 20 | Pending |
 | QLT-12 | Phase 20 | Pending |
 | DX-08 | Phase 14 | Complete |
-| DX-09 | Phase 14 | Pending |
+| DX-09 | Phase 14 | Complete |
 | PRC-01 | Phase 14 | Pending |
 | PRC-02 | Phase 20 | Pending |
 

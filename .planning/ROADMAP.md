@@ -227,7 +227,7 @@ Plans:
 
 - [x] 14-01-PLAN.md — tracer: the groundedness lint end-to-end, with its frontier pinned as an exact literal and three seeded-fault non-inertness proofs (EVD-01)
 - [x] 14-02-PLAN.md — attach the discarded recovery extent as an identity-bearing cause; distinctness corpus, gate, and frozen pre-fix collision control (DX-08)
-- [ ] 14-03-PLAN.md — an `unrepairable` verdict explains itself: additive decline fields, closed decline vocabulary, guard and non-inertness proof (DX-09)
+- [x] 14-03-PLAN.md — an `unrepairable` verdict explains itself: additive decline fields, closed decline vocabulary, guard and non-inertness proof (DX-09)
 - [ ] 14-04-PLAN.md — close the owning-phase vocabulary in the debt-register law, migrate twelve registers, register the `-flto` inertness row (PRC-01, EVD-07)
 - [ ] 14-05-PLAN.md — machine-check the maturity document's counts by independent re-derivation; record a cold suite wall-clock as an observed manifest row (EVD-06, EVD-08)
 

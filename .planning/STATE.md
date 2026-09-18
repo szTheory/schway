@@ -5,15 +5,15 @@ milestone_name: Computation and Honest Instruments
 current_phase: 14
 current_phase_name: Evidence Instrument and Honest Scoping
 status: executing
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-09-18T01:15:54.713Z"
+stopped_at: Completed 14-03-PLAN.md
+last_updated: "2026-09-18T01:32:31.875Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 14 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 2
+  completed_plans: 3
 state_head: 58103f585c9c3e88ce1bfacb97f5812333c01e45
 ---
 
@@ -58,7 +58,7 @@ No outstanding human verification.
 ## Current Position
 
 Phase: 14 (Evidence Instrument and Honest Scoping) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 14 execution started
 
@@ -284,6 +284,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 13 P07 | ~25min active | 3 tasks | 5 files |
 | Phase 14 P01 | 15min | 3 tasks | 1 files |
 | Phase 14 P02 | 15 min | 3 tasks | 17 files |
+| Phase 14 P03 | 9 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -388,6 +389,7 @@ Standing architectural commitments carried into M002:
 - [Phase ?]: 14-02: recoverRegion advances past the unexpected token before measuring the discarded extent, so causes[0].span never overlaps primary_span; the third spiral member's skipped region lands at exactly one token.
 - [Phase ?]: 14-02: skipped_region cause attached only when recoverRegion actually discarded >=1 token, confining published-ID churn to fixtures that reach the declaration-recovery arm with a non-empty discard.
 - [Phase ?]: 14-02: diagnostic_distinctness_test.go lives in package check_test (not package check) since session.CheckCommandFile would otherwise create a check->session->check import cycle.
+- [Phase ?]: [Phase 14]: 14-03: DX-09 closed -- unrepairable decline now carries DiagnosisCodes/DeclineReason/BestApplicability, populated via a new classifyDecline sibling (not a widened selectRepair, to keep antitheater_test.go/repair_test.go byte-unchanged); DiagnosisCodes is a comparable diagnosisCodeList string type (custom JSON marshaling) since a bare []string broke Outcome's existing == comparison in antitheater_test.go; no_diagnostics decline sets diagnosis_code to the reason itself rather than leaving it empty, honoring the plan's unqualified never-empty truth
 
 ### Pending Todos
 
@@ -530,8 +532,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-18T01:15:49.373Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-09-18T01:32:31.863Z
+Stopped at: Completed 14-03-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
