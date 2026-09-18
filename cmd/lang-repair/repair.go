@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -71,8 +72,16 @@ type checkResult struct {
 }
 
 const (
-	statusPass                     = "pass"
-	applicabilityMachineApplicable = "MachineApplicable"
+	statusPass = "pass"
+
+	// The closed applicability vocabulary, re-declared locally (D-06-28)
+	// from diagnostic.Applicability* rather than imported -- only
+	// MachineApplicable was needed before this change; the other two are
+	// added now so BestApplicability can rank every value the wire
+	// document can carry, never just the one the driver already acted on.
+	applicabilityMachineApplicable    = "MachineApplicable"
+	applicabilityRequiresConfirmation = "RequiresConfirmation"
+	applicabilityUnspecified          = "Unspecified"
 )
 
 // DriverError is the driver's own typed-failure shape, matching the
@@ -109,12 +118,78 @@ const (
 	OutcomeReverifyFailed = "reverify_failed"
 )
 
+// Decline reason vocabulary (D-14-42, DX-09). Closed and coded -- every
+// value here is a local constant, never a copy of diagnostic prose, so
+// lorem-ipsum-scrambling the underlying diagnostics leaves these values
+// unchanged (T-14-15).
+const (
+	// DeclineNoneOffered: the program is invalid, carries at least one
+	// diagnostic, and zero repairs[] appear anywhere in the document --
+	// this is the spiral's value (D-14-42): "a cycle has no local,
+	// mechanical edit" becomes a stated fact instead of silence.
+	DeclineNoneOffered = "repair.none_offered"
+	// DeclineNoneEligible: repairs are present somewhere in the document,
+	// but none is driver-eligible (driverEligible returns false for all
+	// of them).
+	DeclineNoneEligible = "repair.none_eligible"
+	// DeclineNoDiagnostics: the program is invalid but reports zero
+	// diagnostics -- a fail-closed anomaly. This must still read as
+	// unrepairable, never a pass (T-14-17).
+	DeclineNoDiagnostics = "repair.no_diagnostics"
+)
+
+// diagnosisCodeList is a comparable, JSON-array-marshaling ordered list of
+// diagnostic codes (D-14-42). It is backed by a "|"-joined string rather
+// than a plain []string because several existing antitheater_test.go
+// checks compare two Outcome values with plain `!=`
+// (TestProseScrambleLeavesRepairBehaviourIdentical), and antitheater_test.go
+// must stay byte-unchanged by this task -- a slice-typed field would make
+// Outcome uncomparable and break that comparison at compile time. "|" is a
+// safe separator: every diagnostic code on the wire is a dotted
+// lowercase/underscore identifier (e.g. "syntax.expected_rbrace") and never
+// contains "|".
+type diagnosisCodeList string
+
+func newDiagnosisCodeList(codes []string) diagnosisCodeList {
+	return diagnosisCodeList(strings.Join(codes, "|"))
+}
+
+func (d diagnosisCodeList) codes() []string {
+	if d == "" {
+		return nil
+	}
+	return strings.Split(string(d), "|")
+}
+
+func (d diagnosisCodeList) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.codes())
+}
+
+func (d *diagnosisCodeList) UnmarshalJSON(data []byte) error {
+	var codes []string
+	if err := json.Unmarshal(data, &codes); err != nil {
+		return err
+	}
+	*d = newDiagnosisCodeList(codes)
+	return nil
+}
+
 // Outcome is the driver's own result envelope, reported on stdout by main.go.
+//
+// DiagnosisCodes, DeclineReason, and BestApplicability are additive
+// omitempty siblings of the pre-existing DiagnosisCode field (D-14-42):
+// Outcome carries no schema string, so this is a purely additive protocol
+// change -- no existing field's type or JSON tag changes, and a
+// repairable-path Outcome is byte-identical before and after this change
+// since all three new fields stay unset on that path.
 type Outcome struct {
-	Status          string `json:"status"`
-	DiagnosisCode   string `json:"diagnosis_code,omitempty"`
-	RepairKind      string `json:"repair_kind,omitempty"`
-	SubprocessCount int    `json:"subprocess_count"`
+	Status            string            `json:"status"`
+	DiagnosisCode     string            `json:"diagnosis_code,omitempty"`
+	DiagnosisCodes    diagnosisCodeList `json:"diagnosis_codes,omitempty"`
+	DeclineReason     string            `json:"decline_reason,omitempty"`
+	BestApplicability string            `json:"best_applicability,omitempty"`
+	RepairKind        string            `json:"repair_kind,omitempty"`
+	SubprocessCount   int               `json:"subprocess_count"`
 }
 
 // boundedWriter caps the bytes captured from a subprocess stream at cap+1 --
@@ -189,6 +264,55 @@ func driverEligible(r jsonRepair) bool {
 	return r.Applicability == applicabilityMachineApplicable && r.Kind != "" && r.Span != nil && r.Replacement != ""
 }
 
+// declineDecision is the classification computed while selectRepair walks
+// the document looking for a driver-eligible repair and finds none (D-14-42).
+// Before this change the false-return path discarded everything it had
+// already computed; this struct is what the false path now carries out
+// instead of throwing away.
+type declineDecision struct {
+	// diagnosisCode is the first diagnostic's code in document order --
+	// deterministic and already specified by the document-order iteration
+	// below, never an invented heuristic. Empty only when there are zero
+	// diagnostics.
+	diagnosisCode string
+	// diagnosisCodes lists every diagnostic's code in document order --
+	// the honest answer for the multi-diagnostic parse-failure path.
+	diagnosisCodes []string
+	// declineReason is one of the three closed Decline* constants.
+	declineReason string
+	// bestApplicability is the maximum applicability observed across all
+	// repairs in the document, using the closed vocabulary re-declared
+	// above. Left empty when declineReason is DeclineNoneOffered (no
+	// repairs anywhere to observe an applicability from).
+	bestApplicability string
+}
+
+// applicabilityRank orders the closed applicability vocabulary so
+// bestApplicability can be computed as a running maximum -- MachineApplicable
+// ranks highest, an empty/unrecognised value ranks lowest.
+func applicabilityRank(a string) int {
+	switch a {
+	case applicabilityMachineApplicable:
+		return 3
+	case applicabilityRequiresConfirmation:
+		return 2
+	case applicabilityUnspecified:
+		return 1
+	default:
+		return 0
+	}
+}
+
+// maxApplicability returns whichever of a, b ranks higher under
+// applicabilityRank, so accumulating it across every repair in the
+// document yields the single best-observed value.
+func maxApplicability(a, b string) string {
+	if applicabilityRank(b) > applicabilityRank(a) {
+		return b
+	}
+	return a
+}
+
 // selectRepair returns the first driver-eligible repair in document order
 // (diagnostics order, then each diagnostic's own repairs order) -- the
 // driver's specified, stable tie-break rule for a diagnostic that carries
@@ -197,6 +321,14 @@ func driverEligible(r jsonRepair) bool {
 // deterministic on the wire: check.go emits diagnostics in traversal order,
 // and diagnostic.ErrorWithRepairs canonically sorts each diagnostic's own
 // repairs by Kind then Detail before they ever reach JSON.
+//
+// Signature deliberately left unchanged (D-14-42): both antitheater_test.go
+// and repair_test.go call this exact three-value form at several sites, and
+// those files must stay byte-unchanged by this task. classifyDecline below
+// is the sibling that widens the false path instead -- Repair calls it only
+// when selectRepair's own ok is false, so the classification computed on
+// that path is carried out to the Outcome rather than discarded, without
+// touching selectRepair's own return shape or its existing callers.
 func selectRepair(result checkResult) (jsonRepair, string, bool) {
 	for _, d := range result.Diagnostics {
 		for _, r := range d.Repairs {
@@ -206,6 +338,43 @@ func selectRepair(result checkResult) (jsonRepair, string, bool) {
 		}
 	}
 	return jsonRepair{}, "", false
+}
+
+// classifyDecline walks the same document selectRepair just found no
+// driver-eligible repair in, and reconstructs the classification that was
+// previously computed inline and discarded on that path (D-14-42): every
+// diagnostic code seen in document order, the closed-vocabulary decline
+// reason, and the best applicability observed. Callers must only invoke
+// this after selectRepair has already returned ok == false for the same
+// result -- it does not itself re-check driver-eligibility as a fast exit,
+// since the caller already knows none exists.
+func classifyDecline(result checkResult) declineDecision {
+	var codes []string
+	anyRepairs := false
+	bestApplicability := ""
+	for _, d := range result.Diagnostics {
+		codes = append(codes, d.Code)
+		for _, r := range d.Repairs {
+			anyRepairs = true
+			bestApplicability = maxApplicability(bestApplicability, r.Applicability)
+		}
+	}
+	decision := declineDecision{diagnosisCodes: codes}
+	if len(codes) > 0 {
+		decision.diagnosisCode = codes[0]
+	}
+	switch {
+	case len(codes) == 0:
+		// Invalid with zero diagnostics -- a fail-closed anomaly that must
+		// still read as unrepairable, never a pass (T-14-17).
+		decision.declineReason = DeclineNoDiagnostics
+	case !anyRepairs:
+		decision.declineReason = DeclineNoneOffered
+	default:
+		decision.declineReason = DeclineNoneEligible
+		decision.bestApplicability = bestApplicability
+	}
+	return decision
 }
 
 func spanStart(s *jsonSpan) int {
@@ -273,8 +442,20 @@ func Repair(ctx context.Context, langBinary, sourcePath string) (Outcome, error)
 	if !ok {
 		// A defect for which the binary emits zero driver-eligible repairs
 		// is reported unrepairable -- never skipped, never counted as a
-		// pass (FND-04 empty-input edge).
-		return Outcome{Status: OutcomeUnrepairable, DiagnosisCode: code, SubprocessCount: 1}, nil
+		// pass (FND-04 empty-input edge). The decline now carries the
+		// classification classifyDecline computes instead of discarding it
+		// (D-14-42): every value below is a code from a closed vocabulary
+		// or read off an already-decoded jsonDiagnostic.Code -- no prose
+		// field is decoded anywhere in this path (T-14-15).
+		decision := classifyDecline(first)
+		return Outcome{
+			Status:            OutcomeUnrepairable,
+			DiagnosisCode:     decision.diagnosisCode,
+			DiagnosisCodes:    newDiagnosisCodeList(decision.diagnosisCodes),
+			DeclineReason:     decision.declineReason,
+			BestApplicability: decision.bestApplicability,
+			SubprocessCount:   1,
+		}, nil
 	}
 	if err := applyRepair(sourcePath, repair); err != nil {
 		return Outcome{}, err
