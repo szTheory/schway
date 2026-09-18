@@ -1,0 +1,9 @@
+module one_token_hard_case
+
+export {}
+
+fn f(v: T) -> T {
+  v
+}
+
+w q

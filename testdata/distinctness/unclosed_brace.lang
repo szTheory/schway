@@ -1,0 +1,6 @@
+module unclosed_brace
+
+export {}
+
+fn broken(v: T) -> T {
+  v

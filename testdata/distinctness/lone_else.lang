@@ -1,0 +1,5 @@
+module lone_else
+
+export {}
+
+else { v }

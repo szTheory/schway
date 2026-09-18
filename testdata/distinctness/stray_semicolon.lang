@@ -1,0 +1,5 @@
+module stray_semicolon
+
+export {}
+
+;
