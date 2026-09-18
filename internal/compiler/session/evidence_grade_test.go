@@ -471,6 +471,7 @@ func isTopLevelTestName(index *testIndex, name string) bool {
 // the declared grade exceeds it, is malformed, or (for EXERCISED+) has no
 // confirming run record. Returns "" when the row is well formed.
 func validationRowProblem(index *testIndex, record *runRecord, taskID, gradeCell, nonInertnessCell, evidenceCell string) string {
+	return "" // RED: intentional stub, restored for GREEN
 	if problem := validationGradeCellProblem(gradeCell); problem != "" {
 		return fmt.Sprintf("row %s: %s", taskID, problem)
 	}
@@ -1074,4 +1075,56 @@ func TestValidationGradeCapBarePackageRowHasNoNamedTest(t *testing.T) {
 	if ceiling != "WIRED" {
 		t.Fatalf("12-VALIDATION.md row 12-04-01's evidence now derives %s (matched %v), not WIRED -- re-grade the debt row", ceiling, matched)
 	}
+}
+
+// ---------------------------------------------------------------------
+// (i) Plan 14-09 Task 3 -- the cap's own non-inertness proof
+// (scripts/assert-go-tests.sh:44-62's sentinel is the direct analogue:
+// proving a nonexistent name is correctly rejected). One seeded fault per
+// mechanizable kind, plus the unfaulted control, over synthetic rows only
+// -- never the real .planning/** tree.
+// ---------------------------------------------------------------------
+
+// TestValidationGradeCapIsNotInert seeds one fault per mechanizable kind
+// into a synthetic row and asserts the cap refuses each; the unfaulted
+// control (declaring the derived ceiling exactly) must accept. A cap
+// proven red on only one seeded fault is inert for the others.
+func TestValidationGradeCapIsNotInert(t *testing.T) {
+	index := syntheticIndex(t)
+	record := syntheticRunRecord()
+
+	t.Run("mutation-killed grade with a nonexistent non-inertness twin fails", func(t *testing.T) {
+		problem := validationRowProblem(index, record, "seed-mk-nonexistent-twin",
+			"MUTATION-KILLED", "TestSyntheticTwinDoesNotExist",
+			"go test ./internal/compiler/check -run TestSyntheticPrimaryClaim")
+		if problem == "" {
+			t.Fatal("declaring MUTATION-KILLED with a nonexistent non-inertness twin must fail the cap")
+		}
+	})
+
+	t.Run("exercised grade whose evidence names a nonexistent test fails", func(t *testing.T) {
+		problem := validationRowProblem(index, record, "seed-exercised-nonexistent-evidence",
+			"EXERCISED", "—",
+			"go test ./internal/compiler/check -run TestDoesNotExistAnywhere")
+		if problem == "" {
+			t.Fatal("declaring EXERCISED with evidence naming a nonexistent test must fail the cap")
+		}
+	})
+
+	t.Run("exercised grade with a resolving test but no run record fails", func(t *testing.T) {
+		problem := validationRowProblem(index, nil, "seed-exercised-no-run-record",
+			"EXERCISED", "—",
+			"go test ./internal/compiler/check -run TestSyntheticPrimaryClaim")
+		if problem == "" {
+			t.Fatal("declaring EXERCISED with a resolving test but record == nil (no run record present) must fail the cap")
+		}
+	})
+
+	t.Run("the unfaulted control accepts", func(t *testing.T) {
+		if problem := validationRowProblem(index, record, "seed-control",
+			"EXERCISED", "—",
+			"go test ./internal/compiler/check -run TestSyntheticPrimaryClaim"); problem != "" {
+			t.Fatalf("unfaulted control (declared grade == derived ceiling) should pass, got: %s", problem)
+		}
+	})
 }
