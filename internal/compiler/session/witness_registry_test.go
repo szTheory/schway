@@ -606,13 +606,42 @@ func TestBuildConstraintsOutsideTheAllowlistAreRefused(t *testing.T) {
 	}
 }
 
+// TestBuildConstraintSurfaceSeenEvenWhenHostExcludesFile is Task 2's own
+// proof that the textual //go:build scan runs ahead of go/build's
+// MatchFile gate: a .go file whose own constraint EXCLUDES it from the
+// current host's build must still be enumerated as a build-constraint
+// site, and an unallowlisted term inside it must still be reported. A
+// constraint that hides its own file from the scanner that checks
+// constraints is circular -- exactly the hole T-14-13-02 names. Before the
+// reorder lands, MatchFile's early return in scanSuppressionSurfaces skips
+// the raw-byte read for this file entirely, so this test fails RED for
+// exactly that reason.
+func TestBuildConstraintSurfaceSeenEvenWhenHostExcludesFile(t *testing.T) {
+	dir := t.TempDir()
+	source := "//go:build plan9\n\npackage seeded\n\nfunc excluded() {}\n"
+	if err := os.WriteFile(filepath.Join(dir, "excluded.go"), []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	problems, err := suppressionProblems(dir, suppressionModeFull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) != 1 {
+		t.Fatalf("expected the host-excluded file's unallowlisted constraint term to still be reported, got %d problems: %v", len(problems), problems)
+	}
+	if !strings.Contains(problems[0], "plan9") {
+		t.Fatalf("expected the problem to name the offending term %q, got: %q", "plan9", problems[0])
+	}
+}
+
 // TestSuppressionWitnessGuardIsNotInert seeds one fault per mechanizable
 // kind (D-14-28) and asserts red for each, with an unmodified-copy
 // control asserting green: (a) a reason-free Skip in a copied synthetic
 // package; (b) a flipped callsite: count in a copied register; (c) a
 // neutralized probe -- editing a copied fixture so the claim it refuses
-// becomes admitted, the unexpected-pass (XPASS) shape. A guard proven red
-// on only one of the three fault kinds would be inert for the other two.
+// becomes admitted, the unexpected-pass (XPASS) shape; (d) a build
+// constraint outside buildConstraintAllowlist. A guard proven red on only
+// some of the four fault kinds would be inert for the rest.
 func TestSuppressionWitnessGuardIsNotInert(t *testing.T) {
 	t.Run("reason-free skip in a copied package", func(t *testing.T) {
 		dir := t.TempDir()
@@ -679,6 +708,60 @@ func TestSuppressionWitnessGuardIsNotInert(t *testing.T) {
 		// neutralized fixture shipped instead of the real one, that probe
 		// would have failed loudly, proving it is not inert to this fault
 		// kind.
+	})
+
+	t.Run("build constraint outside the allowlist", func(t *testing.T) {
+		dir := t.TempDir()
+
+		allowlisted := "//go:build darwin || linux\n\npackage seeded\n\nfunc allowed() {}\n"
+		if err := os.WriteFile(filepath.Join(dir, "seeded.go"), []byte(allowlisted), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		problems, err := suppressionProblems(dir, suppressionModeFull)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) != 0 {
+			t.Fatalf("an all-allowlisted constraint should pass; got: %v", problems)
+		}
+		t.Log("fixture 1/3: allowlisted constraint -- green")
+
+		unallowlisted := "//go:build darwin || linux || windows\n\npackage seeded\n\nfunc refused() {}\n"
+		if err := os.WriteFile(filepath.Join(dir, "seeded.go"), []byte(unallowlisted), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		problems, err = suppressionProblems(dir, suppressionModeFull)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) != 1 {
+			t.Fatalf("an unallowlisted constraint term should be reported exactly once, got %d: %v", len(problems), problems)
+		}
+		t.Logf("fixture 2/3: unallowlisted term -- red: %s", problems[0])
+
+		// The citation is placed on a //go:build-prefixed line AFTER the
+		// package clause, deliberately outside go/parser's own build-
+		// directive position rule (a real directive must precede the
+		// package clause, preceded only by blank lines and other line
+		// comments): a genuine decision citation like "D-14-25" contains a
+		// hyphen, which is not valid build-tag syntax, so embedding it in
+		// an actual leading directive would make go/parser refuse to parse
+		// the file at all. scanSuppressionSurfaces' own textual pass has no
+		// such position rule -- it enumerates any line prefixed
+		// "//go:build" anywhere in the file -- so this still exercises the
+		// same site kind and the same citation escape hatch.
+		cited := "package seeded\n\nfunc cited() {}\n\n//go:build darwin || linux || windows // D-14-25: windows retained pending a future host decision\n"
+		if err := os.WriteFile(filepath.Join(dir, "seeded.go"), []byte(cited), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		problems, err = suppressionProblems(dir, suppressionModeFull)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) != 0 {
+			t.Fatalf("an unallowlisted term carrying a resolvable citation on the same line should pass; got: %v", problems)
+		}
+		t.Log("fixture 3/3: unallowlisted term with a resolvable citation -- green (escape hatch is real, not decorative)")
 	})
 }
 
