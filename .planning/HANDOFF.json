@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-09-18T16:02:56.970Z",
+  "phase": "14",
+  "phase_name": "evidence-instrument-and-honest-scoping",
+  "phase_dir": ".planning/phases/14-evidence-instrument-and-honest-scoping",
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "context": "between-phases",
+  "completed_tasks": [
+    {"id": "14-11", "name": "Completion-witnessed run record, measured margin gate, anchored producer/consumer contract", "status": "done", "commit": "b78b3dd"},
+    {"id": "14-13", "name": "Build-constraint allowlist and live //go:build suppression check", "status": "done", "commit": "d88fa43"},
+    {"id": "14-12", "name": "Remove EVD-02 exemption, confirm corpus-wide bar reflexively, close PRC-01", "status": "done", "commit": "4e234b0"},
+    {"id": "14-review", "name": "Code review of phase 14 (4 findings, 0 critical)", "status": "done", "commit": "44bcad4"},
+    {"id": "14-verify", "name": "Phase goal verification, 11/11 requirements, status passed", "status": "done", "commit": "511399f"},
+    {"id": "14-regression-fix", "name": "Repair verification-artifact rewrite that broke groundedness guards", "status": "done", "commit": "349ede6"},
+    {"id": "14-audit-fix", "name": "Refresh stale STATE fields, close resolved deferred item", "status": "done", "commit": "e1effab"}
+  ],
+  "remaining_tasks": [
+    {"id": "15", "name": "Phase 15 Event Identity (lang.execution/2) — not started, no CONTEXT.md, 0 plans", "status": "not_started"}
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {"action": "Review the D-14-122 judgment call in PHASE-14-DEBT.md", "context": "The fix agent kept the D-14-122 identifier and row (rewritten to narrate that commit 511399f deleted its cited text) rather than retiring it, because PHASE-14-DEBT.md:1582 cites the range 'D-14-48 through D-14-122' by name. This is a register-convention call the project owner should confirm.", "blocking": false},
+    {"action": "Decide whether to act on the two advisory code-review warnings", "context": "cmd/lang-repair/repair.go:242 never checks ctx.Err(), so a 30s subprocess timeout is indistinguishable from a normal nonzero exit. internal/compiler/session/session_phase6_budget.go:377 drops stageDeltas on the blocking branch, so the hard-gate case is less diagnosable than a soft flag. Both are in 14-REVIEW.md; neither blocks.", "blocking": false}
+  ],
+  "decisions": [
+    {"decision": "Did not auto-advance into Phase 15 despite workflow.auto_advance=true", "rationale": "User explicitly chose 'Stop here' when asked, rather than chaining discuss -> plan -> execute autonomously.", "phase": "14"},
+    {"decision": "Treated the first post-merge full-suite failure as a load flake, not a regression", "rationale": "TestCacheKeyCoversEveryDeclaredInput and TestPayloadTracerThreeEngineAgreement failed only at full parallelism where their packages took ~24s vs ~9s; both pass in isolation and the serialized -p 2 run is green. Confirmed rather than assumed.", "phase": "14"},
+    {"decision": "Fixed the groundedness regression at its cause rather than by pinning or exempting", "rationale": "Four elided commands were expanded to runnable ones and one trailing-slash package path corrected; only the single genuine prose fragment kept its pinned-frontier entry (line anchor updated 86 -> 90). Pinning the others would have silenced real defects in the phase's own honesty machinery.", "phase": "14"},
+    {"decision": "Kept D-14-122's identifier while removing its reconciliation block", "rationale": "Its cited narrative was deleted outright by 511399f so there was nothing left to reconcile, but PHASE-14-DEBT.md:1582 cites the ID in a range. Flagged for owner confirmation.", "phase": "14"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Run /gsd-discuss-phase 15 to gather context for Event Identity (lang.execution/2). No CONTEXT.md exists for it yet.",
+  "context_notes": "Phase 14 is complete, verified (11/11 requirements) and genuinely green as of 349ede6 — but it was NOT green at the moment it was first marked complete. See the blocking anti-pattern in .planning/.continue-here.md before running any phase-completion workflow."
+}
