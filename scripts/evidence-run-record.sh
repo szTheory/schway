@@ -14,6 +14,17 @@
 # A failing test inside one pair does not abort the batch: this script's job
 # is to RECORD what happened, including a genuine failure, not to require a
 # clean run before it will write anything.
+#
+# Deliberately SEQUENTIAL, not parallel: a bounded-parallelism version was
+# tried and measured to THRASH rather than speed up when several pairs share
+# a `./internal/compiler/...`-shaped (dozens-of-packages) operand, each of
+# which is already internally parallel across GOMAXPROCS -- running several
+# such invocations concurrently oversubscribes the machine and can stall
+# individual jobs at ~0% CPU for tens of seconds. A corpus-wide batch
+# (100-200+ pairs) is therefore genuinely slow (measured: several minutes,
+# not the "milliseconds" this phase's own threat model first assumed for
+# run-record reads) -- an accepted, disclosed cost lane, not a bug to paper
+# over with fragile backgrounding.
 set -uo pipefail
 
 if [ "$#" -lt 3 ]; then
