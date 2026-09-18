@@ -3,7 +3,7 @@ phase: 14-evidence-instrument-and-honest-scoping
 recorded: 2026-09-18
 status: accepted
 disposition: phase-in-progress
-items: 77
+items: 78
 blocking: 0
 ---
 
@@ -129,6 +129,7 @@ finding).
 | D-14-119 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
 | D-14-120 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | UNOWNED(none-yet-scheduled) | DEFINED | n/a | REMOVING `14-VALIDATION.MD` FROM `validationGradeBarExemptions` AND RE-RUNNING `TestValidationRowGradesAreEarnedOverArchivedCorpus` PRODUCED SPURIOUS "DECLARED EXERCISED EXCEEDS THE CEILING WIRED" FAILURES ACROSS NINE OTHER, UNRELATED, ALREADY-FROZEN ARCHIVED FILES (01, 02, 06, 07, 08, 10, 11, 12, 13-VALIDATION.MD) IN THE SAME RUN. The whole corpus-wide test completed at 300.11s, suspiciously close to `evidenceRunRecordTimeout`'s 300s ceiling (lowered from 900s by plan 14-09's own deviation fix) -- consistent with the run-record generation not completing within its budget and several packages' citations falling back to an unresolved WIRED ceiling rather than their true EXERCISED grade. The exemption-removal change was reverted rather than landed under that risk; the corpus-wide grade cap over the real archived data was never actually re-verified with a complete run record in this plan |
+| D-14-122 | plan 14-11's fail-closed run-record margin check, which surfaced this while measuring the corpus-wide batch's real cost | EVD-01 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `14-VERIFICATION.md:133` cites a seeded-fault placeholder name (`TestThisNameDoesNotExistAnywhereZZQQ`) inside a Non-Inertness Spot-Check's narrative description of an already-reverted perturbation, corrected outside the archive as a RENAMED verdict naming the real, resolving test the row's claim actually rests on (see Detail section). |
 
 ## Detail
 
@@ -1468,6 +1469,47 @@ re-running the corpus-wide grade cap with a verified-complete run record
 budget to be revisited a second time, mirroring plan 14-09's own
 `consolidatePkgPatterns` fix) or accepting `14-VALIDATION.md`'s exemption
 as permanent with an updated, non-stale rationale.
+
+### D-14-122 — `14-VERIFICATION.md:133` cites a seeded-fault placeholder name, corrected as a rename
+
+first-recorded: M003
+
+```reconciliation
+file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md
+line: 133
+command: go test ... -run 'TestThisNameDoesNotExistAnywhereZZQQ'
+classification: R1
+verdict: renamed
+replacement: go test ./internal/compiler/session/... -run TestVerificationGroundednessFrontierIsPinned
+```
+
+Plan 14-11's fail-closed margin check (Task 2) surfaced this while measuring
+the corpus-wide run record's real cost: with D-14-121's own risk closed
+(the run now finishes in well under its margin, see this plan's own
+SUMMARY), `TestValidationRowGradesAreEarnedOverArchivedCorpus` derived a
+genuine `WIRED` ceiling for `14-VALIDATION.md` row `14-10-T1` -- not a
+false negative from an incomplete run, but a real, previously-unreported
+gap in `14-VERIFICATION.md`'s own Non-Inertness Spot-Check table (row 1),
+added after plan 14-10's reconciliation pass closed the R1/R2/R3 frontier
+and therefore never reconciled.
+
+The archived cell's literal text, `go test ... -run
+'TestThisNameDoesNotExistAnywhereZZQQ'`, narrates a fault-injection
+perturbation that was already executed and reverted: the same table row's
+own "Reverted clean?" column confirms `git checkout --` restored
+`14-01-SUMMARY.md` to clean, and `TestThisNameDoesNotExistAnywhereZZQQ` was
+never a real test -- it was deliberately fabricated so the row could show
+`TestVerificationGroundednessFrontierIsPinned` and
+`TestVerificationGroundednessThreeClassesAreEmpty` catching it. The cell
+therefore never named live evidence and was never meant to resolve; the
+row's actual claim rests on the replacement command above, which is a
+real, currently-resolving test (verified via `classifyCommand` over the
+static test index, the same primitive the lint's own classification uses).
+The archived row is left byte-unmodified; only this register records the
+correction.
+
+**Landing phase:** `P14` -- closed by this same plan (14-11) recording the
+correction; no further work is scheduled.
 
 ---
 

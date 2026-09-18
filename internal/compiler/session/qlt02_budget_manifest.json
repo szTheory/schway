@@ -52,5 +52,14 @@
     "unit": "nanoseconds",
     "ratified_at": "2026-09-18T02:08:13Z",
     "ratified_by_commit": "300ff9cfc8c34f5e3c1b2b8d92323d68432914ea"
+  },
+  {
+    "machine_id": "machine:4797d76b7863",
+    "metric": "evidence_run_record_wall_clock_ns",
+    "gate_type": "observed",
+    "value_or_bound": 90301553708,
+    "unit": "nanoseconds",
+    "ratified_at": "2026-09-18T13:45:11Z",
+    "ratified_by_commit": "32bb781907030504d116e8a054b687e87c44ca13"
   }
 ]

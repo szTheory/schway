@@ -952,6 +952,99 @@ func pkgPatternsFor(evidence string) []pkgPattern {
 	return nil
 }
 
+// evidenceRunRecordSelfCitedTests is the closed set of top-level test names
+// that may never be cited as an evidence cell's own confirming run: today
+// this holds only TestValidationRowGradesAreEarnedOverArchivedCorpus, the
+// corpus-wide test itself. A row citing it as evidence would ask the run in
+// which a claim is being graded to also grade that same claim -- a claim
+// may never certify itself. Declared as a set (not a single constant) so a
+// future second self-certifying test has a place to land without widening
+// the check's shape.
+var evidenceRunRecordSelfCitedTests = map[string]bool{
+	"TestValidationRowGradesAreEarnedOverArchivedCorpus": true,
+}
+
+// patternNames splits an anchored "^(NameA|NameB)$" pattern (resolvedPkgPatterns'
+// and pkgPatternsFor's own output shape) back into its individual top-level
+// names. A pattern that is not in that anchored shape is returned unchanged
+// as its own single-element list -- callers only ever feed this function
+// patterns this file itself produced.
+func patternNames(pattern string) []string {
+	trimmed := strings.TrimPrefix(pattern, "^(")
+	trimmed = strings.TrimSuffix(trimmed, ")$")
+	if trimmed == pattern {
+		return []string{pattern}
+	}
+	return strings.Split(trimmed, "|")
+}
+
+// selfCitationError scans pairs (already resolved to exact top-level names
+// via resolvedPkgPatterns) for a member of evidenceRunRecordSelfCitedTests
+// and, if found, returns an error naming the citing document, the row, and
+// the reason -- self-citation is refused by name, never silently dropped
+// from the batch.
+func selfCitationError(doc, taskID string, pairs []pkgPattern) error {
+	for _, p := range pairs {
+		for _, name := range patternNames(p.Pattern) {
+			if evidenceRunRecordSelfCitedTests[name] {
+				return fmt.Errorf("%s: row %s cites %s as evidence -- a claim may not be graded by the run in which it is being graded", doc, taskID, name)
+			}
+		}
+	}
+	return nil
+}
+
+// resolvedPkgPatterns is WR-02's fix: it collects every (package, pattern)
+// pair a row's evidence requires the run record to cover, built from
+// RESOLVED top-level test NAMES rather than the raw pattern text a markdown
+// cell wrote. For the `go test -run` shape, each package operand is
+// resolved through index.resolvePackageNames and matched against the
+// pattern's first path segment using the SAME regexp deriveCeiling itself
+// performs (D-14-03) -- so the producer executes exactly the name set the
+// consumer will consult, anchored, and a cell that resolves to zero names
+// contributes no pair (the existing WIRED-ceiling path, unchanged). The
+// assert-go-tests.sh shape already names exact top-level identifiers and is
+// already anchored (pkgPatternsFor's own "^(...)$" construction, built from
+// the SAME index.resolvePackageNames primitive), so it is routed through
+// pkgPatternsFor unchanged rather than re-derived a second way.
+func resolvedPkgPatterns(index *testIndex, evidence string) []pkgPattern {
+	evidence = strings.TrimSpace(evidence)
+	if assertGoTestsInvocationPattern.MatchString(evidence) {
+		return pkgPatternsFor(evidence)
+	}
+	if !strings.HasPrefix(evidence, "go test") {
+		return nil
+	}
+	parsed, ok := parseGoTestCommand(evidence)
+	if !ok || parsed.Pattern == "" || len(parsed.Packages) == 0 {
+		return nil
+	}
+	segment := strings.SplitN(parsed.Pattern, "/", 2)[0]
+	re, err := regexp.Compile(segment)
+	if err != nil {
+		return nil
+	}
+	var pairs []pkgPattern
+	for _, operand := range parsed.Packages {
+		names, resolved := index.resolvePackageNames(operand)
+		if !resolved {
+			continue
+		}
+		var matched []string
+		for name := range names {
+			if re.MatchString(name) {
+				matched = append(matched, name)
+			}
+		}
+		if len(matched) == 0 {
+			continue // zero resolved names: the WIRED-ceiling path, unchanged
+		}
+		sortStrings(matched)
+		pairs = append(pairs, pkgPattern{Package: operand, Pattern: "^(" + strings.Join(matched, "|") + ")$"})
+	}
+	return pairs
+}
+
 // allPrimaryValidationRows returns every (file, row) pair across the
 // fourteen archived-and-live *-VALIDATION.md documents' primary tables,
 // sorted by (file, line) for deterministic iteration.
@@ -1079,9 +1172,14 @@ func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validati
 	evidenceRunRecordOnce.Do(func() {
 		var pairs []pkgPattern
 		seen := map[string]bool{}
-		for _, rows := range byDoc {
+		for doc, rows := range byDoc {
 			for _, row := range rows {
-				for _, p := range pkgPatternsFor(rowEvidence(row)) {
+				rowPairs := resolvedPkgPatterns(index, rowEvidence(row))
+				if err := selfCitationError(doc, rowIdentifier(row), rowPairs); err != nil {
+					evidenceRunRecordFatal = err.Error()
+					return
+				}
+				for _, p := range rowPairs {
 					key := p.Package + "\x00" + p.Pattern
 					if !seen[key] {
 						seen[key] = true
@@ -1118,6 +1216,15 @@ func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validati
 // spawn. Measured effect: cuts the run-record producer's subprocess count
 // from one per (package, pattern) pair (up to ~208) to one per distinct
 // package (~20).
+//
+// Anchoring constraint (WR-02, plan 14-10's finding, restated so it is not
+// re-litigated): each already-anchored per-cell pattern (resolvedPkgPatterns'
+// "^(...)$" output) is wrapped in its own extra parens and joined by "|" --
+// the anchors stay INSIDE each branch. Wrapping the WHOLE joined alternation
+// in one outer "^(...)$" was tried and breaks classifyPerBranchGroundedness's
+// (R2b) per-branch splitter, which expects to split on top-level "|" and
+// re-derive each branch's own groundedness independently. Per-branch
+// anchoring is therefore load-bearing, not cosmetic.
 func consolidatePkgPatterns(pairs []pkgPattern) []pkgPattern {
 	order := make([]string, 0, len(pairs))
 	byPackage := make(map[string][]string, len(pairs))
@@ -1203,6 +1310,122 @@ func TestRunRecordCompletenessGuardIsNotInert(t *testing.T) {
 		r := syntheticCompleteRunRecord(requested, 10*time.Second)
 		if err := runRecordAdmissible(r, requested); err != nil {
 			t.Fatalf("unmodified complete record inside margin should be admissible, got: %v", err)
+		}
+	})
+}
+
+// evidenceRunRecordAnchoredPatternShape recognizes resolvedPkgPatterns' and
+// pkgPatternsFor's own "^(...)$" output shape.
+var evidenceRunRecordAnchoredPatternShape = regexp.MustCompile(`^\^\(.*\)\$$`)
+
+// TestEvidencePatternsResolveToAnchoredNames is plan 14-11 Task 3's proof
+// that the producer executes exactly what the consumer consults (WR-02):
+// (a) over the whole live corpus, every operand resolvedPkgPatterns would
+// batch is anchored and every branch is an exact top-level test name
+// present in the static index; (b) a synthetic two-cell fixture whose
+// patterns are prefix-related consolidates to exactly the two intended
+// names, sweeping in no unrelated third name; (c) a synthetic cell citing
+// the corpus-wide test itself produces the self-citation refusal -- this
+// subtest is the seeded fault that proves the refusal non-inert.
+func TestEvidencePatternsResolveToAnchoredNames(t *testing.T) {
+	t.Run("every live corpus operand is anchored, and every go-test-shaped branch is an exact top-level name", func(t *testing.T) {
+		index := buildTestIndex(t)
+		byDoc := allPrimaryValidationRows(t)
+		var totalPairs, checkedGoTestNames int
+		for _, rows := range byDoc {
+			for _, row := range rows {
+				evidence := rowEvidence(row)
+				pairs := resolvedPkgPatterns(index, evidence)
+				for _, p := range pairs {
+					totalPairs++
+					if !evidenceRunRecordAnchoredPatternShape.MatchString(p.Pattern) {
+						t.Fatalf("pair %+v (evidence %q) is not anchored in the ^(...)$ shape", p, evidence)
+					}
+				}
+				// Existence-against-the-index is checked only for the `go
+				// test -run` shape: resolvedPkgPatterns derives THOSE
+				// branches FROM the static index itself, so every branch it
+				// produces is an exact top-level name by construction. The
+				// assert-go-tests.sh shape is delegated unchanged to
+				// pkgPatternsFor (D-14-11's own read_first constraint), and
+				// -- like the corpus's own already-documented dead citation
+				// (D-14-51, 04-VALIDATION.md:74, unrelated to this plan) --
+				// may legitimately name a since-retired identifier; that is
+				// capped at WIRED by deriveAssertGoTestsCeiling's own
+				// existence check, not re-verified here.
+				if strings.HasPrefix(evidence, "go test") {
+					for _, p := range pairs {
+						for _, name := range patternNames(p.Pattern) {
+							checkedGoTestNames++
+							if !isTopLevelTestName(index, name) {
+								t.Fatalf("pair %+v (evidence %q) names %q, which is not an exact top-level test name in the static index", p, evidence, name)
+							}
+						}
+					}
+				}
+			}
+		}
+		if totalPairs == 0 {
+			t.Fatal("resolvedPkgPatterns produced zero pairs over the live corpus -- resolution has gone inert")
+		}
+		if checkedGoTestNames == 0 {
+			t.Fatal("no `go test -run` shaped evidence cell was found to check name resolution against -- the live corpus fixture has gone stale")
+		}
+	})
+
+	t.Run("prefix-related patterns consolidate to exactly the two intended names", func(t *testing.T) {
+		index := &testIndex{
+			root: testsupport.ProjectPath(),
+			byImportPath: map[string]map[string]bool{
+				"github.com/codename-lang/lang/internal/compiler/check": {
+					"TestAlpha":         true,
+					"TestAlphaExtended": true,
+					"TestOmega":         true, // unrelated: must never be swept in
+				},
+			},
+		}
+		pairsA := resolvedPkgPatterns(index, "go test ./internal/compiler/check -run TestAlpha")
+		pairsB := resolvedPkgPatterns(index, "go test ./internal/compiler/check -run TestAlphaExtended")
+		all := append(append([]pkgPattern{}, pairsA...), pairsB...)
+		consolidated := consolidatePkgPatterns(all)
+		if len(consolidated) != 1 {
+			t.Fatalf("expected exactly one consolidated pair (single package), got %d: %v", len(consolidated), consolidated)
+		}
+		// consolidatePkgPatterns' own output ("(branch1)|(branch2)") is not
+		// itself in the single-level "^(...)$" shape patternNames parses --
+		// it is the OUTER join of already-anchored branches (the
+		// per-branch-anchoring constraint this task's own doc comment
+		// records). Compile it and check what it actually matches, which is
+		// what the run-record script itself will do with this exact string.
+		re, err := regexp.Compile(consolidated[0].Pattern)
+		if err != nil {
+			t.Fatalf("consolidated pattern %q does not compile: %v", consolidated[0].Pattern, err)
+		}
+		for _, want := range []string{"TestAlpha", "TestAlphaExtended"} {
+			if !re.MatchString(want) {
+				t.Fatalf("consolidated pattern %q does not match intended name %q", consolidated[0].Pattern, want)
+			}
+		}
+		if re.MatchString("TestOmega") {
+			t.Fatalf("consolidated pattern %q wrongly matches the unrelated TestOmega", consolidated[0].Pattern)
+		}
+	})
+
+	t.Run("a cell citing the corpus-wide test itself is refused as a self-citation", func(t *testing.T) {
+		index := buildTestIndex(t)
+		evidence := "go test ./internal/compiler/session -run TestValidationRowGradesAreEarnedOverArchivedCorpus$"
+		pairs := resolvedPkgPatterns(index, evidence)
+		if len(pairs) == 0 {
+			t.Fatal("resolvedPkgPatterns produced zero pairs for a real production test name -- fixture has gone stale")
+		}
+		err := selfCitationError("synthetic-doc.md", "seed-self-citation", pairs)
+		if err == nil {
+			t.Fatal("expected selfCitationError to refuse a cell citing TestValidationRowGradesAreEarnedOverArchivedCorpus")
+		}
+		for _, want := range []string{"synthetic-doc.md", "seed-self-citation", "TestValidationRowGradesAreEarnedOverArchivedCorpus"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Fatalf("error %q does not name %q", err.Error(), want)
+			}
 		}
 	})
 }

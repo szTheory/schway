@@ -1268,6 +1268,16 @@ var pinnedFrontier = []violationRecord{
 	{File: ".planning/research/STACK.md", Line: 492, Command: "go test -fuzz", Classification: classUnparseable},
 	{File: ".planning/research/STACK.md", Line: 509, Command: "go test -fuzz", Classification: classUnparseable},
 	{File: ".planning/research/SUMMARY.md", Line: 468, Command: "go test -fuzz", Classification: classUnparseable},
+	// Added by plan 14-11: this plan's own PLAN.md (a trust-boundary table
+	// cell and an artifacts table cell, both prose naming "go test"/"go
+	// test -run" as a bare code span, never a literal invocation) and
+	// 14-VERIFICATION.md's own "EVD-01" observable-truth cell (prose
+	// describing what the lint detects, not a command it runs). Same
+	// unparseable prose-fragment shape as the STACK.md/SUMMARY.md/
+	// 14-RESEARCH.md entries above.
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 359, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 390, Command: "go test -run", Classification: classUnparseable},
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md", Line: 86, Command: "go test -run", Classification: classUnparseable},
 }
 
 // measuredViolations runs the classifier once over the whole Tier-A

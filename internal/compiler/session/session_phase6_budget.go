@@ -49,8 +49,12 @@ const (
 // "suite_wall_clock_ns" (Phase 14 EVD-08) is the full-suite `go test ./...`
 // cold wall-clock baseline: always gate_type "observed" (machine-dependent,
 // per this vocabulary's own discipline), never "hard".
+// "evidence_run_record_wall_clock_ns" (Phase 14 EVD-02, plan 14-11) is the
+// corpus-wide evidence run-record batch's own measured wall-clock -- also
+// always gate_type "observed", the number Task 2's margin assertion
+// (evidenceRunRecordMarginFraction) checks against evidenceRunRecordTimeout.
 func QLT02MetricVocabulary() []string {
-	return []string{"recomputed_work", "elapsed_ns", "output_bytes", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent", "suite_wall_clock_ns"}
+	return []string{"recomputed_work", "elapsed_ns", "output_bytes", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent", "suite_wall_clock_ns", "evidence_run_record_wall_clock_ns"}
 }
 
 // QLT02GateEligibleMetrics is the closed set of metrics that may ever
