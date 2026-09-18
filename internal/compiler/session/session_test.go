@@ -13,6 +13,7 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -21,6 +22,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -3865,4 +3867,398 @@ func containsSubstring(problems []string, sub string) bool {
 		}
 	}
 	return false
+}
+
+// ---------------------------------------------------------------------
+// Plan 14-10 Task 1: the reconciliation verdict vocabulary (D-14-12).
+//
+// A dead command in an archived evidence document is never rewritten in
+// place -- that would be exactly the falsification this phase exists to
+// prevent. The correction lives OUTSIDE the archive, in this phase's own
+// PHASE-14-DEBT.md, as a debt row with a witness: a "```reconciliation"
+// fenced block inside the row's own ### Detail section, keyed by
+// (file, line, verbatim original command). This is deliberately NOT a
+// third authored register (D-14-13) -- the ledger's content is right, its
+// authorship moves into the existing register law.
+//
+// There is NO inline suppression syntax anywhere in this mechanism: no
+// comment-shaped directive, no per-file ignore, no count-keyed ceiling.
+// Every entry is satisfied only by a claim that can itself fail. Refusing
+// a count-keyed ceiling is deliberate: a count-neutral swap (one dead
+// pattern traded for another, leaving the total unchanged) would land
+// unnoticed under a ceiling -- the documented ESLint-bulk-suppressions
+// failure mode (D-14-12).
+// ---------------------------------------------------------------------
+
+// reconciliationVerdict is the closed four-member vocabulary. A verdict
+// outside this set fails.
+type reconciliationVerdict string
+
+const (
+	reconciliationRenamed          reconciliationVerdict = "renamed"
+	reconciliationSuperseded       reconciliationVerdict = "superseded"
+	reconciliationObsoleteByDesign reconciliationVerdict = "obsolete-by-design"
+	reconciliationUnderScoped      reconciliationVerdict = "under-scoped"
+)
+
+// reconciliationVerdicts is the closed vocabulary, mirroring
+// debtRegisterSeverities' own shape.
+var reconciliationVerdicts = map[reconciliationVerdict]bool{
+	reconciliationRenamed:          true,
+	reconciliationSuperseded:       true,
+	reconciliationObsoleteByDesign: true,
+	reconciliationUnderScoped:      true,
+}
+
+// reconciliationEntry is one parsed ```reconciliation block. Every finding
+// carries File/Line/Command/Verdict/Classification; the remaining fields
+// are populated per-verdict only (D-14-12's four distinct obligations).
+type reconciliationEntry struct {
+	ID string // the enclosing "### D-14-NN" heading
+
+	File           string
+	Line           int
+	Command        string
+	Classification classification
+	Verdict        reconciliationVerdict
+
+	// renamed
+	Replacement string
+
+	// superseded
+	SupersedingPhase  string
+	SupersedingCommit string
+	CoveringCommand   string
+
+	// obsolete-by-design
+	DeletedPackage string
+	DeletedSymbol  string
+	DeletingPhase  string
+	DeletingCommit string
+
+	// under-scoped (permitted only for R2b findings, D-14-12)
+	MissingClause string
+	LandingPhase  string
+}
+
+var (
+	reconciliationBlockPattern   = regexp.MustCompile("(?s)```reconciliation\n(.*?)\n```")
+	reconciliationHeadingPattern = regexp.MustCompile(`(?m)^### (D-14-\d+)`)
+	reconciliationFieldPattern   = regexp.MustCompile(`^([a-z][a-z-]*):\s*(.*)$`)
+)
+
+// parseReconciliationEntries scans a *-DEBT.md register's Detail section
+// for "```reconciliation" fenced blocks (never the Items table itself,
+// which cannot host raw command text -- many verification commands
+// contain an unescaped "|", and parseDebtRegisterTable's row splitter has
+// no escaping discipline). Each block's ID is the nearest preceding
+// "### D-14-NN" heading.
+func parseReconciliationEntries(path string) ([]reconciliationEntry, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	text := string(data)
+
+	headings := reconciliationHeadingPattern.FindAllStringSubmatchIndex(text, -1)
+
+	var entries []reconciliationEntry
+	for _, loc := range reconciliationBlockPattern.FindAllStringSubmatchIndex(text, -1) {
+		blockStart, blockContentStart, blockContentEnd := loc[0], loc[2], loc[3]
+		block := text[blockContentStart:blockContentEnd]
+
+		id := ""
+		for _, h := range headings {
+			if h[0] < blockStart {
+				id = text[h[2]:h[3]]
+			} else {
+				break
+			}
+		}
+
+		fields := make(map[string]string)
+		for _, line := range strings.Split(block, "\n") {
+			m := reconciliationFieldPattern.FindStringSubmatch(line)
+			if m == nil {
+				continue
+			}
+			fields[m[1]] = m[2]
+		}
+
+		lineNum := 0
+		if raw, ok := fields["line"]; ok {
+			n, convErr := strconv.Atoi(strings.TrimSpace(raw))
+			if convErr != nil {
+				return nil, fmt.Errorf("%s: entry %s has non-numeric line %q", path, id, raw)
+			}
+			lineNum = n
+		}
+
+		entries = append(entries, reconciliationEntry{
+			ID: id,
+
+			File:           fields["file"],
+			Line:           lineNum,
+			Command:        fields["command"],
+			Classification: classification(fields["classification"]),
+			Verdict:        reconciliationVerdict(fields["verdict"]),
+
+			Replacement: fields["replacement"],
+
+			SupersedingPhase:  fields["superseding-phase"],
+			SupersedingCommit: fields["superseding-commit"],
+			CoveringCommand:   fields["covering-command"],
+
+			DeletedPackage: fields["deleted-package"],
+			DeletedSymbol:  fields["deleted-symbol"],
+			DeletingPhase:  fields["deleting-phase"],
+			DeletingCommit: fields["deleting-commit"],
+
+			MissingClause: fields["missing-clause"],
+			LandingPhase:  fields["landing-phase"],
+		})
+	}
+	return entries, nil
+}
+
+// reconciliationGitTimeout bounds every git subprocess this file spawns
+// (TestSourceNeverSpawnsUnboundedProcesses, D-02-01).
+const reconciliationGitTimeout = 30 * time.Second
+
+// reconciliationCommitExists confirms a commit SHA genuinely resolves in
+// this repository's history -- a superseding/deleting commit that does not
+// exist is a fabricated citation, not evidence.
+func reconciliationCommitExists(sha string) (bool, string) {
+	ctx, cancel := context.WithTimeout(context.Background(), reconciliationGitTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "cat-file", "-e", sha+"^{commit}")
+	cmd.Dir = testsupport.ProjectPath()
+	var stderr groundednessBoundedWriter
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return false, fmt.Sprintf("commit %q not found in this repository's history: %v (%s)", sha, err, stderr.bytes())
+	}
+	return true, ""
+}
+
+// reconciliationSymbolAbsentFromTree is the obsolete-by-design obligation's
+// absence assertion (D-14-12, key_links): the SAME anti-source-search rule
+// as the callsite: witness grammar (D-14-23) -- a claim that a symbol is
+// gone is falsifiable via an AST declaration scan, never via a textual
+// grep returning zero matches (a claim that a search found nothing is not
+// falsifiable). Reuses debtRegisterCallSiteWitnessMatches directly rather
+// than writing a second AST walker.
+func reconciliationSymbolAbsentFromTree(pkgPath, symbol string) (bool, string) {
+	ok, msg := debtRegisterCallSiteWitnessMatches(pkgPath, symbol, 0)
+	if ok {
+		// declared==true, count==0: the symbol still exists (with zero
+		// call sites), which is NOT the same claim as "deleted".
+		return false, fmt.Sprintf("obsolete-by-design symbol %q still exists (declared) in package %q -- a deleted symbol must be entirely absent, not merely uncalled", symbol, pkgPath)
+	}
+	if strings.Contains(msg, "does not exist in package") {
+		return true, ""
+	}
+	return false, msg
+}
+
+// reconciliationEntryProblem checks ONE entry's verdict obligation
+// (D-14-12) and returns a non-empty problem description on failure. Every
+// "resolves" obligation reuses classifyCommand -- the SAME primitive the
+// groundedness lint's own classifier uses -- so "resolves" means one thing
+// project-wide: the command classifies classOK (never R1/R2/R2b/R3/
+// unparseable).
+func reconciliationEntryProblem(index *testIndex, e reconciliationEntry) string {
+	// RED stub -- Task 1 GREEN replaces this with the real obligation checks.
+	return ""
+}
+
+// TestReconciliationVerdictsCarryTheirObligations is Task 1's own
+// non-inertness proof: the closed vocabulary, its four checked
+// obligations (each with a passing positive and passing negative
+// subtest), and the count/staleness cross-check against a live corpus
+// scan -- never against the shrinking pinnedFrontier literal, so this
+// stays correct after Task 3 empties it.
+func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
+	index := buildTestIndex(t)
+
+	t.Run("verdict outside the closed vocabulary fails, naming the offender", func(t *testing.T) {
+		bad := reconciliationEntry{ID: "D-00-00", File: "x", Line: 1, Command: "y", Verdict: "deprecated"}
+		problem := reconciliationEntryProblem(index, bad)
+		if problem == "" {
+			t.Fatal("a verdict outside the closed vocabulary should fail, but nothing was reported")
+		}
+		if !strings.Contains(problem, "deprecated") {
+			t.Fatalf("problem should name the offending verdict, got: %s", problem)
+		}
+	})
+
+	t.Run("renamed", func(t *testing.T) {
+		t.Run("replacement resolving to a real test passes", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-01", File: "x", Line: 1, Command: "y", Verdict: reconciliationRenamed,
+				Replacement: "go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned"}
+			if problem := reconciliationEntryProblem(index, e); problem != "" {
+				t.Fatalf("expected pass, got: %s", problem)
+			}
+		})
+		t.Run("replacement resolving to nothing fails -- cannot launder a dead pattern into another dead pattern", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-02", File: "x", Line: 1, Command: "y", Verdict: reconciliationRenamed,
+				Replacement: "go test ./internal/compiler/session/... -run TestThisNameDoesNotExistAnywhereInTheModule"}
+			problem := reconciliationEntryProblem(index, e)
+			if problem == "" {
+				t.Fatal("a replacement resolving to nothing should fail, but nothing was reported")
+			}
+		})
+	})
+
+	t.Run("superseded", func(t *testing.T) {
+		t.Run("real commit and resolving covering command passes", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-03", File: "x", Line: 1, Command: "y", Verdict: reconciliationSuperseded,
+				SupersedingPhase: "P09", SupersedingCommit: "b8fe3df",
+				CoveringCommand: "go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned"}
+			if problem := reconciliationEntryProblem(index, e); problem != "" {
+				t.Fatalf("expected pass, got: %s", problem)
+			}
+		})
+		t.Run("nonexistent commit fails", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-04", File: "x", Line: 1, Command: "y", Verdict: reconciliationSuperseded,
+				SupersedingPhase: "P09", SupersedingCommit: "0000000000000000000000000000000000dead",
+				CoveringCommand: "go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned"}
+			if problem := reconciliationEntryProblem(index, e); problem == "" {
+				t.Fatal("a nonexistent superseding commit should fail, but nothing was reported")
+			}
+		})
+		t.Run("covering command resolving to nothing fails", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-05", File: "x", Line: 1, Command: "y", Verdict: reconciliationSuperseded,
+				SupersedingPhase: "P09", SupersedingCommit: "b8fe3df",
+				CoveringCommand: "go test ./internal/compiler/session/... -run TestThisNameDoesNotExistAnywhereInTheModule"}
+			if problem := reconciliationEntryProblem(index, e); problem == "" {
+				t.Fatal("a covering command resolving to nothing should fail, but nothing was reported")
+			}
+		})
+	})
+
+	t.Run("obsolete-by-design", func(t *testing.T) {
+		t.Run("real deleting commit and genuinely absent symbol passes", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-06", File: "x", Line: 1, Command: "y", Verdict: reconciliationObsoleteByDesign,
+				DeletedPackage: "internal/compiler/check", DeletedSymbol: "computeLoanLastUses",
+				DeletingPhase: "P09-09", DeletingCommit: "b8fe3df"}
+			if problem := reconciliationEntryProblem(index, e); problem != "" {
+				t.Fatalf("expected pass, got: %s", problem)
+			}
+		})
+		t.Run("symbol that still exists fails -- absence is never a pass", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-07", File: "x", Line: 1, Command: "y", Verdict: reconciliationObsoleteByDesign,
+				DeletedPackage: "internal/compiler/session", DeletedSymbol: "TestValidationRowGradesAreEarned",
+				DeletingPhase: "P09-09", DeletingCommit: "b8fe3df"}
+			problem := reconciliationEntryProblem(index, e)
+			if problem == "" {
+				t.Fatal("a symbol that still exists should fail, but nothing was reported")
+			}
+			if !strings.Contains(problem, "still exists") {
+				t.Fatalf("problem should say the symbol still exists, got: %s", problem)
+			}
+		})
+		t.Run("nonexistent deleting commit fails", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-08", File: "x", Line: 1, Command: "y", Verdict: reconciliationObsoleteByDesign,
+				DeletedPackage: "internal/compiler/check", DeletedSymbol: "computeLoanLastUses",
+				DeletingPhase: "P09-09", DeletingCommit: "0000000000000000000000000000000000dead"}
+			if problem := reconciliationEntryProblem(index, e); problem == "" {
+				t.Fatal("a nonexistent deleting commit should fail, but nothing was reported")
+			}
+		})
+	})
+
+	t.Run("under-scoped", func(t *testing.T) {
+		t.Run("R2b finding with a clause and a valid landing phase passes", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-09", File: "x", Line: 1, Command: "y", Classification: classR2b, Verdict: reconciliationUnderScoped,
+				MissingClause: "specific failing branch never repointed", LandingPhase: "P20"}
+			if problem := reconciliationEntryProblem(index, e); problem != "" {
+				t.Fatalf("expected pass, got: %s", problem)
+			}
+		})
+		t.Run("under-scoped on a non-R2b finding fails -- permitted only for per-branch findings", func(t *testing.T) {
+			e := reconciliationEntry{ID: "D-00-10", File: "x", Line: 1, Command: "y", Classification: classR2, Verdict: reconciliationUnderScoped,
+				MissingClause: "x", LandingPhase: "P20"}
+			problem := reconciliationEntryProblem(index, e)
+			if problem == "" {
+				t.Fatal("an under-scoped verdict on a non-R2b finding should fail, but nothing was reported")
+			}
+			if !strings.Contains(problem, "per-branch") {
+				t.Fatalf("problem should name the per-branch restriction, got: %s", problem)
+			}
+		})
+	})
+
+	// D-14-12: no inline suppression syntax and no count-keyed ceiling
+	// anywhere in this mechanism. Deliberately verified EXTERNALLY (a
+	// one-off shell grep during plan execution, recorded in the SUMMARY),
+	// never as a Go subtest embedded in this same file -- naming the
+	// banned tokens literally in a subtest here would make this file's
+	// own descriptive comment about the check match the check itself.
+
+	t.Run("every real reconciliation entry's obligation holds", func(t *testing.T) {
+		registers, err := phaseArtifactGlob("14-evidence-instrument-and-honest-scoping", "PHASE-14-DEBT.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(registers) != 1 {
+			t.Fatalf("expected exactly one PHASE-14-DEBT.md, found %d: %v", len(registers), registers)
+		}
+		entries, err := parseReconciliationEntries(registers[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) == 0 {
+			t.Fatal("PHASE-14-DEBT.md carries zero reconciliation entries")
+		}
+		for _, e := range entries {
+			if problem := reconciliationEntryProblem(index, e); problem != "" {
+				t.Errorf("reconciliation entry failed: %s", problem)
+			}
+		}
+	})
+
+	t.Run("the reconciliation ledger exactly covers the live corpus's R1/R2/R3 findings", func(t *testing.T) {
+		registers, err := phaseArtifactGlob("14-evidence-instrument-and-honest-scoping", "PHASE-14-DEBT.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var entries []reconciliationEntry
+		for _, path := range registers {
+			parsed, parseErr := parseReconciliationEntries(path)
+			if parseErr != nil {
+				t.Fatal(parseErr)
+			}
+			entries = append(entries, parsed...)
+		}
+		entrySet := make(map[violationRecord]bool, len(entries))
+		for _, e := range entries {
+			entrySet[violationRecord{File: e.File, Line: e.Line, Command: e.Command, Classification: e.Classification}] = true
+		}
+
+		measured := measuredViolations(t)
+		var liveFindings int
+		for _, v := range measured {
+			if v.Classification != classR1 && v.Classification != classR2 && v.Classification != classR3 {
+				continue
+			}
+			liveFindings++
+			if !entrySet[v] {
+				t.Errorf("live R1/R2/R3 finding has no reconciliation entry: %s %s:%d: %s", v.Classification, v.File, v.Line, v.Command)
+			}
+		}
+		for key := range entrySet {
+			found := false
+			for _, v := range measured {
+				if v == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("stale reconciliation entry: its (file, line, command) no longer appears in the live corpus scan: %s:%d: %s (never auto-pruned -- fix by removing the entry in a reviewed commit)", key.File, key.Line, key.Command)
+			}
+		}
+		t.Logf("%d live R1/R2/R3 findings, %d reconciliation entries", liveFindings, len(entrySet))
+	})
 }
