@@ -46,8 +46,11 @@ const (
 // is declared here (Task 2), measured in a later plan, and ratified at the
 // mid-phase gate -- this plan adds no manifest row for it. A row naming a
 // metric outside this set is malformed.
+// "suite_wall_clock_ns" (Phase 14 EVD-08) is the full-suite `go test ./...`
+// cold wall-clock baseline: always gate_type "observed" (machine-dependent,
+// per this vocabulary's own discipline), never "hard".
 func QLT02MetricVocabulary() []string {
-	return []string{"recomputed_work", "elapsed_ns", "output_bytes", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent"}
+	return []string{"recomputed_work", "elapsed_ns", "output_bytes", "recomputed_work_growth_exponent", "peer_closure_recomputed_work_growth_exponent", "suite_wall_clock_ns"}
 }
 
 // QLT02GateEligibleMetrics is the closed set of metrics that may ever
