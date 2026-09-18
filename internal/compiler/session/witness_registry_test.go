@@ -315,6 +315,28 @@ type suppressionSite struct {
 // surfaces: every //go:build constraint, every comment, every string
 // literal, and every Skip/Skipf/SkipNow call (recorded with its
 // concatenated string-literal arguments as text).
+//
+// The //go:build surface is enumerated for EVERY .go file under root,
+// including one the current GOOS/GOARCH build excludes: go/build's
+// MatchFile gate is applied only to the three AST-based surfaces
+// (comments, string literals, Skip calls) that follow it, never to the
+// textual constraint pass. A constraint is exactly what decides whether
+// its own file compiles on this host, so gating the pass that checks
+// constraints on the constraint being checked would let a file hide its
+// own //go:build line from this guard simply by declaring a host it
+// isn't currently running on (T-14-13-02).
+//
+// suppressionProblems checks every enumerated build-constraint site's
+// terms (split by buildConstraintTerms) against buildConstraintAllowlist
+// -- the closed, project-portability set {darwin, linux, amd64, arm64,
+// cgo} that AGENTS.md's stated host priorities and Go's own cgo tag
+// license with no citation required. A term outside that set is refused
+// unless the same line also carries a citation that resolves under this
+// file's own witness grammar (a PENDING marker, a D-XX-NN decision, an
+// escape: or probe: token) -- the citation is the escape hatch for a
+// deliberately retained non-portable term, proven live by
+// TestSuppressionWitnessGuardIsNotInert's "build constraint outside the
+// allowlist" subtest.
 func scanSuppressionSurfaces(root string) ([]suppressionSite, error) {
 	fset := token.NewFileSet()
 	buildCtx := build.Default
@@ -333,14 +355,6 @@ func scanSuppressionSurfaces(root string) ([]suppressionSite, error) {
 		if !strings.HasSuffix(path, ".go") {
 			return nil
 		}
-		dir := filepath.Dir(path)
-		match, matchErr := buildCtx.MatchFile(dir, filepath.Base(path))
-		if matchErr != nil {
-			return matchErr
-		}
-		if !match {
-			return nil
-		}
 		raw, readErr := os.ReadFile(path)
 		if readErr != nil {
 			return readErr
@@ -350,10 +364,27 @@ func scanSuppressionSurfaces(root string) ([]suppressionSite, error) {
 			rel = path
 		}
 
+		// The textual //go:build pass runs on EVERY .go file's bytes,
+		// ahead of the MatchFile gate below: a file excluded by its own
+		// constraint on the current host is exactly the file whose
+		// constraint nobody would otherwise see, so gating the constraint
+		// scan on the constraint it is checking would be circular
+		// (T-14-13-02). MatchFile is applied only to the AST-based passes
+		// that follow (comments, string literals, Skip calls), which stay
+		// scoped to files the current build actually compiles.
 		for lineNumber, line := range strings.Split(string(raw), "\n") {
 			if strings.HasPrefix(strings.TrimSpace(line), "//go:build") {
 				sites = append(sites, suppressionSite{path: rel, pos: fmt.Sprintf("%s:%d", rel, lineNumber+1), kind: "build-constraint", text: line})
 			}
+		}
+
+		dir := filepath.Dir(path)
+		match, matchErr := buildCtx.MatchFile(dir, filepath.Base(path))
+		if matchErr != nil {
+			return matchErr
+		}
+		if !match {
+			return nil
 		}
 
 		file, parseErr := parser.ParseFile(fset, path, raw, parser.ParseComments)
