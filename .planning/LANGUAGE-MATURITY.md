@@ -2,6 +2,9 @@
 
 **Assessed:** 2026-09-08, at the start of M002.
 **Re-assessed:** 2026-09-11, after Phase 10, at the Phase 11 planning gate.
+**Re-assessed:** 2026-09-17, Phase 14 (EVD-06 landed a machine check for this
+file's own counts; the guard total corrected 32→22 and the corpus figures
+refreshed — see "The single-function guard inventory" below).
 **Purpose:** stop re-discovering the gap between how sophisticated the
 verification stack sounds and how little the language can currently express.
 Planning vocabulary ("semantic spine", "interprocedural equivalence") describes
@@ -72,14 +75,16 @@ print without calling out to C. Hello-world is only reachable through a
 Corpus at first assessment (2026-09-08): 58 `.lang` programs, 1,633 lines
 total (~28 lines average, 193-line maximum), all single-function.
 
-Corpus at re-assessment (2026-09-11): **89 programs, 3,096 lines** (~35 lines
+Corpus at re-assessment (2026-09-11): 89 programs, 3,096 lines (~35 lines
 average, 167-line maximum). No longer all single-function — the largest is a
 13-function call-graph fixture (`testdata/phase07/deep_diamond_acyclic.lang`),
 and multi-function fixtures now exist for Phases 07, 08, and 10. The shape is
 still fixtures, not programs: every one exists to exercise one admission rule,
 and the biggest file is mostly comment.
 
-## The single-function guard inventory (verified 2026-09-11)
+Corpus at re-assessment (2026-09-17, Phase 14 EVD-06 machine check): **126 `.lang` programs, 4,244 lines total** (~34 lines average, 193-line maximum). Growth since 2026-09-11 tracks Phases 11-13 landing more multi-function, native-equivalence, and agent-loop fixtures; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
+
+## The single-function guard inventory (re-verified 2026-09-17, EVD-06 machine check)
 
 Phases 07-10 made `OpCall` real in `check`, `corevalidate`, `originvalidate`,
 `pathoracle`, and (internally, via Go tests) `interp`. A two-function program
@@ -92,29 +97,54 @@ go run ./cmd/lang run --engine=native      testdata/…/call_basic.lang  # opera
 ```
 
 It cannot be executed by either engine. The refusal is **not** confined to the
-two `cgen` entry points the roadmap names. A non-test scan finds
-**32 `len(Functions) != 1` guards across 6 files in 3 packages** (55 including
-tests):
+two `cgen` entry points the roadmap names. A non-test scan finds **22 `len(Functions) != 1` guards across 8 files in 2 packages** (48 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|
-| `session` | 26 | `RunInterpreter`, `RunNative`, `interpreterInputs` (the CLI run path); `verifyBorrowedCorpus` (×9); Phase 5/6/7 verification lanes; `VerifyAliasFalseNoAlias` |
-| `cgen` | 4 | `Emit`, `EmitNative`, `emitLinear`, `emitBranchOperations` |
-| `reduce` | 2 | `Reduce` (hard error on a multi-function seed), `ProjectSource` (returns an unsupported-projection string) |
+| `session` | 20 | `RunInterpreter`, `RunNative` (the CLI run path); `verifyOwnedCorpus`, `verifyBorrowedCorpus` (×8), `TransposeReleaseOrder`; Phase 5/6 verification lanes; `admitPhase5Candidate` |
+| `cgen` | 2 | `Emit`, `EmitNative` |
 
-Re-verify: `awk '/^func /{f=$0;l=NR} /Functions\) != 1/{print FILENAME": "f}' $(find internal cmd -name '*.go' -not -name '*_test.go')`
+**This table is now machine-checked, not self-certified.**
+`internal/compiler/session/self_describing_docs_test.go`'s
+`TestLanguageMaturityCountsAreCurrent` re-derives every number above
+independently, in Go, by walking the module tree with `go/parser` — never by
+executing the `awk` line below. The `awk` line is a text match and cannot tell
+a real guard from a comment that merely *mentions* the pattern (this tree has
+several, e.g. `session.go`'s own "the old len(program.Functions) != 1 guard"
+prose), so it overcounts; it originally reported 32 where the Go test's
+comment-immune AST walk finds 22. The Go test is now this file's authority —
+treat any drift between the table above and its output as this file being
+stale, not the test being wrong.
 
-Two consequences worth carrying into planning:
+Re-verify (approximate only — see the overcounting note above; kept as a cheap
+human convenience, not an authority): `awk '/^func /{f=$0;l=NR} /Functions\) != 1/{print FILENAME": "f}' $(find internal cmd -name '*.go' -not -name '*_test.go')`
 
-- **The reducer is single-function.** `reduce.Reduce` refuses a multi-function
-  seed outright. Any phase that promises HDD reducer behaviour on
-  multi-function programs must widen `reduce` as well as `cgen`.
-- **The comparator and gate scaffolding are single-function.** The 26 `session`
-  guards include the verification lanes that *are* the five-axis equivalence
-  proof. Making multi-function programs runnable and making them *provable* are
-  separate costs.
+Two consequences worth carrying into planning, one of them corrected by this
+re-verification:
+
+- **The reducer is no longer single-function.** Phase 11 (D-11-29/D-11-30)
+  widened `reduce.Reduce` to accept a multi-function `Seed`: two whole-program
+  moves (drop-call-site, drop-orphan-function) run first, then the original
+  per-function moves loop over every function in the seed. `reduce` therefore
+  no longer appears in the guard table above — its remaining `len(Functions)`
+  comparisons use `<= 1` / `== 1`, single-function-path shortcuts rather than
+  `!= 1` refusals, so they fall outside this table's predicate. This corrects
+  this file's prior claim that "`reduce.Reduce` refuses a multi-function seed
+  outright," which was accurate at the 2026-09-11 re-assessment and has since
+  been overtaken by Phase 11.
+- **The comparator and gate scaffolding are still mostly single-function.**
+  The 20 `session` guards include the verification lanes that *are* the
+  five-axis equivalence proof. Making multi-function programs runnable and
+  making them *provable* remain separate costs.
 
 ### Re-verify cheaply — do this rather than trusting this file
+
+As of 2026-09-17 (EVD-06), the guard-count and corpus figures above are
+machine-checked by `TestLanguageMaturityCountsAreCurrent`
+(`go test ./internal/compiler/session/... -run TestLanguageMaturityCountsAreCurrent -count=1`)
+independently of the commands below — the commands below stay for humans
+who want a fast, approximate sanity check, but they are no longer this
+file's authority.
 
 ```bash
 grep -oE '"[a-z_]+"' internal/compiler/syntax/token.go | sort -u   # keyword set
@@ -176,6 +206,12 @@ Rewrite the snapshot when any of these happen:
 - Arithmetic or iteration is added — the proportions move materially.
 - The corpus stops being dominated by <50-line single-function programs.
 - Any milestone closes.
+- ~~This file's own guard-count and corpus figures silently drift from the
+  tree.~~ **FIRED repeatedly (32 claimed vs. 22 actual, corpus stale in both
+  directions) — closed 2026-09-17 (EVD-06): `TestLanguageMaturityCountsAreCurrent`
+  now re-derives every stated count independently and fails the suite if this
+  file and the tree disagree, so this bullet can no longer silently fire
+  again.**
 
 Related: [STANDING-VERDICTS.md](STANDING-VERDICTS.md) — decisions already
 researched, so they are not re-litigated each milestone.
