@@ -84,8 +84,12 @@ func TestDeclineCarriesReasonAndDiagnosis(t *testing.T) {
 		if decision.declineReason != DeclineNoDiagnostics {
 			t.Fatalf("got decline reason %q, want %q", decision.declineReason, DeclineNoDiagnostics)
 		}
-		if decision.diagnosisCode != "" {
-			t.Fatalf("got diagnosis code %q, want empty (zero diagnostics)", decision.diagnosisCode)
+		// diagnosis_code must never be empty on an unrepairable outcome
+		// (D-14-42's global truth), even here where there is no diagnostic
+		// to name as the first element -- the decline reason itself is the
+		// only honest non-empty value available.
+		if decision.diagnosisCode != DeclineNoDiagnostics {
+			t.Fatalf("got diagnosis code %q, want %q (no diagnostic to name; the decline reason is the only honest non-empty value)", decision.diagnosisCode, DeclineNoDiagnostics)
 		}
 	})
 }

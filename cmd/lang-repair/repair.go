@@ -366,8 +366,14 @@ func classifyDecline(result checkResult) declineDecision {
 	switch {
 	case len(codes) == 0:
 		// Invalid with zero diagnostics -- a fail-closed anomaly that must
-		// still read as unrepairable, never a pass (T-14-17).
+		// still read as unrepairable, never a pass (T-14-17). There is no
+		// diagnostic to name as the first element in document order, but
+		// diagnosis_code must still never be empty on an unrepairable
+		// outcome (D-14-42's own global truth): the decline reason itself
+		// is the only honest non-empty value available here, and it is
+		// still a closed-vocabulary code, never invented prose.
 		decision.declineReason = DeclineNoDiagnostics
+		decision.diagnosisCode = DeclineNoDiagnostics
 	case !anyRepairs:
 		decision.declineReason = DeclineNoneOffered
 	default:
