@@ -166,6 +166,22 @@ currently-owned landing phase** — see the Items table's updated `Landing
 phase` cell above and `PHASE-12-DEBT.md`'s `D-12-36` row for the re-filed
 debt item.
 
+**2026-09-18 — informal Grade/Witness note (plan 14-07).** This register
+predates the Grade/Witness columns (D-14-21/D-14-24, `debtRegisterGradeWitnessExemptions`
+exempts this file's table from carrying them mechanically — migrating the
+other fifteen rows in this file is out of plan 14-07's budget, recorded as
+debt in its own SUMMARY). Recorded here as prose only, not mechanically
+enforced: **Grade WIRED, Witness `callsite:internal/compiler/cgen.emitProgram=0`
+composed with the TestN1ConvergenceDifferential measurement above** —
+`emitProgram`'s own refusal of four of the five legacy single-function
+shapes (match-only, branch/match+linear, foreign-call blocks, defect
+terminator) is exactly the multi-function branch-body refusal
+`TestLTOInertnessOnMultiFunctionEmission` (D-14-45,
+`internal/compiler/session/witness_registry_test.go`) also exercises; this
+row's own claim (the six single-function emitters are not deleted this
+phase) is DEFINED-shaped prose about a historical decision, not a claim a
+probe substantiates.
+
 ### D-11-07 — `singleForeignFunction`/`singleManifestFunction` generalize by refusal
 
 first-recorded: M002

@@ -2933,8 +2933,18 @@ func debtRegisterWitnessCellProblems(cell string) []string {
 // closure assertion: every row graded below the satisfying bar carries a
 // witness (every comma-separated token resolves) or is explicitly
 // withdrawn. "n/a" is the literal, explicit spelling for "no witness
-// declared" -- distinct from an empty cell, which is always a problem --
-// and is only legal at or above the satisfying bar, or on a withdrawn row.
+// declared" -- distinct from an empty cell, which is always a problem.
+//
+// DEFINED is exempted from the witness-or-withdrawn requirement: D-14-03's
+// own ladder treats DEFINED as "the floor, always permitted" -- a bare
+// declaration that a claim exists, asserting nothing a witness could
+// substantiate. WIRED and REACHABLE, by contrast, are affirmative
+// below-bar claims ("this exists," "this reaches") and DO require a
+// witness or an explicit withdrawal. Without this exemption, a genuinely
+// open, not-yet-actionable debt row (e.g. PHASE-14-DEBT.md's D-14-46/47,
+// prospective triggers with no executed probe to cite yet) would have no
+// honest way to be recorded: marking it "(withdrawn)" would misstate that
+// the claim has been retracted, when it has not.
 func debtRegisterGradeWitnessRowProblems(name, identifier, gradeCell, witnessCell string) []string {
 	var problems []string
 	m := debtRegisterGradeCellPattern.FindStringSubmatch(strings.TrimSpace(gradeCell))
@@ -2946,7 +2956,8 @@ func debtRegisterGradeWitnessRowProblems(name, identifier, gradeCell, witnessCel
 	if withdrawn && grade != "DEFINED" {
 		problems = append(problems, fmt.Sprintf("%s: row %s: only DEFINED may be marked (withdrawn)", name, identifier))
 	}
-	belowBar := debtRegisterGradeOrdinal[grade] < debtRegisterSatisfyingGradeOrdinal
+	ordinal := debtRegisterGradeOrdinal[grade]
+	belowBar := ordinal > debtRegisterGradeOrdinal["DEFINED"] && ordinal < debtRegisterSatisfyingGradeOrdinal
 	witnessCell = strings.TrimSpace(witnessCell)
 	switch {
 	case witnessCell == "":
@@ -3720,6 +3731,13 @@ func TestDebtRegisterWitnessGrammarIsClosed(t *testing.T) {
 
 	t.Run("a row graded at or above the satisfying bar may declare Witness n/a", func(t *testing.T) {
 		path := debtRegisterWitnessGrammarFixture(t, "MUTATION-KILLED", "n/a")
+		if problems, err := debtRegisterProblems(path); err != nil || len(problems) != 0 {
+			t.Fatalf("expected a clean pass; got err=%v problems=%v", err, problems)
+		}
+	})
+
+	t.Run("DEFINED is the no-claim floor and needs no witness even when not withdrawn", func(t *testing.T) {
+		path := debtRegisterWitnessGrammarFixture(t, "DEFINED", "n/a")
 		if problems, err := debtRegisterProblems(path); err != nil || len(problems) != 0 {
 			t.Fatalf("expected a clean pass; got err=%v problems=%v", err, problems)
 		}

@@ -312,6 +312,21 @@ write count: 2 on a real run) now guards `TestPayloadSlotSwapMutationKilled`
 against ever passing vacuously — the absence this control measures is a
 genuine, exercised absence, not an unexercised no-op.
 
+**2026-09-18 — informal Grade/Witness note (plan 14-07).** This register
+predates the Grade/Witness columns (D-14-21/D-14-24,
+`debtRegisterGradeWitnessExemptions` exempts this file's table from
+carrying them mechanically — migrating the other nine rows in this file is
+out of plan 14-07's budget, recorded as debt in its own SUMMARY). Recorded
+here as prose only, not mechanically enforced: **Grade WIRED, Witness
+`probe:TestD1243ControlIsUnconstructible`**
+(`internal/compiler/session/witness_registry_test.go`) — an executed probe
+that re-seeds the exact wrong-slot-payload-write bug via
+`cgen.SetPayloadSlotSwapForTest` and FAILS if `session.Phase5CompareEngines`
+ever reports a disagreement, unlike `TestPayloadSlotSwapMutationKilled`
+above (which logs either outcome and always passes). If this control ever
+becomes constructible, `TestD1243ControlIsUnconstructible` goes red before
+this row's own "OPEN and UNOWNED" prose would ever be re-read by a human.
+
 ### D-12-44 — CR-01's disposition is FIX, recorded as a decision — CLOSED (plans 06, 07)
 
 first-recorded: M002

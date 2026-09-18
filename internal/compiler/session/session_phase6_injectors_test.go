@@ -183,10 +183,36 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 				if heldoutSummary != derivationSummary {
 					t.Fatalf("%s class is no longer structurally identical (heldout=%+v derivation=%+v) -- PHASE-13-DEBT.md's D-13-34 row is stale: either remove the class from knownStructurallyIdentical here, or the fixtures changed and the debt row needs updating", class, heldoutSummary, derivationSummary)
 				}
-				t.Skipf("D-13-34 (PHASE-13-DEBT.md): %s class heldout/derivation fixtures are structurally identical (%+v) -- an alpha-rename-only pair, the exact M001 weakness D-13-33 exists to close. Ratified as permanent M001 evidence debt (Option B) at plan 13-07's checkpoint rather than fixed inside Phase 13's budget; see PHASE-13-DEBT.md D-13-34 for the full adjudication.", class, heldoutSummary)
+				t.Skipf("D-13-34 (PHASE-13-DEBT.md): %s class heldout/derivation fixtures are structurally identical (%+v) -- an alpha-rename-only pair, the exact M001 weakness D-13-33 exists to close. Ratified as permanent M001 evidence debt (Option B) at plan 13-07's checkpoint rather than fixed inside Phase 13's budget; see PHASE-13-DEBT.md D-13-34 for the full adjudication, witnessed by probe:TestPhase6HeldoutPairsAreAlphaRenamesOnly (session_phase6_injectors_test.go).", class, heldoutSummary)
 			}
 			if heldoutSummary == derivationSummary {
 				t.Fatalf("%s class: heldout and derivation fixtures are structurally IDENTICAL (%+v) -- byte-inequality alone would have passed this pair, which is the exact M001 weakness D-13-33 exists to close; this class is not in knownStructurallyIdentical, so this is a NEW regression, not known debt", class, heldoutSummary)
+			}
+		})
+	}
+}
+
+// TestPhase6HeldoutPairsAreAlphaRenamesOnly is plan 14-07's executed probe
+// backing PHASE-13-DEBT.md's D-13-34 row (witness:
+// probe:TestPhase6HeldoutPairsAreAlphaRenamesOnly): it asserts the
+// described weakness STILL HOLDS exactly as described -- the move and
+// borrow class heldout/derivation pairs remain structurally identical
+// under phase6StructuralSummary, an alpha-rename-only pair. This is an
+// executed claim, not a phase-number citation: if a future fixture edit
+// makes either pair structurally distinct, this probe goes red (XPASS)
+// and forces D-13-34's closure, rather than silently continuing to carry
+// stale debt. TestPhase6DefectCorpusIsHeldOut's own class loop asserts the
+// identical fact per-class already; this is the STANDALONE, stably-named
+// probe the debt register's Witness column cites by name so a rename of
+// the class loop can never silently orphan the citation.
+func TestPhase6HeldoutPairsAreAlphaRenamesOnly(t *testing.T) {
+	for _, class := range []string{"move", "borrow"} {
+		class := class
+		t.Run(class, func(t *testing.T) {
+			heldoutSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "heldout_"+class+"_defect.lang"))
+			derivationSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "derivation_"+class+"_defect.lang"))
+			if heldoutSummary != derivationSummary {
+				t.Fatalf("D-13-34: the %s class heldout/derivation pair is no longer structurally identical (heldout=%+v derivation=%+v) -- the M001 weakness this probe witnesses has been closed; update PHASE-13-DEBT.md's D-13-34 row (and its Grade) instead of treating this failure as something to silence", class, heldoutSummary, derivationSummary)
 			}
 		})
 	}

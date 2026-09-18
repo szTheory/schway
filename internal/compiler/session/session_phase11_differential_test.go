@@ -362,7 +362,7 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 	// emitters, including emitMatch, are deliberately not deleted or
 	// generalized this phase). Recorded in PHASE-11-DEBT.md.
 	t.Run("DivergingCallee", func(t *testing.T) {
-		t.Skip("not expressible this phase: a diverging callee requires a core.Match-bodied function (the only construct that can reach `defect` at this maturity), and cgen.emitProgram explicitly refuses any Match-bodied function in a multi-function program (\"multi-function branch bodies are not supported by native emission this phase\", D-11-02) -- see PHASE-11-DEBT.md")
+		t.Skip("not expressible this phase: a diverging callee requires a core.Match-bodied function (the only construct that can reach `defect` at this maturity), and cgen.emitProgram explicitly refuses any Match-bodied function in a multi-function program (\"multi-function branch bodies are not supported by native emission this phase\", D-11-02) -- see PHASE-11-DEBT.md, witnessed by probe:TestLTOInertnessOnMultiFunctionEmission (internal/compiler/session/witness_registry_test.go)")
 	})
 }
 

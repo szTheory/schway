@@ -323,7 +323,7 @@ func compositionOnlyCellValue(t *testing.T, calleePath, writerPath, wrapperPath,
 	if err != nil {
 		var toolErr *native.ToolError
 		if errors.As(err, &toolErr) && toolErr.Code == "native.tool_missing" {
-			t.Skipf("clang toolchain unavailable on this host: %v", err)
+			t.Skipf("env:clang toolchain unavailable on this host: %v", err)
 		}
 		t.Fatalf("composition-only cell (optimization=%s lto=%v) failed to build/run: %v", optimization, lto, err)
 	}
@@ -342,7 +342,7 @@ func compositionOnlyCellValue(t *testing.T, calleePath, writerPath, wrapperPath,
 // for the full design.
 func TestCompositionOnlyLTODivergence(t *testing.T) {
 	if _, err := exec.LookPath("clang"); err != nil {
-		t.Skipf("clang toolchain unavailable on this host: %v", err)
+		t.Skipf("env:clang toolchain unavailable on this host: %v", err)
 	}
 
 	dir := t.TempDir()

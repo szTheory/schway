@@ -1,0 +1,18 @@
+// Plan 14-07's own fixture backing PHASE-13-DEBT.md's D-13-02b row
+// (witness: probe:TestB1BlameIsStructurallyUnreachable). A function whose
+// own declared ReturnType contradicts its own declared Parameter.Type --
+// exactly the shape D-13-02b claims is refused at admission
+// (sameType(function.ReturnType, function.Parameter.Type), enforced at
+// internal/compiler/check/check.go:255/3148/3399), independent of any
+// call. If B1's contract-violation blame were ever reachable in
+// production, a callee like this one would have to survive admission
+// long enough for the interprocedural pass to see it. It never does.
+module phase14.blame_unreachable_admission_refusal
+
+export {
+  fn contradicts_own_contract
+}
+
+fn contradicts_own_contract(value: Byte) -> Buffer {
+  value
+}
