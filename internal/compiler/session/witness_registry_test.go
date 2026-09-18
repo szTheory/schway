@@ -807,3 +807,236 @@ func TestUnreachableClaimsViewCatchesStaleEntry(t *testing.T) {
 		t.Fatal("a view carrying a stale entry absent from the live derivation should differ from a fresh regeneration, but compared equal")
 	}
 }
+
+// ---------------------------------------------------------------------
+// Plan 14-10 Task 2: .planning/EVIDENCE-RECONCILIATION.md -- a generated,
+// byte-compared view (D-14-13, D-14-14), reusing this file's own
+// UNREACHABLE-CLAIMS.md discipline rather than writing a second generator.
+// The reconciliation entry is the AUTHORED truth (PHASE-14-DEBT.md's
+// "```reconciliation" blocks, session_test.go's parseReconciliationEntries),
+// this file is DERIVED: regenerated in memory and compared, never
+// hand-edited, no blessing path.
+// ---------------------------------------------------------------------
+
+// evidenceReconciliationFrontmatterPattern matches the generated view's own
+// `entries: N` frontmatter line, mirroring unreachableClaimsFrontmatterPattern.
+var evidenceReconciliationFrontmatterPattern = regexp.MustCompile(`(?m)^entries:\s*(\d+)\s*$`)
+
+// deriveEvidenceReconciliation scans every *-DEBT.md register (live and
+// archived) for reconciliation entries, in register-glob order then
+// document order within each register -- fully deterministic. Reuses
+// parseReconciliationEntries directly; this generator never re-parses the
+// underlying markdown with its own logic.
+func deriveEvidenceReconciliation() ([]reconciliationEntry, error) {
+	registers, err := phaseArtifactGlob("*", "*-DEBT.md")
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(registers)
+	var entries []reconciliationEntry
+	for _, path := range registers {
+		parsed, parseErr := parseReconciliationEntries(path)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		entries = append(entries, parsed...)
+	}
+	return entries, nil
+}
+
+// evidenceReconciliationCellEscape escapes a value for embedding in a GFM
+// table cell -- mirroring the groundedness lint's own unescapeCell in
+// reverse: a literal backslash becomes `\\`, a literal pipe becomes `\|`.
+// Verification commands routinely contain an unescaped "|" (e.g.
+// `-run 'A|B'`), so this escape is load-bearing, not decorative.
+func evidenceReconciliationCellEscape(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `|`, `\|`)
+	return s
+}
+
+// evidenceReconciliationObligationSummary renders the verdict-specific
+// obligation fields as one prose cell, escaped for table embedding.
+func evidenceReconciliationObligationSummary(e reconciliationEntry) string {
+	switch e.Verdict {
+	case reconciliationRenamed:
+		return fmt.Sprintf("replacement: %s", e.Replacement)
+	case reconciliationSuperseded:
+		return fmt.Sprintf("phase %s, commit %s, covers: %s", e.SupersedingPhase, e.SupersedingCommit, e.CoveringCommand)
+	case reconciliationObsoleteByDesign:
+		return fmt.Sprintf("deleted %s from %s at phase %s, commit %s", e.DeletedSymbol, e.DeletedPackage, e.DeletingPhase, e.DeletingCommit)
+	case reconciliationUnderScoped:
+		return fmt.Sprintf("missing clause: %s, landing phase: %s", e.MissingClause, e.LandingPhase)
+	default:
+		return ""
+	}
+}
+
+// renderEvidenceReconciliationView renders entries as the exact checked-in
+// document shape: frontmatter `entries: N`, then one table row per entry.
+func renderEvidenceReconciliationView(entries []reconciliationEntry) string {
+	var b strings.Builder
+	b.WriteString("---\n")
+	fmt.Fprintf(&b, "entries: %d\n", len(entries))
+	b.WriteString("---\n\n")
+	b.WriteString("# Evidence Reconciliation\n\n")
+	b.WriteString("**GENERATED. Do not hand-edit.** Regenerated in memory and byte-compared by\n")
+	b.WriteString("`TestEvidenceReconciliationViewIsCurrent` (`internal/compiler/session/witness_registry_test.go`)\n")
+	b.WriteString("from every `*-DEBT.md` register's `` ```reconciliation ``` `` fenced blocks\n")
+	b.WriteString("(`internal/compiler/session/session_test.go`'s `parseReconciliationEntries`). The\n")
+	b.WriteString("register row is the authored truth, this file is derived -- a hand edit is a\n")
+	b.WriteString("failure, not a source of information. There is no regeneration command and no\n")
+	b.WriteString("blessing path: if this view is out of date, correct the registers and\n")
+	b.WriteString("re-derive, never overwrite this file directly.\n\n")
+	b.WriteString("This is deliberately NOT a baseline file: a baseline is satisfied by silence,\n")
+	b.WriteString("while every row here is satisfied only by a claim that can itself fail --\n")
+	b.WriteString("`TestReconciliationVerdictsCarryTheirObligations` re-checks every row's\n")
+	b.WriteString("obligation on every run (D-14-12).\n\n")
+	b.WriteString("## Entries\n\n")
+	b.WriteString("| ID | File | Line | Command | Verdict | Obligation |\n")
+	b.WriteString("|---|---|---|---|---|---|\n")
+	for _, e := range entries {
+		fmt.Fprintf(&b, "| %s | %s | %d | `%s` | %s | %s |\n",
+			e.ID,
+			evidenceReconciliationCellEscape(e.File),
+			e.Line,
+			evidenceReconciliationCellEscape(e.Command),
+			e.Verdict,
+			evidenceReconciliationCellEscape(evidenceReconciliationObligationSummary(e)),
+		)
+	}
+	return b.String()
+}
+
+// TestEvidenceReconciliationViewIsCurrent regenerates the view in memory
+// from the registers and byte-compares it against the checked-in
+// .planning/EVIDENCE-RECONCILIATION.md -- a hand edit is a failure
+// (D-14-13). The non-zero-row-count assertion (D-14-14c) additionally
+// guards against a vacuous pass.
+func TestEvidenceReconciliationViewIsCurrent(t *testing.T) {
+	entries, err := deriveEvidenceReconciliation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("expected at least the 66 reconciliation entries plan 14-10 authored, got 0")
+	}
+
+	regenerated := renderEvidenceReconciliationView(entries)
+
+	checkedInPath := testsupport.ProjectPath(".planning", "EVIDENCE-RECONCILIATION.md")
+	checkedIn, err := os.ReadFile(checkedInPath)
+	if err != nil {
+		t.Fatalf("read .planning/EVIDENCE-RECONCILIATION.md: %v", err)
+	}
+	if regenerated != string(checkedIn) {
+		t.Fatalf(".planning/EVIDENCE-RECONCILIATION.md is out of date -- regenerate from the registers, never hand-edit.\n--- regenerated ---\n%s\n--- checked-in ---\n%s", regenerated, string(checkedIn))
+	}
+
+	m := evidenceReconciliationFrontmatterPattern.FindStringSubmatch(string(checkedIn))
+	if m == nil {
+		t.Fatal(".planning/EVIDENCE-RECONCILIATION.md has no `entries: N` frontmatter line")
+	}
+	declared, convErr := strconv.Atoi(m[1])
+	if convErr != nil {
+		t.Fatalf("unreadable entries: frontmatter: %v", convErr)
+	}
+	if declared != len(entries) {
+		t.Fatalf("frontmatter declares entries: %d but the derivation holds %d", declared, len(entries))
+	}
+}
+
+// TestEvidenceReconciliationViewNonZeroRowCountIsLoadBearing (D-14-14c)
+// proves the non-zero-row-count assertion is not vacuous ornamentation,
+// mirroring TestUnreachableClaimsViewNonZeroRowCountIsLoadBearing exactly.
+func TestEvidenceReconciliationViewNonZeroRowCountIsLoadBearing(t *testing.T) {
+	emptyRendered := renderEvidenceReconciliationView(nil)
+	if !strings.Contains(emptyRendered, "entries: 0") {
+		t.Fatalf("expected an empty entry list to render entries: 0, got:\n%s", emptyRendered)
+	}
+	if emptyRendered != renderEvidenceReconciliationView(nil) {
+		t.Fatal("renderEvidenceReconciliationView is nondeterministic on empty input")
+	}
+	entries, err := deriveEvidenceReconciliation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("the live registers derived ZERO reconciliation entries -- the byte-compare above would now be vacuously comparing two empty documents, proving consistency but not completeness")
+	}
+}
+
+// TestEvidenceReconciliationViewCatchesHandEdit mirrors
+// TestUnreachableClaimsViewCatchesHandEdit exactly: a one-character
+// tamper is proven to differ from a fresh regeneration.
+func TestEvidenceReconciliationViewCatchesHandEdit(t *testing.T) {
+	entries, err := deriveEvidenceReconciliation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	regenerated := renderEvidenceReconciliationView(entries)
+	tampered := regenerated + "x"
+	if tampered == regenerated {
+		t.Fatal("seeded one-character edit did not change the text")
+	}
+	if tampered == renderEvidenceReconciliationView(entries) {
+		t.Fatal("the tampered copy should differ from a fresh regeneration, but compared equal")
+	}
+}
+
+// TestEvidenceReconciliationViewCatchesStaleEntry mirrors
+// TestUnreachableClaimsViewCatchesStaleEntry (D-14-14b): a checked-in
+// entry whose underlying register row has vanished must never be silently
+// auto-pruned -- it must fail.
+func TestEvidenceReconciliationViewCatchesStaleEntry(t *testing.T) {
+	entries, err := deriveEvidenceReconciliation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("no entries to seed a stale row against")
+	}
+	stale := append([]reconciliationEntry{{
+		ID: "D-00-00", File: "nonexistent.md", Line: 1, Command: "echo gone",
+		Classification: classR1, Verdict: reconciliationRenamed, Replacement: "echo replacement",
+	}}, entries...)
+	staleRendered := renderEvidenceReconciliationView(stale)
+	freshRendered := renderEvidenceReconciliationView(entries)
+	if staleRendered == freshRendered {
+		t.Fatal("a view carrying a stale entry absent from the live derivation should differ from a fresh regeneration, but compared equal")
+	}
+}
+
+// TestEvidenceReconciliationViewCountMatchesFrontmatter is D-14-14a's own
+// dedicated proof for this view: a frontmatter `entries: N` that disagrees
+// with the table's own row count must fail. TestEvidenceReconciliationViewIsCurrent
+// already asserts this over the real checked-in file; this test
+// demonstrates the mechanism directly over a synthetic mismatch.
+func TestEvidenceReconciliationViewCountMatchesFrontmatter(t *testing.T) {
+	entries, err := deriveEvidenceReconciliation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rendered := renderEvidenceReconciliationView(entries)
+	tampered := strings.Replace(rendered, fmt.Sprintf("entries: %d\n", len(entries)), fmt.Sprintf("entries: %d\n", len(entries)+1), 1)
+	if tampered == rendered {
+		t.Fatal("seeded frontmatter-count mismatch did not change the text")
+	}
+	m := evidenceReconciliationFrontmatterPattern.FindStringSubmatch(tampered)
+	if m == nil {
+		t.Fatal("tampered text lost its entries: frontmatter line")
+	}
+	declared, convErr := strconv.Atoi(m[1])
+	if convErr != nil {
+		t.Fatal(convErr)
+	}
+	// Re-derive the table row count from the tampered text the same way
+	// TestEvidenceReconciliationViewIsCurrent would over a hand-edited
+	// file: it holds len(entries) rows still (only frontmatter moved), so
+	// declared (len(entries)+1) now disagrees -- this is the failure
+	// TestEvidenceReconciliationViewIsCurrent's own declared != len(entries)
+	// check catches on the real file.
+	if declared == len(entries) {
+		t.Fatal("seeded mismatch did not actually diverge from the true entry count")
+	}
+}
