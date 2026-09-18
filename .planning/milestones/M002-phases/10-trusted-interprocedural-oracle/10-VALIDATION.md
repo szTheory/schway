@@ -8,6 +8,8 @@ nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-11"
 validated: "2026-09-11"
+evidence_vocabulary: v1
+graded_rows: 10
 ---
 
 # Phase 10 — Validation Strategy
@@ -44,18 +46,18 @@ Seeded from the RESEARCH requirement→test map. Task IDs are filled in by
 `/gsd-validate-phase` once PLAN.md task numbering is final; every row below MUST
 bind to at least one plan task.
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 10-04 Task 2 | 10-04 | 2 | SEM-08 | — | Depth-exceeded refusal fires through the real pipeline on a genuine 129-function chain | integration | `go test ./internal/compiler/interp/... -run TestCallDepthExceeded -v` | ✅ | ✅ green |
-| 10-04 Task 3 | 10-04 | 2 | SEM-08 (Pitfall 4 gate) | — | Native-stack headroom probe is a distinct limit from the language-level call-depth bound | subprocess integration | `go test ./internal/compiler/interp/... -run TestNativeStackHeadroomIndependentOfCallDepth -v` | ✅ | ✅ green |
-| 10-05 Task 1 | 10-05 | 3 | SEM-09 | — | Drop/cleanup order observed via canonical bytes on normal return **and** every nonlocal exit | unit + differential | `go test ./internal/compiler/interp/... -run TestFrameDrainOrder -v` | ✅ | ✅ green |
-| 10-02 Task 2 | 10-02 | 2 | TRU-02 | — | `walkReturnOrigin` handles `case core.OpCall`; `twin_a_accept.lang` admits clean through the full CLI | unit + CLI gate | `go test ./internal/compiler/originvalidate/... -run TestOpCallOriginWalk -v` | ✅ | ✅ green |
-| 10-02 Task 3 | 10-02 | 2 | TRU-02 (import guard) | T-10-01 | `originvalidate` transitively imports neither `check` nor `corevalidate` | build/test guard | `go test ./internal/compiler/originvalidate/... -run 'Imports.*Independent' -v` | ✅ | ✅ green |
-| 10-03 Task 2 | 10-03 | 2 | TRU-03 | — | Composition splits the caller's endpoints per-path depending on which callee path is spliced | unit | `go test ./internal/compiler/pathoracle/... -run TestCompositionDiscriminatesPerPathBorrow -v` | ✅ | ✅ green |
-| 10-07 Task 3 | 10-07 | 5 | QLT-04 | — | Depth-3 composition corpus reaches the **declared** bound, checked bidirectionally | corpus + bidirectional gate | `go test ./internal/compiler/session/... -run TestCompositionDepthCorpusReachesDeclaredBound -v` | ✅ | ✅ green |
-| 10-01 Task 3 | 10-01 | 1 | OWN-05b | T-10-02 | `interp` never reads `corevalidate.Result`'s ownership-bearing fields | guard | `go test ./internal/compiler/interp/... -run TestInterpDoesNotReadCorevalidateOwnershipFields -v` | ✅ | ✅ green |
-| 10-08 Task 2 | 10-08 | 6 | Criterion 4 | — | Three-way-on-refuse / four-way-on-accept differential with seeded faults per peer pair | differential + mutation-kill | `go test ./internal/compiler/session/... -run TestNoUndeclaredCheckPeerDivergenceAcrossCorpus -v` | ✅ | ✅ green |
-| 10-09 Task 1/2 | 10-09 | 7 | Stability freeze | — | Golden corpus byte-for-byte and deterministic across repeated runs | golden + flake check | `go test ./internal/compiler/interp/... -run TestInterpOracleGoldenCorpus -v` and `-run 'TestInterpDeterministicAcrossRuns\|TestInterpOracleGoldenCorpus\|TestInterpOracleCorpusDeterministic' -count=10` | ✅ | ✅ green |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 10-04 Task 2 | 10-04 | 2 | SEM-08 | — | Depth-exceeded refusal fires through the real pipeline on a genuine 129-function chain | integration | `go test ./internal/compiler/interp/... -run TestCallDepthExceeded -v` | ✅ | EXERCISED | — |
+| 10-04 Task 3 | 10-04 | 2 | SEM-08 (Pitfall 4 gate) | — | Native-stack headroom probe is a distinct limit from the language-level call-depth bound | subprocess integration | `go test ./internal/compiler/interp/... -run TestNativeStackHeadroomIndependentOfCallDepth -v` | ✅ | EXERCISED | — |
+| 10-05 Task 1 | 10-05 | 3 | SEM-09 | — | Drop/cleanup order observed via canonical bytes on normal return **and** every nonlocal exit | unit + differential | `go test ./internal/compiler/interp/... -run TestFrameDrainOrder -v` | ✅ | EXERCISED | — |
+| 10-02 Task 2 | 10-02 | 2 | TRU-02 | — | `walkReturnOrigin` handles `case core.OpCall`; `twin_a_accept.lang` admits clean through the full CLI | unit + CLI gate | `go test ./internal/compiler/originvalidate/... -run TestOpCallOriginWalk -v` | ✅ | EXERCISED | — |
+| 10-02 Task 3 | 10-02 | 2 | TRU-02 (import guard) | T-10-01 | `originvalidate` transitively imports neither `check` nor `corevalidate` | build/test guard | `go test ./internal/compiler/originvalidate/... -run 'Imports.*Independent' -v` | ✅ | EXERCISED | — |
+| 10-03 Task 2 | 10-03 | 2 | TRU-03 | — | Composition splits the caller's endpoints per-path depending on which callee path is spliced | unit | `go test ./internal/compiler/pathoracle/... -run TestCompositionDiscriminatesPerPathBorrow -v` | ✅ | EXERCISED | — |
+| 10-07 Task 3 | 10-07 | 5 | QLT-04 | — | Depth-3 composition corpus reaches the **declared** bound, checked bidirectionally | corpus + bidirectional gate | `go test ./internal/compiler/session/... -run TestCompositionDepthCorpusReachesDeclaredBound -v` | ✅ | EXERCISED | — |
+| 10-01 Task 3 | 10-01 | 1 | OWN-05b | T-10-02 | `interp` never reads `corevalidate.Result`'s ownership-bearing fields | guard | `go test ./internal/compiler/interp/... -run TestInterpDoesNotReadCorevalidateOwnershipFields -v` | ✅ | EXERCISED | — |
+| 10-08 Task 2 | 10-08 | 6 | Criterion 4 | — | Three-way-on-refuse / four-way-on-accept differential with seeded faults per peer pair | differential + mutation-kill | `go test ./internal/compiler/session/... -run TestNoUndeclaredCheckPeerDivergenceAcrossCorpus -v` | ✅ | EXERCISED | — |
+| 10-09 Task 1/2 | 10-09 | 7 | Stability freeze | — | Golden corpus byte-for-byte and deterministic across repeated runs | golden + flake check | `go test ./internal/compiler/interp/... -run TestInterpOracleGoldenCorpus -v` and `-run 'TestInterpDeterministicAcrossRuns\|TestInterpOracleGoldenCorpus\|TestInterpOracleCorpusDeterministic' -count=10` | ✅ | EXERCISED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

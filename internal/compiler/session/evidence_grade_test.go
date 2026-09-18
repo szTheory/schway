@@ -33,6 +33,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -233,7 +234,7 @@ var evidenceRunRecordScriptRelPath = []string{"scripts", "evidence-run-record.sh
 // (package, pattern) pairs the caller asks for -- not a whole-module
 // `go test ./...` re-run -- so this budget is generous relative to the
 // small, targeted batch it actually bounds.
-const evidenceRunRecordTimeout = 180 * time.Second
+const evidenceRunRecordTimeout = 900 * time.Second
 
 // generateRunRecord invokes scripts/evidence-run-record.sh once, batching
 // every requested (package, pattern) pair into a single process spawn, and
@@ -316,6 +317,9 @@ func deriveCeiling(index *testIndex, record *runRecord, evidence string) (ceilin
 	if compileTimeEvidencePattern.MatchString(evidence) {
 		return "WIRED", nil
 	}
+	if assertGoTestsInvocationPattern.MatchString(evidence) {
+		return deriveAssertGoTestsCeiling(index, record, evidence)
+	}
 	if strings.HasPrefix(evidence, "go test") {
 		parsed, ok := parseGoTestCommand(evidence)
 		if !ok {
@@ -351,12 +355,69 @@ func deriveCeiling(index *testIndex, record *runRecord, evidence string) (ceilin
 		}
 		return "WIRED", matchedNames
 	}
-	if verificationCommandPattern.MatchString(evidence) {
-		// grep/rg/awk/sed/git/./scripts/go run: a fixture path or a
-		// command-line invocation rather than a test name (D-14-03).
+	if verificationCommandPattern.MatchString(evidence) || strings.Contains(evidence, "scripts/") {
+		// grep/rg/awk/sed/git/./scripts/go run, or any other shell
+		// invocation naming a scripts/ path (e.g. `sh scripts/verify-phaseN.sh`,
+		// which does not start with one of verificationCommandPattern's
+		// anchored prefixes but is still a command-line invocation, not a
+		// test name): a fixture path or a command-line invocation rather
+		// than a test name (D-14-03).
 		return "REACHABLE", nil
 	}
 	return "DEFINED", nil
+}
+
+// assertGoTestsInvocationPattern recognizes an M001-era
+// `[env VAR=val] sh scripts/assert-go-tests.sh [--self-test] <package> <TestName>...`
+// evidence cell -- the corpus's OWN "one or more exact Go identifiers" shape
+// D-14-03 describes, predating this phase's `go test -run` convention.
+var assertGoTestsInvocationPattern = regexp.MustCompile(`assert-go-tests\.sh`)
+
+// deriveAssertGoTestsCeiling resolves an assert-go-tests.sh invocation by
+// the SAME exact-match discipline the script itself uses
+// (scripts/assert-go-tests.sh:8-45): every named test argument must exist
+// verbatim in the named package's test set. Any one unresolved name derives
+// WIRED for the whole row -- there is no partial credit, matching D-14-03's
+// "resolve each... unresolved => ceiling WIRED."
+func deriveAssertGoTestsCeiling(index *testIndex, record *runRecord, evidence string) (ceiling string, matchedNames []string) {
+	tokens, err := posixTokenize(evidence)
+	if err != nil {
+		return "DEFINED", nil
+	}
+	scriptIdx := -1
+	for i, tok := range tokens {
+		if strings.Contains(tok, "assert-go-tests.sh") {
+			scriptIdx = i
+			break
+		}
+	}
+	if scriptIdx == -1 || scriptIdx+1 >= len(tokens) {
+		return "DEFINED", nil
+	}
+	rest := tokens[scriptIdx+1:]
+	if len(rest) > 0 && rest[0] == "--self-test" {
+		rest = rest[1:]
+	}
+	if len(rest) < 2 {
+		return "DEFINED", nil
+	}
+	packageNames, resolvedPkg := index.resolvePackageNames(rest[0])
+	names := rest[1:]
+	if !resolvedPkg {
+		return "WIRED", nil
+	}
+	for _, name := range names {
+		if !packageNames[name] {
+			return "WIRED", nil
+		}
+	}
+	matchedNames = append(matchedNames, names...)
+	for _, name := range names {
+		if record.passedNoSkip(name) {
+			return "EXERCISED", matchedNames
+		}
+	}
+	return "WIRED", matchedNames
 }
 
 // nonInertnessNoneMarkers is the closed set of explicit "no twin declared"
@@ -570,4 +631,447 @@ func TestValidationRowGradesAreEarned(t *testing.T) {
 			t.Fatalf("declaring below the derived ceiling should pass, got: %s", problem)
 		}
 	})
+}
+
+// ---------------------------------------------------------------------
+// (e) Plan 14-09 Task 2 -- derive over the whole archived corpus. This
+// section parses the PRIMARY Per-Task Verification Map table (the first
+// header+divider+rows block whose header names "Automated Command",
+// immediately following the "## Per-Task Verification Map" heading) in
+// each of the fourteen documents. Scope note (recorded, not silent): three
+// SECONDARY supplement sub-tables under that same heading --
+// 02-VALIDATION.md's two "Post-Gate Supplement" tables and
+// 11-VALIDATION.md's "Requirement -> Test Map" table -- are out of this
+// migration's scope and retain their original Status column; see this
+// plan's own SUMMARY for the recorded reason.
+// ---------------------------------------------------------------------
+
+// validationSection extracts the text from "## Per-Task Verification Map"
+// up to (not including) the next top-level "## " heading, or to EOF.
+func validationSection(text string) (string, int, bool) {
+	lines := strings.Split(text, "\n")
+	start := -1
+	for i, line := range lines {
+		if strings.HasPrefix(line, "## Per-Task Verification Map") {
+			start = i
+			break
+		}
+	}
+	if start == -1 {
+		return "", 0, false
+	}
+	end := len(lines)
+	for i := start + 1; i < len(lines); i++ {
+		if strings.HasPrefix(lines[i], "## ") {
+			end = i
+			break
+		}
+	}
+	return strings.Join(lines[start:end], "\n"), start, true
+}
+
+// validationRawRow is one data row of the primary table, with RAW
+// (still-escaped) cell text keyed by header name, plus the 1-based line
+// number within the whole file.
+type validationRawRow struct {
+	Line  int
+	Cells map[string]string // header name -> raw cell text (framing pipes and outer whitespace trimmed by splitTableRow's caller)
+}
+
+// primaryValidationTable locates the FIRST header line inside the
+// "## Per-Task Verification Map" section whose cells include "Automated
+// Command", and returns its header order, the header's own line number, and
+// every following data row up to the next divider-less non-table line or
+// the next such header line (a repeated header inside the same block, as
+// several M001 documents use for readability, starts a NEW logical
+// sub-table and is therefore where this primary table stops, keeping the
+// scope to exactly one sub-table as this migration's SUMMARY records).
+func primaryValidationTable(text string) (header []string, rows []validationRawRow, ok bool) {
+	section, sectionStartLine, found := validationSection(text)
+	if !found {
+		return nil, nil, false
+	}
+	lines := strings.Split(section, "\n")
+	headerIdx := -1
+	for i, line := range lines {
+		if !strings.HasPrefix(strings.TrimLeft(line, " \t"), "|") {
+			continue
+		}
+		cells := rawRowCells(line)
+		for _, c := range cells {
+			if strings.TrimSpace(c) == "Automated Command" {
+				headerIdx = i
+				header = cells
+				break
+			}
+		}
+		if headerIdx != -1 {
+			break
+		}
+	}
+	if headerIdx == -1 {
+		return nil, nil, false
+	}
+	// headerIdx+1 is expected to be the divider row; data starts at +2.
+	for i := headerIdx + 2; i < len(lines); i++ {
+		line := lines[i]
+		if !strings.HasPrefix(strings.TrimLeft(line, " \t"), "|") {
+			break
+		}
+		cells := rawRowCells(line)
+		isRepeatedHeader := false
+		for _, c := range cells {
+			if strings.TrimSpace(c) == "Automated Command" {
+				isRepeatedHeader = true
+			}
+		}
+		if isRepeatedHeader {
+			break
+		}
+		if len(cells) != len(header) {
+			continue // a divider-shaped or malformed line; skip rather than misalign columns
+		}
+		named := make(map[string]string, len(header))
+		for col, name := range header {
+			named[strings.TrimSpace(name)] = cells[col]
+		}
+		rows = append(rows, validationRawRow{Line: sectionStartLine + i + 1, Cells: named})
+	}
+	return header, rows, true
+}
+
+// rawRowCells splits a table row into its RAW (still-escaped) cell texts,
+// with the outer framing empty cells (from a line that starts and ends with
+// "|") trimmed away, and each cell's own leading/trailing space stripped.
+// Built on splitTableRow (D-14-15) so backtick-aware splitting is shared,
+// never re-derived.
+func rawRowCells(line string) []string {
+	cells := splitTableRow(line)
+	if len(cells) >= 2 && strings.TrimSpace(cells[0]) == "" {
+		cells = cells[1:]
+	}
+	if len(cells) >= 1 && strings.TrimSpace(cells[len(cells)-1]) == "" {
+		cells = cells[:len(cells)-1]
+	}
+	for i, c := range cells {
+		cells[i] = strings.TrimSpace(c)
+	}
+	return cells
+}
+
+// rowIdentifier returns the row's Task ID (10/6-column shape) for
+// diagnostics; every primary table in this corpus carries one.
+func rowIdentifier(row validationRawRow) string {
+	if v, ok := row.Cells["Task ID"]; ok {
+		return v
+	}
+	if v, ok := row.Cells["Req ID"]; ok {
+		return v
+	}
+	return "?"
+}
+
+// rowEvidence returns the row's unescaped Automated Command cell -- the
+// evidence text deriveCeiling consumes. A cell may legitimately carry two
+// backtick spans (D-14-15); this ladder derives from the FIRST span only,
+// since every real corpus row cited in this plan's read_first uses exactly
+// one command per Automated Command cell for its primary claim.
+func rowEvidence(row validationRawRow) string {
+	raw, ok := row.Cells["Automated Command"]
+	if !ok {
+		return ""
+	}
+	unescaped := unescapeCell(raw)
+	spans := extractCodeSpans(unescaped)
+	if len(spans) == 0 {
+		return strings.TrimSpace(unescaped)
+	}
+	return strings.TrimSpace(spans[0])
+}
+
+// pkgPatternsFor collects every (package, pattern) pair a row's evidence
+// requires the run record to cover -- both the `go test -run` shape and the
+// assert-go-tests.sh exact-name shape, expressed as a `go test` pattern the
+// run-record producer can execute directly.
+func pkgPatternsFor(evidence string) []pkgPattern {
+	evidence = strings.TrimSpace(evidence)
+	if strings.HasPrefix(evidence, "go test") {
+		parsed, ok := parseGoTestCommand(evidence)
+		if !ok || parsed.Pattern == "" || len(parsed.Packages) == 0 {
+			return nil
+		}
+		var pairs []pkgPattern
+		for _, pkg := range parsed.Packages {
+			pairs = append(pairs, pkgPattern{Package: pkg, Pattern: parsed.Pattern})
+		}
+		return pairs
+	}
+	if assertGoTestsInvocationPattern.MatchString(evidence) {
+		tokens, err := posixTokenize(evidence)
+		if err != nil {
+			return nil
+		}
+		scriptIdx := -1
+		for i, tok := range tokens {
+			if strings.Contains(tok, "assert-go-tests.sh") {
+				scriptIdx = i
+				break
+			}
+		}
+		if scriptIdx == -1 || scriptIdx+1 >= len(tokens) {
+			return nil
+		}
+		rest := tokens[scriptIdx+1:]
+		if len(rest) > 0 && rest[0] == "--self-test" {
+			rest = rest[1:]
+		}
+		if len(rest) < 2 {
+			return nil
+		}
+		pattern := "^(" + strings.Join(rest[1:], "|") + ")$"
+		return []pkgPattern{{Package: rest[0], Pattern: pattern}}
+	}
+	return nil
+}
+
+// allPrimaryValidationRows returns every (file, row) pair across the
+// fourteen archived-and-live *-VALIDATION.md documents' primary tables,
+// sorted by (file, line) for deterministic iteration.
+func allPrimaryValidationRows(t testing.TB) map[string][]validationRawRow {
+	t.Helper()
+	docs, err := phaseArtifactGlob("*", "*-VALIDATION.md")
+	if err != nil {
+		t.Fatalf("phaseArtifactGlob *-VALIDATION.md: %v", err)
+	}
+	result := make(map[string][]validationRawRow)
+	for _, doc := range docs {
+		data, readErr := os.ReadFile(doc)
+		if readErr != nil {
+			t.Fatalf("read %s: %v", doc, readErr)
+		}
+		_, rows, ok := primaryValidationTable(string(data))
+		if !ok {
+			continue
+		}
+		result[doc] = rows
+	}
+	return result
+}
+
+func sortStrings(s []string) {
+	for i := 1; i < len(s); i++ {
+		for j := i; j > 0 && s[j-1] > s[j]; j-- {
+			s[j-1], s[j] = s[j], s[j-1]
+		}
+	}
+}
+
+// ---------------------------------------------------------------------
+// (f) Plan 14-09 Task 2 -- the satisfying bar (D-14-06). Split from
+// derivation: derivation is total over ALL fourteen documents (every row
+// gets a ceiling, always); the BAR (declared grade must be >= EXERCISED)
+// is enforced only for phase fourteen onward, gated by this file-scoped,
+// dated exemption map -- copying debtRegisterLandingPhaseExemptions'
+// shape exactly. Exemptions are file-scoped and dated, never row-scoped.
+// ---------------------------------------------------------------------
+
+// validationGradeBarExemptions names every *-VALIDATION.md file exempted
+// from the satisfying bar. Thirteen are frozen M001/M002 prior art,
+// written before this cap existed. The fourteenth, 14-VALIDATION.md
+// itself, is exempted for a DIFFERENT, honestly-recorded reason: its
+// single Per-Task Verification Map row was never filled in beyond
+// plan-time's literal `{command}` placeholder -- this phase's own real
+// per-task evidence lives in each plan's own *-SUMMARY.md (this plan's
+// SUMMARY included), not in this document's table. Recording that as a
+// silent exemption forever would be exactly the suppression this phase
+// exists to retire, so it is ALSO recorded as a debt row (D-14-52,
+// PHASE-14-DEBT.md) naming an owning phase to either populate the table
+// for real or retire it.
+var validationGradeBarExemptions = map[string]string{
+	"01-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
+	"02-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
+	"03-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
+	"04-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
+	"05-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
+	"06-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
+	"07-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
+	"08-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
+	"09-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
+	"10-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
+	"11-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
+	"12-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
+	"13-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
+	"14-VALIDATION.md": "template row never filled beyond plan-time placeholder; real Phase 14 evidence lives in each plan's own SUMMARY.md -- recorded as debt D-14-52, not a silent permanent exemption (plan 14-09)",
+}
+
+// ---------------------------------------------------------------------
+// (g) The real archived-corpus scan (D-14-06's derivation-is-total
+// requirement, wired against the now-migrated documents). Extends
+// TestValidationRowGradesAreEarned's own name via substring match
+// (-run 'TestValidationRowGradesAreEarned' matches both), following the
+// same "keep new classifiers standalone, wire in the final task" shape
+// plan 14-06 used.
+// ---------------------------------------------------------------------
+
+// evidenceRunRecordOnce memoizes ONE corpus-wide run-record generation per
+// test binary process: `go test ./...` already builds and runs every
+// package exactly once, so regenerating per subtest/per-run-of-this-test
+// would multiply an already-measured-expensive cost for no additional
+// information. Measured cost (this plan's own SUMMARY): several minutes
+// for the full ~200-pair corpus, not the "milliseconds" this phase's
+// threat model first assumed for a run-record read -- corrected here.
+var (
+	evidenceRunRecordOnce   sync.Once
+	evidenceRunRecordCached *runRecord
+)
+
+func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validationRawRow) *runRecord {
+	t.Helper()
+	evidenceRunRecordOnce.Do(func() {
+		var pairs []pkgPattern
+		seen := map[string]bool{}
+		for _, rows := range byDoc {
+			for _, row := range rows {
+				for _, p := range pkgPatternsFor(rowEvidence(row)) {
+					key := p.Package + "\x00" + p.Pattern
+					if !seen[key] {
+						seen[key] = true
+						pairs = append(pairs, p)
+					}
+				}
+			}
+		}
+		evidenceRunRecordCached = generateRunRecord(t, pairs)
+	})
+	return evidenceRunRecordCached
+}
+
+// TestValidationRowGradesAreEarnedOverArchivedCorpus is D-14-06's real
+// scan: every primary Per-Task Verification Map row across the fourteen
+// documents must derive a ceiling (derivation is total -- a row this
+// cannot classify is a hard failure, the signal that the vocabulary
+// itself is wrong), every declared Grade must not exceed its derived
+// ceiling, and -- for files NOT in validationGradeBarExemptions -- every
+// declared grade must additionally satisfy the bar (>= EXERCISED).
+func TestValidationRowGradesAreEarnedOverArchivedCorpus(t *testing.T) {
+	index := buildTestIndex(t)
+	byDoc := allPrimaryValidationRows(t)
+	if len(byDoc) == 0 {
+		t.Fatal("no *-VALIDATION.md primary table discovered -- the glob or table detector has gone inert")
+	}
+	record := corpusRunRecord(t, index, byDoc)
+
+	docs := make([]string, 0, len(byDoc))
+	for doc := range byDoc {
+		docs = append(docs, doc)
+	}
+	sortStrings(docs)
+
+	for _, doc := range docs {
+		name := filepath.Base(doc)
+		t.Run(name, func(t *testing.T) {
+			rows := byDoc[doc]
+			if len(rows) == 0 {
+				t.Fatalf("%s: primary table discovered but has zero data rows", name)
+			}
+			_, exempt := validationGradeBarExemptions[name]
+			for _, row := range rows {
+				taskID := rowIdentifier(row)
+				gradeCell, hasGrade := row.Cells["Grade"]
+				nonInertCell, hasNonInert := row.Cells["Non-inertness"]
+				if !hasGrade {
+					t.Fatalf("%s: row %s has no Grade column -- derivation cannot classify a column that does not exist", name, taskID)
+				}
+				if !hasNonInert {
+					t.Fatalf("%s: row %s has no Non-inertness column", name, taskID)
+				}
+				evidence := rowEvidence(row)
+				if problem := validationRowProblem(index, record, taskID, gradeCell, nonInertCell, evidence); problem != "" {
+					t.Fatalf("%s: %s", name, problem)
+				}
+				if !exempt {
+					declared := strings.TrimSpace(gradeCell)
+					if validationGradeOrdinal[declared] < validationGradeOrdinal[validationSatisfyingGrade] {
+						t.Fatalf("%s: row %s declares %s, below the satisfying bar (%s) enforced for this file (not in validationGradeBarExemptions)", name, taskID, declared, validationSatisfyingGrade)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestValidationGradeBarExemptionsAreFileScoped asserts every exemption
+// key is a bare filename (never a row identifier) and carries a non-empty
+// reason -- the mechanical form of "exemptions are file-scoped and dated,
+// never row-scoped" (D-14-06's own prohibition).
+func TestValidationGradeBarExemptionsAreFileScoped(t *testing.T) {
+	for key, reason := range validationGradeBarExemptions {
+		if !enforcedBasenamePattern.MatchString(key) || strings.Contains(key, "/") || strings.Contains(key, "|") {
+			t.Fatalf("validationGradeBarExemptions key %q does not look like a bare *-VALIDATION.md filename", key)
+		}
+		if strings.TrimSpace(reason) == "" {
+			t.Fatalf("validationGradeBarExemptions[%q] has an empty reason", key)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------
+// (h) Witnesses for PHASE-14-DEBT.md's below-shipped-verdict findings
+// (D-14-07). Two of the five findings this plan surfaced (09-VALIDATION.md:85,
+// :93) are already witnessed by 14-01/14-06's own pinned groundedness
+// frontier (TestVerificationGroundednessFrontierIsPinned): both rows are
+// literal entries in that pinned literal, so if either pattern ever became
+// findable again, the frontier pin itself would need re-measuring --
+// exactly D-14-29's "ungrading is forced by execution." The remaining
+// three findings are NOT covered by that lint (assert-go-tests.sh
+// invocations and a bare package-only `go test` cell are both outside its
+// `go test -run` scope), so this probe supplies their witness directly.
+// ---------------------------------------------------------------------
+
+// validationGradeArchivedDeadCitations names the four exact top-level
+// identifiers this plan's derivation found cited in an archived
+// *-VALIDATION.md row (04-VALIDATION.md:74, 06-VALIDATION.md:69,
+// 06-VALIDATION.md:71) that do not exist anywhere in the current module:
+// two were retired alongside the `computeLoanLastUses` deletion
+// (04-DEBT.md's own recorded retirement), and two were renamed in plan
+// 08-05 (TestOnlyRecomputedWorkIsGateEligible -> TestOnlyGateEligibleMetricsPassThrough)
+// and its own reviewed follow-up (TestRecomputedWorkIsTheOnlyHardGate ->
+// TestRecomputedWorkHardGateBoundComparison, per 08-REVIEW.md's WR-01,
+// which named this exact staleness and recommended the rename that
+// landed). Their absence is the claim; if any of them is ever declared
+// again, this probe goes red (XPASS in the LLVM lit sense) and the
+// corresponding debt row must be re-graded, never silently re-passed.
+var validationGradeArchivedDeadCitations = []string{
+	"TestLastUseDiscoveryWorkIsCounted",
+	"TestLastUseDiscoveryWorkSeries",
+	"TestOnlyRecomputedWorkIsGateEligible",
+	"TestRecomputedWorkIsTheOnlyHardGate",
+}
+
+// TestValidationGradeCapArchivedDeadCitationsRemainAbsent is D-14-48/49's
+// witness: the three names above must not exist as a top-level
+// Test/Fuzz/Benchmark/Example identifier anywhere the static index covers.
+func TestValidationGradeCapArchivedDeadCitationsRemainAbsent(t *testing.T) {
+	index := buildTestIndex(t)
+	for _, name := range validationGradeArchivedDeadCitations {
+		if isTopLevelTestName(index, name) {
+			t.Fatalf("%s now exists in the module -- the debt row citing it as a dead reference must be re-graded, not left as WIRED", name)
+		}
+	}
+}
+
+// TestValidationGradeCapBarePackageRowHasNoNamedTest is D-14-50's witness
+// (12-VALIDATION.md's row 12-04-01): a `go test` cell naming packages but
+// no -run/-list/-fuzz/-bench flag derives WIRED because it names no exact
+// test identifier, not because anything is broken. Re-derives the row's
+// own verbatim evidence text and asserts the ceiling is exactly WIRED, so
+// a future edit that adds a pattern to this cell (which would change the
+// ceiling) is caught here rather than leaving the debt row stale.
+func TestValidationGradeCapBarePackageRowHasNoNamedTest(t *testing.T) {
+	index := buildTestIndex(t)
+	evidence := "go test ./internal/compiler/originvalidate/... ./internal/compiler/corevalidate/... -count=1"
+	ceiling, matched := deriveCeiling(index, nil, evidence)
+	if ceiling != "WIRED" {
+		t.Fatalf("12-VALIDATION.md row 12-04-01's evidence now derives %s (matched %v), not WIRED -- re-grade the debt row", ceiling, matched)
+	}
 }

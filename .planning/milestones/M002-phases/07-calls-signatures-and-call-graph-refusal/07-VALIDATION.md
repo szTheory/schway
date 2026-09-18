@@ -8,6 +8,8 @@ nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-08"
 amended: "2026-09-08"
+evidence_vocabulary: v1
+graded_rows: 9
 ---
 
 # Phase 07 — Validation Strategy
@@ -45,17 +47,17 @@ amended: "2026-09-08"
 
 ## Per-Task Verification Map
 
-| Req ID | Behavior | Plan | Test Type | Automated Command | Status |
-|--------|----------|------|-----------|-------------------|--------|
-| SEM-05 | `lang.interface/1` strictly decoded; `/0` routed to a pinned struct; canonical non-self-referential digest preimage | 07-01 | unit | `go test ./internal/compiler/core/... -run 'DecodeInterface\|InterfaceV0'` | ❌ W0 |
-| SEM-05, SEM-06 | `Callable` = publication safety; producer/peer zero divergence over the M001 corpus at BOTH replay sites; five seeded faults | 07-02 | unit | `go test ./internal/compiler/corevalidate/... ./internal/compiler/originvalidate/... -run MutationMatrix` | ❌ W0 |
-| SEM-04 | `CalleeID` + `core.OpCall` recognized at all six dispatch sites; three `CalleeID` refusals at both sites; relocated foreign refusal | 07-03 | unit + CLI | `go test ./internal/compiler/{syntax,core,check,corevalidate,interp,cgen}/...` | ❌ W0 |
-| SEM-04 | Both exhaustive-dispatch controls green with their own phase-07 lists, asserting recognition not execution, each mutation-killed | 07-04 | unit + CLI | `go test ./internal/compiler/core/... -run TestAllOperationKindsHandledAtEverySite` and `sh scripts/verify-phase7.sh` | ❌ W0 |
-| SEM-06, SEM-05 | Pre-body signature table; call to a non-publishable callee refused; body-blindness falsifiable | 07-05 | unit + CLI | `go run ./cmd/lang --json check testdata/phase07/call_uncallable_callee.lang` | ❌ W0 |
-| SEM-07 | `callgraph` three-color DFS; deterministic cycle ID; 32-cause bound; diamond corpus; gray/self-edge mutations killed | 07-06 | unit + CLI | `go test ./internal/compiler/callgraph/... -run MutationMatrix` | ❌ W0 |
-| SEM-07, SEM-04 | Independent `corevalidate` cycle peer over synthetic artifacts; remaining corpora; phase-wide completeness by exact set equality | 07-07 | unit | `go test ./internal/compiler/session/... -run TestPhase7ControlsAreMutationKilled` | ❌ W0 |
-| SEM-05 | `ClosureDigest` chained over callee summary digests in reverse postorder over a proven DAG; callee-changes-invalidates-caller | 07-08 | unit | `go test ./internal/compiler/originvalidate/... -run 'CalleeChange\|Chain'` | ❌ W0 |
-| QLT-08 | Every control introduced this phase observed to fail against a seeded mutation **in the plan that introduced it** (D-07-41) | all | unit | `go test ./... -run 'MutationMatrix\|MutationKilled\|ControlsAreMutationKilled'` | ❌ W0 |
+| Req ID | Behavior | Plan | Test Type | Automated Command | Grade | Non-inertness |
+|---|---|---|---|---|---|---|
+| SEM-05 | `lang.interface/1` strictly decoded; `/0` routed to a pinned struct; canonical non-self-referential digest preimage | 07-01 | unit | `go test ./internal/compiler/core/... -run 'DecodeInterface\|InterfaceV0'` | EXERCISED | — |
+| SEM-05, SEM-06 | `Callable` = publication safety; producer/peer zero divergence over the M001 corpus at BOTH replay sites; five seeded faults | 07-02 | unit | `go test ./internal/compiler/corevalidate/... ./internal/compiler/originvalidate/... -run MutationMatrix` | EXERCISED | — |
+| SEM-04 | `CalleeID` + `core.OpCall` recognized at all six dispatch sites; three `CalleeID` refusals at both sites; relocated foreign refusal | 07-03 | unit + CLI | `go test ./internal/compiler/{syntax,core,check,corevalidate,interp,cgen}/...` | WIRED | — |
+| SEM-04 | Both exhaustive-dispatch controls green with their own phase-07 lists, asserting recognition not execution, each mutation-killed | 07-04 | unit + CLI | `go test ./internal/compiler/core/... -run TestAllOperationKindsHandledAtEverySite` and `sh scripts/verify-phase7.sh` | EXERCISED | — |
+| SEM-06, SEM-05 | Pre-body signature table; call to a non-publishable callee refused; body-blindness falsifiable | 07-05 | unit + CLI | `go run ./cmd/lang --json check testdata/phase07/call_uncallable_callee.lang` | REACHABLE | — |
+| SEM-07 | `callgraph` three-color DFS; deterministic cycle ID; 32-cause bound; diamond corpus; gray/self-edge mutations killed | 07-06 | unit + CLI | `go test ./internal/compiler/callgraph/... -run MutationMatrix` | EXERCISED | — |
+| SEM-07, SEM-04 | Independent `corevalidate` cycle peer over synthetic artifacts; remaining corpora; phase-wide completeness by exact set equality | 07-07 | unit | `go test ./internal/compiler/session/... -run TestPhase7ControlsAreMutationKilled` | EXERCISED | — |
+| SEM-05 | `ClosureDigest` chained over callee summary digests in reverse postorder over a proven DAG; callee-changes-invalidates-caller | 07-08 | unit | `go test ./internal/compiler/originvalidate/... -run 'CalleeChange\|Chain'` | EXERCISED | — |
+| QLT-08 | Every control introduced this phase observed to fail against a seeded mutation **in the plan that introduced it** (D-07-41) | all | unit | `go test ./... -run 'MutationMatrix\|MutationKilled\|ControlsAreMutationKilled'` | EXERCISED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

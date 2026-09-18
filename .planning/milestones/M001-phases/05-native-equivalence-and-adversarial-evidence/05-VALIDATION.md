@@ -7,6 +7,8 @@ status: draft
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-05"
+evidence_vocabulary: v1
+graded_rows: 9
 ---
 
 # Phase 5 — Validation Strategy
@@ -41,17 +43,17 @@ created: "2026-09-05"
 
 > Task IDs are assigned by the planner; this table is the requirement→evidence contract the plans must satisfy. `validate-phase` fills exact task IDs.
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | 0 | NAT-02 | — | Differential corpus exists and is enumerable; no engine disagreement goes unreported | differential (execution) | `lang --json verify testdata/phase5` | ❌ W0 — `testdata/phase5/` does not exist | ⬜ pending |
-| TBD | TBD | ≥1 | NAT-02 | — | Interpreter / `-O0` / `-O3` / `-O3+LTO` agree on terminal outcome, semantic-event order, live-resource state | differential (execution) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... TestPhase5CorpusEngineAgreement` | ❌ W0 | ⬜ pending |
-| TBD | TBD | ≥1 | NAT-03 | T-5-mutation | Each of the seven native hostile mutations is detected by its intended independent lane, not incidentally | mutation-kill (unit + differential) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <Test*MutationIsDetected>` | ❌ W0 — mutation runners not written | ⬜ pending |
-| TBD | TBD | ≥1 | NAT-03 | T-5-sanitizer | ASan/UBSan lane catches retained-pointer, allocator-mismatch and use-after-free; its evidence is isolated from semantic-equivalence evidence | sanitizer (process exit + diagnostic substring) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <TestSanitizerLane*>` | ❌ W0 — sanitizer build config absent from `native.go` | ⬜ pending |
-| TBD | TBD | ≥1 | INT-02 | — | On an injected mismatch the reducer emits a minimized source/core case plus a causal event trace | reducer (unit; 3 required mutation-kills: no-op reducer, too-loose predicate, non-determinism) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <Test*Reducer*>` | ❌ W0 — reducer package does not exist | ⬜ pending |
-| TBD | TBD | ≥1 | INT-02 | — | `lang.mismatch/0` round-trips and binds to the evidence it minimizes | schema round-trip (unit) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <TestMismatchDocumentRoundTrips>` | ❌ W0 | ⬜ pending |
-| TBD | TBD | ≥1 | QLT-01 | — | Every spike control has a live descendant or an explicit waiver; no stale `control:` reference survives | registry audit (unit) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... TestQLT01RegistryComplete` | ❌ W0 — registry does not exist | ⬜ pending |
-| TBD | TBD | final | Phase-5-wide | — | `verify-phase5.sh`'s control set equals `Phase5RequiredControls()` — the gate cannot silently shrink | equality test (unit) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/session TestPhase5RequiredControlsMatchScript TestVerifyPhase5ControlsAndWork` | ❌ W0 | ⬜ pending |
-| TBD | TBD | ≥1 | `discoverLoanLastUses` retirement | — | Zero divergence between the old scanner and `loanLivenessFixpoint` over the full bounded enumeration | shadow-mode divergence logging | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/check TestOwnershipSequenceExhaustive TestBranchSequenceExhaustive` | ❌ W0 — shadow-mode harness not added | ⬜ pending |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TBD | TBD | 0 | NAT-02 | — | Differential corpus exists and is enumerable; no engine disagreement goes unreported | differential (execution) | `lang --json verify testdata/phase5` | ❌ W0 — `testdata/phase5/` does not exist | DEFINED | — |
+| TBD | TBD | ≥1 | NAT-02 | — | Interpreter / `-O0` / `-O3` / `-O3+LTO` agree on terminal outcome, semantic-event order, live-resource state | differential (execution) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... TestPhase5CorpusEngineAgreement` | ❌ W0 | WIRED | — |
+| TBD | TBD | ≥1 | NAT-03 | T-5-mutation | Each of the seven native hostile mutations is detected by its intended independent lane, not incidentally | mutation-kill (unit + differential) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <Test*MutationIsDetected>` | ❌ W0 — mutation runners not written | WIRED | — |
+| TBD | TBD | ≥1 | NAT-03 | T-5-sanitizer | ASan/UBSan lane catches retained-pointer, allocator-mismatch and use-after-free; its evidence is isolated from semantic-equivalence evidence | sanitizer (process exit + diagnostic substring) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <TestSanitizerLane*>` | ❌ W0 — sanitizer build config absent from `native.go` | WIRED | — |
+| TBD | TBD | ≥1 | INT-02 | — | On an injected mismatch the reducer emits a minimized source/core case plus a causal event trace | reducer (unit; 3 required mutation-kills: no-op reducer, too-loose predicate, non-determinism) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <Test*Reducer*>` | ❌ W0 — reducer package does not exist | WIRED | — |
+| TBD | TBD | ≥1 | INT-02 | — | `lang.mismatch/0` round-trips and binds to the evidence it minimizes | schema round-trip (unit) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... <TestMismatchDocumentRoundTrips>` | ❌ W0 | WIRED | — |
+| TBD | TBD | ≥1 | QLT-01 | — | Every spike control has a live descendant or an explicit waiver; no stale `control:` reference survives | registry audit (unit) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/... TestQLT01RegistryComplete` | ❌ W0 — registry does not exist | EXERCISED | — |
+| TBD | TBD | final | Phase-5-wide | — | `verify-phase5.sh`'s control set equals `Phase5RequiredControls()` — the gate cannot silently shrink | equality test (unit) | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/session TestPhase5RequiredControlsMatchScript TestVerifyPhase5ControlsAndWork` | ❌ W0 | EXERCISED | — |
+| TBD | TBD | ≥1 | `discoverLoanLastUses` retirement | — | Zero divergence between the old scanner and `loanLivenessFixpoint` over the full bounded enumeration | shadow-mode divergence logging | `env GOCACHE=/tmp/ai-lang-phase5-cache sh scripts/assert-go-tests.sh ./internal/compiler/check TestOwnershipSequenceExhaustive TestBranchSequenceExhaustive` | ❌ W0 — shadow-mode harness not added | EXERCISED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

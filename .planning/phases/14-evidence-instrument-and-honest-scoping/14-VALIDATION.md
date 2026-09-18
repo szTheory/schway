@@ -7,6 +7,8 @@ status: draft
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-17"
+evidence_vocabulary: v1
+graded_rows: 1
 ---
 
 # Phase 14 — Validation Strategy
@@ -48,9 +50,9 @@ this phase.
 > recorded here. A `go test -run` pattern that matches zero tests is the exact defect
 > EVD-01 exists to catch — authoring one here would be self-refuting.
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 14-01-01 | 01 | 1 | EVD-01 | — | N/A | unit | `{command}` | ❌ W0 | ⬜ pending |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 14-01-01 | 01 | 1 | EVD-01 | — | N/A | unit | `{command}` | ❌ W0 | DEFINED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
