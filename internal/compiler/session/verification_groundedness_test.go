@@ -544,7 +544,13 @@ func classifyCommand(index *testIndex, command string) classification {
 	if !classifyRunnability(command) {
 		return classR1
 	}
-	if strings.Contains(command, "go test") {
+	// HasPrefix, not Contains: the command has already matched
+	// verificationCommandPattern's anchored prefix, so this only needs to
+	// discriminate which prefix matched. A substring Contains check here
+	// is a real bug -- "session.go testdata/..." contains the literal
+	// substring "go test" (from ".go test[data]"), which would wrongly
+	// route a `git diff` command into the go-test parser.
+	if strings.HasPrefix(command, "go test") {
 		parsed, ok := parseGoTestCommand(command)
 		if !ok {
 			return classUnparseable
@@ -564,6 +570,7 @@ func classifyDocument(index *testIndex, path string) ([]violationRecord, error) 
 	if err != nil {
 		return nil, err
 	}
+	relFile := projectRelativePath(index.root, path)
 	var violations []violationRecord
 	for _, occ := range occurrences {
 		class := classifyCommand(index, occ.Command)
@@ -571,13 +578,24 @@ func classifyDocument(index *testIndex, path string) ([]violationRecord, error) 
 			continue
 		}
 		violations = append(violations, violationRecord{
-			File:           occ.File,
+			File:           relFile,
 			Line:           occ.Line,
 			Command:        occ.Command,
 			Classification: class,
 		})
 	}
 	return violations, nil
+}
+
+// projectRelativePath renders path relative to root (the project root, per
+// testsupport.ProjectPath()) so the frontier pin (Task 2) is a portable
+// literal rather than an absolute, host-specific path.
+func projectRelativePath(root, path string) string {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return path
+	}
+	return filepath.ToSlash(rel)
 }
 
 // ---------------------------------------------------------------------
@@ -655,26 +673,12 @@ func TestVerificationGroundednessClassifier(t *testing.T) {
 // .planning/** Tier-A corpus and asserts that the live dead patterns named
 // in this task's own read_first are found by file and line.
 func TestVerificationGroundedness(t *testing.T) {
-	index := buildTestIndex(t)
 	docs := tierADocuments(t)
 	if len(docs) == 0 {
 		t.Fatal("no Tier-A evidence documents found under .planning/**")
 	}
 
-	var all []violationRecord
-	for _, doc := range docs {
-		violations, err := classifyDocument(index, doc)
-		if err != nil {
-			t.Fatalf("classifyDocument(%s): %v", doc, err)
-		}
-		all = append(all, violations...)
-	}
-	sort.Slice(all, func(i, j int) bool {
-		if all[i].File != all[j].File {
-			return all[i].File < all[j].File
-		}
-		return all[i].Line < all[j].Line
-	})
+	all := measuredViolations(t)
 	for _, v := range all {
 		t.Logf("%s %s:%d: %s", v.Classification, v.File, v.Line, v.Command)
 	}
@@ -697,6 +701,101 @@ func TestVerificationGroundedness(t *testing.T) {
 		}
 		if !found {
 			t.Errorf("expected a violation at .../%s:%d, found none among %d violations", want.fileSuffix, want.line, len(all))
+		}
+	}
+}
+
+// ---------------------------------------------------------------------
+// Task 2: the pinned violation frontier (D-14-18, D-14-19).
+// ---------------------------------------------------------------------
+
+// pinnedFrontier is the EXACT violation set measured against this tree
+// when this test was authored (D-14-18, re-measured per D-14-19 rather
+// than assumed from ROADMAP.md/CONTEXT.md prose). It is NOT a count and
+// NOT a ceiling: TestVerificationGroundednessFrontierIsPinned asserts SET
+// EQUALITY between this literal and a freshly computed run on every
+// invocation, so an addition, a removal, and a count-neutral swap (one
+// dead pattern traded for another, leaving the total unchanged) all fail.
+// There is no inline suppression syntax anywhere in this file and no
+// per-file ignore list -- the only way to shrink this literal is to fix
+// the underlying document and edit this slice in a reviewed commit, which
+// is exactly what later plans in this phase (and QLT-10) do.
+var pinnedFrontier = []violationRecord{
+	{File: ".planning/milestones/M001-phases/05-native-equivalence-and-adversarial-evidence/05-VALIDATION.md", Line: 22, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M001-phases/06-agent-feedback-and-performance-ratification/06-VALIDATION.md", Line: 23, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M002-phases/07-calls-signatures-and-call-graph-refusal/07-VERIFICATION.md", Line: 87, Command: "grep -nE 'TBD|FIXME|XXX'", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md", Line: 24, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md", Line: 51, Command: "go test ./internal/compiler/check/... -run TestComputeLoanLastUsesAndDerivePlaceLoansAgree", Classification: classR2},
+	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md", Line: 63, Command: "go test ./internal/compiler/session/... -run TestAuditQLT02BudgetManifest", Classification: classR2},
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 44, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 85, Command: "go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -v", Classification: classR2},
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 93, Command: "go test ./internal/compiler/corevalidate -run 'Mode.*Invalid|DecodeMode' -v", Classification: classR2},
+	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-VALIDATION.md", Line: 25, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 24, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 26, Command: "go test ./internal/compiler/<touched-package>/...", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 51, Command: "grep -c -E 'D-11-(02|07|11|12|13|27|36|40|42)' …/PHASE-11-DEBT.md", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 56, Command: "go test ./internal/compiler/callgraph/... -run 'TestEntryFunction…' -v -count=1", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 58, Command: "go test ./internal/compiler/cgen/... -run 'TestEmittedAttributeSet…' -v -count=1", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 60, Command: "grep -c -E 'function count|call-edge count|N =…' …/11-MIDPHASE-GATE.md", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 61, Command: "awk … | wc -l", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 63, Command: "grep -c 'D-11-25' …/session_phase11_differential_test.go", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 64, Command: "go test ./internal/compiler/session/... -run 'TestQLT03GeneratorOpKindClosure…' -v -count=1", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 68, Command: "go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames|TestCache…|TestNoClosureDigestInCache' -v -count=1", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 69, Command: "grep -c -E 'QLT-06a|QLT-06b|strictly dominates…' …/11-QLT06-ABSTENTION.md", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 71, Command: "go test ./internal/compiler/reduce/... -run 'TestDropCallSite|TestDropOrphanFunction|…' -v -count=1", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/12-result-payloads/12-VALIDATION.md", Line: 22, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M002-phases/12-result-payloads/12-VALIDATION.md", Line: 24, Command: "go test ./internal/compiler/<package>/... -run <TestName> -count=1", Classification: classR1},
+	{File: ".planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md", Line: 23, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 24, Command: "go test ./<changed-package>/...", Classification: classR1},
+}
+
+// measuredViolations runs the classifier once over the whole Tier-A
+// corpus, sorted deterministically by (File, Line).
+func measuredViolations(t testing.TB) []violationRecord {
+	t.Helper()
+	index := buildTestIndex(t)
+	docs := tierADocuments(t)
+	var measured []violationRecord
+	for _, doc := range docs {
+		violations, err := classifyDocument(index, doc)
+		if err != nil {
+			t.Fatalf("classifyDocument(%s): %v", doc, err)
+		}
+		measured = append(measured, violations...)
+	}
+	sort.Slice(measured, func(i, j int) bool {
+		if measured[i].File != measured[j].File {
+			return measured[i].File < measured[j].File
+		}
+		return measured[i].Line < measured[j].Line
+	})
+	return measured
+}
+
+// TestVerificationGroundednessFrontierIsPinned asserts SET EQUALITY
+// between pinnedFrontier and a freshly measured run -- never containment,
+// never a count. Both directions are checked and each failure names the
+// specific offending record (D-14-18).
+func TestVerificationGroundednessFrontierIsPinned(t *testing.T) {
+	measured := measuredViolations(t)
+
+	measuredSet := make(map[violationRecord]bool, len(measured))
+	for _, v := range measured {
+		measuredSet[v] = true
+	}
+	pinnedSet := make(map[violationRecord]bool, len(pinnedFrontier))
+	for _, v := range pinnedFrontier {
+		pinnedSet[v] = true
+	}
+
+	for _, v := range measured {
+		if !pinnedSet[v] {
+			t.Errorf("unexpected extra violation not in the pinned frontier: %s %s:%d: %s", v.Classification, v.File, v.Line, v.Command)
+		}
+	}
+	for _, v := range pinnedFrontier {
+		if !measuredSet[v] {
+			t.Errorf("pinned frontier names a violation the tree no longer produces (remove it from pinnedFrontier once verified): %s %s:%d: %s", v.Classification, v.File, v.Line, v.Command)
 		}
 	}
 }
