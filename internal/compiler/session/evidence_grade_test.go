@@ -291,7 +291,6 @@ var compileTimeEvidencePattern = regexp.MustCompile(`^go (build|vet)\b|^BUILD_OK
 // record may be nil, meaning "no run record present" (fail-closed: nothing
 // can reach EXERCISED).
 func deriveCeiling(index *testIndex, record *runRecord, evidence string) (ceiling string, matchedNames []string) {
-	return "DEFINED", nil // RED: intentional stub, restored for GREEN
 	evidence = strings.TrimSpace(evidence)
 	if evidence == "" {
 		return "DEFINED", nil
