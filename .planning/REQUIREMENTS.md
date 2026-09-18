@@ -35,7 +35,15 @@ branched on and would have become the fifth instance.
 
 - [x] **EVD-01**: A CI lint fails when any `.planning/**` verification document
       cites a `go test -run` pattern that resolves to zero tests, or a command
-      cell elided with `…`. Three such patterns exist today and exit 0.
+      cell elided with `…`. (Closed 2026-09-18 by 14-01/14-06/14-10: the lint
+      is `internal/compiler/session/verification_groundedness_test.go`,
+      classifying every Tier-A command into `{ok, R1 runnability, R2
+      groundedness, R2b per-branch, R3 grep, unparseable}`. The runnability,
+      groundedness and grep classes are driven to empty by 14-10's
+      reconciliation of all 66 findings (`.planning/EVIDENCE-RECONCILIATION.md`);
+      per-branch (R2b, 10 findings) remains pinned with a landing phase
+      (`P20`, ROADMAP QLT-10), a sizing decision recorded in 14-06/14-10, not
+      a gap in the lint's own coverage.)
 
 - [x] **EVD-02**: Every requirement and success criterion carries a grade from
       the closed vocabulary `DEFINED | WIRED | REACHABLE | EXERCISED |

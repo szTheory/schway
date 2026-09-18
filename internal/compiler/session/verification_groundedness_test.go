@@ -1148,24 +1148,26 @@ func TestVerificationGroundednessScopeByIllocutionaryRole(t *testing.T) {
 //
 // This literal grew from plan 14-01's 26 entries to 125 for two combined
 // reasons, both by design, neither a regression:
-//   (1) D-14-11's role-based scope (plan 14-06 Task 1) replaced the
-//       VALIDATION/VERIFICATION-only discovery with the full
-//       .planning/**/*.md tree; no document in this corpus yet declares the
-//       `verification_role: proposal` frontmatter exemption, so every
-//       RESEARCH/PLAN/CONTEXT/DISCUSSION-LOG/research-tree document and
-//       every other non-exempted document defaults enforced (D-14-11's
-//       explicit "exemption is opt-in only" rule) and its command-shaped
-//       table cells are now in scope -- most new entries are the SAME
-//       already-known dead/elided patterns quoted a second (or third) time
-//       in a RESEARCH.md's own test-map table or a SUMMARY.md's own
-//       frontier transcription, not new distinct defects.
-//   (2) R3 (grep execution) and R2b (per-branch groundedness) are wired in
-//       for the first time (plan 14-06 Task 2): R3 added 3 new findings
-//       (archival breakage -- a cited grep no longer matches its target
-//       file), and R2b added 11 new findings (an alternation `-run` pattern
-//       whose union resolves but whose SPECIFIC named branch does not),
-//       consistent with D-14-16's prediction that the per-branch defect
-//       mass would be the larger of the two.
+//
+//	(1) D-14-11's role-based scope (plan 14-06 Task 1) replaced the
+//	    VALIDATION/VERIFICATION-only discovery with the full
+//	    .planning/**/*.md tree; no document in this corpus yet declares the
+//	    `verification_role: proposal` frontmatter exemption, so every
+//	    RESEARCH/PLAN/CONTEXT/DISCUSSION-LOG/research-tree document and
+//	    every other non-exempted document defaults enforced (D-14-11's
+//	    explicit "exemption is opt-in only" rule) and its command-shaped
+//	    table cells are now in scope -- most new entries are the SAME
+//	    already-known dead/elided patterns quoted a second (or third) time
+//	    in a RESEARCH.md's own test-map table or a SUMMARY.md's own
+//	    frontier transcription, not new distinct defects.
+//	(2) R3 (grep execution) and R2b (per-branch groundedness) are wired in
+//	    for the first time (plan 14-06 Task 2): R3 added 3 new findings
+//	    (archival breakage -- a cited grep no longer matches its target
+//	    file), and R2b added 11 new findings (an alternation `-run` pattern
+//	    whose union resolves but whose SPECIFIC named branch does not),
+//	    consistent with D-14-16's prediction that the per-branch defect
+//	    mass would be the larger of the two.
+//
 // Shrinking this literal toward empty is Tier-B frontmatter declarations on
 // genuine proposals (closing reason (1)) plus real reconciliation of the
 // R1/R2/R2b/R3 findings (closing reason (2)) -- both explicitly deferred to
@@ -1173,47 +1175,48 @@ func TestVerificationGroundednessScopeByIllocutionaryRole(t *testing.T) {
 //
 // Re-measured at plan 14-09 (125 -> 124 entries), attributed rather than
 // assumed unchanged, per this literal's own discipline:
-//   (1) EVERY (file, line) in the fourteen migrated *-VALIDATION.md
-//       documents shifted by exactly +2 (D-14-05's two new frontmatter
-//       keys, evidence_vocabulary and graded_rows, inserted ahead of the
-//       body): every pinned record naming one of those fourteen files
-//       moved down two lines, a pure coordinate shift, not a new or
-//       removed finding.
-//   (2) One entry was REMOVED for real, not shifted: 14-RESEARCH.md's own
-//       citation of `go test ./internal/compiler/session/... -run
-//       TestValidationRowGradesAreEarned -v` is no longer a dead pattern
-//       -- plan 14-09 Task 1 implemented that exact test, so the pattern
-//       now resolves. This is the frontier moving for a genuine reason,
-//       the same shape every other frontier fixture in this milestone is
-//       required to demonstrate.
+//
+//	(1) EVERY (file, line) in the fourteen migrated *-VALIDATION.md
+//	    documents shifted by exactly +2 (D-14-05's two new frontmatter
+//	    keys, evidence_vocabulary and graded_rows, inserted ahead of the
+//	    body): every pinned record naming one of those fourteen files
+//	    moved down two lines, a pure coordinate shift, not a new or
+//	    removed finding.
+//	(2) One entry was REMOVED for real, not shifted: 14-RESEARCH.md's own
+//	    citation of `go test ./internal/compiler/session/... -run
+//	    TestValidationRowGradesAreEarned -v` is no longer a dead pattern
+//	    -- plan 14-09 Task 1 implemented that exact test, so the pattern
+//	    now resolves. This is the frontier moving for a genuine reason,
+//	    the same shape every other frontier fixture in this milestone is
+//	    required to demonstrate.
+//
 // enforced-tier document count is unchanged across the migration (verified
 // in this plan's SUMMARY): retiring the Status column did not make any
 // document undetectable, confirming D-14-11's Status/Grade dual-keying
 // (plan 14-06) did exactly the job it was built for.
+//
+// Re-measured at plan 14-10 (124 -> 58 entries): every runnability (R1,
+// 34 entries), groundedness (R2, 29 entries) and grep (R3, 3 entries)
+// finding is now reconciled outside the archive under a debt row with a
+// witness in PHASE-14-DEBT.md (D-14-55..D-14-120), so
+// TestVerificationGroundednessFrontierIsPinned excludes every reconciled
+// finding from its comparison (reconciledFindings, below) rather than
+// this literal continuing to pin all three classes. Per-branch (R2b, 10
+// entries) is untouched -- D-14-16's sizing decision keeps it pinned,
+// not enforced to zero, this phase; every R2b entry now also carries a
+// closed-vocabulary landing phase (r2bLandingPhases, below), all P20 per
+// ROADMAP.md's QLT-10 assignment. This is the frontier moving for a
+// genuine reason, the same shape every other frontier fixture in this
+// milestone is required to demonstrate -- verified by
+// TestVerificationGroundednessThreeClassesAreEmpty.
 var pinnedFrontier = []violationRecord{
 	{File: ".planning/STANDING-VERDICTS.md", Line: 21, Command: "go test -fuzz", Classification: classUnparseable},
 	{File: ".planning/milestones/M001-phases/02-owned-values-and-abilities/02-RESEARCH.md", Line: 85, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M001-phases/03-borrowed-views-and-cfg-lifetimes/03-RESEARCH.md", Line: 849, Command: "go test ./internal/compiler/check/... -run TestLoanConflict", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/03-borrowed-views-and-cfg-lifetimes/03-RESEARCH.md", Line: 850, Command: "go test ./internal/compiler/check/... -run TestCFGLastUse", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/03-borrowed-views-and-cfg-lifetimes/03-RESEARCH.md", Line: 852, Command: "go test ./internal/compiler/corevalidate/... -run TestPublicOrigin", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/03-borrowed-views-and-cfg-lifetimes/03-RESEARCH.md", Line: 853, Command: "go run ./cmd/lang -- <interface-export/import flow>", Classification: classR1},
 	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 552, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 554, Command: "go test ./internal/compiler/... -run <Test...>", Classification: classR1},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 560, Command: "go test ./internal/compiler/session/... -run TestResourceReleaseOrder", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 561, Command: "go test ./internal/compiler/cgen/... -run TestForeignLayoutConformance", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 563, Command: "go test ./internal/compiler/syntax/... -run TestFallibleOperationConsumers", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 565, Command: "go test ./internal/compiler/interp/... -run TestNoCancelledOutcomeEmitted", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 566, Command: "go test ./internal/compiler/native/... -run TestNoUnauditedUndefinedSymbols", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 567, Command: "go test ./internal/compiler/native/... -run TestNonlocalExitDetected", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 568, Command: "go test ./internal/compiler/evidence/... -run TestInterpNativeAgreementIncludingDefect", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 569, Command: "go test ./internal/compiler/originvalidate/... -run TestWalksAllTerminators", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 569, Command: "go test ./internal/compiler/pathoracle/... -run TestWalksAllTerminators", Classification: classR2},
-	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-RESEARCH.md", Line: 570, Command: "go test ./internal/compiler/native/... -run TestAbortSignalHandling", Classification: classR2},
 	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/corevalidate -run '^(TestForeignPolicyValueNotIdentifierRefused|TestForeignContractCommentSafetyRefused)$' -v", Classification: classR2b},
 	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-VERIFICATION.md", Line: 88, Command: "go test ./internal/compiler/corevalidate -run '^(TestInteriorMergeDivergentHistoriesRefused|TestInteriorMergeAgreeingHistoriesAccepted|TestCyclicOkEdgeChainRefusedNotHung|TestAcyclicChainsStillValidateUnderCycleGuard)$' -v", Classification: classR2b},
 	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-VERIFICATION.md", Line: 89, Command: "go test ./internal/compiler/cgen -run '^(TestForeignSymbolInjectionNeverReachesGeneratedC|TestForeignEmittersRefuseNonIdentifierSymbolIndependently|TestExistingEmittersAreByteIdentical)$' -v", Classification: classR2b},
 	{File: ".planning/milestones/M001-phases/05-native-equivalence-and-adversarial-evidence/05-RESEARCH.md", Line: 418, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M001-phases/05-native-equivalence-and-adversarial-evidence/05-RESEARCH.md", Line: 420, Command: "go test ./internal/compiler/... -run <TestName>", Classification: classR1},
 	{File: ".planning/milestones/M001-phases/05-native-equivalence-and-adversarial-evidence/05-VALIDATION.md", Line: 24, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M001-phases/05-native-equivalence-and-adversarial-evidence/05-VERIFICATION.md", Line: 56, Command: "go test ./internal/compiler/session/... -run \"TestNAT03|TestAssertMutationMovesAnAxis|TestEveryNAT03\" -v", Classification: classR2b},
 	{File: ".planning/milestones/M001-phases/06-agent-feedback-and-performance-ratification/06-VALIDATION.md", Line: 25, Command: "go test", Classification: classUnparseable},
@@ -1221,94 +1224,44 @@ var pinnedFrontier = []violationRecord{
 	{File: ".planning/milestones/M002-phases/07-calls-signatures-and-call-graph-refusal/07-04-PLAN.md", Line: 321, Command: "go test -race", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/07-calls-signatures-and-call-graph-refusal/07-05-PLAN.md", Line: 397, Command: "go test -race", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/07-calls-signatures-and-call-graph-refusal/07-06-PLAN.md", Line: 512, Command: "go test -race", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/07-calls-signatures-and-call-graph-refusal/07-VERIFICATION.md", Line: 87, Command: "grep -nE 'TBD|FIXME|XXX'", Classification: classR1},
 	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-RESEARCH.md", Line: 495, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-RESEARCH.md", Line: 507, Command: "go test ./internal/compiler/check/... -run TestComputeLoanLastUsesAndDerivePlaceLoansAgree", Classification: classR2},
-	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-RESEARCH.md", Line: 514, Command: "go test ./internal/compiler/session/... -run TestAuditQLT02BudgetManifest", Classification: classR2},
 	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md", Line: 26, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md", Line: 53, Command: "go test ./internal/compiler/check/... -run TestComputeLoanLastUsesAndDerivePlaceLoansAgree", Classification: classR2},
-	{File: ".planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md", Line: 65, Command: "go test ./internal/compiler/session/... -run TestAuditQLT02BudgetManifest", Classification: classR2},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-RESEARCH.md", Line: 697, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-RESEARCH.md", Line: 706, Command: "go test ./internal/compiler/corevalidate -run TestBuildLoanChainIndex", Classification: classR2},
-	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-RESEARCH.md", Line: 708, Command: "go test ./internal/compiler/corevalidate -run TestPeerDoesNotRederiveNarrowedClasses", Classification: classR2},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 46, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 86, Command: "go test ./internal/compiler/corevalidate -run 'PeerLiveness|LoanChainIndex' -v", Classification: classR2b},
-	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 87, Command: "go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -v", Classification: classR2},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 89, Command: "go test ./internal/compiler/corevalidate -run 'ImportsStayIndependent|ImportIndependence' -v", Classification: classR2b},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 90, Command: "go test ./internal/compiler/corevalidate ./internal/compiler/check -run 'Seam.*StillRefuses|EndpointFault' -v", Classification: classR2b},
-	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 95, Command: "go test ./internal/compiler/corevalidate -run 'Mode.*Invalid|DecodeMode' -v", Classification: classR2},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 97, Command: "go test ./internal/compiler/corevalidate -run 'ClosureCostScaling|GrowthExponent' -v", Classification: classR2b},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 99, Command: "go test ./internal/compiler/check -run 'OrderingStability|DiagnosticSelectionOrder' -v", Classification: classR2b},
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 102, Command: "go test ./internal/compiler/check -run 'UseAfterMove|BorrowRequiresShare|TransferRequiresTake' -v", Classification: classR2b},
-	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 114, Command: "grep -c \"OWN-05a\" .planning/REQUIREMENTS.md", Classification: classR3},
-	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 115, Command: "grep -c \"S-008\" .planning/ROADMAP.md", Classification: classR3},
 	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-RESEARCH.md", Line: 180, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-RESEARCH.md", Line: 180, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-RESEARCH.md", Line: 216, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-RESEARCH.md", Line: 216, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-RESEARCH.md", Line: 674, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-RESEARCH.md", Line: 684, Command: "go test ./internal/compiler/session/... -run TestCheckCommandFile", Classification: classR2},
 	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/10-VALIDATION.md", Line: 27, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/10-trusted-interprocedural-oracle/PHASE-10-DEBT.md", Line: 47, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-RESEARCH.md", Line: 1039, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-RESEARCH.md", Line: 1041, Command: "go test ./internal/compiler/<package>/...", Classification: classR1},
 	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 26, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 28, Command: "go test ./internal/compiler/<touched-package>/...", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 53, Command: "grep -c -E 'D-11-(02|07|11|12|13|27|36|40|42)' …/PHASE-11-DEBT.md", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 58, Command: "go test ./internal/compiler/callgraph/... -run 'TestEntryFunction…' -v -count=1", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 60, Command: "go test ./internal/compiler/cgen/... -run 'TestEmittedAttributeSet…' -v -count=1", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 62, Command: "grep -c -E 'function count|call-edge count|N =…' …/11-MIDPHASE-GATE.md", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 63, Command: "awk … | wc -l", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 65, Command: "grep -c 'D-11-25' …/session_phase11_differential_test.go", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 66, Command: "go test ./internal/compiler/session/... -run 'TestQLT03GeneratorOpKindClosure…' -v -count=1", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 70, Command: "go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames|TestCache…|TestNoClosureDigestInCache' -v -count=1", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 71, Command: "grep -c -E 'QLT-06a|QLT-06b|strictly dominates…' …/11-QLT06-ABSTENTION.md", Classification: classR1},
-	{File: ".planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md", Line: 73, Command: "go test ./internal/compiler/reduce/... -run 'TestDropCallSite|TestDropOrphanFunction|…' -v -count=1", Classification: classR1},
 	{File: ".planning/milestones/M002-phases/12-result-payloads/12-RESEARCH.md", Line: 867, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/12-result-payloads/12-RESEARCH.md", Line: 869, Command: "go test ./internal/compiler/<package>/... -run <TestName>", Classification: classR1},
 	{File: ".planning/milestones/M002-phases/12-result-payloads/12-VALIDATION.md", Line: 24, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/milestones/M002-phases/12-result-payloads/12-VALIDATION.md", Line: 26, Command: "go test ./internal/compiler/<package>/... -run <TestName> -count=1", Classification: classR1},
 	{File: ".planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-RESEARCH.md", Line: 572, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md", Line: 25, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-PLAN.md", Line: 280, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 158, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 159, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 160, Command: "grep -nE 'TBD|FIXME|XXX'", Classification: classR1},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 161, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 162, Command: "go test ./internal/compiler/check/... -run TestComputeLoanLastUsesAndDerivePlaceLoansAgree", Classification: classR2},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 163, Command: "go test ./internal/compiler/session/... -run TestAuditQLT02BudgetManifest", Classification: classR2},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 164, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 165, Command: "go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -v", Classification: classR2},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 166, Command: "go test ./internal/compiler/corevalidate -run 'Mode.*Invalid|DecodeMode' -v", Classification: classR2},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 167, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 168, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 169, Command: "go test ./internal/compiler/<touched-package>/...", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 170, Command: "grep -c -E 'D-11-(02|07|11|12|13|27|36|40|42)' …/PHASE-11-DEBT.md", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 171, Command: "go test ./internal/compiler/callgraph/... -run 'TestEntryFunction…' -v -count=1", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 172, Command: "go test ./internal/compiler/cgen/... -run 'TestEmittedAttributeSet…' -v -count=1", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 173, Command: "grep -c -E 'function count|call-edge count|N =…' …/11-MIDPHASE-GATE.md", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 174, Command: "awk … | wc -l", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 175, Command: "grep -c 'D-11-25' …/session_phase11_differential_test.go", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 176, Command: "go test ./internal/compiler/session/... -run 'TestQLT03GeneratorOpKindClosure…' -v -count=1", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 177, Command: "go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames|TestCache…|TestNoClosureDigestInCache' -v -count=1", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 178, Command: "grep -c -E 'QLT-06a|QLT-06b|strictly dominates…' …/11-QLT06-ABSTENTION.md", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 179, Command: "go test ./internal/compiler/reduce/... -run 'TestDropCallSite|TestDropOrphanFunction|…' -v -count=1", Classification: classR1},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 180, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 181, Command: "go test ./internal/compiler/<package>/... -run <TestName> -count=1", Classification: classR1},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 182, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 183, Command: "go test ./<changed-package>/...", Classification: classR1},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-DISCUSSION-LOG.md", Line: 108, Command: "go test -list", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 59, Command: "go test -list", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 59, Command: "go test -json", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 205, Command: "go test -run", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 446, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 448, Command: "go test ./internal/compiler/<package>/... -run <TestName> -count=1", Classification: classR1},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 459, Command: "go test ./internal/compiler/session/... -run TestLanguageMaturityGuardCountIsCurrent -v", Classification: classR2},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 502, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 26, Command: "go test ./<changed-package>/...", Classification: classR1},
-	{File: ".planning/research/M003/ADVERSARIAL-SYNTHESIS.md", Line: 213, Command: "grep 'D-11-25' PHASE-11-DEBT.md", Classification: classR3},
-	{File: ".planning/research/M003/ADVERSARIAL-SYNTHESIS.md", Line: 214, Command: "go test ./internal/compiler/check/... -list 'TestComputeLoanLastUsesAndDerivePlaceLoansAgree'", Classification: classR2},
-	{File: ".planning/research/M003/ADVERSARIAL-SYNTHESIS.md", Line: 214, Command: "go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -count=1", Classification: classR2},
 	{File: ".planning/research/M003/EVIDENCE-AND-DEBT.md", Line: 828, Command: "go test -list", Classification: classUnparseable},
 	{File: ".planning/research/STACK.md", Line: 29, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/research/STACK.md", Line: 30, Command: "go test -fuzz", Classification: classUnparseable},
@@ -1341,11 +1294,26 @@ func measuredViolations(t testing.TB) []violationRecord {
 }
 
 // TestVerificationGroundednessFrontierIsPinned asserts SET EQUALITY
-// between pinnedFrontier and a freshly measured run -- never containment,
-// never a count. Both directions are checked and each failure names the
-// specific offending record (D-14-18).
+// between pinnedFrontier and a freshly measured run, with every
+// reconciled finding (plan 14-10, D-14-12) EXCLUDED first -- never
+// containment, never a count. Both directions are checked and each
+// failure names the specific offending record (D-14-18). A reconciled
+// finding is still, textually, present in the archive it was found in
+// (never rewritten in place); excluding it here does not hide it from
+// TestReconciliationVerdictsCarryTheirObligations, which re-checks its
+// obligation on every run and re-fails the moment the underlying archive
+// text changes without the reconciliation entry being updated.
 func TestVerificationGroundednessFrontierIsPinned(t *testing.T) {
-	measured := measuredViolations(t)
+	allMeasured := measuredViolations(t)
+	reconciled := reconciledFindings(t)
+
+	var measured []violationRecord
+	for _, v := range allMeasured {
+		if reconciled[v] {
+			continue
+		}
+		measured = append(measured, v)
+	}
 
 	measuredSet := make(map[violationRecord]bool, len(measured))
 	for _, v := range measured {
@@ -2086,4 +2054,126 @@ func TestVerificationGroundednessPerBranch(t *testing.T) {
 			t.Fatal("expected at least one real per-branch finding (D-14-16 predicts the defect mass is here); found none -- classifier may be broken")
 		}
 	})
+}
+
+// ---------------------------------------------------------------------
+// Plan 14-10 Task 3: the reconciliation exclusion (D-14-18's frontier
+// must move for a genuine reason) and the closed R2b landing-phase
+// register (D-14-16).
+// ---------------------------------------------------------------------
+
+// reconciledFindings returns the set of (File,Line,Command,Classification)
+// covered by a reconciliation entry across every *-DEBT.md register
+// (session_test.go's parseReconciliationEntries via deriveEvidenceReconciliation,
+// witness_registry_test.go). A finding in this set is EXCLUDED from
+// pinnedFrontier's comparison -- it is still, textually, a dead pattern in
+// the archive (never rewritten in place), but it is now adjudicated
+// outside the archive under a verdict TestReconciliationVerdictsCarryTheirObligations
+// re-checks on every run, so the lint no longer needs to also pin it.
+func reconciledFindings(t testing.TB) map[violationRecord]bool {
+	t.Helper()
+	entries, err := deriveEvidenceReconciliation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	set := make(map[violationRecord]bool, len(entries))
+	for _, e := range entries {
+		set[violationRecord{File: e.File, Line: e.Line, Command: e.Command, Classification: e.Classification}] = true
+	}
+	return set
+}
+
+// r2bLandingPhases assigns a landing phase to every pinned R2b (per-branch)
+// finding, per D-14-16's sizing decision: this phase drives runnability,
+// groundedness and grep (R1/R2/R3) to empty via reconciliation, but
+// per-branch (R2b) closure is judgment work explicitly deferred to
+// QLT-10 (ROADMAP.md Phase 20). Keyed by the exact pinnedFrontier record
+// so a mismatch (an R2b entry with no landing phase, or a landing phase
+// for an entry no longer pinned) is a hard failure, never silently
+// tolerated.
+var r2bLandingPhases = map[violationRecord]string{
+	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/corevalidate -run '^(TestForeignPolicyValueNotIdentifierRefused|TestForeignContractCommentSafetyRefused)$' -v", Classification: classR2b}:                                                                                      "P20",
+	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-VERIFICATION.md", Line: 88, Command: "go test ./internal/compiler/corevalidate -run '^(TestInteriorMergeDivergentHistoriesRefused|TestInteriorMergeAgreeingHistoriesAccepted|TestCyclicOkEdgeChainRefusedNotHung|TestAcyclicChainsStillValidateUnderCycleGuard)$' -v", Classification: classR2b}: "P20",
+	{File: ".planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-VERIFICATION.md", Line: 89, Command: "go test ./internal/compiler/cgen -run '^(TestForeignSymbolInjectionNeverReachesGeneratedC|TestForeignEmittersRefuseNonIdentifierSymbolIndependently|TestExistingEmittersAreByteIdentical)$' -v", Classification: classR2b}:                                 "P20",
+	{File: ".planning/milestones/M001-phases/05-native-equivalence-and-adversarial-evidence/05-VERIFICATION.md", Line: 56, Command: "go test ./internal/compiler/session/... -run \"TestNAT03|TestAssertMutationMovesAnAxis|TestEveryNAT03\" -v", Classification: classR2b}:                                                                                                           "P20",
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 86, Command: "go test ./internal/compiler/corevalidate -run 'PeerLiveness|LoanChainIndex' -v", Classification: classR2b}:                                                                                                                                              "P20",
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 89, Command: "go test ./internal/compiler/corevalidate -run 'ImportsStayIndependent|ImportIndependence' -v", Classification: classR2b}:                                                                                                                                "P20",
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 90, Command: "go test ./internal/compiler/corevalidate ./internal/compiler/check -run 'Seam.*StillRefuses|EndpointFault' -v", Classification: classR2b}:                                                                                                               "P20",
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 97, Command: "go test ./internal/compiler/corevalidate -run 'ClosureCostScaling|GrowthExponent' -v", Classification: classR2b}:                                                                                                                                        "P20",
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 99, Command: "go test ./internal/compiler/check -run 'OrderingStability|DiagnosticSelectionOrder' -v", Classification: classR2b}:                                                                                                                                      "P20",
+	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 102, Command: "go test ./internal/compiler/check -run 'UseAfterMove|BorrowRequiresShare|TransferRequiresTake' -v", Classification: classR2b}:                                                                                                                          "P20",
+}
+
+// TestVerificationGroundednessThreeClassesAreEmpty is plan 14-10 Task 3's
+// own closing assertion (D-14-18, D-14-19): over a freshly measured run
+// with reconciled findings excluded, the runnability (R1), groundedness
+// (R2) and grep (R3) classes are empty, the per-branch (R2b) class is
+// non-empty with every member carrying a closed-vocabulary landing
+// phase, and the corpus floors still hold in the SAME run -- so "zero
+// findings" is only reportable over a corpus that is still being read
+// (D-14-64).
+func TestVerificationGroundednessThreeClassesAreEmpty(t *testing.T) {
+	measured := measuredViolations(t)
+	reconciled := reconciledFindings(t)
+
+	var r1, r2, r3, r2b int
+	for _, v := range measured {
+		if reconciled[v] {
+			continue
+		}
+		switch v.Classification {
+		case classR1:
+			r1++
+			t.Errorf("unreconciled R1 finding remains: %s:%d: %s", v.File, v.Line, v.Command)
+		case classR2:
+			r2++
+			t.Errorf("unreconciled R2 finding remains: %s:%d: %s", v.File, v.Line, v.Command)
+		case classR3:
+			r3++
+			t.Errorf("unreconciled R3 finding remains: %s:%d: %s", v.File, v.Line, v.Command)
+		case classR2b:
+			r2b++
+			if _, owned := r2bLandingPhases[v]; !owned {
+				t.Errorf("R2b finding has no landing phase: %s:%d: %s", v.File, v.Line, v.Command)
+			} else if phase := r2bLandingPhases[v]; !debtRegisterOwningPhaseForm(phase) {
+				t.Errorf("R2b finding %s:%d has landing phase %q outside the closed P<NN>|CLOSED(<sha>)|UNOWNED(<witness>) vocabulary", v.File, v.Line, phase)
+			}
+		}
+	}
+	if r2b == 0 {
+		t.Error("expected the per-branch (R2b) class to be non-empty -- D-14-16's sizing decision keeps it pinned, not enforced to zero, this phase")
+	}
+	for key := range r2bLandingPhases {
+		found := false
+		for _, v := range measured {
+			if v == key {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("r2bLandingPhases names a finding the tree no longer produces: %s:%d: %s", key.File, key.Line, key.Command)
+		}
+	}
+	t.Logf("post-reconciliation: R1=%d R2=%d R3=%d (all must be 0), R2b=%d (non-zero, every member owned)", r1, r2, r3, r2b)
+
+	// The corpus floors, asserted in the SAME run (D-14-64): "zero
+	// findings" over an empty corpus would be a vacuous, not honest,
+	// claim.
+	docs := enforcedTierDocuments(t)
+	if len(docs) < enforcedTierDocumentFloor {
+		t.Fatalf("enforced-tier document count dropped to %d, below the floor of %d", len(docs), enforcedTierDocumentFloor)
+	}
+	totalCommands := 0
+	for _, doc := range docs {
+		occurrences, err := extractCommands(doc)
+		if err != nil {
+			t.Fatalf("extractCommands(%s): %v", doc, err)
+		}
+		totalCommands += len(occurrences)
+	}
+	if totalCommands < verificationCommandFloor {
+		t.Fatalf("extracted verification command count dropped to %d, below the floor of %d", totalCommands, verificationCommandFloor)
+	}
+	t.Logf("corpus floors held in the same run: %d enforced-tier documents, %d verification commands", len(docs), totalCommands)
 }

@@ -896,7 +896,15 @@ func renderEvidenceReconciliationView(entries []reconciliationEntry) string {
 	b.WriteString("| ID | File | Line | Command | Verdict | Obligation |\n")
 	b.WriteString("|---|---|---|---|---|---|\n")
 	for _, e := range entries {
-		fmt.Fprintf(&b, "| %s | %s | %d | `%s` | %s | %s |\n",
+		// The archived command is rendered as "cmd: <text>", never as a
+		// bare command span: a bare `go test ...`/`grep ...` span here
+		// would itself match verificationCommandPattern, promoting this
+		// very file to Tier A (D-14-11's verdict-token clause) and
+		// creating a NEW finding pointing at the reconciliation view's
+		// own quotation of the command it is reconciling -- the "cmd: "
+		// prefix breaks verificationCommandPattern's anchored match
+		// while keeping the archived text fully legible.
+		fmt.Fprintf(&b, "| %s | %s | %d | `cmd: %s` | %s | %s |\n",
 			e.ID,
 			evidenceReconciliationCellEscape(e.File),
 			e.Line,

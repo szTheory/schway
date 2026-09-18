@@ -3,7 +3,7 @@ phase: 14-evidence-instrument-and-honest-scoping
 recorded: 2026-09-18
 status: accepted
 disposition: phase-in-progress
-items: 76
+items: 77
 blocking: 0
 ---
 
@@ -128,6 +128,7 @@ finding).
 | D-14-118 | plan 14-10's reconciliation of the pinned groundedness frontier's R3 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R3) — `ADVERSARIAL-SYNTHESIS.md:213` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-119 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
 | D-14-120 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
+| D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | UNOWNED(none-yet-scheduled) | DEFINED | n/a | REMOVING `14-VALIDATION.MD` FROM `validationGradeBarExemptions` AND RE-RUNNING `TestValidationRowGradesAreEarnedOverArchivedCorpus` PRODUCED SPURIOUS "DECLARED EXERCISED EXCEEDS THE CEILING WIRED" FAILURES ACROSS NINE OTHER, UNRELATED, ALREADY-FROZEN ARCHIVED FILES (01, 02, 06, 07, 08, 10, 11, 12, 13-VALIDATION.MD) IN THE SAME RUN. The whole corpus-wide test completed at 300.11s, suspiciously close to `evidenceRunRecordTimeout`'s 300s ceiling (lowered from 900s by plan 14-09's own deviation fix) -- consistent with the run-record generation not completing within its budget and several packages' citations falling back to an unresolved WIRED ceiling rather than their true EXERCISED grade. The exemption-removal change was reverted rather than landed under that risk; the corpus-wide grade cap over the real archived data was never actually re-verified with a complete run record in this plan |
 
 ## Detail
 
@@ -303,6 +304,21 @@ floor), which would fail EVD-02's satisfying bar if the bar applied here.
 Rather than let the bar's own file-scoped exemption map
 (`validationGradeBarExemptions`) quietly cover this forever — exactly the
 suppression EVD-02 exists to retire — this row names the gap explicitly.
+
+**Update (plan 14-10):** the table is now populated for real — 31 rows,
+one per task across all ten plans in this phase, every `Automated Command`
+executed during plan 14-10's Task 3 and confirmed to resolve (see
+14-10-SUMMARY.md). The `validationGradeBarExemptions` entry for
+`14-VALIDATION.md` was deliberately LEFT IN PLACE rather than removed:
+removing it and re-running `TestValidationRowGradesAreEarnedOverArchivedCorpus`
+surfaced spurious "declared EXERCISED exceeds the ceiling WIRED" failures
+across MULTIPLE unrelated already-frozen archived files (01, 02, 06, 07,
+08, 10, 11, 12, 13-VALIDATION.md), not just this document — consistent
+with a run-record generation that did not complete within its budget on
+that attempt (the whole run finished at 300.11s, suspiciously close to
+`evidenceRunRecordTimeout`'s 300s ceiling per plan 14-09's own SUMMARY).
+Rather than land a corpus-wide grade change under that risk, the change
+was reverted; see D-14-121 below.
 
 **Landing phase:** `UNOWNED(none-yet-scheduled)` — no phase yet owns either
 retroactively populating this table from the phase's own plan SUMMARYs or
@@ -1407,6 +1423,51 @@ covering-command: go test ./internal/compiler/corevalidate -run TestPeerLoanCarr
 ```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `703fedc` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+
+### D-14-121 — the corpus-wide grade-cap satisfying bar was not re-verified for `14-VALIDATION.md`
+
+first-recorded: M003
+
+Plan 14-10's Task 3 filled `14-VALIDATION.md`'s Per-Task Verification Map
+for real (31 rows, one per task across all ten plans, every command
+executed and confirmed to resolve). This made
+`validationGradeBarExemptions`'s `14-VALIDATION.md` entry — whose stated
+reason was "template row never filled beyond plan-time placeholder" — read
+as stale, so removing it and re-running
+`TestValidationRowGradesAreEarnedOverArchivedCorpus` (the corpus-wide
+EVD-02 satisfying-bar test) was attempted.
+
+That attempt surfaced a problem orthogonal to `14-VALIDATION.md` itself:
+the SAME run reported "declared grade EXERCISED exceeds the ceiling WIRED"
+for rows in NINE other, unrelated, already-frozen archived files
+(`01-VALIDATION.md`, `02-VALIDATION.md`, `06-VALIDATION.md`,
+`07-VALIDATION.md`, `08-VALIDATION.md`, `10-VALIDATION.md`,
+`11-VALIDATION.md`, `12-VALIDATION.md`, `13-VALIDATION.md`) whose own
+exemptions were never touched. The whole corpus-wide test completed at
+`300.11s` — suspiciously close to `evidenceRunRecordTimeout`'s `300s`
+ceiling (`internal/compiler/session/evidence_grade_test.go`, lowered from
+`900s` by plan 14-09's own deviation fix per its SUMMARY) — consistent
+with the run-record generation not completing within its budget on that
+attempt and several packages' citations falling back to an unresolved
+`WIRED` ceiling instead of their true `EXERCISED` grade, rather than any
+of those nine files having genuinely regressed.
+
+The exemption-removal change was reverted (`git checkout --`) rather than
+landed under that risk: this plan never confirmed, one way or the other,
+whether `14-VALIDATION.md` would actually clear the satisfying bar under a
+complete run record. `14-VALIDATION.md`'s exemption therefore stays in
+`validationGradeBarExemptions`, now for a genuinely different and equally
+honest reason than the one originally written there (the table is filled,
+but the bar was never safely re-verified) — recorded here rather than
+silently left to read as though the original "never filled in" reason
+still applied.
+
+**Landing phase:** `UNOWNED(none-yet-scheduled)` — no phase yet owns either
+re-running the corpus-wide grade cap with a verified-complete run record
+(possibly requiring `evidence-run-record.sh`'s own timeout/consolidation
+budget to be revisited a second time, mirroring plan 14-09's own
+`consolidatePkgPatterns` fix) or accepting `14-VALIDATION.md`'s exemption
+as permanent with an updated, non-stale rationale.
 
 ---
 
