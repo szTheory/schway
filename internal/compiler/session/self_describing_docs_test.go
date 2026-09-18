@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -316,4 +317,146 @@ func TestLanguageMaturityCountsAreCurrent(t *testing.T) {
 	for _, f := range findings {
 		t.Error(f)
 	}
+}
+
+// TestSelfDescribingDocsGuardIsNotInert proves both self-checks above are
+// not inert (D-14-28's shape): one seeded fault per mechanizable kind, plus
+// an unmodified-copy control for each artefact, all under t.TempDir() so the
+// real tree is never touched.
+func TestSelfDescribingDocsGuardIsNotInert(t *testing.T) {
+	docPath := testsupport.ProjectPath(".planning", "LANGUAGE-MATURITY.md")
+	root := testsupport.ProjectPath()
+	manifestPath := testsupport.ProjectPath("internal", "compiler", "session", "qlt02_budget_manifest.json")
+
+	originalDoc, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatalf("read maturity doc: %v", err)
+	}
+	originalManifest, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("read manifest: %v", err)
+	}
+
+	t.Run("unmodified maturity doc copy passes", func(t *testing.T) {
+		copyPath := filepath.Join(t.TempDir(), "LANGUAGE-MATURITY.md")
+		if writeErr := os.WriteFile(copyPath, originalDoc, 0o644); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+		findings, checkErr := checkLanguageMaturityDoc(copyPath, root)
+		if checkErr != nil {
+			t.Fatal(checkErr)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("unmodified copy reported findings: %v", findings)
+		}
+	})
+
+	t.Run("changed stated count fails naming the line and both numbers", func(t *testing.T) {
+		loc := guardTotalSentenceRe.FindStringIndex(string(originalDoc))
+		if loc == nil {
+			t.Fatal("guard-total sentence not found in the real document -- cannot seed this fault")
+		}
+		sentence := string(originalDoc[loc[0]:loc[1]])
+		mutatedSentence := regexp.MustCompile(`\*\*(\d+) `).ReplaceAllStringFunc(sentence, func(s string) string {
+			digits := regexp.MustCompile(`\d+`).FindString(s)
+			n, _ := strconv.Atoi(digits)
+			return strings.Replace(s, digits, strconv.Itoa(n+1), 1)
+		})
+		if mutatedSentence == sentence {
+			t.Fatal("mutation did not change the guard-total sentence")
+		}
+		mutatedDoc := string(originalDoc[:loc[0]]) + mutatedSentence + string(originalDoc[loc[1]:])
+
+		copyPath := filepath.Join(t.TempDir(), "LANGUAGE-MATURITY.md")
+		if writeErr := os.WriteFile(copyPath, []byte(mutatedDoc), 0o644); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+		findings, checkErr := checkLanguageMaturityDoc(copyPath, root)
+		if checkErr != nil {
+			t.Fatal(checkErr)
+		}
+		if len(findings) == 0 {
+			t.Fatal("changing the stated guard total by one did not fail the count self-check")
+		}
+		named := false
+		for _, f := range findings {
+			if strings.Contains(f, copyPath) {
+				named = true
+			}
+		}
+		if !named {
+			t.Fatalf("findings do not name the document path: %v", findings)
+		}
+	})
+
+	t.Run("rewritten re-verify command does not change the verdict", func(t *testing.T) {
+		anchor := "Re-verify (approximate only"
+		if !strings.Contains(string(originalDoc), anchor) {
+			t.Fatalf("anchor %q not found in the real document -- cannot seed this fault", anchor)
+		}
+		mutatedDoc := strings.Replace(string(originalDoc), anchor,
+			"Re-verify (REWRITTEN by a seeded fault to a command that would report a wrong number, e.g. `echo 999999`, and must never be executed", 1)
+		if mutatedDoc == string(originalDoc) {
+			t.Fatal("mutation did not change the document")
+		}
+
+		copyPath := filepath.Join(t.TempDir(), "LANGUAGE-MATURITY.md")
+		if writeErr := os.WriteFile(copyPath, []byte(mutatedDoc), 0o644); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+		findings, checkErr := checkLanguageMaturityDoc(copyPath, root)
+		if checkErr != nil {
+			t.Fatal(checkErr)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("rewriting the embedded re-verify command changed the verdict (it must never be executed): %v", findings)
+		}
+	})
+
+	t.Run("unmodified manifest copy passes", func(t *testing.T) {
+		copyPath := filepath.Join(t.TempDir(), "qlt02_budget_manifest.json")
+		if writeErr := os.WriteFile(copyPath, originalManifest, 0o644); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+		findings, checkErr := checkSuiteWallClockObservedRow(copyPath)
+		if checkErr != nil {
+			t.Fatal(checkErr)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("unmodified manifest copy reported findings: %v", findings)
+		}
+	})
+
+	t.Run("manifest missing the suite wall-clock row fails", func(t *testing.T) {
+		var rows []QLT02BudgetRow
+		if jsonErr := json.Unmarshal(originalManifest, &rows); jsonErr != nil {
+			t.Fatal(jsonErr)
+		}
+		var withoutRow []QLT02BudgetRow
+		for _, row := range rows {
+			if row.Metric == suiteWallClockMetric {
+				continue
+			}
+			withoutRow = append(withoutRow, row)
+		}
+		if len(withoutRow) != len(rows)-1 {
+			t.Fatalf("expected to remove exactly one row, removed %d of %d", len(rows)-len(withoutRow), len(rows))
+		}
+		encoded, marshalErr := json.MarshalIndent(withoutRow, "", "  ")
+		if marshalErr != nil {
+			t.Fatal(marshalErr)
+		}
+
+		copyPath := filepath.Join(t.TempDir(), "qlt02_budget_manifest.json")
+		if writeErr := os.WriteFile(copyPath, encoded, 0o644); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+		findings, checkErr := checkSuiteWallClockObservedRow(copyPath)
+		if checkErr != nil {
+			t.Fatal(checkErr)
+		}
+		if len(findings) == 0 {
+			t.Fatal("removing the suite wall-clock row did not fail the manifest self-check")
+		}
+	})
 }
