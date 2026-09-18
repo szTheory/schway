@@ -27,15 +27,17 @@ debt against this phase.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
-| D-04-26 | 03-DEBT.md D-03-01 (carried), D-04-CONTEXT | D-05/D-02-03 | warning | Phase 5 | Retiring `discoverLoanLastUses` in favour of driving both admission and endpoint materialization from `loanLivenessFixpoint` is deliberately deferred |
-| D-04-30 | D-04-CONTEXT `<deferred>`, D-04-04 | M002/Phase 6 | info | M002 or Phase 6 | A storable, matchable `Result` value and payload-carrying alternatives are deferred; the additive move is a sibling `alternative_details []Alternative omitempty` field, never a shape change to `Alternatives []string` |
-| D-04-31 | D-04-CONTEXT `<deferred>` "Accepted residual limitations" | QLT-01, FFI-01 | warning | inherited, not scheduled | Four accepted residual limitations this phase inherits without engineering around: the coordinated three-way lie, two nonlocal-exit blind spots, the single-host single-record-shape fence, and the permanence of quarantine |
-| D-04-32 | 04-CONTEXT.md `<specifics>` "Roadmap gap surfaced by this discussion", recorded 2026-09-05 by plan 04-07 (Task 3) | NAT-03, ROADMAP §Phase 5 | info | Phase 5 (planning) | NAT-03's "false no-alias facts" hostile mutation has no subject until Phase 5 itself first adds a proven alias-fact emission path, because D-04-13 means Phase 4 emits no optimizer-visible attributes to falsify. This is not a defect of Phase 4; it is a planning dependency for whoever plans Phase 5, recorded here per D-04-CONTEXT's own instruction that this gap "is not currently stated in ROADMAP.md §Phase 5 and should be added when Phase 5 is planned." |
-| D-04-33 | 04-REVIEW.md WR-01 (fifth-round code review), 04-VERIFICATION.md (fifth round) | FFI-01 | warning | unscheduled — before any emitter splices `Alias` | `core.ForeignContract.Alias` is the one contract string field excluded from all three of plan 04-13's audit layers and from every falsifier table. It is safe today only because no emitter splices it into generated C; nothing pins that invariant, so a future emitter could reintroduce the closed injection class silently |
+| D-04-26 | 03-DEBT.md D-03-01 (carried), D-04-CONTEXT | D-05/D-02-03 | warning | CLOSED(c09220cd) | Retiring `discoverLoanLastUses` in favour of driving both admission and endpoint materialization from `loanLivenessFixpoint` is deliberately deferred |
+| D-04-30 | D-04-CONTEXT `<deferred>`, D-04-04 | M002/Phase 6 | info | UNOWNED(m002-or-phase-6-ambiguous) | A storable, matchable `Result` value and payload-carrying alternatives are deferred; the additive move is a sibling `alternative_details []Alternative omitempty` field, never a shape change to `Alternatives []string` |
+| D-04-31 | D-04-CONTEXT `<deferred>` "Accepted residual limitations" | QLT-01, FFI-01 | warning | UNOWNED(inherited-residual-limitations) | Four accepted residual limitations this phase inherits without engineering around: the coordinated three-way lie, two nonlocal-exit blind spots, the single-host single-record-shape fence, and the permanence of quarantine |
+| D-04-32 | 04-CONTEXT.md `<specifics>` "Roadmap gap surfaced by this discussion", recorded 2026-09-05 by plan 04-07 (Task 3) | NAT-03, ROADMAP §Phase 5 | info | P05 | NAT-03's "false no-alias facts" hostile mutation has no subject until Phase 5 itself first adds a proven alias-fact emission path, because D-04-13 means Phase 4 emits no optimizer-visible attributes to falsify. This is not a defect of Phase 4; it is a planning dependency for whoever plans Phase 5, recorded here per D-04-CONTEXT's own instruction that this gap "is not currently stated in ROADMAP.md §Phase 5 and should be added when Phase 5 is planned." |
+| D-04-33 | 04-REVIEW.md WR-01 (fifth-round code review), 04-VERIFICATION.md (fifth round) | FFI-01 | warning | CLOSED(c09220cd) | `core.ForeignContract.Alias` is the one contract string field excluded from all three of plan 04-13's audit layers and from every falsifier table. It is safe today only because no emitter splices it into generated C; nothing pins that invariant, so a future emitter could reintroduce the closed injection class silently |
 
 ## Detail
 
 ### D-04-26 — `discoverLoanLastUses` retirement carries to Phase 5
+
+first-recorded: M001
 
 **Disposition of D-03-01 (03-DEBT.md).** D-03-01 had two halves: (a) the
 metric-honesty gap — `discoverLoanLastUses`'s own transitive-scan work was
@@ -84,6 +86,8 @@ combined with D-04-26's compounding-wave avoidance.
 
 ### D-04-30 — payload-carrying alternatives remain deferred
 
+first-recorded: M001
+
 **Disposition.** D-04-04 (one-way door, resolved `edge-based-now`) fixed
 Phase 4's failure representation as a two-successor control-flow edge in
 core, not a storable value: no `Result` type, no generics, no
@@ -111,6 +115,8 @@ admission surface atop a value-based encoding) is fully accepted and named,
 per D-04-04's own reversibility note.
 
 ### D-04-31 — accepted residual limitations this phase inherits
+
+first-recorded: M001
 
 These four items are named in D-04-CONTEXT.md's `<deferred>` §"Accepted
 residual limitations (record, do not engineer around)" and are re-recorded
@@ -166,6 +172,8 @@ No test, fixture, or control in this phase claims to close any of the four.
 
 ### D-04-32 — the Phase 5 roadmap gap this phase surfaces
 
+first-recorded: M001
+
 **Disposition.** D-04-13 (04-CONTEXT.md) means Phase 4 emits zero
 optimizer-visible attributes — there is nothing for NAT-03's "false no-alias
 facts" hostile mutation (ROADMAP §Phase 5) to falsify, because Phase 4 never
@@ -188,6 +196,8 @@ emission path" before or alongside NAT-03's hostile-mutation work, not after.
 ---
 
 ### D-04-33 — `Alias` is outside the field audit, pinned by nothing
+
+first-recorded: M001
 
 Plan 04-13 closed the fifth-round gap by auditing every `core.ForeignContract`
 string field that reaches generated C, at three independent layers:

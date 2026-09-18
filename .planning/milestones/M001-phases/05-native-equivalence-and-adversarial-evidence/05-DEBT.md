@@ -22,12 +22,14 @@ corpus file, frozen foreign TU, and prior gate script reports no changes.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
-| D-05-41 | 05-09 `VerifyPhase5ControlsAndWork` (`lane:interpreter-o0-o3-lto`) | D-05-19 | info | Phase 5+ | The runtime gate's own `control:interpreter-o0-o3-lto` lane drives the interpreter/-O0/-O3/-O3-LTO differential over exactly one adversarial fixture (`inline_across_foreign.lang`), not the full six-fixture adversarial subset D-05-18a defines |
-| D-05-42 | 05-14 (Task 2 developer-confirmed decision, D-05-32/D-05-33) | OWN-03/OWN-04, D-03-02 | warning | M002 | `OpCall`, interprocedural loan liveness in both admission layers, call-graph construction, cycle refusal, a bounded interpreter call stack, and the cross-function rebuild of Phase 3's exhaustive differentials are OUT of M001; D-03-02 remains open past the milestone on this basis |
+| D-05-41 | 05-09 `VerifyPhase5ControlsAndWork` (`lane:interpreter-o0-o3-lto`) | D-05-19 | info | P05 | The runtime gate's own `control:interpreter-o0-o3-lto` lane drives the interpreter/-O0/-O3/-O3-LTO differential over exactly one adversarial fixture (`inline_across_foreign.lang`), not the full six-fixture adversarial subset D-05-18a defines |
+| D-05-42 | 05-14 (Task 2 developer-confirmed decision, D-05-32/D-05-33) | OWN-03/OWN-04, D-03-02 | warning | UNOWNED(m002-broad-scope) | `OpCall`, interprocedural loan liveness in both admission layers, call-graph construction, cycle refusal, a bounded interpreter call stack, and the cross-function rebuild of Phase 3's exhaustive differentials are OUT of M001; D-03-02 remains open past the milestone on this basis |
 
 ## Detail
 
 ### D-05-41 — the gate's own LTO lane samples one adversarial fixture, not all six
+
+first-recorded: M001
 
 **Finding.** `VerifyPhase5ControlsAndWork`'s `phase5RunInterpreterO0O3LTOLane` (`internal/compiler/session/session_phase5.go`) proves `control:interpreter-o0-o3-lto` by running `testdata/phase5/inline_across_foreign.lang` through the interpreter and three native tiers (`-O0`, `-O3`, `-O3 -flto`) and comparing all four via `Phase5CompareEngines`. It does not also drive `dead_store_unused_acquire.lang`, `reorder_two_events.lang`, `tail_collapse_release_ladder.lang`, `typed_failure_truncated_stdout.lang`, or `defect_dies_by_signal.lang` through the same four-tier comparison inside this one gate function.
 
@@ -38,6 +40,8 @@ corpus file, frozen foreign TU, and prior gate script reports no changes.
 **Phase 5+ fix.** Either (a) widen `phase5RunInterpreterO0O3LTOLane` to iterate `session.Phase5AdversarialFixtureFiles` at the `-O3-LTO` tier (cost: five more native builds and links per gate run), or (b) add an LTO tier to `TestPhase5CorpusThreeEngineAgreement`'s own adversarial-subset loop (moving the cost into the ordinary `go test` suite instead of the gate script's own runtime). Either closes the gap; neither is required before plans 05-10 through 05-14 begin, since both consume the settled interpreter/-O0/-O3 differential and the alias-fact/attribute-justification work this gate proves, not the LTO tier specifically.
 
 ### D-05-42 — `OpCall` and interprocedural equivalence deferred to M002; D-03-02 re-recorded as open (D-05-32/D-05-33)
+
+first-recorded: M001
 
 **Decision (developer-confirmed, 05-14 Task 2, `defer-to-m002`).** `OpCall`
 (Lang-to-Lang calls), interprocedural loan liveness in BOTH admission layers,

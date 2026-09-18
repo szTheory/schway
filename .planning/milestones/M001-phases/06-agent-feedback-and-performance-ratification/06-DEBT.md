@@ -25,15 +25,17 @@ none is a new discovery this plan made by accident.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
-| D-06-13 | 06-04 (D-06-13, CONTEXT.md) | DX-03 | info | Phase 6 (declared, not closed) | The artifact cache's soundness argument has four named holes: undeclared environment, a Clang version-string-stable change, future nondeterministic codegen, and a hand-edited/partially-deleted cache directory |
-| D-06-20 | 06-10 (D-06-20, CONTEXT.md) | QLT-02 | info | Deferred, revisit with a second (Linux) machine | Peak RSS stays `"unavailable"` for M001; `getrusage` is not implemented |
-| D-06-29 | 06-11/06-15 (D-06-29, CONTEXT.md) | DX-04 | info | Phase 6 (declared, not closed) | The held-out defect-corpus split blunts, but cannot eliminate, automated-program-repair overfitting risk given how small this language is |
-| D-06-33 | 06-02/06-04/06-05/06-06/06-07/06-08/06-09/06-10/06-11/06-12/06-13/06-14/06-15 | DX-02, DX-03, DX-04, QLT-02 | info | Carried to a future verification pass | Four unresolved `unclassified`-category edge probes from the phase coverage report, never resolved across the whole phase |
-| D-06-30 | 06-11 (D-06-30, CONTEXT.md) | DX-04 | info | Non-gating, per-milestone/on-demand cadence | The recorded agent-legibility exercise measuring `repair_rounds` against the `p95: 2` intent is evidence, not a gate, and has not itself been run as part of this plan's close |
+| D-06-13 | 06-04 (D-06-13, CONTEXT.md) | DX-03 | info | UNOWNED(cache-soundness-holes) | The artifact cache's soundness argument has four named holes: undeclared environment, a Clang version-string-stable change, future nondeterministic codegen, and a hand-edited/partially-deleted cache directory |
+| D-06-20 | 06-10 (D-06-20, CONTEXT.md) | QLT-02 | info | UNOWNED(second-host-required) | Peak RSS stays `"unavailable"` for M001; `getrusage` is not implemented |
+| D-06-29 | 06-11/06-15 (D-06-29, CONTEXT.md) | DX-04 | info | UNOWNED(heldout-corpus-overfitting-risk) | The held-out defect-corpus split blunts, but cannot eliminate, automated-program-repair overfitting risk given how small this language is |
+| D-06-33 | 06-02/06-04/06-05/06-06/06-07/06-08/06-09/06-10/06-11/06-12/06-13/06-14/06-15 | DX-02, DX-03, DX-04, QLT-02 | info | UNOWNED(future-verification-pass) | Four unresolved `unclassified`-category edge probes from the phase coverage report, never resolved across the whole phase |
+| D-06-30 | 06-11 (D-06-30, CONTEXT.md) | DX-04 | info | UNOWNED(non-gating-cadence) | The recorded agent-legibility exercise measuring `repair_rounds` against the `p95: 2` intent is evidence, not a gate, and has not itself been run as part of this plan's close |
 
 ## Detail
 
 ### D-06-13 — the artifact cache's soundness argument has four named holes
+
+first-recorded: M001
 
 **Finding.** The Phase 6 artifact cache (`internal/compiler/cache`, D-06-06 through
 D-06-12) makes an *artifact*-cache argument, not a test-selection argument:
@@ -72,6 +74,8 @@ permanent residual debt, not a scheduled fix.
 
 ### D-06-20 — Peak RSS stays unavailable for M001
 
+first-recorded: M001
+
 **Decision (D-06-20, `06-CONTEXT.md`).** `getrusage` is not implemented for M001.
 `ru_maxrss` is bytes on macOS and kilobytes on Linux, and a Go process's RSS is
 dominated by runtime/GC allocation unrelated to compiler work; implementing it on
@@ -90,6 +94,8 @@ this becomes a real measurement rather than a host-specific guess.
 
 ### D-06-29 — held-out corpus discipline blunts, does not eliminate, repair overfitting risk
 
+first-recorded: M001
+
 **Finding (D-06-29, `06-CONTEXT.md`).** DX-04's defect-injection fixtures
 (`testdata/phase6/heldout_*.lang`) used by the CI gate are held disjoint from the
 `derivation_*.lang` fixtures anyone may consult when hand-deriving the repair
@@ -107,6 +113,8 @@ can express. Declared here as the honest residual: `escape:repair-heldout-corpus
 residual-overfitting` (`session.Phase6ExpectedEscapes()`).
 
 ### D-06-33 — four unresolved `unclassified`-category edge probes, carried across the whole phase
+
+first-recorded: M001
 
 **Finding.** The phase's own coverage report flagged one edge probe per gray area
 as category `unclassified — review manually`, and none of the four was ever
@@ -141,6 +149,8 @@ future phase revisiting one of these four areas) as four standing reviewer
 questions, not as blocking work.
 
 ### D-06-30 — the recorded agent-legibility exercise is non-gating and has not been run as part of this plan's close
+
+first-recorded: M001
 
 **Decision (D-06-23/D-06-30, `06-CONTEXT.md`).** Phase 6's answer to "is the
 repair protocol agent-legible" is two-part: a deterministic CI gate (proven by

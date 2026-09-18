@@ -28,6 +28,8 @@ let them pass unexamined.
 
 ### D-03-01 — the checker's two liveness derivations decide different things, and the quadratic one still governs admission
 
+first-recorded: M001
+
 **Finding.** Two liveness derivations coexist in `internal/compiler/check/check.go`, but they are not alternative answers to the same question — they answer *different* questions, and only one of them is load-bearing for accept/reject:
 
 - `discoverLoanLastUses` (unchanged since Phase 2, transitive per-binding propagation, O(N²) in the worst case per D-02-03) is read by **both** `analyzeStraightLine` (`checkLinear`, line 1019) and `analyzeArmBody` (`checkBranch`'s per-arm helper, line 700). Its `loanUses[index].index` value feeds `loan.lastUse` directly, which drives `conflictingLoan`/`expiringLoans` — the actual accept/reject decision and the actual expiry timing, in **every** function this checker admits, straight-line or branch.
@@ -51,6 +53,8 @@ So "the checker's two derivations" do not disagree on any verdict, because only 
 **Phase 4+ fix.** Either (a) retire `discoverLoanLastUses` in favor of driving BOTH admission and endpoint-fact materialization from `loanLivenessFixpoint` directly (the literal "no longer on the production path" the 03-05 plan's own must_haves originally described for 03-03, deferred there to protect `TestOwnershipSequenceExhaustive` and 03-06's absence invariant), or (b) instrument `discoverLoanLastUses` to count its own transitive-scan work honestly, matching the `result.Work++`-per-operation convention `blockLoanLiveness` already established. (a) is the more complete fix and the one D-05 originally intended; (b) is the smaller one if (a) is deferred again.
 
 ### D-03-02 — an undeclared borrow-derived return exports as if fully owned
+
+first-recorded: M001
 
 **Finding.** `originvalidate.ValidatePublished` (`internal/compiler/originvalidate/originvalidate.go:110-114`) begins:
 

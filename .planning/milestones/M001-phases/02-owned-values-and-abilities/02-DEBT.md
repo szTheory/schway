@@ -36,6 +36,8 @@ rather than run a seventh review wave (2026-09-04).
 
 ### D-02-01 — the unbounded-spawn guard is defeatable
 
+first-recorded: M001
+
 `TestSourceNeverSpawnsUnboundedProcesses` (`internal/compiler/native/native_test.go`)
 scans module sources for two literal spellings. The independent review defeated it
 four ways; the most serious is `exec.CommandContext(context.Background(), ...)` with
@@ -54,6 +56,8 @@ writers at each call site.
 
 ### D-02-02 — the evidence canonical guard is observationally test-only
 
+first-recorded: M001
+
 `evidence.Build` correctly fails closed with `evidence.canonical_unstable` when the
 canonical reparse yields diagnostics or is not a formatter fixed point, and the
 guard was mutation-proven (removing it produces a complete manifest bound to
@@ -68,6 +72,8 @@ and covered. Only the diagnostic specificity is missing.
 code surfaces, and add a CLI-level assertion.
 
 ### D-02-03 — liveness cost is quadratic in body size, in BOTH admission layers
+
+first-recorded: M001
 
 Making loan liveness transitive (`3d9493a`) propagates loan sets per binding, so
 `check` is Θ(N²) in operation count. A 358 KB source burns ~19s (was ~7s) before
@@ -94,6 +100,8 @@ union-find or interval representation removes the quadratic factor; make
 
 ### D-02-04 — `native.timeout` has no in-tree falsifier
 
+first-recorded: M001
+
 `TestNativeHelperProcess` implements flood modes only, no hang mode, so the compile
 and run deadlines have no committed negative control. The mitigation was proven
 effective out of tree twice (compile deadline fired at ~301 ms, run at ~305 ms,
@@ -105,6 +113,8 @@ falsifier is missing. ~40 lines to close.
 **Phase 03 fix:** add a hang mode to the helper process and assert both deadlines.
 
 ### D-02-05 — `__LANG_` is a reserved identifier
+
+first-recorded: M001
 
 The collision suffix at `internal/compiler/cgen/cgen.go` contains a double
 underscore, which C17 §7.1.3 reserves to the implementation *anywhere* in an
@@ -120,6 +130,8 @@ the cost only grows.
 
 ### D-02-06 — the CLI stream ceiling is loose
 
+first-recorded: M001
+
 `MaxCLIStreamBytes` is 8 MiB. Instrumenting all 50 test-support spawns measured a
 maximum stdout of 1,756 B and stderr of 344 B, so the ceiling is ~4,800× the
 high-water mark, and the "whole verify-corpus documents" rationale it was chosen
@@ -132,6 +144,8 @@ the production trust boundary.
 
 ### D-02-07 — the causality control is coupled to one literal line
 
+first-recorded: M001
+
 `OwnedBackendMutationRunner` matches an exact generated line including a
 source-derived identifier. It is correctly fail-closed (`strings.Count != 1` →
 `native.backend_control_invalid`), but renaming the binding in
@@ -143,11 +157,15 @@ and match on that, decoupling the seam from names and formatting.
 
 ### D-02-08 — `protocol.Human` diverges from `protocol.JSON`
 
+first-recorded: M001
+
 `protocol.Human` returns unconverged output in a case where `protocol.JSON`
 errors. Cosmetic today; a divergence between the two renderings is a latent
 honesty gap.
 
 ### D-02-09 — `Box`/`Pair` check but cannot execute
+
+first-recorded: M001
 
 `testdata/phase2/ability_shapes.lang` passes `lang check` at exit 0, and its core
 is valid (`corevalidate` → `Valid:true, Checks:85`), but every engine and

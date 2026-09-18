@@ -39,22 +39,22 @@ was never run. See the Notes section at the end of this file.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
-| D-11-02 | 11-CONTEXT.md (D-11-02), RE-DEFERRED 2026-09-12 (D-12-36, `12-01-SUMMARY.md`) | NAT-04..NAT-07 | info | OPEN and UNOWNED — re-deferred; no phase currently claims porting branch bodies, foreign-call block bodies, and both by-pointer lowering variants into `emitProgram`, converging the preamble, and re-pinning the four frozen golden-C digests (~1,500 lines of `cgen.go` emitter logic per `TestN1ConvergenceDifferential`'s measurement) | THE SIX SINGLE-FUNCTION EMITTERS ARE NOT DELETED THIS PHASE. `emitLinear`, `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, `emitLinearForeign`, `emitBranch`, and `emitMatch` remain in `cgen` unchanged by Phase 11's multi-function emission work. Their deletion was gated on Q-05's green N=1 convergence differential landing as part of Phase 12's own per-dispatch-site `Result` plans; that gate fired RE-DEFER, not DELETE — see the dated sub-paragraph below |
-| D-11-07 | 11-CONTEXT.md (D-11-07) | NAT-04, FFI-01 | warning | Phase 11 — `singleForeignFunction`/`singleManifestFunction` land generalized-by-refusal this phase; `lang.foreign/0` widening is OPEN, unowned | `singleForeignFunction` AND `singleManifestFunction` STAY SINGLE-FUNCTION AND GENERALIZE BY REFUSING a program with two foreign contracts, rather than being rewritten to support multiple. `lang.foreign/0` is NOT widened. These are single-function assumptions the phase's own `len(Functions) != 1` grep inventory does not catch, since they gate on foreign-contract count, not function count |
-| D-11-11 | 11-CONTEXT.md (D-11-11) | NAT-05 | info | OPEN — designed this phase, built in a future phase once a call-boundary alias attribute has a real non-empty case to discharge (see D-11-09, item D-11-42 below) | THE `EmittedAttribute` DISCHARGE-PAIR DESIGN IS DESIGNED AND RECORDED, NOT BUILT. Callee-side `justified_by` plus caller-side `discharged_by`, refused on EQUALITY (never containment), is a complete design this phase writes down but does not implement, because Phase 11 emits zero call-boundary alias attributes by construction (D-11-09) |
-| D-11-12 | 11-CONTEXT.md (D-11-12) | NAT-05 | info | OPEN — same landing condition as D-11-11; the sidecar schema verdict and the discharge-pair design are one artifact | THE SIDECAR-NORMATIVE-PLUS-INLINE-COMMENT CHANNEL, WITH THE `lang.attributes/0` SCHEMA VERDICT, IS DESIGNED AND RECORDED, NOT BUILT. Companion to D-11-11: the channel a discharge pair would be published through is specified, not shipped, for the same reason (zero attributes to discharge this phase) |
-| D-11-13 | 11-CONTEXT.md (D-11-13) | TRU-02, OWN-04 | warning | Phase 11's `lang.attributes/0` design work names this as the gap its eventual schema must close; not closed by this phase's emission work | PRE-EXISTING GAP, NOT INTRODUCED BY PHASE 11. `evidence.go:233` binds `ForeignDigest` only under `hasForeignContract`, so a pure-Lang `restrict` claim is never digest-bound into evidence. Live before Phase 11 opened; closing it is explicitly `lang.attributes/0`'s job, not this phase's emission work |
-| D-11-27 | 11-CONTEXT.md (D-11-27) | NAT-07 | info | OPEN and UNOWNED — no phase currently claims this review | NAT-07's DESIGN DOES NOT DEPEND ON REVIEWING D-09-51's UNREVIEWED NEGATIVE-CONTROL VERDICT FLIP, because D-11-09 deletes the dependent emission rule the flip would have interacted with. The flip review itself (item 4 of the Phase 10 carry-forward list, D-10-C04 below) remains open and unowned by Phase 11 — recorded here so NAT-07's design is not mistaken for having closed it |
-| D-11-36 | 11-CONTEXT.md (D-11-36) | QLT-05 | warning | Escalate immediately if observed — never silently absorbed into the reducer's own tolerance handling | FLAKY-PREDICATE TOLERANCE IN THE REDUCER IS EXPLICITLY NOT BUILT THIS PHASE. If Phase 11's engineered control (the anti-vacuity criterion QLT-05's reducer must satisfy) turns out flaky, that is a criterion-3 problem surfacing in criterion 4, and it MUST be escalated as a defect in the criterion, not silently treated as a reducer tolerance requirement |
-| D-11-40 | 11-CONTEXT.md (D-11-40), corrects S-006 (`.planning/spikes/006-interprocedural-liveness-cost-scaling/`) | QLT-06 | warning | Phase 11 — plan 11-06's audit and this register state the corrected framing; no further action needed to close | CORRECTION: S-006's 100% / 92% / 43% EVICTION FIGURES ARE AN UPPER BOUND ON A MODEL, NOT A MEASUREMENT. `ClosureDigest` chains over signature summaries only, and never over function bodies (`originvalidate.go:561-590`), so a body-only edit does not move a caller's digest at all. Any artifact that re-quotes these three figures as measured eviction rates MUST NOT do so; state them as the analytical upper bound they are |
-| D-11-42 | 11-CONTEXT.md (D-11-42) | QLT-02 | warning | Phase 11 and beyond — a standing constraint on every future lane addition, not a one-time closing action | `SelectLanesForFixture`'s CHANGE-STATE MECHANISM MUST NOT BE EXTENDED to any new Phase 11 lane without the same scrutiny D-11-41/Q-02 applied to the native-differential lane. Deferring a lane because its declared inputs did not move shares D-11-41's exact hole — an undeclared input can move silently while the declared set reports no change |
-| D-10-C01 | STATE.md "Phase 10 carry-forward" item 1; PHASE-10-DEBT.md D-10-19-adjacent (`corevalidate.peerDeriveOriginFacts` has no `core.OpCall` case) | QLT-05, TRU-02 | warning | Phase 11 — Q-01 (Task 1, this plan) settles whether closing this gap is plan 11-08's reducer work or stays Phase 10 debt; TestQ01CoreLevelOpCallToOpCopyRewrite records BRANCH A (accepted) | INPUT TO PHASE 11, NOT CLOSED HISTORY. `corevalidate.peerDeriveOriginFacts` has no `case core.OpCall:` arm. Any function declaring a borrow-returning `PublicOrigin` sourced from forwarding a callee's result is refused as not-`Callable` by `corevalidate` independently of `check`, which admits the same shape with zero diagnostics. Pre-existing; silently affects Phase 08's `relay_depth2_refuse.lang` too. Fail-closed (conservative, not unsound), but it constrained which fixtures Phase 10 plans 10-07/10-08 could express, so any Phase 11 fixture needing that shape hits the same wall |
-| D-10-C02 | STATE.md "Phase 10 carry-forward" item 2; 10-REVIEW.md WR-01 | TRU-02, TRU-03 | warning | Phase 11 — disclosed residual risk; revisit only if a Phase 11 fixture's operation ordering could violate the unstated assumption | INPUT TO PHASE 11, NOT CLOSED HISTORY. `corevalidate.peerCalleeFrameDrained` detects resource escape via return with a single FORWARD pass over `linear.Operations`, correct only under an unstated and unenforced assumption that operations are declaration-ordered by dependency. Its own cited precedent, `peerParameterEscapesOwned`, walks BACKWARD and is order-independent. Disclosed residual risk, not a blocker |
-| D-10-C03 | STATE.md "Phase 10 carry-forward" item 3; 10-REVIEW.md WR-02, D-10-19 | TRU-02, TRU-03 | info | Phase 11 and beyond — Phase 11's NAT-06 leans on this independence; revisit only if `callgraph` gains a compiler-internal dependency beyond `core` | INPUT TO PHASE 11, NOT CLOSED HISTORY. The independence guards disagree: `originvalidate` permits importing `internal/compiler/callgraph`; `corevalidate`'s equivalent forbidden list forbids it. The four peers' independence is enforced by hand-curated per-package import lists, so this asymmetry is defensible by REVIEW, not by MECHANISM. Phase 11's NAT-06 leans on that independence holding |
-| D-10-C04 | STATE.md "Phase 10 carry-forward" item 4; 10-02-SUMMARY.md Deviations (D-09-51 fix) | OWN-09, TRU-02 | warning | OPEN and UNOWNED — Phase 11 does not claim this review (see D-11-27 above); human review required | INPUT TO PHASE 11, NOT CLOSED HISTORY. Plan 10-02's D-09-51 fix flipped two negative controls: `negative_control_fails.lang` and `negative_control_infallible.lang` moved from `check.interprocedural_loan_liveness` to `core.callee_not_callable`, because closing the `OpCall` transparent-walk defect also flows through `check`'s SEM-06 Callable gate. The executor documented the reasoning chain and explicitly flagged it for human review. **That review has not happened.** D-11-27 records that NAT-07's design does not depend on it, but the review itself remains open |
-| D-10-C05 | STATE.md "Phase 10 carry-forward" item 5 | none — dead code, not a live risk | info | No landing phase required — recorded so a future reader does not mistake this for live protection | INPUT TO PHASE 11, NOT CLOSED HISTORY (informational). `interp.Run`'s `!function.HasClosedBody()` guard is provably unreachable: `corevalidate.Validate` always catches that shape first (found by Phase 10 plan 10-09). Dead defensive code, harmless, recorded here so a future Phase 11 reader does not mistake it for live protection when reasoning about `interp`'s refusal surface |
-| D-11-51 | 11-05 Task 2 (`session_phase11_differential_test.go`'s `DiamondSharedLeaf` subtest, discovered against `testdata/phase11/multi_function_diamond_call.lang`) | NAT-06 | warning | OPEN and UNOWNED — requires touching `interp.go` and `cgen_program.go`, neither in plan 11-05's own `files_modified`; needs its own reviewed plan, not a same-task patch | NEWLY DISCOVERED, NOT FIXED. A callee invoked from TWO OR MORE distinct static call sites in one run (a genuine "diamond, shared leaf" call graph) emits its own `function.returned` event with the IDENTICAL event ID on every invocation, because both `interp.Run` (`terminalOutcome`) and `cgen.emitProgram` (`emitProgramFunction`) derive that ID from the callee's OWN STATIC OpReturn operation ID — a per-DECLARATION identity, not a per-INVOCATION one. `interp.Run` performs no duplicate-ID validation and returns such a document successfully; `native.go`'s own decode-time validator (`validateExecution`, "duplicate execution event id") correctly refuses to trust it, identically and consistently across `-O0`, `-O3`, and `-O3 -flto` (the refusal is structural, not optimizer-dependent). No prior fixture in this repository ever executed a shared-leaf diamond — `testdata/phase07/deep_diamond_acyclic.lang`'s own shared-leaf diamond is check-only, never driven through `interp.Run` or native emission — so this gap was never previously observable. |
-| D-11-52 | 11-05 Task 2 (`session_phase11_differential_test.go`'s `DivergingCallee` subtest) | NAT-06 | info | OPEN — same landing condition as D-11-02 (Phase 12, once `emitMatch`'s multi-function generalization or deletion is undertaken) | NOT EXPRESSIBLE THIS PHASE, extends D-11-02. Every existing `defect` terminator in this codebase is reached through a `core.Match` arm (no arithmetic, no `if`, no loops exist at this maturity to reach `defect` any other way), and `cgen.emitProgram` explicitly refuses any Match-bodied function inside a multi-function program ("multi-function branch bodies are not supported by native emission this phase"). A diverging callee therefore cannot be lowered to native in a multi-function program this phase — a direct structural consequence of D-11-02's own scope decision (the six single-function emitters, including `emitMatch`, are deliberately not deleted or generalized this phase), not a fixture-authoring gap. |
+| D-11-02 | 11-CONTEXT.md (D-11-02), RE-DEFERRED 2026-09-12 (D-12-36, `12-01-SUMMARY.md`) | NAT-04..NAT-07 | info | UNOWNED(single-function-emitter-deletion) | THE SIX SINGLE-FUNCTION EMITTERS ARE NOT DELETED THIS PHASE. `emitLinear`, `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, `emitLinearForeign`, `emitBranch`, and `emitMatch` remain in `cgen` unchanged by Phase 11's multi-function emission work. Their deletion was gated on Q-05's green N=1 convergence differential landing as part of Phase 12's own per-dispatch-site `Result` plans; that gate fired RE-DEFER, not DELETE — see the dated sub-paragraph below |
+| D-11-07 | 11-CONTEXT.md (D-11-07) | NAT-04, FFI-01 | warning | P11 | `singleForeignFunction` AND `singleManifestFunction` STAY SINGLE-FUNCTION AND GENERALIZE BY REFUSING a program with two foreign contracts, rather than being rewritten to support multiple. `lang.foreign/0` is NOT widened. These are single-function assumptions the phase's own `len(Functions) != 1` grep inventory does not catch, since they gate on foreign-contract count, not function count |
+| D-11-11 | 11-CONTEXT.md (D-11-11) | NAT-05 | info | UNOWNED(emittedattribute-discharge-pair-design) | THE `EmittedAttribute` DISCHARGE-PAIR DESIGN IS DESIGNED AND RECORDED, NOT BUILT. Callee-side `justified_by` plus caller-side `discharged_by`, refused on EQUALITY (never containment), is a complete design this phase writes down but does not implement, because Phase 11 emits zero call-boundary alias attributes by construction (D-11-09) |
+| D-11-12 | 11-CONTEXT.md (D-11-12) | NAT-05 | info | UNOWNED(sidecar-schema-verdict-design) | THE SIDECAR-NORMATIVE-PLUS-INLINE-COMMENT CHANNEL, WITH THE `lang.attributes/0` SCHEMA VERDICT, IS DESIGNED AND RECORDED, NOT BUILT. Companion to D-11-11: the channel a discharge pair would be published through is specified, not shipped, for the same reason (zero attributes to discharge this phase) |
+| D-11-13 | 11-CONTEXT.md (D-11-13) | TRU-02, OWN-04 | warning | P11 | PRE-EXISTING GAP, NOT INTRODUCED BY PHASE 11. `evidence.go:233` binds `ForeignDigest` only under `hasForeignContract`, so a pure-Lang `restrict` claim is never digest-bound into evidence. Live before Phase 11 opened; closing it is explicitly `lang.attributes/0`'s job, not this phase's emission work |
+| D-11-27 | 11-CONTEXT.md (D-11-27) | NAT-07 | info | UNOWNED(d-09-51-negative-control-review) | NAT-07's DESIGN DOES NOT DEPEND ON REVIEWING D-09-51's UNREVIEWED NEGATIVE-CONTROL VERDICT FLIP, because D-11-09 deletes the dependent emission rule the flip would have interacted with. The flip review itself (item 4 of the Phase 10 carry-forward list, D-10-C04 below) remains open and unowned by Phase 11 — recorded here so NAT-07's design is not mistaken for having closed it |
+| D-11-36 | 11-CONTEXT.md (D-11-36) | QLT-05 | warning | UNOWNED(flaky-predicate-escalation) | FLAKY-PREDICATE TOLERANCE IN THE REDUCER IS EXPLICITLY NOT BUILT THIS PHASE. If Phase 11's engineered control (the anti-vacuity criterion QLT-05's reducer must satisfy) turns out flaky, that is a criterion-3 problem surfacing in criterion 4, and it MUST be escalated as a defect in the criterion, not silently treated as a reducer tolerance requirement |
+| D-11-40 | 11-CONTEXT.md (D-11-40), corrects S-006 (`.planning/spikes/006-interprocedural-liveness-cost-scaling/`) | QLT-06 | warning | P11 | CORRECTION: S-006's 100% / 92% / 43% EVICTION FIGURES ARE AN UPPER BOUND ON A MODEL, NOT A MEASUREMENT. `ClosureDigest` chains over signature summaries only, and never over function bodies (`originvalidate.go:561-590`), so a body-only edit does not move a caller's digest at all. Any artifact that re-quotes these three figures as measured eviction rates MUST NOT do so; state them as the analytical upper bound they are |
+| D-11-42 | 11-CONTEXT.md (D-11-42) | QLT-02 | warning | P11 | `SelectLanesForFixture`'s CHANGE-STATE MECHANISM MUST NOT BE EXTENDED to any new Phase 11 lane without the same scrutiny D-11-41/Q-02 applied to the native-differential lane. Deferring a lane because its declared inputs did not move shares D-11-41's exact hole — an undeclared input can move silently while the declared set reports no change |
+| D-10-C01 | STATE.md "Phase 10 carry-forward" item 1; PHASE-10-DEBT.md D-10-19-adjacent (`corevalidate.peerDeriveOriginFacts` has no `core.OpCall` case) | QLT-05, TRU-02 | warning | P11 | INPUT TO PHASE 11, NOT CLOSED HISTORY. `corevalidate.peerDeriveOriginFacts` has no `case core.OpCall:` arm. Any function declaring a borrow-returning `PublicOrigin` sourced from forwarding a callee's result is refused as not-`Callable` by `corevalidate` independently of `check`, which admits the same shape with zero diagnostics. Pre-existing; silently affects Phase 08's `relay_depth2_refuse.lang` too. Fail-closed (conservative, not unsound), but it constrained which fixtures Phase 10 plans 10-07/10-08 could express, so any Phase 11 fixture needing that shape hits the same wall |
+| D-10-C02 | STATE.md "Phase 10 carry-forward" item 2; 10-REVIEW.md WR-01 | TRU-02, TRU-03 | warning | P11 | INPUT TO PHASE 11, NOT CLOSED HISTORY. `corevalidate.peerCalleeFrameDrained` detects resource escape via return with a single FORWARD pass over `linear.Operations`, correct only under an unstated and unenforced assumption that operations are declaration-ordered by dependency. Its own cited precedent, `peerParameterEscapesOwned`, walks BACKWARD and is order-independent. Disclosed residual risk, not a blocker |
+| D-10-C03 | STATE.md "Phase 10 carry-forward" item 3; 10-REVIEW.md WR-02, D-10-19 | TRU-02, TRU-03 | info | P11 | INPUT TO PHASE 11, NOT CLOSED HISTORY. The independence guards disagree: `originvalidate` permits importing `internal/compiler/callgraph`; `corevalidate`'s equivalent forbidden list forbids it. The four peers' independence is enforced by hand-curated per-package import lists, so this asymmetry is defensible by REVIEW, not by MECHANISM. Phase 11's NAT-06 leans on that independence holding |
+| D-10-C04 | STATE.md "Phase 10 carry-forward" item 4; 10-02-SUMMARY.md Deviations (D-09-51 fix) | OWN-09, TRU-02 | warning | UNOWNED(negative-control-flip-human-review) | INPUT TO PHASE 11, NOT CLOSED HISTORY. Plan 10-02's D-09-51 fix flipped two negative controls: `negative_control_fails.lang` and `negative_control_infallible.lang` moved from `check.interprocedural_loan_liveness` to `core.callee_not_callable`, because closing the `OpCall` transparent-walk defect also flows through `check`'s SEM-06 Callable gate. The executor documented the reasoning chain and explicitly flagged it for human review. **That review has not happened.** D-11-27 records that NAT-07's design does not depend on it, but the review itself remains open |
+| D-10-C05 | STATE.md "Phase 10 carry-forward" item 5 | none — dead code, not a live risk | info | UNOWNED(dead-code-d-10-c05) | INPUT TO PHASE 11, NOT CLOSED HISTORY (informational). `interp.Run`'s `!function.HasClosedBody()` guard is provably unreachable: `corevalidate.Validate` always catches that shape first (found by Phase 10 plan 10-09). Dead defensive code, harmless, recorded here so a future Phase 11 reader does not mistake it for live protection when reasoning about `interp`'s refusal surface |
+| D-11-51 | 11-05 Task 2 (`session_phase11_differential_test.go`'s `DiamondSharedLeaf` subtest, discovered against `testdata/phase11/multi_function_diamond_call.lang`) | NAT-06 | warning | UNOWNED(shared-leaf-diamond-event-identity) | NEWLY DISCOVERED, NOT FIXED. A callee invoked from TWO OR MORE distinct static call sites in one run (a genuine "diamond, shared leaf" call graph) emits its own `function.returned` event with the IDENTICAL event ID on every invocation, because both `interp.Run` (`terminalOutcome`) and `cgen.emitProgram` (`emitProgramFunction`) derive that ID from the callee's OWN STATIC OpReturn operation ID — a per-DECLARATION identity, not a per-INVOCATION one. `interp.Run` performs no duplicate-ID validation and returns such a document successfully; `native.go`'s own decode-time validator (`validateExecution`, "duplicate execution event id") correctly refuses to trust it, identically and consistently across `-O0`, `-O3`, and `-O3 -flto` (the refusal is structural, not optimizer-dependent). No prior fixture in this repository ever executed a shared-leaf diamond — `testdata/phase07/deep_diamond_acyclic.lang`'s own shared-leaf diamond is check-only, never driven through `interp.Run` or native emission — so this gap was never previously observable. |
+| D-11-52 | 11-05 Task 2 (`session_phase11_differential_test.go`'s `DivergingCallee` subtest) | NAT-06 | info | P12 | NOT EXPRESSIBLE THIS PHASE, extends D-11-02. Every existing `defect` terminator in this codebase is reached through a `core.Match` arm (no arithmetic, no `if`, no loops exist at this maturity to reach `defect` any other way), and `cgen.emitProgram` explicitly refuses any Match-bodied function inside a multi-function program ("multi-function branch bodies are not supported by native emission this phase"). A diverging callee therefore cannot be lowered to native in a multi-function program this phase — a direct structural consequence of D-11-02's own scope decision (the six single-function emitters, including `emitMatch`, are deliberately not deleted or generalized this phase), not a fixture-authoring gap. |
 
 ## Spike verdicts
 
@@ -118,6 +118,8 @@ run through that retroactive security review.
 
 ### D-11-02 — the six single-function emitters are not deleted this phase
 
+first-recorded: M002
+
 `emitLinear`, `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`,
 `emitLinearForeign`, `emitBranch`, and `emitMatch` remain exactly as Phase 10
 left them. Phase 11 adds multi-function emission ALONGSIDE these, not instead
@@ -166,6 +168,8 @@ debt item.
 
 ### D-11-07 — `singleForeignFunction`/`singleManifestFunction` generalize by refusal
 
+first-recorded: M002
+
 Both helpers keep their single-function assumption. Rather than rewriting them
 to iterate over multiple foreign contracts, Phase 11 makes them REFUSE a
 program declaring two foreign contracts, closed-set style. `lang.foreign/0`,
@@ -177,6 +181,8 @@ surface a foreign-contract-count assumption at all — this row exists so that
 gap does not silently reappear as a false "already handled" belief.
 
 ### D-11-11 — the `EmittedAttribute` discharge-pair design, designed not built
+
+first-recorded: M002
 
 D-11-09 (11-CONTEXT.md) establishes that Phase 11 emits ZERO call-boundary
 alias attributes: with one parameter per function, no globals, no callbacks,
@@ -195,6 +201,8 @@ boundary can actually carry an attribute worth discharging.
 
 ### D-11-12 — the sidecar-normative-plus-inline-comment channel, designed not built
 
+first-recorded: M002
+
 Companion row to D-11-11: the publication channel a discharge pair would be
 written through — a sidecar manifest entry treated as normative, mirrored by
 a human-readable inline comment at the emission site — plus the
@@ -208,6 +216,8 @@ has a real discharge pair to publish.
 
 ### D-11-13 — the pre-existing `ForeignDigest` gap
 
+first-recorded: M002
+
 `evidence.go:233` binds `ForeignDigest` into evidence only under
 `hasForeignContract`. A function whose return carries a `restrict` claim over
 a purely-Lang code path (no foreign contract at all) is therefore never
@@ -216,6 +226,8 @@ Phase 11's emission work; it is recorded here because `lang.attributes/0`
 (D-11-12) is the schema whose eventual job includes closing it.
 
 ### D-11-27 — NAT-07 does not depend on the unreviewed D-09-51 flip review
+
+first-recorded: M002
 
 NAT-07's design (the `-O3 -flto` equivalence matrix) does not require
 resolving whether Plan 10-02's D-09-51 fix correctly flipped
@@ -227,6 +239,8 @@ stays open and unowned.
 
 ### D-11-36 — flaky-predicate tolerance is not built
 
+first-recorded: M002
+
 QLT-05's reducer relies on an engineered control being deterministic. Phase
 11 does not build any tolerance mechanism for that control turning out flaky.
 If it does, the correct response is to treat it as a defect IN THE CONTROL
@@ -236,6 +250,8 @@ to quietly add retry/tolerance logic to the reducer that would mask a
 genuinely nondeterministic predicate.
 
 ### D-11-40 — S-006's eviction figures are a model bound, not a measurement
+
+first-recorded: M002
 
 `ClosureDigest` (Phase 07) chains strictly over callee SIGNATURE summaries,
 never over function bodies — confirmed at `originvalidate.go:561-590`. S-006's
@@ -250,6 +266,8 @@ cite them as the analytical upper bound S-006 establishes.
 
 ### D-11-42 — `SelectLanesForFixture`'s change-state extension constraint
 
+first-recorded: M002
+
 Q-02 (this plan, Task 2) demonstrates that an input NOT among
 `cache.DeclaredInputNames()`'s seven names (here, `cgen`'s own source) can
 change without the declared-input digest set noticing, letting a stale
@@ -262,6 +280,8 @@ scrutinized with the same skepticism D-11-41/Q-02 applied here, not assumed
 complete by default.
 
 ### D-10-C01 — `corevalidate.peerDeriveOriginFacts` has no `core.OpCall` case
+
+first-recorded: M002
 
 Restated from STATE.md's Phase 10 carry-forward item 1, itself carried from
 `PHASE-10-DEBT.md`. Any function declaring a borrow-returning `PublicOrigin`
@@ -280,6 +300,8 @@ shape (rather than rewriting past it) still hits this wall unchanged.
 
 ### D-10-C02 — `corevalidate.peerCalleeFrameDrained`'s unstated forward-pass ordering assumption
 
+first-recorded: M002
+
 Restated from STATE.md's Phase 10 carry-forward item 2
 (`10-REVIEW.md` WR-01). `peerCalleeFrameDrained` detects resource escape via
 return with a single FORWARD pass over `linear.Operations`, correct only
@@ -292,6 +314,8 @@ operation-declaration order could expose it for the first time.
 
 ### D-10-C03 — the `callgraph` import asymmetry between `originvalidate` and `corevalidate`
 
+first-recorded: M002
+
 Restated from STATE.md's Phase 10 carry-forward item 3
 (`10-REVIEW.md` WR-02, D-10-19). `originvalidate` permits importing
 `internal/compiler/callgraph`; `corevalidate`'s own forbidden-import guard
@@ -302,6 +326,8 @@ matrix) leans on this independence holding; this row flags that the
 independence guarantee is weaker than a mechanism-enforced one.
 
 ### D-10-C04 — the unreviewed D-09-51 negative-control verdict flip
+
+first-recorded: M002
 
 Restated from STATE.md's Phase 10 carry-forward item 4 (`10-02-SUMMARY.md`
 Deviations). Plan 10-02's D-09-51 fix flipped
@@ -316,6 +342,8 @@ Phase 11 plan.
 
 ### D-10-C05 — `interp.Run`'s unreachable `!function.HasClosedBody()` guard
 
+first-recorded: M002
+
 Restated from STATE.md's Phase 10 carry-forward item 5 (found by Phase 10
 plan 10-09). `corevalidate.Validate` always catches an unclosed body first,
 so this guard inside `interp.Run` is provably unreachable dead defensive
@@ -324,6 +352,8 @@ code. Harmless, but recorded here so a future Phase 11 reader tracing
 against a shape `corevalidate` has already excluded upstream.
 
 ### D-11-51 — shared-leaf diamond call graphs collide on event identity
+
+first-recorded: M002
 
 Plan 11-05 Task 2's own `DiamondSharedLeaf` subtest is the first fixture in
 this repository to actually EXECUTE (not merely check) a call graph where
@@ -358,6 +388,8 @@ or picking an easier "diamond" that never actually re-invokes the shared
 leaf, which would misreport a narrower proof as a wider one.
 
 ### D-11-52 — a diverging callee is not expressible in a multi-function program this phase
+
+first-recorded: M002
 
 Extends D-11-02. Every existing `defect` terminator in this codebase
 (`defect_terminal.lang`, `defect_dies_by_signal.lang`) is reached through a

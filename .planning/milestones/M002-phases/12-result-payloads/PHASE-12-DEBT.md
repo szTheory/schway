@@ -33,20 +33,22 @@ outcome; its original measurement narrative is unchanged.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
-| D-12-24 | 12-CONTEXT.md (D-12-24), extends D-12-23 | RES-03 | info | OPEN — reopens only if a payload type is added whose declared representation has a provably invalid bit pattern (a non-null-guaranteed pointer, or a range-restricted integer); no phase currently owns this work | NICHE OPTIMIZATION IS DESIGNED AND RECORDED, NOT BUILT, because its precondition is presently UNINSTANTIABLE, not merely undischarged. The only payload types at this maturity are `Byte` and `Buffer`; `Byte` is plausibly fully inhabited (every bit pattern of an `unsigned char` is a valid `Byte`), so there is no niche bit pattern to exploit. The candidate mechanism is an extension of the checker-derived `RecordLayout`/`LayoutField` path (the pattern `standardForeignLayout` already establishes) with a new inhabitance/niche fact derived by the checker from a type's enumerated bit-pattern space — explicitly NOT a hand-declared ability |
-| D-12-30 | 12-CONTEXT.md (D-12-30), extends D-12-27/D-12-28/D-12-29 | RES-02 | warning | OPEN — lands only when all three of D-10-C01, D-10-C02, and D-10-C04 are resolved; no phase currently owns closing all three | THE FULL RESOURCE-IN-PAYLOAD RULE IS DEFERRED, refused this phase by a named fail-closed diagnostic. Criterion 1's *resource* half is deferred, not met; criterion 1 is satisfied with `Byte`, `Buffer`, and nullary-ADT payloads only. The landing condition is three-part and ALL THREE are jointly required: D-10-C01 closed (the missing `OpCall` arm added to `peerDeriveOriginFacts`) AND D-10-C02 proven order-independent or fixed AND D-10-C04 reviewed |
-| D-12-21 | 12-CONTEXT.md (D-12-21), flags interaction with D-11-51 | NAT-06 | warning | OPEN and UNOWNED — D-11-51 remains open and unowned; its fix needs both `interp.go` and `cgen_program.go` and therefore its own reviewed plan, which Phase 12 does not claim | D-11-51's PER-INVOCATION EVENT IDENTITY GAP IS FLAGGED AS LIKELY TO BE TRIPPED FIRST BY THIS PHASE'S FIXTURES. A multi-call-site fixture exercising a payload-carrying return may surface `validateExecution`'s duplicate-execution-event-id refusal for the first time. This is an anticipated constraint, not a mystery — Phase 12 does not attempt to fix D-11-51 |
-| D-12-42 | 12-CONTEXT.md (D-12-42) | QLT-09 | info | Phase 13 or end-of-Phase-12 (decided against a pre-registered threshold in the QLT-07/D-09-40 style once Phase 12's layout work is frozen) | QLT-09's PHASE-5 NYQUIST PORTION IS NOT CLOSED MID-PHASE. Phase 12 is the native-tier change QLT-09 was waiting on, but the change is still in flight within Phase 12; closing it mid-phase would conflate a fresh semantic-verification commit with a Nyquist-debt closure (D-11-01's digest-conflation concern). `12-VALIDATION.md` scopes itself to criterion 2's new control and explicitly declines to close QLT-09's Phase-5 portion |
-| D-12-04c | 12-CONTEXT.md (D-12-04c) | none — stale documentation, not a live risk | info | CLOSED — Phase 12, plan 04 (header corrected; see this file's `### D-12-04c` section) | `testdata/phase08/relay_depth2_accept.lang`'s HEADER WAS STALE. It claimed `corevalidate` refuses the fixture with `core.move_while_borrowed`, which D-09-03 closed; the pre-flight probe measured `corevalidate.Valid == true` on the unmodified fixture. Plan 04 replaced the stale claim with the correction, naming D-09-03 as the closing decision and D-12-04c as the correction, per D-09-45's record-corrections-never-silently-fix discipline |
-| D-12-36 | 12-CONTEXT.md (D-12-36), RATIFIED at plan 01 Task 2, `12-01-SUMMARY.md` | NAT-04..NAT-07 | warning | OPEN and UNOWNED — re-deferred; no phase currently claims porting branch bodies, foreign-call block bodies, and both by-pointer lowering variants into `emitProgram`, converging the preamble, and re-pinning the four frozen golden-C digests | THE INHERITED D-11-02 SIX-EMITTER DELETION IS RE-DEFERRED WITH A STATED REVERSAL, gated on the N=1 convergence differential per `TestN1ConvergenceDifferential` (`internal/compiler/cgen/cgen_n1_convergence_test.go`). The measured five-shape table shows `emitProgram` refuses four of five single-function shapes outright and diverges textually and structurally on the fifth (`owned_transfer.lang`); making the differential green requires ~1,500 lines of `cgen.go` emitter porting work, which is not "cheap" under any reading — D-12-36's single named trigger. The superseded PHASE-11-DEBT.md landing-phase text ("Phase 12 — a green N=1 convergence differential (Q-05), landing inside Phase 12's per-dispatch-site `Result` plans, never as a second sweep") is withdrawn; see PHASE-11-DEBT.md's `### D-11-02` section for the full stated reversal |
-| D-12-26 | 12-CONTEXT.md (D-12-26), plan 05 Task 3 | RES-03 | info | CLOSED — Phase 12, plan 05 (the claim is recorded at the strength it can actually be held, permanently; there is no future work to land) | CRITERION 2'S "ONE MEANING" CLAIM IS OBSERVABLE-BEHAVIOR AGREEMENT, NOT BYTE-IDENTICAL LAYOUT. `interp` has no byte layout at all — its value model carries no size, alignment, or offset anywhere — so "one meaning in the core IR, the interpreter, and emitted C17" cannot mean byte-identical layout across all three engines, because that claim cannot be true. It means: the same alternative is live, the same payload value is extracted, and the same events are emitted in the same order, with layout-as-bytes a C-only obligation policed by `_Static_assert`/`offsetof` pairs (plan 05 Task 1's `PayloadLayoutMutationRunner`) for internal self-consistency. Byte-identical layout across `interp`, the core IR, and emitted C17 is explicitly NOT claimed |
-| D-12-43 | plan 05 Task 2's empirical measurement, extends D-12-38/D-12-39/D-12-41 | RES-03 | warning | OPEN and UNOWNED — reopens if a future plan changes how a payload-carrying return's terminal value is derived (e.g. exposing payload bytes on a match arm's return path); no phase currently owns this | D-12-38's DECISIVE WRONG-SLOT VALUE-DIVERGENCE CONTROL IS UNCONSTRUCTIBLE AGAINST THE CURRENT REPRESENTATION — an absence-of-applicable-channel finding, not a failed engineering attempt. `TestPayloadSlotSwapMutationKilled` seeds a real, type-safe bug in `cgen`'s `OpConstructPayload` codegen (a correct tag, but the payload written into a DIFFERENT alternative's struct field, via the new `cgen.SetPayloadSlotSwapForTest` seam) and drives it through interpreter/-O0/-O3 comparison. Measured result: NO disagreement on any of the five axes. A payload-carrying return's `Outcome.Value` is, on BOTH engines, always the alternative's own compile-time-known TAG NAME — `cgen`'s `returnLiteral` is a literal string baked into the generated C at emission time (never read back from the runtime struct), and `interp`'s `value.String()` resolves through the tag field, never the payload bytes (D-12-26: `interp` has no byte layout to diverge in). So a wrong-SLOT payload write is structurally invisible to every axis `session_phase5_compare.go` compares today. Per D-12-41/D-11-36 this is escalated as a defect in the criterion, not a quiet downgrade to a weaker (e.g. compile-failure-only) assertion: `TestPayloadSlotSwapMutationKilled` pins the absence as a genuine PASSING regression test, mirroring `TestC03PeerDeriveOriginFactsOpCallGapStillOpen`'s own gap-pinning precedent, rather than falsely claiming the mutation was caught |
-| D-12-44 | `12-REVIEW.md` CR-01, `12-VERIFICATION.md` gap 1, disposition recorded in `12-06-PLAN.md`'s `<cr01_disposition>` | RES-02, RES-03 | blocker | CLOSED — Phase 12, plans 06 and 07 | CR-01'S DISPOSITION IS FIX, RECORDED AS A DECISION, NOT AN INFERRED OUTCOME. `cgen` and `interp` each resolved a payload operation's declaring alternative via an ambiguous first-match linear scan, with no refusal anywhere in the pipeline for the colliding-`PayloadType` case that triggers it — the review's sole CRITICAL finding and the verifier's only hard gap. Closed by a fail-closed `check.duplicate_payload_type` declaration-time refusal (plan 06) plus a shared, ambiguity-detecting `core.AlternativeNameForPayloadType`/`core.LookupAlternativeDetail` resolver replacing both engines' independent copies (plan 07). Imposes a RESTRICTION on the source language: two alternatives of one data type may not declare the same payload type. Lifting condition: GEN-01's real generic `Result<T, E>` (M003) collides by construction at `T == E`; lifting the refusal requires promoting the alternative name to a first-class fact on the operation |
-| D-12-45 | `12-REVIEW.md` WR-01, WR-02, IN-01 | RES-02 | info | CLOSED — Phase 12, plans 06 and 07 | THE THREE SECONDARY REVIEW FINDINGS ARE EACH CLOSED; NONE WAS DEFERRED. WR-01 (misleading binder-source message) fixed plan 06 Task 3. WR-02 (fault-injection seam could no-op vacuously) fixed plan 07 Task 3, now asserting an injected wrong-slot write count of at least 1 (observed: 2). IN-01 (`emitBranch`'s local reimplementation of alternative-detail lookup) fixed plan 07 Task 1 via `core.LookupAlternativeDetail` |
+| D-12-24 | 12-CONTEXT.md (D-12-24), extends D-12-23 | RES-03 | info | UNOWNED(niche-optimization-uninstantiable) | NICHE OPTIMIZATION IS DESIGNED AND RECORDED, NOT BUILT, because its precondition is presently UNINSTANTIABLE, not merely undischarged. The only payload types at this maturity are `Byte` and `Buffer`; `Byte` is plausibly fully inhabited (every bit pattern of an `unsigned char` is a valid `Byte`), so there is no niche bit pattern to exploit. The candidate mechanism is an extension of the checker-derived `RecordLayout`/`LayoutField` path (the pattern `standardForeignLayout` already establishes) with a new inhabitance/niche fact derived by the checker from a type's enumerated bit-pattern space — explicitly NOT a hand-declared ability |
+| D-12-30 | 12-CONTEXT.md (D-12-30), extends D-12-27/D-12-28/D-12-29 | RES-02 | warning | UNOWNED(resource-in-payload-full-rule) | THE FULL RESOURCE-IN-PAYLOAD RULE IS DEFERRED, refused this phase by a named fail-closed diagnostic. Criterion 1's *resource* half is deferred, not met; criterion 1 is satisfied with `Byte`, `Buffer`, and nullary-ADT payloads only. The landing condition is three-part and ALL THREE are jointly required: D-10-C01 closed (the missing `OpCall` arm added to `peerDeriveOriginFacts`) AND D-10-C02 proven order-independent or fixed AND D-10-C04 reviewed |
+| D-12-21 | 12-CONTEXT.md (D-12-21), flags interaction with D-11-51 | NAT-06 | warning | UNOWNED(payload-return-event-identity-d-11-51) | D-11-51's PER-INVOCATION EVENT IDENTITY GAP IS FLAGGED AS LIKELY TO BE TRIPPED FIRST BY THIS PHASE'S FIXTURES. A multi-call-site fixture exercising a payload-carrying return may surface `validateExecution`'s duplicate-execution-event-id refusal for the first time. This is an anticipated constraint, not a mystery — Phase 12 does not attempt to fix D-11-51 |
+| D-12-42 | 12-CONTEXT.md (D-12-42) | QLT-09 | info | UNOWNED(qlt09-phase5-nyquist-portion) | QLT-09's PHASE-5 NYQUIST PORTION IS NOT CLOSED MID-PHASE. Phase 12 is the native-tier change QLT-09 was waiting on, but the change is still in flight within Phase 12; closing it mid-phase would conflate a fresh semantic-verification commit with a Nyquist-debt closure (D-11-01's digest-conflation concern). `12-VALIDATION.md` scopes itself to criterion 2's new control and explicitly declines to close QLT-09's Phase-5 portion |
+| D-12-04c | 12-CONTEXT.md (D-12-04c) | none — stale documentation, not a live risk | info | CLOSED(82da6929) | `testdata/phase08/relay_depth2_accept.lang`'s HEADER WAS STALE. It claimed `corevalidate` refuses the fixture with `core.move_while_borrowed`, which D-09-03 closed; the pre-flight probe measured `corevalidate.Valid == true` on the unmodified fixture. Plan 04 replaced the stale claim with the correction, naming D-09-03 as the closing decision and D-12-04c as the correction, per D-09-45's record-corrections-never-silently-fix discipline |
+| D-12-36 | 12-CONTEXT.md (D-12-36), RATIFIED at plan 01 Task 2, `12-01-SUMMARY.md` | NAT-04..NAT-07 | warning | UNOWNED(single-function-emitter-deletion-redeferred) | THE INHERITED D-11-02 SIX-EMITTER DELETION IS RE-DEFERRED WITH A STATED REVERSAL, gated on the N=1 convergence differential per `TestN1ConvergenceDifferential` (`internal/compiler/cgen/cgen_n1_convergence_test.go`). The measured five-shape table shows `emitProgram` refuses four of five single-function shapes outright and diverges textually and structurally on the fifth (`owned_transfer.lang`); making the differential green requires ~1,500 lines of `cgen.go` emitter porting work, which is not "cheap" under any reading — D-12-36's single named trigger. The superseded PHASE-11-DEBT.md landing-phase text ("Phase 12 — a green N=1 convergence differential (Q-05), landing inside Phase 12's per-dispatch-site `Result` plans, never as a second sweep") is withdrawn; see PHASE-11-DEBT.md's `### D-11-02` section for the full stated reversal |
+| D-12-26 | 12-CONTEXT.md (D-12-26), plan 05 Task 3 | RES-03 | info | CLOSED(5559929a) | CRITERION 2'S "ONE MEANING" CLAIM IS OBSERVABLE-BEHAVIOR AGREEMENT, NOT BYTE-IDENTICAL LAYOUT. `interp` has no byte layout at all — its value model carries no size, alignment, or offset anywhere — so "one meaning in the core IR, the interpreter, and emitted C17" cannot mean byte-identical layout across all three engines, because that claim cannot be true. It means: the same alternative is live, the same payload value is extracted, and the same events are emitted in the same order, with layout-as-bytes a C-only obligation policed by `_Static_assert`/`offsetof` pairs (plan 05 Task 1's `PayloadLayoutMutationRunner`) for internal self-consistency. Byte-identical layout across `interp`, the core IR, and emitted C17 is explicitly NOT claimed |
+| D-12-43 | plan 05 Task 2's empirical measurement, extends D-12-38/D-12-39/D-12-41 | RES-03 | warning | UNOWNED(wrong-slot-value-divergence-unconstructible) | D-12-38's DECISIVE WRONG-SLOT VALUE-DIVERGENCE CONTROL IS UNCONSTRUCTIBLE AGAINST THE CURRENT REPRESENTATION — an absence-of-applicable-channel finding, not a failed engineering attempt. `TestPayloadSlotSwapMutationKilled` seeds a real, type-safe bug in `cgen`'s `OpConstructPayload` codegen (a correct tag, but the payload written into a DIFFERENT alternative's struct field, via the new `cgen.SetPayloadSlotSwapForTest` seam) and drives it through interpreter/-O0/-O3 comparison. Measured result: NO disagreement on any of the five axes. A payload-carrying return's `Outcome.Value` is, on BOTH engines, always the alternative's own compile-time-known TAG NAME — `cgen`'s `returnLiteral` is a literal string baked into the generated C at emission time (never read back from the runtime struct), and `interp`'s `value.String()` resolves through the tag field, never the payload bytes (D-12-26: `interp` has no byte layout to diverge in). So a wrong-SLOT payload write is structurally invisible to every axis `session_phase5_compare.go` compares today. Per D-12-41/D-11-36 this is escalated as a defect in the criterion, not a quiet downgrade to a weaker (e.g. compile-failure-only) assertion: `TestPayloadSlotSwapMutationKilled` pins the absence as a genuine PASSING regression test, mirroring `TestC03PeerDeriveOriginFactsOpCallGapStillOpen`'s own gap-pinning precedent, rather than falsely claiming the mutation was caught |
+| D-12-44 | `12-REVIEW.md` CR-01, `12-VERIFICATION.md` gap 1, disposition recorded in `12-06-PLAN.md`'s `<cr01_disposition>` | RES-02, RES-03 | blocker | CLOSED(1292c2d2) | CR-01'S DISPOSITION IS FIX, RECORDED AS A DECISION, NOT AN INFERRED OUTCOME. `cgen` and `interp` each resolved a payload operation's declaring alternative via an ambiguous first-match linear scan, with no refusal anywhere in the pipeline for the colliding-`PayloadType` case that triggers it — the review's sole CRITICAL finding and the verifier's only hard gap. Closed by a fail-closed `check.duplicate_payload_type` declaration-time refusal (plan 06) plus a shared, ambiguity-detecting `core.AlternativeNameForPayloadType`/`core.LookupAlternativeDetail` resolver replacing both engines' independent copies (plan 07). Imposes a RESTRICTION on the source language: two alternatives of one data type may not declare the same payload type. Lifting condition: GEN-01's real generic `Result<T, E>` (M003) collides by construction at `T == E`; lifting the refusal requires promoting the alternative name to a first-class fact on the operation |
+| D-12-45 | `12-REVIEW.md` WR-01, WR-02, IN-01 | RES-02 | info | CLOSED(1292c2d2) | THE THREE SECONDARY REVIEW FINDINGS ARE EACH CLOSED; NONE WAS DEFERRED. WR-01 (misleading binder-source message) fixed plan 06 Task 3. WR-02 (fault-injection seam could no-op vacuously) fixed plan 07 Task 3, now asserting an injected wrong-slot write count of at least 1 (observed: 2). IN-01 (`emitBranch`'s local reimplementation of alternative-detail lookup) fixed plan 07 Task 1 via `core.LookupAlternativeDetail` |
 
 ## Detail
 
 ### D-12-24 — niche optimization is designed and recorded, not built
+
+first-recorded: M002
 
 D-12-23 establishes that niche optimization requires a provably uninhabited
 bit pattern in the payload type to hide the tag in. The only payload types at
@@ -79,6 +81,8 @@ undischarged, at this maturity.
 
 ### D-12-30 — the resource-payload rule's three-part landing condition
 
+first-recorded: M002
+
 A named refusal rejects any alternative whose payload type structurally
 contains a Phase-4 tracked-resource-derived value. RES-02 and criterion 1 are
 satisfied this phase with `Byte`, `Buffer`, and nullary-ADT payloads —
@@ -104,6 +108,8 @@ silent absorption.
 
 ### D-12-21 — the D-11-51 interaction is anticipated, not absorbed
 
+first-recorded: M002
+
 Widening the interpreter value type (D-12-17) is orthogonal to D-11-51 —
 event-ID identity derives from the callee's static `OpReturn`, untouched by
 the value shape. But a multi-call-site fixture exercising a
@@ -117,6 +123,8 @@ D-11-51 remains **OPEN and UNOWNED**: its fix needs both `interp.go` and
 claim it.
 
 ### D-12-42 — QLT-09's Phase-5 Nyquist portion is not closed this phase
+
+first-recorded: M002
 
 Phase 12 is the native-tier change QLT-09 was waiting on ("deliberately
 deferred because both surfaces are touched again by M002 (native tier, agent
@@ -133,6 +141,8 @@ pre-registered threshold in the QLT-07/D-09-40 style rather than folded
 silently into this criterion.
 
 ### D-12-04c — `relay_depth2_accept.lang`'s stale header — CLOSED (plan 04)
+
+first-recorded: M002
 
 The fixture's header stated that "corevalidate ... also refuses this
 fixture (`core.move_while_borrowed`) even though `check`'s own
@@ -153,6 +163,8 @@ the header was. Not one line of Lang source below the header changed
 (verified by `git diff --stat`).
 
 ### D-12-36 — the inherited D-11-02 deletion is re-deferred with a stated reversal
+
+first-recorded: M002
 
 Plan 01's Task 1 committed `TestN1ConvergenceDifferential`
 (`internal/compiler/cgen/cgen_n1_convergence_test.go`, commit `1bac938`),
@@ -191,6 +203,8 @@ by this decision.
 
 ### D-12-26 — criterion 2's "one meaning" claim is observable-behavior agreement — CLOSED (plan 05)
 
+first-recorded: M002
+
 `interp` has no byte layout at all — its value model (`interp.value{tag,
 payload string}`, D-12-17) carries no size, alignment, or offset anywhere.
 So criterion 2's "one meaning in the core IR, the interpreter, and emitted
@@ -219,6 +233,8 @@ what it actually measured and why the decisive form of that policing is
 presently unconstructible.
 
 ### D-12-43 — D-12-38's decisive value-divergence control is unconstructible against the current representation
+
+first-recorded: M002
 
 D-12-38 requires a genuine interpreter-vs-native **value** divergence from a
 seeded wrong-alternative-payload-slot bug, checked via
@@ -298,6 +314,8 @@ genuine, exercised absence, not an unexercised no-op.
 
 ### D-12-44 — CR-01's disposition is FIX, recorded as a decision — CLOSED (plans 06, 07)
 
+first-recorded: M002
+
 **The disposition chosen was FIX, not ratified debt, and why.** `12-06-PLAN.md`'s
 `<cr01_disposition>` records this explicitly rather than leaving it implicit
 in the existence of the plan, because `12-VERIFICATION.md`'s
@@ -373,6 +391,8 @@ across all 10 pre-Phase-12 corpus directories, byte-identical, no golden
 re-pinned (`12-06-SUMMARY.md`).
 
 ### D-12-45 — the three secondary review findings are each closed — CLOSED (plans 06, 07)
+
+first-recorded: M002
 
 None of `12-REVIEW.md`'s three secondary findings was silently dropped.
 

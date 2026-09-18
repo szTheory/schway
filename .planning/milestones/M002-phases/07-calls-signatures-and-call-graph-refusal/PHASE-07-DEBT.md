@@ -25,21 +25,23 @@ Per Key Lesson 4: declare deferred scope in writing at the moment it is decided.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Item |
 |---|---|---|---|---|---|
-| D-03-02 | 07-01/07-02 (lineage: M001 D-03-02) | OWN-05, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07 | warning | Phase 09 — Peer Re-Derivation and D-03-02 Closure | Interprocedural loan-*liveness* re-derivation in `corevalidate` does not ship this phase; only the independent signature-summary peer (D-07-20) and the call-graph cycle peer (D-07-19) do |
-| D-07-33 | 07-02-PLAN.md (D-07-33, T-07-11) | SEM-06, QLT-08 | warning | Phase 09 — Peer Re-Derivation and D-03-02 Closure | The `corevalidate` summary peer's `Callable` re-derivation is narrowed to the `core.origin_omitted` class only; for `core.origin_understated`, `core.origin_access_mismatch`, and foreign-origin-omitted it can only ever falsely agree with the producer |
-| D-07-46 | 07-09-PLAN.md (T-07-09-05) | SEM-05 | warning | Not scheduled — reopen when a parameterized shape becomes callable | The call argument/return type boundary compares NOMINAL CONSTRUCTOR STRINGS only (`core.Parameter.Type`/`core.Function.ReturnType`, the `/1` `ParameterContract.Type`) — the core schema carries no type ARGUMENTS to compare, so a parameterized shape's arguments cannot be checked at all. Today only the arity-0 constructors `Byte` and `Buffer` are executable, so constructor equality and structural equality coincide and nothing unsound is admitted |
-| D-07-47 | 07-09-PLAN.md | SEM-05 | info | Not scheduled — no legal source program can reach it while `sameType` holds | `check.call_return_type_unrepresentable` is UNREACHABLE from any legal source program while `sameType` forces every function's declared return type to equal its declared parameter type; it is mutation-killed through a seeded seam (`callReturnTypeDerivationSeam`) and through `corevalidate`'s synthetic input space, never through a `.lang` fixture |
-| D-07-48 | 07-09-PLAN.md (probe edge 3, amends D-07-07) | SEM-04 | info | Reopen when arity widens past 1 (D-07-07) | Argument ORDERING has no meaning at arity 1 and is therefore UNANSWERED, not answered, by 07-09's admission gate; when arity widens past 1, a positional argument/parameter correspondence rule must be specified before the widened gate can be called sound |
-| D-07-49 | 07-10-PLAN.md (Task 3) | SEM-04, SEM-06 | info | Phase 08 — Interprocedural Loan Liveness in `check` | PVG-04 / CR-02's defect (`computeLoanLastUses` has no `"call"` case) is now CLI-observable through the peer (`relay_escort_witness.lang` refuses at `lang check` as of 07-10) but is NOT fixed here and remains Phase 08 scope |
-| D-07-50 | 07-10-PLAN.md (Task 3, WR-01) | SEM-06, QLT-08 | info | Not scheduled — needs its own ratified diagnostic code | WR-01's check-side half is deliberately carried: `check` still does not diagnose duplicate `fn` declarations, and `buildCalleeContracts` still silently resolves a call to the LAST declaration while the emitted `CalleeID` names an ID shared by both. Only the user-visible half (the peer's `core.duplicate_function_id` now reaching `lang check`) closed in 07-10 |
-| D-07-51 | 07-10-PLAN.md (Task 3, WR-02) | QLT-08 | info | Not scheduled — needs its own ratification (changes a published diagnostic's Primary span) | WR-02 is deliberately carried: `verifyCallableRefusal` still emits `core.callee_not_callable` with the whole calling function's span, even though `spanByOperationID` already exists and is already used for per-edge cycle spans; it also still returns on the first offending call |
-| D-07-52 | 07-11-PLAN.md (T-07-11-06) | SEM-05 | info | Reopen when a call-site transfer marker is added to the grammar | A-normal form has no `f(take y)` syntax, so 07-11's consume-on-call transfer is IMPLICIT in source: a reader cannot see at `identity(buffer)` that `buffer` is consumed there, the way `take buffer` shows it for a plain binding |
-| D-07-53 | 07-12-PLAN.md (Task 3) | SEM-04, SEM-05 | info | Reopen when a third policy value, a second allocator vocabulary, or a `Fails` schema change to a set lands | `core.ForeignReach`'s worst-case join is defined field-by-field over TODAY's vocabulary only, and `FunctionSignature.Fails` is a single string that cannot express a union of two distinct error types |
-| D-07-54 | 07-12-PLAN.md (Task 3) | SEM-05 | info | Not scheduled — `check`-side paths this gap-closure run does not touch | IN-02 (`check`'s argument-type gate compares the caller's single `typeFact` rather than resolving `argument.place.TypeID`) and IN-03 (`check.Program` clears `result.Program` on a cyclic program but leaves `result.AliasFacts` populated) are deliberately carried, unchanged by this plan |
+| D-03-02 | 07-01/07-02 (lineage: M001 D-03-02) | OWN-05, OWN-07, OWN-08, OWN-09, TRU-04, QLT-07 | warning | P09 | Interprocedural loan-*liveness* re-derivation in `corevalidate` does not ship this phase; only the independent signature-summary peer (D-07-20) and the call-graph cycle peer (D-07-19) do |
+| D-07-33 | 07-02-PLAN.md (D-07-33, T-07-11) | SEM-06, QLT-08 | warning | P09 | The `corevalidate` summary peer's `Callable` re-derivation is narrowed to the `core.origin_omitted` class only; for `core.origin_understated`, `core.origin_access_mismatch`, and foreign-origin-omitted it can only ever falsely agree with the producer |
+| D-07-46 | 07-09-PLAN.md (T-07-09-05) | SEM-05 | warning | UNOWNED(parameterized-shape-callable) | The call argument/return type boundary compares NOMINAL CONSTRUCTOR STRINGS only (`core.Parameter.Type`/`core.Function.ReturnType`, the `/1` `ParameterContract.Type`) — the core schema carries no type ARGUMENTS to compare, so a parameterized shape's arguments cannot be checked at all. Today only the arity-0 constructors `Byte` and `Buffer` are executable, so constructor equality and structural equality coincide and nothing unsound is admitted |
+| D-07-47 | 07-09-PLAN.md | SEM-05 | info | UNOWNED(sametype-precondition-unreachable) | `check.call_return_type_unrepresentable` is UNREACHABLE from any legal source program while `sameType` forces every function's declared return type to equal its declared parameter type; it is mutation-killed through a seeded seam (`callReturnTypeDerivationSeam`) and through `corevalidate`'s synthetic input space, never through a `.lang` fixture |
+| D-07-48 | 07-09-PLAN.md (probe edge 3, amends D-07-07) | SEM-04 | info | UNOWNED(arity-widens-past-1) | Argument ORDERING has no meaning at arity 1 and is therefore UNANSWERED, not answered, by 07-09's admission gate; when arity widens past 1, a positional argument/parameter correspondence rule must be specified before the widened gate can be called sound |
+| D-07-49 | 07-10-PLAN.md (Task 3) | SEM-04, SEM-06 | info | P08 | PVG-04 / CR-02's defect (`computeLoanLastUses` has no `"call"` case) is now CLI-observable through the peer (`relay_escort_witness.lang` refuses at `lang check` as of 07-10) but is NOT fixed here and remains Phase 08 scope |
+| D-07-50 | 07-10-PLAN.md (Task 3, WR-01) | SEM-06, QLT-08 | info | UNOWNED(needs-ratified-diagnostic-code) | WR-01's check-side half is deliberately carried: `check` still does not diagnose duplicate `fn` declarations, and `buildCalleeContracts` still silently resolves a call to the LAST declaration while the emitted `CalleeID` names an ID shared by both. Only the user-visible half (the peer's `core.duplicate_function_id` now reaching `lang check`) closed in 07-10 |
+| D-07-51 | 07-10-PLAN.md (Task 3, WR-02) | QLT-08 | info | UNOWNED(needs-primary-span-ratification) | WR-02 is deliberately carried: `verifyCallableRefusal` still emits `core.callee_not_callable` with the whole calling function's span, even though `spanByOperationID` already exists and is already used for per-edge cycle spans; it also still returns on the first offending call |
+| D-07-52 | 07-11-PLAN.md (T-07-11-06) | SEM-05 | info | UNOWNED(call-site-transfer-marker) | A-normal form has no `f(take y)` syntax, so 07-11's consume-on-call transfer is IMPLICIT in source: a reader cannot see at `identity(buffer)` that `buffer` is consumed there, the way `take buffer` shows it for a plain binding |
+| D-07-53 | 07-12-PLAN.md (Task 3) | SEM-04, SEM-05 | info | UNOWNED(fails-schema-set-change) | `core.ForeignReach`'s worst-case join is defined field-by-field over TODAY's vocabulary only, and `FunctionSignature.Fails` is a single string that cannot express a union of two distinct error types |
+| D-07-54 | 07-12-PLAN.md (Task 3) | SEM-05 | info | UNOWNED(check-side-paths-untouched) | IN-02 (`check`'s argument-type gate compares the caller's single `typeFact` rather than resolving `argument.place.TypeID`) and IN-03 (`check.Program` clears `result.Program` on a cyclic program but leaves `result.AliasFacts` populated) are deliberately carried, unchanged by this plan |
 
 ## Detail
 
 ### D-03-02 — interprocedural loan-*liveness* re-derivation
+
+first-recorded: M002
 
 **Interprocedural loan-liveness re-derivation in `corevalidate`.**
 
@@ -70,6 +72,8 @@ defer the summary peer, and does not defer the seeded faults (D-07-24,
 `07-02-PLAN.md` Task 3).
 
 ### D-07-33 — the peer's `Callable` re-derivation is NARROWED
+
+first-recorded: M002
 
 **This is stated plainly because an undeclared version of it is exactly the
 failure mode this file exists to prevent.**
@@ -123,6 +127,8 @@ that builds the peer's own origin recomputation.
 
 ### D-07-46 — Constructor-string comparison is the disclosed granularity, not an oversight
 
+first-recorded: M002
+
 **Closes 07-VERIFICATION.md's single FAILED must-have truth and 07-REVIEW.md's
 CR-01 (CRITICAL/BLOCKER).** `07-09-PLAN.md` lands the argument-type gate in
 `check.resolveCallBinding` (new code `check.call_argument_type_mismatch`), a
@@ -152,6 +158,8 @@ structured parameter types, not just constructor names.
 
 ### D-07-47 — `check.call_return_type_unrepresentable` is unreachable from any legal source program
 
+first-recorded: M002
+
 The fail-closed half of deriving `OpCall`'s `TargetID.TypeID` from the
 callee's declared return type cannot be reached by any program the parser
 and `sameType` admit: `sameType` forces every function's declared return
@@ -172,6 +180,8 @@ type fact it does not currently mint.
 
 ### D-07-48 — Argument-ordering is unanswered at arity 1, amending D-07-07
 
+first-recorded: M002
+
 07-09's admission gate compares exactly one argument against exactly one
 declared parameter, because arity is fixed at 1 this phase (D-07-07). This
 means the gate answers NOTHING about positional argument/parameter
@@ -187,6 +197,8 @@ BEFORE the widened gate can be called sound — the `/1` schema's
 the CHECKER predicate and the corresponding peer re-derivation are not.
 
 ### D-07-49 — PVG-04 / CR-02 is now CLI-observable and is still Phase 08 scope
+
+first-recorded: M002
 
 `check.computeLoanLastUses` has no `"call"` case and reads `RHS.Source`,
 which a call binding never populates (a call binding carries `RHS.Arguments`
@@ -204,6 +216,8 @@ Phase 08 inherits: `testdata/phase07/relay_escort_witness.lang` (this
 disclosure) and CR-02's `lk5`-shaped program (07-REVIEW.md).
 
 ### D-07-50 — WR-01's check-side half deliberately carried
+
+first-recorded: M002
 
 `check` never diagnoses duplicate `fn` declarations: two declarations with
 the same name are assigned the identical `semanticID` (a pure function of
@@ -224,6 +238,8 @@ phase.
 
 ### D-07-51 — WR-02 deliberately carried
 
+first-recorded: M002
+
 `verifyCallableRefusal` emits `core.callee_not_callable` with the whole
 calling function's span even though `check.Program` already builds
 `spanByOperationID` and `checkCallGraphAcyclic` already uses it for per-edge
@@ -238,6 +254,8 @@ channel, not a diagnostic-quality fix on a path 07-10 does not otherwise
 touch.
 
 ### D-07-52 — the implicit call-site transfer, accepted and disclosed
+
+first-recorded: M002
 
 **Closes 07-VERIFICATION.md's PVG-01 / 07-REVIEW.md's CR-01 (CRITICAL/BLOCKER).**
 `07-11-PLAN.md` lands the consume rule inside `check.resolveCallBinding`
@@ -271,6 +289,8 @@ grammar, at which point the marker becomes required and the implicit-transfer
 disclosure here is retired.
 
 ### D-07-53 — join granularity: three plain strings, no structured lattice
+
+first-recorded: M002
 
 `core.ForeignReach` carries three plain string policy fields (`Allocator`,
 `Unwind`, `NonlocalExit`) with no structured lattice in the schema, so
@@ -308,6 +328,8 @@ schema-level imprecision (`Fails` cannot express a union) is unchanged
 and still reopens under the conditions stated above.
 
 ### D-07-54 — IN-02 and IN-03 deliberately carried
+
+first-recorded: M002
 
 **IN-02:** `check`'s argument-type admission gate compares the CALLING
 function's single `typeFact` (one type fact per function, forced by
