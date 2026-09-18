@@ -251,7 +251,7 @@ Plans:
 **Wave 5** *(gap closure — added 2026-09-18 from `14-VERIFICATION.md`; blocked on Wave 4 completion)*
 
 - [x] 14-11-PLAN.md — a run record that cannot lie about completing: per-pair completion witness, honest 480s budget with a measured 75% margin assertion, anchored producer/consumer name contract, self-citation refused (EVD-02; closes WR-01, WR-02)
-- [ ] 14-13-PLAN.md — the `//go:build` suppression surface stops being inert: declared allowlist, enumeration ahead of the host's own constraint filter, a fourth seeded fault (EVD-04; closes WR-03)
+- [x] 14-13-PLAN.md — the `//go:build` suppression surface stops being inert: declared allowlist, enumeration ahead of the host's own constraint filter, a fourth seeded fault (EVD-04; closes WR-03)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
