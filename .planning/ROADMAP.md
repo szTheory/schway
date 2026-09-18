@@ -233,7 +233,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 14-06-PLAN.md — lint expansion: scope by illocutionary role, executed grep groundedness, per-branch detection, corpus floors, index accuracy control (EVD-01)
+- [x] 14-06-PLAN.md — lint expansion: scope by illocutionary role, executed grep groundedness, per-branch detection, corpus floors, index accuracy control (EVD-01)
 - [ ] 14-07-PLAN.md — closed witness grammar, six executed probes, module-wide suppression enumerator, generated unreachable-claims view (EVD-03, EVD-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*

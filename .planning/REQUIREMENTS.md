@@ -33,7 +33,7 @@ branched on and would have become the fifth instance.
 
 ### Evidence Instruments
 
-- [ ] **EVD-01**: A CI lint fails when any `.planning/**` verification document
+- [x] **EVD-01**: A CI lint fails when any `.planning/**` verification document
       cites a `go test -run` pattern that resolves to zero tests, or a command
       cell elided with `…`. Three such patterns exist today and exit 0.
 
@@ -202,7 +202,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EVD-01 | Phase 14 | Pending |
+| EVD-01 | Phase 14 | Complete |
 | EVD-02 | Phase 14 | Pending |
 | EVD-03 | Phase 14 | Pending |
 | EVD-04 | Phase 14 | Pending |
