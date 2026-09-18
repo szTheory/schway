@@ -213,8 +213,8 @@ func (index *testIndex) canonicalImportPath(operand string) string {
 }
 
 // ---------------------------------------------------------------------
-// (b) Tier-A document scanner (D-14-15) -- discovery via phaseArtifactGlob,
-// never filepath.Glob directly.
+// (b) Tier-A document scanner (D-14-15) -- discovery goes through
+// phaseArtifactGlob only; this file never globs the filesystem itself.
 // ---------------------------------------------------------------------
 
 // verificationCommandPattern matches a code span whose trimmed content is a
@@ -228,7 +228,7 @@ type commandOccurrence struct {
 }
 
 // tierADocuments discovers every Tier-A evidence document via
-// phaseArtifactGlob (D-14-09, D-14-11) -- never filepath.Glob directly.
+// phaseArtifactGlob (D-14-09, D-14-11), the sole path resolver used here.
 func tierADocuments(t testing.TB) []string {
 	t.Helper()
 	validation, err := phaseArtifactGlob("*", "*-VALIDATION.md")
@@ -279,14 +279,26 @@ func extractCommands(path string) ([]commandOccurrence, error) {
 }
 
 // splitTableRow splits a markdown table row on `|` characters not preceded
-// by a backslash.
+// by a backslash AND not inside a backtick-delimited code span. GFM table
+// rendering is code-span-aware: a literal, unescaped `|` inside backticks
+// (e.g. `-run 'TestA|TestB'`) is real, measured corpus content (M001's
+// 01-VALIDATION.md and others) that does not need `\|` escaping to render
+// or run correctly -- only some rows in this corpus escape it (09-VALIDATION.md's
+// `Mode.*Invalid\|DecodeMode`), so the splitter must tolerate both
+// conventions without truncating the command mid-span.
 func splitTableRow(line string) []string {
 	var cells []string
 	var current strings.Builder
 	runes := []rune(line)
+	inCode := false
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
-		if r == '|' && (i == 0 || runes[i-1] != '\\') {
+		if r == '`' {
+			inCode = !inCode
+			current.WriteRune(r)
+			continue
+		}
+		if r == '|' && !inCode && (i == 0 || runes[i-1] != '\\') {
 			cells = append(cells, current.String())
 			current.Reset()
 			continue
@@ -525,15 +537,22 @@ func classifyGroundedness(index *testIndex, packages []string, pattern string) b
 }
 
 // classifyCommand classifies a single verification command occurrence into
-// exactly one of {ok, R1, R2, unparseable}. THIS IS THE RED STUB: it
-// unconditionally returns "ok", ignoring every classifier above, so that
-// TestVerificationGroundednessClassifier's behavior-driven subtests and
-// TestVerificationGroundedness's real-corpus assertions fail for the right
-// reason before the real classification logic is wired in.
+// exactly one of {ok, R1, R2, unparseable}. A command containing "go test"
+// that does not parse into (packages) is a violation classified
+// unparseable, never a pass -- D-14-15's "no silent skips" rule.
 func classifyCommand(index *testIndex, command string) classification {
-	_ = classifyRunnability
-	_ = parseGoTestCommand
-	_ = classifyGroundedness
+	if !classifyRunnability(command) {
+		return classR1
+	}
+	if strings.Contains(command, "go test") {
+		parsed, ok := parseGoTestCommand(command)
+		if !ok {
+			return classUnparseable
+		}
+		if parsed.Pattern != "" && !classifyGroundedness(index, parsed.Packages, parsed.Pattern) {
+			return classR2
+		}
+	}
 	return classOK
 }
 
