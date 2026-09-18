@@ -82,7 +82,7 @@ and multi-function fixtures now exist for Phases 07, 08, and 10. The shape is
 still fixtures, not programs: every one exists to exercise one admission rule,
 and the biggest file is mostly comment.
 
-Corpus at re-assessment (2026-09-17, Phase 14 EVD-06 machine check): **126 `.lang` programs, 4,244 lines total** (~34 lines average, 193-line maximum). Growth since 2026-09-11 tracks Phases 11-13 landing more multi-function, native-equivalence, and agent-loop fixtures; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
+Corpus at re-assessment (2026-09-18, plan 14-07): **128 `.lang` programs, 4,311 lines total** (~34 lines average, 193-line maximum). Growth since 2026-09-17 is plan 14-07's own two new testdata/phase14/ fixtures (the witness registry's executed probes); the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
 
 ## The single-function guard inventory (re-verified 2026-09-17, EVD-06 machine check)
 

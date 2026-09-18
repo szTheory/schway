@@ -2660,25 +2660,26 @@ var debtRegisterFirstRecordedPattern = regexp.MustCompile(`(?m)^first-recorded:\
 // ---------------------------------------------------------------------
 
 // debtRegisterGradeWitnessExemptions names every register written before
-// the Grade/Witness columns existed. Frozen prior art only: mechanically
-// deriving and witnessing ~113 pre-existing rows this register never
-// claimed a Grade for is out of this plan's budget (recorded as debt in
-// this plan's own SUMMARY, not silently deferred). Any register created
-// or extended to carry Grade/Witness cells must NOT be listed here --
-// PHASE-13-DEBT.md and PHASE-14-DEBT.md are the two this plan migrates in
-// full (every row in both files carries a real Grade and Witness).
+// the Grade/Witness columns existed AND not otherwise migrated by this
+// plan. Frozen prior art only: mechanically deriving and witnessing the
+// ~68 remaining pre-existing rows across 02-DEBT.md through
+// PHASE-10-DEBT.md is out of this plan's budget (recorded as debt in this
+// plan's own SUMMARY, not silently deferred). Any register created or
+// extended to carry Grade/Witness cells must NOT be listed here --
+// PHASE-13-DEBT.md and PHASE-14-DEBT.md are migrated in full by this
+// plan, and PHASE-11-DEBT.md/PHASE-12-DEBT.md are migrated in full too
+// (every row DEFINED/n/a except the one claim each file's day-one table
+// names, D-11-02 and D-12-43, which carry real probes).
 var debtRegisterGradeWitnessExemptions = map[string]string{
-	"02-DEBT.md":         "written 2026-09-04, before Grade/Witness existed; frozen prior art",
-	"03-DEBT.md":         "written 2026-09-04, before Grade/Witness existed; frozen prior art",
-	"04-DEBT.md":         "written 2026-09-05, before Grade/Witness existed; frozen prior art",
-	"05-DEBT.md":         "written 2026-09-06, before Grade/Witness existed; frozen prior art",
-	"06-DEBT.md":         "written 2026-09-07, before Grade/Witness existed; frozen prior art",
-	"PHASE-07-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
-	"PHASE-08-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
-	"PHASE-09-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
-	"PHASE-10-DEBT.md":   "written before Grade/Witness existed (plan 14-07); frozen prior art",
-	"PHASE-11-DEBT.md":   "written before Grade/Witness existed (plan 14-07); D-11-02 is witnessed informally in its own Detail section instead -- see PHASE-14-DEBT.md D-14-45's own note and this plan's SUMMARY",
-	"PHASE-12-DEBT.md":   "written before Grade/Witness existed (plan 14-07); D-12-43 is witnessed informally in its own Detail section instead -- see this plan's SUMMARY",
+	"02-DEBT.md":       "written 2026-09-04, before Grade/Witness existed; frozen prior art",
+	"03-DEBT.md":       "written 2026-09-04, before Grade/Witness existed; frozen prior art",
+	"04-DEBT.md":       "written 2026-09-05, before Grade/Witness existed; frozen prior art",
+	"05-DEBT.md":       "written 2026-09-06, before Grade/Witness existed; frozen prior art",
+	"06-DEBT.md":       "written 2026-09-07, before Grade/Witness existed; frozen prior art",
+	"PHASE-07-DEBT.md": "written before Grade/Witness existed (plan 14-07); frozen prior art",
+	"PHASE-08-DEBT.md": "written before Grade/Witness existed (plan 14-07); frozen prior art",
+	"PHASE-09-DEBT.md": "written before Grade/Witness existed (plan 14-07); frozen prior art",
+	"PHASE-10-DEBT.md": "written before Grade/Witness existed (plan 14-07); frozen prior art",
 }
 
 // debtRegisterGrades is the closed grade vocabulary. This plan (EVD-03/04)

@@ -1278,8 +1278,6 @@ var pinnedFrontier = []violationRecord{
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 446, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 448, Command: "go test ./internal/compiler/<package>/... -run <TestName> -count=1", Classification: classR1},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 455, Command: "go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned -v", Classification: classR2},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 456, Command: "go test ./internal/compiler/session/... -run TestUnreachableClaimsViewIsCurrent -v", Classification: classR2},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 457, Command: "go test ./internal/compiler/session/... -run TestNoSuppressionOutlivesItsWitness -v", Classification: classR2},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 459, Command: "go test ./internal/compiler/session/... -run TestLanguageMaturityGuardCountIsCurrent -v", Classification: classR2},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 502, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 24, Command: "go test ./<changed-package>/...", Classification: classR1},
