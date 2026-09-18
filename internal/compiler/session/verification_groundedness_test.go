@@ -603,6 +603,278 @@ func projectRelativePath(root, path string) string {
 }
 
 // ---------------------------------------------------------------------
+// (d) Illocutionary-role scoping (D-14-11, plan 14-06 Task 1) -- Tier A
+// (asserting, enforced) vs Tier B (proposing, exempt), with a promotion rule
+// so renaming a file out of the enforced tier is never an escape.
+// ---------------------------------------------------------------------
+
+// documentTier is the outcome of classifyDocumentTier: every discovered
+// document is classified into exactly one of these two values, never a
+// third "undetermined" bucket (D-14-11).
+type documentTier string
+
+const (
+	tierEnforced documentTier = "enforced"
+	tierExempt   documentTier = "exempt"
+)
+
+// enforcedBasenamePattern matches a basename that identifies a document as
+// ASSERTING evidence -- validation, verification, summary, acceptance
+// testing (UAT), or a mid-phase-gate record. These basenames are always
+// enforced, independent of frontmatter or content.
+var enforcedBasenamePattern = regexp.MustCompile(`(VALIDATION|VERIFICATION|SUMMARY|UAT|MIDPHASE-GATE)\.md$`)
+
+// proposingBasenamePattern matches a basename that PROPOSES rather than
+// asserts. Matching this pattern is necessary but never sufficient for
+// exemption -- D-14-11 additionally requires a positive frontmatter
+// declaration, so renaming a file into this shape is not itself an escape.
+var proposingBasenamePattern = regexp.MustCompile(`-(RESEARCH|PLAN|CONTEXT|DISCUSSION-LOG)\.md$`)
+
+// researchTreeSegment identifies the milestone/project research tree
+// (.planning/research/**), exempt by the identical declaration-gated rule
+// as the proposing basenames.
+const researchTreeSegment = "/research/"
+
+// verificationRoleProposalPattern is the positive frontmatter declaration a
+// Tier-B-shaped document must carry to earn exemption
+// (`verification_role: proposal`). Read only from inside the leading
+// `---`-delimited frontmatter block, mirroring every other frontmatter
+// field already read in this corpus (`phase:`, `status:`, ...).
+var verificationRoleProposalPattern = regexp.MustCompile(`(?m)^verification_role:\s*proposal\s*$`)
+
+// hasProposalFrontmatter reports whether content's leading frontmatter block
+// declares the proposing role. A filename accident is never sufficient.
+func hasProposalFrontmatter(content string) bool {
+	if !strings.HasPrefix(content, "---\n") {
+		return false
+	}
+	rest := content[len("---\n"):]
+	end := strings.Index(rest, "\n---")
+	if end == -1 {
+		return false
+	}
+	return verificationRoleProposalPattern.MatchString(rest[:end])
+}
+
+// verdictEmojiPattern matches the freeform Status column's verdict glyphs
+// (this file's own legend, mirrored from every *-VALIDATION.md: "⬜
+// pending · ✅ green · ❌ red · ⚠️ flaky").
+var verdictEmojiPattern = regexp.MustCompile(`[✅❌⚠️⬜]`)
+
+// gradeVocabularyPattern matches the closed grade vocabulary (D-14-01/D-14-05)
+// that eventually replaces the Status column, as a whole word so prose that
+// merely mentions one of these words is not mistaken for a graded cell.
+var gradeVocabularyPattern = regexp.MustCompile(`\b(DEFINED|WIRED|REACHABLE|EXERCISED|MUTATION-KILLED)\b`)
+
+// cellCarriesVerdictToken reports whether an already-unescaped, trimmed
+// table cell carries a verdict signal under EITHER the current Status
+// column convention or the Grade column convention D-14-05/14-09 migrate
+// to -- the keying caveat this plan must not leave briefly undetectable
+// from either side.
+func cellCarriesVerdictToken(cell string) bool {
+	return verdictEmojiPattern.MatchString(cell) || gradeVocabularyPattern.MatchString(cell)
+}
+
+// dividerCellPattern matches one GFM table divider cell (`---`, `:--`,
+// `--:`, `:-:`).
+var dividerCellPattern = regexp.MustCompile(`^:?-{1,}:?$`)
+
+func isTableRowLine(line string) bool {
+	return strings.HasPrefix(strings.TrimLeft(line, " \t"), "|")
+}
+
+func isDividerRowLine(line string) bool {
+	trimmed := strings.Trim(strings.TrimSpace(line), "|")
+	if trimmed == "" {
+		return false
+	}
+	for _, cell := range strings.Split(trimmed, "|") {
+		if !dividerCellPattern.MatchString(strings.TrimSpace(cell)) {
+			return false
+		}
+	}
+	return true
+}
+
+// rowCells splits and unescapes one table row line into trimmed cells,
+// reusing the backtick-aware splitter and GFM unescape rule D-14-15/D-14-17
+// already established -- no second cell-splitting algorithm.
+func rowCells(line string) []string {
+	raw := splitTableRow(line)
+	cells := make([]string, len(raw))
+	for i, cell := range raw {
+		cells[i] = strings.TrimSpace(unescapeCell(cell))
+	}
+	return cells
+}
+
+// markdownTable is one header+divider+body table discovered in a document.
+type markdownTable struct {
+	header   []string
+	rows     [][]string
+	rowLines []int // 1-indexed source line of each row in rows
+}
+
+// parseMarkdownTables scans doc content for every header+divider+body table
+// -- the structure the verdict-column keying rule (D-14-11's caveat) needs,
+// which a flat per-line scan (extractCommands) cannot resolve because it
+// has no notion of "this cell is under the Status/Grade column".
+func parseMarkdownTables(content string) []markdownTable {
+	lines := strings.Split(content, "\n")
+	var tables []markdownTable
+	i := 0
+	for i < len(lines) {
+		if isTableRowLine(lines[i]) && i+1 < len(lines) && isTableRowLine(lines[i+1]) && isDividerRowLine(lines[i+1]) {
+			table := markdownTable{header: rowCells(lines[i])}
+			j := i + 2
+			for j < len(lines) && isTableRowLine(lines[j]) {
+				table.rows = append(table.rows, rowCells(lines[j]))
+				table.rowLines = append(table.rowLines, j+1)
+				j++
+			}
+			tables = append(tables, table)
+			i = j
+			continue
+		}
+		i++
+	}
+	return tables
+}
+
+// verdictColumnIndex returns the index of a "Status" or "Grade" header
+// column (case-insensitive, exact after trim), or -1 if neither is present
+// -- this IS the D-14-11 keying caveat: detection keys on the column name,
+// never on scanning the whole row for an emoji (which would falsely promote
+// e.g. a RESEARCH.md "File Exists?" ❌ cell that has nothing to do with a
+// verification verdict).
+func verdictColumnIndex(header []string) int {
+	for idx, cell := range header {
+		switch strings.ToLower(strings.TrimSpace(cell)) {
+		case "status", "grade":
+			return idx
+		}
+	}
+	return -1
+}
+
+// rowHasCommandSpan reports whether any cell in row contains a
+// backtick-delimited span matching verificationCommandPattern.
+func rowHasCommandSpan(row []string) bool {
+	for _, cell := range row {
+		for _, span := range extractCodeSpans(cell) {
+			if verificationCommandPattern.MatchString(strings.TrimSpace(span)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// documentHasCommandAndVerdictRow implements D-14-11's promotion clause: a
+// table row holding both a command code-span (any cell) and a verdict token
+// in the row's own Status/Grade column promotes the WHOLE document to Tier
+// A, independent of basename or frontmatter -- this is what makes renaming
+// a file useless as an evasion.
+func documentHasCommandAndVerdictRow(content string) bool {
+	for _, table := range parseMarkdownTables(content) {
+		verdictIdx := verdictColumnIndex(table.header)
+		if verdictIdx == -1 {
+			continue
+		}
+		for _, row := range table.rows {
+			if verdictIdx >= len(row) || !cellCarriesVerdictToken(row[verdictIdx]) {
+				continue
+			}
+			if rowHasCommandSpan(row) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// classifyDocumentTier implements D-14-11's scope rule in full. Order
+// matters: the promotion check runs FIRST so no basename and no exemption
+// declaration can suppress a command+verdict row; the evidence-basename
+// check runs next so an asserting document is enforced regardless of
+// frontmatter; exemption is checked last and is opt-in ONLY (a positive
+// `verification_role: proposal` declaration on a proposing-shaped basename
+// or under the research tree) -- everything else defaults enforced, so
+// omitting the declaration is never a silent escape either.
+func classifyDocumentTier(path string, content string) documentTier {
+	if true {
+		return tierExempt // RED stub: intentionally wrong
+	}
+	if documentHasCommandAndVerdictRow(content) {
+		return tierEnforced
+	}
+	if enforcedBasenamePattern.MatchString(filepath.Base(path)) {
+		return tierEnforced
+	}
+	proposingShaped := proposingBasenamePattern.MatchString(filepath.Base(path)) ||
+		strings.Contains(filepath.ToSlash(path), researchTreeSegment)
+	if proposingShaped && hasProposalFrontmatter(content) {
+		return tierExempt
+	}
+	return tierEnforced
+}
+
+// classifiedDocument pairs a discovered document with its tier.
+type classifiedDocument struct {
+	Path string
+	Tier documentTier
+}
+
+// allPlanningMarkdownDocuments walks every *.md file under .planning/**.
+// D-14-11's promotion clause ("any OTHER .planning/**/*.md...") is not
+// bounded to the VALIDATION/VERIFICATION glob phaseArtifactGlob resolves,
+// so the discovery step this plan extends must walk the full tree, not just
+// the archived-and-live phase directories.
+func allPlanningMarkdownDocuments(t testing.TB) []string {
+	t.Helper()
+	root := testsupport.ProjectPath(".planning")
+	var docs []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			if path != root && strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasSuffix(path, ".md") {
+			docs = append(docs, path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("allPlanningMarkdownDocuments: %v", err)
+	}
+	sort.Strings(docs)
+	return docs
+}
+
+// classifyAllPlanningDocuments classifies every *.md document under
+// .planning/** into exactly one of {enforced, exempt} (D-14-11).
+func classifyAllPlanningDocuments(t testing.TB) []classifiedDocument {
+	t.Helper()
+	var classified []classifiedDocument
+	for _, path := range allPlanningMarkdownDocuments(t) {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		classified = append(classified, classifiedDocument{
+			Path: path,
+			Tier: classifyDocumentTier(path, string(data)),
+		})
+	}
+	return classified
+}
+
+// ---------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------
 
@@ -707,6 +979,114 @@ func TestVerificationGroundedness(t *testing.T) {
 			t.Errorf("expected a violation at .../%s:%d, found none among %d violations", want.fileSuffix, want.line, len(all))
 		}
 	}
+}
+
+// ---------------------------------------------------------------------
+// Plan 14-06 Task 1: scope by illocutionary role, with promotion and no
+// filename escape (D-14-11).
+// ---------------------------------------------------------------------
+
+// TestVerificationGroundednessScopeByIllocutionaryRole exercises every
+// bullet of Task 1's <behavior> list against synthetic documents in
+// t.TempDir() -- the real .planning/** tree is never written to.
+func TestVerificationGroundednessScopeByIllocutionaryRole(t *testing.T) {
+	t.Run("evidence basename is enforced regardless of content", func(t *testing.T) {
+		content := "# prose only\n\nno tables, no frontmatter, nothing to classify.\n"
+		if got := classifyDocumentTier("09-VALIDATION.md", content); got != tierEnforced {
+			t.Fatalf("classifyDocumentTier(evidence basename) = %s, want enforced", got)
+		}
+	})
+
+	t.Run("evidence basename with unresolvable commands and no proposing frontmatter is still enforced -- renaming is not an escape", func(t *testing.T) {
+		content := "# doc\n\n| Task | Automated Command | Status |\n" +
+			"|---|---|---|\n" +
+			"| T1 | `go test ./internal/compiler/<package>/... -run <TestName>` | ⬜ pending |\n"
+		if got := classifyDocumentTier("weird-name-VALIDATION.md", content); got != tierEnforced {
+			t.Fatalf("classifyDocumentTier(evidence basename, unresolvable content) = %s, want enforced", got)
+		}
+	})
+
+	t.Run("proposing basename without a positive frontmatter declaration defaults enforced -- exemption is opt-in only", func(t *testing.T) {
+		content := "# no frontmatter at all\n\nProposes ten tests never written.\n"
+		if got := classifyDocumentTier("04-RESEARCH.md", content); got != tierEnforced {
+			t.Fatalf("classifyDocumentTier(proposing basename, no declaration) = %s, want enforced (exemption is opt-in)", got)
+		}
+	})
+
+	t.Run("proposing basename WITH a positive frontmatter declaration is exempt", func(t *testing.T) {
+		content := "---\nphase: \"14\"\nverification_role: proposal\n---\n\n" +
+			"Proposes a test that does not exist: `go test ./internal/compiler/example/... -run TestNeverWritten`.\n"
+		if got := classifyDocumentTier("14-RESEARCH.md", content); got != tierExempt {
+			t.Fatalf("classifyDocumentTier(proposing basename, declared) = %s, want exempt", got)
+		}
+	})
+
+	t.Run("research tree path WITH declaration is exempt", func(t *testing.T) {
+		content := "---\nverification_role: proposal\n---\n\nSpike notes, no tables.\n"
+		path := testsupport.ProjectPath(".planning", "research", "M003", "notes.md")
+		if got := classifyDocumentTier(path, content); got != tierExempt {
+			t.Fatalf("classifyDocumentTier(research tree, declared) = %s, want exempt", got)
+		}
+	})
+
+	t.Run("a declared-exempt document carrying a verdict token beside a command span is PROMOTED to enforced", func(t *testing.T) {
+		content := "---\nverification_role: proposal\n---\n\n" +
+			"| Task | Automated Command | Status |\n" +
+			"|---|---|---|\n" +
+			"| T1 | `go test ./internal/compiler/example/... -run TestExampleThing` | ✅ green |\n"
+		if got := classifyDocumentTier("14-RESEARCH.md", content); got != tierEnforced {
+			t.Fatalf("classifyDocumentTier(declared exempt, promoted) = %s, want enforced (promotion overrides exemption)", got)
+		}
+	})
+
+	t.Run("detection succeeds when the Per-Task Verification Map still carries a Status column", func(t *testing.T) {
+		content := "## Per-Task Verification Map\n\n" +
+			"| Task ID | Automated Command | Status |\n" +
+			"|---|---|---|\n" +
+			"| T1 | `go test ./internal/compiler/example/... -run TestExampleThing` | ✅ green |\n"
+		if !documentHasCommandAndVerdictRow(content) {
+			t.Fatal("documentHasCommandAndVerdictRow(Status column) = false, want true")
+		}
+	})
+
+	t.Run("detection succeeds when the Per-Task Verification Map's Status column has been replaced by a Grade column", func(t *testing.T) {
+		content := "## Per-Task Verification Map\n\n" +
+			"| Task ID | Automated Command | Grade |\n" +
+			"|---|---|---|\n" +
+			"| T1 | `go test ./internal/compiler/example/... -run TestExampleThing` | WIRED |\n"
+		if !documentHasCommandAndVerdictRow(content) {
+			t.Fatal("documentHasCommandAndVerdictRow(Grade column) = false, want true")
+		}
+	})
+
+	t.Run("a non-verdict column carrying an emoji (e.g. a RESEARCH.md File Exists? cell) is never mistaken for a verdict", func(t *testing.T) {
+		content := "| Req ID | Automated Command | File Exists? |\n" +
+			"|---|---|---|\n" +
+			"| RES-01 | `go test ./internal/compiler/session/... -run TestResourceReleaseOrder` | ❌ Wave 0 — new fixture |\n"
+		if documentHasCommandAndVerdictRow(content) {
+			t.Fatal("documentHasCommandAndVerdictRow(File Exists? column) = true, want false -- only Status/Grade columns carry a verdict")
+		}
+	})
+
+	t.Run("every real document under .planning/** classifies into exactly one of {enforced, exempt}", func(t *testing.T) {
+		classified := classifyAllPlanningDocuments(t)
+		if len(classified) == 0 {
+			t.Fatal("no .planning/**/*.md documents discovered")
+		}
+		enforcedCount, exemptCount := 0, 0
+		for _, cd := range classified {
+			switch cd.Tier {
+			case tierEnforced:
+				enforcedCount++
+			case tierExempt:
+				exemptCount++
+			default:
+				t.Errorf("%s classified into unknown tier %q", cd.Path, cd.Tier)
+			}
+			t.Logf("%s: %s", cd.Tier, projectRelativePath(testsupport.ProjectPath(), cd.Path))
+		}
+		t.Logf("classified %d documents: %d enforced, %d exempt", len(classified), enforcedCount, exemptCount)
+	})
 }
 
 // ---------------------------------------------------------------------
