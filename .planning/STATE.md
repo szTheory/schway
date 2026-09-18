@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 14
-current_phase_name: Evidence Instrument and Honest Scoping
+current_phase_name: evidence-instrument-and-honest-scoping
 status: executing
-stopped_at: Completed 14-10-PLAN.md
-last_updated: "2026-09-18T13:09:35.264Z"
+stopped_at: Completed 14-11-PLAN.md
+last_updated: "2026-09-18T13:58:14.267Z"
 last_activity: 2026-09-18
 last_activity_desc: Phase 14 execution complete — all 10 plans done
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
 state_head: 0dcb460c202ca570e4552967f0ceb0c717c7a54b
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 14 — Evidence Instrument and Honest Scoping
+**Current focus:** Phase 14 — evidence-instrument-and-honest-scoping
 (07-13), 61 plans, 183 tasks. `OpCall` is real at all six dispatch sites, and a
 multi-function program now checks, is independently re-validated by three
 non-importing peers, interprets, lowers to multi-function C17, and agrees across
@@ -57,10 +57,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 14 (Evidence Instrument and Honest Scoping) — COMPLETE
-Plan: 10 of 10 (all complete)
+Phase: 14 (evidence-instrument-and-honest-scoping) — EXECUTING
+Plan: 2 of 13
 Status: Ready to execute
-Last activity: 2026-09-18 — Plan 14-10 (Nyquist reconciliation) closed the phase:
+Last activity: 2026-09-18 — Phase 14 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -299,6 +299,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 14-evidence-instrument-and-honest-scoping P07 | 26 min | 4 tasks | 19 files |
 | Phase 14-evidence-instrument-and-honest-scoping P08 | 9 min | 3 tasks | 5 files |
 | Phase 14 P09 | 385min | 3 tasks | 20 files |
+| Phase 14 P11 | 40min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -414,6 +415,7 @@ Standing architectural commitments carried into M002:
 - [Phase ?]: EVD-02 grade cap: declared grade authored at its derived ceiling (capped, never MUTATION-KILLED) across all 14 migrated VALIDATION docs; 6 rows derive below shipped verdict, recorded as PHASE-14-DEBT.md rows D-14-48..54 rather than suppressed
 - [Phase ?]: Run-record generation for the ~230-row corpus is genuinely several minutes (not milliseconds as T-14-56 first assumed); a parallelism attempt thrashed and was reverted to sequential, documented in scripts/evidence-run-record.sh
 - [Phase 14]: 14-10 (Nyquist reconciliation, closes the phase): 66 runnability/groundedness/grep findings reconciled under a closed four-verdict vocabulary (renamed/superseded/obsolete-by-design/under-scoped) as debt rows with a witness in PHASE-14-DEBT.md (D-14-55..D-14-120), never rewriting the archived documents they were found in; the pinned groundedness frontier emptied for those three classes (124->58 entries), per-branch (R2b, 10 entries) stays pinned and owned by P20 (ROADMAP QLT-10). `.planning/EVIDENCE-RECONCILIATION.md` generated and byte-compared; `scripts/assert-reconciliation-touched.sh` couples future archive edits to it. Filling in 14-VALIDATION.md's own Per-Task Verification Map (31 real rows) exposed a genuine performance regression -- an unanchored `TestValidationRowGradesAreEarned` pattern substring-matched the expensive `TestValidationRowGradesAreEarnedOverArchivedCorpus` itself, recursively re-invoking it inside the run-record generator and pushing the session package past Go's 600s default timeout; fixed by anchoring each alternation branch with a trailing `$` (not wrapping the whole group in `^(...)$`, which breaks the R2b per-branch splitter). Attempted removing 14-VALIDATION.md's stale grade-bar exemption; reverted after it exposed the same corpus-wide timeout risk on nine unrelated files under this specific machine's load -- recorded as debt D-14-121, not landed under uncertainty.
+- [Phase ?]: 14-11: raised evidenceRunRecordTimeout 300s->480s with a measured-honest doc comment, added a 0.75 margin fraction that fails closed on a near-timeout run, and replaced raw-pattern run-record batching with resolvedPkgPatterns (anchored, index-resolved names) -- closing WR-01/WR-02; corpus-wide measured elapsed dropped 269-347s -> ~90s
 
 ### Pending Todos
 
@@ -556,8 +558,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-18T06:28:11.430Z
-Stopped at: Completed 14-09-PLAN.md
+Last session: 2026-09-18T13:58:14.258Z
+Stopped at: Completed 14-11-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
