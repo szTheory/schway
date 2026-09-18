@@ -8,9 +8,9 @@ status: planning
 stopped_at: Completed 14-12-PLAN.md
 last_updated: "2026-09-18T15:37:09.884Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase 14 execution complete — all 10 plans done
+last_activity_desc: Phase 14 execution complete and verified — all 13 plans done
 progress:
-  total_phases: 1
+  total_phases: 7
   completed_phases: 1
   total_plans: 13
   completed_plans: 13
@@ -26,7 +26,10 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 14 — evidence-instrument-and-honest-scoping
+**Current focus:** Phase 15 — Event Identity (`lang.execution/2`). Phase 14
+(evidence-instrument-and-honest-scoping) completed and verified 2026-09-18:
+13 plans, 11/11 requirements, zero `UNOWNED(none-yet-scheduled)` debt rows left
+in `PHASE-14-DEBT.md`. Prior milestone M002
 (07-13), 61 plans, 183 tasks. `OpCall` is real at all six dispatch sites, and a
 multi-function program now checks, is independently re-validated by three
 non-importing peers, interprets, lowers to multi-function C17, and agrees across
@@ -34,7 +37,8 @@ interpreter / `-O0` / `-O3` / `-O3 -flto`. Closed as `override_closeout`: 29/31
 requirements satisfied, DX-06 and DX-07 ratified partial, 10 unowned debt items
 carried forward.
 **M003 — Computation and Honest Instruments is now active**: 7 phases (14-20),
-33 requirements mapped, ~48-57 plans estimated. Next: `/gsd-plan-phase 14`.
+33 requirements mapped, ~48-57 plans estimated. Phase 14 done; next:
+`/gsd-discuss-phase 15`.
 No outstanding human verification.
 
 **Durable context (survives context clears — read before re-deriving):**

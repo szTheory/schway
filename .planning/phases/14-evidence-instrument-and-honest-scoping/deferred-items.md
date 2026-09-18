@@ -32,3 +32,24 @@ scope-boundary rule (do not auto-fix; log and continue).
   `TestSourceNeverSpawnsUnboundedProcesses` for `.claude/skills/**/sources/**`
   (frozen point-in-time snapshots) and reconsider the groundedness lint's own
   accuracy-control shell-out.
+  status: resolved
+  **Resolution (verified 2026-09-18, at the close of Phase 14).** Both call
+  sites are closed, and `unboundedSpawnAllowlist` is still empty — neither was
+  exempted away:
+  - `.claude/skills/.../sources/005-.../lab/lab.go` — `5318357`
+    (`fix(14): restore the unbounded-spawn guard to green at the wave-1 gate`)
+    widened the guard's throwaway-lab exclusion from live labs under
+    `.planning/spikes/` to also cover labs archived verbatim into the
+    spike-findings skill under `.claude/skills/*/sources/`. Per the guard's own
+    doc comment the exclusion's rationale always covered them; only its path
+    literal did not.
+  - `internal/compiler/session/verification_groundedness_test.go` — `4f4d773`
+    (`test(14-06): add failing test for the re-pinned frontier and corpus
+    floors`) moved `TestStaticTestIndexMatchesGoTestList` to the project's
+    bounded shape: `exec.CommandContext` rooted at
+    `context.WithTimeout(context.Background(), staticIndexAccuracyControlTimeout)`
+    with a size-capped reader, rather than bare `exec.Command` + `Output()`.
+
+  Confirmed by running `go test ./internal/compiler/native/ -run
+  'TestSourceNeverSpawnsUnboundedProcesses' -count=1` (ok, 0.382s) and a full
+  `go test ./... -count=1` (exit 0, 25 packages) on the phase-completion tree.
