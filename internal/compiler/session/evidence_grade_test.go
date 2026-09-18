@@ -232,9 +232,15 @@ var evidenceRunRecordScriptRelPath = []string{"scripts", "evidence-run-record.sh
 // context, independently size-capped stdout/stderr writers, never
 // Output()/CombinedOutput()). Generation is scoped to exactly the
 // (package, pattern) pairs the caller asks for -- not a whole-module
-// `go test ./...` re-run -- so this budget is generous relative to the
-// small, targeted batch it actually bounds.
-const evidenceRunRecordTimeout = 900 * time.Second
+// `go test ./...` re-run. corpusRunRecord's consolidatePkgPatterns call
+// (below) folds every pair sharing a package into one alternation before
+// this budget is spent, so the corpus-wide caller -- the most expensive one
+// -- measured at ~136s wall-clock; 300s leaves ample margin under this
+// package's own share of Go's 10-minute default per-package test timeout
+// (that whole-binary ceiling is NOT overridable from in-process code, only
+// via `go test -timeout`, so this budget must stay well under it, not just
+// under some number of its own choosing).
+const evidenceRunRecordTimeout = 300 * time.Second
 
 // generateRunRecord invokes scripts/evidence-run-record.sh once, batching
 // every requested (package, pattern) pair into a single process spawn, and
@@ -941,9 +947,39 @@ func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validati
 				}
 			}
 		}
-		evidenceRunRecordCached = generateRunRecord(t, pairs)
+		evidenceRunRecordCached = generateRunRecord(t, consolidatePkgPatterns(pairs))
 	})
 	return evidenceRunRecordCached
+}
+
+// consolidatePkgPatterns merges every pair sharing the same Package operand
+// into ONE pair whose Pattern is the top-level alternation of every
+// distinct pattern cited for that package. `go test`'s default per-package
+// timeout (10m, unaffected by any flag this file controls) bounds the
+// WHOLE test binary run for internal/compiler/session, not each subtest
+// individually -- so the corpus-wide run record must spend its cost on
+// actual test EXECUTION time, not on ~200 redundant process-start+compile
+// overheads for a package this consolidation could have covered in one
+// spawn. Measured effect: cuts the run-record producer's subprocess count
+// from one per (package, pattern) pair (up to ~208) to one per distinct
+// package (~20).
+func consolidatePkgPatterns(pairs []pkgPattern) []pkgPattern {
+	order := make([]string, 0, len(pairs))
+	byPackage := make(map[string][]string, len(pairs))
+	for _, p := range pairs {
+		if _, ok := byPackage[p.Package]; !ok {
+			order = append(order, p.Package)
+		}
+		byPackage[p.Package] = append(byPackage[p.Package], p.Pattern)
+	}
+	consolidated := make([]pkgPattern, 0, len(order))
+	for _, pkg := range order {
+		consolidated = append(consolidated, pkgPattern{
+			Package: pkg,
+			Pattern: "(" + strings.Join(byPackage[pkg], ")|(") + ")",
+		})
+	}
+	return consolidated
 }
 
 // TestValidationRowGradesAreEarnedOverArchivedCorpus is D-14-06's real
