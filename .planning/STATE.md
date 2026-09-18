@@ -1,20 +1,20 @@
 ---
-gsd_state_version: "1.0"
+gsd_state_version: 1.0
 milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 14
 current_phase_name: Evidence Instrument and Honest Scoping
-status: in_progress
-stopped_at: Phase 14 context gathered
-last_updated: "2026-09-17T21:20:43.997Z"
+status: executing
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-09-18T00:51:38.433Z"
 last_activity: 2026-09-17
-last_activity_desc: M003 roadmap created (Phases 14-20, 33/33 requirements mapped)
-state_head: f079b9bf522cec9a0f50edaebf4f35faf1d562b8
+last_activity_desc: Phase 14 execution started
 progress:
-  total_phases: 7
+  total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 0
+  completed_plans: 1
+state_head: 58103f585c9c3e88ce1bfacb97f5812333c01e45
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Planning next milestone. M002 shipped 2026-09-14 — 7 phases
+**Current focus:** Phase 14 — Evidence Instrument and Honest Scoping
 (07-13), 61 plans, 183 tasks. `OpCall` is real at all six dispatch sites, and a
 multi-function program now checks, is independently re-validated by three
 non-importing peers, interprets, lowers to multi-function C17, and agrees across
@@ -57,10 +57,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 14 (Evidence Instrument and Honest Scoping) — READY TO EXECUTE
-Plan: —
-Status: Roadmap complete; Phase 14 not started
-Last activity: 2026-09-17 — M003 roadmap created (Phases 14-20, 33/33 requirements mapped)
+Phase: 14 (Evidence Instrument and Honest Scoping) — EXECUTING
+Plan: 2 of 10
+Status: Ready to execute
+Last activity: 2026-09-17 — Phase 14 execution started
 
 **Next:** `/gsd-plan-phase 14`
 
@@ -282,6 +282,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 13 P05 | 55min | 3 tasks | 5 files |
 | Phase 13 P06 | 95min | 3 tasks | 8 files |
 | Phase 13 P07 | ~25min active | 3 tasks | 5 files |
+| Phase 14 P01 | 15min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -382,6 +383,7 @@ Standing architectural commitments carried into M002:
 - [Phase 13]: 13-07: D-13-33 adjudicated Option B (developer, blocking-human checkpoint) -- testdata/phase6 move/borrow pairs are structurally identical (alpha-rename only), predicate kept unweakened, carried as permanent M001 evidence debt (D-13-34, PHASE-13-DEBT.md) rather than fixed or reversed
 - [Phase 13]: 13-07: DX-06 and DX-07 ratified Partial (not Complete) -- B1 contract-violation blame structurally unreachable at this maturity (D-13-02b, D-12-43 precedent); use_matching_argument withdrawn as unrepairable, every Lang function sharing one type fact (D-13-10a). Both recorded in PHASE-13-DEBT.md, REQUIREMENTS.md traceability updated
 - [Phase 13]: 13-07: 13-VALIDATION.md corrected against real test names -- two instances of the same go-test-run-matches-nothing defect class found and fixed (D-13-09a's TestOrderingStability -> TestInterproceduralDiagnosticOrderingStability; import-boundary row's TestImportBoundary pattern, which missed the actual lint TestRepairDriverImportsStayOutsideInternal). wave_0_complete/nyquist_compliant set true from evidence; go test ./... green (25 packages)
+- [Phase ?]: Groundedness lint (EVD-01) shipped end-to-end: static Go test index over *_test.go, Tier-A document scanner via phaseArtifactGlob, R1/R2/unparseable classification, 26-record pinned violation frontier, three-fault non-inertness proof. Fixed a real backtick-awareness bug in table-row splitting and a Contains-vs-HasPrefix substring bug found via testing against the live corpus. — Both bugs were caught by running the lint against the real .planning/** corpus rather than trusting the plan's literal algorithm description -- exactly the discipline this phase exists to install.
 
 ### Pending Todos
 
@@ -397,8 +399,10 @@ Carried into M003 as cheap, unowned cleanup:
   that `validate-phase` never reconciled. Phase 13's `nyquist_compliant: true`
   was genuinely earned (plan 13-07 re-ran every Per-Task Verification Map row
   and fixed two ungrounded `-run` patterns); only the lifecycle marker is stale.
+
 - `/gsd-secure-phase 10` — Phase 10 ran with `workflow.security_enforcement=true`
   but produced no `10-SECURITY.md`.
+
 - D-13-34 — M001's `testdata/phase6` move and borrow held-out/derivation pairs
   are alpha-renames of each other, not structurally distinct programs. A hole in
   *shipped M001* evidence, found only because Phase 13 took the stricter
@@ -424,9 +428,11 @@ independent problems:
    **A third deferral would violate D-10-60, a no-third-deferral rule this
    milestone wrote for itself.** M003 must either land the deletion or retire
    D-10-60 explicitly.
+
 2. **Event identity** (D-11-51 → D-12-21). Shared-leaf diamond call graphs
    collide on event identity; D-12-21 cannot close until D-11-51 does. A real
    dependency chain sitting unowned across a milestone boundary.
+
 3. **The single-type-per-function invariant** (D-13-02b, D-13-10a, plus Phase
    13's twin-pair sub-finding). One root cause:
    `sameType(ReturnType, Parameter.Type)` is enforced at every function's
@@ -444,18 +450,22 @@ recorded under `## Deferred Items` below.
 - `corevalidate.peerDeriveOriginFacts` has no `core.OpCall` case — fail-closed
   (conservative, not unsound), but it constrained which fixtures Phases 10-11
   could express. Acknowledged deferred item.
+
 - 10-REVIEW.md WR-01 — `corevalidate.peerCalleeFrameDrained` walks FORWARD over
   `linear.Operations`, correct only under an unstated, unenforced
   declaration-order assumption; its own cited precedent walks BACKWARD.
+
 - 10-REVIEW.md WR-02 / D-10-19 — the four peers' independence is enforced by
   hand-curated per-package import lists, and `originvalidate`'s permits
   `callgraph` while `corevalidate`'s forbids it. Defensible by review, not by
   mechanism — and NAT-06 leans on that independence.
+
 - The D-09-51 negative-control verdict flip (`negative_control_fails.lang`,
   `negative_control_infallible.lang` moved from
   `check.interprocedural_loan_liveness` to `core.callee_not_callable`) was
   flagged for human review and **that review still has not happened** — this is
   D-10-C04, and D-11-27 records that no phase claims it.
+
 - `interp.Run`'s `!function.HasClosedBody()` guard is provably unreachable —
   dead defensive code, harmless, recorded so a future reader does not mistake it
   for live protection.
@@ -516,10 +526,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-17T20:39:28.781Z
-Stopped at: Phase 14 context gathered
+Last session: 2026-09-18T00:51:38.425Z
+Stopped at: Completed 14-01-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-CONTEXT.md
+Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
@@ -589,9 +599,11 @@ is recorded in the two durable files above; the three non-derivative findings:
 
 1. **32 single-function guards, not 2.** Phase 11's real scope. Recorded in
    ROADMAP.md § Phase 11 "Scope input verified at the planning gate".
+
 2. **`reduce` is a Phase 11 subject, not a consumer.** `reduce.Reduce` hard-errors
    on multi-function seeds, so success criterion 4 is unreachable by widening
    `cgen` alone. Same ROADMAP anchor.
+
 3. **`LANGUAGE-MATURITY.md` had gone stale by its own triggers** (reported 58
    programs/1,633 lines; actual 89/3,096) and is now refreshed. Its strategic
    read held up; only the snapshot was wrong.

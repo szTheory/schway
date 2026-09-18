@@ -90,6 +90,7 @@ ownership-state merge is required), then, without further deliberation:
 1. **Phase 18 is CUT.** CTL-01, CTL-02 and CTL-03 move to **M004**, bundled with
    loops — they are the same loan-across-control-flow problem, and M004 is where
    that problem was already going to be paid for.
+
 2. **Phase 18 is REPLACED by `OpBinary` + arithmetic under optimization**
    (Alt-3 in ADVERSARIAL-SYNTHESIS): binary operators over the fixed-width
    unsigned type introduced in Phase 19, an overflow law, C promotion
@@ -99,13 +100,16 @@ ownership-state merge is required), then, without further deliberation:
    Note the ordering flip: the replacement phase *depends on* Phase 19's
    literals, so Phases 19 and 18 swap positions and the arithmetic phase
    executes last of the two.
+
 3. **New requirement IDs are amended into `REQUIREMENTS.md`** for the
    replacement phase (`ARI-01`..) in the same pass that moves CTL-01..03 to the
    Deferred table. Coverage is re-validated at 33 rows; it does not silently
    drop to 30.
+
 4. **Comparison operators and `Bool` stay out regardless.** They are inert
    without a branch on a computed value, and shipping them would be the fifth
    instance of the failure mode this milestone exists to retire.
+
 5. **The milestone's honest headline becomes** "a program can name and compute a
    number" — less exciting, still the first computed value, and not a
    `tech_debt` closeout.
@@ -132,11 +136,13 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
   record is a hard constraint), design anti-features, process anti-patterns, and
   load-bearing facts about the six dispatch sites and why `-flto` is
   load-bearing. Reopen an entry only on new evidence.
+
 - `.planning/LANGUAGE-MATURITY.md` — what the language can actually express
   today. Assurance stack ~70-75% built; language surface ~5-10%. Guards against
   planning as if arithmetic, iteration, collections, or a branch on a computed
   value already exist. They do not. Do **not** read `wiki/example-tour.md` as a
   description of the language.
+
 - `.planning/research/M003/ADVERSARIAL-SYNTHESIS.md` — **authoritative**. Its
   contradiction resolutions override the six source documents wherever they
   conflict.
@@ -219,7 +225,7 @@ non-inertness proof, rather than because scope grew)
 Plans:
 **Wave 1**
 
-- [ ] 14-01-PLAN.md — tracer: the groundedness lint end-to-end, with its frontier pinned as an exact literal and three seeded-fault non-inertness proofs (EVD-01)
+- [x] 14-01-PLAN.md — tracer: the groundedness lint end-to-end, with its frontier pinned as an exact literal and three seeded-fault non-inertness proofs (EVD-01)
 - [ ] 14-02-PLAN.md — attach the discarded recovery extent as an identity-bearing cause; distinctness corpus, gate, and frozen pre-fix collision control (DX-08)
 - [ ] 14-03-PLAN.md — an `unrepairable` verdict explains itself: additive decline fields, closed decline vocabulary, guard and non-inertness proof (DX-09)
 - [ ] 14-04-PLAN.md — close the owning-phase vocabulary in the debt-register law, migrate twelve registers, register the `-flto` inertness row (PRC-01, EVD-07)
