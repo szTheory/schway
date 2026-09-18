@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 14
 current_phase_name: Evidence Instrument and Honest Scoping
 status: verifying
-stopped_at: Completed 14-09-PLAN.md
-last_updated: "2026-09-18T06:49:54.196Z"
-last_activity: 2026-09-17
-last_activity_desc: Phase 14 execution started
+stopped_at: Completed 14-10-PLAN.md
+last_updated: "2026-09-18T08:00:00.000Z"
+last_activity: 2026-09-18
+last_activity_desc: Phase 14 execution complete — all 10 plans done
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 9
-state_head: 58103f585c9c3e88ce1bfacb97f5812333c01e45
+  completed_plans: 10
+state_head: 0dcb460c202ca570e4552967f0ceb0c717c7a54b
 ---
 
 # Project State
@@ -57,12 +57,20 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 14 (Evidence Instrument and Honest Scoping) — EXECUTING
-Plan: 10 of 10
+Phase: 14 (Evidence Instrument and Honest Scoping) — COMPLETE
+Plan: 10 of 10 (all complete)
 Status: Phase complete — ready for verification
-Last activity: 2026-09-17 — Phase 14 execution started
+Last activity: 2026-09-18 — Plan 14-10 (Nyquist reconciliation) closed the phase:
+66 runnability/groundedness/grep findings reconciled outside the archives
+under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
+under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
+(124 -> 58 entries; per-branch R2b stays pinned, owned by P20/QLT-10),
+`.planning/EVIDENCE-RECONCILIATION.md` generated as a byte-compared view,
+`scripts/assert-reconciliation-touched.sh` couples archive edits to it,
+14-VALIDATION.md's Per-Task Verification Map filled with 31 real rows, and
+all eleven phase requirements confirmed complete.
 
-**Next:** `/gsd-plan-phase 14`
+**Next:** `/gsd-verify-work 14`, then `/gsd-plan-phase 15`
 
 ## M003 Phase Map
 
@@ -405,6 +413,7 @@ Standing architectural commitments carried into M002:
 - [Phase ?]: Found and fixed two stale PENDING-05-08 prose occurrences beyond the plan's named five sites (a test's own negative-assertion literal, and a witness_registry_test.go hand-off comment), since the plan's acceptance criterion is a repo-wide grep, not a fixed site list. — Rule 2 - missing critical: satisfying the literal 'marker survives nowhere' truth required a full repo scan, not just the five research-identified sites.
 - [Phase ?]: EVD-02 grade cap: declared grade authored at its derived ceiling (capped, never MUTATION-KILLED) across all 14 migrated VALIDATION docs; 6 rows derive below shipped verdict, recorded as PHASE-14-DEBT.md rows D-14-48..54 rather than suppressed
 - [Phase ?]: Run-record generation for the ~230-row corpus is genuinely several minutes (not milliseconds as T-14-56 first assumed); a parallelism attempt thrashed and was reverted to sequential, documented in scripts/evidence-run-record.sh
+- [Phase 14]: 14-10 (Nyquist reconciliation, closes the phase): 66 runnability/groundedness/grep findings reconciled under a closed four-verdict vocabulary (renamed/superseded/obsolete-by-design/under-scoped) as debt rows with a witness in PHASE-14-DEBT.md (D-14-55..D-14-120), never rewriting the archived documents they were found in; the pinned groundedness frontier emptied for those three classes (124->58 entries), per-branch (R2b, 10 entries) stays pinned and owned by P20 (ROADMAP QLT-10). `.planning/EVIDENCE-RECONCILIATION.md` generated and byte-compared; `scripts/assert-reconciliation-touched.sh` couples future archive edits to it. Filling in 14-VALIDATION.md's own Per-Task Verification Map (31 real rows) exposed a genuine performance regression -- an unanchored `TestValidationRowGradesAreEarned` pattern substring-matched the expensive `TestValidationRowGradesAreEarnedOverArchivedCorpus` itself, recursively re-invoking it inside the run-record generator and pushing the session package past Go's 600s default timeout; fixed by anchoring each alternation branch with a trailing `$` (not wrapping the whole group in `^(...)$`, which breaks the R2b per-branch splitter). Attempted removing 14-VALIDATION.md's stale grade-bar exemption; reverted after it exposed the same corpus-wide timeout risk on nine unrelated files under this specific machine's load -- recorded as debt D-14-121, not landed under uncertainty.
 
 ### Pending Todos
 

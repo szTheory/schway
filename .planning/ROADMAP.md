@@ -120,7 +120,7 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
 
 ## Phases
 
-- [ ] **Phase 14: Evidence Instrument and Honest Scoping** - The instruments stop reporting green for work that is merely wired.
+- [x] **Phase 14: Evidence Instrument and Honest Scoping** - The instruments stop reporting green for work that is merely wired.
 - [ ] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable.
 - [ ] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut.
 - [ ] **Phase 17: Return Type ≠ Parameter Type** - A function may return a type it was not given.
@@ -616,7 +616,7 @@ assurance-refactor milestone rather than a feature milestone.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 14. Evidence Instrument and Honest Scoping | 0/? | Not started | - |
+| 14. Evidence Instrument and Honest Scoping | 10/10 | Complete | 2026-09-18 |
 | 15. Event Identity (`lang.execution/2`) | 0/? | Not started | - |
 | 16. Branch/Match Emitter Port | 0/? | Not started | - |
 | 17. Return Type ≠ Parameter Type | 0/? | Not started | - |
