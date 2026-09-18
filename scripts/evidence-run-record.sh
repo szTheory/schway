@@ -15,6 +15,18 @@
 # is to RECORD what happened, including a genuine failure, not to require a
 # clean run before it will write anything.
 #
+# Completion witness (plan 14-11, EVD-02): after each pair's `go test`
+# invocation returns, this script appends one additional JSON-line record
+# marking that (package, pattern) pair finished, and after the whole loop
+# appends one final record marking the batch finished with the pair count.
+# Both sentinels carry an `Action` value ("record_pair_complete" /
+# "record_batch_complete") that is disjoint from go test's own -json
+# vocabulary (run/pause/cont/bench/pass/fail/skip/output), so the consumer's
+# parser can never confuse a completion witness with a test result. This is
+# what lets the consumer refuse a run record that did not finish producing
+# what it claims to report, instead of silently degrading to a lower grade
+# ceiling.
+#
 # Deliberately SEQUENTIAL, not parallel: a bounded-parallelism version was
 # tried and measured to THRASH rather than speed up when several pairs share
 # a `./internal/compiler/...`-shaped (dozens-of-packages) operand, each of
@@ -42,11 +54,30 @@ fi
 
 : > "$out"
 
+# json_escape backslash- and quote-escapes its one argument for embedding in
+# a JSON string value. This is local string transformation for the
+# sentinels THIS script writes, never a shell string that gets interpolated
+# into a command and executed -- $pkg/$pattern stay discrete argv elements
+# in every `go test` invocation below.
+json_escape() {
+  local s="$1"
+  s=${s//\\/\\\\}
+  s=${s//\"/\\\"}
+  printf '%s' "$s"
+}
+
+pairs=0
 while [ "$#" -ge 2 ]; do
   pkg="$1"
   pattern="$2"
   shift 2
+  pairs=$((pairs + 1))
   go test "$pkg" -run "$pattern" -json -count=1 >> "$out" 2>>"${out}.stderr" || true
+  pkg_json=$(json_escape "$pkg")
+  pattern_json=$(json_escape "$pattern")
+  printf '{"Action":"record_pair_complete","Package":"%s","Pattern":"%s"}\n' "$pkg_json" "$pattern_json" >> "$out"
 done
+
+printf '{"Action":"record_batch_complete","Pairs":%d}\n' "$pairs" >> "$out"
 
 exit 0

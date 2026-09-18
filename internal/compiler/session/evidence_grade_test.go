@@ -160,19 +160,42 @@ func TestValidationGradeOrderIsTotal(t *testing.T) {
 // runRecordEntry is one go test -json TestEvent line, decoded loosely: only
 // the three fields this ladder consults.
 type runRecordEntry struct {
-	Action string `json:"Action"`
-	Test   string `json:"Test"`
+	Action  string `json:"Action"`
+	Test    string `json:"Test"`
+	Package string `json:"Package"`
+	Pattern string `json:"Pattern"`
+	Pairs   int    `json:"Pairs"`
 }
+
+// runRecordPairCompleteAction and runRecordBatchCompleteAction are the two
+// completion-witness sentinel actions scripts/evidence-run-record.sh emits
+// (plan 14-11). Both are disjoint from go test's own -json Action
+// vocabulary (run/pause/cont/bench/pass/fail/skip/output), so parseRunRecord
+// can never confuse a sentinel with a test result.
+const (
+	runRecordPairCompleteAction  = "record_pair_complete"
+	runRecordBatchCompleteAction = "record_batch_complete"
+)
 
 // runRecord is a parsed run record, collapsed to top-level test names only
 // (D-14-04: the toolchain's listing -- and this record -- carries top-level
 // tests only; a subtest's "Test" field contains a "/" and is deliberately
 // excluded here, matching the evidence cell's own parent-test-only
-// discipline).
+// discipline). coveredPairs/batchComplete/requestedPairs are the completion
+// witness (D-14-?? / plan 14-11): coveredPairs is keyed the same way
+// corpusRunRecord's own "seen" dedup map is keyed (Package, NUL, Pattern),
+// and batchComplete is set only when the script's final sentinel was
+// observed -- a script that times out or is killed mid-batch never writes
+// that line, so batchComplete simply stays false rather than reporting a
+// result the batch never finished producing.
 type runRecord struct {
-	passed  map[string]bool
-	failed  map[string]bool
-	skipped map[string]bool
+	passed         map[string]bool
+	failed         map[string]bool
+	skipped        map[string]bool
+	coveredPairs   map[string]bool
+	batchComplete  bool
+	requestedPairs int
+	elapsed        time.Duration
 }
 
 // passedNoSkip reports whether name is confirmed EXERCISED: a recorded pass
@@ -192,7 +215,7 @@ func (r *runRecord) passedNoSkip(name string) bool {
 // best-effort evidence, and an unparseable line simply contributes nothing
 // rather than crashing the consumer.
 func parseRunRecord(data []byte) *runRecord {
-	record := &runRecord{passed: map[string]bool{}, failed: map[string]bool{}, skipped: map[string]bool{}}
+	record := &runRecord{passed: map[string]bool{}, failed: map[string]bool{}, skipped: map[string]bool{}, coveredPairs: map[string]bool{}}
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -200,6 +223,15 @@ func parseRunRecord(data []byte) *runRecord {
 		}
 		var entry runRecordEntry
 		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			continue
+		}
+		switch entry.Action {
+		case runRecordPairCompleteAction:
+			record.coveredPairs[entry.Package+"\x00"+entry.Pattern] = true
+			continue
+		case runRecordBatchCompleteAction:
+			record.batchComplete = true
+			record.requestedPairs = entry.Pairs
 			continue
 		}
 		if entry.Test == "" || strings.Contains(entry.Test, "/") {
@@ -215,6 +247,32 @@ func parseRunRecord(data []byte) *runRecord {
 		}
 	}
 	return record
+}
+
+// complete reports whether record positively demonstrates it covered every
+// pair in requested: the script's final batch sentinel was observed AND
+// every requested pair has its own per-pair completion sentinel. A
+// zero-length requested is the existing legal "nothing to cover" case and
+// is vacuously complete regardless of the record -- an empty batch was
+// never asked to finish anything. Otherwise a nil record (no run record
+// present at all) reports not complete with every pair uncovered -- the
+// existing fail-closed direction, preserved. The returned slice names
+// exactly the uncovered pairs, in requested's own order.
+func (r *runRecord) complete(requested []pkgPattern) (bool, []pkgPattern) {
+	if len(requested) == 0 {
+		return true, nil
+	}
+	if r == nil {
+		return false, requested
+	}
+	var missing []pkgPattern
+	for _, p := range requested {
+		key := p.Package + "\x00" + p.Pattern
+		if !r.coveredPairs[key] {
+			missing = append(missing, p)
+		}
+	}
+	return r.batchComplete && len(missing) == 0, missing
 }
 
 // pkgPattern is one (package, -run pattern) pair the run record must cover.
@@ -266,15 +324,51 @@ func generateRunRecord(t testing.TB, pairs []pkgPattern) *runRecord {
 	var stdout, stderr groundednessBoundedWriter
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		t.Logf("evidence-run-record.sh reported an error (a failing test inside the batch is expected and non-fatal here): %v; stderr: %s", err, stderr.bytes())
+	start := time.Now()
+	runErr := cmd.Run()
+	elapsed := time.Since(start)
+	if runErr != nil {
+		t.Logf("evidence-run-record.sh reported an error (a failing test inside the batch is expected and non-fatal here): %v; stderr: %s", runErr, stderr.bytes())
 	}
 	data, readErr := os.ReadFile(out)
 	if readErr != nil {
 		t.Logf("evidence run record file unreadable, treating as absent: %v", readErr)
 		return nil
 	}
-	return parseRunRecord(data)
+	record := parseRunRecord(data)
+	record.elapsed = elapsed
+	return record
+}
+
+// TestRunRecordCarriesACompletionWitness is plan 14-11 Task 1's tracer: one
+// thin path wired end to end through every layer this plan's remaining
+// tasks expand on -- producer script -> record file -> parser -> in-memory
+// record -> assertion. It invokes the REAL script (via generateRunRecord,
+// never a hand-rolled second spawn) for two cheap pairs in
+// internal/compiler/core, a package that runs in about a second, and
+// asserts the returned record positively reports which pairs it covered,
+// that the whole batch finished, how long it took, and that a real test
+// name in that batch is confirmed passed-no-skip.
+func TestRunRecordCarriesACompletionWitness(t *testing.T) {
+	pairs := []pkgPattern{
+		{Package: "./internal/compiler/core", Pattern: "^TestConventionOverrideNotExpressibleInCore$"},
+		{Package: "./internal/compiler/core", Pattern: "^TestParameterModeDecodeIsClosedSet$"},
+	}
+	record := generateRunRecord(t, pairs)
+	if record == nil {
+		t.Fatal("generateRunRecord returned a nil record for a real two-pair batch")
+	}
+	complete, missing := record.complete(pairs)
+	if !complete {
+		t.Fatalf("record.complete = false, missing pairs: %v", missing)
+	}
+	if record.elapsed <= 0 {
+		t.Fatalf("record.elapsed = %v, want > 0 for a real subprocess batch", record.elapsed)
+	}
+	t.Logf("measured elapsed for the two-pair tracer batch: %v", record.elapsed)
+	if !record.passedNoSkip("TestConventionOverrideNotExpressibleInCore") {
+		t.Fatal("expected TestConventionOverrideNotExpressibleInCore to be passedNoSkip in the tracer batch's record")
+	}
 }
 
 // ---------------------------------------------------------------------
