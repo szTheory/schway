@@ -178,7 +178,7 @@ None -- no external service configuration required.
 ## Self-Check: PASSED
 
 - `[ -f internal/compiler/session/verification_groundedness_test.go ]` -> FOUND
-- Commits present in `git log --oneline --all`: `a116cb8`, `fa0a7cc`, `9e445e8`, `f8ddf2d`, `4f4d773`, `5b75b1e`, `95f4720` -- all FOUND
+- Commits present in `git log --oneline --all`: `a116cb8`, `fa0a7cc`, `9e445e8`, `f8ddf2d`, `4f4d773`, `5b75b1e` -- all FOUND. The seventh, this plan's own metadata commit, is self-referential and cannot state its own SHA: verify it with `git log --oneline -1 -- .planning/phases/14-evidence-instrument-and-honest-scoping/14-06-SUMMARY.md`.
 - `go test ./internal/compiler/session/... -run 'TestVerificationGroundedness' -count=1 -v` re-run: 9/9 subtests PASS (`TestVerificationGroundednessClassifier`, `TestVerificationGroundedness`, `TestVerificationGroundednessScopeByIllocutionaryRole`, `TestVerificationGroundednessFrontierIsPinned`, `TestVerificationGroundednessCorpusIsNotEmpty`, `TestVerificationGroundednessIsNotInert`, `TestVerificationGroundednessGrepExecution`, `TestVerificationGroundednessGrepOverRealCorpus`, `TestVerificationGroundednessPerBranch`)
 - `go test ./internal/compiler/session/... -run 'TestStaticTestIndexMatchesGoTestList' -count=1 -v` re-run: PASS (1066 names resolved on both sides, 4.4s)
 - `go build ./...` and `go vet ./...` re-run: both clean
