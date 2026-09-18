@@ -2733,6 +2733,7 @@ var debtRegisterEscapeRegistry = map[string]string{
 // citation-free skip laundered through a new invented env value.
 var debtRegisterEnvironmentalSet = map[string]bool{
 	"clang": true,
+	"otool": true,
 }
 
 // debtRegisterModuleTestNames scans every *_test.go file in the module

@@ -443,7 +443,7 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 				// TestPhase5AdversarialSubsetIsComplete. Skipping it here
 				// avoids asserting the one thing this fixture exists to
 				// disprove.
-				t.Skip("typed_failure_truncated_stdout.lang intentionally exceeds the native stdout bound; see TestPhase5AdversarialSubsetIsComplete for its own interpreter-level verification")
+				t.Skip("typed_failure_truncated_stdout.lang intentionally exceeds the native stdout bound; see probe:TestPhase5AdversarialSubsetIsComplete for its own interpreter-level verification")
 			}
 			if fixture == "allocator_mismatch.lang" || fixture == "retained_pointer.lang" {
 				// D-05-10 (plan 05-08): detection for both of these fixtures
@@ -473,7 +473,7 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 				// this one; skip here rather than fail, since a non-accepting
 				// fixture failing Phase4CheckedProgram is expected, not a
 				// regression.
-				t.Skipf("%s: not an accepting fixture (reject-program, out of scope for this differential): %v", fixture, err)
+				t.Skipf("D-05-20: %s: not an accepting fixture (reject-program, out of scope for this differential): %v", fixture, err)
 			}
 			phase5RunThreeEngineAgreement(t, fixture, program, functionName)
 		})

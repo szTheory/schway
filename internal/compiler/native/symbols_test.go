@@ -159,7 +159,7 @@ func TestUnwindControlDoesNotInspectSections(t *testing.T) {
 		command := exec.CommandContext(ctx, "otool", "-l", binaryPath)
 		command.Stdout = &stdout
 		if runErr := command.Run(); runErr == nil && !strings.Contains(stdout.String(), "__unwind_info") {
-			t.Skip("host binary format has no inspectable unwind section; nothing to contrast against")
+			t.Skip("env:otool -- host binary format has no inspectable unwind section; nothing to contrast against")
 		}
 	}
 	status, rejected, toolErr := CheckUndefinedSymbolAllowlist(context.Background(), "", binaryPath, 0)

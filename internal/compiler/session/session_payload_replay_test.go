@@ -230,7 +230,7 @@ func TestPayloadCorpusCharacterizationReplay(t *testing.T) {
 					t.Fatalf("%s: does not check cleanly (%v) and is not in payloadCorpusExpectedSkips -- if this is expected, add it there and name why; if not, this is a regression", relative, checked.Diagnostics)
 				}
 				seenSkip[relative] = true
-				t.Skipf("does not check cleanly, expected: %v", checked.Diagnostics)
+				t.Skipf("D-12-19: does not check cleanly, expected (named in payloadCorpusExpectedSkips): %v", checked.Diagnostics)
 				return
 			}
 
@@ -240,7 +240,7 @@ func TestPayloadCorpusCharacterizationReplay(t *testing.T) {
 					t.Fatalf("%s: checks cleanly but cannot run through interp (diagnostics=%v err=%v) and is not in payloadCorpusExpectedSkips -- if this is expected (e.g. an ambiguous-entry or negative-control shape), add it there and name why; if not, this is a regression", relative, diagnostics, runErr)
 				}
 				seenSkip[relative] = true
-				t.Skipf("checks cleanly but cannot run through interp, expected: diagnostics=%v err=%v", diagnostics, runErr)
+				t.Skipf("D-12-19: checks cleanly but cannot run through interp, expected (named in payloadCorpusExpectedSkips): diagnostics=%v err=%v", diagnostics, runErr)
 				return
 			}
 

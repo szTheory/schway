@@ -540,7 +540,7 @@ func TestStaleEvidenceInjectorBreaksManifestBinding(t *testing.T) {
 
 	facts, err := evidence.DefaultFacts(ctx, "clang")
 	if err != nil {
-		t.Skipf("clang toolchain unavailable, skipping stale-evidence exercise: %v", err)
+		t.Skipf("env:clang toolchain unavailable, skipping stale-evidence exercise: %v", err)
 	}
 	product, diagnostics, err := evidence.Build(source, facts)
 	if err != nil {

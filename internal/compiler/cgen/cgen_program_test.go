@@ -182,9 +182,13 @@ func TestEmitProgramForwardDefinedCallee(t *testing.T) {
 // is ever reachable -- the refusal is asserted by CODE, not merely by
 // absence of emitted output.
 func TestEmitProgramRefusesRecursiveProgramsUpstream(t *testing.T) {
+	// plan 14-07: this fixture is checked into the repo
+	// (testdata/phase07/cycle_self.lang); a read failure here is repo
+	// corruption, not a legitimate skip condition, so it fails loudly
+	// rather than silently skipping.
 	selfRecursive, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "cycle_self.lang"))
 	if err != nil {
-		t.Skipf("no self-recursion fixture available: %v", err)
+		t.Fatalf("testdata/phase07/cycle_self.lang: %v", err)
 	}
 	checked := session.Check(selfRecursive)
 	if len(checked.Diagnostics) == 0 {

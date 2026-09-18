@@ -24,7 +24,7 @@ func phase6EvidenceFixture(t *testing.T) (manifestPath, sourcePath string, manif
 	}
 	facts, err := evidence.DefaultFacts(context.Background(), "clang")
 	if err != nil {
-		t.Skipf("clang toolchain unavailable, skipping evidence exercise: %v", err)
+		t.Skipf("env:clang toolchain unavailable, skipping evidence exercise: %v", err)
 	}
 	product, diagnostics, err := evidence.Build(source, facts)
 	if err != nil {
