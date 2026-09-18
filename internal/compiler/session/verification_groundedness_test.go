@@ -22,6 +22,8 @@
 package session_test
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -35,6 +37,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -840,6 +843,42 @@ func seedCopy(t *testing.T, extraRow string) string {
 	return dest
 }
 
+// groundednessGitTimeout bounds the one process this file spawns. A
+// `git status` over .planning/ is sub-second on any tree this project has
+// ever had; the generous ceiling exists so a wedged git cannot hang the
+// suite, not as a performance budget.
+const groundednessGitTimeout = 30 * time.Second
+
+// groundednessMaxStreamBytes caps each captured child stream independently.
+const groundednessMaxStreamBytes = 1 << 20
+
+// groundednessBoundedWriter is this file's local copy of the module's
+// bounded-capture shape (testsupport.boundedWriter, native.boundedWriter):
+// it retains at most groundednessMaxStreamBytes+1 bytes so overflow is
+// observable rather than silently truncated into a plausible-looking
+// result. Duplicated rather than exported because both existing copies are
+// deliberately package-private and this file is package session_test.
+type groundednessBoundedWriter struct {
+	buffer bytes.Buffer
+	total  int
+}
+
+func (w *groundednessBoundedWriter) Write(data []byte) (int, error) {
+	w.total += len(data)
+	remaining := groundednessMaxStreamBytes + 1 - w.buffer.Len()
+	if remaining > len(data) {
+		remaining = len(data)
+	}
+	if remaining > 0 {
+		_, _ = w.buffer.Write(data[:remaining])
+	}
+	return len(data), nil
+}
+
+func (w *groundednessBoundedWriter) bytes() []byte { return w.buffer.Bytes() }
+
+func (w *groundednessBoundedWriter) overflowed() bool { return w.total > groundednessMaxStreamBytes }
+
 // TestVerificationGroundednessIsNotInert seeds exactly one fault per
 // mechanizable classification (R1 elision, R2 dead pattern, an unparseable
 // go test cell) into a temp copy of a clean Tier-A document and asserts
@@ -849,13 +888,25 @@ func seedCopy(t *testing.T, extraRow string) string {
 func TestVerificationGroundednessIsNotInert(t *testing.T) {
 	gitStatusPlanning := func(t *testing.T) string {
 		t.Helper()
-		cmd := exec.Command("git", "status", "--porcelain", ".planning")
+		// Spawned the way every other spawn in this module is
+		// (TestSourceNeverSpawnsUnboundedProcesses): a deadline-carrying
+		// context, and independently size-capped stdout/stderr writers --
+		// never CombinedOutput/Output, which read the child into one
+		// unbounded buffer.
+		ctx, cancel := context.WithTimeout(context.Background(), groundednessGitTimeout)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "git", "status", "--porcelain", ".planning")
 		cmd.Dir = testsupport.ProjectPath()
-		out, err := cmd.Output()
-		if err != nil {
-			t.Fatalf("git status --porcelain .planning: %v", err)
+		var stdout, stderr groundednessBoundedWriter
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("git status --porcelain .planning: %v (stderr: %s)", err, stderr.bytes())
 		}
-		return string(out)
+		if stdout.overflowed() || stderr.overflowed() {
+			t.Fatalf("git status --porcelain .planning exceeded %d bytes of output", groundednessMaxStreamBytes)
+		}
+		return string(stdout.bytes())
 	}
 	// Captured before any seeding so the assertion below is a diff against
 	// this run's own activity, not an assumption that the working tree

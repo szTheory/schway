@@ -574,8 +574,14 @@ func importAlias(file *ast.File, importPath, defaultName string) string {
 // parses every *.go file in the module and reports every AST-resolved
 // forbidden spawn shape scanUnboundedSpawns names, rather than matching a
 // literal substring a rename or reformat could evade.
-// Only .planning/spikes/ is excluded, because throwaway spike labs are not
-// part of the compiler or its test support.
+// Only throwaway spike labs are excluded, because they are not part of the
+// compiler or its test support. That is two locations, not one: live labs
+// under .planning/spikes/, and labs archived verbatim into the
+// spike-findings project skill under .claude/skills/*/sources/ (moved there
+// by 58103f5, which is when this guard first went red on lab.go -- the
+// exclusion's rationale always covered them, only its path literal did
+// not). Archived labs are read-only evidence of a past experiment; they are
+// never built, imported, or run by the compiler.
 func TestSourceNeverSpawnsUnboundedProcesses(t *testing.T) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
@@ -583,6 +589,16 @@ func TestSourceNeverSpawnsUnboundedProcesses(t *testing.T) {
 	}
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
 	spikes := filepath.Join(root, ".planning", "spikes") + string(filepath.Separator)
+	skills := filepath.Join(root, ".claude", "skills") + string(filepath.Separator)
+	archivedLab := func(path string) bool {
+		if !strings.HasPrefix(path, skills) {
+			return false
+		}
+		rest := strings.Split(filepath.ToSlash(strings.TrimPrefix(path, skills)), "/")
+		// <skill>/sources/<spike>/... -- anything shallower is skill
+		// machinery, not an archived lab, and stays scanned.
+		return len(rest) > 2 && rest[1] == "sources"
+	}
 	fileSet := token.NewFileSet()
 	scanned := 0
 	walkErr := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
@@ -595,7 +611,7 @@ func TestSourceNeverSpawnsUnboundedProcesses(t *testing.T) {
 			}
 			return nil
 		}
-		if filepath.Ext(path) != ".go" || strings.HasPrefix(path, spikes) {
+		if filepath.Ext(path) != ".go" || strings.HasPrefix(path, spikes) || archivedLab(path) {
 			return nil
 		}
 		relative, relErr := filepath.Rel(root, path)
