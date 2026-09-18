@@ -55,7 +55,7 @@ branched on and would have become the fifth instance.
       test over its re-verify greps, so the file cannot go stale unnoticed.
       (It currently states 32 guards; there are 26.)
 
-- [ ] **EVD-07**: PROJECT.md's DX-06 claim and NAT-07 `-flto` bullet state what
+- [x] **EVD-07**: PROJECT.md's DX-06 claim and NAT-07 `-flto` bullet state what
       the evidence supports, and the `-flto` multi-function inertness has a debt
       row with an owning phase.
 
@@ -159,7 +159,7 @@ arithmetic operators, and branching moves to M004.
 
 ### Process
 
-- [ ] **PRC-01**: Every debt item names an owning phase when recorded, and a
+- [x] **PRC-01**: Every debt item names an owning phase when recorded, and a
       well-formedness gate fails otherwise — mechanizing D-10-60, which prose
       did not.
 
@@ -202,7 +202,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | EVD-04 | Phase 14 | Pending |
 | EVD-05 | Phase 14 | Pending |
 | EVD-06 | Phase 14 | Pending |
-| EVD-07 | Phase 14 | Pending |
+| EVD-07 | Phase 14 | Complete |
 | EVD-08 | Phase 14 | Pending |
 | OBS-01 | Phase 15 | Pending |
 | OBS-02 | Phase 15 | Pending |
@@ -227,7 +227,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | QLT-12 | Phase 20 | Pending |
 | DX-08 | Phase 14 | Complete |
 | DX-09 | Phase 14 | Complete |
-| PRC-01 | Phase 14 | Pending |
+| PRC-01 | Phase 14 | Complete |
 | PRC-02 | Phase 20 | Pending |
 
 **Coverage:**
