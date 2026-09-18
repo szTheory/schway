@@ -36,22 +36,29 @@ branched on and would have become the fifth instance.
 - [ ] **EVD-01**: A CI lint fails when any `.planning/**` verification document
       cites a `go test -run` pattern that resolves to zero tests, or a command
       cell elided with `…`. Three such patterns exist today and exit 0.
+
 - [ ] **EVD-02**: Every requirement and success criterion carries a grade from
       the closed vocabulary `DEFINED | WIRED | REACHABLE | EXERCISED |
       MUTATION-KILLED`, and is satisfiable only at EXERCISED or above.
+
 - [ ] **EVD-03**: A claim that is built but structurally unreachable is recorded
       in `.planning/UNREACHABLE-CLAIMS.md` with its unblocking trigger, rather
       than graded as satisfied or silently downgraded.
+
 - [ ] **EVD-04**: No test skip or row exclusion outlives the trigger it cites; a
       guard fails when a cited gate has already closed.
+
 - [ ] **EVD-05**: The mutation axis-movement law has exactly one implementation
       and zero per-row exclusions.
+
 - [ ] **EVD-06**: `LANGUAGE-MATURITY.md`'s own counts are machine-checked by a
       test over its re-verify greps, so the file cannot go stale unnoticed.
       (It currently states 32 guards; there are 26.)
+
 - [ ] **EVD-07**: PROJECT.md's DX-06 claim and NAT-07 `-flto` bullet state what
       the evidence supports, and the `-flto` multi-function inertness has a debt
       row with an owning phase.
+
 - [ ] **EVD-08**: Suite wall-clock is an observed row in the budget manifest
       with a recorded baseline. (Measured 192.67s; documents claim ~60s.)
 
@@ -59,10 +66,13 @@ branched on and would have become the fifth instance.
 
 - [ ] **OBS-01**: Two activations of the same callee through a shared-leaf
       diamond produce distinct event identities.
+
 - [ ] **OBS-02**: A call emits an observable event, so the causal edge between
       caller and callee is visible rather than inferred.
+
 - [ ] **OBS-03**: Event identity is re-derived independently by a non-importing
       peer over its own traversal.
+
 - [ ] **OBS-04**: The `/0` and `/1` execution-document bytes remain frozen; the
       new required field lands under a `/2` schema bump.
 
@@ -71,9 +81,11 @@ branched on and would have become the fifth instance.
 - [ ] **NAT-08**: One emission law lowers every admissible program; the three
       superseded single-function emitters are deleted in the same commit that
       flips dispatch.
+
 - [ ] **NAT-09**: The three emitter families with no M003 consumer are formally
       cut by a recorded amendment naming their landing milestone and the
       `-flto` consequence — not deferred a third time.
+
 - [ ] **NAT-10**: A re-invoking multi-function fixture is compared across
       interpreter, `-O0`, `-O3`, and `-O3 -flto`.
 
@@ -81,13 +93,17 @@ branched on and would have become the fifth instance.
 
 - [ ] **TYP-01**: A function's declared return type may differ from its
       parameter type, and a program relying on that checks, runs, and lowers.
+
 - [ ] **TYP-02**: A call whose argument type does not match the callee's
       declared parameter type is refused by name, from a `.lang` fixture.
+
 - [ ] **TYP-03**: A return contract that cannot be represented is refused by
       name, from a `.lang` fixture.
+
 - [ ] **TYP-04**: Drop obligations and freshness are derived from the return
       type's own abilities, independently at each admission layer — not
       inherited from the parameter's.
+
 - [ ] **TYP-05**: `lang-repair` reaches `repaired` on `use_matching_argument`
       against a sealed held-out fixture. (Closes DX-07 / D-13-10a.)
 
@@ -99,8 +115,10 @@ arithmetic operators, and branching moves to M004.
 
 - [ ] **CTL-01**: A branch discriminates a value the function computed, not only
       the function's own parameter.
+
 - [ ] **CTL-02**: A program that calls a `Result`-returning callee and matches
       on the result agrees across all five axes.
+
 - [ ] **CTL-03**: An arm returns a destructured payload place, and a seeded
       wrong-slot write is observed on a comparator axis — constructing D-12-43
       rather than ratifying it as unconstructible.
@@ -109,8 +127,10 @@ arithmetic operators, and branching moves to M004.
 
 - [ ] **VAL-01**: A numeric literal can be written, checked, interpreted, and
       lowered.
+
 - [ ] **VAL-02**: Every operation kind is handled at all six dispatch sites,
       proven by the exhaustive-dispatch control.
+
 - [ ] **VAL-03**: A literal-bearing program agrees across interpreter, `-O0`,
       `-O3`, and `-O3 -flto`.
 
@@ -118,19 +138,22 @@ arithmetic operators, and branching moves to M004.
 
 - [ ] **QLT-10**: Phases 07, 08, and 11 reconcile against the post-M003 surface,
       with EVD-01's lint doing the finding; no VALIDATION file remains `draft`.
+
 - [ ] **QLT-11**: A refused frontier fixture for `examples/checksum.lang` is
       checked in with its refusing diagnostic pinned, and the milestone moved
       that diagnostic.
+
 - [ ] **QLT-12**: The enumerated-closure proof is content-addressed rather than
       re-run every commit. (Currently 58.33s, 30% of suite wall-clock, re-proving
       a frozen 112-program closure.)
 
 ### Agent Loop
 
-- [ ] **DX-08**: Structurally different defective programs produce
+- [x] **DX-08**: Structurally different defective programs produce
       distinguishable diagnostics. Today three such programs yield identical
       diagnostic IDs and an identical result ID, so an editing agent gets no
       convergence signal.
+
 - [ ] **DX-09**: An `unrepairable` verdict explains itself; the `diagnosis` field
       is never empty.
 
@@ -139,6 +162,7 @@ arithmetic operators, and branching moves to M004.
 - [ ] **PRC-01**: Every debt item names an owning phase when recorded, and a
       well-formedness gate fails otherwise — mechanizing D-10-60, which prose
       did not.
+
 - [ ] **PRC-02**: M003 does not close with more than 5 open, unowned debt items.
 
 ## Deferred — Named Landing, Not Dropped
@@ -201,12 +225,13 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | QLT-10 | Phase 20 | Pending |
 | QLT-11 | Phase 20 | Pending |
 | QLT-12 | Phase 20 | Pending |
-| DX-08 | Phase 14 | Pending |
+| DX-08 | Phase 14 | Complete |
 | DX-09 | Phase 14 | Pending |
 | PRC-01 | Phase 14 | Pending |
 | PRC-02 | Phase 20 | Pending |
 
 **Coverage:**
+
 - M003 requirements: 33 total
 - Mapped to phases: 33 ✓
 - Unmapped: 0
@@ -221,9 +246,11 @@ P20 = 4. No orphans, no duplicates.
   (`multi_function_diamond_call.lang` across all four tiers). Filing it with the
   emitter port would let Phase 16 claim credit for an already-green row — the
   exact "green because it is wired" pattern this milestone retires.
+
 - **PRC-01 → Phase 14, PRC-02 → Phase 20.** PRC-01 is an instrument and must
   exist before debt accrues; PRC-02 is a close condition adjudicable only at the
   end.
+
 - **DX-08 / DX-09 → Phase 14.** Both are shipped-API defects measurable today
   and instances of the milestone's central theme. Note these two IDs are
   ADVERSARIAL-SYNTHESIS's DX-10 and DX-12 renumbered; that document's own

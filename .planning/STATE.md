@@ -5,15 +5,15 @@ milestone_name: Computation and Honest Instruments
 current_phase: 14
 current_phase_name: Evidence Instrument and Honest Scoping
 status: executing
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-09-18T00:51:38.433Z"
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-09-18T01:15:54.713Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 14 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 1
+  completed_plans: 2
 state_head: 58103f585c9c3e88ce1bfacb97f5812333c01e45
 ---
 
@@ -58,7 +58,7 @@ No outstanding human verification.
 ## Current Position
 
 Phase: 14 (Evidence Instrument and Honest Scoping) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 14 execution started
 
@@ -283,6 +283,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 13 P06 | 95min | 3 tasks | 8 files |
 | Phase 13 P07 | ~25min active | 3 tasks | 5 files |
 | Phase 14 P01 | 15min | 3 tasks | 1 files |
+| Phase 14 P02 | 15 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -384,6 +385,9 @@ Standing architectural commitments carried into M002:
 - [Phase 13]: 13-07: DX-06 and DX-07 ratified Partial (not Complete) -- B1 contract-violation blame structurally unreachable at this maturity (D-13-02b, D-12-43 precedent); use_matching_argument withdrawn as unrepairable, every Lang function sharing one type fact (D-13-10a). Both recorded in PHASE-13-DEBT.md, REQUIREMENTS.md traceability updated
 - [Phase 13]: 13-07: 13-VALIDATION.md corrected against real test names -- two instances of the same go-test-run-matches-nothing defect class found and fixed (D-13-09a's TestOrderingStability -> TestInterproceduralDiagnosticOrderingStability; import-boundary row's TestImportBoundary pattern, which missed the actual lint TestRepairDriverImportsStayOutsideInternal). wave_0_complete/nyquist_compliant set true from evidence; go test ./... green (25 packages)
 - [Phase ?]: Groundedness lint (EVD-01) shipped end-to-end: static Go test index over *_test.go, Tier-A document scanner via phaseArtifactGlob, R1/R2/unparseable classification, 26-record pinned violation frontier, three-fault non-inertness proof. Fixed a real backtick-awareness bug in table-row splitting and a Contains-vs-HasPrefix substring bug found via testing against the live corpus. — Both bugs were caught by running the lint against the real .planning/** corpus rather than trusting the plan's literal algorithm description -- exactly the discipline this phase exists to install.
+- [Phase ?]: 14-02: recoverRegion advances past the unexpected token before measuring the discarded extent, so causes[0].span never overlaps primary_span; the third spiral member's skipped region lands at exactly one token.
+- [Phase ?]: 14-02: skipped_region cause attached only when recoverRegion actually discarded >=1 token, confining published-ID churn to fixtures that reach the declaration-recovery arm with a non-empty discard.
+- [Phase ?]: 14-02: diagnostic_distinctness_test.go lives in package check_test (not package check) since session.CheckCommandFile would otherwise create a check->session->check import cycle.
 
 ### Pending Todos
 
@@ -526,8 +530,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-18T00:51:38.425Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-09-18T01:15:49.373Z
+Stopped at: Completed 14-02-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
