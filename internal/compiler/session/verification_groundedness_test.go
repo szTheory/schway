@@ -802,9 +802,6 @@ func documentHasCommandAndVerdictRow(content string) bool {
 // or under the research tree) -- everything else defaults enforced, so
 // omitting the declaration is never a silent escape either.
 func classifyDocumentTier(path string, content string) documentTier {
-	if true {
-		return tierExempt // RED stub: intentionally wrong
-	}
 	if documentHasCommandAndVerdictRow(content) {
 		return tierEnforced
 	}
