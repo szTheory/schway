@@ -304,6 +304,46 @@ func checkLanguageMaturityDoc(docPath, root string) ([]string, error) {
 	return findings, nil
 }
 
+// suiteWallClockMetric is the QLT-02 budget-manifest metric name for the
+// full-suite wall-clock baseline EVD-08 adds (Task 2): a cold, observed
+// measurement of `go test ./...` taken during this phase, never a figure
+// copied out of prose.
+const suiteWallClockMetric = "suite_wall_clock_ns"
+
+// checkSuiteWallClockObservedRow re-parses manifestPath directly (never
+// through the package's go:embed, so it also works unchanged against a temp
+// copy) and asserts exactly one gate_type "observed" row names
+// suiteWallClockMetric. Factored to take a manifest path so
+// TestSelfDescribingDocsGuardIsNotInert can run it against a temp copy with
+// the row removed, without touching the checked-in manifest.
+func checkSuiteWallClockObservedRow(manifestPath string) ([]string, error) {
+	raw, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, err
+	}
+	var rows []QLT02BudgetRow
+	if jsonErr := json.Unmarshal(raw, &rows); jsonErr != nil {
+		return nil, fmt.Errorf("%s: invalid JSON: %w", manifestPath, jsonErr)
+	}
+	count := 0
+	var findings []string
+	for _, row := range rows {
+		if row.Metric != suiteWallClockMetric {
+			continue
+		}
+		count++
+		if row.GateType != QLT02GateTypeObserved {
+			findings = append(findings, fmt.Sprintf("%s: %s row has gate_type %q, want %q", manifestPath, suiteWallClockMetric, row.GateType, QLT02GateTypeObserved))
+		}
+	}
+	if count == 0 {
+		findings = append(findings, fmt.Sprintf("%s: no %s row found", manifestPath, suiteWallClockMetric))
+	} else if count > 1 {
+		findings = append(findings, fmt.Sprintf("%s: %d %s rows found, want exactly 1", manifestPath, count, suiteWallClockMetric))
+	}
+	return findings, nil
+}
+
 // TestLanguageMaturityCountsAreCurrent is EVD-06's real-corpus check: every
 // count .planning/LANGUAGE-MATURITY.md states about the tree must equal this
 // file's independent re-derivation of that same count.
