@@ -29,6 +29,7 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -797,5 +798,127 @@ func TestVerificationGroundednessFrontierIsPinned(t *testing.T) {
 		if !measuredSet[v] {
 			t.Errorf("pinned frontier names a violation the tree no longer produces (remove it from pinnedFrontier once verified): %s %s:%d: %s", v.Classification, v.File, v.Line, v.Command)
 		}
+	}
+}
+
+// ---------------------------------------------------------------------
+// Task 3: prove the lint is not inert (mirrors
+// TestInjectorMarkerCountGuardIsNotInert's temp-copy-and-seed-one-fault
+// shape, session_phase6_injectors_test.go:823-863).
+// ---------------------------------------------------------------------
+
+// nonInertBaseDocument is a real Tier-A document that produces ZERO
+// violations against the current tree, chosen so a seeded fault's single
+// new violation is unambiguously attributable to the seed alone.
+const nonInertBaseDocument = ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VERIFICATION.md"
+
+// nonInertSentinelName is the R2 seed's identifier. Its non-existence in
+// the module is confirmed against the static index itself before use,
+// mirroring scripts/assert-go-tests.sh --self-test's sentinel discipline
+// (a nonexistent name, verified nonexistent, not merely asserted).
+const nonInertSentinelName = "TestZZZNonexistentSentinelForGroundednessNotInertProof"
+
+// seedCopy copies nonInertBaseDocument into t.TempDir() with one extra
+// table row appended and returns the copy's path -- the real .planning/**
+// tree is never touched.
+func seedCopy(t *testing.T, extraRow string) string {
+	t.Helper()
+	base := testsupport.ProjectPath(strings.Split(nonInertBaseDocument, "/")...)
+	data, err := os.ReadFile(base)
+	if err != nil {
+		t.Fatalf("read base document: %v", err)
+	}
+	mutated := string(data)
+	if !strings.HasSuffix(mutated, "\n") {
+		mutated += "\n"
+	}
+	mutated += extraRow
+	dest := filepath.Join(t.TempDir(), "seeded.md")
+	if err := os.WriteFile(dest, []byte(mutated), 0o644); err != nil {
+		t.Fatalf("write seeded copy: %v", err)
+	}
+	return dest
+}
+
+// TestVerificationGroundednessIsNotInert seeds exactly one fault per
+// mechanizable classification (R1 elision, R2 dead pattern, an unparseable
+// go test cell) into a temp copy of a clean Tier-A document and asserts
+// the classifier reports exactly that violation and nothing else. A guard
+// proven red on only one classification is inert for the others, so all
+// three are required here.
+func TestVerificationGroundednessIsNotInert(t *testing.T) {
+	gitStatusPlanning := func(t *testing.T) string {
+		t.Helper()
+		cmd := exec.Command("git", "status", "--porcelain", ".planning")
+		cmd.Dir = testsupport.ProjectPath()
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("git status --porcelain .planning: %v", err)
+		}
+		return string(out)
+	}
+	// Captured before any seeding so the assertion below is a diff against
+	// this run's own activity, not an assumption that the working tree
+	// starts clean (STATE.md/state.json are legitimately touched by
+	// unrelated GSD tracking machinery during phase execution).
+	statusBefore := gitStatusPlanning(t)
+
+	index := buildTestIndex(t)
+
+	for importPath, names := range index.byImportPath {
+		if names[nonInertSentinelName] {
+			t.Fatalf("sentinel %q unexpectedly exists in %s -- pick a different sentinel", nonInertSentinelName, importPath)
+		}
+	}
+
+	baseFull := testsupport.ProjectPath(strings.Split(nonInertBaseDocument, "/")...)
+	baseline, err := classifyDocument(index, baseFull)
+	if err != nil {
+		t.Fatalf("classifyDocument(base): %v", err)
+	}
+	if len(baseline) != 0 {
+		t.Fatalf("base document %s already produces %d violation(s); it must be clean for seeded-fault attribution to be unambiguous: %+v", nonInertBaseDocument, len(baseline), baseline)
+	}
+
+	assertExactlyOne := func(t *testing.T, row string, want classification) {
+		t.Helper()
+		copyPath := seedCopy(t, row)
+		unmodifiedBaseline, err := classifyDocument(index, baseFull)
+		if err != nil {
+			t.Fatalf("classifyDocument(base, re-checked): %v", err)
+		}
+		if len(unmodifiedBaseline) != 0 {
+			t.Fatalf("unmodified base document produced %d violation(s), want 0: %+v", len(unmodifiedBaseline), unmodifiedBaseline)
+		}
+		violations, err := classifyDocument(index, copyPath)
+		if err != nil {
+			t.Fatalf("classifyDocument(seeded): %v", err)
+		}
+		if len(violations) != 1 {
+			t.Fatalf("expected exactly one seeded violation, got %d: %+v", len(violations), violations)
+		}
+		if violations[0].Classification != want {
+			t.Fatalf("expected classification %s, got %s: %+v", want, violations[0].Classification, violations[0])
+		}
+	}
+
+	t.Run("R2 dead pattern", func(t *testing.T) {
+		row := "| seed | seed | seed | seed | seed | seed | `go test ./internal/compiler/session -run " + nonInertSentinelName + "` | seed | seed |\n"
+		assertExactlyOne(t, row, classR2)
+	})
+
+	t.Run("R1 elision", func(t *testing.T) {
+		row := "| seed | seed | seed | seed | seed | seed | `go test ./internal/compiler/session -run TestSeedElided…` | seed | seed |\n"
+		assertExactlyOne(t, row, classR1)
+	})
+
+	t.Run("unparseable go test cell", func(t *testing.T) {
+		row := "| seed | seed | seed | seed | seed | seed | `go test -flag-with-no-package-or-pattern` | seed | seed |\n"
+		assertExactlyOne(t, row, classUnparseable)
+	})
+
+	statusAfter := gitStatusPlanning(t)
+	if statusAfter != statusBefore {
+		t.Fatalf("git status --porcelain .planning changed during this test run -- a seeded copy leaked into the real tree (seeded copies must live only under t.TempDir()):\nbefore:\n%s\nafter:\n%s", statusBefore, statusAfter)
 	}
 }
