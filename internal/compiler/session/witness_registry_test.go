@@ -397,6 +397,48 @@ func scanSuppressionSurfaces(root string) ([]suppressionSite, error) {
 	return sites, err
 }
 
+// buildConstraintAllowlist is the closed set of //go:build constraint
+// TERMS (GOOS values, GOARCH values, and cgo) this guard accepts with no
+// citation required. Membership is a project-portability decision:
+// AGENTS.md names macOS and Linux as this project's initial host
+// priorities, so this project's declared targets (darwin, linux GOOS;
+// amd64, arm64 GOARCH) plus Go's own cgo build tag are pre-approved. Any
+// other term -- another GOOS/GOARCH value, a Go version tag, a custom
+// build tag -- falls outside that portability decision and must carry a
+// citation that resolves under the EVD-04 witness grammar
+// (suppressionCitationsResolve) on the same //go:build line.
+var buildConstraintAllowlist = map[string]string{
+	"darwin": "AGENTS.md names macOS as an initial host priority",
+	"linux":  "AGENTS.md names Linux as an initial host priority",
+	"amd64":  "portable GOARCH target this project builds for",
+	"arm64":  "portable GOARCH target this project builds for (current Apple host)",
+	"cgo":    "Go's own cgo build tag, not a portability decision",
+}
+
+// buildConstraintTerms splits a //go:build constraint line into its bare
+// terms. It is deliberately a TERM EXTRACTOR, not a constraint evaluator:
+// this guard only ever asks "which terms appear on this line", never "does
+// this line's boolean expression evaluate true on some host" -- that
+// question belongs to go/build.Context.MatchFile, not to this guard. Go's
+// build-constraint syntax allows &&, ||, !, and parentheses between terms;
+// this splits on all of them, trims the leading directive, drops each
+// term's negation prefix, and discards empties.
+func buildConstraintTerms(line string) []string {
+	trimmed := strings.TrimSpace(line)
+	trimmed = strings.TrimPrefix(trimmed, "//go:build")
+	replacer := strings.NewReplacer("&&", " ", "||", " ", "(", " ", ")", " ")
+	fields := strings.Fields(replacer.Replace(trimmed))
+	var terms []string
+	for _, field := range fields {
+		field = strings.TrimPrefix(field, "!")
+		if field == "" {
+			continue
+		}
+		terms = append(terms, field)
+	}
+	return terms
+}
+
 // suppressionProblems runs suppressionCitationsResolve over every site,
 // plus the NAT03Mutation unsubjected-row surface, and returns every
 // problem found (nil means clean). Shared by
@@ -423,6 +465,14 @@ func suppressionProblems(root string, nonSkipMode suppressionResolutionMode) ([]
 		}
 		if site.kind == "skip" && !found {
 			problems = append(problems, fmt.Sprintf("%s (%s): uncited suppression -- a Skip call must cite a resolvable witness", site.pos, site.kind))
+		}
+		if site.kind == "build-constraint" && !found {
+			for _, term := range buildConstraintTerms(site.text) {
+				if _, allowed := buildConstraintAllowlist[term]; allowed {
+					continue
+				}
+				problems = append(problems, fmt.Sprintf("%s (%s): constraint term %q is outside buildConstraintAllowlist and carries no resolvable citation", site.pos, site.kind, term))
+			}
 		}
 	}
 	return problems, nil
@@ -509,6 +559,50 @@ func TestSuppressionWitnessOnlyInStringLiteralIsFound(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected a string-literal-kind problem naming the unresolved escape citation, got: %v", problems)
+	}
+}
+
+// TestBuildConstraintsOutsideTheAllowlistAreRefused is Task 1's tracer,
+// wiring the thinnest complete path end to end: a //go:build constraint
+// line in a scanned file is enumerated as a build-constraint site,
+// evaluated against buildConstraintAllowlist, and reported by name when a
+// term falls outside it, while an all-allowlisted sibling constraint
+// produces nothing. Fixtures use interpreted strings with escaped
+// newlines, never a backtick raw string literal: a raw string would place
+// a real //go:build directive at the start of a line in THIS file, and the
+// module-wide TestNoSuppressionOutlivesItsWitness scan would then enumerate
+// the fixture's own text as a live site.
+func TestBuildConstraintsOutsideTheAllowlistAreRefused(t *testing.T) {
+	allowedDir := t.TempDir()
+	allowedSource := "//go:build darwin || linux\n\npackage seeded\n\nfunc allowed() {}\n"
+	if err := os.WriteFile(filepath.Join(allowedDir, "allowed.go"), []byte(allowedSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	problems, err := suppressionProblems(allowedDir, suppressionModeFull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) != 0 {
+		t.Fatalf("an all-allowlisted //go:build constraint should produce zero problems; got: %v", problems)
+	}
+
+	refusedDir := t.TempDir()
+	refusedSource := "//go:build darwin || linux || windows\n\npackage seeded\n\nfunc refused() {}\n"
+	if err := os.WriteFile(filepath.Join(refusedDir, "refused.go"), []byte(refusedSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	problems, err = suppressionProblems(refusedDir, suppressionModeFull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) != 1 {
+		t.Fatalf("expected exactly one problem for the unallowlisted constraint term, got %d: %v", len(problems), problems)
+	}
+	if !strings.Contains(problems[0], "windows") {
+		t.Fatalf("expected the problem to name the offending term %q, got: %q", "windows", problems[0])
+	}
+	if !strings.Contains(problems[0], "refused.go:1") {
+		t.Fatalf("expected the problem to name the site position, got: %q", problems[0])
 	}
 }
 
