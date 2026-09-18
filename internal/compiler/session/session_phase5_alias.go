@@ -506,7 +506,12 @@ func NAT03Mutations() []NAT03Mutation {
 // asserted directly against the refusal's own diagnostic content rather
 // than via Phase5CompareEngines. Rows 4-5 produce two genuinely comparable
 // execution.Execution documents and are asserted via Phase5CompareEngines
-// itself, naming the axis Phase5CompareEngines actually reports.
+// itself, naming the axis Phase5CompareEngines actually reports. Row 6
+// (control:native.sanitize.allocator_mismatch) is likewise a total
+// refusal -- ASan's alloc-dealloc-mismatch report -- asserted directly
+// against the sanitizer's own signature by assertAllocatorMismatchMovesAxis.
+// This is the single axis-movement law: every subjected control has
+// exactly one case here, with no dispatcher in front of it (EVD-05).
 func AssertMutationMovesAnAxis(ctx context.Context, mutation NAT03Mutation) error {
 	switch mutation.ControlID {
 	case "control:foreign.layout_mismatch":
@@ -519,8 +524,10 @@ func AssertMutationMovesAnAxis(ctx context.Context, mutation NAT03Mutation) erro
 		return assertNonlocalExitMovesAxis(ctx, mutation)
 	case ControlAliasFalseNoAlias:
 		return assertAliasFalseNoAliasMovesAxis(ctx, mutation)
+	case ControlSanitizeAllocatorMismatch:
+		return assertAllocatorMismatchMovesAxis(ctx, mutation)
 	default:
-		return fmt.Errorf("AssertMutationMovesAnAxis: unsupported control %q (row not yet subjected — see PENDING-05-08)", mutation.ControlID)
+		return fmt.Errorf("AssertMutationMovesAnAxis: unsupported control %q", mutation.ControlID)
 	}
 }
 

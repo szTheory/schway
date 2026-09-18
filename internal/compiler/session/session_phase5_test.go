@@ -202,11 +202,11 @@ func TestNAT03MutationsCiteExistingPrograms(t *testing.T) {
 	}
 }
 
-// TestNAT03SanitizerRowMovesItsClaimedAxis closes D-05-22 for the row
-// plan 05-07 could not assert (control:native.sanitize.allocator_mismatch,
-// PENDING-05-08 until this plan): Phase5AssertMutationMovesAnAxis succeeds
-// against plan 05-08's testdata/phase5/allocator_mismatch.lang, asserting
-// the row's own claimed axis specifically.
+// TestNAT03SanitizerRowMovesItsClaimedAxis closes D-05-22 for
+// control:native.sanitize.allocator_mismatch: the single surviving
+// axis-movement law, session.AssertMutationMovesAnAxis, succeeds against
+// testdata/phase5/allocator_mismatch.lang directly -- there is no
+// dispatcher in front of it any more (EVD-05, plan 14-08 collapse).
 func TestNAT03SanitizerRowMovesItsClaimedAxis(t *testing.T) {
 	var target *session.NAT03Mutation
 	for _, row := range session.NAT03Mutations() {
@@ -221,7 +221,7 @@ func TestNAT03SanitizerRowMovesItsClaimedAxis(t *testing.T) {
 	if !target.Subjected {
 		t.Fatalf("expected the allocator-mismatch row to be Subjected: true, got %+v", target)
 	}
-	if err := session.Phase5AssertMutationMovesAnAxis(context.Background(), *target); err != nil {
+	if err := session.AssertMutationMovesAnAxis(context.Background(), *target); err != nil {
 		t.Fatalf("allocator-mismatch row did not move its claimed axis: %v", err)
 	}
 }

@@ -409,25 +409,6 @@ func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) 
 	return protocol.StatusPass, []string{"control:interpreter-o0-o3-lto"}, 4
 }
 
-// Phase5AssertMutationMovesAnAxis closes D-05-22's cross-plan obligation:
-// plan 05-07 built NAT03Mutations()/AssertMutationMovesAnAxis but ran
-// concurrently with plan 05-08, which authors the allocator_mismatch.lang
-// fixture row 6 cites, so 05-07's own AssertMutationMovesAnAxis has no case
-// for control:native.sanitize.allocator_mismatch (row 6 is unreachable
-// there, falling through to its "row not yet subjected" default). This
-// plan depends on both 05-07 and 05-08, so it is the first point the
-// assertion is deterministic rather than a race -- but 05-07's own
-// session_phase5_alias.go is otherwise byte-frozen this plan (only its two
-// now-closed PENDING-05-08 marker comments are removed), so the new case
-// is added here, as a thin dispatcher: every other control still delegates
-// verbatim, unmodified, to AssertMutationMovesAnAxis.
-func Phase5AssertMutationMovesAnAxis(ctx context.Context, mutation NAT03Mutation) error {
-	if mutation.ControlID == ControlSanitizeAllocatorMismatch {
-		return assertAllocatorMismatchMovesAxis(ctx, mutation)
-	}
-	return AssertMutationMovesAnAxis(ctx, mutation)
-}
-
 // assertAllocatorMismatchMovesAxis proves control:native.sanitize.allocator_mismatch
 // against its cited fixture (testdata/phase5/allocator_mismatch.lang):
 // ASan's own alloc-dealloc-mismatch report is a genuine divergence from a
