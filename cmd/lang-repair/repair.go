@@ -138,6 +138,15 @@ const (
 	DeclineNoDiagnostics = "repair.no_diagnostics"
 )
 
+// diagnosisEmissionDisabledForTest is a fault-injection seam declared in
+// production code, not an export_test.go symbol -- this project's own
+// established seeded-fault precedent (corevalidate.SetDisableCyclePeerForTest,
+// cgen.PayloadSlotSwapInjectedWriteCount). When true, Repair's decline
+// branch discards the classifyDecline result it would otherwise populate,
+// letting TestUnrepairableDiagnosisGuardIsNotInert seed exactly the fault
+// the Task 2 guard exists to catch. Never set outside a test.
+var diagnosisEmissionDisabledForTest = false
+
 // diagnosisCodeList is a comparable, JSON-array-marshaling ordered list of
 // diagnostic codes (D-14-42). It is backed by a "|"-joined string rather
 // than a plain []string because several existing antitheater_test.go
@@ -454,6 +463,15 @@ func Repair(ctx context.Context, langBinary, sourcePath string) (Outcome, error)
 		// or read off an already-decoded jsonDiagnostic.Code -- no prose
 		// field is decoded anywhere in this path (T-14-15).
 		decision := classifyDecline(first)
+		if diagnosisEmissionDisabledForTest {
+			// Fault-injection seam (D-14-42's own non-inertness proof,
+			// TestUnrepairableDiagnosisGuardIsNotInert): reproduces, on
+			// demand, exactly the bug the Task 2 guard
+			// (TestUnrepairableAlwaysCarriesDiagnosis) exists to catch --
+			// an unrepairable outcome with an empty diagnosis_code. Never
+			// set outside a test.
+			decision = declineDecision{}
+		}
 		return Outcome{
 			Status:            OutcomeUnrepairable,
 			DiagnosisCode:     decision.diagnosisCode,

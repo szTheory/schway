@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -294,4 +295,67 @@ func TestDeclineReasonOutsideVocabularyFailsTheGuard(t *testing.T) {
 	} else if msg == "" {
 		t.Fatal("expected a non-empty violation message")
 	}
+}
+
+// TestUnrepairableDiagnosisGuardIsNotInert proves the Task 2 guard
+// (TestUnrepairableAlwaysCarriesDiagnosis, via its own unrepairableDiagnosisOK
+// predicate) is not inert: it can actually go red. Reuses buildStandin and
+// the existing stand-in-binary pattern (antitheater_test.go) rather than
+// writing a second harness -- the stand-in serves a staged checkResult
+// document reporting an invalid program with exactly one diagnostic and
+// zero repairs (a genuine repair.none_offered decline), and
+// diagnosisEmissionDisabledForTest seeds the single fault this test exists
+// to prove: the decline-path classification is discarded before it reaches
+// Outcome, exactly the bug the guard exists to catch.
+func TestUnrepairableDiagnosisGuardIsNotInert(t *testing.T) {
+	standinBinary := buildStandin(t)
+
+	declineDoc, err := json.Marshal(checkResult{
+		Status: "invalid",
+		Diagnostics: []jsonDiagnostic{
+			{Code: "syntax.seeded_diagnostic"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dir := t.TempDir()
+	content := []byte("seeded source content for the diagnosis non-inertness proof")
+	sourcePath := filepath.Join(dir, "seed.lang")
+	mustWriteFile(t, sourcePath, content)
+	writeCaptureForContent(t, dir, content, declineDoc)
+	t.Setenv(standinDirEnv, dir)
+
+	t.Run("fault: diagnosis emission disabled", func(t *testing.T) {
+		diagnosisEmissionDisabledForTest = true
+		defer func() { diagnosisEmissionDisabledForTest = false }()
+
+		outcome, err := Repair(context.Background(), standinBinary, sourcePath)
+		if err != nil {
+			t.Fatalf("Repair: %v", err)
+		}
+		if outcome.Status != OutcomeUnrepairable {
+			t.Fatalf("test construction error: got status %q, want %q", outcome.Status, OutcomeUnrepairable)
+		}
+		if outcome.DiagnosisCode != "" {
+			t.Fatalf("test construction error: fault injection did not actually produce an empty diagnosis_code (got %q) -- this test would prove nothing", outcome.DiagnosisCode)
+		}
+		if ok, _ := unrepairableDiagnosisOK(outcome.DiagnosisCode, outcome.DeclineReason); ok {
+			t.Fatal("expected the Task 2 guard to reject the seeded empty-diagnosis outcome, but it passed")
+		}
+	})
+
+	t.Run("control: diagnosis emission enabled", func(t *testing.T) {
+		outcome, err := Repair(context.Background(), standinBinary, sourcePath)
+		if err != nil {
+			t.Fatalf("Repair: %v", err)
+		}
+		if outcome.Status != OutcomeUnrepairable {
+			t.Fatalf("got status %q, want %q", outcome.Status, OutcomeUnrepairable)
+		}
+		if ok, msg := unrepairableDiagnosisOK(outcome.DiagnosisCode, outcome.DeclineReason); !ok {
+			t.Fatalf("expected the unfaulted control to pass the Task 2 guard: %s", msg)
+		}
+	})
 }
