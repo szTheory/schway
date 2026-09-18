@@ -37,7 +37,7 @@ branched on and would have become the fifth instance.
       cites a `go test -run` pattern that resolves to zero tests, or a command
       cell elided with `…`. Three such patterns exist today and exit 0.
 
-- [ ] **EVD-02**: Every requirement and success criterion carries a grade from
+- [x] **EVD-02**: Every requirement and success criterion carries a grade from
       the closed vocabulary `DEFINED | WIRED | REACHABLE | EXERCISED |
       MUTATION-KILLED`, and is satisfiable only at EXERCISED or above.
 
@@ -203,7 +203,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | EVD-01 | Phase 14 | Complete |
-| EVD-02 | Phase 14 | Pending |
+| EVD-02 | Phase 14 | Complete |
 | EVD-03 | Phase 14 | Complete |
 | EVD-04 | Phase 14 | Complete |
 | EVD-05 | Phase 14 | Complete |

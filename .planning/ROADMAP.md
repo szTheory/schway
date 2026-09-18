@@ -239,7 +239,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 14-08-PLAN.md — one axis-movement law, zero per-row exclusions, the superseded marker guard and its stale markers deleted (EVD-05)
-- [ ] 14-09-PLAN.md — closed grade vocabulary with a mechanically derived ceiling; fourteen verification maps migrated; the freeform status column retired (EVD-02)
+- [x] 14-09-PLAN.md — closed grade vocabulary with a mechanically derived ceiling; fourteen verification maps migrated; the freeform status column retired (EVD-02)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
