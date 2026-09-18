@@ -155,6 +155,7 @@ refs above are the durable ones.
 
 ### Phase 14: Evidence Instrument and Honest Scoping
 
+**UI hint**: no
 **Goal**: Every shipped claim is graded at EXERCISED or above, or names itself
 unreachable with an unblocking trigger — so that no instrument in this project
 can report green for something that is merely wired.
@@ -218,9 +219,11 @@ highest-ROI item across all six research documents. The cost is elsewhere: the
 axis-movement law has two coexisting implementations, and the PROJECT.md
 corrections touch three documents that each state the same wrong claim.
 **Parallel**: S-009 and S-010 run alongside.
-**Plans**: 10 plans (planned 2026-09-17; above the 6-8 estimate because the
-eleven requirements decompose into ten single-concern units, each with its own
-non-inertness proof, rather than because scope grew)
+**Plans**: 13 plans (10 planned 2026-09-17; 3 gap-closure plans added
+2026-09-18 after `14-VERIFICATION.md` scored 10/11 with one partial — the
+above-estimate count reflects eleven requirements decomposing into
+single-concern units, each with its own non-inertness proof, rather than
+scope growth)
 
 Plans:
 **Wave 1**
@@ -244,6 +247,15 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [ ] 14-10-PLAN.md — reconcile every finding outside the archives under checked verdict obligations; generated reconciliation view; frontier emptied (EVD-03, EVD-01)
+
+**Wave 5** *(gap closure — added 2026-09-18 from `14-VERIFICATION.md`; blocked on Wave 4 completion)*
+
+- [ ] 14-11-PLAN.md — a run record that cannot lie about completing: per-pair completion witness, honest 480s budget with a measured 75% margin assertion, anchored producer/consumer name contract, self-citation refused (EVD-02; closes WR-01, WR-02)
+- [ ] 14-13-PLAN.md — the `//go:build` suppression surface stops being inert: declared allowlist, enumeration ahead of the host's own constraint filter, a fourth seeded fault (EVD-04; closes WR-03)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 14-12-PLAN.md — remove `14-VALIDATION.md`'s grade-bar exemption and confirm the corpus-wide bar with a complete run record and measured margin; row-scoped narrowing that names an owner; D-14-121 leaves UNOWNED (EVD-02, PRC-01)
 
 ---
 
