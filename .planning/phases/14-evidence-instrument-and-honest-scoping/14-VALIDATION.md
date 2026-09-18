@@ -8,7 +8,7 @@ nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-17"
 evidence_vocabulary: v1
-graded_rows: 31
+graded_rows: 38
 ---
 
 # Phase 14 — Validation Strategy
@@ -83,6 +83,13 @@ this phase.
 | 14-10-T1 | 10 | 8 | EVD-03 | — | Author reconciliation entries under a closed verdict vocabulary | unit | `go test ./internal/compiler/session/... -run 'TestReconciliationVerdictsCarryTheirObligations' -count=1 -v` | ✅ exists | EXERCISED | — |
 | 14-10-T2 | 10 | 8 | EVD-03 | — | Generate the reconciliation view and couple archive edits to it | unit | `go test ./internal/compiler/session/... -run 'TestEvidenceReconciliationViewIsCurrent' -count=1 -v` | ✅ exists | EXERCISED | — |
 | 14-10-T3 | 10 | 8 | EVD-01 | — | Empty three of four frontier classes and close the phase's evidence | unit | `go test ./internal/compiler/session/... -run 'TestVerificationGroundednessThreeClassesAreEmpty' -count=1 -v` | ✅ exists | WIRED | — |
+| 14-11-T1 | 11 | 9 | EVD-02 | — | End-to-end completion witness for one run-record batch | unit | `go test ./internal/compiler/session/... -run 'TestRunRecordCarriesACompletionWitness$' -count=1 -v` | ✅ exists | EXERCISED | — |
+| 14-11-T2 | 11 | 9 | EVD-02 | — | An incomplete or margin-less run record fails by name, and the timeout tells the truth | unit | `go test ./internal/compiler/session/... -run 'TestRunRecordCompletenessGuardIsNotInert$' -count=1 -v` | ✅ exists | EXERCISED | — |
+| 14-11-T3 | 11 | 9 | EVD-02 | — | Producer and consumer consult one anchored name set; self-citation is refused | unit | `go test ./internal/compiler/session/... -run 'TestEvidencePatternsResolveToAnchoredNames$' -count=1 -v` | ✅ exists | EXERCISED | — |
+| 14-13-T1 | 13 | 9 | EVD-04 | — | One unallowlisted build constraint, end to end, goes red | unit | `go test ./internal/compiler/session/... -run 'TestBuildConstraintsOutsideTheAllowlistAreRefused$' -count=1 -v` | ✅ exists | EXERCISED | — |
+| 14-13-T2 | 13 | 9 | EVD-04 | — | The scan sees constrained-out files, and the new branch carries its own seeded fault | unit | `go test ./internal/compiler/session/... -run 'TestBuildConstraintSurfaceSeenEvenWhenHostExcludesFile$' -count=1 -v` | ✅ exists | EXERCISED | — |
+| 14-12-T1 | 12 | 9 | EVD-02 | — | The exemption cannot silently return | unit | `go test ./internal/compiler/session/... -run 'TestValidationGradeBarAppliesToPhase14$' -count=1 -v` | ✅ exists | EXERCISED | — |
+| 14-12-T2 | 12 | 9 | EVD-02/PRC-01 | — | Any residual narrowing names an owner | unit | `go test ./internal/compiler/session/... -run 'TestValidationGradeBarRowExemptionsAreOwned$' -count=1 -v` | ✅ exists | EXERCISED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

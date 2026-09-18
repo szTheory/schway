@@ -3,7 +3,7 @@ phase: 14-evidence-instrument-and-honest-scoping
 recorded: 2026-09-18
 status: accepted
 disposition: phase-in-progress
-items: 78
+items: 83
 blocking: 0
 ---
 
@@ -130,6 +130,11 @@ finding).
 | D-14-120 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | UNOWNED(none-yet-scheduled) | DEFINED | n/a | REMOVING `14-VALIDATION.MD` FROM `validationGradeBarExemptions` AND RE-RUNNING `TestValidationRowGradesAreEarnedOverArchivedCorpus` PRODUCED SPURIOUS "DECLARED EXERCISED EXCEEDS THE CEILING WIRED" FAILURES ACROSS NINE OTHER, UNRELATED, ALREADY-FROZEN ARCHIVED FILES (01, 02, 06, 07, 08, 10, 11, 12, 13-VALIDATION.MD) IN THE SAME RUN. The whole corpus-wide test completed at 300.11s, suspiciously close to `evidenceRunRecordTimeout`'s 300s ceiling (lowered from 900s by plan 14-09's own deviation fix) -- consistent with the run-record generation not completing within its budget and several packages' citations falling back to an unresolved WIRED ceiling rather than their true EXERCISED grade. The exemption-removal change was reverted rather than landed under that risk; the corpus-wide grade cap over the real archived data was never actually re-verified with a complete run record in this plan |
 | D-14-122 | plan 14-11's fail-closed run-record margin check, which surfaced this while measuring the corpus-wide batch's real cost | EVD-01 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `14-VERIFICATION.md:133` cites a seeded-fault placeholder name (`TestThisNameDoesNotExistAnywhereZZQQ`) inside a Non-Inertness Spot-Check's narrative description of an already-reverted perturbation, corrected outside the archive as a RENAMED verdict naming the real, resolving test the row's claim actually rests on (see Detail section). |
+| D-14-123 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-01-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-01-T2` DECLARES `WIRED`, BELOW THE NOW-ENFORCED `>=EXERCISED` SATISFYING BAR. Re-deriving its evidence cell against plan 14-11's completion-witnessed, margin-checked run record shows the cited test (`TestVerificationGroundednessFrontierIsPinned`) genuinely passed and is matched -- the row's TRUE ceiling is `EXERCISED`, not `WIRED`. The declared cell is kept byte-unchanged (this plan's own prohibition on rewriting a row belonging to plans 14-01..14-10 to force the bar to pass) and is instead narrowed here via `validationGradeBarRowExemptions`, mechanically checked by `TestValidationGradeBarRowExemptionsAreOwned`. |
+| D-14-124 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T1` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T1`'S EVIDENCE CELL IS A go-run invocation (`./cmd/lang --json check testdata/distinctness/spiral_full.lang`), not a go-test command -- IT IS STRUCTURALLY CAPPED AT `REACHABLE` BY `deriveCeiling`'s OWN LADDER AND CAN NEVER DERIVE `EXERCISED` WITHOUT REWRITING THE EVIDENCE CELL TO a go-test invocation with a -run pattern naming a specific test. The declared `REACHABLE` cell is kept byte-unchanged (row belongs to plan 14-02, covered by this plan's never-rewrite prohibition) and is narrowed here via `validationGradeBarRowExemptions`. |
+| D-14-125 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T2`'S EVIDENCE CELL NAMES THREE PACKAGES BUT NO `-run` PATTERN, SO `deriveCeiling` DERIVES `WIRED` STRUCTURALLY (THE SAME BARE-PACKAGE SHAPE GAP D-14-50 ALREADY RECORDED FOR `12-VALIDATION.md:52`) -- IT CAN NEVER REACH `EXERCISED` WITHOUT REWRITING THE CELL TO NAME A SPECIFIC TEST. Kept byte-unchanged (row belongs to plan 14-02) and narrowed here. |
+| D-14-126 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-03-T1` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-03-T1`'S EVIDENCE CELL, `go test ./cmd/lang-repair/... -count=1`, NAMES NO `-run` PATTERN -- SAME STRUCTURAL SHAPE GAP AS D-14-125, STRUCTURALLY CAPPED AT `WIRED`. Kept byte-unchanged (row belongs to plan 14-03) and narrowed here. |
+| D-14-127 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-10-T3` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-10-T3` DECLARES `WIRED`, BELOW THE NOW-ENFORCED BAR. Re-deriving its evidence cell (`TestVerificationGroundednessThreeClassesAreEmpty`) against the complete run record shows it genuinely passed and is matched -- TRUE ceiling `EXERCISED`, same finding shape as D-14-123. Kept byte-unchanged (row belongs to plan 14-10) and narrowed here. |
 
 ## Detail
 
@@ -1510,6 +1515,124 @@ correction.
 
 **Landing phase:** `P14` -- closed by this same plan (14-11) recording the
 correction; no further work is scheduled.
+
+### D-14-123 — `14-VALIDATION.md:14-01-T2` under-declares its now-measurable ceiling
+
+first-recorded: M003
+
+Plan 14-12's removal of `14-VALIDATION.md`'s file-scoped exemption
+(`validationGradeBarExemptions`) subjects every row in the file's own
+Per-Task Verification Map to the `>=EXERCISED` satisfying bar for the
+first time. Row `14-01-T2` (plan 14-01, "Pin the measured violation
+frontier as an exact committed literal") declares `WIRED`. Re-deriving its
+evidence cell (`go test ./internal/compiler/session/... -run
+'TestVerificationGroundednessFrontierIsPinned' -count=1 -v`) against plan
+14-11's completion-witnessed, margin-checked run record confirms the cited
+test resolves to exactly one top-level name and that name is
+`passedNoSkip` in the real corpus-wide run -- the row's TRUE ceiling is
+`EXERCISED`, strictly above its declared `WIRED`. This is not a cap
+violation (declared never exceeds derived), only a bar violation, and only
+because the bar itself did not exist -- or was file-exempted -- when this
+row was authored.
+
+This plan's own prohibition ("never rewrite an archived
+`*-VALIDATION.md` row belonging to plans 14-01..14-10 to make the bar
+pass") is read to cover this row: it belongs to plan 14-01, predates the
+bar, and bumping its declared cell now, in the very plan that is
+introducing the bar, would be indistinguishable in the historical record
+from silently inflating a grade to pass a new gate. The row is kept
+byte-unchanged; the correction is recorded here instead, following the
+exact "archived row left untouched, only the register records the
+correction" precedent D-14-48 through D-14-122 already established for
+every other pre-existing finding in this phase.
+
+**Closure mechanism:** `validationGradeBarRowExemptions["14-VALIDATION.md:14-01-T2"] = "D-14-123"`
+(this row), mechanically checked by `TestValidationGradeBarRowExemptionsAreOwned`
+-- the row-scoped narrowing plan 14-12's Task 2 introduces specifically for
+findings, like this one, that a `*-VALIDATION.md` row cannot fix without
+being rewritten.
+
+**Landing phase:** `P14` -- closed by this same plan (14-12): the
+row-scoped exemption and its ownership guard ARE the closure. No future
+phase needs to act; a future plan MAY choose to retroactively correct
+`14-VALIDATION.md`'s own cell if it ever touches that row for an unrelated
+reason, at which point this row and its exemption entry should be retired
+together.
+
+### D-14-124 — `14-VALIDATION.md:14-02-T1` is structurally capped below the bar
+
+first-recorded: M003
+
+Row `14-02-T1` (plan 14-02, "Build the distinctness corpus and freeze the
+pre-fix collision control") declares `REACHABLE`. Its evidence cell,
+`go run ./cmd/lang --json check testdata/distinctness/spiral_full.lang`,
+is not a `go test` invocation at all -- `deriveCeiling` has no path from a
+`go run` command to `EXERCISED`; the ladder structurally stops this row at
+`REACHABLE` regardless of any run record's completeness. This is
+permanent and cannot be closed by a more complete run: only rewriting the
+evidence cell to a `go test -run` invocation naming a specific test could
+raise it, and that rewrite is exactly what this plan's never-rewrite
+prohibition forbids for a plan-14-01..14-10 row.
+
+**Closure mechanism:** `validationGradeBarRowExemptions["14-VALIDATION.md:14-02-T1"] = "D-14-124"`,
+checked the same way as D-14-123.
+
+**Landing phase:** `P14` -- closed by this same plan (14-12) via the
+row-scoped exemption. No phase currently owns rewriting plan 14-02's
+evidence cell to a `go test`-shaped invocation; if a future plan touches
+that row for an unrelated reason, retiring this exemption entry alongside
+is the natural follow-up, but nothing is scheduled.
+
+### D-14-125 — `14-VALIDATION.md:14-02-T2` names no `-run` pattern, structurally capped
+
+first-recorded: M003
+
+Row `14-02-T2` (plan 14-02, "Attach the discarded recovery extent as a
+skipped_region cause") declares `WIRED`. Its evidence cell, `go test
+./internal/compiler/syntax/... ./internal/compiler/diagnostic/...
+./internal/compiler/check/... -count=1`, names three packages and no
+`-run`/`-list`/`-fuzz`/`-bench` pattern. `deriveCeiling` returns `WIRED`
+whenever `parsed.Pattern == ""` -- the exact bare-package shape gap
+D-14-50 already recorded for `12-VALIDATION.md:52`, now found a second
+time inside this phase's own document. Permanent and evidence-shape-bound,
+same reasoning as D-14-124.
+
+**Closure mechanism:** `validationGradeBarRowExemptions["14-VALIDATION.md:14-02-T2"] = "D-14-125"`.
+
+**Landing phase:** `P14` -- closed by this same plan (14-12) via the
+row-scoped exemption, same disposition as D-14-124.
+
+### D-14-126 — `14-VALIDATION.md:14-03-T1` names no `-run` pattern, structurally capped
+
+first-recorded: M003
+
+Row `14-03-T1` (plan 14-03, "Carry the decline reason through selectRepair
+onto the Outcome envelope") declares `WIRED`. Its evidence cell, `go test
+./cmd/lang-repair/... -count=1`, names one package and no `-run` pattern
+-- the identical structural shape as D-14-125, in a different package.
+Permanent and evidence-shape-bound.
+
+**Closure mechanism:** `validationGradeBarRowExemptions["14-VALIDATION.md:14-03-T1"] = "D-14-126"`.
+
+**Landing phase:** `P14` -- closed by this same plan (14-12) via the
+row-scoped exemption, same disposition as D-14-124/D-14-125.
+
+### D-14-127 — `14-VALIDATION.md:14-10-T3` under-declares its now-measurable ceiling
+
+first-recorded: M003
+
+Row `14-10-T3` (plan 14-10, "Empty three of four frontier classes and
+close the phase's evidence") declares `WIRED`. Re-deriving its evidence
+cell (`go test ./internal/compiler/session/... -run
+'TestVerificationGroundednessThreeClassesAreEmpty' -count=1 -v`) against
+the complete corpus-wide run record confirms the cited test resolves and
+passed -- TRUE ceiling `EXERCISED`, the identical finding shape as
+D-14-123, in a row belonging to plan 14-10 instead of plan 14-01.
+
+**Closure mechanism:** `validationGradeBarRowExemptions["14-VALIDATION.md:14-10-T3"] = "D-14-127"`.
+
+**Landing phase:** `P14` -- closed by this same plan (14-12) via the
+row-scoped exemption, same disposition as D-14-123.
 
 ---
 

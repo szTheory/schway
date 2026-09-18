@@ -1087,17 +1087,27 @@ func sortStrings(s []string) {
 // ---------------------------------------------------------------------
 
 // validationGradeBarExemptions names every *-VALIDATION.md file exempted
-// from the satisfying bar. Thirteen are frozen M001/M002 prior art,
-// written before this cap existed. The fourteenth, 14-VALIDATION.md
-// itself, is exempted for a DIFFERENT, honestly-recorded reason: its
-// single Per-Task Verification Map row was never filled in beyond
-// plan-time's literal `{command}` placeholder -- this phase's own real
-// per-task evidence lives in each plan's own *-SUMMARY.md (this plan's
-// SUMMARY included), not in this document's table. Recording that as a
-// silent exemption forever would be exactly the suppression this phase
-// exists to retire, so it is ALSO recorded as a debt row (D-14-52,
-// PHASE-14-DEBT.md) naming an owning phase to either populate the table
-// for real or retire it.
+// from the satisfying bar. It now names exactly thirteen frozen M001/M002
+// documents, written before this cap existed -- 14-VALIDATION.md itself
+// carried a fourteenth, differently-reasoned entry here from plan 14-09
+// through plan 14-11 (its Per-Task Verification Map was still being
+// filled in, and D-14-121 recorded a real, measured reason the removal
+// attempt could not yet be trusted: the corpus-wide run finished at
+// 300.11s, suspiciously close to the then-300s timeout, producing
+// spurious ceiling failures across nine unrelated frozen files). Plan
+// 14-11 fixed the root cause (raised the timeout to a measured-honest
+// 480s, added a 0.75 margin fraction that fails closed on a near-timeout
+// run, and anchored the producer/consumer name contract so the batch
+// executes exactly what deriveCeiling consults) and plan 14-12 then
+// removed the 14-VALIDATION.md entry for good, confirming the bar holds
+// for this phase's own artifact with a complete run record measuring a
+// 88.63s elapsed against the 480s budget (18.5%, comfortably inside the
+// 75% margin) -- see D-14-121's closure and 14-12-SUMMARY.md. A
+// file-scoped exemption is reserved for these thirteen frozen documents
+// only; any document authored from Phase 14 on that needs a bar
+// narrowing uses the row-scoped validationGradeBarRowExemptions instead,
+// which requires a named debt-row owner and can never widen to cover a
+// whole file the way this map does.
 var validationGradeBarExemptions = map[string]string{
 	"01-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
 	"02-VALIDATION.md": "written before M001, before the grade cap existed (plan 14-09); frozen prior art",
@@ -1112,7 +1122,185 @@ var validationGradeBarExemptions = map[string]string{
 	"11-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
 	"12-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
 	"13-VALIDATION.md": "written before M002, before the grade cap existed (plan 14-09); frozen prior art",
-	"14-VALIDATION.md": "template row never filled beyond plan-time placeholder; real Phase 14 evidence lives in each plan's own SUMMARY.md -- recorded as debt D-14-52, not a silent permanent exemption (plan 14-09)",
+}
+
+// validationGradeBarRowExemptions is the honest, row-scoped escape hatch
+// that replaces a whole-file exemption for any document authored from
+// Phase 14 on: a closed map from "<file>:<Task ID>" to the D-14-NNN debt
+// row that owns the narrowing. Every entry's cited row MUST carry a
+// P<NN> or CLOSED(<sha>) Landing phase cell -- never UNOWNED(...) --
+// mechanically checked by TestValidationGradeBarRowExemptionsAreOwned. A
+// file-scoped exemption (validationGradeBarExemptions) is reserved for
+// the thirteen frozen M001/M002 documents above; this map is where every
+// later, honest narrowing lives instead.
+//
+// This plan's own read_first expected this map to ship EMPTY: the
+// planner's assumption was that every pre-existing row in
+// 14-VALIDATION.md's own Per-Task Verification Map would already clear
+// the satisfying bar once the file-scoped exemption was removed. Running
+// the real corpus test against the real archived rows falsified that
+// assumption for five of them (see PHASE-14-DEBT.md D-14-123..D-14-127):
+// two (14-01-T2, 14-10-T3) declare WIRED even though a complete run
+// record now derives EXERCISED for their evidence, and three (14-02-T1,
+// 14-02-T2, 14-03-T1) are structurally capped below EXERCISED by their
+// evidence cell's own shape (a `go run` invocation, or a `go test`
+// invocation with no `-run` pattern) and can never reach EXERCISED
+// without rewriting the cell -- which this plan's own prohibition on
+// rewriting an archived 14-01..14-10 row to force the bar to pass
+// forbids. Each of the five is narrowed here instead, exactly per this
+// plan's own Task 1 contingency text ("for an archived 14-01..14-10 row
+// you may not rewrite, route it through Task 2's row-scoped narrowing
+// with a debt witness").
+var validationGradeBarRowExemptions = map[string]string{
+	"14-VALIDATION.md:14-01-T2": "D-14-123",
+	"14-VALIDATION.md:14-02-T1": "D-14-124",
+	"14-VALIDATION.md:14-02-T2": "D-14-125",
+	"14-VALIDATION.md:14-03-T1": "D-14-126",
+	"14-VALIDATION.md:14-10-T3": "D-14-127",
+}
+
+// phase14DebtLandingPhases reads PHASE-14-DEBT.md's own Items table and
+// returns a map from debt-row ID to its (already-trimmed) Landing phase
+// cell -- the one lookup both TestValidationGradeBarRowExemptionsAreOwned
+// and rowExemptionProblems use to resolve a validationGradeBarRowExemptions
+// entry's cited debt row, built on parseDebtRegisterTable (session_test.go)
+// rather than a second, ad hoc parser.
+func phase14DebtLandingPhases(t testing.TB) map[string]string {
+	t.Helper()
+	registers, err := phaseArtifactGlob("14-evidence-instrument-and-honest-scoping", "PHASE-14-DEBT.md")
+	if err != nil || len(registers) != 1 {
+		t.Fatalf("expected exactly one PHASE-14-DEBT.md, found %d (err=%v)", len(registers), err)
+	}
+	data, err := os.ReadFile(registers[0])
+	if err != nil {
+		t.Fatalf("read %s: %v", registers[0], err)
+	}
+	columns, rows, parseErr := parseDebtRegisterTable(filepath.Base(registers[0]), string(data))
+	if parseErr != nil {
+		t.Fatalf("parse %s: %v", registers[0], parseErr)
+	}
+	result := make(map[string]string, len(rows))
+	for _, row := range rows {
+		result[row[columns["ID"]]] = strings.TrimSpace(row[columns["Landing phase"]])
+	}
+	return result
+}
+
+// rowExemptionProblems is the ONE predicate shared by
+// validationGradeBarRowExemptions' production use and
+// TestValidationGradeBarRowExemptionsAreOwned's seeded-fault proof (never
+// a second copy), following suppressionProblems' precedent
+// (witness_registry_test.go). register is phase14DebtLandingPhases' own
+// output shape (debt-row ID -> trimmed Landing phase cell). Returns one
+// problem string per faulty entry -- a cited row that does not exist, or
+// one whose Landing phase cell is UNOWNED(...) -- naming the entry's key
+// and the debt row every time, never just "failed".
+func rowExemptionProblems(entries map[string]string, register map[string]string) []string {
+	keys := make([]string, 0, len(entries))
+	for key := range entries {
+		keys = append(keys, key)
+	}
+	sortStrings(keys)
+	var problems []string
+	for _, key := range keys {
+		debtID := entries[key]
+		cell, exists := register[debtID]
+		if !exists {
+			problems = append(problems, fmt.Sprintf("validationGradeBarRowExemptions[%q] cites %s, which does not exist in PHASE-14-DEBT.md", key, debtID))
+			continue
+		}
+		if debtRegisterUnownedPattern.MatchString(cell) {
+			problems = append(problems, fmt.Sprintf("validationGradeBarRowExemptions[%q] cites %s, whose Landing phase cell %q is UNOWNED -- a row-scoped narrowing must name a real owner", key, debtID, cell))
+		}
+	}
+	return problems
+}
+
+// TestValidationGradeBarRowExemptionsAreOwned proves rowExemptionProblems
+// is not inert (three seeded faults over synthetic entries against the
+// real, live PHASE-14-DEBT.md register) and then asserts the shipped
+// validationGradeBarRowExemptions carries zero problems.
+func TestValidationGradeBarRowExemptionsAreOwned(t *testing.T) {
+	register := phase14DebtLandingPhases(t)
+
+	t.Run("an entry citing a nonexistent row is refused, naming the entry", func(t *testing.T) {
+		entries := map[string]string{"synthetic-doc.md:T1": "D-14-999999-does-not-exist"}
+		problems := rowExemptionProblems(entries, register)
+		if len(problems) != 1 {
+			t.Fatalf("expected exactly one problem, got %d: %v", len(problems), problems)
+		}
+		for _, want := range []string{"synthetic-doc.md:T1", "D-14-999999-does-not-exist"} {
+			if !strings.Contains(problems[0], want) {
+				t.Fatalf("problem %q does not name %q", problems[0], want)
+			}
+		}
+	})
+
+	t.Run("an entry citing a real row whose cell is UNOWNED is refused, naming the row", func(t *testing.T) {
+		// D-14-45 is a real, currently UNOWNED(...) row in the live register.
+		if cell := register["D-14-45"]; !debtRegisterUnownedPattern.MatchString(cell) {
+			t.Fatalf("fixture assumption broken: D-14-45's Landing phase is %q, no longer UNOWNED(...)", cell)
+		}
+		entries := map[string]string{"synthetic-doc.md:T2": "D-14-45"}
+		problems := rowExemptionProblems(entries, register)
+		if len(problems) != 1 {
+			t.Fatalf("expected exactly one problem, got %d: %v", len(problems), problems)
+		}
+		if !strings.Contains(problems[0], "D-14-45") {
+			t.Fatalf("problem %q does not name D-14-45", problems[0])
+		}
+	})
+
+	t.Run("an entry citing a real row with a P<NN> cell passes", func(t *testing.T) {
+		// D-14-48's Landing phase is P14.
+		if cell := register["D-14-48"]; !debtRegisterPhaseIDPattern.MatchString(cell) {
+			t.Fatalf("fixture assumption broken: D-14-48's Landing phase is %q, not a P<NN> cell", cell)
+		}
+		entries := map[string]string{"synthetic-doc.md:T3": "D-14-48"}
+		if problems := rowExemptionProblems(entries, register); len(problems) != 0 {
+			t.Fatalf("expected zero problems, got %v", problems)
+		}
+	})
+
+	if problems := rowExemptionProblems(validationGradeBarRowExemptions, register); len(problems) > 0 {
+		t.Fatalf("shipped validationGradeBarRowExemptions has %d unowned/nonexistent entries:\n%s", len(problems), strings.Join(problems, "\n"))
+	}
+}
+
+// phase14ValidationRowFloor is the non-vacuity floor plan 14-10 established
+// (31 real rows, one per task across plans 14-01..14-10) -- the count
+// 14-VALIDATION.md's own Per-Task Verification Map must never fall below,
+// so TestValidationGradeBarAppliesToPhase14 cannot be satisfied by emptying
+// the table (D-14-121's permanent guard, second half).
+const phase14ValidationRowFloor = 31
+
+// TestValidationGradeBarAppliesToPhase14 is D-14-121's permanent guard: it
+// fails, naming the file, if 14-VALIDATION.md is ever re-added to
+// validationGradeBarExemptions, AND it fails, naming the count, if
+// 14-VALIDATION.md's own Per-Task Verification Map ever shrinks below
+// phase14ValidationRowFloor -- both halves are needed, because either one
+// alone reopens the same finding D-14-121 records: re-adding the
+// exemption directly un-checks the bar, and emptying the table reaches
+// the same outcome indirectly (there would be nothing left for the bar to
+// judge).
+func TestValidationGradeBarAppliesToPhase14(t *testing.T) {
+	if _, exempt := validationGradeBarExemptions["14-VALIDATION.md"]; exempt {
+		t.Fatal("14-VALIDATION.md must never re-appear in validationGradeBarExemptions -- D-14-121's finding is permanently closed, not merely fixed once")
+	}
+	byDoc := allPrimaryValidationRows(t)
+	var found bool
+	for doc, rows := range byDoc {
+		if filepath.Base(doc) != "14-VALIDATION.md" {
+			continue
+		}
+		found = true
+		if len(rows) < phase14ValidationRowFloor {
+			t.Fatalf("14-VALIDATION.md has %d rows, below the %d floor plan 14-10 established -- the satisfying bar must not be satisfiable by emptying the table", len(rows), phase14ValidationRowFloor)
+		}
+	}
+	if !found {
+		t.Fatal("14-VALIDATION.md's primary table was not discovered at all")
+	}
 }
 
 // ---------------------------------------------------------------------
@@ -1476,7 +1664,9 @@ func TestValidationRowGradesAreEarnedOverArchivedCorpus(t *testing.T) {
 				if !exempt {
 					declared := strings.TrimSpace(gradeCell)
 					if validationGradeOrdinal[declared] < validationGradeOrdinal[validationSatisfyingGrade] {
-						t.Fatalf("%s: row %s declares %s, below the satisfying bar (%s) enforced for this file (not in validationGradeBarExemptions)", name, taskID, declared, validationSatisfyingGrade)
+						if _, rowExempt := validationGradeBarRowExemptions[name+":"+taskID]; !rowExempt {
+							t.Fatalf("%s: row %s declares %s, below the satisfying bar (%s) enforced for this file (not in validationGradeBarExemptions or validationGradeBarRowExemptions)", name, taskID, declared, validationSatisfyingGrade)
+						}
 					}
 				}
 			}
