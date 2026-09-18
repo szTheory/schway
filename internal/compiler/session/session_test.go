@@ -4068,7 +4068,55 @@ func reconciliationSymbolAbsentFromTree(pkgPath, symbol string) (bool, string) {
 // project-wide: the command classifies classOK (never R1/R2/R2b/R3/
 // unparseable).
 func reconciliationEntryProblem(index *testIndex, e reconciliationEntry) string {
-	// RED stub -- Task 1 GREEN replaces this with the real obligation checks.
+	if e.ID == "" {
+		return "reconciliation block has no enclosing \"### D-14-NN\" heading"
+	}
+	if e.File == "" || e.Line == 0 || e.Command == "" {
+		return fmt.Sprintf("%s: reconciliation entry missing file, line, or command", e.ID)
+	}
+	if !reconciliationVerdicts[e.Verdict] {
+		return fmt.Sprintf("%s: verdict %q is outside the closed four-member vocabulary (renamed, superseded, obsolete-by-design, under-scoped)", e.ID, e.Verdict)
+	}
+
+	switch e.Verdict {
+	case reconciliationRenamed:
+		if e.Replacement == "" {
+			return fmt.Sprintf("%s: renamed entry names no replacement command", e.ID)
+		}
+		if class := classifyCommand(index, e.Replacement); class != classOK {
+			return fmt.Sprintf("%s: renamed entry's replacement command does not resolve (classified %s): %s", e.ID, class, e.Replacement)
+		}
+	case reconciliationSuperseded:
+		if e.SupersedingPhase == "" || e.SupersedingCommit == "" || e.CoveringCommand == "" {
+			return fmt.Sprintf("%s: superseded entry missing superseding phase, commit, or covering command", e.ID)
+		}
+		if ok, msg := reconciliationCommitExists(e.SupersedingCommit); !ok {
+			return fmt.Sprintf("%s: superseding commit %s: %s", e.ID, e.SupersedingCommit, msg)
+		}
+		if class := classifyCommand(index, e.CoveringCommand); class != classOK {
+			return fmt.Sprintf("%s: superseded entry's covering command does not resolve (classified %s): %s", e.ID, class, e.CoveringCommand)
+		}
+	case reconciliationObsoleteByDesign:
+		if e.DeletedPackage == "" || e.DeletedSymbol == "" || e.DeletingPhase == "" || e.DeletingCommit == "" {
+			return fmt.Sprintf("%s: obsolete-by-design entry missing deleted package, deleted symbol, deleting phase, or commit", e.ID)
+		}
+		if ok, msg := reconciliationCommitExists(e.DeletingCommit); !ok {
+			return fmt.Sprintf("%s: deleting commit %s: %s", e.ID, e.DeletingCommit, msg)
+		}
+		if ok, msg := reconciliationSymbolAbsentFromTree(e.DeletedPackage, e.DeletedSymbol); !ok {
+			return fmt.Sprintf("%s: %s", e.ID, msg)
+		}
+	case reconciliationUnderScoped:
+		if e.Classification != classR2b {
+			return fmt.Sprintf("%s: under-scoped verdict is permitted only for per-branch (R2b) findings, not %s", e.ID, e.Classification)
+		}
+		if e.MissingClause == "" || e.LandingPhase == "" {
+			return fmt.Sprintf("%s: under-scoped entry missing clause or landing phase", e.ID)
+		}
+		if !debtRegisterOwningPhaseForm(e.LandingPhase) {
+			return fmt.Sprintf("%s: under-scoped entry's landing phase %q is not one of the closed forms (P<NN>, CLOSED(<sha>), UNOWNED(<witness-id>))", e.ID, e.LandingPhase)
+		}
+	}
 	return ""
 }
 
@@ -4148,7 +4196,7 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 		})
 		t.Run("symbol that still exists fails -- absence is never a pass", func(t *testing.T) {
 			e := reconciliationEntry{ID: "D-00-07", File: "x", Line: 1, Command: "y", Verdict: reconciliationObsoleteByDesign,
-				DeletedPackage: "internal/compiler/session", DeletedSymbol: "TestValidationRowGradesAreEarned",
+				DeletedPackage: "internal/compiler/check", DeletedSymbol: "resolveBlame",
 				DeletingPhase: "P09-09", DeletingCommit: "b8fe3df"}
 			problem := reconciliationEntryProblem(index, e)
 			if problem == "" {
