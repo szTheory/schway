@@ -152,11 +152,11 @@ itself.
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Corpus-wide `>=EXERCISED` bar holds for `14-VALIDATION.md` | `go test ./internal/compiler/session/ -run 'TestValidationRowGradesAreEarnedOverArchivedCorpus$' -count=1 -v` | PASS, 133.98s, run-record elapsed 2m13.89s vs 8m0s budget, `14-VALIDATION.md` subtest passes | ✓ PASS |
-| Permanent guard against the exemption returning | `go test ... -run 'TestValidationGradeBarAppliesToPhase14$'` | PASS | ✓ PASS |
-| Row-scoped exemptions require a real owner | `go test ... -run 'TestValidationGradeBarRowExemptionsAreOwned$'` | PASS (3 seeded subtests + shipped-map check) | ✓ PASS |
-| `//go:build` suppression surface is gated, not dormant | `go test ... -run 'TestBuildConstraintsOutsideTheAllowlistAreRefused$|TestBuildConstraintSurfaceSeenEvenWhenHostExcludesFile$|TestSuppressionWitnessGuardIsNotInert$'` | PASS (all, including 4th seeded-fault subtest) | ✓ PASS |
-| Debt registers well-formed, including `PHASE-14-DEBT.md` | `go test ... -run 'TestDebtRegistersAreWellFormed$'` | PASS (8 registers) | ✓ PASS |
+| Corpus-wide `>=EXERCISED` bar holds for `14-VALIDATION.md` | `go test ./internal/compiler/session -run 'TestValidationRowGradesAreEarnedOverArchivedCorpus$' -count=1 -v` | PASS, 133.98s, run-record elapsed 2m13.89s vs 8m0s budget, `14-VALIDATION.md` subtest passes | ✓ PASS |
+| Permanent guard against the exemption returning | `go test ./internal/compiler/session -run 'TestValidationGradeBarAppliesToPhase14$' -count=1 -v` | PASS | ✓ PASS |
+| Row-scoped exemptions require a real owner | `go test ./internal/compiler/session -run 'TestValidationGradeBarRowExemptionsAreOwned$' -count=1 -v` | PASS (3 seeded subtests + shipped-map check) | ✓ PASS |
+| `//go:build` suppression surface is gated, not dormant | `go test ./internal/compiler/session -run 'TestBuildConstraintsOutsideTheAllowlistAreRefused$|TestBuildConstraintSurfaceSeenEvenWhenHostExcludesFile$|TestSuppressionWitnessGuardIsNotInert$' -count=1 -v` | PASS (all, including 4th seeded-fault subtest) | ✓ PASS |
+| Debt registers well-formed, including `PHASE-14-DEBT.md` | `go test ./internal/compiler/session -run 'TestDebtRegistersAreWellFormed$' -count=1 -v` | PASS (8 registers) | ✓ PASS |
 | Independent full-suite baseline | `go test ./... -count=1` | exit 0, 25 packages, `session` package 300.091s | ✓ PASS |
 
 ### Human Verification Required

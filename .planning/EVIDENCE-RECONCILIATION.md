@@ -1,5 +1,5 @@
 ---
-entries: 67
+entries: 66
 ---
 
 # Evidence Reconciliation
@@ -88,4 +88,3 @@ obligation on every run (D-14-12).
 | D-14-118 | .planning/research/M003/ADVERSARIAL-SYNTHESIS.md | 213 | `cmd: grep 'D-11-25' PHASE-11-DEBT.md` | superseded | phase P14-07, commit b8242d1, covers: grep -c "D-11-25" .planning/UNREACHABLE-CLAIMS.md |
 | D-14-119 | .planning/research/M003/ADVERSARIAL-SYNTHESIS.md | 214 | `cmd: go test ./internal/compiler/check/... -list 'TestComputeLoanLastUsesAndDerivePlaceLoansAgree'` | obsolete-by-design | deleted computeLoanLastUses from internal/compiler/check at phase P09-09, commit b8fe3df |
 | D-14-120 | .planning/research/M003/ADVERSARIAL-SYNTHESIS.md | 214 | `cmd: go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -count=1` | superseded | phase P09, commit 703fedc, covers: go test ./internal/compiler/corevalidate -run TestPeerLoanCarryDerivesForwardFromOperations |
-| D-14-122 | .planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md | 133 | `cmd: go test ... -run 'TestThisNameDoesNotExistAnywhereZZQQ'` | renamed | replacement: go test ./internal/compiler/session/... -run TestVerificationGroundednessFrontierIsPinned |

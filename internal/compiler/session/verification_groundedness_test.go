@@ -1277,7 +1277,7 @@ var pinnedFrontier = []violationRecord{
 	// 14-RESEARCH.md entries above.
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 359, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 390, Command: "go test -run", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md", Line: 86, Command: "go test -run", Classification: classUnparseable},
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md", Line: 90, Command: "go test -run", Classification: classUnparseable},
 }
 
 // measuredViolations runs the classifier once over the whole Tier-A

@@ -129,7 +129,7 @@ finding).
 | D-14-119 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
 | D-14-120 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | CLOSED(128ecec) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | RESOLVED. `14-VALIDATION.MD` IS REMOVED FROM `validationGradeBarExemptions` (plan 14-12), AND `TestValidationRowGradesAreEarnedOverArchivedCorpus` PASSES FOR IT with a run record that reported complete and a measured elapsed of ~90-92s against the 480s budget (roughly 19%, comfortably inside the 75% margin) -- see Detail section for the full root-cause fix and measured numbers |
-| D-14-122 | plan 14-11's fail-closed run-record margin check, which surfaced this while measuring the corpus-wide batch's real cost | EVD-01 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `14-VERIFICATION.md:133` cites a seeded-fault placeholder name (`TestThisNameDoesNotExistAnywhereZZQQ`) inside a Non-Inertness Spot-Check's narrative description of an already-reverted perturbation, corrected outside the archive as a RENAMED verdict naming the real, resolving test the row's claim actually rests on (see Detail section). |
+| D-14-122 | plan 14-11's fail-closed run-record margin check, which surfaced this while measuring the corpus-wide batch's real cost | EVD-01 | info | P14 | DEFINED | n/a | RETIRED — the text this row reconciled (`14-VERIFICATION.md:133`'s seeded-fault placeholder `TestThisNameDoesNotExistAnywhereZZQQ`) was deleted outright, not merely moved, when commit 511399f's verification-artifact rewrite replaced the whole Non-Inertness Spot-Check narrative; the reconciliation entry is removed as moot rather than repointed at a new anchor (see Detail section). |
 | D-14-123 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-01-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-01-T2` DECLARES `WIRED`, BELOW THE NOW-ENFORCED `>=EXERCISED` SATISFYING BAR. Re-deriving its evidence cell against plan 14-11's completion-witnessed, margin-checked run record shows the cited test (`TestVerificationGroundednessFrontierIsPinned`) genuinely passed and is matched -- the row's TRUE ceiling is `EXERCISED`, not `WIRED`. The declared cell is kept byte-unchanged (this plan's own prohibition on rewriting a row belonging to plans 14-01..14-10 to force the bar to pass) and is instead narrowed here via `validationGradeBarRowExemptions`, mechanically checked by `TestValidationGradeBarRowExemptionsAreOwned`. |
 | D-14-124 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T1` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T1`'S EVIDENCE CELL IS A go-run invocation (`./cmd/lang --json check testdata/distinctness/spiral_full.lang`), not a go-test command -- IT IS STRUCTURALLY CAPPED AT `REACHABLE` BY `deriveCeiling`'s OWN LADDER AND CAN NEVER DERIVE `EXERCISED` WITHOUT REWRITING THE EVIDENCE CELL TO a go-test invocation with a -run pattern naming a specific test. The declared `REACHABLE` cell is kept byte-unchanged (row belongs to plan 14-02, covered by this plan's never-rewrite prohibition) and is narrowed here via `validationGradeBarRowExemptions`. |
 | D-14-125 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T2`'S EVIDENCE CELL NAMES THREE PACKAGES BUT NO `-run` PATTERN, SO `deriveCeiling` DERIVES `WIRED` STRUCTURALLY (THE SAME BARE-PACKAGE SHAPE GAP D-14-50 ALREADY RECORDED FOR `12-VALIDATION.md:52`) -- IT CAN NEVER REACH `EXERCISED` WITHOUT REWRITING THE CELL TO NAME A SPECIFIC TEST. Kept byte-unchanged (row belongs to plan 14-02) and narrowed here. |
@@ -1511,46 +1511,53 @@ symptom plan 14-11 fixed, not a real defect in any of those nine files.
 **Landing phase:** `CLOSED(128ecec)` — plan 14-12's commit removing the
 `14-VALIDATION.md` exemption entry and landing the permanent guard.
 
-### D-14-122 — `14-VERIFICATION.md:133` cites a seeded-fault placeholder name, corrected as a rename
+### D-14-122 — `14-VERIFICATION.md:133` cited a seeded-fault placeholder name; row retired, reconciliation removed
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md
-line: 133
-command: go test ... -run 'TestThisNameDoesNotExistAnywhereZZQQ'
-classification: R1
-verdict: renamed
-replacement: go test ./internal/compiler/session/... -run TestVerificationGroundednessFrontierIsPinned
-```
-
-Plan 14-11's fail-closed margin check (Task 2) surfaced this while measuring
-the corpus-wide run record's real cost: with D-14-121's own risk closed
-(the run now finishes in well under its margin, see this plan's own
-SUMMARY), `TestValidationRowGradesAreEarnedOverArchivedCorpus` derived a
-genuine `WIRED` ceiling for `14-VALIDATION.md` row `14-10-T1` -- not a
+Plan 14-11's fail-closed margin check (Task 2) originally surfaced this
+while measuring the corpus-wide run record's real cost: with D-14-121's
+own risk closed (the run finished well under its margin, see plan 14-11's
+own SUMMARY), `TestValidationRowGradesAreEarnedOverArchivedCorpus` derived
+a genuine `WIRED` ceiling for `14-VALIDATION.md` row `14-10-T1` -- not a
 false negative from an incomplete run, but a real, previously-unreported
 gap in `14-VERIFICATION.md`'s own Non-Inertness Spot-Check table (row 1),
 added after plan 14-10's reconciliation pass closed the R1/R2/R3 frontier
-and therefore never reconciled.
+and therefore never reconciled at the time. Plan 14-11 recorded a
+`reconciliation` block here classifying that cell as R1 with a `renamed`
+verdict pointing at `TestVerificationGroundednessFrontierIsPinned`.
 
-The archived cell's literal text, `go test ... -run
-'TestThisNameDoesNotExistAnywhereZZQQ'`, narrates a fault-injection
-perturbation that was already executed and reverted: the same table row's
-own "Reverted clean?" column confirms `git checkout --` restored
-`14-01-SUMMARY.md` to clean, and `TestThisNameDoesNotExistAnywhereZZQQ` was
-never a real test -- it was deliberately fabricated so the row could show
-`TestVerificationGroundednessFrontierIsPinned` and
-`TestVerificationGroundednessThreeClassesAreEmpty` catching it. The cell
-therefore never named live evidence and was never meant to resolve; the
-row's actual claim rests on the replacement command above, which is a
-real, currently-resolving test (verified via `classifyCommand` over the
-static test index, the same primitive the lint's own classification uses).
-The archived row is left byte-unmodified; only this register records the
-correction.
+Commit `511399f` ("docs(phase-14): complete phase execution") then
+rewrote `14-VERIFICATION.md` wholesale as part of the phase's final
+verification pass. That rewrite replaced the entire Non-Inertness
+Spot-Check narrative -- the seeded-fault placeholder text
+`TestThisNameDoesNotExistAnywhereZZQQ` this row was reconciling no longer
+appears anywhere in `14-VERIFICATION.md` (confirmed by direct grep: zero
+matches). This is not a case of the cited line moving to a new location
+inside the same document (which `renamed`/`superseded` verdicts exist to
+cover) -- the specific text the `reconciliation` block pointed at was
+deleted outright, together with the row that contained it. The
+reconciliation entry has nothing left to reconcile: keeping it would mean
+carrying forward a verdict about a command that no longer exists in the
+tree, which is exactly the kind of stale ballast
+`TestEvidenceReconciliationViewCatchesStaleEntry` (D-14-14b) exists to
+catch on the *generated view* side; on the *authored register* side, the
+honest move is to remove the block rather than repoint it at a new anchor
+that would misrepresent what happened.
 
-**Landing phase:** `P14` -- closed by this same plan (14-11) recording the
-correction; no further work is scheduled.
+The `reconciliation` fenced block is therefore removed from this Detail
+section (and `.planning/EVIDENCE-RECONCILIATION.md` regenerated to drop
+the corresponding row). The `D-14-122` identifier and this Detail section
+are kept -- not retired outright -- because `PHASE-14-DEBT.md:1582`
+still cites it by name as the last entry in the "archived row left
+untouched, only the register records the correction" precedent chain
+(D-14-48 through D-14-122); retiring the ID would break that citation
+without fixing anything real. No future phase needs to act on this row.
+
+**Landing phase:** `P14` -- closed by plan 14-11 recording the original
+correction; this entry (the fix you are reading) removes the now-stale
+reconciliation block after commit `511399f` deleted its target. No
+further work is scheduled.
 
 ### D-14-123 — `14-VALIDATION.md:14-01-T2` under-declares its now-measurable ceiling
 
