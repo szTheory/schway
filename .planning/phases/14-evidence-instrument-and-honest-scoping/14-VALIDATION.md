@@ -8,7 +8,7 @@ nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-17"
 evidence_vocabulary: v1
-graded_rows: 38
+graded_rows: 39
 ---
 
 # Phase 14 — Validation Strategy
@@ -90,6 +90,7 @@ this phase.
 | 14-13-T2 | 13 | 9 | EVD-04 | — | The scan sees constrained-out files, and the new branch carries its own seeded fault | unit | `go test ./internal/compiler/session/... -run 'TestBuildConstraintSurfaceSeenEvenWhenHostExcludesFile$' -count=1 -v` | ✅ exists | EXERCISED | — |
 | 14-12-T1 | 12 | 9 | EVD-02 | — | The exemption cannot silently return | unit | `go test ./internal/compiler/session/... -run 'TestValidationGradeBarAppliesToPhase14$' -count=1 -v` | ✅ exists | EXERCISED | — |
 | 14-12-T2 | 12 | 9 | EVD-02/PRC-01 | — | Any residual narrowing names an owner | unit | `go test ./internal/compiler/session/... -run 'TestValidationGradeBarRowExemptionsAreOwned$' -count=1 -v` | ✅ exists | EXERCISED | — |
+| 14-12-T3 | 12 | 9 | PRC-01 | — | D-14-121 leaves UNOWNED with a real reason | unit | `go test ./internal/compiler/session/... -run 'TestDebtRegistersAreWellFormed$' -count=1 -v` | ✅ exists | EXERCISED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

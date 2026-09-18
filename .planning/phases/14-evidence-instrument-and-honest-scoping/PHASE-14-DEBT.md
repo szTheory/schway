@@ -60,7 +60,7 @@ finding).
 | D-14-50 | plan 14-09's grade derivation over 12-VALIDATION.md:52 (row 12-04-01) | EVD-02 | info | UNOWNED(probe:TestValidationGradeCapBarePackageRowHasNoNamedTest) | WIRED | probe:TestValidationGradeCapBarePackageRowHasNoNamedTest | 12-VALIDATION.MD ROW 12-04-01's EVIDENCE CELL NAMES TWO PACKAGES BUT NO `-run`/`-list`/`-fuzz`/`-bench` PATTERN, SO IT NAMES NO EXACT TEST IDENTIFIER THE CAP CAN CONFIRM EXECUTED -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED UNDER THE EXACT-IDENTIFIER DISCIPLINE. The package-wide invocation genuinely compiles and the code path is real; the row is simply not phrased as a resolvable claim. No phase currently owns rephrasing it |
 | D-14-51 | plan 14-09's grade derivation over 04-VALIDATION.md:74 (row 04-06-03) | EVD-02 | warning | UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent) | WIRED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 04-VALIDATION.MD ROW 04-06-03's EVIDENCE CELL NAMES `TestLastUseDiscoveryWorkIsCounted` AND `TestLastUseDiscoveryWorkSeries`, NEITHER OF WHICH EXISTS IN THE CURRENT MODULE -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. Both were real tests at the time 04-DEBT.md's "deferred retirement" item was written (04-06-SUMMARY.md cites them as coverage) and were retired alongside the `computeLoanLastUses` deletion (D-09-09) without this row being updated. This is a genuine hole in shipped M001 evidence being surfaced, not a regression to suppress -- the precedent D-13-33 and D-14-07 both name explicitly |
 | D-14-52 | plan 14-09's grade derivation over 06-VALIDATION.md:69 (row 06-08-T3) | EVD-02 | warning | UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent) | WIRED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-08-T3's EVIDENCE CELL NAMES `TestOnlyRecomputedWorkIsGateEligible`, WHICH DOES NOT EXIST -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. Plan 08-05 renamed it to `TestOnlyGateEligibleMetricsPassThrough` when `GateEligibleMetrics()` widened from one metric to a set (08-05-SUMMARY.md's own key-decisions record the rename and why), and this M001 row was never repointed. Same class of finding as D-14-51: a real rename left a stale citation in a document already marked satisfied |
-| D-14-53 | plan 14-09's own satisfying-bar exemption for 14-VALIDATION.md | EVD-02 | info | UNOWNED(none-yet-scheduled) | DEFINED | n/a | 14-VALIDATION.MD'S OWN PER-TASK VERIFICATION MAP HAS EXACTLY ONE ROW, AND ITS EVIDENCE CELL IS STILL THE LITERAL PLAN-TIME PLACEHOLDER `` `{command}` `` -- NO PLAN IN THIS PHASE EVER FILLED IT IN, BECAUSE EACH PLAN TRACKS ITS OWN VERIFICATION THROUGH ITS OWN `*-SUMMARY.md` INSTEAD. Recording this as a silent permanent bar exemption (`validationGradeBarExemptions`, `internal/compiler/session/evidence_grade_test.go`) would be exactly the suppression EVD-02 exists to retire, so it is named here instead: either a future plan populates this table for real from the phase's nine plans' own evidence, or the document is retired in favor of the per-plan SUMMARY.md convention it has in practice already lost to |
+| D-14-53 | plan 14-09's own satisfying-bar exemption for 14-VALIDATION.md | EVD-02 | info | CLOSED(128ecec) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | 14-VALIDATION.MD'S OWN PER-TASK VERIFICATION MAP, ORIGINALLY EXACTLY ONE UNFILLED PLACEHOLDER ROW, IS NOW POPULATED FOR REAL: 31 rows plan 14-10 filled plus 8 this plan (14-12) added (14-11-T1..T3, 14-13-T1..T2, 14-12-T1..T3), all executed and confirmed to resolve, all judged by the now-unexempted `>=EXERCISED` satisfying bar via `TestValidationRowGradesAreEarnedOverArchivedCorpus`. The premise this row recorded (the table was never filled in beyond its plan-time placeholder) no longer holds |
 | D-14-54 | plan 14-09's grade derivation over 06-VALIDATION.md:71 (row 06-09-T3) | EVD-02 | warning | UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent) | WIRED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-09-T3's EVIDENCE CELL NAMES `TestRecomputedWorkIsTheOnlyHardGate`, WHICH DOES NOT EXIST -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. `08-REVIEW.md`'s own WR-01 warning named this exact staleness (the test's name asserted "only hard gate" after plan 08-05 widened the gate-eligible set to two metrics) and recommended a rename; the rename that landed is `TestRecomputedWorkHardGateBoundComparison`. A third instance of the same class as D-14-51/D-14-52 -- a real, even self-documented rename left a stale citation behind in an M001 row already marked satisfied |
 | D-14-55 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:849` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-56 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:850` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
@@ -128,7 +128,7 @@ finding).
 | D-14-118 | plan 14-10's reconciliation of the pinned groundedness frontier's R3 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R3) — `ADVERSARIAL-SYNTHESIS.md:213` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-119 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
 | D-14-120 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
-| D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | UNOWNED(none-yet-scheduled) | DEFINED | n/a | REMOVING `14-VALIDATION.MD` FROM `validationGradeBarExemptions` AND RE-RUNNING `TestValidationRowGradesAreEarnedOverArchivedCorpus` PRODUCED SPURIOUS "DECLARED EXERCISED EXCEEDS THE CEILING WIRED" FAILURES ACROSS NINE OTHER, UNRELATED, ALREADY-FROZEN ARCHIVED FILES (01, 02, 06, 07, 08, 10, 11, 12, 13-VALIDATION.MD) IN THE SAME RUN. The whole corpus-wide test completed at 300.11s, suspiciously close to `evidenceRunRecordTimeout`'s 300s ceiling (lowered from 900s by plan 14-09's own deviation fix) -- consistent with the run-record generation not completing within its budget and several packages' citations falling back to an unresolved WIRED ceiling rather than their true EXERCISED grade. The exemption-removal change was reverted rather than landed under that risk; the corpus-wide grade cap over the real archived data was never actually re-verified with a complete run record in this plan |
+| D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | CLOSED(128ecec) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | RESOLVED. `14-VALIDATION.MD` IS REMOVED FROM `validationGradeBarExemptions` (plan 14-12), AND `TestValidationRowGradesAreEarnedOverArchivedCorpus` PASSES FOR IT with a run record that reported complete and a measured elapsed of ~90-92s against the 480s budget (roughly 19%, comfortably inside the 75% margin) -- see Detail section for the full root-cause fix and measured numbers |
 | D-14-122 | plan 14-11's fail-closed run-record margin check, which surfaced this while measuring the corpus-wide batch's real cost | EVD-01 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `14-VERIFICATION.md:133` cites a seeded-fault placeholder name (`TestThisNameDoesNotExistAnywhereZZQQ`) inside a Non-Inertness Spot-Check's narrative description of an already-reverted perturbation, corrected outside the archive as a RENAMED verdict naming the real, resolving test the row's claim actually rests on (see Detail section). |
 | D-14-123 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-01-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-01-T2` DECLARES `WIRED`, BELOW THE NOW-ENFORCED `>=EXERCISED` SATISFYING BAR. Re-deriving its evidence cell against plan 14-11's completion-witnessed, margin-checked run record shows the cited test (`TestVerificationGroundednessFrontierIsPinned`) genuinely passed and is matched -- the row's TRUE ceiling is `EXERCISED`, not `WIRED`. The declared cell is kept byte-unchanged (this plan's own prohibition on rewriting a row belonging to plans 14-01..14-10 to force the bar to pass) and is instead narrowed here via `validationGradeBarRowExemptions`, mechanically checked by `TestValidationGradeBarRowExemptionsAreOwned`. |
 | D-14-124 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T1` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T1`'S EVIDENCE CELL IS A go-run invocation (`./cmd/lang --json check testdata/distinctness/spiral_full.lang`), not a go-test command -- IT IS STRUCTURALLY CAPPED AT `REACHABLE` BY `deriveCeiling`'s OWN LADDER AND CAN NEVER DERIVE `EXERCISED` WITHOUT REWRITING THE EVIDENCE CELL TO a go-test invocation with a -run pattern naming a specific test. The declared `REACHABLE` cell is kept byte-unchanged (row belongs to plan 14-02, covered by this plan's never-rewrite prohibition) and is narrowed here via `validationGradeBarRowExemptions`. |
@@ -326,10 +326,21 @@ that attempt (the whole run finished at 300.11s, suspiciously close to
 Rather than land a corpus-wide grade change under that risk, the change
 was reverted; see D-14-121 below.
 
-**Landing phase:** `UNOWNED(none-yet-scheduled)` — no phase yet owns either
-retroactively populating this table from the phase's own plan SUMMARYs or
-formally retiring the document in favor of the convention the phase has,
-in practice, already moved to.
+**Update (plan 14-12) — RESOLVED.** Plan 14-11 fixed D-14-121's root
+cause (raised `evidenceRunRecordTimeout` to `480s`, added the 0.75 margin
+fraction, anchored the producer/consumer name contract), and plan 14-12
+removed the `14-VALIDATION.md` exemption entry for real (commit
+`128ecec`), adding 8 more real rows on top of plan 14-10's 31
+(`14-11-T1..T3`, `14-13-T1..T2`, `14-12-T1..T3` — 39 total,
+`graded_rows: 39`). `TestValidationRowGradesAreEarnedOverArchivedCorpus`
+now passes for this file with a complete run record. The premise this
+row recorded — that the table would sit at a single unfilled placeholder
+forever, with no plan ever closing that gap — no longer holds; the table
+is filled, the exemption is gone, and a permanent guard
+(`TestValidationGradeBarAppliesToPhase14`) makes both facts checkable
+rather than merely asserted.
+
+**Landing phase:** `CLOSED(128ecec)` — plan 14-12's commit.
 
 ### D-14-54 — `06-VALIDATION.md:71` cites a test renamed per its own reviewer's warning
 
@@ -1468,12 +1479,37 @@ but the bar was never safely re-verified) — recorded here rather than
 silently left to read as though the original "never filled in" reason
 still applied.
 
-**Landing phase:** `UNOWNED(none-yet-scheduled)` — no phase yet owns either
-re-running the corpus-wide grade cap with a verified-complete run record
-(possibly requiring `evidence-run-record.sh`'s own timeout/consolidation
-budget to be revisited a second time, mirroring plan 14-09's own
-`consolidatePkgPatterns` fix) or accepting `14-VALIDATION.md`'s exemption
-as permanent with an updated, non-stale rationale.
+**Update (plan 14-12) — RESOLVED.** Plan 14-11 fixed the root cause this
+row identified as suspected but unconfirmed: `evidenceRunRecordTimeout`
+raised from the then-300s ceiling to a measured-honest `480s`, a new
+`evidenceRunRecordMarginFraction` (`0.75`) that fails closed on a
+near-timeout run instead of silently degrading to a lower grade ceiling,
+and `resolvedPkgPatterns` anchoring the run-record producer to execute
+exactly the resolved, exact top-level test names the consumer
+(`deriveCeiling`) consults — closing the substring-match risk that could
+have caused the original 300.11s run's own timing pressure. Plan 14-11's
+own measured corpus-wide elapsed dropped to ~90.30s (recorded in
+`qlt02_budget_manifest.json`'s `evidence_run_record_wall_clock_ns`).
+
+Plan 14-12 then removed the `14-VALIDATION.md` entry from
+`validationGradeBarExemptions` for real (commit `128ecec`) and re-ran
+`TestValidationRowGradesAreEarnedOverArchivedCorpus`: the run record
+reported complete, with a measured elapsed of `1m32.646s` (92.6s) against
+the `480s` budget — 19.3% of budget, comfortably inside the 75% margin,
+and nowhere near the original `300.11s`/`300s`-ceiling near-miss. Five
+pre-existing rows in `14-VALIDATION.md`'s own table failed the bar for
+real, un-rewritable reasons (see D-14-123 through D-14-127) and are
+narrowed via `validationGradeBarRowExemptions`, not via re-adding the
+file-scoped exemption; the guard that makes the exemption's return
+mechanically impossible (`TestValidationGradeBarAppliesToPhase14`) is
+this row's own closing witness.
+
+None of the nine other archived files' rows regressed — the original
+spurious cross-file failures were exactly the incomplete-run-record
+symptom plan 14-11 fixed, not a real defect in any of those nine files.
+
+**Landing phase:** `CLOSED(128ecec)` — plan 14-12's commit removing the
+`14-VALIDATION.md` exemption entry and landing the permanent guard.
 
 ### D-14-122 — `14-VERIFICATION.md:133` cites a seeded-fault placeholder name, corrected as a rename
 
