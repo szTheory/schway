@@ -1000,9 +1000,13 @@ func TestVerificationGroundedness(t *testing.T) {
 		fileSuffix string
 		line       int
 	}{
-		{"08-VALIDATION.md", 51},
-		{"08-VALIDATION.md", 63},
-		{"09-VALIDATION.md", 85},
+		// Line numbers shifted +2 at plan 14-09 (D-14-05's two new
+		// frontmatter keys, evidence_vocabulary and graded_rows, inserted
+		// ahead of the body of every migrated *-VALIDATION.md) -- a pure
+		// coordinate shift, re-measured rather than assumed unchanged.
+		{"08-VALIDATION.md", 53},
+		{"08-VALIDATION.md", 65},
+		{"09-VALIDATION.md", 87},
 	}
 	for _, want := range mustContain {
 		found := false
@@ -1980,7 +1984,9 @@ func runGroundednessSelfCheckGrep(t *testing.T, pattern, relFile string) string 
 
 // TestVerificationGroundednessGrepOverRealCorpus proves the grep classifier
 // finds the real, currently-live archival-breakage instance in the Tier-A
-// corpus: `.planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md:113`
+// corpus: `.planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md:115`
+// (line 113 at plan 14-06's measurement; shifted +2 by plan 14-09's D-14-05
+// frontmatter migration -- a pure coordinate shift, re-measured here)
 // (`grep -c "S-008" .planning/ROADMAP.md`) returns zero matches today --
 // "S-008" no longer appears in the live ROADMAP.md, exactly the archival
 // breakage D-14-15's R3 exists to catch. (Task 2's read_first names this as
@@ -2017,13 +2023,13 @@ func TestVerificationGroundednessGrepOverRealCorpus(t *testing.T) {
 	}
 	found := false
 	for _, v := range grepFindings {
-		if strings.HasSuffix(v.File, "09-VALIDATION.md") && v.Line == 113 {
+		if strings.HasSuffix(v.File, "09-VALIDATION.md") && v.Line == 115 {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Errorf("expected an R3 finding at .../09-VALIDATION.md:113 (grep -c \"S-008\" .planning/ROADMAP.md), found none among %d grep findings: %+v", len(grepFindings), grepFindings)
+		t.Errorf("expected an R3 finding at .../09-VALIDATION.md:115 (grep -c \"S-008\" .planning/ROADMAP.md), found none among %d grep findings: %+v", len(grepFindings), grepFindings)
 	}
 }
 
