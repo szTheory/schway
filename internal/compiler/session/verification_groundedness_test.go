@@ -24,6 +24,7 @@ package session_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -1349,4 +1350,423 @@ func TestVerificationGroundednessIsNotInert(t *testing.T) {
 	if statusAfter != statusBefore {
 		t.Fatalf("git status --porcelain .planning changed during this test run -- a seeded copy leaked into the real tree (seeded copies must live only under t.TempDir()):\nbefore:\n%s\nafter:\n%s", statusBefore, statusAfter)
 	}
+}
+
+// ---------------------------------------------------------------------
+// Plan 14-06 Task 2: execute grep-shaped commands (R3), and detect and pin
+// per-branch groundedness (R2b) -- D-14-15's third rule, D-14-16, D-14-17.
+// ---------------------------------------------------------------------
+
+// classR3 and classR2b extend the classification vocabulary this plan adds.
+// classR3 is the grep-groundedness finding (D-14-15's third rule, the
+// archival-breakage class); classR2b is a per-branch alternation finding,
+// DETECTED AND PINNED this phase but not enforced to zero (D-14-16).
+const (
+	classR3  classification = "R3"
+	classR2b classification = "R2b"
+)
+
+// grepShapedPattern matches the `grep`/`rg` prefix verificationCommandPattern
+// already anchors extraction to.
+var grepShapedPattern = regexp.MustCompile(`^(grep|rg)\b`)
+
+func isGrepShaped(command string) bool {
+	return grepShapedPattern.MatchString(command)
+}
+
+// hasShellMetacharacterOutsideQuotes reports whether command contains a
+// pipe, redirect, conjunction (`&&`), semicolon, or command-substitution
+// opener (`$(`) OUTSIDE any single/double-quoted argument. A grep pattern's
+// own regex alternation (`grep -nE 'TBD|FIXME|XXX'`) uses `|` INSIDE quotes
+// and must never be misclassified as a shell pipe -- this is what keeps R3
+// from silently swallowing every alternation-pattern grep command in the
+// corpus.
+func hasShellMetacharacterOutsideQuotes(command string) bool {
+	inSingle, inDouble := false, false
+	runes := []rune(command)
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		switch {
+		case r == '\'' && !inDouble:
+			inSingle = !inSingle
+		case r == '"' && !inSingle:
+			inDouble = !inDouble
+		case inSingle || inDouble:
+			// Inside a quoted argument: literal content, not shell syntax.
+		case r == '|' || r == '>' || r == ';':
+			return true
+		case r == '&' && i+1 < len(runes) && runes[i+1] == '&':
+			return true
+		case r == '$' && i+1 < len(runes) && runes[i+1] == '(':
+			return true
+		}
+	}
+	return false
+}
+
+// grepFileOperand extracts a grep/rg command's trailing file operand by
+// POSIX-tokenizing (reusing posixTokenize, no second tokenizer) and taking
+// the LAST non-flag positional token after the pattern. `-e`/`-f` consume a
+// following value token; every other flag token (`-c`, `-n`, `-E`, `-nE`,
+// `-r`, ...) does not. A command with only one positional token (the
+// pattern, e.g. a recursive `grep -rn NAME` with no explicit path) has no
+// file operand and is reported as such -- R3 only applies to a LITERAL file
+// operand, never to an implied recursive scope.
+func grepFileOperand(command string) (operand string, ok bool) {
+	tokens, err := posixTokenize(command)
+	if err != nil || len(tokens) == 0 {
+		return "", false
+	}
+	var positionals []string
+	for i := 1; i < len(tokens); i++ {
+		tok := tokens[i]
+		if strings.HasPrefix(tok, "-") {
+			if tok == "-e" || tok == "-f" {
+				i++
+			}
+			continue
+		}
+		positionals = append(positionals, tok)
+	}
+	if len(positionals) < 2 {
+		return "", false
+	}
+	return positionals[len(positionals)-1], true
+}
+
+// classifyGrepGroundedness applies R3: a grep/rg-shaped command with a
+// literal existing file operand and no shell metacharacter is executed
+// DIRECTLY -- argv form via os/exec, never a shell -- and must yield at
+// least one match; zero matches (grep's exit status 1) is a finding, naming
+// the archival-breakage class D-14-15 requires this lint to also catch. A
+// command carrying a pipe, redirect, conjunction, semicolon, or command
+// substitution is never executed; it is classified by shape only (the
+// caller's R1 check already ran, and this function reports executed=false
+// so a test can assert no subprocess ran). A missing file operand is a
+// finding, never a skip -- classified without spawning a process, since
+// there is nothing to run against.
+func classifyGrepGroundedness(projectRoot, command string) (result classification, executed bool) {
+	if true {
+		return classOK, false // RED stub: intentionally wrong
+	}
+	if hasShellMetacharacterOutsideQuotes(command) {
+		return classOK, false
+	}
+	operand, hasOperand := grepFileOperand(command)
+	if !hasOperand {
+		return classOK, false
+	}
+	resolved := operand
+	if !filepath.IsAbs(resolved) {
+		resolved = filepath.Join(projectRoot, operand)
+	}
+	if _, statErr := os.Stat(resolved); statErr != nil {
+		return classR3, false
+	}
+	tokens, err := posixTokenize(command)
+	if err != nil {
+		return classUnparseable, false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), groundednessGitTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, tokens[0], tokens[1:]...)
+	cmd.Dir = projectRoot
+	var stdout, stderr groundednessBoundedWriter
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	runErr := cmd.Run()
+	if runErr == nil {
+		return classOK, true
+	}
+	// Any non-zero exit (grep's documented "no lines selected" status 1, or
+	// any other failure) is a finding -- D-14-15's "no silent skips" rule
+	// applies here exactly as it does to an unparseable go-test cell.
+	return classR3, true
+}
+
+// splitTopLevelAlternation splits a go-test -run pattern's first segment on
+// `|`. The pattern has already been through D-14-17's markdown-unescape
+// ruling by the time it reaches here (extractCommands/unescapeCell already
+// ran), and every alternation pattern actually present in this corpus is a
+// flat `A|B|...` with no grouping metacharacter, so a literal top-level
+// split is exact.
+func splitTopLevelAlternation(pattern string) []string {
+	return strings.Split(pattern, "|")
+}
+
+// classifyPerBranchGroundedness applies R2b (D-14-16): split the run
+// pattern's first segment on top-level alternation and require EVERY
+// branch to resolve to at least one name in the union index -- this is
+// what turns `-run 'PeerLiveness|LoanChainIndex'` from a pass into a
+// finding when only one branch resolves. Returns every branch that fails to
+// resolve; the caller decides how to record that (Task 2 logs it, Task 3
+// wires it into the pinned frontier as classR2b, DETECTED AND PINNED but
+// not enforced to zero this phase per D-14-16's explicit sizing decision).
+func classifyPerBranchGroundedness(index *testIndex, packages []string, pattern string) (failingBranches []string) {
+	if true {
+		return nil // RED stub: intentionally wrong
+	}
+	names := make(map[string]bool)
+	for _, operand := range packages {
+		set, _ := index.resolvePackageNames(operand)
+		for name := range set {
+			names[name] = true
+		}
+	}
+	segment := strings.SplitN(pattern, "/", 2)[0]
+	for _, branch := range splitTopLevelAlternation(segment) {
+		re, err := regexp.Compile(branch)
+		if err != nil {
+			failingBranches = append(failingBranches, branch)
+			continue
+		}
+		matched := false
+		for name := range names {
+			if re.MatchString(name) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			failingBranches = append(failingBranches, branch)
+		}
+	}
+	return failingBranches
+}
+
+// TestVerificationGroundednessGrepExecution exercises Task 2's grep/R3
+// <behavior> bullets against synthetic fixture files under t.TempDir().
+func TestVerificationGroundednessGrepExecution(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "match.txt"), []byte("needle found here\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "nomatch.txt"), []byte("nothing interesting\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("an existing file with a guaranteed match classifies clean", func(t *testing.T) {
+		got, executed := classifyGrepGroundedness(root, "grep -c 'needle' match.txt")
+		if !executed {
+			t.Fatal("expected the grep subprocess to run")
+		}
+		if got != classOK {
+			t.Fatalf("classifyGrepGroundedness(match) = %s, want ok", got)
+		}
+	})
+
+	t.Run("an existing file with no match is a finding", func(t *testing.T) {
+		got, executed := classifyGrepGroundedness(root, "grep -c 'needle' nomatch.txt")
+		if !executed {
+			t.Fatal("expected the grep subprocess to run")
+		}
+		if got != classR3 {
+			t.Fatalf("classifyGrepGroundedness(no match) = %s, want R3", got)
+		}
+	})
+
+	t.Run("a missing file operand is a finding, not a skip", func(t *testing.T) {
+		got, executed := classifyGrepGroundedness(root, "grep -c 'needle' does-not-exist.txt")
+		if executed {
+			t.Fatal("expected no subprocess for a missing file operand")
+		}
+		if got != classR3 {
+			t.Fatalf("classifyGrepGroundedness(missing file) = %s, want R3", got)
+		}
+	})
+
+	t.Run("a command carrying a pipe is proven never executed and is classified by shape only", func(t *testing.T) {
+		got, executed := classifyGrepGroundedness(root, "grep -c 'needle' match.txt | wc -l")
+		if executed {
+			t.Fatal("expected the piped command to never be executed")
+		}
+		if got != classOK {
+			t.Fatalf("classifyGrepGroundedness(piped) = %s, want ok (shape-classified, never executed)", got)
+		}
+	})
+
+	t.Run("a command carrying a redirect is never executed", func(t *testing.T) {
+		_, executed := classifyGrepGroundedness(root, "grep -c 'needle' match.txt > out.txt")
+		if executed {
+			t.Fatal("expected the redirected command to never be executed")
+		}
+	})
+
+	t.Run("a command carrying a conjunction is never executed", func(t *testing.T) {
+		_, executed := classifyGrepGroundedness(root, "grep -c 'needle' match.txt && echo done")
+		if executed {
+			t.Fatal("expected the conjunction command to never be executed")
+		}
+	})
+
+	t.Run("a command carrying a semicolon is never executed", func(t *testing.T) {
+		_, executed := classifyGrepGroundedness(root, "grep -c 'needle' match.txt; echo done")
+		if executed {
+			t.Fatal("expected the semicolon-joined command to never be executed")
+		}
+	})
+
+	t.Run("a command carrying a command substitution is never executed", func(t *testing.T) {
+		_, executed := classifyGrepGroundedness(root, "grep -c \"$(cat match.txt)\" match.txt")
+		if executed {
+			t.Fatal("expected the command-substitution command to never be executed")
+		}
+	})
+
+	t.Run("a pattern-internal alternation pipe inside quotes is not mistaken for a shell pipe", func(t *testing.T) {
+		if hasShellMetacharacterOutsideQuotes(`grep -nE 'TBD|FIXME|XXX' match.txt`) {
+			t.Fatal("a quoted alternation pipe was misclassified as a shell metacharacter")
+		}
+		got, executed := classifyGrepGroundedness(root, "grep -nE 'needle|absent' match.txt")
+		if !executed {
+			t.Fatal("expected the subprocess to run: the pipe is inside quotes, not a shell pipe")
+		}
+		if got != classOK {
+			t.Fatalf("classifyGrepGroundedness(quoted alternation) = %s, want ok", got)
+		}
+	})
+
+	t.Run("a recursive grep with no file operand is not R3-eligible", func(t *testing.T) {
+		_, executed := classifyGrepGroundedness(root, "grep -rn needle")
+		if executed {
+			t.Fatal("expected no subprocess for a command with no file operand")
+		}
+	})
+
+	// Argv-form-only invariant (Task 2 acceptance criteria): this file must
+	// never pass a command string to a shell. Verified directly, executed
+	// exactly the way every other spawn in this module is (bounded,
+	// deadline-carrying, argv form).
+	t.Run("this file never passes a command string to a shell", func(t *testing.T) {
+		out := runGroundednessSelfCheckGrep(t, `sh", "-c"`, "verification_groundedness_test.go")
+		if strings.TrimSpace(out) != "0" {
+			t.Fatalf(`grep -c 'sh", "-c"' verification_groundedness_test.go = %q, want "0" (no shell invocation present)`, strings.TrimSpace(out))
+		}
+	})
+}
+
+// runGroundednessSelfCheckGrep runs `grep -c PATTERN FILE` over this
+// package's own source directory, bounded exactly like every other spawn in
+// this file, and returns stdout. Used only by the argv-form-only self-check
+// above -- not part of the lint's production classification path.
+func runGroundednessSelfCheckGrep(t *testing.T, pattern, relFile string) string {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), groundednessGitTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "grep", "-c", pattern, relFile)
+	cmd.Dir = testsupport.ProjectPath("internal", "compiler", "session")
+	var stdout, stderr groundednessBoundedWriter
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if !(errors.As(err, &exitErr) && exitErr.ExitCode() == 1) {
+			t.Fatalf("grep -c %q %s: %v (stderr: %s)", pattern, relFile, err, stderr.bytes())
+		}
+	}
+	return string(stdout.bytes())
+}
+
+// TestVerificationGroundednessGrepOverRealCorpus proves the grep classifier
+// finds the real, currently-live archival-breakage instance in the Tier-A
+// corpus: `.planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md:113`
+// (`grep -c "S-008" .planning/ROADMAP.md`) returns zero matches today --
+// "S-008" no longer appears in the live ROADMAP.md, exactly the archival
+// breakage D-14-15's R3 exists to catch. (Task 2's read_first names this as
+// "the grep row over the roadmap that returns zero matches since
+// archival" under the 11-VALIDATION.md heading; the verified live instance
+// is this 09-VALIDATION.md row -- recorded in the plan 14-06 SUMMARY.)
+func TestVerificationGroundednessGrepOverRealCorpus(t *testing.T) {
+	root := testsupport.ProjectPath()
+	docs := tierADocuments(t)
+	var grepFindings []violationRecord
+	for _, doc := range docs {
+		occurrences, err := extractCommands(doc)
+		if err != nil {
+			t.Fatalf("extractCommands(%s): %v", doc, err)
+		}
+		for _, occ := range occurrences {
+			if !isGrepShaped(occ.Command) {
+				continue
+			}
+			if !classifyRunnability(occ.Command) {
+				continue // already R1 -- do not double-report
+			}
+			class, executed := classifyGrepGroundedness(root, occ.Command)
+			t.Logf("grep-shaped (executed=%v) %s %s:%d: %s", executed, class, projectRelativePath(root, doc), occ.Line, occ.Command)
+			if class == classR3 {
+				grepFindings = append(grepFindings, violationRecord{
+					File:           projectRelativePath(root, doc),
+					Line:           occ.Line,
+					Command:        occ.Command,
+					Classification: classR3,
+				})
+			}
+		}
+	}
+	found := false
+	for _, v := range grepFindings {
+		if strings.HasSuffix(v.File, "09-VALIDATION.md") && v.Line == 113 {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected an R3 finding at .../09-VALIDATION.md:113 (grep -c \"S-008\" .planning/ROADMAP.md), found none among %d grep findings: %+v", len(grepFindings), grepFindings)
+	}
+}
+
+// TestVerificationGroundednessPerBranch exercises Task 2's per-branch/R2b
+// <behavior> bullets.
+func TestVerificationGroundednessPerBranch(t *testing.T) {
+	index := &testIndex{byImportPath: map[string]map[string]bool{
+		groundednessModulePath + "/internal/compiler/example": {
+			"TestPeerLivenessFileImportsStayIndependent": true,
+		},
+	}}
+
+	t.Run("every branch resolving is clean", func(t *testing.T) {
+		failing := classifyPerBranchGroundedness(index, []string{"./internal/compiler/example/..."}, "PeerLiveness|TestPeerLivenessFileImportsStayIndependent")
+		if len(failing) != 0 {
+			t.Fatalf("want no failing branches, got %v", failing)
+		}
+	})
+
+	t.Run("one branch resolving to zero names is a per-branch finding", func(t *testing.T) {
+		failing := classifyPerBranchGroundedness(index, []string{"./internal/compiler/example/..."}, "PeerLiveness|LoanChainIndex")
+		if len(failing) != 1 || failing[0] != "LoanChainIndex" {
+			t.Fatalf("want exactly one failing branch (LoanChainIndex), got %v", failing)
+		}
+	})
+
+	t.Run("per-branch findings are recorded, not enforced to zero (D-14-16)", func(t *testing.T) {
+		root := testsupport.ProjectPath()
+		realIndex := buildTestIndex(t)
+		docs := tierADocuments(t)
+		var perBranchCount int
+		for _, doc := range docs {
+			occurrences, err := extractCommands(doc)
+			if err != nil {
+				t.Fatalf("extractCommands(%s): %v", doc, err)
+			}
+			for _, occ := range occurrences {
+				if !strings.HasPrefix(occ.Command, "go test") || !classifyRunnability(occ.Command) {
+					continue
+				}
+				parsed, ok := parseGoTestCommand(occ.Command)
+				if !ok || parsed.Pattern == "" || !strings.Contains(parsed.Pattern, "|") {
+					continue
+				}
+				failing := classifyPerBranchGroundedness(realIndex, parsed.Packages, parsed.Pattern)
+				if len(failing) > 0 {
+					perBranchCount++
+					t.Logf("R2b %s:%d: %s -- failing branches: %v", projectRelativePath(root, doc), occ.Line, occ.Command, failing)
+				}
+			}
+		}
+		t.Logf("total per-branch (R2b) findings over the real Tier-A corpus: %d", perBranchCount)
+		if perBranchCount == 0 {
+			t.Fatal("expected at least one real per-branch finding (D-14-16 predicts the defect mass is here); found none -- classifier may be broken")
+		}
+	})
 }
