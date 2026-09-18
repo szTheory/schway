@@ -1375,12 +1375,16 @@ func isGrepShaped(command string) bool {
 }
 
 // hasShellMetacharacterOutsideQuotes reports whether command contains a
-// pipe, redirect, conjunction (`&&`), semicolon, or command-substitution
-// opener (`$(`) OUTSIDE any single/double-quoted argument. A grep pattern's
-// own regex alternation (`grep -nE 'TBD|FIXME|XXX'`) uses `|` INSIDE quotes
-// and must never be misclassified as a shell pipe -- this is what keeps R3
-// from silently swallowing every alternation-pattern grep command in the
-// corpus.
+// pipe, redirect, conjunction (`&&`), or semicolon OUTSIDE any
+// single/double-quoted argument, or a command-substitution opener (`$(`)
+// outside SINGLE quotes specifically. A grep pattern's own regex
+// alternation (`grep -nE 'TBD|FIXME|XXX'`) uses `|` INSIDE quotes and must
+// never be misclassified as a shell pipe -- this is what keeps R3 from
+// silently swallowing every alternation-pattern grep command in the
+// corpus. Command substitution is the one metacharacter double quotes do
+// NOT neutralize in POSIX shell semantics (only single quotes suppress all
+// expansion), so `$(` is checked independent of inDouble -- gated only by
+// inSingle.
 func hasShellMetacharacterOutsideQuotes(command string) bool {
 	inSingle, inDouble := false, false
 	runes := []rune(command)
@@ -1389,15 +1393,21 @@ func hasShellMetacharacterOutsideQuotes(command string) bool {
 		switch {
 		case r == '\'' && !inDouble:
 			inSingle = !inSingle
+			continue
 		case r == '"' && !inSingle:
 			inDouble = !inDouble
-		case inSingle || inDouble:
-			// Inside a quoted argument: literal content, not shell syntax.
+			continue
+		}
+		if r == '$' && !inSingle && i+1 < len(runes) && runes[i+1] == '(' {
+			return true
+		}
+		if inSingle || inDouble {
+			continue // Inside a quoted argument: literal content, not shell syntax.
+		}
+		switch {
 		case r == '|' || r == '>' || r == ';':
 			return true
 		case r == '&' && i+1 < len(runes) && runes[i+1] == '&':
-			return true
-		case r == '$' && i+1 < len(runes) && runes[i+1] == '(':
 			return true
 		}
 	}
@@ -1446,9 +1456,6 @@ func grepFileOperand(command string) (operand string, ok bool) {
 // finding, never a skip -- classified without spawning a process, since
 // there is nothing to run against.
 func classifyGrepGroundedness(projectRoot, command string) (result classification, executed bool) {
-	if true {
-		return classOK, false // RED stub: intentionally wrong
-	}
 	if hasShellMetacharacterOutsideQuotes(command) {
 		return classOK, false
 	}
@@ -1503,9 +1510,6 @@ func splitTopLevelAlternation(pattern string) []string {
 // wires it into the pinned frontier as classR2b, DETECTED AND PINNED but
 // not enforced to zero this phase per D-14-16's explicit sizing decision).
 func classifyPerBranchGroundedness(index *testIndex, packages []string, pattern string) (failingBranches []string) {
-	if true {
-		return nil // RED stub: intentionally wrong
-	}
 	names := make(map[string]bool)
 	for _, operand := range packages {
 		set, _ := index.resolvePackageNames(operand)
@@ -1636,11 +1640,15 @@ func TestVerificationGroundednessGrepExecution(t *testing.T) {
 	// Argv-form-only invariant (Task 2 acceptance criteria): this file must
 	// never pass a command string to a shell. Verified directly, executed
 	// exactly the way every other spawn in this module is (bounded,
-	// deadline-carrying, argv form).
+	// deadline-carrying, argv form). The search pattern is assembled at
+	// runtime from parts, never written as one contiguous literal in this
+	// file's own source -- otherwise this very assertion would be a
+	// self-referential false positive, matching its own source line.
 	t.Run("this file never passes a command string to a shell", func(t *testing.T) {
-		out := runGroundednessSelfCheckGrep(t, `sh", "-c"`, "verification_groundedness_test.go")
+		shellInvocationPattern := strings.Join([]string{`sh`, `"`, `, `, `"`, `-c`, `"`}, "")
+		out := runGroundednessSelfCheckGrep(t, shellInvocationPattern, "verification_groundedness_test.go")
 		if strings.TrimSpace(out) != "0" {
-			t.Fatalf(`grep -c 'sh", "-c"' verification_groundedness_test.go = %q, want "0" (no shell invocation present)`, strings.TrimSpace(out))
+			t.Fatalf("grep -c %q verification_groundedness_test.go = %q, want \"0\" (no shell invocation present)", shellInvocationPattern, strings.TrimSpace(out))
 		}
 	})
 }
