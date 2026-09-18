@@ -471,7 +471,6 @@ func isTopLevelTestName(index *testIndex, name string) bool {
 // the declared grade exceeds it, is malformed, or (for EXERCISED+) has no
 // confirming run record. Returns "" when the row is well formed.
 func validationRowProblem(index *testIndex, record *runRecord, taskID, gradeCell, nonInertnessCell, evidenceCell string) string {
-	return "" // RED: intentional stub, restored for GREEN
 	if problem := validationGradeCellProblem(gradeCell); problem != "" {
 		return fmt.Sprintf("row %s: %s", taskID, problem)
 	}
