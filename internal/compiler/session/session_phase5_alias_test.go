@@ -224,12 +224,16 @@ var validPhase5Axes = map[string]bool{
 	session.AxisDiagnosticID:     true,
 }
 
-// TestEveryMutationMovesItsClaimedAxis enumerates every NAT-03 row (never
-// a hardcoded subset) and, for every row whose cited fixture exists at
-// THIS plan's own landing point (rows 1-5 — rows 6-7 are marked
-// PENDING-05-08 and closed at plan 05-09's gate, which depends on both
-// this plan and 05-08), asserts AssertMutationMovesAnAxis succeeds and
-// every row's ExpectedAxis is one of plan 05-06's five named axes.
+// TestEveryMutationMovesItsClaimedAxis enumerates EVERY NAT-03 row (never
+// a hardcoded subset, never a per-row exclusion by fixture path) and
+// branches on the row's OWN declared state (EVD-05, plan 14-08 collapse):
+// a Subjected row is asserted to move its claimed axis through the single
+// surviving law, session.AssertMutationMovesAnAxis; an unsubjected row
+// must instead carry a declared escape identifier that resolves in the
+// closed escape registry (debtRegisterEscapeRegistry, plan 14-07) and
+// carries its own probe. A row is never excluded from this test -- it is
+// either subjected and asserted, or unsubjected and admitted with a
+// witnessed declared escape. No subtest is ever skipped.
 func TestEveryMutationMovesItsClaimedAxis(t *testing.T) {
 	for _, row := range session.NAT03Mutations() {
 		row := row
@@ -237,11 +241,17 @@ func TestEveryMutationMovesItsClaimedAxis(t *testing.T) {
 			if !validPhase5Axes[row.ExpectedAxis] {
 				t.Fatalf("ExpectedAxis %q is not one of plan 05-06's five axis identifiers", row.ExpectedAxis)
 			}
-			if strings.Contains(row.CorpusProgram, "phase5/allocator_mismatch.lang") || strings.Contains(row.CorpusProgram, "phase5/retained_pointer.lang") {
-				t.Skip("PENDING-05-08: closed at plan 05-09's gate, which depends on this plan and 05-08")
+			if row.Subjected {
+				if err := session.AssertMutationMovesAnAxis(context.Background(), row); err != nil {
+					t.Fatalf("row %+v did not move its claimed axis: %v", row, err)
+				}
+				return
 			}
-			if err := session.AssertMutationMovesAnAxis(context.Background(), row); err != nil {
-				t.Fatalf("row %+v did not move its claimed axis: %v", row, err)
+			if row.EscapeID == "" {
+				t.Fatalf("unsubjected row %+v carries no declared escape identifier", row)
+			}
+			if problem := debtRegisterWitnessTokenProblem(row.EscapeID); problem != "" {
+				t.Fatalf("unsubjected row %+v's declared escape does not resolve: %s", row, problem)
 			}
 		})
 	}
