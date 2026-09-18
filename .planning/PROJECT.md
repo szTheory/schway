@@ -34,6 +34,15 @@ across interpreter / `-O0` / `-O3` / `-O3 -flto` on the five-axis comparator.
 `Result` values carry payloads. `lang-repair` fixes interprocedural loan-liveness
 defects through the JSON protocol alone.
 
+**Phase 14 complete (2026-09-18) — Evidence Instrument and Honest Scoping.**
+13 plans. The systemic finding below — *the instrument reports green because
+something is wired, not because it runs* — now has a mechanism rather than a
+set of patches: claims carry evidence grades with declared ceilings, every guard
+carries a seeded-fault proof, the corpus-wide run record cannot report a result
+it did not finish producing, and the `>=EXERCISED` bar is applied reflexively to
+Phase 14's own validation artifact. Debt rows require a named owner; zero
+`UNOWNED(none-yet-scheduled)` rows remain in `PHASE-14-DEBT.md`.
+
 **Known gaps carried into M003** (corrected 2026-09-17 against the tree by the
 M003 research fan-out — `.planning/research/M003/`; three claims previously
 recorded here were wrong and are restated below):
@@ -223,16 +232,19 @@ milestone must measurably move the refusal forward.
   because M001 ships without calls.
 - ✓ `lang explain`'s cause DAG stays bounded across function boundaries and
   names the function each cause step belongs to — M002 (Phase 13; DX-05).
+- ✓ Every shipped claim is graded at EXERCISED or above, or names itself
+  unreachable with an unblocking trigger, so no instrument can report green for
+  work that is merely wired — M003 (Phase 14; evidence grades with WIRED /
+  EXERCISED ceilings, seeded-fault proofs on every guard, a completion-witnessed
+  corpus-wide run record with a measured timing margin, a live `//go:build`
+  suppression allowlist, and owner-required debt rows). Validated in Phase 14:
+  Evidence Instrument and Honest Scoping.
 
 ### Active
 
 M003 scope, confirmed 2026-09-17. Each line is a milestone-level intent;
 `REQUIREMENTS.md` carries the testable REQ-IDs.
 
-- [ ] Make the instruments honest: grade every shipped claim at EXERCISED+ or
-      record it as unreachable with an unblocking trigger. Correct the DX-06,
-      `-flto`/NAT-07, and Phase 09 Nyquist claims that this document and the
-      M002 audit previously stated wrongly.
 - [ ] Give event identity an owner: shared-leaf diamond call graphs collide
       (D-11-51), `OpCall` emits no event at all, and D-12-21 cannot close
       until both are fixed.
@@ -409,4 +421,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-17 after the M003 research fan-out and milestone start*
+*Last updated: 2026-09-18 after Phase 14 (Evidence Instrument and Honest Scoping) completed*
