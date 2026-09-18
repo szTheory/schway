@@ -48,7 +48,7 @@ branched on and would have become the fifth instance.
 - [x] **EVD-04**: No test skip or row exclusion outlives the trigger it cites; a
       guard fails when a cited gate has already closed.
 
-- [ ] **EVD-05**: The mutation axis-movement law has exactly one implementation
+- [x] **EVD-05**: The mutation axis-movement law has exactly one implementation
       and zero per-row exclusions.
 
 - [x] **EVD-06**: `LANGUAGE-MATURITY.md`'s own counts are machine-checked by a
@@ -206,7 +206,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | EVD-02 | Phase 14 | Pending |
 | EVD-03 | Phase 14 | Complete |
 | EVD-04 | Phase 14 | Complete |
-| EVD-05 | Phase 14 | Pending |
+| EVD-05 | Phase 14 | Complete |
 | EVD-06 | Phase 14 | Complete |
 | EVD-07 | Phase 14 | Complete |
 | EVD-08 | Phase 14 | Complete |

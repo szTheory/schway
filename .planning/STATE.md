@@ -5,15 +5,15 @@ milestone_name: Computation and Honest Instruments
 current_phase: 14
 current_phase_name: Evidence Instrument and Honest Scoping
 status: executing
-stopped_at: Completed 14-07-PLAN.md
-last_updated: "2026-09-18T03:47:41.941Z"
+stopped_at: Completed 14-08-PLAN.md
+last_updated: "2026-09-18T04:07:25.362Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 14 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
 state_head: 58103f585c9c3e88ce1bfacb97f5812333c01e45
 ---
 
@@ -58,7 +58,7 @@ No outstanding human verification.
 ## Current Position
 
 Phase: 14 (Evidence Instrument and Honest Scoping) — EXECUTING
-Plan: 8 of 10
+Plan: 9 of 10
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 14 execution started
 
@@ -289,6 +289,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 14 P05 | 55min | 3 tasks | 4 files |
 | Phase 14 P06 | 55min | 3 tasks | 1 files |
 | Phase 14-evidence-instrument-and-honest-scoping P07 | 26 min | 4 tasks | 19 files |
+| Phase 14-evidence-instrument-and-honest-scoping P08 | 9 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -399,6 +400,8 @@ Standing architectural commitments carried into M002:
 - [Phase 14]: 14-05: Machine-checked LANGUAGE-MATURITY.md via independent go/parser AST re-derivation (never shelling out to the doc's own awk command); corrected guard total 32->22 and removed the stale reduce-package row (Phase 11 already widened reduce.Reduce to accept multi-function seeds). Recorded a real cold go test ./... wall-clock baseline (191.89s) as an observed qlt02_budget_manifest.json row.
 - [Phase ?]: 14-06: D-14-11 role-based document scoping wired with promotion; grep execution (R3) and per-branch groundedness (R2b) wired; frontier re-pinned 26->125 entries (full .planning/**/*.md scope, no documents yet declare the proposal exemption)
 - [Phase 14-evidence-instrument-and-honest-scoping]: 14-07: closed four-kind witness grammar (probe:/callsite:/escape:/env:) mechanized in checkDebtRegister; four executed probes back D-13-02b/D-13-10a/D-13-34/D-14-45/D-12-43/D-11-02; module-wide suppression enumerator requires every t.Skip to cite a resolvable witness (scoped to PENDING-only for the live module's blanket comment/string-literal surface after a full-grammar attempt produced 115 false positives against this codebase's own unrelated escape:/D-XX-NN conventions); .planning/UNREACHABLE-CLAIMS.md generated and byte-compared, holding exactly the six known qualifying rows. EVD-03/EVD-04 complete. 87 debt-register rows across 02-DEBT.md..PHASE-10-DEBT.md remain unmigrated to Grade/Witness, recorded as debt.
+- [Phase ?]: Task 2's per-row-exclusion removal shipped as a single test commit (no separate GREEN): Task 1's collapse already made the real mutation table satisfy the check; RED was demonstrated by temporarily clearing the real EscapeID field, observing failure, then reverting before commit. — Data already valid post-Task1, but genuine RED evidence was still produced rather than asserted from memory.
+- [Phase ?]: Found and fixed two stale PENDING-05-08 prose occurrences beyond the plan's named five sites (a test's own negative-assertion literal, and a witness_registry_test.go hand-off comment), since the plan's acceptance criterion is a repo-wide grep, not a fixed site list. — Rule 2 - missing critical: satisfying the literal 'marker survives nowhere' truth required a full repo scan, not just the five research-identified sites.
 
 ### Pending Todos
 
@@ -541,8 +544,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-18T03:47:41.933Z
-Stopped at: Completed 14-07-PLAN.md
+Last session: 2026-09-18T04:07:25.354Z
+Stopped at: Completed 14-08-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
