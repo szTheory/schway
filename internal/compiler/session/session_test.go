@@ -3505,7 +3505,18 @@ func debtRegisterEmptyTableFixture(t *testing.T) string {
 	}
 	text := string(data)
 
-	text = strings.Replace(text, "items: 3", "items: 0", 1)
+	// Derive the live "items: N" line rather than hardcoding N: this
+	// fixture copies the real, currently-live PHASE-14-DEBT.md (via
+	// debtRegisterOwnershipFixture), and that register's own item count
+	// grows over time (D-14-01..D-14-54 and beyond) -- a hardcoded prior
+	// count silently stops matching and this replace becomes a no-op,
+	// which is exactly the kind of drift no test in this file should be
+	// able to hide.
+	itemsLinePattern := regexp.MustCompile(`(?m)^items:\s*\d+\s*$`)
+	if !itemsLinePattern.MatchString(text) {
+		t.Fatal("fixture has no `items: N` frontmatter line to zero out")
+	}
+	text = itemsLinePattern.ReplaceAllString(text, "items: 0")
 
 	itemsAnchor := "\n## Items\n"
 	itemsStart := strings.Index(text, itemsAnchor)
