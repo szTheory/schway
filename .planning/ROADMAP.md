@@ -255,7 +255,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 14-12-PLAN.md — remove `14-VALIDATION.md`'s grade-bar exemption and confirm the corpus-wide bar with a complete run record and measured margin; row-scoped narrowing that names an owner; D-14-121 leaves UNOWNED (EVD-02, PRC-01)
+- [x] 14-12-PLAN.md — remove `14-VALIDATION.md`'s grade-bar exemption and confirm the corpus-wide bar with a complete run record and measured margin; row-scoped narrowing that names an owner; D-14-121 leaves UNOWNED (EVD-02, PRC-01)
 
 ---
 
