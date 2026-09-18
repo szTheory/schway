@@ -1,12 +1,48 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M003",
-  "phases": [],
+  "milestone": "M003 — Computation and Honest Instruments",
+  "phases": [
+    {
+      "number": "14",
+      "name": "Evidence Instrument and Honest Scoping",
+      "status": "pending"
+    },
+    {
+      "number": "15",
+      "name": "Event Identity (`lang.execution/2`)",
+      "status": "pending"
+    },
+    {
+      "number": "16",
+      "name": "Branch/Match Emitter Port",
+      "status": "pending"
+    },
+    {
+      "number": "17",
+      "name": "Return Type ≠ Parameter Type",
+      "status": "pending"
+    },
+    {
+      "number": "18",
+      "name": "Branch on a Computed Value",
+      "status": "pending"
+    },
+    {
+      "number": "19",
+      "name": "Numeric Literals and `OpConst`",
+      "status": "pending"
+    },
+    {
+      "number": "20",
+      "name": "Nyquist, D-13-34, and the Frontier Fixture",
+      "status": "pending"
+    }
+  ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 14 of 7 · executing"
   },
-  "updated_at": "2026-09-17T20:16:16.729Z"
+  "updated_at": "2026-09-18T00:27:41.519Z"
 }

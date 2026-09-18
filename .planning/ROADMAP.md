@@ -229,7 +229,7 @@ Plans:
 - [x] 14-02-PLAN.md — attach the discarded recovery extent as an identity-bearing cause; distinctness corpus, gate, and frozen pre-fix collision control (DX-08)
 - [x] 14-03-PLAN.md — an `unrepairable` verdict explains itself: additive decline fields, closed decline vocabulary, guard and non-inertness proof (DX-09)
 - [x] 14-04-PLAN.md — close the owning-phase vocabulary in the debt-register law, migrate twelve registers, register the `-flto` inertness row (PRC-01, EVD-07)
-- [ ] 14-05-PLAN.md — machine-check the maturity document's counts by independent re-derivation; record a cold suite wall-clock as an observed manifest row (EVD-06, EVD-08)
+- [x] 14-05-PLAN.md — machine-check the maturity document's counts by independent re-derivation; record a cold suite wall-clock as an observed manifest row (EVD-06, EVD-08)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

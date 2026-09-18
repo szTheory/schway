@@ -51,16 +51,22 @@ branched on and would have become the fifth instance.
 - [ ] **EVD-05**: The mutation axis-movement law has exactly one implementation
       and zero per-row exclusions.
 
-- [ ] **EVD-06**: `LANGUAGE-MATURITY.md`'s own counts are machine-checked by a
-      test over its re-verify greps, so the file cannot go stale unnoticed.
-      (It currently states 32 guards; there are 26.)
+- [x] **EVD-06**: `LANGUAGE-MATURITY.md`'s own counts are machine-checked by a
+      test that independently re-derives them from the tree (never by running
+      the document's own embedded re-verify greps), so the file cannot go
+      stale unnoticed. (Closed 2026-09-18 by 14-05: corrected 32 guards to the
+      measured 22; see `.planning/phases/14-evidence-instrument-and-honest-scoping/14-05-SUMMARY.md`.)
 
 - [x] **EVD-07**: PROJECT.md's DX-06 claim and NAT-07 `-flto` bullet state what
       the evidence supports, and the `-flto` multi-function inertness has a debt
       row with an owning phase.
 
-- [ ] **EVD-08**: Suite wall-clock is an observed row in the budget manifest
-      with a recorded baseline. (Measured 192.67s; documents claim ~60s.)
+- [x] **EVD-08**: Suite wall-clock is an observed row in the budget manifest
+      with a recorded baseline. (Closed 2026-09-18 by 14-05: a real clean
+      cold `go test ./...` run measured 191.89s on `machine:4797d76b7863`,
+      recorded as the `suite_wall_clock_ns` row; documents previously
+      claimed ~60s in five archived VALIDATION.md files, still unfixed and
+      enumerated in the 14-05 SUMMARY.)
 
 ### Observability — Event Identity
 
@@ -201,9 +207,9 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | EVD-03 | Phase 14 | Pending |
 | EVD-04 | Phase 14 | Pending |
 | EVD-05 | Phase 14 | Pending |
-| EVD-06 | Phase 14 | Pending |
+| EVD-06 | Phase 14 | Complete |
 | EVD-07 | Phase 14 | Complete |
-| EVD-08 | Phase 14 | Pending |
+| EVD-08 | Phase 14 | Complete |
 | OBS-01 | Phase 15 | Pending |
 | OBS-02 | Phase 15 | Pending |
 | OBS-03 | Phase 15 | Pending |

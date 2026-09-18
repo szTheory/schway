@@ -5,15 +5,15 @@ milestone_name: Computation and Honest Instruments
 current_phase: 14
 current_phase_name: Evidence Instrument and Honest Scoping
 status: executing
-stopped_at: Completed 14-04-PLAN.md
-last_updated: "2026-09-18T01:57:23.957Z"
+stopped_at: Completed 14-05-PLAN.md
+last_updated: "2026-09-18T02:25:04.057Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 14 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
 state_head: 58103f585c9c3e88ce1bfacb97f5812333c01e45
 ---
 
@@ -58,7 +58,7 @@ No outstanding human verification.
 ## Current Position
 
 Phase: 14 (Evidence Instrument and Honest Scoping) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 14 execution started
 
@@ -286,6 +286,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 14 P02 | 15 min | 3 tasks | 17 files |
 | Phase 14 P03 | 9 min | 3 tasks | 2 files |
 | Phase 14-evidence-instrument-and-honest-scoping P04 | 6 min | 3 tasks | 14 files |
+| Phase 14 P05 | 55min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -393,6 +394,7 @@ Standing architectural commitments carried into M002:
 - [Phase ?]: [Phase 14]: 14-03: DX-09 closed -- unrepairable decline now carries DiagnosisCodes/DeclineReason/BestApplicability, populated via a new classifyDecline sibling (not a widened selectRepair, to keep antitheater_test.go/repair_test.go byte-unchanged); DiagnosisCodes is a comparable diagnosisCodeList string type (custom JSON marshaling) since a bare []string broke Outcome's existing == comparison in antitheater_test.go; no_diagnostics decline sets diagnosis_code to the reason itself rather than leaving it empty, honoring the plan's unqualified never-empty truth
 - [Phase ?]: 14-04: mechanized PRC-01's closed owning-phase vocabulary (P<NN>|CLOSED(sha)|UNOWNED(witness)) inside checkDebtRegister and migrated all twelve pre-existing debt registers to it cell-format-only, via a documented rule (CLOSED only on explicit closure language, P<NN> on a single named phase, else UNOWNED); D-09-53 migrated CLOSED (not the P10 its own cell text implies) since PHASE-10-DEBT.md's D-10-27/D-10-30 explicitly withdrew its premise — PRC-01 requires every debt item to name a resolvable owning phase; the prior law only checked non-empty
 - [Phase ?]: 14-04: opened PHASE-14-DEBT.md and closed EVD-07's outstanding half by registering the -flto multi-function inertness claim (D-14-45) with an owning-phase cell; PROJECT.md's DX-06/-flto text confirmed already correct (commit d21db90), not re-edited — the debt row was the one remaining task; the text correction had already landed
+- [Phase 14]: 14-05: Machine-checked LANGUAGE-MATURITY.md via independent go/parser AST re-derivation (never shelling out to the doc's own awk command); corrected guard total 32->22 and removed the stale reduce-package row (Phase 11 already widened reduce.Reduce to accept multi-function seeds). Recorded a real cold go test ./... wall-clock baseline (191.89s) as an observed qlt02_budget_manifest.json row.
 
 ### Pending Todos
 
@@ -535,8 +537,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-18T01:57:16.603Z
-Stopped at: Completed 14-04-PLAN.md
+Last session: 2026-09-18T02:25:04.045Z
+Stopped at: Completed 14-05-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
