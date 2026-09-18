@@ -226,6 +226,51 @@ func TestNAT03SanitizerRowMovesItsClaimedAxis(t *testing.T) {
 	}
 }
 
+// TestAssertMutationMovesAnAxisHandlesSanitizerControl is Task 1's own RED
+// falsifier for the collapse: the surviving law,
+// session.AssertMutationMovesAnAxis, must handle
+// control:native.sanitize.allocator_mismatch DIRECTLY (no dispatcher in
+// front of it) once the sanitizer case is folded into its own switch.
+func TestAssertMutationMovesAnAxisHandlesSanitizerControl(t *testing.T) {
+	var target *session.NAT03Mutation
+	for _, row := range session.NAT03Mutations() {
+		row := row
+		if row.ControlID == session.ControlSanitizeAllocatorMismatch {
+			target = &row
+		}
+	}
+	if target == nil {
+		t.Fatal("no NAT-03 row declares control:native.sanitize.allocator_mismatch")
+	}
+	if err := session.AssertMutationMovesAnAxis(context.Background(), *target); err != nil {
+		t.Fatalf("AssertMutationMovesAnAxis did not handle the sanitizer allocator-mismatch control directly: %v", err)
+	}
+}
+
+// TestAssertMutationMovesAnAxisUnknownControlNamesControlNoMarker is Task
+// 1's second RED falsifier: an unknown control's default-arm error must
+// name the unsupported control and must carry NO stale pending-marker
+// text -- the marker's removal from this error string is the same
+// deletion the retired TestNoNAT03RowRemainsPending guard was supposed to
+// catch and did not (D-14-22 instance 4).
+func TestAssertMutationMovesAnAxisUnknownControlNamesControlNoMarker(t *testing.T) {
+	unknown := session.NAT03Mutation{
+		ControlID:    "control:does.not.exist",
+		ExpectedAxis: session.AxisTerminalOutcome,
+		Subjected:    true,
+	}
+	err := session.AssertMutationMovesAnAxis(context.Background(), unknown)
+	if err == nil {
+		t.Fatal("expected an error for an unknown control, got nil")
+	}
+	if !strings.Contains(err.Error(), unknown.ControlID) {
+		t.Fatalf("expected the error to name the unsupported control %q, got: %v", unknown.ControlID, err)
+	}
+	if strings.Contains(err.Error(), "PENDING-05-08") {
+		t.Fatalf("expected no stale pending-marker text in the error, got: %v", err)
+	}
+}
+
 // TestNoNAT03RowRemainsPending refuses a gate whose citation is unclosed:
 // no NAT-03 row's OWN declaration in session_phase5_alias.go may still
 // carry plan 05-07's pending marker comment now that plan 05-08's fixtures
