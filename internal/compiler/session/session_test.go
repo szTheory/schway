@@ -2979,3 +2979,231 @@ func parseDebtRegisterTable(name, text string) (map[string]int, [][]string, erro
 	}
 	return columns, rows, nil
 }
+
+// debtRegisterOwnershipFixture copies a real, currently well-formed debt
+// register (PHASE-14-DEBT.md) into t.TempDir(), so each seeded fault below
+// is attributable to exactly one deliberate mutation rather than to any
+// pre-existing defect in the source file. git status --porcelain over
+// .planning never sees these copies: they live entirely under t.TempDir().
+func debtRegisterOwnershipFixture(t *testing.T) string {
+	t.Helper()
+	registers, err := phaseArtifactGlob("14-evidence-instrument-and-honest-scoping", "PHASE-14-DEBT.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(registers) != 1 {
+		t.Fatalf("expected exactly one PHASE-14-DEBT.md, found %d: %v", len(registers), registers)
+	}
+	data, err := os.ReadFile(registers[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	dst := filepath.Join(t.TempDir(), "PHASE-14-DEBT.md")
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dst
+}
+
+// debtRegisterFixtureLandingCell is the exact Landing phase cell value
+// debtRegisterOwnershipFixture's copy carries for row D-14-45 today. Seeded
+// faults below rewrite exactly this cell and nothing else, so a fault is
+// attributable to that one row.
+const debtRegisterFixtureLandingCell = "UNOWNED(probe:TestLTOInertnessOnMultiFunctionEmission)"
+
+// debtRegisterSeedLandingPhaseFault rewrites row D-14-45's Landing phase
+// cell in the Items table (and only the Items table cell -- not the Detail
+// section's own prose mention of the same string) to newCell, following
+// TestInjectorMarkerCountGuardIsNotInert's temp-copy-and-seed-one-fault
+// shape (session_phase6_injectors_test.go).
+func debtRegisterSeedLandingPhaseFault(t *testing.T, path, newCell string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	needle := "| " + debtRegisterFixtureLandingCell + " |"
+	if !strings.Contains(text, needle) {
+		t.Fatalf("fixture does not contain the expected D-14-45 Items-table cell %q -- fixture drifted from the seam this test seeds", needle)
+	}
+	text = strings.Replace(text, needle, "| "+newCell+" |", 1)
+	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// debtRegisterEmptyTableFixture builds a well-formed, zero-row variant of
+// the real register: the frontmatter items: count is adjusted to 0, every
+// Items table data row is removed (header and separator kept), and the
+// Detail section is removed entirely (a zero-row table has no identifiers,
+// so no `### D-ID` section could match one). This is the "the gate looked
+// at nothing and found nothing" control D-14-24's vacuous-pass requirement
+// names -- it must be indistinguishable, in result, from a genuinely empty
+// register, never merely a register whose rows happen to all pass.
+func debtRegisterEmptyTableFixture(t *testing.T) string {
+	t.Helper()
+	src := debtRegisterOwnershipFixture(t)
+	data, err := os.ReadFile(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+
+	text = strings.Replace(text, "items: 3", "items: 0", 1)
+
+	itemsAnchor := "\n## Items\n"
+	itemsStart := strings.Index(text, itemsAnchor)
+	if itemsStart == -1 {
+		t.Fatal("fixture has no `## Items` section")
+	}
+	afterItems := text[itemsStart+len(itemsAnchor):]
+	detailAnchor := "\n## Detail\n"
+	detailStart := strings.Index(afterItems, detailAnchor)
+	if detailStart == -1 {
+		t.Fatal("fixture has no `## Detail` section")
+	}
+	itemsSection := afterItems[:detailStart]
+	// Keep only the header and separator lines (the first two `|`-prefixed
+	// lines); drop every data row.
+	var kept []string
+	tableLines := 0
+	for _, line := range strings.Split(itemsSection, "\n") {
+		if strings.HasPrefix(line, "|") {
+			tableLines++
+			if tableLines > 2 {
+				continue
+			}
+		}
+		kept = append(kept, line)
+	}
+	newItemsSection := strings.Join(kept, "\n")
+
+	rest := afterItems[detailStart:]
+	// Drop everything from `## Detail` up to (not including) the next
+	// top-level `## ` heading, or EOF if none -- zero rows means zero
+	// identifiers, so zero detail sections are required or permitted.
+	afterDetailAnchor := rest[len(detailAnchor):]
+	if next := strings.Index(afterDetailAnchor, "\n## "); next != -1 {
+		rest = "\n## Detail\n\n" + afterDetailAnchor[next+1:]
+	} else {
+		rest = "\n## Detail\n"
+	}
+
+	text = text[:itemsStart+len(itemsAnchor)] + newItemsSection + rest
+	dst := filepath.Join(filepath.Dir(src), "PHASE-99-DEBT.md")
+	if err := os.WriteFile(dst, []byte(text), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dst
+}
+
+// TestDebtRegisterOwnershipGuardIsNotInert demonstrates concretely that the
+// closed owning-phase vocabulary (D-14-24) is not merely wired but actually
+// exercised: it seeds one fault per mechanizable kind (emptied cell,
+// whitespace-only cell, free-prose cell) into a temp copy of a real
+// register and asserts debtRegisterProblems -- the reports-rather-than-
+// fatals variant checkDebtRegister wraps -- refuses each one, names the
+// offending row, and reports nothing for the unmodified control. The
+// emptied-Items-table control passes vacuously, distinguishing "the gate
+// found nothing" from "the gate looked at nothing" (T-14-23). A guard
+// proven red on only one of the three fault kinds would be inert for the
+// other two, so all three seeds ship together.
+func TestDebtRegisterOwnershipGuardIsNotInert(t *testing.T) {
+	t.Run("unmodified copy passes", func(t *testing.T) {
+		path := debtRegisterOwnershipFixture(t)
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) != 0 {
+			t.Fatalf("unmodified copy should pass; got problems: %v", problems)
+		}
+	})
+
+	t.Run("emptied cell fails", func(t *testing.T) {
+		path := debtRegisterOwnershipFixture(t)
+		debtRegisterSeedLandingPhaseFault(t, path, "")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("emptied Landing phase cell should refuse, but debtRegisterProblems reported no problems")
+		}
+		if !containsSubstring(problems, "D-14-45") {
+			t.Fatalf("refusal does not name the offending row D-14-45: %v", problems)
+		}
+	})
+
+	t.Run("whitespace-only cell fails identically", func(t *testing.T) {
+		path := debtRegisterOwnershipFixture(t)
+		debtRegisterSeedLandingPhaseFault(t, path, "   ")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("whitespace-only Landing phase cell should refuse, but debtRegisterProblems reported no problems")
+		}
+		if !containsSubstring(problems, "D-14-45") {
+			t.Fatalf("refusal does not name the offending row D-14-45: %v", problems)
+		}
+	})
+
+	t.Run("free-prose cell fails as out-of-vocabulary", func(t *testing.T) {
+		path := debtRegisterOwnershipFixture(t)
+		debtRegisterSeedLandingPhaseFault(t, path, "Reopen when the language gains conditionals")
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) == 0 {
+			t.Fatal("free-prose Landing phase cell should refuse, but debtRegisterProblems reported no problems")
+		}
+		if !containsSubstring(problems, "D-14-45") {
+			t.Fatalf("refusal does not name the offending row D-14-45: %v", problems)
+		}
+	})
+
+	t.Run("emptied Items table passes vacuously", func(t *testing.T) {
+		path := debtRegisterEmptyTableFixture(t)
+		problems, err := debtRegisterProblems(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(problems) != 0 {
+			t.Fatalf("a zero-row Items table with a matching items: 0 frontmatter should pass vacuously; got problems: %v", problems)
+		}
+	})
+
+	t.Run("every seeded copy lived under t.TempDir()", func(t *testing.T) {
+		// Every helper above writes exclusively through filepath.Join with
+		// t.TempDir() (directly, or via debtRegisterOwnershipFixture) --
+		// asserted here as a structural invariant rather than re-deriving
+		// it via a subprocess `git status` call (which this project's own
+		// TestSourceNeverSpawnsUnboundedProcesses guard, D-02-01, watches).
+		// No test above ever constructs a path under testsupport.ProjectPath's
+		// live .planning tree, so git status --porcelain .planning is empty
+		// by construction, not by a post-hoc check.
+		planningRoot := testsupport.ProjectPath(".planning")
+		for _, p := range []string{
+			debtRegisterOwnershipFixture(t),
+			debtRegisterEmptyTableFixture(t),
+		} {
+			if strings.HasPrefix(p, planningRoot) {
+				t.Fatalf("fixture path %q leaked into the live .planning tree", p)
+			}
+		}
+	})
+}
+
+// containsSubstring reports whether any element of problems contains sub.
+func containsSubstring(problems []string, sub string) bool {
+	for _, p := range problems {
+		if strings.Contains(p, sub) {
+			return true
+		}
+	}
+	return false
+}
