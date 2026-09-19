@@ -10,6 +10,96 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
 
+// maxInvocationPathTableNodes is the deliberately fixed D-15-16 ceiling on
+// static activation occurrences in a native program. It is not a byte-size
+// budget and is intentionally independent of pathoracle.MaxPaths.
+const maxInvocationPathTableNodes = 4096
+
+// invocationPreflightBypassForTest is a narrowly-scoped mutation seam. It is
+// false in every production build; the test-only accessor proves that omitting
+// the guard would otherwise let serialization begin for an over-limit graph.
+var invocationPreflightBypassForTest bool
+
+// invocationSerializationReachedForTest records the forbidden path reached by
+// the mutation control. It is only read through export_test.go.
+var invocationSerializationReachedForTest bool
+
+// invocationPathTableExceededError is the stable, witness-carrying refusal
+// returned before C serialization when static invocation unfolding would add
+// node 4097. The incoming OpCall and parent occurrence make the first rejected
+// occurrence auditable without constructing an unbounded path table.
+type invocationPathTableExceededError struct {
+	entry, callOperationID, calleeFunctionID string
+	parentIndex                              int
+	limit, observedAtLeast                   int
+}
+
+func (e *invocationPathTableExceededError) Error() string {
+	return fmt.Sprintf("cgen.invocation_path_table_exceeded: entry %q limit %d observed_at_least %d first_overflow_parent %d call %q callee %q", e.entry, e.limit, e.observedAtLeast, e.parentIndex, e.callOperationID, e.calleeFunctionID)
+}
+
+func (e *invocationPathTableExceededError) Code() string {
+	return "cgen.invocation_path_table_exceeded"
+}
+func (e *invocationPathTableExceededError) Entry() string                 { return e.entry }
+func (e *invocationPathTableExceededError) Limit() int                    { return e.limit }
+func (e *invocationPathTableExceededError) ObservedAtLeast() int          { return e.observedAtLeast }
+func (e *invocationPathTableExceededError) FirstOverflowParentIndex() int { return e.parentIndex }
+func (e *invocationPathTableExceededError) FirstOverflowCallOperationID() string {
+	return e.callOperationID
+}
+func (e *invocationPathTableExceededError) FirstOverflowCalleeFunctionID() string {
+	return e.calleeFunctionID
+}
+
+// InvocationPathTableExceededError recognizes this package's bounded native
+// unfolding refusal without exposing its representation for mutation.
+func InvocationPathTableExceededError(err error) (*invocationPathTableExceededError, bool) {
+	e, ok := err.(*invocationPathTableExceededError)
+	return e, ok
+}
+
+type invocationPreflightNode struct {
+	functionID, incomingCallID string
+	parentIndex                int
+}
+
+// preflightInvocationPathTable unfolds the validated call DAG in the same
+// depth-first, declared-operation order native execution uses. It records only
+// bounded occurrence ancestry for the later path-table emitter; crucially it
+// refuses before a generated-C builder, emitted table, or C serialization can
+// be allocated. Entry is occurrence zero (node one to users).
+func preflightInvocationPathTable(program core.Program, entry core.Function) ([]invocationPreflightNode, error) {
+	byID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		byID[function.ID] = function
+	}
+
+	nodes := []invocationPreflightNode{{functionID: entry.ID, parentIndex: -1}}
+	for index := 0; index < len(nodes); index++ {
+		function, ok := byID[nodes[index].functionID]
+		if !ok {
+			return nil, fmt.Errorf("emitProgram: preflight node names unknown function %q", nodes[index].functionID)
+		}
+		if function.Linear == nil {
+			return nil, fmt.Errorf("function %q: has no linear body", function.ID)
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall {
+				continue
+			}
+			if len(nodes) == maxInvocationPathTableNodes && !invocationPreflightBypassForTest {
+				return nil, &invocationPathTableExceededError{
+					entry: entry.ID, limit: maxInvocationPathTableNodes, observedAtLeast: maxInvocationPathTableNodes + 1,
+					parentIndex: index, callOperationID: operation.ID, calleeFunctionID: operation.CalleeID,
+				}
+			}
+			nodes = append(nodes, invocationPreflightNode{functionID: operation.CalleeID, incomingCallID: operation.ID, parentIndex: index})
+		}
+	}
+	return nodes, nil
+}
+
 // callBoundaryAttributeSetForTest is
 // TestEmittedAttributeSetCommentIsDerivedNotLiteral's own fault-injection
 // seam (D-04-12): nil (the default, and the ONLY value any production
@@ -136,6 +226,12 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// D-15-18: graph and entry refusal always win; once both have succeeded,
+	// bound every dynamic activation occurrence before allocating emission
+	// tables or beginning generated-C serialization.
+	if _, err := preflightInvocationPathTable(program, entry); err != nil {
+		return "", err
+	}
 
 	byID := make(map[string]core.Function, len(program.Functions))
 	for _, function := range program.Functions {
@@ -214,6 +310,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		totalOperations += len(function.Linear.Operations)
 	}
 
+	invocationSerializationReachedForTest = true
 	var out strings.Builder
 	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 */\n")
 	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")

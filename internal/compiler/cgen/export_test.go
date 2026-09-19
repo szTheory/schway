@@ -1,6 +1,9 @@
 package cgen
 
-import "github.com/codename-lang/lang/internal/compiler/core"
+import (
+	"github.com/codename-lang/lang/internal/compiler/callgraph"
+	"github.com/codename-lang/lang/internal/compiler/core"
+)
 
 // Test-only accessors. These make the emitters' reserved sets and the two
 // identifier-namespace constructors visible to the external cgen_test package
@@ -46,4 +49,44 @@ func SetCallBoundaryAttributeSetForTest(set []string) (restore func()) {
 	previous := callBoundaryAttributeSetForTest
 	callBoundaryAttributeSetForTest = set
 	return func() { callBoundaryAttributeSetForTest = previous }
+}
+
+// SetInvocationPreflightBypassForTest temporarily removes the bounded
+// invocation preflight check. Its companion observation proves the bypass
+// reaches generated-C serialization, so the guard test cannot pass inertly.
+func SetInvocationPreflightBypassForTest(bypass bool) (restore func()) {
+	previous := invocationPreflightBypassForTest
+	invocationPreflightBypassForTest = bypass
+	invocationSerializationReachedForTest = false
+	return func() {
+		invocationPreflightBypassForTest = previous
+	}
+}
+
+// InvocationSerializationReachedForTest reports whether emitProgram began C
+// serialization since the invocation-preflight test seam was installed.
+func InvocationSerializationReachedForTest() bool {
+	return invocationSerializationReachedForTest
+}
+
+// InvocationPathNodeCountForTest runs the same validated preflight used by
+// emitProgram and exposes its bounded occurrence count to cgen's black-box
+// tests without making a production configuration surface.
+func InvocationPathNodeCountForTest(program core.Program) (int, error) {
+	if _, err := callgraph.Order(program); err != nil {
+		return 0, err
+	}
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return 0, err
+	}
+	nodes, err := preflightInvocationPathTable(program, entry)
+	return len(nodes), err
+}
+
+// EmitProgramForTest exposes the whole-program assembler without the public
+// EmitNative corevalidation wrapper so ordering controls can feed malformed
+// graph/entry artifacts directly to its first two validation gates.
+func EmitProgramForTest(program core.Program) (string, error) {
+	return emitProgram(program, false)
 }
