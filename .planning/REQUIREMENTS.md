@@ -92,7 +92,7 @@ branched on and would have become the fifth instance.
 
 ### Native Emission
 
-- [ ] **NAT-08**: One emission law lowers every admissible program; the three
+- [x] **NAT-08**: One emission law lowers every admissible program; the three
       superseded single-function emitters are deleted in the same commit that
       flips dispatch.
 
@@ -222,7 +222,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | OBS-02 | Phase 15 | Complete |
 | OBS-03 | Phase 15 | Complete |
 | OBS-04 | Phase 15 | Complete |
-| NAT-08 | Phase 16 | Pending |
+| NAT-08 | Phase 16 | Complete |
 | NAT-09 | Phase 16 | Pending |
 | NAT-10 | Phase 15 | Complete |
 | TYP-01 | Phase 17 | Pending |

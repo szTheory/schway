@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 16
 current_phase_name: Branch/Match Emitter Port
 status: executing
-stopped_at: Phase 16 context gathered
-last_updated: "2026-09-19T21:14:14.217Z"
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-09-19T21:21:26.309Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 15 complete, transitioned to Phase 16
-state_head: a6e30f9b6f44c6f3d9c87a2dc6bf636122742290
+last_activity_desc: Phase 16 execution started
+state_head: 528388dc9ec2d83d81f8e7453f9a4a8064a4c227
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 29
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 15 — Event Identity (`lang.execution/2`)
+**Current focus:** Phase 16 — Branch/Match Emitter Port
 (evidence-instrument-and-honest-scoping) completed and verified 2026-09-18:
 13 plans, 11/11 requirements, zero `UNOWNED(none-yet-scheduled)` debt rows left
 in `PHASE-14-DEBT.md`. Prior milestone M002
@@ -61,10 +61,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 16 (Branch/Match Emitter Port) — READY TO EXECUTE
-Plan: Not started
+Phase: 16 (Branch/Match Emitter Port) — EXECUTING
+Plan: 2 of 9
 Status: Ready to execute
-Last activity: 2026-09-19 — Phase 15 complete, transitioned to Phase 16
+Last activity: 2026-09-19 — Phase 16 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -308,6 +308,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 14 P11 | 40min | 3 tasks | 7 files |
 | Phase 14 P13 | 15min | 2 tasks | 1 files |
 | Phase 14 P12 | 55min | 3 tasks | 4 files |
+| Phase 16 P01 | 2 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -427,6 +428,8 @@ Standing architectural commitments carried into M002:
 - [Phase ?]: 14-13: buildConstraintAllowlist (darwin/linux/amd64/arm64/cgo) closes EVD-04's inert //go:build branch; scanSuppressionSurfaces reordered so MatchFile gates only AST passes, never the textual constraint pass, closing T-14-13-02's constraint-hides-itself hole
 - [Phase ?]: 14-12: removed 14-VALIDATION.md's file-scoped grade-bar exemption, confirmed the corpus-wide >=EXERCISED bar with a complete run record (90-92s vs 480s budget), added the row-scoped validationGradeBarRowExemptions narrowing (5 entries, each debt-witnessed) since Task 2's own ship-empty expectation was falsified by real execution, and closed D-14-121/D-14-53 as CLOSED(128ecec). EVD-02 and PRC-01 complete.
 - [Phase 15]: Ratified Phase 15 /2 invocation grammar and caller-owned callee_function_id contract before publication.
+- [Phase 16]: Preserved public dispatch while proving direct ordinary-linear emitProgram behavior.
+- [Phase 16]: Derived schema-2 live_resources from emitProgram without introducing a resource ledger.
 
 ### Pending Todos
 
@@ -569,10 +572,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-19T20:53:43.458Z
-Stopped at: Phase 16 context gathered
+Last session: 2026-09-19T21:21:26.250Z
+Stopped at: Completed 16-01-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: .planning/phases/16-branch-match-emitter-port/16-CONTEXT.md
+Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
