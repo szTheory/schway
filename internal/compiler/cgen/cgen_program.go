@@ -484,7 +484,10 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		if function.Match == nil && len(function.Linear.Blocks) > 0 {
 			return "", fmt.Errorf("function %q: multi-function foreign-call bodies are not supported by native emission this phase", function.ID)
 		}
-		if len(program.Functions) == 1 && function.Match == nil && (selectsByPointerLowering(function, function.Linear) || selectsByPointerLoweringSharedOnly(function, function.Linear)) {
+		// Plan 16-05's human-selected cut-m004 applies to every program
+		// cardinality. A legacy pointer-specialized body must not become
+		// admissible merely because an otherwise ordinary caller is present.
+		if function.Match == nil && (selectsByPointerLowering(function, function.Linear) || selectsByPointerLoweringSharedOnly(function, function.Linear)) {
 			return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
 		}
 		if function.ForeignContract != nil {

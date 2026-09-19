@@ -497,6 +497,45 @@ func TestUnsupportedProgramShapePrecedesSchema2Preflight(t *testing.T) {
 	}
 }
 
+// TestProgramBorrowedByPointerDisposition makes the whole-program admission
+// boundary answer the human-reviewed Plan 16-05 decision, rather than a
+// locally assumed default.  cut-m004 applies to the pointer-specialized
+// family in every program cardinality: adding an ordinary caller must not
+// turn the legacy single-function lowering into an admitted program shape.
+func TestProgramBorrowedByPointerDisposition(t *testing.T) {
+	decision, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "16-branch-match-emitter-port", "16-05-SUMMARY.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(decision), "Selected cut-m004") {
+		t.Fatalf("Plan 16-05 decision record does not select cut-m004: %q", decision)
+	}
+
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture must check clean: %+v", checked.Diagnostics)
+	}
+
+	program := checked.Program
+	program.Functions = append(program.Functions, core.Function{
+		ID: "fn:ordinary-caller",
+		Linear: &core.LinearBody{Operations: []core.LinearOperation{{
+			ID: "op:call-restrict", Kind: core.OpCall, CalleeID: program.Functions[0].ID,
+		}}},
+	})
+	_, err = cgen.EmitProgramForTest(program)
+	if err == nil || !strings.Contains(err.Error(), "by-pointer bodies are not supported by whole-program native emission this phase") {
+		t.Fatalf("cut-m004 must refuse a by-pointer family in a multi-function program before preflight, got %v", err)
+	}
+	if cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("cut-m004 pointer refusal reached C serialization")
+	}
+}
+
 // TestProgramBranchValidationOrder pins the admission law after branch bodies
 // became supported: graph/entry errors win first, unsupported shapes still
 // stop before preflight/serialization, and an admitted branch reaches the
