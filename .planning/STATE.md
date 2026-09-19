@@ -1,20 +1,20 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 15
 current_phase_name: Event Identity (`lang.execution/2`)
 status: planning
-stopped_at: Completed 14-12-PLAN.md
-last_updated: "2026-09-18T15:37:09.884Z"
+stopped_at: Phase 15 context gathered
+last_updated: "2026-09-19T14:20:35.278Z"
 last_activity: 2026-09-18
 last_activity_desc: Phase 14 execution complete and verified — all 13 plans done
+state_head: 64cb4f2c071e9e08e180a7450fea907339567f85
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 13
   completed_plans: 13
-state_head: 0dcb460c202ca570e4552967f0ceb0c717c7a54b
 ---
 
 # Project State
@@ -567,10 +567,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-18T14:59:20.854Z
-Stopped at: Completed 14-12-PLAN.md
+Last session: 2026-09-19T14:20:35.182Z
+Stopped at: Phase 15 context gathered
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: None
+Resume file: .planning/phases/15-event-identity-lang-execution-2/15-CONTEXT.md
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
