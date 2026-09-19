@@ -148,3 +148,93 @@ func runRestrictProbeLane(t *testing.T, host, clang, lane string, flags []string
 	}
 	return restrictProbeResult{Host: host, Toolchain: clang, Lane: lane, Result: "PASS", SourceSHA: digest}
 }
+
+// restrictAdmissionShape is deliberately test-local. D-16-07 requires an
+// auditable candidate boundary before a later decision may consider routing;
+// this type neither parses Lang nor changes cgen production selection.
+type restrictAdmissionShape struct {
+	pointerCount          int
+	readCopyOnly          bool
+	pointeeMutation       bool
+	pointerEscape         bool
+	pointerForwarding     bool
+	callback              bool
+	foreignCall           bool
+	volatileAccess        bool
+	atomicAccess          bool
+	oneTranslationUnit    bool
+	callerLocalAccessOnly bool
+}
+
+func exactRestrictAdmissionShape() restrictAdmissionShape {
+	return restrictAdmissionShape{
+		pointerCount:          1,
+		readCopyOnly:          true,
+		oneTranslationUnit:    true,
+		callerLocalAccessOnly: true,
+	}
+}
+
+// restrictAdmissionReason is intentionally incomplete for the RED phase.
+// The test below proves that a one-pointer-only rule would over-admit every
+// locked D-16-07 extension before the green implementation closes the fence.
+func restrictAdmissionReason(shape restrictAdmissionShape) string {
+	if shape.pointerCount != 1 {
+		return "second-pointer"
+	}
+	return ""
+}
+
+func TestRestrictAdmissionExactShape(t *testing.T) {
+	if reason := restrictAdmissionReason(exactRestrictAdmissionShape()); reason != "" {
+		t.Fatalf("exact D-16-06 shape refused: %s", reason)
+	}
+}
+
+func TestRestrictAdmissionRejectsExtensions(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*restrictAdmissionShape)
+		want   string
+	}{
+		{"pointee mutation", func(shape *restrictAdmissionShape) { shape.pointeeMutation = true }, "pointee-mutation"},
+		{"second pointer", func(shape *restrictAdmissionShape) { shape.pointerCount = 2 }, "second-pointer"},
+		{"pointer escape", func(shape *restrictAdmissionShape) { shape.pointerEscape = true }, "pointer-escape"},
+		{"pointer forwarding", func(shape *restrictAdmissionShape) { shape.pointerForwarding = true }, "pointer-forwarding"},
+		{"callback", func(shape *restrictAdmissionShape) { shape.callback = true }, "callback"},
+		{"foreign call", func(shape *restrictAdmissionShape) { shape.foreignCall = true }, "foreign-call"},
+		{"volatile access", func(shape *restrictAdmissionShape) { shape.volatileAccess = true }, "volatile-access"},
+		{"atomic access", func(shape *restrictAdmissionShape) { shape.atomicAccess = true }, "atomic-access"},
+		{"separate compilation", func(shape *restrictAdmissionShape) { shape.oneTranslationUnit = false }, "separate-compilation"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			shape := exactRestrictAdmissionShape()
+			test.mutate(&shape)
+			if got := restrictAdmissionReason(shape); got != test.want {
+				t.Fatalf("extension %q admission reason=%q, want %q", test.name, got, test.want)
+			}
+		})
+	}
+}
+
+func TestRestrictAdmissionFenceIsNotInert(t *testing.T) {
+	shape := exactRestrictAdmissionShape()
+	shape.pointeeMutation = true
+	if got := restrictAdmissionBypassReason(shape); got != "" {
+		t.Fatalf("bypass control unexpectedly rejected mutation: %q", got)
+	}
+	if got := restrictAdmissionReason(shape); got == "" {
+		t.Fatal("normal fence admitted a bypassed mutation")
+	}
+}
+
+// restrictAdmissionBypassReason is the local negative control: it models the
+// earlier one-pointer-only rule so the suite proves its D-16-07 checks are
+// live rather than merely present as unused prose.
+func restrictAdmissionBypassReason(shape restrictAdmissionShape) string {
+	if shape.pointerCount != 1 {
+		return "second-pointer"
+	}
+	return ""
+}
