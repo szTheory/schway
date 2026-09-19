@@ -8,6 +8,7 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/callgraph"
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 )
 
 // maxInvocationPathTableNodes is the deliberately fixed D-15-16 ceiling on
@@ -100,6 +101,82 @@ func preflightInvocationPathTable(program core.Program, entry core.Function) ([]
 	return nodes, nil
 }
 
+// invocationPathTable turns the bounded preorder produced by preflight into
+// C literals. A child table is deliberately indexed by the caller occurrence
+// rather than by function: the same generated caller can run beneath two
+// parents and must select two different child activations (D-15-15).
+type invocationPathTable struct {
+	invocations []string
+	children    map[string][]int
+}
+
+func buildInvocationPathTable(entryID string, nodes []invocationPreflightNode) (invocationPathTable, error) {
+	table := invocationPathTable{invocations: make([]string, len(nodes)), children: map[string][]int{}}
+	segments := make([][]execution.InvocationSegment, len(nodes))
+	for index, node := range nodes {
+		if node.parentIndex < 0 {
+			segments[index] = nil
+		} else {
+			if node.parentIndex >= index {
+				return invocationPathTable{}, fmt.Errorf("invocation node %d has non-preorder parent %d", index, node.parentIndex)
+			}
+			segments[index] = append(append([]execution.InvocationSegment{}, segments[node.parentIndex]...), execution.InvocationSegment{OpCallID: node.incomingCallID, Ordinal: 0})
+			if table.children[node.incomingCallID] == nil {
+				table.children[node.incomingCallID] = make([]int, len(nodes))
+				for childIndex := range table.children[node.incomingCallID] {
+					table.children[node.incomingCallID][childIndex] = -1
+				}
+			}
+			table.children[node.incomingCallID][node.parentIndex] = index
+		}
+		invocation, err := execution.FormatInvocation(entryID, segments[index])
+		if err != nil {
+			return invocationPathTable{}, fmt.Errorf("invocation node %d: %w", index, err)
+		}
+		table.invocations[index] = invocation
+	}
+	return table, nil
+}
+
+func invocationChildTableNames(table invocationPathTable, names *cNames) map[string]string {
+	callIDs := make([]string, 0, len(table.children))
+	for callID := range table.children {
+		callIDs = append(callIDs, callID)
+	}
+	sort.Strings(callIDs)
+	tableNames := make(map[string]string, len(callIDs))
+	for ordinal, callID := range callIDs {
+		tableNames[callID] = names.allocate("lang_child_index_"+cName(callID), "invocation_child", ordinal)
+	}
+	return tableNames
+}
+
+func emitInvocationPathTable(out *strings.Builder, table invocationPathTable, tableNames map[string]string) {
+	out.WriteString("static const char *lang_invocations[] = {\n")
+	for _, invocation := range table.invocations {
+		fmt.Fprintf(out, "  %s,\n", strconv.Quote(invocation))
+	}
+	out.WriteString("};\n\n")
+
+	callIDs := make([]string, 0, len(table.children))
+	for callID := range table.children {
+		callIDs = append(callIDs, callID)
+	}
+	sort.Strings(callIDs)
+	for _, callID := range callIDs {
+		tableName := tableNames[callID]
+		fmt.Fprintf(out, "static const unsigned int %s[] = {\n", tableName)
+		for _, childIndex := range table.children[callID] {
+			if childIndex < 0 {
+				out.WriteString("  0u,\n")
+			} else {
+				fmt.Fprintf(out, "  %du,\n", childIndex)
+			}
+		}
+		out.WriteString("};\n\n")
+	}
+}
+
 // callBoundaryAttributeSetForTest is
 // TestEmittedAttributeSetCommentIsDerivedNotLiteral's own fault-injection
 // seam (D-04-12): nil (the default, and the ONLY value any production
@@ -184,6 +261,11 @@ func emitCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, arg
 	fmt.Fprintf(out, "  (void)%s;\n", targetLocal)
 }
 
+func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex string, operation core.LinearOperation) {
+	fmt.Fprintf(out, "  %s %s = %s(%s, %s); /* call: %s */\n", calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex, operation.ID)
+	fmt.Fprintf(out, "  (void)%s;\n", targetLocal)
+}
+
 // emitProgram is Phase 11's whole-program C17 translation-unit assembler
 // (D-11-01/D-11-03): the additive path Emit and EmitNative dispatch to
 // whenever a validated program declares more than one function. Per
@@ -229,7 +311,12 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	// D-15-18: graph and entry refusal always win; once both have succeeded,
 	// bound every dynamic activation occurrence before allocating emission
 	// tables or beginning generated-C serialization.
-	if _, err := preflightInvocationPathTable(program, entry); err != nil {
+	preflightNodes, err := preflightInvocationPathTable(program, entry)
+	if err != nil {
+		return "", err
+	}
+	paths, err := buildInvocationPathTable(entry.ID, preflightNodes)
+	if err != nil {
 		return "", err
 	}
 
@@ -282,11 +369,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	// function's places named lang_value_x rather than lang_value_x_2
 	// (D-11-08): C block scope already makes locals independent; the seed
 	// is what makes shadowing impossible.
+	childTableNames := invocationChildTableNames(paths, globals)
 	globalNames := make([]string, 0, len(globals.used))
 	for name := range globals.used {
 		globalNames = append(globalNames, name)
 	}
-
 	indexByFunctionID := make(map[string]int, len(functions))
 	for index, function := range functions {
 		indexByFunctionID[function.ID] = index
@@ -316,6 +403,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")
 	out.WriteString(emitCallBoundaryAttributeComment(functions))
 	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n")
+	emitInvocationPathTable(&out, paths, childTableNames)
 	if needsBuffer {
 		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
 	}
@@ -333,12 +421,12 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	// Prototypes before definitions (D-11-03): what makes a forward-
 	// referenced callee legal C17.
 	for index := range functions {
-		fmt.Fprintf(&out, "static %s %s(%s);\n", typeNames[index], functionNames[index], typeNames[index])
+		fmt.Fprintf(&out, "static %s %s(%s, unsigned int);\n", typeNames[index], functionNames[index], typeNames[index])
 	}
 	out.WriteString("\n")
 
 	for index, function := range functions {
-		if err := emitProgramFunction(&out, function, typeNames[index], functionNames[index], globalNames, lookup); err != nil {
+		if err := emitProgramFunction(&out, function, typeNames[index], functionNames[index], globalNames, lookup, childTableNames); err != nil {
 			return "", err
 		}
 	}
@@ -352,6 +440,10 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		return "", err
 	}
 	out.WriteString("int main(int argc, char **argv) {\n")
+	// Task 2 consumes this literal table while recording /2 events. It is
+	// already emitted in Task 1 so all internal calls share one stable index;
+	// retain an explicit harmless reference until the event writer reads it.
+	out.WriteString("  (void)lang_invocations;\n")
 	// A declared-but-never-called function (D-11-05's unreachable-function
 	// contract: it is still emitted as a real C definition, dead code that
 	// does not change entry resolution) would otherwise be flagged
@@ -384,7 +476,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	out.WriteString("  if (argc != 2) return 64;\n")
 	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
 	fmt.Fprintf(&out, "  %s lang_entry_input = %s;\n", entryTypeName, initializer)
-	fmt.Fprintf(&out, "  %s lang_entry_output = %s(lang_entry_input);\n", entryTypeName, functionNames[entryIndex])
+	fmt.Fprintf(&out, "  %s lang_entry_output = %s(lang_entry_input, 0u);\n", entryTypeName, functionNames[entryIndex])
 	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 	if entryTypeName == "LANG_BUFFER" {
 		out.WriteString("  if (!lang_write_buffer_hex(&lang_entry_output)) return 74;\n")
@@ -433,7 +525,7 @@ func emitProgramByteWriter(out *strings.Builder) {
 // OpCall, never written to stdout directly; the entry function's own
 // return value is written to stdout exactly once, by `main`, after it
 // returns).
-func emitProgramFunction(out *strings.Builder, function core.Function, typeName, functionName string, globalNames []string, lookup *emitCallLookup) error {
+func emitProgramFunction(out *strings.Builder, function core.Function, typeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string) error {
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
 		places[place.ID] = place
@@ -457,7 +549,11 @@ func emitProgramFunction(out *strings.Builder, function core.Function, typeName,
 		locals[place.ID] = names.allocate(cLocal(place.Name), "place", index)
 	}
 
-	fmt.Fprintf(out, "static %s %s(%s %s) {\n", typeName, functionName, typeName, locals[parameter.ID])
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n", typeName, functionName, typeName, locals[parameter.ID])
+	// Leaf functions do not consult a child table, but every internal
+	// function still receives the occurrence index. Keep generated C clean
+	// under -Werror while preserving the uniform ABI.
+	out.WriteString("  (void)invocation_index;\n")
 	declared := map[string]bool{parameter.ID: true}
 	returned := false
 	for _, operation := range function.Linear.Operations {
@@ -504,7 +600,11 @@ func emitProgramFunction(out *strings.Builder, function core.Function, typeName,
 			if !ok {
 				return fmt.Errorf("operation %q: call to unresolved callee %q", operation.ID, operation.CalleeID)
 			}
-			emitCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], operation)
+			childTable, ok := childTableNames[operation.ID]
+			if !ok {
+				return fmt.Errorf("operation %q has no invocation child table", operation.ID)
+			}
+			emitProgramCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], childTable+"[invocation_index]", operation)
 			declared[operation.TargetID] = true
 		case core.OpReturn:
 			// Unlike emitLinear's single-function OpReturn arm, this never

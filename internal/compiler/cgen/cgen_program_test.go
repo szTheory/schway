@@ -198,8 +198,8 @@ func TestEmitProgram(t *testing.T) {
 	if strings.Count(generated, "int main(") != 1 {
 		t.Fatalf("expected exactly one int main(, got source:\n%s", generated)
 	}
-	prototypeIndexMain := strings.Index(generated, "static unsigned char LANG_MAIN(unsigned char);")
-	prototypeIndexIdentity := strings.Index(generated, "static unsigned char LANG_IDENTITY(unsigned char);")
+	prototypeIndexMain := strings.Index(generated, "static unsigned char LANG_MAIN(unsigned char, unsigned int);")
+	prototypeIndexIdentity := strings.Index(generated, "static unsigned char LANG_IDENTITY(unsigned char, unsigned int);")
 	definitionIndexMain := strings.Index(generated, "static unsigned char LANG_MAIN(unsigned char lang_value_")
 	definitionIndexIdentity := strings.Index(generated, "static unsigned char LANG_IDENTITY(unsigned char lang_value_")
 	if prototypeIndexMain < 0 || prototypeIndexIdentity < 0 || definitionIndexMain < 0 || definitionIndexIdentity < 0 {
@@ -244,8 +244,8 @@ func TestParentIndexedChildLookup(t *testing.T) {
 	if !strings.Contains(generated, "static const char *lang_invocations[]") {
 		t.Fatalf("generated C has no literal invocation table:\n%s", generated)
 	}
-	if !strings.Contains(generated, "inv:entry:fn:main/op:main:left#0/op:left:leaf#0") ||
-		!strings.Contains(generated, "inv:entry:fn:main/op:main:right#0/op:right:leaf#0") {
+	if !strings.Contains(generated, ":fn:main:op:0#0/s1:phase11.multi_function_diamond_call:fn:left:op:0#0") ||
+		!strings.Contains(generated, ":fn:main:op:1#0/s1:phase11.multi_function_diamond_call:fn:right:op:0#0") {
 		t.Fatalf("generated C does not retain distinct shared-leaf occurrences:\n%s", generated)
 	}
 	if !strings.Contains(generated, "lang_child_index_") {
@@ -361,7 +361,7 @@ func TestEmitProgramForwardDefinedCallee(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	if !strings.Contains(generated, "static unsigned char LANG_LATER(unsigned char);") {
+	if !strings.Contains(generated, "static unsigned char LANG_LATER(unsigned char, unsigned int);") {
 		t.Fatalf("expected LANG_LATER's own forward prototype, got source:\n%s", generated)
 	}
 
