@@ -192,6 +192,28 @@ func TestInvocationPreflightOrdering(t *testing.T) {
 	})
 }
 
+func TestUnsupportedProgramShapePrecedesSchema2Preflight(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "multi_function_match_refusal.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("fixture must check clean: %+v", checked.Diagnostics)
+	}
+
+	_, err = cgen.EmitNative(checked.Program)
+	if err == nil {
+		t.Fatal("expected multi-function Match body to be refused")
+	}
+	if !strings.Contains(err.Error(), "multi-function branch bodies are not supported by native emission this phase") {
+		t.Fatalf("expected structural refusal before schema-2 preflight, got: %v", err)
+	}
+	if cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("unsupported program shape reached C serialization")
+	}
+}
+
 func TestInvocationPathTableBoundary(t *testing.T) {
 	accepted := syntheticInvocationProgram(t, 4096)
 	if _, err := cgen.EmitNative(accepted); err != nil {

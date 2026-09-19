@@ -420,34 +420,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// D-15-18: graph and entry refusal always win; once both have succeeded,
-	// bound every dynamic activation occurrence before allocating emission
-	// tables or beginning generated-C serialization.
-	preflightNodes, err := preflightInvocationPathTable(program, entry)
-	if err != nil {
-		return "", err
-	}
-	paths, err := buildInvocationPathTable(entry.ID, preflightNodes)
-	if err != nil {
-		return "", err
-	}
 
 	byID := make(map[string]core.Function, len(program.Functions))
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
-	eventCapacity, err := invocationEventCapacity(preflightNodes, byID)
-	if err != nil {
-		return "", err
-	}
-	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID)
-	if err != nil {
-		return "", err
-	}
-	if executionBytes > executionOutputLimit {
-		return "", &executionOutputExceededError{limit: executionOutputLimit, observed: executionBytes}
-	}
-
 	functions := make([]core.Function, 0, len(order))
 	for _, id := range order {
 		function, ok := byID[id]
@@ -467,6 +444,31 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 			return "", fmt.Errorf("function %q: multi-function foreign contracts are not supported by native emission this phase", function.ID)
 		}
 		functions = append(functions, function)
+	}
+
+	// D-15-18: graph and entry refusal always win. The supported-shape
+	// contract above must also be established before schema-2 preflight,
+	// whose size estimator assumes every emitted body is linear. Once those
+	// checks have succeeded, bound every dynamic activation occurrence before
+	// allocating emission tables or beginning generated-C serialization.
+	preflightNodes, err := preflightInvocationPathTable(program, entry)
+	if err != nil {
+		return "", err
+	}
+	paths, err := buildInvocationPathTable(entry.ID, preflightNodes)
+	if err != nil {
+		return "", err
+	}
+	eventCapacity, err := invocationEventCapacity(preflightNodes, byID)
+	if err != nil {
+		return "", err
+	}
+	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID)
+	if err != nil {
+		return "", err
+	}
+	if executionBytes > executionOutputLimit {
+		return "", &executionOutputExceededError{limit: executionOutputLimit, observed: executionBytes}
 	}
 	ensureInvocationChildTables(&paths, functions)
 
