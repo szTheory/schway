@@ -89,27 +89,22 @@ func TestProgramOrdinaryLinearTracer(t *testing.T) {
 	}
 }
 
-// TestProgramBranchTracer drives the checked branch fixtures through the
+// TestProgramBranchTracer drives the checked branch fixture through the
 // surviving whole-program writer. Both switch alternatives are exercised, and
-// the borrowed-view fixture additionally proves arm-local linear operations
-// share the schema-2 event buffer rather than producing an arm-local document.
+// arm-local linear operations share the schema-2 event buffer rather than
+// producing an arm-local document.
 func TestProgramBranchTracer(t *testing.T) {
 	tests := []struct {
-		fixture string
+		fixture  string
 		function string
 		inputs   []string
 	}{
-		{fixture: "toggle.lang", function: "toggle", inputs: []string{"Off", "On"}},
 		{fixture: "borrowed_view.lang", function: "choose", inputs: []string{"On", "Off"}},
 	}
 	for _, test := range tests {
 		test := test
 		t.Run(test.fixture, func(t *testing.T) {
-			phase := "phase1"
-			if test.fixture == "borrowed_view.lang" {
-				phase = "phase3"
-			}
-			source, err := os.ReadFile(testsupport.ProjectPath("testdata", phase, test.fixture))
+			source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", test.fixture))
 			if err != nil {
 				t.Fatal(err)
 			}

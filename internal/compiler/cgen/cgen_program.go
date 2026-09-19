@@ -117,6 +117,9 @@ func invocationEventCapacity(nodes []invocationPreflightNode, byID map[string]co
 			return 0, fmt.Errorf("event-capacity node %d names unknown function %q", index, node.functionID)
 		}
 		if function.Linear == nil {
+			if function.Match != nil {
+				continue
+			}
 			return 0, fmt.Errorf("function %q: has no linear body", function.ID)
 		}
 		capacity += len(function.Linear.Operations)
@@ -132,8 +135,11 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 	events := make([]execution.Event, 0)
 	for index, node := range nodes {
 		function, ok := byID[node.functionID]
-		if !ok || function.Linear == nil {
+		if !ok || (function.Linear == nil && function.Match == nil) {
 			return 0, fmt.Errorf("execution-size node %d names invalid function %q", index, node.functionID)
+		}
+		if function.Linear == nil {
+			continue
 		}
 		for _, operation := range function.Linear.Operations {
 			event := execution.Event{
@@ -159,9 +165,19 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 			events = append(events, event)
 		}
 	}
-	outcomeValue, _, _, err := linearInput(entry)
-	if err != nil {
-		return 0, err
+	outcomeValue := ""
+	if entry.Match != nil {
+		for _, arm := range entry.Match.Arms {
+			if len(arm.Value) > len(outcomeValue) {
+				outcomeValue = arm.Value
+			}
+		}
+	} else {
+		var err error
+		outcomeValue, _, _, err = linearInput(entry)
+		if err != nil {
+			return 0, err
+		}
 	}
 	document := execution.Execution{
 		Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeReturned, Value: outcomeValue},
@@ -191,6 +207,9 @@ func preflightInvocationPathTable(program core.Program, entry core.Function) ([]
 			return nil, fmt.Errorf("emitProgram: preflight node names unknown function %q", nodes[index].functionID)
 		}
 		if function.Linear == nil {
+			if function.Match != nil {
+				continue
+			}
 			return nil, fmt.Errorf("function %q: has no linear body", function.ID)
 		}
 		for _, operation := range function.Linear.Operations {
@@ -449,13 +468,13 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("emitProgram: call-graph order names unknown function %q", id)
 		}
-		if function.Match != nil {
-			return "", fmt.Errorf("function %q: multi-function branch bodies are not supported by native emission this phase", function.ID)
-		}
-		if function.Linear == nil {
+		if function.Match == nil && function.Linear == nil {
 			return "", fmt.Errorf("function %q: has no linear body", function.ID)
 		}
-		if len(function.Linear.Blocks) > 0 {
+		if function.Match != nil && function.Linear == nil {
+			return "", fmt.Errorf("function %q: match-only bodies are not supported by whole-program native emission this phase", function.ID)
+		}
+		if function.Match == nil && len(function.Linear.Blocks) > 0 {
 			return "", fmt.Errorf("function %q: multi-function foreign-call bodies are not supported by native emission this phase", function.ID)
 		}
 		if function.ForeignContract != nil {
@@ -481,6 +500,12 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// C17 has no zero-length arrays. A zero-operation match still writes the
+	// shared event document with count zero, so reserve one inert slot while
+	// retaining the actual count as the sole serialization authority.
+	if eventCapacity == 0 {
+		eventCapacity = 1
+	}
 	liveResources := deriveProgramLiveResources(program)
 	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID, liveResources)
 	if err != nil {
@@ -499,13 +524,23 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	globals := newCNames(linearFixedNames...)
 	functionNames := make([]string, len(functions))
 	typeNames := make([]string, len(functions))
+	branchTypes := make(map[string]programBranchType)
 	for index, function := range functions {
 		functionNames[index] = globals.allocate(cName(function.Name), "function", index)
-		_, _, typeName, err := linearInput(function)
-		if err != nil {
-			return "", fmt.Errorf("function %q: %w", function.ID, err)
+		if function.Match != nil {
+			branchType, err := newProgramBranchType(function, program.DataTypes, globals)
+			if err != nil {
+				return "", fmt.Errorf("function %q: %w", function.ID, err)
+			}
+			branchTypes[function.ID] = branchType
+			typeNames[index] = branchType.typeName
+		} else {
+			_, _, typeName, err := linearInput(function)
+			if err != nil {
+				return "", fmt.Errorf("function %q: %w", function.ID, err)
+			}
+			typeNames[index] = typeName
 		}
-		typeNames[index] = typeName
 	}
 	// globalNames snapshots every name the global allocator has handed out
 	// (function names plus the reserved list) so each function's own FRESH
@@ -547,6 +582,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	out.WriteString(emitCallBoundaryAttributeComment(functions))
 	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n")
 	emitInvocationPathTable(&out, paths, childTableNames)
+	for _, function := range functions {
+		if branchType, ok := branchTypes[function.ID]; ok {
+			emitProgramBranchType(&out, branchType)
+		}
+	}
 	if needsBuffer {
 		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
 	}
@@ -572,7 +612,13 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	out.WriteString("\n")
 
 	for index, function := range functions {
-		if err := emitProgramFunction(&out, function, typeNames[index], functionNames[index], globalNames, lookup, childTableNames); err != nil {
+		var err error
+		if branchType, ok := branchTypes[function.ID]; ok {
+			err = emitProgramBranchFunction(&out, function, branchType, functionNames[index], globalNames, lookup, childTableNames)
+		} else {
+			err = emitProgramFunction(&out, function, typeNames[index], functionNames[index], globalNames, lookup, childTableNames)
+		}
+		if err != nil {
 			return "", err
 		}
 	}
@@ -582,7 +628,10 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		return "", fmt.Errorf("emitProgram: resolved entry %q is absent from the emitted function set", entry.ID)
 	}
 	input, initializer, entryTypeName, err := linearInput(entry)
-	if err != nil {
+	entryBranch, entryIsBranch := branchTypes[entry.ID]
+	if entryIsBranch {
+		entryTypeName = entryBranch.typeName
+	} else if err != nil {
 		return "", err
 	}
 	out.WriteString("int main(int argc, char **argv) {\n")
@@ -590,6 +639,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	// already emitted in Task 1 so all internal calls share one stable index;
 	// retain an explicit harmless reference until the event writer reads it.
 	out.WriteString("  (void)lang_invocations;\n")
+	// A nullary match can produce no operation events at all; retain a harmless
+	// reference so the shared schema-2 support remains valid under -Werror.
+	out.WriteString("  (void)lang_record_event;\n")
 	// A declared-but-never-called function (D-11-05's unreachable-function
 	// contract: it is still emitted as a real C definition, dead code that
 	// does not change entry resolution) would otherwise be flagged
@@ -620,16 +672,38 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		out.WriteString("  (void)lang_write_byte;\n")
 	}
 	out.WriteString("  if (argc != 2) return 64;\n")
-	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
-	fmt.Fprintf(&out, "  %s lang_entry_input = %s;\n", entryTypeName, initializer)
+	if entryIsBranch {
+		fmt.Fprintf(&out, "  %s lang_entry_input;\n", entryTypeName)
+		for index, alternative := range entryBranch.alternatives {
+			prefix := "if"
+			if index > 0 {
+				prefix = "else if"
+			}
+			fmt.Fprintf(&out, "  %s (strcmp(argv[1], %s) == 0) lang_entry_input = %s;\n", prefix, strconv.Quote(alternative.source), alternative.cName)
+		}
+		out.WriteString("  else return 65;\n")
+	} else {
+		fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
+		fmt.Fprintf(&out, "  %s lang_entry_input = %s;\n", entryTypeName, initializer)
+	}
 	fmt.Fprintf(&out, "  %s lang_entry_output = %s(lang_entry_input, 0u);\n", entryTypeName, functionNames[entryIndex])
-	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
-	if entryTypeName == "LANG_BUFFER" {
+	if entryIsBranch {
+		fmt.Fprintf(&out, "  const char *lang_entry_name = %s(lang_entry_output);\n", entryBranch.nameFunction)
+		out.WriteString("  if (lang_entry_name == NULL) return 70;\n")
+		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
+		out.WriteString("  if (!lang_write_json_string(lang_entry_name)) return 74;\n")
+	} else if entryTypeName == "LANG_BUFFER" {
+		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 		out.WriteString("  if (!lang_write_buffer_hex(&lang_entry_output)) return 74;\n")
 	} else {
+		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 		out.WriteString("  if (!lang_write_byte(lang_entry_output)) return 74;\n")
 	}
-	out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
+	if entryIsBranch {
+		out.WriteString("  if (!lang_write_literal(\"},\\\"events\\\":[\")) return 74;\n")
+	} else {
+		out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
+	}
 	out.WriteString("  if (!lang_write_events()) return 74;\n")
 	out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":\")) return 74;\n")
 	out.WriteString("  if (!lang_write_live_resources()) return 74;\n")
@@ -673,6 +747,178 @@ func emitProgramLiveResourcesWriter(out *strings.Builder, liveResources []string
 		return fmt.Errorf("encode derived live resources: %w", err)
 	}
 	fmt.Fprintf(out, "static int lang_write_live_resources(void) {\n  return lang_write_literal(%s);\n}\n\n", strconv.Quote(string(encoded)))
+	return nil
+}
+
+type programBranchAlternative struct {
+	source, cName string
+}
+
+// programBranchType carries the checked nominal branch layout into the one
+// whole-program writer. Phase 16 admits only nullary alternatives here; the
+// payload record lowering remains behind its existing unsupported boundary.
+type programBranchType struct {
+	typeName, nameFunction string
+	alternatives           []programBranchAlternative
+	bySource               map[string]string
+}
+
+func newProgramBranchType(function core.Function, dataTypes []core.DataType, names *cNames) (programBranchType, error) {
+	var dataType core.DataType
+	for _, candidate := range dataTypes {
+		if candidate.Name == function.Parameter.Type {
+			dataType = candidate
+			break
+		}
+	}
+	if dataType.Name == "" || len(dataType.Alternatives) == 0 {
+		return programBranchType{}, fmt.Errorf("branch C emitter cannot find alternatives for data type %q", function.Parameter.Type)
+	}
+	for _, detail := range dataType.AlternativeDetails {
+		if detail.PayloadType != "" {
+			return programBranchType{}, fmt.Errorf("branch payload shapes are not supported by whole-program native emission this phase")
+		}
+	}
+	result := programBranchType{
+		typeName:     names.allocate(cName(dataType.Name), "type", 0),
+		bySource:     make(map[string]string, len(dataType.Alternatives)),
+		alternatives: make([]programBranchAlternative, 0, len(dataType.Alternatives)),
+	}
+	for index, alternative := range dataType.Alternatives {
+		cAlternative := names.allocate(result.typeName+"_"+cName(alternative), "alternative", index)
+		result.alternatives = append(result.alternatives, programBranchAlternative{source: alternative, cName: cAlternative})
+		result.bySource[alternative] = cAlternative
+	}
+	result.nameFunction = names.allocate(result.typeName+"_name", "type_name", 0)
+	return result, nil
+}
+
+func emitProgramBranchType(out *strings.Builder, branchType programBranchType) {
+	fmt.Fprintf(out, "typedef enum %s {\n", branchType.typeName)
+	for index, alternative := range branchType.alternatives {
+		fmt.Fprintf(out, "  %s = %d,\n", alternative.cName, index)
+	}
+	fmt.Fprintf(out, "} %s;\n\n", branchType.typeName)
+	fmt.Fprintf(out, "static const char *%s(%s value) {\n  switch (value) {\n", branchType.nameFunction, branchType.typeName)
+	for _, alternative := range branchType.alternatives {
+		fmt.Fprintf(out, "    case %s: return %s;\n", alternative.cName, strconv.Quote(alternative.source))
+	}
+	out.WriteString("  }\n  return NULL;\n}\n\n")
+}
+
+// emitProgramBranchFunction lowers a match/branch body into the same shared
+// schema-2 event buffer and bare-return ABI as ordinary emitProgram functions.
+// It intentionally never writes an execution document: main owns that once.
+func emitProgramBranchFunction(out *strings.Builder, function core.Function, branchType programBranchType, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string) error {
+	if function.Match == nil {
+		return fmt.Errorf("function %q: branch writer requires a match body", function.ID)
+	}
+	if function.Linear == nil {
+		fmt.Fprintf(out, "static %s %s(%s value, unsigned int invocation_index) {\n  (void)invocation_index;\n  switch (value) {\n", branchType.typeName, functionName, branchType.typeName)
+		for _, arm := range function.Match.Arms {
+			pattern, known := branchType.bySource[arm.Pattern]
+			valueName, valueKnown := branchType.bySource[arm.Value]
+			if !known || !valueKnown {
+				return fmt.Errorf("function %q: match arm %q names unknown alternative", function.ID, arm.ID)
+			}
+			fmt.Fprintf(out, "    case %s: return %s;\n", pattern, valueName)
+		}
+		out.WriteString("  }\n  abort();\n}\n\n")
+		return nil
+	}
+
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	parameter, ok := places[function.Parameter.ID]
+	if !ok {
+		return fmt.Errorf("function %q: branch parameter place is absent", function.ID)
+	}
+	reserved := append(append([]string{}, linearFixedNames...), globalNames...)
+	names := newCNames(reserved...)
+	locals := make(map[string]string, len(function.Linear.Places))
+	for index, place := range function.Linear.Places {
+		locals[place.ID] = names.allocate(cLocal(place.Name), "place", index)
+	}
+	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		operations[operation.ID] = operation
+	}
+	blocks := make(map[string]core.Block, len(function.Linear.Blocks))
+	for _, block := range function.Linear.Blocks {
+		blocks[block.ID] = block
+	}
+
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  switch (%s) {\n", branchType.typeName, functionName, branchType.typeName, locals[parameter.ID], locals[parameter.ID])
+	for _, arm := range function.Match.Arms {
+		block, known := blocks[arm.BlockID]
+		if !known {
+			return fmt.Errorf("arm %q references unknown block %q", arm.ID, arm.BlockID)
+		}
+		pattern, known := branchType.bySource[arm.Pattern]
+		if !known {
+			return fmt.Errorf("arm %q names unknown alternative %q", arm.ID, arm.Pattern)
+		}
+		fmt.Fprintf(out, "    case %s: {\n", pattern)
+		declared := map[string]bool{parameter.ID: true}
+		for _, operationID := range block.OperationIDs {
+			operation, known := operations[operationID]
+			if !known {
+				return fmt.Errorf("block references unknown operation %q", operationID)
+			}
+			if err := emitProgramBranchOperation(out, function, operation, branchType.typeName, locals, places, declared, lookup, childTableNames); err != nil {
+				return err
+			}
+		}
+		out.WriteString("    }\n")
+	}
+	out.WriteString("  }\n  abort();\n}\n\n")
+	return nil
+}
+
+func emitProgramBranchOperation(out *strings.Builder, function core.Function, operation core.LinearOperation, typeName string, locals map[string]string, places map[string]core.Place, declared map[string]bool, lookup *emitCallLookup, childTableNames map[string]string) error {
+	if _, known := places[operation.SourceID]; !known {
+		return fmt.Errorf("operation %q has invalid source", operation.ID)
+	}
+	switch operation.Kind {
+	case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
+		if _, exists := places[operation.TargetID]; !exists || declared[operation.TargetID] {
+			return fmt.Errorf("operation %q has invalid target", operation.ID)
+		}
+		label, eventKind := "copy", "value.copied"
+		if operation.Kind == core.OpMove {
+			label, eventKind = "authority transfer", "value.transferred"
+		} else if operation.Kind == core.OpBorrowShared {
+			label, eventKind = "shared borrow representation", "value.borrowed"
+		} else if operation.Kind == core.OpBorrowExclusive {
+			label, eventKind = "exclusive borrow representation", "value.borrowed_exclusive"
+		}
+		fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n      (void)%s;\n", typeName, locals[operation.TargetID], locals[operation.SourceID], label, operation.ID, locals[operation.TargetID])
+		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n", strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
+		declared[operation.TargetID] = true
+	case core.OpReturn:
+		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, NULL, %s, lang_invocations[invocation_index], NULL)) abort();\n      return %s;\n", strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), locals[operation.SourceID])
+	case core.OpCall:
+		if _, exists := places[operation.TargetID]; !exists || declared[operation.TargetID] {
+			return fmt.Errorf("operation %q has invalid target", operation.ID)
+		}
+		calleeName, calleeTypeName, ok := lookup.resolve(operation.CalleeID)
+		if !ok {
+			return fmt.Errorf("operation %q: call to unresolved callee %q", operation.ID, operation.CalleeID)
+		}
+		childTable, ok := childTableNames[operation.ID]
+		if !ok {
+			return fmt.Errorf("operation %q has no invocation child table", operation.ID)
+		}
+		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], %s)) abort();\n", strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
+		emitProgramCall(out, calleeTypeName, locals[operation.TargetID], calleeName, locals[operation.SourceID], childTable+"[invocation_index]", operation)
+		declared[operation.TargetID] = true
+	case core.OpForeignCall, core.OpFail, core.OpDefect, core.OpConstructPayload, core.OpDestructurePayload:
+		return fmt.Errorf("operation %q: unsupported branch operation kind %q in whole-program native emission", operation.ID, operation.Kind)
+	default:
+		return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
+	}
 	return nil
 }
 
