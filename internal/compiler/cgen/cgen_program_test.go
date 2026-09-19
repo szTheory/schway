@@ -1088,7 +1088,11 @@ func TestEmittedAttributeSetCommentIsDerivedNotLiteral(t *testing.T) {
 // order-permuted variant of the same program (must_have: byte-stable
 // order regardless of function declaration order).
 func TestEmittedAttributeSetOrderIsStable(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_gate_corpus.lang")
+	// The former gate corpus intentionally contains a pointer-specialized
+	// helper and is now a cut-m004 refusal. This ordinary multi-function
+	// caller still exercises declaration-order stability without weakening
+	// the whole-program admission boundary.
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
 
 	first, err := cgen.EmitNative(program)
 	if err != nil {
@@ -1123,7 +1127,7 @@ func TestEmittedAttributeSetOrderIsStable(t *testing.T) {
 // language, so no call site in the gate corpus's emitted C may introduce
 // an arithmetic conversion.
 func TestCallSitesEmitNoArithmeticConversion(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_gate_corpus.lang")
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
 	generated, err := cgen.EmitNative(program)
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)

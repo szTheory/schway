@@ -15,13 +15,11 @@ import (
 // program, for every single-function emitter shape the legacy family
 // selects between, and asserts the CURRENT, MEASURED state of each.
 //
-// A passing run today means the two families have NOT converged: on four of
-// five shapes emitProgram refuses outright, and on the fifth (a plain linear
-// function with no branch/match, no foreign-call blocks, and no by-pointer
-// lowering) both paths succeed but their C output differs -- a call-boundary
-// attribute comment and an extra #include shift the preamble, and
-// emitProgram writes a static function plus a separate main where emitLinear
-// writes one inline main.
+// A passing run today means the two families have NOT converged: emitProgram
+// now admits match and defect bodies as well as ordinary linear programs, but
+// its schema-2 whole-program output remains deliberately different from the
+// legacy single-function output. Foreign-call and pointer-specialized bodies
+// remain named refusals pending their separately-owned M004 work.
 //
 // When convergence work lands (porting branch bodies, foreign-call block
 // bodies, and both by-pointer lowering variants into emitProgram's family,
@@ -53,10 +51,9 @@ func TestN1ConvergenceDifferential(t *testing.T) {
 	}
 
 	table := []expectation{
-		// match-only: emitProgram refuses -- multi-function branch bodies
-		// are not supported by native emission this phase
-		// (cgen_program.go's core.Match refusal).
-		{fixture: "testdata/phase1/toggle.lang", legacyOK: true, programOK: false},
+		// match-only: emitProgram admits this through the schema-2 program
+		// writer, while the legacy output remains different.
+		{fixture: "testdata/phase1/toggle.lang", legacyOK: true, programOK: true, identical: false},
 		// plain linear: BOTH paths succeed, but their outputs DIFFER --
 		// this is the one shape where a byte-level comparison is even
 		// meaningful today.
@@ -69,11 +66,10 @@ func TestN1ConvergenceDifferential(t *testing.T) {
 		// foreign-call bodies are not supported by native emission this
 		// phase.
 		{fixture: "testdata/phase4/foreign_acquire_one.lang", legacyOK: true, programOK: false},
-		// branch with a defect terminator: emitProgram refuses -- reaches
-		// the same core.Match refusal as toggle.lang and borrowed_view.lang
-		// (every defect terminator in this codebase is reached through a
-		// core.Match arm at this maturity, per PHASE-11-DEBT.md D-11-52).
-		{fixture: "testdata/phase4/defect_terminal.lang", legacyOK: true, programOK: false},
+		// branch with a defect terminator: the program writer records its
+		// schema-2 defect terminal before aborting, so it is admitted but
+		// differs from the legacy document.
+		{fixture: "testdata/phase4/defect_terminal.lang", legacyOK: true, programOK: true, identical: false},
 	}
 
 	if len(table) != 5 {
