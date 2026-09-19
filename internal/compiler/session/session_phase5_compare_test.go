@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
@@ -262,6 +263,49 @@ func TestComparisonFieldRoutingIsExhaustive(t *testing.T) {
 	}
 	if stale := setDiff(union, actual); len(stale) > 0 {
 		t.Fatalf("routed field path(s) no longer exist on execution.Execution -- remove from Phase5ComparedComparisonFields/Phase5ExcludedComparisonFields: %v", stale)
+	}
+}
+
+// TestInvocationFieldsAreCompared proves the /2 occurrence and call-edge
+// identity facts are part of whole-event equality, not merely listed in the
+// routing table.
+func TestInvocationFieldsAreCompared(t *testing.T) {
+	baseline := phase5CompareBaseline()
+	baseline.Schema = execution.Schema2
+	baseline.Events[0].Schema = execution.Schema2
+	baseline.Events[0].Invocation = "inv:entry:f0"
+	baseline.Events[0].CalleeFunctionID = "callee:one"
+
+	for _, mutate := range []func(*execution.Event){
+		func(event *execution.Event) { event.Invocation = "inv:entry:other" },
+		func(event *execution.Event) { event.CalleeFunctionID = "callee:other" },
+	} {
+		left, right := baseline, baseline
+		left.Events = append([]execution.Event(nil), baseline.Events...)
+		right.Events = append([]execution.Event(nil), baseline.Events...)
+		mutate(&right.Events[0])
+		err := session.Phase5CompareEngines("invocation-fields", map[string]execution.Execution{"interpreter": left, "O0": right})
+		disagreement, ok := err.(*session.Phase5EngineDisagreement)
+		if !ok || disagreement.Axis != session.AxisEventOrder {
+			t.Fatalf("mutating /2 identity field = %v, want axis:event-order disagreement", err)
+		}
+	}
+}
+
+// TestSchema2ComparisonRequiresPeerVerdict proves that pair equality cannot
+// bless matching forged /2 evidence: the peer is consulted before comparison.
+func TestSchema2ComparisonRequiresPeerVerdict(t *testing.T) {
+	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.lang")
+	entry := phase11EntryFunction(t, program, entryName)
+	engines := phase11RunFourTiers(t, context.Background(), program, entryName, phase11EntryInput(t, entry.Parameter.Type))
+	for name, document := range engines {
+		document.Events = append([]execution.Event(nil), document.Events...)
+		document.Events[0].Invocation = "not-an-invocation"
+		engines[name] = document
+	}
+	err := session.Phase5CompareProgramEngines("peer-verdict", program, engines)
+	if err == nil || !strings.Contains(err.Error(), "executionpeer.malformed_invocation") {
+		t.Fatalf("matching forged documents passed comparison without a named peer refusal: %v", err)
 	}
 }
 

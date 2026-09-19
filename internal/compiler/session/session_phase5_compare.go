@@ -5,8 +5,10 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/executionpeer"
 )
 
 // Axis identifiers (D-05-20): every axis Phase5CompareEngines and its
@@ -84,6 +86,43 @@ func Phase5CompareEngines(fixture string, engines map[string]execution.Execution
 		}
 	}
 	return nil
+}
+
+// phase5Schema2PeerValidate is deliberately independent of every execution
+// producer. Tests may replace only this session boundary to prove that a
+// disabled peer would otherwise accept a fixed bad document; production always
+// uses executionpeer.Validate.
+var phase5Schema2PeerValidate = executionpeer.Validate
+
+// SetPhase5Schema2PeerValidatorForTest replaces the /2 peer at the session
+// boundary and returns a restore function. It is intentionally narrow: it
+// changes neither producer derivation nor the peer package's implementation.
+func SetPhase5Schema2PeerValidatorForTest(validate func(core.Program, execution.Execution) error) func() {
+	previous := phase5Schema2PeerValidate
+	phase5Schema2PeerValidate = validate
+	return func() { phase5Schema2PeerValidate = previous }
+}
+
+// Phase5CompareProgramEngines validates every lang.execution/2 document with
+// the independent peer before comparing engine pairs. Legacy /0 and /1
+// documents deliberately retain Phase5CompareEngines' historical behavior:
+// there is no invocation grammar for the peer to validate in those schemas.
+func Phase5CompareProgramEngines(fixture string, program core.Program, engines map[string]execution.Execution) error {
+	names := make([]string, 0, len(engines))
+	for name := range engines {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		document := engines[name]
+		if document.Schema != execution.Schema2 {
+			continue
+		}
+		if err := phase5Schema2PeerValidate(program, document); err != nil {
+			return fmt.Errorf("phase5 schema2 peer refusal: fixture=%s engine=%s: %w", fixture, name, err)
+		}
+	}
+	return Phase5CompareEngines(fixture, engines)
 }
 
 func comparePhase5Pair(fixture, pair string, left, right execution.Execution) error {
@@ -185,6 +224,8 @@ var Phase5ComparedComparisonFields = []string{
 	"Execution.Events.SourcePlace",
 	"Execution.Events.TargetPlace",
 	"Execution.Events.TypeID",
+	"Execution.Events.Invocation",
+	"Execution.Events.CalleeFunctionID",
 	"Execution.LiveResources",
 	"Execution.ExitSignaled",
 	"Execution.ExitSignal",

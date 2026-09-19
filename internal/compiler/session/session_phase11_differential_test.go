@@ -141,7 +141,7 @@ func phase11CompareFourTiers(t *testing.T, ctx context.Context, fixture string) 
 	entry := phase11EntryFunction(t, program, entryName)
 	input := phase11EntryInput(t, entry.Parameter.Type)
 	engines := phase11RunFourTiers(t, ctx, program, entryName, input)
-	if err := session.Phase5CompareEngines(fixture, engines); err != nil {
+	if err := session.Phase5CompareProgramEngines(fixture, program, engines); err != nil {
 		t.Fatalf("%s: four-tier disagreement: %v", fixture, err)
 	}
 	return program, engines
