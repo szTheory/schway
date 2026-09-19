@@ -38,6 +38,57 @@ func checkedPhase07Program(t *testing.T, fixture string) core.Program {
 	return validated.Program()
 }
 
+// TestProgramOrdinaryLinearTracer drives the existing whole-program emitter
+// directly on the phase-2 tracked-transfer fixture.  It deliberately avoids
+// the public EmitNative dispatcher: this is the N=1 tracer for the surviving
+// emitter law, including its schema-2 event/invocation machinery.
+func TestProgramOrdinaryLinearTracer(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("owned_transfer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("owned_transfer.lang: corevalidate rejected: %+v", validated.Problems)
+	}
+	program := validated.Program()
+
+	generated, err := cgen.EmitProgramForTest(program)
+	if err != nil {
+		t.Fatalf("direct emitProgram: %v", err)
+	}
+	got, err := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{"01020304"})
+	if err != nil || len(got.Pairs) != 1 {
+		t.Fatalf("direct emitProgram native run: pairs=%d err=%v", len(got.Pairs), err)
+	}
+	want, err := interp.Run(program, "relay", "01020304")
+	if err != nil {
+		t.Fatalf("interpreter: %v", err)
+	}
+	// The interpreter remains schema-1 for this legacy fixture. The program
+	// emitter's schema-2 contract adds the entry invocation identity without
+	// changing the underlying ordinary operation sequence.
+	want.Schema = execution.Schema2
+	invocation, err := execution.FormatInvocation(program.Functions[0].ID, nil)
+	if err != nil {
+		t.Fatalf("format entry invocation: %v", err)
+	}
+	for index := range want.Events {
+		want.Events[index].Schema = execution.Schema2
+		want.Events[index].Invocation = invocation
+	}
+	if got.Pairs[0].Execution.Schema != execution.Schema2 {
+		t.Fatalf("direct emitProgram schema=%q, want %q", got.Pairs[0].Execution.Schema, execution.Schema2)
+	}
+	if !execution.Equal(want, got.Pairs[0].Execution) {
+		t.Fatalf("direct emitProgram differs from interpreter:\nwant: %+v\ngot:  %+v", want, got.Pairs[0].Execution)
+	}
+}
+
 // syntheticInvocationProgram produces valid, straight-line source whose
 // shared-callee unfolding is exact: node11 has 4095 occurrences; root adds
 // either one child (4096 total) or node0 as its second child (4097 total).
