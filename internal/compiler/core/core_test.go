@@ -159,6 +159,186 @@ var previousPhaseGoldenCDigests = map[string]string{
 	"testdata/phase5/restrict_borrow.golden.c":         "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0",
 }
 
+// phase16GoldenCutState makes the four pinned generated-C files an explicit
+// two-state record.  PreCut is the only state checked in before Plan 16-09:
+// its old digests describe the real files and it deliberately has no guessed
+// future digest.  Plan 16-09 must switch every row to PostCut in the same
+// authority-cut commit that changes the files and digest map.
+type phase16GoldenCutState string
+
+const (
+	phase16GoldenPreCut  phase16GoldenCutState = "pre-cut"
+	phase16GoldenPostCut phase16GoldenCutState = "post-cut"
+)
+
+type phase16GoldenChange struct {
+	Path                string
+	State               phase16GoldenCutState
+	OldSHA256           string
+	NewSHA256           string
+	MovedResponsibility string
+	StructuralReason    string
+	SemanticWitness     string
+	N1Fixture           string
+	ReviewDisposition   string
+}
+
+// phase16GoldenChangeLedger is intentionally fixed at the same four paths as
+// previousPhaseGoldenCDigests. A hash establishes file integrity only; the
+// executable semantic witness records the independent evidence for the
+// emitter responsibility change.
+var phase16GoldenChangeLedger = []phase16GoldenChange{
+	{Path: "testdata/phase1/generated.golden.c", State: phase16GoldenPreCut, OldSHA256: "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "pre-cut legacy match output remains distinct from direct schema-2 output", SemanticWitness: "TestPhase16DirectProgramFourTierDifferential/Toggle", N1Fixture: "testdata/phase1/toggle.lang", ReviewDisposition: "retain pre-cut divergence until Plan 16-09 atomic authority cut"},
+	{Path: "testdata/phase2/owned_transfer.golden.c", State: phase16GoldenPreCut, OldSHA256: "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "pre-cut legacy schema-1 output remains distinct from direct schema-2 output", SemanticWitness: "TestPhase16DirectProgramFourTierDifferential/OwnedTransfer", N1Fixture: "testdata/phase2/owned_transfer.lang", ReviewDisposition: "retain pre-cut divergence until Plan 16-09 atomic authority cut"},
+	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", State: phase16GoldenPreCut, OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", MovedResponsibility: "legacy foreign emitter remains outside emitProgram", StructuralReason: "foreign lowering is explicit M004 debt and not an admitted program shape", SemanticWitness: "TestProgramBranchValidationOrder/foreign_shape_precedes_preflight", N1Fixture: "testdata/phase4/foreign_layout_mismatch.lang", ReviewDisposition: "preserve unchanged pending owned M004 foreign lowering"},
+	{Path: "testdata/phase5/restrict_borrow.golden.c", State: phase16GoldenPreCut, OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", MovedResponsibility: "legacy by-pointer emitter remains outside emitProgram", StructuralReason: "cut-m004 excludes every by-pointer family from program admission", SemanticWitness: "TestProgramBorrowedByPointerDisposition", N1Fixture: "testdata/phase5/restrict_borrow.lang", ReviewDisposition: "preserve unchanged pending M004 discharge-pair design"},
+}
+
+func phase16GoldenLedgerProblems(digests map[string]string, ledger []phase16GoldenChange, current map[string]string) []string {
+	var problems []string
+	if len(ledger) != 4 {
+		problems = append(problems, fmt.Sprintf("ledger count=%d, want 4", len(ledger)))
+	}
+	seen := make(map[string]bool, len(ledger))
+	state := phase16GoldenCutState("")
+	for _, entry := range ledger {
+		if seen[entry.Path] {
+			problems = append(problems, "duplicate ledger path "+entry.Path)
+		}
+		seen[entry.Path] = true
+		if _, ok := digests[entry.Path]; !ok {
+			problems = append(problems, "ledger path absent from digest map "+entry.Path)
+		}
+		if state == "" {
+			state = entry.State
+		} else if state != entry.State {
+			problems = append(problems, "mixed cut states")
+		}
+		if entry.State != phase16GoldenPreCut && entry.State != phase16GoldenPostCut {
+			problems = append(problems, "invalid state for "+entry.Path)
+		}
+		for field, value := range map[string]string{
+			"old digest": entry.OldSHA256, "moved responsibility": entry.MovedResponsibility,
+			"structural reason": entry.StructuralReason, "semantic witness": entry.SemanticWitness,
+			"N=1 fixture": entry.N1Fixture, "review disposition": entry.ReviewDisposition,
+		} {
+			if value == "" {
+				problems = append(problems, entry.Path+": missing "+field)
+			}
+		}
+		if !isPhase16SHA256(entry.OldSHA256) {
+			problems = append(problems, entry.Path+": malformed old digest")
+		}
+		if !strings.Contains(entry.SemanticWitness, "Test") {
+			problems = append(problems, entry.Path+": semantic witness must name an executable test")
+		}
+		actual, known := current[entry.Path]
+		if !known {
+			problems = append(problems, entry.Path+": current file digest missing")
+		}
+		switch entry.State {
+		case phase16GoldenPreCut:
+			if entry.NewSHA256 != "" {
+				problems = append(problems, entry.Path+": pre-cut row prematurely records new digest")
+			}
+			if digests[entry.Path] != entry.OldSHA256 || actual != entry.OldSHA256 {
+				problems = append(problems, entry.Path+": pre-cut map/current digest must equal old digest")
+			}
+		case phase16GoldenPostCut:
+			if !isPhase16SHA256(entry.NewSHA256) {
+				problems = append(problems, entry.Path+": malformed or missing post-cut new digest")
+			}
+			if digests[entry.Path] != entry.NewSHA256 || actual != entry.NewSHA256 {
+				problems = append(problems, entry.Path+": post-cut map/current/new digests disagree")
+			}
+		}
+	}
+	for path := range digests {
+		if !seen[path] {
+			problems = append(problems, "digest map path absent from ledger "+path)
+		}
+	}
+	return problems
+}
+
+func isPhase16SHA256(value string) bool {
+	if len(value) != 64 {
+		return false
+	}
+	_, err := hex.DecodeString(value)
+	return err == nil
+}
+
+func phase16CurrentGoldenDigests(t *testing.T) map[string]string {
+	t.Helper()
+	current := make(map[string]string, len(previousPhaseGoldenCDigests))
+	for path := range previousPhaseGoldenCDigests {
+		data, err := os.ReadFile(testsupport.ProjectPath(splitPath(path)...))
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		sum := sha256.Sum256(data)
+		current[path] = hex.EncodeToString(sum[:])
+	}
+	return current
+}
+
+func TestPhase16GoldenChangeLedger(t *testing.T) {
+	if problems := phase16GoldenLedgerProblems(previousPhaseGoldenCDigests, phase16GoldenChangeLedger, phase16CurrentGoldenDigests(t)); len(problems) != 0 {
+		t.Fatalf("Phase 16 golden-C ledger invalid:\n%s", strings.Join(problems, "\n"))
+	}
+}
+
+func TestPhase16GoldenChangeLedgerRejectsFaults(t *testing.T) {
+	baselineCurrent := phase16CurrentGoldenDigests(t)
+	cloneLedger := func() []phase16GoldenChange { return append([]phase16GoldenChange(nil), phase16GoldenChangeLedger...) }
+	cloneMap := func(source map[string]string) map[string]string {
+		copy := make(map[string]string, len(source))
+		for key, value := range source {
+			copy[key] = value
+		}
+		return copy
+	}
+	tests := []struct {
+		name, want string
+		mutate     func([]phase16GoldenChange, map[string]string, map[string]string)
+	}{
+		{"malformed_old_digest", "malformed old digest", func(l []phase16GoldenChange, _, _ map[string]string) { l[0].OldSHA256 = "bad" }},
+		{"premature_post_cut_digest", "prematurely records new digest", func(l []phase16GoldenChange, _, _ map[string]string) { l[0].NewSHA256 = l[0].OldSHA256 }},
+		{"missing_witness", "missing semantic witness", func(l []phase16GoldenChange, _, _ map[string]string) { l[0].SemanticWitness = "" }},
+		{"duplicate_path", "duplicate ledger path", func(l []phase16GoldenChange, _, _ map[string]string) { l[1].Path = l[0].Path }},
+		{"stale_current_file", "pre-cut map/current digest", func(_ []phase16GoldenChange, _ map[string]string, current map[string]string) {
+			current["testdata/phase1/generated.golden.c"] = strings.Repeat("0", 64)
+		}},
+		{"map_mismatch", "pre-cut map/current digest", func(_ []phase16GoldenChange, digests, _ map[string]string) {
+			digests["testdata/phase1/generated.golden.c"] = strings.Repeat("0", 64)
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ledger, digests, current := cloneLedger(), cloneMap(previousPhaseGoldenCDigests), cloneMap(baselineCurrent)
+			test.mutate(ledger, digests, current)
+			if problems := phase16GoldenLedgerProblems(digests, ledger, current); !strings.Contains(strings.Join(problems, "\n"), test.want) {
+				t.Fatalf("fault %s passed or lacked actionable problem %q: %v", test.name, test.want, problems)
+			}
+		})
+	}
+	t.Run("post_cut_state_requires_coherent_new_baseline", func(t *testing.T) {
+		ledger, digests, current := cloneLedger(), cloneMap(previousPhaseGoldenCDigests), cloneMap(baselineCurrent)
+		for index := range ledger {
+			ledger[index].State = phase16GoldenPostCut
+			ledger[index].NewSHA256 = ledger[index].OldSHA256 // unchanged bytes are an honest post-cut possibility.
+		}
+		if problems := phase16GoldenLedgerProblems(digests, ledger, current); len(problems) != 0 {
+			t.Fatalf("coherent post-cut state rejected: %v", problems)
+		}
+		ledger[0].NewSHA256 = ""
+		if problems := phase16GoldenLedgerProblems(digests, ledger, current); !strings.Contains(strings.Join(problems, "\n"), "missing post-cut new digest") {
+			t.Fatalf("post-cut missing new digest passed: %v", problems)
+		}
+	})
+}
+
 // TestPreviousPhaseGoldenCUnchanged hashes every committed *.golden.c under
 // testdata/phase1 through testdata/phase5 and compares each against
 // previousPhaseGoldenCDigests. It fails on any drift, naming the exact file
