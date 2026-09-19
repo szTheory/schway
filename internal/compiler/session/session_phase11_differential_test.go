@@ -259,83 +259,38 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 	// two distinct callees (`left`, `right`) that both call a shared leaf
 	// (`leaf`) -- must agree across all four tiers.
 	//
-	// FINDING (Rule 1-adjacent, architectural, flagged for human review,
-	// NOT silently fixed): this fixture is the FIRST program in this
-	// repository ever actually EXECUTED (as opposed to merely checked --
-	// testdata/phase07/deep_diamond_acyclic.lang's own shared-leaf diamond
-	// is a check-only corpus member, never driven through interp.Run or
-	// native emission) whose call graph invokes the SAME callee from TWO
-	// DISTINCT static call sites. Both interp.Run and cgen.emitProgram
-	// derive an executed function's `function.returned` event ID from that
-	// function's OWN STATIC OpReturn operation ID (interp.go's
-	// terminalOutcome, cgen_program.go's emitProgramFunction) -- an
-	// identity that is per-DECLARATION, not per-INVOCATION. `leaf` is
-	// invoked twice in one run (once via `left`, once via `right`), so it
-	// emits the IDENTICAL `function.returned` event ID twice. interp.Run
-	// itself performs no duplicate-ID validation and returns such a
-	// document successfully; native.go's OWN decode-time validator
-	// (validateExecution, "duplicate execution event id") correctly
-	// refuses to trust ANY decoded execution document -- native or
-	// otherwise -- carrying two events with the same ID, since ID
-	// uniqueness is exactly the invariant this project's own causal-event
-	// tracking (D-04's own event-identity convention) depends on. The
-	// refusal is IDENTICAL and consistent across -O0, -O3, and -O3 -flto
-	// (all three share the one cgen.EmitNative lowering; the divergence is
-	// structural, not optimizer-dependent), so there is no cross-tier
-	// DISAGREEMENT here -- but there is no four-tier AGREEMENT on a
-	// comparable execution document either, since three of the four tiers
-	// never produce one. Fixing this for real requires giving each
-	// function's events a per-INVOCATION-unique identity (e.g. threading a
-	// call-site-qualified suffix through both interp.Run's frame stack and
-	// cgen.emitProgram's per-function event-ID derivation, independently,
-	// so the two engines' identity schemes keep agreeing) -- a change to
-	// interp.go and cgen_program.go, neither of which is in this plan's own
-	// declared files_modified, and a big enough change to both engines'
-	// shared event-identity convention that it needs its own reviewed
-	// plan, not a same-task patch. Recorded as new debt (PHASE-11-DEBT.md)
-	// rather than silently worked around by weakening this test's own
-	// assertions or quietly picking an easier "diamond" that never
-	// actually re-invokes the shared leaf (which would misreport a
-	// narrower proof as the wider one Task 1's own prohibition forbids).
+	// The shared leaf is deliberately invoked from two distinct call sites.
+	// Schema /2 preserves the old static IDs but makes the full
+	// (Invocation, ID) identity pair unique, so this exact fixture is the
+	// permanent four-tier occurrence-identity gate.
 	t.Run("DiamondSharedLeaf", func(t *testing.T) {
 		const fixture = "multi_function_diamond_call.lang"
 		program, entryName := phase11CheckedFixture(t, fixture)
 		entry := phase11EntryFunction(t, program, entryName)
 		input := phase11EntryInput(t, entry.Parameter.Type)
-
-		interpreted, err := interp.Run(program, entryName, input)
-		if err != nil {
-			t.Fatalf("%s: interp.Run: %v", fixture, err)
+		engines := phase11RunFourTiers(t, ctx, program, entryName, input)
+		if len(engines) != 4 {
+			t.Fatalf("%s: expected all four engine documents, got %d", fixture, len(engines))
 		}
-		if interpreted.Outcome.Kind != execution.OutcomeReturned {
-			t.Fatalf("%s: interpreter: expected outcome kind %q, got %q", fixture, execution.OutcomeReturned, interpreted.Outcome.Kind)
-		}
-		seen := make(map[string]bool, len(interpreted.Events))
-		duplicated := false
-		for _, event := range interpreted.Events {
-			if seen[event.ID] {
-				duplicated = true
+		for _, name := range []string{"interpreter", "O0", "O3", "O3-LTO"} {
+			document, ok := engines[name]
+			if !ok {
+				t.Fatalf("%s: missing %s document", fixture, name)
 			}
-			seen[event.ID] = true
-		}
-		if !duplicated {
-			t.Fatalf("%s: expected the interpreter's own document to exhibit the documented duplicate-event-ID finding; if this now passes, the underlying gap has been fixed and this test (and PHASE-11-DEBT.md's matching row) should be updated, not left stale", fixture)
-		}
-
-		cSource, err := cgen.EmitNative(program)
-		if err != nil {
-			t.Fatalf("%s: cgen.EmitNative unexpectedly refused a shared-leaf diamond at the LOWERING step (expected it to lower cleanly and fail only at native decode time): %v", fixture, err)
-		}
-		runner := native.DefaultRunner()
-		for _, optimization := range []string{"-O0", "-O3"} {
-			if _, err := runner.Run(ctx, cSource, optimization, []string{input}); err == nil {
-				t.Fatalf("%s: expected %s to refuse with a duplicate-event-ID decode error, got a clean run -- the documented finding may have been fixed without updating this test", fixture, optimization)
+			seen := make(map[string]bool, len(document.Events))
+			for _, event := range document.Events {
+				pair := event.Invocation + "\x00" + event.ID
+				if seen[pair] {
+					t.Fatalf("%s: %s duplicated occurrence identity %q", fixture, name, pair)
+				}
+				seen[pair] = true
 			}
 		}
-		ltoRunner := runner
-		ltoRunner.LTO = true
-		if _, err := ltoRunner.Run(ctx, cSource, "-O3", []string{input}); err == nil {
-			t.Fatalf("%s: expected -O3 -flto to refuse with a duplicate-event-ID decode error, got a clean run", fixture)
+		// This validates each document with the independent /2 peer (including
+		// strict preorder and caller-owned call edges) before comparing every
+		// one of the six engine pairs.
+		if err := session.Phase5CompareProgramEngines(fixture, program, engines); err != nil {
+			t.Fatalf("%s: four-tier occurrence evidence disagreed: %v", fixture, err)
 		}
 	})
 
