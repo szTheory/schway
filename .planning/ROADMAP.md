@@ -390,7 +390,37 @@ not, `emitLinearBorrowedByPointer` moves from the cut half to the landed half
 and the `-flto` inertness gap is de-fanged. Highest-value optional probe in the
 milestone; not a hard gate.
 **Closes**: D-11-02, D-12-36, D-11-27; honours D-10-60.
-**Plans**: 8-10 (TBD at `/gsd-plan-phase 16`)
+**Plans**: 9 plans
+
+**Wave 1**
+
+- [ ] 16-01-PLAN.md — prove the ordinary-linear tracer and derived resource tail through `emitProgram`
+- [ ] 16-04-PLAN.md — check in the exact-shape `restrict` probe and exhaustive structural refusal matrix
+
+**Wave 2**
+
+- [ ] 16-02-PLAN.md — port branch blocks while preserving Phase 15 validation order
+- [ ] 16-05-PLAN.md — decide the evidence-bounded by-pointer admission or M004 cut
+
+**Wave 3**
+
+- [ ] 16-03-PLAN.md — port match payload and defect lowering through checker-owned layout facts
+
+**Wave 4**
+
+- [ ] 16-06-PLAN.md — implement the pointer disposition and formally amend/own every M004 cut
+
+**Wave 5**
+
+- [ ] 16-07-PLAN.md — establish byte, provenance-ledger, and independent four-tier convergence gates
+
+**Wave 6**
+
+- [ ] 16-08-PLAN.md — obtain explicit approval for the one-way atomic authority cut
+
+**Wave 7**
+
+- [ ] 16-09-PLAN.md — flip dispatch, delete the three superseded laws in the same commit, and close validation
 
 ---
 
