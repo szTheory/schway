@@ -96,7 +96,7 @@ branched on and would have become the fifth instance.
       superseded single-function emitters are deleted in the same commit that
       flips dispatch.
 
-- [ ] **NAT-09**: The three emitter families with no M003 consumer are formally
+- [x] **NAT-09**: The three emitter families with no M003 consumer are formally
       cut by a recorded amendment naming their landing milestone and the
       `-flto` consequence — not deferred a third time.
 
@@ -236,7 +236,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | OBS-03 | Phase 15 | Complete |
 | OBS-04 | Phase 15 | Complete |
 | NAT-08 | Phase 16 | Complete |
-| NAT-09 | Phase 16 | Pending |
+| NAT-09 | Phase 16 | Complete |
 | NAT-10 | Phase 15 | Complete |
 | TYP-01 | Phase 17 | Pending |
 | TYP-02 | Phase 17 | Pending |

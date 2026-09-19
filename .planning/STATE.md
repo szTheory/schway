@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 16
 current_phase_name: Branch/Match Emitter Port
 status: executing
-stopped_at: Completed 16-03-PLAN.md
-last_updated: "2026-09-19T21:48:16.769Z"
+stopped_at: Completed 16-06-PLAN.md
+last_updated: "2026-09-19T21:54:52.144Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 16 execution started
-state_head: b5d5f094279729b51aac60cbbe1d05e1262cec3a
+state_head: 065a20272c76f6f52efaa33b54940eef29704d9e
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 29
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 # Project State
@@ -62,7 +62,7 @@ No outstanding human verification.
 ## Current Position
 
 Phase: 16 (Branch/Match Emitter Port) — EXECUTING
-Plan: 6 of 9
+Plan: 7 of 9
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 16 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -313,6 +313,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16-branch-match-emitter-port P02 | 8m 26s | 2 tasks | 3 files |
 | Phase 16 P05 | 3 min | 1 tasks | 1 files |
 | Phase 16-branch-match-emitter-port P03 | 4min | 2 tasks | 2 files |
+| Phase 16-branch-match-emitter-port P06 | 12 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -440,6 +441,8 @@ Standing architectural commitments carried into M002:
 - [Phase 16]: Keep main as the sole schema-2 document writer; branch helpers only record events and return C values.
 - [Phase 16]: Selected cut-m004: unavailable Linux evidence means macOS-only probe results cannot admit emitLinearBorrowedByPointer or any by-pointer family in M003.
 - [Phase 16]: emitProgram reads checker-owned payload layout and shared alternative identity; defect evidence is written before the narrow abort helper.
+- [Phase 16]: Applied cut-m004: no pointer-specialized family is admitted by emitProgram at any program cardinality.
+- [Phase 16]: Recorded foreign and by-pointer emitter families as M004 debt; one-TU pure-Lang -flto remains behaviorally inert evidence.
 
 ### Pending Todos
 
@@ -582,8 +585,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-19T21:48:16.706Z
-Stopped at: Completed 16-03-PLAN.md
+Last session: 2026-09-19T21:54:52.083Z
+Stopped at: Completed 16-06-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
