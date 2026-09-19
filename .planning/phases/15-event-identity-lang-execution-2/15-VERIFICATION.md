@@ -1,6 +1,6 @@
 ---
 phase: 15-event-identity-lang-execution-2
-verified: 2026-09-19T20:26:08Z
+verified: 2026-09-19T20:34:08Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -41,7 +41,7 @@ covered_files:
   - internal/compiler/session/session_phase5_compare.go
   - internal/compiler/session/session_phase5_compare_test.go
   - internal/compiler/session/witness_registry_test.go
-covered_digest: "v1:sha256:327117c580f56d50cf681ea0ee8a459c31e473ede2dc30b550ff62aaaa99fe5d"
+covered_digest: "v1:sha256:ed7575dc17e016412ae7b0573cf8ebc3a5d6edeb0e23fc2a808e1f60ab5ec9a6"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -56,7 +56,7 @@ re_verification:
 # Phase 15: Event Identity (`lang.execution/2`) Verification Report
 
 **Phase Goal:** Two activations of the same callee through a shared-leaf diamond are distinguishable, and the causal edge between caller and callee is observed rather than inferred.
-**Verified:** 2026-09-19T20:26:08Z
+**Verified:** 2026-09-19T20:34:08Z
 **Status:** passed
 **Re-verification:** Yes — after LTO diagnostic-order gap closure
 
@@ -100,7 +100,7 @@ re_verification:
 | --- | --- | --- | --- |
 | LTO diagnostic precedence plus native capacity/output safeguards | Focused cgen regression/boundary run | All named tests passed. | ✓ PASS |
 | Four-tier occurrence identity and collision guard | `go test ./internal/compiler/session -run 'TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert|TestPhase15DiamondFrontierMoved' -count=1 -v` | All matching named tests passed. | ✓ PASS |
-| Repository automated acceptance | `go build ./... && go vet ./... && go test ./... -count=1` | Completed successfully after the focused checks; no package failure observed. | ✓ PASS |
+| Repository automated acceptance | `go build ./... && go vet ./... && go test ./... -count=1` | Completed successfully in 252.911s; no package failure observed. | ✓ PASS |
 
 ### Requirements Coverage
 
@@ -140,5 +140,5 @@ None. The prior LTO diagnostic-order regression is closed without weakening capa
 
 ---
 
-_Verified: 2026-09-19T20:26:08Z_
+_Verified: 2026-09-19T20:34:08Z_
 _Verifier: the agent (gsd-verifier)_
