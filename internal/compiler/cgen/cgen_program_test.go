@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
@@ -215,6 +215,56 @@ func TestProgramMatchUsesCheckerLayout(t *testing.T) {
 	}
 	if strings.Index(generated, layout.Fields[1].Name) > strings.Index(generated, layout.Fields[2].Name) {
 		t.Fatalf("generated tagged record does not preserve checker field order:\n%s", generated)
+	}
+}
+
+// TestProgramMatchDefectEventPrecedesAbort verifies the schema-2 terminal
+// record is visible to the native runner before the defect helper aborts.
+func TestProgramMatchDefectEventPrecedesAbort(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("defect_terminal.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitProgramForTest(checked.Program)
+	if err != nil {
+		t.Fatalf("direct emitProgram: %v", err)
+	}
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectDefect
+	got, err := runner.Run(context.Background(), generated, "-O0", []string{"Halt"})
+	if err != nil || len(got.Pairs) != 1 {
+		t.Fatalf("defect native run: pairs=%d err=%v", len(got.Pairs), err)
+	}
+	events := got.Pairs[0].Execution.Events
+	if len(events) == 0 || events[len(events)-1].Kind != "function.defected" || events[len(events)-1].Output != "halt requested" {
+		t.Fatalf("defect event was not the terminal visible event: %+v", events)
+	}
+}
+
+// TestProgramNoreturnExemptionIsNarrow prevents attributes from spreading
+// beyond the generated abort-only defect helper.
+func TestProgramNoreturnExemptionIsNarrow(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("defect_terminal.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitProgramForTest(checked.Program)
+	if err != nil {
+		t.Fatalf("direct emitProgram: %v", err)
+	}
+	if strings.Count(generated, "_Noreturn") != 1 || !strings.Contains(generated, "_Noreturn static void lang_defect") {
+		t.Fatalf("_Noreturn must appear only on lang_defect:\n%s", generated)
+	}
+	if strings.Index(generated, "lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2") > strings.Index(generated, "lang_defect(\"halt requested\")") {
+		t.Fatalf("defect document must be emitted before lang_defect:\n%s", generated)
 	}
 }
 
