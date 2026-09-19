@@ -351,7 +351,7 @@ func TestInvocationPreflightOrdering(t *testing.T) {
 }
 
 func TestUnsupportedProgramShapePrecedesSchema2Preflight(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "multi_function_match_refusal.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,16 +360,59 @@ func TestUnsupportedProgramShapePrecedesSchema2Preflight(t *testing.T) {
 		t.Fatalf("fixture must check clean: %+v", checked.Diagnostics)
 	}
 
-	_, err = cgen.EmitNative(checked.Program)
+	_, err = cgen.EmitProgramForTest(checked.Program)
 	if err == nil {
-		t.Fatal("expected multi-function Match body to be refused")
+		t.Fatal("expected by-pointer program shape to be refused")
 	}
-	if !strings.Contains(err.Error(), "multi-function branch bodies are not supported by native emission this phase") {
+	if !strings.Contains(err.Error(), "by-pointer bodies are not supported by whole-program native emission this phase") {
 		t.Fatalf("expected structural refusal before schema-2 preflight, got: %v", err)
 	}
 	if cgen.InvocationSerializationReachedForTest() {
 		t.Fatal("unsupported program shape reached C serialization")
 	}
+}
+
+// TestProgramBranchValidationOrder pins the admission law after branch bodies
+// became supported: graph/entry errors win first, unsupported shapes still
+// stop before preflight/serialization, and an admitted branch reaches the
+// output-bound preflight when its seeded limit is too small.
+func TestProgramBranchValidationOrder(t *testing.T) {
+	branchSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "borrowed_view.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(branchSource)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("branch fixture must check clean: %+v", checked.Diagnostics)
+	}
+
+	t.Run("foreign_shape_precedes_preflight", func(t *testing.T) {
+		program := checked.Program
+		program.Functions = append([]core.Function(nil), checked.Program.Functions...)
+		program.Functions[0].ForeignContract = &core.ForeignContract{}
+		reset := cgen.SetExecutionOutputLimitForTest(execution.MaxDocumentBytes)
+		defer reset()
+		_, err := cgen.EmitProgramForTest(program)
+		if err == nil || !strings.Contains(err.Error(), "multi-function foreign contracts are not supported by native emission this phase") {
+			t.Fatalf("want named foreign shape refusal, got %v", err)
+		}
+		if cgen.InvocationSerializationReachedForTest() {
+			t.Fatal("foreign shape refusal reached C serialization")
+		}
+	})
+
+	t.Run("branch_preflight_seed_is_not_inert", func(t *testing.T) {
+		restore := cgen.SetExecutionOutputLimitForTest(1)
+		defer restore()
+		_, err := cgen.EmitProgramForTest(checked.Program)
+		bound, ok := cgen.ExecutionOutputExceededError(err)
+		if !ok || bound.Limit() != 1 {
+			t.Fatalf("seeded branch output limit did not reach preflight: %v", err)
+		}
+		if cgen.InvocationSerializationReachedForTest() {
+			t.Fatal("branch output preflight refusal reached C serialization")
+		}
+	})
 }
 
 func TestInvocationPathTableBoundary(t *testing.T) {
