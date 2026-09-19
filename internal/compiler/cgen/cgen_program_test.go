@@ -89,6 +89,65 @@ func TestProgramOrdinaryLinearTracer(t *testing.T) {
 	}
 }
 
+// TestProgramBranchTracer drives the checked branch fixtures through the
+// surviving whole-program writer. Both switch alternatives are exercised, and
+// the borrowed-view fixture additionally proves arm-local linear operations
+// share the schema-2 event buffer rather than producing an arm-local document.
+func TestProgramBranchTracer(t *testing.T) {
+	tests := []struct {
+		fixture string
+		function string
+		inputs   []string
+	}{
+		{fixture: "toggle.lang", function: "toggle", inputs: []string{"Off", "On"}},
+		{fixture: "borrowed_view.lang", function: "choose", inputs: []string{"On", "Off"}},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.fixture, func(t *testing.T) {
+			phase := "phase1"
+			if test.fixture == "borrowed_view.lang" {
+				phase = "phase3"
+			}
+			source, err := os.ReadFile(testsupport.ProjectPath("testdata", phase, test.fixture))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("%s: unexpected diagnostics: %+v", test.fixture, checked.Diagnostics)
+			}
+			program := checked.Program
+			generated, err := cgen.EmitProgramForTest(program)
+			if err != nil {
+				t.Fatalf("direct emitProgram: %v", err)
+			}
+			invocation, err := execution.FormatInvocation(program.Functions[0].ID, nil)
+			if err != nil {
+				t.Fatalf("format entry invocation: %v", err)
+			}
+			for _, input := range test.inputs {
+				got, err := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{input})
+				if err != nil || len(got.Pairs) != 1 {
+					t.Fatalf("direct emitProgram native run input %q: pairs=%d err=%v", input, len(got.Pairs), err)
+				}
+				want, err := interp.Run(program, test.function, input)
+				if err != nil {
+					t.Fatalf("interpreter input %q: %v", input, err)
+				}
+				want.Schema = execution.Schema2
+				for index := range want.Events {
+					want.Events[index].Schema = execution.Schema2
+					want.Events[index].Invocation = invocation
+				}
+				if !execution.Equal(want, got.Pairs[0].Execution) {
+					t.Fatalf("direct emitProgram input %q differs from interpreter:\nwant: %+v\ngot:  %+v", input, want, got.Pairs[0].Execution)
+				}
+			}
+		})
+	}
+}
+
 // TestProgramLiveResourcesAreDerived rejects a fixed resource-tail literal:
 // even though ordinary linear programs presently derive no live resources,
 // their schema-2 document must be rendered from the surviving emitter's
