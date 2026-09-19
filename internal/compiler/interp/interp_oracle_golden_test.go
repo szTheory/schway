@@ -211,6 +211,13 @@ func TestInterpOracleGoldenCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s: CanonicalBytes: %v", entry.name, err)
 			}
+			if result.Schema == execution.Schema2 {
+				// /2 deliberately supersedes the legacy multi-function
+				// oracle bytes with activation and call-edge evidence.
+				// The dedicated /2 tests assert that new contract; this
+				// corpus continues to freeze only legacy producer bytes.
+				return
+			}
 			goldenPath := filepath.Join(oracleGoldenDir(), entry.name+".golden.json")
 			want, err := os.ReadFile(goldenPath)
 			if err != nil {
