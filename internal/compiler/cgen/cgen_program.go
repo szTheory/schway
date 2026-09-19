@@ -164,6 +164,8 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				event.ID, event.Kind, event.TargetPlace = operation.ID+":event", "value.payload_destructured", operation.PayloadTargetID
 			case core.OpConstructPayload:
 				event.ID, event.Kind = operation.ID+":event", "value.payload_constructed"
+			case core.OpDefect:
+				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", operation.Reason
 			default:
 				return 0, fmt.Errorf("operation %q has unsupported schema-2 output kind %q", operation.ID, operation.Kind)
 			}
@@ -1019,7 +1021,10 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		fmt.Fprintf(out, "      %s %s; /* payload construct: %s */\n      %s.tag = %s;\n      %s.%s = %s;\n      (void)%s;\n", branchType.typeName, locals[target.ID], operation.ID, locals[target.ID], tag, locals[target.ID], field.name, locals[operation.SourceID], locals[target.ID])
 		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n", strconv.Quote("value.payload_constructed"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 		declared[operation.TargetID] = true
-	case core.OpForeignCall, core.OpFail, core.OpDefect:
+	case core.OpDefect:
+		emitProgramDefectTerminal(out, function, operation)
+		fmt.Fprintf(out, "      lang_defect(%s);\n", strconv.Quote(operation.Reason))
+	case core.OpForeignCall, core.OpFail:
 		return fmt.Errorf("operation %q: unsupported branch operation kind %q in whole-program native emission", operation.ID, operation.Kind)
 	default:
 		return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
@@ -1033,6 +1038,31 @@ func branchPayloadAlternative(branchType programBranchType, operation core.Linea
 		return "", fmt.Errorf("operation %q: %w", operation.ID, err)
 	}
 	return alternative, nil
+}
+
+// emitProgramDefectTerminal writes the schema-2 document before the only
+// generated _Noreturn helper aborts. The common buffered event representation
+// intentionally has no Output member, so the defect's reason-bearing event is
+// appended directly instead of broadening every ordinary event's ABI.
+func emitProgramDefectTerminal(out *strings.Builder, function core.Function, operation core.LinearOperation) {
+	out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"defect\\\",\\\"value\\\":\\\"\\\"},\\\"events\\\":[\")) abort();\n")
+	out.WriteString("      if (!lang_write_events()) abort();\n")
+	out.WriteString("      if (lang_event_count != 0u && !lang_write_bytes(\",\", 1u)) abort();\n")
+	out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"id\\\":\")) abort();\n")
+	fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(operation.ID+":event:defected"))
+	out.WriteString("      if (!lang_write_literal(\",\\\"kind\\\":\\\"function.defected\\\",\\\"function_id\\\":\")) abort();\n")
+	fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(function.ID))
+	out.WriteString("      if (!lang_write_literal(\",\\\"output\\\":\")) abort();\n")
+	fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(operation.Reason))
+	out.WriteString("      if (!lang_write_literal(\",\\\"source_place\\\":\")) abort();\n")
+	fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(operation.SourceID))
+	out.WriteString("      if (!lang_write_literal(\",\\\"type_id\\\":\")) abort();\n")
+	fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(operation.TypeID))
+	out.WriteString("      if (!lang_write_literal(\",\\\"invocation\\\":\")) abort();\n")
+	out.WriteString("      if (!lang_write_json_string(lang_invocations[invocation_index])) abort();\n")
+	out.WriteString("      if (!lang_write_literal(\"}],\\\"live_resources\\\":\")) abort();\n")
+	out.WriteString("      if (!lang_write_live_resources()) abort();\n")
+	out.WriteString("      if (!lang_write_literal(\"}\\n\")) abort();\n")
 }
 
 // emitProgramFunction writes ONE function's own C definition: its own
