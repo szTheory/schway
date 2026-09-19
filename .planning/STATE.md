@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 15
-current_phase_name: Event Identity (lang.execution/2)
-status: executing
-stopped_at: Phase 15 context gathered
-last_updated: "2026-09-19T14:43:57.907Z"
-last_activity: 2026-09-18
-last_activity_desc: Phase 14 execution complete and verified — all 13 plans done
-state_head: "0bd4a886c829b9df32cc13a0477e8daf2a271135"
+current_phase: 16
+current_phase_name: Branch/Match Emitter Port
+status: planning
+stopped_at: Phase 15 complete, ready to plan Phase 16
+last_updated: "2026-09-19T20:28:50.494Z"
+last_activity: 2026-09-19
+last_activity_desc: Phase 15 complete, transitioned to Phase 16
+state_head: 66e0fc9f7f0a744278d5424fbcdce76e81541947
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 20
-  completed_plans: 13
+  completed_plans: 20
+  percent: 29
 ---
 
 # Project State
@@ -26,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 15 — Event Identity (`lang.execution/2`). Phase 14
+**Current focus:** Phase 15 — Event Identity (`lang.execution/2`)
 (evidence-instrument-and-honest-scoping) completed and verified 2026-09-18:
 13 plans, 11/11 requirements, zero `UNOWNED(none-yet-scheduled)` debt rows left
 in `PHASE-14-DEBT.md`. Prior milestone M002
@@ -61,10 +62,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 15 (Event Identity (lang.execution/2)) — READY TO EXECUTE
+Phase: 16 — Branch/Match Emitter Port
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-18 — Phase 14 complete, transitioned to Phase 15
+Status: Ready to plan
+Last activity: 2026-09-19 — Phase 15 complete, transitioned to Phase 16
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -149,7 +150,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 126
+- Total plans completed: 133
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -169,6 +170,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 11 | 9 | - | - |
 | 12 | 8 | - | - |
 | 14 | 13 | - | - |
+| 15 | 7 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -425,6 +427,7 @@ Standing architectural commitments carried into M002:
 - [Phase ?]: 14-11: raised evidenceRunRecordTimeout 300s->480s with a measured-honest doc comment, added a 0.75 margin fraction that fails closed on a near-timeout run, and replaced raw-pattern run-record batching with resolvedPkgPatterns (anchored, index-resolved names) -- closing WR-01/WR-02; corpus-wide measured elapsed dropped 269-347s -> ~90s
 - [Phase ?]: 14-13: buildConstraintAllowlist (darwin/linux/amd64/arm64/cgo) closes EVD-04's inert //go:build branch; scanSuppressionSurfaces reordered so MatchFile gates only AST passes, never the textual constraint pass, closing T-14-13-02's constraint-hides-itself hole
 - [Phase ?]: 14-12: removed 14-VALIDATION.md's file-scoped grade-bar exemption, confirmed the corpus-wide >=EXERCISED bar with a complete run record (90-92s vs 480s budget), added the row-scoped validationGradeBarRowExemptions narrowing (5 entries, each debt-witnessed) since Task 2's own ship-empty expectation was falsified by real execution, and closed D-14-121/D-14-53 as CLOSED(128ecec). EVD-02 and PRC-01 complete.
+- [Phase 15]: Ratified Phase 15 /2 invocation grammar and caller-owned callee_function_id contract before publication.
 
 ### Pending Todos
 
@@ -568,7 +571,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-19T14:20:35.182Z
-Stopped at: Phase 15 context gathered
+Stopped at: Phase 15 complete, ready to plan Phase 16
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: .planning/phases/15-event-identity-lang-execution-2/15-CONTEXT.md
 Next command: `/clear` then `/gsd-new-milestone`

@@ -78,16 +78,16 @@ branched on and would have become the fifth instance.
 
 ### Observability — Event Identity
 
-- [ ] **OBS-01**: Two activations of the same callee through a shared-leaf
+- [x] **OBS-01**: Two activations of the same callee through a shared-leaf
       diamond produce distinct event identities.
 
-- [ ] **OBS-02**: A call emits an observable event, so the causal edge between
+- [x] **OBS-02**: A call emits an observable event, so the causal edge between
       caller and callee is visible rather than inferred.
 
-- [ ] **OBS-03**: Event identity is re-derived independently by a non-importing
+- [x] **OBS-03**: Event identity is re-derived independently by a non-importing
       peer over its own traversal.
 
-- [ ] **OBS-04**: The `/0` and `/1` execution-document bytes remain frozen; the
+- [x] **OBS-04**: The `/0` and `/1` execution-document bytes remain frozen; the
       new required field lands under a `/2` schema bump.
 
 ### Native Emission
@@ -100,7 +100,7 @@ branched on and would have become the fifth instance.
       cut by a recorded amendment naming their landing milestone and the
       `-flto` consequence — not deferred a third time.
 
-- [ ] **NAT-10**: A re-invoking multi-function fixture is compared across
+- [x] **NAT-10**: A re-invoking multi-function fixture is compared across
       interpreter, `-O0`, `-O3`, and `-O3 -flto`.
 
 ### Types
@@ -218,13 +218,13 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | EVD-06 | Phase 14 | Complete |
 | EVD-07 | Phase 14 | Complete |
 | EVD-08 | Phase 14 | Complete |
-| OBS-01 | Phase 15 | Pending |
-| OBS-02 | Phase 15 | Pending |
-| OBS-03 | Phase 15 | Pending |
-| OBS-04 | Phase 15 | Pending |
+| OBS-01 | Phase 15 | Complete |
+| OBS-02 | Phase 15 | Complete |
+| OBS-03 | Phase 15 | Complete |
+| OBS-04 | Phase 15 | Complete |
 | NAT-08 | Phase 16 | Pending |
 | NAT-09 | Phase 16 | Pending |
-| NAT-10 | Phase 15 | Pending |
+| NAT-10 | Phase 15 | Complete |
 | TYP-01 | Phase 17 | Pending |
 | TYP-02 | Phase 17 | Pending |
 | TYP-03 | Phase 17 | Pending |

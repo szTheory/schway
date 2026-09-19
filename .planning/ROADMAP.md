@@ -121,7 +121,7 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
 ## Phases
 
 - [x] **Phase 14: Evidence Instrument and Honest Scoping** - The instruments stop reporting green for work that is merely wired.
-- [ ] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable.
+- [x] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable. (completed 2026-09-19)
 - [ ] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut.
 - [ ] **Phase 17: Return Type ≠ Parameter Type** - A function may return a type it was not given.
 - [ ] **Phase 18: Branch on a Computed Value** - A branch discriminates a value the function computed. **HARD-GATED on spike S-010.**
@@ -318,22 +318,22 @@ The ordering rests on the write-it-twice argument, not on a hard block.
 Plans:
 **Wave 1**
 
-- [ ] 15-01-PLAN.md — confirm and trace the `/2` wire grammar through strict admission while freezing `/0` and `/1` and pinning the pre-fix diamond frontier
+- [x] 15-01-PLAN.md — confirm and trace the `/2` wire grammar through strict admission while freezing `/0` and `/1` and pinning the pre-fix diamond frontier
 
 **Wave 2** *(blocked on Wave 1 completion; plans may execute in parallel)*
 
-- [ ] 15-02-PLAN.md — thread interpreter occurrence identity and emit caller-owned preorder call edges with projection-only removal semantics
-- [ ] 15-03-PLAN.md — independently re-derive invocation membership and validate exact observed causal structure in a non-importing peer
-- [ ] 15-04-PLAN.md — preflight native invocation expansion with the measured 61-node control and exact 4096/4097 non-inert boundary
+- [x] 15-02-PLAN.md — thread interpreter occurrence identity and emit caller-owned preorder call edges with projection-only removal semantics
+- [x] 15-03-PLAN.md — independently re-derive invocation membership and validate exact observed causal structure in a non-importing peer
+- [x] 15-04-PLAN.md — preflight native invocation expansion with the measured 61-node control and exact 4096/4097 non-inert boundary
 
 **Wave 3** *(blocked on the named Wave 2 dependencies)*
 
-- [ ] 15-05-PLAN.md — emit static parent-indexed invocation tables and `/2` call evidence in readable C17 without moving legacy writers
-- [ ] 15-06-PLAN.md — route both new comparator fields, require peer validation, and prove producer/peer independence in both fault directions
+- [x] 15-05-PLAN.md — emit static parent-indexed invocation tables and `/2` call evidence in readable C17 without moving legacy writers
+- [x] 15-06-PLAN.md — route both new comparator fields, require peer validation, and prove producer/peer independence in both fault directions
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 15-07-PLAN.md — flip DiamondSharedLeaf into a peer-validated four-tier positive gate, retain the collision negative, and close inherited debt honestly
+- [x] 15-07-PLAN.md — flip DiamondSharedLeaf into a peer-validated four-tier positive gate, retain the collision negative, and close inherited debt honestly
 
 ---
 
@@ -649,7 +649,7 @@ assurance-refactor milestone rather than a feature milestone.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 14. Evidence Instrument and Honest Scoping | 13/13 | Complete    | 2026-09-18 |
-| 15. Event Identity (`lang.execution/2`) | 0/? | Not started | - |
+| 15. Event Identity (`lang.execution/2`) | 7/7 | Complete    | 2026-09-19 |
 | 16. Branch/Match Emitter Port | 0/? | Not started | - |
 | 17. Return Type ≠ Parameter Type | 0/? | Not started | - |
 | 18. Branch on a Computed Value | 0/? | Not started (S-010 gate) | - |
