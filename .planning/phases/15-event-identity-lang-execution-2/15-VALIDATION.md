@@ -19,7 +19,7 @@ created: "2026-09-19"
 |----------|-------|
 | **Framework** | Go 1.24 standard `testing` package |
 | **Config file** | none |
-| **Quick run command** | `go test ./internal/compiler/{execution,interp,cgen,native,session} -run 'Test(.*Invocation.*|.*DiamondSharedLeaf.*|.*PathTable.*|.*ComparisonFieldRouting.*)' -count=1` |
+| **Quick run command** | `go test ./internal/compiler/{execution,executionpeer,interp,cgen,native,session} -run 'Test(.*Invocation.*|.*FunctionCalled.*|.*DiamondSharedLeaf.*|.*PathTable.*|.*ComparisonFieldRouting.*)' -count=1` |
 | **Full suite command** | `go test ./...` |
 | **Estimated runtime** | Measure during execution; Phase 14 observed the full suite near 193 seconds on its host |
 
@@ -38,14 +38,21 @@ created: "2026-09-19"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 15-01-01 | 01 | 1 | OBS-04 | T-15-02 | Reject ambiguous or non-canonical `/2` identity | unit/golden | `go test ./internal/compiler/execution ./internal/compiler/native -count=1` | ❌ W0 `/2` cases | ⬜ pending |
-| 15-02-01 | 02 | 1 | OBS-01, OBS-02 | T-15-03 | Interpreter emits correctly owned preorder edges | unit | `go test ./internal/compiler/interp -count=1` | ❌ W0 | ⬜ pending |
-| 15-03-01 | 03 | 1 | OBS-03 | T-15-03 | Independent peer rejects forged causal structure | peer/mutation | `go test ./internal/compiler/executionpeer -count=1` | ❌ W0 | ⬜ pending |
-| 15-04-01 | 04 | 2 | OBS-01, OBS-04 | T-15-01 | Native preflight bounds expansion before allocation | boundary/mutation | `go test ./internal/compiler/cgen -count=1` | ❌ W0 | ⬜ pending |
-| 15-05-01 | 05 | 2 | OBS-02, OBS-03 | T-15-03, T-15-04 | Comparator routes new fields and both fault directions fail | differential | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
-| 15-06-01 | 06 | 3 | OBS-01, NAT-10 | T-15-04 | Shared-leaf fixture agrees across four tiers and collision return fails | integration | `go test ./internal/compiler/session -run '^TestPhase11InterproceduralDifferential$' -count=1 -v` | ✅ expectation flips | ⬜ pending |
+| 15-01-02 | 01 | 1 | OBS-01, OBS-02, OBS-04 | T-15-02, T-15-04 | Canonical `/2` tracer rejects ambiguity, freezes legacy bytes, and pins the old diamond frontier | unit/golden/frontier | `go test ./internal/compiler/execution ./internal/compiler/native ./internal/compiler/session -run 'TestInvocationGrammar|TestExecutionLegacyBytesFrozen|TestValidateExecutionSchema2|TestPhase15DiamondFrontierIsPinned' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-02-01 | 02 | 2 | OBS-01, OBS-04 | T-15-04 | Interpreter threads identity through every event path with explicit legacy selection | unit | `go test ./internal/compiler/interp -run 'TestInvocationThreadsThroughAllEventPaths|TestExecutionSchemaSelectionPreservesLegacy' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-02-02 | 02 | 2 | OBS-02 | T-15-03 | Admitted calls emit caller-owned preorder edges and projection-only removal is exact | unit/negative | `go test ./internal/compiler/interp -run 'TestFunctionCalledPreorderAndOwnership|TestFunctionCalledProjectionRemoval|TestRejectedCallEmitsNoCalledEdge' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-03-01 | 03 | 2 | OBS-03 | T-15-01, T-15-03 | Peer independently resolves and unfolds without engine imports | peer/structural | `go test ./internal/compiler/executionpeer -run 'TestIndependentEntryResolution|TestInvocationMembershipTraversal|TestExecutionPeerImportBoundary|TestFullCoverageControlIsSeparate' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-03-02 | 03 | 2 | OBS-03, OBS-04 | T-15-03 | Peer rejects forged ownership, pair, grammar, kind, and preorder facts actionably | peer/mutation | `go test ./internal/compiler/executionpeer -run 'TestValidateObservedCausalStructure|TestExecutionPeerFailuresAreActionable' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-04-01 | 04 | 2 | OBS-04 | T-15-01 | Native preflight derives the real 61-node measurement before allocation | boundary | `go test ./internal/compiler/cgen -run 'TestInvocationPathTableDeepDiamondMeasures61|TestInvocationPreflightOrdering' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-04-02 | 04 | 2 | OBS-04 | T-15-01 | 4096 passes, 4097 refuses by name, and bypass is mutation-killed | boundary/mutation | `go test ./internal/compiler/cgen -run 'TestInvocationPathTableBoundary|TestInvocationPreflightGuardIsNotInert' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-05-01 | 05 | 3 | OBS-01, NAT-10 | T-15-03 | Native parent-indexed lookup distinguishes children for repeated parent occurrences | unit/structural | `go test ./internal/compiler/cgen -run 'TestProgramInvocationIndexThreading|TestParentIndexedChildLookup|TestInvocationTableEmissionIsDeterministic' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-05-02 | 05 | 3 | OBS-02, OBS-04 | T-15-03, T-15-04 | Native `/2` writer emits preorder edges and freezes legacy writers | unit/golden | `go test ./internal/compiler/cgen -run 'TestProgramWritesExecutionSchema2|TestNativeFunctionCalledPreorder|TestNativeFunctionCalledProjectionRemoval|TestLegacyEventWritersFrozen' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-06-01 | 06 | 3 | OBS-03, OBS-04 | T-15-03, T-15-04 | Comparator routes both fields and requires a peer verdict | differential | `go test ./internal/compiler/session -run 'TestComparisonFieldRoutingIsExhaustive|TestInvocationFieldsAreCompared|TestSchema2ComparisonRequiresPeerVerdict' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-06-02 | 06 | 3 | OBS-03 | T-15-03, T-15-04 | Producer and peer fault directions each demonstrate actual bad behavior | mutation | `go test ./internal/compiler/session -run 'TestExecutionProducerFaultIsCaughtByPeer|TestExecutionPeerAcceptanceFaultIsCaughtByControl' -count=1 -v` | ❌ W0 | ⬜ pending |
+| 15-07-01 | 07 | 4 | OBS-01, OBS-02, OBS-03, NAT-10 | T-15-03, T-15-04 | Existing DiamondSharedLeaf passes all four tiers and restored collision fails | integration/mutation | `go test ./internal/compiler/session -run 'TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert|TestPhase15DiamondFrontierMoved' -count=1 -v` | ✅ expectation flips | ⬜ pending |
+| 15-07-02 | 07 | 4 | OBS-01, OBS-02, OBS-03, OBS-04, NAT-10 | T-15-04 | Full build/vet/suite backs debt and validation closure | integration | `go build ./... && go vet ./internal/compiler/session/... && go test ./... -count=1` | ✅ infrastructure | ⬜ pending |
 
-*Task/plan allocation is provisional until PLAN.md files are finalized. Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky.*
+*Task/plan allocation matches the seven finalized PLAN.md files. Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky.*
 
 ---
 

@@ -313,7 +313,27 @@ STANDING-VERDICTS' own "two coexisting laws is a defect with a delayed fuse".
 identity fix. The dependency caps corpus richness; it does not gate the port.
 The ordering rests on the write-it-twice argument, not on a hard block.
 **Closes**: D-11-51, D-12-21.
-**Plans**: 6-8 (TBD at `/gsd-plan-phase 15`)
+**Plans**: 7 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 15-01-PLAN.md — confirm and trace the `/2` wire grammar through strict admission while freezing `/0` and `/1` and pinning the pre-fix diamond frontier
+
+**Wave 2** *(blocked on Wave 1 completion; plans may execute in parallel)*
+
+- [ ] 15-02-PLAN.md — thread interpreter occurrence identity and emit caller-owned preorder call edges with projection-only removal semantics
+- [ ] 15-03-PLAN.md — independently re-derive invocation membership and validate exact observed causal structure in a non-importing peer
+- [ ] 15-04-PLAN.md — preflight native invocation expansion with the measured 61-node control and exact 4096/4097 non-inert boundary
+
+**Wave 3** *(blocked on the named Wave 2 dependencies)*
+
+- [ ] 15-05-PLAN.md — emit static parent-indexed invocation tables and `/2` call evidence in readable C17 without moving legacy writers
+- [ ] 15-06-PLAN.md — route both new comparator fields, require peer validation, and prove producer/peer independence in both fault directions
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 15-07-PLAN.md — flip DiamondSharedLeaf into a peer-validated four-tier positive gate, retain the collision negative, and close inherited debt honestly
 
 ---
 
