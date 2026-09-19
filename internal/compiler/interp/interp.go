@@ -11,14 +11,15 @@ import (
 const Schema = execution.Schema0
 
 // schemaForProgram makes the producer boundary explicit: existing
-// single-function executions retain their frozen /1 document, while a
+// single-function executions retain the legacy schema selected by their
+// producer (/0 for a bare match, /1 for frame-based execution), while a
 // program with more than one declared function exposes dynamic activations
 // and call causality through /2.
-func schemaForProgram(program core.Program) string {
+func schemaForProgram(program core.Program, legacySchema string) string {
 	if len(program.Functions) > 1 {
 		return execution.Schema2
 	}
-	return execution.Schema1
+	return legacySchema
 }
 
 // MaxCallDepth bounds interp's own explicit []frame call stack (D-10-21) at
@@ -182,7 +183,7 @@ func Run(program core.Program, functionName, input string) (Execution, error) {
 			continue
 		}
 		if arm.BlockID == "" {
-			schema, invocation, err := entryIdentity(program, function.ID)
+			schema, invocation, err := entryIdentity(program, function.ID, Schema)
 			if err != nil {
 				return Execution{}, err
 			}
@@ -517,8 +518,8 @@ func newArmFrame(function core.Function, values map[string]value, blockID string
 	return f
 }
 
-func entryIdentity(program core.Program, entryID string) (string, string, error) {
-	schema := schemaForProgram(program)
+func entryIdentity(program core.Program, entryID, legacySchema string) (string, string, error) {
+	schema := schemaForProgram(program, legacySchema)
 	if schema != execution.Schema2 {
 		return schema, "", nil
 	}
@@ -530,7 +531,7 @@ func entryIdentity(program core.Program, entryID string) (string, string, error)
 }
 
 func runProgramFrameStack(program core.Program, base frame) (Execution, error) {
-	schema, invocation, err := entryIdentity(program, base.function.ID)
+	schema, invocation, err := entryIdentity(program, base.function.ID, execution.Schema1)
 	if err != nil {
 		return Execution{}, err
 	}

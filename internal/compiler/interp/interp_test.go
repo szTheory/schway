@@ -321,9 +321,19 @@ func TestInvocationThreadsThroughAllEventPaths(t *testing.T) {
 	}
 }
 
-// TestExecutionSchemaSelectionPreservesLegacy freezes the producer boundary:
-// adding /2 must not alter the canonical bytes of a single-function /1 run.
+// TestExecutionSchemaSelectionPreservesLegacy freezes both legacy producer
+// boundaries: adding /2 must not alter a bare-match /0 document or a
+// frame-based /1 document.
 func TestExecutionSchemaSelectionPreservesLegacy(t *testing.T) {
+	bareProgram := checkedProgramFromFixture(t, "phase1", "toggle.lang")
+	bare, err := Run(bareProgram, bareProgram.Functions[0].Name, "Off")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bare.Schema != execution.Schema0 || len(bare.Events) != 1 || bare.Events[0].Schema != execution.Schema0 || bare.Events[0].Invocation != "" {
+		t.Fatalf("single-function bare-match execution moved from legacy /0: %+v", bare)
+	}
+
 	program := checkedProgramFromFixture(t, "phase4", "defect_terminal.lang")
 	result, err := Run(program, "triage", "Go")
 	if err != nil {

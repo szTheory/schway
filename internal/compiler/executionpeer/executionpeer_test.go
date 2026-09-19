@@ -1,17 +1,41 @@
 package executionpeer_test
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"go/parser"
 	"go/token"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/executionpeer"
 )
+
+const maxGoListBytes = 1 << 20
+
+type boundedGoListWriter struct {
+	buffer bytes.Buffer
+	total  int
+}
+
+func (w *boundedGoListWriter) Write(data []byte) (int, error) {
+	w.total += len(data)
+	remaining := maxGoListBytes + 1 - w.buffer.Len()
+	if remaining > len(data) {
+		remaining = len(data)
+	}
+	if remaining > 0 {
+		_, _ = w.buffer.Write(data[:remaining])
+	}
+	return len(data), nil
+}
+
+func (w *boundedGoListWriter) overflowed() bool { return w.total > maxGoListBytes }
 
 func function(id string, operations ...core.LinearOperation) core.Function {
 	return core.Function{ID: id, Name: id, Parameter: core.Parameter{ID: id + ":arg", Type: "Byte"}, Linear: &core.LinearBody{ID: id + ":body", Operations: operations}}
@@ -102,12 +126,23 @@ func TestInvocationMembershipTraversalBound(t *testing.T) {
 }
 
 func TestExecutionPeerImportBoundary(t *testing.T) {
-	command := exec.Command("go", "list", "-deps", "-f", "{{.ImportPath}}", "github.com/codename-lang/lang/internal/compiler/executionpeer")
-	output, err := command.Output()
-	if err != nil {
-		t.Fatal(err)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	command := exec.CommandContext(ctx, "go", "list", "-deps", "-f", "{{.ImportPath}}", "github.com/codename-lang/lang/internal/compiler/executionpeer")
+	var stdout, stderr boundedGoListWriter
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	err := command.Run()
+	if ctx.Err() != nil {
+		t.Fatalf("go list dependency probe timed out: %v", ctx.Err())
 	}
-	for _, path := range strings.Fields(string(output)) {
+	if stdout.overflowed() || stderr.overflowed() {
+		t.Fatalf("go list dependency probe exceeded %d bytes (stdout=%d stderr=%d)", maxGoListBytes, stdout.total, stderr.total)
+	}
+	if err != nil {
+		t.Fatalf("go list dependency probe: %v: %s", err, stderr.buffer.Bytes())
+	}
+	for _, path := range strings.Fields(stdout.buffer.String()) {
 		if strings.HasSuffix(path, "/interp") || strings.HasSuffix(path, "/cgen") {
 			t.Fatalf("forbidden dependency %q", path)
 		}

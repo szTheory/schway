@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -125,6 +126,33 @@ var payloadCorpusBaseline = map[string]string{
 	"testdata/phase6/heldout_match_defect.lang":                    "3e054420dbb9907f7245d33bfe6e80a8b14f20932846dda5135f599929eb1d7d",
 	"testdata/phase6/heldout_move_defect.lang":                     "547cebbad44dba78b938abadd14d6e7b841d48ec98a1cb7b7a09e28b6cc02e8f",
 	"testdata/phase6/stale_evidence_subject.lang":                  "d0c214b7fbf9a97f5c9fbc6b0b311877ae8544a4e306e5b1421cb50c65197cd8",
+}
+
+// payloadCorpusPhase15Schema2Baseline is the explicit successor ledger for
+// pre-Phase-12 fixtures whose multi-function interpreter documents Phase 15
+// intentionally migrated from /1 to /2. Keeping this separate from
+// payloadCorpusBaseline preserves the historical D-12-19 snapshot while
+// making every authorized byte movement named, schema-checked, and pinned.
+// A fixture absent here must still match its original legacy digest exactly.
+var payloadCorpusPhase15Schema2Baseline = map[string]string{
+	"testdata/phase07/call_argument_used_once.lang":               "39fcf77d9d3215d4d4cfb6873ebca0e8ac83d5aed3f7ee8e16f86f941d38fa57",
+	"testdata/phase07/call_basic.lang":                            "c62209ed506b2fcdb9b1f6f78030cea715c8695400656ab5d1b5ee2c900a70ee",
+	"testdata/phase07/call_fallible_foreign_reach.lang":           "ab8193bf320aeb9b1721231932a3ad042379fa70fa33724f2a5baa5be2fcf6f0",
+	"testdata/phase07/call_from_both_match_arms.lang":             "735bd0ed068d637ed7446a2bf1b68587d3e53e32755615335eb6dcc3fb833119",
+	"testdata/phase07/call_two_fallible_callees_disagree.lang":    "8f3caa3c5f55a608b07abf1a80a3368a858a34fc1aa7b4cccb9e9edcf689ec06",
+	"testdata/phase07/deep_diamond_acyclic.lang":                  "06a0d63aa3e0c58e868de8bd5a228402c062d6b6fb5e22164b87e0d7bede45dc",
+	"testdata/phase08/match_arm_call.lang":                        "b69308cd8dcaa9ccab60fcacce0a43a6c6a1815e423e98ea0cc9c1e29fb90429",
+	"testdata/phase08/relay_depth2_accept.lang":                   "57e99ce7fd7e728606d99ff561091579576867d32b1aa88d36d083a45cf51c7c",
+	"testdata/phase08/twin_a_accept.lang":                         "55e7c68aa48d6438bde0c3b945eb7b60db7fd2efcf80bfa96d5c40afd796fc1b",
+	"testdata/phase10/compose_per_path_borrow_caller_accept.lang": "c5e72c8bc6897cb3bbc67079aa2914e3cc0739dc0b22a2d7405dbd11bc3edf44",
+	"testdata/phase10/relay_depth3_accept.lang":                   "9f90f91d18c959dd556d7cf41a7c0446b8c9fa0e11f9651cbf219f3821020d79",
+	"testdata/phase11/multi_function_diamond_call.lang":           "61e2d14a6cfe432a6b1fbeec4f469faa4777f903c569f5661bbf6ff23e7f40b6",
+	"testdata/phase11/multi_function_entry_basic.lang":            "2f83a2fb76e88c003e2851283860b7d4d7df3ca969c09639aee4bd54f4e27407",
+	"testdata/phase11/multi_function_forward_callee.lang":         "246585a63c13f9055bbf38b68379bd70443c5c41c890ad8a99239f7838449488",
+	"testdata/phase11/multi_function_gate_corpus.lang":            "3d56cdc6832d970f7f5e8c2a8dc825b60248c6615947227fda6a760094467871",
+	"testdata/phase11/multi_function_reduce_gate.lang":            "cff57dd44f306a348858b5a08b3bd3ce01c00e6eaf12e77cb95a48ee6b563537",
+	"testdata/phase11/multi_function_relay_depth2.lang":           "c1c3010c1e9c9f20a23057a3e2f415a8fc74f6135e123294ec45aa2444f71579",
+	"testdata/phase11/multi_function_unreachable.lang":            "421cc70866dcf72fd74b15ae55dc211dce578ef9283d8c1dfe8d5cb85eb626ed",
 }
 
 // payloadCorpusExpectedSkips names every pre-Phase-12 fixture that does NOT
@@ -252,9 +280,17 @@ func TestPayloadCorpusCharacterizationReplay(t *testing.T) {
 			if !known {
 				t.Fatalf("%s: produced a clean execution document but is not in payloadCorpusBaseline -- add its pinned digest (got %s)", relative, got)
 			}
+			if phase15Want, migrated := payloadCorpusPhase15Schema2Baseline[relative]; migrated {
+				for index, document := range executions {
+					if document.Schema != execution.Schema2 {
+						t.Fatalf("%s: Phase 15 migration ledger names execution %d, but its schema is %q, want %q", relative, index, document.Schema, execution.Schema2)
+					}
+				}
+				want = phase15Want
+			}
 			seenBaseline[relative] = true
 			if got != want {
-				t.Fatalf("%s: interp execution document moved: got sha256 %s, want %s -- the interp value widening (D-12-17) was supposed to be evidence-invisible for every scalar (D-12-18)", relative, got, want)
+				t.Fatalf("%s: interp execution document moved: got sha256 %s, want current pinned digest %s", relative, got, want)
 			}
 		})
 	}
