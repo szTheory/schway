@@ -228,7 +228,7 @@ events = append(events, Event{
 |---|---|
 | Framework | Go standard `testing` package, Go 1.24.0 available [VERIFIED: environment probe] |
 | Config file | none |
-| Quick run command | `go test ./internal/compiler/{execution,interp,cgen,native,session} -run 'Test(.*Invocation.*|.*DiamondSharedLeaf.*|.*PathTable.*|.*ComparisonFieldRouting.*)' -count=1` |
+| Quick run command | `go test ./internal/compiler/session -run 'TestPhase15DiamondFrontierMoved' -count=1` |
 | Full suite command | `go test ./...` |
 
 ### Phase Requirements → Test Map
