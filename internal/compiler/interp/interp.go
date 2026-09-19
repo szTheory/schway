@@ -10,6 +10,17 @@ import (
 
 const Schema = execution.Schema0
 
+// schemaForProgram makes the producer boundary explicit: existing
+// single-function executions retain their frozen /1 document, while a
+// program with more than one declared function exposes dynamic activations
+// and call causality through /2.
+func schemaForProgram(program core.Program) string {
+	if len(program.Functions) > 1 {
+		return execution.Schema2
+	}
+	return execution.Schema1
+}
+
 // MaxCallDepth bounds interp's own explicit []frame call stack (D-10-21) at
 // a genuinely reachable ceiling -- the exact INVERSE of
 // pathoracle.MaxPaths' direction (pathoracle.go:56-67). MaxPaths (4096)
@@ -125,7 +136,8 @@ func drainStackForAbruptExit(stack []frame) ([]Event, []string) {
 		places := liveResourcePlaces(f.operations, f.live, f.liveOrder)
 		for _, place := range places {
 			events = append(events, Event{
-				Schema: execution.Schema1, ID: fmt.Sprintf("%s:event:leaked:%d", f.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: f.function.ID,
+				Schema: f.eventSchema(), ID: fmt.Sprintf("%s:event:leaked:%d", f.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: f.function.ID,
+				Invocation:  f.invocation,
 				SourcePlace: place,
 			})
 			leakIndex++
@@ -170,12 +182,16 @@ func Run(program core.Program, functionName, input string) (Execution, error) {
 			continue
 		}
 		if arm.BlockID == "" {
+			schema, invocation, err := entryIdentity(program, function.ID)
+			if err != nil {
+				return Execution{}, err
+			}
 			event := Event{
-				Schema: Schema, ID: arm.ID + ":event:returned", Kind: "function.returned",
+				Schema: schema, ID: arm.ID + ":event:returned", Kind: "function.returned", Invocation: invocation,
 				FunctionID: function.ID, Input: input, Output: arm.Value,
 			}
 			return Execution{
-				Schema: Schema, Outcome: Outcome{Kind: "returned", Value: arm.Value},
+				Schema: schema, Outcome: Outcome{Kind: "returned", Value: arm.Value},
 				Events: []Event{event}, LiveResources: []string{},
 			}, nil
 		}
@@ -203,7 +219,7 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 		return Execution{}, fmt.Errorf("branch arm %q references unknown block %q", arm.ID, arm.BlockID)
 	}
 	base := newArmFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}}, arm.BlockID)
-	return runFrameStack(program, base)
+	return runProgramFrameStack(program, base)
 }
 
 // runLinearBlocks executes a fallible-call function's Blocks/Edges
@@ -217,7 +233,7 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 // runBranchArm use, rather than a third hand-copied loop.
 func runLinearBlocks(program core.Program, function core.Function, input string) (Execution, error) {
 	base := newBlockFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}}, function.ID+":block:entry")
-	return runFrameStack(program, base)
+	return runProgramFrameStack(program, base)
 }
 
 // nonlocalExitDefectReason is duplicated VERBATIM from cgen.go's own
@@ -284,7 +300,7 @@ func runLinear(program core.Program, function core.Function, input string) (Exec
 		return runLinearBlocks(program, function, input)
 	}
 	base := newFlatFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}})
-	return runFrameStack(program, base)
+	return runProgramFrameStack(program, base)
 }
 
 // frame is one activation record on interp's own explicit call stack
@@ -300,6 +316,14 @@ func runLinear(program core.Program, function core.Function, input string) (Exec
 // the one frame with hasCaller == false.
 type frame struct {
 	function core.Function
+
+	// schema and invocation are activation-local evidence context. They are
+	// intentionally carried by every frame rather than reconstructed from a
+	// function ID or stack depth, either of which collides at a shared leaf.
+	schema     string
+	invocation string
+	entryID    string
+	segments   []execution.InvocationSegment
 
 	// values is this frame's OWN place map (D-10-26): a moved-from place
 	// in a caller's frame is genuinely absent from this map -- not merely
@@ -493,6 +517,53 @@ func newArmFrame(function core.Function, values map[string]value, blockID string
 	return f
 }
 
+func entryIdentity(program core.Program, entryID string) (string, string, error) {
+	schema := schemaForProgram(program)
+	if schema != execution.Schema2 {
+		return schema, "", nil
+	}
+	invocation, err := execution.FormatInvocation(entryID, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("entry invocation: %w", err)
+	}
+	return schema, invocation, nil
+}
+
+func runProgramFrameStack(program core.Program, base frame) (Execution, error) {
+	schema, invocation, err := entryIdentity(program, base.function.ID)
+	if err != nil {
+		return Execution{}, err
+	}
+	base.schema, base.invocation, base.entryID = schema, invocation, base.function.ID
+	return runFrameStack(program, base)
+}
+
+func (f *frame) eventSchema() string {
+	if f.schema == "" {
+		return execution.Schema1
+	}
+	return f.schema
+}
+
+func (f *frame) childInvocation(operation core.LinearOperation) string {
+	if f.eventSchema() != execution.Schema2 {
+		return ""
+	}
+	segments := append(append([]execution.InvocationSegment{}, f.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
+	invocation, err := execution.FormatInvocation(f.entryID, segments)
+	if err != nil {
+		panic(fmt.Sprintf("checked core has invalid invocation component: %v", err))
+	}
+	return invocation
+}
+
+func (f *frame) configureChild(child *frame, operation core.LinearOperation) {
+	child.schema = f.eventSchema()
+	child.entryID = f.entryID
+	child.segments = append(append([]execution.InvocationSegment{}, f.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
+	child.invocation = f.childInvocation(operation)
+}
+
 // pushResult is partitionFrameForCall's outcome: either a genuine callee
 // frame to push onto the stack (Frame non-nil), or an immediate
 // resolution. A bare match arm (core.MatchArm.BlockID == "") needs no
@@ -506,6 +577,7 @@ type pushResult struct {
 	frame          *frame
 	immediateValue string
 	immediateEvent Event
+	calleeID       string
 }
 
 // partitionFrameForCall is the ONE frame-partition helper D-10-39 permits
@@ -546,15 +618,18 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 				return pushResult{
 					immediateValue: arm.Value,
 					immediateEvent: Event{
-						Schema: Schema, ID: arm.ID + ":event:returned", Kind: "function.returned",
+						Schema: caller.eventSchema(), ID: arm.ID + ":event:returned", Kind: "function.returned",
+						Invocation: caller.childInvocation(operation),
 						FunctionID: callee.ID, Input: argumentText, Output: arm.Value,
 					},
+					calleeID: callee.ID,
 				}, nil
 			}
 			f := newArmFrame(callee, seeded, arm.BlockID)
 			f.returnTarget = operation.TargetID
 			f.hasCaller = true
-			return pushResult{frame: &f}, nil
+			caller.configureChild(&f, operation)
+			return pushResult{frame: &f, calleeID: callee.ID}, nil
 		}
 		return pushResult{}, fmt.Errorf("checked match %q has no arm for %q", callee.Match.ID, argumentText)
 	}
@@ -567,7 +642,8 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 	}
 	f.returnTarget = operation.TargetID
 	f.hasCaller = true
-	return pushResult{frame: &f}, nil
+	caller.configureChild(&f, operation)
+	return pushResult{frame: &f, calleeID: callee.ID}, nil
 }
 
 // argumentIsCopyable reports whether operation's own SourceID place carries
@@ -620,22 +696,22 @@ func currentOperationIDs(f *frame) []string {
 // OpDefect terminator produces, attributed to the frame's OWN function ID
 // (D-10-32) -- never a depth value, so a callee's events are distinguished
 // from its caller's by identity alone, invariant under inlining.
-func terminalOutcome(function core.Function, operation core.LinearOperation, value string) (Outcome, Event) {
+func terminalOutcome(f *frame, operation core.LinearOperation, value string) (Outcome, Event) {
 	switch operation.Kind {
 	case core.OpFail:
 		return Outcome{Kind: "typed_failure", Value: value}, Event{
-			Schema: execution.Schema1, ID: operation.ID + ":event:failed", Kind: "function.failed",
-			FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
+			Schema: f.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
+			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 		}
 	case core.OpDefect:
 		return Outcome{Kind: execution.OutcomeDefect, Value: ""}, Event{
-			Schema: execution.Schema1, ID: operation.ID + ":event:defected", Kind: "function.defected",
-			FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
+			Schema: f.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
+			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
 		}
 	default: // core.OpReturn
 		return Outcome{Kind: "returned", Value: value}, Event{
-			Schema: execution.Schema1, ID: operation.ID + ":event:returned", Kind: "function.returned",
-			FunctionID: function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
+			Schema: f.eventSchema(), ID: operation.ID + ":event:returned", Kind: "function.returned",
+			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 		}
 	}
 }
@@ -691,20 +767,20 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 		switch operation.Kind {
 		case core.OpCopy:
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top.function, operation, "value.copied"))
+			events = append(events, ownedEvent(top, operation, "value.copied"))
 			top.idx++
 		case core.OpMove:
 			delete(top.values, operation.SourceID)
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top.function, operation, "value.transferred"))
+			events = append(events, ownedEvent(top, operation, "value.transferred"))
 			top.idx++
 		case core.OpBorrowShared:
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top.function, operation, "value.borrowed"))
+			events = append(events, ownedEvent(top, operation, "value.borrowed"))
 			top.idx++
 		case core.OpBorrowExclusive:
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top.function, operation, "value.borrowed_exclusive"))
+			events = append(events, ownedEvent(top, operation, "value.borrowed_exclusive"))
 			top.idx++
 		case core.OpConstructPayload:
 			// D-12-05/D-12-14: builds a NEW tagged value from the source
@@ -733,7 +809,7 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, altErr)
 			}
 			top.values[operation.TargetID] = value{tag: altName, payload: sourceValue.payload}
-			events = append(events, ownedEvent(top.function, operation, "value.payload_constructed"))
+			events = append(events, ownedEvent(top, operation, "value.payload_constructed"))
 			top.idx++
 		case core.OpDestructurePayload:
 			// D-12-05/D-12-14: extracts the source's own payload content
@@ -743,19 +819,19 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			delete(top.values, operation.SourceID)
 			top.values[operation.PayloadTargetID] = value{tag: "", payload: sourceValue.payload}
 			events = append(events, Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "value.payload_destructured", FunctionID: top.function.ID,
+				Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "value.payload_destructured", FunctionID: top.function.ID, Invocation: top.invocation,
 				SourcePlace: operation.SourceID, TargetPlace: operation.PayloadTargetID, TypeID: operation.TypeID,
 			})
 			top.idx++
 		case core.OpRelease:
 			top.live[operation.ReleasesOperationID] = false
-			events = append(events, ownedEvent(top.function, operation, "resource.released"))
+			events = append(events, ownedEvent(top, operation, "resource.released"))
 			top.idx++
 		case core.OpForeignCall:
 			top.nonlocalExitCalls++
 			if top.nonlocalExitPolicy && top.nonlocalExitCalls == 2 {
 				events = append(events, Event{
-					Schema: execution.Schema1, ID: top.function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: top.function.ID,
+					Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: top.function.ID, Invocation: top.invocation,
 				})
 				// D-10-33: drain EVERY live frame on the stack, not only
 				// top -- this landing pad is one of the two constructs
@@ -763,15 +839,15 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				leakEvents, liveResources := drainStackForAbruptExit(stack)
 				events = append(events, leakEvents...)
 				events = append(events, Event{
-					Schema: execution.Schema1, ID: top.function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: top.function.ID,
+					Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: top.function.ID, Invocation: top.invocation,
 					SourcePlace: top.function.Parameter.ID, TypeID: top.placeTypes[top.function.Parameter.ID], Output: nonlocalExitDefectReason,
 				})
-				return Execution{Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResources}, nil
+				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResources}, nil
 			}
 			top.values[operation.TargetID] = sourceValue
 			top.values[operation.ErrTargetID] = value{tag: "", payload: "err"}
 			events = append(events, Event{
-				Schema: execution.Schema1, ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID,
+				Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
 				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
 			})
 			if top.tracked[operation.ID] && !top.live[operation.ID] {
@@ -794,6 +870,9 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				// Immediate arm resolution (a bare match arm): nothing to
 				// push, no callee frame ever ran -- bind directly into the
 				// caller's own TargetID place.
+				if top.eventSchema() == execution.Schema2 {
+					events = append(events, calledEvent(top, operation, result.calleeID))
+				}
 				events = append(events, result.immediateEvent)
 				top.values[operation.TargetID] = value{tag: "", payload: result.immediateValue}
 				continue
@@ -814,17 +893,20 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				leakEvents, liveResources := drainStackForAbruptExit(stack)
 				events = append(events, leakEvents...)
 				event := Event{
-					Schema: execution.Schema1, ID: operation.ID + ":event:call_depth_exceeded", Kind: "function.defected",
-					FunctionID: top.function.ID, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: callDepthExceededDefectReason,
+					Schema: top.eventSchema(), ID: operation.ID + ":event:call_depth_exceeded", Kind: "function.defected",
+					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: callDepthExceededDefectReason,
 				}
 				return Execution{
-					Schema: execution.Schema1, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
+					Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
 					Events: append(events, event), LiveResources: liveResources,
 				}, nil
 			}
+			if top.eventSchema() == execution.Schema2 {
+				events = append(events, calledEvent(top, operation, result.calleeID))
+			}
 			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:
-			outcome, event := terminalOutcome(top.function, operation, sourceValue.String())
+			outcome, event := terminalOutcome(top, operation, sourceValue.String())
 			events = append(events, event)
 			if operation.Kind == core.OpReturn && top.hasCaller {
 				returnTarget, returnValue := top.returnTarget, outcome.Value
@@ -836,16 +918,24 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			if top.blocks != nil && !top.singleBlockOnly {
 				liveResources = liveResourceList(top.live, top.liveOrder)
 			}
-			return Execution{Schema: execution.Schema1, Outcome: outcome, Events: events, LiveResources: liveResources}, nil
+			return Execution{Schema: top.eventSchema(), Outcome: outcome, Events: events, LiveResources: liveResources}, nil
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
 	}
 }
 
-func ownedEvent(function core.Function, operation core.LinearOperation, kind string) Event {
+func ownedEvent(f *frame, operation core.LinearOperation, kind string) Event {
 	return Event{
-		Schema: execution.Schema1, ID: operation.ID + ":event", Kind: kind, FunctionID: function.ID,
+		Schema: f.eventSchema(), ID: operation.ID + ":event", Kind: kind, FunctionID: f.function.ID, Invocation: f.invocation,
+		SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+	}
+}
+
+func calledEvent(f *frame, operation core.LinearOperation, calleeID string) Event {
+	return Event{
+		Schema: f.eventSchema(), ID: operation.ID + ":event:called", Kind: "function.called",
+		FunctionID: f.function.ID, Invocation: f.invocation, CalleeFunctionID: calleeID,
 		SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
 	}
 }

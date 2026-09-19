@@ -266,6 +266,211 @@ func TestCallExecutesAcrossOneFrame(t *testing.T) {
 	}
 }
 
+// TestInvocationThreadsThroughAllEventPaths is the /2 producer contract:
+// every event emitted by a multi-function activation carries the activation's
+// canonical occurrence path, including abrupt terminal paths.  The diamond
+// adds the important shared-leaf case where static event IDs repeat but their
+// invocation-qualified identities do not.
+func TestInvocationThreadsThroughAllEventPaths(t *testing.T) {
+	for _, entry := range interpOracleCorpus(t) {
+		entry := entry
+		t.Run(entry.name, func(t *testing.T) {
+			result, err := entry.run(t)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Schema != execution.Schema2 {
+				return // single-function producers deliberately remain legacy.
+			}
+			for index, event := range result.Events {
+				if event.Schema != execution.Schema2 {
+					t.Fatalf("event[%d] schema = %q, want /2", index, event.Schema)
+				}
+				if _, err := execution.ParseInvocation(event.Invocation); err != nil {
+					t.Fatalf("event[%d] invocation %q is not canonical: %v", index, event.Invocation, err)
+				}
+			}
+		})
+	}
+
+	program := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.lang")
+	result, err := Run(program, "main", "7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Schema != execution.Schema2 {
+		t.Fatalf("diamond schema = %q, want %q", result.Schema, execution.Schema2)
+	}
+	seen := map[string]bool{}
+	leafInvocations := map[string]bool{}
+	for _, event := range result.Events {
+		if event.Schema != execution.Schema2 || event.Invocation == "" {
+			t.Fatalf("/2 event lacks /2 identity: %+v", event)
+		}
+		key := event.Invocation + "\x00" + event.ID
+		if seen[key] {
+			t.Fatalf("duplicate /2 event identity %q", key)
+		}
+		seen[key] = true
+		if strings.Contains(event.FunctionID, ":fn:leaf") && event.Kind == "function.returned" {
+			leafInvocations[event.Invocation] = true
+		}
+	}
+	if len(leafInvocations) != 2 {
+		t.Fatalf("shared leaf ran under %d invocation(s), want 2: %+v", len(leafInvocations), result.Events)
+	}
+}
+
+// TestExecutionSchemaSelectionPreservesLegacy freezes the producer boundary:
+// adding /2 must not alter the canonical bytes of a single-function /1 run.
+func TestExecutionSchemaSelectionPreservesLegacy(t *testing.T) {
+	program := checkedProgramFromFixture(t, "phase4", "defect_terminal.lang")
+	result, err := Run(program, "triage", "Go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Schema != execution.Schema1 {
+		t.Fatalf("single-function schema = %q, want %q", result.Schema, execution.Schema1)
+	}
+	got, err := CanonicalBytes(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(filepath.Join(oracleGoldenDir(), "single_frame_return.golden.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("legacy /1 canonical bytes moved\n got: %s\nwant: %s", got, want)
+	}
+}
+
+func functionCalledEvents(events []Event) []Event {
+	called := []Event{}
+	for _, event := range events {
+		if event.Kind == "function.called" {
+			called = append(called, event)
+		}
+	}
+	return called
+}
+
+// TestFunctionCalledPreorderAndOwnership makes caller-to-callee causality a
+// first-class /2 observation. The diamond also proves that a caller resumes
+// only after the complete child subsequence.
+func TestFunctionCalledPreorderAndOwnership(t *testing.T) {
+	program := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.lang")
+	result, err := Run(program, "main", "7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	called := functionCalledEvents(result.Events)
+	if len(called) != 4 {
+		t.Fatalf("function.called projection has %d events, want 4: %+v", len(called), called)
+	}
+	for _, event := range called {
+		if event.Schema != execution.Schema2 || event.Invocation == "" || event.CalleeFunctionID == "" {
+			t.Fatalf("called event lacks /2 caller/callee identity: %+v", event)
+		}
+		if event.ID != strings.TrimSuffix(event.ID, ":event:called")+":event:called" {
+			t.Fatalf("called event ID is not canonical: %+v", event)
+		}
+		childStart := indexOfInvocationEvent(result.Events, event.ID, event.Invocation)
+		if childStart < 0 {
+			t.Fatalf("called event disappeared from full sequence: %+v", event)
+		}
+		for next := childStart + 1; next < len(result.Events); next++ {
+			candidate := result.Events[next]
+			if candidate.FunctionID == event.CalleeFunctionID {
+				break
+			}
+			if candidate.Invocation == event.Invocation && candidate.FunctionID == event.FunctionID {
+				t.Fatalf("caller event resumed before callee subsequence for %+v; next caller event %+v", event, candidate)
+			}
+			if next == len(result.Events)-1 {
+				t.Fatalf("no callee event follows called edge %+v", event)
+			}
+		}
+	}
+}
+
+func indexOfInvocationEvent(events []Event, id, invocation string) int {
+	for index, event := range events {
+		if event.ID == id && event.Invocation == invocation {
+			return index
+		}
+	}
+	return -1
+}
+
+// TestFunctionCalledProjectionRemoval compares only causal edges: removing
+// left's reachable leaf call leaves left itself reachable, so the projection
+// must lose exactly that one caller-owned function.called record.
+func TestFunctionCalledProjectionRemoval(t *testing.T) {
+	full := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.lang")
+	fullResult, err := Run(full, "main", "7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fullCalled := functionCalledEvents(fullResult.Events)
+
+	sourcePath := filepath.Join(interpProjectRoot(), "testdata", "phase11", "multi_function_diamond_call.lang")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withoutLeafCall := strings.Replace(string(source), "  let result = leaf(value)\n  result", "  value", 1)
+	parsed := syntax.Parse([]byte(withoutLeafCall))
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse removal control: %v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check removal control: %v", checked.Diagnostics)
+	}
+	reduced, err := Run(checked.Program, "main", "7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	reducedCalled := functionCalledEvents(reduced.Events)
+	if got, want := len(fullCalled)-len(reducedCalled), 1; got != want {
+		t.Fatalf("function.called projection loss = %d, want %d; full=%+v reduced=%+v", got, want, fullCalled, reducedCalled)
+	}
+}
+
+// TestRejectedCallEmitsNoCalledEdge covers both admissions that do not become
+// successful calls: unresolved callees fail before an execution exists, and
+// a depth refusal returns only events from already-admitted ancestors.
+func TestRejectedCallEmitsNoCalledEdge(t *testing.T) {
+	t.Run("unresolved", func(t *testing.T) {
+		program, caller := moveAsCopyProbeProgram()
+		caller.Linear.Operations[0].CalleeID = "missing:callee"
+		program.Functions[1] = caller
+		base := newFlatFrame(caller, map[string]value{caller.Parameter.ID: {payload: "V"}})
+		if _, err := runProgramFrameStack(program, base); err == nil {
+			t.Fatal("unresolved call unexpectedly executed")
+		}
+	})
+	t.Run("depth", func(t *testing.T) {
+		program := generateAndCheckCallDepthChain(t, 3)
+		previous := maxCallDepthOverride
+		maxCallDepthOverride = func() int { return 2 }
+		defer func() { maxCallDepthOverride = previous }()
+		result, err := Run(program, "link0", "7")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, event := range functionCalledEvents(result.Events) {
+			if strings.Contains(event.ID, "link1") {
+				t.Fatalf("depth-rejected call emitted a called edge: %+v", event)
+			}
+		}
+		if got := len(functionCalledEvents(result.Events)); got != 1 {
+			t.Fatalf("depth refusal admitted %d called edges, want only the first successful call", got)
+		}
+	})
+}
+
 // forbiddenOwnershipAccessors is corevalidate.Result's own ownership-bearing
 // accessor set (D-10-36/D-10-37): PeerSignatures and PeerSiteCoverage both
 // expose the summary peer's own call-site derivation contract. Validate,
@@ -549,7 +754,7 @@ const (
 	probeReducedCallDepthCap  = 8
 	probeCallDepthMultiplier  = 100
 	probeChainDepth           = probeReducedCallDepthCap * probeCallDepthMultiplier // 800, held well under maxFunctions=1024
-	probeMaxStackBytes        = 1 << 20                                            // 1 MiB: a deliberately small, pinned host ceiling
+	probeMaxStackBytes        = 1 << 20                                             // 1 MiB: a deliberately small, pinned host ceiling
 	probeSubprocessTimeout    = 30 * time.Second
 	probeChildEnv             = "LANG_INTERP_CALL_DEPTH_PROBE_CHILD"
 	probeArmEnv               = "LANG_INTERP_CALL_DEPTH_PROBE_ARM"
