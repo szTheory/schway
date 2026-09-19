@@ -83,6 +83,10 @@ updated: "2026-09-19T01:30:00-04:00"
   checked: "Final automated acceptance gate"
   found: "go build ./..., go vet ./..., and go test ./... -count=1 all exited zero. The session package passed in 253.106s, including the original LTO witness and verification-groundedness law."
   implication: "Under the user's explicit no-human-UAT policy, automated acceptance confirms the fix end to end and the session may be resolved."
+- timestamp: "2026-09-19T01:35:00-04:00"
+  checked: "Semantic debug recall/capture availability"
+  found: "Project configuration has mempalace.enabled=false and no MemPalace tool is available; the durable knowledge-base entry was written successfully."
+  implication: "Semantic indexing is skipped by protocol; .planning/debug/knowledge-base.md remains the durable fallback."
 
 ## Eliminated
 
