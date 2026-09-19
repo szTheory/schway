@@ -237,7 +237,8 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 		runStarted := time.Now()
 		runCtx, runCancel := context.WithTimeout(parent, r.Timeout)
 		runCommand := r.commandContext(runCtx, binaryPath, input)
-		var runStdout, runStderr boundedWriter
+		runStdout := boundedWriter{limit: execution.MaxDocumentBytes}
+		var runStderr boundedWriter
 		runCommand.Stdout = &runStdout
 		runCommand.Stderr = &runStderr
 		runErr := runCommand.Run()
@@ -248,7 +249,7 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 			return Result{}, &ToolError{Code: "native.timeout", Err: runCtx.Err()}
 		}
 		if runStdout.overflowed() {
-			return Result{}, streamError("native.run_stdout_truncated")
+			return Result{}, executionStreamError("native.run_stdout_truncated")
 		}
 		if runStderr.overflowed() {
 			return Result{}, streamError("native.run_stderr_truncated")
@@ -392,11 +393,19 @@ func (r Runner) commandContext(ctx context.Context, name string, arguments ...st
 type boundedWriter struct {
 	buffer bytes.Buffer
 	total  int
+	limit  int
+}
+
+func (w *boundedWriter) byteLimit() int {
+	if w.limit > 0 {
+		return w.limit
+	}
+	return MaxStreamBytes
 }
 
 func (w *boundedWriter) Write(data []byte) (int, error) {
 	w.total += len(data)
-	remaining := MaxStreamBytes + 1 - w.buffer.Len()
+	remaining := w.byteLimit() + 1 - w.buffer.Len()
 	if remaining > 0 {
 		if remaining > len(data) {
 			remaining = len(data)
@@ -407,10 +416,14 @@ func (w *boundedWriter) Write(data []byte) (int, error) {
 }
 
 func (w *boundedWriter) bytes() []byte    { return w.buffer.Bytes() }
-func (w *boundedWriter) overflowed() bool { return w.total > MaxStreamBytes }
+func (w *boundedWriter) overflowed() bool { return w.total > w.byteLimit() }
 
 func streamError(code string) error {
 	return &ToolError{Code: code, Err: fmt.Errorf("process stream exceeded %d bytes", MaxStreamBytes)}
+}
+
+func executionStreamError(code string) error {
+	return &ToolError{Code: code, Err: fmt.Errorf("execution document exceeded %d bytes", execution.MaxDocumentBytes)}
 }
 
 func withStderr(err error, stderr []byte) error {
@@ -421,8 +434,8 @@ func withStderr(err error, stderr []byte) error {
 }
 
 func decodeExecution(stdout []byte, expect TerminalOutcome) (execution.Execution, error) {
-	if len(stdout) > MaxStreamBytes {
-		return execution.Execution{}, streamError("native.run_stdout_truncated")
+	if len(stdout) > execution.MaxDocumentBytes {
+		return execution.Execution{}, executionStreamError("native.run_stdout_truncated")
 	}
 	if err := rejectDuplicateJSONKeys(stdout); err != nil {
 		if isUnterminatedJSON(err) {

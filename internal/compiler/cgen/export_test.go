@@ -84,6 +84,37 @@ func InvocationPathNodeCountForTest(program core.Program) (int, error) {
 	return len(nodes), err
 }
 
+// ExecutionOutputSizeForTest exposes the production preflight estimator so
+// boundary tests can derive N-1/N limits without copying its arithmetic.
+func ExecutionOutputSizeForTest(program core.Program) (int, error) {
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return 0, err
+	}
+	nodes, err := preflightInvocationPathTable(program, entry)
+	if err != nil {
+		return 0, err
+	}
+	paths, err := buildInvocationPathTable(entry.ID, nodes)
+	if err != nil {
+		return 0, err
+	}
+	byID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		byID[function.ID] = function
+	}
+	return schema2ExecutionDocumentSize(entry, nodes, paths, byID)
+}
+
+// SetExecutionOutputLimitForTest installs a boundary-only limit and resets the
+// serialization observation, proving refusal occurs before C output begins.
+func SetExecutionOutputLimitForTest(limit int) (restore func()) {
+	previous := executionOutputLimit
+	executionOutputLimit = limit
+	invocationSerializationReachedForTest = false
+	return func() { executionOutputLimit = previous }
+}
+
 // EmitProgramForTest exposes the whole-program assembler without the public
 // EmitNative corevalidation wrapper so ordering controls can feed malformed
 // graph/entry artifacts directly to its first two validation gates.

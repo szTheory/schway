@@ -785,7 +785,7 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		// TestTerminalRecordAbsenceIsHardFailure/TestTruncationAndAbsenceReportDistinctCodes.
 		{name: "malformed", data: []byte(`{"schema":`), code: "native.terminal_record_absent"},
 		{name: "truncated", data: append([]byte{}, valid[:len(valid)-1]...), code: "native.terminal_record_absent"},
-		{name: "oversized", data: append(append([]byte{}, valid...), []byte(strings.Repeat(" ", MaxStreamBytes))...), code: "native.run_stdout_truncated"},
+		{name: "oversized", data: append(append([]byte{}, valid...), []byte(strings.Repeat(" ", execution.MaxDocumentBytes))...), code: "native.run_stdout_truncated"},
 		{name: "duplicate key", data: []byte(`{"schema":"lang.execution/1","schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
 		{name: "unknown schema", data: []byte(`{"schema":"lang.execution/9","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
 		{name: "unknown outcome", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"mystery","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
@@ -821,6 +821,9 @@ func TestNativeHelperProcess(t *testing.T) {
 	}
 	mode, stage := os.Args[len(os.Args)-2], os.Args[len(os.Args)-1]
 	flood := strings.Repeat("x", MaxStreamBytes+2)
+	if mode == "run-stdout-flood" {
+		flood = strings.Repeat("x", execution.MaxDocumentBytes+2)
+	}
 	if stage == "compile" {
 		switch mode {
 		case "compile-stdout-flood":
@@ -1046,7 +1049,7 @@ func TestTerminalRecordAbsenceIsHardFailure(t *testing.T) {
 // the process died before a terminal record was written reports the
 // distinct native.terminal_record_absent -- never the same code.
 func TestTruncationAndAbsenceReportDistinctCodes(t *testing.T) {
-	_, truncErr := decodeExecution(bytes.Repeat([]byte("x"), MaxStreamBytes+2), ExpectValue)
+	_, truncErr := decodeExecution(bytes.Repeat([]byte("x"), execution.MaxDocumentBytes+2), ExpectValue)
 	var truncToolError *ToolError
 	if !errors.As(truncErr, &truncToolError) || truncToolError.Code != "native.run_stdout_truncated" {
 		t.Fatalf("truncation code=%v want=native.run_stdout_truncated err=%v", truncToolError, truncErr)

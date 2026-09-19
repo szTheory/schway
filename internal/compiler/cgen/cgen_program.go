@@ -1,6 +1,7 @@
 package cgen
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -15,6 +16,27 @@ import (
 // static activation occurrences in a native program. It is not a byte-size
 // budget and is intentionally independent of pathoracle.MaxPaths.
 const maxInvocationPathTableNodes = 4096
+
+var executionOutputLimit = execution.MaxDocumentBytes
+
+type executionOutputExceededError struct {
+	limit, observed int
+}
+
+func (e *executionOutputExceededError) Error() string {
+	return fmt.Sprintf("cgen.execution_output_exceeded: limit %d observed %d", e.limit, e.observed)
+}
+
+func (e *executionOutputExceededError) Code() string  { return "cgen.execution_output_exceeded" }
+func (e *executionOutputExceededError) Limit() int    { return e.limit }
+func (e *executionOutputExceededError) Observed() int { return e.observed }
+
+// ExecutionOutputExceededError recognizes the stable schema-2 byte-bound
+// refusal without exposing its representation for mutation.
+func ExecutionOutputExceededError(err error) (*executionOutputExceededError, bool) {
+	e, ok := err.(*executionOutputExceededError)
+	return e, ok
+}
 
 // invocationPreflightBypassForTest is a narrowly-scoped mutation seam. It is
 // false in every production build; the test-only accessor proves that omitting
@@ -65,6 +87,75 @@ type invocationPreflightNode struct {
 	parentIndex                int
 }
 
+// invocationEventCapacity derives the shared event-array size from activation
+// occurrences, not unique function declarations. Every supported whole-program
+// body is straight-line and records exactly one event per operation, so this is
+// the exact runtime capacity required by the already-bounded unfolding.
+func invocationEventCapacity(nodes []invocationPreflightNode, byID map[string]core.Function) (int, error) {
+	capacity := 0
+	for index, node := range nodes {
+		function, ok := byID[node.functionID]
+		if !ok {
+			return 0, fmt.Errorf("event-capacity node %d names unknown function %q", index, node.functionID)
+		}
+		if function.Linear == nil {
+			return 0, fmt.Errorf("function %q: has no linear body", function.ID)
+		}
+		capacity += len(function.Linear.Operations)
+	}
+	return capacity, nil
+}
+
+// schema2ExecutionDocumentSize calculates the exact canonical byte count of
+// the straight-line document represented by the bounded occurrence table. The
+// event order does not affect JSON length; field presence and spellings mirror
+// emitProgramFunction and emitEventSupportSchema2.
+func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflightNode, paths invocationPathTable, byID map[string]core.Function) (int, error) {
+	events := make([]execution.Event, 0)
+	for index, node := range nodes {
+		function, ok := byID[node.functionID]
+		if !ok || function.Linear == nil {
+			return 0, fmt.Errorf("execution-size node %d names invalid function %q", index, node.functionID)
+		}
+		for _, operation := range function.Linear.Operations {
+			event := execution.Event{
+				Schema: execution.Schema2, FunctionID: function.ID, Invocation: paths.invocations[index],
+				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+			}
+			switch operation.Kind {
+			case core.OpCopy:
+				event.ID, event.Kind = operation.ID+":event", "value.copied"
+			case core.OpMove:
+				event.ID, event.Kind = operation.ID+":event", "value.transferred"
+			case core.OpBorrowShared:
+				event.ID, event.Kind = operation.ID+":event", "value.borrowed"
+			case core.OpBorrowExclusive:
+				event.ID, event.Kind = operation.ID+":event", "value.borrowed_exclusive"
+			case core.OpCall:
+				event.ID, event.Kind, event.CalleeFunctionID = operation.ID+":event:called", "function.called", operation.CalleeID
+			case core.OpReturn:
+				event.ID, event.Kind, event.TargetPlace = operation.ID+":event:returned", "function.returned", ""
+			default:
+				return 0, fmt.Errorf("operation %q has unsupported schema-2 output kind %q", operation.ID, operation.Kind)
+			}
+			events = append(events, event)
+		}
+	}
+	outcomeValue, _, _, err := linearInput(entry)
+	if err != nil {
+		return 0, err
+	}
+	document := execution.Execution{
+		Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeReturned, Value: outcomeValue},
+		Events: events, LiveResources: []string{},
+	}
+	encoded, err := json.Marshal(document)
+	if err != nil {
+		return 0, fmt.Errorf("size schema-2 execution document: %w", err)
+	}
+	return len(encoded) + 1, nil // generated stdout terminates the document with '\n'
+}
+
 // preflightInvocationPathTable unfolds the validated call DAG in the same
 // depth-first, declared-operation order native execution uses. It records only
 // bounded occurrence ancestry for the later path-table emitter; crucially it
@@ -75,7 +166,6 @@ func preflightInvocationPathTable(program core.Program, entry core.Function) ([]
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
-
 	nodes := []invocationPreflightNode{{functionID: entry.ID, parentIndex: -1}}
 	for index := 0; index < len(nodes); index++ {
 		function, ok := byID[nodes[index].functionID]
@@ -346,6 +436,17 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
+	eventCapacity, err := invocationEventCapacity(preflightNodes, byID)
+	if err != nil {
+		return "", err
+	}
+	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID)
+	if err != nil {
+		return "", err
+	}
+	if executionBytes > executionOutputLimit {
+		return "", &executionOutputExceededError{limit: executionOutputLimit, observed: executionBytes}
+	}
 
 	functions := make([]core.Function, 0, len(order))
 	for _, id := range order {
@@ -406,8 +507,6 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	needsBuffer := false
 	needsByte := false
 	needsDefect := false
-	totalOperations := 0
-	callOperations := 0
 	for _, function := range functions {
 		switch function.Parameter.Type {
 		case "Buffer":
@@ -417,12 +516,6 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		}
 		if functionHasDefect(function) {
 			needsDefect = true
-		}
-		totalOperations += len(function.Linear.Operations)
-		for _, operation := range function.Linear.Operations {
-			if operation.Kind == core.OpCall {
-				callOperations++
-			}
 		}
 	}
 
@@ -436,7 +529,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if needsBuffer {
 		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
 	}
-	emitEventSupportSchema2(&out, totalOperations+callOperations)
+	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit)
 	if needsDefect {
 		emitDefectSupport(&out)
 	}

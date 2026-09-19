@@ -11,6 +11,11 @@ const (
 	Schema2 = "lang.execution/2"
 )
 
+// MaxDocumentBytes is the native execution-document capture ceiling. Schema-2
+// emission preflights against the same contract; compile diagnostics and
+// stderr retain their smaller process-stream bounds.
+const MaxDocumentBytes = 16 * 1024 * 1024
+
 // Terminal outcome kinds (D-04-08): a closed named set carried as its own
 // axis, separate from the returned value. OutcomeCancelled is reserved but
 // deliberately unconstructible this phase -- async/cancellation is

@@ -12,6 +12,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -80,6 +81,82 @@ func TestInvocationPathTableDeepDiamondMeasures61(t *testing.T) {
 	}
 	if _, err := cgen.EmitNative(program); err != nil {
 		t.Fatalf("EmitNative after 61-node preflight: %v", err)
+	}
+}
+
+// TestDeepDiamondExecutesAcrossNativeOptimizationTiers is the runtime
+// counterpart to the compile-only 61-occurrence preflight assertion above.
+// Its oracle is derived from the interpreter: every native tier must retain
+// the full occurrence-weighted event stream, not merely avoid crashing.
+func TestDeepDiamondExecutesAcrossNativeOptimizationTiers(t *testing.T) {
+	program := checkedPhase07Program(t, "deep_diamond_acyclic.lang")
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := interp.Run(program, entry.Name, "7")
+	if err != nil {
+		t.Fatalf("interp.Run: %v", err)
+	}
+	generated, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	if wantCapacity := fmt.Sprintf("#define LANG_EVENT_CAPACITY %du", len(want.Events)); !strings.Contains(generated, wantCapacity) {
+		t.Fatalf("generated capacity is not occurrence-weighted; want %q", wantCapacity)
+	}
+	wantBytes, err := cgen.ExecutionOutputSizeForTest(program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, optimization := range []string{"-O0", "-O3"} {
+		t.Run(optimization, func(t *testing.T) {
+			got, runErr := native.DefaultRunner().Run(context.Background(), generated, optimization, []string{"7"})
+			if runErr != nil || len(got.Pairs) != 1 {
+				t.Fatalf("native run: pairs=%d err=%v", len(got.Pairs), runErr)
+			}
+			if !execution.Equal(want, got.Pairs[0].Execution) {
+				t.Fatalf("native evidence differs from interpreter: want %d events, got %d", len(want.Events), len(got.Pairs[0].Execution.Events))
+			}
+			if got.OutputBytes != wantBytes {
+				t.Fatalf("native output bytes=%d, preflight estimate=%d", got.OutputBytes, wantBytes)
+			}
+		})
+	}
+}
+
+// TestSchema2ExecutionOutputBoundIsPreflighted pins the separately diagnosed
+// byte contract at N-1/N. The fixture is intentionally larger than the legacy
+// generic process-stream cap, so acceptance cannot silently inherit 64 KiB.
+func TestSchema2ExecutionOutputBoundIsPreflighted(t *testing.T) {
+	program := checkedPhase07Program(t, "deep_diamond_acyclic.lang")
+	observed, err := cgen.ExecutionOutputSizeForTest(program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if observed <= native.MaxStreamBytes {
+		t.Fatalf("fixture size %d must exercise beyond legacy stream limit %d", observed, native.MaxStreamBytes)
+	}
+
+	restore := cgen.SetExecutionOutputLimitForTest(observed - 1)
+	_, err = cgen.EmitNative(program)
+	restore()
+	bound, ok := cgen.ExecutionOutputExceededError(err)
+	if !ok || bound.Code() != "cgen.execution_output_exceeded" || bound.Limit() != observed-1 || bound.Observed() != observed {
+		t.Fatalf("want exact output-bound refusal at N-1, got %v", err)
+	}
+	if cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("output-bound refusal reached C serialization")
+	}
+
+	restore = cgen.SetExecutionOutputLimitForTest(observed)
+	generated, err := cgen.EmitNative(program)
+	restore()
+	if err != nil {
+		t.Fatalf("exact-bound document refused: %v", err)
+	}
+	if !strings.Contains(generated, fmt.Sprintf("#define LANG_OUTPUT_LIMIT %du", observed)) {
+		t.Fatalf("generated writer does not carry exact tested limit %d", observed)
 	}
 }
 
