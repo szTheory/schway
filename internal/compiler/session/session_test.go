@@ -4310,3 +4310,96 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 		t.Logf("%d live R1/R2/R3 findings, %d reconciliation entries", liveFindings, len(entrySet))
 	})
 }
+
+// TestPhase16EmitterCutsAreAmendedAndOwned is the anti-decay control for
+// NAT-09/D-10-60. It deliberately uses parseDebtRegisterTable, the shared
+// debt-register parser, so this semantic law cannot grow a second Markdown
+// grammar that disagrees with TestDebtRegistersAreWellFormed.
+func TestPhase16EmitterCutsAreAmendedAndOwned(t *testing.T) {
+	requirementsPath := testsupport.ProjectPath(".planning", "REQUIREMENTS.md")
+	requirements, err := os.ReadFile(requirementsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registers, err := phaseArtifactGlob("16-branch-match-emitter-port", "PHASE-16-DEBT.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(registers) != 1 {
+		t.Fatalf("expected exactly one Phase 16 emitter debt register, found %d: %v", len(registers), registers)
+	}
+	debt, err := os.ReadFile(registers[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if problems := phase16EmitterCutProblems(string(requirements), string(debt)); len(problems) != 0 {
+		t.Fatalf("Phase 16 NAT-09 amendment/debt mismatch:\n%s", strings.Join(problems, "\n"))
+	}
+
+	// The control changes exactly one family spelling in an otherwise-real
+	// register. A passing control would prove this test only found a heading,
+	// not the required amendment-to-row bijection.
+	mutated := strings.Replace(string(debt), "emitLinearBorrowedByPointerPlain", "missingPointerFamily", 1)
+	if problems := phase16EmitterCutProblems(string(requirements), mutated); len(problems) == 0 {
+		t.Fatal("seeded missing pointer family passed the NAT-09 amendment/debt control")
+	}
+}
+
+func phase16EmitterCutProblems(requirements, debt string) []string {
+	const amendment = "### NAT-09 — Phase 16 D-10-60 amendment (2026-09-19)"
+	families := []struct{ id, name string }{
+		{"D-16-11", "emitLinearForeign"},
+		{"D-16-12", "emitLinearBorrowedByPointer"},
+		{"D-16-13", "emitLinearBorrowedByPointerPlain"},
+	}
+	var problems []string
+	if !strings.Contains(requirements, amendment) || !strings.Contains(requirements, "cut-m004") || !strings.Contains(requirements, "PHASE-16-DEBT.md") {
+		problems = append(problems, "NAT-09 lacks the dated Phase 16 D-10-60 cut-m004 amendment linked to PHASE-16-DEBT.md")
+	}
+	columns, rows, err := parseDebtRegisterTable("PHASE-16-DEBT.md", debt)
+	if err != nil {
+		return append(problems, err.Error())
+	}
+	if len(rows) != len(families) {
+		problems = append(problems, fmt.Sprintf("PHASE-16-DEBT.md has %d cut rows, want %d", len(rows), len(families)))
+	}
+	for _, column := range []string{"ID", "Item"} {
+		if _, ok := columns[column]; !ok {
+			return append(problems, fmt.Sprintf("PHASE-16-DEBT.md lacks %q column", column))
+		}
+	}
+	for _, family := range families {
+		if !strings.Contains(requirements, family.name) {
+			problems = append(problems, fmt.Sprintf("NAT-09 amendment omits %s", family.name))
+		}
+		found := false
+		for _, row := range rows {
+			if row[columns["ID"]] == family.id && strings.Contains(row[columns["Item"]], family.name) {
+				found = true
+			}
+		}
+		if !found {
+			problems = append(problems, fmt.Sprintf("debt register has no bijective %s row for %s", family.id, family.name))
+		}
+		section := phase16DebtDetail(debt, family.id)
+		for _, required := range []string{"M004 owner:", "Prerequisite:", "Reopening condition:", "Witness:", "`-flto` consequence:"} {
+			if !strings.Contains(section, required) {
+				problems = append(problems, fmt.Sprintf("%s detail omits %s", family.id, required))
+			}
+		}
+	}
+	return problems
+}
+
+func phase16DebtDetail(debt, id string) string {
+	anchor := "### " + id
+	start := strings.Index(debt, anchor)
+	if start == -1 {
+		return ""
+	}
+	rest := debt[start+len(anchor):]
+	if end := strings.Index(rest, "\n### "); end != -1 {
+		return rest[:end]
+	}
+	return rest
+}

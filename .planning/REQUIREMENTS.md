@@ -100,6 +100,19 @@ branched on and would have become the fifth instance.
       cut by a recorded amendment naming their landing milestone and the
       `-flto` consequence — not deferred a third time.
 
+### NAT-09 — Phase 16 D-10-60 amendment (2026-09-19)
+
+The recorded Plan 16-05 decision is `cut-m004`: Linux evidence is unavailable,
+so macOS-only results do not admit `emitLinearBorrowedByPointer`. The following
+three legacy emitter families are therefore cut from M003, not relabelled for a
+third deferral: `emitLinearForeign`, `emitLinearBorrowedByPointer`, and
+`emitLinearBorrowedByPointerPlain`. Their explicit M004 ownership, prerequisites,
+reopening conditions, witnesses, and one-translation-unit/`-flto` consequences
+are recorded bijectively in
+`.planning/phases/16-branch-match-emitter-port/PHASE-16-DEBT.md`. This amendment
+does not weaken NAT-09's normative text or claim that the probe makes LTO
+non-inert.
+
 - [x] **NAT-10**: A re-invoking multi-function fixture is compared across
       interpreter, `-O0`, `-O3`, and `-O3 -flto`.
 
