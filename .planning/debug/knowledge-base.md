@@ -23,3 +23,13 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Why not caught:** The 61-node test stopped at EmitNative and the 4,096-node test asserted admission only; neither executed native code or checked document bytes
 - **Recurrence guard:** Regression tests internal/compiler/cgen/cgen_program_test.go:TestDeepDiamondExecutesAcrossNativeOptimizationTiers and TestSchema2ExecutionOutputBoundIsPreflighted
 ---
+
+## phase15-lto-diagnostic-order — Schema-2 preflight masked the established unsupported-Match refusal
+- **Date:** 2026-09-19
+- **Error patterns:** unsupported linear C type "Switch", multi-function branch bodies, diagnostic precedence, TestLTOInertnessOnMultiFunctionEmission
+- **Root cause(s):** emitProgram performed schema-2 occurrence/output preflight before supported-body validation, allowing schema2ExecutionDocumentSize's linearInput call on a Match entry to mask the established multi-function branch-body refusal
+- **Fix:** Move ordered supported-shape validation ahead of the unchanged invocation-path, event-capacity, and exact output-size preflights; add a direct cgen diagnostic-precedence regression
+- **Files changed:** internal/compiler/cgen/cgen_program.go, internal/compiler/cgen/cgen_program_test.go, .planning/phases/15-event-identity-lang-execution-2/15-VERIFICATION.md
+- **Why not caught:** The native-capacity regression suite proved bounds for supported straight-line programs but had no unsupported-body diagnostic-precedence case
+- **Recurrence guard:** Regression test internal/compiler/cgen/cgen_program_test.go:TestUnsupportedProgramShapePrecedesSchema2Preflight, plus existing 4096/4097 occurrence and N-1/N output-bound controls
+---
