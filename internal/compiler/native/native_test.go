@@ -923,6 +923,46 @@ func TestValidateExecutionStillRejectsOldGrounds(t *testing.T) {
 	}
 }
 
+func TestValidateExecutionSchema2(t *testing.T) {
+	valid := execution.Execution{
+		Schema: execution.Schema2, Outcome: execution.Outcome{Kind: "returned", Value: "7"},
+		Events: []execution.Event{
+			{Schema: execution.Schema2, ID: "op:call:event:called", Kind: "function.called", FunctionID: "fn:entry", Invocation: "inv:entry:fn:entry", CalleeFunctionID: "fn:child", SourcePlace: "place:arg", TargetPlace: "place:result", TypeID: "type:Byte"},
+			{Schema: execution.Schema2, ID: "op:child:return:event", Kind: "function.returned", FunctionID: "fn:child", Invocation: "inv:entry:fn:entry/op:call#0", SourcePlace: "place:child", TypeID: "type:Byte"},
+			{Schema: execution.Schema2, ID: "op:entry:return:event", Kind: "function.returned", FunctionID: "fn:entry", Invocation: "inv:entry:fn:entry", SourcePlace: "place:result", TypeID: "type:Byte"},
+		}, LiveResources: []string{},
+	}
+	clone := func(value execution.Execution) execution.Execution {
+		value.Events = append([]execution.Event(nil), value.Events...)
+		return value
+	}
+	if err := validateExecution(valid, ExpectValue); err != nil {
+		t.Fatalf("manual /2 call document rejected: %v", err)
+	}
+	for _, test := range []struct {
+		name   string
+		mutate func(execution.Execution) execution.Execution
+	}{
+		{"missing invocation", func(v execution.Execution) execution.Execution { v.Events[0].Invocation = ""; return v }},
+		{"missing callee", func(v execution.Execution) execution.Execution { v.Events[0].CalleeFunctionID = ""; return v }},
+		{"extra callee", func(v execution.Execution) execution.Execution { v.Events[1].CalleeFunctionID = "fn:other"; return v }},
+		{"duplicate pair", func(v execution.Execution) execution.Execution { v.Events[2].ID = v.Events[0].ID; return v }},
+		{"unknown kind", func(v execution.Execution) execution.Execution { v.Events[1].Kind = "future.event"; return v }},
+		{"unknown schema", func(v execution.Execution) execution.Execution { v.Schema = "lang.execution/3"; return v }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := validateExecution(test.mutate(clone(valid)), ExpectValue); err == nil {
+				t.Fatal("invalid /2 document unexpectedly admitted")
+			}
+		})
+	}
+	duplicateAcrossInvocations := clone(valid)
+	duplicateAcrossInvocations.Events[1].ID = duplicateAcrossInvocations.Events[2].ID
+	if err := validateExecution(duplicateAcrossInvocations, ExpectValue); err != nil {
+		t.Fatalf("same ID in distinct invocations rejected: %v", err)
+	}
+}
+
 // TestValidateExecutionTypedFailureDiscriminates proves the new axis
 // discriminates in both directions rather than merely widening: a
 // typed_failure-expecting call accepts a typed_failure document and rejects

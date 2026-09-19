@@ -8,6 +8,7 @@ import (
 const (
 	Schema0 = "lang.execution/0"
 	Schema1 = "lang.execution/1"
+	Schema2 = "lang.execution/2"
 )
 
 // Terminal outcome kinds (D-04-08): a closed named set carried as its own
@@ -39,15 +40,17 @@ type Outcome struct {
 }
 
 type Event struct {
-	Schema      string `json:"schema"`
-	ID          string `json:"id"`
-	Kind        string `json:"kind"`
-	FunctionID  string `json:"function_id"`
-	Input       string `json:"input,omitempty"`
-	Output      string `json:"output,omitempty"`
-	SourcePlace string `json:"source_place,omitempty"`
-	TargetPlace string `json:"target_place,omitempty"`
-	TypeID      string `json:"type_id,omitempty"`
+	Schema           string `json:"schema"`
+	ID               string `json:"id"`
+	Kind             string `json:"kind"`
+	FunctionID       string `json:"function_id"`
+	Input            string `json:"input,omitempty"`
+	Output           string `json:"output,omitempty"`
+	SourcePlace      string `json:"source_place,omitempty"`
+	TargetPlace      string `json:"target_place,omitempty"`
+	TypeID           string `json:"type_id,omitempty"`
+	Invocation       string `json:"invocation,omitempty"`
+	CalleeFunctionID string `json:"callee_function_id,omitempty"`
 }
 
 type Execution struct {
