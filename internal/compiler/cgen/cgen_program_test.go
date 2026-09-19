@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/callgraph"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
@@ -140,6 +141,80 @@ func TestProgramBranchTracer(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestProgramMatchPayloadLowering drives the checked Phase 12 payload tracer
+// through the surviving program emitter. Both alternatives must retain their
+// construct/destructure events and receive the schema-2 invocation identity.
+func TestProgramMatchPayloadLowering(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("payload_tracer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	program := checked.Program
+	generated, err := cgen.EmitProgramForTest(program)
+	if err != nil {
+		t.Fatalf("direct emitProgram: %v", err)
+	}
+	invocation, err := execution.FormatInvocation(program.Functions[0].ID, nil)
+	if err != nil {
+		t.Fatalf("format entry invocation: %v", err)
+	}
+	for _, input := range []string{"Ok", "Err"} {
+		got, err := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{input})
+		if err != nil || len(got.Pairs) != 1 {
+			t.Fatalf("native run input %q: pairs=%d err=%v", input, len(got.Pairs), err)
+		}
+		want, err := interp.Run(program, "identity", input)
+		if err != nil {
+			t.Fatalf("interpreter input %q: %v", input, err)
+		}
+		want.Schema = execution.Schema2
+		for index := range want.Events {
+			want.Events[index].Schema = execution.Schema2
+			want.Events[index].Invocation = invocation
+		}
+		if !execution.Equal(want, got.Pairs[0].Execution) {
+			t.Fatalf("input %q differs from interpreter:\nwant: %+v\ngot:  %+v", input, want, got.Pairs[0].Execution)
+		}
+	}
+}
+
+// TestProgramMatchUsesCheckerLayout proves that the emitted tagged record is
+// a projection of check.PayloadRecordLayout rather than a local layout law.
+func TestProgramMatchUsesCheckerLayout(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("payload_tracer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitProgramForTest(checked.Program)
+	if err != nil {
+		t.Fatalf("direct emitProgram: %v", err)
+	}
+	var outcome core.DataType
+	for _, dataType := range checked.Program.DataTypes {
+		if dataType.Name == "Outcome" {
+			outcome = dataType
+			break
+		}
+	}
+	layout := check.PayloadRecordLayout(outcome)
+	for _, field := range layout.Fields {
+		if !strings.Contains(generated, field.CType+" "+field.Name+";") {
+			t.Fatalf("generated tagged record omits checker field %s %s:\n%s", field.CType, field.Name, generated)
+		}
+	}
+	if strings.Index(generated, layout.Fields[1].Name) > strings.Index(generated, layout.Fields[2].Name) {
+		t.Fatalf("generated tagged record does not preserve checker field order:\n%s", generated)
 	}
 }
 
