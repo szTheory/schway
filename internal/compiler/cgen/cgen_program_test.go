@@ -268,6 +268,94 @@ func TestInvocationTableEmissionIsDeterministic(t *testing.T) {
 	}
 }
 
+func TestProgramWritesExecutionSchema2(t *testing.T) {
+	generated, err := cgen.EmitNative(phase11CheckedProgram(t, "multi_function_entry_basic.lang"))
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	for _, want := range []string{"\"schema\":\"lang.execution/2\"", "\"invocation\":", "\"callee_function_id\":"} {
+		if !strings.Contains(generated, want) {
+			t.Fatalf("schema-2 generated C is missing %q:\n%s", want, generated)
+		}
+	}
+}
+
+func TestNativeFunctionCalledPreorder(t *testing.T) {
+	source := mustRead(t, "multi_function_diamond_call.lang")
+	interpreted, diags, err := session.RunInterpreter(source)
+	if err != nil || len(diags) != 0 || len(interpreted) != 1 {
+		t.Fatalf("RunInterpreter: executions=%d diagnostics=%v error=%v", len(interpreted), diags, err)
+	}
+	nativeResult, diags, err := session.RunNative(context.Background(), source, native.DefaultRunner())
+	if err != nil || len(diags) != 0 || len(nativeResult.O0.Pairs) != 1 {
+		t.Fatalf("RunNative: pairs=%d diagnostics=%v error=%v", len(nativeResult.O0.Pairs), diags, err)
+	}
+	got := nativeResult.O0.Pairs[0].Execution
+	if !execution.Equal(interpreted[0], got) {
+		t.Fatalf("native /2 evidence disagrees with interpreter:\nwant=%+v\ngot=%+v", interpreted[0], got)
+	}
+	called := 0
+	for index, event := range got.Events {
+		if event.Kind != "function.called" {
+			continue
+		}
+		called++
+		if event.Invocation == "" || event.CalleeFunctionID == "" {
+			t.Fatalf("call edge %d omits /2 ownership: %+v", index, event)
+		}
+		if index+1 >= len(got.Events) || got.Events[index+1].FunctionID != event.CalleeFunctionID {
+			t.Fatalf("call edge %d is not immediately before callee evidence: %+v", index, got.Events)
+		}
+	}
+	if called != 4 {
+		t.Fatalf("function.called edges = %d, want 4", called)
+	}
+}
+
+func TestNativeFunctionCalledProjectionRemoval(t *testing.T) {
+	withRight := mustRead(t, "multi_function_diamond_call.lang")
+	withoutRight := []byte(strings.Replace(string(withRight), "  let r2 = right(value)\n  r2\n", "  r1\n", 1))
+	run := func(source []byte) []execution.Event {
+		t.Helper()
+		result, diags, err := session.RunNative(context.Background(), source, native.DefaultRunner())
+		if err != nil || len(diags) != 0 || len(result.O0.Pairs) != 1 {
+			t.Fatalf("RunNative: pairs=%d diagnostics=%v error=%v", len(result.O0.Pairs), diags, err)
+		}
+		var edges []execution.Event
+		for _, event := range result.O0.Pairs[0].Execution.Events {
+			if event.Kind == "function.called" {
+				edges = append(edges, event)
+			}
+		}
+		return edges
+	}
+	if got, want := len(run(withRight))-len(run(withoutRight)), 1; got != want {
+		t.Fatalf("removing one source call changed call-edge projection by %d, want %d", got, want)
+	}
+}
+
+func TestLegacyEventWritersFrozen(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "generated.golden.c"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("Check: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.Emit(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if generated != string(golden) {
+		t.Fatal("legacy /0 event writer bytes changed")
+	}
+}
+
 // TestEmitProgramEndToEndAgreesWithInterpreterAtO0 drives
 // multi_function_entry_basic.lang through session's own run path on both
 // engines and asserts the two lang.execution/1 documents are equal --
