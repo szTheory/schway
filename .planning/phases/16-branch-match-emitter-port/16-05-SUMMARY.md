@@ -73,7 +73,7 @@ The human checkpoint resolution is `cut-m004`. `emitLinearBorrowedByPointer`, `e
 
 ## Task Commits
 
-1. **Task 1: Decide the bounded by-pointer disposition** — pending metadata commit (docs)
+1. **Task 1: Decide the bounded by-pointer disposition** — `446490c` (docs)
 
 ## Files Created/Modified
 
@@ -103,4 +103,5 @@ Later Phase 16 plans must carry the formal M004 debt disposition forward and mus
 ## Self-Check: PASSED
 
 - Found `.planning/phases/16-branch-match-emitter-port/16-05-SUMMARY.md`.
+- Found task commit `446490c` in git history.
 - Focused source-shape, refusal-matrix, and mutation-control verification passed; the explicit Linux test reported the expected `UNAVAILABLE` result.
