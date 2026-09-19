@@ -386,6 +386,22 @@ func TestProgramBranchValidationOrder(t *testing.T) {
 		t.Fatalf("branch fixture must check clean: %+v", checked.Diagnostics)
 	}
 
+	t.Run("graph_and_entry_precede_branch_inspection", func(t *testing.T) {
+		program := checked.Program
+		program.Functions = append([]core.Function(nil), checked.Program.Functions...)
+		program.Functions = append(program.Functions, core.Function{ID: "fn:second", Linear: &core.LinearBody{}})
+		_, err := cgen.EmitProgramForTest(program)
+		if err == nil {
+			t.Fatal("expected ambiguous entry refusal")
+		}
+		if _, ok := callgraph.EntryAmbiguousError(err); !ok {
+			t.Fatalf("entry validation did not precede branch inspection: %v", err)
+		}
+		if cgen.InvocationSerializationReachedForTest() {
+			t.Fatal("entry refusal reached C serialization")
+		}
+	})
+
 	t.Run("foreign_shape_precedes_preflight", func(t *testing.T) {
 		program := checked.Program
 		program.Functions = append([]core.Function(nil), checked.Program.Functions...)

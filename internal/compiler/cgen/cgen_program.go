@@ -448,6 +448,9 @@ func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeNa
 // single behavior emitLinear's own single-function path already has).
 func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	_ = executionJSON
+	// Every caller observes whether THIS attempt crossed into C
+	// serialization; ordered-refusal tests must not inherit a prior success.
+	invocationSerializationReachedForTest = false
 
 	order, err := callgraph.Order(program)
 	if err != nil {
@@ -476,6 +479,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		}
 		if function.Match == nil && len(function.Linear.Blocks) > 0 {
 			return "", fmt.Errorf("function %q: multi-function foreign-call bodies are not supported by native emission this phase", function.ID)
+		}
+		if len(program.Functions) == 1 && function.Match == nil && (selectsByPointerLowering(function, function.Linear) || selectsByPointerLoweringSharedOnly(function, function.Linear)) {
+			return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
 		}
 		if function.ForeignContract != nil {
 			return "", fmt.Errorf("function %q: multi-function foreign contracts are not supported by native emission this phase", function.ID)

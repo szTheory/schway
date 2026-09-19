@@ -61,9 +61,10 @@ func TestN1ConvergenceDifferential(t *testing.T) {
 		// this is the one shape where a byte-level comparison is even
 		// meaningful today.
 		{fixture: "testdata/phase2/owned_transfer.lang", legacyOK: true, programOK: true, identical: false},
-		// branch/match+linear: emitProgram refuses (same core.Match
-		// refusal as toggle.lang).
-		{fixture: "testdata/phase3/borrowed_view.lang", legacyOK: true, programOK: false},
+		// branch/match+linear: emitProgram now admits arm-local operations
+		// through the shared schema-2 event writer. The legacy /1 document
+		// still differs, so this remains a convergence characterization.
+		{fixture: "testdata/phase3/borrowed_view.lang", legacyOK: true, programOK: true, identical: false},
 		// foreign-call blocks: emitProgram refuses -- multi-function
 		// foreign-call bodies are not supported by native emission this
 		// phase.
