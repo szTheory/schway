@@ -218,6 +218,56 @@ func TestEmitProgram(t *testing.T) {
 	}
 }
 
+func TestProgramInvocationIndexThreading(t *testing.T) {
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	generated, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	for _, want := range []string{
+		"static unsigned char LANG_MAIN(unsigned char, unsigned int);",
+		"static unsigned char LANG_IDENTITY(unsigned char, unsigned int);",
+		"LANG_MAIN(lang_entry_input, 0u)",
+	} {
+		if !strings.Contains(generated, want) {
+			t.Fatalf("generated C is missing threaded invocation index %q:\n%s", want, generated)
+		}
+	}
+}
+
+func TestParentIndexedChildLookup(t *testing.T) {
+	program := phase11CheckedProgram(t, "multi_function_diamond_call.lang")
+	generated, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	if !strings.Contains(generated, "static const char *lang_invocations[]") {
+		t.Fatalf("generated C has no literal invocation table:\n%s", generated)
+	}
+	if !strings.Contains(generated, "inv:entry:fn:main/op:main:left#0/op:left:leaf#0") ||
+		!strings.Contains(generated, "inv:entry:fn:main/op:main:right#0/op:right:leaf#0") {
+		t.Fatalf("generated C does not retain distinct shared-leaf occurrences:\n%s", generated)
+	}
+	if !strings.Contains(generated, "lang_child_index_") {
+		t.Fatalf("generated C has no parent-indexed child lookup:\n%s", generated)
+	}
+}
+
+func TestInvocationTableEmissionIsDeterministic(t *testing.T) {
+	program := phase11CheckedProgram(t, "multi_function_diamond_call.lang")
+	first, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("first EmitNative: %v", err)
+	}
+	second, err := cgen.EmitNative(program)
+	if err != nil {
+		t.Fatalf("second EmitNative: %v", err)
+	}
+	if first != second {
+		t.Fatal("invocation table emission is not byte-identical")
+	}
+}
+
 // TestEmitProgramEndToEndAgreesWithInterpreterAtO0 drives
 // multi_function_entry_basic.lang through session's own run path on both
 // engines and asserts the two lang.execution/1 documents are equal --
