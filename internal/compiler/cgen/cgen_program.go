@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/codename-lang/lang/internal/compiler/callgraph"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 )
@@ -159,6 +160,10 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				event.ID, event.Kind, event.CalleeFunctionID = operation.ID+":event:called", "function.called", operation.CalleeID
 			case core.OpReturn:
 				event.ID, event.Kind, event.TargetPlace = operation.ID+":event:returned", "function.returned", ""
+			case core.OpDestructurePayload:
+				event.ID, event.Kind, event.TargetPlace = operation.ID+":event", "value.payload_destructured", operation.PayloadTargetID
+			case core.OpConstructPayload:
+				event.ID, event.Kind = operation.ID+":event", "value.payload_constructed"
 			default:
 				return 0, fmt.Errorf("operation %q has unsupported schema-2 output kind %q", operation.ID, operation.Kind)
 			}
@@ -474,9 +479,6 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		if function.Match == nil && function.Linear == nil {
 			return "", fmt.Errorf("function %q: has no linear body", function.ID)
 		}
-		if function.Match != nil && function.Linear == nil {
-			return "", fmt.Errorf("function %q: match-only bodies are not supported by whole-program native emission this phase", function.ID)
-		}
 		if function.Match == nil && len(function.Linear.Blocks) > 0 {
 			return "", fmt.Errorf("function %q: multi-function foreign-call bodies are not supported by native emission this phase", function.ID)
 		}
@@ -579,6 +581,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		if functionHasDefect(function) {
 			needsDefect = true
 		}
+		if branchType, ok := branchTypes[function.ID]; ok && branchType.hasPayload && branchType.hasCType("LANG_BUFFER") {
+			needsBuffer = true
+		}
 	}
 
 	invocationSerializationReachedForTest = true
@@ -588,13 +593,13 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	out.WriteString(emitCallBoundaryAttributeComment(functions))
 	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n")
 	emitInvocationPathTable(&out, paths, childTableNames)
+	if needsBuffer {
+		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
+	}
 	for _, function := range functions {
 		if branchType, ok := branchTypes[function.ID]; ok {
 			emitProgramBranchType(&out, branchType)
 		}
-	}
-	if needsBuffer {
-		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
 	}
 	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit)
 	if needsDefect {
@@ -685,7 +690,15 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 			if index > 0 {
 				prefix = "else if"
 			}
-			fmt.Fprintf(&out, "  %s (strcmp(argv[1], %s) == 0) lang_entry_input = %s;\n", prefix, strconv.Quote(alternative.source), alternative.cName)
+			if entryBranch.hasPayload {
+				if field, ok := entryBranch.fields[alternative.source]; ok && field.payloadType != "" {
+					fmt.Fprintf(&out, "  %s (strcmp(argv[1], %s) == 0) { lang_entry_input.tag = %s; lang_entry_input.%s = %s; }\n", prefix, strconv.Quote(alternative.source), alternative.cName, field.name, payloadCannedInitializer(field.payloadType))
+				} else {
+					fmt.Fprintf(&out, "  %s (strcmp(argv[1], %s) == 0) { lang_entry_input.tag = %s; }\n", prefix, strconv.Quote(alternative.source), alternative.cName)
+				}
+			} else {
+				fmt.Fprintf(&out, "  %s (strcmp(argv[1], %s) == 0) lang_entry_input = %s;\n", prefix, strconv.Quote(alternative.source), alternative.cName)
+			}
 		}
 		out.WriteString("  else return 65;\n")
 	} else {
@@ -760,6 +773,10 @@ type programBranchAlternative struct {
 	source, cName string
 }
 
+type programPayloadField struct {
+	name, cType, payloadType string
+}
+
 // programBranchType carries the checked nominal branch layout into the one
 // whole-program writer. Phase 16 admits only nullary alternatives here; the
 // payload record lowering remains behind its existing unsupported boundary.
@@ -767,6 +784,9 @@ type programBranchType struct {
 	typeName, nameFunction string
 	alternatives           []programBranchAlternative
 	bySource               map[string]string
+	fields                 map[string]programPayloadField
+	hasPayload             bool
+	dataType               core.DataType
 }
 
 func newProgramBranchType(function core.Function, dataTypes []core.DataType, names *cNames) (programBranchType, error) {
@@ -780,15 +800,28 @@ func newProgramBranchType(function core.Function, dataTypes []core.DataType, nam
 	if dataType.Name == "" || len(dataType.Alternatives) == 0 {
 		return programBranchType{}, fmt.Errorf("branch C emitter cannot find alternatives for data type %q", function.Parameter.Type)
 	}
-	for _, detail := range dataType.AlternativeDetails {
-		if detail.PayloadType != "" {
-			return programBranchType{}, fmt.Errorf("branch payload shapes are not supported by whole-program native emission this phase")
-		}
-	}
 	result := programBranchType{
 		typeName:     names.allocate(cName(dataType.Name), "type", 0),
 		bySource:     make(map[string]string, len(dataType.Alternatives)),
 		alternatives: make([]programBranchAlternative, 0, len(dataType.Alternatives)),
+		fields:       make(map[string]programPayloadField, len(dataType.Alternatives)),
+		dataType:     dataType,
+	}
+	for _, detail := range dataType.AlternativeDetails {
+		if detail.PayloadType != "" {
+			result.hasPayload = true
+		}
+	}
+	if result.hasPayload {
+		layout := check.PayloadRecordLayout(dataType)
+		if len(layout.Fields) != len(dataType.Alternatives)+1 || layout.Fields[0].Name != "tag" || layout.Fields[0].CType != "unsigned char" {
+			return programBranchType{}, fmt.Errorf("branch payload layout for data type %q is invalid", dataType.Name)
+		}
+		for index, alternative := range dataType.Alternatives {
+			detail := core.LookupAlternativeDetail(dataType, alternative)
+			field := layout.Fields[index+1]
+			result.fields[alternative] = programPayloadField{name: field.Name, cType: field.CType, payloadType: detail.PayloadType}
+		}
 	}
 	for index, alternative := range dataType.Alternatives {
 		cAlternative := names.allocate(result.typeName+"_"+cName(alternative), "alternative", index)
@@ -799,13 +832,39 @@ func newProgramBranchType(function core.Function, dataTypes []core.DataType, nam
 	return result, nil
 }
 
-func emitProgramBranchType(out *strings.Builder, branchType programBranchType) {
-	fmt.Fprintf(out, "typedef enum %s {\n", branchType.typeName)
-	for index, alternative := range branchType.alternatives {
-		fmt.Fprintf(out, "  %s = %d,\n", alternative.cName, index)
+func (t programBranchType) hasCType(cType string) bool {
+	for _, field := range t.fields {
+		if field.cType == cType {
+			return true
+		}
 	}
-	fmt.Fprintf(out, "} %s;\n\n", branchType.typeName)
-	fmt.Fprintf(out, "static const char *%s(%s value) {\n  switch (value) {\n", branchType.nameFunction, branchType.typeName)
+	return false
+}
+
+func emitProgramBranchType(out *strings.Builder, branchType programBranchType) {
+	if branchType.hasPayload {
+		fmt.Fprintf(out, "typedef struct %s {\n  unsigned char tag;\n", branchType.typeName)
+		for _, alternative := range branchType.alternatives {
+			field := branchType.fields[alternative.source]
+			fmt.Fprintf(out, "  %s %s;\n", field.cType, field.name)
+		}
+		fmt.Fprintf(out, "} %s;\n\n", branchType.typeName)
+		for index, alternative := range branchType.alternatives {
+			fmt.Fprintf(out, "#define %s %d\n", alternative.cName, index)
+		}
+		out.WriteString("\n")
+	} else {
+		fmt.Fprintf(out, "typedef enum %s {\n", branchType.typeName)
+		for index, alternative := range branchType.alternatives {
+			fmt.Fprintf(out, "  %s = %d,\n", alternative.cName, index)
+		}
+		fmt.Fprintf(out, "} %s;\n\n", branchType.typeName)
+	}
+	switchValue := "value"
+	if branchType.hasPayload {
+		switchValue = "value.tag"
+	}
+	fmt.Fprintf(out, "static const char *%s(%s value) {\n  switch (%s) {\n", branchType.nameFunction, branchType.typeName, switchValue)
 	for _, alternative := range branchType.alternatives {
 		fmt.Fprintf(out, "    case %s: return %s;\n", alternative.cName, strconv.Quote(alternative.source))
 	}
@@ -856,7 +915,11 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, bra
 		blocks[block.ID] = block
 	}
 
-	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  switch (%s) {\n", branchType.typeName, functionName, branchType.typeName, locals[parameter.ID], locals[parameter.ID])
+	switchValue := locals[parameter.ID]
+	if branchType.hasPayload {
+		switchValue += ".tag"
+	}
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  switch (%s) {\n", branchType.typeName, functionName, branchType.typeName, locals[parameter.ID], switchValue)
 	for _, arm := range function.Match.Arms {
 		block, known := blocks[arm.BlockID]
 		if !known {
@@ -873,7 +936,7 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, bra
 			if !known {
 				return fmt.Errorf("block references unknown operation %q", operationID)
 			}
-			if err := emitProgramBranchOperation(out, function, operation, branchType.typeName, locals, places, declared, lookup, childTableNames); err != nil {
+			if err := emitProgramBranchOperation(out, function, operation, branchType, locals, places, declared, lookup, childTableNames); err != nil {
 				return err
 			}
 		}
@@ -883,7 +946,7 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, bra
 	return nil
 }
 
-func emitProgramBranchOperation(out *strings.Builder, function core.Function, operation core.LinearOperation, typeName string, locals map[string]string, places map[string]core.Place, declared map[string]bool, lookup *emitCallLookup, childTableNames map[string]string) error {
+func emitProgramBranchOperation(out *strings.Builder, function core.Function, operation core.LinearOperation, branchType programBranchType, locals map[string]string, places map[string]core.Place, declared map[string]bool, lookup *emitCallLookup, childTableNames map[string]string) error {
 	if _, known := places[operation.SourceID]; !known {
 		return fmt.Errorf("operation %q has invalid source", operation.ID)
 	}
@@ -900,7 +963,7 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		} else if operation.Kind == core.OpBorrowExclusive {
 			label, eventKind = "exclusive borrow representation", "value.borrowed_exclusive"
 		}
-		fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n      (void)%s;\n", typeName, locals[operation.TargetID], locals[operation.SourceID], label, operation.ID, locals[operation.TargetID])
+		fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n      (void)%s;\n", branchType.typeName, locals[operation.TargetID], locals[operation.SourceID], label, operation.ID, locals[operation.TargetID])
 		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n", strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 		declared[operation.TargetID] = true
 	case core.OpReturn:
@@ -920,12 +983,56 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], %s)) abort();\n", strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
 		emitProgramCall(out, calleeTypeName, locals[operation.TargetID], calleeName, locals[operation.SourceID], childTable+"[invocation_index]", operation)
 		declared[operation.TargetID] = true
-	case core.OpForeignCall, core.OpFail, core.OpDefect, core.OpConstructPayload, core.OpDestructurePayload:
+	case core.OpDestructurePayload:
+		target, exists := places[operation.PayloadTargetID]
+		if !exists || declared[operation.PayloadTargetID] {
+			return fmt.Errorf("operation %q has invalid payload target", operation.ID)
+		}
+		alternative, err := branchPayloadAlternative(branchType, operation)
+		if err != nil {
+			return err
+		}
+		field, ok := branchType.fields[alternative]
+		if !ok {
+			return fmt.Errorf("operation %q: no checker-derived field for alternative %q", operation.ID, alternative)
+		}
+		fmt.Fprintf(out, "      %s %s = %s.%s; /* payload destructure: %s */\n      (void)%s;\n", field.cType, locals[target.ID], locals[operation.SourceID], field.name, operation.ID, locals[target.ID])
+		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n", strconv.Quote("value.payload_destructured"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.PayloadTargetID), strconv.Quote(operation.TypeID))
+		declared[operation.PayloadTargetID] = true
+	case core.OpConstructPayload:
+		target, exists := places[operation.TargetID]
+		if !exists || declared[operation.TargetID] {
+			return fmt.Errorf("operation %q has invalid target", operation.ID)
+		}
+		alternative, err := branchPayloadAlternative(branchType, operation)
+		if err != nil {
+			return err
+		}
+		field, ok := branchType.fields[alternative]
+		if !ok {
+			return fmt.Errorf("operation %q: no checker-derived field for alternative %q", operation.ID, alternative)
+		}
+		tag, ok := branchType.bySource[alternative]
+		if !ok {
+			return fmt.Errorf("operation %q: unknown alternative %q", operation.ID, alternative)
+		}
+		fmt.Fprintf(out, "      %s %s; /* payload construct: %s */\n      %s.tag = %s;\n      %s.%s = %s;\n      (void)%s;\n", branchType.typeName, locals[target.ID], operation.ID, locals[target.ID], tag, locals[target.ID], field.name, locals[operation.SourceID], locals[target.ID])
+		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n", strconv.Quote("value.payload_constructed"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
+		declared[operation.TargetID] = true
+	case core.OpForeignCall, core.OpFail, core.OpDefect:
 		return fmt.Errorf("operation %q: unsupported branch operation kind %q in whole-program native emission", operation.ID, operation.Kind)
 	default:
 		return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 	}
 	return nil
+}
+
+func branchPayloadAlternative(branchType programBranchType, operation core.LinearOperation) (string, error) {
+	alternative, err := core.AlternativeNameForPayloadType(branchType.dataType, operation.PayloadType)
+	if err != nil {
+		return "", fmt.Errorf("operation %q: %w", operation.ID, err)
+	}
+	return alternative, nil
 }
 
 // emitProgramFunction writes ONE function's own C definition: its own
