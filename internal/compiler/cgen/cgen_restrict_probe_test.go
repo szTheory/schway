@@ -175,12 +175,42 @@ func exactRestrictAdmissionShape() restrictAdmissionShape {
 	}
 }
 
-// restrictAdmissionReason is intentionally incomplete for the RED phase.
-// The test below proves that a one-pointer-only rule would over-admit every
-// locked D-16-07 extension before the green implementation closes the fence.
+// restrictAdmissionReason is the smallest auditable D-16-07 candidate fence.
+// It accepts only the hand-written probe's read/copy-only, caller-local,
+// one-TU, one-pointer shape; it is test evidence, not production routing.
 func restrictAdmissionReason(shape restrictAdmissionShape) string {
 	if shape.pointerCount != 1 {
 		return "second-pointer"
+	}
+	if !shape.readCopyOnly {
+		return "not-read-copy-only"
+	}
+	if shape.pointeeMutation {
+		return "pointee-mutation"
+	}
+	if shape.pointerEscape {
+		return "pointer-escape"
+	}
+	if shape.pointerForwarding {
+		return "pointer-forwarding"
+	}
+	if shape.callback {
+		return "callback"
+	}
+	if shape.foreignCall {
+		return "foreign-call"
+	}
+	if shape.volatileAccess {
+		return "volatile-access"
+	}
+	if shape.atomicAccess {
+		return "atomic-access"
+	}
+	if !shape.oneTranslationUnit {
+		return "separate-compilation"
+	}
+	if !shape.callerLocalAccessOnly {
+		return "non-local-caller-access"
 	}
 	return ""
 }
