@@ -273,7 +273,7 @@ func TestProgramWritesExecutionSchema2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	for _, want := range []string{"\"schema\":\"lang.execution/2\"", "\"invocation\":", "\"callee_function_id\":"} {
+	for _, want := range []string{"{\\\"schema\\\":\\\"lang.execution/2\\\"", ",\\\"invocation\\\":", ",\\\"callee_function_id\\\":"} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("schema-2 generated C is missing %q:\n%s", want, generated)
 		}
@@ -314,7 +314,7 @@ func TestNativeFunctionCalledPreorder(t *testing.T) {
 
 func TestNativeFunctionCalledProjectionRemoval(t *testing.T) {
 	withRight := mustRead(t, "multi_function_diamond_call.lang")
-	withoutRight := []byte(strings.Replace(string(withRight), "  let r2 = right(value)\n  r2\n", "  r1\n", 1))
+	withoutRight := []byte(strings.Replace(string(withRight), "fn left(value: Byte) -> Byte {\n  let result = leaf(value)\n  result\n}", "fn left(value: Byte) -> Byte {\n  value\n}", 1))
 	run := func(source []byte) []execution.Event {
 		t.Helper()
 		result, diags, err := session.RunNative(context.Background(), source, native.DefaultRunner())

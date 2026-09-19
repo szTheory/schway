@@ -363,7 +363,7 @@ func TestMultiFunctionNameAllocation(t *testing.T) {
 		t.Fatalf("re-emitting the same program twice moved bytes:\nfirst:\n%s\nsecond:\n%s", first, second)
 	}
 
-	globalNamePattern := regexp.MustCompile(`static unsigned char (LANG_[A-Z0-9_]*)\(unsigned char\);`)
+	globalNamePattern := regexp.MustCompile(`static unsigned char (LANG_[A-Z0-9_]*)\(unsigned char, unsigned int\);`)
 	globalMatches := globalNamePattern.FindAllStringSubmatch(first, -1)
 	if len(globalMatches) != 3 {
 		t.Fatalf("expected three function prototypes, got %d in:\n%s", len(globalMatches), first)
@@ -385,7 +385,7 @@ func TestMultiFunctionNameAllocation(t *testing.T) {
 	if strings.Contains(first, "_LANG_PLACE_") {
 		t.Fatalf("expected no place-category collision suffix across functions, got:\n%s", first)
 	}
-	definitionPattern := regexp.MustCompile(`static unsigned char LANG_[A-Z0-9_]*\(unsigned char (lang_value_[A-Za-z0-9_]*)\) \{`)
+	definitionPattern := regexp.MustCompile(`static unsigned char LANG_[A-Z0-9_]*\(unsigned char (lang_value_[A-Za-z0-9_]*), unsigned int invocation_index\) \{`)
 	definitions := definitionPattern.FindAllStringSubmatch(first, -1)
 	if len(definitions) != 3 {
 		t.Fatalf("expected three function definitions, got %d", len(definitions))

@@ -138,6 +138,28 @@ func buildInvocationPathTable(entryID string, nodes []invocationPreflightNode) (
 	return table, nil
 }
 
+// ensureInvocationChildTables keeps every emitted definition compilable,
+// including deliberately emitted but unreachable functions. Their rows have
+// no reachable child occurrence, yet their static call expression still
+// needs a named literal table; it is never selected by a valid invocation.
+func ensureInvocationChildTables(table *invocationPathTable, functions []core.Function) {
+	for _, function := range functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall || table.children[operation.ID] != nil {
+				continue
+			}
+			indices := make([]int, len(table.invocations))
+			for index := range indices {
+				indices[index] = -1
+			}
+			table.children[operation.ID] = indices
+		}
+	}
+}
+
 func invocationChildTableNames(table invocationPathTable, names *cNames) map[string]string {
 	callIDs := make([]string, 0, len(table.children))
 	for callID := range table.children {
@@ -345,6 +367,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		}
 		functions = append(functions, function)
 	}
+	ensureInvocationChildTables(&paths, functions)
 
 	// Two-tier name allocation (D-11-08/T-11-06): ONE global cNames
 	// allocates every function's own C name, iterating in
@@ -384,6 +407,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	needsByte := false
 	needsDefect := false
 	totalOperations := 0
+	callOperations := 0
 	for _, function := range functions {
 		switch function.Parameter.Type {
 		case "Buffer":
@@ -395,6 +419,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 			needsDefect = true
 		}
 		totalOperations += len(function.Linear.Operations)
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpCall {
+				callOperations++
+			}
+		}
 	}
 
 	invocationSerializationReachedForTest = true
@@ -407,7 +436,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if needsBuffer {
 		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
 	}
-	emitEventSupport(&out, totalOperations)
+	emitEventSupportSchema2(&out, totalOperations+callOperations)
 	if needsDefect {
 		emitDefectSupport(&out)
 	}
@@ -477,7 +506,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
 	fmt.Fprintf(&out, "  %s lang_entry_input = %s;\n", entryTypeName, initializer)
 	fmt.Fprintf(&out, "  %s lang_entry_output = %s(lang_entry_input, 0u);\n", entryTypeName, functionNames[entryIndex])
-	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
+	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 	if entryTypeName == "LANG_BUFFER" {
 		out.WriteString("  if (!lang_write_buffer_hex(&lang_entry_output)) return 74;\n")
 	} else {
@@ -587,7 +616,7 @@ func emitProgramFunction(out *strings.Builder, function core.Function, typeName,
 			} else if operation.Kind == core.OpBorrowExclusive {
 				eventKind = "value.borrowed_exclusive"
 			}
-			fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, %s, %s)) abort();\n",
+			fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n",
 				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 			declared[operation.TargetID] = true
@@ -604,6 +633,9 @@ func emitProgramFunction(out *strings.Builder, function core.Function, typeName,
 			if !ok {
 				return fmt.Errorf("operation %q has no invocation child table", operation.ID)
 			}
+			fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], %s)) abort();\n",
+				strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(function.ID),
+				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
 			emitProgramCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], childTable+"[invocation_index]", operation)
 			declared[operation.TargetID] = true
 		case core.OpReturn:
@@ -616,7 +648,7 @@ func emitProgramFunction(out *strings.Builder, function core.Function, typeName,
 			// caller's own events and the callee's own function.returned
 			// event both land in the shared events buffer in execution
 			// order regardless of call depth.
-			fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, NULL, %s)) abort(); /* returned place: %s */\n",
+			fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, NULL, %s, lang_invocations[invocation_index], NULL)) abort(); /* returned place: %s */\n",
 				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
 			fmt.Fprintf(out, "  return %s;\n", locals[source.ID])
