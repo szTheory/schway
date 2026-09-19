@@ -6,7 +6,7 @@
     {
       "number": "14",
       "name": "Evidence Instrument and Honest Scoping",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "15",
@@ -42,7 +42,7 @@
   "next": {
     "command": "/gsd:progress --next",
     "label": "Advance to the next step",
-    "reason": "Phase 14 of 7 · executing"
+    "reason": "Phase 15 of 7 · executing"
   },
-  "updated_at": "2026-09-18T00:27:41.519Z"
+  "updated_at": "2026-09-19T14:43:57.924Z"
 }
