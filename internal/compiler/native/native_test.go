@@ -932,6 +932,10 @@ func TestValidateExecutionSchema2(t *testing.T) {
 			{Schema: execution.Schema2, ID: "op:entry:return:event", Kind: "function.returned", FunctionID: "fn:entry", Invocation: "inv:entry:fn:entry", SourcePlace: "place:result", TypeID: "type:Byte"},
 		}, LiveResources: []string{},
 	}
+	clone := func(value execution.Execution) execution.Execution {
+		value.Events = append([]execution.Event(nil), value.Events...)
+		return value
+	}
 	if err := validateExecution(valid, ExpectValue); err != nil {
 		t.Fatalf("manual /2 call document rejected: %v", err)
 	}
@@ -947,12 +951,12 @@ func TestValidateExecutionSchema2(t *testing.T) {
 		{"unknown schema", func(v execution.Execution) execution.Execution { v.Schema = "lang.execution/3"; return v }},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := validateExecution(test.mutate(valid), ExpectValue); err == nil {
+			if err := validateExecution(test.mutate(clone(valid)), ExpectValue); err == nil {
 				t.Fatal("invalid /2 document unexpectedly admitted")
 			}
 		})
 	}
-	duplicateAcrossInvocations := valid
+	duplicateAcrossInvocations := clone(valid)
 	duplicateAcrossInvocations.Events[1].ID = duplicateAcrossInvocations.Events[2].ID
 	if err := validateExecution(duplicateAcrossInvocations, ExpectValue); err != nil {
 		t.Fatalf("same ID in distinct invocations rejected: %v", err)

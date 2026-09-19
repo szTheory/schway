@@ -551,7 +551,7 @@ func rejectDuplicateJSONKeys(data []byte) error {
 // rejects (TestValidateExecutionStillRejectsOldGrounds), this function
 // simply no longer treats every OTHER expectation as automatically invalid.
 func validateExecution(value execution.Execution, expect TerminalOutcome) error {
-	if value.Schema != execution.Schema0 && value.Schema != execution.Schema1 {
+	if value.Schema != execution.Schema0 && value.Schema != execution.Schema1 && value.Schema != execution.Schema2 {
 		return errors.New("unsupported execution schema")
 	}
 	switch expect {
@@ -571,6 +571,7 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 		return fmt.Errorf("unsupported expected terminal outcome %q", expect)
 	}
 	seenIDs := make(map[string]struct{}, len(value.Events))
+	seenInvocationIDs := make(map[string]struct{}, len(value.Events))
 	for index, event := range value.Events {
 		// D-11-05/Phase 11: a multi-function execution's own events span
 		// more than one function -- a callee's own function.returned event
@@ -585,9 +586,24 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			return errors.New("execution event identity or schema mismatch")
 		}
 		if _, duplicate := seenIDs[event.ID]; duplicate {
-			return errors.New("duplicate execution event id")
+			if value.Schema != execution.Schema2 {
+				return errors.New("duplicate execution event id")
+			}
 		}
 		seenIDs[event.ID] = struct{}{}
+		if value.Schema == execution.Schema2 {
+			if _, err := execution.ParseInvocation(event.Invocation); err != nil {
+				return errors.New("execution event invocation is invalid")
+			}
+			if event.Kind != "function.called" && event.CalleeFunctionID != "" {
+				return errors.New("callee function ID is reserved for function called events")
+			}
+			key := event.Invocation + "\x00" + event.ID
+			if _, duplicate := seenInvocationIDs[key]; duplicate {
+				return errors.New("duplicate execution invocation and event id")
+			}
+			seenInvocationIDs[key] = struct{}{}
+		}
 		isLast := index == len(value.Events)-1
 		switch event.Kind {
 		case "function.returned":
@@ -618,18 +634,22 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			// Phase 12's own linear transition events (D-12-05): shaped
 			// identically to value.copied/value.transferred (a non-terminal
 			// transition naming its own source/target places and type).
-			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+			if (value.Schema != execution.Schema1 && value.Schema != execution.Schema2) || isLast || event.SourcePlace == "" || event.TargetPlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear transition event fields are invalid")
 			}
+		case "function.called":
+			if value.Schema != execution.Schema2 || isLast || event.CalleeFunctionID == "" || event.SourcePlace == "" || event.TargetPlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+				return errors.New("function called event fields are invalid")
+			}
 		case "function.failed":
-			if !isLast || value.Schema != execution.Schema1 || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+			if !isLast || (value.Schema != execution.Schema1 && value.Schema != execution.Schema2) || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("typed-failure event fields are invalid")
 			}
 		case "function.defected":
 			// D-04-15's terminal event: like function.failed it must be
 			// last, but it carries its required non-empty reason string in
 			// Output rather than leaving it empty.
-			if !isLast || value.Schema != execution.Schema1 || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output == "" {
+			if !isLast || (value.Schema != execution.Schema1 && value.Schema != execution.Schema2) || event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output == "" {
 				return errors.New("defect event fields are invalid")
 			}
 		case "foreign.nonlocal_exit":
@@ -637,7 +657,7 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			// nonlocal-exit path. Never last (a function.defected terminator
 			// always follows) and carries no place/type facts of its own --
 			// it is a process-level event, not a per-value transition.
-			if value.Schema != execution.Schema1 || isLast || event.SourcePlace != "" || event.TargetPlace != "" || event.TypeID != "" || event.Input != "" || event.Output != "" {
+			if (value.Schema != execution.Schema1 && value.Schema != execution.Schema2) || isLast || event.SourcePlace != "" || event.TargetPlace != "" || event.TypeID != "" || event.Input != "" || event.Output != "" {
 				return errors.New("nonlocal exit event fields are invalid")
 			}
 		case "resource.leaked":
@@ -646,7 +666,7 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			// follows) and carries the acquisition's own place in
 			// SourcePlace, mirroring resource.released's shape but naming a
 			// leak rather than a discharge.
-			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace != "" || event.Input != "" || event.Output != "" {
+			if (value.Schema != execution.Schema1 && value.Schema != execution.Schema2) || isLast || event.SourcePlace == "" || event.TargetPlace != "" || event.Input != "" || event.Output != "" {
 				return errors.New("resource leaked event fields are invalid")
 			}
 		case "resource.released":
@@ -654,7 +674,7 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			// linear transitions it is never last (a terminator always
 			// follows), but unlike them it produces no new place, so
 			// TargetPlace must stay empty rather than required.
-			if value.Schema != execution.Schema1 || isLast || event.SourcePlace == "" || event.TargetPlace != "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+			if (value.Schema != execution.Schema1 && value.Schema != execution.Schema2) || isLast || event.SourcePlace == "" || event.TargetPlace != "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("resource release event fields are invalid")
 			}
 		default:
