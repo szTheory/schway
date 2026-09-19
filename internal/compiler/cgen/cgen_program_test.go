@@ -2,6 +2,7 @@ package cgen_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -15,6 +16,151 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// checkedPhase07Program parses the tracked adversarial fixture through the
+// normal checker and independent core peer; the 61-node assertion below is
+// therefore derived from the checked source fixture, not restated data.
+func checkedPhase07Program(t *testing.T, fixture string) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("%s: unexpected diagnostics: %+v", fixture, checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("%s: corevalidate rejected: %+v", fixture, validated.Problems)
+	}
+	return validated.Program()
+}
+
+// syntheticInvocationProgram produces valid, straight-line source whose
+// shared-callee unfolding is exact: node11 has 4095 occurrences; root adds
+// either one child (4096 total) or node0 as its second child (4097 total).
+func syntheticInvocationProgram(t *testing.T, nodes int) core.Program {
+	t.Helper()
+	if nodes != 4096 && nodes != 4097 {
+		t.Fatalf("syntheticInvocationProgram only models the pinned boundaries, got %d", nodes)
+	}
+	var source strings.Builder
+	source.WriteString("module phase15.synthetic\n\nexport {\n  fn root\n}\n\n")
+	source.WriteString("fn node0(value: Byte) -> Byte {\n  value\n}\n\n")
+	for level := 1; level <= 11; level++ {
+		fmt.Fprintf(&source, "fn node%d(value: Byte) -> Byte {\n  let first = node%d(value)\n  let second = node%d(value)\n  second\n}\n\n", level, level-1, level-1)
+	}
+	source.WriteString("fn root(value: Byte) -> Byte {\n  let first = node11(value)\n")
+	if nodes == 4097 {
+		source.WriteString("  let second = node0(value)\n  second\n")
+	} else {
+		source.WriteString("  first\n")
+	}
+	source.WriteString("}\n")
+	checked := session.Check([]byte(source.String()))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("synthetic %d-node source unexpectedly refused: %+v\n%s", nodes, checked.Diagnostics, source.String())
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("synthetic %d-node source failed core validation: %+v", nodes, validated.Problems)
+	}
+	return validated.Program()
+}
+
+func TestInvocationPathTableDeepDiamondMeasures61(t *testing.T) {
+	program := checkedPhase07Program(t, "deep_diamond_acyclic.lang")
+	got, err := cgen.InvocationPathNodeCountForTest(program)
+	if err != nil {
+		t.Fatalf("preflight deep_diamond_acyclic.lang: %v", err)
+	}
+	if got != 61 {
+		t.Fatalf("deep_diamond_acyclic.lang invocation nodes = %d, want 61 (T0=1, T1=5, T2=13, T3=29, T4=61)", got)
+	}
+	if _, err := cgen.EmitNative(program); err != nil {
+		t.Fatalf("EmitNative after 61-node preflight: %v", err)
+	}
+}
+
+func TestInvocationPreflightOrdering(t *testing.T) {
+	t.Run("call_graph_refusal_precedes_expansion", func(t *testing.T) {
+		restore := cgen.SetInvocationPreflightBypassForTest(false)
+		defer restore()
+		program := core.Program{Functions: []core.Function{
+			{ID: "fn:a", Linear: &core.LinearBody{Operations: []core.LinearOperation{{ID: "op:missing", Kind: core.OpCall, CalleeID: "fn:missing"}}}},
+			{ID: "fn:b", Linear: &core.LinearBody{}},
+		}}
+		if _, err := cgen.EmitProgramForTest(program); err == nil {
+			t.Fatal("expected call-graph refusal")
+		} else if _, ok := callgraph.UnresolvedCalleeError(err); !ok {
+			t.Fatalf("want callgraph unresolved-callee error, got %v", err)
+		}
+		if cgen.InvocationSerializationReachedForTest() {
+			t.Fatal("call-graph refusal reached C serialization")
+		}
+	})
+	t.Run("entry_refusal_precedes_expansion", func(t *testing.T) {
+		restore := cgen.SetInvocationPreflightBypassForTest(false)
+		defer restore()
+		program := core.Program{Functions: []core.Function{{ID: "fn:a", Linear: &core.LinearBody{}}, {ID: "fn:b", Linear: &core.LinearBody{}}}}
+		if _, err := cgen.EmitProgramForTest(program); err == nil {
+			t.Fatal("expected entry refusal")
+		} else if _, ok := callgraph.EntryAmbiguousError(err); !ok {
+			t.Fatalf("want callgraph entry-ambiguity error, got %v", err)
+		}
+		if cgen.InvocationSerializationReachedForTest() {
+			t.Fatal("entry refusal reached C serialization")
+		}
+	})
+}
+
+func TestInvocationPathTableBoundary(t *testing.T) {
+	accepted := syntheticInvocationProgram(t, 4096)
+	if _, err := cgen.EmitNative(accepted); err != nil {
+		t.Fatalf("4096-node program refused: %v", err)
+	}
+
+	overflow := syntheticInvocationProgram(t, 4097)
+	_, err := cgen.EmitNative(overflow)
+	if err == nil {
+		t.Fatal("4097-node program was admitted")
+	}
+	cap, ok := cgen.InvocationPathTableExceededError(err)
+	if !ok || cap.Code() != "cgen.invocation_path_table_exceeded" {
+		t.Fatalf("want cgen.invocation_path_table_exceeded, got %v", err)
+	}
+	if cap.Entry() == "" || cap.Limit() != 4096 || cap.ObservedAtLeast() != 4097 || cap.FirstOverflowCallOperationID() == "" || cap.FirstOverflowCalleeFunctionID() == "" || cap.FirstOverflowParentIndex() < 0 {
+		t.Fatalf("incomplete overflow facts: entry=%q limit=%d observed=%d parent=%d call=%q callee=%q", cap.Entry(), cap.Limit(), cap.ObservedAtLeast(), cap.FirstOverflowParentIndex(), cap.FirstOverflowCallOperationID(), cap.FirstOverflowCalleeFunctionID())
+	}
+	_, repeated := cgen.EmitNative(overflow)
+	if repeated == nil || repeated.Error() != err.Error() {
+		t.Fatalf("first-overflow context was not deterministic:\nfirst: %v\nnext:  %v", err, repeated)
+	}
+}
+
+func TestInvocationPreflightGuardIsNotInert(t *testing.T) {
+	overflow := syntheticInvocationProgram(t, 4097)
+	restore := cgen.SetInvocationPreflightBypassForTest(false)
+	if _, err := cgen.EmitNative(overflow); err == nil {
+		restore()
+		t.Fatal("restored preflight admitted 4097 nodes")
+	}
+	if cgen.InvocationSerializationReachedForTest() {
+		restore()
+		t.Fatal("restored preflight reached forbidden serialization path")
+	}
+	restore()
+
+	restore = cgen.SetInvocationPreflightBypassForTest(true)
+	defer restore()
+	if _, err := cgen.EmitNative(overflow); err != nil {
+		t.Fatalf("bypassed preflight did not reach emission: %v", err)
+	}
+	if !cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("bypassed preflight did not reach forbidden serialization path")
+	}
+}
 
 // phase11CheckedProgram checks and independently re-validates a
 // testdata/phase11 fixture, returning the validated core.Program (peer
