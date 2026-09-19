@@ -2,7 +2,11 @@ package session_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/callgraph"
@@ -70,6 +74,74 @@ func phase11CheckedFixture(t *testing.T, fixture string) (core.Program, string) 
 	return program, entryName
 }
 
+// phase16CheckedFixture uses the same checker and canonical entry resolver as
+// the Phase 11 corpus while accepting the three retained N=1 fixtures. The
+// native route selected below is deliberately direct emitProgram, not either
+// public dispatcher.
+func phase16CheckedFixture(t *testing.T, fixture string) (core.Program, string) {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath(fixture))
+	if err != nil {
+		t.Fatalf("%s: read: %v", fixture, err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("%s: check diagnostics: %+v", fixture, checked.Diagnostics)
+	}
+	entry, err := callgraph.EntryFunction(checked.Program)
+	if err != nil {
+		t.Fatalf("%s: entry: %v", fixture, err)
+	}
+	return checked.Program, entry.Name
+}
+
+func phase16EntryInput(t *testing.T, fixture, parameterType string) string {
+	t.Helper()
+	if parameterType == "Switch" {
+		switch fixture {
+		case "testdata/phase1/toggle.lang":
+			return "Off"
+		case "testdata/phase3/borrowed_view.lang":
+			return "On"
+		}
+	}
+	return phase11EntryInput(t, parameterType)
+}
+
+// phase16ProjectInterpreterSchema2 is a comparison-boundary projection for
+// the direct-program gate only. The N=1 interpreter legitimately retains /0
+// or /1 while direct emitProgram emits /2, so the projection supplies the
+// one entry invocation and removes legacy event-only input/output decoration
+// before the independent /2 peer and all-pairs comparator inspect semantics.
+func phase16ProjectInterpreterSchema2(t *testing.T, program core.Program, document execution.Execution) execution.Execution {
+	t.Helper()
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		t.Fatalf("project interpreter schema: entry: %v", err)
+	}
+	invocation, err := execution.FormatInvocation(entry.ID, nil)
+	if err != nil {
+		t.Fatalf("project interpreter schema: invocation: %v", err)
+	}
+	document.Schema = execution.Schema2
+	bareMatch := entry.Match != nil && entry.Linear == nil
+	for index := range document.Events {
+		document.Events[index].Schema = execution.Schema2
+		document.Events[index].Invocation = invocation
+		document.Events[index].Input = ""
+		document.Events[index].Output = ""
+		if bareMatch {
+			document.Events[index].ID = entry.ID + ":match:return"
+			document.Events[index].SourcePlace = entry.Parameter.ID
+			document.Events[index].TargetPlace = ""
+			document.Events[index].TypeID = entry.Parameter.Type
+		}
+	}
+	return document
+}
+
+type phase11NativeCSupplier func(core.Program) (string, error)
+
 // phase11RunFourTiers drives program's resolved entry through the
 // interpreter and all three native tiers -- -O0, -O3, and -O3 with -flto --
 // for the SAME single input, returning all four execution.Execution
@@ -88,6 +160,14 @@ func phase11CheckedFixture(t *testing.T, fixture string) (core.Program, string) 
 // none of. NAT-07's hand-written control (plan 11-02) is what proves the
 // TIER itself can be exploited when a real cross-TU boundary exists.
 func phase11RunFourTiers(t *testing.T, ctx context.Context, program core.Program, entryName, input string) map[string]execution.Execution {
+	return phase11RunFourTiersWithSupplier(t, ctx, program, entryName, input, cgen.EmitNative, "public EmitNative")
+}
+
+// phase11RunFourTiersWithSupplier preserves the interpreter and native runner
+// lanes while allowing a narrow caller-selected C supplier. The supplier is
+// named in every native failure so a direct-program gate cannot accidentally
+// become evidence for public dispatch.
+func phase11RunFourTiersWithSupplier(t *testing.T, ctx context.Context, program core.Program, entryName, input string, supplier phase11NativeCSupplier, route string) map[string]execution.Execution {
 	t.Helper()
 
 	interpreted, err := interp.Run(program, entryName, input)
@@ -95,25 +175,25 @@ func phase11RunFourTiers(t *testing.T, ctx context.Context, program core.Program
 		t.Fatalf("interp.Run(%s): %v", entryName, err)
 	}
 
-	cSource, err := cgen.EmitNative(program)
+	cSource, err := supplier(program)
 	if err != nil {
-		t.Fatalf("cgen.EmitNative: %v", err)
+		t.Fatalf("%s: native C: %v", route, err)
 	}
 
 	runner := native.DefaultRunner()
 	o0, err := runner.Run(ctx, cSource, "-O0", []string{input})
 	if err != nil || len(o0.Pairs) != 1 {
-		t.Fatalf("-O0 run failed: err=%v result=%+v", err, o0)
+		t.Fatalf("%s -O0 run failed: err=%v result=%+v", route, err, o0)
 	}
 	o3, err := runner.Run(ctx, cSource, "-O3", []string{input})
 	if err != nil || len(o3.Pairs) != 1 {
-		t.Fatalf("-O3 run failed: err=%v result=%+v", err, o3)
+		t.Fatalf("%s -O3 run failed: err=%v result=%+v", route, err, o3)
 	}
 	ltoRunner := runner
 	ltoRunner.LTO = true
 	o3lto, err := ltoRunner.Run(ctx, cSource, "-O3", []string{input})
 	if err != nil || len(o3lto.Pairs) != 1 {
-		t.Fatalf("-O3 -flto run failed: err=%v result=%+v", err, o3lto)
+		t.Fatalf("%s -O3 -flto run failed: err=%v result=%+v", route, err, o3lto)
 	}
 
 	return map[string]execution.Execution{
@@ -145,6 +225,81 @@ func phase11CompareFourTiers(t *testing.T, ctx context.Context, fixture string) 
 		t.Fatalf("%s: four-tier disagreement: %v", fixture, err)
 	}
 	return program, engines
+}
+
+func phase16CompareDirectProgramFourTiers(t *testing.T, ctx context.Context, fixture string) (core.Program, map[string]execution.Execution, string) {
+	t.Helper()
+	program, entryName := phase16CheckedFixture(t, fixture)
+	entry := phase11EntryFunction(t, program, entryName)
+	input := phase16EntryInput(t, fixture, entry.Parameter.Type)
+	directC, err := cgen.EmitProgramNativeForTest(program)
+	if err != nil {
+		t.Fatalf("%s: direct emitProgram(..., true): %v", fixture, err)
+	}
+	if !strings.Contains(directC, "lang.execution/2") {
+		t.Fatalf("%s: direct emitProgram(..., true) did not supply schema-2 C", fixture)
+	}
+	engines := phase11RunFourTiersWithSupplier(t, ctx, program, entryName, input, func(core.Program) (string, error) {
+		return directC, nil
+	}, "direct emitProgram(..., true)")
+	engines["interpreter"] = phase16ProjectInterpreterSchema2(t, program, engines["interpreter"])
+	// Bare matches have no core.LinearOperation ID for executionpeer to
+	// classify, so this direct gate deliberately uses the all-pairs semantic
+	// comparator rather than pretending the peer can validate a synthetic
+	// bare-match return operation. Branches with linear arms keep their peer
+	// coverage in the existing program-emitter tests.
+	if err := session.Phase5CompareEngines(fixture, engines); err != nil {
+		t.Fatalf("%s: direct emitProgram four-tier disagreement: %v", fixture, err)
+	}
+	return program, engines, directC
+}
+
+// TestPhase16DirectProgramFourTierDifferential keeps semantic evidence
+// independent from the byte/provenance gates: each native optimization lane
+// compiles C supplied directly by emitProgram(..., true), rather than C from
+// the retained public N=1 dispatcher.
+func TestPhase16DirectProgramFourTierDifferential(t *testing.T) {
+	ctx := context.Background()
+	for _, test := range []struct {
+		name, fixture string
+	}{
+		{name: "Toggle", fixture: "testdata/phase1/toggle.lang"},
+		{name: "OwnedTransfer", fixture: "testdata/phase2/owned_transfer.lang"},
+		{name: "BorrowedView", fixture: "testdata/phase3/borrowed_view.lang"},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			_, engines, _ := phase16CompareDirectProgramFourTiers(t, ctx, test.fixture)
+			if len(engines) != 4 {
+				t.Fatalf("%s: direct route supplied %d engine documents, want 4", test.fixture, len(engines))
+			}
+		})
+	}
+}
+
+// TestPhase16EmitterPortSemanticGuardIsNotInert mutates a compared semantic
+// document after its direct-program C bytes have been fixed. The C digest is
+// therefore still internally consistent, yet the independent comparator must
+// reject the changed terminal-outcome axis; this is why a golden hash cannot
+// serve as the semantic witness for its own update.
+func TestPhase16EmitterPortSemanticGuardIsNotInert(t *testing.T) {
+	program, engines, directC := phase16CompareDirectProgramFourTiers(t, context.Background(), "testdata/phase2/owned_transfer.lang")
+	before := sha256.Sum256([]byte(directC))
+	mutated := engines["O3"]
+	mutated.Outcome.Value = "phase16-seeded-semantic-mutation"
+	engines["O3"] = mutated
+	after := sha256.Sum256([]byte(directC))
+	if before != after {
+		t.Fatalf("direct-program C unexpectedly changed during document mutation: before=%s after=%s", hex.EncodeToString(before[:]), hex.EncodeToString(after[:]))
+	}
+	err := session.Phase5CompareProgramEngines("phase16-seeded-semantic-mutation", program, engines)
+	if err == nil {
+		t.Fatal("seeded semantic mutation stayed green")
+	}
+	var disagreement *session.Phase5EngineDisagreement
+	if !errors.As(err, &disagreement) || disagreement.Axis != session.AxisTerminalOutcome {
+		t.Fatalf("seeded semantic mutation must change terminal-outcome comparator axis, got %v", err)
+	}
 }
 
 // TestPhase11InterproceduralDifferential is NAT-06's own four-tier

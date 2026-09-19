@@ -86,15 +86,11 @@ func TestD1243ControlIsUnconstructible(t *testing.T) {
 	}
 }
 
-// TestLTOInertnessOnMultiFunctionEmission backs PHASE-14-DEBT.md's D-14-45
-// row (EVD-07): it checks a real multi-function fixture where one
-// function (toggle) has a core.Match body -- exactly the shape
-// cgen.emitProgram refuses -- and asserts native emission refuses BY NAME
-// ("multi-function branch bodies are not supported by native emission
-// this phase"). `-flto`'s whole-program optimizer tier has no
-// cross-function boundary to exploit when cgen never emits more than one
-// function's worth of a program containing a branch body at all; this
-// probe is the executed half of that claim.
+// TestLTOInertnessOnMultiFunctionEmission preserves D-14-45's honest limit
+// after Phase 16 admitted match-bodied programs to emitProgram. The fixture
+// must now emit a schema-2 one-translation-unit program; that admission does
+// not prove any LTO axis movement, because the direct C still has no
+// cross-translation-unit boundary for -flto to exploit.
 func TestLTOInertnessOnMultiFunctionEmission(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "multi_function_match_refusal.lang"))
 	if err != nil {
@@ -107,12 +103,12 @@ func TestLTOInertnessOnMultiFunctionEmission(t *testing.T) {
 	if len(checked.Program.Functions) < 2 {
 		t.Fatalf("fixture must be genuinely multi-function (>= 2 functions), got %d", len(checked.Program.Functions))
 	}
-	_, emitErr := cgen.EmitNative(checked.Program)
-	if emitErr == nil {
-		t.Fatal("D-14-45: expected multi-function native emission to refuse a Match-bodied function inside a multi-function program; it succeeded instead -- the -flto multi-function inertness claim may no longer hold, regrade PHASE-14-DEBT.md's D-14-45 row")
+	generated, emitErr := cgen.EmitNative(checked.Program)
+	if emitErr != nil {
+		t.Fatalf("Phase 16 match admission regressed: %v", emitErr)
 	}
-	if !strings.Contains(emitErr.Error(), "multi-function branch bodies are not supported by native emission this phase") {
-		t.Fatalf("expected the refusal to name the multi-function branch-body restriction, got: %v", emitErr)
+	if !strings.Contains(generated, "lang.execution/2") {
+		t.Fatal("Phase 16 match admission did not emit the schema-2 one-TU program")
 	}
 }
 

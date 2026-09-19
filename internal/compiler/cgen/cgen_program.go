@@ -18,6 +18,15 @@ import (
 // budget and is intentionally independent of pathoracle.MaxPaths.
 const maxInvocationPathTableNodes = 4096
 
+// EmitProgramNativeForTest exposes the direct whole-program native route to
+// cross-package differential tests. It deliberately bypasses both public
+// dispatchers and invokes exactly emitProgram(program, true), so it cannot
+// silently certify the retained N=1 legacy route before Plan 16-09's cutover.
+// Callers must supply an already checked and validated core.Program.
+func EmitProgramNativeForTest(program core.Program) (string, error) {
+	return emitProgram(program, true)
+}
+
 var executionOutputLimit = execution.MaxDocumentBytes
 
 // programLiveResourcesForTest is a narrow mutation seam for the surviving
@@ -119,6 +128,7 @@ func invocationEventCapacity(nodes []invocationPreflightNode, byID map[string]co
 		}
 		if function.Linear == nil {
 			if function.Match != nil {
+				capacity++ // A bare match records its one selected-arm return.
 				continue
 			}
 			return 0, fmt.Errorf("function %q: has no linear body", function.ID)
@@ -140,6 +150,12 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 			return 0, fmt.Errorf("execution-size node %d names invalid function %q", index, node.functionID)
 		}
 		if function.Linear == nil {
+			if function.Match != nil {
+				events = append(events, execution.Event{
+					Schema: execution.Schema2, ID: function.ID + ":match:return", Kind: "function.returned",
+					FunctionID: function.ID, Invocation: paths.invocations[index], SourcePlace: function.Parameter.ID, TypeID: function.Parameter.Type,
+				})
+			}
 			continue
 		}
 		for _, operation := range function.Linear.Operations {
@@ -884,14 +900,14 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, bra
 		return fmt.Errorf("function %q: branch writer requires a match body", function.ID)
 	}
 	if function.Linear == nil {
-		fmt.Fprintf(out, "static %s %s(%s value, unsigned int invocation_index) {\n  (void)invocation_index;\n  switch (value) {\n", branchType.typeName, functionName, branchType.typeName)
+		fmt.Fprintf(out, "static %s %s(%s value, unsigned int invocation_index) {\n  switch (value) {\n", branchType.typeName, functionName, branchType.typeName)
 		for _, arm := range function.Match.Arms {
 			pattern, known := branchType.bySource[arm.Pattern]
 			valueName, valueKnown := branchType.bySource[arm.Value]
 			if !known || !valueKnown {
 				return fmt.Errorf("function %q: match arm %q names unknown alternative", function.ID, arm.ID)
 			}
-			fmt.Fprintf(out, "    case %s: return %s;\n", pattern, valueName)
+			fmt.Fprintf(out, "    case %s:\n      if (!lang_record_event(\"function.returned\", %s, %s, %s, NULL, %s, lang_invocations[invocation_index], NULL)) abort();\n      return %s;\n", pattern, strconv.Quote(function.ID+":match:return"), strconv.Quote(function.ID), strconv.Quote(function.Parameter.ID), strconv.Quote(function.Parameter.Type), valueName)
 		}
 		out.WriteString("  }\n  abort();\n}\n\n")
 		return nil
