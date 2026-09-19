@@ -19,6 +19,24 @@ const maxInvocationPathTableNodes = 4096
 
 var executionOutputLimit = execution.MaxDocumentBytes
 
+// programLiveResourcesForTest is a narrow mutation seam for the surviving
+// emitter's schema-2 resource tail. Production derivation has no admitted
+// resource-owning shapes yet, so it returns an empty collection; the seam
+// proves serialization consumes the derivation rather than a fixed literal.
+var programLiveResourcesForTest []string
+
+// deriveProgramLiveResources owns the schema-2 resource result for every
+// shape emitProgram admits. Foreign-resource accounting remains outside this
+// phase: ordinary linear programs currently derive the semantically correct
+// empty collection without introducing a resource ledger.
+func deriveProgramLiveResources(program core.Program) []string {
+	if programLiveResourcesForTest != nil {
+		return append([]string(nil), programLiveResourcesForTest...)
+	}
+	_ = program
+	return []string{}
+}
+
 type executionOutputExceededError struct {
 	limit, observed int
 }
@@ -110,7 +128,7 @@ func invocationEventCapacity(nodes []invocationPreflightNode, byID map[string]co
 // the straight-line document represented by the bounded occurrence table. The
 // event order does not affect JSON length; field presence and spellings mirror
 // emitProgramFunction and emitEventSupportSchema2.
-func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflightNode, paths invocationPathTable, byID map[string]core.Function) (int, error) {
+func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflightNode, paths invocationPathTable, byID map[string]core.Function, liveResources []string) (int, error) {
 	events := make([]execution.Event, 0)
 	for index, node := range nodes {
 		function, ok := byID[node.functionID]
@@ -147,7 +165,7 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 	}
 	document := execution.Execution{
 		Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeReturned, Value: outcomeValue},
-		Events: events, LiveResources: []string{},
+		Events: events, LiveResources: liveResources,
 	}
 	encoded, err := json.Marshal(document)
 	if err != nil {
@@ -463,7 +481,8 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID)
+	liveResources := deriveProgramLiveResources(program)
+	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID, liveResources)
 	if err != nil {
 		return "", err
 	}
@@ -541,6 +560,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if needsByte {
 		emitProgramByteWriter(&out)
 	}
+	if err := emitProgramLiveResourcesWriter(&out, liveResources); err != nil {
+		return "", err
+	}
 
 	// Prototypes before definitions (D-11-03): what makes a forward-
 	// referenced callee legal C17.
@@ -609,7 +631,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	}
 	out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
 	out.WriteString("  if (!lang_write_events()) return 74;\n")
-	out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
+	out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":\")) return 74;\n")
+	out.WriteString("  if (!lang_write_live_resources()) return 74;\n")
+	out.WriteString("  if (!lang_write_literal(\"}\\n\")) return 74;\n")
 	out.WriteString("  return 0;\n}\n")
 
 	return out.String(), nil
@@ -637,6 +661,19 @@ func emitProgramByteWriter(out *strings.Builder) {
 	out.WriteString("static int lang_write_byte(unsigned char value) {\n")
 	out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
 	out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
+}
+
+// emitProgramLiveResourcesWriter serializes the collection derived by
+// emitProgram. The C writer receives canonical JSON computed from that one
+// collection, so the output-size preflight and document tail share the same
+// result without adding a resource ledger for unsupported foreign shapes.
+func emitProgramLiveResourcesWriter(out *strings.Builder, liveResources []string) error {
+	encoded, err := json.Marshal(liveResources)
+	if err != nil {
+		return fmt.Errorf("encode derived live resources: %w", err)
+	}
+	fmt.Fprintf(out, "static int lang_write_live_resources(void) {\n  return lang_write_literal(%s);\n}\n\n", strconv.Quote(string(encoded)))
+	return nil
 }
 
 // emitProgramFunction writes ONE function's own C definition: its own

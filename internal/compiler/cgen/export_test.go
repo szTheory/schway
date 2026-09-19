@@ -103,7 +103,16 @@ func ExecutionOutputSizeForTest(program core.Program) (int, error) {
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
-	return schema2ExecutionDocumentSize(entry, nodes, paths, byID)
+	return schema2ExecutionDocumentSize(entry, nodes, paths, byID, deriveProgramLiveResources(program))
+}
+
+// SetProgramLiveResourcesForTest replaces the surviving emitter's derived
+// resource collection for a mutation control. It is test-only and never
+// creates resource ownership semantics on a production path.
+func SetProgramLiveResourcesForTest(resources []string) (restore func()) {
+	previous := programLiveResourcesForTest
+	programLiveResourcesForTest = append([]string(nil), resources...)
+	return func() { programLiveResourcesForTest = previous }
 }
 
 // SetExecutionOutputLimitForTest installs a boundary-only limit and resets the

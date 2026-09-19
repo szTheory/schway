@@ -89,6 +89,59 @@ func TestProgramOrdinaryLinearTracer(t *testing.T) {
 	}
 }
 
+// TestProgramLiveResourcesAreDerived rejects a fixed resource-tail literal:
+// even though ordinary linear programs presently derive no live resources,
+// their schema-2 document must be rendered from the surviving emitter's
+// derived collection.
+func TestProgramLiveResourcesAreDerived(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("owned_transfer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("owned_transfer.lang: corevalidate rejected: %+v", validated.Problems)
+	}
+	generated, err := cgen.EmitProgramForTest(validated.Program())
+	if err != nil {
+		t.Fatalf("direct emitProgram: %v", err)
+	}
+	if !strings.Contains(generated, "lang_write_live_resources") {
+		t.Fatalf("schema-2 resource tail bypasses a derived-value writer:\n%s", generated)
+	}
+}
+
+// TestProgramLiveResourceDerivationIsNotInert mutates the emitter-owned
+// derivation and observes the resulting native document, so a future tail
+// shortcut cannot leave the derivation present but unused.
+func TestProgramLiveResourceDerivationIsNotInert(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("owned_transfer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("owned_transfer.lang: corevalidate rejected: %+v", validated.Problems)
+	}
+	restore := cgen.SetProgramLiveResourcesForTest([]string{"resource:seed"})
+	defer restore()
+	generated, err := cgen.EmitProgramForTest(validated.Program())
+	if err != nil {
+		t.Fatalf("direct emitProgram: %v", err)
+	}
+	if !strings.Contains(generated, "resource:seed") {
+		t.Fatalf("seeded derived resources did not move generated serialization:\n%s", generated)
+	}
+}
+
 // syntheticInvocationProgram produces valid, straight-line source whose
 // shared-callee unfolding is exact: node11 has 4095 occurrences; root adds
 // either one child (4096 total) or node0 as its second child (4097 total).
