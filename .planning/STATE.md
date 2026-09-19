@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 16
 current_phase_name: Branch/Match Emitter Port
 status: executing
-stopped_at: Completed 16-04-PLAN.md
-last_updated: "2026-09-19T21:27:19.497Z"
+stopped_at: Completed 16-02-PLAN.md
+last_updated: "2026-09-19T21:37:35.523Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 16 execution started
-state_head: 3562bca2ca30664a3aca2c347b3fb526b093bff3
+state_head: 44f714d90e76871d3c839d8caa52ebbeab4555ef
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 29
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State
@@ -62,7 +62,7 @@ No outstanding human verification.
 ## Current Position
 
 Phase: 16 (Branch/Match Emitter Port) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 16 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -310,6 +310,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 14 P12 | 55min | 3 tasks | 4 files |
 | Phase 16 P01 | 2 min | 2 tasks | 3 files |
 | Phase 16 P04 | 2 min | 2 tasks | 2 files |
+| Phase 16-branch-match-emitter-port P02 | 8m 26s | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -433,6 +434,8 @@ Standing architectural commitments carried into M002:
 - [Phase 16]: Derived schema-2 live_resources from emitProgram without introducing a resource ledger.
 - [Phase 16]: Keep restrict admission evidence test-local; no production routing changes before Plan 05 human disposition.
 - [Phase 16]: Linux restrict-probe lane is unresolved on macOS and cannot be counted as success.
+- [Phase 16]: Admit nullary branch blocks through emitProgram while retaining explicit refusals for match-only, payload, foreign, and N=1 by-pointer shapes.
+- [Phase 16]: Keep main as the sole schema-2 document writer; branch helpers only record events and return C values.
 
 ### Pending Todos
 
@@ -575,8 +578,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-19T21:27:19.433Z
-Stopped at: Completed 16-04-PLAN.md
+Last session: 2026-09-19T21:37:35.460Z
+Stopped at: Completed 16-02-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
