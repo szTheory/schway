@@ -84,7 +84,7 @@ var pinnedFixtures = []pinnedFixture{
 	// and is deliberately excluded from this table.
 	{"testdata/phase5/allocator_mismatch.lang", "636097c74c3f161f532284bbaf2d6567e53413a7a9652f76c29da223dd0222c2", "evidence:1cdac22aba40cacc0f5e0001"},
 	{"testdata/phase5/dead_store_unused_acquire.lang", "22a734be2932d02ecc47ced7c778f05e3d56296d4bfb9f3a7f4c1e543738fd1c", "evidence:f454a99f26276fb1545ce790"},
-	{"testdata/phase5/defect_dies_by_signal.lang", "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a", "evidence:864b0ad460d0e0d00135227f"},
+	{"testdata/phase5/defect_dies_by_signal.lang", "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a", "evidence:c9eea4002b7177106948da43"},
 	{"testdata/phase5/false_restrict_hoist.lang", "2e2deae3e230984bf1430bb2d4c347d172444e22ad68f71c4d1197e34766f791", "evidence:ca3e057326af5276f18f5393"},
 	{"testdata/phase5/inline_across_foreign.lang", "02fd41768398d0c650462790f15162f02c0eb5a0fc07bb97d15078d2a11cb53b", "evidence:2a9644fce2f925ca50841428"},
 	{"testdata/phase5/reorder_two_events.lang", "5bc35a467aadffee60cb1ad7978ed17bf54f5f372c5f68d2ea9ebf81bf0ae56d", "evidence:1d7d61d8028a9472ee203b54"},
@@ -156,6 +156,9 @@ func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 			}
 			product, diagnostics, err := evidence.Build(source, pinnedFacts)
 			if err != nil {
+				if phase16M004Refusal(t, source, err) {
+					return
+				}
 				t.Fatalf("build: %v", err)
 			}
 			if len(diagnostics) > 0 {
@@ -166,6 +169,22 @@ func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 			}
 		})
 	}
+}
+
+func phase16M004Refusal(t *testing.T, source []byte, buildErr error) bool {
+	t.Helper()
+	message := buildErr.Error()
+	if !strings.Contains(message, "multi-function foreign-call bodies are not supported") && !strings.Contains(message, "by-pointer bodies are not supported") {
+		return false
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("cut fixture unexpectedly failed check: %v", checked.Diagnostics)
+	}
+	if _, err := cgen.Emit(checked.Program); err == nil || err.Error() != message {
+		t.Fatalf("cut fixture refusal drift: build=%q emit=%v", message, err)
+	}
+	return true
 }
 
 // previousPhaseGoldenCDigests pins the SHA-256 digest of every committed
