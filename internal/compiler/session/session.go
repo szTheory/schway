@@ -1026,15 +1026,56 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 		}
 	}
 	for index, expected := range interpreted {
+		// The sole post-cut public emitter serializes schema-2 documents. The
+		// interpreter remains the independent semantic oracle, so project its
+		// legacy representation at this comparison boundary and validate the
+		// resulting /2 document with the independent peer before comparing it
+		// to native output. Cut-M004 programs never reach this point: cgen
+		// refuses them before native compilation.
+		expectedDocument := projectInterpreterSchema2(checked.Program, expected)
+		engines := map[string]execution.Execution{
+			"interpreter": expectedDocument,
+			"O0":          o0.Pairs[index].Execution,
+			"O3":          o3.Pairs[index].Execution,
+		}
+		if err := Phase5CompareProgramEngines("run-native", checked.Program, engines); err != nil {
+			return NativeResult{}, nil, err
+		}
 		for _, actual := range []native.Result{o0, o3} {
-			if !execution.Equal(expected, actual.Pairs[index].Execution) {
-				expectedBytes, _ := execution.CanonicalBytes(expected)
+			if !execution.Equal(expectedDocument, actual.Pairs[index].Execution) {
+				expectedBytes, _ := execution.CanonicalBytes(expectedDocument)
 				actualBytes, _ := execution.CanonicalBytes(actual.Pairs[index].Execution)
 				return NativeResult{}, nil, &EngineMismatch{Optimization: actual.Optimization, Input: inputs[index], Expected: string(expectedBytes), Actual: string(actualBytes)}
 			}
 		}
 	}
 	return NativeResult{CSource: cSource, Interpreter: interpreted, O0: o0, O3: o3}, nil, nil
+}
+
+func projectInterpreterSchema2(program core.Program, document execution.Execution) execution.Execution {
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return document
+	}
+	invocation, err := execution.FormatInvocation(entry.ID, nil)
+	if err != nil {
+		return document
+	}
+	document.Schema = execution.Schema2
+	bareMatch := entry.Match != nil && entry.Linear == nil
+	for index := range document.Events {
+		document.Events[index].Schema = execution.Schema2
+		document.Events[index].Invocation = invocation
+		document.Events[index].Input = ""
+		document.Events[index].Output = ""
+		if bareMatch {
+			document.Events[index].ID = entry.ID + ":match:return"
+			document.Events[index].SourcePlace = entry.Parameter.ID
+			document.Events[index].TargetPlace = ""
+			document.Events[index].TypeID = entry.Parameter.Type
+		}
+	}
+	return document
 }
 
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
