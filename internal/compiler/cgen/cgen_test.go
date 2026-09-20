@@ -9,7 +9,6 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -38,10 +37,14 @@ func foreignReleaseCheckedProgram(t *testing.T) session.CheckResult {
 // at the very end.
 func TestStreamingEmitterWritesAtPointOfOccurrence(t *testing.T) {
 	checked := foreignReleaseCheckedProgram(t)
-	generated, err := cgen.EmitNative(checked.Program)
+	if _, err := cgen.EmitNative(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("foreign cut must be a named public refusal, got %v", err)
+	}
+	generatedBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "acquire_three_success.c"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	generated := string(generatedBytes)
 	if strings.Contains(generated, "lang_write_events") {
 		t.Fatalf("a foreign-acquiring function must not use the buffered event replay:\n%s", generated)
 	}
@@ -672,10 +675,14 @@ func TestPhase5ByPointerLoweringGolden(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
 	}
-	generated, err := cgen.Emit(checked.Program)
+	if _, err := cgen.Emit(checked.Program); err == nil || !strings.Contains(err.Error(), "by-pointer bodies are not supported") {
+		t.Fatalf("by-pointer cut must be a named public refusal, got %v", err)
+	}
+	generatedBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "restrict_borrow.c"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	generated := string(generatedBytes)
 	golden, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.golden.c"))
 	if err != nil {
 		t.Fatal(err)
@@ -998,84 +1005,5 @@ func TestForeignManifestBytesUnchangedForPriorPhases(t *testing.T) {
 				t.Fatalf("expected the Phase 4 foreign-contract manifest to keep an empty emitted_attributes array, got:\n%s", manifest)
 			}
 		})
-	}
-}
-
-// TestOpCallGroupedArmMutationKilled is Task 3 Test 4 (D-07-39/D-07-41,
-// QLT-08): cgen's dedicated core.OpCall arm in emitLinear returns a named,
-// dedicated error rather than emitting C at all. With that arm replaced --
-// through the unexported opCallGroupedArmForTest seam
-// (cgen.SetOpCallGroupedArmForTest) -- by the SAME grouped behaviour
-// OpCopy/OpMove/OpBorrowShared/OpBorrowExclusive use, the
-// recognized-not-executed assertion goes red: emitLinear no longer errors
-// at all, and instead emits ordinary copy-shaped C, exactly as D-07-39
-// warns a grouped-arm fold would (a call would look like a successful
-// value transfer with no callee ever invoked).
-//
-// A-02: cgen.Emit/EmitNative's len(program.Functions) != 1 guard means no
-// legal call through the public API ever reaches emitLinear with an
-// OpCall-bearing function -- this test uses cgen.EmitLinearForTest to
-// drive emitLinear directly (the same escape hatch A-02 already documents
-// as the only way to exercise this arm at all), on `main`, the real
-// checked+corevalidated function from testdata/phase07/call_basic.lang.
-//
-// Four-beat body (pathoracle_test.go:268-295's precedent): assert clean,
-// save/override/defer-restore, assert an observable effect, assert the
-// specific code.
-func TestOpCallGroupedArmMutationKilled(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_basic.lang"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	checked := session.Check(source)
-	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("unexpected diagnostics: %v", checked.Diagnostics)
-	}
-	validated := corevalidate.Validate(checked.Program)
-	if !validated.Valid {
-		t.Fatalf("corevalidate rejected: %v", validated.Problems)
-	}
-	program := validated.Program()
-	var main core.Function
-	found := false
-	for _, function := range program.Functions {
-		if function.Name == "main" {
-			main = function
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("call_basic.lang: function \"main\" not found")
-	}
-
-	// Beat 1: assert clean. The real, unmutated arm returns a dedicated
-	// error naming this exact reason -- never emitted C, never a silent
-	// pass.
-	const wantErrorSubstring = "Lang-to-Lang calls are not supported by native emission this phase"
-	if _, err := cgen.EmitLinearForTest(main); err == nil || !strings.Contains(err.Error(), wantErrorSubstring) {
-		t.Fatalf("expected the clean (unmutated) emitLinear to fail with %q, got: %v", wantErrorSubstring, err)
-	}
-
-	// Beat 2: override, restored via defer.
-	restore := cgen.SetOpCallGroupedArmForTest(true)
-	defer restore()
-
-	// Beat 3: assert an observable effect. The mutated emitLinear no
-	// longer errors at all.
-	generated, err := cgen.EmitLinearForTest(main)
-	if err != nil {
-		t.Fatalf("expected the mutated emitLinear (folding OpCall into the grouped copy/move/borrow arm) to succeed, got error: %v", err)
-	}
-
-	// Beat 4: assert the specific code -- the mutated output emits a
-	// plain value-copy assignment and a "value.copied" event for the call
-	// operation, never the dedicated error, proving the
-	// recognized-not-executed assertion is genuinely load-bearing rather
-	// than incidentally true.
-	if !strings.Contains(generated, "value.copied") {
-		t.Fatalf("expected the mutated emitLinear output to contain a value.copied event (the grouped arm's own event kind), got:\n%s", generated)
-	}
-	if strings.Contains(generated, wantErrorSubstring) {
-		t.Fatalf("expected the mutated emitLinear output to NOT contain the dedicated OpCall error text, got:\n%s", generated)
 	}
 }

@@ -2,6 +2,7 @@
   "schema": "phase16.legacy-emitter-artifacts/1",
   "cut_commit": "0607486",
   "artifacts": [
+	{"fixture":"testdata/phase4/acquire_three_success.lang","path":"testdata/phase16/historical/acquire_three_success.c","sha256":"b86133b1b92d05ac6b95a492a59d5e60e2ff4530a86d8650827a8c3d6253c1f2"},
     {"fixture":"testdata/phase4/foreign_acquire_one.lang","path":"testdata/phase16/historical/foreign_acquire_one.c","sha256":"621f23618ad0e849ae2c3e0d483ea16ce40af11333ac1d0a8176e4b798890998"},
     {"fixture":"testdata/phase5/retained_pointer.lang","path":"testdata/phase16/historical/retained_pointer.c","sha256":"be02f1de9184b629e27deb121c260c39457bf301f25ba94e5a1915eb5598f1f7"},
     {"fixture":"testdata/phase5/inline_across_foreign.lang","path":"testdata/phase16/historical/inline_across_foreign.c","sha256":"6d5fccd190b68bd98c2f0f8bb73ee45307dec297e11ba5c26edbfb0b369abc14"},
