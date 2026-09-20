@@ -1,6 +1,8 @@
 package cgen_test
 
 import (
+	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -10,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -138,15 +141,25 @@ func runRestrictProbeLane(t *testing.T, host, clang, lane string, flags []string
 	}
 	args := append([]string{"-std=c17", "-Wall", "-Wextra", "-Werror"}, flags...)
 	args = append(args, sourcePath, "-o", binaryPath)
-	output, err := exec.Command(clang, args...).CombinedOutput()
+	output, err := runRestrictProbeCommand(clang, args...)
 	if err != nil {
 		return restrictProbeResult{Host: host, Toolchain: clang, Lane: lane, Result: "FAIL", SourceSHA: digest, Diagnostic: fmt.Sprintf("compile: %v: %s", err, strings.TrimSpace(string(output)))}
 	}
-	output, err = exec.Command(binaryPath).CombinedOutput()
+	output, err = runRestrictProbeCommand(binaryPath)
 	if err != nil {
 		return restrictProbeResult{Host: host, Toolchain: clang, Lane: lane, Result: "FAIL", SourceSHA: digest, Diagnostic: fmt.Sprintf("execute: %v: %s", err, strings.TrimSpace(string(output)))}
 	}
 	return restrictProbeResult{Host: host, Toolchain: clang, Lane: lane, Result: "PASS", SourceSHA: digest}
+}
+
+func runRestrictProbeCommand(name string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	command := exec.CommandContext(ctx, name, args...)
+	var stdout, stderr bytes.Buffer
+	command.Stdout, command.Stderr = &stdout, &stderr
+	err := command.Run()
+	return append(stdout.Bytes(), stderr.Bytes()...), err
 }
 
 // restrictAdmissionShape is deliberately test-local. D-16-07 requires an
