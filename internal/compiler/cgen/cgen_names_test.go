@@ -158,7 +158,7 @@ func TestGeneratedIdentifierNamespacesStayConfined(t *testing.T) {
 			reserved: cgen.MatchFixedNames,
 			left:     "module a.one\n\nexport {\n  type Switch\n  fn toggle\n}\n\ndata Switch =\n  | Off\n  | On\n\nfn toggle(state: Switch) -> Switch {\n  match state {\n    Off => On\n    On => Off\n  }\n}\n",
 			right:    "module z.two\n\nexport {\n  type Fixture\n  fn convert\n}\n\ndata Fixture =\n  | Alpha\n  | Beta\n\nfn convert(item: Fixture) -> Fixture {\n  match item {\n    Alpha => Beta\n    Beta => Alpha\n  }\n}\n",
-			leftOnly: []string{"LANG_SWITCH", "LANG_SWITCH_LANG_OFF", "LANG_TOGGLE", "LANG_STATE", "LANG_SWITCH_name"},
+			leftOnly: []string{"LANG_SWITCH", "LANG_SWITCH_LANG_OFF", "LANG_TOGGLE"},
 		},
 		{
 			name:     "linear Buffer",

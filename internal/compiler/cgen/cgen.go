@@ -159,6 +159,13 @@ func EmitNative(program core.Program) (string, error) {
 // excluding C keywords and the libc names it calls.
 var matchFixedNames = []string{
 	"main", "argc", "argv", "input", "output", "name", "value",
+	"LANG_EVENT", "LANG_EVENT_CAPACITY", "LANG_OUTPUT_LIMIT", "lang_events",
+	"lang_event_count", "lang_output_count", "lang_write_bytes", "lang_write_literal",
+	"lang_write_json_string", "lang_record_event", "lang_write_events",
+	"lang_write_live_resources", "lang_invocations", "lang_entry_input", "lang_entry_output",
+	"invocation", "invocation_index", "callee_function_id",
+	"abort", "byte", "data", "encoded", "escape", "event", "function_id", "hex", "id",
+	"index", "kind", "lang_entry_name", "length", "source_place", "target_place", "type_id",
 }
 
 // linearFixedNames is every ordinary identifier emitLinear and
@@ -184,6 +191,8 @@ var linearFixedNames = []string{
 	"data", "value", "hex", "byte", "escape", "encoded", "event", "index",
 	// main
 	"main", "argc", "argv", "input",
+	"abort", "callee_function_id", "invocation", "invocation_index", "lang_entry_input",
+	"lang_entry_output", "lang_invocations",
 }
 
 // borrowByPointerMarker is the single, stable marker comment
