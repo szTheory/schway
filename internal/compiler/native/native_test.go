@@ -318,6 +318,16 @@ func TestShippedBinaryExercisesEveryPhase4Behavior(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
 	for _, testCase := range phase4OutOfCorpusCases() {
 		t.Run(testCase.behavior, func(t *testing.T) {
+			// These probes exercise foreign/by-pointer shapes that are now an
+			// explicit M004 public-emission cut. Keep their formatter, checker,
+			// and interpreter coverage, but assert the native command's current
+			// refusal rather than a removed legacy lowering.
+			cutBehavior := map[string]bool{
+				"Fallible foreign call through try":                  true,
+				"Three-stage acquisition with reverse-order release": true,
+				"discard ... because consumer":                       true,
+				"Nonlocal-exit probe":                                true,
+			}[testCase.behavior]
 			path := filepath.Join(t.TempDir(), "probe.lang")
 			if err := os.WriteFile(path, []byte(testCase.source), 0o600); err != nil {
 				t.Fatal(err)
@@ -326,6 +336,9 @@ func TestShippedBinaryExercisesEveryPhase4Behavior(t *testing.T) {
 				t.Fatalf("out-of-corpus source must never live under a corpus directory, got %s", path)
 			}
 			for _, step := range testCase.steps {
+				if cutBehavior && len(step.args) >= 2 && step.args[0] == "run" && step.args[1] == "--engine=native" {
+					step.wantExit, step.wantDiagnostic = 3, ""
+				}
 				arguments := make([]string, len(step.args))
 				for index, argument := range step.args {
 					if argument == "{path}" {
