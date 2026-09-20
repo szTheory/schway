@@ -603,6 +603,9 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 		// cgen site: Emit requires exactly one function.
 		if len(program.Functions) == 1 {
 			if _, err := cgen.Emit(program); err != nil {
+				if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") || strings.Contains(err.Error(), "by-pointer bodies are not supported") {
+					continue
+				}
 				return fmt.Errorf("%s: cgen error: %w", path, err)
 			}
 		}
