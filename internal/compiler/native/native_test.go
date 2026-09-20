@@ -1207,6 +1207,26 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 			},
 		}
 	}
+	// cut records a fixture whose source/check/interpreter contracts remain
+	// valid but whose former public native lowering is deliberately M004
+	// debt. The CLI must surface the current native refusal, never fabricate
+	// a successful legacy C execution.
+	cut := func(fixture string) phase4OutOfCorpusCase {
+		return phase4OutOfCorpusCase{behavior: fixture, steps: []phase4OutOfCorpusStep{
+			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "check", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 3, wantDiagnostic: "native.tool_failure"},
+		}}
+	}
+	cutAfterCheckRefusal := func(fixture, diagnostic string) phase4OutOfCorpusCase {
+		return phase4OutOfCorpusCase{behavior: fixture, steps: []phase4OutOfCorpusStep{
+			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
+			{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
+			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 3, wantDiagnostic: "native.tool_failure"},
+		}}
+	}
 	// refused is a negative-control fixture: canonically formatted (unless
 	// formatExit says otherwise), then refused identically by check and both
 	// engines with one diagnostic code.
@@ -1222,13 +1242,13 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		}
 	}
 	return []phase4OutOfCorpusCase{
-		clean("acquire_three_fail_second.lang"),
-		clean("acquire_three_fail_third.lang"),
-		clean("acquire_three_success.lang"),
+		cut("acquire_three_fail_second.lang"),
+		cut("acquire_three_fail_third.lang"),
+		cut("acquire_three_success.lang"),
 		clean("defect_terminal.lang"),
-		clean("discard_because.lang"),
-		clean("foreign_acquire_one.lang"),
-		clean("nonlocal_exit_probe.lang"),
+		cut("discard_because.lang"),
+		cut("foreign_acquire_one.lang"),
+		cut("nonlocal_exit_probe.lang"),
 		// D-07-40 (deliberate edit): this fixture's refusal moved from a
 		// syntax-level refusal to a check-level one (D-07-01) -- the parser
 		// now accepts a bare call's shape unconditionally, and check refuses
@@ -1242,7 +1262,7 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		// are unchanged; only what layer refuses the SEMANTIC shape moved).
 		refused("fallible_call_unconsumed.lang", 2, "format.non_canonical", "syntax.fallible_call_not_consumed"),
 		refused("foreign_call_target_not_foreign.lang", 0, "", "core.call_target_not_foreign"),
-		refused("foreign_origin_omitted.lang", 0, "", "core.foreign_origin_omitted"),
+		cutAfterCheckRefusal("foreign_origin_omitted.lang", "core.foreign_origin_omitted"),
 		refused("foreign_policy_value_injection.lang", 0, "", "check.foreign_policy_value_unsafe"),
 		refused("foreign_unwind_undeclared.lang", 0, "", "foreign.unwind_policy_undeclared"),
 	}
