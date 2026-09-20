@@ -153,8 +153,8 @@ func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 // phase's committed generated-C golden. Digests were computed from the tree
 // as it stood immediately before this plan's Task 2 change.
 var previousPhaseGoldenCDigests = map[string]string{
-	"testdata/phase1/generated.golden.c":               "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74",
-	"testdata/phase2/owned_transfer.golden.c":          "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8",
+	"testdata/phase1/generated.golden.c":               "1fd8aff8ee28de7ec39e559a7ca9ce50e480ecfffede617c36b2282c60cc122a",
+	"testdata/phase2/owned_transfer.golden.c":          "f324f24db3ca0dfa8006b5c7fbec4263a6daf2dcbe220d49ea19167920799686",
 	"testdata/phase4/foreign_layout_mismatch.golden.c": "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031",
 	"testdata/phase5/restrict_borrow.golden.c":         "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0",
 }
@@ -188,10 +188,10 @@ type phase16GoldenChange struct {
 // executable semantic witness records the independent evidence for the
 // emitter responsibility change.
 var phase16GoldenChangeLedger = []phase16GoldenChange{
-	{Path: "testdata/phase1/generated.golden.c", State: phase16GoldenPreCut, OldSHA256: "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "pre-cut legacy match output remains distinct from direct schema-2 output", SemanticWitness: "TestPhase16DirectProgramFourTierDifferential/Toggle", N1Fixture: "testdata/phase1/toggle.lang", ReviewDisposition: "retain pre-cut divergence until Plan 16-09 atomic authority cut"},
-	{Path: "testdata/phase2/owned_transfer.golden.c", State: phase16GoldenPreCut, OldSHA256: "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "pre-cut legacy schema-1 output remains distinct from direct schema-2 output", SemanticWitness: "TestPhase16DirectProgramFourTierDifferential/OwnedTransfer", N1Fixture: "testdata/phase2/owned_transfer.lang", ReviewDisposition: "retain pre-cut divergence until Plan 16-09 atomic authority cut"},
-	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", State: phase16GoldenPreCut, OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", MovedResponsibility: "legacy foreign emitter remains outside emitProgram", StructuralReason: "foreign lowering is explicit M004 debt and not an admitted program shape", SemanticWitness: "TestProgramBranchValidationOrder/foreign_shape_precedes_preflight", N1Fixture: "testdata/phase4/foreign_layout_mismatch.lang", ReviewDisposition: "preserve unchanged pending owned M004 foreign lowering"},
-	{Path: "testdata/phase5/restrict_borrow.golden.c", State: phase16GoldenPreCut, OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", MovedResponsibility: "legacy by-pointer emitter remains outside emitProgram", StructuralReason: "cut-m004 excludes every by-pointer family from program admission", SemanticWitness: "TestProgramBorrowedByPointerDisposition", N1Fixture: "testdata/phase5/restrict_borrow.lang", ReviewDisposition: "preserve unchanged pending M004 discharge-pair design"},
+	{Path: "testdata/phase1/generated.golden.c", State: phase16GoldenPostCut, OldSHA256: "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74", NewSHA256: "1fd8aff8ee28de7ec39e559a7ca9ce50e480ecfffede617c36b2282c60cc122a", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public match dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase1/toggle.lang", N1Fixture: "testdata/phase1/toggle.lang", ReviewDisposition: "post-cut public/direct byte identity"},
+	{Path: "testdata/phase2/owned_transfer.golden.c", State: phase16GoldenPostCut, OldSHA256: "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8", NewSHA256: "f324f24db3ca0dfa8006b5c7fbec4263a6daf2dcbe220d49ea19167920799686", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public linear dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase2/owned_transfer.lang", N1Fixture: "testdata/phase2/owned_transfer.lang", ReviewDisposition: "post-cut public/direct byte identity"},
+	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", State: phase16GoldenPostCut, OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", NewSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", MovedResponsibility: "foreign lowering remains outside emitProgram", StructuralReason: "foreign lowering is explicit cut-M004 debt and not an admitted program shape", SemanticWitness: "TestProgramBranchValidationOrder/foreign_shape_precedes_preflight", N1Fixture: "testdata/phase4/foreign_layout_mismatch.lang", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
+	{Path: "testdata/phase5/restrict_borrow.golden.c", State: phase16GoldenPostCut, OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", NewSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", MovedResponsibility: "by-pointer lowering remains outside emitProgram", StructuralReason: "cut-M004 excludes every by-pointer family from program admission", SemanticWitness: "TestProgramBorrowedByPointerDisposition", N1Fixture: "testdata/phase5/restrict_borrow.lang", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
 }
 
 func phase16GoldenLedgerProblems(digests map[string]string, ledger []phase16GoldenChange, current map[string]string) []string {
@@ -304,13 +304,13 @@ func TestPhase16GoldenChangeLedgerRejectsFaults(t *testing.T) {
 		mutate     func([]phase16GoldenChange, map[string]string, map[string]string)
 	}{
 		{"malformed_old_digest", "malformed old digest", func(l []phase16GoldenChange, _, _ map[string]string) { l[0].OldSHA256 = "bad" }},
-		{"premature_post_cut_digest", "prematurely records new digest", func(l []phase16GoldenChange, _, _ map[string]string) { l[0].NewSHA256 = l[0].OldSHA256 }},
+		{"missing_post_cut_digest", "malformed or missing post-cut new digest", func(l []phase16GoldenChange, _, _ map[string]string) { l[0].NewSHA256 = "" }},
 		{"missing_witness", "missing semantic witness", func(l []phase16GoldenChange, _, _ map[string]string) { l[0].SemanticWitness = "" }},
 		{"duplicate_path", "duplicate ledger path", func(l []phase16GoldenChange, _, _ map[string]string) { l[1].Path = l[0].Path }},
-		{"stale_current_file", "pre-cut map/current digest", func(_ []phase16GoldenChange, _ map[string]string, current map[string]string) {
+		{"stale_current_file", "post-cut map/current/new digests disagree", func(_ []phase16GoldenChange, _ map[string]string, current map[string]string) {
 			current["testdata/phase1/generated.golden.c"] = strings.Repeat("0", 64)
 		}},
-		{"map_mismatch", "pre-cut map/current digest", func(_ []phase16GoldenChange, digests, _ map[string]string) {
+		{"map_mismatch", "post-cut map/current/new digests disagree", func(_ []phase16GoldenChange, digests, _ map[string]string) {
 			digests["testdata/phase1/generated.golden.c"] = strings.Repeat("0", 64)
 		}},
 	}
@@ -325,16 +325,14 @@ func TestPhase16GoldenChangeLedgerRejectsFaults(t *testing.T) {
 	}
 	t.Run("post_cut_state_requires_coherent_new_baseline", func(t *testing.T) {
 		ledger, digests, current := cloneLedger(), cloneMap(previousPhaseGoldenCDigests), cloneMap(baselineCurrent)
-		for index := range ledger {
-			ledger[index].State = phase16GoldenPostCut
-			ledger[index].NewSHA256 = ledger[index].OldSHA256 // unchanged bytes are an honest post-cut possibility.
-		}
 		if problems := phase16GoldenLedgerProblems(digests, ledger, current); len(problems) != 0 {
 			t.Fatalf("coherent post-cut state rejected: %v", problems)
 		}
-		ledger[0].NewSHA256 = ""
-		if problems := phase16GoldenLedgerProblems(digests, ledger, current); !strings.Contains(strings.Join(problems, "\n"), "missing post-cut new digest") {
-			t.Fatalf("post-cut missing new digest passed: %v", problems)
+		// Changing only the map simulates the forbidden partial cutover in
+		// which the golden and ledger advanced but the pinned map did not.
+		digests[ledger[0].Path] = ledger[0].OldSHA256
+		if problems := phase16GoldenLedgerProblems(digests, ledger, current); !strings.Contains(strings.Join(problems, "\n"), "post-cut map/current/new digests disagree") {
+			t.Fatalf("partial post-cut transition passed: %v", problems)
 		}
 	})
 }

@@ -3,6 +3,9 @@ package cgen_test
 import (
 	"context"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"strings"
 	"testing"
@@ -18,6 +21,45 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// TestPublicDispatchUsesOnlyEmitProgram parses the production source so the
+// sole-route claim cannot be satisfied by a comment or an incidental runtime
+// result. Each public API may validate first, but its only emitter call is the
+// whole-program implementation.
+func TestPublicDispatchUsesOnlyEmitProgram(t *testing.T) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, testsupport.ProjectPath("internal", "compiler", "cgen", "cgen.go"), nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"Emit", "EmitNative"} {
+		var declaration *ast.FuncDecl
+		for _, candidate := range file.Decls {
+			function, ok := candidate.(*ast.FuncDecl)
+			if ok && function.Name.Name == name {
+				declaration = function
+				break
+			}
+		}
+		if declaration == nil {
+			t.Fatalf("missing public dispatcher %s", name)
+		}
+		var emitterCalls []string
+		ast.Inspect(declaration.Body, func(node ast.Node) bool {
+			call, ok := node.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			if identifier, ok := call.Fun.(*ast.Ident); ok && len(identifier.Name) >= 4 && identifier.Name[:4] == "emit" {
+				emitterCalls = append(emitterCalls, identifier.Name)
+			}
+			return true
+		})
+		if len(emitterCalls) != 1 || emitterCalls[0] != "emitProgram" {
+			t.Fatalf("%s emitter calls = %v, want only emitProgram", name, emitterCalls)
+		}
+	}
+}
 
 // checkedPhase07Program parses the tracked adversarial fixture through the
 // normal checker and independent core peer; the 61-node assertion below is
