@@ -494,10 +494,14 @@ func TestCleanupInjectorReusesReleaseOmissionRunner(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cSource, err := cgen.EmitNative(checked.Program)
+	if _, err := cgen.EmitNative(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("EmitNative must retain the named M004 refusal, got %v", err)
+	}
+	historical, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "acquire_three_success.c"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	cSource := string(historical)
 	originalCount := strings.Count(cSource, releaseMarker)
 	if originalCount == 0 {
 		t.Fatal("fixture's generated C carries no release-site marker; test setup is broken")

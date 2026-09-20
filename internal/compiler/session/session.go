@@ -475,6 +475,38 @@ func Phase4CompareThreeEngines(fixture string, interpreted, o0, o3 execution.Exe
 	return nil
 }
 
+// ProjectExecutionSchema2 adapts the interpreter's retained historical
+// execution document to the schema-2 boundary used by the whole-program C
+// emitter.  It is deliberately a comparison-boundary projection: it does not
+// participate in checking, emission, or execution.  Native program emission
+// already writes schema-2 directly, while the interpreter keeps its older
+// event identity for compatibility with pre-cut evidence.
+func ProjectExecutionSchema2(program core.Program, document execution.Execution) (execution.Execution, error) {
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return execution.Execution{}, err
+	}
+	invocation, err := execution.FormatInvocation(entry.ID, nil)
+	if err != nil {
+		return execution.Execution{}, err
+	}
+	document.Schema = execution.Schema2
+	bareMatch := entry.Match != nil && entry.Linear == nil
+	for index := range document.Events {
+		document.Events[index].Schema = execution.Schema2
+		document.Events[index].Invocation = invocation
+		document.Events[index].Input = ""
+		document.Events[index].Output = ""
+		if bareMatch {
+			document.Events[index].ID = entry.ID + ":match:return"
+			document.Events[index].SourcePlace = entry.Parameter.ID
+			document.Events[index].TargetPlace = ""
+			document.Events[index].TypeID = entry.Parameter.Type
+		}
+	}
+	return document, nil
+}
+
 // Phase4ThreeEngineDifferential is task 04-07-02's own differential
 // (ROADMAP SC4): it drives program's named function through the
 // interpreter and both native optimization levels for input, then hands

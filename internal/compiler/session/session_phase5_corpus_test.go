@@ -375,6 +375,9 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 	}
 	cSource, err := cgen.EmitNative(program)
 	if err != nil {
+		if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") || strings.Contains(err.Error(), "by-pointer bodies are not supported") {
+			t.Skipf("Phase 16 M004 public refusal is exercised separately from this admitted schema-2 differential: %v", err)
+		}
 		t.Fatalf("%s: cgen.EmitNative: %v", fixture, err)
 	}
 	baseRunner := native.DefaultRunner()
@@ -390,6 +393,10 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 		interpreted, err := interp.Run(program, functionName, input)
 		if err != nil {
 			t.Fatalf("%s input=%q: interp.Run: %v", fixture, input, err)
+		}
+		interpreted, err = session.ProjectExecutionSchema2(program, interpreted)
+		if err != nil {
+			t.Fatalf("%s input=%q: schema-2 projection: %v", fixture, input, err)
 		}
 		runner := baseRunner
 		runner.Expect = phase5ExpectForOutcomeKind(interpreted.Outcome.Kind)
