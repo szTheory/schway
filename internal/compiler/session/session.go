@@ -491,7 +491,11 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 		return execution.Execution{}, err
 	}
 	document.Schema = execution.Schema2
-	bareMatch := entry.Match != nil && entry.Linear == nil
+	// Only the legacy one-event switch document needs its historical match
+	// return identity projected.  A match with arm operations (for example a
+	// defect terminal) already has operation identities that correspond to
+	// the program emitter and must not be collapsed into one synthetic event.
+	bareMatch := entry.Match != nil && entry.Linear == nil && len(document.Events) == 1
 	for index := range document.Events {
 		document.Events[index].Schema = execution.Schema2
 		document.Events[index].Invocation = invocation
