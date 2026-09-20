@@ -190,12 +190,8 @@ func TestPrivateHeaderIsIncludedOnlyByConformanceUnit(t *testing.T) {
 	privateHeaderPath := testsupport.ProjectPath("native", "lang_foreign_resource_private.h")
 	includeLine := `#include "` + privateHeaderPath + `"`
 
-	ordinary, err := cgen.Emit(checked.Program)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(ordinary, privateHeaderPath) {
-		t.Fatalf("ordinary Emit output mentions the private header path:\n%s", ordinary)
+	if _, err := cgen.Emit(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("ordinary Emit must retain the named M004 refusal, got %v", err)
 	}
 	header, err := cgen.EmitForeignHeader(checked.Program)
 	if err != nil {
@@ -238,11 +234,10 @@ var hostileForeignSymbols = []struct {
 // fragment was ever produced.
 func TestForeignSymbolInjectionNeverReachesGeneratedC(t *testing.T) {
 	positiveControl := foreignAcquireCheckedProgram(t)
-	if _, err := cgen.Emit(positiveControl.Program); err != nil {
-		t.Fatalf("positive control: unmutated program failed to Emit: %v", err)
-	}
-	if _, err := cgen.EmitNative(positiveControl.Program); err != nil {
-		t.Fatalf("positive control: unmutated program failed to EmitNative: %v", err)
+	for _, emit := range []func(core.Program) (string, error){cgen.Emit, cgen.EmitNative} {
+		if _, err := emit(positiveControl.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+			t.Fatalf("positive control must retain named M004 refusal, got %v", err)
+		}
 	}
 
 	for _, hostileCase := range hostileForeignSymbols {
@@ -487,13 +482,13 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 		{
 			name:     "Buffer move",
 			source:   "module owned.transfer\nexport { fn relay }\nfn relay(buffer: Buffer) -> Buffer {\n  let delivered = take buffer\n  delivered\n}\n",
-			outcome:  "lang_write_buffer_hex(&lang_value_delivered)",
+			outcome:  "lang_write_buffer_hex(&lang_entry_output)",
 			transfer: "lang_record_event(\"value.transferred\"",
 		},
 		{
 			name:     "Byte copy",
 			source:   "module owned.copy\nexport { fn retain }\nfn retain(code: Byte) -> Byte {\n  let kept = code\n  kept\n}\n",
-			outcome:  "lang_write_byte(lang_value_kept)",
+			outcome:  "lang_write_byte(lang_entry_output)",
 			transfer: "lang_record_event(\"value.copied\"",
 		},
 	}
@@ -508,7 +503,7 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, required := range []string{
-				"#define LANG_OUTPUT_LIMIT 65536u",
+				"#define LANG_OUTPUT_LIMIT 16777216u",
 				"static int lang_write_json_string(",
 				"static int lang_record_event(",
 				test.transfer,
@@ -859,10 +854,14 @@ func TestRestrictEmittedOnlyWithAliasFact(t *testing.T) {
 	if len(positiveChecked.Diagnostics) != 0 {
 		t.Fatalf("fixture failed to check: %+v", positiveChecked.Diagnostics)
 	}
-	positiveGenerated, err := cgen.Emit(positiveChecked.Program)
+	if _, err := cgen.Emit(positiveChecked.Program); err == nil || !strings.Contains(err.Error(), "by-pointer bodies are not supported") {
+		t.Fatalf("positive by-pointer fixture must retain named M004 refusal, got %v", err)
+	}
+	positiveBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "restrict_borrow.c"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	positiveGenerated := string(positiveBytes)
 	// "restrict" as a substring also appears inside this fixture's own
 	// module/function identifiers ("phase5.restrict_borrow"), so the
 	// falsifiable count is the actual C `*restrict ` qualifier token, not a
@@ -896,10 +895,14 @@ func TestRestrictEmittedOnlyWithAliasFact(t *testing.T) {
 // proof: the declaration-site ban stays exactly as strict as Phase 4.
 func TestRestrictNeverOnForeignExtern(t *testing.T) {
 	checked := foreignAcquireCheckedProgram(t)
-	cSource, err := cgen.Emit(checked.Program)
+	if _, err := cgen.Emit(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("foreign fixture must retain named M004 refusal, got %v", err)
+	}
+	cSourceBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "foreign_acquire_one.c"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	cSource := string(cSourceBytes)
 	header, err := cgen.EmitForeignHeader(checked.Program)
 	if err != nil {
 		t.Fatal(err)
