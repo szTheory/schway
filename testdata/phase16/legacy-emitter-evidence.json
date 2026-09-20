@@ -1,0 +1,10 @@
+{
+  "schema": "phase16.legacy-emitter-evidence/1",
+  "cut_commit": "0607486",
+  "records": [
+    {"fixture":"testdata/phase4/foreign_acquire_one.lang","fixture_sha256":"f66c55e4cf0b1dab45408c805c131848acf5f5ae1e11fa8ba2746181be409130","family":"foreign-m004","artifact":"testdata/phase16/historical/foreign_acquire_one.c","refusal":"multi-function foreign-call bodies are not supported by native emission this phase","witness":"TestLegacyEmitterEvidence"},
+    {"fixture":"testdata/phase5/retained_pointer.lang","fixture_sha256":"5136960f513341e8a5167bb80ee0de1228887b038e42f6befa5faf763e853957","family":"foreign-m004","artifact":"testdata/phase16/historical/retained_pointer.c","refusal":"multi-function foreign-call bodies are not supported by native emission this phase","witness":"TestLegacyEmitterEvidence"},
+    {"fixture":"testdata/phase5/inline_across_foreign.lang","fixture_sha256":"7d2ff2d799196b1a8b28025fc8081bd0675591c38c5485a998744c1fc47d95f4","family":"foreign-m004","artifact":"testdata/phase16/historical/inline_across_foreign.c","refusal":"multi-function foreign-call bodies are not supported by native emission this phase","witness":"TestLegacyEmitterEvidence"},
+    {"fixture":"testdata/phase5/restrict_borrow.lang","fixture_sha256":"7a12f2a640947cc83c34aafaea84358a1d8e4d3358e424e30ea62fdff71ee1fe","family":"by-pointer-m004","artifact":"testdata/phase16/historical/restrict_borrow.c","refusal":"by-pointer bodies are not supported by whole-program native emission this phase","witness":"TestLegacyEmitterEvidence"}
+  ]
+}

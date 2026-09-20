@@ -1,0 +1,10 @@
+{
+  "schema": "phase16.legacy-emitter-artifacts/1",
+  "cut_commit": "0607486",
+  "artifacts": [
+    {"fixture":"testdata/phase4/foreign_acquire_one.lang","path":"testdata/phase16/historical/foreign_acquire_one.c","sha256":"621f23618ad0e849ae2c3e0d483ea16ce40af11333ac1d0a8176e4b798890998"},
+    {"fixture":"testdata/phase5/retained_pointer.lang","path":"testdata/phase16/historical/retained_pointer.c","sha256":"be02f1de9184b629e27deb121c260c39457bf301f25ba94e5a1915eb5598f1f7"},
+    {"fixture":"testdata/phase5/inline_across_foreign.lang","path":"testdata/phase16/historical/inline_across_foreign.c","sha256":"6d5fccd190b68bd98c2f0f8bb73ee45307dec297e11ba5c26edbfb0b369abc14"},
+    {"fixture":"testdata/phase5/restrict_borrow.lang","path":"testdata/phase16/historical/restrict_borrow.c","sha256":"05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0"}
+  ]
+}
