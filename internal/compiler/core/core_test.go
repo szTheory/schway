@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
@@ -19,6 +20,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/pathoracle"
 	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -104,20 +106,41 @@ func TestPreviousPhaseCoreBytesUnchanged(t *testing.T) {
 			if err != nil {
 				t.Fatalf("read fixture: %v", err)
 			}
-			product, diagnostics, err := evidence.Build(source, pinnedFacts)
-			if err != nil {
-				t.Fatalf("build: %v", err)
-			}
-			if len(diagnostics) > 0 {
-				t.Fatalf("unexpected diagnostics: %v", diagnostics)
-			}
-			sum := sha256.Sum256(product.CoreBytes)
+			coreBytes := phase16CoreBytes(t, source)
+			sum := sha256.Sum256(coreBytes)
 			got := hex.EncodeToString(sum[:])
 			if got != fixture.CoreSHA256 {
 				t.Fatalf("core bytes moved for %s: got sha256 %s, want %s", fixture.Path, got, fixture.CoreSHA256)
 			}
 		})
 	}
+}
+
+// phase16CoreBytes deliberately stops at the checked core boundary.  The
+// historical pin is a source-to-core invariant, not an assertion that every
+// pre-cut foreign/by-pointer fixture remains admitted to current native C
+// lowering.  Keeping that boundary explicit prevents a public M004 refusal
+// from laundering into an unrelated core-byte regression.
+func phase16CoreBytes(t *testing.T, source []byte) []byte {
+	t.Helper()
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse: %v", parsed.Diagnostics)
+	}
+	canonical := syntax.Format(parsed.Tree)
+	checked := check.Program(syntax.Parse(canonical).Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check: %v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("core validation: %v", validated.Problems)
+	}
+	encoded, err := json.Marshal(validated.Program())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return encoded
 }
 
 // TestPreviousPhaseManifestIDsUnchanged is TestPreviousPhaseCoreBytesUnchanged's
