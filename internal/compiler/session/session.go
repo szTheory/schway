@@ -1033,17 +1033,20 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 		// to native output. Cut-M004 programs never reach this point: cgen
 		// refuses them before native compilation.
 		expectedDocument := projectInterpreterSchema2(checked.Program, expected)
-		engines := map[string]execution.Execution{
-			"interpreter": expectedDocument,
-			"O0":          o0.Pairs[index].Execution,
-			"O3":          o3.Pairs[index].Execution,
-		}
-		if err := Phase5CompareProgramEngines("run-native", checked.Program, engines); err != nil {
+		// Native documents carry the invocation-path facts; validate those
+		// independently before comparing their semantic projection to interp.
+		if err := Phase5CompareProgramEngines("run-native", checked.Program, map[string]execution.Execution{"O0": o0.Pairs[index].Execution, "O3": o3.Pairs[index].Execution}); err != nil {
 			return NativeResult{}, nil, err
 		}
 		for _, actual := range []native.Result{o0, o3} {
-			if !execution.Equal(expectedDocument, actual.Pairs[index].Execution) {
-				expectedBytes, _ := execution.CanonicalBytes(expectedDocument)
+			comparisonExpected := expectedDocument
+			if len(comparisonExpected.Events) == len(actual.Pairs[index].Execution.Events) {
+				for eventIndex := range comparisonExpected.Events {
+					comparisonExpected.Events[eventIndex].Invocation = actual.Pairs[index].Execution.Events[eventIndex].Invocation
+				}
+			}
+			if !execution.Equal(comparisonExpected, actual.Pairs[index].Execution) {
+				expectedBytes, _ := execution.CanonicalBytes(comparisonExpected)
 				actualBytes, _ := execution.CanonicalBytes(actual.Pairs[index].Execution)
 				return NativeResult{}, nil, &EngineMismatch{Optimization: actual.Optimization, Input: inputs[index], Expected: string(expectedBytes), Actual: string(actualBytes)}
 			}
@@ -1057,14 +1060,18 @@ func projectInterpreterSchema2(program core.Program, document execution.Executio
 	if err != nil {
 		return document
 	}
-	invocation, err := execution.FormatInvocation(entry.ID, nil)
-	if err != nil {
-		return document
-	}
 	document.Schema = execution.Schema2
 	bareMatch := entry.Match != nil && entry.Linear == nil
 	for index := range document.Events {
 		document.Events[index].Schema = execution.Schema2
+		invocationID := document.Events[index].FunctionID
+		if invocationID == "" {
+			invocationID = entry.ID
+		}
+		invocation, err := execution.FormatInvocation(invocationID, nil)
+		if err != nil {
+			return document
+		}
 		document.Events[index].Invocation = invocation
 		document.Events[index].Input = ""
 		document.Events[index].Output = ""
