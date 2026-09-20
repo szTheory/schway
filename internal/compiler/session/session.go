@@ -1103,7 +1103,18 @@ func projectInterpreterSchema2(program core.Program, document execution.Executio
 		return document
 	}
 	document.Schema = execution.Schema2
-	bareMatch := entry.Match != nil && entry.Linear == nil
+	defectReasons := map[string]string{}
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpDefect && operation.Reason != "" {
+				defectReasons[operation.ID+":event:defected"] = operation.Reason
+			}
+		}
+	}
+	bareMatch := entry.Match != nil && entry.Linear == nil && len(document.Events) == 1
 	for index := range document.Events {
 		document.Events[index].Schema = execution.Schema2
 		invocationID := document.Events[index].FunctionID
@@ -1116,7 +1127,11 @@ func projectInterpreterSchema2(program core.Program, document execution.Executio
 		}
 		document.Events[index].Invocation = invocation
 		document.Events[index].Input = ""
-		document.Events[index].Output = ""
+		if document.Events[index].Kind != "function.defected" {
+			document.Events[index].Output = ""
+		} else if document.Events[index].Output == "" {
+			document.Events[index].Output = defectReasons[document.Events[index].ID]
+		}
 		if bareMatch {
 			document.Events[index].ID = entry.ID + ":match:return"
 			document.Events[index].SourcePlace = entry.Parameter.ID
