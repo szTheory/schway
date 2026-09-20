@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
@@ -44,11 +45,14 @@ func compileRetainedPointerFixture(t *testing.T) string {
 	if !validated.Valid {
 		t.Fatalf("fixture rejected by corevalidate: %+v", validated.Problems)
 	}
-	cSource, err := cgen.EmitNative(validated.Program())
-	if err != nil {
-		t.Fatalf("cgen failed: %v", err)
+	if _, err := cgen.EmitNative(validated.Program()); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("EmitNative must retain the named M004 refusal, got %v", err)
 	}
-	return cSource
+	cSource, err := os.ReadFile(filepath.Join(projectRoot(), "testdata", "phase16", "historical", "retained_pointer.c"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(cSource)
 }
 
 // TestRetainedPointerFixtureIsUBUnderPlainRun is D-05-10's explicit

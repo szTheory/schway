@@ -40,10 +40,14 @@ func compiledForeignAcquireOneBinary(t *testing.T) (string, func()) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
 	}
-	cSource, err := cgen.EmitNative(checked.Program)
+	if _, err := cgen.EmitNative(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("EmitNative must retain the named M004 refusal, got %v", err)
+	}
+	cSourceBytes, err := os.ReadFile(filepath.Join(projectRoot(), "testdata", "phase16", "historical", "foreign_acquire_one.c"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	cSource := string(cSourceBytes)
 	runner := DefaultRunner()
 	runner.ForeignSources = []string{ForeignResourceSourcePath()}
 	binaryPath, cleanup, err := runner.CompileOnly(context.Background(), cSource, "-O0")

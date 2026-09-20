@@ -35,11 +35,18 @@ func phase5LTOFixtureSource(t *testing.T) string {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
 	}
-	cSource, err := cgen.EmitNative(checked.Program)
-	if err != nil {
-		t.Fatalf("EmitNative failed: %v", err)
+	// This fixture is deliberately outside the Phase 16 admitted surface.
+	// Keep the current public refusal live, then run the historical runner
+	// control from the digest-pinned artifact instead of recreating it through
+	// a second lowering authority.
+	if _, err := cgen.EmitNative(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("EmitNative must retain the named M004 refusal, got %v", err)
 	}
-	return cSource
+	cSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "inline_across_foreign.c"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(cSource)
 }
 
 // nonPathTokens filters every argument that looks like a filesystem path
@@ -353,11 +360,11 @@ func TestCompositionOnlyLTODivergence(t *testing.T) {
 	wrapperPlainPath := writeCompositionSource(t, dir, "wrapper_plain.c", compositionOnlyWrapperSource(false))
 
 	type compositionConfig struct {
-		name       string
-		calleePath string
+		name        string
+		calleePath  string
 		wrapperPath string
-		restrict   bool
-		aliased    bool
+		restrict    bool
+		aliased     bool
 	}
 	configs := []compositionConfig{
 		{name: "none", calleePath: calleePlainPath, wrapperPath: wrapperPlainPath, restrict: false, aliased: true},
