@@ -500,7 +500,13 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 		document.Events[index].Schema = execution.Schema2
 		document.Events[index].Invocation = invocation
 		document.Events[index].Input = ""
-		document.Events[index].Output = ""
+		// Schema-2 deliberately omits legacy event decoration, except a defect
+		// reason: the program emitter records the checked operation reason as
+		// the terminal event's output and the interpreter already owns that
+		// same semantic fact.
+		if document.Events[index].Kind != "function.defected" {
+			document.Events[index].Output = ""
+		}
 		if bareMatch {
 			document.Events[index].ID = entry.ID + ":match:return"
 			document.Events[index].SourcePlace = entry.Parameter.ID
