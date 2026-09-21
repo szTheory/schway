@@ -107,33 +107,46 @@ func TestPhase16PublicEmitterConsumerInventory(t *testing.T) {
 		t.Fatalf("unexpected registry schema %q", registry.Schema)
 	}
 	actual := phase16PublicEmitterCalls(t, testsupport.ProjectPath("internal", "compiler"))
+	if problems := phase16ConsumerRegistryProblems(actual, registry); len(problems) != 0 {
+		t.Fatal(strings.Join(problems, "\n"))
+	}
+}
+
+// phase16ConsumerRegistryProblems is the shared, fail-closed law for the
+// source-derived inventory and its hand-maintained disposition registry.
+func phase16ConsumerRegistryProblems(actual []string, registry phase16ConsumerRegistry) []string {
+	var problems []string
 	seen := make(map[string]phase16ConsumerRegistryRow, len(registry.Entries))
 	for _, row := range registry.Entries {
 		if row.Call == "" || (row.Classification != phase16AdmittedDynamic && row.Classification != phase16RefusalWithFrozen) {
-			t.Fatalf("invalid registry row: %+v", row)
+			problems = append(problems, "invalid classification for registry row "+row.Call)
+			continue
 		}
 		if row.Classification == phase16RefusalWithFrozen && !strings.HasPrefix(row.Witness, "probe:") {
-			t.Fatalf("refusal row %q lacks named probe witness", row.Call)
+			problems = append(problems, "missing refusal witness for registry row "+row.Call)
 		}
 		if _, duplicate := seen[row.Call]; duplicate {
-			t.Fatalf("duplicate registry entry %q", row.Call)
+			problems = append(problems, "duplicate registry entry "+row.Call)
+			continue
 		}
 		seen[row.Call] = row
 	}
-	if len(actual) != len(seen) {
-		t.Fatalf("public emitter inventory cardinality drift: source=%d registry=%d", len(actual), len(seen))
-	}
 	for _, call := range actual {
 		if _, ok := seen[call]; !ok {
-			t.Fatalf("unclassified public emitter call %q", call)
+			problems = append(problems, "missing registry entry for source call "+call)
 		}
 	}
 	for call := range seen {
 		index := sort.SearchStrings(actual, call)
 		if index == len(actual) || actual[index] != call {
-			t.Fatalf("stale registry call %q", call)
+			problems = append(problems, "stale registry entry "+call)
 		}
 	}
+	if len(actual) != len(seen) {
+		problems = append(problems, "public emitter inventory cardinality drift: source="+strconv.Itoa(len(actual))+" registry="+strconv.Itoa(len(seen)))
+	}
+	sort.Strings(problems)
+	return problems
 }
 
 func TestPhase16EmitterInventoryMutationControls(t *testing.T) {
