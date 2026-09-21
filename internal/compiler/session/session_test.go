@@ -1838,7 +1838,7 @@ func nonlocalProbeChecked(t *testing.T) session.CheckResult {
 // never a hardcoded exit code (D-04-24, reused here).
 func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := cgen.EmitNative(checked.Program)
+	generated, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1877,7 +1877,7 @@ func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 // use-after-free by a stray release running from indeterminate state.
 func TestPadRunsNoRelease(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := cgen.EmitNative(checked.Program)
+	generated, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1907,7 +1907,7 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	generated, err := cgen.EmitNative(checked.Program)
+	generated, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1938,7 +1938,7 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 // than by assertion alone.
 func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := cgen.EmitNative(checked.Program)
+	generated, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1963,7 +1963,7 @@ func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 // SPECIFICALLY as a leak-count disagreement, not merely "some difference."
 func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := cgen.EmitNative(checked.Program)
+	generated, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
