@@ -2,15 +2,10 @@ package session
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
@@ -23,207 +18,11 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 )
 
-// phase16FrozenEmitterEvidence is the narrow, refusal-first bridge for the
-// M004 families cut from public native emission in 0607486.  It is deliberately
-// local to verification controls: callers always try cgen.EmitNative first and
-// only receive historical C after the current, family-specific refusal and both
-// immutable digests have been verified.
-type phase16FrozenEmitterEvidence struct {
-	refusal        string
-	fixtureSHA256  string
-	artifact       string
-	artifactSHA256 string
-}
-
-type phase16GeneratedFrozenEvidence struct {
-	Schema    string
-	Generator string
-	Records   []struct {
-		ID             string
-		ProgramSHA256  string
-		Artifact       string
-		ArtifactSHA256 string
-	}
-}
-
-type phase16FileFrozenEvidence struct {
-	Schema  string
-	Records []struct {
-		Fixture, FixtureSHA256, Artifact, ArtifactSHA256 string
-	}
-}
-
-var phase16FrozenEmitterEvidenceByFixture = map[string]phase16FrozenEmitterEvidence{
-	"testdata/phase4/acquire_three_success.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "be62a50ecc048174f220cc3775c7abe34dcb856d835377e1059413d345ddbe75",
-		artifact:       "testdata/phase16/historical/acquire_three_success.c",
-		artifactSHA256: "b86133b1b92d05ac6b95a492a59d5e60e2ff4530a86d8650827a8c3d6253c1f2",
-	},
-	"testdata/phase4/foreign_acquire_one.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "f66c55e4cf0b1dab45408c805c131848acf5f5ae1e11fa8ba2746181be409130",
-		artifact:       "testdata/phase16/historical/foreign_acquire_one.c",
-		artifactSHA256: "621f23618ad0e849ae2c3e0d483ea16ce40af11333ac1d0a8176e4b798890998",
-	},
-	"testdata/phase4/acquire_three_fail_second.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "ce63c2a910af3ae6f45154fea2cea3af1aee1772293f372c09351113afd1d596",
-		artifact:       "testdata/phase16/historical/acquire_three_fail_second.c",
-		artifactSHA256: "ba992be43a9aab13663508d665daeca1ff8d8a2461eddc824cf54ebd2a2ecff2",
-	},
-	"testdata/phase4/acquire_three_fail_third.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "f6958321765b0793ad919875c2528c21b6dfe7b5ff916b8943e478d883d319dd",
-		artifact:       "testdata/phase16/historical/acquire_three_fail_third.c",
-		artifactSHA256: "4ebbf4228aa898242f7d1fb802c63b040a69fd13fb97b1ccee25a16c667e5841",
-	},
-	"testdata/phase4/nonlocal_exit_probe.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "92bd1a98a22fc50d5a5c07127187d0d1c4292f60508321d269ab30db595c36ae",
-		artifact:       "testdata/phase16/historical/nonlocal_exit_probe.c",
-		artifactSHA256: "685d4b88f67533cde6f40dbf9cb1762609fcdaa0174fd9d8a4fb2c99b17f5f14",
-	},
-	"testdata/phase5/retained_pointer.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "5136960f513341e8a5167bb80ee0de1228887b038e42f6befa5faf763e853957",
-		artifact:       "testdata/phase16/historical/retained_pointer.c",
-		artifactSHA256: "be02f1de9184b629e27deb121c260c39457bf301f25ba94e5a1915eb5598f1f7",
-	},
-	"testdata/phase5/allocator_mismatch.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "526b3a791ff0870aafc64a56efdd0d98a562a1236d634eacf3251c1ae33f34ef",
-		artifact:       "testdata/phase16/historical/allocator_mismatch.c",
-		artifactSHA256: "323175965d2fc24de70eebeb979a638f1cd71bbefc4f64d8c4f38b377ab00185",
-	},
-	"testdata/phase5/inline_across_foreign.lang": {
-		refusal:        "multi-function foreign-call bodies are not supported",
-		fixtureSHA256:  "7d2ff2d799196b1a8b28025fc8081bd0675591c38c5485a998744c1fc47d95f4",
-		artifact:       "testdata/phase16/historical/inline_across_foreign.c",
-		artifactSHA256: "6d5fccd190b68bd98c2f0f8bb73ee45307dec297e11ba5c26edbfb0b369abc14",
-	},
-	"testdata/phase5/restrict_borrow.lang": {
-		refusal:        "by-pointer bodies are not supported",
-		fixtureSHA256:  "7a12f2a640947cc83c34aafaea84358a1d8e4d3358e424e30ea62fdff71ee1fe",
-		artifact:       "testdata/phase16/historical/restrict_borrow.c",
-		artifactSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0",
-	},
-}
-
-// Phase16ControlNativeC returns generated C for an admitted program, or the
-// digest-bound historical C for a cut M004 verification control. It is not a
-// general emitter: an unrecognised fixture always receives cgen's error.
+// Phase16ControlNativeC is the production session boundary for native C.
+// The fixture parameter remains for operational-call compatibility, but cannot
+// select evidence: cgen.EmitNative is the sole emission authority.
 func Phase16ControlNativeC(program core.Program, fixture string) (string, error) {
-	if filepath.IsAbs(fixture) {
-		relative, relErr := filepath.Rel(nat03ProjectRoot(), fixture)
-		if relErr != nil {
-			return "", relErr
-		}
-		fixture = filepath.ToSlash(relative)
-	}
-	generated, err := cgen.EmitNative(program)
-	if err == nil {
-		return generated, nil
-	}
-	evidence, cut := phase16FrozenEmitterEvidenceByFixture[fixture]
-	if !cut {
-		if fixture != "" {
-			return phase16FileControlNativeC(fixture, err)
-		}
-		return phase16GeneratedControlNativeC(program, err)
-	}
-	if !strings.Contains(err.Error(), evidence.refusal) {
-		return "", fmt.Errorf("%s: public native refusal changed: got %q, want %q", fixture, err, evidence.refusal)
-	}
-	fixtureBytes, readErr := os.ReadFile(nat03CorpusPath(fixture))
-	if readErr != nil {
-		return "", fmt.Errorf("%s: reading frozen-evidence fixture: %w", fixture, readErr)
-	}
-	fixtureDigest := sha256.Sum256(fixtureBytes)
-	if hex.EncodeToString(fixtureDigest[:]) != evidence.fixtureSHA256 {
-		return "", fmt.Errorf("%s: frozen-evidence fixture digest changed", fixture)
-	}
-	artifactPath := filepath.Join(nat03ProjectRoot(), filepath.FromSlash(evidence.artifact))
-	artifact, readErr := os.ReadFile(artifactPath)
-	if readErr != nil {
-		return "", fmt.Errorf("%s: reading frozen evidence artifact: %w", fixture, readErr)
-	}
-	artifactDigest := sha256.Sum256(artifact)
-	if hex.EncodeToString(artifactDigest[:]) != evidence.artifactSHA256 {
-		return "", fmt.Errorf("%s: frozen evidence artifact digest changed", fixture)
-	}
-	return string(artifact), nil
-}
-
-func phase16FileControlNativeC(fixture string, refusal error) (string, error) {
-	if !strings.Contains(refusal.Error(), "foreign-call bodies are not supported") && !strings.Contains(refusal.Error(), "by-pointer bodies are not supported") {
-		return "", refusal
-	}
-	bytes, err := os.ReadFile(nat03CorpusPath("testdata/phase16/file-frozen-evidence.json"))
-	if err != nil {
-		return "", err
-	}
-	var manifest phase16FileFrozenEvidence
-	if err := json.Unmarshal(bytes, &manifest); err != nil || manifest.Schema != "phase16.file-frozen-evidence/1" {
-		return "", fmt.Errorf("invalid file frozen evidence manifest")
-	}
-	source, err := os.ReadFile(nat03CorpusPath(fixture))
-	if err != nil {
-		return "", err
-	}
-	sourceSum := sha256.Sum256(source)
-	for _, r := range manifest.Records {
-		if r.Fixture == fixture && r.FixtureSHA256 == hex.EncodeToString(sourceSum[:]) {
-			artifact, err := os.ReadFile(nat03CorpusPath(r.Artifact))
-			if err != nil {
-				return "", err
-			}
-			sum := sha256.Sum256(artifact)
-			if hex.EncodeToString(sum[:]) != r.ArtifactSHA256 {
-				return "", fmt.Errorf("file frozen artifact digest changed for %s", fixture)
-			}
-			return string(artifact), nil
-		}
-	}
-	return "", fmt.Errorf("file-backed cut fixture %q lacks digest-bound frozen evidence", fixture)
-}
-
-func phase16GeneratedControlNativeC(program core.Program, refusal error) (string, error) {
-	if !strings.Contains(refusal.Error(), "by-pointer bodies are not supported") && !strings.Contains(refusal.Error(), "foreign-call bodies are not supported") {
-		return "", refusal
-	}
-	manifestBytes, err := os.ReadFile(nat03CorpusPath("testdata/phase16/generated-frozen-evidence.json"))
-	if err != nil {
-		return "", fmt.Errorf("generated frozen evidence manifest: %w", err)
-	}
-	var manifest phase16GeneratedFrozenEvidence
-	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
-		return "", fmt.Errorf("decode generated frozen evidence manifest: %w", err)
-	}
-	if manifest.Schema != "phase16.generated-frozen-evidence/1" || manifest.Generator != "EnumeratePhase5Closure/v1" {
-		return "", fmt.Errorf("generated frozen evidence manifest has unsupported schema or generator")
-	}
-	canonical, err := json.Marshal(program)
-	if err != nil {
-		return "", fmt.Errorf("canonical generated program: %w", err)
-	}
-	digest := sha256.Sum256(canonical)
-	want := hex.EncodeToString(digest[:])
-	for _, record := range manifest.Records {
-		if record.ID != program.Module || record.ProgramSHA256 != want {
-			continue
-		}
-		artifact, err := os.ReadFile(nat03CorpusPath(record.Artifact))
-		if err != nil {
-			return "", fmt.Errorf("generated frozen artifact: %w", err)
-		}
-		artifactDigest := sha256.Sum256(artifact)
-		if hex.EncodeToString(artifactDigest[:]) != record.ArtifactSHA256 {
-			return "", fmt.Errorf("generated frozen artifact digest changed for %s", program.Module)
-		}
-		return string(artifact), nil
-	}
-	return "", fmt.Errorf("generated cut program %q lacks a digest-bound frozen artifact", program.Module)
+	return cgen.EmitNative(program)
 }
 
 // Phase5RequiredControls is the complete Phase 5 required-control list as
