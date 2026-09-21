@@ -2474,7 +2474,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	foreignRunner := runner
 	foreignRunner.ForeignSources = append(append([]string(nil), foreignRunner.ForeignSources...), native.ForeignResourceSourcePath())
 	omissionRunner := NewReleaseOmissionMutationRunner(foreignRunner)
-	_, _, omissionErr := RunNative(ctx, releaseSource, omissionRunner)
+	_, _, omissionErr := runNative(ctx, releaseSource, omissionRunner, "testdata/phase4/acquire_three_success.lang")
 	if omissionErr == nil {
 		addLane("lane:release-omitted", "fail", nil, releaseChecked.Work+len(omissionRunner.Optimizations()), len(releaseSource), laneStarted)
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:resource.release_omitted")
@@ -2519,7 +2519,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// human reviewer is most likely to actually read -- would otherwise go
 	// completely undetected (WR-01).
 	laneStarted = time.Now()
-	tracerCSource, tracerErr := cgen.Emit(positiveChecked.Program)
+	tracerCSource, tracerErr := Phase16ControlNativeC(positiveChecked.Program, "testdata/phase4/foreign_acquire_one.lang")
 	if tracerErr != nil {
 		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 1, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer C for attribute scan")
@@ -2539,7 +2539,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer conformance unit for attribute scan")
 	}
-	releaseCSource, releaseCSourceErr := cgen.Emit(releaseChecked.Program)
+	releaseCSource, releaseCSourceErr := Phase16ControlNativeC(releaseChecked.Program, "testdata/phase4/acquire_three_success.lang")
 	if releaseCSourceErr != nil {
 		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 5, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release C for attribute scan")
@@ -2713,7 +2713,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+1, len(nonlocalSource), laneStarted)
 		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "nonlocal_exit_probe.lang")
 	}
-	nonlocalCSource, nonlocalCSourceErr := cgen.EmitNative(nonlocalChecked.Program)
+	nonlocalCSource, nonlocalCSourceErr := Phase16ControlNativeC(nonlocalChecked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
 	if nonlocalCSourceErr != nil {
 		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+2, len(nonlocalSource), laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit nonlocal-exit probe C")
@@ -2868,7 +2868,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 			}
 		}
 		if len(dispatchProgram.Functions) == 1 {
-			if _, cgenErr := cgen.Emit(dispatchProgram); cgenErr != nil {
+			if _, cgenErr := Phase16ControlNativeC(dispatchProgram, "testdata/phase4/"+fixtureName); cgenErr != nil {
 				addLane("lane:kind-exhaustive-dispatch", "fail", nil, dispatchWork+1, len(fixtureSource), laneStarted)
 				return fail(protocol.StatusOperational, "verify.control_incomplete", "cgen dispatch error for "+fixtureName)
 			}

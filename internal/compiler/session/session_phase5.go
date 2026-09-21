@@ -47,11 +47,35 @@ var phase16FrozenEmitterEvidenceByFixture = map[string]phase16FrozenEmitterEvide
 		artifact:       "testdata/phase16/historical/foreign_acquire_one.c",
 		artifactSHA256: "621f23618ad0e849ae2c3e0d483ea16ce40af11333ac1d0a8176e4b798890998",
 	},
+	"testdata/phase4/acquire_three_fail_second.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "ce63c2a910af3ae6f45154fea2cea3af1aee1772293f372c09351113afd1d596",
+		artifact:       "testdata/phase16/historical/acquire_three_fail_second.c",
+		artifactSHA256: "ba992be43a9aab13663508d665daeca1ff8d8a2461eddc824cf54ebd2a2ecff2",
+	},
+	"testdata/phase4/acquire_three_fail_third.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "f6958321765b0793ad919875c2528c21b6dfe7b5ff916b8943e478d883d319dd",
+		artifact:       "testdata/phase16/historical/acquire_three_fail_third.c",
+		artifactSHA256: "4ebbf4228aa898242f7d1fb802c63b040a69fd13fb97b1ccee25a16c667e5841",
+	},
+	"testdata/phase4/nonlocal_exit_probe.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "92bd1a98a22fc50d5a5c07127187d0d1c4292f60508321d269ab30db595c36ae",
+		artifact:       "testdata/phase16/historical/nonlocal_exit_probe.c",
+		artifactSHA256: "685d4b88f67533cde6f40dbf9cb1762609fcdaa0174fd9d8a4fb2c99b17f5f14",
+	},
 	"testdata/phase5/retained_pointer.lang": {
 		refusal:        "multi-function foreign-call bodies are not supported",
 		fixtureSHA256:  "5136960f513341e8a5167bb80ee0de1228887b038e42f6befa5faf763e853957",
 		artifact:       "testdata/phase16/historical/retained_pointer.c",
 		artifactSHA256: "be02f1de9184b629e27deb121c260c39457bf301f25ba94e5a1915eb5598f1f7",
+	},
+	"testdata/phase5/allocator_mismatch.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "526b3a791ff0870aafc64a56efdd0d98a562a1236d634eacf3251c1ae33f34ef",
+		artifact:       "testdata/phase16/historical/allocator_mismatch.c",
+		artifactSHA256: "323175965d2fc24de70eebeb979a638f1cd71bbefc4f64d8c4f38b377ab00185",
 	},
 	"testdata/phase5/inline_across_foreign.lang": {
 		refusal:        "multi-function foreign-call bodies are not supported",

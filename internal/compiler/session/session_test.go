@@ -2325,7 +2325,7 @@ func assertTypedFailurePathAgrees(t *testing.T, fixture string, failOnCall int, 
 		t.Fatalf("interptestdirect.RunLinearBlockDirect: %v", err)
 	}
 
-	cSource, err := cgen.EmitNative(program)
+	cSource, err := session.Phase16ControlNativeC(program, "testdata/phase4/"+fixture)
 	if err != nil {
 		t.Fatalf("cgen.EmitNative: %v", err)
 	}

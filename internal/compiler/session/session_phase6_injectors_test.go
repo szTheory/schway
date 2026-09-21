@@ -644,7 +644,7 @@ func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cSource, err := cgen.EmitNative(checked.Program)
+	cSource, err := Phase16ControlNativeC(checked.Program, "testdata/phase4/acquire_three_success.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
