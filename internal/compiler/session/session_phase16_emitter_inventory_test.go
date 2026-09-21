@@ -150,8 +150,69 @@ func phase16ConsumerRegistryProblems(actual []string, registry phase16ConsumerRe
 }
 
 func TestPhase16EmitterInventoryMutationControls(t *testing.T) {
-	// The live scanner has explicit alias, same-package, dot-import, and local
-	// shadow branches; these literals prevent their intent from becoming vague.
+	actual := phase16PublicEmitterCalls(t, testsupport.ProjectPath("internal", "compiler"))
+	for _, mutate := range []struct {
+		name      string
+		wantClass string
+		apply     func(*phase16ConsumerRegistry)
+	}{
+		{
+			name:      "duplicate current row",
+			wantClass: "duplicate registry entry ",
+			apply: func(registry *phase16ConsumerRegistry) {
+				registry.Entries = append(registry.Entries, registry.Entries[0])
+			},
+		},
+		{
+			name:      "stale well-formed row",
+			wantClass: "stale registry entry ",
+			apply: func(registry *phase16ConsumerRegistry) {
+				registry.Entries = append(registry.Entries, phase16ConsumerRegistryRow{Call: "internal/compiler/session/not_present.go:EmitNative:1", Classification: phase16AdmittedDynamic})
+			},
+		},
+		{
+			name:      "missing current row",
+			wantClass: "missing registry entry for source call ",
+			apply: func(registry *phase16ConsumerRegistry) {
+				registry.Entries = registry.Entries[1:]
+			},
+		},
+		{
+			name:      "invalid classification",
+			wantClass: "invalid classification for registry row ",
+			apply: func(registry *phase16ConsumerRegistry) {
+				registry.Entries[0].Classification = "invented-classification"
+			},
+		},
+		{
+			name:      "missing refusal witness",
+			wantClass: "missing refusal witness for registry row ",
+			apply: func(registry *phase16ConsumerRegistry) {
+				for i := range registry.Entries {
+					if registry.Entries[i].Classification == phase16RefusalWithFrozen {
+						registry.Entries[i].Witness = ""
+						return
+					}
+				}
+				t.Fatal("fixture has no refusal row to mutate")
+			},
+		},
+	} {
+		t.Run(mutate.name, func(t *testing.T) {
+			got := phase16InventoryFixture(t)
+			mutate.apply(&got)
+			problems := phase16ConsumerRegistryProblems(actual, got)
+			for _, problem := range problems {
+				if strings.HasPrefix(problem, mutate.wantClass) {
+					return
+				}
+			}
+			t.Fatalf("mutation did not produce %q: %v", mutate.wantClass, problems)
+		})
+	}
+
+	// These sentinels protect the scanner's alias, same-package, dot-import,
+	// and local-shadow branches while the table above exercises the registry law.
 	for _, required := range []string{"aliases[receiver.Name]", "file.Name.Name == \"cgen\"", "cgen dot import"} {
 		data, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "session", "session_phase16_emitter_inventory_test.go"))
 		if err != nil {
@@ -161,4 +222,17 @@ func TestPhase16EmitterInventoryMutationControls(t *testing.T) {
 			t.Fatalf("missing mutation control for %q", required)
 		}
 	}
+}
+
+func phase16InventoryFixture(t *testing.T) phase16ConsumerRegistry {
+	t.Helper()
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "public-emitter-consumers.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var registry phase16ConsumerRegistry
+	if err := json.Unmarshal(data, &registry); err != nil {
+		t.Fatal(err)
+	}
+	return registry
 }
