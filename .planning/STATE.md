@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 16
-current_phase_name: Branch/Match Emitter Port
-status: executing
-stopped_at: Completed 16-15-PLAN.md
-last_updated: "2026-09-21T22:50:24.652Z"
+current_phase: 17
+current_phase_name: Return Type ≠ Parameter Type
+status: planning
+stopped_at: Phase 16 complete, ready to plan Phase 17
+last_updated: "2026-09-21T23:23:37.175Z"
 last_activity: 2026-09-21
-last_activity_desc: Phase 16 execution started
-state_head: 978a7848a704802703694ef1ab45f5ba956d849f
+last_activity_desc: Phase 16 complete, transitioned to Phase 17
+state_head: e8eb7af3e7cbf425a85fa4afdcbd1d2c366229f9
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 35
   completed_plans: 35
+  percent: 43
 ---
 
 # Project State
@@ -61,10 +62,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 16 (Branch/Match Emitter Port) — EXECUTING
-Plan: 2 of 15
-Status: Ready to execute
-Last activity: 2026-09-21 — Phase 16 execution started
+Phase: 17 — Return Type ≠ Parameter Type
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-21 — Phase 16 complete, transitioned to Phase 17
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -149,7 +150,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 133
+- Total plans completed: 148
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -170,6 +171,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 12 | 8 | - | - |
 | 14 | 13 | - | - |
 | 15 | 7 | - | - |
+| 16 | 15 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -589,7 +591,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-21T22:50:24.586Z
-Stopped at: Completed 16-15-PLAN.md
+Stopped at: Phase 16 complete, ready to plan Phase 17
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

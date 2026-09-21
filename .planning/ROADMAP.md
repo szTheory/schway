@@ -122,7 +122,7 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
 
 - [x] **Phase 14: Evidence Instrument and Honest Scoping** - The instruments stop reporting green for work that is merely wired.
 - [x] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable. (completed 2026-09-19)
-- [ ] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut.
+- [x] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut. (completed 2026-09-21)
 - [ ] **Phase 17: Return Type ≠ Parameter Type** - A function may return a type it was not given.
 - [ ] **Phase 18: Branch on a Computed Value** - A branch discriminates a value the function computed. **HARD-GATED on spike S-010.**
 - [ ] **Phase 19: Numeric Literals and `OpConst`** - Lang can name a value it was not given.
@@ -394,33 +394,33 @@ milestone; not a hard gate.
 
 **Wave 1**
 
-- [ ] 16-01-PLAN.md — prove the ordinary-linear tracer and derived resource tail through `emitProgram`
-- [ ] 16-04-PLAN.md — check in the exact-shape `restrict` probe and exhaustive structural refusal matrix
+- [x] 16-01-PLAN.md — prove the ordinary-linear tracer and derived resource tail through `emitProgram`
+- [x] 16-04-PLAN.md — check in the exact-shape `restrict` probe and exhaustive structural refusal matrix
 
 **Wave 2**
 
-- [ ] 16-02-PLAN.md — port branch blocks while preserving Phase 15 validation order
-- [ ] 16-05-PLAN.md — decide the evidence-bounded by-pointer admission or M004 cut
+- [x] 16-02-PLAN.md — port branch blocks while preserving Phase 15 validation order
+- [x] 16-05-PLAN.md — decide the evidence-bounded by-pointer admission or M004 cut
 
 **Wave 3**
 
-- [ ] 16-03-PLAN.md — port match payload and defect lowering through checker-owned layout facts
+- [x] 16-03-PLAN.md — port match payload and defect lowering through checker-owned layout facts
 
 **Wave 4**
 
-- [ ] 16-06-PLAN.md — implement the pointer disposition and formally amend/own every M004 cut
+- [x] 16-06-PLAN.md — implement the pointer disposition and formally amend/own every M004 cut
 
 **Wave 5**
 
-- [ ] 16-07-PLAN.md — establish byte, provenance-ledger, and independent four-tier convergence gates
+- [x] 16-07-PLAN.md — establish byte, provenance-ledger, and independent four-tier convergence gates
 
 **Wave 6**
 
-- [ ] 16-08-PLAN.md — obtain explicit approval for the one-way atomic authority cut
+- [x] 16-08-PLAN.md — obtain explicit approval for the one-way atomic authority cut
 
 **Wave 7**
 
-- [ ] 16-09-PLAN.md — flip dispatch, delete the three superseded laws in the same commit, and close validation
+- [x] 16-09-PLAN.md — flip dispatch, delete the three superseded laws in the same commit, and close validation
 
 ---
 
@@ -680,7 +680,7 @@ assurance-refactor milestone rather than a feature milestone.
 |-------|----------------|--------|-----------|
 | 14. Evidence Instrument and Honest Scoping | 13/13 | Complete    | 2026-09-18 |
 | 15. Event Identity (`lang.execution/2`) | 7/7 | Complete    | 2026-09-19 |
-| 16. Branch/Match Emitter Port | 0/? | Not started | - |
+| 16. Branch/Match Emitter Port | 15/15 | Complete    | 2026-09-21 |
 | 17. Return Type ≠ Parameter Type | 0/? | Not started | - |
 | 18. Branch on a Computed Value | 0/? | Not started (S-010 gate) | - |
 | 19. Numeric Literals and `OpConst` | 0/? | Not started | - |
