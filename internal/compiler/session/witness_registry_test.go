@@ -9,6 +9,7 @@ package session_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"go/ast"
@@ -29,6 +30,33 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+const phase16M004Witness = "probe:TestPhase16M004CorpusRefusal"
+
+type phase16LegacyEvidenceLedger struct {
+	Schema    string                     `json:"schema"`
+	CutCommit string                     `json:"cut_commit"`
+	Records   []phase16LegacyEvidenceRow `json:"records"`
+}
+
+type phase16LegacyEvidenceRow struct {
+	Fixture       string `json:"fixture"`
+	FixtureSHA256 string `json:"fixture_sha256"`
+	Artifact      string `json:"artifact"`
+	Witness       string `json:"witness"`
+}
+
+type phase16FileFrozenEvidenceLedger struct {
+	Schema  string                         `json:"Schema"`
+	Records []phase16FileFrozenEvidenceRow `json:"Records"`
+}
+
+type phase16FileFrozenEvidenceRow struct {
+	Fixture        string `json:"Fixture"`
+	FixtureSHA256  string `json:"FixtureSHA256"`
+	Artifact       string `json:"Artifact"`
+	ArtifactSHA256 string `json:"ArtifactSHA256"`
+}
 
 // TestPhase16EmitterInventoryRefusalWitnessesResolve keeps the inventory's
 // refusal rows tied to an executable named probe instead of a prose-only
@@ -60,6 +88,143 @@ func TestPhase16EmitterInventoryRefusalWitnessesResolve(t *testing.T) {
 	if refusals == 0 {
 		t.Fatal("inventory has no refusal-plus-frozen classifications")
 	}
+}
+
+// TestPhase16M004ProvenanceRegistryRejectsFaults is the quality-control
+// companion to the cgen manifest tests: the consumer inventory, the current
+// public-refusal probe, and the frozen manifest must remain one auditable
+// chain.  It mutates each link in memory so an uncited skip cannot make an
+// M004 cut look like a dynamic admission.
+func TestPhase16M004ProvenanceRegistryRejectsFaults(t *testing.T) {
+	registry, evidence, files := phase16M004WitnessFixture(t)
+	for _, mutate := range []struct {
+		name  string
+		apply func(*phase16ConsumerRegistry, *phase16LegacyEvidenceLedger, *phase16FileFrozenEvidenceLedger)
+	}{
+		{"missing citation", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
+			r.Entries[firstPhase16RefusalRow(r)].Witness = ""
+		}},
+		{"stale witness", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
+			r.Entries[firstPhase16RefusalRow(r)].Witness = "probe:TestNoLongerCurrent"
+		}},
+		{"changed digest reference", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
+			f.Records[0].FixtureSHA256 = strings.Repeat("0", 64)
+		}},
+		{"classification drift", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
+			r.Entries[firstPhase16RefusalRow(r)].Classification = phase16AdmittedDynamic
+		}},
+	} {
+		t.Run(mutate.name, func(t *testing.T) {
+			gotRegistry, gotEvidence, gotFiles := clonePhase16M004WitnessFixture(t, registry, evidence, files)
+			mutate.apply(&gotRegistry, &gotEvidence, &gotFiles)
+			if problems := phase16M004ProvenanceProblems(gotRegistry, gotEvidence, gotFiles); len(problems) == 0 {
+				t.Fatal("mutated M004 registry/provenance chain was accepted")
+			}
+		})
+	}
+}
+
+func phase16M004WitnessFixture(t *testing.T) (phase16ConsumerRegistry, phase16LegacyEvidenceLedger, phase16FileFrozenEvidenceLedger) {
+	t.Helper()
+	read := func(path string, target any) {
+		data, err := os.ReadFile(testsupport.ProjectPath(path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(data, target); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var registry phase16ConsumerRegistry
+	var evidence phase16LegacyEvidenceLedger
+	var files phase16FileFrozenEvidenceLedger
+	read("testdata/phase16/public-emitter-consumers.json", &registry)
+	read("testdata/phase16/legacy-emitter-evidence.json", &evidence)
+	read("testdata/phase16/file-frozen-evidence.json", &files)
+	return registry, evidence, files
+}
+
+func clonePhase16M004WitnessFixture(t *testing.T, registry phase16ConsumerRegistry, evidence phase16LegacyEvidenceLedger, files phase16FileFrozenEvidenceLedger) (phase16ConsumerRegistry, phase16LegacyEvidenceLedger, phase16FileFrozenEvidenceLedger) {
+	t.Helper()
+	data, err := json.Marshal(struct {
+		Registry phase16ConsumerRegistry
+		Evidence phase16LegacyEvidenceLedger
+		Files    phase16FileFrozenEvidenceLedger
+	}{registry, evidence, files})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var clone struct {
+		Registry phase16ConsumerRegistry
+		Evidence phase16LegacyEvidenceLedger
+		Files    phase16FileFrozenEvidenceLedger
+	}
+	if err := json.Unmarshal(data, &clone); err != nil {
+		t.Fatal(err)
+	}
+	return clone.Registry, clone.Evidence, clone.Files
+}
+
+func firstPhase16RefusalRow(registry *phase16ConsumerRegistry) int {
+	for i, row := range registry.Entries {
+		if row.Classification == phase16RefusalWithFrozen {
+			return i
+		}
+	}
+	return -1
+}
+
+func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence phase16LegacyEvidenceLedger, files phase16FileFrozenEvidenceLedger) []string {
+	var problems []string
+	if registry.Schema != "phase16.public-emitter-consumers/2" {
+		problems = append(problems, "consumer registry schema is stale")
+	}
+	if evidence.Schema != "phase16.legacy-emitter-evidence/1" || evidence.CutCommit != "0607486" {
+		problems = append(problems, "legacy provenance schema or cutover revision is stale")
+	}
+	if files.Schema != "phase16.file-frozen-evidence/1" {
+		problems = append(problems, "file provenance schema is stale")
+	}
+	refusalCalls := map[string]bool{}
+	for _, row := range registry.Entries {
+		if row.Classification != phase16RefusalWithFrozen {
+			continue
+		}
+		refusalCalls[row.Call] = true
+		if row.Witness != phase16M004Witness {
+			problems = append(problems, "uncited or stale refusal row "+row.Call)
+		}
+	}
+	for _, call := range []string{
+		"internal/compiler/cgen/cgen_test.go:Emit:193",
+		"internal/compiler/native/foreign_retained_test.go:EmitNative:48",
+		"internal/compiler/session/session_phase5_corpus_test.go:EmitNative:436",
+	} {
+		if !refusalCalls[call] {
+			problems = append(problems, "M004 control was reclassified without provenance: "+call)
+		}
+	}
+	fileByFixture := map[string]phase16FileFrozenEvidenceRow{}
+	for _, record := range files.Records {
+		if record.Fixture == "" || record.Artifact == "" || len(record.FixtureSHA256) != sha256.Size*2 || len(record.ArtifactSHA256) != sha256.Size*2 {
+			problems = append(problems, "file frozen record has missing provenance")
+			continue
+		}
+		if _, duplicate := fileByFixture[record.Fixture]; duplicate {
+			problems = append(problems, "duplicate file frozen fixture "+record.Fixture)
+		}
+		fileByFixture[record.Fixture] = record
+	}
+	for _, record := range evidence.Records {
+		if record.Witness != strings.TrimPrefix(phase16M004Witness, "probe:") {
+			problems = append(problems, "legacy record has stale witness "+record.Fixture)
+		}
+		file, ok := fileByFixture[record.Fixture]
+		if !ok || file.FixtureSHA256 != record.FixtureSHA256 {
+			problems = append(problems, "legacy record lacks matching file provenance "+record.Fixture)
+		}
+	}
+	return problems
 }
 
 // TestB1BlameIsStructurallyUnreachable backs PHASE-13-DEBT.md's D-13-02b
