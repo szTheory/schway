@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/callgraph"
@@ -282,6 +283,12 @@ func mismatchPredicate(baseRunner native.Runner, fixturePath, fallbackInput stri
 		}
 		cSource, err := cgen.EmitNative(candidateProgram)
 		if err != nil {
+			// A reduced M004 candidate has altered canonical bytes and therefore
+			// cannot borrow any digest-bound frozen artifact. Its only valid
+			// native observation is the public refusal; it is not a reducer hit.
+			if strings.Contains(err.Error(), "by-pointer bodies are not supported") || strings.Contains(err.Error(), "foreign-call bodies are not supported") {
+				return reduce.Signature{}, false, nil
+			}
 			return reduce.Signature{}, false, nil
 		}
 		input := fallbackInput
@@ -348,7 +355,7 @@ func ReduceSeededAliasMismatch(ctx context.Context) (reduce.MismatchDocument, er
 
 	baseRunner := phase5DefaultRunner()
 	seedRunner := NewAliasFactMutationRunner(baseRunner, fixturePath)
-	cSource, err := cgen.EmitNative(program)
+	cSource, err := Phase16ControlNativeC(program, fixturePath)
 	if err != nil {
 		return reduce.MismatchDocument{}, fmt.Errorf("mismatch-reduce: emitting C: %w", err)
 	}
