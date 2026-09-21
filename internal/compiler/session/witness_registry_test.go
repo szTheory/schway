@@ -9,6 +9,7 @@ package session_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -28,6 +29,38 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// TestPhase16EmitterInventoryRefusalWitnessesResolve keeps the inventory's
+// refusal rows tied to an executable named probe instead of a prose-only
+// classification. Frozen-artifact digest validation is added by Plan 16-11;
+// this is the fail-closed registry-to-witness half of that contract.
+func TestPhase16EmitterInventoryRefusalWitnessesResolve(t *testing.T) {
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "public-emitter-consumers.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var registry phase16ConsumerRegistry
+	if err := json.Unmarshal(data, &registry); err != nil {
+		t.Fatal(err)
+	}
+	source, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "session", "session_phase5_corpus_test.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	refusals := 0
+	for _, row := range registry.Entries {
+		if row.Classification != phase16RefusalWithFrozen {
+			continue
+		}
+		refusals++
+		if row.Witness != "probe:TestPhase16M004CorpusRefusal" || !strings.Contains(string(source), "func TestPhase16M004CorpusRefusal") {
+			t.Fatalf("%s: unresolved refusal witness %q", row.Call, row.Witness)
+		}
+	}
+	if refusals == 0 {
+		t.Fatal("inventory has no refusal-plus-frozen classifications")
+	}
+}
 
 // TestB1BlameIsStructurallyUnreachable backs PHASE-13-DEBT.md's D-13-02b
 // row (and, sharing the same root cause, D-13-10a's withdrawn

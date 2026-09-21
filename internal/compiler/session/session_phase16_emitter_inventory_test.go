@@ -15,16 +15,25 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
-const cgenImportPath = "github.com/codename-lang/lang/internal/compiler/cgen"
+const (
+	cgenImportPath           = "github.com/codename-lang/lang/internal/compiler/cgen"
+	phase16AdmittedDynamic   = "admitted-dynamic-schema2"
+	phase16RefusalWithFrozen = "refusal-frozen-witness"
+)
 
-// phase16ConsumerRegistry is intentionally small: the source-derived list is
-// the authority and this file pins its cardinality and classification policy.
-// A new callsite cannot silently become trusted just because it compiles.
 type phase16ConsumerRegistry struct {
-	Schema        string `json:"schema"`
-	ExpectedCount int    `json:"expected_count"`
+	Schema  string                       `json:"schema"`
+	Entries []phase16ConsumerRegistryRow `json:"entries"`
 }
 
+type phase16ConsumerRegistryRow struct {
+	Call           string `json:"call"`
+	Classification string `json:"classification"`
+	Witness        string `json:"witness,omitempty"`
+}
+
+// phase16PublicEmitterCalls resolves import aliases, same-package calls, and
+// rejects dot imports. Non-cgen unqualified identifiers are local shadows.
 func phase16PublicEmitterCalls(t *testing.T, root string) []string {
 	t.Helper()
 	var calls []string
@@ -33,9 +42,9 @@ func phase16PublicEmitterCalls(t *testing.T, root string) []string {
 			return err
 		}
 		fset := token.NewFileSet()
-		file, parseErr := parser.ParseFile(fset, path, nil, 0)
-		if parseErr != nil {
-			return parseErr
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			return err
 		}
 		aliases := map[string]bool{}
 		for _, spec := range file.Imports {
@@ -57,21 +66,22 @@ func phase16PublicEmitterCalls(t *testing.T, root string) []string {
 				return true
 			}
 			name := ""
-			switch fn := call.Fun.(type) {
+			switch fun := call.Fun.(type) {
 			case *ast.SelectorExpr:
-				if receiver, ok := fn.X.(*ast.Ident); ok && aliases[receiver.Name] && (fn.Sel.Name == "Emit" || fn.Sel.Name == "EmitNative") {
-					name = fn.Sel.Name
+				if receiver, ok := fun.X.(*ast.Ident); ok && aliases[receiver.Name] && (fun.Sel.Name == "Emit" || fun.Sel.Name == "EmitNative") {
+					name = fun.Sel.Name
 				}
 			case *ast.Ident:
-				// Only package cgen can call its own exported functions without
-				// a selector; local shadows are deliberately not counted.
-				if file.Name.Name == "cgen" && (fn.Name == "Emit" || fn.Name == "EmitNative") {
-					name = fn.Name
+				if file.Name.Name == "cgen" && (fun.Name == "Emit" || fun.Name == "EmitNative") {
+					name = fun.Name
 				}
 			}
 			if name != "" {
-				position := fset.Position(call.Pos())
-				calls = append(calls, filepath.ToSlash(strings.TrimPrefix(path, testsupport.ProjectPath()+string(filepath.Separator)))+":"+name+":"+itoa(position.Line))
+				relative, relErr := filepath.Rel(testsupport.ProjectPath(), path)
+				if relErr != nil {
+					t.Fatal(relErr)
+				}
+				calls = append(calls, filepath.ToSlash(relative)+":"+name+":"+strconv.Itoa(fset.Position(call.Pos()).Line))
 			}
 			return true
 		})
@@ -84,8 +94,6 @@ func phase16PublicEmitterCalls(t *testing.T, root string) []string {
 	return calls
 }
 
-func itoa(v int) string { return strconv.Itoa(v) }
-
 func TestPhase16PublicEmitterConsumerInventory(t *testing.T) {
 	data, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "public-emitter-consumers.json"))
 	if err != nil {
@@ -95,18 +103,49 @@ func TestPhase16PublicEmitterConsumerInventory(t *testing.T) {
 	if err := json.Unmarshal(data, &registry); err != nil {
 		t.Fatal(err)
 	}
-	if registry.Schema != "phase16.public-emitter-consumers/1" {
+	if registry.Schema != "phase16.public-emitter-consumers/2" {
 		t.Fatalf("unexpected registry schema %q", registry.Schema)
 	}
-	calls := phase16PublicEmitterCalls(t, testsupport.ProjectPath("internal", "compiler"))
-	if len(calls) != registry.ExpectedCount {
-		t.Fatalf("public emitter inventory drift: got %d calls, registry permits %d; first=%v", len(calls), registry.ExpectedCount, calls[:min(5, len(calls))])
+	actual := phase16PublicEmitterCalls(t, testsupport.ProjectPath("internal", "compiler"))
+	seen := make(map[string]phase16ConsumerRegistryRow, len(registry.Entries))
+	for _, row := range registry.Entries {
+		if row.Call == "" || (row.Classification != phase16AdmittedDynamic && row.Classification != phase16RefusalWithFrozen) {
+			t.Fatalf("invalid registry row: %+v", row)
+		}
+		if row.Classification == phase16RefusalWithFrozen && !strings.HasPrefix(row.Witness, "probe:") {
+			t.Fatalf("refusal row %q lacks named probe witness", row.Call)
+		}
+		if _, duplicate := seen[row.Call]; duplicate {
+			t.Fatalf("duplicate registry entry %q", row.Call)
+		}
+		seen[row.Call] = row
+	}
+	if len(actual) != len(seen) {
+		t.Fatalf("public emitter inventory cardinality drift: source=%d registry=%d", len(actual), len(seen))
+	}
+	for _, call := range actual {
+		if _, ok := seen[call]; !ok {
+			t.Fatalf("unclassified public emitter call %q", call)
+		}
+	}
+	for call := range seen {
+		index := sort.SearchStrings(actual, call)
+		if index == len(actual) || actual[index] != call {
+			t.Fatalf("stale registry call %q", call)
+		}
 	}
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
+func TestPhase16EmitterInventoryMutationControls(t *testing.T) {
+	// The live scanner has explicit alias, same-package, dot-import, and local
+	// shadow branches; these literals prevent their intent from becoming vague.
+	for _, required := range []string{"aliases[receiver.Name]", "file.Name.Name == \"cgen\"", "cgen dot import"} {
+		data, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "session", "session_phase16_emitter_inventory_test.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), required) {
+			t.Fatalf("missing mutation control for %q", required)
+		}
 	}
-	return b
 }
