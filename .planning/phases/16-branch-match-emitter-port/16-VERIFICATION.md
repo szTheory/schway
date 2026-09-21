@@ -78,7 +78,7 @@ covered_files:
   - testdata/phase16/restrict_readonly_probe.c
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
-covered_digest: "v1:sha256:d3a762b0329be0123df1f64560d1293356b0aee9a833cbb0c9349c93347e74b6"
+covered_digest: "v1:sha256:fcc1bdcd702f2091a8a8dc8697a9a2cb02be0c88aa5946a6d690e61232bc29de"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
