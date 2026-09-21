@@ -3,6 +3,8 @@ package session_test
 import (
 	"bytes"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
@@ -50,5 +52,26 @@ func TestPhase16ControlNativeCPreservesM004Refusal(t *testing.T) {
 	}
 	if err.Error() != want.Error() {
 		t.Fatalf("refusal = %q, want public refusal %q", err, want)
+	}
+}
+
+func TestPhase16ProductionSourcesCannotLoadFrozenC(t *testing.T) {
+	files, err := filepath.Glob(testsupport.ProjectPath("internal/compiler/session/*.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+		source, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, forbidden := range []string{"testdata/phase16/historical", "file-frozen-evidence.json", "generated-frozen-evidence.json"} {
+			if strings.Contains(string(source), forbidden) {
+				t.Fatalf("production source %s can select frozen C through %q", file, forbidden)
+			}
+		}
 	}
 }
