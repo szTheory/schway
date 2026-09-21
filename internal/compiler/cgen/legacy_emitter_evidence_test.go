@@ -37,6 +37,11 @@ type legacyEvidenceEntry struct {
 	Witness       string `json:"witness"`
 }
 
+type fileFrozenEvidenceLedger struct {
+	Schema  string
+	Records []struct{ Fixture, FixtureSHA256, Artifact, ArtifactSHA256 string }
+}
+
 const (
 	legacyArtifactSchema = "phase16.legacy-emitter-artifacts/1"
 	legacyEvidenceSchema = "phase16.legacy-emitter-evidence/1"
@@ -58,9 +63,14 @@ func TestLegacyEmitterEvidence(t *testing.T) {
 	}
 	read("testdata/phase16/legacy-emitter-artifacts.json", &artifacts)
 	read("testdata/phase16/legacy-emitter-evidence.json", &evidence)
+	var fileFrozen fileFrozenEvidenceLedger
+	read("testdata/phase16/file-frozen-evidence.json", &fileFrozen)
 	if err := validateLegacyEmitterEvidence(artifacts, evidence, func(path string) ([]byte, error) {
 		return os.ReadFile(testsupport.ProjectPath(path))
 	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateFileFrozenEvidence(fileFrozen, func(path string) ([]byte, error) { return os.ReadFile(testsupport.ProjectPath(path)) }); err != nil {
 		t.Fatal(err)
 	}
 	for _, record := range evidence.Records {
@@ -76,6 +86,36 @@ func TestLegacyEmitterEvidence(t *testing.T) {
 			t.Fatalf("%s did not preserve refusal %q: %v", record.Fixture, record.Refusal, err)
 		}
 	}
+}
+
+func validateFileFrozenEvidence(ledger fileFrozenEvidenceLedger, readFile func(string) ([]byte, error)) error {
+	if ledger.Schema != "phase16.file-frozen-evidence/1" || len(ledger.Records) == 0 {
+		return fmt.Errorf("invalid file frozen evidence manifest")
+	}
+	seen := map[string]bool{}
+	for _, r := range ledger.Records {
+		if r.Fixture == "" || r.Artifact == "" || seen[r.Fixture] {
+			return fmt.Errorf("invalid file frozen record")
+		}
+		seen[r.Fixture] = true
+		source, err := readFile(r.Fixture)
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256(source)
+		if hex.EncodeToString(sum[:]) != r.FixtureSHA256 {
+			return fmt.Errorf("file fixture digest mismatch")
+		}
+		artifact, err := readFile(r.Artifact)
+		if err != nil {
+			return err
+		}
+		sum = sha256.Sum256(artifact)
+		if hex.EncodeToString(sum[:]) != r.ArtifactSHA256 {
+			return fmt.Errorf("file artifact digest mismatch")
+		}
+	}
+	return nil
 }
 
 func TestLegacyEmitterEvidenceRejectsFaults(t *testing.T) {
