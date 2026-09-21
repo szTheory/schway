@@ -188,7 +188,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/legacy_emitter_evidence_test.go:EmitNative:57",
+      "call": "internal/compiler/cgen/legacy_emitter_evidence_test.go:EmitNative:100",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
@@ -224,31 +224,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session.go:Emit:2493",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session.go:Emit:2513",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session.go:Emit:2842",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session.go:EmitNative:1047",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session.go:EmitNative:2640",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session.go:EmitNative:2687",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session.go:EmitNative:427",
+      "call": "internal/compiler/session/session.go:EmitNative:2669",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -272,27 +248,11 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase5.go:EmitNative:369",
+      "call": "internal/compiler/session/session_phase5.go:EmitNative:124",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase5_alias.go:EmitNative:374",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase5_alias.go:EmitNative:631",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase5_alias.go:EmitNative:681",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase5_corpus_test.go:EmitNative:376",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase5_corpus_test.go:EmitNative:430",
+      "call": "internal/compiler/session/session_phase5_corpus_test.go:EmitNative:436",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
@@ -309,28 +269,13 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase5_sanitize.go:EmitNative:105",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase6.go:EmitNative:299",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
       "call": "internal/compiler/session/session_phase6_cache_hole_test.go:EmitNative:91",
       "classification": "admitted-dynamic-schema2"
     },
     {
       "call": "internal/compiler/session/session_phase6_injectors_test.go:EmitNative:497",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase6_injectors_test.go:EmitNative:648",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase6_injectors_test.go:EmitNative:804",
-      "classification": "admitted-dynamic-schema2"
+      "classification": "refusal-frozen-witness",
+      "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
       "call": "internal/compiler/session/session_phase6_oracle_test.go:EmitNative:144",
@@ -378,10 +323,6 @@
     },
     {
       "call": "internal/compiler/session/session_test.go:EmitNative:1966",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_test.go:EmitNative:2328",
       "classification": "admitted-dynamic-schema2"
     },
     {

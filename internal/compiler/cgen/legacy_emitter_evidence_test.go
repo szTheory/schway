@@ -42,6 +42,16 @@ type fileFrozenEvidenceLedger struct {
 	Records []struct{ Fixture, FixtureSHA256, Artifact, ArtifactSHA256 string }
 }
 
+// generatedFrozenEvidenceLedger intentionally preserves the manifest's
+// generator identity alongside the canonical Program bytes digest.  Generated
+// controls are not file fixtures, so both facts are required to make the
+// historical artifact binding fail closed.
+type generatedFrozenEvidenceLedger struct {
+	Schema    string
+	Generator string
+	Records   []struct{ ID, ProgramSHA256, Artifact, ArtifactSHA256 string }
+}
+
 const (
 	legacyArtifactSchema = "phase16.legacy-emitter-artifacts/1"
 	legacyEvidenceSchema = "phase16.legacy-emitter-evidence/1"
@@ -65,12 +75,17 @@ func TestLegacyEmitterEvidence(t *testing.T) {
 	read("testdata/phase16/legacy-emitter-evidence.json", &evidence)
 	var fileFrozen fileFrozenEvidenceLedger
 	read("testdata/phase16/file-frozen-evidence.json", &fileFrozen)
+	var generatedFrozen generatedFrozenEvidenceLedger
+	read("testdata/phase16/generated-frozen-evidence.json", &generatedFrozen)
 	if err := validateLegacyEmitterEvidence(artifacts, evidence, func(path string) ([]byte, error) {
 		return os.ReadFile(testsupport.ProjectPath(path))
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := validateFileFrozenEvidence(fileFrozen, func(path string) ([]byte, error) { return os.ReadFile(testsupport.ProjectPath(path)) }); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateGeneratedFrozenEvidence(generatedFrozen, func(path string) ([]byte, error) { return os.ReadFile(testsupport.ProjectPath(path)) }); err != nil {
 		t.Fatal(err)
 	}
 	for _, record := range evidence.Records {
@@ -86,6 +101,43 @@ func TestLegacyEmitterEvidence(t *testing.T) {
 			t.Fatalf("%s did not preserve refusal %q: %v", record.Fixture, record.Refusal, err)
 		}
 	}
+}
+
+func validateGeneratedFrozenEvidence(ledger generatedFrozenEvidenceLedger, readFile func(string) ([]byte, error)) error {
+	if ledger.Schema != "phase16.generated-frozen-evidence/1" || ledger.Generator != "EnumeratePhase5Closure/v1" || len(ledger.Records) == 0 {
+		return fmt.Errorf("invalid generated frozen evidence manifest")
+	}
+	programs := make(map[string]string)
+	for _, program := range session.EnumeratePhase5Closure() {
+		canonical, err := json.Marshal(program)
+		if err != nil {
+			return fmt.Errorf("canonical generated program %q: %w", program.Module, err)
+		}
+		sum := sha256.Sum256(canonical)
+		programs[program.Module] = hex.EncodeToString(sum[:])
+	}
+	seen := map[string]bool{}
+	for _, record := range ledger.Records {
+		if record.ID == "" || record.Artifact == "" || seen[record.ID] {
+			return fmt.Errorf("invalid generated frozen record")
+		}
+		seen[record.ID] = true
+		if got, ok := programs[record.ID]; !ok || got != record.ProgramSHA256 {
+			return fmt.Errorf("generated program digest mismatch for %q", record.ID)
+		}
+		artifact, err := readFile(record.Artifact)
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256(artifact)
+		if hex.EncodeToString(sum[:]) != record.ArtifactSHA256 {
+			return fmt.Errorf("generated artifact digest mismatch for %q", record.ID)
+		}
+	}
+	if len(seen) != len(programs) {
+		return fmt.Errorf("generated frozen evidence does not cover every enumerated program")
+	}
+	return nil
 }
 
 func validateFileFrozenEvidence(ledger fileFrozenEvidenceLedger, readFile func(string) ([]byte, error)) error {
@@ -116,6 +168,63 @@ func validateFileFrozenEvidence(ledger fileFrozenEvidenceLedger, readFile func(s
 		}
 	}
 	return nil
+}
+
+func TestFileFrozenEvidenceRejectsFaults(t *testing.T) {
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata/phase16/file-frozen-evidence.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ledger fileFrozenEvidenceLedger
+	if err := json.Unmarshal(data, &ledger); err != nil {
+		t.Fatal(err)
+	}
+	read := func(path string) ([]byte, error) { return os.ReadFile(testsupport.ProjectPath(path)) }
+	for _, mutate := range []func(*fileFrozenEvidenceLedger){
+		func(l *fileFrozenEvidenceLedger) { l.Schema = "" },
+		func(l *fileFrozenEvidenceLedger) { l.Records[0].FixtureSHA256 = strings.Repeat("0", sha256.Size*2) },
+		func(l *fileFrozenEvidenceLedger) { l.Records[0].ArtifactSHA256 = strings.Repeat("0", sha256.Size*2) },
+		func(l *fileFrozenEvidenceLedger) { l.Records = append(l.Records, l.Records[0]) },
+	} {
+		cloneBytes, _ := json.Marshal(ledger)
+		var clone fileFrozenEvidenceLedger
+		_ = json.Unmarshal(cloneBytes, &clone)
+		mutate(&clone)
+		if err := validateFileFrozenEvidence(clone, read); err == nil {
+			t.Fatal("mutated file frozen evidence was accepted")
+		}
+	}
+}
+
+func TestGeneratedFrozenEvidenceRejectsFaults(t *testing.T) {
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata/phase16/generated-frozen-evidence.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ledger generatedFrozenEvidenceLedger
+	if err := json.Unmarshal(data, &ledger); err != nil {
+		t.Fatal(err)
+	}
+	read := func(path string) ([]byte, error) { return os.ReadFile(testsupport.ProjectPath(path)) }
+	for _, mutate := range []func(*generatedFrozenEvidenceLedger){
+		func(l *generatedFrozenEvidenceLedger) { l.Schema = "" },
+		func(l *generatedFrozenEvidenceLedger) { l.Generator = "wrong-generator/v1" },
+		func(l *generatedFrozenEvidenceLedger) {
+			l.Records[0].ProgramSHA256 = strings.Repeat("0", sha256.Size*2)
+		},
+		func(l *generatedFrozenEvidenceLedger) {
+			l.Records[0].ArtifactSHA256 = strings.Repeat("0", sha256.Size*2)
+		},
+		func(l *generatedFrozenEvidenceLedger) { l.Records = append(l.Records, l.Records[0]) },
+	} {
+		cloneBytes, _ := json.Marshal(ledger)
+		var clone generatedFrozenEvidenceLedger
+		_ = json.Unmarshal(cloneBytes, &clone)
+		mutate(&clone)
+		if err := validateGeneratedFrozenEvidence(clone, read); err == nil {
+			t.Fatal("mutated generated frozen evidence was accepted")
+		}
+	}
 }
 
 func TestLegacyEmitterEvidenceRejectsFaults(t *testing.T) {
