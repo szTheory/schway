@@ -419,12 +419,12 @@ func firstExecutionDisagreement(left, right execution.Execution) string {
 // auto-wiring the frozen foreign source for any declared ForeignContract
 // symbol exactly as session.RunNative does, so a caller never has to
 // remember which frozen TU a given symbol needs linked.
-func phase4RunThreeEngines(ctx context.Context, program core.Program, functionName, input string, runner native.Runner, expect native.TerminalOutcome) (interpreted, o0, o3 execution.Execution, err error) {
+func phase4RunThreeEngines(ctx context.Context, fixture string, program core.Program, functionName, input string, runner native.Runner, expect native.TerminalOutcome) (interpreted, o0, o3 execution.Execution, err error) {
 	interpreted, err = interp.Run(program, functionName, input)
 	if err != nil {
 		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("interpreter run failed: %w", err)
 	}
-	cSource, cgenErr := cgen.EmitNative(program)
+	cSource, cgenErr := Phase16ControlNativeC(program, "testdata/phase4/"+fixture)
 	if cgenErr != nil {
 		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("cgen failed: %w", cgenErr)
 	}
@@ -446,7 +446,19 @@ func phase4RunThreeEngines(ctx context.Context, program core.Program, functionNa
 	if o3Err != nil || len(o3Result.Pairs) != 1 {
 		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("-O3 run failed: %w (pairs=%d)", o3Err, len(o3Result.Pairs))
 	}
-	return interpreted, o0Result.Pairs[0].Execution, o3Result.Pairs[0].Execution, nil
+	interpreted, err = ProjectExecutionSchema2(program, interpreted)
+	if err != nil {
+		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("project interpreter schema-2 evidence: %w", err)
+	}
+	o0, err = ProjectExecutionSchema2(program, o0Result.Pairs[0].Execution)
+	if err != nil {
+		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("project -O0 schema-2 evidence: %w", err)
+	}
+	o3, err = ProjectExecutionSchema2(program, o3Result.Pairs[0].Execution)
+	if err != nil {
+		return execution.Execution{}, execution.Execution{}, execution.Execution{}, fmt.Errorf("project -O3 schema-2 evidence: %w", err)
+	}
+	return interpreted, o0, o3, nil
 }
 
 // Phase4CompareThreeEngines is the pure comparison half of task 04-07-02's
@@ -535,7 +547,7 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 // all three documents to Phase4CompareThreeEngines. A differential must
 // never report only that a mismatch occurred.
 func Phase4ThreeEngineDifferential(ctx context.Context, fixture string, program core.Program, functionName, input string, runner native.Runner, expect native.TerminalOutcome) (execution.Execution, error) {
-	interpreted, o0, o3, err := phase4RunThreeEngines(ctx, program, functionName, input, runner, expect)
+	interpreted, o0, o3, err := phase4RunThreeEngines(ctx, fixture, program, functionName, input, runner, expect)
 	if err != nil {
 		return execution.Execution{}, fmt.Errorf("%s: %w", fixture, err)
 	}
@@ -1016,7 +1028,7 @@ func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	return completeCommand(result, started, len(executions)), nil
 }
 
-func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
+func runNative(ctx context.Context, source []byte, runner NativeRunner, fixture string) (NativeResult, []diagnostic.Diagnostic, error) {
 	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
 		return NativeResult{}, checked.Diagnostics, nil
@@ -1044,7 +1056,7 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 		}
 		interpreted = append(interpreted, execution)
 	}
-	cSource, err := cgen.EmitNative(checked.Program)
+	cSource, err := Phase16ControlNativeC(checked.Program, fixture)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
@@ -1090,8 +1102,17 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 		if projectionErr != nil {
 			return NativeResult{}, nil, fmt.Errorf("project schema-2 interpreter evidence: %w", projectionErr)
 		}
-		// Native documents carry the invocation-path facts; validate those
-		// independently before comparing their semantic projection to interp.
+		interpreted[index] = expectedDocument
+		for _, result := range []*native.Result{&o0, &o3} {
+			projected, projectionErr := ProjectExecutionSchema2(checked.Program, result.Pairs[index].Execution)
+			if projectionErr != nil {
+				return NativeResult{}, nil, fmt.Errorf("project %s schema-2 native evidence: %w", result.Optimization, projectionErr)
+			}
+			result.Pairs[index].Execution = projected
+		}
+		// The projection derives its invocation and defect facts from checked
+		// program data, so native output can no longer repair the expected
+		// document by carrying legacy schema decoration.
 		if err := Phase5CompareProgramEngines("run-native", checked.Program, map[string]execution.Execution{"O0": o0.Pairs[index].Execution, "O3": o3.Pairs[index].Execution}); err != nil {
 			return NativeResult{}, nil, err
 		}
@@ -1104,6 +1125,10 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 		}
 	}
 	return NativeResult{CSource: cSource, Interpreter: interpreted, O0: o0, O3: o3}, nil, nil
+}
+
+func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
+	return runNative(ctx, source, runner, "")
 }
 
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
@@ -1165,7 +1190,11 @@ func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (Nativ
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
-	return RunNative(ctx, source, runner)
+	relative, relErr := filepath.Rel(nat03ProjectRoot(), path)
+	if relErr != nil {
+		return NativeResult{}, nil, relErr
+	}
+	return runNative(ctx, source, runner, filepath.ToSlash(relative))
 }
 
 func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner) (protocol.Result, error) {

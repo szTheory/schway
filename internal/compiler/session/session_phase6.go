@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
@@ -285,18 +284,14 @@ func phase6RunCleanupInjectionLane() (status, control string, work int) {
 		return protocol.StatusOperational, "", 1
 	}
 	checked := Check(source)
-	// Phase 11 (11-GUARD-LEDGER.md): KEPT. Bound to the fixed Phase 4
-	// fixture phase6CleanupFixture (acquire_three_success.lang),
-	// genuinely single-function by construction; unrelated to the
-	// multi-function corpus this phase widens.
-	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
+	if len(checked.Diagnostics) != 0 {
 		return protocol.StatusInvalid, "", 1
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
 		return protocol.StatusInvalid, "", 1
 	}
-	cSource, emitErr := cgen.EmitNative(validated.Program())
+	cSource, emitErr := Phase16ControlNativeC(validated.Program(), phase6CleanupFixture)
 	if emitErr != nil {
 		return protocol.StatusOperational, "", 1
 	}
