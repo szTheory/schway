@@ -409,7 +409,15 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 		if err != nil || len(o3.Pairs) != 1 {
 			t.Fatalf("%s input=%q: -O3 run failed: err=%v pairs=%d", fixture, input, err, len(o3.Pairs))
 		}
-		if compareErr := session.Phase4CompareThreeEngines(fixture, interpreted, o0.Pairs[0].Execution, o3.Pairs[0].Execution); compareErr != nil {
+		o0Execution, err := session.ProjectExecutionSchema2(program, o0.Pairs[0].Execution)
+		if err != nil {
+			t.Fatalf("%s input=%q: -O0 schema-2 projection: %v", fixture, input, err)
+		}
+		o3Execution, err := session.ProjectExecutionSchema2(program, o3.Pairs[0].Execution)
+		if err != nil {
+			t.Fatalf("%s input=%q: -O3 schema-2 projection: %v", fixture, input, err)
+		}
+		if compareErr := session.Phase4CompareThreeEngines(fixture, interpreted, o0Execution, o3Execution); compareErr != nil {
 			t.Fatalf("%s input=%q: %v", fixture, input, compareErr)
 		}
 	}
