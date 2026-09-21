@@ -78,6 +78,89 @@ func TestLegacyEmitterEvidence(t *testing.T) {
 	}
 }
 
+func TestLegacyEmitterEvidenceRejectsFaults(t *testing.T) {
+	var artifacts legacyArtifactLedger
+	var evidence legacyEvidenceLedger
+	readLedger := func(path string, target any) {
+		data, err := os.ReadFile(testsupport.ProjectPath(path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(data, target); err != nil {
+			t.Fatal(err)
+		}
+	}
+	readLedger("testdata/phase16/legacy-emitter-artifacts.json", &artifacts)
+	readLedger("testdata/phase16/legacy-emitter-evidence.json", &evidence)
+	readFile := func(path string) ([]byte, error) { return os.ReadFile(testsupport.ProjectPath(path)) }
+	validate := func(artifacts legacyArtifactLedger, evidence legacyEvidenceLedger) error {
+		return validateLegacyEmitterEvidence(artifacts, evidence, readFile)
+	}
+
+	for _, fault := range []struct {
+		name   string
+		mutate func(*legacyArtifactLedger, *legacyEvidenceLedger)
+	}{
+		{"duplicate entry", func(_ *legacyArtifactLedger, evidence *legacyEvidenceLedger) {
+			evidence.Records = append(evidence.Records, evidence.Records[0])
+		}},
+		{"omitted artifact", func(artifacts *legacyArtifactLedger, _ *legacyEvidenceLedger) {
+			artifacts.Artifacts = artifacts.Artifacts[1:]
+		}},
+		{"changed digest", func(artifacts *legacyArtifactLedger, _ *legacyEvidenceLedger) {
+			artifacts.Artifacts[0].SHA256 = strings.Repeat("0", sha256.Size*2)
+		}},
+		{"artifact for different fixture", func(_ *legacyArtifactLedger, evidence *legacyEvidenceLedger) {
+			evidence.Records[0].Artifact = evidence.Records[1].Artifact
+		}},
+		{"fixture identity", func(_ *legacyArtifactLedger, evidence *legacyEvidenceLedger) {
+			evidence.Records[0].Fixture = evidence.Records[1].Fixture
+		}},
+		{"refusal code", func(_ *legacyArtifactLedger, evidence *legacyEvidenceLedger) {
+			evidence.Records[0].Refusal = pointerM004Refusal
+		}},
+	} {
+		t.Run(fault.name, func(t *testing.T) {
+			mutatedArtifacts, mutatedEvidence := cloneLegacyLedgers(t, artifacts, evidence)
+			fault.mutate(&mutatedArtifacts, &mutatedEvidence)
+			if err := validate(mutatedArtifacts, mutatedEvidence); err == nil {
+				t.Fatal("mutated provenance registry was accepted")
+			}
+		})
+	}
+
+	t.Run("artifact bytes", func(t *testing.T) {
+		if err := validateLegacyEmitterEvidence(artifacts, evidence, func(path string) ([]byte, error) {
+			data, err := readFile(path)
+			if path == "testdata/phase16/historical/restrict_borrow.c" {
+				data = append(data, byte('!'))
+			}
+			return data, err
+		}); err == nil {
+			t.Fatal("altered frozen artifact bytes were accepted")
+		}
+	})
+}
+
+func cloneLegacyLedgers(t *testing.T, artifacts legacyArtifactLedger, evidence legacyEvidenceLedger) (legacyArtifactLedger, legacyEvidenceLedger) {
+	t.Helper()
+	data, err := json.Marshal(struct {
+		Artifacts legacyArtifactLedger `json:"artifacts"`
+		Evidence  legacyEvidenceLedger `json:"evidence"`
+	}{artifacts, evidence})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var clone struct {
+		Artifacts legacyArtifactLedger `json:"artifacts"`
+		Evidence  legacyEvidenceLedger `json:"evidence"`
+	}
+	if err := json.Unmarshal(data, &clone); err != nil {
+		t.Fatal(err)
+	}
+	return clone.Artifacts, clone.Evidence
+}
+
 func validateLegacyEmitterEvidence(artifacts legacyArtifactLedger, evidence legacyEvidenceLedger, readFile func(string) ([]byte, error)) error {
 	if artifacts.Schema != legacyArtifactSchema || evidence.Schema != legacyEvidenceSchema {
 		return fmt.Errorf("unexpected legacy evidence schemas: artifacts=%q evidence=%q", artifacts.Schema, evidence.Schema)
