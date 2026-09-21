@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 16
 current_phase_name: Branch/Match Emitter Port
 status: executing
-stopped_at: Completed 16-06-PLAN.md
-last_updated: "2026-09-21T22:35:05.445Z"
+stopped_at: Completed 16-15-PLAN.md
+last_updated: "2026-09-21T22:50:24.652Z"
 last_activity: 2026-09-21
 last_activity_desc: Phase 16 execution started
-state_head: 8e7211ced7314da24e068ad2780b2671940406a1
+state_head: 978a7848a704802703694ef1ab45f5ba956d849f
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 35
-  completed_plans: 32
+  completed_plans: 35
 ---
 
 # Project State
@@ -61,8 +61,8 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 16 (Branch/Match Emitter Port) — READY TO EXECUTE
-Plan: 1 of 13
+Phase: 16 (Branch/Match Emitter Port) — EXECUTING
+Plan: 2 of 15
 Status: Ready to execute
 Last activity: 2026-09-21 — Phase 16 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -314,6 +314,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16 P05 | 3 min | 1 tasks | 1 files |
 | Phase 16-branch-match-emitter-port P03 | 4min | 2 tasks | 2 files |
 | Phase 16-branch-match-emitter-port P06 | 12 min | 2 tasks | 6 files |
+| Phase 16-branch-match-emitter-port P15 | ~15 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -443,6 +444,8 @@ Standing architectural commitments carried into M002:
 - [Phase 16]: emitProgram reads checker-owned payload layout and shared alternative identity; defect evidence is written before the narrow abort helper.
 - [Phase 16]: Applied cut-m004: no pointer-specialized family is admitted by emitProgram at any program cardinality.
 - [Phase 16]: Recorded foreign and by-pointer emitter families as M004 debt; one-TU pure-Lang -flto remains behaviorally inert evidence.
+- [Phase 16]: AST-derived public-emitter calls are authoritative; registry rows classify each exactly once.
+- [Phase 16]: Mutation controls require intended validator error classes, not generic cardinality drift.
 
 ### Pending Todos
 
@@ -585,8 +588,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-19T21:54:52.083Z
-Stopped at: Completed 16-06-PLAN.md
+Last session: 2026-09-21T22:50:24.586Z
+Stopped at: Completed 16-15-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
