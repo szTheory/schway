@@ -26,12 +26,14 @@ package session_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -189,13 +191,15 @@ const (
 // that line, so batchComplete simply stays false rather than reporting a
 // result the batch never finished producing.
 type runRecord struct {
-	passed         map[string]bool
-	failed         map[string]bool
-	skipped        map[string]bool
-	coveredPairs   map[string]bool
-	batchComplete  bool
-	requestedPairs int
-	elapsed        time.Duration
+	passed           map[string]bool
+	failed           map[string]bool
+	skipped          map[string]bool
+	coveredPairs     map[string]bool
+	batchComplete    bool
+	requestedPairs   int
+	batchCompletions int
+	pairCompletions  map[string]int
+	elapsed          time.Duration
 }
 
 // passedNoSkip reports whether name is confirmed EXERCISED: a recorded pass
@@ -215,7 +219,7 @@ func (r *runRecord) passedNoSkip(name string) bool {
 // best-effort evidence, and an unparseable line simply contributes nothing
 // rather than crashing the consumer.
 func parseRunRecord(data []byte) *runRecord {
-	record := &runRecord{passed: map[string]bool{}, failed: map[string]bool{}, skipped: map[string]bool{}, coveredPairs: map[string]bool{}}
+	record := &runRecord{passed: map[string]bool{}, failed: map[string]bool{}, skipped: map[string]bool{}, coveredPairs: map[string]bool{}, pairCompletions: map[string]int{}}
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -227,10 +231,13 @@ func parseRunRecord(data []byte) *runRecord {
 		}
 		switch entry.Action {
 		case runRecordPairCompleteAction:
-			record.coveredPairs[entry.Package+"\x00"+entry.Pattern] = true
+			key := entry.Package + "\x00" + entry.Pattern
+			record.coveredPairs[key] = true
+			record.pairCompletions[key]++
 			continue
 		case runRecordBatchCompleteAction:
 			record.batchComplete = true
+			record.batchCompletions++
 			record.requestedPairs = entry.Pairs
 			continue
 		}
@@ -279,6 +286,100 @@ func (r *runRecord) complete(requested []pkgPattern) (bool, []pkgPattern) {
 type pkgPattern struct {
 	Package string
 	Pattern string
+}
+
+// checkedInCorpusRecord is the provenance envelope for the expensive corpus
+// execution. The JSONL body remains the producer's unmodified output; this
+// envelope binds it to the exact consumer-derived pair list and records the
+// revision and bounded external execution that produced it.
+type checkedInCorpusRecord struct {
+	Schema       string `json:"schema"`
+	Revision     string `json:"revision"`
+	PairDigest   string `json:"pair_digest_sha256"`
+	RecordDigest string `json:"record_digest_sha256"`
+	Completed    bool   `json:"completed"`
+	ProducedAt   string `json:"produced_at"`
+	Elapsed      string `json:"elapsed"`
+}
+
+const (
+	checkedInCorpusRecordSchema = "phase16-validation-corpus-run-record/v1"
+	checkedInCorpusRecordLimit  = 15 * time.Minute
+)
+
+var checkedInCorpusRecordRelPath = []string{"testdata", "phase16", "validation-corpus-run-record.jsonl"}
+var checkedInCorpusManifestRelPath = []string{"testdata", "phase16", "validation-corpus-run-record.manifest.json"}
+
+func corpusPairBytes(pairs []pkgPattern) ([]byte, error) {
+	type pair struct {
+		Package string `json:"package"`
+		Pattern string `json:"pattern"`
+	}
+	exported := make([]pair, len(pairs))
+	for i, p := range pairs {
+		exported[i] = pair{Package: p.Package, Pattern: p.Pattern}
+	}
+	return json.Marshal(exported)
+}
+
+func sha256Hex(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
+
+// checkedInCorpusRunRecord validates an artifact without spawning a child
+// process. The record must be complete exactly once, match the currently
+// requested pairs byte-for-byte, carry a non-empty revision, and be bound to
+// its raw JSONL digest. Any stale or partial artifact refuses to grade.
+func checkedInCorpusRunRecord(requested []pkgPattern, recordData, manifestData []byte) (*runRecord, error) {
+	if len(requested) == 0 {
+		return nil, fmt.Errorf("validation corpus requested pair list is empty")
+	}
+	var manifest checkedInCorpusRecord
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		return nil, fmt.Errorf("decode checked-in validation corpus manifest: %w", err)
+	}
+	if manifest.Schema != checkedInCorpusRecordSchema || manifest.Revision == "" || !manifest.Completed {
+		return nil, fmt.Errorf("checked-in validation corpus manifest lacks schema, revision, or completion witness")
+	}
+	pairData, err := corpusPairBytes(requested)
+	if err != nil {
+		return nil, err
+	}
+	if manifest.PairDigest != sha256Hex(pairData) {
+		return nil, fmt.Errorf("checked-in validation corpus pair digest does not match the current requested corpus")
+	}
+	if manifest.RecordDigest != sha256Hex(recordData) {
+		return nil, fmt.Errorf("checked-in validation corpus record digest does not match its JSONL body")
+	}
+	if _, err := time.Parse(time.RFC3339, manifest.ProducedAt); err != nil {
+		return nil, fmt.Errorf("checked-in validation corpus produced_at is invalid: %w", err)
+	}
+	elapsed, err := time.ParseDuration(manifest.Elapsed)
+	if err != nil || elapsed <= 0 || elapsed > checkedInCorpusRecordLimit {
+		return nil, fmt.Errorf("checked-in validation corpus elapsed %q is outside the external %v bound", manifest.Elapsed, checkedInCorpusRecordLimit)
+	}
+	record := parseRunRecord(recordData)
+	record.elapsed = elapsed
+	complete, missing := record.complete(requested)
+	if !complete || record.batchCompletions != 1 || record.requestedPairs != len(requested) {
+		return nil, fmt.Errorf("checked-in validation corpus completion witness is incomplete, duplicated, or mismatched (batch=%d pairs=%d want=%d missing=%v)", record.batchCompletions, record.requestedPairs, len(requested), missing)
+	}
+	for _, p := range requested {
+		if record.pairCompletions[p.Package+"\x00"+p.Pattern] != 1 {
+			return nil, fmt.Errorf("checked-in validation corpus pair completion witness is not exactly once for %s %s", p.Package, p.Pattern)
+		}
+	}
+	return record, nil
+}
+
+func loadCheckedInCorpusRunRecord(requested []pkgPattern) (*runRecord, error) {
+	recordData, err := os.ReadFile(testsupport.ProjectPath(checkedInCorpusRecordRelPath...))
+	if err != nil {
+		return nil, fmt.Errorf("read checked-in validation corpus record: %w", err)
+	}
+	manifestData, err := os.ReadFile(testsupport.ProjectPath(checkedInCorpusManifestRelPath...))
+	if err != nil {
+		return nil, fmt.Errorf("read checked-in validation corpus manifest: %w", err)
+	}
+	return checkedInCorpusRunRecord(requested, recordData, manifestData)
 }
 
 // evidenceRunRecordScriptRelPath is scripts/evidence-run-record.sh's
@@ -1358,39 +1459,121 @@ func runRecordAdmissible(record *runRecord, requested []pkgPattern) error {
 func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validationRawRow) *runRecord {
 	t.Helper()
 	evidenceRunRecordOnce.Do(func() {
-		var pairs []pkgPattern
-		seen := map[string]bool{}
-		for doc, rows := range byDoc {
-			for _, row := range rows {
-				rowPairs := resolvedPkgPatterns(index, rowEvidence(row))
-				if err := selfCitationError(doc, rowIdentifier(row), rowPairs); err != nil {
-					evidenceRunRecordFatal = err.Error()
-					return
-				}
-				for _, p := range rowPairs {
-					key := p.Package + "\x00" + p.Pattern
-					if !seen[key] {
-						seen[key] = true
-						pairs = append(pairs, p)
-					}
-				}
-			}
-		}
-		requested := consolidatePkgPatterns(pairs)
-		record := generateRunRecord(t, requested)
-		if err := runRecordAdmissible(record, requested); err != nil {
+		requested, err := requestedCorpusPairs(index, byDoc)
+		if err != nil {
 			evidenceRunRecordFatal = err.Error()
 			return
 		}
-		if record != nil {
-			t.Logf("evidence run record measured elapsed: %v (budget %v)", record.elapsed, evidenceRunRecordTimeout)
+		record, err := loadCheckedInCorpusRunRecord(requested)
+		if err != nil {
+			evidenceRunRecordFatal = err.Error()
+			return
 		}
+		t.Logf("checked-in evidence run record elapsed: %v (external bound %v)", record.elapsed, checkedInCorpusRecordLimit)
 		evidenceRunRecordCached = record
 	})
 	if evidenceRunRecordFatal != "" {
 		t.Fatalf("%s", evidenceRunRecordFatal)
 	}
 	return evidenceRunRecordCached
+}
+
+// requestedCorpusPairs is the single deterministic source for both the
+// validation consumer and the external record producer.  Keeping the pair
+// derivation here prevents a checked-in evidence record from claiming a
+// guessed or stale subset of the archived validation corpus.
+func requestedCorpusPairs(index *testIndex, byDoc map[string][]validationRawRow) ([]pkgPattern, error) {
+	var pairs []pkgPattern
+	seen := map[string]bool{}
+	docs := make([]string, 0, len(byDoc))
+	for doc := range byDoc {
+		docs = append(docs, doc)
+	}
+	sort.Strings(docs)
+	for _, doc := range docs {
+		rows := byDoc[doc]
+		for _, row := range rows {
+			rowPairs := resolvedPkgPatterns(index, rowEvidence(row))
+			if err := selfCitationError(doc, rowIdentifier(row), rowPairs); err != nil {
+				return nil, err
+			}
+			for _, p := range rowPairs {
+				key := p.Package + "\x00" + p.Pattern
+				if !seen[key] {
+					seen[key] = true
+					pairs = append(pairs, p)
+				}
+			}
+		}
+	}
+	return consolidatePkgPatterns(pairs), nil
+}
+
+// TestExportValidationCorpusPairs is an intentionally narrow producer seam.
+// When AI_LANG_EVIDENCE_PAIR_OUTPUT is set it writes the exact pair list the
+// grade consumer requests, using requestedCorpusPairs rather than a second
+// parser.  Normal test runs leave no file behind.
+func TestExportValidationCorpusPairs(t *testing.T) {
+	path := os.Getenv("AI_LANG_EVIDENCE_PAIR_OUTPUT")
+	if path == "" {
+		t.Skip("producer seam is invoked only by the external record command; see probe:TestValidationCorpusPairExportMatchesConsumer")
+	}
+	pairs, err := requestedCorpusPairs(buildTestIndex(t), allPrimaryValidationRows(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeCorpusPairExport(path, pairs); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeCorpusPairExport(path string, pairs []pkgPattern) error {
+	data, err := corpusPairBytes(pairs)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o600)
+}
+
+func TestValidationCorpusPairExportMatchesConsumer(t *testing.T) {
+	pairs, err := requestedCorpusPairs(buildTestIndex(t), allPrimaryValidationRows(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pairs) == 0 {
+		t.Fatal("requested corpus pair export is empty")
+	}
+	for _, pair := range pairs {
+		if pair.Package == "" || pair.Pattern == "" {
+			t.Fatalf("invalid requested corpus pair: %+v", pair)
+		}
+	}
+	path := filepath.Join(t.TempDir(), "pairs.json")
+	if err := writeCorpusPairExport(path, pairs); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := corpusPairBytes(pairs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatal("producer pair export differs from the validation consumer's exact requested list")
+	}
+	again, err := requestedCorpusPairs(buildTestIndex(t), allPrimaryValidationRows(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	againBytes, err := corpusPairBytes(again)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(want) != string(againBytes) {
+		t.Fatal("consumer pair export is nondeterministic across fresh corpus maps")
+	}
 }
 
 // consolidatePkgPatterns merges every pair sharing the same Package operand
@@ -1500,6 +1683,41 @@ func TestRunRecordCompletenessGuardIsNotInert(t *testing.T) {
 			t.Fatalf("unmodified complete record inside margin should be admissible, got: %v", err)
 		}
 	})
+}
+
+func TestCheckedInCorpusRecordRejectsTamperingAndVacuity(t *testing.T) {
+	requested := []pkgPattern{{Package: "./internal/compiler/core", Pattern: "^TestSeeded$"}}
+	recordData := []byte("{\"Action\":\"pass\",\"Test\":\"TestSeeded\"}\n{\"Action\":\"record_pair_complete\",\"Package\":\"./internal/compiler/core\",\"Pattern\":\"^TestSeeded$\"}\n{\"Action\":\"record_batch_complete\",\"Pairs\":1}\n")
+	pairData, err := corpusPairBytes(requested)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := checkedInCorpusRecord{Schema: checkedInCorpusRecordSchema, Revision: "9a1de4c", PairDigest: sha256Hex(pairData), RecordDigest: sha256Hex(recordData), Completed: true, ProducedAt: "2026-09-20T23:00:00Z", Elapsed: "1s"}
+	manifestData, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := checkedInCorpusRunRecord(requested, recordData, manifestData); err != nil {
+		t.Fatalf("valid checked-in record rejected: %v", err)
+	}
+	for name, mutate := range map[string]func(*checkedInCorpusRecord){
+		"missing revision":    func(m *checkedInCorpusRecord) { m.Revision = "" },
+		"pair digest drift":   func(m *checkedInCorpusRecord) { m.PairDigest = "00" },
+		"record digest drift": func(m *checkedInCorpusRecord) { m.RecordDigest = "00" },
+		"missing completion":  func(m *checkedInCorpusRecord) { m.Completed = false },
+	} {
+		t.Run(name, func(t *testing.T) {
+			mutated := manifest
+			mutate(&mutated)
+			data, err := json.Marshal(mutated)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := checkedInCorpusRunRecord(requested, recordData, data); err == nil {
+				t.Fatal("tampered checked-in record was accepted")
+			}
+		})
+	}
 }
 
 // evidenceRunRecordAnchoredPatternShape recognizes resolvedPkgPatterns' and

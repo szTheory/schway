@@ -30,14 +30,14 @@ created: "2026-09-19"
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 16-01-01 | 01 | 1 | NAT-08 | T-16-01 | N=1 legacy and whole-program paths are byte-identical for scoped fixtures in both public modes. | unit + golden | `env GOCACHE=/tmp/ai-lang-phase16-cache sh scripts/assert-go-tests.sh ./internal/compiler/cgen/... 'TestN1ConvergenceDifferential|Test.*Program'` | ❌ W0 expansion | ⬜ pending |
-| 16-01-02 | 01 | 1 | NAT-08 | T-16-02 | Admission preserves graph/entry → shape → preflight → serialization ordering. | unit + mutation | `env GOCACHE=/tmp/ai-lang-phase16-cache sh scripts/assert-go-tests.sh ./internal/compiler/cgen/... 'Test.*Program|TestN1ConvergenceDifferential'` | ❌ W0 port cases | ⬜ pending |
-| 16-02-01 | 02 | 2 | NAT-08 | T-16-03 | Golden-change ledger bijects with the digest map and rejects stale or duplicate entries. | unit | `go test ./internal/compiler/core/... -run 'TestPreviousPhaseGoldenCUnchanged|Test.*Golden.*Ledger' -count=1` | ❌ W0 ledger | ⬜ pending |
-| 16-03-01 | 03 | 3 | NAT-08 | T-16-04 | Public native dispatch has no function-count route and production lowering uses `emitProgram`. | structural + unit | `go test ./internal/compiler/cgen/... -run 'Test.*Dispatch|TestN1ConvergenceDifferential' -count=1` | ❌ W0 structural control | ⬜ pending |
-| 16-04-01 | 04 | 4 | NAT-08 | T-16-05 | Interpreter, `-O0`, `-O3`, and `-O3 -flto` remain semantically aligned. | integration | `go test ./internal/compiler/session/... -run TestPhase11InterproceduralDifferential -count=1` | ✅ | ⬜ pending |
-| 16-05-01 | 05 | 4 | NAT-09 | T-16-06 | Amendment and M004 debt records preserve owner, prerequisite, reopening, and LTO consequence. | document + unit | `go test ./internal/compiler/session/... -run TestDebtRegistersAreWellFormed -count=1` | ❌ W0 Phase-16 rows | ⬜ pending |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness | Status |
+|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|-------|----------------|--------|
+| 16-01-01 | 01 | 1 | NAT-08 | T-16-01 | N=1 legacy and whole-program paths are byte-identical for scoped fixtures in both public modes. | unit + golden | `go test ./internal/compiler/cgen -run 'TestN1ConvergenceDifferential|Test.*Program' -count=1` | ✅ | EXERCISED | TestN1ConvergenceDifferential | ✅ green |
+| 16-01-02 | 01 | 1 | NAT-08 | T-16-02 | Admission preserves graph/entry → shape → preflight → serialization ordering. | unit + mutation | `go test ./internal/compiler/cgen -run 'Test.*Program|TestN1ConvergenceDifferential' -count=1` | ✅ | EXERCISED | TestN1ConvergenceDifferential | ✅ green |
+| 16-02-01 | 02 | 2 | NAT-08 | T-16-03 | Golden-change ledger bijects with the digest map and rejects stale or duplicate entries. | unit | `go test ./internal/compiler/core -run 'TestPreviousPhaseGoldenCUnchanged|Test.*Golden.*Ledger' -count=1` | ✅ | EXERCISED | TestPreviousPhaseGoldenCUnchanged | ✅ green |
+| 16-03-01 | 03 | 3 | NAT-08 | T-16-04 | Public native dispatch has no function-count route and production lowering uses `emitProgram`. | structural + unit | `go test ./internal/compiler/cgen -run 'Test.*Dispatch|TestN1ConvergenceDifferential' -count=1` | ✅ | EXERCISED | TestN1ConvergenceDifferential | ✅ green |
+| 16-04-01 | 04 | 4 | NAT-08 | T-16-05 | Admitted fixtures align dynamically; M004 is current refusal plus frozen provenance. | integration | `go test ./internal/compiler/session -run 'TestPhase11InterproceduralDifferential|TestPhase16M004CorpusRefusal' -count=1` | ✅ | EXERCISED | TestPhase16M004CorpusRefusal | ✅ green |
+| 16-05-01 | 05 | 4 | NAT-09 | T-16-06 | Amendment and M004 debt records preserve owner, prerequisite, reopening, and LTO consequence. | document + unit | `go test ./internal/compiler/session -run TestDebtRegistersAreWellFormed -count=1` | ✅ | EXERCISED | TestDebtRegistersAreWellFormed | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
