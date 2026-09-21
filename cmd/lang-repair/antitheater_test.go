@@ -563,16 +563,13 @@ func testCleanupClassIsProseIndependent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	first, err := cgen.EmitNative(checked.Program)
-	if err != nil {
-		t.Fatal(err)
+	_, first := cgen.EmitNative(checked.Program)
+	_, second := cgen.EmitNative(checked.Program)
+	if first == nil || second == nil {
+		t.Fatal("cleanup fixture unexpectedly regained native admission after the Phase 16 M004 cut")
 	}
-	second, err := cgen.EmitNative(checked.Program)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first != second {
-		t.Fatal("cleanup's repair mechanism (cgen.EmitNative re-derivation) is not deterministic -- cannot be claimed prose-independent if it is not even self-consistent")
+	if first.Error() != second.Error() {
+		t.Fatalf("cleanup's M004 refusal is not deterministic: first=%q second=%q", first, second)
 	}
 }
 

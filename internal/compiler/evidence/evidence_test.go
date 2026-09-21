@@ -9,14 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -178,44 +174,15 @@ func walkKeys(value any, visit func(string)) {
 // declaring a foreign block produces a non-empty ForeignDigest that is
 // exactly the content digest of its own lang.foreign/0 sidecar manifest
 // (D-04-12c), and a program with no foreign block leaves it empty.
-func TestForeignSidecarManifestDigestBinds(t *testing.T) {
+func TestForeignEvidenceIsRefusedAfterM004Cut(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	product, diagnostics, err := evidence.Build(source, ownedFacts())
-	if err != nil || len(diagnostics) != 0 {
-		t.Fatalf("build foreign evidence: err=%v diagnostics=%+v", err, diagnostics)
+	_, diagnostics, err := evidence.Build(source, ownedFacts())
+	if len(diagnostics) != 0 || err == nil {
+		t.Fatalf("foreign evidence must stop at the public M004 refusal: err=%v diagnostics=%+v", err, diagnostics)
 	}
-	if product.Manifest.ForeignDigest == "" {
-		t.Fatal("expected a non-empty ForeignDigest for a program declaring a foreign block")
-	}
-	checked := check.Program(mustParse(t, source))
-	validated := corevalidate.Validate(checked.Program)
-	if !validated.Valid {
-		t.Fatalf("core validation failed: %+v", validated.Problems)
-	}
-	manifest, err := cgen.EmitForeignManifest(validated.Program())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := evidence.ContentDigest([]byte(manifest)); product.Manifest.ForeignDigest != want {
-		t.Fatalf("ForeignDigest = %s, want %s (manifest=%s)", product.Manifest.ForeignDigest, want, manifest)
-	}
-
-	nonForeign := goldenProduct(t)
-	if nonForeign.Manifest.ForeignDigest != "" {
-		t.Fatalf("expected an empty ForeignDigest for a program with no foreign block, got %s", nonForeign.Manifest.ForeignDigest)
-	}
-}
-
-func mustParse(t testing.TB, source []byte) ast.Program {
-	t.Helper()
-	parsed := syntax.Parse(source)
-	if len(parsed.Diagnostics) != 0 {
-		t.Fatalf("parse: %+v", parsed.Diagnostics)
-	}
-	return parsed.Program
 }
 
 func TestEvidenceErrorCodeReachesCLI(t *testing.T) {
@@ -268,26 +235,14 @@ func ownedFacts() evidence.Facts {
 // source) is refused with evidence.foreign_digest_mismatch, mirroring
 // TestEvidenceMutationMatrix's established per-field mutation-and-refuse
 // shape for this new Phase 4 field specifically.
-func TestForeignDigestMismatchRefused(t *testing.T) {
+func TestForeignDigestMismatchIsUnreachableAfterM004Cut(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	product, diagnostics, err := evidence.Build(source, ownedFacts())
-	if err != nil || len(diagnostics) != 0 {
-		t.Fatalf("build foreign evidence: err=%v diagnostics=%+v", err, diagnostics)
-	}
-	if product.Manifest.ForeignDigest == "" {
-		t.Fatal("expected a non-empty ForeignDigest for a program declaring a foreign block")
-	}
-	mutated := product.Manifest
-	mutated.ForeignDigest = staleDigest()
-	if err := evidence.Validate(mutated, source, ownedFacts()); evidence.ErrorCode(err) != "evidence.foreign_digest_mismatch" {
-		t.Fatalf("mutated ForeignDigest code=%s, want evidence.foreign_digest_mismatch", evidence.ErrorCode(err))
-	}
-	// The honest, unmutated manifest must still validate cleanly.
-	if err := evidence.Validate(product.Manifest, source, ownedFacts()); err != nil {
-		t.Fatalf("honest foreign manifest rejected: %v", err)
+	_, diagnostics, err := evidence.Build(source, ownedFacts())
+	if len(diagnostics) != 0 || err == nil {
+		t.Fatalf("foreign evidence unexpectedly reached a mutable sidecar manifest: err=%v diagnostics=%+v", err, diagnostics)
 	}
 }
 
