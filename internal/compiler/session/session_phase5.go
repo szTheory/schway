@@ -189,7 +189,7 @@ func phase16FileControlNativeC(fixture string, refusal error) (string, error) {
 }
 
 func phase16GeneratedControlNativeC(program core.Program, refusal error) (string, error) {
-	if !strings.Contains(refusal.Error(), "by-pointer bodies are not supported") {
+	if !strings.Contains(refusal.Error(), "by-pointer bodies are not supported") && !strings.Contains(refusal.Error(), "foreign-call bodies are not supported") {
 		return "", refusal
 	}
 	manifestBytes, err := os.ReadFile(nat03CorpusPath("testdata/phase16/generated-frozen-evidence.json"))
