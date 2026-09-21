@@ -46,6 +46,13 @@ type phase16GeneratedFrozenEvidence struct {
 	}
 }
 
+type phase16FileFrozenEvidence struct {
+	Schema  string
+	Records []struct {
+		Fixture, FixtureSHA256, Artifact, ArtifactSHA256 string
+	}
+}
+
 var phase16FrozenEmitterEvidenceByFixture = map[string]phase16FrozenEmitterEvidence{
 	"testdata/phase4/acquire_three_success.lang": {
 		refusal:        "multi-function foreign-call bodies are not supported",
@@ -114,7 +121,7 @@ func Phase16ControlNativeC(program core.Program, fixture string) (string, error)
 	evidence, cut := phase16FrozenEmitterEvidenceByFixture[fixture]
 	if !cut {
 		if fixture != "" {
-			return "", err
+			return phase16FileControlNativeC(fixture, err)
 		}
 		return phase16GeneratedControlNativeC(program, err)
 	}
@@ -139,6 +146,39 @@ func Phase16ControlNativeC(program core.Program, fixture string) (string, error)
 		return "", fmt.Errorf("%s: frozen evidence artifact digest changed", fixture)
 	}
 	return string(artifact), nil
+}
+
+func phase16FileControlNativeC(fixture string, refusal error) (string, error) {
+	if !strings.Contains(refusal.Error(), "foreign-call bodies are not supported") && !strings.Contains(refusal.Error(), "by-pointer bodies are not supported") {
+		return "", refusal
+	}
+	bytes, err := os.ReadFile(nat03CorpusPath("testdata/phase16/file-frozen-evidence.json"))
+	if err != nil {
+		return "", err
+	}
+	var manifest phase16FileFrozenEvidence
+	if err := json.Unmarshal(bytes, &manifest); err != nil || manifest.Schema != "phase16.file-frozen-evidence/1" {
+		return "", fmt.Errorf("invalid file frozen evidence manifest")
+	}
+	source, err := os.ReadFile(nat03CorpusPath(fixture))
+	if err != nil {
+		return "", err
+	}
+	sourceSum := sha256.Sum256(source)
+	for _, r := range manifest.Records {
+		if r.Fixture == fixture && r.FixtureSHA256 == hex.EncodeToString(sourceSum[:]) {
+			artifact, err := os.ReadFile(nat03CorpusPath(r.Artifact))
+			if err != nil {
+				return "", err
+			}
+			sum := sha256.Sum256(artifact)
+			if hex.EncodeToString(sum[:]) != r.ArtifactSHA256 {
+				return "", fmt.Errorf("file frozen artifact digest changed for %s", fixture)
+			}
+			return string(artifact), nil
+		}
+	}
+	return "", fmt.Errorf("file-backed cut fixture %q lacks digest-bound frozen evidence", fixture)
 }
 
 func phase16GeneratedControlNativeC(program core.Program, refusal error) (string, error) {
