@@ -84,7 +84,7 @@ and the biggest file is mostly comment.
 
 Corpus at re-assessment (2026-09-18, plan 14-07): **128 `.lang` programs, 4,311 lines total** (~34 lines average, 193-line maximum). Growth since 2026-09-17 is plan 14-07's own two new testdata/phase14/ fixtures (the witness registry's executed probes); the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
 
-## The single-function guard inventory (re-verified 2026-09-17, EVD-06 machine check)
+## The single-function guard inventory (re-verified 2026-09-20, EVD-06 machine check)
 
 Phases 07-10 made `OpCall` real in `check`, `corevalidate`, `originvalidate`,
 `pathoracle`, and (internally, via Go tests) `interp`. A two-function program
@@ -97,12 +97,11 @@ go run ./cmd/lang run --engine=native      testdata/…/call_basic.lang  # opera
 ```
 
 It cannot be executed by either engine. The refusal is **not** confined to the
-two `cgen` entry points the roadmap names. A non-test scan finds **22 `len(Functions) != 1` guards across 8 files in 2 packages** (48 including tests):
+two `cgen` entry points the roadmap names. A non-test scan finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (45 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|
-| `session` | 20 | `RunInterpreter`, `RunNative` (the CLI run path); `verifyOwnedCorpus`, `verifyBorrowedCorpus` (×8), `TransposeReleaseOrder`; Phase 5/6 verification lanes; `admitPhase5Candidate` |
-| `cgen` | 2 | `Emit`, `EmitNative` |
+| `session` | 19 | `RunInterpreter`, `RunNative` (the CLI run path); `verifyOwnedCorpus`, `verifyBorrowedCorpus` (×8), `TransposeReleaseOrder`; Phase 5/6 verification lanes; `admitPhase5Candidate` |
 
 **This table is now machine-checked, not self-certified.**
 `internal/compiler/session/self_describing_docs_test.go`'s

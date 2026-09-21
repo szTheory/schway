@@ -335,8 +335,10 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 
 	// AllComparableFixtures sweeps every testdata/phase11/*.lang fixture
 	// that resolves to a unique entry and is expected to agree across all
-	// four tiers -- every existing corpus member except
-	// multi_function_zero_call.lang, whose own genuinely ambiguous entry
+	// four tiers -- every existing corpus member except the cut M004
+	// multi_function_gate_corpus.lang (refusal is covered by
+	// probe:TestPhase16M004CorpusRefusal) and multi_function_zero_call.lang,
+	// whose own genuinely ambiguous entry
 	// (ZeroCallEdges, below) means it never reaches any tier at all, by
 	// design (D-11-05's "never guess" prohibition).
 	t.Run("AllComparableFixtures", func(t *testing.T) {
@@ -344,7 +346,6 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 			"multi_function_entry_basic.lang",
 			"multi_function_forward_callee.lang",
 			"multi_function_unreachable.lang",
-			"multi_function_gate_corpus.lang",
 			"multi_function_relay_depth2.lang",
 		} {
 			t.Run(fixture, func(t *testing.T) {

@@ -58,10 +58,11 @@ type operation struct {
 }
 
 type index struct {
-	functions   map[string]core.Function
-	operations  map[string]operation
-	entry       string
-	occurrences map[string]occurrence
+	functions    map[string]core.Function
+	operations   map[string]operation
+	matchReturns map[string]string
+	entry        string
+	occurrences  map[string]occurrence
 }
 
 // Validate checks only observed causal structure. It intentionally does not
@@ -100,7 +101,7 @@ func ValidateFullCoverage(program core.Program, document execution.Execution) er
 }
 
 func buildIndex(program core.Program) (*index, error) {
-	i := &index{functions: make(map[string]core.Function), operations: make(map[string]operation), occurrences: make(map[string]occurrence)}
+	i := &index{functions: make(map[string]core.Function), operations: make(map[string]operation), matchReturns: make(map[string]string), occurrences: make(map[string]occurrence)}
 	for _, function := range program.Functions {
 		if function.ID == "" {
 			return nil, refusal("program", -1, "", "", "", "function ID is missing")
@@ -109,6 +110,9 @@ func buildIndex(program core.Program) (*index, error) {
 			return nil, refusal("program", -1, "", "", function.ID, "duplicate function ID")
 		}
 		i.functions[function.ID] = function
+		if function.Match != nil && function.Linear == nil {
+			i.matchReturns[function.ID+":match:return"] = function.ID
+		}
 	}
 	for _, function := range program.Functions {
 		if function.Linear == nil {
@@ -319,6 +323,9 @@ func terminal(kind string) bool {
 }
 
 func (i *index) classify(event execution.Event) (operation, error) {
+	if functionID, ok := i.matchReturns[event.ID]; ok && event.Kind == "function.returned" {
+		return operation{functionID: functionID}, nil
+	}
 	for _, op := range i.operations {
 		id := op.value.ID
 		if event.Kind == "function.called" && event.ID == id+":event:called" && op.value.Kind == core.OpCall {

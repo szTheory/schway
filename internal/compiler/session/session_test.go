@@ -384,7 +384,7 @@ func TestNativeToggleO0O3(t *testing.T) {
 	if len(result.O0.Pairs) != 2 || len(result.O3.Pairs) != 2 {
 		t.Fatalf("unexpected native results: O0=%+v O3=%+v", result.O0, result.O3)
 	}
-	if !strings.Contains(result.CSource, "typedef enum LANG_SWITCH") || !strings.Contains(result.CSource, "switch (LANG_STATE)") {
+	if !strings.Contains(result.CSource, "typedef enum LANG_SWITCH") || !strings.Contains(result.CSource, "switch (value)") {
 		t.Fatalf("generated C is not reviewable S1 lowering:\n%s", result.CSource)
 	}
 }
