@@ -1222,15 +1222,15 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 	}
 	// cut records a fixture whose source/check/interpreter contracts remain
 	// valid while public cgen lowering remains deliberately M004 debt (proved
-	// by probe:TestPhase16M004CorpusRefusal). The CLI's control route may run
-	// only digest-bound frozen evidence after that public refusal, so its
-	// observable native result remains a successful historical comparison.
+	// by probe:TestPhase16M004CorpusRefusal). Production CLI execution must
+	// preserve that terminal refusal instead of selecting historical C, so the
+	// native command reports its ordinary operational failure envelope.
 	cut := func(fixture string) phase4OutOfCorpusCase {
 		return phase4OutOfCorpusCase{behavior: fixture, steps: []phase4OutOfCorpusStep{
 			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
 			{args: []string{"--json", "check", "{path}"}, wantExit: 0},
 			{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 0},
-			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 3, wantDiagnostic: "native.tool_failure"},
 		}}
 	}
 	// The nonlocal-exit probe is also refusal-first frozen evidence, but its
@@ -1249,7 +1249,7 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
 			{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
 			{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
-			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
+			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 3, wantDiagnostic: "native.tool_failure"},
 		}}
 	}
 	// refused is a negative-control fixture: canonically formatted (unless
