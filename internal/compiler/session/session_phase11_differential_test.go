@@ -115,29 +115,11 @@ func phase16EntryInput(t *testing.T, fixture, parameterType string) string {
 // before the independent /2 peer and all-pairs comparator inspect semantics.
 func phase16ProjectInterpreterSchema2(t *testing.T, program core.Program, document execution.Execution) execution.Execution {
 	t.Helper()
-	entry, err := callgraph.EntryFunction(program)
+	projected, err := session.ProjectExecutionSchema2(program, document)
 	if err != nil {
-		t.Fatalf("project interpreter schema: entry: %v", err)
+		t.Fatalf("project interpreter schema: %v", err)
 	}
-	invocation, err := execution.FormatInvocation(entry.ID, nil)
-	if err != nil {
-		t.Fatalf("project interpreter schema: invocation: %v", err)
-	}
-	document.Schema = execution.Schema2
-	bareMatch := entry.Match != nil && entry.Linear == nil
-	for index := range document.Events {
-		document.Events[index].Schema = execution.Schema2
-		document.Events[index].Invocation = invocation
-		document.Events[index].Input = ""
-		document.Events[index].Output = ""
-		if bareMatch {
-			document.Events[index].ID = entry.ID + ":match:return"
-			document.Events[index].SourcePlace = entry.Parameter.ID
-			document.Events[index].TargetPlace = ""
-			document.Events[index].TypeID = entry.Parameter.Type
-		}
-	}
-	return document
+	return projected
 }
 
 type phase11NativeCSupplier func(core.Program) (string, error)
@@ -299,6 +281,44 @@ func TestPhase16EmitterPortSemanticGuardIsNotInert(t *testing.T) {
 	var disagreement *session.Phase5EngineDisagreement
 	if !errors.As(err, &disagreement) || disagreement.Axis != session.AxisTerminalOutcome {
 		t.Fatalf("seeded semantic mutation must change terminal-outcome comparator axis, got %v", err)
+	}
+}
+
+// TestPhase16Schema2ProjectionRejectsNativeFactMutation proves that expected
+// schema-2 facts remain derived from the checked program and interpreter
+// document. In particular, no native invocation or defect reason can be
+// copied back into the expected projection to conceal a broken emitter.
+func TestPhase16Schema2ProjectionRejectsNativeFactMutation(t *testing.T) {
+	program, entryName := phase16CheckedFixture(t, "testdata/phase5/defect_dies_by_signal.lang")
+	interpreted, err := interp.Run(program, entryName, "Halt")
+	if err != nil {
+		t.Fatalf("interp.Run: %v", err)
+	}
+	expected := phase16ProjectInterpreterSchema2(t, program, interpreted)
+	if len(expected.Events) == 0 {
+		t.Fatal("fixture produced no expected events")
+	}
+	mutatedInvocation := expected
+	mutatedInvocation.Events = append([]execution.Event(nil), expected.Events...)
+	mutatedInvocation.Events[0].Invocation = "native-injected-invocation"
+	if execution.Equal(expected, mutatedInvocation) {
+		t.Fatal("native invocation mutation was accepted by schema-2 comparison")
+	}
+	mutatedReason := expected
+	mutatedReason.Events = append([]execution.Event(nil), expected.Events...)
+	foundDefect := false
+	for index := range mutatedReason.Events {
+		if mutatedReason.Events[index].Kind == "function.defected" {
+			mutatedReason.Events[index].Output = "native-injected-defect-reason"
+			foundDefect = true
+			break
+		}
+	}
+	if !foundDefect {
+		t.Fatal("fixture produced no defect event")
+	}
+	if execution.Equal(expected, mutatedReason) {
+		t.Fatal("native defect-reason mutation was accepted by schema-2 comparison")
 	}
 }
 

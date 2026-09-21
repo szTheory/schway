@@ -491,6 +491,17 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 		return execution.Execution{}, err
 	}
 	document.Schema = execution.Schema2
+	defectReasons := make(map[string]string)
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpDefect && operation.Reason != "" {
+				defectReasons[operation.ID+":event:defected"] = operation.Reason
+			}
+		}
+	}
 	// Only the legacy one-event switch document needs its historical match
 	// return identity projected.  A match with arm operations (for example a
 	// defect terminal) already has operation identities that correspond to
@@ -501,11 +512,12 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 		document.Events[index].Invocation = invocation
 		document.Events[index].Input = ""
 		// Schema-2 deliberately omits legacy event decoration, except a defect
-		// reason: the program emitter records the checked operation reason as
-		// the terminal event's output and the interpreter already owns that
-		// same semantic fact.
+		// reason. That reason is a checked core-operation fact, not an
+		// observation borrowed from native output.
 		if document.Events[index].Kind != "function.defected" {
 			document.Events[index].Output = ""
+		} else {
+			document.Events[index].Output = defectReasons[document.Events[index].ID]
 		}
 		if bareMatch {
 			document.Events[index].ID = entry.ID + ":match:return"
@@ -1074,72 +1086,24 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 		// resulting /2 document with the independent peer before comparing it
 		// to native output. Cut-M004 programs never reach this point: cgen
 		// refuses them before native compilation.
-		expectedDocument := projectInterpreterSchema2(checked.Program, expected)
+		expectedDocument, projectionErr := ProjectExecutionSchema2(checked.Program, expected)
+		if projectionErr != nil {
+			return NativeResult{}, nil, fmt.Errorf("project schema-2 interpreter evidence: %w", projectionErr)
+		}
 		// Native documents carry the invocation-path facts; validate those
 		// independently before comparing their semantic projection to interp.
 		if err := Phase5CompareProgramEngines("run-native", checked.Program, map[string]execution.Execution{"O0": o0.Pairs[index].Execution, "O3": o3.Pairs[index].Execution}); err != nil {
 			return NativeResult{}, nil, err
 		}
 		for _, actual := range []native.Result{o0, o3} {
-			comparisonExpected := expectedDocument
-			if len(comparisonExpected.Events) == len(actual.Pairs[index].Execution.Events) {
-				for eventIndex := range comparisonExpected.Events {
-					comparisonExpected.Events[eventIndex].Invocation = actual.Pairs[index].Execution.Events[eventIndex].Invocation
-				}
-			}
-			if !execution.Equal(comparisonExpected, actual.Pairs[index].Execution) {
-				expectedBytes, _ := execution.CanonicalBytes(comparisonExpected)
+			if !execution.Equal(expectedDocument, actual.Pairs[index].Execution) {
+				expectedBytes, _ := execution.CanonicalBytes(expectedDocument)
 				actualBytes, _ := execution.CanonicalBytes(actual.Pairs[index].Execution)
 				return NativeResult{}, nil, &EngineMismatch{Optimization: actual.Optimization, Input: inputs[index], Expected: string(expectedBytes), Actual: string(actualBytes)}
 			}
 		}
 	}
 	return NativeResult{CSource: cSource, Interpreter: interpreted, O0: o0, O3: o3}, nil, nil
-}
-
-func projectInterpreterSchema2(program core.Program, document execution.Execution) execution.Execution {
-	entry, err := callgraph.EntryFunction(program)
-	if err != nil {
-		return document
-	}
-	document.Schema = execution.Schema2
-	defectReasons := map[string]string{}
-	for _, function := range program.Functions {
-		if function.Linear == nil {
-			continue
-		}
-		for _, operation := range function.Linear.Operations {
-			if operation.Kind == core.OpDefect && operation.Reason != "" {
-				defectReasons[operation.ID+":event:defected"] = operation.Reason
-			}
-		}
-	}
-	bareMatch := entry.Match != nil && entry.Linear == nil && len(document.Events) == 1
-	for index := range document.Events {
-		document.Events[index].Schema = execution.Schema2
-		invocationID := document.Events[index].FunctionID
-		if invocationID == "" {
-			invocationID = entry.ID
-		}
-		invocation, err := execution.FormatInvocation(invocationID, nil)
-		if err != nil {
-			return document
-		}
-		document.Events[index].Invocation = invocation
-		document.Events[index].Input = ""
-		if document.Events[index].Kind != "function.defected" {
-			document.Events[index].Output = ""
-		} else if document.Events[index].Output == "" {
-			document.Events[index].Output = defectReasons[document.Events[index].ID]
-		}
-		if bareMatch {
-			document.Events[index].ID = entry.ID + ":match:return"
-			document.Events[index].SourcePlace = entry.Parameter.ID
-			document.Events[index].TargetPlace = ""
-			document.Events[index].TypeID = entry.Parameter.Type
-		}
-	}
-	return document
 }
 
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the

@@ -376,6 +376,9 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 	cSource, err := cgen.EmitNative(program)
 	if err != nil {
 		if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") || strings.Contains(err.Error(), "by-pointer bodies are not supported") {
+			if fixture == "acquire_three_success.lang" {
+				t.Skipf("probe:TestPhase16M004CorpusRefusal: cut-M004 fixture is refusal-only; live lowering is forbidden: %v", err)
+			}
 			t.Skipf("Phase 16 M004 public refusal is exercised separately from this admitted schema-2 differential: %v", err)
 		}
 		t.Fatalf("%s: cgen.EmitNative: %v", fixture, err)
@@ -411,6 +414,23 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 		if compareErr := session.Phase4CompareThreeEngines(fixture, interpreted, o0.Pairs[0].Execution, o3.Pairs[0].Execution); compareErr != nil {
 			t.Fatalf("%s input=%q: %v", fixture, input, compareErr)
 		}
+	}
+}
+
+// TestPhase16M004CorpusRefusal gives the corpus a named, witness-cited route
+// for one cut member. It intentionally proves the current public refusal and
+// never turns the historical evidence into a live lowering fallback; Plan
+// 16-11 binds the corresponding frozen artifact and provenance.
+func TestPhase16M004CorpusRefusal(t *testing.T) {
+	const fixture = "acquire_three_success.lang"
+	program, _, err := session.Phase4CheckedProgram(testsupport.ProjectPath("testdata", "phase4"), fixture)
+	if err != nil {
+		t.Fatalf("%s: checked program: %v", fixture, err)
+	}
+	if _, err := cgen.EmitNative(program); err == nil {
+		t.Fatalf("%s: cut-M004 fixture unexpectedly admitted to public native lowering", fixture)
+	} else if !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("%s: wrong refusal identity: %v", fixture, err)
 	}
 }
 
