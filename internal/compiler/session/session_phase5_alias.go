@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/interp"
@@ -371,7 +370,7 @@ func VerifyAliasFalseNoAlias(ctx context.Context, runner *AliasFactMutationRunne
 		return fmt.Errorf("fixture %s must declare exactly one function", runner.fixturePath)
 	}
 
-	cSource, err := cgen.EmitNative(program)
+	cSource, err := Phase16ControlNativeC(program, runner.fixturePath)
 	if err != nil {
 		return err
 	}
@@ -628,7 +627,7 @@ func assertNonlocalExitMovesAxis(ctx context.Context, mutation NAT03Mutation) er
 	if len(checked.Diagnostics) != 0 {
 		return fmt.Errorf("%s: fixture failed to check: %+v", mutation.ControlID, checked.Diagnostics)
 	}
-	generated, err := cgen.EmitNative(checked.Program)
+	generated, err := Phase16ControlNativeC(checked.Program, mutation.CorpusProgram)
 	if err != nil {
 		return fmt.Errorf("%s: %w", mutation.ControlID, err)
 	}
@@ -678,7 +677,7 @@ func assertAliasFalseNoAliasMovesAxis(ctx context.Context, mutation NAT03Mutatio
 		return fmt.Errorf("%s: fixture rejected by corevalidate: %+v", mutation.ControlID, validated.Problems)
 	}
 	program := validated.Program()
-	cSource, err := cgen.EmitNative(program)
+	cSource, err := Phase16ControlNativeC(program, mutation.CorpusProgram)
 	if err != nil {
 		return err
 	}

@@ -114,6 +114,13 @@ var phase16FrozenEmitterEvidenceByFixture = map[string]phase16FrozenEmitterEvide
 // digest-bound historical C for a cut M004 verification control. It is not a
 // general emitter: an unrecognised fixture always receives cgen's error.
 func Phase16ControlNativeC(program core.Program, fixture string) (string, error) {
+	if filepath.IsAbs(fixture) {
+		relative, relErr := filepath.Rel(nat03ProjectRoot(), fixture)
+		if relErr != nil {
+			return "", relErr
+		}
+		fixture = filepath.ToSlash(relative)
+	}
 	generated, err := cgen.EmitNative(program)
 	if err == nil {
 		return generated, nil
