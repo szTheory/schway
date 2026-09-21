@@ -428,15 +428,36 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 // never turns the historical evidence into a live lowering fallback; Plan
 // 16-11 binds the corresponding frozen artifact and provenance.
 func TestPhase16M004CorpusRefusal(t *testing.T) {
-	const fixture = "acquire_three_success.lang"
-	program, _, err := session.Phase4CheckedProgram(testsupport.ProjectPath("testdata", "phase4"), fixture)
-	if err != nil {
-		t.Fatalf("%s: checked program: %v", fixture, err)
+	// This list mirrors the fixture/refusal identities in
+	// legacy-emitter-evidence.json.  The immutable C artifacts remain
+	// evidence only; this probe is the live public-API half of the contract.
+	tests := []struct{ fixture, refusal string }{
+		{"testdata/phase4/acquire_three_success.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/acquire_three_fail_second.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/acquire_three_fail_third.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/nonlocal_exit_probe.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/foreign_acquire_one.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/retained_pointer.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/allocator_mismatch.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/inline_across_foreign.lang", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/restrict_borrow.lang", "by-pointer bodies are not supported"},
 	}
-	if _, err := cgen.EmitNative(program); err == nil {
-		t.Fatalf("%s: cut-M004 fixture unexpectedly admitted to public native lowering", fixture)
-	} else if !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
-		t.Fatalf("%s: wrong refusal identity: %v", fixture, err)
+	for _, test := range tests {
+		t.Run(filepath.Base(test.fixture), func(t *testing.T) {
+			source, err := os.ReadFile(testsupport.ProjectPath(strings.Split(test.fixture, "/")...))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("fixture must check clean: %+v", checked.Diagnostics)
+			}
+			if _, err := cgen.EmitNative(checked.Program); err == nil {
+				t.Fatal("cut-M004 fixture unexpectedly admitted to public native lowering")
+			} else if !strings.Contains(err.Error(), test.refusal) {
+				t.Fatalf("wrong refusal identity: %v", err)
+			}
+		})
 	}
 }
 

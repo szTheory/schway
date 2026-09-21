@@ -174,10 +174,22 @@ func runFunctionOkExecutions(t *testing.T, ctx context.Context, program core.Pro
 	if len(o0.Pairs) != 1 || len(o3.Pairs) != 1 {
 		t.Fatalf("%s: expected exactly one execution per optimization level, got -O0=%d -O3=%d", functionName, len(o0.Pairs), len(o3.Pairs))
 	}
+	interpreted, err = session.ProjectExecutionSchema2(program, interpreted)
+	if err != nil {
+		t.Fatalf("%s: interpreter schema-2 projection: %v", functionName, err)
+	}
+	o0Execution, err := session.ProjectExecutionSchema2(program, o0.Pairs[0].Execution)
+	if err != nil {
+		t.Fatalf("%s: -O0 schema-2 projection: %v", functionName, err)
+	}
+	o3Execution, err := session.ProjectExecutionSchema2(program, o3.Pairs[0].Execution)
+	if err != nil {
+		t.Fatalf("%s: -O3 schema-2 projection: %v", functionName, err)
+	}
 	return map[string]execution.Execution{
 		"interpreter": interpreted,
-		"O0":          o0.Pairs[0].Execution,
-		"O3":          o3.Pairs[0].Execution,
+		"O0":          o0Execution,
+		"O3":          o3Execution,
 	}
 }
 

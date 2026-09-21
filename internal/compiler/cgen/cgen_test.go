@@ -501,7 +501,7 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 			generated, err := cgen.EmitNative(checked.Program)
 			if err != nil {
 				if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
-					t.Skipf("historical landing-pad lowering is M004-frozen; current public refusal: %v", err)
+					t.Skipf("historical landing-pad lowering is M004-frozen; current public refusal: %v; see probe:TestPhase16M004CorpusRefusal", err)
 				}
 				t.Fatal(err)
 			}
@@ -556,7 +556,7 @@ func TestExactlyOneLandingPadIsInstalled(t *testing.T) {
 			generated, err := cgen.EmitNative(checked.Program)
 			if err != nil {
 				if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
-					t.Skipf("historical landing-pad lowering is M004-frozen; current public refusal: %v", err)
+					t.Skipf("historical landing-pad lowering is M004-frozen; current public refusal: %v; see probe:TestPhase16M004CorpusRefusal", err)
 				}
 				t.Fatal(err)
 			}
@@ -576,7 +576,7 @@ func TestLedgerIsStaticStorage(t *testing.T) {
 	generated, err := cgen.EmitNative(checked.Program)
 	if err != nil {
 		if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
-			t.Skipf("historical static-ledger lowering is M004-frozen; current public refusal: %v", err)
+			t.Skipf("historical static-ledger lowering is M004-frozen; current public refusal: %v; see probe:TestPhase16M004CorpusRefusal", err)
 		}
 		t.Fatal(err)
 	}
@@ -770,7 +770,7 @@ func TestPhase5ByPointerLoweringThreeEngineAgreement(t *testing.T) {
 	}
 	if err != nil {
 		if strings.Contains(err.Error(), "by-pointer bodies are not supported") {
-			t.Skipf("by-pointer native tracer is frozen M004 evidence; current public refusal: %v", err)
+			t.Skipf("by-pointer native tracer is frozen M004 evidence; current public refusal: %v; see probe:TestPhase16M004CorpusRefusal", err)
 		}
 		t.Fatalf("engines disagreed or native run failed: %v", err)
 	}

@@ -1037,7 +1037,31 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		if !ok {
 			return fmt.Errorf("operation %q: unknown alternative %q", operation.ID, alternative)
 		}
-		fmt.Fprintf(out, "      %s %s; /* payload construct: %s */\n      %s.tag = %s;\n      %s.%s = %s;\n      (void)%s;\n", branchType.typeName, locals[target.ID], operation.ID, locals[target.ID], tag, locals[target.ID], field.name, locals[operation.SourceID], locals[target.ID])
+		fmt.Fprintf(out, "      %s %s; /* payload construct: %s */\n      %s.tag = %s;\n", branchType.typeName, locals[target.ID], operation.ID, locals[target.ID], tag)
+		if payloadSlotSwapForTest {
+			// Keep D-12-38's test-only mutation seam on the whole-program
+			// emitter path.  Leaving it only in emitBranchOperations made the
+			// quality control silently inject nothing after Phase 16 routed
+			// admitted branch programs through emitProgram.
+			wrongField, wrongType, swapped := programWrongPayloadSlot(branchType, alternative)
+			if swapped {
+				payloadSlotSwapInjectedWriteCount++
+				sourceType := payloadCTypeName(operation.PayloadType)
+				switch {
+				case wrongType == sourceType:
+					fmt.Fprintf(out, "      %s.%s = %s; /* D-12-38 mutation: wrong-slot write */\n", locals[target.ID], wrongField, locals[operation.SourceID])
+				case wrongType == "LANG_BUFFER":
+					fmt.Fprintf(out, "      %s.%s = (LANG_BUFFER){{%s}, 1u}; /* D-12-38 mutation: wrong-slot write, widened */\n", locals[target.ID], wrongField, locals[operation.SourceID])
+				default:
+					fmt.Fprintf(out, "      %s.%s = %s.bytes[0]; /* D-12-38 mutation: wrong-slot write, truncated */\n", locals[target.ID], wrongField, locals[operation.SourceID])
+				}
+			} else {
+				fmt.Fprintf(out, "      %s.%s = %s;\n", locals[target.ID], field.name, locals[operation.SourceID])
+			}
+		} else {
+			fmt.Fprintf(out, "      %s.%s = %s;\n", locals[target.ID], field.name, locals[operation.SourceID])
+		}
+		fmt.Fprintf(out, "      (void)%s;\n", locals[target.ID])
 		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n", strconv.Quote("value.payload_constructed"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 		declared[operation.TargetID] = true
 	case core.OpDefect:
@@ -1057,6 +1081,21 @@ func branchPayloadAlternative(branchType programBranchType, operation core.Linea
 		return "", fmt.Errorf("operation %q: %w", operation.ID, err)
 	}
 	return alternative, nil
+}
+
+// programWrongPayloadSlot finds a different payload-bearing alternative for
+// D-12-38's test-only wrong-slot mutation.  It deliberately derives the
+// target from the same checker-derived branch type that emission uses.
+func programWrongPayloadSlot(branchType programBranchType, alternative string) (field, cType string, ok bool) {
+	for _, detail := range branchType.dataType.AlternativeDetails {
+		if detail.Name == alternative || detail.PayloadType == "" {
+			continue
+		}
+		if candidate, exists := branchType.fields[detail.Name]; exists {
+			return candidate.name, candidate.cType, true
+		}
+	}
+	return "", "", false
 }
 
 // emitProgramDefectTerminal writes the schema-2 document before the only

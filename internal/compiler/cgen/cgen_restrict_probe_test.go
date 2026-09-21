@@ -96,7 +96,7 @@ func runRestrictProbeHostLanes(t *testing.T, requiredHost string) {
 	digest := restrictProbeDigest(source)
 	if runtime.GOOS != requiredHost {
 		t.Logf("restrict_probe host=%s required_host=%s lane=all result=UNAVAILABLE source_sha256=%s", runtime.GOOS, requiredHost, digest)
-		t.Skipf("UNAVAILABLE: restrict probe requires host=%s (source_sha256=%s)", requiredHost, digest)
+		t.Skipf("UNAVAILABLE: restrict probe requires host=%s (source_sha256=%s); see probe:TestRestrictReadonlyProbeDarwinLanes", requiredHost, digest)
 	}
 
 	clang, err := exec.LookPath("clang")
