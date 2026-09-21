@@ -377,7 +377,7 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 	if len(fixturePath) > 0 {
 		path = filepath.ToSlash(fixturePath[0])
 	}
-	cSource, err := session.Phase16ControlNativeC(program, path)
+	cSource, err := phase16FileFrozenEvidenceC(t, program, path)
 	if err != nil {
 		t.Fatalf("%s: cgen.EmitNative: %v", fixture, err)
 	}
