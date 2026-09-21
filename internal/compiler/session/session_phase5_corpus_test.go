@@ -367,20 +367,18 @@ func phase5ExpectForOutcomeKind(kind string) native.TerminalOutcome {
 // three documents to session.Phase4CompareThreeEngines -- the EXISTING
 // comparator (D-05-18/D-05-37), never a private copy (grep-verifiable:
 // this file calls session.Phase4CompareThreeEngines directly).
-func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Program, functionName string) {
+func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Program, functionName string, fixturePath ...string) {
 	t.Helper()
 	inputs, ok := phase5InputsForProgram(program)
 	if !ok {
 		t.Fatalf("%s: cannot derive inputs for function %q", fixture, functionName)
 	}
-	cSource, err := cgen.EmitNative(program)
+	path := ""
+	if len(fixturePath) > 0 {
+		path = filepath.ToSlash(fixturePath[0])
+	}
+	cSource, err := session.Phase16ControlNativeC(program, path)
 	if err != nil {
-		if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") || strings.Contains(err.Error(), "by-pointer bodies are not supported") {
-			if fixture == "acquire_three_success.lang" {
-				t.Skipf("probe:TestPhase16M004CorpusRefusal: cut-M004 fixture is refusal-only; live lowering is forbidden: %v", err)
-			}
-			t.Skipf("Phase 16 M004 public refusal is exercised separately from this admitted schema-2 differential: %v", err)
-		}
 		t.Fatalf("%s: cgen.EmitNative: %v", fixture, err)
 	}
 	baseRunner := native.DefaultRunner()
@@ -502,7 +500,11 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 				// regression.
 				t.Skipf("D-05-20: %s: not an accepting fixture (reject-program, out of scope for this differential): %v", fixture, err)
 			}
-			phase5RunThreeEngineAgreement(t, fixture, program, functionName)
+			relative, err := filepath.Rel(testsupport.ProjectPath(), path)
+			if err != nil {
+				t.Fatalf("relative fixture path: %v", err)
+			}
+			phase5RunThreeEngineAgreement(t, fixture, program, functionName, relative)
 		})
 	}
 

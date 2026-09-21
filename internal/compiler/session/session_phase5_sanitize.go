@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/native"
@@ -102,7 +101,7 @@ func compilePhase5SanitizeFixture(relative string) (string, error) {
 	if !validated.Valid {
 		return "", fmt.Errorf("%s: fixture rejected by corevalidate: %+v", relative, validated.Problems)
 	}
-	cSource, err := cgen.EmitNative(validated.Program())
+	cSource, err := Phase16ControlNativeC(validated.Program(), relative)
 	if err != nil {
 		return "", fmt.Errorf("%s: cgen failed: %w", relative, err)
 	}

@@ -2,13 +2,18 @@ package session
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/execution"
@@ -16,6 +21,86 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 )
+
+// phase16FrozenEmitterEvidence is the narrow, refusal-first bridge for the
+// M004 families cut from public native emission in 0607486.  It is deliberately
+// local to verification controls: callers always try cgen.EmitNative first and
+// only receive historical C after the current, family-specific refusal and both
+// immutable digests have been verified.
+type phase16FrozenEmitterEvidence struct {
+	refusal        string
+	fixtureSHA256  string
+	artifact       string
+	artifactSHA256 string
+}
+
+var phase16FrozenEmitterEvidenceByFixture = map[string]phase16FrozenEmitterEvidence{
+	"testdata/phase4/acquire_three_success.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "be62a50ecc048174f220cc3775c7abe34dcb856d835377e1059413d345ddbe75",
+		artifact:       "testdata/phase16/historical/acquire_three_success.c",
+		artifactSHA256: "b86133b1b92d05ac6b95a492a59d5e60e2ff4530a86d8650827a8c3d6253c1f2",
+	},
+	"testdata/phase4/foreign_acquire_one.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "f66c55e4cf0b1dab45408c805c131848acf5f5ae1e11fa8ba2746181be409130",
+		artifact:       "testdata/phase16/historical/foreign_acquire_one.c",
+		artifactSHA256: "621f23618ad0e849ae2c3e0d483ea16ce40af11333ac1d0a8176e4b798890998",
+	},
+	"testdata/phase5/retained_pointer.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "5136960f513341e8a5167bb80ee0de1228887b038e42f6befa5faf763e853957",
+		artifact:       "testdata/phase16/historical/retained_pointer.c",
+		artifactSHA256: "be02f1de9184b629e27deb121c260c39457bf301f25ba94e5a1915eb5598f1f7",
+	},
+	"testdata/phase5/inline_across_foreign.lang": {
+		refusal:        "multi-function foreign-call bodies are not supported",
+		fixtureSHA256:  "7d2ff2d799196b1a8b28025fc8081bd0675591c38c5485a998744c1fc47d95f4",
+		artifact:       "testdata/phase16/historical/inline_across_foreign.c",
+		artifactSHA256: "6d5fccd190b68bd98c2f0f8bb73ee45307dec297e11ba5c26edbfb0b369abc14",
+	},
+	"testdata/phase5/restrict_borrow.lang": {
+		refusal:        "by-pointer bodies are not supported",
+		fixtureSHA256:  "7a12f2a640947cc83c34aafaea84358a1d8e4d3358e424e30ea62fdff71ee1fe",
+		artifact:       "testdata/phase16/historical/restrict_borrow.c",
+		artifactSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0",
+	},
+}
+
+// Phase16ControlNativeC returns generated C for an admitted program, or the
+// digest-bound historical C for a cut M004 verification control. It is not a
+// general emitter: an unrecognised fixture always receives cgen's error.
+func Phase16ControlNativeC(program core.Program, fixture string) (string, error) {
+	generated, err := cgen.EmitNative(program)
+	if err == nil {
+		return generated, nil
+	}
+	evidence, cut := phase16FrozenEmitterEvidenceByFixture[fixture]
+	if !cut {
+		return "", err
+	}
+	if !strings.Contains(err.Error(), evidence.refusal) {
+		return "", fmt.Errorf("%s: public native refusal changed: got %q, want %q", fixture, err, evidence.refusal)
+	}
+	fixtureBytes, readErr := os.ReadFile(nat03CorpusPath(fixture))
+	if readErr != nil {
+		return "", fmt.Errorf("%s: reading frozen-evidence fixture: %w", fixture, readErr)
+	}
+	fixtureDigest := sha256.Sum256(fixtureBytes)
+	if hex.EncodeToString(fixtureDigest[:]) != evidence.fixtureSHA256 {
+		return "", fmt.Errorf("%s: frozen-evidence fixture digest changed", fixture)
+	}
+	artifactPath := filepath.Join(nat03ProjectRoot(), filepath.FromSlash(evidence.artifact))
+	artifact, readErr := os.ReadFile(artifactPath)
+	if readErr != nil {
+		return "", fmt.Errorf("%s: reading frozen evidence artifact: %w", fixture, readErr)
+	}
+	artifactDigest := sha256.Sum256(artifact)
+	if hex.EncodeToString(artifactDigest[:]) != evidence.artifactSHA256 {
+		return "", fmt.Errorf("%s: frozen evidence artifact digest changed", fixture)
+	}
+	return string(artifact), nil
+}
 
 // Phase5RequiredControls is the complete Phase 5 required-control list as
 // of plan 05-09 (D-05-17): every control this gate's own lanes fire,
@@ -366,7 +451,7 @@ func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) 
 	if err != nil {
 		return protocol.StatusOperational, nil, 1
 	}
-	cSource, err := cgen.EmitNative(program)
+	cSource, err := Phase16ControlNativeC(program, "testdata/phase5/inline_across_foreign.lang")
 	if err != nil {
 		return protocol.StatusOperational, nil, 1
 	}
