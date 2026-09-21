@@ -45,9 +45,9 @@ created: "2026-09-19"
 
 | Date (UTC) | Revision | Command | Result | Evidence |
 |---|---|---|---|---|
-| 2026-09-20 | `0607486` cutover, `0cbfe0b` evidence repair | `go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1` | PASS | Every historical artifact has a SHA-256-bound fixture, artifact, family refusal, and `probe:TestPhase16M004CorpusRefusal`. |
-| 2026-09-20 | `0cbfe0b` | `go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1` | PASS | Admitted controls compare dynamic schema-2 evidence; missing/stale witness, changed digest, and classification drift remain fail-closed. |
-| 2026-09-20 | current working revision | `go test ./internal/compiler/cgen ./internal/compiler/core ./internal/compiler/native ./internal/compiler/session -count=1` | PASS | Final package gate. Native schema-2 invocations retain activation ownership; frozen M004 CLI controls are refusal-first evidence, never live emitter admission. |
+| 2026-09-21 | `0607486` cutover, `6827f8f` witness-provenance control | `go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1` | PASS | Every historical artifact has a SHA-256-bound fixture, artifact, family refusal, and `probe:TestPhase16M004CorpusRefusal`. |
+| 2026-09-21 | `6827f8f` | `go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1` | PASS | Admitted controls compare dynamic schema-2 evidence; the registry/probe/manifest chain rejects missing or stale citation, altered digest provenance, and an M004 reclassification as dynamic admission. |
+| 2026-09-21 | `6827f8f` | `go test ./internal/compiler/cgen ./internal/compiler/core ./internal/compiler/native ./internal/compiler/session -count=1` | PASS | Final package gate. Admitted controls keep dynamic schema-2 byte/convergence evidence; M004 controls are public refusal plus digest-bound frozen provenance, never live emitter admission. |
 
 ## M004 Refusal-First Dispositions
 
