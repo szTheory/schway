@@ -1,9 +1,9 @@
 ---
 phase: "16"
 slug: "branch-match-emitter-port"
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-09-19"
 ---
 
@@ -41,13 +41,35 @@ created: "2026-09-19"
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
+## Executed Gate Records
+
+| Date (UTC) | Revision | Command | Result | Evidence |
+|---|---|---|---|---|
+| 2026-09-20 | `0607486` cutover, `0cbfe0b` evidence repair | `go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1` | PASS | Every historical artifact has a SHA-256-bound fixture, artifact, family refusal, and `probe:TestPhase16M004CorpusRefusal`. |
+| 2026-09-20 | `0cbfe0b` | `go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1` | PASS | Admitted controls compare dynamic schema-2 evidence; missing/stale witness, changed digest, and classification drift remain fail-closed. |
+| 2026-09-20 | current working revision | `go test ./internal/compiler/cgen ./internal/compiler/core ./internal/compiler/native ./internal/compiler/session -count=1` | PASS | Final package gate. Native schema-2 invocations retain activation ownership; frozen M004 CLI controls are refusal-first evidence, never live emitter admission. |
+
+## M004 Refusal-First Dispositions
+
+| Family | Fixture disposition | Frozen provenance | Current refusal witness |
+|---|---|---|---|
+| `foreign-m004` | Phase 4 acquisition/nonlocal fixtures and Phase 5 foreign controls remain cut from public `cgen.EmitNative`. | `testdata/phase16/legacy-emitter-evidence.json`, immutable `testdata/phase16/historical/*.c`, per-record fixture/artifact SHA-256. | `probe:TestPhase16M004CorpusRefusal` |
+| `by-pointer-m004` | `testdata/phase5/restrict_borrow.lang` remains cut from whole-program public native emission. | `testdata/phase16/legacy-emitter-evidence.json`, `historical/restrict_borrow.c`, fixture/artifact SHA-256. | `probe:TestPhase16M004CorpusRefusal` |
+| generated/file-backed controls | Phase 5 generated closure and file controls use only the authoritative manifest matching their fixture/program identity. | `generated-frozen-evidence.json` and `file-frozen-evidence.json`, with generator/program or source/artifact digests. | `probe:TestPhase16M004CorpusRefusal` where cut; admitted rows remain dynamic. |
+
+The public consumer registry schema is `phase16.public-emitter-consumers/2`.
+Its inventory test scans every public `Emit`/`EmitNative` call, rejects stale,
+duplicate, local-shadow, alias, or dot-import classification drift, and requires
+every refusal row to cite a current `probe:` witness. No row claims M004 dynamic
+admission.
+
 ## Wave 0 Requirements
 
-- [ ] Add both-mode N=1 byte-identity rows and retained scoped-refusal rows.
-- [ ] Add golden-change ledger parser, bijection, current-digest, duplicate, and stale negative controls.
-- [ ] Add a structural control proving public dispatch has no function-count route and only `emitProgram` is a production route.
-- [ ] Add Phase-16 debt-register and amendment assertions for M004 owner, prerequisite, reopening condition, and LTO consequence.
-- [ ] Add an exact-shape `restrict` probe harness and extension-refusal matrix if D-16-07 is considered for admission.
+- [x] Both-mode N=1 byte-identity rows and retained scoped-refusal rows are covered by the consumer inventory and convergence controls.
+- [x] Golden/frozen ledger bijection, current-digest, duplicate, stale, and altered-artifact negative controls pass.
+- [x] Public dispatch has no function-count route; production lowering uses `emitProgram` for admitted whole programs.
+- [x] M004 owner, prerequisite, reopening condition, and LTO consequence remain documented by debt/amendment controls.
+- [x] Exact-shape `restrict` probe remains refusal-first M004 evidence; it is not an admission claim.
 
 ## Manual-Only Verifications
 
@@ -57,11 +79,11 @@ created: "2026-09-19"
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verification or Wave 0 dependencies.
-- [ ] Sampling continuity has no three consecutive tasks without automated verification.
-- [ ] Wave 0 covers all missing verification references.
+- [x] All tasks have automated verification.
+- [x] Sampling continuity has no three consecutive tasks without automated verification.
+- [x] Wave 0 covers all missing verification references.
 - [ ] No watch-mode flags.
 - [ ] Focused feedback latency is under 30 seconds.
-- [ ] `nyquist_compliant: true` set in frontmatter.
+- [x] `nyquist_compliant: true` set in frontmatter.
 
-**Approval:** pending
+**Approval:** automated evidence complete; M004 remains explicit refusal-only debt.

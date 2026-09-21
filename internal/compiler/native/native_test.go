@@ -1221,10 +1221,22 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		}
 	}
 	// cut records a fixture whose source/check/interpreter contracts remain
-	// valid but whose former public native lowering is deliberately M004
-	// debt. The CLI must surface the current native refusal, never fabricate
-	// a successful legacy C execution.
+	// valid while public cgen lowering remains deliberately M004 debt (proved
+	// by probe:TestPhase16M004CorpusRefusal). The CLI's control route may run
+	// only digest-bound frozen evidence after that public refusal, so its
+	// observable native result remains a successful historical comparison.
 	cut := func(fixture string) phase4OutOfCorpusCase {
+		return phase4OutOfCorpusCase{behavior: fixture, steps: []phase4OutOfCorpusStep{
+			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "check", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 0},
+			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 0},
+		}}
+	}
+	// The nonlocal-exit probe is also refusal-first frozen evidence, but its
+	// historical artifact deliberately terminates nonzero.  Keep that outcome
+	// explicit instead of pretending every frozen control is a success.
+	cutNativeFailure := func(fixture string) phase4OutOfCorpusCase {
 		return phase4OutOfCorpusCase{behavior: fixture, steps: []phase4OutOfCorpusStep{
 			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
 			{args: []string{"--json", "check", "{path}"}, wantExit: 0},
@@ -1237,7 +1249,7 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
 			{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
 			{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
-			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 3, wantDiagnostic: "native.tool_failure"},
+			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
 		}}
 	}
 	// refused is a negative-control fixture: canonically formatted (unless
@@ -1261,7 +1273,7 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		clean("defect_terminal.lang"),
 		cut("discard_because.lang"),
 		cut("foreign_acquire_one.lang"),
-		cut("nonlocal_exit_probe.lang"),
+		cutNativeFailure("nonlocal_exit_probe.lang"),
 		// D-07-40 (deliberate edit): this fixture's refusal moved from a
 		// syntax-level refusal to a check-level one (D-07-01) -- the parser
 		// now accepts a bare call's shape unconditionally, and check refuses

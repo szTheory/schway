@@ -494,6 +494,12 @@ func Phase4CompareThreeEngines(fixture string, interpreted, o0, o3 execution.Exe
 // already writes schema-2 directly, while the interpreter keeps its older
 // event identity for compatibility with pre-cut evidence.
 func ProjectExecutionSchema2(program core.Program, document execution.Execution) (execution.Execution, error) {
+	// Whole-program native emission already owns schema-2 causal identities.
+	// Projecting it again would flatten every nested invocation to the entry
+	// occurrence, turning valid call evidence into a peer refusal.
+	if document.Schema == execution.Schema2 {
+		return document, nil
+	}
 	entry, err := callgraph.EntryFunction(program)
 	if err != nil {
 		return execution.Execution{}, err
