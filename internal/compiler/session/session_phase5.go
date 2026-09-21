@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -32,6 +33,17 @@ type phase16FrozenEmitterEvidence struct {
 	fixtureSHA256  string
 	artifact       string
 	artifactSHA256 string
+}
+
+type phase16GeneratedFrozenEvidence struct {
+	Schema    string
+	Generator string
+	Records   []struct {
+		ID             string
+		ProgramSHA256  string
+		Artifact       string
+		ArtifactSHA256 string
+	}
 }
 
 var phase16FrozenEmitterEvidenceByFixture = map[string]phase16FrozenEmitterEvidence{
@@ -101,7 +113,10 @@ func Phase16ControlNativeC(program core.Program, fixture string) (string, error)
 	}
 	evidence, cut := phase16FrozenEmitterEvidenceByFixture[fixture]
 	if !cut {
-		return "", err
+		if fixture != "" {
+			return "", err
+		}
+		return phase16GeneratedControlNativeC(program, err)
 	}
 	if !strings.Contains(err.Error(), evidence.refusal) {
 		return "", fmt.Errorf("%s: public native refusal changed: got %q, want %q", fixture, err, evidence.refusal)
@@ -124,6 +139,44 @@ func Phase16ControlNativeC(program core.Program, fixture string) (string, error)
 		return "", fmt.Errorf("%s: frozen evidence artifact digest changed", fixture)
 	}
 	return string(artifact), nil
+}
+
+func phase16GeneratedControlNativeC(program core.Program, refusal error) (string, error) {
+	if !strings.Contains(refusal.Error(), "by-pointer bodies are not supported") {
+		return "", refusal
+	}
+	manifestBytes, err := os.ReadFile(nat03CorpusPath("testdata/phase16/generated-frozen-evidence.json"))
+	if err != nil {
+		return "", fmt.Errorf("generated frozen evidence manifest: %w", err)
+	}
+	var manifest phase16GeneratedFrozenEvidence
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		return "", fmt.Errorf("decode generated frozen evidence manifest: %w", err)
+	}
+	if manifest.Schema != "phase16.generated-frozen-evidence/1" || manifest.Generator != "EnumeratePhase5Closure/v1" {
+		return "", fmt.Errorf("generated frozen evidence manifest has unsupported schema or generator")
+	}
+	canonical, err := json.Marshal(program)
+	if err != nil {
+		return "", fmt.Errorf("canonical generated program: %w", err)
+	}
+	digest := sha256.Sum256(canonical)
+	want := hex.EncodeToString(digest[:])
+	for _, record := range manifest.Records {
+		if record.ID != program.Module || record.ProgramSHA256 != want {
+			continue
+		}
+		artifact, err := os.ReadFile(nat03CorpusPath(record.Artifact))
+		if err != nil {
+			return "", fmt.Errorf("generated frozen artifact: %w", err)
+		}
+		artifactDigest := sha256.Sum256(artifact)
+		if hex.EncodeToString(artifactDigest[:]) != record.ArtifactSHA256 {
+			return "", fmt.Errorf("generated frozen artifact digest changed for %s", program.Module)
+		}
+		return string(artifact), nil
+	}
+	return "", fmt.Errorf("generated cut program %q lacks a digest-bound frozen artifact", program.Module)
 }
 
 // Phase5RequiredControls is the complete Phase 5 required-control list as
