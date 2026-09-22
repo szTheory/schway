@@ -374,6 +374,14 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 			return protocol.Lane{}, outcome, fmt.Errorf("phase6.native_run_failed: %w", runErr)
 		}
 		work++
+		interpreted, projectionErr := ProjectExecutionSchema2(program, interpreted)
+		if projectionErr != nil {
+			return protocol.Lane{}, outcome, fmt.Errorf("phase6.interpret_projection_failed: %w", projectionErr)
+		}
+		actual, projectionErr = ProjectExecutionSchema2(program, actual)
+		if projectionErr != nil {
+			return protocol.Lane{}, outcome, fmt.Errorf("phase6.native_projection_failed: %w", projectionErr)
+		}
 		if !execution.Equal(interpreted, actual) {
 			return protocol.Lane{
 				Schema: protocol.LaneSchema1, ID: phase6NativeDifferentialLane, Status: protocol.StatusMismatch,

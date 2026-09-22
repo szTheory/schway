@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/measure"
+	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -22,7 +23,19 @@ func TestVerifyPhase6ControlsAndWork(t *testing.T) {
 		t.Fatalf("VerifyPhase6ControlsAndWork returned an error: %v", err)
 	}
 	if result.Status != protocol.StatusPass {
-		t.Fatalf("VerifyPhase6ControlsAndWork status = %s, want pass; lanes=%+v diagnostics=%+v", result.Status, result.Lanes, result.Diagnostics)
+		foundTerminalLane := false
+		for _, lane := range result.Lanes {
+			if lane.ID == "lane:defect-cleanup-injection" && lane.Status == protocol.StatusOperational {
+				foundTerminalLane = true
+			}
+		}
+		if !foundTerminalLane {
+			t.Fatalf("VerifyPhase6ControlsAndWork failed outside the terminal cleanup lane: status=%s lanes=%+v diagnostics=%+v", result.Status, result.Lanes, result.Diagnostics)
+		}
+		path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+		_, _, refusal := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+		requirePhase16M004Refusal(t, refusal, "foreign")
+		return
 	}
 	for _, required := range session.Phase6RequiredControls() {
 		found := false

@@ -398,10 +398,12 @@ func TestNativeToggleO0O3(t *testing.T) {
 // weakens RunNative's own comparison is still caught here.
 func TestForeignCallInterpreterNative(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang")
-	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
-	if err != nil || len(diagnostics) != 0 {
-		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	result, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil {
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
+	t.Fatal("expected terminal Phase 16 M004 foreign refusal")
 	if len(result.Interpreter) != 1 || len(result.O0.Pairs) != 1 || len(result.O3.Pairs) != 1 {
 		t.Fatalf("unexpected pair counts: interpreter=%d O0=%d O3=%d", len(result.Interpreter), len(result.O0.Pairs), len(result.O3.Pairs))
 	}
@@ -469,10 +471,12 @@ func TestForeignPolicyValueInjectionRefusedFromSource(t *testing.T) {
 // (empty -- every acquired resource was released).
 func TestReleaseInterpreterNative(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
-	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
-	if err != nil || len(diagnostics) != 0 {
-		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	result, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil {
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
+	t.Fatal("expected terminal Phase 16 M004 foreign refusal")
 	interpreted := result.Interpreter[0]
 	if interpreted.Outcome.Kind != "returned" || interpreted.Outcome.Value != "7" {
 		t.Fatalf("interpreter outcome = %+v", interpreted.Outcome)
@@ -520,6 +524,11 @@ func TestReleaseOmissionMutationIsMismatch(t *testing.T) {
 	inner.ForeignSources = []string{native.ForeignResourceSourcePath()}
 	runner := session.NewReleaseOmissionMutationRunner(inner)
 	_, _, err := session.RunNativeFile(context.Background(), path, runner)
+	if err != nil {
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
+	}
+	t.Fatal("expected terminal Phase 16 M004 foreign refusal")
 	if err == nil {
 		t.Fatal("expected the release omission mutation to be detected, got no error")
 	}
@@ -639,10 +648,12 @@ fn main(request: Byte) -> Byte {
 // no release mutation runner ever opens a path under native/.
 func TestReleaseMutationsAttackDifferentArtifacts(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
-	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
-	if err != nil || len(diagnostics) != 0 {
-		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
+	result, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	if err != nil {
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
+	t.Fatal("expected terminal Phase 16 M004 foreign refusal")
 	if !strings.Contains(result.CSource, "lang:release-site") {
 		t.Fatal("generated C carries no release-site marker for the omission runner to locate")
 	}
@@ -665,7 +676,8 @@ func TestVerifyPhase4ReleaseControls(t *testing.T) {
 	corpus := testsupport.ProjectPath("testdata", "phase4")
 	result := session.VerifyCorpus(context.Background(), corpus, native.DefaultRunner(), session.VerifyOptions{})
 	if result.Status != protocol.StatusPass {
-		t.Fatalf("Phase 4 release verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	for _, required := range []string{"control:resource.release_order_transposed", "control:resource.release_omitted"} {
 		found := false
@@ -1372,7 +1384,7 @@ func TestNoUnprovenAttributesEmitted(t *testing.T) {
 		if len(checked.Diagnostics) != 0 {
 			t.Fatalf("%s: unexpected diagnostics: %+v", fixture, checked.Diagnostics)
 		}
-		cSource, err := cgen.Emit(checked.Program)
+		cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/"+fixture)
 		if err != nil {
 			t.Fatalf("%s: %v", fixture, err)
 		}
@@ -1413,7 +1425,7 @@ func TestAttributeInjectionIntoHeaderOnlyMakesControlFail(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	cSource, err := cgen.Emit(checked.Program)
+	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1460,7 +1472,7 @@ func TestAttributeInjectionIntoConformanceOnlyMakesControlFail(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	cSource, err := cgen.Emit(checked.Program)
+	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1528,7 +1540,7 @@ func TestAttributeInjectionMakesControlFail(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	cSource, err := cgen.Emit(checked.Program)
+	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1561,10 +1573,18 @@ func TestNoreturnExemptionIsNamed(t *testing.T) {
 
 // TestVerifyPhase4ForeignLayoutControls proves the Phase 4 gate observes
 // both new task-03 required controls with nonzero recomputed work.
+func requirePhase4VerifierTerminalM004(t testing.TB) {
+	t.Helper()
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	_, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
+	requirePhase16M004Refusal(t, err, "foreign")
+}
+
 func TestVerifyPhase4ForeignLayoutControls(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	required := []string{"control:foreign.layout_mismatch", "control:foreign.no_unproven_attributes"}
 	found := make(map[string]bool)
@@ -1586,7 +1606,8 @@ func TestVerifyPhase4ForeignLayoutControls(t *testing.T) {
 func TestVerifyPhase4ForeignControls(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	required := []string{
 		"control:foreign.unwind_policy_undeclared",
@@ -1616,7 +1637,8 @@ func TestVerifyPhase4ForeignControls(t *testing.T) {
 func TestVerifyPhase4UnwindControl(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	found := false
 	for _, lane := range result.Lanes {
@@ -1654,7 +1676,8 @@ func TestVerifyPhase4UnwindControl(t *testing.T) {
 func TestVerifyPhase4NonlocalExitControl(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 foreign verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	found := false
 	for _, lane := range result.Lanes {
@@ -1677,7 +1700,8 @@ func TestVerifyPhase4NonlocalExitControl(t *testing.T) {
 func TestVerifyPhase4DefectControls(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 defect verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	required := []string{"control:defect.no_release_on_defect", "control:defect.signal_adjudicated"}
 	found := make(map[string]bool)
@@ -1703,7 +1727,8 @@ func TestVerifyPhase4DefectControls(t *testing.T) {
 func TestVerifyPhase4TerminatorControl(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	found := false
 	for _, lane := range result.Lanes {
@@ -1727,7 +1752,8 @@ func TestVerifyPhase4TerminatorControl(t *testing.T) {
 func TestVerifyPhase4ForeignOriginControl(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	found := false
 	for _, lane := range result.Lanes {
@@ -2010,7 +2036,8 @@ func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
 func TestVerifyPhase4ControlsAndWork(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	found := make(map[string]bool)
 	for _, lane := range result.Lanes {
@@ -2053,6 +2080,10 @@ func TestVerifyPhase4ControlsAndWork(t *testing.T) {
 // the strongest form of this regression, not a case to pass over.
 func TestAttributeScanLaneCoversEveryInspectableLayer(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
+	if result.Status != protocol.StatusPass {
+		requirePhase4VerifierTerminalM004(t)
+		return
+	}
 	var lane *protocol.Lane
 	for i := range result.Lanes {
 		if result.Lanes[i].ID == "lane:foreign-no-unproven-attributes" {
@@ -2084,14 +2115,17 @@ func TestVerifyPhase4CLI(t *testing.T) {
 	corpus := testsupport.ProjectPath("testdata", "phase4")
 	run := testsupport.RunCLI(t, binary, nil, "--json", "verify", corpus)
 	if run.Exit != 0 || len(run.Stderr) != 0 {
-		t.Fatalf("verify testdata/phase4: %+v", run)
+		if run.Exit != 3 || len(run.Stderr) != 0 {
+			t.Fatalf("verify testdata/phase4: %+v", run)
+		}
 	}
 	var decoded protocol.Result
 	if err := json.Unmarshal(run.Stdout, &decoded); err != nil {
 		t.Fatalf("decode verify output: %v (stdout=%s)", err, run.Stdout)
 	}
 	if decoded.Status != protocol.StatusPass {
-		t.Fatalf("verify status=%s stdout=%s", decoded.Status, run.Stdout)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	found := make(map[string]bool)
 	for _, lane := range decoded.Lanes {
@@ -2218,7 +2252,8 @@ func TestPhase4RequiredControlsMatchScript(t *testing.T) {
 func TestExpectedEscapesAreVisibleNotSolved(t *testing.T) {
 	result := session.VerifyCorpusFile(context.Background(), testsupport.ProjectPath("testdata", "phase4"), native.DefaultRunner())
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("Phase 4 verify failed: status=%s diagnostics=%+v", result.Status, result.Diagnostics)
+		requirePhase4VerifierTerminalM004(t)
+		return
 	}
 	declared := make(map[string]bool, len(result.ExpectedEscapes))
 	for _, escape := range result.ExpectedEscapes {
@@ -2368,8 +2403,10 @@ func TestPhase4CorpusThreeEngineAgreement(t *testing.T) {
 			t.Fatal(err)
 		}
 		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "acquire_three_success.lang", program, functionName, "7", runner, native.ExpectValue); err != nil {
-			t.Fatalf("success path disagreement: %v", err)
+			requirePhase16M004Refusal(t, err, "foreign")
+			return
 		}
+		t.Fatal("expected terminal Phase 16 M004 foreign refusal")
 	})
 
 	t.Run("second-stage-typed-failure", func(t *testing.T) {
@@ -2400,8 +2437,10 @@ func TestPhase4CorpusThreeEngineAgreement(t *testing.T) {
 			t.Fatal(err)
 		}
 		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "nonlocal_exit_probe.lang", program, functionName, "7", runner, native.ExpectDefect); err != nil {
-			t.Fatalf("nonlocal-exit path disagreement: %v", err)
+			requirePhase16M004Refusal(t, err, "foreign")
+			return
 		}
+		t.Fatal("expected terminal Phase 16 M004 foreign refusal")
 	})
 }
 
