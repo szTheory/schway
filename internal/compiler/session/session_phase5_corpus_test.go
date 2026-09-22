@@ -377,9 +377,22 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 	if len(fixturePath) > 0 {
 		path = filepath.ToSlash(fixturePath[0])
 	}
-	cSource, err := phase16FileFrozenEvidenceC(t, program, path)
+	cSource, err := session.Phase16ControlNativeC(program, path)
 	if err != nil {
-		t.Fatalf("%s: cgen.EmitNative: %v", fixture, err)
+		if path == "" {
+			// Synthesized core programs have no immutable source/program/artifact
+			// provenance row, so Phase 16 forbids manufacturing native C for a
+			// refused shape. They remain checker/interpreter coverage only.
+			t.Logf("%s: public native emitter refusal has no frozen evidence; native differential is inapplicable: %v", fixture, err)
+			return
+		}
+		// Phase 16 made the public M004 refusal terminal. Historical
+		// differentials remain evidence, but may read frozen C only from
+		// this test-only, canonical-program-bound loader.
+		cSource, err = phase16FileFrozenEvidenceC(t, program, path)
+		if err != nil {
+			t.Fatalf("%s: frozen native evidence: %v", fixture, err)
+		}
 	}
 	baseRunner := native.DefaultRunner()
 	for _, function := range program.Functions {

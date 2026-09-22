@@ -497,7 +497,7 @@ func TestCleanupInjectorReusesReleaseOmissionRunner(t *testing.T) {
 	if _, err := cgen.EmitNative(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
 		t.Fatalf("EmitNative must retain the named M004 refusal, got %v", err)
 	}
-	cSource, err := Phase16ControlNativeC(checked.Program, "testdata/phase4/acquire_three_success.lang")
+	cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.lang")
 	if err != nil {
 		t.Fatalf("refusal-first frozen control C: %v", err)
 	}
@@ -644,7 +644,7 @@ func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cSource, err := Phase16ControlNativeC(checked.Program, "testdata/phase4/acquire_three_success.lang")
+	cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -800,7 +800,7 @@ func markerAbsentInput(t *testing.T, name string) []byte {
 		if err != nil {
 			t.Fatal(err)
 		}
-		cSource, err := Phase16ControlNativeC(checked.Program, "testdata/phase4/acquire_three_success.lang")
+		cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.lang")
 		if err != nil {
 			t.Fatal(err)
 		}
