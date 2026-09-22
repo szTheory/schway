@@ -62,6 +62,23 @@ func TestRepairDriverImportsStayOutsideInternal(t *testing.T) {
 	}
 }
 
+// TestPhase17HeldoutPathsAbsentFromProduction prevents the repair driver from
+// acquiring knowledge of the sealed TYP-05 corpus. Tests may name a fixture;
+// non-test command sources must operate solely on the caller-supplied path.
+func TestPhase17HeldoutPathsAbsentFromProduction(t *testing.T) {
+	for _, forbidden := range []string{"testdata/phase17", "heldout_call_argument_mismatch.lang"} {
+		forEachNonTestFile(t, repairPackageDir(t), func(name string, _ *token.FileSet, file *ast.File) {
+			ast.Inspect(file, func(n ast.Node) bool {
+				literal, ok := n.(*ast.BasicLit)
+				if ok && literal.Kind == token.STRING && strings.Contains(literal.Value, forbidden) {
+					t.Fatalf("%s names sealed Phase 17 fixture material %q", name, forbidden)
+				}
+				return true
+			})
+		})
+	}
+}
+
 // TestImportBoundaryTestIsNotInert proves scanForbiddenImports actually
 // detects what it claims to detect, rather than passing vacuously on an
 // empty or well-behaved file list (this project's own three-gate-failure

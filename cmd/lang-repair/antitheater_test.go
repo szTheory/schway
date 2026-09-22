@@ -314,10 +314,79 @@ func mutateCapture(raw []byte, mode string) ([]byte, error) {
 		forEachRepair(doc, func(repair map[string]interface{}) {
 			delete(repair, field)
 		})
+	case "corrupt_kind":
+		forEachRepair(doc, func(repair map[string]interface{}) { repair["kind"] = "" })
+	case "corrupt_span":
+		forEachRepair(doc, func(repair map[string]interface{}) {
+			if span, ok := repair["span"].(map[string]interface{}); ok {
+				span["start"] = json.Number("999999")
+			}
+		})
+	case "corrupt_replacement":
+		forEachRepair(doc, func(repair map[string]interface{}) { repair["replacement"] = "value" })
 	default:
 		return nil, fmt.Errorf("mutateCapture: unknown mode %q", mode)
 	}
 	return json.Marshal(doc)
+}
+
+// TestPhase17RepairProtocolFields proves the newly reachable repair remains
+// wholly protocol-driven.  The stand-in serves captures keyed by source
+// bytes, so every run follows Repair's real diagnose/apply/reverify path;
+// only the selected JSON field is changed.
+func TestPhase17RepairProtocolFields(t *testing.T) {
+	langBinary := testsupport.BuildCLI(t)
+	standinBinary := buildStandin(t)
+	original, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "heldout_call_argument_mismatch.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRepaired := bytes.Replace(original, []byte("classify(value)"), []byte("classify(resource)"), 1)
+	diagnose := testsupport.RunCLI(t, langBinary, nil, "--json", "check", writeTempCopy(t, original)).Stdout
+	reverify := testsupport.RunCLI(t, langBinary, nil, "--json", "check", writeTempCopy(t, wantRepaired)).Stdout
+
+	run := func(mode string) (int, Outcome, []byte) {
+		t.Helper()
+		return runViaStandin(t, standinBinary, original, diagnose, reverify, mode)
+	}
+
+	identityExit, identity, identityBytes := run("identity")
+	if identityExit != 0 || identity.Status != OutcomeRepaired || !bytes.Equal(identityBytes, wantRepaired) {
+		t.Fatalf("identity control did not repair the held-out source: exit=%d outcome=%+v", identityExit, identity)
+	}
+	scrambledExit, scrambled, scrambledBytes := run("scramble_prose")
+	if scrambledExit != identityExit || scrambled != identity || !bytes.Equal(scrambledBytes, identityBytes) {
+		t.Fatalf("prose scrambling changed repair outcome: identity=%+v scrambled=%+v", identity, scrambled)
+	}
+	for _, mode := range []string{"strip_kind", "strip_span", "strip_replacement", "corrupt_kind", "corrupt_replacement"} {
+		t.Run(mode, func(t *testing.T) {
+			exit, outcome, repaired := run(mode)
+			if exit == 0 || outcome.Status == OutcomeRepaired {
+				t.Fatalf("%s accepted a corrupted required protocol field: exit=%d outcome=%+v", mode, exit, outcome)
+			}
+			if outcome.Status == OutcomeUnrepairable && !bytes.Equal(repaired, original) {
+				t.Fatalf("%s modified source despite refusing repair", mode)
+			}
+		})
+	}
+	// An out-of-range changed span cannot reach a reverify at all: applyRepair
+	// refuses it before writing. Exercise that failure directly so the test can
+	// distinguish a bounded-edit rejection from an unrelated stand-in response.
+	corruptSpan := mutateCaptureOrFatal(t, diagnose, "corrupt_span")
+	standinDir := t.TempDir()
+	writeCaptureForContent(t, standinDir, original, corruptSpan)
+	t.Setenv(standinDirEnv, standinDir)
+	path := writeTempCopy(t, original)
+	if _, err := Repair(context.Background(), standinBinary, path); err == nil {
+		t.Fatal("corrupt_span was accepted; an out-of-range structured span must refuse repair")
+	}
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(after, original) {
+		t.Fatal("corrupt_span modified source before refusing repair")
+	}
 }
 
 // forEachDiagnostic walks doc["diagnostics"] (a []interface{} of

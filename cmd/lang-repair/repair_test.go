@@ -133,6 +133,60 @@ func TestRepairDriverFixesOneDefectEndToEnd(t *testing.T) {
 	}
 }
 
+// TestPhase17SealedHeldoutRepairs is TYP-05's sealed, protocol-driven
+// end-to-end evidence. It deliberately runs the public Repair driver only on
+// a temporary copy: the checked-in held-out bytes remain the oracle for the
+// exact structured replacement.
+func TestPhase17SealedHeldoutRepairs(t *testing.T) {
+	langBinary := testsupport.BuildCLI(t)
+	fixturePath := testsupport.ProjectPath("testdata", "phase17", "heldout_call_argument_mismatch.lang")
+	original, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourcePath := filepath.Join(t.TempDir(), "heldout_call_argument_mismatch.lang")
+	mustWriteFile(t, sourcePath, original)
+	diagnosis := decodeCheckJSON(t, testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath).Stdout)
+	repair, code, ok := selectRepair(diagnosis)
+	if !ok {
+		t.Fatalf("sealed held-out diagnosis has no driver-eligible repair: %+v", diagnosis.Diagnostics)
+	}
+	if code != "check.call_argument_type_mismatch" || repair.Kind != "use_matching_argument" {
+		t.Fatalf("got protocol repair (%q, %q), want (check.call_argument_type_mismatch, use_matching_argument)", code, repair.Kind)
+	}
+	wantStart := bytes.Index(original, []byte("classify(value)")) + len("classify(")
+	if wantStart < len("classify(") || repair.Span == nil || repair.Span.Start != wantStart || repair.Span.End != wantStart+len("value") || repair.Replacement != "resource" {
+		t.Fatalf("got repair %+v, want exact span [%d,%d) and replacement resource", repair, wantStart, wantStart+len("value"))
+	}
+
+	outcome, err := Repair(context.Background(), langBinary, sourcePath)
+	if err != nil {
+		t.Fatalf("Repair: %v", err)
+	}
+	if outcome.Status != OutcomeRepaired || outcome.DiagnosisCode != code || outcome.RepairKind != repair.Kind || outcome.SubprocessCount != 2 {
+		t.Fatalf("got outcome %+v, want repaired %q/%q with exactly two driver checks", outcome, code, repair.Kind)
+	}
+	repaired, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRepaired := bytes.Replace(original, []byte("classify(value)"), []byte("classify(resource)"), 1)
+	if !bytes.Equal(repaired, wantRepaired) {
+		t.Fatal("repair bytes differ from the canonical exact-token held-out repair")
+	}
+	clean := decodeCheckJSON(t, testsupport.RunCLI(t, langBinary, nil, "--json", "check", sourcePath).Stdout)
+	if clean.Status != statusPass || len(clean.Diagnostics) != 0 {
+		t.Fatalf("independent third check is not clean: %+v", clean)
+	}
+	after, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(after, original) {
+		t.Fatal("sealed checked-in fixture moved; repair must operate only on its temporary copy")
+	}
+}
+
 // TestRepairDriverDecodesNoProseFields asserts, by go/ast, that no struct
 // declared in cmd/lang-repair binds either prose field of the diagnostic
 // document -- the human-readable "message", or any cause/repair "detail" --
