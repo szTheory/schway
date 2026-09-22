@@ -1,7 +1,7 @@
 # Phase 17: Return Type ≠ Parameter Type - Research
 
-**Researched:** 2026-09-22  
-**Domain:** Go-hosted compiler semantic widening: independent parameter/return type facts, call contracts, C17 lowering, and protocol-only repair  
+**Researched:** 2026-09-22
+**Domain:** Go-hosted compiler semantic widening: independent parameter/return type facts, call contracts, C17 lowering, and protocol-only repair
 **Confidence:** HIGH
 
 <user_constraints>
@@ -324,6 +324,5 @@ Current emission is single-typed, so every position named above must be widened.
 - Architecture: HIGH — material seams opened in current tree.
 - Pitfalls: HIGH — current explicit assumptions or locked evidence; A1 is assumed.
 
-**Research date:** 2026-09-22  
+**Research date:** 2026-09-22
 **Valid until:** 2026-10-22
-
