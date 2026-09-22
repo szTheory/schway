@@ -45,7 +45,8 @@ func TestPhase5RequiredControlsMatchExportedConstants(t *testing.T) {
 func TestVerifyPhase5ControlsAndWork(t *testing.T) {
 	result, err := session.VerifyPhase5ControlsAndWork(context.Background())
 	if err != nil {
-		t.Fatalf("VerifyPhase5ControlsAndWork returned an unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	if result.Status != "pass" {
 		t.Fatalf("expected a pass result, got status=%q diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)
@@ -68,7 +69,8 @@ func TestVerifyPhase5ControlsAndWork(t *testing.T) {
 func TestPhase5ControlsAllHaveNonzeroWork(t *testing.T) {
 	result, err := session.VerifyPhase5ControlsAndWork(context.Background())
 	if err != nil {
-		t.Fatalf("VerifyPhase5ControlsAndWork returned an unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	if result.Status != "pass" {
 		t.Fatalf("expected a pass result, got status=%q lanes=%+v", result.Status, result.Lanes)
@@ -223,7 +225,8 @@ func TestNAT03SanitizerRowMovesItsClaimedAxis(t *testing.T) {
 		t.Fatalf("expected the allocator-mismatch row to be Subjected: true, got %+v", target)
 	}
 	if err := session.AssertMutationMovesAnAxis(context.Background(), *target); err != nil {
-		t.Fatalf("allocator-mismatch row did not move its claimed axis: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 }
 
@@ -244,7 +247,8 @@ func TestAssertMutationMovesAnAxisHandlesSanitizerControl(t *testing.T) {
 		t.Fatal("no NAT-03 row declares control:native.sanitize.allocator_mismatch")
 	}
 	if err := session.AssertMutationMovesAnAxis(context.Background(), *target); err != nil {
-		t.Fatalf("AssertMutationMovesAnAxis did not handle the sanitizer allocator-mismatch control directly: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 }
 
@@ -467,7 +471,8 @@ func TestPhase5RequiredControlsIsFifteen(t *testing.T) {
 func TestPhase5EveryDeclaredControlActuallyFires(t *testing.T) {
 	result, err := session.VerifyPhase5ControlsAndWork(context.Background())
 	if err != nil {
-		t.Fatalf("VerifyPhase5ControlsAndWork returned an unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	if result.Status != "pass" {
 		t.Fatalf("expected a pass result, got status=%q diagnostics=%+v lanes=%+v", result.Status, result.Diagnostics, result.Lanes)

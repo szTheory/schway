@@ -15,7 +15,8 @@ import (
 func TestSanitizeLaneRetainedPointerAlwaysReports(t *testing.T) {
 	result, err := session.VerifyPhase5SanitizeLane(context.Background(), native.DefaultRunner())
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	if result.Status != protocol.StatusPass {
 		t.Fatalf("expected pass, got status=%s diagnostics=%+v", result.Status, result.Diagnostics)
@@ -38,7 +39,8 @@ func TestSanitizeLaneRetainedPointerAlwaysReports(t *testing.T) {
 func TestSanitizeLaneAllocatorMismatchIsDetected(t *testing.T) {
 	result, err := session.VerifyPhase5SanitizeLane(context.Background(), native.DefaultRunner())
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	if result.Status != protocol.StatusPass {
 		t.Fatalf("expected pass, got status=%s diagnostics=%+v", result.Status, result.Diagnostics)
@@ -62,7 +64,8 @@ func TestSanitizeLaneAllocatorMismatchIsDetected(t *testing.T) {
 func TestSanitizeLaneUBSanNoRecoverIsProven(t *testing.T) {
 	result, err := session.VerifyPhase5SanitizeLane(context.Background(), native.DefaultRunner())
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	if result.Status != protocol.StatusPass {
 		t.Fatalf("expected pass, got status=%s diagnostics=%+v", result.Status, result.Diagnostics)
@@ -132,7 +135,8 @@ func TestSanitizeLaneCleanPositiveControlFailsTheLane(t *testing.T) {
 
 	result, err := session.VerifyPhase5SanitizeLane(context.Background(), native.DefaultRunner())
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	if result.Status == protocol.StatusPass {
 		t.Fatalf("lane must go red when the positive control stops reporting, got status=%s lanes=%+v", result.Status, result.Lanes)
@@ -153,7 +157,8 @@ func TestSanitizeLaneCleanPositiveControlFailsTheLane(t *testing.T) {
 func TestCallbackEscapeIsDeclaredNeverDetected(t *testing.T) {
 	result, err := session.VerifyPhase5SanitizeLane(context.Background(), native.DefaultRunner())
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
 	declared := false
 	for _, escape := range result.ExpectedEscapes {

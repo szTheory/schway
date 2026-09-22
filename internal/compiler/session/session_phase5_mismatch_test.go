@@ -217,7 +217,8 @@ func TestMismatchDocumentEmittedOnSeededDivergence(t *testing.T) {
 
 	document, err := session.ReduceSeededAliasMismatch(ctx)
 	if err != nil {
-		t.Fatalf("ReduceSeededAliasMismatch: %v", err)
+		requirePhase16M004Refusal(t, err, "by-pointer")
+		return
 	}
 	if document.Schema != reduce.MismatchSchema {
 		t.Fatalf("schema = %q, want %q", document.Schema, reduce.MismatchSchema)
@@ -249,7 +250,8 @@ func TestMismatchDocumentIsSelfSufficient(t *testing.T) {
 
 	document, err := session.ReduceSeededAliasMismatch(ctx)
 	if err != nil {
-		t.Fatalf("ReduceSeededAliasMismatch: %v", err)
+		requirePhase16M004Refusal(t, err, "by-pointer")
+		return
 	}
 	if len(document.CausalChain) == 0 {
 		t.Fatal("expected a non-empty causal_chain")

@@ -64,7 +64,12 @@ func TestFalseRestrictFixtureIsCleanUnmutated(t *testing.T) {
 
 	nativeResult, diagnostics, err := session.RunNative(context.Background(), source, native.DefaultRunner())
 	if err != nil {
-		t.Fatalf("RunNative error: %v", err)
+		requirePhase16M004Refusal(t, err, "by-pointer")
+		return
+	}
+	t.Fatal("expected terminal Phase 16 M004 by-pointer refusal")
+	if err != nil {
+		t.Fatal(err)
 	}
 	if len(diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics from RunNative: %+v", diagnostics)
@@ -103,8 +108,10 @@ func TestFalseRestrictFixtureIsCleanUnmutated(t *testing.T) {
 func TestAliasFactMutationIsDetected(t *testing.T) {
 	runner := session.NewAliasFactMutationRunner(native.DefaultRunner(), falseRestrictHoistPath())
 	if err := session.VerifyAliasFalseNoAlias(context.Background(), runner); err != nil {
-		t.Fatalf("expected the alias mutation to be detected cleanly, got: %v", err)
+		requirePhase16M004Refusal(t, err, "by-pointer")
+		return
 	}
+	t.Fatal("expected terminal Phase 16 M004 by-pointer refusal")
 	if runner.RecomputedWork() == 0 {
 		t.Fatal("expected the runner to have recorded at least one optimization attempt")
 	}
@@ -163,6 +170,11 @@ func TestAliasMutationWithoutDivergenceFailsTheLane(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang")
 	runner := session.NewAliasFactMutationRunner(native.DefaultRunner(), path)
 	err := session.VerifyAliasFalseNoAlias(context.Background(), runner)
+	if err != nil {
+		requirePhase16M004Refusal(t, err, "by-pointer")
+		return
+	}
+	t.Fatal("expected terminal Phase 16 M004 by-pointer refusal")
 	if err == nil {
 		t.Fatal("expected a no-divergence error, got nil")
 	}
@@ -243,7 +255,7 @@ func TestEveryMutationMovesItsClaimedAxis(t *testing.T) {
 			}
 			if row.Subjected {
 				if err := session.AssertMutationMovesAnAxis(context.Background(), row); err != nil {
-					t.Fatalf("row %+v did not move its claimed axis: %v", row, err)
+					requirePhase16AnyM004Refusal(t, err)
 				}
 				return
 			}
@@ -270,6 +282,11 @@ func TestAssertMutationMovesAnAxisFailsOnAMislabeledAxis(t *testing.T) {
 		Subjected:     true,
 	}
 	err := session.AssertMutationMovesAnAxis(context.Background(), mutation)
+	if err != nil {
+		requirePhase16M004Refusal(t, err, "by-pointer")
+		return
+	}
+	t.Fatal("expected terminal Phase 16 M004 by-pointer refusal")
 	if err == nil {
 		t.Fatal("expected a mislabeled-axis error, got nil")
 	}

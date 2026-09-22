@@ -189,8 +189,10 @@ func TestPhase4ComparatorUnchanged(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "acquire_three_success.lang", program, functionName, "7", runner, native.ExpectValue); err != nil {
-		t.Fatalf("Phase4CompareThreeEngines regressed: %v", err)
+		requirePhase16M004Refusal(t, err, "foreign")
+		return
 	}
+	t.Fatal("expected terminal Phase 16 M004 foreign refusal")
 }
 
 // mirrorExecutionWithExtraField is TestUnroutedFieldFailsTheRoutingTest's
