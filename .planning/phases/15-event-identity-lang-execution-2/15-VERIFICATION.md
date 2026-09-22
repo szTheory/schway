@@ -1,6 +1,6 @@
 ---
 phase: 15-event-identity-lang-execution-2
-verified: 2026-09-22T10:31:13Z
+verified: 2026-09-22T17:10:15Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -24,14 +24,11 @@ covered_files:
   - .planning/phases/15-event-identity-lang-execution-2/15-08-SUMMARY.md
   - .planning/phases/15-event-identity-lang-execution-2/15-09-PLAN.md
   - .planning/phases/15-event-identity-lang-execution-2/15-09-SUMMARY.md
-  - .planning/phases/15-event-identity-lang-execution-2/15-SECURITY.md
-  - .planning/phases/15-event-identity-lang-execution-2/15-UAT.md
-  - .planning/phases/15-event-identity-lang-execution-2/15-REVIEW.md
-  - .planning/phases/15-event-identity-lang-execution-2/15-VALIDATION.md
   - internal/compiler/cgen/cgen.go
+  - internal/compiler/cgen/cgen_names_test.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
-  - internal/compiler/cgen/export_test.go
+  - internal/compiler/cgen/cgen_test.go
   - internal/compiler/execution/execution.go
   - internal/compiler/execution/invocation.go
   - internal/compiler/execution/invocation_test.go
@@ -41,32 +38,30 @@ covered_files:
   - internal/compiler/interp/interp_test.go
   - internal/compiler/native/native.go
   - internal/compiler/native/native_test.go
+  - internal/compiler/session/session_payload_replay_test.go
   - internal/compiler/session/session_phase11_differential_test.go
   - internal/compiler/session/session_phase15_frontier_test.go
   - internal/compiler/session/session_phase5_compare.go
   - internal/compiler/session/session_phase5_compare_test.go
   - internal/compiler/session/session_phase6_test.go
-  - internal/compiler/session/witness_registry_test.go
-covered_digest: "v1:sha256:fe6c2c71b72e0785a7b1cd0db269d97a45bb3f099072e5b7aecc050a439346a3"
+covered_digest: "v1:sha256:83b4ad62a4679530133f076088babf5c093de5f263c7490af10ae7fa331ba539"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: stale
+  previous_status: passed
   previous_score: 5/5
-  gaps_closed:
-    - "Schema 2 canonical JSON admission now crosses the decoder and ToolError boundary with refusal-specific diagnostics."
-    - "Schema 0 and Schema 1 program-aware comparison is directly pinned to bypass the Schema 2 peer while preserving comparator verdicts."
-    - "Cross-platform CI now names the current Phase 15 schema, peer, legacy-wrapper, four-tier diamond, and collision seams while retaining the historical baseline."
+  gaps_closed: []
   gaps_remaining: []
   regressions: []
+human_verification: []
 ---
 
 # Phase 15: Event Identity (`lang.execution/2`) Verification Report
 
 **Phase Goal:** Two activations of the same callee through a shared-leaf diamond are distinguishable, and the causal edge between caller and callee is observed rather than inferred.
-**Verified:** 2026-09-22T10:31:13Z
+**Verified:** 2026-09-22T17:10:15Z
 **Status:** passed
-**Re-verification:** Yes — after automated-UAT gap closure in Plans 15-08 and 15-09
+**Re-verification:** Yes — refreshed stale covered-input fingerprint with independent focused evidence.
 
 ## Goal Achievement
 
@@ -74,11 +69,11 @@ re_verification:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | The shared-leaf diamond is distinct and agrees across interpreter, O0, O3, and O3-LTO. | ✓ VERIFIED | `DiamondSharedLeaf`, `TestPhase15DiamondFrontierMoved`, and `TestPhase15CollisionGuardIsNotInert` passed. The positive gate runs the checked fixture on four real tiers, rejects restored duplicate `(invocation, id)` pairs, and peer-gates all pairwise comparisons. `.github/workflows/ci.yml` now names the diamond and collision controls in its cross-platform aggregate, pinned by `TestCIWorkflowRunsCurrentAggregateGate`. |
-| 2 | `OpCall` emits an observed, caller-owned causal edge; removing or corrupting it is caught. | ✓ VERIFIED | `calledEvent` records the caller invocation and `CalleeFunctionID` before child execution; native emission does the same. Focused edge, projection, and mutation controls passed. |
-| 3 | A non-importing peer independently re-derives occurrence membership and rejects producer and peer-boundary faults. | ✓ VERIFIED | `executionpeer.Validate` reconstructs traversal from `core` plus public execution data; producer-corruption, peer-acceptance, import-boundary, and peer-required comparison controls pass. `TestSchema2ComparisonRequiresPeerVerdict` remains in the current CI aggregate. |
-| 4 | `/0` and `/1` stay frozen while `/2` carries invocation identity. | ✓ VERIFIED | `schemaForProgram` selects `/2` only for multi-function programs; grammar and legacy-byte/frozen-writer tests pass. `TestDecodeExecutionSchema2AdmissionSeam` proves canonical bytes cross strict JSON decode and semantic admission, while `TestPhase5CompareProgramEnginesPreservesLegacySchemas` directly pins `/0` and `/1` peer bypass and verdict equivalence. |
-| 5 | Native occurrence expansion is measured and bounded, with usable output capacity and preserved refusal precedence. | ✓ VERIFIED | The 61-node real fixture, 4096/4097 boundary, preflight mutation, exact output N-1/N, and O0/O3 execution tests pass. `TestUnsupportedProgramShapePrecedesSchema2Preflight` and the original LTO witness prove unsupported `Match` bodies retain their named refusal before size estimation. |
+| 1 | `multi_function_diamond_call.lang` runs on interpreter, O0, O3, and O3-LTO with distinct activation identities, and the restored collision fails. | ✓ VERIFIED | `TestPhase11InterproceduralDifferential/DiamondSharedLeaf`, `TestPhase15DiamondFrontierMoved`, and `TestPhase15CollisionGuardIsNotInert` passed. The latter appends a real duplicate `(Invocation, ID)` pair and requires the independent peer's `executionpeer.duplicate_pair` refusal. |
+| 2 | An admitted `OpCall` produces one caller-owned, preorder `function.called` event; an unresolved or depth-refused call produces none. | ✓ VERIFIED | `interp.go` appends `calledEvent(top, operation, result.calleeID)` only after successful call partitioning and before child-frame push. Interpreter and native preorder/removal/refusal controls passed. |
+| 3 | A non-importing peer independently derives observed invocation/causal structure and rejects producer and peer-boundary corruption. | ✓ VERIFIED | `executionpeer` imports only `core` and public `execution`, builds its own function/operation index, parses public invocation grammar, and validates its own stack/preorder state. Import-boundary, actionable-refusal, producer-fault, peer-acceptance-fault, and peer-required controls passed. |
+| 4 | `/0` and `/1` bytes stay frozen; only `/2` carries invocation identity and uses pair uniqueness. | ✓ VERIFIED | `schemaForProgram` selects `/2` only for multi-function programs. Legacy-byte, schema-selection, wrapper-preservation, strict validation, and serialized-admission controls passed. |
+| 5 | Native occurrence expansion is measured and bounded: the real deep diamond is 61 nodes, 4096 is accepted, and the attempted 4097th fails closed before emission. | ✓ VERIFIED | `preflightInvocationPathTable` precedes path-table construction and C serialization; it returns `cgen.invocation_path_table_exceeded`. Measurement, ordering, boundary, and non-inertness controls passed. |
 
 **Score:** 5/5 truths verified (0 present, behavior-unverified)
 
@@ -86,71 +81,81 @@ re_verification:
 
 | Artifact | Expected | Status | Details |
 | --- | --- | --- | --- |
-| `internal/compiler/execution/invocation.go` | Canonical invocation grammar | ✓ VERIFIED | Strict formatter/parser and invalid-spelling tests are substantive and used by all `/2` producers/peer. |
-| `internal/compiler/interp/interp.go` | Frame-local occurrences and call edges | ✓ VERIFIED | `entryIdentity`, child configuration, and `calledEvent` wire canonical identities through interpreter event paths. |
-| `internal/compiler/executionpeer/executionpeer.go` | Independent causal peer | ✓ VERIFIED | Imports public/core model rather than interpreter or cgen, and validates exact observed `/2` structure. |
-| `internal/compiler/cgen/cgen_program.go` and `cgen.go` | Native occurrence tables, causal writer, and bounded preflight | ✓ VERIFIED | Supported body shapes are collected before invocation/event/output preflight; static parent-indexed table and C writer remain live after the ordering repair. |
-| `internal/compiler/session/session_phase5_compare.go` | `/2` peer gate before comparison | ✓ VERIFIED | Every schema-2 document reaches `executionpeer.Validate` before pair comparison. |
-| `internal/compiler/session/session_phase11_differential_test.go` | Four-tier diamond gate | ✓ VERIFIED | Requires all four documents, pair uniqueness, and peer-gated all-pairs comparison for the permanent fixture. |
-| `internal/compiler/native/native_test.go` | Serialized Schema 2 admission seam | ✓ VERIFIED | Canonical bytes survive decode and validation; noncanonical invocation, duplicate activation identity, unknown kind, and callee-ownership faults preserve `native.invalid_execution` with class-specific context. |
-| `.github/workflows/ci.yml` and `session_phase6_test.go` | Durable cross-platform evidence provenance | ✓ VERIFIED | Ubuntu and macOS retain the Phase 6 baseline and run the five named Phase 15 seams; the source pin fails closed if the aggregate drifts. |
+| `internal/compiler/execution/invocation.go` | Canonical `/2` invocation grammar | ✓ VERIFIED | Non-stub formatter/parser rejects noncanonical escaping and ordinal forms; grammar and native admission tests exercise it. |
+| `internal/compiler/interp/interp.go` | Frame-local occurrences and observed caller-owned edges | ✓ VERIFIED | Schema selection, invocation threading, and `calledEvent` are on real interpreter execution paths exercised by success and refusal tests. |
+| `internal/compiler/executionpeer/executionpeer.go` | Independent causal peer | ✓ VERIFIED | Substantive traversal/index/stack validation uses public model plus `core`; no interpreter or cgen import is present. |
+| `internal/compiler/cgen/cgen_program.go`, `cgen.go` | Native occurrence table, call edge writer, and bounded preflight | ✓ VERIFIED | Preflight, parent-indexed lookup, threaded indices, literal invocation table, and C event writer are exercised by cgen and four-tier tests. |
+| `internal/compiler/session/session_phase5_compare.go` | `/2` peer gate before comparison | ✓ VERIFIED | Focused comparator tests prove exhaustive field routing, peer-required rejection, and preserved legacy bypass. |
+| Differential/frontier tests | Four-tier positive diamond and live negative controls | ✓ VERIFIED | The tracked fixture is run through all four tiers and actual documents/refusals are inspected. |
+| `internal/compiler/native/native.go`, `native_test.go` | Strict serialized Schema 2 admission | ✓ VERIFIED | Canonical bytes reach `decodeExecution`; malformed invocation, duplicate pair, unknown kind, and caller-ownership faults are asserted as `native.invalid_execution`. |
+| `.github/workflows/ci.yml`, `session_phase6_test.go` | Durable cross-platform aggregate | ✓ VERIFIED | Source-pinning test passed and the workflow names all Phase 15 seams on Ubuntu and macOS. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | --- | --- | --- | --- | --- |
-| Interpreter frames and `OpCall` | Invocation grammar | ✓ WIRED | Frame creation/child setup use `execution.FormatInvocation`; call edge has caller ownership. |
-| Native shape validation and preflight | Native C writer | ✓ WIRED | `emitProgram` validates ordered supported functions, then preserves bounded occurrence, event-capacity, and exact-size checks before serialization. |
-| Four-tier driver | Independent peer | ✓ WIRED | `Phase5CompareProgramEngines` validates each `/2` engine result before comparing pairs. |
-| Diamond test | Tracked fixture | ✓ WIRED | `DiamondSharedLeaf` executes `multi_function_diamond_call.lang` on interpreter, O0, O3, and O3-LTO. |
+| Interpreter `OpCall` | Public invocation/call-edge model | `execution.FormatInvocation` during frame construction; `calledEvent` before child push | ✓ WIRED | Direct source trace and interpreter behavioral tests confirm caller ownership and order. |
+| Native `emitProgram` | Preflight and C writer | validated entry → preflight → path table → literal C emission | ✓ WIRED | Source order is explicit; ordering and boundary tests pass. |
+| `/2` comparator | `executionpeer.Validate` | each `/2` document is peer-validated before pair agreement | ✓ WIRED | `TestSchema2ComparisonRequiresPeerVerdict` passes with a real corrupted document. |
+| Four-tier driver | tracked shared-leaf fixture | `DiamondSharedLeaf` loads `multi_function_diamond_call.lang` and runs all four tiers | ✓ WIRED | Differential, moved-frontier, and collision controls passed. |
+| CI aggregate | focused Phase 15 evidence | named Go-test regexp in both-host workflow job | ✓ WIRED | `TestCIWorkflowRunsCurrentAggregateGate` passed. |
+
+### Data-Flow Trace (Level 4)
+
+No rendered UI/data artifact exists in this compiler phase. The relevant runtime path is nevertheless exercised end to end: checked fixture → interpreter/native execution document → independent peer/comparator → assertion. No static or hollow rendering path applies.
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| LTO diagnostic precedence plus native capacity/output safeguards | Focused cgen regression/boundary run | All named tests passed. | ✓ PASS |
-| Four-tier occurrence identity and collision guard | `go test ./internal/compiler/session -run 'TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert|TestPhase15DiamondFrontierMoved' -count=1 -v` | All matching named tests passed. | ✓ PASS |
-| Repository automated acceptance | `go build ./... && go vet ./... && go test ./... -count=1` | Completed successfully in 252.911s; no package failure observed. | ✓ PASS |
-| Schema 2 serialized admission | `go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam\|TestValidateExecutionSchema2' -count=1 -v` | Both named top-level tests and all refusal subclasses passed. | ✓ PASS |
-| Peer, legacy-wrapper, diamond, collision, and CI provenance | Focused `internal/compiler/session` run over eight named controls | All controls passed; `go build ./...` and `go vet ./...` also exited zero. | ✓ PASS |
+| Grammar, admission, interpreter, peer, native preflight/writer, comparator, diamond, collision, legacy, and CI seams | `go test ./internal/compiler/execution ./internal/compiler/native ./internal/compiler/interp ./internal/compiler/executionpeer ./internal/compiler/cgen ./internal/compiler/session -run 'TestInvocationGrammar|TestExecutionLegacyBytesFrozen|TestValidateExecutionSchema2|TestDecodeExecutionSchema2AdmissionSeam|TestInvocationThreadsThroughAllEventPaths|TestExecutionSchemaSelectionPreservesLegacy|TestFunctionCalledPreorderAndOwnership|TestFunctionCalledProjectionRemoval|TestRejectedCallEmitsNoCalledEdge|TestIndependentEntryResolution|TestInvocationMembershipTraversal|TestExecutionPeerImportBoundary|TestFullCoverageControlIsSeparate|TestValidateObservedCausalStructure|TestExecutionPeerFailuresAreActionable|TestInvocationPathTableDeepDiamondMeasures61|TestInvocationPreflightOrdering|TestInvocationPathTableBoundary|TestInvocationPreflightGuardIsNotInert|TestProgramInvocationIndexThreading|TestParentIndexedChildLookup|TestInvocationTableEmissionIsDeterministic|TestProgramWritesExecutionSchema2|TestNativeFunctionCalledPreorder|TestNativeFunctionCalledProjectionRemoval|TestLegacyEventWritersFrozen|TestComparisonFieldRoutingIsExhaustive|TestInvocationFieldsAreCompared|TestSchema2ComparisonRequiresPeerVerdict|TestExecutionProducerFaultIsCaughtByPeer|TestExecutionPeerAcceptanceFaultIsCaughtByControl|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert|TestPhase15DiamondFrontierMoved|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestCIWorkflowRunsCurrentAggregateGate' -count=1 -v` | All selected top-level tests and subtests passed; the slowest selected package was 5.845s. | ✓ PASS |
+
+### Probe Execution
+
+No Phase 15 plan or summary declares a probe, and no `scripts/*/tests/probe-*.sh` file was discovered. **SKIPPED (no declared probe).**
 
 ### Requirements Coverage
 
-| Requirement | Source Plans | Status | Evidence |
-| --- | --- | --- | --- |
-| OBS-01 | 15-01, 15-02, 15-05, 15-07, 15-09 | ✓ SATISFIED | Four-tier diamond acceptance and restored-collision negative prove occurrence-specific identity; current cross-platform CI names both controls. |
-| OBS-02 | 15-01, 15-02, 15-05, 15-06 | ✓ SATISFIED | Caller-owned `function.called` appears across engines; focused corrupt/remove controls exercise the edge. |
-| OBS-03 | 15-03, 15-06, 15-09 | ✓ SATISFIED | Independent peer traversal, two-direction fault controls, and recurring peer-gate CI provenance pass. |
-| OBS-04 | 15-01 through 15-06, 15-08, 15-09 | ✓ SATISFIED | Frozen `/0`/`/1` bytes, direct legacy-wrapper peer bypass, and serialized `/2` admission are covered by active tests. |
-| NAT-10 | 15-05, 15-07, 15-09 | ✓ SATISFIED | The re-invoking multi-function diamond agrees on interpreter, O0, O3, and O3-LTO and is named in both-host CI. |
+| Requirement | Source Plans | Description | Status | Evidence |
+| --- | --- | --- | --- | --- |
+| OBS-01 | 15-01, 02, 05, 07, 09 | Shared-leaf activations have distinct identities. | ✓ SATISFIED | Four-tier diamond, moved-frontier, and restored collision-negative tests passed. |
+| OBS-02 | 15-01, 02, 05, 06, 07, 09 | Caller-to-callee edge is observed. | ✓ SATISFIED | Interpreter/native preorder/ownership/removal tests and peer validation passed. |
+| OBS-03 | 15-03, 06, 07, 09 | Non-importing peer re-derives structure. | ✓ SATISFIED | Import boundary, independent traversal, actionable failures, and both fault-direction controls passed. |
+| OBS-04 | 15-01 through 15-09 | Legacy wire bytes frozen; `/2` introduces identity. | ✓ SATISFIED | Legacy-byte, schema-selection, wrapper-preservation, and serialized admission tests passed. |
+| NAT-10 | 15-05, 07, 09 | Re-invoking fixture agrees across four tiers. | ✓ SATISFIED | `DiamondSharedLeaf` executed interpreter/O0/O3/O3-LTO successfully. |
 
 ### Test Quality Audit
 
 | Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
 | --- | --- | --- | --- | --- | --- | --- |
-| `session_phase11_differential_test.go` | OBS-01, NAT-10 | Yes | 0 | No | Behavioral four-tier and pairwise comparisons | Strong |
-| `session_phase15_frontier_test.go` | OBS-01, OBS-02, OBS-03 | Yes | 0 | No | Behavioral/mutation | Strong |
-| `cgen_program_test.go` | OBS-04 | Yes | 0 | No | Boundary, refusal precedence, and native execution | Strong |
+| `session_phase11_differential_test.go` | OBS-01, NAT-10 | Yes | 0 | No | Behavioral four-tier comparison | Strong |
+| `session_phase15_frontier_test.go` | OBS-01, OBS-02, OBS-03 | Yes | 0 | No | Mutation and refusal assertions | Strong |
+| Interpreter/peer/cgen tests | OBS-02, OBS-03, OBS-04 | Yes | 0 | No | Behavioral, structural, boundary | Strong |
+| Native/comparator/CI tests | OBS-04, NAT-10 | Yes | 0 | No | Serialized-admission and provenance | Strong |
 
-No disabled requirement-only test or circular expected-value generator was found. Differential expected values come from independently executed engines and the independently-derived peer.
+No disabled requirement-only test or circular expected-value generator was found. The differential result is independently produced by the interpreter and three compiled native tiers, then checked by a separately derived peer.
 
 ### Anti-Patterns Found
 
-No Phase 15 debt markers (`TBD`, `FIXME`, or `XXX`) were found in the changed compiler implementation. The previous deterministic failure is closed by `b55c1fc`: the emitter validates supported structural shapes before schema-2 estimation, and the direct regression plus original LTO witness pass. Plans 15-08 and 15-09 add evidence seams and coverage metadata without changing the published execution semantics or weakening any validator.
+No unreferenced `TBD`, `FIXME`, or `XXX` marker was found in the Phase 15 implementation or requirement-linked tests. The `return []string{}` matches in cgen are non-rendering helper branches with populated paths exercised by boundary and native-output tests. No blocker or warning resulted.
 
 ### Decision Coverage
 
-All 20 trackable Phase 15 context decisions are honored by shipped artifacts.
+`check.decision-coverage-verify` reported **20/20** trackable Phase 15 context decisions honored; no decision was unhonored. This is advisory and did not determine the status.
+
+### Advisory (New Scope, Unevidenced)
+
+None.
 
 ## Human Verification
 
-N/A — compiler/foundation phase. Per the user's explicit automated-acceptance policy, integration, differential, mutation, boundary, and uncached repository-suite evidence are the acceptance gate; no manual UAT is required.
+N/A — this is a compiler/foundation phase with no user-facing element. All acceptance criteria, including state/order invariants, have focused automated behavioral evidence. The current UAT is independently consistent: zero manual UAT items are required.
 
 ## Gaps Summary
 
-None. The prior LTO diagnostic-order regression is closed without weakening capacity or output safeguards. Gap closures G-15-1, G-15-11, and G-15-12 are resolved through serialized admission, legacy-wrapper, CI-provenance, diamond, and collision controls. `15-UAT.md` records 12/12 automated passes, `15-SECURITY.md` records zero open threats, and all five Phase 15 requirements have deterministic automated evidence.
+None. The prior report's input fingerprint was stale; the refreshed digest covers all Phase 15 plans and summaries, the mapped requirements, and the implementation/test/CI files changed by the phase.
 
 ---
 
-_Verified: 2026-09-22T10:31:13Z_
+_Verified: 2026-09-22T17:10:15Z_
 _Verifier: the agent (gsd-verifier)_
