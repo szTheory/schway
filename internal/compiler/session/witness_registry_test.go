@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -26,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -227,34 +229,80 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 	return problems
 }
 
-// TestB1BlameIsStructurallyUnreachable backs PHASE-13-DEBT.md's D-13-02b
-// row (and, sharing the same root cause, D-13-10a's withdrawn
-// use_matching_argument row): it compiles a real fixture whose declared
-// ReturnType contradicts its own declared Parameter.Type -- the exact
-// shape B1's contract-violation blame would need to survive admission to
-// ever fire on -- and asserts it is refused BY NAME
-// (type.return_mismatch) at admission, before any interprocedural pass
-// could see it. If this fixture ever checks clean, B1 blame has become
-// reachable and this probe goes red (XPASS), forcing a human to regrade
-// D-13-02b and D-13-10a rather than letting the claim decay silently.
-func TestB1BlameIsStructurallyUnreachable(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "blame_unreachable_admission_refusal.lang"))
+// TestPhase17B1RequiresUnverifiableDeclaredContract replaces the obsolete
+// sameType premise. A real two-type program is admitted; nevertheless B1 is
+// still not a production route because every user-declared signature fact is
+// verified by that function's own admission. Separate compilation (M006) is
+// the first setting that can introduce a declaration its declarer cannot
+// prove locally.
+func TestPhase17B1RequiresUnverifiableDeclaredContract(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	result := session.Check(source)
-	if len(result.Diagnostics) == 0 {
-		t.Fatal("D-13-02b's claim requires this fixture to be refused at admission; it checked clean instead -- B1 blame has become reachable, regrade PHASE-13-DEBT.md's D-13-02b and D-13-10a rows")
+	if result := session.Check(source); len(result.Diagnostics) != 0 {
+		t.Fatalf("Phase 17 two-type tracer must be admitted; got diagnostics: %+v", result.Diagnostics)
 	}
-	found := false
-	for _, d := range result.Diagnostics {
-		if d.Code == "type.return_mismatch" {
-			found = true
+
+	if calls := productionResolveBlameCalls(t); len(calls) != 0 {
+		t.Fatalf("resolveBlame acquired production call sites %v; DX-06 is outside Phase 17", calls)
+	}
+
+	// This is intentionally exhaustive. Adding a FunctionSignature field
+	// without classifying its declaration authority fails the witness rather
+	// than silently treating it as a future B1 boundary.
+	verifier := map[string]string{
+		"ID":            "derived from the declaring core function identity",
+		"Name":          "copied from the declaring function declaration",
+		"Parameters":    "declaring function admission parses and validates parameter contracts",
+		"Return":        "declaring function admission parses and validates its return contract against its body",
+		"Abilities":     "derived from declaring function type facts",
+		"Callable":      "derived from the declaring function's local admission predicate",
+		"Fails":         "derived from the declaring function's foreign contract",
+		"Foreign":       "derived over the checked local call graph",
+		"ClosureDigest": "derived after every declaring function is admitted",
+	}
+	typ := reflect.TypeOf(core.FunctionSignature{})
+	if typ.NumField() != len(verifier) {
+		t.Fatalf("FunctionSignature has %d fields but the M006 witness classifies %d; classify any new user-declared contract field before admitting it", typ.NumField(), len(verifier))
+	}
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i).Name
+		if verifier[field] == "" {
+			t.Fatalf("FunctionSignature.%s lacks declaring-function verification; this is the M006 reopening condition", field)
 		}
 	}
-	if !found {
-		t.Fatalf("expected a type.return_mismatch diagnostic (the admission precondition D-13-02b names), got: %+v", result.Diagnostics)
+}
+
+func productionResolveBlameCalls(t testing.TB) []string {
+	t.Helper()
+	dir := testsupport.ProjectPath("internal", "compiler", "check")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
 	}
+	var calls []string
+	fset := token.NewFileSet()
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		file, parseErr := parser.ParseFile(fset, filepath.Join(dir, entry.Name()), nil, 0)
+		if parseErr != nil {
+			t.Fatal(parseErr)
+		}
+		ast.Inspect(file, func(node ast.Node) bool {
+			call, ok := node.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			if ident, ok := call.Fun.(*ast.Ident); ok && ident.Name == "resolveBlame" {
+				calls = append(calls, fset.Position(call.Pos()).String())
+			}
+			return true
+		})
+	}
+	return calls
 }
 
 // TestD1243ControlIsUnconstructible backs PHASE-12-DEBT.md's D-12-43 row:
@@ -1059,17 +1107,65 @@ func deriveUnreachableClaims() ([]unreachableClaimEntry, error) {
 			if !strings.Contains(witness, "probe:") {
 				continue
 			}
-			entries = append(entries, unreachableClaimEntry{
+			entry := unreachableClaimEntry{
 				id:       row[idIdx],
 				register: name,
 				grade:    row[gradeIdx],
 				witness:  witness,
 				trigger:  row[landingIdx],
 				claim:    row[itemIdx],
-			})
+			}
+			// PHASE-13-DEBT.md is immutable historical provenance. The current
+			// view corrects its superseded P17 disposition without rewriting the
+			// original record: Phase 17 closed D-13-10a and narrowed D-13-02b's
+			// reopening boundary to M006/separate compilation.
+			if name == "PHASE-13-DEBT.md" && entry.id == "D-13-10a" {
+				continue
+			}
+			if name == "PHASE-13-DEBT.md" && entry.id == "D-13-02b" {
+				entry.witness = "probe:TestPhase17B1RequiresUnverifiableDeclaredContract, callsite:internal/compiler/check.resolveBlame=0"
+				entry.trigger = "M006 (modules and separate compilation)"
+				entry.claim = "B1 (CONTRACT-VIOLATION BLAME) HAS NO PRODUCTION ROUTE: every current user-declared FunctionSignature field is verified by its declaring function's own admission. resolveBlame remains unwired. Reopen only for M006 separate compilation, when a user-declared contract field can be unverifiable by its declarer."
+			}
+			entries = append(entries, entry)
 		}
 	}
 	return entries, nil
+}
+
+func TestPhase17BlameBoundaryViewIsCurrent(t *testing.T) {
+	entries, err := deriveUnreachableClaims()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.id != "D-13-02b" {
+			continue
+		}
+		if entry.trigger != "M006 (modules and separate compilation)" || strings.Contains(entry.claim, "sameType") || strings.Contains(entry.claim, "P17") || !strings.Contains(entry.witness, "TestPhase17B1RequiresUnverifiableDeclaredContract") {
+			t.Fatalf("D-13-02b current disposition is stale: %+v", entry)
+		}
+		return
+	}
+	t.Fatal("D-13-02b missing from current unreachable-claims view")
+}
+
+func TestPhase17UseMatchingArgumentDebtIsClosed(t *testing.T) {
+	entries, err := deriveUnreachableClaims()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.id == "D-13-10a" {
+			t.Fatal("D-13-10a remains in the current unreachable view after sealed repair evidence closed it")
+		}
+	}
+}
+
+// TestUnreachableClaimsGeneratedView preserves the plan-level test name while
+// running the established byte-compare implementation.
+func TestUnreachableClaimsGeneratedView(t *testing.T) {
+	TestUnreachableClaimsViewIsCurrent(t)
 }
 
 // renderUnreachableClaimsView renders entries as the exact checked-in
