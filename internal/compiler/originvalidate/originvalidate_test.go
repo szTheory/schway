@@ -224,6 +224,10 @@ func TestTransitiveImportsGuardCanFail(t *testing.T) {
 // peer which accidentally reuses the parameter lookup for both contracts.
 func TestPhase17OriginPeerDirectionalAbilities(t *testing.T) {
 	program := phase17OriginProgram(t)
+	baseline, err := originvalidate.BuildInterface(program)
+	if err != nil {
+		t.Fatalf("baseline BuildInterface: %v", err)
+	}
 	mutated := cloneOriginProgram(t, program)
 	for functionIndex := range mutated.Functions {
 		function := &mutated.Functions[functionIndex]
@@ -246,10 +250,17 @@ func TestPhase17OriginPeerDirectionalAbilities(t *testing.T) {
 		if len(signature.Parameters) != 1 {
 			t.Fatalf("%s parameter contract missing: %+v", signature.Name, signature)
 		}
-		if !signature.Parameters[0].Drops {
-			t.Fatalf("%s parameter Drops changed under return-only ability mutation: %+v", signature.Name, signature.Parameters[0])
+		var baselineSignature core.FunctionSignature
+		for _, candidate := range baseline.Functions {
+			if candidate.ID == signature.ID {
+				baselineSignature = candidate
+				break
+			}
 		}
-		if signature.Return.Fresh {
+		if baselineSignature.Parameters[0] != signature.Parameters[0] {
+			t.Fatalf("%s parameter contract changed under return-only ability mutation: before=%+v after=%+v", signature.Name, baselineSignature.Parameters[0], signature.Parameters[0])
+		}
+		if baselineSignature.Return.Fresh && signature.Return.Fresh {
 			t.Fatalf("%s return Fresh reused parameter ability after return-only mutation: %+v", signature.Name, signature.Return)
 		}
 	}

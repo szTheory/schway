@@ -19,6 +19,13 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
 
+// SetPhase17ReturnLookupFaultForTest is the fact-free test control used by
+// the cross-package agreement matrix. Its return-side behavior is introduced
+// with the mutation test that specifies it.
+func SetPhase17ReturnLookupFaultForTest(enabled bool) (restore func()) {
+	return func() {}
+}
+
 // KnownEscape names the exact boundary this package cannot prove: a producer
 // whose frontend and published summary lie in a coordinated way remains
 // outside source-blind, body-blind validation. It mirrors
@@ -910,29 +917,17 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 	calleeContracts := BuildCalleeOriginFacts(program)
 	indexByID := make(map[string]int, len(program.Functions))
 	for _, function := range program.Functions {
-		abilities := []core.Ability{}
-		hasDropAbility := false
-		if function.Linear != nil {
-			for _, fact := range function.Linear.Types {
-				if typeFactExactIDMatch(fact.ID, function.ID+":type:0") {
-					abilities = fact.Abilities
-					break
-				}
-			}
-		}
-		for _, ability := range abilities {
-			if ability == core.AbilityDrop {
-				hasDropAbility = true
-				break
-			}
-		}
+		parameterAbilities := interfaceParameterAbilities(function)
+		returnAbilities := interfaceReturnAbilities(function)
+		hasParameterDropAbility := abilitiesIncludeDrop(parameterAbilities)
+		hasReturnDropAbility := abilitiesIncludeDrop(returnAbilities)
 
 		parameterContract := core.ParameterContract{
 			ID: function.Parameter.ID, Name: function.Parameter.Name, Type: function.Parameter.Type,
 			// D-07-01: today's grammar has exactly one parameter form
 			// (by-value), so every parameter's Mode is "owned" (R-01).
 			Mode:  "owned",
-			Drops: hasDropAbility && !parameterEscapesOwned(function),
+			Drops: hasParameterDropAbility && !parameterEscapesOwned(function),
 		}
 
 		returnContract := core.ReturnContract{Type: function.ReturnType}
@@ -947,7 +942,7 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 			returnContract.Mode = function.PublicOrigin.Access
 			returnContract.Paths = function.PublicOrigin.Paths
 		}
-		returnContract.Fresh = returnContract.Mode == "owned" && hasDropAbility
+		returnContract.Fresh = returnContract.Mode == "owned" && hasReturnDropAbility
 
 		foreignReach := core.ForeignReach{}
 		fails := ""
@@ -970,7 +965,7 @@ func BuildInterface(program core.Program) (core.Interface, error) {
 			ID: function.ID, Name: function.Name,
 			Parameters: []core.ParameterContract{parameterContract},
 			Return:     returnContract,
-			Abilities:  abilities,
+			Abilities:  parameterAbilities,
 			Callable:   callable,
 			Fails:      fails,
 			Foreign:    foreignReach,
@@ -1100,6 +1095,39 @@ func parameterEscapesOwned(function core.Function) bool {
 			current = operation.SourceID
 		}
 		if current == function.Parameter.ID {
+			return true
+		}
+	}
+	return false
+}
+
+// interfaceParameterAbilities and interfaceReturnAbilities deliberately keep
+// the Phase 17 contract lookups separate.  Origin validation derives both
+// facts from its own typed-core traversal; it neither imports another peer nor
+// reuses a producer-derived contract.
+func interfaceParameterAbilities(function core.Function) []core.Ability {
+	return interfaceTypeAbilities(function, function.ID+":type:0")
+}
+
+func interfaceReturnAbilities(function core.Function) []core.Ability {
+	return interfaceTypeAbilities(function, function.ID+":type:1")
+}
+
+func interfaceTypeAbilities(function core.Function, typeID string) []core.Ability {
+	if function.Linear == nil {
+		return nil
+	}
+	for _, fact := range function.Linear.Types {
+		if typeFactExactIDMatch(fact.ID, typeID) {
+			return fact.Abilities
+		}
+	}
+	return nil
+}
+
+func abilitiesIncludeDrop(abilities []core.Ability) bool {
+	for _, ability := range abilities {
+		if ability == core.AbilityDrop {
 			return true
 		}
 	}
