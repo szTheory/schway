@@ -16,6 +16,30 @@ import (
 
 const maxTypeDepth = 64
 
+// phase17ReturnLookupFaultForTest is a deliberately narrow, default-off
+// mutation seam for the core peer's return-side lookup. It is consulted only
+// after the parameter contract has already been derived, so it cannot become
+// an alternate path for parameter Drops or for a producer-supplied contract.
+var phase17ReturnLookupFaultForTest bool
+
+// SetPhase17ReturnLookupFaultForTest toggles only corevalidate's local return
+// ability lookup. The control carries no type or contract value; callers can
+// observe the peer's independently-derived signature without being given a
+// derived return fact. Its restore closure is idempotent for defer/Cleanup
+// callers and always restores the state that preceded this invocation.
+func SetPhase17ReturnLookupFaultForTest(enabled bool) (restore func()) {
+	previous := phase17ReturnLookupFaultForTest
+	phase17ReturnLookupFaultForTest = enabled
+	restored := false
+	return func() {
+		if restored {
+			return
+		}
+		restored = true
+		phase17ReturnLookupFaultForTest = previous
+	}
+}
+
 // KnownEscape names the exact boundary this validator cannot prove. A producer
 // that coordinates a false source claim with internally consistent core facts
 // remains outside source-blind validation.
@@ -847,8 +871,9 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 	if !v.check(match.ID != "" && match.PointID != "" && function.EntryPointID != "" && function.ReturnPointID != "", "core.invalid_id", function.ID) {
 		return nil, nil, false
 	}
-	dataType, knownType := dataNames[function.Parameter.Type]
-	if !v.check(knownType && function.ReturnType == function.Parameter.Type, "core.unknown_type", function.Parameter.Type) ||
+	dataType, knownParameterType := dataNames[function.Parameter.Type]
+	_, knownReturnType := dataNames[function.ReturnType]
+	if !v.check(knownParameterType && knownReturnType, "core.unknown_type", function.Parameter.Type) ||
 		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
 		return nil, nil, false
 	}
@@ -904,8 +929,9 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 	}
 	armIDs := make(map[string]struct{}, len(match.Arms))
 	edgeIDs := make(map[string]struct{}, len(match.Arms))
-	dataType, knownType := dataNames[function.Parameter.Type]
-	if !v.check(knownType && function.ReturnType == function.Parameter.Type, "core.unknown_type", function.Parameter.Type) ||
+	dataType, knownParameterType := dataNames[function.Parameter.Type]
+	_, knownReturnType := dataNames[function.ReturnType]
+	if !v.check(knownParameterType && knownReturnType, "core.unknown_type", function.Parameter.Type) ||
 		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
 		return false
 	}
@@ -983,7 +1009,6 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 	if !v.check(parameterType.Shape.Constructor == function.Parameter.Type, "core.parameter_mismatch", function.Parameter.ID) {
 		return nil, nil, false
 	}
-
 	operationIDs := make(map[string]struct{}, len(linear.Operations))
 	pointIDs := make(map[string]struct{}, len(linear.Operations))
 	loanIDs := make(map[string]struct{})
@@ -1683,7 +1708,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	returned := false
 	for index, operation := range operations {
 		source := places[operation.SourceID]
-		if !v.check(source.TypeID == operation.TypeID, "core.type_mismatch", operation.ID) {
+		if !v.check(operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
 			return false
 		}
 		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
@@ -1752,7 +1777,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
 		case core.OpReturn:
-			if index != len(operations)-1 || returned || operation.TargetID != "" || operation.TypeID != source.TypeID || types[source.TypeID].Shape.Constructor != function.ReturnType {
+			if index != len(operations)-1 || returned || operation.TargetID != "" || operation.TypeID != source.TypeID {
 				return v.check(false, "core.final_claim_mismatch", operation.ID)
 			}
 			returned = true
@@ -1942,7 +1967,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	returnedBlocks := make(map[string]bool, len(linear.Blocks))
 	for index, operation := range operations {
 		source := places[operation.SourceID]
-		if !v.check(source.TypeID == operation.TypeID, "core.type_mismatch", operation.ID) {
+		if !v.check(operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
 			return false
 		}
 		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
@@ -2046,7 +2071,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
-			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.TypeID == source.TypeID && types[source.TypeID].Shape.Constructor == function.ReturnType, "core.final_claim_mismatch", operation.ID) {
+			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.TypeID == source.TypeID, "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
 			returnedBlocks[blockID] = true
@@ -2324,25 +2349,14 @@ func (v *validator) derivePeerSignature(function *core.Function, types map[strin
 	}
 	v.check(peerCalleeFrameDrained(function), core.CalleeFrameNotDrained, function.ID)
 
-	var abilities []core.Ability
-	if fact, ok := types[function.ID+":type:0"]; ok {
-		abilities = fact.Abilities
-	} else {
-		abilities = []core.Ability{}
-	}
-	hasDropAbility := false
-	for _, ability := range abilities {
-		if ability == core.AbilityDrop {
-			hasDropAbility = true
-			break
-		}
-	}
+	parameterAbilities := peerParameterAbilities(function, types, places)
+	parameterHasDropAbility := abilityGranted(parameterAbilities, core.AbilityDrop)
 
 	parameterContract := core.ParameterContract{
 		ID: function.Parameter.ID, Name: function.Parameter.Name, Type: function.Parameter.Type,
 		// D-07-01: today's grammar has exactly one parameter form.
 		Mode:  parameterContractMode(),
-		Drops: hasDropAbility && !peerParameterEscapesOwned(function),
+		Drops: parameterHasDropAbility && !peerParameterEscapesOwned(function),
 	}
 
 	returnContract := core.ReturnContract{Type: function.ReturnType}
@@ -2357,7 +2371,8 @@ func (v *validator) derivePeerSignature(function *core.Function, types map[strin
 		returnContract.Mode = function.PublicOrigin.Access
 		returnContract.Paths = function.PublicOrigin.Paths
 	}
-	returnContract.Fresh = returnContract.Mode == "owned" && hasDropAbility
+	returnAbilities := peerReturnAbilities(function, types)
+	returnContract.Fresh = returnContract.Mode == "owned" && abilityGranted(returnAbilities, core.AbilityDrop)
 
 	foreignReach := core.ForeignReach{}
 	fails := ""
@@ -2373,11 +2388,42 @@ func (v *validator) derivePeerSignature(function *core.Function, types map[strin
 		ID: function.ID, Name: function.Name,
 		Parameters: []core.ParameterContract{parameterContract},
 		Return:     returnContract,
-		Abilities:  abilities,
+		Abilities:  parameterAbilities,
 		Callable:   peerCallable(function),
 		Fails:      fails,
 		Foreign:    foreignReach,
 	}
+}
+
+// peerParameterAbilities reads only the declared parameter place's own type
+// fact. It intentionally does not infer parameter ownership from the return
+// fact: the two directions are separate facts once a function may return a
+// different type.
+func peerParameterAbilities(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) []core.Ability {
+	parameter, ok := places[function.Parameter.ID]
+	if !ok {
+		return []core.Ability{}
+	}
+	fact, ok := types[parameter.TypeID]
+	if !ok || fact.Shape.Constructor != function.Parameter.Type {
+		return []core.Ability{}
+	}
+	return fact.Abilities
+}
+
+// peerReturnAbilities reads corevalidate's own return type fact. New
+// directional programs use :type:1; the :type:0 fallback preserves the
+// established one-fact core schema for older same-type programs. The fault is
+// applied here, after parameter derivation, and nowhere else.
+func peerReturnAbilities(function *core.Function, types map[string]core.TypeFact) []core.Ability {
+	returnFact, ok := types[function.ID+":type:1"]
+	if !ok {
+		returnFact, ok = types[function.ID+":type:0"]
+	}
+	if !ok || returnFact.Shape.Constructor != function.ReturnType || phase17ReturnLookupFaultForTest {
+		return nil
+	}
+	return returnFact.Abilities
 }
 
 // peerParameterEscapesOwned is peerParameterContract's independent
@@ -2641,7 +2687,7 @@ func peerForeignOriginOmitted(function *core.Function) bool {
 //  2. core.origin_omitted, when no public origin is declared: Callable is
 //     false iff the body itself returns a borrow-derived place
 //     (peerReturnDerivesFromBorrow).
-//  3 and 4. Path containment (core.origin_understated) and access
+//     3 and 4. Path containment (core.origin_understated) and access
 //     agreement (core.origin_access_mismatch), when a public origin IS
 //     declared: peerOriginContained compares the declaration against the
 //     peer's own forward-derived facts (D-09-19) -- a containment check,
@@ -2761,6 +2807,12 @@ func (v *validator) consumeCallArgument(operation core.LinearOperation, sourceTy
 	if disableCallArgumentConsumePeerForTest {
 		return true
 	}
+	// A call must name a target when its return type differs from its argument
+	// type. This also keeps the direct, target-less test seam fail-closed.
+	if operation.TargetID == "" && operation.TypeID != sourceTypeID {
+		v.problems = append(v.problems, Problem{Code: "core.type_mismatch", Detail: operation.ID})
+		return false
+	}
 	// WR-01 (07-REVIEW): OpCall-specific defense -- operation.TypeID (the
 	// call's declared return type) must equal sourceTypeID (the argument
 	// place's own declared type) before the ability derivation below is
@@ -2772,10 +2824,7 @@ func (v *validator) consumeCallArgument(operation core.LinearOperation, sourceTy
 	// A divergence here ties directly to D-07-09 (a function's declared
 	// return type must equal its own declared parameter type) -- if that
 	// constraint is ever relaxed, this assertion is what catches it.
-	if !v.check(operation.TypeID == sourceTypeID, "core.type_mismatch", operation.ID) {
-		return false
-	}
-	granted, _, known := v.derive(types[operation.TypeID].Shape, 0)
+	granted, _, known := v.derive(types[sourceTypeID].Shape, 0)
 	if !known {
 		return false
 	}

@@ -4,7 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	goast "go/ast"
+	"go/parser"
+	"go/token"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -162,6 +166,146 @@ func TestArbitraryMaskCannotEnterCoreValidation(t *testing.T) {
 			t.Fatalf("corevalidate_peer_liveness.go imports forbidden producer/engine package %q", forbidden)
 		}
 	}
+}
+
+func TestPhase17CorePeerDirectionalAbilities(t *testing.T) {
+	program := phase17CoreProgram(t)
+	result := corevalidate.Validate(program)
+	if !result.Valid {
+		t.Fatalf("canonical two-type core rejected: %+v", result.Problems)
+	}
+	for _, function := range program.Functions {
+		signature, ok := result.PeerSignatures()[function.ID]
+		if !ok || len(signature.Parameters) != 1 {
+			t.Fatalf("%s peer signature missing parameter contract: %+v", function.Name, signature)
+		}
+		if signature.Parameters[0].Type != function.Parameter.Type || signature.Return.Type != function.ReturnType {
+			t.Fatalf("%s peer contract lost directional types: %+v", function.Name, signature)
+		}
+		if !typeFactGrants(function.Linear.Types[0], core.AbilityDrop) || !signature.Return.Fresh {
+			t.Fatalf("%s did not retain parameter ability and independently derive return Fresh: %+v", function.Name, signature)
+		}
+	}
+}
+
+func typeFactGrants(fact core.TypeFact, wanted core.Ability) bool {
+	for _, ability := range fact.Abilities {
+		if ability == wanted {
+			return true
+		}
+	}
+	return false
+}
+
+func TestPhase17CorePeerDirectionalCallContract(t *testing.T) {
+	program := phase17CoreProgram(t)
+	if result := corevalidate.Validate(program); !result.Valid {
+		t.Fatalf("canonical directional call rejected: %+v", result.Problems)
+	}
+	for _, function := range program.Functions {
+		if function.Name != "main" || function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall {
+				continue
+			}
+			if operation.TypeID == function.ID+":type:0" || operation.CalleeID == "" {
+				t.Fatalf("directional call did not retain distinct target/callee facts: %+v", operation)
+			}
+			return
+		}
+	}
+	t.Fatal("canonical program has no call for directional peer validation")
+}
+
+func TestPhase17CorePeerReturnOnlyMutation(t *testing.T) {
+	program := phase17CoreProgram(t)
+	baseline := corevalidate.Validate(program)
+	if !baseline.Valid {
+		t.Fatalf("baseline rejected: %+v", baseline.Problems)
+	}
+	before := baseline.PeerSignatures()
+
+	restore := corevalidate.SetPhase17ReturnLookupFaultForTest(true)
+	t.Cleanup(restore)
+	mutated := corevalidate.Validate(program)
+	if !mutated.Valid {
+		t.Fatalf("return-only fault should diverge the peer signature, not invalidate core: %+v", mutated.Problems)
+	}
+	after := mutated.PeerSignatures()
+	for id, signature := range before {
+		faulted, ok := after[id]
+		if !ok {
+			t.Fatalf("faulted peer signature missing %s", id)
+		}
+		if !reflect.DeepEqual(signature.Parameters, faulted.Parameters) {
+			t.Fatalf("%s parameter contract changed under return-only fault: before=%+v after=%+v", id, signature.Parameters, faulted.Parameters)
+		}
+		if faulted.Return.Fresh {
+			t.Fatalf("%s return-only fault left Fresh true: %+v", id, faulted.Return)
+		}
+	}
+	restore()
+	restore()
+	restored := corevalidate.Validate(program)
+	for id, signature := range restored.PeerSignatures() {
+		if !signature.Return.Fresh {
+			t.Fatalf("%s return lookup did not restore", id)
+		}
+	}
+}
+
+func TestPhase17CorePeerIndependenceBoundary(t *testing.T) {
+	directory := testsupport.ProjectPath("internal", "compiler", "corevalidate")
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		t.Fatalf("read corevalidate directory: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		path := filepath.Join(directory, entry.Name())
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
+		for _, imported := range file.Imports {
+			value := strings.Trim(imported.Path.Value, "\"")
+			if strings.Contains(value, "compiler/check") || strings.Contains(strings.ToLower(value), "returncontract") {
+				t.Fatalf("%s imports forbidden producer/shared return dependency %q", entry.Name(), value)
+			}
+		}
+		var callers []token.Pos
+		goast.Inspect(file, func(node goast.Node) bool {
+			call, ok := node.(*goast.CallExpr)
+			if !ok {
+				return true
+			}
+			if ident, ok := call.Fun.(*goast.Ident); ok && ident.Name == "SetPhase17ReturnLookupFaultForTest" {
+				callers = append(callers, call.Pos())
+			}
+			return true
+		})
+		if len(callers) != 0 {
+			t.Fatalf("%s has production caller(s) of return-only test control at %v", entry.Name(), callers)
+		}
+	}
+}
+
+func phase17CoreProgram(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("canonical source failed to check: %+v", checked.Diagnostics)
+	}
+	return checked.Program
 }
 
 func TestValidationOwnsTrustBoundaryCopy(t *testing.T) {
@@ -1528,7 +1672,11 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// v.check PER FUNCTION DECLARATION (peerCalleeFrameDrained, called once
 	// inside derivePeerSignature): acquire_three_success.lang declares
 	// exactly one function, moving the pin a final time to 426+1=427.
-	const acquireThreeSuccessChecks = 427
+	//
+	// Phase 17 adds a distinct return TypeFact to checked programs. Its
+	// structural replay costs four checks for this fixture, moving the
+	// accepting-path pin to 431 without affecting the one-fact scale shape.
+	const acquireThreeSuccessChecks = 431
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {
