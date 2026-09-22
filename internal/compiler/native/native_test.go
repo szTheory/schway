@@ -979,6 +979,69 @@ func TestValidateExecutionSchema2(t *testing.T) {
 	}
 }
 
+// TestDecodeExecutionSchema2AdmissionSeam pins the public native admission
+// envelope: canonical /2 bytes decode faithfully, while semantic refusals
+// retain their specific context after decodeExecution wraps them as ToolError.
+func TestDecodeExecutionSchema2AdmissionSeam(t *testing.T) {
+	valid := execution.Execution{
+		Schema: execution.Schema2, Outcome: execution.Outcome{Kind: "returned", Value: "7"},
+		Events: []execution.Event{
+			{Schema: execution.Schema2, ID: "op:call:event:called", Kind: "function.called", FunctionID: "fn:entry", Invocation: "inv:entry:fn:entry", CalleeFunctionID: "fn:child", SourcePlace: "place:arg", TargetPlace: "place:result", TypeID: "type:Byte"},
+			{Schema: execution.Schema2, ID: "op:child:return:event", Kind: "function.returned", FunctionID: "fn:child", Invocation: "inv:entry:fn:entry/op:call#0", SourcePlace: "place:child", TypeID: "type:Byte"},
+			{Schema: execution.Schema2, ID: "op:entry:return:event", Kind: "function.returned", FunctionID: "fn:entry", Invocation: "inv:entry:fn:entry", SourcePlace: "place:result", TypeID: "type:Byte"},
+		}, LiveResources: []string{},
+	}
+	clone := func(value execution.Execution) execution.Execution {
+		value.Events = append([]execution.Event(nil), value.Events...)
+		return value
+	}
+	decode := func(t *testing.T, value execution.Execution) (execution.Execution, error) {
+		t.Helper()
+		encoded, err := execution.CanonicalBytes(value)
+		if err != nil {
+			t.Fatalf("canonical encode: %v", err)
+		}
+		return decodeExecution(encoded, ExpectValue)
+	}
+
+	decoded, err := decode(t, valid)
+	if err != nil {
+		t.Fatalf("canonical /2 document rejected at decoder seam: %v", err)
+	}
+	if !execution.Equal(decoded, valid) {
+		t.Fatalf("decoded /2 document changed: got=%+v want=%+v", decoded, valid)
+	}
+
+	for _, test := range []struct {
+		name   string
+		mutate func(execution.Execution) execution.Execution
+		want   string
+	}{
+		{"noncanonical invocation", func(v execution.Execution) execution.Execution {
+			v.Events[1].Invocation = "inv:entry:fn:entry/op:call#00"
+			return v
+		}, "execution event invocation is invalid"},
+		{"duplicate invocation and event ID", func(v execution.Execution) execution.Execution { v.Events[2].ID = v.Events[0].ID; return v }, "duplicate execution invocation and event id"},
+		{"unknown event kind", func(v execution.Execution) execution.Execution { v.Events[1].Kind = "future.event"; return v }, "unknown execution event kind"},
+		{"missing caller-owned callee", func(v execution.Execution) execution.Execution { v.Events[0].CalleeFunctionID = ""; return v }, "function called event fields are invalid"},
+		{"extra caller-owned callee", func(v execution.Execution) execution.Execution { v.Events[1].CalleeFunctionID = "fn:other"; return v }, "callee function ID is reserved for function called events"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := decode(t, test.mutate(clone(valid)))
+			var toolError *ToolError
+			if !errors.As(err, &toolError) {
+				t.Fatalf("expected ToolError, got %v", err)
+			}
+			if toolError.Code != "native.invalid_execution" {
+				t.Fatalf("code=%q want=native.invalid_execution err=%v", toolError.Code, err)
+			}
+			if !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error %q does not identify %q", err, test.want)
+			}
+		})
+	}
+}
+
 // TestValidateExecutionTypedFailureDiscriminates proves the new axis
 // discriminates in both directions rather than merely widening: a
 // typed_failure-expecting call accepts a typed_failure document and rejects
