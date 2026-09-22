@@ -1,0 +1,29 @@
+// One intended failure: main cannot represent classify's Result return type.
+module phase17.call_return_type_unrepresentable
+
+export {
+  fn main
+}
+
+data Resource =
+  | Raw
+
+data Result =
+  | Classified
+
+fn classify(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      resource
+    }
+  }
+}
+
+fn main(resource: Resource) -> Resource {
+  match resource {
+    Raw => {
+      let result = classify(resource)
+      resource
+    }
+  }
+}

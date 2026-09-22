@@ -1,0 +1,31 @@
+// Phase 17's source-first canonical tracer.  `classify` deliberately has
+// distinct nominal parameter and return types; later plans carry it through
+// the independent validators and native emitter.
+module phase17.return_type_tracer
+
+export {
+  fn main
+}
+
+data Resource =
+  | Raw
+
+data Result =
+  | Classified
+
+fn classify(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      resource
+    }
+  }
+}
+
+fn main(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      let result = classify(resource)
+      result
+    }
+  }
+}

@@ -1,0 +1,29 @@
+// One intended failure: the argument at this call is not classify's Resource.
+module phase17.call_argument_type_mismatch
+
+export {
+  fn main
+}
+
+data Resource =
+  | Raw
+
+data Result =
+  | Classified
+
+fn classify(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      resource
+    }
+  }
+}
+
+fn main(value: Result) -> Result {
+  match value {
+    Classified => {
+      let result = classify(value)
+      result
+    }
+  }
+}
