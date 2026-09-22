@@ -5,17 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 17
 current_phase_name: Return Type ≠ Parameter Type
 status: planning
-stopped_at: Phase 16 complete, ready to plan Phase 17
-last_updated: "2026-09-22T10:44:35.537Z"
+stopped_at: Phase 17 context gathered
+last_updated: "2026-09-22T11:18:01.325Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 16 complete, transitioned to Phase 17
-state_head: 4c36e7359e37f2783a4a2b46199cb78095ce99e5
+state_head: 394deab2b175f452439e3f7b8ac9b43d961e0e27
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 37
   completed_plans: 37
-  percent: 43
 ---
 
 # Project State
@@ -590,10 +589,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-21T22:50:24.586Z
-Stopped at: Phase 16 complete, ready to plan Phase 17
+Last session: 2026-09-22T11:18:01.126Z
+Stopped at: Phase 17 context gathered
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: None
+Resume file: .planning/phases/17-return-type-parameter-type/17-CONTEXT.md
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
