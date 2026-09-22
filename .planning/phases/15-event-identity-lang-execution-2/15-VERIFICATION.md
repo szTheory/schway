@@ -6,7 +6,6 @@ score: 5/5 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .planning/REQUIREMENTS.md
-  - .planning/ROADMAP.md
   - .planning/phases/15-event-identity-lang-execution-2/15-01-PLAN.md
   - .planning/phases/15-event-identity-lang-execution-2/15-01-SUMMARY.md
   - .planning/phases/15-event-identity-lang-execution-2/15-02-PLAN.md
@@ -48,7 +47,7 @@ covered_files:
   - internal/compiler/session/session_phase5_compare_test.go
   - internal/compiler/session/session_phase6_test.go
   - internal/compiler/session/witness_registry_test.go
-covered_digest: "v1:sha256:fdcaafd3d3442d88ff5678db88b72d23db4557b3f45e45c09a73ed9b75e2d796"
+covered_digest: "v1:sha256:fe6c2c71b72e0785a7b1cd0db269d97a45bb3f099072e5b7aecc050a439346a3"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
