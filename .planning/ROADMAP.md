@@ -313,7 +313,7 @@ STANDING-VERDICTS' own "two coexisting laws is a defect with a delayed fuse".
 identity fix. The dependency caps corpus richness; it does not gate the port.
 The ordering rests on the write-it-twice argument, not on a hard block.
 **Closes**: D-11-51, D-12-21.
-**Plans**: 7 plans
+**Plans**: 9 plans
 
 Plans:
 **Wave 1**
@@ -334,6 +334,14 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 15-07-PLAN.md — flip DiamondSharedLeaf into a peer-validated four-tier positive gate, retain the collision negative, and close inherited debt honestly
+
+**Wave 5** *(gap closure; blocked on Plan 01 completion)*
+
+- [ ] 15-08-PLAN.md — automate the Schema 2 JSON-to-ToolError admission seam and publish Plan 01 coverage metadata (G-15-1)
+
+**Wave 6** *(gap closure; blocked on Plans 06-08 completion)*
+
+- [ ] 15-09-PLAN.md — preserve legacy wrapper behavior, replace stale CI provenance with a durable aggregate, and publish peer/diamond coverage (G-15-11, G-15-12)
 
 ---
 
