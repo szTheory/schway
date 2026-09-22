@@ -2,6 +2,15 @@
 phase: 15-event-identity-lang-execution-2
 plan: 01
 status: complete
+coverage:
+  - id: D1
+    description: "Canonical lang.execution/2 JSON is admitted through the native decoder, while non-canonical invocation identity, duplicate activation identity, an unknown event kind, and missing or extra caller-owned callee identity are refused as native.invalid_execution with actionable class-specific diagnostics."
+    requirement: OBS-04
+    verification:
+      - kind: integration
+        ref: "internal/compiler/native/native_test.go#TestDecodeExecutionSchema2AdmissionSeam"
+        status: pass
+    human_judgment: false
 ---
 
 # Phase 15 Plan 01 Summary
