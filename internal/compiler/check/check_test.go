@@ -84,6 +84,102 @@ func TestPhase17CallContractCauses(t *testing.T) {
 	}
 }
 
+func TestPhase17CheckerDirectionalAbilities(t *testing.T) {
+	baseline := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	if len(baseline.Diagnostics) != 0 {
+		t.Fatalf("baseline rejected: %+v", baseline.Diagnostics)
+	}
+	for _, function := range baseline.Program.Functions {
+		if function.Linear == nil || len(function.Linear.Types) < 2 {
+			t.Fatalf("%s has no directional type facts", function.Name)
+		}
+		parameter, returned := function.Linear.Types[0], function.Linear.Types[1]
+		if parameter.Shape.Constructor != function.Parameter.Type || returned.Shape.Constructor != function.ReturnType {
+			t.Fatalf("%s facts do not follow their declaration: %+v", function.Name, function.Linear.Types)
+		}
+		if !hasTypeAbility(parameter, core.AbilityDrop) || !hasTypeAbility(returned, core.AbilityDrop) {
+			t.Fatalf("%s expected independently-derived drop abilities, got parameter=%v return=%v", function.Name, parameter.Abilities, returned.Abilities)
+		}
+	}
+}
+
+func TestPhase17CheckerReturnOnlyMutation(t *testing.T) {
+	baseline := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	if len(baseline.Diagnostics) != 0 {
+		t.Fatalf("baseline rejected: %+v", baseline.Diagnostics)
+	}
+	restore := SetPhase17ReturnLookupFaultForTest(true)
+	t.Cleanup(restore)
+	mutated := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	if len(mutated.Diagnostics) != 0 {
+		t.Fatalf("return-only mutation changed admission: %+v", mutated.Diagnostics)
+	}
+	if len(baseline.Program.Functions) != len(mutated.Program.Functions) {
+		t.Fatalf("function count changed: %d -> %d", len(baseline.Program.Functions), len(mutated.Program.Functions))
+	}
+	for index := range baseline.Program.Functions {
+		before, after := baseline.Program.Functions[index], mutated.Program.Functions[index]
+		if !reflect.DeepEqual(before.Linear.Types[0], after.Linear.Types[0]) {
+			t.Fatalf("%s parameter fact changed under return-only mutation: before=%+v after=%+v", before.Name, before.Linear.Types[0], after.Linear.Types[0])
+		}
+		if hasTypeAbility(after.Linear.Types[1], core.AbilityDrop) {
+			t.Fatalf("%s return lookup fault left return drop ability intact: %+v", after.Name, after.Linear.Types[1])
+		}
+	}
+	restore()
+	restore() // idempotence is part of the cross-package control contract.
+	restored := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	for _, function := range restored.Program.Functions {
+		if !hasTypeAbility(function.Linear.Types[1], core.AbilityDrop) {
+			t.Fatalf("%s return lookup did not restore", function.Name)
+		}
+	}
+
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatalf("read checker directory: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, entry.Name(), nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", entry.Name(), err)
+		}
+		var callers []token.Pos
+		goast.Inspect(file, func(node goast.Node) bool {
+			call, ok := node.(*goast.CallExpr)
+			if !ok {
+				return true
+			}
+			if ident, ok := call.Fun.(*goast.Ident); ok && ident.Name == "SetPhase17ReturnLookupFaultForTest" {
+				callers = append(callers, call.Pos())
+			}
+			return true
+		})
+		if len(callers) != 0 {
+			t.Fatalf("%s has production caller(s) of return-only test control at %v", entry.Name(), callers)
+		}
+	}
+}
+
+func TestPhase17CheckerMissingTypeFactFailsClosed(t *testing.T) {
+	typeFact := core.TypeFact{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Byte"}}
+	places := map[string]*placeState{
+		"value": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: typeFact.ID}, initialized: true},
+	}
+	binding := ast.Binding{Name: "result", RHS: ast.RHS{Kind: "call", Callee: "identity", Arguments: []string{"value"}}}
+	contracts := map[string]calleeContract{"identity": {ID: "s1:m:fn:identity", ParameterType: "Byte", ReturnType: "Buffer"}}
+	if _, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil, []core.TypeFact{}); diag == nil || diag.Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("missing parameter fact must refuse, got %+v", diag)
+	}
+	if _, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, typeFact, nil, []core.TypeFact{typeFact}); diag == nil || diag.Code != checkCallReturnTypeUnrepresentable {
+		t.Fatalf("missing return fact must refuse, got %+v", diag)
+	}
+}
+
 func mustParseProgram(t *testing.T, source []byte) ast.Program {
 	t.Helper()
 	parsed := syntax.Parse(source)

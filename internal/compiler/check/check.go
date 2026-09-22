@@ -31,6 +31,53 @@ import (
 // precedent for fault-injection seams).
 var testOnlyForceUniformLoanJoin = false
 
+// phase17ReturnLookupFaultForTest is a return-side-only mutation control for
+// Phase 17's directional type-fact evidence. It is deliberately local to the
+// checker: parameter ability lookup remains the primitive Derive call at each
+// admission head, while this control can affect only the separately-derived
+// return fact. The exported setter below carries no type or contract data so
+// session evidence can activate this one checker fault across the package
+// boundary without becoming a second derivation path.
+var phase17ReturnLookupFaultForTest = false
+
+// SetPhase17ReturnLookupFaultForTest toggles only check's return ability
+// lookup. Its restore closure is idempotent so callers can use either defer or
+// t.Cleanup without leaking the test control into a subsequent assertion.
+func SetPhase17ReturnLookupFaultForTest(enabled bool) (restore func()) {
+	previous := phase17ReturnLookupFaultForTest
+	phase17ReturnLookupFaultForTest = enabled
+	restored := false
+	return func() {
+		if restored {
+			return
+		}
+		restored = true
+		phase17ReturnLookupFaultForTest = previous
+	}
+}
+
+func deriveCheckerReturnAbilities(shape core.TypeRef) (ability.Result, error) {
+	derived, err := ability.Derive(shape)
+	if err != nil {
+		return ability.Result{}, err
+	}
+	if phase17ReturnLookupFaultForTest {
+		return ability.Result{}, nil
+	}
+	return derived, nil
+}
+
+func deriveCheckerSealedReturnAbilities(shape core.TypeRef, sealed map[string]bool) (ability.Result, error) {
+	derived, err := ability.DeriveSealed(shape, sealed)
+	if err != nil {
+		return ability.Result{}, err
+	}
+	if phase17ReturnLookupFaultForTest {
+		return ability.Result{}, nil
+	}
+	return derived, nil
+}
+
 type Result struct {
 	Program     core.Program
 	Diagnostics []diagnostic.Diagnostic
@@ -2168,7 +2215,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType), nil
 	}
-	returnDerived, err := ability.DeriveSealed(returnType, sealed)
+	returnDerived, err := deriveCheckerSealedReturnAbilities(returnType, sealed)
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, err.Error())}, typeNodeCount(parameterType) + typeNodeCount(returnType), nil
 	}
@@ -3176,7 +3223,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl, calleeContrac
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType), nil
 	}
-	returnDerived, err := ability.Derive(returnType)
+	returnDerived, err := deriveCheckerReturnAbilities(returnType)
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, err.Error())}, typeNodeCount(parameterType) + typeNodeCount(returnType), nil
 	}
@@ -3415,7 +3462,7 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
 	}
-	returnDerived, err := ability.Derive(returnType)
+	returnDerived, err := deriveCheckerReturnAbilities(returnType)
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, err.Error())}, typeNodeCount(parameterType) + typeNodeCount(returnType)
 	}
@@ -3459,6 +3506,7 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 // dropped edge is how a cycle escapes detection).
 func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, places map[string]*placeState, calleeContracts map[string]calleeContract, typeFact core.TypeFact, foreignSymbols map[string]foreignSymbolInfo, availableTypeFacts ...[]core.TypeFact) (core.LinearOperation, core.Place, *diagnostic.Diagnostic) {
 	typeFacts := []core.TypeFact{typeFact}
+	explicitTypeFacts := len(availableTypeFacts) > 0
 	if len(availableTypeFacts) > 0 {
 		typeFacts = availableTypeFacts[0]
 	}
@@ -3487,9 +3535,16 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 	}
 	argumentTypeFact, ok := typeFactForID(typeFacts, argument.place.TypeID)
 	if !ok {
-		// Direct seam tests historically supplied a synthetic place TypeID
-		// alongside the caller's sole fact. Preserve that test-only shape;
-		// source paths always resolve a place against one of their facts.
+		if explicitTypeFacts {
+			causes := []diagnostic.Cause{
+				{Kind: "missing_argument_type_fact", Detail: argument.place.TypeID},
+			}
+			diag := diagnostic.Error(checkCallArgumentTypeMismatch, binding.RHS.Span, "call argument has no declared type fact", causes...)
+			return core.LinearOperation{}, core.Place{}, &diag
+		}
+		// Legacy direct seam tests supply only the parameter fact and no
+		// explicit fact set. Real source paths always pass the complete set;
+		// an explicitly incomplete set takes the refusing branch above.
 		argumentTypeFact = typeFact
 	}
 	if contract, isFunction := calleeContracts[binding.RHS.Callee]; isFunction {
