@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 15-event-identity-lang-execution-2
 source: 15-01-SUMMARY.md, 15-02-SUMMARY.md, 15-03-SUMMARY.md, 15-04-SUMMARY.md, 15-05-SUMMARY.md, 15-06-SUMMARY.md, 15-07-SUMMARY.md
 started: 2026-09-21T23:54:47Z
-updated: 2026-09-22T09:30:41Z
+updated: 2026-09-22T13:00:00Z
 ---
 
 ## Current Test
@@ -14,9 +14,8 @@ updated: 2026-09-22T09:30:41Z
 
 ### 1. Schema 2 execution admission
 expected: A multi-function execution document with canonical invocation identities is accepted, while a non-canonical invocation, duplicate activation identity, invalid event kind, or invalid caller-owned callee identity is refused with an actionable diagnostic.
-result: issue
-reported: "integration/e2e/smoke/seam test... automate the world devops mindset shift left,  goal is 0 human verificaiton / uat required (even shift to CI ... iff recurring value there)"
-severity: major
+result: pass
+source: automated
 
 ### 2. Multi-function interpreter evidence
 expected: Multi-function interpreter events carry canonical activation identity while single-function bytes remain /1.
@@ -74,21 +73,19 @@ coverage_id: D3
 
 ### 11. Schema 2 peer comparison gate
 expected: The program-aware four-engine Schema 2 comparison refuses a corrupted engine document before it can report agreement, while /0 and /1 comparison behavior remains unchanged.
-result: issue
-reported: "integration/e2e/smoke/seam test... automate the world devops mindset shift left,  goal is 0 human verificaiton / uat required (even shift to CI ... iff recurring value there)"
-severity: major
+result: pass
+source: automated
 
 ### 12. Four-tier shared-leaf diamond gate
 expected: The unchanged shared-leaf diamond completes successfully across interpreter, O0, O3, and O3-LTO using Schema 2 evidence; the historical duplicate-pair collision control remains live.
-result: issue
-reported: "integration/e2e/smoke/seam test... automate the world devops mindset shift left,  goal is 0 human verificaiton / uat required (even shift to CI ... iff recurring value there)"
-severity: major
+result: pass
+source: automated
 
 ## Summary
 
 total: 12
-passed: 9
-issues: 3
+passed: 12
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
@@ -97,7 +94,9 @@ blocked: 0
 
 - gap_id: G-15-1
   truth: "A multi-function execution document with canonical invocation identities is accepted, while a non-canonical invocation, duplicate activation identity, invalid event kind, or invalid caller-owned callee identity is refused with an actionable diagnostic."
-  status: failed
+  status: resolved
+  resolved_by: 15-08-PLAN.md
+  resolved_at: 2026-09-22
   reason: "User reported: integration/e2e/smoke/seam test... automate the world devops mindset shift left,  goal is 0 human verificaiton / uat required (even shift to CI ... iff recurring value there)"
   severity: major
   test: 1
@@ -113,7 +112,9 @@ blocked: 0
   debug_session: .planning/debug/phase-15-schema-admission-ci.md
 - gap_id: G-15-11
   truth: "The program-aware four-engine Schema 2 comparison refuses a corrupted engine document before it can report agreement, while /0 and /1 comparison behavior remains unchanged."
-  status: failed
+  status: resolved
+  resolved_by: 15-09-PLAN.md
+  resolved_at: 2026-09-22
   reason: "User reported: integration/e2e/smoke/seam test... automate the world devops mindset shift left,  goal is 0 human verificaiton / uat required (even shift to CI ... iff recurring value there)"
   severity: major
   test: 11
@@ -132,7 +133,9 @@ blocked: 0
   debug_session: .planning/debug/phase-15-peer-gate-ci.md
 - gap_id: G-15-12
   truth: "The unchanged shared-leaf diamond completes successfully across interpreter, O0, O3, and O3-LTO using Schema 2 evidence; the historical duplicate-pair collision control remains live."
-  status: failed
+  status: resolved
+  resolved_by: 15-09-PLAN.md
+  resolved_at: 2026-09-22
   reason: "User reported: integration/e2e/smoke/seam test... automate the world devops mindset shift left,  goal is 0 human verificaiton / uat required (even shift to CI ... iff recurring value there)"
   severity: major
   test: 12
