@@ -8,6 +8,98 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 )
 
+func phase17ArgumentMismatch(t *testing.T, places map[string]*placeState, facts []core.TypeFact) *diagnostic.Diagnostic {
+	t.Helper()
+	binding := ast.Binding{
+		Name: "result",
+		RHS: ast.RHS{
+			Kind: "call", Callee: "classify", Arguments: []string{"value"},
+			Span: diagnostic.Span{Start: 10, End: 18},
+		},
+		Span: diagnostic.Span{Start: 0, End: 19},
+	}
+	contracts := map[string]calleeContract{
+		"classify": {ID: "s1:m:fn:classify", ParameterType: "Resource", ReturnType: "Result"},
+	}
+	_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, contracts, facts[0], nil, facts)
+	if diag == nil || diag.Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("expected %s, got %+v", checkCallArgumentTypeMismatch, diag)
+	}
+	return diag
+}
+
+// TestPhase17UseMatchingArgument closes the candidate partition over each
+// place's own fact. The direct seam deliberately supplies two caller facts:
+// Phase 17 source reaches that state through a prior Result-producing call.
+func TestPhase17UseMatchingArgument(t *testing.T) {
+	facts := []core.TypeFact{
+		{ID: "s1:m:fn:main:type:0", Shape: core.TypeRef{Constructor: "Resource"}},
+		{ID: "s1:m:fn:main:type:1", Shape: core.TypeRef{Constructor: "Result"}},
+	}
+	value := &placeState{place: core.Place{ID: "s1:m:fn:main:place:1", Name: "value", TypeID: facts[1].ID}, initialized: true}
+
+	t.Run("UniqueRealCandidate", func(t *testing.T) {
+		diag := phase17ArgumentMismatch(t, map[string]*placeState{
+			"resource": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "resource", TypeID: facts[0].ID}, initialized: true},
+			"value":    value,
+		}, facts)
+		if len(diag.Repairs) != 1 {
+			t.Fatalf("repairs = %+v, want one distinct Resource candidate", diag.Repairs)
+		}
+	})
+
+	t.Run("ZeroCandidates", func(t *testing.T) {
+		diag := phase17ArgumentMismatch(t, map[string]*placeState{"value": value}, facts)
+		if len(diag.Repairs) != 0 {
+			t.Fatalf("repairs = %+v, want none", diag.Repairs)
+		}
+	})
+
+	t.Run("AmbiguousCandidates", func(t *testing.T) {
+		diag := phase17ArgumentMismatch(t, map[string]*placeState{
+			"resource": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "resource", TypeID: facts[0].ID}, initialized: true},
+			"other":    {place: core.Place{ID: "s1:m:fn:main:place:2", Name: "other", TypeID: facts[0].ID}, initialized: true},
+			"value":    value,
+		}, facts)
+		if len(diag.Repairs) != 0 {
+			t.Fatalf("repairs = %+v, want none for ambiguous alternatives", diag.Repairs)
+		}
+	})
+
+	t.Run("UninitializedCandidate", func(t *testing.T) {
+		diag := phase17ArgumentMismatch(t, map[string]*placeState{
+			"resource": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "resource", TypeID: facts[0].ID}, initialized: false},
+			"value":    value,
+		}, facts)
+		if len(diag.Repairs) != 0 {
+			t.Fatalf("repairs = %+v, want none for an uninitialized alternative", diag.Repairs)
+		}
+	})
+
+	t.Run("NoOpCandidate", func(t *testing.T) {
+		diag := phase17ArgumentMismatch(t, map[string]*placeState{
+			"alias": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "value", TypeID: facts[0].ID}, initialized: true},
+			"value": value,
+		}, facts)
+		if len(diag.Repairs) != 0 {
+			t.Fatalf("repairs = %+v, want none for a byte-identical replacement", diag.Repairs)
+		}
+	})
+}
+
+// The top-level names keep each required partition independently runnable
+// through `go test -run`, while the shared table remains the readable source
+// of the complete fail-closed contract.
+func TestPhase17UseMatchingArgumentUniqueRealCandidate(t *testing.T) { TestPhase17UseMatchingArgument(t) }
+func TestPhase17UseMatchingArgumentZeroCandidates(t *testing.T)     { TestPhase17UseMatchingArgument(t) }
+func TestPhase17UseMatchingArgumentAmbiguousCandidates(t *testing.T) {
+	TestPhase17UseMatchingArgument(t)
+}
+func TestPhase17UseMatchingArgumentUninitializedCandidate(t *testing.T) {
+	TestPhase17UseMatchingArgument(t)
+}
+func TestPhase17UseMatchingArgumentNoOpCandidate(t *testing.T) { TestPhase17UseMatchingArgument(t) }
+
 // ---------------------------------------------------------------------
 // 13-05 Task 1: wrap_call_in_try on syntax.fallible_call_not_consumed
 // ---------------------------------------------------------------------
