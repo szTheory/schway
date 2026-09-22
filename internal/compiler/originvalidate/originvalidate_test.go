@@ -217,6 +217,89 @@ func TestTransitiveImportsGuardCanFail(t *testing.T) {
 	}
 }
 
+// TestPhase17OriginPeerDirectionalAbilities proves that the origin peer
+// derives Drops from the parameter fact and Fresh from the separate return
+// fact.  The two-type tracer deliberately grants both facts Drop; removing it
+// only from the return fact is therefore the narrow mutation that catches a
+// peer which accidentally reuses the parameter lookup for both contracts.
+func TestPhase17OriginPeerDirectionalAbilities(t *testing.T) {
+	program := phase17OriginProgram(t)
+	mutated := cloneOriginProgram(t, program)
+	for functionIndex := range mutated.Functions {
+		function := &mutated.Functions[functionIndex]
+		if function.Linear == nil {
+			continue
+		}
+		for factIndex := range function.Linear.Types {
+			fact := &function.Linear.Types[factIndex]
+			if fact.ID == function.ID+":type:1" {
+				fact.Abilities = nil
+			}
+		}
+	}
+
+	summary, err := originvalidate.BuildInterface(mutated)
+	if err != nil {
+		t.Fatalf("BuildInterface: %v", err)
+	}
+	for _, signature := range summary.Functions {
+		if len(signature.Parameters) != 1 {
+			t.Fatalf("%s parameter contract missing: %+v", signature.Name, signature)
+		}
+		if !signature.Parameters[0].Drops {
+			t.Fatalf("%s parameter Drops changed under return-only ability mutation: %+v", signature.Name, signature.Parameters[0])
+		}
+		if signature.Return.Fresh {
+			t.Fatalf("%s return Fresh reused parameter ability after return-only mutation: %+v", signature.Name, signature.Return)
+		}
+	}
+}
+
+func TestPhase17OriginPeerPublishedTwoTypeContract(t *testing.T) {
+	program := phase17OriginProgram(t)
+	summary, err := originvalidate.BuildInterface(program)
+	if err != nil {
+		t.Fatalf("BuildInterface: %v", err)
+	}
+	for _, function := range program.Functions {
+		for _, signature := range summary.Functions {
+			if signature.ID != function.ID {
+				continue
+			}
+			if len(signature.Parameters) != 1 || signature.Parameters[0].Type != function.Parameter.Type || signature.Return.Type != function.ReturnType {
+				t.Fatalf("%s collapsed its declared parameter/return contract: %+v", function.Name, signature)
+			}
+			break
+		}
+	}
+}
+
+func phase17OriginProgram(t testing.TB) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("canonical source failed to check: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+func cloneOriginProgram(t testing.TB, program core.Program) core.Program {
+	t.Helper()
+	encoded, err := json.Marshal(program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cloned core.Program
+	if err := json.Unmarshal(encoded, &cloned); err != nil {
+		t.Fatal(err)
+	}
+	return cloned
+}
+
 func honestProgram(t testing.TB, fixture string) core.Program {
 	t.Helper()
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", fixture))
