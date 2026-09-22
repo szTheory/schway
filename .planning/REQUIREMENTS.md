@@ -118,7 +118,7 @@ non-inert.
 
 ### Types
 
-- [ ] **TYP-01**: A function's declared return type may differ from its
+- [x] **TYP-01**: A function's declared return type may differ from its
       parameter type, and a program relying on that checks, runs, and lowers.
 
 - [x] **TYP-02**: A call whose argument type does not match the callee's
@@ -131,7 +131,7 @@ non-inert.
       type's own abilities, independently at each admission layer — not
       inherited from the parameter's.
 
-- [ ] **TYP-05**: `lang-repair` reaches `repaired` on `use_matching_argument`
+- [x] **TYP-05**: `lang-repair` reaches `repaired` on `use_matching_argument`
       against a sealed held-out fixture. (Closes DX-07 / D-13-10a.)
 
 ### Control — Branch on a Computed Value
@@ -238,11 +238,11 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | NAT-08 | Phase 16 | Complete |
 | NAT-09 | Phase 16 | Complete |
 | NAT-10 | Phase 15 | Complete |
-| TYP-01 | Phase 17 | Pending |
+| TYP-01 | Phase 17 | Complete |
 | TYP-02 | Phase 17 | Complete |
 | TYP-03 | Phase 17 | Complete |
 | TYP-04 | Phase 17 | Complete |
-| TYP-05 | Phase 17 | Pending |
+| TYP-05 | Phase 17 | Complete |
 | CTL-01 | Phase 18 | Pending |
 | CTL-02 | Phase 18 | Pending |
 | CTL-03 | Phase 18 | Pending |
