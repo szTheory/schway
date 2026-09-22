@@ -225,15 +225,11 @@ Current emission is single-typed, so every position named above must be widened.
 |---|---|---|---|
 | A1 | Two facts can retain current core schema without a version bump. | State of the Art | Add schema/version work before implementation. |
 
-## Open Questions
+## Resolved Planning Status
 
-1. **S-009 result unrecorded.**
-   - What we know: it is planning input, cannot weaken TYP-05 or block semantic widening. [VERIFIED: 17-CONTEXT.md:79-81]
-   - Recommendation: Locate/run it before final repair-surface planning; do not delay source/type/emitter work.
+1. **S-009 result remains unrecorded; its planning disposition is accepted and resolved.** S-009 is required planning input that calibrates later repair-surface appetite. It does not block semantic widening, weaken TYP-05, or authorize an additional repair class. This records the disposition, not a claim that S-009 is complete. [VERIFIED: 17-CONTEXT.md:94-98; 17-09-PLAN.md:23-26,89]
 
-2. **Exact fact identifiers and minting placement.**
-   - What we know: one-fact assumption appears in checker and both peers. [VERIFIED: internal/compiler/check/check.go:3397-3407; internal/compiler/corevalidate/corevalidate.go:2327-2360; internal/compiler/originvalidate/originvalidate.go:913-950]
-   - Recommendation: First plan inventories producer/consumer sites and adds identity/order controls before call lowering.
+2. **Exact fact identifiers and minting locations are resolved by fixture-first inventory and producer-consumer work.** Plan 17-01 first pins parser-valid source fixtures and then introduces deterministic `functionID:type:N` facts, preserving the parameter fact while adding the return fact; Plan 17-02 preserves the split through explicit reducer fact selection. The implementation plans therefore own final identifier assignment and minting placement, with source movement and directional projection controls before lowering. [VERIFIED: 17-01-PLAN.md:64-66,87-88; 17-02-PLAN.md:62-65,105-106]
 
 ## Environment Availability
 
