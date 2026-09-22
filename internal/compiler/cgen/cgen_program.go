@@ -555,11 +555,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	returnTypeNames := make([]string, len(functions))
 	branchTypes := make(map[string]programBranchType)
 	branchTypeOrder := make([]string, 0)
-	branchTypeFor := func(typeName string) (programBranchType, error) {
+	branchTypeFor := func(typeName, representationType string) (programBranchType, error) {
 		if branchType, ok := branchTypes[typeName]; ok {
 			return branchType, nil
 		}
-		branchType, err := newProgramBranchType(typeName, program.DataTypes, globals)
+		branchType, err := newProgramBranchType(typeName, representationType, program.DataTypes, globals)
 		if err != nil {
 			return programBranchType{}, err
 		}
@@ -570,11 +570,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	for index, function := range functions {
 		functionNames[index] = globals.allocate(cName(function.Name), "function", index)
 		if function.Match != nil {
-			parameterBranchType, err := branchTypeFor(function.Parameter.Type)
+			parameterBranchType, err := branchTypeFor(function.Parameter.Type, function.Parameter.Type)
 			if err != nil {
 				return "", fmt.Errorf("function %q: %w", function.ID, err)
 			}
-			returnBranchType, err := branchTypeFor(function.ReturnType)
+			returnBranchType, err := branchTypeFor(function.ReturnType, function.Parameter.Type)
 			if err != nil {
 				return "", fmt.Errorf("function %q: %w", function.ID, err)
 			}
@@ -717,6 +717,16 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	for index := range functions {
 		fmt.Fprintf(&out, "  (void)%s;\n", functionNames[index])
 	}
+	// A directional ABI can declare a nominal input representation that is
+	// intentionally distinct from the entry result. The result name writer is
+	// used below; retain harmless references to every other generated name
+	// writer so strict C builds do not reject the checked input-only types.
+	for _, typeName := range branchTypeOrder {
+		branchType := branchTypes[typeName]
+		if !entryReturnIsBranch || branchType.nameFunction != entryReturnBranch.nameFunction {
+			fmt.Fprintf(&out, "  (void)%s;\n", branchType.nameFunction)
+		}
+	}
 	// lang_write_buffer_hex/lang_write_byte (emitProgramBufferWriter/
 	// emitProgramByteWriter above) are emitted whenever ANY function in the
 	// program declares that parameter type -- not only when the RESOLVED
@@ -842,19 +852,19 @@ type programBranchType struct {
 	dataType               core.DataType
 }
 
-func newProgramBranchType(typeName string, dataTypes []core.DataType, names *cNames) (programBranchType, error) {
+func newProgramBranchType(typeName, representationType string, dataTypes []core.DataType, names *cNames) (programBranchType, error) {
 	var dataType core.DataType
 	for _, candidate := range dataTypes {
-		if candidate.Name == typeName {
+		if candidate.Name == representationType {
 			dataType = candidate
 			break
 		}
 	}
 	if dataType.Name == "" || len(dataType.Alternatives) == 0 {
-		return programBranchType{}, fmt.Errorf("branch C emitter cannot find alternatives for data type %q", typeName)
+		return programBranchType{}, fmt.Errorf("branch C emitter cannot find alternatives for representation %q", representationType)
 	}
 	result := programBranchType{
-		typeName:     names.allocate(cName(dataType.Name), "type", 0),
+		typeName:     names.allocate(cName(typeName), "type", 0),
 		bySource:     make(map[string]string, len(dataType.Alternatives)),
 		alternatives: make([]programBranchAlternative, 0, len(dataType.Alternatives)),
 		fields:       make(map[string]programPayloadField, len(dataType.Alternatives)),
