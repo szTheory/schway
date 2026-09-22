@@ -367,7 +367,7 @@ func (v *validator) run() {
 			}
 			pending = append(pending, pendingReplayEntry{function: function, types: types, places: places})
 		default:
-			if !v.check(v.program.Schema == core.Schema, "core.schema", "match body requires lang.core/0") || !v.match(function, dataNames) {
+			if !v.check(v.program.Schema == core.Schema || v.program.Schema == core.Schema1, "core.schema", "match body requires lang.core/0 or lang.core/1") || !v.match(function, dataNames) {
 				return
 			}
 		}
@@ -930,7 +930,7 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 	armIDs := make(map[string]struct{}, len(match.Arms))
 	edgeIDs := make(map[string]struct{}, len(match.Arms))
 	dataType, knownParameterType := dataNames[function.Parameter.Type]
-	_, knownReturnType := dataNames[function.ReturnType]
+	returnDataType, knownReturnType := dataNames[function.ReturnType]
 	if !v.check(knownParameterType && knownReturnType, "core.unknown_type", function.Parameter.Type) ||
 		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
 		return false
@@ -938,6 +938,10 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 	alternatives := make(map[string]struct{}, len(dataType.Alternatives))
 	for _, alternative := range dataType.Alternatives {
 		alternatives[alternative] = struct{}{}
+	}
+	returnAlternatives := make(map[string]struct{}, len(returnDataType.Alternatives))
+	for _, alternative := range returnDataType.Alternatives {
+		returnAlternatives[alternative] = struct{}{}
 	}
 	patterns := make(map[string]struct{}, len(match.Arms))
 	for _, arm := range match.Arms {
@@ -948,7 +952,7 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 			return false
 		}
 		_, patternKnown := alternatives[arm.Pattern]
-		_, valueKnown := alternatives[arm.Value]
+		_, valueKnown := returnAlternatives[arm.Value]
 		if !v.check(patternKnown && valueKnown, "core.unknown_alternative", arm.ID) {
 			return false
 		}
@@ -1777,6 +1781,9 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
 		case core.OpReturn:
+			if !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
+				return false
+			}
 			if index != len(operations)-1 || returned || operation.TargetID != "" || operation.TypeID != source.TypeID {
 				return v.check(false, "core.final_claim_mismatch", operation.ID)
 			}
@@ -2067,6 +2074,9 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			initialized[operation.PayloadTargetID] = true
 			produced[operation.PayloadTargetID] = true
 		case core.OpReturn:
+			if !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
+				return false
+			}
 			blockID, known := blockOfOperation[operation.ID]
 			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {
 				return false

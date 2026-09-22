@@ -574,7 +574,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 			if err != nil {
 				return "", fmt.Errorf("function %q: %w", function.ID, err)
 			}
-			returnBranchType, err := branchTypeFor(function.ReturnType, function.Parameter.Type)
+			returnBranchType, err := branchTypeFor(function.ReturnType, function.ReturnType)
 			if err != nil {
 				return "", fmt.Errorf("function %q: %w", function.ID, err)
 			}
@@ -946,9 +946,6 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 		for _, arm := range function.Match.Arms {
 			pattern, known := parameterBranchType.bySource[arm.Pattern]
 			valueName, valueKnown := returnBranchType.bySource[arm.Value]
-			if !valueKnown && len(returnBranchType.alternatives) == 1 {
-				valueName, valueKnown = returnBranchType.alternatives[0].cName, true
-			}
 			if !known || !valueKnown {
 				return fmt.Errorf("function %q: match arm %q names unknown alternative", function.ID, arm.ID)
 			}
@@ -1034,9 +1031,6 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		declared[operation.TargetID] = true
 	case core.OpReturn:
 		returnValue := locals[operation.SourceID]
-		if parameterBranchType.typeName != returnBranchType.typeName {
-			returnValue = "(" + returnBranchType.typeName + ")" + returnValue
-		}
 		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, NULL, %s, lang_invocations[invocation_index], NULL)) abort();\n      return %s;\n", strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), returnValue)
 	case core.OpCall:
 		if _, exists := places[operation.TargetID]; !exists || declared[operation.TargetID] {

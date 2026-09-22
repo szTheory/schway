@@ -765,7 +765,7 @@ func TestPhase17ProgramTwoTypePrototype(t *testing.T) {
 func TestPhase17ProgramTwoTypeDefinition(t *testing.T) {
 	generated := phase17TwoTypeGeneratedC(t)
 	for _, want := range []string{
-		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE lang_value_resource, unsigned int invocation_index)",
+		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE value, unsigned int invocation_index)",
 		"static LANG_RESULT LANG_MAIN(LANG_RESOURCE lang_value_resource, unsigned int invocation_index)",
 	} {
 		if !strings.Contains(generated, want) {

@@ -3176,6 +3176,9 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	if !returned.initialized {
 		return fail(useAfterMove(body.Span, returned))
 	}
+	if !returnPlaceMatchesDeclaration(functionID, returned.place.TypeID, availableTypeFacts, typeFact) {
+		return fail(diagnostic.Error("type.return_mismatch", body.Span, "linear result does not match the function's declared return type"))
+	}
 	result.Operations = append(result.Operations, core.LinearOperation{
 		ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
 		Kind: core.OpReturn, SourceID: returned.place.ID, TypeID: returned.place.TypeID,
@@ -4772,6 +4775,9 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	if !returned.initialized {
 		return fail(useAfterMove(body.Span, returned))
 	}
+	if !returnPlaceMatchesDeclaration(functionID, returned.place.TypeID, availableTypeFacts, typeFact) {
+		return fail(diagnostic.Error("type.return_mismatch", body.Span, "linear result does not match the function's declared return type"))
+	}
 	ordinal := len(body.Bindings)
 	result.Operations = append(result.Operations, core.LinearOperation{
 		ID: fmt.Sprintf("%s:op:%d", functionID, ordinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, ordinal),
@@ -4780,6 +4786,30 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	endLoans(ordinal)
 	result.States = append(result.States, ownershipSnapshot(ordinal, places, activeLoans))
 	return result
+}
+
+func returnPlaceMatchesDeclaration(functionID, sourceTypeID string, available [][]core.TypeFact, fallback core.TypeFact) bool {
+	facts := []core.TypeFact{fallback}
+	if len(available) > 0 {
+		facts = available[0]
+	}
+	var source, declared core.TypeFact
+	var sourceOK, declaredOK bool
+	for _, fact := range facts {
+		if fact.ID == sourceTypeID {
+			source, sourceOK = fact, true
+		}
+		if fact.ID == functionID+":type:1" {
+			declared, declaredOK = fact, true
+		}
+	}
+	// Direct analyzer unit probes predate directional function facts and pass
+	// only the source fact. The enclosing checker always supplies type:1;
+	// preserve those lower-level probes while enforcing every real program.
+	if !declaredOK {
+		return true
+	}
+	return sourceOK && typeKey(source.Shape) == typeKey(declared.Shape)
 }
 
 type loanUse struct {

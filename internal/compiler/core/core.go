@@ -781,6 +781,8 @@ const CallArgumentTypeMismatch = "core.call_argument_type_mismatch"
 // distinct namespace for the same independence reason.
 const CallReturnTypeMismatch = "core.call_return_type_mismatch"
 
+const ReturnTypeMismatch = "core.return_type_mismatch"
+
 // CalleeFrameNotDrained is Plan 10-05 Task 2's stable code (D-10-33/D-10-34,
 // SEM-09) for corevalidate's own per-function-declaration invariant: a
 // function whose body acquires a TRACKED resource (an OpForeignCall whose

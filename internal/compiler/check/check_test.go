@@ -46,7 +46,10 @@ func TestPhase17TwoTypeAdmission(t *testing.T) {
 		t.Fatalf("canonical Resource -> Result tracer rejected: %+v", result.Diagnostics)
 	}
 	for _, function := range result.Program.Functions {
-		if function.Linear == nil || len(function.Linear.Types) < 2 {
+		if function.Linear == nil {
+			continue
+		}
+		if len(function.Linear.Types) < 2 {
 			t.Fatalf("%s did not mint parameter and return type facts: %+v", function.Name, function.Linear)
 		}
 		parameter, returned := function.Linear.Types[0], function.Linear.Types[1]
@@ -56,6 +59,23 @@ func TestPhase17TwoTypeAdmission(t *testing.T) {
 		if parameter.Shape.Constructor != function.Parameter.Type || returned.Shape.Constructor != function.ReturnType {
 			t.Fatalf("%s directional type facts = %+v, signature = %+v", function.Name, function.Linear.Types[:2], function)
 		}
+	}
+}
+
+func TestPhase17RejectsParameterTypedTerminalForDistinctReturn(t *testing.T) {
+	source := []byte(`module phase17.return_mismatch
+export { fn classify }
+data Resource = | Raw
+data Result = | Classified
+fn classify(resource: Resource) -> Result {
+  match resource {
+    Raw => { resource }
+  }
+}
+`)
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "type.return_mismatch" {
+		t.Fatalf("diagnostics = %+v, want exactly type.return_mismatch", result.Diagnostics)
 	}
 }
 
@@ -182,8 +202,11 @@ func TestPhase17CheckerDirectionalAbilities(t *testing.T) {
 		t.Fatalf("baseline rejected: %+v", baseline.Diagnostics)
 	}
 	for _, function := range baseline.Program.Functions {
-		if function.Linear == nil || len(function.Linear.Types) < 2 {
-			t.Fatalf("%s has no directional type facts", function.Name)
+		if function.Linear == nil {
+			continue
+		}
+		if len(function.Linear.Types) < 2 {
+			t.Fatalf("%s has incomplete directional type facts", function.Name)
 		}
 		parameter, returned := function.Linear.Types[0], function.Linear.Types[1]
 		if parameter.Shape.Constructor != function.Parameter.Type || returned.Shape.Constructor != function.ReturnType {
@@ -211,6 +234,9 @@ func TestPhase17CheckerReturnOnlyMutation(t *testing.T) {
 	}
 	for index := range baseline.Program.Functions {
 		before, after := baseline.Program.Functions[index], mutated.Program.Functions[index]
+		if before.Linear == nil {
+			continue
+		}
 		if !reflect.DeepEqual(before.Linear.Types[0], after.Linear.Types[0]) {
 			t.Fatalf("%s parameter fact changed under return-only mutation: before=%+v after=%+v", before.Name, before.Linear.Types[0], after.Linear.Types[0])
 		}
@@ -222,6 +248,9 @@ func TestPhase17CheckerReturnOnlyMutation(t *testing.T) {
 	restore() // idempotence is part of the cross-package control contract.
 	restored := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
 	for _, function := range restored.Program.Functions {
+		if function.Linear == nil {
+			continue
+		}
 		if !hasTypeAbility(function.Linear.Types[1], core.AbilityDrop) {
 			t.Fatalf("%s return lookup did not restore", function.Name)
 		}

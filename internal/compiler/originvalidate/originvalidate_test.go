@@ -318,6 +318,15 @@ func TestPhase17OriginPeerReturnOnlyMutation(t *testing.T) {
 		t.Fatalf("restored BuildInterface: %v", err)
 	}
 	for _, signature := range restored.Functions {
+		var hasLinear bool
+		for _, function := range program.Functions {
+			if function.ID == signature.ID {
+				hasLinear = function.Linear != nil
+			}
+		}
+		if !hasLinear {
+			continue
+		}
 		if !signature.Return.Fresh {
 			t.Fatalf("%s return lookup did not restore: %+v", signature.Name, signature.Return)
 		}

@@ -112,6 +112,9 @@ func buildIndex(program core.Program) (*index, error) {
 		i.functions[function.ID] = function
 		if function.Match != nil && function.Linear == nil {
 			i.matchReturns[function.ID+":match:return"] = function.ID
+			for _, arm := range function.Match.Arms {
+				i.matchReturns[arm.ID+":event:returned"] = function.ID
+			}
 		}
 	}
 	for _, function := range program.Functions {

@@ -41,7 +41,7 @@ func TestPhase17TwoTypeFourTierDifferential(t *testing.T) {
 
 func TestPhase17TwoTypeEmitterGuardIsNotInert(t *testing.T) {
 	program, engines, generated := phase17TwoTypeFourTiers(t)
-	mutatedC := strings.Replace(generated, "case LANG_RESULT_LANG_RAW: return \"Raw\";", "case LANG_RESULT_LANG_RAW: return \"phase17-seeded-return-mutation\";", 1)
+	mutatedC := strings.Replace(generated, "case LANG_RESULT_LANG_CLASSIFIED: return \"Classified\";", "case LANG_RESULT_LANG_CLASSIFIED: return \"phase17-seeded-return-mutation\";", 1)
 	if mutatedC == generated {
 		t.Fatal("return-side C mutation did not reach the Result renderer")
 	}

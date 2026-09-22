@@ -13,9 +13,7 @@ data Result =
 
 fn classify(resource: Resource) -> Result {
   match resource {
-    Raw => {
-      resource
-    }
+    Raw => Classified
   }
 }
 

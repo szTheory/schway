@@ -182,7 +182,7 @@ func TestPhase17CorePeerDirectionalAbilities(t *testing.T) {
 		if signature.Parameters[0].Type != function.Parameter.Type || signature.Return.Type != function.ReturnType {
 			t.Fatalf("%s peer contract lost directional types: %+v", function.Name, signature)
 		}
-		if !typeFactGrants(function.Linear.Types[0], core.AbilityDrop) || !signature.Return.Fresh {
+		if function.Linear != nil && (!typeFactGrants(function.Linear.Types[0], core.AbilityDrop) || !signature.Return.Fresh) {
 			t.Fatalf("%s did not retain parameter ability and independently derive return Fresh: %+v", function.Name, signature)
 		}
 	}
@@ -250,6 +250,15 @@ func TestPhase17CorePeerReturnOnlyMutation(t *testing.T) {
 	restore()
 	restored := corevalidate.Validate(program)
 	for id, signature := range restored.PeerSignatures() {
+		var hasLinear bool
+		for _, function := range program.Functions {
+			if function.ID == id {
+				hasLinear = function.Linear != nil
+			}
+		}
+		if !hasLinear {
+			continue
+		}
 		if !signature.Return.Fresh {
 			t.Fatalf("%s return lookup did not restore", id)
 		}

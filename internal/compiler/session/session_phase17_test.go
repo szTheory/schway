@@ -104,8 +104,11 @@ func phase17ParameterBytes(t testing.TB, program core.Program) []byte {
 	t.Helper()
 	parameters := make([]core.TypeFact, 0, len(program.Functions))
 	for _, function := range program.Functions {
-		if function.Linear == nil || len(function.Linear.Types) < 2 {
-			t.Fatalf("%s lacks directional type facts", function.Name)
+		if function.Linear == nil {
+			continue
+		}
+		if len(function.Linear.Types) < 2 {
+			t.Fatalf("%s lacks complete directional type facts", function.Name)
 		}
 		parameters = append(parameters, function.Linear.Types[0])
 	}
@@ -123,7 +126,7 @@ func phase17DeclaredReturnOracle(source []byte, program core.Program) map[string
 	declaresResult := bytes.Contains(source, []byte("data Result"))
 	want := make(map[string]bool, len(program.Functions))
 	for _, function := range program.Functions {
-		want[function.ID] = declaresResult && function.ReturnType == "Result"
+		want[function.ID] = declaresResult && function.ReturnType == "Result" && function.Linear != nil
 	}
 	return want
 }
@@ -139,8 +142,11 @@ func phase17AgreementProblems(peers phase17Peers, oracle map[string]bool) []stri
 	}
 	var problems []string
 	for _, function := range peers.checked.Functions {
-		if function.Linear == nil || len(function.Linear.Types) < 2 {
-			return append(problems, function.Name+": missing directional type facts")
+		if function.Linear == nil {
+			continue
+		}
+		if len(function.Linear.Types) < 2 {
+			return append(problems, function.Name+": incomplete directional type facts")
 		}
 		checkerReturnFresh := phase17FactHasAbility(function.Linear.Types[1], core.AbilityDrop)
 		coreSignature, coreOK := coreSignatures[function.ID]
@@ -184,8 +190,8 @@ func TestPhase17InterpreterTracer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("interpret tracer repeat: %v", err)
 	}
-	if first.Outcome.Kind != "returned" || first.Outcome.Value != "Raw" {
-		t.Fatalf("tracer outcome = %+v, want returned Raw", first.Outcome)
+	if first.Outcome.Kind != "returned" || first.Outcome.Value != "Classified" {
+		t.Fatalf("tracer outcome = %+v, want returned Classified", first.Outcome)
 	}
 	firstBytes, err := json.Marshal(first)
 	if err != nil {
