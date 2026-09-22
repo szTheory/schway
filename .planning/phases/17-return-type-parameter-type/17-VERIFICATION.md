@@ -1,36 +1,15 @@
 ---
 phase: 17-return-type-parameter-type
-verified: 2026-09-22T16:44:26Z
+verified: 2026-09-22T16:52:58Z
 status: passed
 score: 5/5 must-haves verified
 re_verification: true
-covered_files:
-  - .planning/REQUIREMENTS.md
-  - .planning/phases/17-return-type-parameter-type/17-01-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-02-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-03-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-04-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-05-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-06-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-07-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-08-PLAN.md
-  - .planning/phases/17-return-type-parameter-type/17-09-PLAN.md
-  - internal/compiler/check/check.go
-  - internal/compiler/corevalidate/corevalidate.go
-  - internal/compiler/originvalidate/originvalidate.go
-  - internal/compiler/reduce/reduce.go
-  - internal/compiler/cgen/cgen_program.go
-  - internal/compiler/session/session_phase17_test.go
-  - internal/compiler/session/session_phase17_native_test.go
-  - cmd/lang-repair/repair.go
-  - testdata/phase17/HELDOUT.sha256
-gaps: "[]"
 ---
 
 # Phase 17: Return Type != Parameter Type Re-verification Report
 
 **Phase Goal:** A function may declare a return type different from its parameter type, and a program relying on that checks, runs, and lowers.
-**Verified:** 2026-09-22T16:44:26Z
+**Verified:** 2026-09-22T16:52:58Z
 **Status:** passed
 **Re-verification:** Yes
 
@@ -81,6 +60,24 @@ The goal-backward check started at the five observable phase outcomes and traced
 | TYP-04 | Checker, corevalidate, originvalidate, core, and reduce independent derivation/mutation controls passed. | ✓ SATISFIED |
 | TYP-05 | Repair corpus and exhaustive seal controls passed; `lang-repair` repaired the sealed held-out fixture. | ✓ SATISFIED |
 
+## Data-Flow Trace
+
+Not applicable: this compiler phase has source fixtures flowing through parser/checker/reducer/emitter and CLI subprocesses, rather than rendered dynamic data. The source-to-native and repair protocol links are exercised by the focused tests below.
+
+## Test Quality Audit
+
+| Test group | Linked requirements | Active | Skipped | Assertion level | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Phase 17 semantic/native/repair focused tests | TYP-01–TYP-05 | Yes | 0 disabled tests found | Behavioral/value/mutation | ✓ PASS |
+| Core/reducer fact tests | TYP-01, TYP-04 | Yes | 0 disabled tests found | Value/mutation | ✓ PASS |
+| Corpus and seal controls | TYP-05 | Yes | 0 disabled tests found | Behavioral/SHA-256 | ✓ PASS |
+
+The focused tests use checked-in fixtures, generated C, independent peer mutations, and a SHA-256 manifest; no circular expected-value generator was found in the requirement-linked tests.
+
+### Decision Coverage
+
+All 10 trackable `17-CONTEXT.md` decisions are honored by shipped artifacts.
+
 ## Commands Run
 
 | Command | Result |
@@ -89,11 +86,11 @@ The goal-backward check started at the five observable phase outcomes and traced
 | `go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v` | PASS — all selected core and reducer fact tests passed. |
 | `go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v` | PASS — repair corpus, structural-distinctness, unique-candidate, historical-control, seal, and mutation controls passed. |
 | `shasum -a 256 testdata/phase17/heldout_call_argument_mismatch.lang` | PASS — `b822b2ca0ae5ab9d0a2cd6a85bd7c76608cec1983e9c0e7cdb50ebc9f699477f`, matching `HELDOUT.sha256`. |
-| Plan 07 frontmatter and structure validation | PASS — both validations returned `valid: true`; the corrected test path appears exactly four times and the obsolete Plan 07 path appears zero times. |
+| Plan 07 traceability check | PASS — `internal/compiler/session/session_phase17_test.go` appears in the corrected `files_modified`, artifact, and two task file declarations; the obsolete path appears zero times. |
 
 ## Gaps Summary
 
 None. The former Plan 07 artifact-path gap is resolved by the traceability-only correction in `ead07ff`; the existing consolidated test file is present and its focused evidence passes. Repository-wide failures, if any, were not used to infer a Phase 17 failure because the current focused Phase 17 graph passed in full.
 
-_Verified: 2026-09-22T16:44:26Z_
+_Verified: 2026-09-22T16:52:58Z_
 _Verifier: the agent (goal-backward re-verification)_
