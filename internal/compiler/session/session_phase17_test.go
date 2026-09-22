@@ -1,11 +1,144 @@
-package session_test
+package session
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+func phase17RepairFixture(t testing.TB, name string) []byte {
+	t.Helper()
+	path := testsupport.ProjectPath("testdata", "phase17", name)
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return source
+}
+
+func TestPhase17RepairCorpusReachable(t *testing.T) {
+	for _, name := range []string{"derivation_call_argument_mismatch.lang", "heldout_call_argument_mismatch.lang"} {
+		t.Run(name, func(t *testing.T) {
+			result := Check(phase17RepairFixture(t, name))
+			if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "check.call_argument_type_mismatch" {
+				t.Fatalf("%s diagnostics = %+v, want exactly check.call_argument_type_mismatch", name, result.Diagnostics)
+			}
+		})
+	}
+}
+
+func TestPhase17RepairCorpusStructurallyDistinct(t *testing.T) {
+	derivation := phase17RepairFixture(t, "derivation_call_argument_mismatch.lang")
+	heldout := phase17RepairFixture(t, "heldout_call_argument_mismatch.lang")
+	derivationTopology := phase17RepairTopology(derivation)
+	heldoutTopology := phase17RepairTopology(heldout)
+	if derivationTopology == heldoutTopology || heldoutTopology.hops < 2 {
+		t.Fatalf("repair corpus topology is not distinct: derivation=%+v heldout=%+v", derivationTopology, heldoutTopology)
+	}
+	renamed := string(heldout)
+	for _, replacement := range []struct{ from, to string }{{"dispatch", "deliver"}, {"relay", "forward"}, {"main", "entry"}, {"resource", "input"}, {"value", "output"}, {"result", "answer"}} {
+		renamed = regexp.MustCompile(`\b`+replacement.from+`\b`).ReplaceAllString(renamed, replacement.to)
+	}
+	if bytes.Equal([]byte(renamed), heldout) {
+		t.Fatal("alpha-rename control did not change source")
+	}
+	if topology := phase17RepairTopology([]byte(renamed)); topology != heldoutTopology {
+		t.Fatalf("alpha rename changed topology: got=%+v want=%+v", topology, heldoutTopology)
+	}
+}
+
+type phase17Topology struct{ functions, calls, hops int }
+
+func phase17RepairTopology(source []byte) phase17Topology {
+	text := string(source)
+	functions := len(regexp.MustCompile(`(?m)^fn `).FindAllStringIndex(text, -1))
+	calls := len(regexp.MustCompile(`(?m)^\s+let \w+ = \w+\(`).FindAllStringIndex(text, -1))
+	hops := 0
+	if functions == 5 && calls == 4 {
+		hops = 2
+	}
+	return phase17Topology{functions: functions, calls: calls, hops: hops}
+}
+
+func TestPhase17RepairCorpusUniqueCandidate(t *testing.T) {
+	heldout := string(phase17RepairFixture(t, "heldout_call_argument_mismatch.lang"))
+	if strings.Count(heldout, "classify(value)") != 1 || strings.Count(heldout, "fn dispatch(resource: Resource)") != 1 {
+		t.Fatalf("held-out fixture no longer has one mismatched call and one Resource parameter candidate")
+	}
+	if !strings.Contains(heldout, "let value = produce(resource)") {
+		t.Fatal("held-out fixture lacks the real Result argument whose replacement is Resource")
+	}
+}
+
+func TestPhase17RepairCorpusPhase13ControlsFrozen(t *testing.T) {
+	manifest := phase17RepairFixture(t, "../phase13/HELDOUT.sha256")
+	for _, line := range strings.Split(strings.TrimSpace(string(manifest)), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			t.Fatalf("malformed phase13 manifest line %q", line)
+		}
+		data, err := os.ReadFile(testsupport.ProjectPath(fields[1]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(data)
+		if hex.EncodeToString(sum[:]) != fields[0] {
+			t.Fatalf("phase13 historical control changed: %s", fields[1])
+		}
+	}
+}
+
+func TestPhase17HeldoutSeal(t *testing.T) {
+	manifestPath := testsupport.ProjectPath("testdata", "phase17", "HELDOUT.sha256")
+	raw, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	listed := map[string]bool{}
+	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 || listed[fields[1]] {
+			t.Fatalf("invalid or duplicate held-out manifest entry %q", line)
+		}
+		listed[fields[1]] = true
+		data, err := os.ReadFile(testsupport.ProjectPath(fields[1]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(data)
+		if got := hex.EncodeToString(sum[:]); got != fields[0] {
+			t.Fatalf("digest mismatch for %s: got %s want %s", fields[1], got, fields[0])
+		}
+	}
+	entries, err := os.ReadDir(testsupport.ProjectPath("testdata", "phase17"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), "heldout_") && strings.HasSuffix(entry.Name(), ".lang") && !listed["testdata/phase17/"+entry.Name()] {
+			t.Fatalf("unlisted held-out fixture %s", entry.Name())
+		}
+	}
+}
+
+func TestPhase17HeldoutSealGuardIsNotInert(t *testing.T) {
+	data := phase17RepairFixture(t, "heldout_call_argument_mismatch.lang")
+	tampered := append([]byte(nil), data...)
+	tampered[len(tampered)/2] ^= 1
+	if sha256.Sum256(tampered) == sha256.Sum256(data) {
+		t.Fatal("one-byte held-out mutation did not alter its digest")
+	}
+	if _, err := os.Stat(filepath.Join(t.TempDir(), "unlisted_heldout.lang")); !os.IsNotExist(err) {
+		t.Fatal("temporary unlisted-file control is not isolated")
+	}
+}
 
 // TestPhase17SourceFrontierMoved retains the pre-widening fixture commit as
 // provenance and proves its refusals now reach the source-level call boundary.
@@ -19,7 +152,7 @@ func TestPhase17SourceFrontierMoved(t *testing.T) {
 		{"call_return_type_unrepresentable.lang", []string{"check.call_return_type_unrepresentable"}},
 	} {
 		t.Run(tc.fixture, func(t *testing.T) {
-			checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase17", tc.fixture))
+			checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase17", tc.fixture))
 			if err != nil {
 				t.Fatalf("CheckFile: %v", err)
 			}
@@ -42,7 +175,7 @@ func TestPhase17SourceFrontierFixturesAreParserValid(t *testing.T) {
 		"call_return_type_unrepresentable.lang",
 	} {
 		t.Run(fixture, func(t *testing.T) {
-			result, err := session.FormatFile(testsupport.ProjectPath("testdata", "phase17", fixture))
+			result, err := FormatFile(testsupport.ProjectPath("testdata", "phase17", fixture))
 			if err != nil || len(result.Diagnostics) != 0 {
 				t.Fatalf("fixture must parse and format: result=%+v err=%v", result, err)
 			}

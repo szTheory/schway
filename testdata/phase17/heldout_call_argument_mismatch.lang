@@ -1,0 +1,55 @@
+module phase17.heldout_call_argument_mismatch
+
+export {
+  fn main
+}
+
+data Resource =
+  | Raw
+
+data Result =
+  | Classified
+
+fn classify(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      resource
+    }
+  }
+}
+
+fn produce(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      resource
+    }
+  }
+}
+
+fn dispatch(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      let value = produce(resource)
+      let result = classify(value)
+      result
+    }
+  }
+}
+
+fn relay(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      let result = dispatch(resource)
+      result
+    }
+  }
+}
+
+fn main(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      let result = relay(resource)
+      result
+    }
+  }
+}

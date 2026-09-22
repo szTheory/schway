@@ -1,0 +1,37 @@
+module phase17.derivation_call_argument_mismatch
+
+export {
+  fn main
+}
+
+data Resource =
+  | Raw
+
+data Result =
+  | Classified
+
+fn classify(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      resource
+    }
+  }
+}
+
+fn produce(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      resource
+    }
+  }
+}
+
+fn main(resource: Resource) -> Result {
+  match resource {
+    Raw => {
+      let value = produce(resource)
+      let result = classify(value)
+      result
+    }
+  }
+}
