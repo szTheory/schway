@@ -7,6 +7,29 @@ tags: [session, comparator, execution-schema-2, executionpeer]
 requires: [15-02, 15-03, 15-05]
 provides: [schema-2-peer-gate, invocation-field-routing, bidirectional-peer-controls]
 affects: [four-tier-differential, observability]
+coverage:
+  - id: D1
+    description: "Schema 2 engine comparison fails closed through the independent peer, including producer and peer-boundary fault controls."
+    requirement: OBS-03
+    verification:
+      - kind: integration
+        ref: "internal/compiler/session/session_phase5_compare_test.go#TestSchema2ComparisonRequiresPeerVerdict"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase15_frontier_test.go#TestExecutionProducerFaultIsCaughtByPeer"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase15_frontier_test.go#TestExecutionPeerAcceptanceFaultIsCaughtByControl"
+        status: pass
+    human_judgment: false
+  - id: D2
+    description: "Program-aware comparison preserves Schema 0 and Schema 1 behavior without consulting the Schema 2 peer."
+    requirement: OBS-04
+    verification:
+      - kind: unit
+        ref: "internal/compiler/session/session_phase5_compare_test.go#TestPhase5CompareProgramEnginesPreservesLegacySchemas"
+        status: pass
+    human_judgment: false
 tech-stack:
   added: []
   patterns: [program-aware-schema-2-peer-gate, disjoint-fault-seams]

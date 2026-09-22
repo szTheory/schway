@@ -9,22 +9,14 @@
 #
 #   checks      Fast feedback -- vet, build, unit/integration tests, and the
 #               race detector. This is what a contributor waits on.
-#   phase-gate  The current phase's own bounded gate script, which is a
-#               superset of `checks` and additionally verifies all six
-#               corpora with one freshly built binary and requires every
-#               Phase 6 control identifier and expected escape by exact text.
+#   evidence-aggregate  Preserves the historical Phase 6 gate and names the
+#               current high-value evidence seams that must recur on both
+#               initial host priorities.
 #
-# Only the current phase's gate is run, never the older ones as well: that
-# script proves every prior phase's non-regression by re-running THEIR OWN
-# corpora with THIS phase's binary (see its own comment), so invoking the
-# older gates too would re-run the same suite five more times for no
-# additional signal.
-#
-# This job is pinned to the current phase's gate by
-# session_phase6_test.go#TestCIWorkflowRunsPhase6Gate, which fails if this
-# file names any superseded gate script. That pin exists because the prose
-# promise it replaces ("when the next gate lands, this job moves to it") was
-# made here once and then silently missed for two phases.
+# The historical Phase 6 script remains a baseline gate; the focused aggregate
+# complements it instead of recursively re-running its full suite.
+# session_phase6_test.go#TestCIWorkflowRunsCurrentAggregateGate pins both the
+# retained baseline and the current evidence identifiers as workflow text.
 name: CI
 
 on:
@@ -64,8 +56,8 @@ jobs:
       - run: go test ./...
       - run: go test -race ./...
 
-  phase-gate:
-    name: phase-6 gate (${{ matrix.os }})
+  evidence-aggregate:
+    name: current evidence aggregate (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -81,3 +73,5 @@ jobs:
         run: clang --version
       - name: scripts/verify-phase6.sh
         run: sh scripts/verify-phase6.sh
+      - name: Phase 15 focused evidence seams
+        run: go test ./internal/compiler/session -run 'TestDecodeExecutionSchema2AdmissionSeam|TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas' -count=1 -v

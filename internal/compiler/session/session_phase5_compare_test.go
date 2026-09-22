@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/native"
@@ -306,6 +307,48 @@ func TestSchema2ComparisonRequiresPeerVerdict(t *testing.T) {
 	err := session.Phase5CompareProgramEngines("peer-verdict", program, engines)
 	if err == nil || !strings.Contains(err.Error(), "executionpeer.malformed_invocation") {
 		t.Fatalf("matching forged documents passed comparison without a named peer refusal: %v", err)
+	}
+}
+
+// TestPhase5CompareProgramEnginesPreservesLegacySchemas proves that the
+// program-aware wrapper delegates untouched /0 and /1 documents to the
+// historical comparator without consulting the Schema 2 peer.
+func TestPhase5CompareProgramEnginesPreservesLegacySchemas(t *testing.T) {
+	for _, schema := range []string{execution.Schema0, execution.Schema1} {
+		t.Run(schema, func(t *testing.T) {
+			peerCalled := false
+			restore := session.SetPhase5Schema2PeerValidatorForTest(func(core.Program, execution.Execution) error {
+				peerCalled = true
+				t.Error("legacy document unexpectedly consulted the Schema 2 peer")
+				return nil
+			})
+			t.Cleanup(restore)
+
+			baseline := phase5CompareBaseline()
+			baseline.Schema = schema
+			for index := range baseline.Events {
+				baseline.Events[index].Schema = schema
+			}
+
+			matching := map[string]execution.Execution{"interpreter": baseline, "O0": baseline}
+			if want, got := session.Phase5CompareEngines("legacy-match", matching), session.Phase5CompareProgramEngines("legacy-match", core.Program{}, matching); want != nil || got != nil {
+				t.Fatalf("matching %s documents disagree: legacy=%v wrapper=%v", schema, want, got)
+			}
+
+			divergent := baseline
+			divergent.Outcome.Value = "legacy-divergence"
+			engines := map[string]execution.Execution{"interpreter": baseline, "O0": divergent}
+			want := session.Phase5CompareEngines("legacy-divergence", engines)
+			got := session.Phase5CompareProgramEngines("legacy-divergence", core.Program{}, engines)
+			wantDisagreement, wantOK := want.(*session.Phase5EngineDisagreement)
+			gotDisagreement, gotOK := got.(*session.Phase5EngineDisagreement)
+			if !wantOK || !gotOK || wantDisagreement.Axis != gotDisagreement.Axis {
+				t.Fatalf("divergent %s documents disagree on comparison axis: legacy=%v wrapper=%v", schema, want, got)
+			}
+			if peerCalled {
+				t.Fatal("legacy comparison consulted the Schema 2 peer")
+			}
+		})
 	}
 }
 
