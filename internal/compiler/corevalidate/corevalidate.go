@@ -78,7 +78,7 @@ const KnownEscape = "escape:coordinated-source-core-lie"
 // function), never once per fact/operation -- the identical "constant
 // addition, not a per-operation change" reasoning as 07-07's own entry
 // immediately above.
-func LinearWorkLimit(facts int) int { return 17*facts + 16 }
+func LinearWorkLimit(facts int) int { return 17*facts + 17 }
 
 type Problem struct {
 	Code   string `json:"code"`
@@ -332,6 +332,20 @@ func (v *validator) run() {
 	}
 	functionIDs := make(map[string]struct{}, len(v.program.Functions))
 	pending := make([]pendingReplayEntry, 0, len(v.program.Functions))
+	requiresSchema1 := false
+	for index := range v.program.Functions {
+		function := &v.program.Functions[index]
+		if function.Linear != nil {
+			requiresSchema1 = true
+			break
+		}
+	}
+	if v.program.Schema == core.Schema1 && !requiresSchema1 {
+		if len(v.problems) == 0 {
+			v.problems = append(v.problems, Problem{Code: "core.schema", Detail: "lang.core/1 requires a linear body"})
+		}
+		return
+	}
 	for index := range v.program.Functions {
 		function := &v.program.Functions[index]
 		if !v.unique(functionIDs, function.ID, "core.duplicate_function_id") {
@@ -2412,11 +2426,11 @@ func (v *validator) derivePeerSignature(function *core.Function, types map[strin
 func peerParameterAbilities(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) []core.Ability {
 	parameter, ok := places[function.Parameter.ID]
 	if !ok {
-		return []core.Ability{}
+		return nil
 	}
 	fact, ok := types[parameter.TypeID]
 	if !ok || fact.Shape.Constructor != function.Parameter.Type {
-		return []core.Ability{}
+		return nil
 	}
 	return fact.Abilities
 }
@@ -2427,7 +2441,7 @@ func peerParameterAbilities(function *core.Function, types map[string]core.TypeF
 // applied here, after parameter derivation, and nowhere else.
 func peerReturnAbilities(function *core.Function, types map[string]core.TypeFact) []core.Ability {
 	returnFact, ok := types[function.ID+":type:1"]
-	if !ok {
+	if !ok || returnFact.Shape.Constructor != function.ReturnType {
 		returnFact, ok = types[function.ID+":type:0"]
 	}
 	if !ok || returnFact.Shape.Constructor != function.ReturnType || phase17ReturnLookupFaultForTest {

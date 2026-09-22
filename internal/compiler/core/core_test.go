@@ -55,17 +55,14 @@ func TestPhase17TwoTypeCoreFacts(t *testing.T) {
 			main = function
 		}
 	}
-	if classify.ID == "" || main.ID == "" || classify.Linear == nil || main.Linear == nil {
+	if classify.ID == "" || main.ID == "" || classify.Match == nil || classify.Linear != nil || main.Linear == nil {
 		t.Fatalf("canonical tracer functions missing or malformed: %+v", checked.Program.Functions)
 	}
 	if classify.Parameter.Type != "Resource" || classify.ReturnType != "Result" || main.Parameter.Type != "Resource" || main.ReturnType != "Result" {
 		t.Fatalf("tracer declarations collapsed: classify=%+v main=%+v", classify, main)
 	}
-	if len(classify.Linear.Types) < 2 || classify.Linear.Types[0].ID != classify.ID+":type:0" || classify.Linear.Types[1].ID != classify.ID+":type:1" {
-		t.Fatalf("classify directional facts malformed: %+v", classify.Linear.Types)
-	}
-	if classify.Linear.Types[0].Shape.Constructor != "Resource" || classify.Linear.Types[1].Shape.Constructor != "Result" {
-		t.Fatalf("classify facts do not preserve Resource -> Result: %+v", classify.Linear.Types[:2])
+	if len(classify.Match.Arms) != 1 || classify.Match.Arms[0].Pattern != "Raw" || classify.Match.Arms[0].Value != "Classified" {
+		t.Fatalf("classify directional alternatives malformed: %+v", classify.Match.Arms)
 	}
 	for _, operation := range main.Linear.Operations {
 		if operation.Kind != core.OpCall {

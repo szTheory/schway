@@ -1682,17 +1682,16 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// inside derivePeerSignature): acquire_three_success.lang declares
 	// exactly one function, moving the pin a final time to 426+1=427.
 	//
-	// Phase 17 adds a distinct return TypeFact to checked programs. Its
-	// structural replay costs four checks for this fixture, moving the
-	// accepting-path pin to 431 without affecting the one-fact scale shape.
-	const acquireThreeSuccessChecks = 431
+	// Phase 17 preserves the single TypeFact representation for same-type
+	// functions and adds one terminal return-contract check.
+	const acquireThreeSuccessChecks = 428
 
 	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
 	if !result.Valid {
 		t.Fatalf("expected acquire_three_success.lang to validate, got %+v", result)
 	}
 	if result.Checks != acquireThreeSuccessChecks {
-		t.Fatalf("expected unchanged counted work %d, got %d", acquireThreeSuccessChecks, result.Checks)
+		t.Fatalf("expected counted work with the terminal return contract check %d, got %d", acquireThreeSuccessChecks, result.Checks)
 	}
 
 	discardResult := corevalidate.Validate(resourceLifecycleProgram(t, "discard_because.lang"))

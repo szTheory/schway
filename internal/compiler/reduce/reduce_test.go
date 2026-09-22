@@ -422,14 +422,20 @@ func TestPhase17ReducerForeignChainRetainsReturnFact(t *testing.T) {
 		t.Fatalf("reduce: %v", err)
 	}
 	linear := result.Program.Functions[0].Linear
-	if len(linear.Types) != 2 {
-		t.Fatalf("reduced plain return retained %d type facts, want parameter and return: %+v", len(linear.Types), linear.Types)
+	function := result.Program.Functions[0]
+	returnTypeID := function.ID + ":type:1"
+	if function.Parameter.Type == function.ReturnType {
+		returnTypeID = function.ID + ":type:0"
 	}
-	if linear.Types[0].ID != result.Program.Functions[0].ID+":type:0" || linear.Types[1].ID != result.Program.Functions[0].ID+":type:1" {
-		t.Fatalf("reduced signature facts = %+v, want type:0/type:1", linear.Types)
+	var returnFact core.TypeFact
+	for _, fact := range linear.Types {
+		if fact.ID == returnTypeID {
+			returnFact = fact
+			break
+		}
 	}
-	if linear.Types[1].Shape.Constructor != result.Program.Functions[0].ReturnType {
-		t.Fatalf("return fact = %+v, declared return = %q", linear.Types[1], result.Program.Functions[0].ReturnType)
+	if returnFact.ID == "" || returnFact.Shape.Constructor != function.ReturnType {
+		t.Fatalf("return fact = %+v, declared return = %q (all facts: %+v)", returnFact, function.ReturnType, linear.Types)
 	}
 }
 

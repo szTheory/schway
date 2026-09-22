@@ -2221,12 +2221,19 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	}
 	typeID := functionID + ":type:0"
 	returnTypeID := functionID + ":type:1"
+	if typeKey(parameterType) == typeKey(returnType) {
+		returnTypeID = typeID
+	}
 	parameterID := functionID + ":place:0"
 	typeFact := core.TypeFact{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}
 	returnFact := core.TypeFact{ID: returnTypeID, Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses}
+	typeFacts := []core.TypeFact{typeFact}
+	if returnFact.ID != typeFact.ID {
+		typeFacts = append(typeFacts, returnFact)
+	}
 	linear := &core.LinearBody{
 		ID:         functionID + ":linear",
-		Types:      []core.TypeFact{typeFact, returnFact},
+		Types:      typeFacts,
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
@@ -3232,6 +3239,9 @@ func checkLinear(module, functionID string, function ast.FuncDecl, calleeContrac
 	}
 	typeID := functionID + ":type:0"
 	returnTypeID := functionID + ":type:1"
+	if typeKey(parameterType) == typeKey(returnType) {
+		returnTypeID = typeID
+	}
 	if !executableShape(parameterType) {
 		// Ability derivation above already ran and produced facts for this
 		// shape (derived.Granted/derived.NegativeWitnesses) — this gate
@@ -3256,13 +3266,13 @@ func checkLinear(module, functionID string, function ast.FuncDecl, calleeContrac
 	}
 	parameterID := functionID + ":place:0"
 	linear := &core.LinearBody{
-		ID: functionID + ":linear",
-		Types: []core.TypeFact{
-			{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses},
-			{ID: returnTypeID, Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses},
-		},
+		ID:         functionID + ":linear",
+		Types:      []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}},
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
+	}
+	if returnTypeID != typeID {
+		linear.Types = append(linear.Types, core.TypeFact{ID: returnTypeID, Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses})
 	}
 	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, calleeContracts, foreignSymbols, linear.Types)
 	if support.Diagnostic != nil {
@@ -3470,7 +3480,11 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, err.Error())}, typeNodeCount(parameterType) + typeNodeCount(returnType)
 	}
 	typeID := functionID + ":type:0"
-	returnFact := core.TypeFact{ID: functionID + ":type:1", Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses}
+	returnTypeID := functionID + ":type:1"
+	if typeKey(parameterType) == typeKey(returnType) {
+		returnTypeID = typeID
+	}
+	returnFact := core.TypeFact{ID: returnTypeID, Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses}
 	work := typeNodeCount(parameterType) + typeNodeCount(returnType) + 1
 	if !executableShape(parameterType) {
 		causes := []diagnostic.Cause{{Kind: "type", Detail: typeID}, {Kind: "constructor", Detail: parameterType.Constructor}}
@@ -3829,6 +3843,9 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 	okPlaceID := functionID + ":place:1"
 	errPlaceID := functionID + ":place:2"
 	errTypeID := functionID + ":type:2"
+	if returnFact.ID == typeID {
+		errTypeID = functionID + ":type:1"
+	}
 	entryBlockID := functionID + ":block:entry"
 	okBlockID := functionID + ":block:ok"
 	errBlockID := functionID + ":block:err"
@@ -3838,13 +3855,14 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 	returnOpID := functionID + ":op:1"
 	failOpID := functionID + ":op:2"
 
+	types := []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}}
+	if returnFact.ID != typeID {
+		types = append(types, returnFact)
+	}
+	types = append(types, core.TypeFact{ID: errTypeID, Shape: errShape, Abilities: errDerived.Granted, NegativeWitnesses: errDerived.NegativeWitnesses})
 	linear := &core.LinearBody{
-		ID: functionID + ":linear",
-		Types: []core.TypeFact{
-			{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses},
-			returnFact,
-			{ID: errTypeID, Shape: errShape, Abilities: errDerived.Granted, NegativeWitnesses: errDerived.NegativeWitnesses},
-		},
+		ID:    functionID + ":linear",
+		Types: types,
 		Places: []core.Place{
 			{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID},
 			{ID: okPlaceID, Name: tryBinding.Name, TypeID: typeID},
@@ -4231,11 +4249,14 @@ func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterT
 	n := len(steps)
 	parameterID := functionID + ":place:0"
 
-	types := []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}, returnFact}
+	types := []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}}
+	if returnFact.ID != typeID {
+		types = append(types, returnFact)
+	}
 	places := make([]core.Place, 1+n, 1+2*n)
 	places[0] = core.Place{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}
 	infos := make([]resourceStep, n)
-	typeCounter := 2
+	typeCounter := len(types)
 
 	// corevalidate's targetMatches requires an OpForeignCall at flat
 	// operation index i to produce place:(i+1) EXACTLY (the same
@@ -4799,13 +4820,13 @@ func returnPlaceMatchesDeclaration(functionID, sourceTypeID string, available []
 		if fact.ID == sourceTypeID {
 			source, sourceOK = fact, true
 		}
-		if fact.ID == functionID+":type:1" {
+		if fact.ID == functionID+":type:1" || (!declaredOK && fact.ID == functionID+":type:0") {
 			declared, declaredOK = fact, true
 		}
 	}
-	// Direct analyzer unit probes predate directional function facts and pass
-	// only the source fact. The enclosing checker always supplies type:1;
-	// preserve those lower-level probes while enforcing every real program.
+	// Direct analyzer unit probes and legacy same-type functions carry only
+	// type:0. Distinct return contracts add type:1, which replaces type:0 as
+	// the declaration fact when present.
 	if !declaredOK {
 		return true
 	}

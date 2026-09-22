@@ -188,8 +188,13 @@ func Run(program core.Program, functionName, input string) (Execution, error) {
 				return Execution{}, err
 			}
 			event := Event{
-				Schema: schema, ID: function.ID + ":match:return", Kind: "function.returned", Invocation: invocation,
-				FunctionID: function.ID, SourcePlace: function.Parameter.ID, TypeID: function.Parameter.Type,
+				Schema: schema, ID: arm.ID + ":event:returned", Kind: "function.returned", Invocation: invocation,
+				FunctionID: function.ID, Input: input, Output: arm.Value,
+			}
+			if function.Parameter.Type != function.ReturnType {
+				event.ID = function.ID + ":match:return"
+				event.Input, event.Output = "", ""
+				event.SourcePlace, event.TypeID = function.Parameter.ID, function.Parameter.Type
 			}
 			return Execution{
 				Schema: schema, Outcome: Outcome{Kind: "returned", Value: arm.Value},
@@ -616,14 +621,20 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 				continue
 			}
 			if arm.BlockID == "" {
+				event := Event{
+					Schema: caller.eventSchema(), ID: arm.ID + ":event:returned", Kind: "function.returned",
+					Invocation: caller.childInvocation(operation),
+					FunctionID: callee.ID, Input: argumentText, Output: arm.Value,
+				}
+				if callee.Parameter.Type != callee.ReturnType {
+					event.ID = callee.ID + ":match:return"
+					event.Input, event.Output = "", ""
+					event.SourcePlace, event.TypeID = callee.Parameter.ID, callee.Parameter.Type
+				}
 				return pushResult{
 					immediateValue: arm.Value,
-					immediateEvent: Event{
-						Schema: caller.eventSchema(), ID: callee.ID + ":match:return", Kind: "function.returned",
-						Invocation: caller.childInvocation(operation),
-						FunctionID: callee.ID, SourcePlace: callee.Parameter.ID, TypeID: callee.Parameter.Type,
-					},
-					calleeID: callee.ID,
+					immediateEvent: event,
+					calleeID:       callee.ID,
 				}, nil
 			}
 			f := newArmFrame(callee, seeded, arm.BlockID)

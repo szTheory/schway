@@ -1126,7 +1126,11 @@ func interfaceReturnAbilities(function core.Function) []core.Ability {
 	if phase17ReturnLookupFaultForTest {
 		return nil
 	}
-	return interfaceTypeAbilities(function, function.ID+":type:1")
+	abilities := interfaceTypeAbilities(function, function.ID+":type:1")
+	if abilities == nil && function.Parameter.Type == function.ReturnType {
+		return interfaceTypeAbilities(function, function.ID+":type:0")
+	}
+	return abilities
 }
 
 func interfaceTypeAbilities(function core.Function, typeID string) []core.Ability {
