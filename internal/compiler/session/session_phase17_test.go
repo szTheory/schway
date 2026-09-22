@@ -7,17 +7,16 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
-// TestPhase17SourceFrontierPreWidening preserves the source-first evidence
-// commit.  Task 2 replaces the historical type.return_mismatch expectations
-// with the two call-contract diagnostics while retaining this provenance.
-func TestPhase17SourceFrontierPreWidening(t *testing.T) {
+// TestPhase17SourceFrontierMoved retains the pre-widening fixture commit as
+// provenance and proves its refusals now reach the source-level call boundary.
+func TestPhase17SourceFrontierMoved(t *testing.T) {
 	for _, tc := range []struct {
 		fixture string
 		codes   []string
 	}{
-		{"return_type_tracer.lang", []string{"type.return_mismatch", "type.return_mismatch"}},
-		{"call_argument_type_mismatch.lang", []string{"type.return_mismatch", "check.call_argument_type_mismatch"}},
-		{"call_return_type_unrepresentable.lang", []string{"type.return_mismatch", "check.call_return_type_unrepresentable"}},
+		{"return_type_tracer.lang", nil},
+		{"call_argument_type_mismatch.lang", []string{"check.call_argument_type_mismatch"}},
+		{"call_return_type_unrepresentable.lang", []string{"check.call_return_type_unrepresentable"}},
 	} {
 		t.Run(tc.fixture, func(t *testing.T) {
 			checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase17", tc.fixture))

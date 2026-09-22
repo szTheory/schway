@@ -252,8 +252,9 @@ func Program(program ast.Program) Result {
 			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.unknown", function.Parameter.Span, "unknown parameter type"))
 			continue
 		}
-		if !sameType(function.ReturnType, function.Parameter.Type) {
-			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.return_mismatch", function.Span, "S1 match result must have the parameter type"))
+		returnDataType, ok := types[function.ReturnType.Constructor]
+		if !ok {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.unknown", function.Span, "unknown return type"))
 			continue
 		}
 		if function.Body.Scrutinee != function.Parameter.Name {
@@ -302,7 +303,7 @@ func Program(program ast.Program) Result {
 				result.Diagnostics = append(result.Diagnostics, diagnostic.Error("match.unreachable", arm.Span, "pattern is not an alternative of the scrutinee type"))
 				continue
 			}
-			if !contains(dataType.Alternatives, arm.Value) {
+			if !contains(returnDataType.Alternatives, arm.Value) {
 				result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.invalid_variant", arm.Span, "match result is not an alternative of the return type"))
 				continue
 			}
@@ -2162,16 +2163,23 @@ const maxBlocksPerFunction = 128
 // simple "every arm has a BlockID" invariant rather than a per-arm union.
 func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
 	parameterType := coreType(function.Parameter.Type)
+	returnType := coreType(function.ReturnType)
 	derived, err := ability.DeriveSealed(parameterType, sealed)
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType), nil
 	}
+	returnDerived, err := ability.DeriveSealed(returnType, sealed)
+	if err != nil {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, err.Error())}, typeNodeCount(parameterType) + typeNodeCount(returnType), nil
+	}
 	typeID := functionID + ":type:0"
+	returnTypeID := functionID + ":type:1"
 	parameterID := functionID + ":place:0"
 	typeFact := core.TypeFact{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}
+	returnFact := core.TypeFact{ID: returnTypeID, Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses}
 	linear := &core.LinearBody{
 		ID:         functionID + ":linear",
-		Types:      []core.TypeFact{typeFact},
+		Types:      []core.TypeFact{typeFact, returnFact},
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
@@ -2241,7 +2249,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 
 		var support ownershipSupport
 		if arm.Body != nil {
-			support = analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols)
+			support = analyzeArmBody(functionID, nextIndex, function.Parameter.Name, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols, linear.Types)
 		} else {
 			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, typeID, dataType, arm, sealed)
 		}
@@ -2896,7 +2904,7 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // the walk below never reaches every binding -- an independent oracle
 // populates the same fields the same way, over the same full body,
 // regardless of which fact fails first.
-func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
+func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
@@ -2951,7 +2959,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 		result.Work++
 		global := startIndex + index
 		if binding.RHS.Kind == "call" {
-			op, target, diag := resolveCallBinding(functionID, global, binding, places, calleeContracts, typeFact, foreignSymbols)
+			op, target, diag := resolveCallBinding(functionID, global, binding, places, calleeContracts, typeFact, foreignSymbols, availableTypeFacts...)
 			if diag != nil {
 				return fail(*diag)
 			}
@@ -3145,9 +3153,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 
 func checkLinear(module, functionID string, function ast.FuncDecl, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
 	parameterType := coreType(function.Parameter.Type)
-	if !sameType(function.ReturnType, function.Parameter.Type) {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType), nil
-	}
+	returnType := coreType(function.ReturnType)
 	// OWN-04: the borrowed-view return case relaxes nothing about type
 	// identity above (the underlying type must still match the parameter
 	// type) — it adds a new legal declaration alongside the unchanged
@@ -3170,7 +3176,12 @@ func checkLinear(module, functionID string, function ast.FuncDecl, calleeContrac
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType), nil
 	}
+	returnDerived, err := ability.Derive(returnType)
+	if err != nil {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, err.Error())}, typeNodeCount(parameterType) + typeNodeCount(returnType), nil
+	}
 	typeID := functionID + ":type:0"
+	returnTypeID := functionID + ":type:1"
 	if !executableShape(parameterType) {
 		// Ability derivation above already ran and produced facts for this
 		// shape (derived.Granted/derived.NegativeWitnesses) — this gate
@@ -3195,12 +3206,15 @@ func checkLinear(module, functionID string, function ast.FuncDecl, calleeContrac
 	}
 	parameterID := functionID + ":place:0"
 	linear := &core.LinearBody{
-		ID:         functionID + ":linear",
-		Types:      []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}},
+		ID: functionID + ":linear",
+		Types: []core.TypeFact{
+			{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses},
+			{ID: returnTypeID, Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses},
+		},
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
-	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, calleeContracts, foreignSymbols)
+	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, calleeContracts, foreignSymbols, linear.Types)
 	if support.Diagnostic != nil {
 		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work, nil
 	}
@@ -3396,15 +3410,18 @@ func hasTryCall(body *ast.LinearBody) bool {
 // parameter (never moved by a foreign call) is always what comes back.
 func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
-	if !sameType(function.ReturnType, function.Parameter.Type) {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.return_mismatch", function.Span, "linear result must have the parameter type")}, typeNodeCount(parameterType)
-	}
+	returnType := coreType(function.ReturnType)
 	derived, err := ability.Derive(parameterType)
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
 	}
+	returnDerived, err := ability.Derive(returnType)
+	if err != nil {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, err.Error())}, typeNodeCount(parameterType) + typeNodeCount(returnType)
+	}
 	typeID := functionID + ":type:0"
-	work := typeNodeCount(parameterType) + 1
+	returnFact := core.TypeFact{ID: functionID + ":type:1", Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses}
+	work := typeNodeCount(parameterType) + typeNodeCount(returnType) + 1
 	if !executableShape(parameterType) {
 		causes := []diagnostic.Cause{{Kind: "type", Detail: typeID}, {Kind: "constructor", Detail: parameterType.Constructor}}
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.ErrorWithRepairs(
@@ -3416,10 +3433,10 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 
 	body := function.Body.Linear
 	if len(body.Bindings) == 1 && body.Bindings[0].RHS.Kind == "try_call" && body.Result == body.Bindings[0].Name {
-		return checkForeignTracer(functionID, function, parameterType, derived, typeID, work, body.Bindings[0], foreignSymbols, functionNames, dataTypes)
+		return checkForeignTracer(functionID, function, parameterType, derived, typeID, returnFact, work, body.Bindings[0], foreignSymbols, functionNames, dataTypes)
 	}
 	if len(body.Bindings) > 0 && body.Result == function.Parameter.Name && everyBindingIsFallible(body.Bindings) {
-		return checkResourceLifecycle(functionID, function, parameterType, derived, typeID, work, foreignSymbols, functionNames, dataTypes)
+		return checkResourceLifecycle(functionID, function, parameterType, derived, typeID, returnFact, work, foreignSymbols, functionNames, dataTypes)
 	}
 	return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(
 		"check.foreign_call_shape_unsupported", body.Span,
@@ -3440,7 +3457,11 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 // without changing its published code), or neither (refused with
 // core.CallCalleeUnresolved, D-07-45 -- never silently dropped, since a
 // dropped edge is how a cycle escapes detection).
-func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, places map[string]*placeState, calleeContracts map[string]calleeContract, typeFact core.TypeFact, foreignSymbols map[string]foreignSymbolInfo) (core.LinearOperation, core.Place, *diagnostic.Diagnostic) {
+func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, places map[string]*placeState, calleeContracts map[string]calleeContract, typeFact core.TypeFact, foreignSymbols map[string]foreignSymbolInfo, availableTypeFacts ...[]core.TypeFact) (core.LinearOperation, core.Place, *diagnostic.Diagnostic) {
+	typeFacts := []core.TypeFact{typeFact}
+	if len(availableTypeFacts) > 0 {
+		typeFacts = availableTypeFacts[0]
+	}
 	if len(binding.RHS.Arguments) != 1 {
 		causes := []diagnostic.Cause{
 			{Kind: "declared_arity", Detail: fmt.Sprintf("%d", len(binding.RHS.Arguments))},
@@ -3464,6 +3485,13 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		diag := diagnostic.Error("ownership.use_after_move", binding.RHS.Span, "value was used after ownership transferred", causes...)
 		return core.LinearOperation{}, core.Place{}, &diag
 	}
+	argumentTypeFact, ok := typeFactForID(typeFacts, argument.place.TypeID)
+	if !ok {
+		// Direct seam tests historically supplied a synthetic place TypeID
+		// alongside the caller's sole fact. Preserve that test-only shape;
+		// source paths always resolve a place against one of their facts.
+		argumentTypeFact = typeFact
+	}
 	if contract, isFunction := calleeContracts[binding.RHS.Callee]; isFunction {
 		// 07-09 D-07-09/SEM-05: the argument-type gate. Exact string
 		// equality on the constructor -- never TypeID equality (a TypeID
@@ -3475,10 +3503,14 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		// exactly what the zero-value calleeContract's empty string
 		// achieves against typeFact.Shape.Constructor (never empty for
 		// an executable shape).
-		if !callArgumentTypeCheckSeam && (typeFact.Shape.Constructor == "" || contract.ParameterType == "" || typeFact.Shape.Constructor != contract.ParameterType) {
+		if !callArgumentTypeCheckSeam && (argumentTypeFact.Shape.Constructor == "" || contract.ParameterType == "" || argumentTypeFact.Shape.Constructor != contract.ParameterType) {
+			argumentCauseKind := "argument_type"
+			if contract.ParameterType != contract.ReturnType {
+				argumentCauseKind = "actual_argument_type"
+			}
 			causes := []diagnostic.Cause{
 				{Kind: "callee", Detail: contract.ID},
-				{Kind: "argument_type", Detail: typeFact.Shape.Constructor},
+				{Kind: argumentCauseKind, Detail: argumentTypeFact.Shape.Constructor},
 				{Kind: "declared_parameter_type", Detail: contract.ParameterType},
 			}
 			// 13-05 Task 2 (D-13-10): the uniqueness gate IS the safety
@@ -3559,16 +3591,17 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		if callReturnTypeDerivationSeam {
 			derivedTypeID = argument.place.TypeID
 		} else {
-			if contract.ReturnType == "" || contract.ReturnType != typeFact.Shape.Constructor {
+			returnFact, found := typeFactForConstructor(typeFacts, contract.ReturnType)
+			if contract.ReturnType == "" || !found {
 				causes := []diagnostic.Cause{
 					{Kind: "callee", Detail: contract.ID},
 					{Kind: "declared_return_type", Detail: contract.ReturnType},
-					{Kind: "available_type", Detail: typeFact.Shape.Constructor},
+					{Kind: "available_type_facts", Detail: availableTypeFactDetails(typeFacts)},
 				}
 				diag := diagnostic.Error(checkCallReturnTypeUnrepresentable, binding.RHS.Span, "callee's declared return type names no type fact available in the calling function", causes...)
 				return core.LinearOperation{}, core.Place{}, &diag
 			}
-			derivedTypeID = typeFact.ID
+			derivedTypeID = returnFact.ID
 		}
 		target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, opOrdinal+1), Name: binding.Name, TypeID: derivedTypeID}
 		op := core.LinearOperation{
@@ -3587,7 +3620,7 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		// permitting default. This must stay the ONLY place this rule is
 		// expressed -- see check.go's own doc comment on
 		// resolveCallBinding and the two call arms' unchanged continues.
-		if !callArgumentConsumeSeam && (callArgumentConsumeAlwaysSeam || !hasTypeAbility(typeFact, core.AbilityCopy)) {
+		if !callArgumentConsumeSeam && (callArgumentConsumeAlwaysSeam || !hasTypeAbility(argumentTypeFact, core.AbilityCopy)) {
 			argument.initialized = false
 			argument.movedAt = spanPointer(binding.RHS.Span)
 			argument.moveTargetID = target.ID
@@ -3746,7 +3779,7 @@ func resolveForeignStep(binding ast.Binding, functionParameterName string, forei
 // edge. It produces a core.Function whose Linear body carries three blocks
 // (entry/ok/err) and two edges, exactly mirroring checkBranch's block/edge
 // shape but keyed on a fallible call rather than a match arm.
-func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType core.TypeRef, derived ability.Result, typeID string, work int, tryBinding ast.Binding, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
+func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType core.TypeRef, derived ability.Result, typeID string, returnFact core.TypeFact, work int, tryBinding ast.Binding, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
 	symbol, errShape, errDerived, problem := resolveForeignStep(tryBinding, function.Parameter.Name, foreignSymbols, functionNames, dataTypes)
 	if problem != nil {
 		return core.Function{}, []diagnostic.Diagnostic{*problem}, work
@@ -3755,7 +3788,7 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 	parameterID := functionID + ":place:0"
 	okPlaceID := functionID + ":place:1"
 	errPlaceID := functionID + ":place:2"
-	errTypeID := functionID + ":type:1"
+	errTypeID := functionID + ":type:2"
 	entryBlockID := functionID + ":block:entry"
 	okBlockID := functionID + ":block:ok"
 	errBlockID := functionID + ":block:err"
@@ -3769,6 +3802,7 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 		ID: functionID + ":linear",
 		Types: []core.TypeFact{
 			{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses},
+			returnFact,
 			{ID: errTypeID, Shape: errShape, Abilities: errDerived.Granted, NegativeWitnesses: errDerived.NegativeWitnesses},
 		},
 		Places: []core.Place{
@@ -4152,16 +4186,16 @@ type resourceStep struct {
 // than from this materialized list is exactly the defect the three-
 // acquisition fixture and the transposition mutation (Task 04-02-03) exist to
 // catch.
-func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterType core.TypeRef, derived ability.Result, typeID string, work int, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
+func checkResourceLifecycle(functionID string, function ast.FuncDecl, parameterType core.TypeRef, derived ability.Result, typeID string, returnFact core.TypeFact, work int, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
 	steps := function.Body.Linear.Bindings
 	n := len(steps)
 	parameterID := functionID + ":place:0"
 
-	types := []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}}
+	types := []core.TypeFact{{ID: typeID, Shape: parameterType, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}, returnFact}
 	places := make([]core.Place, 1+n, 1+2*n)
 	places[0] = core.Place{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}
 	infos := make([]resourceStep, n)
-	typeCounter := 1
+	typeCounter := 2
 
 	// corevalidate's targetMatches requires an OpForeignCall at flat
 	// operation index i to produce place:(i+1) EXACTLY (the same
@@ -4474,7 +4508,7 @@ type placeState struct {
 // cost shape. The fixpoint's REAL, honestly-varying cost is not hidden: it is
 // counted separately via FixpointWork (see its own doc comment), folded into
 // checkLinear's function-level RecomputedWork total.
-func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) ownershipSupport {
+func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
 	parameterID := functionID + ":place:0"
 	result := ownershipSupport{
 		Places:     []core.Place{{ID: parameterID, Name: parameterName, TypeID: typeFact.ID}},
@@ -4557,7 +4591,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	for index, binding := range body.Bindings {
 		result.Work++
 		if binding.RHS.Kind == "call" {
-			op, target, diag := resolveCallBinding(functionID, index, binding, places, calleeContracts, typeFact, foreignSymbols)
+			op, target, diag := resolveCallBinding(functionID, index, binding, places, calleeContracts, typeFact, foreignSymbols, availableTypeFacts...)
 			if diag != nil {
 				return fail(*diag)
 			}
@@ -4999,6 +5033,37 @@ func hasTypeAbility(fact core.TypeFact, wanted core.Ability) bool {
 		}
 	}
 	return false
+}
+
+// typeFactForID and typeFactForConstructor keep the call boundary directional:
+// an argument is admitted from the fact attached to its source place, while a
+// call target is minted from the caller fact that represents the callee's
+// declared return type. Neither lookup falls back from return to parameter.
+func typeFactForID(facts []core.TypeFact, id string) (core.TypeFact, bool) {
+	for _, fact := range facts {
+		if fact.ID == id {
+			return fact, true
+		}
+	}
+	return core.TypeFact{}, false
+}
+
+func typeFactForConstructor(facts []core.TypeFact, constructor string) (core.TypeFact, bool) {
+	for _, fact := range facts {
+		if fact.Shape.Constructor == constructor {
+			return fact, true
+		}
+	}
+	return core.TypeFact{}, false
+}
+
+func availableTypeFactDetails(facts []core.TypeFact) string {
+	details := make([]string, 0, len(facts))
+	for _, fact := range facts {
+		details = append(details, fact.ID+":"+fact.Shape.Constructor)
+	}
+	sort.Strings(details)
+	return strings.Join(details, ",")
 }
 
 // executableShape reports whether a linear (non-match) function's parameter

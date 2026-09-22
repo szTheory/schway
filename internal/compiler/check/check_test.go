@@ -40,6 +40,50 @@ func readTestdataFixture(t *testing.T, name string) []byte {
 	return source
 }
 
+func TestPhase17TwoTypeAdmission(t *testing.T) {
+	result := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("canonical Resource -> Result tracer rejected: %+v", result.Diagnostics)
+	}
+	for _, function := range result.Program.Functions {
+		if function.Linear == nil || len(function.Linear.Types) < 2 {
+			t.Fatalf("%s did not mint parameter and return type facts: %+v", function.Name, function.Linear)
+		}
+		parameter, returned := function.Linear.Types[0], function.Linear.Types[1]
+		if parameter.ID != function.ID+":type:0" || returned.ID != function.ID+":type:1" {
+			t.Fatalf("%s type fact identities = %q, %q; want directional type:0/type:1", function.Name, parameter.ID, returned.ID)
+		}
+		if parameter.Shape.Constructor != function.Parameter.Type || returned.Shape.Constructor != function.ReturnType {
+			t.Fatalf("%s directional type facts = %+v, signature = %+v", function.Name, function.Linear.Types[:2], function)
+		}
+	}
+}
+
+func TestPhase17CallContractCauses(t *testing.T) {
+	for _, tc := range []struct {
+		fixture string
+		code    string
+		causes  []string
+	}{
+		{"call_argument_type_mismatch.lang", checkCallArgumentTypeMismatch, []string{"callee", "actual_argument_type", "declared_parameter_type"}},
+		{"call_return_type_unrepresentable.lang", checkCallReturnTypeUnrepresentable, []string{"callee", "declared_return_type", "available_type_facts"}},
+	} {
+		t.Run(tc.fixture, func(t *testing.T) {
+			result := Program(mustParseProgram(t, readPhase17Fixture(t, tc.fixture)))
+			if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != tc.code {
+				t.Fatalf("diagnostics = %+v, want exactly %s", result.Diagnostics, tc.code)
+			}
+			got := make([]string, 0, len(result.Diagnostics[0].Causes))
+			for _, cause := range result.Diagnostics[0].Causes {
+				got = append(got, cause.Kind)
+			}
+			if !reflect.DeepEqual(got, tc.causes) {
+				t.Fatalf("cause order = %v, want %v", got, tc.causes)
+			}
+		})
+	}
+}
+
 func mustParseProgram(t *testing.T, source []byte) ast.Program {
 	t.Helper()
 	parsed := syntax.Parse(source)
@@ -2503,6 +2547,15 @@ func scanOpCallsByKind(operations []core.LinearOperation) []core.LinearOperation
 func readPhase07Fixture(t *testing.T, name string) []byte {
 	t.Helper()
 	source, err := os.ReadFile("../../../testdata/phase07/" + name)
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", name, err)
+	}
+	return source
+}
+
+func readPhase17Fixture(t *testing.T, name string) []byte {
+	t.Helper()
+	source, err := os.ReadFile("../../../testdata/phase17/" + name)
 	if err != nil {
 		t.Fatalf("read fixture %q: %v", name, err)
 	}
