@@ -6,6 +6,23 @@ tags: [schema-2, native, differential, debt-closure, validation]
 requires: [15-05, 15-06]
 provides: [four-tier-diamond-gate, closed-identity-debt, completed-phase-validation]
 affects: [session-differential, interpreter-schema-selection, executionpeer-process-policy, payload-characterization]
+coverage:
+  - id: D1
+    description: "The shared-leaf diamond produces peer-validated Schema 2 evidence across interpreter, O0, O3, and O3-LTO."
+    requirement: NAT-10
+    verification:
+      - kind: integration
+        ref: "internal/compiler/session/session_phase11_differential_test.go#TestPhase11InterproceduralDifferential/DiamondSharedLeaf"
+        status: pass
+    human_judgment: false
+  - id: D2
+    description: "The duplicate invocation-and-ID pair collision control remains a live peer refusal."
+    requirement: OBS-01
+    verification:
+      - kind: unit
+        ref: "internal/compiler/session/session_phase15_frontier_test.go#TestPhase15CollisionGuardIsNotInert"
+        status: pass
+    human_judgment: false
 tech-stack:
   added: []
   patterns: [four-tier-differential-gate, non-inert-collision-control, recorded-automated-release-gate]

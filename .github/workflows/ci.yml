@@ -74,4 +74,4 @@ jobs:
       - name: scripts/verify-phase6.sh
         run: sh scripts/verify-phase6.sh
       - name: Phase 15 focused evidence seams
-        run: go test ./internal/compiler/session -run 'TestDecodeExecutionSchema2AdmissionSeam|TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas' -count=1 -v
+        run: go test ./internal/compiler/session -run 'TestDecodeExecutionSchema2AdmissionSeam|TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v
