@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 16
-current_phase_name: Branch/Match Emitter Port
+current_phase: 17
+current_phase_name: Return Type ≠ Parameter Type
 status: planning
-stopped_at: Phase 15 complete, ready to plan Phase 16
-last_updated: "2026-09-22T10:38:02.431Z"
+stopped_at: Phase 16 complete, ready to plan Phase 17
+last_updated: "2026-09-22T10:44:35.537Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 15 complete, transitioned to Phase 16
-state_head: 4c7d8479395966be47a7815a91c4978aa9662521
+last_activity_desc: Phase 16 complete, transitioned to Phase 17
+state_head: 4c36e7359e37f2783a4a2b46199cb78095ce99e5
 progress:
   total_phases: 7
   completed_phases: 3
@@ -62,10 +62,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 16 — Branch/Match Emitter Port
+Phase: 17 — Return Type ≠ Parameter Type
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-22 — Phase 15 complete, transitioned to Phase 16
+Last activity: 2026-09-22 — Phase 16 complete, transitioned to Phase 17
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -591,7 +591,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-21T22:50:24.586Z
-Stopped at: Phase 15 complete, ready to plan Phase 16
+Stopped at: Phase 16 complete, ready to plan Phase 17
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

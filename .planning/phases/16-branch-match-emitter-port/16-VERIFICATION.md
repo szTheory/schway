@@ -1,6 +1,6 @@
 ---
 phase: 16-branch-match-emitter-port
-verified: 2026-09-21T23:21:58Z
+verified: 2026-09-22T10:43:59Z
 status: passed
 score: 6/6 must-haves verified
 covered_files:
@@ -78,15 +78,13 @@ covered_files:
   - testdata/phase16/restrict_readonly_probe.c
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
-covered_digest: "v1:sha256:fcc1bdcd702f2091a8a8dc8697a9a2cb02be0c88aa5946a6d690e61232bc29de"
+covered_digest: "v1:sha256:4feaecd8a7a550f9d940882421de0b5e1cefda41ee425910397357bceb1c2566"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
-  previous_score: 4/6
-  gaps_closed:
-    - "The sole public production dispatcher selects schema-2 emitProgram and has no legacy-emitter fallback."
-    - "Every direct public cgen emitter use under internal/compiler is classified by a deterministic registry."
+  previous_status: passed
+  previous_score: 6/6
+  gaps_closed: []
   gaps_remaining: []
   regressions: []
 decision_coverage:
@@ -99,11 +97,11 @@ decision_coverage:
 
 **Phase Goal:** One emission law lowers every admissible program, instead of two laws split by a function-count guard.
 
-**Verified:** 2026-09-21T23:21:58Z
+**Verified:** 2026-09-22T10:43:59Z
 
 **Status:** passed
 
-**Re-verification:** Yes — after gap closure
+**Re-verification:** Yes — fresh canonical re-verification of the prior passing report
 
 ## Goal Achievement
 
@@ -195,8 +193,8 @@ N/A — infrastructure/foundation phase with no user-facing elements. All phase-
 
 ## Gaps Summary
 
-The two previous blockers are closed. The session boundary no longer returns historical C after a public M004 refusal, and the source-derived public-emitter registry is now an exact, passing bijection. No remaining gap blocks NAT-08 or NAT-09.
+Fresh live-code verification found no regression: the session boundary returns no historical C after a public M004 refusal, and the source-derived public-emitter registry remains an exact, passing bijection. No remaining gap blocks NAT-08 or NAT-09.
 
-_Verified: 2026-09-21T23:21:58Z_
+_Verified: 2026-09-22T10:43:59Z_
 
 _Verifier: the agent (gsd-verifier)_
