@@ -4,14 +4,171 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/check"
+	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/originvalidate"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+// TestPhase17ThreePeerAgreement compares the checker fact, core peer, and
+// origin peer without giving any peer a return fact derived by another. The
+// local oracle reads only the checked program's declared parameter/return
+// type names and the source declaration that makes Result a nominal value;
+// consequently coordinated peer faults cannot turn agreement into success.
+func TestPhase17ThreePeerAgreement(t *testing.T) {
+	source := phase17ReturnTracerSource(t)
+	baseline := phase17PeerRun(t, source)
+	if problems := phase17AgreementProblems(baseline, phase17DeclaredReturnOracle(source, baseline.checked)); len(problems) != 0 {
+		t.Fatalf("unmodified peers disagree: %s", strings.Join(problems, "; "))
+	}
+	parameterBytes := phase17ParameterBytes(t, baseline.checked)
+
+	for _, tc := range []struct {
+		name string
+		seed func() []func()
+	}{
+		{"checker", func() []func() { return []func(){check.SetPhase17ReturnLookupFaultForTest(true)} }},
+		{"core", func() []func() { return []func(){corevalidate.SetPhase17ReturnLookupFaultForTest(true)} }},
+		{"origin", func() []func() { return []func(){originvalidate.SetPhase17ReturnLookupFaultForTest(true)} }},
+		{"coordinated", func() []func() {
+			return []func(){
+				check.SetPhase17ReturnLookupFaultForTest(true),
+				corevalidate.SetPhase17ReturnLookupFaultForTest(true),
+				originvalidate.SetPhase17ReturnLookupFaultForTest(true),
+			}
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			restores := tc.seed()
+			for _, restore := range restores {
+				t.Cleanup(restore)
+			}
+			faulted := phase17PeerRun(t, source)
+			if got := phase17ParameterBytes(t, faulted.checked); !bytes.Equal(got, parameterBytes) {
+				t.Fatalf("parameter facts changed under %s return-only seed", tc.name)
+			}
+			if problems := phase17AgreementProblems(faulted, phase17DeclaredReturnOracle(source, faulted.checked)); len(problems) == 0 {
+				t.Fatalf("%s return-only seed passed the agreement gate", tc.name)
+			}
+			for _, restore := range restores {
+				restore()
+			}
+		})
+	}
+}
+
+type phase17Peers struct {
+	checked core.Program
+	core    corevalidate.Result
+	origin  core.Interface
+}
+
+func phase17ReturnTracerSource(t testing.TB) []byte {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return source
+}
+
+func phase17PeerRun(t testing.TB, source []byte) phase17Peers {
+	t.Helper()
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse tracer: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check tracer: %+v", checked.Diagnostics)
+	}
+	corePeer := corevalidate.Validate(checked.Program)
+	originPeer, err := originvalidate.BuildInterface(checked.Program)
+	if err != nil {
+		t.Fatalf("originvalidate tracer: %v", err)
+	}
+	return phase17Peers{checked: checked.Program, core: corePeer, origin: originPeer}
+}
+
+func phase17ParameterBytes(t testing.TB, program core.Program) []byte {
+	t.Helper()
+	parameters := make([]core.TypeFact, 0, len(program.Functions))
+	for _, function := range program.Functions {
+		if function.Linear == nil || len(function.Linear.Types) < 2 {
+			t.Fatalf("%s lacks directional type facts", function.Name)
+		}
+		parameters = append(parameters, function.Linear.Types[0])
+	}
+	encoded, err := json.Marshal(parameters)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return encoded
+}
+
+func phase17DeclaredReturnOracle(source []byte, program core.Program) map[string]bool {
+	// This deliberately does not call check/corevalidate/originvalidate return
+	// derivation code. The canonical source declares Result as a nominal data
+	// value, so every declared Result return is fresh independently of a peer.
+	declaresResult := bytes.Contains(source, []byte("data Result"))
+	want := make(map[string]bool, len(program.Functions))
+	for _, function := range program.Functions {
+		want[function.ID] = declaresResult && function.ReturnType == "Result"
+	}
+	return want
+}
+
+func phase17AgreementProblems(peers phase17Peers, oracle map[string]bool) []string {
+	if !peers.core.Valid {
+		return []string{"corevalidate rejected the checker-produced contract"}
+	}
+	coreSignatures := peers.core.PeerSignatures()
+	originSignatures := make(map[string]core.FunctionSignature, len(peers.origin.Functions))
+	for _, signature := range peers.origin.Functions {
+		originSignatures[signature.ID] = signature
+	}
+	var problems []string
+	for _, function := range peers.checked.Functions {
+		if function.Linear == nil || len(function.Linear.Types) < 2 {
+			return append(problems, function.Name+": missing directional type facts")
+		}
+		checkerReturnFresh := phase17FactHasAbility(function.Linear.Types[1], core.AbilityDrop)
+		coreSignature, coreOK := coreSignatures[function.ID]
+		originSignature, originOK := originSignatures[function.ID]
+		if !coreOK || !originOK || len(coreSignature.Parameters) != 1 || len(originSignature.Parameters) != 1 {
+			problems = append(problems, function.Name+": missing peer contract")
+			continue
+		}
+		if function.Linear.Types[0].Shape.Constructor != coreSignature.Parameters[0].Type || function.Linear.Types[0].Shape.Constructor != originSignature.Parameters[0].Type {
+			problems = append(problems, function.Name+": parameter type disagreement")
+		}
+		if function.ReturnType != coreSignature.Return.Type || function.ReturnType != originSignature.Return.Type {
+			problems = append(problems, function.Name+": return type disagreement")
+		}
+		if checkerReturnFresh != oracle[function.ID] || coreSignature.Return.Fresh != oracle[function.ID] || originSignature.Return.Fresh != oracle[function.ID] {
+			problems = append(problems, function.Name+": return freshness disagrees with declared-contract oracle")
+		}
+	}
+	return problems
+}
+
+func phase17FactHasAbility(fact core.TypeFact, wanted core.Ability) bool {
+	for _, ability := range fact.Abilities {
+		if ability == wanted {
+			return true
+		}
+	}
+	return false
+}
 
 func phase17RepairFixture(t testing.TB, name string) []byte {
 	t.Helper()
