@@ -757,6 +757,104 @@ func TestProgramInvocationIndexThreading(t *testing.T) {
 	}
 }
 
+func TestPhase17ProgramTwoTypePrototype(t *testing.T) {
+	generated := phase17TwoTypeGeneratedC(t)
+	phase17RequireTwoTypeC(t, generated)
+}
+
+func TestPhase17ProgramTwoTypeDefinition(t *testing.T) {
+	generated := phase17TwoTypeGeneratedC(t)
+	for _, want := range []string{
+		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE lang_value_resource, unsigned int invocation_index)",
+		"static LANG_RESULT LANG_MAIN(LANG_RESOURCE lang_value_resource, unsigned int invocation_index)",
+	} {
+		if !strings.Contains(generated, want) {
+			t.Fatalf("generated C misses two-type definition %q:\n%s", want, generated)
+		}
+	}
+}
+
+func TestPhase17ProgramTwoTypeCall(t *testing.T) {
+	generated := phase17TwoTypeGeneratedC(t)
+	if !strings.Contains(generated, "LANG_RESULT lang_value_result = LANG_CLASSIFY(lang_value_resource, lang_child_index_") {
+		t.Fatalf("generated C misses Result call target with Resource argument:\n%s", generated)
+	}
+}
+
+func TestPhase17ProgramTwoTypeEntryIO(t *testing.T) {
+	generated := phase17TwoTypeGeneratedC(t)
+	for _, want := range []string{
+		"LANG_RESOURCE lang_entry_input;",
+		"LANG_RESULT lang_entry_output = LANG_MAIN(lang_entry_input, 0u);",
+		"LANG_RESULT_name(lang_entry_output)",
+	} {
+		if !strings.Contains(generated, want) {
+			t.Fatalf("generated C misses two-type entry position %q:\n%s", want, generated)
+		}
+	}
+}
+
+func TestPhase17ProgramTypePairMutation(t *testing.T) {
+	generated := phase17TwoTypeGeneratedC(t)
+	phase17RequireTwoTypeC(t, generated)
+	for _, mutation := range []struct {
+		name, old, new string
+	}{
+		{"prototype", "static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE, unsigned int);", "static LANG_RESOURCE LANG_CLASSIFY(LANG_RESOURCE, unsigned int);"},
+		{"call target", "LANG_RESULT lang_value_result = LANG_CLASSIFY", "LANG_RESOURCE lang_value_result = LANG_CLASSIFY"},
+		{"entry output", "LANG_RESULT lang_entry_output = LANG_MAIN", "LANG_RESOURCE lang_entry_output = LANG_MAIN"},
+	} {
+		t.Run(mutation.name, func(t *testing.T) {
+			mutated := strings.Replace(generated, mutation.old, mutation.new, 1)
+			if mutated == generated {
+				t.Fatalf("mutation did not find its intended C position: %q", mutation.old)
+			}
+			if phase17TwoTypeCProblem(mutated) == "" {
+				t.Fatalf("seeded %s swap passed structural guard", mutation.name)
+			}
+		})
+	}
+}
+
+func phase17TwoTypeGeneratedC(t *testing.T) string {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check tracer: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative tracer: %v", err)
+	}
+	return generated
+}
+
+func phase17RequireTwoTypeC(t *testing.T, generated string) {
+	t.Helper()
+	if problem := phase17TwoTypeCProblem(generated); problem != "" {
+		t.Fatalf("generated C violates Resource -> Result type pair: %s:\n%s", problem, generated)
+	}
+}
+
+func phase17TwoTypeCProblem(generated string) string {
+	for _, want := range []string{
+		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE, unsigned int);",
+		"static LANG_RESULT LANG_MAIN(LANG_RESOURCE, unsigned int);",
+		"LANG_RESULT lang_value_result = LANG_CLASSIFY(lang_value_resource, lang_child_index_",
+		"LANG_RESOURCE lang_entry_input;",
+		"LANG_RESULT lang_entry_output = LANG_MAIN(lang_entry_input, 0u);",
+	} {
+		if !strings.Contains(generated, want) {
+			return "missing " + want
+		}
+	}
+	return ""
+}
+
 func TestParentIndexedChildLookup(t *testing.T) {
 	program := phase11CheckedProgram(t, "multi_function_diamond_call.lang")
 	generated, err := cgen.EmitNative(program)
