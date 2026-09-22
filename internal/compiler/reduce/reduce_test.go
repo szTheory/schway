@@ -351,6 +351,70 @@ func TestCollapseBranchToDivergingArmProducesStraightLineBody(t *testing.T) {
 	}
 }
 
+func TestPhase17ReducerTwoTypeFacts(t *testing.T) {
+	seed := twoArmMatchSeed()
+	function := &seed.Functions[0]
+	parameterTypeID := function.ID + ":type:parameter"
+	returnTypeID := function.ID + ":type:return"
+	function.Linear.Types = []core.TypeFact{{ID: parameterTypeID}, {ID: returnTypeID}}
+	function.Linear.Places[0].TypeID = parameterTypeID
+	// Every surviving branch operation is return-side typed: whichever arm a
+	// prior narrowing move leaves behind, a first-operation fallback would
+	// corrupt the parameter projection immediately.
+	for index := range function.Linear.Operations {
+		function.Linear.Operations[index].TypeID = returnTypeID
+	}
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, func(_ context.Context, candidate core.Program) (reduce.Signature, bool, error) {
+		return reduce.Signature{Axis: "phase17", EnginePair: "pair", CausalRole: "two-types"}, candidate.Functions[0].Match == nil, nil
+	})
+	if err != nil {
+		t.Fatalf("reduce: %v", err)
+	}
+	got := result.Program.Functions[0]
+	if got.Match != nil || got.Linear == nil {
+		t.Fatalf("expected collapsed linear projection, got %+v", got)
+	}
+	if got.Linear.Places[0].TypeID != parameterTypeID {
+		t.Fatalf("parameter TypeID = %q, want %q", got.Linear.Places[0].TypeID, parameterTypeID)
+	}
+	if got.Linear.Operations[0].TypeID != returnTypeID {
+		t.Fatalf("operation TypeID = %q, want return-side %q", got.Linear.Operations[0].TypeID, returnTypeID)
+	}
+}
+
+func TestPhase17ReducerOperationOrderIndependent(t *testing.T) {
+	seed := twoArmMatchSeed()
+	function := &seed.Functions[0]
+	parameterTypeID := function.ID + ":type:parameter"
+	returnTypeID := function.ID + ":type:return"
+	function.Linear.Types = []core.TypeFact{{ID: parameterTypeID}, {ID: returnTypeID}}
+	function.Linear.Places[0].TypeID = parameterTypeID
+	for index := range function.Linear.Operations {
+		function.Linear.Operations[index].TypeID = returnTypeID
+	}
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, func(_ context.Context, candidate core.Program) (reduce.Signature, bool, error) {
+		return reduce.Signature{Axis: "phase17", EnginePair: "pair", CausalRole: "reordered"}, candidate.Functions[0].Match == nil, nil
+	})
+	if err != nil {
+		t.Fatalf("reduce: %v", err)
+	}
+	if got := result.Program.Functions[0].Linear.Places[0].TypeID; got != parameterTypeID {
+		t.Fatalf("parameter TypeID changed with operation order: got %q want %q", got, parameterTypeID)
+	}
+}
+
+func TestPhase17ReducerMissingFactFailsClosed(t *testing.T) {
+	seed := twoArmMatchSeed()
+	seed.Functions[0].Linear.Places[0].TypeID = ""
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(reduce.Signature{Axis: "phase17", EnginePair: "pair", CausalRole: "missing-parameter-fact"}))
+	if err != nil {
+		t.Fatalf("reduce: %v", err)
+	}
+	if result.Program.Functions[0].Match == nil {
+		t.Fatalf("reducer collapsed a match with no explicit parameter TypeID: %+v", result.Program.Functions[0].Linear)
+	}
+}
+
 func TestTruncateToMinimalPrefixShortensStraightLineTail(t *testing.T) {
 	seed := borrowChainSeedNoUnusedTail()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "first-borrow"}

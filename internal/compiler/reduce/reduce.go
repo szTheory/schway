@@ -710,11 +710,22 @@ func collapseBranchToDivergingArm(p core.Program) (core.Program, bool) {
 		}
 
 		origPlaceNames := make(map[string]string, len(fn.Linear.Places))
+		parameterTypeID := ""
 		for _, place := range fn.Linear.Places {
 			origPlaceNames[place.ID] = place.Name
+			if place.ID == fn.Parameter.ID {
+				parameterTypeID = place.TypeID
+			}
+		}
+		// The parameter TypeID is a source fact, not an inference from the
+		// first surviving operation. Without it this projection cannot retain
+		// directional parameter/return facts, so refuse this reduction rather
+		// than silently substituting an operation (which may be a return).
+		if parameterTypeID == "" {
+			continue
 		}
 
-		newOps, newPlaces := renumberStraightLine(fn.ID, fn.Parameter, origPlaceNames, rest, aliasTargetID)
+		newOps, newPlaces := renumberStraightLine(fn.ID, fn.Parameter, parameterTypeID, origPlaceNames, rest, aliasTargetID)
 
 		out := cloneProgram(p)
 		outFn := &out.Functions[fi]
@@ -735,14 +746,10 @@ func collapseBranchToDivergingArm(p core.Program) (core.Program, bool) {
 // analyzeStraightLine's own ID scheme: place:0 is the parameter, place:N
 // for N>=1 is the target of the (N-1)th surviving operation, op:N/
 // point:linear:N are assigned contiguously in order.
-func renumberStraightLine(functionID string, parameter core.Parameter, origPlaceNames map[string]string, ops []core.LinearOperation, aliasTargetID string) ([]core.LinearOperation, []core.Place) {
+func renumberStraightLine(functionID string, parameter core.Parameter, parameterTypeID string, origPlaceNames map[string]string, ops []core.LinearOperation, aliasTargetID string) ([]core.LinearOperation, []core.Place) {
 	idMap := map[string]string{parameter.ID: parameter.ID}
 	if aliasTargetID != "" {
 		idMap[aliasTargetID] = parameter.ID
-	}
-	parameterTypeID := ""
-	if len(ops) > 0 {
-		parameterTypeID = ops[0].TypeID
 	}
 	places := []core.Place{{ID: parameter.ID, Name: parameter.Name, TypeID: parameterTypeID}}
 	newOps := make([]core.LinearOperation, 0, len(ops))
@@ -761,12 +768,6 @@ func renumberStraightLine(functionID string, parameter core.Parameter, origPlace
 		}
 		newOps = append(newOps, newOp)
 	}
-	// The parameter's own TypeID is only knowable from its own original
-	// Place entry, which the caller does not thread through op.TypeID for
-	// index 0 -- recover it from origPlaceNames' companion type map is not
-	// available here, so fall back to the first operation's TypeID (every
-	// operation in this project's grammar shares its function's sole type
-	// fact, since every function has exactly one parameter and one type).
 	return newOps, places
 }
 
