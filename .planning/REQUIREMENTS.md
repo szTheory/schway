@@ -121,10 +121,10 @@ non-inert.
 - [ ] **TYP-01**: A function's declared return type may differ from its
       parameter type, and a program relying on that checks, runs, and lowers.
 
-- [ ] **TYP-02**: A call whose argument type does not match the callee's
+- [x] **TYP-02**: A call whose argument type does not match the callee's
       declared parameter type is refused by name, from a `.lang` fixture.
 
-- [ ] **TYP-03**: A return contract that cannot be represented is refused by
+- [x] **TYP-03**: A return contract that cannot be represented is refused by
       name, from a `.lang` fixture.
 
 - [ ] **TYP-04**: Drop obligations and freshness are derived from the return
@@ -239,8 +239,8 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | NAT-09 | Phase 16 | Complete |
 | NAT-10 | Phase 15 | Complete |
 | TYP-01 | Phase 17 | Pending |
-| TYP-02 | Phase 17 | Pending |
-| TYP-03 | Phase 17 | Pending |
+| TYP-02 | Phase 17 | Complete |
+| TYP-03 | Phase 17 | Complete |
 | TYP-04 | Phase 17 | Pending |
 | TYP-05 | Phase 17 | Pending |
 | CTL-01 | Phase 18 | Pending |

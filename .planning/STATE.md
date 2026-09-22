@@ -6,15 +6,15 @@ current_phase: 17
 current_phase_name: Return Type ≠ Parameter Type
 status: executing
 stopped_at: Phase 17 context gathered
-last_updated: "2026-09-22T12:19:26.246Z"
+last_updated: "2026-09-22T12:37:26.766Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 16 complete, transitioned to Phase 17
-state_head: 17b5707ec552d4c1386a5265667e154855a5d866
+last_activity_desc: Phase 17 execution started
+state_head: 337ecc19629afa9838e5f305c5831f9a74b48461
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 46
-  completed_plans: 37
+  completed_plans: 38
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 15 — Event Identity (`lang.execution/2`)
+**Current focus:** Phase 17 — Return Type ≠ Parameter Type
 (evidence-instrument-and-honest-scoping) completed and verified 2026-09-18:
 13 plans, 11/11 requirements, zero `UNOWNED(none-yet-scheduled)` debt rows left
 in `PHASE-14-DEBT.md`. Prior milestone M002
@@ -61,10 +61,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 17 (Return Type ≠ Parameter Type) — READY TO EXECUTE
-Plan: Not started
+Phase: 17 (Return Type ≠ Parameter Type) — EXECUTING
+Plan: 2 of 9
 Status: Ready to execute
-Last activity: 2026-09-22 — Phase 16 complete, transitioned to Phase 17
+Last activity: 2026-09-22 — Phase 17 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
