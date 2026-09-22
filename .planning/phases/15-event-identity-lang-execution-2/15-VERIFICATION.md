@@ -1,12 +1,12 @@
 ---
 phase: 15-event-identity-lang-execution-2
-verified: 2026-09-19T20:34:08Z
+verified: 2026-09-22T10:31:13Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
+  - .github/workflows/ci.yml
   - .planning/REQUIREMENTS.md
   - .planning/ROADMAP.md
-  - .planning/debug/resolved/phase15-lto-diagnostic-order.md
   - .planning/phases/15-event-identity-lang-execution-2/15-01-PLAN.md
   - .planning/phases/15-event-identity-lang-execution-2/15-01-SUMMARY.md
   - .planning/phases/15-event-identity-lang-execution-2/15-02-PLAN.md
@@ -21,6 +21,12 @@ covered_files:
   - .planning/phases/15-event-identity-lang-execution-2/15-06-SUMMARY.md
   - .planning/phases/15-event-identity-lang-execution-2/15-07-PLAN.md
   - .planning/phases/15-event-identity-lang-execution-2/15-07-SUMMARY.md
+  - .planning/phases/15-event-identity-lang-execution-2/15-08-PLAN.md
+  - .planning/phases/15-event-identity-lang-execution-2/15-08-SUMMARY.md
+  - .planning/phases/15-event-identity-lang-execution-2/15-09-PLAN.md
+  - .planning/phases/15-event-identity-lang-execution-2/15-09-SUMMARY.md
+  - .planning/phases/15-event-identity-lang-execution-2/15-SECURITY.md
+  - .planning/phases/15-event-identity-lang-execution-2/15-UAT.md
   - .planning/phases/15-event-identity-lang-execution-2/15-REVIEW.md
   - .planning/phases/15-event-identity-lang-execution-2/15-VALIDATION.md
   - internal/compiler/cgen/cgen.go
@@ -40,15 +46,18 @@ covered_files:
   - internal/compiler/session/session_phase15_frontier_test.go
   - internal/compiler/session/session_phase5_compare.go
   - internal/compiler/session/session_phase5_compare_test.go
+  - internal/compiler/session/session_phase6_test.go
   - internal/compiler/session/witness_registry_test.go
-covered_digest: "v1:sha256:ed7575dc17e016412ae7b0573cf8ebc3a5d6edeb0e23fc2a808e1f60ab5ec9a6"
+covered_digest: "v1:sha256:fdcaafd3d3442d88ff5678db88b72d23db4557b3f45e45c09a73ed9b75e2d796"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
+  previous_status: stale
   previous_score: 5/5
   gaps_closed:
-    - "Repository-wide automated acceptance remains green after Phase 15 native-emitter changes."
+    - "Schema 2 canonical JSON admission now crosses the decoder and ToolError boundary with refusal-specific diagnostics."
+    - "Schema 0 and Schema 1 program-aware comparison is directly pinned to bypass the Schema 2 peer while preserving comparator verdicts."
+    - "Cross-platform CI now names the current Phase 15 schema, peer, legacy-wrapper, four-tier diamond, and collision seams while retaining the historical baseline."
   gaps_remaining: []
   regressions: []
 ---
@@ -56,9 +65,9 @@ re_verification:
 # Phase 15: Event Identity (`lang.execution/2`) Verification Report
 
 **Phase Goal:** Two activations of the same callee through a shared-leaf diamond are distinguishable, and the causal edge between caller and callee is observed rather than inferred.
-**Verified:** 2026-09-19T20:34:08Z
+**Verified:** 2026-09-22T10:31:13Z
 **Status:** passed
-**Re-verification:** Yes — after LTO diagnostic-order gap closure
+**Re-verification:** Yes — after automated-UAT gap closure in Plans 15-08 and 15-09
 
 ## Goal Achievement
 
@@ -66,10 +75,10 @@ re_verification:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | The shared-leaf diamond is distinct and agrees across interpreter, O0, O3, and O3-LTO. | ✓ VERIFIED | `DiamondSharedLeaf`, `TestPhase15DiamondFrontierMoved`, and `TestPhase15CollisionGuardIsNotInert` passed. The positive gate runs the checked fixture on four real tiers, rejects restored duplicate `(invocation, id)` pairs, and peer-gates all pairwise comparisons. |
+| 1 | The shared-leaf diamond is distinct and agrees across interpreter, O0, O3, and O3-LTO. | ✓ VERIFIED | `DiamondSharedLeaf`, `TestPhase15DiamondFrontierMoved`, and `TestPhase15CollisionGuardIsNotInert` passed. The positive gate runs the checked fixture on four real tiers, rejects restored duplicate `(invocation, id)` pairs, and peer-gates all pairwise comparisons. `.github/workflows/ci.yml` now names the diamond and collision controls in its cross-platform aggregate, pinned by `TestCIWorkflowRunsCurrentAggregateGate`. |
 | 2 | `OpCall` emits an observed, caller-owned causal edge; removing or corrupting it is caught. | ✓ VERIFIED | `calledEvent` records the caller invocation and `CalleeFunctionID` before child execution; native emission does the same. Focused edge, projection, and mutation controls passed. |
-| 3 | A non-importing peer independently re-derives occurrence membership and rejects producer and peer-boundary faults. | ✓ VERIFIED | `executionpeer.Validate` reconstructs traversal from `core` plus public execution data; producer-corruption, peer-acceptance, import-boundary, and peer-required comparison controls pass. |
-| 4 | `/0` and `/1` stay frozen while `/2` carries invocation identity. | ✓ VERIFIED | `schemaForProgram` selects `/2` only for multi-function programs; grammar and legacy-byte/frozen-writer tests pass. |
+| 3 | A non-importing peer independently re-derives occurrence membership and rejects producer and peer-boundary faults. | ✓ VERIFIED | `executionpeer.Validate` reconstructs traversal from `core` plus public execution data; producer-corruption, peer-acceptance, import-boundary, and peer-required comparison controls pass. `TestSchema2ComparisonRequiresPeerVerdict` remains in the current CI aggregate. |
+| 4 | `/0` and `/1` stay frozen while `/2` carries invocation identity. | ✓ VERIFIED | `schemaForProgram` selects `/2` only for multi-function programs; grammar and legacy-byte/frozen-writer tests pass. `TestDecodeExecutionSchema2AdmissionSeam` proves canonical bytes cross strict JSON decode and semantic admission, while `TestPhase5CompareProgramEnginesPreservesLegacySchemas` directly pins `/0` and `/1` peer bypass and verdict equivalence. |
 | 5 | Native occurrence expansion is measured and bounded, with usable output capacity and preserved refusal precedence. | ✓ VERIFIED | The 61-node real fixture, 4096/4097 boundary, preflight mutation, exact output N-1/N, and O0/O3 execution tests pass. `TestUnsupportedProgramShapePrecedesSchema2Preflight` and the original LTO witness prove unsupported `Match` bodies retain their named refusal before size estimation. |
 
 **Score:** 5/5 truths verified (0 present, behavior-unverified)
@@ -84,6 +93,8 @@ re_verification:
 | `internal/compiler/cgen/cgen_program.go` and `cgen.go` | Native occurrence tables, causal writer, and bounded preflight | ✓ VERIFIED | Supported body shapes are collected before invocation/event/output preflight; static parent-indexed table and C writer remain live after the ordering repair. |
 | `internal/compiler/session/session_phase5_compare.go` | `/2` peer gate before comparison | ✓ VERIFIED | Every schema-2 document reaches `executionpeer.Validate` before pair comparison. |
 | `internal/compiler/session/session_phase11_differential_test.go` | Four-tier diamond gate | ✓ VERIFIED | Requires all four documents, pair uniqueness, and peer-gated all-pairs comparison for the permanent fixture. |
+| `internal/compiler/native/native_test.go` | Serialized Schema 2 admission seam | ✓ VERIFIED | Canonical bytes survive decode and validation; noncanonical invocation, duplicate activation identity, unknown kind, and callee-ownership faults preserve `native.invalid_execution` with class-specific context. |
+| `.github/workflows/ci.yml` and `session_phase6_test.go` | Durable cross-platform evidence provenance | ✓ VERIFIED | Ubuntu and macOS retain the Phase 6 baseline and run the five named Phase 15 seams; the source pin fails closed if the aggregate drifts. |
 
 ### Key Link Verification
 
@@ -101,16 +112,18 @@ re_verification:
 | LTO diagnostic precedence plus native capacity/output safeguards | Focused cgen regression/boundary run | All named tests passed. | ✓ PASS |
 | Four-tier occurrence identity and collision guard | `go test ./internal/compiler/session -run 'TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert|TestPhase15DiamondFrontierMoved' -count=1 -v` | All matching named tests passed. | ✓ PASS |
 | Repository automated acceptance | `go build ./... && go vet ./... && go test ./... -count=1` | Completed successfully in 252.911s; no package failure observed. | ✓ PASS |
+| Schema 2 serialized admission | `go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam\|TestValidateExecutionSchema2' -count=1 -v` | Both named top-level tests and all refusal subclasses passed. | ✓ PASS |
+| Peer, legacy-wrapper, diamond, collision, and CI provenance | Focused `internal/compiler/session` run over eight named controls | All controls passed; `go build ./...` and `go vet ./...` also exited zero. | ✓ PASS |
 
 ### Requirements Coverage
 
 | Requirement | Source Plans | Status | Evidence |
 | --- | --- | --- | --- |
-| OBS-01 | 15-01, 15-02, 15-05, 15-07 | ✓ SATISFIED | Four-tier diamond acceptance and restored-collision negative prove occurrence-specific identity. |
+| OBS-01 | 15-01, 15-02, 15-05, 15-07, 15-09 | ✓ SATISFIED | Four-tier diamond acceptance and restored-collision negative prove occurrence-specific identity; current cross-platform CI names both controls. |
 | OBS-02 | 15-01, 15-02, 15-05, 15-06 | ✓ SATISFIED | Caller-owned `function.called` appears across engines; focused corrupt/remove controls exercise the edge. |
-| OBS-03 | 15-03, 15-06 | ✓ SATISFIED | Independent peer traversal and two-direction fault controls pass. |
-| OBS-04 | 15-01 through 15-06 | ✓ SATISFIED | Frozen `/0`/`/1` bytes and `/2`-only invocation grammar are covered by active tests. |
-| NAT-10 | 15-05, 15-07 | ✓ SATISFIED | The re-invoking multi-function diamond agrees on interpreter, O0, O3, and O3-LTO. |
+| OBS-03 | 15-03, 15-06, 15-09 | ✓ SATISFIED | Independent peer traversal, two-direction fault controls, and recurring peer-gate CI provenance pass. |
+| OBS-04 | 15-01 through 15-06, 15-08, 15-09 | ✓ SATISFIED | Frozen `/0`/`/1` bytes, direct legacy-wrapper peer bypass, and serialized `/2` admission are covered by active tests. |
+| NAT-10 | 15-05, 15-07, 15-09 | ✓ SATISFIED | The re-invoking multi-function diamond agrees on interpreter, O0, O3, and O3-LTO and is named in both-host CI. |
 
 ### Test Quality Audit
 
@@ -124,7 +137,7 @@ No disabled requirement-only test or circular expected-value generator was found
 
 ### Anti-Patterns Found
 
-No Phase 15 debt markers (`TBD`, `FIXME`, or `XXX`) were found in the changed compiler implementation. The previous deterministic failure is closed by `b55c1fc`: the emitter validates supported structural shapes before schema-2 estimation, and the direct regression plus original LTO witness pass.
+No Phase 15 debt markers (`TBD`, `FIXME`, or `XXX`) were found in the changed compiler implementation. The previous deterministic failure is closed by `b55c1fc`: the emitter validates supported structural shapes before schema-2 estimation, and the direct regression plus original LTO witness pass. Plans 15-08 and 15-09 add evidence seams and coverage metadata without changing the published execution semantics or weakening any validator.
 
 ### Decision Coverage
 
@@ -136,9 +149,9 @@ N/A — compiler/foundation phase. Per the user's explicit automated-acceptance 
 
 ## Gaps Summary
 
-None. The prior LTO diagnostic-order regression is closed without weakening capacity or output safeguards, and all five Phase 15 requirements have deterministic automated evidence.
+None. The prior LTO diagnostic-order regression is closed without weakening capacity or output safeguards. Gap closures G-15-1, G-15-11, and G-15-12 are resolved through serialized admission, legacy-wrapper, CI-provenance, diamond, and collision controls. `15-UAT.md` records 12/12 automated passes, `15-SECURITY.md` records zero open threats, and all five Phase 15 requirements have deterministic automated evidence.
 
 ---
 
-_Verified: 2026-09-19T20:34:08Z_
+_Verified: 2026-09-22T10:31:13Z_
 _Verifier: the agent (gsd-verifier)_

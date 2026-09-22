@@ -337,11 +337,11 @@ Plans:
 
 **Wave 5** *(gap closure; blocked on Plan 01 completion)*
 
-- [ ] 15-08-PLAN.md — automate the Schema 2 JSON-to-ToolError admission seam and publish Plan 01 coverage metadata (G-15-1)
+- [x] 15-08-PLAN.md — automate the Schema 2 JSON-to-ToolError admission seam and publish Plan 01 coverage metadata (G-15-1)
 
 **Wave 6** *(gap closure; blocked on Plans 06-08 completion)*
 
-- [ ] 15-09-PLAN.md — preserve legacy wrapper behavior, replace stale CI provenance with a durable aggregate, and publish peer/diamond coverage (G-15-11, G-15-12)
+- [x] 15-09-PLAN.md — preserve legacy wrapper behavior, replace stale CI provenance with a durable aggregate, and publish peer/diamond coverage (G-15-11, G-15-12)
 
 ---
 
@@ -687,7 +687,7 @@ assurance-refactor milestone rather than a feature milestone.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 14. Evidence Instrument and Honest Scoping | 13/13 | Complete    | 2026-09-18 |
-| 15. Event Identity (`lang.execution/2`) | 7/7 | Complete    | 2026-09-19 |
+| 15. Event Identity (`lang.execution/2`) | 9/9 | Complete    | 2026-09-19 |
 | 16. Branch/Match Emitter Port | 15/15 | Complete    | 2026-09-21 |
 | 17. Return Type ≠ Parameter Type | 0/? | Not started | - |
 | 18. Branch on a Computed Value | 0/? | Not started (S-010 gate) | - |

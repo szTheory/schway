@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 17
-current_phase_name: Return Type ≠ Parameter Type
+current_phase: 16
+current_phase_name: Branch/Match Emitter Port
 status: planning
-stopped_at: Phase 16 complete, ready to plan Phase 17
-last_updated: "2026-09-21T23:23:37.175Z"
-last_activity: 2026-09-21
-last_activity_desc: Phase 16 complete, transitioned to Phase 17
-state_head: e8eb7af3e7cbf425a85fa4afdcbd1d2c366229f9
+stopped_at: Phase 15 complete, ready to plan Phase 16
+last_updated: "2026-09-22T10:38:02.431Z"
+last_activity: 2026-09-22
+last_activity_desc: Phase 15 complete, transitioned to Phase 16
+state_head: 4c7d8479395966be47a7815a91c4978aa9662521
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 35
-  completed_plans: 35
+  total_plans: 37
+  completed_plans: 37
   percent: 43
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 16 — Branch/Match Emitter Port
+**Current focus:** Phase 15 — Event Identity (`lang.execution/2`)
 (evidence-instrument-and-honest-scoping) completed and verified 2026-09-18:
 13 plans, 11/11 requirements, zero `UNOWNED(none-yet-scheduled)` debt rows left
 in `PHASE-14-DEBT.md`. Prior milestone M002
@@ -62,10 +62,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 17 — Return Type ≠ Parameter Type
+Phase: 16 — Branch/Match Emitter Port
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-21 — Phase 16 complete, transitioned to Phase 17
+Last activity: 2026-09-22 — Phase 15 complete, transitioned to Phase 16
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -150,7 +150,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 148
+- Total plans completed: 150
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -170,7 +170,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 11 | 9 | - | - |
 | 12 | 8 | - | - |
 | 14 | 13 | - | - |
-| 15 | 7 | - | - |
+| 15 | 9 | - | - |
 | 16 | 15 | - | - |
 **Per-Plan Metrics:**
 
@@ -591,7 +591,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-21T22:50:24.586Z
-Stopped at: Phase 16 complete, ready to plan Phase 17
+Stopped at: Phase 15 complete, ready to plan Phase 16
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
