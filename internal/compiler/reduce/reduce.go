@@ -461,6 +461,18 @@ func dropOffpathForeignStage(p core.Program) (core.Program, bool) {
 		if len(steps) == 0 {
 			continue
 		}
+		parameterFact := fn.Linear.Types[0]
+		var returnFact *core.TypeFact
+		if p.Schema == core.Schema1 {
+			parameter, returned, ok := directionalSignatureFacts(fn)
+			if !ok {
+				// A /1 reduction may not invent a distinct return fact. A
+				// distinct return without a declared fact is refused here
+				// instead of inheriting an unrelated failure-operation fact.
+				continue
+			}
+			parameterFact, returnFact = parameter, &returned
+		}
 		remaining := steps[1:]
 
 		out := cloneProgram(p)
@@ -472,14 +484,18 @@ func dropOffpathForeignStage(p core.Program) (core.Program, bool) {
 			// dead (a fresh check of the corresponding plain source would
 			// never re-derive it).
 			outFn.ForeignContract = nil
+			types := []core.TypeFact{parameterFact}
+			if returnFact != nil {
+				types = append(types, *returnFact)
+			}
 			outFn.Linear = &core.LinearBody{
 				ID:    fn.ID + ":linear",
-				Types: []core.TypeFact{fn.Linear.Types[0]},
+				Types: types,
 				Places: []core.Place{
-					{ID: fn.Parameter.ID, Name: fn.Parameter.Name, TypeID: fn.Linear.Types[0].ID},
+					{ID: fn.Parameter.ID, Name: fn.Parameter.Name, TypeID: parameterFact.ID},
 				},
 				Operations: []core.LinearOperation{
-					{ID: fn.ID + ":op:0", PointID: fn.ID + ":point:linear:0", Kind: core.OpReturn, SourceID: fn.Parameter.ID, TypeID: fn.Linear.Types[0].ID},
+					{ID: fn.ID + ":op:0", PointID: fn.ID + ":point:linear:0", Kind: core.OpReturn, SourceID: fn.Parameter.ID, TypeID: parameterFact.ID},
 				},
 			}
 			if len(p.Functions) == 1 {
@@ -497,10 +513,49 @@ func dropOffpathForeignStage(p core.Program) (core.Program, bool) {
 		}
 		failShape := core.TypeRef{Constructor: fn.ForeignContract.Fails}
 		failGranted := []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape}
-		outFn.Linear = rebuildForeignChain(fn.ID, fn.Parameter, fn.Linear.Types[0], failShape, failGranted, remaining)
+		outFn.Linear = rebuildForeignChain(fn.ID, fn.Parameter, parameterFact, returnFact, failShape, failGranted, remaining)
 		return out, true
 	}
 	return p, false
+}
+
+// directionalSignatureFacts recovers the two declared facts that a /1 reduced
+// source function will re-mint. A /0 artifact's type:1 may instead be an
+// error fact, so callers must invoke this only for a /1 program. A distinct
+// return with no explicit matching fact fails closed rather than inheriting
+// an unrelated failure-operation fact.
+func directionalSignatureFacts(fn core.Function) (core.TypeFact, core.TypeFact, bool) {
+	if fn.Linear == nil {
+		return core.TypeFact{}, core.TypeFact{}, false
+	}
+	parameterTypeID := ""
+	for _, place := range fn.Linear.Places {
+		if place.ID == fn.Parameter.ID {
+			parameterTypeID = place.TypeID
+			break
+		}
+	}
+	if parameterTypeID == "" {
+		return core.TypeFact{}, core.TypeFact{}, false
+	}
+	var parameterFact core.TypeFact
+	parameterFound := false
+	for _, fact := range fn.Linear.Types {
+		if fact.ID == parameterTypeID {
+			parameterFact, parameterFound = fact, true
+			break
+		}
+	}
+	if !parameterFound || parameterFact.Shape.Constructor != fn.Parameter.Type {
+		return core.TypeFact{}, core.TypeFact{}, false
+	}
+	returnTypeID := fn.ID + ":type:1"
+	for _, fact := range fn.Linear.Types {
+		if fact.ID == returnTypeID && fact.Shape.Constructor == fn.ReturnType {
+			return parameterFact, fact, true
+		}
+	}
+	return core.TypeFact{}, core.TypeFact{}, false
 }
 
 // foreignStepInfo is the minimal per-step fact rebuildForeignChain needs:
@@ -546,13 +601,16 @@ func decodeForeignSteps(fn core.Function) []foreignStepInfo {
 // checkResourceLifecycle, the algorithm this function is a deliberate,
 // narrowed peer of (every step here is always a "try_call" to the SAME
 // declared symbol, this project's real corpus never uses discard_call).
-func rebuildForeignChain(functionID string, parameter core.Parameter, parameterType core.TypeFact, failShape core.TypeRef, failGranted []core.Ability, steps []foreignStepInfo) *core.LinearBody {
+func rebuildForeignChain(functionID string, parameter core.Parameter, parameterType core.TypeFact, returnType *core.TypeFact, failShape core.TypeRef, failGranted []core.Ability, steps []foreignStepInfo) *core.LinearBody {
 	n := len(steps)
 	parameterID := parameter.ID
 	typeID := parameterType.ID
 
 	types := make([]core.TypeFact, 1, 1+n)
 	types[0] = parameterType
+	if returnType != nil {
+		types = append(types, *returnType)
+	}
 
 	type builtStep struct {
 		callID, okPlaceID, errPlaceID, errTypeID, blockID, okEdgeID, errEdgeID string
@@ -562,7 +620,7 @@ func rebuildForeignChain(functionID string, parameter core.Parameter, parameterT
 	okPlaces := make([]core.Place, n)
 	errPlaces := make([]core.Place, n)
 	for i, step := range steps {
-		errTypeID := fmt.Sprintf("%s:type:%d", functionID, i+1)
+		errTypeID := fmt.Sprintf("%s:type:%d", functionID, len(types))
 		types = append(types, core.TypeFact{ID: errTypeID, Shape: failShape, Abilities: failGranted, NegativeWitnesses: []core.AbilityWitness{}})
 		okPlaceID := fmt.Sprintf("%s:place:%d", functionID, i+1)
 		errPlaceID := fmt.Sprintf("%s:place:%d", functionID, n+1+i)

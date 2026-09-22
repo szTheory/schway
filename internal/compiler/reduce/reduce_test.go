@@ -415,6 +415,24 @@ func TestPhase17ReducerMissingFactFailsClosed(t *testing.T) {
 	}
 }
 
+func TestPhase17ReducerForeignChainRetainsReturnFact(t *testing.T) {
+	seed := recheck(t, realForeignChainSource)
+	result, err := reduce.Reduce(context.Background(), reduce.Seed{Program: seed}, alwaysInteresting(reduce.Signature{Axis: "phase17", EnginePair: "pair", CausalRole: "foreign-return"}))
+	if err != nil {
+		t.Fatalf("reduce: %v", err)
+	}
+	linear := result.Program.Functions[0].Linear
+	if len(linear.Types) != 2 {
+		t.Fatalf("reduced plain return retained %d type facts, want parameter and return: %+v", len(linear.Types), linear.Types)
+	}
+	if linear.Types[0].ID != result.Program.Functions[0].ID+":type:0" || linear.Types[1].ID != result.Program.Functions[0].ID+":type:1" {
+		t.Fatalf("reduced signature facts = %+v, want type:0/type:1", linear.Types)
+	}
+	if linear.Types[1].Shape.Constructor != result.Program.Functions[0].ReturnType {
+		t.Fatalf("return fact = %+v, declared return = %q", linear.Types[1], result.Program.Functions[0].ReturnType)
+	}
+}
+
 func TestTruncateToMinimalPrefixShortensStraightLineTail(t *testing.T) {
 	seed := borrowChainSeedNoUnusedTail()
 	sig := reduce.Signature{Axis: "axis:terminal-outcome", EnginePair: "pair", CausalRole: "first-borrow"}
