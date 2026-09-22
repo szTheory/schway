@@ -84,6 +84,98 @@ func TestPhase17CallContractCauses(t *testing.T) {
 	}
 }
 
+func TestPhase17UseMatchingArgumentProtocolFields(t *testing.T) {
+	source := readPhase17Fixture(t, "derivation_call_argument_mismatch.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("diagnostics = %+v, want one %s", result.Diagnostics, checkCallArgumentTypeMismatch)
+	}
+	if len(result.Diagnostics[0].Repairs) != 1 {
+		t.Fatalf("repairs = %+v, want one repair", result.Diagnostics[0].Repairs)
+	}
+	repair := result.Diagnostics[0].Repairs[0]
+	callStart := strings.Index(string(source), "classify(value)")
+	if callStart < 0 {
+		t.Fatal("derivation fixture has no mismatched call")
+	}
+	wantSpan := diagnostic.Span{Start: callStart + len("classify("), End: callStart + len("classify(value")}
+	if err := phase17MatchingArgumentProtocolError(repair, wantSpan, "resource"); err != "" {
+		t.Fatal(err)
+	}
+	repaired := append([]byte(nil), source[:repair.Span.Start]...)
+	repaired = append(repaired, repair.Replacement...)
+	repaired = append(repaired, source[repair.Span.End:]...)
+	if got := string(repaired[repair.Span.Start : repair.Span.Start+len(repair.Replacement)]); got != repair.Replacement {
+		t.Fatalf("source splice = %q, want replacement %q", got, repair.Replacement)
+	}
+	if rechecked := Program(mustParseProgram(t, repaired)); len(rechecked.Diagnostics) != 0 {
+		t.Fatalf("spliced source still rejected: %+v", rechecked.Diagnostics)
+	}
+}
+
+func TestPhase17UseMatchingArgumentFieldControlsAreNotInert(t *testing.T) {
+	span := diagnostic.Span{Start: 10, End: 15}
+	baseline := diagnostic.Repair{
+		Kind: "use_matching_argument", Span: &span, Replacement: "resource",
+		Applicability: diagnostic.ApplicabilityMachineApplicable,
+	}
+	if err := phase17MatchingArgumentProtocolError(baseline, span, "resource"); err != "" {
+		t.Fatalf("baseline protocol rejected: %s", err)
+	}
+	for name, mutate := range map[string]func(diagnostic.Repair) diagnostic.Repair{
+		"kind": func(repair diagnostic.Repair) diagnostic.Repair { repair.Kind = ""; return repair },
+		"applicability": func(repair diagnostic.Repair) diagnostic.Repair {
+			repair.Applicability = diagnostic.ApplicabilityUnspecified
+			return repair
+		},
+		"span": func(repair diagnostic.Repair) diagnostic.Repair {
+			changed := diagnostic.Span{Start: 9, End: 15}
+			repair.Span = &changed
+			return repair
+		},
+		"replacement": func(repair diagnostic.Repair) diagnostic.Repair { repair.Replacement = "value"; return repair },
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := phase17MatchingArgumentProtocolError(mutate(baseline), span, "resource"); err == "" {
+				t.Fatalf("mutating %s did not fail the protocol", name)
+			}
+		})
+	}
+}
+
+func TestPhase17UseMatchingArgumentHistoricalNoOpStaysWithdrawn(t *testing.T) {
+	source, err := os.ReadFile("../../../testdata/phase13/heldout_call_argument_mismatch.lang")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutated := []byte(strings.Replace(string(source), "fn identity(value: Byte) -> Byte", "fn identity(value: Buffer) -> Buffer", 1))
+	result := Program(mustParseProgram(t, mutated))
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != checkCallArgumentTypeMismatch {
+		t.Fatalf("diagnostics = %+v, want historical call mismatch", result.Diagnostics)
+	}
+	for _, repair := range result.Diagnostics[0].Repairs {
+		if repair.Kind == "use_matching_argument" {
+			t.Fatalf("historical no-op unexpectedly advertises %+v", repair)
+		}
+	}
+}
+
+func phase17MatchingArgumentProtocolError(repair diagnostic.Repair, wantSpan diagnostic.Span, wantReplacement string) string {
+	if repair.Kind != "use_matching_argument" {
+		return fmt.Sprintf("kind = %q", repair.Kind)
+	}
+	if repair.Applicability != diagnostic.ApplicabilityMachineApplicable {
+		return fmt.Sprintf("applicability = %q", repair.Applicability)
+	}
+	if repair.Span == nil || *repair.Span != wantSpan {
+		return fmt.Sprintf("span = %+v, want %+v", repair.Span, wantSpan)
+	}
+	if repair.Replacement != wantReplacement {
+		return fmt.Sprintf("replacement = %q, want %q", repair.Replacement, wantReplacement)
+	}
+	return ""
+}
+
 func TestPhase17CheckerDirectionalAbilities(t *testing.T) {
 	baseline := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
 	if len(baseline.Diagnostics) != 0 {
