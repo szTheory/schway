@@ -19,11 +19,24 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
 
+// phase17ReturnLookupFaultForTest is a default-off mutation seam consulted
+// only by originvalidate's local return-side lookup.
+var phase17ReturnLookupFaultForTest bool
+
 // SetPhase17ReturnLookupFaultForTest is the fact-free test control used by
-// the cross-package agreement matrix. Its return-side behavior is introduced
-// with the mutation test that specifies it.
+// the cross-package agreement matrix. Its idempotent restore closure makes
+// the narrow seam safe for both defer and t.Cleanup callers.
 func SetPhase17ReturnLookupFaultForTest(enabled bool) (restore func()) {
-	return func() {}
+	previous := phase17ReturnLookupFaultForTest
+	phase17ReturnLookupFaultForTest = enabled
+	restored := false
+	return func() {
+		if restored {
+			return
+		}
+		restored = true
+		phase17ReturnLookupFaultForTest = previous
+	}
 }
 
 // KnownEscape names the exact boundary this package cannot prove: a producer
@@ -1110,6 +1123,9 @@ func interfaceParameterAbilities(function core.Function) []core.Ability {
 }
 
 func interfaceReturnAbilities(function core.Function) []core.Ability {
+	if phase17ReturnLookupFaultForTest {
+		return nil
+	}
 	return interfaceTypeAbilities(function, function.ID+":type:1")
 }
 
