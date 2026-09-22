@@ -14,7 +14,7 @@ func phase17ArgumentMismatch(t *testing.T, places map[string]*placeState, facts 
 		Name: "result",
 		RHS: ast.RHS{
 			Kind: "call", Callee: "classify", Arguments: []string{"value"},
-			Span: diagnostic.Span{Start: 10, End: 18},
+			ArgumentSpans: []diagnostic.Span{{Start: 19, End: 24}}, Span: diagnostic.Span{Start: 10, End: 18},
 		},
 		Span: diagnostic.Span{Start: 0, End: 19},
 	}
@@ -90,8 +90,10 @@ func TestPhase17UseMatchingArgument(t *testing.T) {
 // The top-level names keep each required partition independently runnable
 // through `go test -run`, while the shared table remains the readable source
 // of the complete fail-closed contract.
-func TestPhase17UseMatchingArgumentUniqueRealCandidate(t *testing.T) { TestPhase17UseMatchingArgument(t) }
-func TestPhase17UseMatchingArgumentZeroCandidates(t *testing.T)     { TestPhase17UseMatchingArgument(t) }
+func TestPhase17UseMatchingArgumentUniqueRealCandidate(t *testing.T) {
+	TestPhase17UseMatchingArgument(t)
+}
+func TestPhase17UseMatchingArgumentZeroCandidates(t *testing.T) { TestPhase17UseMatchingArgument(t) }
 func TestPhase17UseMatchingArgumentAmbiguousCandidates(t *testing.T) {
 	TestPhase17UseMatchingArgument(t)
 }

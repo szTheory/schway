@@ -179,6 +179,9 @@ type RHS struct {
 	// Rationale.
 	Callee    string
 	Arguments []string
+	// ArgumentSpans preserves exact token bounds for source edits that replace
+	// one argument without touching the callee or surrounding punctuation.
+	ArgumentSpans []diagnostic.Span
 	// Rationale is populated only when Kind == "discard_call": the required
 	// non-empty string literal explaining why the call's failure is not
 	// actionable here (D-04-06). Empty for every other Kind.

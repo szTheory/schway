@@ -426,7 +426,7 @@ func (p *parser) linearBody() ast.LinearBody {
 			// available. The parser now accepts the shape unconditionally
 			// and emits an ast.RHS{Kind: "call"} binding for check to admit
 			// or refuse.
-			arguments, end := p.callArguments()
+			arguments, argumentSpans, end := p.callArguments()
 			// 13-01 Task 1 (Rule 1 bugfix): Binding.Span for a call binding
 			// must cover the WHOLE "let NAME = callee(ARGS)" statement,
 			// exactly like every other binding kind's Span already does
@@ -443,7 +443,7 @@ func (p *parser) linearBody() ast.LinearBody {
 			// value (verified by a full `go test ./...` run before and
 			// after this change).
 			body.Bindings = append(body.Bindings, ast.Binding{
-				Name: name.Text, RHS: ast.RHS{Kind: "call", Callee: source.Text, Arguments: arguments, Span: source.Span}, Span: diagnostic.Span{Start: bindingStart.Span.Start, End: end},
+				Name: name.Text, RHS: ast.RHS{Kind: "call", Callee: source.Text, Arguments: arguments, ArgumentSpans: argumentSpans, Span: source.Span}, Span: diagnostic.Span{Start: bindingStart.Span.Start, End: end},
 			})
 			body.Span.End = end
 			continue
@@ -486,8 +486,8 @@ func (p *parser) linearBody() ast.LinearBody {
 func (p *parser) tryCallBinding(bindingStart, name Token) (ast.Binding, int) {
 	tryToken := p.advance()
 	callee := p.identifier("syntax.expected_foreign_callee")
-	arguments, end := p.callArguments()
-	rhs := ast.RHS{Kind: "try_call", Callee: callee.Text, Arguments: arguments, Span: spanFrom(tryToken, callee)}
+	arguments, argumentSpans, end := p.callArguments()
+	rhs := ast.RHS{Kind: "try_call", Callee: callee.Text, Arguments: arguments, ArgumentSpans: argumentSpans, Span: spanFrom(tryToken, callee)}
 	return ast.Binding{Name: name.Text, RHS: rhs, Span: diagnostic.Span{Start: bindingStart.Span.Start, End: end}}, end
 }
 
@@ -499,7 +499,7 @@ func (p *parser) tryCallBinding(bindingStart, name Token) (ast.Binding, int) {
 func (p *parser) discardBecause() (ast.Binding, int) {
 	start := p.expect(TokenDiscard, "syntax.expected_discard")
 	callee := p.identifier("syntax.expected_foreign_callee")
-	arguments, _ := p.callArguments()
+	arguments, argumentSpans, _ := p.callArguments()
 	because := p.expect(TokenBecause, "syntax.expected_because")
 	rationaleToken := p.expect(TokenString, "syntax.expected_discard_rationale")
 	rationale := rationaleToken.Text
@@ -513,27 +513,29 @@ func (p *parser) discardBecause() (ast.Binding, int) {
 	if because.Kind != TokenBecause {
 		end = because.Span.End
 	}
-	rhs := ast.RHS{Kind: "discard_call", Callee: callee.Text, Arguments: arguments, Rationale: rationale, Span: spanFrom(start, callee)}
+	rhs := ast.RHS{Kind: "discard_call", Callee: callee.Text, Arguments: arguments, ArgumentSpans: argumentSpans, Rationale: rationale, Span: spanFrom(start, callee)}
 	return ast.Binding{Name: "", RHS: rhs, Span: diagnostic.Span{Start: start.Span.Start, End: end}}, end
 }
 
 // callArguments parses `(arg, arg, ...)`, where each argument is a bare
 // identifier naming an already-bound place, returning the argument names in
 // source order and the end offset of the closing paren.
-func (p *parser) callArguments() ([]string, int) {
+func (p *parser) callArguments() ([]string, []diagnostic.Span, int) {
 	p.expect(TokenLParen, "syntax.expected_lparen")
 	var arguments []string
+	var argumentSpans []diagnostic.Span
 	if p.peek().Kind != TokenRParen {
 		for {
 			argument := p.identifier("syntax.expected_call_argument")
 			arguments = append(arguments, argument.Text)
+			argumentSpans = append(argumentSpans, argument.Span)
 			if !p.accept(TokenComma) {
 				break
 			}
 		}
 	}
 	end := p.expect(TokenRParen, "syntax.expected_rparen")
-	return arguments, end.Span.End
+	return arguments, argumentSpans, end.Span.End
 }
 
 // maxArmsPerMatch bounds T-03-01's CFG-shape denial-of-service surface at the

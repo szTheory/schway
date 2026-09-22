@@ -3568,64 +3568,11 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 				{Kind: argumentCauseKind, Detail: argumentTypeFact.Shape.Constructor},
 				{Kind: "declared_parameter_type", Detail: contract.ParameterType},
 			}
-			// 13-05 Task 2 (D-13-10): the uniqueness gate IS the safety
-			// argument for this class -- rustc's "there is a value of
-			// this type in scope" MaybeIncorrect downgrade, converted
-			// into a PRECONDITION rather than an applicability downgrade
-			// (NormalizeApplicability never defaults toward
-			// driver-eligible). `places` (this function's own parameter)
-			// is already the in-scope enumeration the gate needs --
-			// 13-RESEARCH.md Code Example 5, no plumbing required.
-			//
-			// The comparison target is deliberately typeFact.ID (this
-			// CALLER's own, single type fact -- D-07-09: every Lang
-			// function has exactly one parameter and one type fact, so
-			// every initialized place in THIS function shares typeFact's
-			// own constructor), never contract.ParameterType: this
-			// branch's own guard above already establishes
-			// typeFact.Shape.Constructor != contract.ParameterType, so
-			// no in-scope place's constructor can ever equal
-			// contract.ParameterType when this diagnostic fires --
-			// comparing against it would make the gate permanently,
-			// vacuously refuse and use_matching_argument would never
-			// ship a single repair, contradicting this plan's own
-			// acceptance criteria. 13-RESEARCH.md Pitfall 3 records the
-			// same finding: "the matches set is naturally either every
-			// initialized place, or the single parameter if nothing else
-			// is in scope yet" -- language possible ONLY when the
-			// comparison target is the caller's own type. Counting ALL
-			// initialized in-scope places sharing that type is also the
-			// LARGER, more conservative set (parameter alone, or
-			// parameter plus every prior `let`), so the gate refuses
-			// MORE often on multi-binding bodies -- the correct direction
-			// for a fail-closed precondition.
-			// 13-06 D-13-10a (adjudicated empirically against the real
-			// driver, not asserted): D-13-10's uniqueness gate over
-			// initialized in-scope places sharing the caller's own
-			// type fact (typeFact.ID) was designed to identify a
-			// genuine alternative argument. But D-07-09's single-
-			// parameter/single-type-fact invariant means every
-			// initialized place in this function ALREADY shares
-			// typeFact's own constructor -- so the "unique match" on
-			// the one-match partition is, in every real (non-synthetic)
-			// trigger, the argument's own place: the same name already
-			// written at binding.RHS.Span. A repair built from that
-			// match (`callee(matchName)`) reproduces the source bytes
-			// already at that span verbatim -- a byte-identical splice.
-			// 13-06's own held-out driver run confirmed the consequence:
-			// applying that splice and re-checking reproduces the
-			// identical diagnostic every time (`reverify_failed`, never
-			// `repaired`).
-			//
-			// No repair is emitted on ANY partition. This is D-13-10's
-			// own fail-closed posture taken to its honest conclusion:
-			// `use_matching_argument` is not machine-repairable at this
-			// language's current maturity (one parameter per function,
-			// no second in-scope value of the callee's declared type can
-			// ever exist), so the driver correctly reports
-			// `unrepairable` for this diagnostic, rather than claiming a
-			// `repaired` outcome no splice can actually produce.
-			var repairs []diagnostic.Repair
+			// The widened caller may contain both its parameter fact and a
+			// prior call's return fact. Select only a distinct, initialized
+			// place whose own fact matches the callee parameter contract.
+			// Zero or multiple such alternatives remain deliberately silent.
+			repairs := matchingArgumentRepairs(binding, places, typeFacts, contract.ParameterType)
 			diag := diagnostic.ErrorWithRepairs(checkCallArgumentTypeMismatch, binding.RHS.Span, "call argument type does not match the callee's declared parameter type", causes, repairs...)
 			return core.LinearOperation{}, core.Place{}, &diag
 		}
@@ -3786,6 +3733,41 @@ func everyBindingIsFallible(bindings []ast.Binding) bool {
 		}
 	}
 	return true
+}
+
+// matchingArgumentRepairs converts a call mismatch into an edit only when one
+// non-no-op initialized caller place has the callee's parameter constructor.
+// The exact argument-token span comes from syntax rather than reconstructing
+// offsets from text, so whitespace and punctuation are never part of the edit.
+func matchingArgumentRepairs(binding ast.Binding, places map[string]*placeState, facts []core.TypeFact, parameterType string) []diagnostic.Repair {
+	if len(binding.RHS.Arguments) != 1 || len(binding.RHS.ArgumentSpans) != 1 || parameterType == "" {
+		return nil
+	}
+	argumentName := binding.RHS.Arguments[0]
+	var candidate *placeState
+	for _, state := range places {
+		if !state.initialized || state.place.Name == argumentName {
+			continue
+		}
+		fact, ok := typeFactForID(facts, state.place.TypeID)
+		if !ok || fact.Shape.Constructor != parameterType {
+			continue
+		}
+		if candidate != nil {
+			return nil
+		}
+		candidate = state
+	}
+	if candidate == nil {
+		return nil
+	}
+	span := binding.RHS.ArgumentSpans[0]
+	return []diagnostic.Repair{{
+		Kind:          "use_matching_argument",
+		Span:          &span,
+		Replacement:   candidate.place.Name,
+		Applicability: diagnostic.ApplicabilityMachineApplicable,
+	}}
 }
 
 // resolveForeignStep independently resolves one step's declared foreign
