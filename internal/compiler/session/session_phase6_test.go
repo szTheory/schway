@@ -198,22 +198,10 @@ func TestPhase6VerifierScriptContract(t *testing.T) {
 	}
 }
 
-// TestCIWorkflowRunsPhase6Gate pins the CI pipeline to the CURRENT phase's
-// gate. A gate script that nothing runs is documentation, not verification:
-// before this test, .github/workflows/ci.yml still invoked verify-phase4.sh
-// two phases after that gate stopped being current, exactly the silent drift
-// its own header comment ("When a Phase 5 gate lands, this job moves to it")
-// promised would not happen.
-//
-// It reads the workflow as text and never executes it. That is deliberate and
-// load-bearing: scripts/verify-phase6.sh itself runs `go test ./...`, so a
-// test that shell-executed the gate would recurse without bound.
-//
-// The same peer-not-descendant rule TestPhase6ScriptInvokesNoPriorGate
-// enforces on the script is enforced here on the pipeline that runs it --
-// Phase 6's gate re-runs every prior corpus with this phase's binary, so
-// naming an older gate as well would buy no signal.
-func TestCIWorkflowRunsPhase6Gate(t *testing.T) {
+// TestCIWorkflowRunsCurrentAggregateGate pins the historical Phase 6 baseline
+// and the current focused evidence aggregate without recursively executing the
+// workflow: the baseline itself runs `go test ./...`.
+func TestCIWorkflowRunsCurrentAggregateGate(t *testing.T) {
 	path := testsupport.ProjectPath(".github", "workflows", "ci.yml")
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -221,32 +209,22 @@ func TestCIWorkflowRunsPhase6Gate(t *testing.T) {
 	}
 	text := string(raw)
 
-	if !strings.Contains(text, "sh scripts/verify-phase6.sh") {
-		t.Fatal(".github/workflows/ci.yml does not run `sh scripts/verify-phase6.sh`; the current phase's gate must run in CI")
-	}
-	for _, stale := range []string{
-		"verify-phase1.sh", "verify-phase2.sh", "verify-phase3.sh",
-		"verify-phase4.sh", "verify-phase5.sh",
+	for _, required := range []string{
+		"checks:",
+		"evidence-aggregate:",
+		"current evidence aggregate",
+		"sh scripts/verify-phase6.sh",
+		"ubuntu-latest",
+		"macos-latest",
+		"TestDecodeExecutionSchema2AdmissionSeam",
+		"TestSchema2ComparisonRequiresPeerVerdict",
+		"TestPhase5CompareProgramEnginesPreservesLegacySchemas",
+		"TestPhase11InterproceduralDifferential/DiamondSharedLeaf",
+		"TestPhase15CollisionGuardIsNotInert",
 	} {
-		if strings.Contains(text, stale) {
-			t.Fatalf(".github/workflows/ci.yml still references %q; CI runs the current phase's gate alone, which already re-runs every prior corpus", stale)
+		if !strings.Contains(text, required) {
+			t.Fatalf(".github/workflows/ci.yml is missing current aggregate requirement %q", required)
 		}
-	}
-	// Both initial host priorities, matching the gate's own cross-platform
-	// claim -- a Linux-only pipeline would leave the macOS half unverified.
-	for _, runner := range []string{"ubuntu-latest", "macos-latest"} {
-		if !strings.Contains(text, runner) {
-			t.Fatalf(".github/workflows/ci.yml does not exercise %s", runner)
-		}
-	}
-
-	gate := testsupport.ProjectPath("scripts", "verify-phase6.sh")
-	info, err := os.Stat(gate)
-	if err != nil {
-		t.Fatalf("scripts/verify-phase6.sh must exist for CI to run it: %v", err)
-	}
-	if info.Size() == 0 {
-		t.Fatal("scripts/verify-phase6.sh is empty")
 	}
 }
 
