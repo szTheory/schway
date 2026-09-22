@@ -127,7 +127,7 @@ non-inert.
 - [x] **TYP-03**: A return contract that cannot be represented is refused by
       name, from a `.lang` fixture.
 
-- [ ] **TYP-04**: Drop obligations and freshness are derived from the return
+- [x] **TYP-04**: Drop obligations and freshness are derived from the return
       type's own abilities, independently at each admission layer — not
       inherited from the parameter's.
 
@@ -241,7 +241,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | TYP-01 | Phase 17 | Pending |
 | TYP-02 | Phase 17 | Complete |
 | TYP-03 | Phase 17 | Complete |
-| TYP-04 | Phase 17 | Pending |
+| TYP-04 | Phase 17 | Complete |
 | TYP-05 | Phase 17 | Pending |
 | CTL-01 | Phase 18 | Pending |
 | CTL-02 | Phase 18 | Pending |
