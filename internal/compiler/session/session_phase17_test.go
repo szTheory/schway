@@ -14,6 +14,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/interp"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -168,6 +169,35 @@ func phase17FactHasAbility(fact core.TypeFact, wanted core.Ability) bool {
 		}
 	}
 	return false
+}
+
+func TestPhase17InterpreterTracer(t *testing.T) {
+	checked := Check(phase17ReturnTracerSource(t))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check tracer: %+v", checked.Diagnostics)
+	}
+	first, err := interp.Run(checked.Program, "main", "Raw")
+	if err != nil {
+		t.Fatalf("interpret tracer: %v", err)
+	}
+	second, err := interp.Run(checked.Program, "main", "Raw")
+	if err != nil {
+		t.Fatalf("interpret tracer repeat: %v", err)
+	}
+	if first.Outcome.Kind != "returned" || first.Outcome.Value != "Raw" {
+		t.Fatalf("tracer outcome = %+v, want returned Raw", first.Outcome)
+	}
+	firstBytes, err := json.Marshal(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondBytes, err := json.Marshal(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(firstBytes, secondBytes) {
+		t.Fatalf("tracer execution is not deterministic:\nfirst=%s\nsecond=%s", firstBytes, secondBytes)
+	}
 }
 
 func phase17RepairFixture(t testing.TB, name string) []byte {

@@ -34,6 +34,73 @@ var pinnedFacts = evidence.Facts{
 	Flags: []string{"-pin"}, Policy: "test-pin-policy",
 }
 
+// TestPhase17TwoTypeCoreFacts pins the directional core identity that a call
+// uses: the caller source matches the callee parameter type while the target
+// uses the caller's separately minted return-side fact.
+func TestPhase17TwoTypeCoreFacts(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check canonical tracer: %+v", checked.Diagnostics)
+	}
+	var classify, main core.Function
+	for _, function := range checked.Program.Functions {
+		switch function.Name {
+		case "classify":
+			classify = function
+		case "main":
+			main = function
+		}
+	}
+	if classify.ID == "" || main.ID == "" || classify.Linear == nil || main.Linear == nil {
+		t.Fatalf("canonical tracer functions missing or malformed: %+v", checked.Program.Functions)
+	}
+	if classify.Parameter.Type != "Resource" || classify.ReturnType != "Result" || main.Parameter.Type != "Resource" || main.ReturnType != "Result" {
+		t.Fatalf("tracer declarations collapsed: classify=%+v main=%+v", classify, main)
+	}
+	if len(classify.Linear.Types) < 2 || classify.Linear.Types[0].ID != classify.ID+":type:0" || classify.Linear.Types[1].ID != classify.ID+":type:1" {
+		t.Fatalf("classify directional facts malformed: %+v", classify.Linear.Types)
+	}
+	if classify.Linear.Types[0].Shape.Constructor != "Resource" || classify.Linear.Types[1].Shape.Constructor != "Result" {
+		t.Fatalf("classify facts do not preserve Resource -> Result: %+v", classify.Linear.Types[:2])
+	}
+	for _, operation := range main.Linear.Operations {
+		if operation.Kind != core.OpCall {
+			continue
+		}
+		if operation.CalleeID != classify.ID || operation.TypeID != main.ID+":type:1" {
+			t.Fatalf("call does not target main's return-side fact: %+v", operation)
+		}
+		var source, target core.Place
+		for _, place := range main.Linear.Places {
+			if place.ID == operation.SourceID {
+				source = place
+			}
+			if place.ID == operation.TargetID {
+				target = place
+			}
+		}
+		if source.TypeID != main.ID+":type:0" || target.TypeID != main.ID+":type:1" {
+			t.Fatalf("call source/target facts = %q/%q, want main parameter/return facts", source.TypeID, target.TypeID)
+		}
+		if source.TypeID == target.TypeID || source.TypeID == operation.TypeID {
+			t.Fatalf("call source and target facts collapsed: %+v", operation)
+		}
+		facts := map[string]core.TypeFact{}
+		for _, fact := range main.Linear.Types {
+			facts[fact.ID] = fact
+		}
+		if facts[source.TypeID].Shape.Constructor != classify.Parameter.Type || facts[target.TypeID].Shape.Constructor != classify.ReturnType {
+			t.Fatalf("call source/target shapes = %q/%q, want classify parameter/return %q/%q", facts[source.TypeID].Shape.Constructor, facts[target.TypeID].Shape.Constructor, classify.Parameter.Type, classify.ReturnType)
+		}
+		return
+	}
+	t.Fatal("main has no call operation")
+}
+
 // pinnedFixture is one fixture this pin asserts is byte-identical to its
 // value at the Phase 4 phase-start commit. CoreSHA256 and ManifestID were
 // captured by running evidence.Build with pinnedFacts against the exact
