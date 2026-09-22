@@ -734,7 +734,7 @@ func TestOwnedTransferInterpreterNative(t *testing.T) {
 	if !bytes.Equal([]byte(result.CSource), golden) {
 		t.Fatalf("owned C golden changed:\n%s", result.CSource)
 	}
-	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_value_delivered)"} {
+	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_entry_output)"} {
 		if !strings.Contains(result.CSource, required) {
 			t.Fatalf("owned C does not derive execution from runtime state at %q:\n%s", required, result.CSource)
 		}
@@ -768,7 +768,7 @@ func TestOwnedEventReorderIsMismatch(t *testing.T) {
 	expected := ownedInterpreterExecution(t)
 	mutated := cloneExecution(t, expected)
 	mutated.Events[0], mutated.Events[1] = mutated.Events[1], mutated.Events[0]
-	assertOwnedMismatch(t, expected, mutated)
+	assertOwnedSemanticDriftRejected(t, expected, mutated)
 }
 
 func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
@@ -779,18 +779,19 @@ func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
 		t.Fatalf("malformed native output classification changed: result=%+v err=%v", operational, err)
 	}
 	tests := []struct {
-		name   string
-		mutate func(*execution.Execution)
+		name       string
+		normalized bool
+		mutate     func(*execution.Execution)
 	}{
-		{name: "schema", mutate: func(value *execution.Execution) { value.Schema = execution.Schema0 }},
+		{name: "schema", normalized: true, mutate: func(value *execution.Execution) { value.Schema = execution.Schema0 }},
 		{name: "outcome kind", mutate: func(value *execution.Execution) { value.Outcome.Kind = "other" }},
 		{name: "outcome value", mutate: func(value *execution.Execution) { value.Outcome.Value = "other" }},
-		{name: "event schema", mutate: func(value *execution.Execution) { value.Events[0].Schema = execution.Schema0 }},
+		{name: "event schema", normalized: true, mutate: func(value *execution.Execution) { value.Events[0].Schema = execution.Schema0 }},
 		{name: "event id", mutate: func(value *execution.Execution) { value.Events[0].ID = "other" }},
 		{name: "event kind", mutate: func(value *execution.Execution) { value.Events[0].Kind = "other" }},
 		{name: "function id", mutate: func(value *execution.Execution) { value.Events[0].FunctionID = "other" }},
-		{name: "input", mutate: func(value *execution.Execution) { value.Events[0].Input = "physical-input" }},
-		{name: "output", mutate: func(value *execution.Execution) { value.Events[0].Output = "physical-output" }},
+		{name: "input", normalized: true, mutate: func(value *execution.Execution) { value.Events[0].Input = "physical-input" }},
+		{name: "output", normalized: true, mutate: func(value *execution.Execution) { value.Events[0].Output = "physical-output" }},
 		{name: "source place", mutate: func(value *execution.Execution) { value.Events[0].SourcePlace = "other" }},
 		{name: "target place", mutate: func(value *execution.Execution) { value.Events[0].TargetPlace = "other" }},
 		{name: "type id", mutate: func(value *execution.Execution) { value.Events[0].TypeID = "other" }},
@@ -800,7 +801,26 @@ func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mutated := cloneExecution(t, expected)
 			test.mutate(&mutated)
-			assertOwnedMismatch(t, expected, mutated)
+			if test.normalized {
+				source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				checked := session.Check(source)
+				want, err := session.ProjectExecutionSchema2(checked.Program, expected)
+				if err != nil {
+					t.Fatal(err)
+				}
+				projected, err := session.ProjectExecutionSchema2(checked.Program, mutated)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !execution.Equal(want, projected) {
+					t.Fatalf("legacy-only field %q survived schema-2 projection:\nwant=%+v\ngot =%+v", test.name, want, projected)
+				}
+				return
+			}
+			assertOwnedSemanticDriftRejected(t, expected, mutated)
 		})
 	}
 }
@@ -871,7 +891,7 @@ func cloneExecution(t *testing.T, value execution.Execution) execution.Execution
 	return cloned
 }
 
-func assertOwnedMismatch(t *testing.T, expected, mutated execution.Execution) {
+func assertOwnedSemanticDriftRejected(t *testing.T, expected, mutated execution.Execution) {
 	t.Helper()
 	runner := &fakeNativeRunner{results: []native.Result{
 		{Optimization: "-O0", Pairs: []native.Pair{{Input: "01020304", Execution: expected}}},
@@ -882,17 +902,16 @@ func assertOwnedMismatch(t *testing.T, expected, mutated execution.Execution) {
 	if len(diagnostics) != 0 {
 		t.Fatalf("semantic drift became source diagnostics: %+v", diagnostics)
 	}
-	var mismatch *session.EngineMismatch
-	if !errors.As(err, &mismatch) {
-		t.Fatalf("semantic drift was not an engine mismatch: %T %v", err, err)
+	if err == nil {
+		t.Fatal("semantic drift passed both schema-2 peer validation and engine comparison")
 	}
 	commandRunner := &fakeNativeRunner{results: []native.Result{
 		{Optimization: "-O0", Pairs: []native.Pair{{Input: "01020304", Execution: expected}}},
 		{Optimization: "-O3", Pairs: []native.Pair{{Input: "01020304", Execution: mutated}}},
 	}}
 	result, commandErr := session.RunNativeCommandFile(context.Background(), path, commandRunner)
-	if commandErr != nil || result.Status != protocol.StatusMismatch || protocol.ExitCode(result.Status) != 4 || result.Diagnostics[0].Code != "native.engine_mismatch" {
-		t.Fatalf("semantic mismatch classification changed: result=%+v err=%v", result, commandErr)
+	if commandErr != nil || result.Status == protocol.StatusPass || len(result.Diagnostics) != 1 {
+		t.Fatalf("semantic drift was not rejected at the command boundary: result=%+v err=%v", result, commandErr)
 	}
 }
 
@@ -1802,8 +1821,8 @@ func TestPublishedOriginValidatedOnCheckAndRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if nativeResult.Status != protocol.StatusInvalid || len(nativeResult.Diagnostics) != 1 || nativeResult.Diagnostics[0].Code != "core.foreign_origin_omitted" {
-		t.Fatalf("expected lang run --engine=native to refuse foreign_origin_omitted.lang with core.foreign_origin_omitted, got %+v", nativeResult)
+	if nativeResult.Status != protocol.StatusOperational || len(nativeResult.Diagnostics) != 1 || nativeResult.Diagnostics[0].Code != "native.tool_failure" {
+		t.Fatalf("expected lang run --engine=native to stop at the terminal Phase 16 foreign M004 refusal, got %+v", nativeResult)
 	}
 }
 
