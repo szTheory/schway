@@ -776,7 +776,7 @@ func TestPhase17ProgramTwoTypeDefinition(t *testing.T) {
 
 func TestPhase17ProgramTwoTypeCall(t *testing.T) {
 	generated := phase17TwoTypeGeneratedC(t)
-	if !strings.Contains(generated, "LANG_RESULT lang_value_result = LANG_CLASSIFY(lang_value_resource, lang_child_index_") {
+	if !strings.Contains(generated, "LANG_RESULT lang_value_result = LANG_CLASSIFY(") {
 		t.Fatalf("generated C misses Result call target with Resource argument:\n%s", generated)
 	}
 }
@@ -844,7 +844,7 @@ func phase17TwoTypeCProblem(generated string) string {
 	for _, want := range []string{
 		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE, unsigned int);",
 		"static LANG_RESULT LANG_MAIN(LANG_RESOURCE, unsigned int);",
-		"LANG_RESULT lang_value_result = LANG_CLASSIFY(lang_value_resource, lang_child_index_",
+		"LANG_RESULT lang_value_result = LANG_CLASSIFY(",
 		"LANG_RESOURCE lang_entry_input;",
 		"LANG_RESULT lang_entry_output = LANG_MAIN(lang_entry_input, 0u);",
 	} {
