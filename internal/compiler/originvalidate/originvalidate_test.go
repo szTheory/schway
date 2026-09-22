@@ -285,6 +285,100 @@ func TestPhase17OriginPeerPublishedTwoTypeContract(t *testing.T) {
 	}
 }
 
+func TestPhase17OriginPeerReturnOnlyMutation(t *testing.T) {
+	program := phase17OriginProgram(t)
+	baseline, err := originvalidate.BuildInterface(program)
+	if err != nil {
+		t.Fatalf("baseline BuildInterface: %v", err)
+	}
+
+	restore := originvalidate.SetPhase17ReturnLookupFaultForTest(true)
+	t.Cleanup(restore)
+	faulted, err := originvalidate.BuildInterface(program)
+	if err != nil {
+		t.Fatalf("faulted BuildInterface: %v", err)
+	}
+	for _, before := range baseline.Functions {
+		for _, after := range faulted.Functions {
+			if after.ID != before.ID {
+				continue
+			}
+			if len(before.Parameters) != 1 || len(after.Parameters) != 1 || before.Parameters[0] != after.Parameters[0] {
+				t.Fatalf("%s parameter contract changed under return-only fault: before=%+v after=%+v", before.Name, before.Parameters, after.Parameters)
+			}
+			if before.Return.Fresh && after.Return.Fresh {
+				t.Fatalf("%s return-only fault left Fresh true: %+v", before.Name, after.Return)
+			}
+		}
+	}
+	restore()
+	restore()
+	restored, err := originvalidate.BuildInterface(program)
+	if err != nil {
+		t.Fatalf("restored BuildInterface: %v", err)
+	}
+	for _, signature := range restored.Functions {
+		if !signature.Return.Fresh {
+			t.Fatalf("%s return lookup did not restore: %+v", signature.Name, signature.Return)
+		}
+	}
+}
+
+func TestPhase17OriginPeerIndependenceBoundary(t *testing.T) {
+	directory := testsupport.ProjectPath("internal", "compiler", "originvalidate")
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		path := filepath.Join(directory, entry.Name())
+		file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", entry.Name(), err)
+		}
+		if violation := phase17OriginForbiddenImport(file); violation != "" {
+			t.Fatalf("%s imports forbidden derivation dependency %q", entry.Name(), violation)
+		}
+		var callers []token.Pos
+		ast.Inspect(file, func(node ast.Node) bool {
+			call, ok := node.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			if ident, ok := call.Fun.(*ast.Ident); ok && ident.Name == "SetPhase17ReturnLookupFaultForTest" {
+				callers = append(callers, call.Pos())
+			}
+			return true
+		})
+		if len(callers) != 0 {
+			t.Fatalf("%s has production caller(s) of return-only test control at %v", entry.Name(), callers)
+		}
+	}
+
+	seeded, err := parser.ParseFile(token.NewFileSet(), "seed.go", `package originvalidate
+import _ "github.com/codename-lang/lang/internal/compiler/corevalidate"
+`, parser.ImportsOnly)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := phase17OriginForbiddenImport(seeded); got == "" {
+		t.Fatal("seeded prohibited derivation import was not detected")
+	}
+}
+
+func phase17OriginForbiddenImport(file *ast.File) string {
+	for _, imported := range file.Imports {
+		value := strings.Trim(imported.Path.Value, `"`)
+		if strings.Contains(value, "compiler/check") || strings.Contains(value, "compiler/corevalidate") || strings.Contains(strings.ToLower(value), "returncontract") {
+			return value
+		}
+	}
+	return ""
+}
+
 func phase17OriginProgram(t testing.TB) core.Program {
 	t.Helper()
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
