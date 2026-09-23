@@ -20,6 +20,12 @@ Give an AI agent and a human reviewer the shortest reliable path from intent to
 sound, reproducible evidence without wasting iteration time or hiding runtime
 costs.
 
+## Verification Operating Preference
+
+GSD defaults to automating verification wherever practical, using integration, end-to-end, smoke, and seam tests as suitable evidence. Move recurring checks into CI when their ongoing regression value justifies their maintenance and runtime cost. For claims established deterministically, target zero human verification or UAT. Reserve human handoff for irreducible judgment, external access or hardware unavailable to the agent, and decisions reserved to the user.
+
+This preference does not waive mandatory workflow gates, required user authorization, or acceptance decisions explicitly designated as human-only. Future phase plans must name the concrete automated verification commands that prove their acceptance criteria and arrange for high-value recurring checks to run in CI.
+
 ## Current State
 
 **Shipped M002 — Interprocedural Semantic Spine (2026-09-14).** Phases 07-13,

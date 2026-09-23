@@ -6,10 +6,10 @@ current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: planning
 stopped_at: Phase 17 complete, ready to plan Phase 18
-last_updated: "2026-09-22T16:53:47.857Z"
+last_updated: "2026-09-23T21:19:09.845Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: c653412b588f0f90b5a884f04d6e531e32c0345c
+state_head: dd257c518959e6c249319bff43baefc3daebdcb0
 progress:
   total_phases: 7
   completed_phases: 4
@@ -65,7 +65,7 @@ No outstanding human verification.
 Phase: 18 — Branch on a Computed Value
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-22 — Phase 17 complete, transitioned to Phase 18
+Last activity: 2026-09-23 - Completed quick task 260923-nvq: Automate verification by default and record project preference
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -584,6 +584,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
 | 260922-hfs | Correct Phase 17 Plan 07 traceability and reverify Phase 17 | 2026-09-22 | c7f3692 | passed | [260922-hfs-correct-phase-17-plan-07-traceability-so](./quick/260922-hfs-correct-phase-17-plan-07-traceability-so/) |
+| 260923-nvq | Automate verification by default and record project preference | 2026-09-23 | dd257c5 | passed | [260923-nvq-default-to-automated-integration-end-to-](./quick/260923-nvq-default-to-automated-integration-end-to-/) |
 
 ## Deferred Items
 
