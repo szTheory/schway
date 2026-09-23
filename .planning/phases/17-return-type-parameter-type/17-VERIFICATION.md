@@ -83,8 +83,8 @@ All 10 trackable `17-CONTEXT.md` decisions are honored by shipped artifacts.
 | Command | Result |
 | --- | --- |
 | `go test ./internal/compiler/check ./internal/compiler/corevalidate ./internal/compiler/originvalidate ./internal/compiler/cgen ./internal/compiler/session ./cmd/lang-repair -run 'TestPhase17|TestUnreachableClaimsGeneratedView|TestRepairDriverDecodesNoProseFields' -count=1 -v` | PASS — all selected Phase 17 semantic, native, repair, seal, and boundary tests passed. |
-| `go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v` | PASS — all selected core and reducer fact tests passed. |
-| `go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v` | PASS — repair corpus, structural-distinctness, unique-candidate, historical-control, seal, and mutation controls passed. |
+| `go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v` | PASS — all selected core and reducer fact tests passed. Owner: P20 (QLT-10); landing phase: P20. |
+| `go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v` | PASS — repair corpus, structural-distinctness, unique-candidate, historical-control, seal, and mutation controls passed. Owner: P20 (QLT-10); landing phase: P20. |
 | `shasum -a 256 testdata/phase17/heldout_call_argument_mismatch.lang` | PASS — `b822b2ca0ae5ab9d0a2cd6a85bd7c76608cec1983e9c0e7cdb50ebc9f699477f`, matching `HELDOUT.sha256`. |
 | Plan 07 traceability check | PASS — `internal/compiler/session/session_phase17_test.go` appears in the corrected `files_modified`, artifact, and two task file declarations; the obsolete path appears zero times. |
 

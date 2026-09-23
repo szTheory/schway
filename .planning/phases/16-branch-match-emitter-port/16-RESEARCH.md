@@ -141,7 +141,7 @@ The smallest safe decomposition is evidence first, capability port second, then 
 
 | Tool | Purpose | When to use |
 |---|---|---|
-| `go test` | focused characterization, cgen, core pin, session/debt checks | Each task commit and before cutover. |
+| `go test ./internal/compiler/cgen ./internal/compiler/core ./internal/compiler/session -count=1` | focused characterization, cgen, core pin, session/debt checks | Each task commit and before cutover. |
 | `scripts/assert-go-tests.sh` | rejects a `-run` target that discovers no test | Use for every plan-specified focused command. [VERIFIED: .planning/milestones/M001-phases/06-agent-feedback-and-performance-ratification/06-01-PLAN.md:100-102] |
 | Clang | `-O0`, `-O3`, `-O3 -flto`, and sanitizer probe lanes | Restrict microprogram and end-to-end native comparator. |
 
