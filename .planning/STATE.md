@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: planning
-stopped_at: Completed 16-20-PLAN.md
-last_updated: "2026-09-23T22:56:30.368Z"
+stopped_at: Completed 16-18-PLAN.md
+last_updated: "2026-09-23T23:53:05.545Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 31648da0c8e81b70d1a6756aaac93abbc5d3235a
+state_head: 919e8d77a72fe4506419735eb614e1e8781ec89c
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 51
-  completed_plans: 48
+  completed_plans: 49
 ---
 
 # Project State
@@ -319,6 +319,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16-branch-match-emitter-port P15 | ~15 min | 2 tasks | 2 files |
 | Phase 16 P19 | 15 min | 2 tasks | 2 files |
 | Phase 16 P20 | 9 min | 1 tasks | 1 files |
+| Phase 16 P18 | 50min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -451,6 +452,8 @@ Standing architectural commitments carried into M002:
 - [Phase 16]: AST-derived public-emitter calls are authoritative; registry rows classify each exactly once.
 - [Phase 16]: Mutation controls require intended validator error classes, not generic cardinality drift.
 - [Phase 16]: 16-19: replaced stale archived witness names with the current Phase 17 witness and used deterministic injected MachineFacts for budget audit tests; preserved the existing generated-view disposition rules.
+- [Phase 18]: 16-18: Keep the Phase 16 research command explicit and executable while preserving its characterization purpose.
+- [Phase 18]: 16-18: Pin every current groundedness finding and assign all surviving R2b rows to P20 under QLT-10; preserve exact-set equality and empty R1/R2/R3 gates.
 
 ### Pending Todos
 
@@ -602,8 +605,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-23T22:56:30.237Z
-Stopped at: Completed 16-20-PLAN.md
+Last session: 2026-09-23T23:53:05.360Z
+Stopped at: Completed 16-18-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
