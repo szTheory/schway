@@ -5,17 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: planning
-stopped_at: Phase 17 complete, ready to plan Phase 18
-last_updated: "2026-09-23T21:19:09.845Z"
-last_activity: 2026-09-22
+stopped_at: Completed 16-19-PLAN.md
+last_updated: "2026-09-23T22:45:38.359Z"
+last_activity: 2026-09-23
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: dd257c518959e6c249319bff43baefc3daebdcb0
+state_head: 904822bd8864fdd26679e7086fd7ea6ee62b9258
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 46
-  completed_plans: 46
-  percent: 57
+  total_plans: 51
+  completed_plans: 47
 ---
 
 # Project State
@@ -318,6 +317,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16-branch-match-emitter-port P03 | 4min | 2 tasks | 2 files |
 | Phase 16-branch-match-emitter-port P06 | 12 min | 2 tasks | 6 files |
 | Phase 16-branch-match-emitter-port P15 | ~15 min | 2 tasks | 2 files |
+| Phase 16 P19 | 15 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -449,6 +449,7 @@ Standing architectural commitments carried into M002:
 - [Phase 16]: Recorded foreign and by-pointer emitter families as M004 debt; one-TU pure-Lang -flto remains behaviorally inert evidence.
 - [Phase 16]: AST-derived public-emitter calls are authoritative; registry rows classify each exactly once.
 - [Phase 16]: Mutation controls require intended validator error classes, not generic cardinality drift.
+- [Phase 16]: 16-19: replaced stale archived witness names with the current Phase 17 witness and used deterministic injected MachineFacts for budget audit tests; preserved the existing generated-view disposition rules.
 
 ### Pending Todos
 
@@ -544,6 +545,8 @@ that grades requirements from wiring will convert an honest partial into a false
 green**, because wiring is exactly what a structurally unreachable defect class
 still has. Grade requirements against the tree, not the wiring diagram.
 
+- Full go test ./... remains red on Phase 11 gate fixtures, stale corpus counts and validation digest, and unpinned groundedness findings outside Plan 16-19 scope.
+
 ### Roadmap Evolution
 
 - Phase 1 edited: removed generic web-app MVP mode; retained tracer-first
@@ -598,10 +601,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-22T11:18:01.126Z
-Stopped at: Phase 17 complete, ready to plan Phase 18
+Last session: 2026-09-23T22:41:36.815Z
+Stopped at: Completed 16-19-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: .planning/phases/17-return-type-parameter-type/17-CONTEXT.md
+Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
