@@ -313,7 +313,7 @@ STANDING-VERDICTS' own "two coexisting laws is a defect with a delayed fuse".
 identity fix. The dependency caps corpus richness; it does not gate the port.
 The ordering rests on the write-it-twice argument, not on a hard block.
 **Closes**: D-11-51, D-12-21.
-**Plans**: 9 plans
+**Plans**: 20 plans
 
 Plans:
 **Wave 1**
@@ -429,6 +429,20 @@ milestone; not a hard gate.
 **Wave 7**
 
 - [x] 16-09-PLAN.md — flip dispatch, delete the three superseded laws in the same commit, and close validation
+
+**Wave 1 — UAT gap closure**
+
+- [ ] 16-16-PLAN.md — migrate Phase 11 by-pointer evidence to refusal-first frozen inputs
+- [ ] 16-19-PLAN.md — synchronize historical witnesses and make budget probes deterministic
+- [ ] 16-20-PLAN.md — refresh machine-checked language maturity corpus counts
+
+**Wave 2**
+
+- [ ] 16-18-PLAN.md — reconcile the exact groundedness frontier and P20 ownership
+
+**Wave 3**
+
+- [ ] 16-17-PLAN.md — regenerate the current validation corpus run record and manifest
 
 ---
 
