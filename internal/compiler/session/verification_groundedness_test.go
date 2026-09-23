@@ -1209,6 +1209,12 @@ func TestVerificationGroundednessScopeByIllocutionaryRole(t *testing.T) {
 // genuine reason, the same shape every other frontier fixture in this
 // milestone is required to demonstrate -- verified by
 // TestVerificationGroundednessThreeClassesAreEmpty.
+// Re-measured at plan 16-18 (58 -> 63 entries): five newly visible R2b
+// records appeared in the Phase 14 validation, Phase 16 validation, and
+// Phase 17 verification documents after the test index and evidence corpus
+// evolved. The malformed Phase 16 research fragment was made executable;
+// none of these changes weakens classification, and all five R2b records
+// retain the QLT-10 / P20 owner and landing phase.
 var pinnedFrontier = []violationRecord{
 	{File: ".planning/STANDING-VERDICTS.md", Line: 21, Command: "go test -fuzz", Classification: classUnparseable},
 	{File: ".planning/milestones/M001-phases/02-owned-values-and-abilities/02-RESEARCH.md", Line: 85, Command: "go test", Classification: classUnparseable},
@@ -1278,6 +1284,11 @@ var pinnedFrontier = []violationRecord{
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 359, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 390, Command: "go test -run", Classification: classUnparseable},
 	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md", Line: 90, Command: "go test -run", Classification: classUnparseable},
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreAlphaRenamesOnly' -count=1 -v", Classification: classR2b},
+	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b},
+	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b},
+	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b},
+	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b},
 }
 
 // measuredViolations runs the classifier once over the whole Tier-A
@@ -2112,6 +2123,11 @@ var r2bLandingPhases = map[violationRecord]string{
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 97, Command: "go test ./internal/compiler/corevalidate -run 'ClosureCostScaling|GrowthExponent' -v", Classification: classR2b}:                                                                                                                                        "P20",
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 99, Command: "go test ./internal/compiler/check -run 'OrderingStability|DiagnosticSelectionOrder' -v", Classification: classR2b}:                                                                                                                                      "P20",
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 102, Command: "go test ./internal/compiler/check -run 'UseAfterMove|BorrowRequiresShare|TransferRequiresTake' -v", Classification: classR2b}:                                                                                                                          "P20",
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreAlphaRenamesOnly' -count=1 -v", Classification: classR2b}: "P20",
+	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b}: "P20",
+	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b}: "P20",
+	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b}: "P20",
+	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b}: "P20",
 }
 
 // TestVerificationGroundednessThreeClassesAreEmpty is plan 14-10 Task 3's
