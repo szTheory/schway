@@ -97,7 +97,7 @@ func TestBudgetAuditRefusesUndeclaredMachine(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("expected control:qlt02.unknown_machine to fire against a fabricated live machine ID, got failures: %+v", failures)
+		t.Errorf("expected control:qlt02.unknown_machine to fire against an undeclared machine ID, got failures: %+v", failures)
 	}
 
 	// The checked-in budget values against deterministic injected facts must
@@ -105,7 +105,7 @@ func TestBudgetAuditRefusesUndeclaredMachine(t *testing.T) {
 	live, rows := deterministicBudgetFixture(t)
 	clean := AuditQLT02BudgetManifest(rows, live, QLT02GateEligibleMetrics())
 	if len(clean) != 0 {
-		t.Errorf("AuditQLT02BudgetManifest against real live machine_id %q returned failures: %+v", live, clean)
+		t.Errorf("AuditQLT02BudgetManifest against injected machine_id %q returned failures: %+v", live, clean)
 	}
 }
 
@@ -214,7 +214,7 @@ func gateEligibleMetricsAgree(a, b []string) bool {
 // recomputed_work_growth_exponent row, it is gate_type "hard", its metric
 // is in QLT02GateEligibleMetrics(), its value_or_bound is 1200 with unit
 // "milliexponent", and AuditQLT02BudgetManifest reports zero failures for
-// it against the live machine ID -- proving the row is genuinely
+// it against deterministic injected machine facts -- proving the row is genuinely
 // gate-eligible and audit-clean, not merely present.
 func TestQLT02InterproceduralGrowthExponent(t *testing.T) {
 	rows, err := LoadQLT02BudgetManifest()
@@ -256,7 +256,7 @@ func TestQLT02InterproceduralGrowthExponent(t *testing.T) {
 	live, rows := deterministicBudgetFixture(t)
 	failures := AuditQLT02BudgetManifest(rows, live, QLT02GateEligibleMetrics())
 	if len(failures) != 0 {
-		t.Errorf("AuditQLT02BudgetManifest against real live machine_id %q returned failures: %+v", live, failures)
+		t.Errorf("AuditQLT02BudgetManifest against injected machine_id %q returned failures: %+v", live, failures)
 	}
 }
 
