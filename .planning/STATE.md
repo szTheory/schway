@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: planning
-stopped_at: Completed 16-19-PLAN.md
-last_updated: "2026-09-23T22:45:38.359Z"
+stopped_at: Completed 16-20-PLAN.md
+last_updated: "2026-09-23T22:56:30.368Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 904822bd8864fdd26679e7086fd7ea6ee62b9258
+state_head: 31648da0c8e81b70d1a6756aaac93abbc5d3235a
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 51
-  completed_plans: 47
+  completed_plans: 48
 ---
 
 # Project State
@@ -318,6 +318,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16-branch-match-emitter-port P06 | 12 min | 2 tasks | 6 files |
 | Phase 16-branch-match-emitter-port P15 | ~15 min | 2 tasks | 2 files |
 | Phase 16 P19 | 15 min | 2 tasks | 2 files |
+| Phase 16 P20 | 9 min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -601,8 +602,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-23T22:41:36.815Z
-Stopped at: Completed 16-19-PLAN.md
+Last session: 2026-09-23T22:56:30.237Z
+Stopped at: Completed 16-20-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

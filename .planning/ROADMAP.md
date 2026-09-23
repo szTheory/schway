@@ -434,7 +434,7 @@ milestone; not a hard gate.
 
 - [ ] 16-16-PLAN.md — migrate Phase 11 by-pointer evidence to refusal-first frozen inputs
 - [ ] 16-19-PLAN.md — synchronize historical witnesses and make budget probes deterministic
-- [ ] 16-20-PLAN.md — refresh machine-checked language maturity corpus counts
+- [x] 16-20-PLAN.md — refresh machine-checked language maturity corpus counts
 
 **Wave 2**
 
