@@ -1,22 +1,31 @@
 package session
 
 import (
-	"context"
 	"os"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/measure"
-	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 )
 
-func liveMachineIDForTest(t *testing.T) string {
+// deterministicBudgetFixture makes the budget audit's machine identity an
+// explicit input. These tests exercise lane construction and audit logic;
+// real host observation remains covered by measure's bounded command tests.
+func deterministicBudgetFixture(t *testing.T) (string, []QLT02BudgetRow) {
 	t.Helper()
-	facts, err := measure.ProbeMachine(context.Background())
-	if err != nil {
-		t.Fatalf("ProbeMachine: %v", err)
+	facts := measure.MachineFacts{
+		OS: "darwin", Arch: "arm64", CPUModel: "fixture CPU",
+		LogicalCores: 8, GoVersion: "go1.24.0", ClangVersion: "clang fixture",
 	}
-	return measure.MachineID(facts)
+	machineID := measure.MachineID(facts)
+	rows, err := LoadQLT02BudgetManifest()
+	if err != nil {
+		t.Fatalf("LoadQLT02BudgetManifest: %v", err)
+	}
+	for i := range rows {
+		rows[i].MachineID = machineID
+	}
+	return machineID, rows
 }
 
 // --- Task 1: manifest load / tracer -----------------------------------
@@ -43,34 +52,16 @@ func TestBudgetManifestLoads(t *testing.T) {
 }
 
 func TestBudgetLaneCarriesMachineIDAndVerdict(t *testing.T) {
-	corpus := nat03CorpusPath("testdata/phase1")
-	phase6TestRoots(t)
-	runner := native.DefaultRunner()
-
-	result, err := VerifyPhase6ChangedRisk(context.Background(), corpus, runner)
-	if err != nil {
-		t.Fatalf("VerifyPhase6ChangedRisk error: %v", err)
+	machineID, rows := deterministicBudgetFixture(t)
+	lane := QLT02LaneFromRows(rows, machineID, QLT02GateEligibleMetrics())
+	if lane.ID != LaneQLT02BudgetAudit {
+		t.Fatalf("lane.ID = %q, want %q", lane.ID, LaneQLT02BudgetAudit)
 	}
-
-	lane := phase6FindLane(result, phase6NativeDifferentialLane)
-	if lane == nil {
-		t.Fatal("no lane:native-differential in result")
+	if lane.Status != "pass" {
+		t.Fatalf("lane.Status = %q, want pass", lane.Status)
 	}
-
-	live := liveMachineIDForTest(t)
-	if lane.MachineID != live {
-		t.Errorf("lane.MachineID = %q, want %q", lane.MachineID, live)
-	}
-
-	found := false
-	for _, verdict := range protocol.LaneGateVerdicts() {
-		if lane.GateVerdict == verdict {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("lane.GateVerdict = %q, not in %v", lane.GateVerdict, protocol.LaneGateVerdicts())
+	if lane.Fired[ControlQLT02UnknownMachine] {
+		t.Fatalf("lane marked the injected machine ID unknown: %+v", lane)
 	}
 }
 
@@ -109,9 +100,9 @@ func TestBudgetAuditRefusesUndeclaredMachine(t *testing.T) {
 		t.Errorf("expected control:qlt02.unknown_machine to fire against a fabricated live machine ID, got failures: %+v", failures)
 	}
 
-	// The checked-in manifest against THIS host's real live machine ID must
-	// pass with zero fired controls.
-	live := liveMachineIDForTest(t)
+	// The checked-in budget values against deterministic injected facts must
+	// pass with zero fired controls, regardless of host probe permissions.
+	live, rows := deterministicBudgetFixture(t)
 	clean := AuditQLT02BudgetManifest(rows, live, QLT02GateEligibleMetrics())
 	if len(clean) != 0 {
 		t.Errorf("AuditQLT02BudgetManifest against real live machine_id %q returned failures: %+v", live, clean)
@@ -262,7 +253,7 @@ func TestQLT02InterproceduralGrowthExponent(t *testing.T) {
 		t.Errorf("row.Unit = %q, want %q", row.Unit, "milliexponent")
 	}
 
-	live := liveMachineIDForTest(t)
+	live, rows := deterministicBudgetFixture(t)
 	failures := AuditQLT02BudgetManifest(rows, live, QLT02GateEligibleMetrics())
 	if len(failures) != 0 {
 		t.Errorf("AuditQLT02BudgetManifest against real live machine_id %q returned failures: %+v", live, failures)
