@@ -15,7 +15,7 @@ affects: [phase-18-verification, CTL-03, payload-observability]
 actuals:
   tokens: 5625
   tasks: 3
-  commits: 0
+  commits: 1
 tech-stack:
   added: []
   patterns: ["tag-plus-runtime-payload terminal serialization", "data-parameter input seeding aligned with native fixtures"]
@@ -67,7 +67,7 @@ metrics:
   completed_date: 2026-09-24
 status: complete
 plan_head_before: b808fc858c8d8fbb622c4dc1b00c66c15da2a0f9
-commits: 0
+commits: 1
 ---
 
 # Phase 18 Plan 05: Payload Return Evidence Summary
@@ -91,7 +91,7 @@ commits: 0
 
 ## Task Commits
 
-Task commits were deferred to the parent GSD commit helper as requested. The implementation was left uncommitted at handoff; current HEAD remains `b808fc8`.
+`d5ddb04` — `feat(18-05): surface returned payload in terminal evidence`.
 
 ## Files Created/Modified
 
@@ -162,4 +162,4 @@ Plan 18-05's payload value and mutation evidence are complete. CTL-01 through CT
 ## Self-Check: PASSED
 
 - The summary and source witness exist.
-- The task was intentionally left uncommitted for the parent GSD helper; no commit hash is claimed here.
+- The implementation and summary are recorded in commit `d5ddb04`.
