@@ -624,6 +624,60 @@ func TestEdgeSpecificLiveOut(t *testing.T) {
 	}
 }
 
+// TestPhase18BothArmLoanEndpointControl exercises the valid opposite of the
+// production S-010 one-arm fixture: both mutually exclusive successors use
+// the same loan created before the branch. Each use gets its own point
+// endpoint, and the branch has no edge endpoint for that loan.
+func TestPhase18BothArmLoanEndpointControl(t *testing.T) {
+	loanOp := core.LinearOperation{ID: "fn:op:0", Kind: core.OpBorrowShared, SourceID: "fn:place:0", TargetID: "fn:place:1", LoanID: "fn:loan:0"}
+	entry := cfgBlockSpec{id: "fn:block:entry", operations: []core.LinearOperation{loanOp}, successors: []string{"fn:block:on", "fn:block:off"}}
+	onUse := core.LinearOperation{ID: "fn:op:1", Kind: core.OpReturn, SourceID: "fn:place:1"}
+	offUse := core.LinearOperation{ID: "fn:op:2", Kind: core.OpReturn, SourceID: "fn:place:1"}
+	on := cfgBlockSpec{id: "fn:block:on", operations: []core.LinearOperation{onUse}}
+	off := cfgBlockSpec{id: "fn:block:off", operations: []core.LinearOperation{offUse}}
+	blocks := []cfgBlockSpec{entry, on, off}
+	fixpoint, diag := loanLivenessFixpoint("fn", blocks, interproceduralSummaryTable{}, diagnostic.Span{})
+	if diag != nil {
+		t.Fatalf("unexpected CFG rejection: %+v", diag)
+	}
+	for _, blockID := range []string{"fn:block:on", "fn:block:off"} {
+		if !fixpoint.liveIn[blockID]["fn:loan:0"] {
+			t.Fatalf("loan not live entering intended use block %s: %+v", blockID, fixpoint.liveIn)
+		}
+	}
+	if len(entry.successors) != 2 || len(on.operations) != 1 || on.operations[0].SourceID != "fn:place:1" || len(off.operations) != 1 || off.operations[0].SourceID != "fn:place:1" {
+		t.Fatalf("both-arm witness did not construct two successor uses of one loan: %+v", blocks)
+	}
+	edgeID := func(from, to string) string { return from + "->" + to }
+	endpoints := materializeLoanEndpoints("fn", blocks, edgeID, fixpoint, interproceduralSummaryTable{})
+	var points, edges []core.LoanEndpoint
+	for _, endpoint := range endpoints {
+		if endpoint.LoanID != "fn:loan:0" {
+			continue
+		}
+		if endpoint.Kind == "edge" {
+			edges = append(edges, endpoint)
+		} else if endpoint.Kind == "point" {
+			points = append(points, endpoint)
+		} else {
+			t.Fatalf("unsupported endpoint kind: %+v", endpoint)
+		}
+	}
+	if len(edges) != 0 {
+		t.Fatalf("both-arm uses must not produce a diverging edge endpoint: %+v", edges)
+	}
+	if len(points) != 2 {
+		t.Fatalf("want one point endpoint in each using successor, got %+v", points)
+	}
+	pointBlocks := map[string]bool{}
+	for _, endpoint := range points {
+		pointBlocks[endpoint.BlockID] = true
+	}
+	if !pointBlocks["fn:block:on"] || !pointBlocks["fn:block:off"] {
+		t.Fatalf("point endpoints do not cover both real uses: %+v", points)
+	}
+}
+
 // TestBackEdgeRejected proves the fixpoint fails closed on a cyclic CFG
 // rather than iterating forever (T-03-11) — a real back edge, if one is ever
 // present, is rejected, not silently accepted. Task 1(c) widens this to

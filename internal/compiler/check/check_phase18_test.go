@@ -284,30 +284,27 @@ func TestPhase18LoanAcrossBranchFixture(t *testing.T) {
 		t.Fatalf("unused sibling did not receive the edge endpoint: edge=%q", offEdge)
 	}
 
-	// Controls keep the exactly-one-arm assumption explicit: the endpoint
-	// topology must change when the source use is present in both or neither arm.
-	for _, control := range []struct {
-		name   string
-		source string
-	}{
-		{name: "both arms", source: strings.Replace(string(source), "    Off => {\n      computed", "    Off => {\n      let alsoObserved = take view\n      computed", 1)},
-		{name: "neither arm", source: strings.Replace(string(source), "      let observed = take view\n", "", 1)},
-	} {
-		t.Run(control.name, func(t *testing.T) {
-			result := session.Check([]byte(control.source))
-			if len(result.Diagnostics) != 0 {
-				t.Fatalf("control source rejected: %+v", result.Diagnostics)
-			}
-			for _, fn := range result.Program.Functions {
-				if fn.Name != "select" || fn.Linear == nil {
-					continue
-				}
-				for _, endpoint := range fn.Linear.LoanEndpoints {
-					if endpoint.LoanID != borrowID || endpoint.Kind == "edge" {
-						t.Fatalf("control inherited one-arm edge classification: %+v", fn.Linear.LoanEndpoints)
-					}
-				}
-			}
-		})
+	// The neither-arm source control preserves the admitted ownership shape
+	// while proving that the one-arm edge endpoint disappears when the use is
+	// removed. The both-arm control is a valid synthetic CFG in check_test.go;
+	// spelling a second `take view` in source would move the same value twice.
+	neither := strings.Replace(string(source), "      let observed = take view\n", "", 1)
+	result := session.Check([]byte(neither))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("neither-arm control source rejected: %+v", result.Diagnostics)
+	}
+	var neitherFn *core.Function
+	for index := range result.Program.Functions {
+		if result.Program.Functions[index].Name == "select" {
+			neitherFn = &result.Program.Functions[index]
+		}
+	}
+	if neitherFn == nil || neitherFn.Linear == nil {
+		t.Fatalf("neither-arm control omitted select CFG: %+v", result.Program.Functions)
+	}
+	for _, endpoint := range neitherFn.Linear.LoanEndpoints {
+		if endpoint.LoanID == borrowID && endpoint.Kind == "edge" {
+			t.Fatalf("neither-arm control retained one-arm edge classification: %+v", endpoint)
+		}
 	}
 }

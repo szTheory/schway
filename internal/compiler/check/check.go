@@ -2229,6 +2229,7 @@ const maxBlocksPerFunction = 128
 // block-shaped function, and the interpreter/validator dispatch stays a
 // simple "every arm has a BlockID" invariant rather than a per-arm union.
 func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, dataTypes map[string]core.DataType, sealed map[string]bool, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, prefixes ...*ast.LinearBody) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
+	computedTerminal := len(prefixes) > 0 && prefixes[0] != nil && len(prefixes[0].Bindings) > 0
 	parameterType := coreType(function.Parameter.Type)
 	returnType := coreType(function.ReturnType)
 	derived, err := ability.DeriveSealed(parameterType, sealed)
@@ -2382,7 +2383,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		if arm.Body != nil {
 			support = analyzeArmBody(functionID, nextIndex, scrutineeName, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols, linear.Places, linear.Operations, linear.Types)
 		} else {
-			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, scrutineeTypeID, returnTypeID, dataType, returnDataType, arm, sealed)
+			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, scrutineeTypeID, returnTypeID, dataType, returnDataType, arm, sealed, computedTerminal)
 		}
 		if support.Diagnostic != nil {
 			diagnostics = append(diagnostics, *support.Diagnostic)
@@ -2407,7 +2408,10 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		})
 		armBlockIDs = append(armBlockIDs, armBlockID)
 		armEdgeToJoinID := fmt.Sprintf("%s:edge:arm:%d:join", functionID, index)
-		armEdgeFromEntryID := fmt.Sprintf("%s:edge:%s", matchID, arm.Pattern)
+		armEdgeFromEntryID := fmt.Sprintf("%s:edge:entry:arm:%d", functionID, index)
+		if computedTerminal {
+			armEdgeFromEntryID = fmt.Sprintf("%s:edge:%s", matchID, arm.Pattern)
+		}
 		edges = append(edges,
 			core.Edge{ID: armEdgeFromEntryID, FromBlockID: entryBlockID, ToBlockID: armBlockID, Pattern: arm.Pattern},
 			core.Edge{ID: armEdgeToJoinID, FromBlockID: armBlockID, ToBlockID: joinBlockID, Pattern: arm.Pattern},
@@ -4204,7 +4208,7 @@ func PayloadRecordLayout(dataType core.DataType) *core.RecordLayout {
 //     the same declared place this phase);
 //  4. a terminating core.OpReturn reading whichever place holds the arm's
 //     final value.
-func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceID, sourceTypeID, returnTypeID string, dataType, returnDataType core.DataType, arm ast.MatchArm, sealed map[string]bool) ownershipSupport {
+func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceID, sourceTypeID, returnTypeID string, dataType, returnDataType core.DataType, arm ast.MatchArm, sealed map[string]bool, computedTerminal bool) ownershipSupport {
 	result := ownershipSupport{Places: []core.Place{}, Operations: []core.LinearOperation{}, Types: []core.TypeFact{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: 1}
 	fail := func(problem diagnostic.Diagnostic) ownershipSupport {
 		result.DiagnosticCode = problem.Code
@@ -4224,7 +4228,13 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 	}
 
 	patternDetail := lookupAlternativeDetail(dataType, arm.Pattern)
-	valueDetail := lookupAlternativeDetail(returnDataType, arm.Value)
+	valueDataType := dataType
+	resultTypeID := sourceTypeID
+	if computedTerminal {
+		valueDataType = returnDataType
+		resultTypeID = returnTypeID
+	}
+	valueDetail := lookupAlternativeDetail(valueDataType, arm.Value)
 
 	step := 0
 	currentSourceID := aliasPlaceID
@@ -4294,21 +4304,21 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
 			Kind: core.OpConstructPayload, SourceID: currentSourceID, TargetID: targetID, PayloadType: valueDetail.PayloadType, TypeID: currentSourceTypeID,
 		})
-		result.Places = append(result.Places, core.Place{ID: targetID, Name: "_construct_" + arm.Value, TypeID: returnTypeID})
+		result.Places = append(result.Places, core.Place{ID: targetID, Name: "_construct_" + arm.Value, TypeID: resultTypeID})
 		returnSourceID = targetID
 		step++
 	}
 
 	global := startIndex + step
-	if valueDetail.PayloadType == "" && returnTypeID != sourceTypeID {
+	if computedTerminal && valueDetail.PayloadType == "" && returnTypeID != sourceTypeID {
 		returnSourceID = fmt.Sprintf("%s:place:%d", functionID, global+1)
 		result.ValuePlaceID = returnSourceID
 	}
 	result.Operations = append(result.Operations, core.LinearOperation{
 		ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
-		Kind: core.OpReturn, SourceID: returnSourceID, TypeID: returnTypeID,
+		Kind: core.OpReturn, SourceID: returnSourceID, TypeID: resultTypeID,
 	})
-	result.Places = append(result.Places, core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: "_", TypeID: returnTypeID})
+	result.Places = append(result.Places, core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: "_", TypeID: resultTypeID})
 	step++
 	result.Work += step
 	return result
