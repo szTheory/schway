@@ -227,7 +227,7 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 	if !found {
 		return Execution{}, fmt.Errorf("branch arm %q references unknown block %q", arm.ID, arm.BlockID)
 	}
-	base := newArmFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}}, arm.BlockID)
+	base := newArmFrame(function, map[string]value{function.Parameter.ID: inputValue(program, function, input)}, arm.BlockID)
 	return runProgramFrameStack(program, base)
 }
 
@@ -241,7 +241,7 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 // partitionFrameForCall helper and runFrameStack driver runLinear and
 // runBranchArm use, rather than a third hand-copied loop.
 func runLinearBlocks(program core.Program, function core.Function, input string) (Execution, error) {
-	base := newBlockFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}}, function.ID+":block:entry")
+	base := newBlockFrame(function, map[string]value{function.Parameter.ID: inputValue(program, function, input)}, function.ID+":block:entry")
 	return runProgramFrameStack(program, base)
 }
 
@@ -308,8 +308,39 @@ func runLinear(program core.Program, function core.Function, input string) (Exec
 	if len(function.Linear.Blocks) > 0 {
 		return runLinearBlocks(program, function, input)
 	}
-	base := newFlatFrame(function, map[string]value{function.Parameter.ID: {tag: "", payload: input}})
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: inputValue(program, function, input)})
 	return runProgramFrameStack(program, base)
+}
+
+// inputValue mirrors the production emitter's closed test-input convention:
+// data parameters receive the requested alternative and the same canonical
+// payload bytes that native main initializes for that alternative.
+func inputValue(program core.Program, function core.Function, input string) value {
+	for _, dataType := range program.DataTypes {
+		if dataType.Name != function.Parameter.Type {
+			continue
+		}
+		for _, alternative := range dataType.AlternativeDetails {
+			if alternative.Name != input || alternative.PayloadType == "" {
+				continue
+			}
+			switch alternative.PayloadType {
+			case "Buffer":
+				return value{tag: input, payload: "01020304"}
+			case "Byte":
+				return value{tag: input, payload: "7"}
+			default:
+				for _, nested := range program.DataTypes {
+					if nested.Name != alternative.PayloadType || len(nested.Alternatives) == 0 {
+						continue
+					}
+					return value{tag: input, payload: nested.Alternatives[0]}
+				}
+				return value{tag: input, payload: input}
+			}
+		}
+	}
+	return value{payload: input}
 }
 
 // frame is one activation record on interp's own explicit call stack
@@ -446,6 +477,16 @@ func (v value) String() string {
 		return v.tag
 	}
 	return v.payload
+}
+
+// terminalString preserves a returned payload alongside its selected
+// alternative. Scrutinee dispatch continues to use String(), which remains
+// the tag-only representation for payload-bearing ADTs.
+func (v value) terminalString() string {
+	if v.tag != "" && v.payload != "" {
+		return v.tag + ":" + v.payload
+	}
+	return v.String()
 }
 
 // newFlatFrame builds a frame for a flat (non-block) linear body: the
@@ -965,7 +1006,7 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			}
 			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:
-			outcome, event := terminalOutcome(top, operation, sourceValue.String())
+			outcome, event := terminalOutcome(top, operation, sourceValue.terminalString())
 			events = append(events, event)
 			if operation.Kind == core.OpReturn && top.hasCaller {
 				returnTarget, returnValue := top.returnTarget, outcome.Value

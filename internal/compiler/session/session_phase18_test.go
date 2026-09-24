@@ -178,7 +178,7 @@ fn main(input: Result) -> Result {
 }
 
 func TestPhase18PayloadFixtureFrontier(t *testing.T) {
-	assertPhase18ComputedFrontier(t, "payload_return.lang", "let result = identity(value)", "Ok(payload) => payload", "match result")
+	assertPhase18ComputedFrontier(t, "payload_return.lang", "let result = take value", "Ok(payload) => Ok(payload)", "match result")
 }
 
 func TestPhase18ComputedSourceFourTierDifferential(t *testing.T) {

@@ -1,25 +1,20 @@
-// CTL-03 source witness: the Ok arm returns its destructured payload place.
-// The baseline parser refuses the terminal computed match before type
-// checking its payload result.
+// CTL-03 source witness: a computed Outcome is matched, its payload is
+// destructured, reconstructed into the selected alternative, and returned.
 module phase18.payload_return
 
 export {
   type Outcome
-  fn identity
   fn return_payload
 }
 
 data Outcome =
   | Ok(Buffer)
+  | Again(Byte)
 
-fn identity(value: Outcome) -> Outcome {
-  let returned = take value
-  returned
-}
-
-fn return_payload(value: Outcome) -> Buffer {
-  let result = identity(value)
+fn return_payload(value: Outcome) -> Outcome {
+  let result = take value
   match result {
-    Ok(payload) => payload
+    Ok(payload) => Ok(payload)
+    Again(other) => Again(other)
   }
 }

@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Completed 18-04-PLAN.md; full Go suite passed
-last_updated: "2026-09-24T17:42:53.569Z"
+stopped_at: Completed 18-05-PLAN.md
+last_updated: "2026-09-24T18:07:10.917Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 18 execution started
-state_head: a99ec44c5f332d792641a3d9ffc09cee6d844d99
+state_head: b808fc858c8d8fbb622c4dc1b00c66c15da2a0f9
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 62
+  completed_plans: 63
 ---
 
 # Project State
@@ -27,11 +27,13 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
 **Current focus:** Phase 18 — Branch on a Computed Value
-is executing its eight checked plans. Plans 18-01 through 18-03 have summaries;
-the independent core and origin peers now validate computed branch places and
-payload provenance. The Phase 18 quick validation and full Go suite are green.
-CTL-01 through CTL-03 remain open pending phase-level verification. Plans
-18-04 through 18-08 remain to execute.
+is executing its eight checked plans. Plans 18-01 through 18-05 have summaries;
+the independent core and origin peers validate computed branch places and
+payload provenance, and the interpreter/native terminal outcome now preserves
+returned payload values. The seeded wrong-slot mutation is observed on
+`axis:terminal-outcome`; the Phase 18 session checks and full Go suite are
+green. CTL-01 through CTL-03 remain open pending phase-level verification.
+Plans 18-06 through 18-08 remain to execute.
 M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 
 **Durable context (survives context clears — read before re-deriving):**
@@ -55,9 +57,9 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 ## Current Position
 
 Phase: 18 (Branch on a Computed Value) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
-Last activity: 2026-09-24 — Completed quick task 260924-gee; Phase 18 computed match implementation is verified and Phase 18 plan execution can continue
+Last activity: 2026-09-24 — Completed Phase 18 Plan 05; runtime payload value and wrong-slot mutation acceptance verified, with requirements open for phase-level verification
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -320,6 +322,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P2 | 31min | 2 tasks | 11 files |
 | Phase 18 P03 | 23min | 2 tasks | 4 files |
 | Phase 18 P4 | 35m | 3 tasks | 11 files |
+| Phase 18 P5 | 24min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -464,6 +467,9 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Core computed scrutinee IDs must resolve to a definition in the shared branch entry prefix; ID-less matches remain parameter-only.
 - [Phase 18]: Origin derivation is bounded to earlier operations in the return arm and shared entry prefix, using block facts even if Match metadata is absent.
 - [Phase 18]: Computed Result match arms use an explicit edge-bound typed value place when the return type differs from the scrutinee type.
+- [Phase 18]: Serialize payload-bearing terminal ADTs with their runtime payload while retaining tag-only branch dispatch.
+- [Phase 18]: Seed interpreter data inputs with the canonical payload values emitted by native entry setup.
+- [Phase 18]: Keep CTL-01 through CTL-03 open until full Phase 18 verification.
 
 ### Pending Todos
 
@@ -617,8 +623,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T17:42:53.252Z
-Stopped at: Completed 18-04-PLAN.md; full Go suite passed
+Last session: 2026-09-24T18:07:10.693Z
+Stopped at: Completed 18-05-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

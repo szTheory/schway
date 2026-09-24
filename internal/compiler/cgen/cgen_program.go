@@ -693,6 +693,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	entryReturnBranch, entryReturnIsBranch := branchTypes[entry.ReturnType]
 	entryIndexType := parameterTypeNames[entryIndex]
 	entryOutputType := returnTypeNames[entryIndex]
+	if entryReturnIsBranch && entryReturnBranch.hasPayload {
+		emitProgramTerminalValueWriter(&out, entryReturnBranch, program.DataTypes)
+	}
 	if entryIsBranch {
 		entryTypeName = entryIndexType
 	} else if err != nil {
@@ -773,7 +776,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		fmt.Fprintf(&out, "  const char *lang_entry_name = %s(lang_entry_output);\n", entryReturnBranch.nameFunction)
 		out.WriteString("  if (lang_entry_name == NULL) return 70;\n")
 		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
-		out.WriteString("  if (!lang_write_json_string(lang_entry_name)) return 74;\n")
+		if entryReturnBranch.hasPayload {
+			out.WriteString("  if (!lang_write_terminal_value(lang_entry_output)) return 74;\n")
+		} else {
+			out.WriteString("  if (!lang_write_json_string(lang_entry_name)) return 74;\n")
+		}
 	} else if entryOutputType == "LANG_BUFFER" {
 		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 		out.WriteString("  if (!lang_write_buffer_hex(&lang_entry_output)) return 74;\n")
@@ -817,6 +824,52 @@ func emitProgramByteWriter(out *strings.Builder) {
 	out.WriteString("static int lang_write_byte(unsigned char value) {\n")
 	out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
 	out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
+}
+
+// emitProgramTerminalValueWriter makes a returned payload-bearing ADT value
+// observable at the schema-2 terminal boundary. The tag and payload are read
+// from the returned C value, so a wrong-slot construction cannot hide behind
+// a compile-time alternative name.
+func emitProgramTerminalValueWriter(out *strings.Builder, branchType programBranchType, dataTypes []core.DataType) {
+	fmt.Fprintf(out, "static int lang_write_terminal_value(%s value) {\n", branchType.typeName)
+	fmt.Fprintf(out, "  const char *tag_name = %s(value);\n  if (tag_name == NULL) return 0;\n", branchType.nameFunction)
+	out.WriteString("  char rendered[128];\n  int length = -1;\n  switch (value.tag) {\n")
+	for _, alternative := range branchType.alternatives {
+		field, hasPayload := branchType.fields[alternative.source]
+		fmt.Fprintf(out, "    case %s:\n", alternative.cName)
+		if !hasPayload {
+			out.WriteString("      length = snprintf(rendered, sizeof rendered, \"%s\", tag_name);\n      break;\n")
+			continue
+		}
+		if nestedType, nested := findProgramDataTypeByName(dataTypes, field.payloadType); nested && field.cType == "unsigned char" {
+			fmt.Fprintf(out, "      switch (value.%s) {\n", field.name)
+			for index, nestedAlternative := range nestedType.Alternatives {
+				fmt.Fprintf(out, "        case %du: length = snprintf(rendered, sizeof rendered, \"%%s:%%s\", tag_name, %s); break;\n", index, strconv.Quote(nestedAlternative))
+			}
+			out.WriteString("        default: return 0;\n      }\n      break;\n")
+			continue
+		}
+		switch field.cType {
+		case "LANG_BUFFER":
+			fmt.Fprintf(out, "      if (value.%s.length > 4u) return 0;\n      char payload_hex[9];\n      static const char hex[] = \"0123456789abcdef\";\n      for (size_t i = 0u; i < value.%s.length; ++i) {\n        payload_hex[i * 2u] = hex[value.%s.bytes[i] >> 4u];\n        payload_hex[i * 2u + 1u] = hex[value.%s.bytes[i] & 15u];\n      }\n      payload_hex[value.%s.length * 2u] = '\\0';\n      length = snprintf(rendered, sizeof rendered, \"%%s:%%s\", tag_name, payload_hex);\n      break;\n", field.name, field.name, field.name, field.name, field.name)
+		case "unsigned char":
+			fmt.Fprintf(out, "      length = snprintf(rendered, sizeof rendered, \"%%s:%%u\", tag_name, (unsigned int)value.%s);\n      break;\n", field.name)
+		default:
+			// Nested data payload serialization is outside this phase's
+			// admitted witness; preserve existing tag semantics for it.
+			out.WriteString("      length = snprintf(rendered, sizeof rendered, \"%s\", tag_name);\n      break;\n")
+		}
+	}
+	out.WriteString("    default: return 0;\n  }\n  return length >= 0 && (size_t)length < sizeof rendered && lang_write_json_string(rendered);\n}\n\n")
+}
+
+func findProgramDataTypeByName(dataTypes []core.DataType, name string) (core.DataType, bool) {
+	for _, candidate := range dataTypes {
+		if candidate.Name == name {
+			return candidate, true
+		}
+	}
+	return core.DataType{}, false
 }
 
 // emitProgramLiveResourcesWriter serializes the collection derived by
@@ -1136,7 +1189,7 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		if !ok {
 			return fmt.Errorf("operation %q: unknown alternative %q", operation.ID, alternative)
 		}
-		fmt.Fprintf(out, "      %s %s; /* payload construct: %s */\n      %s.tag = %s;\n", parameterBranchType.typeName, locals[target.ID], operation.ID, locals[target.ID], tag)
+		fmt.Fprintf(out, "      %s %s = {0}; /* payload construct: %s */\n      %s.tag = %s;\n", parameterBranchType.typeName, locals[target.ID], operation.ID, locals[target.ID], tag)
 		if payloadSlotSwapForTest {
 			// Keep D-12-38's test-only mutation seam on the whole-program
 			// emitter path.  Leaving it only in emitBranchOperations made the

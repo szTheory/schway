@@ -455,16 +455,11 @@ func productionResolveBlameCalls(t testing.TB) []string {
 	return calls
 }
 
-// TestD1243ControlIsUnconstructible backs PHASE-12-DEBT.md's D-12-43 row:
-// it seeds a real, type-safe wrong-slot payload write via
-// cgen.SetPayloadSlotSwapForTest and asserts the resulting divergence is
-// STILL invisible to every axis session.Phase5CompareEngines checks --
-// the decisive value-divergence control D-12-38 wanted is still
-// unconstructible against the current representation. Unlike
-// TestPayloadSlotSwapMutationKilled (which logs either outcome and always
-// passes), this probe FAILS the moment the mutation becomes visible,
-// because that is exactly the day D-12-43's claim needs regrading rather
-// than continuing to pass on a stale premise.
+// TestD1243ControlIsUnconstructible preserves its registered probe identity
+// while proving the opposite of its historical name: Phase 18 now exposes
+// returned payload bytes, so the seeded wrong-slot write must diverge on the
+// terminal-outcome axis. The historical D-12-43 claim is closed by this
+// source-independent runtime control and the Phase 18 source witness.
 func TestD1243ControlIsUnconstructible(t *testing.T) {
 	ctx := context.Background()
 	runner := native.DefaultRunner()
@@ -477,8 +472,10 @@ func TestD1243ControlIsUnconstructible(t *testing.T) {
 	if injected < 1 {
 		t.Fatalf("D-12-43 probe: the fault-injection seam injected no wrong-slot write (count=%d), so this run proves nothing about the control -- check whether payload_tracer.lang's data type still declares two payload-carrying alternatives", injected)
 	}
-	if compareErr := session.Phase5CompareEngines("payload_tracer.lang(D-12-43 probe)", engines); compareErr != nil {
-		t.Fatalf("D-12-43's decisive wrong-slot value-divergence control has become CONSTRUCTIBLE: %v -- this claim is stale, regrade PHASE-12-DEBT.md's D-12-43 row instead of treating this failure as something to silence", compareErr)
+	compareErr := session.Phase5CompareEngines("payload_tracer.lang(D-12-43 probe)", engines)
+	disagreement, ok := compareErr.(*session.Phase5EngineDisagreement)
+	if !ok || disagreement.Axis != session.AxisTerminalOutcome {
+		t.Fatalf("D-12-43 wrong-slot control error = %v, want exact %s disagreement", compareErr, session.AxisTerminalOutcome)
 	}
 }
 

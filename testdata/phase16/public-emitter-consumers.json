@@ -339,7 +339,7 @@
       ]
     },
     {
-      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:502",
+      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:499",
       "classification": "admitted-dynamic-schema2"
     }
   ]

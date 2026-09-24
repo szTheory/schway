@@ -223,28 +223,12 @@ func checkedProgram(t *testing.T, relativeParts ...string) core.Program {
 //     and assert the comparator reports AGREEMENT -- discriminating real
 //     value-identity checking from a harness that screams on any diff.
 //
-// EMPIRICAL FINDING (escalated per D-12-41/D-11-36, see
-// PHASE-12-DEBT.md's D-12-26 entry): the mutated beat's wrong-slot write
-// does NOT reach session.AxisTerminalOutcome. A payload-carrying return's
-// terminal Outcome.Value is, on BOTH engines, the alternative's own TAG
-// NAME -- cgen's returnLiteral is a compile-time-known string baked
-// directly into the generated C (never read back from the runtime struct),
-// and interp's value.String() likewise resolves through the tag, never the
-// payload bytes (D-12-26: interp has no byte layout at all to diverge in).
-// So a wrong-slot payload WRITE is invisible to every one of the five axes
-// this control could check -- not a flaw in this mutation's construction,
-// but a structural property of the current representation. This is
-// recorded as a DEFECT IN THE CRITERION (D-12-41), never a quiet downgrade:
-// the test below proves, and pins, the absence exactly as
-// TestC03PeerDeriveOriginFactsOpCallGapStillOpen pins D-10-C01's own open
-// gap -- a genuine PASSING regression test recording what is NOT yet true,
-// rather than a false claim that the mutation was caught.
-//
-// WR-02: the mutated beat also asserts, via
+// WR-02: the mutated beat asserts, via
 // cgen.PayloadSlotSwapInjectedWriteCount, that engaging the seam actually
 // injected a wrong-slot write at least once. This proves the MUTATION WAS
-// APPLIED; it does not and must not claim the mutation was caught -- that
-// remains the empirical finding recorded above, unchanged.
+// APPLIED. The schema-2 terminal outcome now includes the runtime payload,
+// so this control must observe the wrong-slot corruption on the terminal
+// outcome axis.
 func TestPayloadSlotSwapMutationKilled(t *testing.T) {
 	ctx := context.Background()
 	runner := native.DefaultRunner()
@@ -262,19 +246,10 @@ func TestPayloadSlotSwapMutationKilled(t *testing.T) {
 		t.Logf("WR-02: fault-injection seam injected %d wrong-slot write(s)", injected)
 		compareErr := session.Phase5CompareEngines("payload_tracer.lang(mutated)", engines)
 		var disagreement *session.Phase5EngineDisagreement
-		if errors.As(compareErr, &disagreement) && disagreement.Axis == session.AxisTerminalOutcome {
-			// If this ever fires, the architectural finding above is
-			// STALE: the payload value now reaches the terminal outcome,
-			// and this control has become constructible for real. Do not
-			// "fix" this branch to keep the test green -- update the
-			// finding in PHASE-12-DEBT.md's D-12-26 entry instead.
-			t.Logf("mutation KILLED on %s: %v", session.AxisTerminalOutcome, disagreement)
-			return
+		if !errors.As(compareErr, &disagreement) || disagreement.Axis != session.AxisTerminalOutcome {
+			t.Fatalf("payload_tracer.lang(mutated): comparison error = %v, want exact %s disagreement", compareErr, session.AxisTerminalOutcome)
 		}
-		if compareErr != nil {
-			t.Fatalf("payload_tracer.lang(mutated): unexpected disagreement not on %s: %v", session.AxisTerminalOutcome, compareErr)
-		}
-		t.Logf("EMPIRICALLY CONFIRMED (D-12-41 escalation): the wrong-slot payload write is invisible to %s -- interpreter, -O0, and -O3 all agree despite the seeded bug, because a payload-carrying return's Outcome.Value is always the alternative's own tag name on both engines, never the payload bytes. See PHASE-12-DEBT.md's D-12-26 entry.", session.AxisTerminalOutcome)
+		t.Logf("mutation KILLED on %s: %v", session.AxisTerminalOutcome, disagreement)
 	})
 
 	t.Run("companion_unmutated_agreement", func(t *testing.T) {
