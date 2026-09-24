@@ -178,6 +178,9 @@ func Run(program core.Program, functionName, input string) (Execution, error) {
 	if function.Linear != nil && function.Match == nil {
 		return runLinear(program, function, input)
 	}
+	if function.Match != nil && function.Linear != nil && len(function.Linear.Blocks) > 0 && len(function.Linear.Blocks[0].OperationIDs) > 0 {
+		return runLinearBlocks(program, function, input)
+	}
 	for _, arm := range function.Match.Arms {
 		if arm.Pattern != input {
 			continue
@@ -758,6 +761,31 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				return Execution{}, fmt.Errorf("branch arm referencing block %q has no return operation", top.currentBlockID)
 			}
 			block := top.blocks[top.currentBlockID]
+			if len(block.Successors) > 1 && top.function.Match != nil {
+				var scrutineeID string
+				for _, place := range top.function.Linear.Places {
+					if place.Name == top.function.Match.Scrutinee && scrutineeID == "" {
+						scrutineeID = place.ID
+					}
+				}
+				scrutinee, initialized := top.values[scrutineeID]
+				if !initialized || scrutineeID == "" {
+					return Execution{}, fmt.Errorf("match %q scrutinee %q is not initialized at dispatch", top.function.Match.ID, top.function.Match.Scrutinee)
+				}
+				selected := ""
+				for _, edge := range top.edges {
+					if edge.FromBlockID == block.ID && edge.Pattern == scrutinee.String() {
+						selected = edge.ToBlockID
+						break
+					}
+				}
+				if selected == "" {
+					return Execution{}, fmt.Errorf("match %q has no edge for %q", top.function.Match.ID, scrutinee.String())
+				}
+				top.currentBlockID = selected
+				top.idx = 0
+				continue
+			}
 			if len(block.Successors) != 1 {
 				return Execution{}, fmt.Errorf("block %q has no terminator and an ambiguous successor set", block.ID)
 			}

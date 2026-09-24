@@ -885,10 +885,27 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 	if !v.check(match.ID != "" && match.PointID != "" && function.EntryPointID != "" && function.ReturnPointID != "", "core.invalid_id", function.ID) {
 		return nil, nil, false
 	}
-	dataType, knownParameterType := dataNames[function.Parameter.Type]
+	scrutineeType := function.Parameter.Type
+	knownScrutinee := match.Scrutinee == function.Parameter.Name
+	if function.Linear != nil {
+		knownScrutinee = false
+		for _, place := range function.Linear.Places {
+			if place.Name != match.Scrutinee {
+				continue
+			}
+			for _, fact := range function.Linear.Types {
+				if fact.ID == place.TypeID {
+					scrutineeType = fact.Shape.Constructor
+					knownScrutinee = true
+					break
+				}
+			}
+		}
+	}
+	dataType, knownScrutineeType := dataNames[scrutineeType]
 	_, knownReturnType := dataNames[function.ReturnType]
-	if !v.check(knownParameterType && knownReturnType, "core.unknown_type", function.Parameter.Type) ||
-		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
+	if !v.check(knownScrutineeType && knownReturnType, "core.unknown_type", scrutineeType) ||
+		!v.check(knownScrutinee, "core.unknown_place", match.Scrutinee) {
 		return nil, nil, false
 	}
 	alternatives := make(map[string]struct{}, len(dataType.Alternatives))
@@ -943,10 +960,27 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 	}
 	armIDs := make(map[string]struct{}, len(match.Arms))
 	edgeIDs := make(map[string]struct{}, len(match.Arms))
-	dataType, knownParameterType := dataNames[function.Parameter.Type]
+	scrutineeType := function.Parameter.Type
+	knownScrutinee := match.Scrutinee == function.Parameter.Name
+	if function.Linear != nil {
+		knownScrutinee = false
+		for _, place := range function.Linear.Places {
+			if place.Name != match.Scrutinee {
+				continue
+			}
+			for _, fact := range function.Linear.Types {
+				if fact.ID == place.TypeID {
+					scrutineeType = fact.Shape.Constructor
+					knownScrutinee = true
+					break
+				}
+			}
+		}
+	}
+	dataType, knownScrutineeType := dataNames[scrutineeType]
 	returnDataType, knownReturnType := dataNames[function.ReturnType]
-	if !v.check(knownParameterType && knownReturnType, "core.unknown_type", function.Parameter.Type) ||
-		!v.check(match.Scrutinee == function.Parameter.Name, "core.unknown_place", match.Scrutinee) {
+	if !v.check(knownScrutineeType && knownReturnType, "core.unknown_type", scrutineeType) ||
+		!v.check(knownScrutinee, "core.unknown_place", match.Scrutinee) {
 		return false
 	}
 	alternatives := make(map[string]struct{}, len(dataType.Alternatives))
@@ -2190,6 +2224,13 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	}
 	for _, block := range linear.Blocks {
 		if len(block.OperationIDs) == 0 {
+			continue
+		}
+		// A computed terminal match has a real linear prefix in its entry
+		// block. The block then dispatches through the function's existing
+		// match edges, so its last prefix operation is intentionally not a
+		// function-terminal operation.
+		if function.Match != nil && block.ID == function.ID+":block:entry" && len(block.Successors) > 0 {
 			continue
 		}
 		lastOpID := block.OperationIDs[len(block.OperationIDs)-1]

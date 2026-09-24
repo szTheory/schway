@@ -1,5 +1,4 @@
-// Fixture-first refusal for Phase 18: the terminal match names an in-scope
-// local place rather than the function's parameter.
+// Phase 18 CTL-01: the terminal match names an in-scope computed local place.
 module phase18.computed_match
 
 export {

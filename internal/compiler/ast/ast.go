@@ -150,6 +150,10 @@ func (a MatchArm) HasClosedVariant() bool { return (a.Value != "") != (a.Body !=
 type LinearBody struct {
 	Bindings []Binding
 	Result   string
+	// TerminalMatch is Phase 18's sole extension to a linear function body:
+	// after its ordered prefix, the body may end in the existing match form.
+	// It is nil for ordinary straight-line and match-arm bodies.
+	TerminalMatch *MatchExpr
 	// DefectReason is populated instead of Result when this body's terminal
 	// position is `defect "<reason>"` (D-04-15): a real, reachable, abort-only
 	// terminal outcome. Exactly one of Result and DefectReason is ever

@@ -978,11 +978,39 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 		blocks[block.ID] = block
 	}
 
-	switchValue := locals[parameter.ID]
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n", returnBranchType.typeName, functionName, parameterBranchType.typeName, locals[parameter.ID])
+	declaredPrefix := map[string]bool{parameter.ID: true}
+	entryBlock, hasEntry := blocks[function.ID+":block:entry"]
+	if !hasEntry {
+		return fmt.Errorf("function %q: branch entry block is absent", function.ID)
+	}
+	for _, operationID := range entryBlock.OperationIDs {
+		operation, known := operations[operationID]
+		if !known {
+			return fmt.Errorf("entry block references unknown operation %q", operationID)
+		}
+		if err := emitProgramBranchOperation(out, function, operation, parameterBranchType, returnBranchType, locals, places, declaredPrefix, lookup, childTableNames); err != nil {
+			return err
+		}
+	}
+	scrutineeID := parameter.ID
+	if function.Match.Scrutinee != parameter.Name {
+		for _, place := range function.Linear.Places {
+			if place.Name == function.Match.Scrutinee {
+				scrutineeID = place.ID
+				break
+			}
+		}
+	}
+	switchPlace, known := places[scrutineeID]
+	if !known || switchPlace.Name != function.Match.Scrutinee {
+		return fmt.Errorf("function %q: match scrutinee place %q is absent", function.ID, function.Match.Scrutinee)
+	}
+	switchValue := locals[scrutineeID]
 	if parameterBranchType.hasPayload {
 		switchValue += ".tag"
 	}
-	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  switch (%s) {\n", returnBranchType.typeName, functionName, parameterBranchType.typeName, locals[parameter.ID], switchValue)
+	fmt.Fprintf(out, "  switch (%s) {\n", switchValue)
 	for _, arm := range function.Match.Arms {
 		block, known := blocks[arm.BlockID]
 		if !known {
@@ -993,7 +1021,10 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 			return fmt.Errorf("arm %q names unknown alternative %q", arm.ID, arm.Pattern)
 		}
 		fmt.Fprintf(out, "    case %s: {\n", pattern)
-		declared := map[string]bool{parameter.ID: true}
+		declared := make(map[string]bool, len(declaredPrefix))
+		for placeID, isDeclared := range declaredPrefix {
+			declared[placeID] = isDeclared
+		}
 		for _, operationID := range block.OperationIDs {
 			operation, known := operations[operationID]
 			if !known {

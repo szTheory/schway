@@ -319,7 +319,7 @@ func (p *parser) funcDecl() ast.FuncDecl {
 		match := p.matchExpr()
 		body.MatchExpr = match
 	} else {
-		linear := p.linearBody()
+		linear := p.linearBody(true)
 		body.Linear = &linear
 	}
 	end := p.expect(TokenRBrace, "syntax.expected_rbrace")
@@ -387,7 +387,7 @@ func (p *parser) typeRef() ast.TypeRef {
 	return result
 }
 
-func (p *parser) linearBody() ast.LinearBody {
+func (p *parser) linearBody(allowTerminalMatch bool) ast.LinearBody {
 	start := p.peek()
 	body := ast.LinearBody{Span: start.Span}
 	for p.peek().Kind == TokenLet || p.peek().Kind == TokenDiscard {
@@ -452,6 +452,12 @@ func (p *parser) linearBody() ast.LinearBody {
 			Name: name.Text, RHS: ast.RHS{Kind: kind, Source: source.Text, Span: source.Span}, Span: spanFrom(bindingStart, source),
 		})
 		body.Span.End = source.Span.End
+	}
+	if allowTerminalMatch && p.peek().Kind == TokenMatch {
+		match := p.matchExpr()
+		body.TerminalMatch = &match
+		body.Span.End = match.Span.End
+		return body
 	}
 	if p.peek().Kind == TokenDefect {
 		// D-04-15: `defect "<reason>"` is the other admissible terminal form
@@ -567,7 +573,7 @@ func (p *parser) matchExpr() ast.MatchExpr {
 		}
 		if p.peek().Kind == TokenLBrace {
 			p.advance()
-			body := p.linearBody()
+			body := p.linearBody(false)
 			end := p.expect(TokenRBrace, "syntax.expected_rbrace")
 			if pattern.Kind == TokenIdentifier {
 				expression.Arms = append(expression.Arms, ast.MatchArm{Pattern: pattern.Text, Body: &body, Binder: patternBinder, Span: spanFrom(pattern, end)})
