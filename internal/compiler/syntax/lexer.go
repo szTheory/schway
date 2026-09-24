@@ -46,6 +46,24 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 			return tokens, []diagnostic.Diagnostic{inputLimit(offset)}, false
 		}
 		start := offset
+		if source[offset] >= '0' && source[offset] <= '9' {
+			// Consume one bounded candidate before validating it so suffixes,
+			// invalid radix digits, and separator errors cannot be accepted as
+			// a valid numeric prefix followed by another token.
+			offset++
+			for offset < len(source) && isNumericCandidateByte(source[offset]) {
+				offset++
+			}
+			text := string(source[start:offset])
+			span := diagnostic.Span{Start: start, End: offset}
+			if validNumericLiteral(text) {
+				tokens = append(tokens, Token{Kind: TokenNumber, Text: text, Span: span})
+			} else {
+				tokens = append(tokens, Token{Kind: TokenUnknown, Text: text, Span: span})
+				problem(diagnostic.Error("syntax.malformed_numeric_literal", span, "malformed numeric literal"))
+			}
+			continue
+		}
 		if source[offset] == '/' && offset+1 < len(source) && source[offset+1] == '/' {
 			offset += 2
 			for offset < len(source) && source[offset] != '\n' {
@@ -129,6 +147,57 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 	}
 	tokens = append(tokens, Token{Kind: TokenEOF, Span: diagnostic.Span{Start: len(source), End: len(source)}})
 	return tokens, diagnostics, truncated
+}
+
+func isNumericCandidateByte(value byte) bool {
+	return value >= '0' && value <= '9' || value >= 'a' && value <= 'z' || value >= 'A' && value <= 'Z' || value == '_'
+}
+
+func validNumericLiteral(text string) bool {
+	base, digits := 10, text
+	if len(text) >= 2 && text[0] == '0' {
+		switch text[1] {
+		case 'x', 'X':
+			base, digits = 16, text[2:]
+		case 'b', 'B':
+			base, digits = 2, text[2:]
+		case 'o', 'O':
+			return false
+		}
+	}
+	if digits == "" {
+		return false
+	}
+	previousDigit := false
+	for index := 0; index < len(digits); index++ {
+		value := digits[index]
+		if value == '_' {
+			if !previousDigit || index+1 == len(digits) || numericDigit(digits[index+1]) < 0 || numericDigit(digits[index+1]) >= base {
+				return false
+			}
+			previousDigit = false
+			continue
+		}
+		digit := numericDigit(value)
+		if digit < 0 || digit >= base {
+			return false
+		}
+		previousDigit = true
+	}
+	return previousDigit
+}
+
+func numericDigit(value byte) int {
+	switch {
+	case value >= '0' && value <= '9':
+		return int(value - '0')
+	case value >= 'a' && value <= 'f':
+		return int(value-'a') + 10
+	case value >= 'A' && value <= 'F':
+		return int(value-'A') + 10
+	default:
+		return -1
+	}
 }
 
 func punctuation(source []byte) (Kind, int) {
