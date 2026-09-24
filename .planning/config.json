@@ -103,14 +103,30 @@
   "resolve_model_ids": true,
   "model_policy": {
     "provider": "openai",
-    "budget": "medium"
+    "budget": "medium",
+    "runtime_tiers": {
+      "codex": {
+        "opus": "gpt-6-sol",
+        "sonnet": "gpt-6-luna",
+        "haiku": "gpt-6-luna"
+      }
+    }
   },
   "effort": {
     "default": "medium",
     "routing_tier_defaults": {
-      "light": "medium",
+      "light": "low",
       "standard": "medium",
-      "heavy": "medium"
+      "heavy": "high"
     }
+  },
+  "model_profile_overrides": {
+    "codex": {}
+  },
+  "models": {},
+  "model_overrides": {
+    "gsd-planner": "gpt-6-sol",
+    "gsd-roadmapper": "gpt-6-sol",
+    "gsd-debugger": "gpt-6-sol"
   }
 }

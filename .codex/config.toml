@@ -1,0 +1,8 @@
+# Keep project GSD execution capacity aligned with Codex's per-session agent cap.
+[agents]
+max_concurrent_threads_per_session = 3
+
+# GSD fails closed to one worker when the Codex runtime reports concurrency as
+# undocumented. Codex injects this project-scoped value into command processes.
+[shell_environment_policy.set]
+GSD_DISPATCH_MAX_CONCURRENCY = "3"
