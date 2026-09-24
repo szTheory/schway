@@ -557,7 +557,17 @@ position), a `checkBranch` re-architecture so the entry block can carry a
 straight-line prefix, and an ownership question that does not exist today. This
 is Austral Rule 3's territory arriving a full milestone before anyone budgeted
 for it.
-**Plans**: 8-10 (TBD at `/gsd-plan-phase 18`, after S-010)
+**Plans**: 8
+
+Plans:
+- [ ] 18-01-PLAN.md — Pin computed-place, Result-call, payload, and production-loan source frontiers
+- [ ] 18-02-PLAN.md — Trace computed terminal match through source, peers, interpreter, and native emission
+- [ ] 18-03-PLAN.md — Independently validate computed places and payload origins
+- [ ] 18-04-PLAN.md — Match a Result-returning callee value across all five axes
+- [ ] 18-05-PLAN.md — Return destructured payload and kill the wrong-slot mutation
+- [ ] 18-06-PLAN.md — Prove bounded production borrow-across-branch liveness
+- [ ] 18-07-PLAN.md — Add peer, comparator, and mutation anti-vacuity controls
+- [ ] 18-08-PLAN.md — Measure verification cost and justify focused recurring CI
 
 ---
 
