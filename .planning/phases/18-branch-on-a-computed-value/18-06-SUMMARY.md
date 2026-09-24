@@ -16,7 +16,7 @@ affects: [phase-18-verification, CTL-01, S-010, loan-liveness]
 actuals:
   tokens: 3354
   tasks: 3
-  commits: 0
+  commits: 1
 tech-stack:
   added: []
   patterns: ["Computed-match entry prefix participates in the ownership CFG", "Each branch arm receives isolated state seeded from shared prefix places"]
@@ -66,7 +66,7 @@ metrics:
   completed_date: 2026-09-24
 status: complete
 plan_head_before: 76c7bd1b78560a207dcde9fe59b76e5520d85e6b
-commits: 0
+commits: 1
 ---
 
 # Phase 18 Plan 06: Production Loan Across a Computed Branch
@@ -135,4 +135,4 @@ The production S-010 gate is clean for this topology. Requirements remain open f
 
 - Summary and all planned source/test/fixture files are present.
 - Focused checker, liveness-bound, source ownership, and Phase 18 checker/session verification passed.
-- Task commits were intentionally delegated to the parent GSD helper; frontmatter commit count reflects the measured state before that parent commit and should be refreshed with its commit hash/count.
+- Implementation and state are recorded in commit `81f030a` (`feat(18-06): validate loans across computed match`).
