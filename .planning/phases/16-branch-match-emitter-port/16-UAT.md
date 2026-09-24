@@ -3,7 +3,7 @@ status: diagnosed
 phase: 16-branch-match-emitter-port
 source: [16-01-SUMMARY.md, 16-02-SUMMARY.md, 16-03-SUMMARY.md, 16-04-SUMMARY.md, 16-05-SUMMARY.md, 16-06-SUMMARY.md, 16-07-SUMMARY.md, 16-08-SUMMARY.md, 16-09-SUMMARY.md, 16-10-SUMMARY.md, 16-11-SUMMARY.md, 16-12-SUMMARY.md, 16-13-SUMMARY.md, 16-14-SUMMARY.md, 16-15-SUMMARY.md]
 started: 2026-09-23T00:00:00Z
-updated: 2026-09-23T22:30:00Z
+updated: 2026-09-24T00:00:00Z
 ---
 
 ## Current Test
@@ -190,6 +190,22 @@ skipped: 0
   artifacts: [".planning/debug/phase16-debt-and-machine-probe.md", ".planning/LANGUAGE-MATURITY.md", "internal/compiler/session/self_describing_docs_test.go"]
   missing: ["Refresh the dated maturity snapshot to the derived 133-program/4,478-line counts and retain the machine-checked count guard so future fixture drift is detected automatically."]
   debug_session: ".planning/debug/phase16-debt-and-machine-probe.md"
+
+- gap_id: G-16-21-E
+  truth: Every scanner-visible verification command in the Phase 16 report has an owned R2b landing phase, and the groundedness suite passes against the current report.
+  status: failed
+  reason: "Fresh GOCACHE=/tmp/ai-lang-gocache go test ./... run fails only TestVerificationGroundednessFrontierIsPinned and TestVerificationGroundednessThreeClassesAreEmpty: the command at 16-VERIFICATION.md:143 is an unowned R2b finding."
+  severity: blocker
+  test: 21
+  root_cause: "Groundedness classification splits the literal selector at each `|`; the grouped alternation leaves invalid standalone branches and is classified as an unowned R2b command. The report is semantically accurate, but its selector form trips this scanner."
+  artifacts:
+    - path: ".planning/phases/16-branch-match-emitter-port/16-VERIFICATION.md"
+      issue: "Line 143 uses a grouped alternation that the groundedness scanner splits into invalid branches."
+    - path: "internal/compiler/session/verification_groundedness_test.go"
+      issue: "The per-branch classifier intentionally splits selectors on `|` and requires each branch to be independently grounded."
+  missing:
+    - "Express the same two test names as independently anchored alternation branches, then rerun the groundedness tests and complete Go suite."
+  debug_session: ".planning/debug/phase16-groundedness-owner.md"
 
 ## Verification Blockers
 
