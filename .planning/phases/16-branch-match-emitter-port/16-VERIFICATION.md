@@ -1,10 +1,12 @@
 ---
 phase: 16-branch-match-emitter-port
-verified: 2026-09-22T10:43:59Z
+verified: 2026-09-24T02:19:59Z
 status: passed
-score: 6/6 must-haves verified
+score: 4/4 must-haves verified
 covered_files:
+  - .github/workflows/ci.yml
   - .planning/REQUIREMENTS.md
+  - .planning/ROADMAP.md
   - .planning/phases/16-branch-match-emitter-port/16-01-PLAN.md
   - .planning/phases/16-branch-match-emitter-port/16-01-SUMMARY.md
   - .planning/phases/16-branch-match-emitter-port/16-02-PLAN.md
@@ -35,73 +37,60 @@ covered_files:
   - .planning/phases/16-branch-match-emitter-port/16-14-SUMMARY.md
   - .planning/phases/16-branch-match-emitter-port/16-15-PLAN.md
   - .planning/phases/16-branch-match-emitter-port/16-15-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-16-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-16-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-17-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-17-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-18-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-18-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-19-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-19-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-20-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-20-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-21-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-21-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-22-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-22-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-23-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-23-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-24-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-24-SUMMARY.md
+  - .planning/phases/16-branch-match-emitter-port/16-25-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-CONTEXT.md
+  - .planning/phases/16-branch-match-emitter-port/16-RESEARCH.md
+  - .planning/phases/16-branch-match-emitter-port/16-VALIDATION.md
+  - .planning/phases/16-branch-match-emitter-port/PHASE-16-DEBT.md
   - internal/compiler/cgen/cgen.go
   - internal/compiler/cgen/cgen_n1_convergence_test.go
-  - internal/compiler/cgen/cgen_names_test.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
-  - internal/compiler/cgen/cgen_restrict_probe_test.go
-  - internal/compiler/cgen/cgen_test.go
-  - internal/compiler/cgen/export_test.go
   - internal/compiler/cgen/legacy_emitter_evidence_test.go
-  - internal/compiler/core/core_test.go
-  - internal/compiler/evidence/evidence_test.go
-  - internal/compiler/executionpeer/executionpeer.go
-  - internal/compiler/native/foreign_retained_test.go
-  - internal/compiler/native/native_lto_test.go
-  - internal/compiler/native/native_test.go
-  - internal/compiler/native/symbols_test.go
-  - internal/compiler/session/evidence_grade_test.go
-  - internal/compiler/session/session.go
-  - internal/compiler/session/session_payload_control_test.go
-  - internal/compiler/session/session_phase11_differential_test.go
   - internal/compiler/session/session_phase16_control_test.go
   - internal/compiler/session/session_phase16_emitter_inventory_test.go
   - internal/compiler/session/session_phase16_frozen_evidence_external_test.go
   - internal/compiler/session/session_phase5.go
-  - internal/compiler/session/session_phase5_alias.go
-  - internal/compiler/session/session_phase5_corpus_test.go
-  - internal/compiler/session/session_phase5_mismatch.go
-  - internal/compiler/session/session_phase5_sanitize.go
-  - internal/compiler/session/session_phase6.go
-  - internal/compiler/session/session_phase6_injectors_test.go
-  - internal/compiler/session/session_phase6_pin_test.go
-  - internal/compiler/session/session_phase7.go
-  - internal/compiler/session/session_phase7_test.go
-  - internal/compiler/session/session_test.go
-  - internal/compiler/session/witness_registry_test.go
-  - testdata/phase16/file-frozen-evidence.json
-  - testdata/phase16/generated-frozen-evidence.json
-  - testdata/phase16/legacy-emitter-artifacts.json
-  - testdata/phase16/legacy-emitter-evidence.json
-  - testdata/phase16/public-emitter-consumers.json
-  - testdata/phase16/restrict_readonly_probe.c
-  - testdata/phase16/validation-corpus-run-record.jsonl
-  - testdata/phase16/validation-corpus-run-record.manifest.json
-covered_digest: "v1:sha256:4feaecd8a7a550f9d940882421de0b5e1cefda41ee425910397357bceb1c2566"
+  - internal/compiler/session/verification_groundedness_test.go
+covered_digest: "v1:sha256:7b985338d816e3d04ff64c3ffc70a2733cf683aa499411739dd7d7a2ca538a91"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: passed
-  previous_score: 6/6
-  gaps_closed: []
+  previous_status: gaps_found
+  previous_score: 3/4
+  gaps_closed:
+    - "Each NAT-09 cut family has an owning M004 phase."
   gaps_remaining: []
   regressions: []
-decision_coverage:
-  honored: 11
-  total: 11
-  not_honored: []
 ---
 
 # Phase 16: Branch/Match Emitter Port Verification Report
 
 **Phase Goal:** One emission law lowers every admissible program, instead of two laws split by a function-count guard.
 
-**Verified:** 2026-09-22T10:43:59Z
+**Verified:** 2026-09-24T02:19:59Z
 
 **Status:** passed
 
-**Re-verification:** Yes — fresh canonical re-verification of the prior passing report
+**Re-verification:** Yes — after Plan 16-25 gap closure.
 
 ## Goal Achievement
 
@@ -109,92 +98,74 @@ decision_coverage:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | The three superseded public dispatch emitters are deleted in the atomic dispatch-flip commit. | ✓ VERIFIED | `rg` finds no definitions for `emitMatch`, `emitBranch`, or `emitLinear`. Commit `0607486` both replaces the two public dispatch bodies with `emitProgram` calls and deletes the three bodies. |
-| 2 | N=1 public/direct convergence is byte-identical for the admitted fixtures, while cut families retain M004 refusal and each moved golden has provenance. | ✓ VERIFIED | `TestN1ConvergenceDifferential`, `TestLegacyEmitterEvidence`, and both frozen-evidence fault controls pass; `TestPreviousPhaseGoldenCUnchanged` passes for all four preserved golden files. |
-| 3 | The three no-consumer families are formally cut to M004 with owner, reopening condition, and `-flto` consequence. | ✓ VERIFIED | The NAT-09 amendment names `emitLinearForeign`, `emitLinearBorrowedByPointer`, and `emitLinearBorrowedByPointerPlain`; `PHASE-16-DEBT.md` records D-16-11 through D-16-13 with all required fields. |
-| 4 | Public emission has no function-count fork and derives `live_resources`. | ✓ VERIFIED | `cgen.Emit` and `EmitNative` directly delegate to `emitProgram`; no `len(program.Functions) != 1` condition remains. `deriveProgramLiveResources` feeds JSON serialization, exercised by both resource-tail tests. |
-| 5 | The sole production dispatcher has no fallback that converts an M004 refusal into C. | ✓ VERIFIED | `Phase16ControlNativeC` is exactly `return cgen.EmitNative(program)`. The admitted/refusal equality controls and non-test-source frozen-route scan pass, including all Phase 16 M004 corpus refusal cases. |
-| 6 | Every direct public emitter consumer is classified by the deterministic registry. | ✓ VERIFIED | `TestPhase16PublicEmitterConsumerInventory` passes against the current AST scan and registry. The registry has 77 sorted entries (63 dynamic, 14 refusal witnesses); duplicate, stale, missing, invalid-classification, and missing-witness mutations all fail the shared validator. |
+| 1 | The superseded `emitMatch`, `emitBranch`, and `emitLinear` dispatch emitters are deleted in the same commit that flips public dispatch. | ✓ VERIFIED | No definitions remain; commit `0607486` deletes the bodies and changes both public APIs to call `emitProgram`. |
+| 2 | The N=1 public/direct convergence table is byte-identical for admitted fixtures and the four moved goldens have an auditable ledger. | ✓ VERIFIED | Fresh convergence, legacy-evidence, and golden-digest tests pass. |
+| 3 | The three no-consumer emitter families are formally cut to M004 with an owning phase and stated `-flto` consequence. | ✓ VERIFIED | ROADMAP and NAT-09 name M004 Phase 21, rows D-16-11 through D-16-13 are `P21`, and the semantic control rejects a seeded `UNOWNED(...)` regression. |
+| 4 | No admissible fixture reaches C through a function-count fork, and `live_resources` is derived by the surviving emitter. | ✓ VERIFIED | `Emit` and `EmitNative` call `emitProgram`; no dispatch fork remains. `deriveProgramLiveResources` feeds serialization and its mutation-backed test passes. |
 
-**Score:** 6/6 truths verified (0 present, behavior-unverified)
+**Score:** 4/4 truths verified (0 present, behavior-unverified)
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 | --- | --- | --- | --- |
-| `internal/compiler/cgen/cgen.go` | Sole public dispatch to `emitProgram` | ✓ VERIFIED | Both public APIs validate then call `emitProgram` once. |
-| `internal/compiler/cgen/cgen_program.go` | Program, branch, and match lowering with derived resource tail | ✓ VERIFIED | Substantive production implementation; tracer, match-payload, branch, ordering, and resource tests pass. |
-| `internal/compiler/session/session_phase5.go` | Production refusal boundary | ✓ VERIFIED | The helper has no artifact lookup and propagates the public emitter result unchanged. |
-| `internal/compiler/session/session_phase16_frozen_evidence_external_test.go` | Test-only, program-bound historical evidence loader | ✓ VERIFIED | `_test.go`-only loader checks checked fixture/program canonical bytes, current refusal, and artifact digests before returning historical bytes. |
-| `internal/compiler/session/session_phase16_emitter_inventory_test.go` | AST-derived source/registry bijection gate | ✓ VERIFIED | Current-source inventory and five negative controls pass. |
-| `testdata/phase16/public-emitter-consumers.json` | Sorted consumer registry | ✓ VERIFIED | Parsed by the passing bijection gate; no stale rows remain. |
-| `PHASE-16-DEBT.md` plus NAT-09 amendment | Formal M004 cut | ✓ VERIFIED | All three named families have M004 ownership, prerequisite/reopening conditions, witnesses, and honest `-flto` consequences. |
+| `internal/compiler/cgen/cgen.go` | One public dispatch law | ✓ VERIFIED | Both public APIs call `emitProgram` after validation. |
+| `internal/compiler/cgen/cgen_program.go` | Whole-program lowering | ✓ VERIFIED | Substantive ordinary, branch, match, and explicit refusal implementation. |
+| `internal/compiler/session/session_phase5.go` | Production refusal boundary | ✓ VERIFIED | `Phase16ControlNativeC` directly returns `cgen.EmitNative(program)`. |
+| `PHASE-16-DEBT.md` plus NAT-09 amendment | Formal M004 cut with owner | ✓ VERIFIED | All three rows and detail sections name Phase 21; their individual reopening conditions and `-flto` disclosures remain intact. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | --- | --- | --- | --- | --- |
-| `cgen.go` | `cgen_program.go` | `Emit` and `EmitNative` | ✓ WIRED | Each API delegates to `emitProgram` after validation. |
-| `session_phase5.go` | `cgen.go` | `Phase16ControlNativeC` | ✓ WIRED | One direct delegation; terminal error propagates. |
-| test-only frozen-evidence loader | `file-frozen-evidence.json` | canonical program/refusal/artifact checks | ✓ WIRED | Loader is external test-package code and no non-test session source references phase-16 frozen selectors. |
-| inventory test | consumer registry | AST identities checked both directions | ✓ WIRED | The live-source bijection and all negative controls pass. |
+| `cgen.go` | `cgen_program.go` | `Emit`, `EmitNative` | ✓ WIRED | Direct delegation to `emitProgram`. |
+| `session_phase5.go` | `cgen.go` | `Phase16ControlNativeC` | ✓ WIRED | Returns live C or the unchanged terminal M004 error. |
+| NAT-09 amendment | debt register | M004 owner field | ✓ WIRED | Requirement, roadmap, table cells, and detail sections agree on Phase 21. |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | --- | --- | --- | --- | --- |
-| `cgen_program.go` | `liveResources` | `deriveProgramLiveResources(program)` → JSON writer | Yes; seed control changes generated C serialization | ✓ FLOWING |
-| `session_phase5.go` | returned C/error | live `cgen.EmitNative(program)` | Yes; no historical artifact branch exists in production | ✓ FLOWING |
+| `cgen_program.go` | `liveResources` | `deriveProgramLiveResources(program)` | Test seam changes serialized JSON | ✓ FLOWING |
+| `session_phase5.go` | C/error result | live `cgen.EmitNative(program)` | No production historical-C path exists | ✓ FLOWING |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Session production boundary and registry bijection | focused `go test ./internal/compiler/session` Phase-16 controls | 0; admitted/refusal, non-bypass, inventory, and all mutations passed | ✓ PASS |
-| Public/direct convergence and derived lowering | focused `go test ./internal/compiler/cgen` Phase-16 controls | 0; N=1, branch/match, resource, and frozen-evidence controls passed | ✓ PASS |
-| Previous golden preservation | `go test ./internal/compiler/core -run '^TestPreviousPhaseGoldenCUnchanged$' -count=1 -v` | 0; four golden files passed | ✓ PASS |
-| Workspace regression | `go test ./...` | 0 | ✓ PASS |
+| Convergence, resource derivation, cut dispositions, goldens | focused cgen controls | 0 | ✓ PASS |
+| Session delegation, refusal, inventory, provenance controls | focused session controls | 0 | ✓ PASS |
+| Workspace regression | `GOCACHE=/tmp/ai-lang-go-cache-verify16 go test ./...` | 0 | ✓ PASS |
+| Race regression | `GOCACHE=/tmp/ai-lang-go-cache-verify16 go test -race ./...` | 0; session completed in 184.467s | ✓ PASS |
+| Static analysis and build | `go vet ./... && go build ./...` | 0 | ✓ PASS |
+| Native compiler | `clang --version` | Apple clang 21.0.0 | ✓ PASS |
+| NAT-09 owner law | `go test ./internal/compiler/session -run '^(TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed)$' -count=1 -v` | 0; seeded `UNOWNED`, mistitled-roadmap, and missing-prerequisite faults rejected | ✓ PASS |
 
 ### Probe Execution
 
-Step 7c: SKIPPED — no Phase 16 probe script is declared or present under `scripts/*/tests/probe-*.sh`.
+Step 7c: SKIPPED — no Phase 16 probe script is declared or present. Native C paths are exercised by the passing compiler tests; CI requires clang, vet, build, full tests, and race tests on macOS and Linux.
 
 ### Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| NAT-08 | 16-01 through 16-15 | One emission law lowers every admissible program; superseded emitters are atomically deleted. | ✓ SATISFIED | Atomic cutover/deletion is in `0607486`; public APIs, production session boundary, convergence controls, and current consumer registry all use the one program-emitter authority. |
-| NAT-09 | 16-05, 16-06, 16-11 through 16-15 | Three no-consumer emitter families are formally cut rather than deferred a third time. | ✓ SATISFIED | Amendment and three debt rows are complete; public and session controls refuse the cut corpus rather than fabricating live C. |
+| NAT-08 | 16-01 through 16-15 | One emission law; superseded emitters deleted in the cutover commit. | ✓ SATISFIED | Source deletion, `0607486`, convergence, goldens, test, race, vet, and build evidence. |
+| NAT-09 | 16-05, 16-06, 16-11 through 16-25 | Three no-consumer families formally cut with M004 landing and `-flto` consequence. | ✓ SATISFIED | M004 Phase 21 is authoritative, all three rows are P21, and mutation controls reject ownerless or inconsistent drift. |
 
 No orphaned Phase 16 requirements were found.
 
-### Test Quality Audit
-
-| Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
-| --- | --- | --- | --- | --- | --- | --- |
-| `cgen_n1_convergence_test.go` | NAT-08 | yes | no | no | Value | Compares public/direct output and named refusal outcomes. |
-| `session_phase16_control_test.go` | NAT-08/NAT-09 | yes | no | no | Behavioral | Verifies admitted equality, terminal refusal, and absence of production artifact selectors. |
-| `session_phase16_emitter_inventory_test.go` | NAT-08 | yes | no | no | Behavioral/bijection | Exercises the live AST/registry law plus five independent invalid mutations. |
-| `session_phase16_frozen_evidence_external_test.go` | NAT-09 | yes | no | no | Value | Warning: `TestPhase16FileFrozenEvidenceRejectsProgramSubstitution` compares distinct canonical programs but does not invoke the private loader with the substitute. The loader contains the rejecting comparison; add that direct negative call to strengthen the test. |
-
-No disabled requirement test or circular expected-value generator was found. The final row is a non-blocking test-quality warning, not evidence of a production boundary failure.
-
-### Decision Coverage
-
-All 11/11 trackable Phase 16 decisions are honored by shipped artifacts. This is non-blocking.
-
 ### Anti-Patterns Found
 
-No blocking anti-pattern was found in the Phase 16 implementation. No unreferenced `TBD`, `FIXME`, or `XXX` debt marker was found in the inspected implementation or control files.
+No blocking anti-pattern was found. No unreferenced `TBD`, `FIXME`, or `XXX` marker was found in the inspected implementation or controls.
 
 ## Human Verification
 
-N/A — infrastructure/foundation phase with no user-facing elements. All phase-goal acceptance criteria were verified programmatically.
+N/A — infrastructure/compiler phase. All behavior-dependent technical claims received deterministic test evidence. The prior `cut-m004` decision remains an approval; no user decision or UAT remains.
 
 ## Gaps Summary
 
-Fresh live-code verification found no regression: the session boundary returns no historical C after a public M004 refusal, and the source-derived public-emitter registry remains an exact, passing bijection. No remaining gap blocks NAT-08 or NAT-09.
+Plan 16-25 closed the sole prior gap. M004 Phase 21 now owns D-16-11 through D-16-13 in every authority, and the executable NAT-09 control rejects an ownerless row. The one-law emission goal and both NAT requirements are achieved.
 
-_Verified: 2026-09-22T10:43:59Z_
+_Verified: 2026-09-24T02:19:59Z_
 
 _Verifier: the agent (gsd-verifier)_
