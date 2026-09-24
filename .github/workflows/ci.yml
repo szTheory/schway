@@ -73,5 +73,7 @@ jobs:
         run: clang --version
       - name: scripts/verify-phase6.sh
         run: sh scripts/verify-phase6.sh
-      - name: Phase 15 focused evidence seams
-        run: go test ./internal/compiler/session -run 'TestDecodeExecutionSchema2AdmissionSeam|TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v
+      - name: Phase 15 native admission seam
+        run: go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v
+      - name: Phase 15 session evidence seams
+        run: go test ./internal/compiler/session -run 'TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v

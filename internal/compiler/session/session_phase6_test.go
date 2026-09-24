@@ -229,16 +229,104 @@ func TestCIWorkflowRunsCurrentAggregateGate(t *testing.T) {
 		"sh scripts/verify-phase6.sh",
 		"ubuntu-latest",
 		"macos-latest",
-		"TestDecodeExecutionSchema2AdmissionSeam",
-		"TestSchema2ComparisonRequiresPeerVerdict",
-		"TestPhase5CompareProgramEnginesPreservesLegacySchemas",
-		"TestPhase11InterproceduralDifferential/DiamondSharedLeaf",
-		"TestPhase15CollisionGuardIsNotInert",
 	} {
 		if !strings.Contains(text, required) {
 			t.Fatalf(".github/workflows/ci.yml is missing current aggregate requirement %q", required)
 		}
 	}
+
+	for _, required := range []struct {
+		pkg      string
+		testName string
+	}{
+		{"./internal/compiler/native", "TestDecodeExecutionSchema2AdmissionSeam"},
+		{"./internal/compiler/session", "TestSchema2ComparisonRequiresPeerVerdict"},
+		{"./internal/compiler/session", "TestPhase5CompareProgramEnginesPreservesLegacySchemas"},
+		{"./internal/compiler/session", "TestPhase11InterproceduralDifferential/DiamondSharedLeaf"},
+		{"./internal/compiler/session", "TestPhase15CollisionGuardIsNotInert"},
+	} {
+		if !workflowRunsTestInPackage(text, required.pkg, required.testName) {
+			t.Fatalf(".github/workflows/ci.yml must select %s from %s", required.testName, required.pkg)
+		}
+	}
+}
+
+func TestCIWorkflowSelectionPinsPackageOwnership(t *testing.T) {
+	tests := []struct {
+		name     string
+		workflow string
+		pkg      string
+		testName string
+		want     bool
+	}{
+		{
+			name:     "native decoder selected from owning package",
+			workflow: "run: go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v",
+			pkg:      "./internal/compiler/native",
+			testName: "TestDecodeExecutionSchema2AdmissionSeam",
+			want:     true,
+		},
+		{
+			name:     "native decoder rejected from session package",
+			workflow: "run: go test ./internal/compiler/session -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v",
+			pkg:      "./internal/compiler/native",
+			testName: "TestDecodeExecutionSchema2AdmissionSeam",
+			want:     false,
+		},
+		{
+			name:     "session seam selected from owning package",
+			workflow: "run: go test ./internal/compiler/session -run 'TestSchema2ComparisonRequiresPeerVerdict' -count=1 -v",
+			pkg:      "./internal/compiler/session",
+			testName: "TestSchema2ComparisonRequiresPeerVerdict",
+			want:     true,
+		},
+		{
+			name:     "missing selection rejected",
+			workflow: "run: go test ./internal/compiler/native -run 'TestOther' -count=1 -v",
+			pkg:      "./internal/compiler/native",
+			testName: "TestDecodeExecutionSchema2AdmissionSeam",
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := workflowRunsTestInPackage(tt.workflow, tt.pkg, tt.testName); got != tt.want {
+				t.Fatalf("workflowRunsTestInPackage(%q, %q) = %t, want %t", tt.pkg, tt.testName, got, tt.want)
+			}
+		})
+	}
+}
+
+// workflowRunsTestInPackage reports whether one focused go test invocation
+// couples a test selector with the package that owns the test.
+func workflowRunsTestInPackage(workflow, pkg, testName string) bool {
+	for _, line := range strings.Split(workflow, "\n") {
+		start := strings.Index(line, "go test ")
+		if start < 0 {
+			continue
+		}
+		args := strings.Fields(line[start:])
+		if len(args) < 4 || args[0] != "go" || args[1] != "test" || args[2] != pkg {
+			continue
+		}
+		for i, arg := range args[3:] {
+			selector := ""
+			switch {
+			case arg == "-run" && i+4 < len(args):
+				selector = args[i+4]
+			case strings.HasPrefix(arg, "-run="):
+				selector = strings.TrimPrefix(arg, "-run=")
+			default:
+				continue
+			}
+			selector = strings.Trim(selector, "'\"")
+			if strings.Contains(selector, testName) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // TestPhase6ScriptInvokesNoPriorGate asserts the script never references
