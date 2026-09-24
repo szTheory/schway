@@ -38,12 +38,12 @@ created: "2026-09-24"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| Wave 0 | 01 | 0 | CTL-01 | T-18-01 | Pin the existing computed-scrutinee refusal; independent validators fail closed for malformed or forged core | fixture, unit | `go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase18' -count=1` | ❌ W0 | ⬜ pending |
-| Wave 0 | 01 | 0 | CTL-02 | T-18-02 | A Result-returning callee's computed value reaches all five comparator axes through independent peer admission | integration, differential, smoke | `go test ./internal/compiler/session -run 'TestPhase18.*Result|TestPhase18.*Computed' -count=1` | ❌ W0 | ⬜ pending |
-| Wave 0 | 01 | 0 | CTL-03 | T-18-03 | Payload place is returned; injected wrong-slot corruption diverges at `axis:terminal-outcome` | integration, mutation-kill | `go test ./internal/compiler/session -run 'TestPhase18.*Payload|TestPhase18.*WrongSlot' -count=1` | ❌ W0 | ⬜ pending |
-| Wave 0 | 01 | 0 | CTL-01 | T-18-01 | A pre-match loan live in one arm is classified with existing endpoints and bounded fixpoint work | source integration, ownership | `go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase18.*Loan|TestEdgeSpecificLiveOut' -count=1` | ❌ W0 | ⬜ pending |
-| 18-08-T1 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-01 | Repeated cold/warm distributions and host/tool provenance are recorded and internally consistent | latency evidence | `bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh --measurements` | ❌ W0 | ⬜ pending |
-| 18-08-T2 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-03 | CI disposition is evidence-backed; added command runs in both matrix hosts or unchanged CI blob is proven | CI configuration evidence | `bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh --final` | ❌ W0 | ⬜ pending |
+| Wave 0 | 01 | 0 | CTL-01 | T-18-01 | Pin the existing computed-scrutinee refusal; independent validators fail closed for malformed or forged core | fixture, unit | `go test ./internal/compiler/check ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
+| Wave 0 | 01 | 0 | CTL-02 | T-18-02 | A Result-returning callee's computed value reaches all five comparator axes through independent peer admission | integration, differential, smoke | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
+| Wave 0 | 01 | 0 | CTL-03 | T-18-03 | Payload place is returned; injected wrong-slot corruption diverges at `axis:terminal-outcome` | integration, mutation-kill | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
+| Wave 0 | 01 | 0 | CTL-01 | T-18-01 | A pre-match loan live in one arm is classified with existing endpoints and bounded fixpoint work | source integration, ownership | `go test ./internal/compiler/check ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
+| 18-08-T1 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-01 | Repeated cold/warm distributions and host/tool provenance are recorded and internally consistent; plan 08 will deliver the phase-local evidence verifier | latency evidence | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
+| 18-08-T2 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-03 | CI disposition is evidence-backed; added command runs in both matrix hosts or unchanged CI blob is proven; plan 08 will deliver the phase-local evidence verifier | CI configuration evidence | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
 
 Threat refs:
 
@@ -78,7 +78,7 @@ phase18_evidence_version=1
 host=
 go_version=
 clang_version=
-focused_command=go test ./internal/compiler/session -run 'TestPhase18' -count=1
+focused_command=go test ./internal/compiler/session -count=1
 focused_cold_seconds=
 focused_cold_count=
 focused_cold_min_seconds=
