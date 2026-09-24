@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Completed 18-06-PLAN.md
-last_updated: "2026-09-24T18:16:55.242Z"
+stopped_at: Completed 18-07-PLAN.md; Phase 18 pathoracle endpoint differential remains for scoped follow-up
+last_updated: "2026-09-24T18:25:23.712Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 18 execution started
-state_head: 76c7bd1b78560a207dcde9fe59b76e5520d85e6b
+state_head: 537d4599f181d56abe2f72b9fbb13b1e245806a6
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 64
+  completed_plans: 65
 ---
 
 # Project State
@@ -57,7 +57,7 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 ## Current Position
 
 Phase: 18 (Branch on a Computed Value) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-09-24 — Completed Phase 18 Plan 05; runtime payload value and wrong-slot mutation acceptance verified, with requirements open for phase-level verification
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -324,6 +324,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P4 | 35m | 3 tasks | 11 files |
 | Phase 18 P5 | 24min | 3 tasks | 9 files |
 | Phase 18 P6 | 11min | 3 tasks | 6 files |
+| Phase 18 P07 | 3m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -568,6 +569,7 @@ green**, because wiring is exactly what a structurally unreachable defect class
 still has. Grade requirements against the tree, not the wiring diagram.
 
 - Full go test ./... remains red on Phase 11 gate fixtures, stale corpus counts and validation digest, and unpinned groundedness findings outside Plan 16-19 scope.
+- Phase 18 full session suite: testdata/phase18/loan_across_branch.lang is admitted by check and corevalidate (same point-after-op:3 arm:0 plus Off-edge endpoint), while pathoracle.RecomputeEndpoints(select) returns pathoracle.inconsistent_path_death: loan dies at different positions across paths sharing its birth block. Plan 18-07 focused controls pass; resolve in a scoped follow-up before phase acceptance.
 
 ### Roadmap Evolution
 
@@ -625,10 +627,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T18:16:55.020Z
-Stopped at: Completed 18-06-PLAN.md
+Last session: 2026-09-24T18:25:23.161Z
+Stopped at: Completed 18-07-PLAN.md; Phase 18 pathoracle endpoint differential remains for scoped follow-up
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: None
+Resume file: 18-08-PLAN.md
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a

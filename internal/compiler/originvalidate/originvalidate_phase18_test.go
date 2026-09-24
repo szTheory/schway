@@ -110,3 +110,32 @@ func TestPhase18OriginPeerAcceptsComputedSource(t *testing.T) {
 		t.Fatalf("origin peer rejected valid computed match source: %+v", problems)
 	}
 }
+
+// Checker admission does not bless a later forged origin summary: this test
+// first admits the source, then changes only the published contract and asks
+// the origin peer to recompute it from the core facts.
+func TestPhase18OriginPeerRejectsForgedComputedOriginAfterCheckerAdmission(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("checker refused control source: %+v", checked.Diagnostics)
+	}
+	var target *core.Function
+	for index := range checked.Program.Functions {
+		if checked.Program.Functions[index].PublicOrigin != nil {
+			target = &checked.Program.Functions[index]
+			break
+		}
+	}
+	if target == nil {
+		t.Fatal("checker-admitted control source did not publish an origin")
+	}
+	target.PublicOrigin = &core.PublicOrigin{Paths: []string{}, Access: "shared"}
+	problems := originvalidate.ValidatePublished(checked.Program)
+	if len(problems) == 0 {
+		t.Fatal("origin peer accepted forged empty origin after checker admission")
+	}
+}
