@@ -1,14 +1,12 @@
 ---
 phase: 18-branch-on-a-computed-value
-verified: 2026-09-24T20:33:39Z
+verified: 2026-09-24T20:47:13Z
 status: passed
 score: 21/21 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .planning/LANGUAGE-MATURITY.md
   - .planning/REQUIREMENTS.md
-  - .planning/ROADMAP.md
-  - .planning/STATE.md
   - .planning/phases/18-branch-on-a-computed-value/18-01-PLAN.md
   - .planning/phases/18-branch-on-a-computed-value/18-01-SUMMARY.md
   - .planning/phases/18-branch-on-a-computed-value/18-02-PLAN.md
@@ -44,7 +42,6 @@ covered_files:
   - .planning/quick/260924-kto-restore-historical-core-compatibility-an/260924-kto-SUMMARY.md
   - .planning/quick/260924-kto-restore-historical-core-compatibility-an/260924-kto-VERIFICATION.md
   - .planning/spikes/007-loan-across-branch/README.md
-  - .planning/state.json
   - internal/compiler/ast/ast.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
@@ -75,9 +72,15 @@ covered_files:
   - testdata/phase18/loan_across_branch.lang
   - testdata/phase18/payload_return.lang
   - testdata/phase18/result_computed_match.lang
-covered_digest: "v1:sha256:b5af9d7884e86be9b63fb4041c8ef18e0966a9d20550540fd898806221c89d01"
+covered_digest: "v1:sha256:da1c9699fef8f115fa6e7429b948d53c07e3cd2d24181bc49ae1e8ea737d126e"
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 21/21
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 decision_coverage:
   honored: 5
   total: 5
@@ -88,9 +91,11 @@ human_verification: []
 # Phase 18: Branch on a Computed Value — Verification
 
 **Phase Goal:** A branch can discriminate a value the function computed, not only its own parameter, by generalizing `match` to the terminal form of a linear body over an in-scope `data` place.
-**Verified:** 2026-09-24T20:33:39Z
+**Verified:** 2026-09-24T20:47:13Z
 **Status:** passed
-**Re-verification:** No — initial phase verification
+**Re-verification:** Yes — refreshed after GSD completion metadata changed.
+
+The Phase 18 goal and success criteria were rechecked against the completed roadmap entry. The fingerprint covers the phase plans and summaries, mapped requirements, implementation, fixtures, and validation evidence. Mutable progress files (`ROADMAP.md`, `STATE.md`, and `state.json`) are excluded because GSD completion and subsequent phase advancement edit those administrative records without changing the acceptance contract or implementation evidence; including them would make the phase report stale as a consequence of its own completion workflow.
 
 ## Goal Achievement
 
@@ -151,7 +156,7 @@ The generic key-link query cannot interpret the plans' descriptive component nam
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Computed source, Result call, payload mutation, loan, axis controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase18ComputedSourceFourTierDifferential|TestPhase18ResultComputedMatch|TestPhase18FiveAxis|TestPhase18PayloadPlaceReturn|TestPhase18WrongSlotMutation|TestPhase18LoanAcrossBranchProduction|TestPhase18ComparatorControlRejectsMissingExecutionTierAndRequiresPeer|TestPhase18ComparatorAxesRejectSeededDivergence)$' -count=1` | Passed in 8.2s | ✓ PASS |
+| Computed source, Result call, payload mutation, loan, axis controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase18ComputedSourceFourTierDifferential|TestPhase18ResultComputedMatch|TestPhase18FiveAxis|TestPhase18PayloadPlaceReturn|TestPhase18WrongSlotMutation|TestPhase18LoanAcrossBranchProduction|TestPhase18ComparatorControlRejectsMissingExecutionTierAndRequiresPeer|TestPhase18ComparatorAxesRejectSeededDivergence)$' -count=1` | Passed in 5.758s | ✓ PASS |
 | Parser frontier and computed terminal form | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/syntax -run '^TestPhase18' -count=1` | Passed | ✓ PASS |
 | Production checker/refusal/loan controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/check -run '^TestPhase18' -count=1` | Passed | ✓ PASS |
 | Independent core peer | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/corevalidate -run '^TestPhase18' -count=1` | Passed | ✓ PASS |
@@ -159,7 +164,9 @@ The generic key-link query cannot interpret the plans' descriptive component nam
 | Interpreter call-prefix regression | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/interp -run '^TestPhase18' -count=1` | Passed | ✓ PASS |
 | C emitter regression | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/cgen -run '^TestPhase18' -count=1` | Passed | ✓ PASS |
 | Entire Go suite and race suite | `go test ./... -count=1`; `go test -race ./... -count=1` | Full suite and 30 cold/warm lane samples reported passing by the orchestrator; the phase-local verifier confirms the recorded runs and distribution metadata. | ✓ PASS |
-| Production S-010 source check | `GOCACHE=/tmp/ai-lang-gocache go run ./cmd/lang check testdata/phase18/loan_across_branch.lang` | Exit 0; `recomputed_work=173` | ✓ PASS |
+| Phase evidence measurements | `bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh --measurements` | Exit 0; “Phase 18 measurements evidence verified” | ✓ PASS |
+| Phase evidence disposition | `bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh --final` | Exit 0; “Phase 18 final evidence verified” | ✓ PASS |
+| Production S-010 source check | `GOCACHE=/tmp/ai-lang-gocache go run ./cmd/lang check testdata/phase18/loan_across_branch.lang` | Exit 0; `recomputed_work=173` (recorded phase validation evidence) | ✓ PASS |
 
 ### Probe Execution
 
@@ -204,5 +211,5 @@ No gaps remain against the Phase 18 roadmap success criteria or the merged plan 
 
 ---
 
-_Verified: 2026-09-24T20:33:39Z_  
+_Verified: 2026-09-24T20:47:13Z_  
 _Verifier: the agent (gsd-verifier)_
