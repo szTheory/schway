@@ -1,0 +1,25 @@
+// CTL-02 source witness: the terminal match uses a Result returned by a
+// Lang callee, rather than the function's input place.
+module phase18.result_computed_match
+
+export {
+  type Result
+  fn main
+}
+
+data Result =
+  | Accepted
+  | Rejected
+
+fn identity(value: Result) -> Result {
+  let returned = take value
+  returned
+}
+
+fn main(input: Result) -> Result {
+  let result = identity(input)
+  match result {
+    Accepted => Accepted
+    Rejected => Rejected
+  }
+}

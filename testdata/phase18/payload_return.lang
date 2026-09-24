@@ -1,0 +1,25 @@
+// CTL-03 source witness: the Ok arm returns its destructured payload place.
+// The baseline parser refuses the terminal computed match before type
+// checking its payload result.
+module phase18.payload_return
+
+export {
+  type Outcome
+  fn identity
+  fn return_payload
+}
+
+data Outcome =
+  | Ok(Buffer)
+
+fn identity(value: Outcome) -> Outcome {
+  let returned = take value
+  returned
+}
+
+fn return_payload(value: Outcome) -> Buffer {
+  let result = identity(value)
+  match result {
+    Ok(payload) => payload
+  }
+}
