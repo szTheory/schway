@@ -56,3 +56,10 @@ func TestPhase19NumericRefusalFrontiers(t *testing.T) {
 		})
 	}
 }
+
+func TestPhase19ScalarGate(t *testing.T) {
+	// Reuse the established D-12-18 mutation control so this gate inherits its
+	// pinned corpus comparison instead of creating a second comparison law.
+	TestPayloadCorpusCharacterizationReplayMutationKilled(t)
+	TestPhase19LiteralFrontier(t)
+}
