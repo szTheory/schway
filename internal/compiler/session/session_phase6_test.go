@@ -241,6 +241,59 @@ func TestCIWorkflowRunsCurrentAggregateGate(t *testing.T) {
 	}
 }
 
+func TestCIWorkflowSelectionPinsPackageOwnership(t *testing.T) {
+	tests := []struct {
+		name     string
+		workflow string
+		pkg      string
+		testName string
+		want     bool
+	}{
+		{
+			name:     "native decoder selected from owning package",
+			workflow: "run: go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v",
+			pkg:      "./internal/compiler/native",
+			testName: "TestDecodeExecutionSchema2AdmissionSeam",
+			want:     true,
+		},
+		{
+			name:     "native decoder rejected from session package",
+			workflow: "run: go test ./internal/compiler/session -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v",
+			pkg:      "./internal/compiler/native",
+			testName: "TestDecodeExecutionSchema2AdmissionSeam",
+			want:     false,
+		},
+		{
+			name:     "session seam selected from owning package",
+			workflow: "run: go test ./internal/compiler/session -run 'TestSchema2ComparisonRequiresPeerVerdict' -count=1 -v",
+			pkg:      "./internal/compiler/session",
+			testName: "TestSchema2ComparisonRequiresPeerVerdict",
+			want:     true,
+		},
+		{
+			name:     "missing selection rejected",
+			workflow: "run: go test ./internal/compiler/native -run 'TestOther' -count=1 -v",
+			pkg:      "./internal/compiler/native",
+			testName: "TestDecodeExecutionSchema2AdmissionSeam",
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := workflowRunsTestInPackage(tt.workflow, tt.pkg, tt.testName); got != tt.want {
+				t.Fatalf("workflowRunsTestInPackage(%q, %q) = %t, want %t", tt.pkg, tt.testName, got, tt.want)
+			}
+		})
+	}
+}
+
+// workflowRunsTestInPackage reports whether one focused go test invocation
+// couples a test selector with the package that owns the test.
+func workflowRunsTestInPackage(workflow, pkg, testName string) bool {
+	return strings.Contains(workflow, testName)
+}
+
 // TestPhase6ScriptInvokesNoPriorGate asserts the script never references
 // any prior phase's own gate script by path -- a phase gate is a peer,
 // never a descendant (D-06-13's carried-forward standing rule).
