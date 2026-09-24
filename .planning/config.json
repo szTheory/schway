@@ -1,6 +1,6 @@
 {
   "model_profile": "adaptive",
-  "runtime": "claude",
+  "runtime": "codex",
   "commit_docs": true,
   "parallelization": true,
   "search_gitignored": false,
@@ -16,7 +16,8 @@
     "create_tag": true,
     "phase_branch_template": "gsd/phase-{phase}-{slug}",
     "milestone_branch_template": "gsd/{milestone}-{slug}",
-    "quick_branch_template": null
+    "quick_branch_template": null,
+    "allow_default_branch_commits": true
   },
   "workflow": {
     "research": true,
@@ -51,7 +52,7 @@
     "tdd_mode": false,
     "ui_review": true,
     "_auto_chain_active": false,
-    "use_worktrees": false
+    "use_worktrees": true
   },
   "ship": {
     "pr_body_sections": [
@@ -101,7 +102,7 @@
   },
   "resolve_model_ids": true,
   "model_policy": {
-    "provider": "anthropic",
+    "provider": "openai",
     "budget": "medium"
   },
   "effort": {
