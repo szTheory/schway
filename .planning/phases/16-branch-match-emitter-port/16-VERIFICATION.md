@@ -1,12 +1,13 @@
 ---
 phase: 16-branch-match-emitter-port
-verified: 2026-09-24T06:27:30Z
+verified: 2026-09-24T06:34:18Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .planning/REQUIREMENTS.md
   - .planning/ROADMAP.md
+  - .planning/STATE.md
   - .planning/phases/16-branch-match-emitter-port/16-01-PLAN.md
   - .planning/phases/16-branch-match-emitter-port/16-01-SUMMARY.md
   - .planning/phases/16-branch-match-emitter-port/16-02-PLAN.md
@@ -76,7 +77,7 @@ covered_files:
   - internal/compiler/session/session_phase16_production_paths_test.go
   - internal/compiler/session/session_test.go
   - internal/compiler/session/verification_groundedness_test.go
-covered_digest: "v1:sha256:682f87164a40e1591e658e208c6b97b68c698c4a8908a8b5a604b1c7282bbdcd"
+covered_digest: "v1:sha256:1e447453d347e589ffd6aae2ee00c95976cf15b7b01ed6fdfdde553686837a90"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -96,11 +97,11 @@ decision_coverage:
 
 **Phase Goal:** One emission law lowers every admissible program, instead of two laws split by a function-count guard.
 
-**Verified:** 2026-09-24T06:27:30Z
+**Verified:** 2026-09-24T06:34:18Z
 
 **Status:** passed
 
-**Re-verification:** Yes — after Plan 16-26 groundedness gap closure and addition of direct emitter-retirement and production-path refusal smoke tests. The prior report had no `gaps:` frontmatter; all roadmap truths were rechecked against code and tests.
+**Re-verification:** Yes — after Plan 16-26 groundedness gap closure and the Phase 16 → 17 tracking transition. The prior report had no `gaps:` frontmatter; all roadmap truths and NAT-08/NAT-09 were rechecked against source, tests, UAT, and the updated roadmap/state artifacts. The fingerprint includes the post-transition `.planning/ROADMAP.md` and `.planning/STATE.md`.
 
 ## Goal Achievement
 
@@ -158,6 +159,7 @@ The additional production-path smoke controls are also verified: `TestPhase16Pro
 | NAT-09 ownership and groundedness frontier | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1` | exit 0 (1.580s) | ✓ PASS |
 | Independent native semantic differential | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^TestPhase16DirectProgramFourTierDifferential$' -count=1` | exit 0 (2.134s) | ✓ PASS |
 | Superseded-emitter deletion and production-path safety | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/cgen -run '^TestSupersededEmitterDefinitionsRemoved$' -count=1`; `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase16ProductionBypassMutationIsKilled|TestPhase16ProductionPathsPreserveM004Refusal|TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1` | both exit 0 (0.260s and 1.344s) | ✓ PASS |
+| Re-verification regression selection | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/cgen ./internal/compiler/core ./internal/compiler/session -run '^(TestSupersededEmitterDefinitionsRemoved|TestN1ConvergenceDifferential|TestPreviousPhaseGoldenCUnchanged|TestPhase16GoldenChangeLedger|TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1` | exit 0 across all three packages (1.773s) | ✓ PASS |
 | Full workspace regression and build | `GOCACHE=/tmp/ai-lang-gocache go test ./...`; `GOCACHE=/tmp/ai-lang-gocache go build ./...` | both exit 0 (fresh final results supplied by the orchestrator) | ✓ PASS |
 
 ### Validation Coverage Outcome
@@ -210,6 +212,6 @@ None. This compiler/infrastructure phase has no visual or user-flow criteria. Th
 
 No must-have gaps remain. Plan 16-26 corrected the scanner-visible owner-law selector into independently anchored branches. Fresh focused emitter-retirement, production-path refusal, bypass-mutation, owner-law, and groundedness tests pass; the complete Go test suite and build also pass. `16-VALIDATION.md` is Nyquist-compliant through Plan 26; `16-SECURITY.md` records 49/49 threats closed or accepted and zero open. The macOS/Linux CI matrix runs the full build and test commands. UAT records 21/21 checks passed, including the previously recorded `cut-m004` decision and fresh full-suite check.
 
-_Verified: 2026-09-24T06:27:30Z_
+_Verified: 2026-09-24T06:34:18Z_
 
 _Verifier: the agent (gsd-verifier)_
