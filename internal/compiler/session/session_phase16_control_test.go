@@ -68,10 +68,18 @@ func TestPhase16ProductionSourcesCannotLoadFrozenC(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, forbidden := range []string{"testdata/phase16/historical", "file-frozen-evidence.json", "generated-frozen-evidence.json"} {
-			if strings.Contains(string(source), forbidden) {
-				t.Fatalf("production source %s can select frozen C through %q", file, forbidden)
-			}
+		if refs := phase16FrozenCSelectors(string(source)); len(refs) > 0 {
+			t.Fatalf("production source %s can select frozen C through %q", file, refs)
 		}
 	}
+}
+
+func phase16FrozenCSelectors(source string) []string {
+	var found []string
+	for _, selector := range []string{"testdata/phase16/historical", "file-frozen-evidence.json", "generated-frozen-evidence.json"} {
+		if strings.Contains(source, selector) {
+			found = append(found, selector)
+		}
+	}
+	return found
 }
