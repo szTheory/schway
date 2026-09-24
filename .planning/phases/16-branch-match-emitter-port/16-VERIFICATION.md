@@ -1,13 +1,11 @@
 ---
 phase: 16-branch-match-emitter-port
-verified: 2026-09-24T20:42:17Z
+verified: 2026-09-24T20:52:11Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .planning/REQUIREMENTS.md
-  - .planning/ROADMAP.md
-  - .planning/STATE.md
   - .planning/phases/16-branch-match-emitter-port/16-01-PLAN.md
   - .planning/phases/16-branch-match-emitter-port/16-01-SUMMARY.md
   - .planning/phases/16-branch-match-emitter-port/16-02-PLAN.md
@@ -77,7 +75,7 @@ covered_files:
   - internal/compiler/session/session_phase16_production_paths_test.go
   - internal/compiler/session/session_test.go
   - internal/compiler/session/verification_groundedness_test.go
-covered_digest: "v1:sha256:e541e3375b4086946c15be492161e4cf2c12ad766aadef19c005a9433e19438f"
+covered_digest: "v1:sha256:c65bbd9c855857f42fe4c03b2274f65210780f10ea461c3ce7b4d3e0c51bdd1f"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -86,7 +84,7 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  refresh_reason: "Later Phase 18 work changed covered emitter code and the requirements file. The previous Phase 16 fingerprint no longer matched the current tree, so Phase 16 acceptance tests were rerun."
+  refresh_reason: "Phase 16 acceptance tests were rerun after an administrative STATE.md narrative edit. Mutable progress files are excluded from this fingerprint to prevent workflow status updates from invalidating unchanged implementation evidence."
 decision_coverage:
   honored: 11
   total: 11
@@ -97,11 +95,13 @@ decision_coverage:
 
 **Phase Goal:** One emission law lowers every admissible program, instead of two laws split by a function-count guard.
 
-**Verified:** 2026-09-24T20:42:17Z
+**Verified:** 2026-09-24T20:52:11Z
 
 **Status:** passed
 
 **Re-verification:** Yes — refreshed the stale fingerprint after later shared-emitter changes and reran the Phase 16 acceptance checks against the current tree. All roadmap truths and NAT-08/NAT-09 remain verified; no current criterion requires human judgment.
+
+The current roadmap goal and Phase 16 requirements were checked. The fingerprint covers all Phase 16 plans and summaries, mapped requirements, implementation, tests, and phase evidence. Mutable progress files (`ROADMAP.md`, `STATE.md`, and `state.json`) are excluded because GSD status and narrative updates do not change the acceptance contract or implementation evidence and otherwise cause circular staleness after phase transitions.
 
 ## Goal Achievement
 
@@ -217,6 +217,6 @@ None. This compiler/infrastructure phase has no visual or user-flow criteria. Th
 
 No must-have gaps remain. Plan 16-26 corrected the scanner-visible owner-law selector into independently anchored branches. Fresh focused emitter-retirement, production-path refusal, bypass-mutation, owner-law, and groundedness tests pass; the complete Go test suite and build also pass. `16-VALIDATION.md` is Nyquist-compliant through Plan 26; `16-SECURITY.md` records 49/49 threats closed or accepted and zero open. The macOS/Linux CI matrix runs the full build and test commands. UAT records 21/21 checks passed, including the previously recorded `cut-m004` decision and fresh full-suite check.
 
-_Verified: 2026-09-24T20:42:17Z_
+_Verified: 2026-09-24T20:52:11Z_
 
 _Verifier: the agent (gsd-verifier)_

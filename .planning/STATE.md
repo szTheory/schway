@@ -27,16 +27,17 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 18 — Branch on a Computed Value
-has completed its eight checked plans. Plans 18-01 through 18-08 have summaries;
-the independent core and origin peers validate computed branch places and
-payload provenance, and the interpreter/native terminal outcome now preserves
-returned payload values. The seeded wrong-slot mutation is observed on
-`axis:terminal-outcome`; the Phase 18 session checks and full Go suite are
-green. CTL-01 through CTL-03 remain open pending phase-level verification.
-The measured validation record and CI disposition are in 18-VALIDATION.md;
-objective acceptance remains assigned to automated phase-level verification.
-M003 remains the active milestone; Phase 19 and Phase 20 are pending.
+**Current focus:** Phase 18 — Branch on a Computed Value — is complete and
+automatically verified (21/21 must-haves; zero human UAT). CTL-01 through
+CTL-03 are complete. The independent core and origin peers validate computed
+branch places and payload provenance; interpreter and native tiers preserve
+returned payload values; the seeded wrong-slot mutation is observed on
+`axis:terminal-outcome`; and the production S-010 source fixture retains its
+bounded point/edge loan behavior. The measured validation record and
+evidence-based CI disposition are in
+`.planning/phases/18-branch-on-a-computed-value/18-VALIDATION.md`.
+M003 remains active; Phase 19 is ready for discussion and planning, followed by
+Phase 20.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -71,7 +72,7 @@ under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
 14-VALIDATION.md's Per-Task Verification Map filled with 31 real rows, and
 all eleven phase requirements confirmed complete.
 
-**Next:** `$gsd-verify-work 18` (automated evidence review; no human UAT is required for the objective criteria)
+**Next:** `$gsd-discuss-phase 19` — prior research recommends one fixed-width unsigned `U64` type lowered to `uint64_t`; confirm any remaining language-facing choices before planning.
 
 ## M003 Phase Map
 
@@ -81,12 +82,12 @@ Phases 14-20. Structure is the ratified plan from
 
 | Phase | Name | Requirements | Plans (est.) | Status |
 |-------|------|--------------|--------------|--------|
-| 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Not started |
-| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Not started |
-| 16 | Branch/Match Emitter Port | 2 | 8-10 | Not started |
-| 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Not started |
-| 18 | Branch on a Computed Value | 3 | 8-10 | Not started — **S-010 gate** |
-| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Not started |
+| 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
+| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete |
+| 16 | Branch/Match Emitter Port | 2 | 8-10 | Complete |
+| 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
+| 18 | Branch on a Computed Value | 3 | 8-10 | Complete |
+| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Ready to plan |
 | 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 4-5 | Not started |
 
 **Carry-forward context that must survive a context reset** (restated here
