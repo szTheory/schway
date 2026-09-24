@@ -5,6 +5,8 @@
 **Re-assessed:** 2026-09-17, Phase 14 (EVD-06 landed a machine check for this
 file's own counts; the guard total corrected 32→22 and the corpus figures
 refreshed — see "The single-function guard inventory" below).
+**Re-assessed:** 2026-09-24, Phase 18 fixture-era snapshot (current corpus and
+guard counts refreshed; EVD-06's machine check was introduced on 2026-09-17).
 **Purpose:** stop re-discovering the gap between how sophisticated the
 verification stack sounds and how little the language can currently express.
 Planning vocabulary ("semantic spine", "interprocedural equivalence") describes
@@ -82,9 +84,9 @@ and multi-function fixtures now exist for Phases 07, 08, and 10. The shape is
 still fixtures, not programs: every one exists to exercise one admission rule,
 and the biggest file is mostly comment.
 
-Corpus at re-assessment (2026-09-23, plan 16-20): **133 `.lang` programs, 4,478 lines total** (~34 lines average, 193-line maximum). The corpus has grown since the previous machine-verified snapshot; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
+Corpus at re-assessment (2026-09-24, Phase 18 fixture-era check): **137 `.lang` programs, 4,578 lines total** (~33 lines average, 193-line maximum). The corpus has grown since the previous machine-verified snapshot; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
 
-## The single-function guard inventory (re-verified 2026-09-20, EVD-06 machine check)
+## The single-function guard inventory (re-verified 2026-09-24, Phase 18 fixture-era check)
 
 Phases 07-10 made `OpCall` real in `check`, `corevalidate`, `originvalidate`,
 `pathoracle`, and (internally, via Go tests) `interp`. A two-function program
@@ -97,7 +99,7 @@ go run ./cmd/lang run --engine=native      testdata/…/call_basic.lang  # opera
 ```
 
 It cannot be executed by either engine. The refusal is **not** confined to the
-two `cgen` entry points the roadmap names. A non-test scan finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (45 including tests):
+two `cgen` entry points the roadmap names. A non-test scan finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (46 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|
@@ -132,13 +134,15 @@ re-verification:
   outright," which was accurate at the 2026-09-11 re-assessment and has since
   been overtaken by Phase 11.
 - **The comparator and gate scaffolding are still mostly single-function.**
-  The 20 `session` guards include the verification lanes that *are* the
+  The 19 `session` guards include the verification lanes that *are* the
   five-axis equivalence proof. Making multi-function programs runnable and
   making them *provable* remain separate costs.
 
 ### Re-verify cheaply — do this rather than trusting this file
 
-As of 2026-09-17 (EVD-06), the guard-count and corpus figures above are
+As of 2026-09-17 (EVD-06), the guard-count and corpus figures above have been
+machine-checked. The current values below are refreshed as of 2026-09-24; EVD-06
+introduced the check on 2026-09-17. The guard-count and corpus figures are
 machine-checked by `TestLanguageMaturityCountsAreCurrent`
 (`go test ./internal/compiler/session/... -run TestLanguageMaturityCountsAreCurrent -count=1`)
 independently of the commands below — the commands below stay for humans

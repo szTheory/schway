@@ -599,6 +599,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260922-hfs | Correct Phase 17 Plan 07 traceability and reverify Phase 17 | 2026-09-22 | c7f3692 | passed | [260922-hfs-correct-phase-17-plan-07-traceability-so](./quick/260922-hfs-correct-phase-17-plan-07-traceability-so/) |
 | 260923-nvq | Automate verification by default and record project preference | 2026-09-23 | dd257c5 | passed | [260923-nvq-default-to-automated-integration-end-to-](./quick/260923-nvq-default-to-automated-integration-end-to-/) |
 | 260924-djg | Avoid groundedness false positives from Phase 18 preparatory commands | 2026-09-24 | c349f52 | passed | [260924-djg-avoid-groundedness-false-positives-from](./quick/260924-djg-avoid-groundedness-false-positives-from-/) |
+| 260924-gee | Refresh derived language maturity guard and corpus counts | 2026-09-24 | pending | passed; GSD commit helper blocked by sandbox | [260924-gee-refresh-language-maturity-derived-guard](./quick/260924-gee-refresh-language-maturity-derived-guard/) |
 
 ## Deferred Items
 
