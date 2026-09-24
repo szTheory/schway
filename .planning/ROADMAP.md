@@ -561,7 +561,7 @@ for it.
 
 Plans:
 - [x] 18-01-PLAN.md — Pin computed-place, Result-call, payload, and production-loan source frontiers
-- [ ] 18-02-PLAN.md — Trace computed terminal match through source, peers, interpreter, and native emission
+- [x] 18-02-PLAN.md — Trace computed terminal match through source, peers, interpreter, and native emission
 - [ ] 18-03-PLAN.md — Independently validate computed places and payload origins
 - [ ] 18-04-PLAN.md — Match a Result-returning callee value across all five axes
 - [ ] 18-05-PLAN.md — Return destructured payload and kill the wrong-slot mutation

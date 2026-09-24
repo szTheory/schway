@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-09-24T15:03:50.085Z"
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-09-24T15:41:02.873Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 18 execution started
-state_head: 6b287873e5146e7d9cec45f78e88bc1f91bd30a6
+state_head: 33f8c2e2dd0ac36b5db828bd4cc8991a158b464a
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 59
+  completed_plans: 60
 ---
 
 # Project State
@@ -56,7 +56,7 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 ## Current Position
 
 Phase: 18 (Branch on a Computed Value) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-09-24 — Completed quick task 260924-djg; Phase 18 regression gate is clear
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -318,6 +318,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16 P16 | 4min | 1 tasks | 5 files |
 | Phase 16 P21 | 20 min | 2 tasks | 6 files |
 | Phase 18 P1 | 15min | 3 tasks | 6 files |
+| Phase 18 P2 | 31min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -457,6 +458,8 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Phase 16 Plan 21: Keep Phase 11 assurance test-only; require exact cut-m004 refusal before loading provenance-checked frozen C.
 - [Phase 18]: Phase 16 Plan 21: Keep zero-call entry ambiguity as an independently typed refusal, without by-pointer frozen-evidence mapping.
 - [Phase 18]: Phase 18's current source frontier is the parser diagnostic syntax.expected_linear_result at terminal match; preserve it until computed match is admitted.
+- [Phase 18]: Represent a linear prefix followed by one terminal match in the existing body and branch CFG.
+- [Phase 18]: Keep CTL-01 open until full Phase 18 acceptance is verified.
 
 ### Pending Todos
 
@@ -609,8 +612,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T15:03:49.861Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-09-24T15:41:02.678Z
+Stopped at: Completed 18-02-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
