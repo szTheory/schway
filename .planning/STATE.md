@@ -5,17 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: planning
-stopped_at: Phase 17 complete, ready to plan Phase 18
-last_updated: "2026-09-24T12:23:17.201Z"
+stopped_at: Phase 18 context gathered
+last_updated: "2026-09-24T12:57:18.914Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 25f765d9738858a100e4953d4b6298b703df1a41
+state_head: 47b9cbe3b2ceaee81d4cac41653419eb20997c95
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 58
   completed_plans: 58
-  percent: 57
 ---
 
 # Project State
@@ -613,10 +612,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T01:05:39.537Z
-Stopped at: Phase 17 complete, ready to plan Phase 18
+Last session: 2026-09-24T12:57:18.758Z
+Stopped at: Phase 18 context gathered
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: None
+Resume file: .planning/phases/18-branch-on-a-computed-value/18-CONTEXT.md
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
