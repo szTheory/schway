@@ -103,7 +103,7 @@ func phase16FileFrozenEvidenceC(t *testing.T, supplied core.Program, fixture str
 func TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram(t *testing.T) {
 	for _, fixture := range []string{
 		"testdata/phase11/multi_function_gate_corpus.lang",
-		"testdata/phase11/multi_function_gate_n_two.lang",
+		"testdata/phase16/historical/phase11_gate_n_two.fixture",
 	} {
 		checked := checkedPhase16Fixture(t, fixture)
 		artifact, err := phase16FileFrozenEvidenceC(t, checked.Program, fixture)

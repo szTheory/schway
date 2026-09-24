@@ -109,7 +109,7 @@ func phase11ExpectedRefusal(fixture string) string {
 	switch fixture {
 	case "testdata/phase11/multi_function_gate_corpus.lang":
 		return `function "s1:phase11.multi_function_gate_corpus:fn:touch": by-pointer bodies are not supported by whole-program native emission this phase`
-	case "testdata/phase11/multi_function_gate_n_two.lang":
+	case "testdata/phase16/historical/phase11_gate_n_two.fixture":
 		return `function "s1:phase11.gate_n_two:fn:touchTwo": by-pointer bodies are not supported by whole-program native emission this phase`
 	default:
 		return ""
@@ -292,7 +292,7 @@ fn main(value: Byte) -> Byte {
 
 func phase11TwoWouldCarryCorpusSource(t *testing.T) []byte {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_gate_n_two.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "phase11_gate_n_two.fixture"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +375,7 @@ func TestPhase11GateFailsAtNZero(t *testing.T) {
 // attribute set is still exactly empty -- adjacency does not merge or
 // double-count the would-have-carried population.
 func TestPhase11GateCountsAdjacentWouldCarryFunctions(t *testing.T) {
-	report, err := verifyPhase11ZeroAttributeGate(t, context.Background(), phase11TwoWouldCarryCorpusSource(t), "testdata/phase11/multi_function_gate_n_two.lang", native.DefaultRunner())
+	report, err := verifyPhase11ZeroAttributeGate(t, context.Background(), phase11TwoWouldCarryCorpusSource(t), "testdata/phase16/historical/phase11_gate_n_two.fixture", native.DefaultRunner())
 	if err != nil {
 		t.Fatalf("VerifyPhase11ZeroAttributeGate: %v", err)
 	}
@@ -418,7 +418,7 @@ func phase11ReplaceOnce(t *testing.T, source, old, replacement string) string {
 func TestPhase11ByPointerRefusalFirstEvidence(t *testing.T) {
 	for _, fixture := range []string{
 		"testdata/phase11/multi_function_gate_corpus.lang",
-		"testdata/phase11/multi_function_gate_n_two.lang",
+		"testdata/phase16/historical/phase11_gate_n_two.fixture",
 	} {
 		source, err := os.ReadFile(testsupport.ProjectPath(fixture))
 		if err != nil {

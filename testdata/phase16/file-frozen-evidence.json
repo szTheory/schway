@@ -143,7 +143,7 @@
       "Refusal": "function \"s1:phase11.multi_function_gate_corpus:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase"
     },
     {
-      "Fixture": "testdata/phase11/multi_function_gate_n_two.lang",
+      "Fixture": "testdata/phase16/historical/phase11_gate_n_two.fixture",
       "FixtureSHA256": "4bfaf7c7b5116671163a0ca933bf05a8b8bab418c7cb4d5d1d1d30516fcc5bc5",
       "Artifact": "testdata/phase16/historical/phase11_gate_n_two.c",
       "ArtifactSHA256": "79659b7626f6ff44fdc80bcfed2361e6b2a16d154bf5683c7847eba58d60a27a",

@@ -265,7 +265,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 		if row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
 			ambiguousEntryRowFound = row.Classification == phase16TypedRefusal && row.Witness == "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" && len(row.EvidenceFixtures) == 0
 		}
-		if strings.HasPrefix(row.Call, "internal/compiler/session/session_phase11_gate_test.go:EmitNative:") && row.Classification == phase16RefusalWithFrozen && row.Witness == "probe:TestPhase11ByPointerRefusalFirstEvidence" && reflect.DeepEqual(row.EvidenceFixtures, []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase11/multi_function_gate_n_two.lang"}) {
+		if strings.HasPrefix(row.Call, "internal/compiler/session/session_phase11_gate_test.go:EmitNative:") && row.Classification == phase16RefusalWithFrozen && row.Witness == "probe:TestPhase11ByPointerRefusalFirstEvidence" && reflect.DeepEqual(row.EvidenceFixtures, []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase16/historical/phase11_gate_n_two.fixture"}) {
 			phase11GateRowFound = true
 		}
 		if row.Classification == phase16TypedRefusal && row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
@@ -314,7 +314,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 			problems = append(problems, "duplicate file frozen fixture "+record.Fixture)
 		}
 		fileByFixture[record.Fixture] = record
-		if strings.HasPrefix(record.Fixture, "testdata/phase11/multi_function_gate") {
+		if strings.HasPrefix(record.Fixture, "testdata/phase11/multi_function_gate") || record.Fixture == "testdata/phase16/historical/phase11_gate_n_two.fixture" {
 			if !phase11MappedFixtures[record.Fixture] {
 				problems = append(problems, "unconsumed Phase 11 frozen evidence record "+record.Fixture)
 			}
@@ -361,7 +361,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 			problems = append(problems, "Phase 11 refusal row maps missing frozen evidence "+fixture)
 		}
 	}
-	wantPhase11Fixtures := []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase11/multi_function_gate_n_two.lang"}
+	wantPhase11Fixtures := []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase16/historical/phase11_gate_n_two.fixture"}
 	for _, fixture := range wantPhase11Fixtures {
 		if !phase11MappedFixtures[fixture] {
 			problems = append(problems, "Phase 11 frozen evidence record is not consumed "+fixture)

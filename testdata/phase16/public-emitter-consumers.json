@@ -246,7 +246,7 @@
       "witness": "probe:TestPhase11ByPointerRefusalFirstEvidence",
       "evidence_fixtures": [
         "testdata/phase11/multi_function_gate_corpus.lang",
-        "testdata/phase11/multi_function_gate_n_two.lang"
+        "testdata/phase16/historical/phase11_gate_n_two.fixture"
       ]
     },
     {
@@ -276,7 +276,7 @@
       "witness": "probe:TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram",
       "evidence_fixtures": [
         "testdata/phase11/multi_function_gate_corpus.lang",
-        "testdata/phase11/multi_function_gate_n_two.lang"
+        "testdata/phase16/historical/phase11_gate_n_two.fixture"
       ]
     },
     {
@@ -331,7 +331,7 @@
       "witness": "probe:TestPhase16M004ProvenanceRegistryRejectsFaults",
       "evidence_fixtures": [
         "testdata/phase11/multi_function_gate_corpus.lang",
-        "testdata/phase11/multi_function_gate_n_two.lang"
+        "testdata/phase16/historical/phase11_gate_n_two.fixture"
       ]
     },
     {
