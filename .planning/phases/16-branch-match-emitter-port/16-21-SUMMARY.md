@@ -88,7 +88,7 @@ commits: 4
 3. **Task 1: Clarify frozen evidence mutation controls** - `9526d2c` (test)
 4. **Task 2: Bind Phase 11 inventory rows to frozen provenance** - `75336b1` (test)
 
-**Plan metadata:** pending GSD close-out commit.
+**Plan metadata:** recorded by the GSD close-out commit following summary creation.
 
 ## Files Created/Modified
 
