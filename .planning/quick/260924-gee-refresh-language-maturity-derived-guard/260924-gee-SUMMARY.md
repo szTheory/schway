@@ -55,7 +55,7 @@ status: complete
 
 ## Task Commits
 
-The GSD commit helper did not commit the task: staging failed because the sandbox denied creation of `.git/index.lock`. No raw Git staging or commit was attempted.
+- `f5bd7ae` — `docs(quick-260924-gee): refresh maturity counts`
 
 ## Verification
 
@@ -67,15 +67,11 @@ The GSD commit helper did not commit the task: staging failed because the sandbo
 
 - Retained the test's literal pluralized `packages` phrasing while reporting the verified count of one package; the AST-derived numeric result remains authoritative.
 
-## Deviations from Plan
-
-The GSD commit helper returned `staging_failed` for `.planning/LANGUAGE-MATURITY.md`: `fatal: Unable to create '~/projects/ai-lang/.git/index.lock': Operation not permitted`. Task changes and supporting records remain uncommitted for the parent executor to handle.
-
 ## Issues Encountered
 
-The first focused run exposed that the self-check requires the literal sentence shape `N packages`; the document was corrected to preserve that parser contract, and the focused check then passed. Existing unrelated modified and untracked files were left untouched.
+The first focused run exposed that the self-check requires the literal sentence shape `N packages`; the document was corrected to preserve that parser contract, and the focused check then passed. The executor sandbox could not create `.git/index.lock`; the GSD commit helper committed the scoped files from the parent context. Existing unrelated modified and untracked files were left untouched.
 
-## Self-Check: FAILED (commit unavailable)
+## Self-Check: PASSED
 
 - Summary and verification artifacts are present.
-- Task commit is absent because repository metadata is not writable in this executor sandbox; the parent executor must commit the scoped changes if its permissions allow.
+- Task commit `f5bd7ae` is recorded in the summary and STATE.md.
