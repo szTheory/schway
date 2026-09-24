@@ -14,7 +14,7 @@ affects: [phase-18, computed-match, corevalidate, originvalidate]
 actuals:
   tokens: 4472
   tasks: 2
-  commits: 1
+  commits: 2
 tech-stack:
   added: []
   patterns: [entry-prefix place derivation, return-arm-scoped origin walk]
@@ -60,7 +60,7 @@ duration: 23min
 completed: 2026-09-24
 status: complete
 plan_head_before: be25df0e5bb7a37f6ef5dd603fe2b53aaa006ddc
-commits: 1
+commits: 2
 ---
 
 # Phase 18 Plan 03: Independent Admission Peers Summary
@@ -84,8 +84,8 @@ commits: 1
 
 ## Task Commits
 
-1. **Task 1: Independently validate computed scrutinee place and type in core** - `8201c82` (RED control; implementation changes await the parent GSD commit route).
-2. **Task 2: Independently validate origin and payload facts for computed branches** - implementation and controls are complete; commit is pending the parent GSD commit route.
+1. **Task 1: Independently validate computed scrutinee place and type in core** - `8201c82` (RED control).
+2. **Plan implementation and metadata** - `6195d66` (`feat(18-03): harden computed match admission peers`).
 
 ## Files Created/Modified
 
@@ -109,7 +109,7 @@ commits: 1
 - **Fix:** ID-less matches resolve only to the function parameter; computed matches require an explicit ID and entry-prefix producer.
 - **Files modified:** `internal/compiler/corevalidate/corevalidate.go`
 - **Verification:** The core peer tests and Phase 18 quick validation passed after the adjustment.
-- **Commit:** Pending the parent GSD commit route.
+- **Commit:** `6195d66`.
 
 **2. [Rule 2 - Independent origin scope] Bound each branch return to its own definitions.**
 - **Found during:** Task 2
@@ -117,7 +117,7 @@ commits: 1
 - **Fix:** Require every traversed definition to precede the return and reside in its block or the shared entry block.
 - **Files modified:** `internal/compiler/originvalidate/originvalidate.go`, `internal/compiler/originvalidate/originvalidate_phase18_test.go`
 - **Verification:** Origin-focused controls and the quick validation passed.
-- **Commit:** Pending the parent GSD commit route.
+- **Commit:** `6195d66`.
 
 **Total deviations:** 2 auto-fixed (1 Rule 1, 1 Rule 2). **Impact:** Both changes close peer correctness gaps exposed by Phase 18 computed-place inputs.
 
@@ -126,12 +126,12 @@ commits: 1
 - Passed `go test ./internal/compiler/corevalidate -run 'Test(Phase18|CoreValidateBranch)' -count=1`.
 - Passed `go test ./internal/compiler/originvalidate -run 'Test(Phase18|OriginValidate.*Payload)' -count=1`.
 - Passed the Phase 18 quick validation command: `go test ./internal/compiler/syntax ./internal/compiler/check ./internal/compiler/corevalidate ./internal/compiler/originvalidate -count=1`.
-- Passed `go test ./...` before the final tightening that scopes origin walks based on block facts even when Match is absent; after that small tightening, both peer-focused commands and the quick validation command passed again.
+- Passed the full Go suite after the final origin-scope tightening; `GOCACHE=/tmp/ai-lang-gocache go test ./...` exited 0 (session package: 126.138s).
 - Confirmed the new peer tests use the public source/session entry point only and import no checker derivation helpers.
 
 ## Issues Encountered
 
-- The executor environment cannot create `.git/index.lock`; the GSD helper reported `staging_failed`. Per orchestration instruction, no further commit attempt was made. Parent owns committing the scoped code and plan artifacts.
+- The executor environment could not create `.git/index.lock`; the parent committed the scoped implementation and plan artifacts through the GSD helper.
 - The CTL-03 payload fixture is not yet checker-valid at this plan boundary, so the valid-source origin acceptance control uses the already accepted computed-match fixture; synthetic core tests separately exercise computed payload provenance. Later phase plans retain full CTL acceptance responsibility.
 
 ## Next Phase Readiness
@@ -145,5 +145,5 @@ Both peers now have independent computed-place boundaries and automated malforme
 ## Self-Check: PASSED
 
 - The summary and both Phase 18 peer test files exist.
-- The RED control commit `8201c82` exists; remaining scoped implementation and metadata changes are awaiting the parent GSD commit route.
+- The RED control commit `8201c82` and implementation/metadata commit `6195d66` are recorded.
 - Focused core, focused origin, quick validation, and full `go test ./...` results are recorded above.
