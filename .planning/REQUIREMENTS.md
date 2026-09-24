@@ -243,9 +243,9 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | TYP-03 | Phase 17 | Complete |
 | TYP-04 | Phase 17 | Complete |
 | TYP-05 | Phase 17 | Complete |
-| CTL-01 | Phase 18 | Pending |
-| CTL-02 | Phase 18 | Pending |
-| CTL-03 | Phase 18 | Pending |
+| CTL-01 | Phase 18 | Gaps Found |
+| CTL-02 | Phase 18 | Gaps Found |
+| CTL-03 | Phase 18 | Gaps Found |
 | VAL-01 | Phase 19 | Pending |
 | VAL-02 | Phase 19 | Pending |
 | VAL-03 | Phase 19 | Pending |

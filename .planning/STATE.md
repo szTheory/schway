@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Phase 18 context gathered
-last_updated: "2026-09-24T14:39:08.250Z"
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-09-24T15:03:50.085Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 18 execution started
-state_head: c349f52f10a30af56a6924f4d11e42016359cc0e
+state_head: 6b287873e5146e7d9cec45f78e88bc1f91bd30a6
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 58
+  completed_plans: 59
 ---
 
 # Project State
@@ -56,8 +56,8 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 ## Current Position
 
 Phase: 18 (Branch on a Computed Value) — EXECUTING
-Plan: 1 of 8
-Status: Executing Phase 18
+Plan: 2 of 8
+Status: Ready to execute
 Last activity: 2026-09-24 — Completed quick task 260924-djg; Phase 18 regression gate is clear
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
@@ -317,6 +317,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16 P17 | 12min | 2 tasks | 3 files |
 | Phase 16 P16 | 4min | 1 tasks | 5 files |
 | Phase 16 P21 | 20 min | 2 tasks | 6 files |
+| Phase 18 P1 | 15min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -455,6 +456,7 @@ Standing architectural commitments carried into M002:
 - [Phase 16]: Bind each checked-in record body to exact pair bytes and require persisted per-pair and batch completion witnesses, including under re-digested mutations.
 - [Phase 18]: Phase 16 Plan 21: Keep Phase 11 assurance test-only; require exact cut-m004 refusal before loading provenance-checked frozen C.
 - [Phase 18]: Phase 16 Plan 21: Keep zero-call entry ambiguity as an independently typed refusal, without by-pointer frozen-evidence mapping.
+- [Phase 18]: Phase 18's current source frontier is the parser diagnostic syntax.expected_linear_result at terminal match; preserve it until computed match is admitted.
 
 ### Pending Todos
 
@@ -607,10 +609,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T12:57:18.758Z
-Stopped at: Phase 18 context gathered
+Last session: 2026-09-24T15:03:49.861Z
+Stopped at: Completed 18-01-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: .planning/phases/18-branch-on-a-computed-value/18-CONTEXT.md
+Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
