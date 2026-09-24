@@ -2,6 +2,7 @@ package interp
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
@@ -432,6 +433,8 @@ type frame struct {
 type value struct {
 	tag     string
 	payload string
+	u64     uint64
+	isU64   bool
 }
 
 // disableEmptyTagSerializationSeamForTest is Phase 12 plan 04 Task 2's own
@@ -475,6 +478,9 @@ func (v value) String() string {
 	}
 	if v.tag != "" {
 		return v.tag
+	}
+	if v.isU64 {
+		return strconv.FormatUint(v.u64, 10)
 	}
 	return v.payload
 }
