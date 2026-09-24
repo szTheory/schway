@@ -287,16 +287,16 @@ This is a port/delete refactor, so all five categories were checked.
 | A1 | The current macOS probe shape will compile and behave identically in Linux CI. | Restrict Probe Result | By-pointer admission cannot proceed; choose M004 cut at checkpoint. |
 | A2 | The port can derive live resources with a small reusable abstraction without importing foreign-resource machinery. | Architecture Patterns | May require more factoring; do not weaken D-16-05. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does Linux validate the exact one-pointer read/copy-only restrict probe across the required lanes?**
    - What we know: macOS lanes passed.
    - What's unclear: Linux Clang/linker/sanitizer result.
-   - Recommendation: run unchanged probe in Linux CI before the D-16-07 admission checkpoint.
+   - Resolution: D-16-05 selected the complete by-pointer cut to M004. The Linux result is therefore not used to claim cross-host support or admit the probe's source family in Phase 16. Any later admission must produce Linux evidence in its M004 plan first.
 2. **Can `emitLinearBorrowedByPointer` be structurally fenced without importing unbuilt discharge-pair machinery?**
    - What we know: the port is allowed only for the exact source shape.
    - What's unclear: the smallest inspectable predicate/test seam.
-   - Recommendation: prototype a private predicate and exhaustive rejection matrix while legacy code remains present; reject → cut if the fence is not auditable.
+   - Resolution: D-16-05 selected the complete by-pointer cut to M004, so no production by-pointer predicate is admitted in this phase. Phase 16 preserves refusal controls; a future M004 admission must define and verify its structural fence before enabling lowering.
 
 ## Environment Availability
 
@@ -305,9 +305,9 @@ This is a port/delete refactor, so all five categories were checked.
 | Go | implementation/tests | ✓ | `go1.24` module target | — |
 | Clang | C17 probe/native lanes | ✓ | host-installed | — |
 | macOS | local restrict lanes | ✓ | current host | — |
-| Linux | required cross-host restrict proof | ✗ | — | CI checkpoint; no local substitute |
+| Linux | required only for by-pointer admission | ✗ | — | Not required for the selected cut-m004 disposition; mandatory before any M004 admission |
 
-**Missing dependencies with no fallback:** Linux execution evidence for D-16-06.
+**Resolved dependency scope:** Linux execution evidence for the optional by-pointer admission probe remains unavailable in this phase. The selected cut-m004 disposition leaves all by-pointer families refused, so no cross-host support claim depends on that missing result. Any future admission remains gated on Linux CI evidence.
 
 ## Validation Architecture
 
