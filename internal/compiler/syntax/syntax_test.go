@@ -40,6 +40,24 @@ func TestTokenBudgetStopsWithOneStableDiagnostic(t *testing.T) {
 	}
 }
 
+func TestPhase19NumericToken(t *testing.T) {
+	for _, spelling := range []string{"0", "00", "08", "42", "4_2", "0x2a", "0b101010"} {
+		tokens, diagnostics := syntax.Lex([]byte(spelling))
+		if len(diagnostics) != 0 || len(tokens) != 2 || tokens[0].Kind != syntax.TokenNumber || tokens[0].Text != spelling || tokens[0].Span.Start != 0 || tokens[0].Span.End != len(spelling) {
+			t.Errorf("Lex(%q) = tokens %+v, diagnostics %+v", spelling, tokens, diagnostics)
+		}
+	}
+}
+
+func TestPhase19NumericMalformed(t *testing.T) {
+	for _, spelling := range []string{"0x", "0b", "1_", "1__2", "0x_F", "0b2", "0o77", "42u64", "42abc"} {
+		tokens, diagnostics := syntax.Lex([]byte(spelling))
+		if len(diagnostics) != 1 || len(tokens) != 2 || tokens[0].Kind != syntax.TokenUnknown || tokens[0].Text != spelling || tokens[0].Span.Start != 0 || tokens[0].Span.End != len(spelling) || diagnostics[0].Primary.Start != 0 || diagnostics[0].Primary.End != len(spelling) {
+			t.Errorf("Lex(%q) = tokens %+v, diagnostics %+v; want one full-span malformed token", spelling, tokens, diagnostics)
+		}
+	}
+}
+
 func TestFormatIdempotent(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
 	if err != nil {
