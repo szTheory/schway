@@ -1146,9 +1146,58 @@ func resolvedPkgPatterns(index *testIndex, evidence string) []pkgPattern {
 	return pairs
 }
 
-// allPrimaryValidationRows returns every (file, row) pair across the
-// fourteen archived-and-live *-VALIDATION.md documents' primary tables,
-// sorted by (file, line) for deterministic iteration.
+// validationStatusEligibleForGrading keeps draft/planned validation contracts
+// out of completed evidence grading until validate-phase records their actual
+// status. Complete is retained for archived milestone artifacts.
+func validationStatusEligibleForGrading(status string) bool {
+	switch strings.TrimSpace(status) {
+	case "validated", "partial", "complete":
+		return true
+	default:
+		return false
+	}
+}
+
+func validationDocumentStatus(markdown string) string {
+	lines := strings.Split(markdown, "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return ""
+	}
+	for _, line := range lines[1:] {
+		line = strings.TrimSpace(line)
+		if line == "---" {
+			break
+		}
+		key, value, ok := strings.Cut(line, ":")
+		if ok && strings.TrimSpace(key) == "status" {
+			return strings.Trim(strings.TrimSpace(value), `"'`)
+		}
+	}
+	return ""
+}
+
+func TestAllPrimaryValidationRowsExcludeDrafts(t *testing.T) {
+	for _, status := range []string{"validated", "partial", "complete"} {
+		if !validationStatusEligibleForGrading(status) {
+			t.Errorf("eligible validation status %q was excluded", status)
+		}
+	}
+	for _, status := range []string{"draft", "planned", "", "unknown"} {
+		if validationStatusEligibleForGrading(status) {
+			t.Errorf("incomplete validation status %q was included", status)
+		}
+	}
+	if got := validationDocumentStatus("---\nstatus: draft\n---\n# Draft\n"); got != "draft" {
+		t.Fatalf("validationDocumentStatus(draft) = %q", got)
+	}
+	if got := validationDocumentStatus("---\nstatus: \"validated\"\n---\n"); got != "validated" {
+		t.Fatalf("validationDocumentStatus(quoted validated) = %q", got)
+	}
+}
+
+// allPrimaryValidationRows returns rows from validated, partial, and complete
+// *-VALIDATION.md primary tables only, sorted by (file, line) for deterministic
+// iteration. Draft and planned documents have not collected final evidence.
 func allPrimaryValidationRows(t testing.TB) map[string][]validationRawRow {
 	t.Helper()
 	docs, err := phaseArtifactGlob("*", "*-VALIDATION.md")
@@ -1161,7 +1210,11 @@ func allPrimaryValidationRows(t testing.TB) map[string][]validationRawRow {
 		if readErr != nil {
 			t.Fatalf("read %s: %v", doc, readErr)
 		}
-		_, rows, ok := primaryValidationTable(string(data))
+		markdown := string(data)
+		if !validationStatusEligibleForGrading(validationDocumentStatus(markdown)) {
+			continue
+		}
+		_, rows, ok := primaryValidationTable(markdown)
 		if !ok {
 			continue
 		}

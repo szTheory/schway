@@ -30,7 +30,7 @@ const currentLaneSchema = "lang.verify-lane/1"
 // confirmed by direct grep: session.go x8, session_phase5.go x1,
 // session_phase5_mismatch.go x2, session_phase5_sanitize.go x1, total 12.
 // Every one of these sites is a protocol.Lane{Schema: protocol.LaneSchema1,
-// ...} composite literal inside one of the 5 independently-implemented
+// ...} composite literal inside an independently-implemented
 // addLane closures (VerifyCorpus, verifyOwnedCorpus, verifyBorrowedCorpus,
 // verifyForeignCorpus, VerifyPhase5ControlsAndWork). 06-06's coordinated bump
 // moved every single one of these sites at once (D-06-31) -- this test is
@@ -48,6 +48,8 @@ const currentLaneSchema = "lang.verify-lane/1"
 // half-landed /0-to-/1 bump among the ORIGINAL 12 while not treating this
 // plan's own new production lanes as drift.]
 //
+// session_phase11_gate.go x1 was removed by Plan 16-21 when Phase 11 assurance moved to test-only code;
+// the focused Phase 11 gate tests preserve refusal behavior without a production lane.
 // session_phase6.go x1 is the same species of addition again, from plan
 // 06-15's own VerifyPhase6ControlsAndWork addLane closure -- one more
 // brand-new production lane, never a /0 literal moved. [Rule 1/3
@@ -61,10 +63,9 @@ var expectedLaneSchemaLiteralSitesByFile = map[string]int{
 	"session_phase6.go":          1,
 	"session_phase6_verify.go":   3,
 	"session_phase7.go":          1,
-	"session_phase11_gate.go":    1,
 }
 
-const expectedLaneSchemaLiteralSiteTotal = 18
+const expectedLaneSchemaLiteralSiteTotal = 17
 
 // TestLaneSchemaLiteralSiteCountIsPinned pins the exact count and per-file
 // location of every protocol.LaneSchema1 reference in
