@@ -1,0 +1,10 @@
+module phase19.literal_tracer
+
+export {
+  fn main
+}
+
+fn main(input: Byte) -> U64 {
+  let count = 42
+  count
+}
