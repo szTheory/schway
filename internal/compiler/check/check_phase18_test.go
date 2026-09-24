@@ -6,28 +6,89 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
-func TestPhase18ComputedScrutineeFrontierPinned(t *testing.T) {
+func TestPhase18ComputedScrutineeProductionPathAccepted(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase18", "computed_match.lang")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
 	checked := session.Check(source)
-	if len(checked.Diagnostics) == 0 {
-		t.Fatal("fixture did not reach the parser's terminal-result refusal")
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("computed terminal match was refused: %+v", checked.Diagnostics)
 	}
-	diagnostic := checked.Diagnostics[0]
-	if diagnostic.Code != "syntax.expected_linear_result" {
-		t.Fatalf("diagnostic code = %q, want syntax.expected_linear_result at the unsupported terminal match: %+v", diagnostic.Code, diagnostic)
+	if len(checked.Program.Functions) != 1 {
+		t.Fatalf("checked function count = %d, want 1", len(checked.Program.Functions))
 	}
-	if diagnostic.Primary.Start <= 0 || diagnostic.Primary.End <= diagnostic.Primary.Start {
-		t.Fatalf("computed-scrutinee diagnostic has no source location: %+v", diagnostic.Primary)
+	function := checked.Program.Functions[0]
+	if function.Match == nil || function.Match.Scrutinee != "computed" || function.Linear == nil {
+		t.Fatalf("computed match did not reach checked branch core: %+v", function)
 	}
-	if diagnostic.Primary.End > len(source) || string(source[diagnostic.Primary.Start:diagnostic.Primary.End]) != "match" {
-		t.Fatalf("diagnostic span = %q, want the terminal match token", source[diagnostic.Primary.Start:diagnostic.Primary.End])
+	if len(function.Linear.Operations) < 2 || function.Linear.Operations[0].Kind == "return" {
+		t.Fatalf("linear prefix/branch operations are missing or malformed: %+v", function.Linear.Operations)
+	}
+}
+
+func TestPhase18ComputedScrutineeRefusals(t *testing.T) {
+	base := `module phase18.computed_refusal
+export {
+  type Choice
+  fn select
+}
+data Choice =
+  | Left
+  | Right
+`
+	cases := []struct {
+		name, function, want string
+	}{
+		{
+			name: "out of scope",
+			function: `fn select(input: Choice) -> Choice {
+  let computed = input
+  match missing {
+    Left => Left
+    Right => Right
+  }
+}`,
+			want: "name.unknown_scrutinee",
+		},
+		{
+			name: "shadows parameter",
+			function: `fn select(computed: Choice) -> Choice {
+  let computed = computed
+  match computed {
+    Left => Left
+    Right => Right
+  }
+}`,
+			want: "name.unknown_scrutinee",
+		},
+		{
+			name: "non data parameter",
+			function: `fn select(input: Byte) -> Byte {
+  let computed = input
+  match computed {
+    Left => Left
+    Right => Right
+  }
+}`,
+			want: "type.unknown",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			checked := session.Check([]byte(base + tc.function))
+			for _, diagnostic := range checked.Diagnostics {
+				if diagnostic.Code == tc.want {
+					return
+				}
+			}
+			t.Fatalf("diagnostics = %+v, want stable code %q", checked.Diagnostics, tc.want)
+		})
 	}
 }
 
@@ -40,12 +101,14 @@ func TestPhase18LoanAcrossBranchFixture(t *testing.T) {
 	if !strings.Contains(string(source), "let view = borrow input") || !strings.Contains(string(source), "let observed = take view") {
 		t.Fatal("fixture does not witness a pre-match borrow consumed in one arm")
 	}
-	checked := session.Check(source)
-	if len(checked.Diagnostics) == 0 || checked.Diagnostics[0].Code != "syntax.expected_linear_result" {
-		t.Fatalf("want the pinned terminal-match parser frontier, got %+v", checked.Diagnostics)
+	parsed := syntax.Parse(source)
+	foundTerminalMatch := false
+	for _, function := range parsed.Program.Funcs {
+		if function.Name == "select" && function.Body.Linear != nil && function.Body.Linear.TerminalMatch != nil {
+			foundTerminalMatch = true
+		}
 	}
-	problem := checked.Diagnostics[0]
-	if problem.Primary.End > len(source) || string(source[problem.Primary.Start:problem.Primary.End]) != "match" {
-		t.Fatalf("diagnostic does not point at terminal match: %+v", problem.Primary)
+	if len(parsed.Diagnostics) != 0 || !foundTerminalMatch {
+		t.Fatalf("terminal computed match did not parse into the linear-body form: diagnostics=%+v", parsed.Diagnostics)
 	}
 }

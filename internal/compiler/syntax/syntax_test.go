@@ -79,6 +79,19 @@ func withoutSpans(program ast.Program) ast.Program {
 				function.Body.Linear.Bindings[bindingIndex].Span = noSpan
 				function.Body.Linear.Bindings[bindingIndex].RHS.Span = noSpan
 			}
+			if match := function.Body.Linear.TerminalMatch; match != nil {
+				match.Span = noSpan
+				for armIndex := range match.Arms {
+					match.Arms[armIndex].Span = noSpan
+					if body := match.Arms[armIndex].Body; body != nil {
+						body.Span = noSpan
+						for bindingIndex := range body.Bindings {
+							body.Bindings[bindingIndex].Span = noSpan
+							body.Bindings[bindingIndex].RHS.Span = noSpan
+						}
+					}
+				}
+			}
 		}
 		for armIndex := range function.Body.Arms {
 			function.Body.Arms[armIndex].Span = noSpan
@@ -693,7 +706,12 @@ func generatedBranchProgram(caseID uint64) []byte {
 	} else {
 		fmt.Fprintf(&source, "fn%s%s(subject:%s%s)%s->%s%s%s{\n", separator, functionName, separator, typeName, separator, separator, typeName, separator)
 	}
-	fmt.Fprintf(&source, "%smatch%ssubject%s{\n", separator, separator, separator)
+	matchScrutinee := "subject"
+	if caseID%17 == 0 {
+		matchScrutinee = "computed"
+		fmt.Fprintf(&source, "%slet%scomputed%s=%ssubject\n", separator, separator, separator, separator)
+	}
+	fmt.Fprintf(&source, "%smatch%s%s%s{\n", separator, separator, matchScrutinee, separator)
 
 	// Arm 0: the varied arm -- 0, 1, or 2 bindings, an optional
 	// header-trailing comment, and the full kind alphabet including the
@@ -707,7 +725,7 @@ func generatedBranchProgram(caseID uint64) []byte {
 	} else {
 		fmt.Fprintf(&source, "%s%s%s=>%s{\n", separator, first, separator, separator)
 	}
-	result := "subject"
+	result := matchScrutinee
 	for index := 0; index < bindingCount; index++ {
 		name := fmt.Sprintf("hold%d", index)
 		kind := bindingKind
@@ -726,7 +744,7 @@ func generatedBranchProgram(caseID uint64) []byte {
 	// Arm 1: a zero-binding arm — the aliased parameter is the arm's own
 	// Result directly, with no bindings at all.
 	fmt.Fprintf(&source, "%s%s%s=>%s{\n", separator, second, separator, separator)
-	fmt.Fprintf(&source, "%s%ssubject\n", separator, separator)
+	fmt.Fprintf(&source, "%s%s%s\n", separator, separator, matchScrutinee)
 	fmt.Fprintf(&source, "%s}\n", separator)
 
 	source.WriteString("}\n}\n")
