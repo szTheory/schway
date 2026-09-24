@@ -45,8 +45,8 @@ coverage:
     description: "The repository-wide Go suite passes."
     verification:
       - kind: test
-        ref: "GOCACHE=/tmp/ai-lang-gocache go test ./..."
-        status: fail
+        ref: "GOCACHE=/tmp/ai-lang-gocache go test ./... after regression closure commit e91628c"
+        status: pass
     human_judgment: false
 duration: ~12min
 completed: 2026-09-24
@@ -71,12 +71,12 @@ status: complete
 - Focused corpus agreement and maturity checks — PASS.
 - Full `internal/compiler/pathoracle` and `internal/compiler/session` packages — PASS.
 - `git diff --check` on planned files — PASS.
-- `GOCACHE=/tmp/ai-lang-gocache go test ./...` — FAIL; the failing package checks and exact observations are recorded in the verification report for parent triage.
+- `GOCACHE=/tmp/ai-lang-gocache go test ./...` — PASS after follow-up regression closure commit `e91628c`; historical core/manifest pins and the valid S-010 two-successor control also pass.
 
 ## Deviations from Plan
 
 - `internal/compiler/session/session_peer_gate_test.go` was left untouched because the existing corpus gate already walks and checks this fixture.
-- No commit was created by this executor; the parent executor owns the GSD scoped commit.
+- Implementation was committed as `bc71633`; follow-up compatibility and control repairs were committed as `e91628c`.
 
 ## Changed Files
 
@@ -89,4 +89,4 @@ status: complete
 ## Self-Check: PASSED
 
 - Summary and verification report exist.
-- No task commit was expected from this executor; parent handles the scoped commit.
+- Scoped implementation and regression-closure commits are present.
