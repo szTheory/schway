@@ -19,6 +19,8 @@ const (
 	cgenImportPath           = "github.com/codename-lang/lang/internal/compiler/cgen"
 	phase16AdmittedDynamic   = "admitted-dynamic-schema2"
 	phase16RefusalWithFrozen = "refusal-frozen-witness"
+	phase16TypedRefusal      = "typed-refusal"
+	phase16EvidenceValidator = "frozen-evidence-validator"
 )
 
 type phase16ConsumerRegistry struct {
@@ -27,9 +29,10 @@ type phase16ConsumerRegistry struct {
 }
 
 type phase16ConsumerRegistryRow struct {
-	Call           string `json:"call"`
-	Classification string `json:"classification"`
-	Witness        string `json:"witness,omitempty"`
+	Call             string   `json:"call"`
+	Classification   string   `json:"classification"`
+	Witness          string   `json:"witness,omitempty"`
+	EvidenceFixtures []string `json:"evidence_fixtures,omitempty"`
 }
 
 // phase16PublicEmitterCalls resolves import aliases, same-package calls, and
@@ -118,12 +121,21 @@ func phase16ConsumerRegistryProblems(actual []string, registry phase16ConsumerRe
 	var problems []string
 	seen := make(map[string]phase16ConsumerRegistryRow, len(registry.Entries))
 	for _, row := range registry.Entries {
-		if row.Call == "" || (row.Classification != phase16AdmittedDynamic && row.Classification != phase16RefusalWithFrozen) {
+		if row.Call == "" || (row.Classification != phase16AdmittedDynamic && row.Classification != phase16RefusalWithFrozen && row.Classification != phase16TypedRefusal && row.Classification != phase16EvidenceValidator) {
 			problems = append(problems, "invalid classification for registry row "+row.Call)
 			continue
 		}
-		if row.Classification == phase16RefusalWithFrozen && !strings.HasPrefix(row.Witness, "probe:") {
+		if (row.Classification == phase16RefusalWithFrozen || row.Classification == phase16TypedRefusal || row.Classification == phase16EvidenceValidator) && !strings.HasPrefix(row.Witness, "probe:") {
 			problems = append(problems, "missing refusal witness for registry row "+row.Call)
+		}
+		if row.Classification == phase16TypedRefusal && len(row.EvidenceFixtures) != 0 {
+			problems = append(problems, "typed refusal unexpectedly maps frozen evidence for registry row "+row.Call)
+		}
+		if row.Classification == phase16EvidenceValidator && row.Witness == "probe:TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram" && len(row.EvidenceFixtures) == 0 {
+			problems = append(problems, "frozen evidence validator has no evidence fixtures "+row.Call)
+		}
+		if row.Classification == phase16RefusalWithFrozen && strings.HasPrefix(row.Call, "internal/compiler/session/session_phase11_gate_test.go:EmitNative:") && len(row.EvidenceFixtures) == 0 {
+			problems = append(problems, "Phase 11 frozen refusal row has no evidence fixtures "+row.Call)
 		}
 		if _, duplicate := seen[row.Call]; duplicate {
 			problems = append(problems, "duplicate registry entry "+row.Call)

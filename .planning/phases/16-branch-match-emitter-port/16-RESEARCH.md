@@ -292,11 +292,11 @@ This is a port/delete refactor, so all five categories were checked.
 1. **Does Linux validate the exact one-pointer read/copy-only restrict probe across the required lanes?**
    - What we know: macOS lanes passed.
    - What's unclear: Linux Clang/linker/sanitizer result.
-   - Resolution: D-16-05 selected the complete by-pointer cut to M004. The Linux result is therefore not used to claim cross-host support or admit the probe's source family in Phase 16. Any later admission must produce Linux evidence in its M004 plan first.
+   - Resolution: D-16-05 selected the complete by-pointer cut to M004. Because Phase 16 admits no by-pointer source family, Linux execution evidence is unnecessary to support this no-admission cut and is not used to claim cross-host support. Any future by-pointer admission remains blocked until its M004 plan produces Linux evidence first.
 2. **Can `emitLinearBorrowedByPointer` be structurally fenced without importing unbuilt discharge-pair machinery?**
    - What we know: the port is allowed only for the exact source shape.
    - What's unclear: the smallest inspectable predicate/test seam.
-   - Resolution: D-16-05 selected the complete by-pointer cut to M004, so no production by-pointer predicate is admitted in this phase. Phase 16 preserves refusal controls; a future M004 admission must define and verify its structural fence before enabling lowering.
+   - Resolution: D-16-05 selected the complete by-pointer cut to M004. No production by-pointer fence or predicate is enabled in Phase 16; the emitter remains cut for every by-pointer family. Phase 16 preserves refusal controls. A future M004 admission must define and verify its structural fence, and produce Linux evidence, before enabling lowering.
 
 ## Environment Availability
 
@@ -305,9 +305,9 @@ This is a port/delete refactor, so all five categories were checked.
 | Go | implementation/tests | ✓ | `go1.24` module target | — |
 | Clang | C17 probe/native lanes | ✓ | host-installed | — |
 | macOS | local restrict lanes | ✓ | current host | — |
-| Linux | required only for by-pointer admission | ✗ | — | Not required for the selected cut-m004 disposition; mandatory before any M004 admission |
+| Linux | required only for by-pointer admission | ✗ | — | Unnecessary for Phase 16 no-admission cut; mandatory before any future M004 admission |
 
-**Resolved dependency scope:** Linux execution evidence for the optional by-pointer admission probe remains unavailable in this phase. The selected cut-m004 disposition leaves all by-pointer families refused, so no cross-host support claim depends on that missing result. Any future admission remains gated on Linux CI evidence.
+**Resolved dependency scope:** Linux execution evidence for the optional by-pointer admission probe remains unavailable in this phase. The selected cut-m004 disposition admits no by-pointer family and enables no production by-pointer fence, so Linux evidence is unnecessary for this no-admission cut and no cross-host support claim depends on it. Any future by-pointer admission remains gated on Linux CI evidence.
 
 ## Validation Architecture
 

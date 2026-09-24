@@ -116,6 +116,16 @@ func phase11ExpectedRefusal(fixture string) string {
 	}
 }
 
+func phase11RefusalFirstFrozen(t *testing.T, program core.Program, fixture string) (string, error) {
+	t.Helper()
+	_, refusal := cgen.EmitNative(program)
+	want := phase11ExpectedRefusal(fixture)
+	if want == "" || refusal == nil || refusal.Error() != want {
+		return "", fmt.Errorf("public refusal changed for %q: want %q, got %v", fixture, want, refusal)
+	}
+	return phase16FileFrozenEvidenceC(t, program, fixture)
+}
+
 func verifyPhase11ZeroAttributeGate(t *testing.T, ctx context.Context, source []byte, fixture string, runner native.Runner) (phase11GateReport, error) {
 	report := phase11GateReport{}
 	result := protocol.New("verify", protocol.StatusPass)
@@ -186,14 +196,9 @@ func verifyPhase11ZeroAttributeGate(t *testing.T, ctx context.Context, source []
 	scanStarted := time.Now()
 	var artifacts []string
 	if report.WouldCarryCount > 0 {
-		_, refusal := cgen.EmitNative(program)
-		want := phase11ExpectedRefusal(fixture)
-		if refusal == nil || refusal.Error() != want {
-			return report, fmt.Errorf("phase11 gate: public refusal changed for %q: want %q, got %v", fixture, want, refusal)
-		}
-		frozen, err := phase16FileFrozenEvidenceC(t, program, fixture)
+		frozen, err := phase11RefusalFirstFrozen(t, program, fixture)
 		if err != nil {
-			return report, fmt.Errorf("phase11 gate: load refusal-gated frozen evidence: %w", err)
+			return report, fmt.Errorf("phase11 gate: refusal-first frozen evidence: %w", err)
 		}
 		artifacts = append(artifacts, frozen)
 		entry, entryErr := callgraph.EntryFunction(program)
@@ -389,11 +394,7 @@ func TestPhase11GateCountsAdjacentWouldCarryFunctions(t *testing.T) {
 // restrict mutation in frozen evidence must turn the exact same scanner red.
 func TestPhase11GateMutationKill(t *testing.T) {
 	program := session.Check(phase11GateCorpusSource(t)).Program
-	_, refusal := cgen.EmitNative(program)
-	if refusal == nil || refusal.Error() != phase11ExpectedRefusal("testdata/phase11/multi_function_gate_corpus.lang") {
-		t.Fatalf("expected exact public cut-m004 refusal before reading evidence, got %v", refusal)
-	}
-	frozen, err := phase16FileFrozenEvidenceC(t, program, "testdata/phase11/multi_function_gate_corpus.lang")
+	frozen, err := phase11RefusalFirstFrozen(t, program, "testdata/phase11/multi_function_gate_corpus.lang")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,6 +415,29 @@ func phase11ReplaceOnce(t *testing.T, source, old, replacement string) string {
 	return strings.Replace(source, old, replacement, 1)
 }
 
+func TestPhase11ByPointerRefusalFirstEvidence(t *testing.T) {
+	for _, fixture := range []string{
+		"testdata/phase11/multi_function_gate_corpus.lang",
+		"testdata/phase11/multi_function_gate_n_two.lang",
+	} {
+		source, err := os.ReadFile(testsupport.ProjectPath(fixture))
+		if err != nil {
+			t.Fatal(err)
+		}
+		checked := session.Check(source)
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("%s: unexpected diagnostics: %+v", fixture, checked.Diagnostics)
+		}
+		frozen, err := phase11RefusalFirstFrozen(t, checked.Program, fixture)
+		if err != nil {
+			t.Fatalf("%s: %v", fixture, err)
+		}
+		if frozen == "" {
+			t.Fatalf("%s: refusal-first loader returned empty frozen C", fixture)
+		}
+	}
+}
+
 // TestPhase11SuppressionIsDiffLocal is D-11-16's own diff-locality proof:
 // comparing frozen attribute-free evidence with a single seeded `restrict`
 // token at the exact function-declaration seam proves suppression locality.
@@ -422,11 +446,7 @@ func TestPhase11SuppressionIsDiffLocal(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	_, refusal := cgen.EmitNative(checked.Program)
-	if refusal == nil || refusal.Error() != phase11ExpectedRefusal("testdata/phase11/multi_function_gate_corpus.lang") {
-		t.Fatalf("expected exact public cut-m004 refusal before reading evidence, got %v", refusal)
-	}
-	suppressed, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase11/multi_function_gate_corpus.lang")
+	suppressed, err := phase11RefusalFirstFrozen(t, checked.Program, "testdata/phase11/multi_function_gate_corpus.lang")
 	if err != nil {
 		t.Fatal(err)
 	}

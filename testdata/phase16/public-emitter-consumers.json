@@ -34,6 +34,14 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1036",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1068",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1179",
       "classification": "admitted-dynamic-schema2"
     },
@@ -123,14 +131,6 @@
     },
     {
       "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:892",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1036",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1068",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -237,18 +237,20 @@
     },
     {
       "call": "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391",
-      "classification": "admitted-dynamic-schema2"
+      "classification": "typed-refusal",
+      "witness": "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges"
     },
     {
-      "call": "internal/compiler/session/session_phase11_gate.go:EmitNative:190",
-      "classification": "admitted-dynamic-schema2"
+      "call": "internal/compiler/session/session_phase11_gate_test.go:EmitNative:121",
+      "classification": "refusal-frozen-witness",
+      "witness": "probe:TestPhase11ByPointerRefusalFirstEvidence",
+      "evidence_fixtures": [
+        "testdata/phase11/multi_function_gate_corpus.lang",
+        "testdata/phase11/multi_function_gate_n_two.lang"
+      ]
     },
     {
-      "call": "internal/compiler/session/session_phase11_gate.go:EmitNative:199",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase11_gate_test.go:EmitNative:258",
+      "call": "internal/compiler/session/session_phase11_gate_test.go:EmitNative:219",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -261,13 +263,25 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session_phase17_native_test.go:EmitNative:74",
-      "classification": "admitted-dynamic-schema2"
+      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:131",
+      "classification": "frozen-evidence-validator",
+      "witness": "probe:TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults",
+      "evidence_fixtures": [
+        "testdata/phase11/multi_function_gate_corpus.lang"
+      ]
     },
     {
-      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:54",
-      "classification": "refusal-frozen-witness",
-      "witness": "probe:TestPhase16M004CorpusRefusal"
+      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:82",
+      "classification": "frozen-evidence-validator",
+      "witness": "probe:TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram",
+      "evidence_fixtures": [
+        "testdata/phase11/multi_function_gate_corpus.lang",
+        "testdata/phase11/multi_function_gate_n_two.lang"
+      ]
+    },
+    {
+      "call": "internal/compiler/session/session_phase17_native_test.go:EmitNative:74",
+      "classification": "admitted-dynamic-schema2"
     },
     {
       "call": "internal/compiler/session/session_phase5.go:EmitNative:25",
@@ -312,7 +326,16 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:352",
+      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:353",
+      "classification": "frozen-evidence-validator",
+      "witness": "probe:TestPhase16M004ProvenanceRegistryRejectsFaults",
+      "evidence_fixtures": [
+        "testdata/phase11/multi_function_gate_corpus.lang",
+        "testdata/phase11/multi_function_gate_n_two.lang"
+      ]
+    },
+    {
+      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:502",
       "classification": "admitted-dynamic-schema2"
     }
   ]

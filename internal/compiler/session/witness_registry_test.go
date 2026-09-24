@@ -56,8 +56,10 @@ type phase16FileFrozenEvidenceLedger struct {
 type phase16FileFrozenEvidenceRow struct {
 	Fixture        string `json:"Fixture"`
 	FixtureSHA256  string `json:"FixtureSHA256"`
+	ProgramSHA256  string `json:"ProgramSHA256"`
 	Artifact       string `json:"Artifact"`
 	ArtifactSHA256 string `json:"ArtifactSHA256"`
+	Refusal        string `json:"Refusal"`
 }
 
 // TestPhase16EmitterInventoryRefusalWitnessesResolve keeps the inventory's
@@ -79,12 +81,38 @@ func TestPhase16EmitterInventoryRefusalWitnessesResolve(t *testing.T) {
 	}
 	refusals := 0
 	for _, row := range registry.Entries {
+		if row.Classification == phase16TypedRefusal {
+			if row.Witness != "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" || strings.Contains(strings.Join(row.EvidenceFixtures, " "), "phase11") {
+				t.Fatalf("%s: ambiguous-entry refusal was treated as frozen evidence: witness=%q fixtures=%v", row.Call, row.Witness, row.EvidenceFixtures)
+			}
+			continue
+		}
+		if row.Classification == phase16EvidenceValidator {
+			if row.Witness == "probe:TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram" {
+				if len(row.EvidenceFixtures) == 0 {
+					t.Fatalf("%s: frozen evidence validator has no Phase 11 fixture mapping", row.Call)
+				}
+			} else if row.Witness != "probe:TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults" && row.Witness != "probe:TestPhase16M004ProvenanceRegistryRejectsFaults" {
+				t.Fatalf("%s: unresolved frozen evidence validator witness %q", row.Call, row.Witness)
+			}
+			continue
+		}
 		if row.Classification != phase16RefusalWithFrozen {
 			continue
 		}
 		refusals++
-		if row.Witness != "probe:TestPhase16M004CorpusRefusal" || !strings.Contains(string(source), "func TestPhase16M004CorpusRefusal") {
-			t.Fatalf("%s: unresolved refusal witness %q", row.Call, row.Witness)
+		switch row.Witness {
+		case phase16M004Witness:
+			if !strings.Contains(string(source), "func TestPhase16M004CorpusRefusal") {
+				t.Fatalf("%s: unresolved refusal witness %q", row.Call, row.Witness)
+			}
+		case "probe:TestPhase11ByPointerRefusalFirstEvidence":
+			gate, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "session", "session_phase11_gate_test.go"))
+			if err != nil || !strings.Contains(string(gate), "func TestPhase11ByPointerRefusalFirstEvidence") || len(row.EvidenceFixtures) == 0 {
+				t.Fatalf("%s: unresolved Phase 11 refusal witness %q fixtures=%v", row.Call, row.Witness, row.EvidenceFixtures)
+			}
+		default:
+			t.Fatalf("%s: unrecognized refusal witness %q", row.Call, row.Witness)
 		}
 	}
 	if refusals == 0 {
@@ -99,6 +127,9 @@ func TestPhase16EmitterInventoryRefusalWitnessesResolve(t *testing.T) {
 // M004 cut look like a dynamic admission.
 func TestPhase16M004ProvenanceRegistryRejectsFaults(t *testing.T) {
 	registry, evidence, files := phase16M004WitnessFixture(t)
+	if problems := phase16M004ProvenanceProblems(registry, evidence, files); len(problems) != 0 {
+		t.Fatalf("checked-in provenance chain is invalid: %v", problems)
+	}
 	for _, mutate := range []struct {
 		name  string
 		apply func(*phase16ConsumerRegistry, *phase16LegacyEvidenceLedger, *phase16FileFrozenEvidenceLedger)
@@ -115,6 +146,27 @@ func TestPhase16M004ProvenanceRegistryRejectsFaults(t *testing.T) {
 		{"classification drift", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
 			r.Entries[firstPhase16RefusalRow(r)].Classification = phase16AdmittedDynamic
 		}},
+		{"Phase 11 fixture substitution", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].Fixture = "testdata/phase11/substituted.lang"
+		}},
+		{"Phase 11 canonical program digest", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].ProgramSHA256 = strings.Repeat("0", 64)
+		}},
+		{"Phase 11 artifact digest", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].ArtifactSHA256 = strings.Repeat("0", 64)
+		}},
+		{"Phase 11 exact refusal", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].Refusal = "different emitter error"
+		}},
+		{"Phase 11 row classification", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
+			r.Entries[firstPhase11RefusalRow(r)].Classification = phase16AdmittedDynamic
+		}},
+		{"Phase 11 refusal witness", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
+			r.Entries[firstPhase11RefusalRow(r)].Witness = "probe:TestNoLongerCurrent"
+		}},
+		{"Phase 11 fixture mapping", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
+			r.Entries[firstPhase11RefusalRow(r)].EvidenceFixtures = []string{"testdata/phase11/multi_function_gate_corpus.lang"}
+		}},
 	} {
 		t.Run(mutate.name, func(t *testing.T) {
 			gotRegistry, gotEvidence, gotFiles := clonePhase16M004WitnessFixture(t, registry, evidence, files)
@@ -124,6 +176,24 @@ func TestPhase16M004ProvenanceRegistryRejectsFaults(t *testing.T) {
 			}
 		})
 	}
+}
+
+func phase11FileRecordIndex(files *phase16FileFrozenEvidenceLedger, fixture string) int {
+	for i, record := range files.Records {
+		if record.Fixture == fixture {
+			return i
+		}
+	}
+	panic("missing Phase 11 frozen record " + fixture)
+}
+
+func firstPhase11RefusalRow(registry *phase16ConsumerRegistry) int {
+	for i, row := range registry.Entries {
+		if row.Classification == phase16RefusalWithFrozen && len(row.EvidenceFixtures) > 0 {
+			return i
+		}
+	}
+	panic("missing Phase 11 refusal row")
 }
 
 func phase16M004WitnessFixture(t *testing.T) (phase16ConsumerRegistry, phase16LegacyEvidenceLedger, phase16FileFrozenEvidenceLedger) {
@@ -188,19 +258,47 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 		problems = append(problems, "file provenance schema is stale")
 	}
 	refusalCalls := map[string]bool{}
+	phase11MappedFixtures := map[string]bool{}
+	phase11GateRowFound := false
+	ambiguousEntryRowFound := false
 	for _, row := range registry.Entries {
-		if row.Classification != phase16RefusalWithFrozen {
-			continue
+		if row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
+			ambiguousEntryRowFound = row.Classification == phase16TypedRefusal && row.Witness == "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" && len(row.EvidenceFixtures) == 0
 		}
-		refusalCalls[row.Call] = true
-		if row.Witness != phase16M004Witness {
+		if strings.HasPrefix(row.Call, "internal/compiler/session/session_phase11_gate_test.go:EmitNative:") && row.Classification == phase16RefusalWithFrozen && row.Witness == "probe:TestPhase11ByPointerRefusalFirstEvidence" && reflect.DeepEqual(row.EvidenceFixtures, []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase11/multi_function_gate_n_two.lang"}) {
+			phase11GateRowFound = true
+		}
+		if row.Classification == phase16TypedRefusal && row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
+			if row.Witness != "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" || len(row.EvidenceFixtures) != 0 {
+				problems = append(problems, "ambiguous-entry refusal lost its independent typed witness")
+			}
+		}
+		if row.Classification == phase16RefusalWithFrozen {
+			refusalCalls[row.Call] = true
+		}
+		if len(row.EvidenceFixtures) > 0 {
+			validWitness := row.Witness == "probe:TestPhase11ByPointerRefusalFirstEvidence" || row.Witness == "probe:TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults" || row.Witness == "probe:TestPhase16M004ProvenanceRegistryRejectsFaults" || row.Witness == "probe:TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram"
+			if !validWitness {
+				problems = append(problems, "Phase 11 refusal row has stale witness "+row.Call)
+			}
+			for _, fixture := range row.EvidenceFixtures {
+				phase11MappedFixtures[fixture] = true
+			}
+		}
+		if row.Classification == phase16RefusalWithFrozen && len(row.EvidenceFixtures) == 0 && row.Witness != phase16M004Witness {
 			problems = append(problems, "uncited or stale refusal row "+row.Call)
 		}
+	}
+	if !phase11GateRowFound {
+		problems = append(problems, "Phase 11 refusal-first consumer is missing exact fixture mappings")
+	}
+	if !ambiguousEntryRowFound {
+		problems = append(problems, "ambiguous-entry refusal is not independently typed")
 	}
 	for _, call := range []string{
 		"internal/compiler/cgen/cgen_test.go:Emit:193",
 		"internal/compiler/native/foreign_retained_test.go:EmitNative:48",
-		"internal/compiler/session/session_phase5_corpus_test.go:EmitNative:436",
+		"internal/compiler/session/session_phase5_corpus_test.go:EmitNative:468",
 	} {
 		if !refusalCalls[call] {
 			problems = append(problems, "M004 control was reclassified without provenance: "+call)
@@ -208,7 +306,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 	}
 	fileByFixture := map[string]phase16FileFrozenEvidenceRow{}
 	for _, record := range files.Records {
-		if record.Fixture == "" || record.Artifact == "" || len(record.FixtureSHA256) != sha256.Size*2 || len(record.ArtifactSHA256) != sha256.Size*2 {
+		if record.Fixture == "" || record.Artifact == "" || len(record.FixtureSHA256) != sha256.Size*2 || len(record.ProgramSHA256) != sha256.Size*2 || len(record.ArtifactSHA256) != sha256.Size*2 {
 			problems = append(problems, "file frozen record has missing provenance")
 			continue
 		}
@@ -216,6 +314,58 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 			problems = append(problems, "duplicate file frozen fixture "+record.Fixture)
 		}
 		fileByFixture[record.Fixture] = record
+		if strings.HasPrefix(record.Fixture, "testdata/phase11/multi_function_gate") {
+			if !phase11MappedFixtures[record.Fixture] {
+				problems = append(problems, "unconsumed Phase 11 frozen evidence record "+record.Fixture)
+			}
+			source, sourceErr := os.ReadFile(testsupport.ProjectPath(record.Fixture))
+			if sourceErr != nil {
+				problems = append(problems, "Phase 11 fixture cannot be read "+record.Fixture)
+				continue
+			}
+			fixtureSum := sha256.Sum256(source)
+			if fmt.Sprintf("%x", fixtureSum) != record.FixtureSHA256 {
+				problems = append(problems, "Phase 11 fixture digest changed "+record.Fixture)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				problems = append(problems, "Phase 11 fixture no longer checks "+record.Fixture)
+				continue
+			}
+			canonical, marshalErr := json.Marshal(checked.Program)
+			if marshalErr != nil {
+				problems = append(problems, "Phase 11 canonical program cannot be encoded "+record.Fixture)
+				continue
+			}
+			programSum := sha256.Sum256(canonical)
+			if fmt.Sprintf("%x", programSum) != record.ProgramSHA256 {
+				problems = append(problems, "Phase 11 canonical program digest changed "+record.Fixture)
+			}
+			artifact, artifactErr := os.ReadFile(testsupport.ProjectPath(record.Artifact))
+			if artifactErr != nil {
+				problems = append(problems, "Phase 11 frozen artifact cannot be read "+record.Fixture)
+				continue
+			}
+			artifactSum := sha256.Sum256(artifact)
+			if fmt.Sprintf("%x", artifactSum) != record.ArtifactSHA256 {
+				problems = append(problems, "Phase 11 frozen artifact digest changed "+record.Fixture)
+			}
+			_, refusal := cgen.EmitNative(checked.Program)
+			if refusal == nil || refusal.Error() != record.Refusal {
+				problems = append(problems, "Phase 11 frozen evidence has stale exact refusal "+record.Fixture)
+			}
+		}
+	}
+	for fixture := range phase11MappedFixtures {
+		if _, ok := fileByFixture[fixture]; !ok {
+			problems = append(problems, "Phase 11 refusal row maps missing frozen evidence "+fixture)
+		}
+	}
+	wantPhase11Fixtures := []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase11/multi_function_gate_n_two.lang"}
+	for _, fixture := range wantPhase11Fixtures {
+		if !phase11MappedFixtures[fixture] {
+			problems = append(problems, "Phase 11 frozen evidence record is not consumed "+fixture)
+		}
 	}
 	for _, record := range evidence.Records {
 		if record.Witness != strings.TrimPrefix(phase16M004Witness, "probe:") {
