@@ -125,7 +125,7 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
 - [x] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable. (completed 2026-09-19)
 - [x] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut. (completed 2026-09-21)
 - [x] **Phase 17: Return Type ≠ Parameter Type** - A function may return a type it was not given. (completed 2026-09-22)
-- [ ] **Phase 18: Branch on a Computed Value** - A branch discriminates a value the function computed. **HARD-GATED on spike S-010.**
+- [x] **Phase 18: Branch on a Computed Value** - A branch discriminates a value the function computed. **HARD-GATED on spike S-010.** (completed 2026-09-24)
 - [ ] **Phase 19: Numeric Literals and `OpConst`** - Lang can name a value it was not given.
 - [ ] **Phase 20: Nyquist, D-13-34, and the Frontier Fixture** - The measuring corpus reconciles against the new surface and the refusal frontier is pinned as moved.
 
@@ -560,14 +560,15 @@ for it.
 **Plans**: 8
 
 Plans:
+
 - [x] 18-01-PLAN.md — Pin computed-place, Result-call, payload, and production-loan source frontiers
 - [x] 18-02-PLAN.md — Trace computed terminal match through source, peers, interpreter, and native emission
-- [ ] 18-03-PLAN.md — Independently validate computed places and payload origins
-- [ ] 18-04-PLAN.md — Match a Result-returning callee value across all five axes
-- [ ] 18-05-PLAN.md — Return destructured payload and kill the wrong-slot mutation
-- [ ] 18-06-PLAN.md — Prove bounded production borrow-across-branch liveness
-- [ ] 18-07-PLAN.md — Add peer, comparator, and mutation anti-vacuity controls
-- [ ] 18-08-PLAN.md — Measure verification cost and justify focused recurring CI
+- [x] 18-03-PLAN.md — Independently validate computed places and payload origins
+- [x] 18-04-PLAN.md — Match a Result-returning callee value across all five axes
+- [x] 18-05-PLAN.md — Return destructured payload and kill the wrong-slot mutation
+- [x] 18-06-PLAN.md — Prove bounded production borrow-across-branch liveness
+- [x] 18-07-PLAN.md — Add peer, comparator, and mutation anti-vacuity controls
+- [x] 18-08-PLAN.md — Measure verification cost and justify focused recurring CI
 
 ---
 
@@ -715,7 +716,7 @@ assurance-refactor milestone rather than a feature milestone.
 | 15. Event Identity (`lang.execution/2`) | 9/9 | Complete    | 2026-09-19 |
 | 16. Branch/Match Emitter Port | 26/26 | Complete    | 2026-09-21 |
 | 17. Return Type ≠ Parameter Type | 9/9 | Complete    | 2026-09-22 |
-| 18. Branch on a Computed Value | 3/8 | In Progress | - |
+| 18. Branch on a Computed Value | 8/8 | Complete    | 2026-09-24 |
 | 19. Numeric Literals and `OpConst` | 0/? | Not started | - |
 | 20. Nyquist, D-13-34, and the Frontier Fixture | 0/? | Not started | - |
 

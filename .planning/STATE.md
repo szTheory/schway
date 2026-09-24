@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 18
-current_phase_name: Branch on a Computed Value
-status: verifying
-stopped_at: Completed 18-08-PLAN.md; Phase 18 ready for automated verification
-last_updated: "2026-09-24T20:22:25.090Z"
+current_phase: 19
+current_phase_name: Numeric Literals and `OpConst`
+status: planning
+stopped_at: Phase 18 complete, ready to plan Phase 19
+last_updated: "2026-09-24T20:34:32.951Z"
 last_activity: 2026-09-24
-last_activity_desc: Completed Phase 18 Plan 08 measurement evidence and retained existing full/race CI lanes; all Phase 18 plans are ready for automated verification
-state_head: 04a590f23a2fe56a027aae9d3ddd5708c04c75ca
+last_activity_desc: Phase 18 complete, transitioned to Phase 19
+state_head: 67d8c185e693ed53396b303b1162b0817a24613f
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 66
   completed_plans: 66
+  percent: 71
 ---
 
 # Project State
@@ -57,10 +58,10 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 
 ## Current Position
 
-Phase: 18 (Branch on a Computed Value) — VERIFYING
-Plan: 8 of 8
-Status: All plans complete; phase-level automated verification is next
-Last activity: 2026-09-24 — Completed Plan 18-08: measured all five feedback lanes, passed the phase-local evidence verifier, and retained existing Ubuntu/macOS full and race CI coverage; CTL requirements remain open pending phase verification
+Phase: 19 — Numeric Literals and `OpConst`
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-24 — Phase 18 complete, transitioned to Phase 19
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -145,7 +146,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 170
+- Total plans completed: 178
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -168,6 +169,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 15 | 9 | - | - |
 | 16 | 26 | - | - |
 | 17 | 9 | - | - |
+| 18 | 8 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -633,7 +635,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-24T20:22:24.943Z
-Stopped at: Completed 18-08-PLAN.md; Phase 18 ready for automated verification
+Stopped at: Phase 18 complete, ready to plan Phase 19
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: 18-08-SUMMARY.md
 Next command: `/clear` then `/gsd-new-milestone`

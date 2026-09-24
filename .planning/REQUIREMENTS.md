@@ -140,13 +140,13 @@ Gated on spike **S-010**. If S-010 shows a loan crossing a branch point forces a
 redesign rather than an extension, this category is cut and replaced by
 arithmetic operators, and branching moves to M004.
 
-- [ ] **CTL-01**: A branch discriminates a value the function computed, not only
+- [x] **CTL-01**: A branch discriminates a value the function computed, not only
       the function's own parameter.
 
-- [ ] **CTL-02**: A program that calls a `Result`-returning callee and matches
+- [x] **CTL-02**: A program that calls a `Result`-returning callee and matches
       on the result agrees across all five axes.
 
-- [ ] **CTL-03**: An arm returns a destructured payload place, and a seeded
+- [x] **CTL-03**: An arm returns a destructured payload place, and a seeded
       wrong-slot write is observed on a comparator axis — constructing D-12-43
       rather than ratifying it as unconstructible.
 
@@ -243,9 +243,9 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | TYP-03 | Phase 17 | Complete |
 | TYP-04 | Phase 17 | Complete |
 | TYP-05 | Phase 17 | Complete |
-| CTL-01 | Phase 18 | Gaps Found |
-| CTL-02 | Phase 18 | Gaps Found |
-| CTL-03 | Phase 18 | Gaps Found |
+| CTL-01 | Phase 18 | Complete |
+| CTL-02 | Phase 18 | Complete |
+| CTL-03 | Phase 18 | Complete |
 | VAL-01 | Phase 19 | Pending |
 | VAL-02 | Phase 19 | Pending |
 | VAL-03 | Phase 19 | Pending |
