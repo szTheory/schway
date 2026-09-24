@@ -1,6 +1,6 @@
 ---
 phase: 15-event-identity-lang-execution-2
-verified: 2026-09-24T03:51:52Z
+verified: 2026-09-24T20:38:37Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -46,25 +46,25 @@ covered_files:
   - internal/compiler/session/session_phase5_compare.go
   - internal/compiler/session/session_phase5_compare_test.go
   - internal/compiler/session/session_phase6_test.go
-covered_digest: "v1:sha256:e62e02bd18df1503cc3c2e1a327e656d0f9423ee4c4b64bb8f661e53a2414453"
+covered_digest: "v1:sha256:cf33f38b7875cd1eda5e8370a0e7b2473e8776c48f76ac84fd6218725630c203"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
-  previous_score: 6/7
-  gaps_closed:
-    - "CI aggregate invokes the Schema 2 decoder seam under the wrong Go package, so the test is silently omitted (G-15-13)."
+  previous_status: passed
+  previous_score: 7/7
+  gaps_closed: []
   gaps_remaining: []
   regressions: []
+  refresh_reason: "Shared cgen/interpreter implementation files changed after Phase 18 work, and REQUIREMENTS.md was updated; the old covered-file digest no longer matched the current tree."
 advisory: []
 ---
 
 # Phase 15: Event Identity (`lang.execution/2`) Verification Report
 
 **Phase Goal:** Two activations of the same callee through a shared-leaf diamond are distinguishable, and the causal edge between caller and callee is observed rather than inferred.
-**Verified:** 2026-09-24T03:51:52Z
+**Verified:** 2026-09-24T20:38:37Z
 **Status:** passed
-**Re-verification:** Yes — after Plan 15-10 closed G-15-13.
+**Re-verification:** Yes — refreshed the stale fingerprint and reran current Phase 15 automated evidence.
 
 ## Goal Achievement
 
@@ -110,17 +110,17 @@ advisory: []
 
 ### Data-Flow Trace (Level 4)
 
-No rendered UI/data artifact exists in this compiler phase. The runtime path is exercised as fixture/source → interpreter/native execution document → independent peer/comparator → assertions. The Schema 2 decoder path reaches real JSON decode and validation when invoked directly; the phase's recurring CI link to that test is the one failed connection above.
+No rendered UI/data artifact exists in this compiler phase. The runtime path is exercised as fixture/source → interpreter/native execution document → independent peer/comparator → assertions. The Schema 2 decoder path reaches real JSON decode and validation when invoked directly, and the workflow selects it from its owning `internal/compiler/native` package.
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Schema 2 JSON-to-ToolError seam in its CI owning package | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v` | Exit 0; canonical admission and five refusal cases passed. | ✓ PASS |
-| CI source-pin positive/negative package ownership | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run 'TestCIWorkflowSelectionPinsPackageOwnership|TestCIWorkflowRunsCurrentAggregateGate' -count=1 -v` | Exit 0; package-correct native selection accepted, synthetic wrong-package selection rejected, aggregate source contract passed. | ✓ PASS |
-| Cross-platform session evidence selectors | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run 'TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v` | Exit 0; peer, legacy wrapper, four-tier diamond, and collision tests all ran and passed. | ✓ PASS |
-| Cross-package grammar, admission, interpreter, peer, native-boundary, and cgen controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/execution ./internal/compiler/native ./internal/compiler/interp ./internal/compiler/executionpeer ./internal/compiler/cgen -run 'TestInvocationGrammar|TestExecutionLegacyBytesFrozen|TestValidateExecutionSchema2|TestInvocationThreadsThroughAllEventPaths|TestExecutionSchemaSelectionPreservesLegacy|TestFunctionCalledPreorderAndOwnership|TestFunctionCalledProjectionRemoval|TestRejectedCallEmitsNoCalledEdge|TestIndependentEntryResolution|TestInvocationMembershipTraversal|TestExecutionPeerImportBoundary|TestFullCoverageControlIsSeparate|TestValidateObservedCausalStructure|TestExecutionPeerFailuresAreActionable|TestInvocationPathTableDeepDiamondMeasures61|TestInvocationPreflightOrdering|TestInvocationPathTableBoundary|TestInvocationPreflightGuardIsNotInert|TestProgramInvocationIndexThreading|TestParentIndexedChildLookup|TestInvocationTableEmissionIsDeterministic|TestProgramWritesExecutionSchema2|TestNativeFunctionCalledPreorder|TestNativeFunctionCalledProjectionRemoval|TestLegacyEventWritersFrozen' -count=1 -v` | Exit 0; selected tests passed in all five packages. | ✓ PASS |
-| Workflow source pin and diamond/collision controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run 'TestCIWorkflowRunsCurrentAggregateGate|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v` | Exit 0; all named tests and diamond subtest ran. | ✓ PASS |
+| Schema 2 JSON-to-ToolError seam in its CI owning package | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v` | Rerun exit 0; canonical admission and all five refusal cases passed. | ✓ PASS |
+| CI source-pin positive/negative package ownership | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run 'TestCIWorkflowSelectionPinsPackageOwnership|TestCIWorkflowRunsCurrentAggregateGate' -count=1 -v` | Rerun exit 0; correct package accepted, wrong-package selector rejected, aggregate source contract passed. | ✓ PASS |
+| Cross-platform session evidence selectors | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run 'TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v` | Rerun exit 0; peer, `/0`/`/1` wrapper, four-tier diamond, and collision tests passed. | ✓ PASS |
+| Cross-package grammar, admission, interpreter, peer, native-boundary, and cgen controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/execution ./internal/compiler/native ./internal/compiler/interp ./internal/compiler/executionpeer ./internal/compiler/cgen -run 'TestInvocationGrammar|TestExecutionLegacyBytesFrozen|TestValidateExecutionSchema2|TestInvocationThreadsThroughAllEventPaths|TestExecutionSchemaSelectionPreservesLegacy|TestFunctionCalledPreorderAndOwnership|TestFunctionCalledProjectionRemoval|TestRejectedCallEmitsNoCalledEdge|TestIndependentEntryResolution|TestInvocationMembershipTraversal|TestExecutionPeerImportBoundary|TestFullCoverageControlIsSeparate|TestValidateObservedCausalStructure|TestExecutionPeerFailuresAreActionable|TestInvocationPathTableDeepDiamondMeasures61|TestInvocationPreflightOrdering|TestInvocationPathTableBoundary|TestInvocationPreflightGuardIsNotInert|TestProgramInvocationIndexThreading|TestParentIndexedChildLookup|TestInvocationTableEmissionIsDeterministic|TestProgramWritesExecutionSchema2|TestNativeFunctionCalledPreorder|TestNativeFunctionCalledProjectionRemoval|TestLegacyEventWritersFrozen' -count=1 -v` | Rerun exit 0; selected tests passed in all five packages. | ✓ PASS |
+| Workflow source pin and diamond/collision controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run 'TestCIWorkflowRunsCurrentAggregateGate|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v` | Rerun exit 0; all named tests and diamond subtest passed. | ✓ PASS |
 
 ### Probe Execution
 
@@ -130,11 +130,11 @@ No Phase 15 plan or summary declares a probe, and no phase-relevant `scripts/*/t
 
 | Requirement | Source Plans | Description | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| OBS-01 | 15-01, 15-02, 15-05, 15-07, 15-09 | Shared-leaf activations have distinct identities. | ✓ SATISFIED | Four-tier diamond and collision negative passed. |
-| OBS-02 | 15-01, 15-02, 15-05, 15-06, 15-07, 15-09 | Caller-to-callee edge is observed. | ✓ SATISFIED | Interpreter/native preorder and removal/refusal tests passed; peer validation passed. |
-| OBS-03 | 15-03, 15-06, 15-07, 15-09 | Non-importing peer re-derives structure. | ✓ SATISFIED | Import-boundary, independent traversal, actionable errors, and bidirectional fault tests passed. |
-| OBS-04 | 15-01 through 15-10 | Legacy bytes frozen; `/2` introduces identity. | ✓ SATISFIED | Frozen bytes, schema admission, wrapper preservation, and package-correct recurring admission selection passed. |
-| NAT-10 | 15-05, 15-07, 15-09, 15-10 | Re-invoking fixture agrees across four tiers. | ✓ SATISFIED | `DiamondSharedLeaf` and collision control passed; CI keeps both selected in the session package and package ownership is pinned. |
+| OBS-01 | 15-01, 15-02, 15-05, 15-07, 15-09 | Shared-leaf activations have distinct identities. | ✓ COMPLETE | `REQUIREMENTS.md` marks complete; current four-tier diamond and collision-negative tests passed. |
+| OBS-02 | 15-01, 15-02, 15-05, 15-06, 15-07, 15-09 | Caller-to-callee edge is observed. | ✓ COMPLETE | `REQUIREMENTS.md` marks complete; interpreter/native preorder and removal/refusal tests passed; peer validation passed. |
+| OBS-03 | 15-03, 15-06, 15-07, 15-09 | Non-importing peer re-derives structure. | ✓ COMPLETE | `REQUIREMENTS.md` marks complete; import-boundary, independent traversal, actionable errors, and bidirectional fault tests passed. |
+| OBS-04 | 15-01 through 15-10 | Legacy bytes frozen; `/2` introduces identity. | ✓ COMPLETE | `REQUIREMENTS.md` marks complete; frozen bytes, schema admission, wrapper preservation, and package-correct recurring admission selection passed. |
+| NAT-10 | 15-05, 15-07, 15-09, 15-10 | Re-invoking fixture agrees across four tiers. | ✓ COMPLETE | `REQUIREMENTS.md` marks complete; `DiamondSharedLeaf` and collision control passed; CI keeps both selected in the session package and package ownership is pinned. |
 
 No additional requirement IDs mapped to Phase 15 were orphaned from the plans.
 
@@ -158,6 +158,10 @@ No unresolved `TBD`, `FIXME`, or `XXX` debt marker was found in the Phase 15 imp
 
 `check.decision-coverage-verify` reported **20/20** trackable Phase 15 context decisions honored; no decision was unhonored. This gate is advisory and does not affect the status.
 
+### Fingerprint Refresh
+
+The previous digest (`v1:sha256:e62e02bd18df1503cc3c2e1a327e656d0f9423ee4c4b64bb8f661e53a2414453`) recomputed to `v1:sha256:cf33f38b7875cd1eda5e8370a0e7b2473e8776c48f76ac84fd6218725630c203`. `git log --since=2026-09-24T03:51:52Z` shows later Phase 18 changes to the covered shared emitter/interpreter files, and `REQUIREMENTS.md` was updated. The Phase 15 regression checks above were rerun against this current tree. Requirements were already complete; no requirement or STATE edits were needed.
+
 ### Advisory (New Scope, Unevidenced)
 
 None. No new-scope anti-pattern finding required advisory treatment in this re-verification.
@@ -172,5 +176,5 @@ The implementation truths, including the four-tier diamond, caller-owned causal 
 
 ---
 
-_Verified: 2026-09-24T03:51:52Z_  
+_Verified: 2026-09-24T20:38:37Z_  
 _Verifier: the agent (gsd-verifier)_
