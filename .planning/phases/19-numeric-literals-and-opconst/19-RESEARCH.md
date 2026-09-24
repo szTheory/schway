@@ -319,24 +319,15 @@ The generated digits should be canonical decimal digits from admitted IR; compil
 |---|-------|---------|---------------|
 | A1 | C17's `uint64_t` / `UINT64_C` availability is sufficient as the lowering capability gate on supported targets; a missing macro/type can be surfaced as a compile failure. | Standard Stack, Patterns | An implementation could expose one without the other or need a cleaner explicit generated check. Validate on CI target matrix before locking backend details. |
 | A2 | Checked parsing via standard library or explicit bound-before-multiply arithmetic will fit the parser/checker architecture without a new arbitrary precision type. | Code Examples | Could mis-handle diagnostic attribution or radix/separator grammar if split across layers. |
-| A3 | The native differential helper can be reused for a no-input literal-return fixture without changes to native runner plumbing. | Validation Architecture | Existing harness assumes parameter inputs in some call paths; a dedicated wrapper may be needed. |
+| A3 | The existing four-tier helper accepts a Byte-input function returning U64 after checker, peer, and emitter support land. | Validation Architecture | The helper already supplies one entry input; verify the U64 return writer through the public native route. |
 
-## Open Questions
+## Resolved Design Questions
 
-1. **Where should overflow be diagnosed: lexer/parser or checker?**
-   - What we know: decisions require rejection with a source diagnostic before executable core; lexer preserves token spans, AST/checker already own semantic admission.
-   - What's unclear: whether numeric token conversion belongs with syntax validation or semantic U64 range checking in `check`.
-   - Recommendation: planner should assign one owner and keep malformed spelling distinct from a syntactically valid but out-of-range magnitude; both must stop before core emission.
+1. **Overflow owner:** The lexer refuses malformed complete tokens with source spans; `check` performs checked U64 range conversion and emits a source diagnostic before constructing `OpConst`. This is the planner's helper-boundary choice under D-19-01 and D-19-02. No overflowing value reaches executable core.
 
-2. **What representation should `core.OpConst` carry?**
-   - What we know: operation kinds are typed and checker-produced; execution scalar serialization uses strings; source spelling must not control semantic equality.
-   - What's unclear: whether canonical decimal `string` or numeric `uint64` field best preserves serialized-core stability and target generation.
-   - Recommendation: prefer a single canonical value field and leave source spelling in syntax/AST; test pre-existing serialized core fixtures for byte drift before deciding if a schema change is necessary.
+2. **Core representation:** `core.LinearOperation.ConstU64` is a kind-exclusive canonical decimal string with `omitempty`. The checked value zero is `"0"`, so absence and zero differ; source spelling stays in syntax/AST. `corevalidate` independently checks decimal canonicality and U64 range. This planner choice keeps legacy core JSON bytes unchanged and preserves exact values across JSON consumers under D-19-01, D-19-03, and D-19-04.
 
-3. **How is exact target support reported to users?**
-   - What we know: locked behavior is fail-closed on unsupported exact U64 target.
-   - What's unclear: whether generated C compile errors suffice or native runner can preflight-target-check and surface a Lang diagnostic.
-   - Recommendation: use the shallowest boundary that guarantees no executable is produced and preserves the target-specific cause in the build error.
+3. **Unsupported native target:** Emitted C includes the exact-width `uint64_t`/`UINT64_C` contract and a compile-time guard. The native compiler's target-specific error is surfaced through the existing runner; no executable is produced. This satisfies D-19-01 without introducing a preflight API. Host support for `-flto` remains an execution-environment observation, not an unresolved language decision.
 
 ## Environment Availability
 

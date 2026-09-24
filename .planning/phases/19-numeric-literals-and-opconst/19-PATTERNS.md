@@ -1,8 +1,8 @@
 # Phase 19: Numeric Literals and `OpConst` - Pattern Map
 
 **Mapped:** 2026-09-24  
-**Files analyzed:** 23 anticipated source and test files across 11 implementation seams  
-**Analogs found:** 23 / 23 (closest analogs for implementation; test files should extend owning package suites)
+**Files analyzed:** 25 anticipated source and test files across 12 implementation seams
+**Analogs found:** 25 / 25 (closest analogs for implementation; test files should extend owning package suites)
 
 ## File Classification
 
@@ -13,6 +13,8 @@
 | `internal/compiler/syntax/parser.go` | utility | transform | `linearBody` binding parser | exact |
 | `internal/compiler/syntax/format.go` | utility | transform | same file's token formatter | exact |
 | `internal/compiler/ast/ast.go` | model | transform | `Binding` / `RHS` | exact |
+| `internal/compiler/ability/ability.go` | service | transform | `deriveShape` primitive `Byte` ability branch | role-match |
+| `internal/compiler/ability/ability_test.go` | test | transform | primitive and structural ability cases in the same suite | exact |
 | `internal/compiler/check/check.go` | service | transform | `checkLinear` binding lowering | role-match |
 | `internal/compiler/core/core.go` | model | transform | `OpConstructPayload` declaration and registry | role-match |
 | `internal/compiler/corevalidate/corevalidate.go` | service | transform | `replayStraightLine` operation switch | role-match |
@@ -35,6 +37,12 @@
 The test paths suffixed `phase19` are suggested by neighboring phase-specific suites, not locked filenames. Follow repository naming where the concrete plan identifies an existing test file to extend instead.
 
 ## Pattern Assignments
+
+### `internal/compiler/ability/ability.go` and `ability_test.go` (U64 ability derivation)
+
+**Analogs:** `internal/compiler/ability/ability.go` `deriveShape` primitive `Byte` branch and `internal/compiler/ability/ability_test.go` primitive/structural derivation cases (tracked).
+
+Add the one zero-argument `U64` constructor to the existing primitive derivation switch. Its checked scalar semantics grant copy, drop, share, send, and escape just as `Byte` does; an argument-bearing `U64<...>` remains an error. Exercise both the granted set and the arity refusal in the owning test suite. `corevalidate` must re-derive the same facts independently rather than importing this producer helper.
 
 ### `internal/compiler/syntax/token.go` and `lexer.go` (tokenization, transform)
 

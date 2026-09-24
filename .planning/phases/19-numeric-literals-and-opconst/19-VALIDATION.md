@@ -31,8 +31,9 @@ must distinguish those known baseline issues from Phase 19 regressions.
 
 - **After each touched package task:** Run focused tests for the changed syntax,
   checker/core, validator, interpreter, or C emitter package.
-- **After each plan wave:** Run the focused phase integration and four-tier
-  literal comparison; run `go test ./...` at the phase gate, reporting known
+- **After each plan wave:** Run that wave's focused gate. The four-tier literal
+  comparison becomes runnable after Wave 7 integrates both engines and all
+  independent peers. Run `go test ./...` at the phase gate, reporting known
   unrelated baseline failures separately.
 - **Before `$gsd-verify-work`:** Run the full suite and the phase-specific
   evidence gates.
@@ -43,19 +44,22 @@ must distinguish those known baseline issues from Phase 19 regressions.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 19-01-01 | 01 | 1 | VAL-01 | T-19-01 | Reject malformed/out-of-range source literals before executable core. | unit + integration | `go test ./internal/compiler/syntax ./internal/compiler/check` | ❌ W0 | ⬜ pending |
-| 19-02-01 | 02 | 1 | VAL-02 | — | Every independent peer handles admitted `OpConst`; removal controls detect omissions. | integration + mutation control | `go test ./internal/compiler/core ./internal/compiler/corevalidate ./internal/compiler/pathoracle ./internal/compiler/originvalidate ./internal/compiler/interp ./internal/compiler/cgen` | ❌ W0 | ⬜ pending |
-| 19-03-01 | 03 | 2 | VAL-03 | T-19-01 | Exact U64 values are observed consistently across interpreter and native tiers. | differential | `go test ./internal/compiler/session -run 'Phase19|FourTier|Phase5' -count=1` | ❌ W0 | ⬜ pending |
-| 19-01-02 | 01 | 1 | Roadmap criterion 4 | T-19-01 | Existing scalar execution projection remains byte-identical unless a movement is justified. | regression | `go test ./internal/compiler/session -run 'PayloadCorpusCharacterizationReplay' -count=1` | ✅ precedent | ⬜ pending |
-
-Plan/task identifiers above are provisional sampling slots. The planner may
-renumber or consolidate them, but every phase requirement and the scalar golden
-gate must remain covered.
+| 19-01-01 | 01 | 1 | VAL-01 | T-19-02 | Pin the refused source fixture before production edits. | source frontier | `go test ./internal/compiler/session -run 'TestPhase19LiteralFrontier' -count=1` | ❌ W1 | ⬜ pending |
+| 19-01-02 | 01 | 1 | VAL-01 | T-19-02 | Pin separate malformed and overflow refusals. | source frontier | `go test ./internal/compiler/session -run 'TestPhase19(LiteralFrontier|NumericRefusalFrontiers)' -count=1` | ❌ W1 | ⬜ pending |
+| 19-02-01 | 02 | 2 | Roadmap criterion 4 | T-19-01 | Widen interpreter values and replay old scalar documents before OpConst routing. | regression | `go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(ScalarProjection|LiteralFrontier)|TestPayloadCorpusCharacterizationReplay' -count=1` | ✅ replay precedent; ❌ new test | ⬜ pending |
+| 19-03-01 | 03 | 3 | VAL-01 | T-19-03 | Refuse malformed complete numeric tokens. | unit | `go test ./internal/compiler/syntax -run 'TestPhase19Numeric(Token|Malformed)' -count=1` | ❌ W3 | ⬜ pending |
+| 19-04-02 | 04 | 4 | VAL-01 | T-19-05 | Refuse U64 overflow before typed OpConst. | checker | `go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase19(LiteralAdmission|LiteralRange|LiteralType|LiteralFrontier|NumericRefusalFrontiers)' -count=1` | ❌ W4 | ⬜ pending |
+| 19-05-01 | 05 | 5 | VAL-02 | T-19-07 | Independently admit only canonical U64 core facts. | peer + forged core | `go test ./internal/compiler/corevalidate -run 'TestPhase19(OpConst|U64|Forged)' -count=1` | ❌ W5 | ⬜ pending |
+| 19-06-02 | 06 | 6 | VAL-01 | T-19-09 | Emit exact-width U64 native C and fail closed on unsupported targets. | native | `go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1` | ❌ W6 | ⬜ pending |
+| 19-07-01 | 07 | 7 | VAL-02 | T-19-12 | Exercise OpConst at all six consumers with both mutation-sensitive controls. | integration + mutation | `go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1` | ❌ W7 | ⬜ pending |
+| 19-07-02 | 07 | 7 | VAL-03 | T-19-13 | Observe exact U64 result across four tiers and five axes. | differential | `go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1` | ❌ W7 | ⬜ pending |
 
 ## Wave 0 Requirements
 
+- [ ] Wave 1: check in the literal, overflow, and malformed fixtures and pin their current production diagnostic before any compiler production edit.
+- [ ] Wave 2: widen interpreter values and replay D-12-18 scalar goldens before `OpConst` reaches another dispatch site.
 - [ ] Add accepted/refused decimal, hexadecimal, binary, separator, formatting,
-  maximum-U64, and overflow fixtures.
+  maximum-U64, and overflow cases in their owning package tests.
 - [ ] Add a real literal-bearing fixture that drives `OpConst` through all six
   required dispatch consumers and both exhaustive-dispatch controls.
 - [ ] Add a four-tier observable literal result using the existing five-axis
