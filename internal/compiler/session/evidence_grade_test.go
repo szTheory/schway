@@ -1146,16 +1146,21 @@ func resolvedPkgPatterns(index *testIndex, evidence string) []pkgPattern {
 	return pairs
 }
 
-// validationStatusEligibleForGrading keeps draft/planned validation contracts
-// out of completed evidence grading until validate-phase records their actual
-// status. Complete is retained for archived milestone artifacts.
-func validationStatusEligibleForGrading(status string) bool {
+// validationTableEligibleForGrading keeps unfinished draft/planned contracts
+// out of evidence grading until they have adopted the Grade column. Existing
+// graded drafts remain checked, and validated/partial/complete tables are
+// always checked so status cannot hide missing evidence.
+func validationTableEligibleForGrading(status string, header []string) bool {
 	switch strings.TrimSpace(status) {
 	case "validated", "partial", "complete":
 		return true
-	default:
-		return false
 	}
+	for _, column := range header {
+		if strings.TrimSpace(column) == "Grade" {
+			return true
+		}
+	}
+	return false
 }
 
 func validationDocumentStatus(markdown string) string {
@@ -1178,14 +1183,17 @@ func validationDocumentStatus(markdown string) string {
 
 func TestAllPrimaryValidationRowsExcludeDrafts(t *testing.T) {
 	for _, status := range []string{"validated", "partial", "complete"} {
-		if !validationStatusEligibleForGrading(status) {
+		if !validationTableEligibleForGrading(status, nil) {
 			t.Errorf("eligible validation status %q was excluded", status)
 		}
 	}
 	for _, status := range []string{"draft", "planned", "", "unknown"} {
-		if validationStatusEligibleForGrading(status) {
-			t.Errorf("incomplete validation status %q was included", status)
+		if validationTableEligibleForGrading(status, nil) {
+			t.Errorf("ungraded validation status %q was included", status)
 		}
+	}
+	if !validationTableEligibleForGrading("draft", []string{"Task ID", "Grade"}) {
+		t.Fatal("a draft that already has graded evidence must remain checked")
 	}
 	if got := validationDocumentStatus("---\nstatus: draft\n---\n# Draft\n"); got != "draft" {
 		t.Fatalf("validationDocumentStatus(draft) = %q", got)
@@ -1195,9 +1203,9 @@ func TestAllPrimaryValidationRowsExcludeDrafts(t *testing.T) {
 	}
 }
 
-// allPrimaryValidationRows returns rows from validated, partial, and complete
-// *-VALIDATION.md primary tables only, sorted by (file, line) for deterministic
-// iteration. Draft and planned documents have not collected final evidence.
+// allPrimaryValidationRows returns completed tables plus draft/planned tables
+// that already use the graded evidence schema, sorted by (file, line). An
+// ungraded draft such as a newly planned phase is deferred until validation.
 func allPrimaryValidationRows(t testing.TB) map[string][]validationRawRow {
 	t.Helper()
 	docs, err := phaseArtifactGlob("*", "*-VALIDATION.md")
@@ -1211,11 +1219,8 @@ func allPrimaryValidationRows(t testing.TB) map[string][]validationRawRow {
 			t.Fatalf("read %s: %v", doc, readErr)
 		}
 		markdown := string(data)
-		if !validationStatusEligibleForGrading(validationDocumentStatus(markdown)) {
-			continue
-		}
-		_, rows, ok := primaryValidationTable(markdown)
-		if !ok {
+		header, rows, ok := primaryValidationTable(markdown)
+		if !ok || !validationTableEligibleForGrading(validationDocumentStatus(markdown), header) {
 			continue
 		}
 		result[doc] = rows
