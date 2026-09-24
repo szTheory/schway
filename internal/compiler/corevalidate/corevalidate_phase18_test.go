@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/session"
 )
@@ -80,5 +81,41 @@ fn select(input: Choice) -> Choice {
 	program.Functions[0].Match.ScrutineeID = "forged-place"
 	if result := corevalidate.Validate(program); result.Valid {
 		t.Fatal("forged scrutinee place ID was accepted")
+	}
+}
+
+func TestPhase18ComputedScrutineeRejectsWrongType(t *testing.T) {
+	checked := session.Check([]byte(`module phase18.core_peer_wrong_type
+export { type Choice fn select }
+data Choice = | Left | Right
+fn select(input: Choice) -> Choice {
+  let computed = input
+  match computed {
+    Left => Left
+    Right => Right
+  }
+}`))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("source diagnostics: %+v", checked.Diagnostics)
+	}
+	program := checked.Program
+	function := &program.Functions[0]
+	var computedID string
+	for _, place := range function.Linear.Places {
+		if place.Name == "computed" {
+			computedID = place.ID
+			break
+		}
+	}
+	for index := range function.Linear.Places {
+		if function.Linear.Places[index].ID == computedID {
+			function.Linear.Places[index].TypeID = "forged-non-data-type"
+		}
+	}
+	function.Linear.Types = append(function.Linear.Types, core.TypeFact{
+		ID: "forged-non-data-type", Shape: core.TypeRef{Constructor: "Byte"},
+	})
+	if result := corevalidate.Validate(program); result.Valid {
+		t.Fatal("computed scrutinee whose place claims a non-data type was accepted")
 	}
 }

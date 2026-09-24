@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-09-24T15:41:02.873Z"
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-09-24T16:11:52.363Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 18 execution started
-state_head: 33f8c2e2dd0ac36b5db828bd4cc8991a158b464a
+state_head: 8201c82017a3f986ecdb0124044f3cc5379f4c2c
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 60
+  completed_plans: 61
 ---
 
 # Project State
@@ -27,12 +27,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
 **Current focus:** Phase 18 — Branch on a Computed Value
-is executing its eight checked plans. Phases 14–17 are complete; Phase 18's
-full-suite pre-execution gate exposed six prospective verification commands in
-research/validation that the repository groundedness scanner correctly treats
-as unresolved. Those documents now use existing package-level commands while
-the precise future acceptance commands remain in the plans. The full suite is
-green again. Phase 18 execution is ready to resume at plan 18-01.
+is executing its eight checked plans. Plans 18-01 through 18-03 have summaries;
+the independent core and origin peers now validate computed branch places and
+payload provenance. The Phase 18 quick validation and full Go suite are green.
+CTL-01 through CTL-03 remain open pending phase-level verification. Plans
+18-04 through 18-08 remain to execute.
 M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 
 **Durable context (survives context clears — read before re-deriving):**
@@ -56,7 +55,7 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 ## Current Position
 
 Phase: 18 (Branch on a Computed Value) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-09-24 — Completed quick task 260924-gee; Phase 18 computed match implementation is verified and Phase 18 plan execution can continue
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -319,6 +318,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 16 P21 | 20 min | 2 tasks | 6 files |
 | Phase 18 P1 | 15min | 3 tasks | 6 files |
 | Phase 18 P2 | 31min | 2 tasks | 11 files |
+| Phase 18 P03 | 23min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -460,6 +460,8 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Phase 18's current source frontier is the parser diagnostic syntax.expected_linear_result at terminal match; preserve it until computed match is admitted.
 - [Phase 18]: Represent a linear prefix followed by one terminal match in the existing body and branch CFG.
 - [Phase 18]: Keep CTL-01 open until full Phase 18 acceptance is verified.
+- [Phase 18]: Core computed scrutinee IDs must resolve to a definition in the shared branch entry prefix; ID-less matches remain parameter-only.
+- [Phase 18]: Origin derivation is bounded to earlier operations in the return arm and shared entry prefix, using block facts even if Match metadata is absent.
 
 ### Pending Todos
 
@@ -613,8 +615,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T15:41:02.678Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-09-24T16:11:52.165Z
+Stopped at: Completed 18-03-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

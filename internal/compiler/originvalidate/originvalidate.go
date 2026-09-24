@@ -182,18 +182,12 @@ func BuildCalleeOriginFacts(program core.Program) map[string]calleeOriginFact {
 	return facts
 }
 
-// RecomputeOriginPerReturn is the package's SOLE backward-walk site (Task
-// 03-10-01's binding decision: exactly one such loop may exist in this
-// file). It walks backward from EVERY core.OpReturn in
-// function.Linear.Operations, in operation order, using one TargetID->
-// SourceOperation map built once over the whole flat operations list. That
-// single shared map is safe to reuse across arms because check.go's arm
-// lowering pads one unreferenced place per arm's Return, keeping every
-// operation's place ordinal globally distinct across the whole function
-// (corevalidate.replayBlocks' own place-order invariant) — so no arm's walk
-// can ever cross into a sibling arm's operations. Each walk independently
-// preserves 03-08's first-seen-hop-wins rule: the hop nearest the returned
-// place decides that return's derived access mode, per return.
+// RecomputeOriginPerReturn is the package's SOLE backward-walk site. It
+// builds its source map from this function's core operations and walks each
+// return independently. A definition must precede the return; in branch
+// core it must also live in that return's arm or in the shared entry prefix.
+// This prevents a malformed artifact from borrowing a sibling-arm or
+// future operation's origin while retaining the computed-prefix path.
 //
 // calleeContracts is D-10-01/D-10-03's callee-contract map (see
 // BuildCalleeOriginFacts): the walk consults it, keyed by CalleeID, at an
@@ -204,7 +198,14 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 	}
 	operations := function.Linear.Operations
 	sourceOf := make(map[string]core.LinearOperation, len(operations))
-	var returnOps []*core.LinearOperation
+	sourceIndex := make(map[string]int, len(operations))
+	operationBlock := make(map[string]string, len(operations))
+	for _, block := range function.Linear.Blocks {
+		for _, operationID := range block.OperationIDs {
+			operationBlock[operationID] = block.ID
+		}
+	}
+	var returnIndexes []int
 	for index := range operations {
 		operation := operations[index]
 		// D-04-29: the discriminant is a membership test against the
@@ -216,7 +217,7 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 		// agnostic, walking backward from whichever operation this loop
 		// collects.
 		if isTerminatorKind(operation.Kind) {
-			returnOps = append(returnOps, &operations[index])
+			returnIndexes = append(returnIndexes, index)
 			continue
 		}
 		// D-12-10: an OpDestructurePayload names its produced place via
@@ -229,16 +230,24 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 		// for a produced place the map never recorded in the first place.
 		if operation.Kind == core.OpDestructurePayload {
 			sourceOf[operation.PayloadTargetID] = operation
+			sourceIndex[operation.PayloadTargetID] = index
 			continue
 		}
 		sourceOf[operation.TargetID] = operation
+		sourceIndex[operation.TargetID] = index
 	}
-	if len(returnOps) == 0 {
+	if len(returnIndexes) == 0 {
 		return nil
 	}
-	results := make([]ReturnOrigin, 0, len(returnOps))
-	for _, returnOp := range returnOps {
-		results = append(results, walkReturnOrigin(function, sourceOf, returnOp, calleeContracts))
+	results := make([]ReturnOrigin, 0, len(returnIndexes))
+	for _, returnIndex := range returnIndexes {
+		returnOp := &operations[returnIndex]
+		// Blocks themselves carry the trust-boundary evidence. Do not depend
+		// on Match being present to enable arm scoping: a forged artifact may
+		// omit its match summary while retaining branch-shaped linear facts.
+		branch := len(function.Linear.Blocks) != 0
+		returnBlock := operationBlock[returnOp.ID]
+		results = append(results, walkReturnOrigin(function, sourceOf, sourceIndex, operationBlock, returnOp, returnIndex, returnBlock, branch, calleeContracts))
 	}
 	return results
 }
@@ -259,18 +268,26 @@ var disableOpCallOriginConsultForTest bool
 // walkReturnOrigin performs exactly one backward walk, from one return
 // operation, using the shared sourceOf map RecomputeOriginPerReturn built
 // once for the whole function.
-func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOperation, returnOp *core.LinearOperation, calleeContracts map[string]calleeOriginFact) ReturnOrigin {
+func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOperation, sourceIndex map[string]int, operationBlock map[string]string, returnOp *core.LinearOperation, returnIndex int, returnBlock string, branch bool, calleeContracts map[string]calleeOriginFact) ReturnOrigin {
 	current := returnOp.SourceID
 	visited := make(map[string]bool)
 	derivedAccess := ""
+	entryBlock := function.ID + ":block:entry"
 	for current != function.Parameter.ID {
 		if visited[current] {
 			return ReturnOrigin{OperationID: returnOp.ID}
 		}
 		visited[current] = true
 		operation, exists := sourceOf[current]
-		if !exists {
+		definitionIndex, indexed := sourceIndex[current]
+		if !exists || !indexed || definitionIndex >= returnIndex {
 			return ReturnOrigin{OperationID: returnOp.ID}
+		}
+		if branch {
+			definitionBlock := operationBlock[operation.ID]
+			if definitionBlock != entryBlock && definitionBlock != returnBlock {
+				return ReturnOrigin{OperationID: returnOp.ID}
+			}
 		}
 		switch operation.Kind {
 		case core.OpBorrowExclusive:

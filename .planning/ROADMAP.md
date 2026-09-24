@@ -715,7 +715,7 @@ assurance-refactor milestone rather than a feature milestone.
 | 15. Event Identity (`lang.execution/2`) | 9/9 | Complete    | 2026-09-19 |
 | 16. Branch/Match Emitter Port | 26/26 | Complete    | 2026-09-21 |
 | 17. Return Type ≠ Parameter Type | 9/9 | Complete    | 2026-09-22 |
-| 18. Branch on a Computed Value | 0/? | Not started (S-010 gate) | - |
+| 18. Branch on a Computed Value | 3/8 | In Progress | - |
 | 19. Numeric Literals and `OpConst` | 0/? | Not started | - |
 | 20. Nyquist, D-13-34, and the Frontier Fixture | 0/? | Not started | - |
 

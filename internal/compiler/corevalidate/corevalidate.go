@@ -887,13 +887,11 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 	}
 	scrutineeType := function.Parameter.Type
 	knownScrutinee := match.Scrutinee == function.Parameter.Name
-	if function.Linear != nil {
+	computedScrutinee := false
+	if function.Linear != nil && match.ScrutineeID != "" {
 		knownScrutinee = false
 		for _, place := range function.Linear.Places {
-			if match.ScrutineeID != "" && place.ID != match.ScrutineeID {
-				continue
-			}
-			if match.ScrutineeID == "" && place.Name != match.Scrutinee {
+			if place.ID != match.ScrutineeID {
 				continue
 			}
 			if place.Name != match.Scrutinee {
@@ -903,9 +901,13 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 				if fact.ID == place.TypeID {
 					scrutineeType = fact.Shape.Constructor
 					knownScrutinee = true
+					computedScrutinee = place.ID != function.Parameter.ID
 					break
 				}
 			}
+		}
+		if computedScrutinee && !v.computedScrutineeDefinedInEntry(function, match.ScrutineeID) {
+			return nil, nil, v.check(false, "core.unknown_place", match.Scrutinee)
 		}
 	}
 	dataType, knownScrutineeType := dataNames[scrutineeType]
@@ -944,6 +946,36 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 		return nil, nil, false
 	}
 	return v.linearStructural(function)
+}
+
+// computedScrutineeDefinedInEntry independently proves that a non-parameter
+// match place is produced by the straight-line prefix in the branch entry
+// block. Merely finding a matching Place in the flattened arm list would let
+// forged core borrow a place that does not exist until after dispatch.
+func (v *validator) computedScrutineeDefinedInEntry(function *core.Function, placeID string) bool {
+	if function.Linear == nil || placeID == "" {
+		return false
+	}
+	entryID := function.ID + ":block:entry"
+	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		operations[operation.ID] = operation
+	}
+	for _, block := range function.Linear.Blocks {
+		if block.ID != entryID || len(block.Successors) == 0 || len(block.OperationIDs) == 0 {
+			continue
+		}
+		for _, operationID := range block.OperationIDs {
+			operation, exists := operations[operationID]
+			if !exists {
+				return false
+			}
+			if operation.TargetID == placeID || operation.Kind == core.OpDestructurePayload && operation.PayloadTargetID == placeID {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (v *validator) match(function *core.Function, dataNames map[string]core.DataType) bool {
