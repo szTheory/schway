@@ -256,5 +256,17 @@
       "owner": "compiler-frontend",
       "phase": "09"
     }
+  },
+  {
+    "spike_id": "007",
+    "control_id": "spike-007-loan-across-branch-edge-specific-liveness",
+    "control_mechanism": "CFG loan liveness fails to distinguish an unused branch edge from the consuming point for a loan created before the branch, causing the loan endpoint to be materialized at the wrong location",
+    "live_descendant": null,
+    "waived": {
+      "reason": "spike 007 is an algorithmic probe whose focused regression is not a control:-registry entry returned by the shipped QLT inventory; TestEdgeSpecificLiveOut directly exercises the production edge-sensitive liveness behavior, but cannot be cited as a live control identifier without fabricating one",
+      "citation": ".planning/spikes/007-loan-across-branch/README.md (validated S-010 result); internal/compiler/check/check_test.go's TestEdgeSpecificLiveOut; internal/compiler/check/check.go's loanLivenessFixpoint and materializeLoanEndpoints",
+      "owner": "compiler-frontend",
+      "phase": "18"
+    }
   }
 ]
