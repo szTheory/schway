@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 19
 current_phase_name: Numeric Literals and OpConst
 status: executing
-stopped_at: Phase 19 context gathered
-last_updated: "2026-09-24T21:48:29.851Z"
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-09-24T23:53:10.576Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 18 complete, transitioned to Phase 19
-state_head: 69fbd9117e1bc11305c804890b0fb21f03ff6995
+last_activity_desc: Phase 19 execution started
+state_head: 5c100f5465a14099193788f4a31f4887ec90e3b9
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 73
-  completed_plans: 66
+  completed_plans: 68
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 18 — Branch on a Computed Value — is complete and
+**Current focus:** Phase 19 — Numeric Literals and OpConst
 automatically verified (21/21 must-haves; zero human UAT). CTL-01 through
 CTL-03 are complete. The independent core and origin peers validate computed
 branch places and payload provenance; interpreter and native tiers preserve
@@ -58,10 +58,10 @@ Phase 20.
 
 ## Current Position
 
-Phase: 19 (Numeric Literals and OpConst) — READY TO EXECUTE
-Plan: Not started
+Phase: 19 (Numeric Literals and OpConst) — EXECUTING
+Plan: 3 of 7
 Status: Ready to execute
-Last activity: 2026-09-24 — Phase 18 complete, transitioned to Phase 19
+Last activity: 2026-09-24 — Phase 19 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -329,6 +329,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P6 | 11min | 3 tasks | 6 files |
 | Phase 18 P07 | 3m | 2 tasks | 2 files |
 | Phase 18 P08 | 64m | 2 tasks | 2 files |
+| Phase 19 P02 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -478,6 +479,8 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Keep CTL-01 through CTL-03 open until full Phase 18 verification.
 - [Phase 18]: 18-06: Keep S-010 loan endpoints within existing point and edge kinds, with the computed-match prefix participating in bounded CFG liveness.
 - [Phase 18]: Plan 18-08 kept CI unchanged because existing macOS/Linux full and race suites already cover Phase 18 and duplicate focused coverage costs about two minutes per host.
+- [Phase 19]: 19-02: store U64 as a discriminated interpreter value and serialize it as canonical decimal while preserving prior scalar projections
+- [Phase 19]: 19-02: require D-12-18 corpus replay and seeded projection mutation evidence before OpConst routing
 
 ### Pending Todos
 
@@ -634,10 +637,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T21:12:18.909Z
-Stopped at: Phase 19 context gathered
+Last session: 2026-09-24T23:52:23.781Z
+Stopped at: Completed 19-02-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: .planning/phases/19-numeric-literals-and-opconst/19-CONTEXT.md
+Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
