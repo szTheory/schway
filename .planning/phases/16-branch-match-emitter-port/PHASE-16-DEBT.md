@@ -25,9 +25,9 @@ the D-16-08 non-inertness evidence obligation.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Grade | Witness | Item |
 |---|---|---|---|---|---|---|---|
-| D-16-11 | 16-CONTEXT.md D-16-11; NAT-09 | NAT-09, D-16-08 | warning | UNOWNED(m004-native-emission-design) | DEFINED | n/a | `emitLinearForeign` is cut from M003. M004 must design resource discharge and foreign-boundary ownership before this family can enter `emitProgram`; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
-| D-16-12 | 16-05-SUMMARY.md cut-m004; D-16-07 | NAT-09, D-16-08 | warning | UNOWNED(m004-native-emission-design) | DEFINED | n/a | `emitLinearBorrowedByPointer` is cut from M003. M004 must provide discharge-pair semantics and required macOS/Linux evidence before reopening; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
-| D-16-13 | 16-05-SUMMARY.md cut-m004; D-16-11 | NAT-09, D-16-08 | warning | UNOWNED(m004-native-emission-design) | DEFINED | n/a | `emitLinearBorrowedByPointerPlain` is cut from M003. M004 must prove its shared-pointer/alias contract and discharge behavior before reopening; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
+| D-16-11 | 16-CONTEXT.md D-16-11; NAT-09 | NAT-09, D-16-08 | warning | P21 | DEFINED | n/a | `emitLinearForeign` is cut from M003. M004 must design resource discharge and foreign-boundary ownership before this family can enter `emitProgram`; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
+| D-16-12 | 16-05-SUMMARY.md cut-m004; D-16-07 | NAT-09, D-16-08 | warning | P21 | DEFINED | n/a | `emitLinearBorrowedByPointer` is cut from M003. M004 must provide discharge-pair semantics and required macOS/Linux evidence before reopening; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
+| D-16-13 | 16-05-SUMMARY.md cut-m004; D-16-11 | NAT-09, D-16-08 | warning | P21 | DEFINED | n/a | `emitLinearBorrowedByPointerPlain` is cut from M003. M004 must prove its shared-pointer/alias contract and discharge behavior before reopening; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
 
 ## Detail
 
@@ -35,7 +35,7 @@ the D-16-08 non-inertness evidence obligation.
 
 first-recorded: M003
 
-M004 owner: native-emission/ownership design workstream.
+M004 owner: Phase 21 — Native Emission Ownership and Resource Discharge.
 
 Prerequisite: a checked resource ledger and discharge-pair design that covers
 foreign-call blocks and makes cleanup obligations explicit at the C boundary.
@@ -54,7 +54,7 @@ one-TU subset and this row does not claim otherwise.
 
 first-recorded: M003
 
-M004 owner: native-emission/ownership design workstream.
+M004 owner: Phase 21 — Native Emission Ownership and Resource Discharge.
 
 Prerequisite: the full discharge-pair design plus successful exact-shape
 macOS and Linux evidence; Plan 16-05 records Linux as unavailable, so its
@@ -76,7 +76,7 @@ not authorization for this pointer lowering.
 
 first-recorded: M003
 
-M004 owner: native-emission/ownership design workstream.
+M004 owner: Phase 21 — Native Emission Ownership and Resource Discharge.
 
 Prerequisite: a specified shared-pointer alias and discharge contract; the
 exclusive `restrict` probe cannot substitute for this different family.

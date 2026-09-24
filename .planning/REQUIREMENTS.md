@@ -106,9 +106,9 @@ The recorded Plan 16-05 decision is `cut-m004`: Linux evidence is unavailable,
 so macOS-only results do not admit `emitLinearBorrowedByPointer`. The following
 three legacy emitter families are therefore cut from M003, not relabelled for a
 third deferral: `emitLinearForeign`, `emitLinearBorrowedByPointer`, and
-`emitLinearBorrowedByPointerPlain`. Their explicit M004 ownership, prerequisites,
-reopening conditions, witnesses, and one-translation-unit/`-flto` consequences
-are recorded bijectively in
+`emitLinearBorrowedByPointerPlain`. Their explicit owner is M004 Phase 21: Native Emission Ownership and Resource Discharge.
+Their prerequisites, reopening conditions, witnesses, and one-translation-unit/`-flto`
+consequences are recorded bijectively in
 `.planning/phases/16-branch-match-emitter-port/PHASE-16-DEBT.md`. This amendment
 does not weaken NAT-09's normative text or claim that the probe makes LTO
 non-inert.

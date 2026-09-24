@@ -5,6 +5,7 @@
 - ✅ **M001 — Source-to-Native Semantic Spine** — Phases 1-6 (shipped 2026-09-07) — [archive](milestones/M001-ROADMAP.md)
 - ✅ **M002 — Interprocedural Semantic Spine** — Phases 07-13 (shipped 2026-09-14) — [archive](milestones/M002-ROADMAP.md)
 - 🚧 **M003 — Computation and Honest Instruments** — Phases 14-20 (active)
+- ◷ **M004 — Native Emission Ownership and Resource Discharge** — planned after M003; Phase 21 owns D-16-11 through D-16-13
 
 ## Overview
 
@@ -802,3 +803,16 @@ real finding.
 
 ---
 *Roadmap created: 2026-09-17 for milestone M003*
+
+### Phase 21: Native Emission Ownership and Resource Discharge (M004)
+
+**Status**: Planned owner designation only; M003 Phases 14-20 complete before
+M004 work is scheduled.
+**Goal**: Design checked resource discharge and foreign-boundary ownership
+contracts required before any M003-cut emitter family can be reconsidered.
+**Owns**: D-16-11 (`emitLinearForeign`), D-16-12
+(`emitLinearBorrowedByPointer`), and D-16-13
+(`emitLinearBorrowedByPointerPlain`).
+**Admission boundary**: This ownership assignment does not admit or reopen any
+emitter family. Each family retains its own prerequisites, cross-host evidence,
+refusal-fence requirements, and one-translation-unit/`-flto` limitation.
