@@ -2380,7 +2380,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 
 		var support ownershipSupport
 		if arm.Body != nil {
-			support = analyzeArmBody(functionID, nextIndex, scrutineeName, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols, linear.Types)
+			support = analyzeArmBody(functionID, nextIndex, scrutineeName, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols, linear.Places, linear.Operations, linear.Types)
 		} else {
 			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, scrutineeTypeID, returnTypeID, dataType, returnDataType, arm, sealed)
 		}
@@ -2407,10 +2407,12 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		})
 		armBlockIDs = append(armBlockIDs, armBlockID)
 		armEdgeToJoinID := fmt.Sprintf("%s:edge:arm:%d:join", functionID, index)
+		armEdgeFromEntryID := fmt.Sprintf("%s:edge:%s", matchID, arm.Pattern)
 		edges = append(edges,
-			core.Edge{ID: fmt.Sprintf("%s:edge:entry:arm:%d", functionID, index), FromBlockID: entryBlockID, ToBlockID: armBlockID, Pattern: arm.Pattern},
+			core.Edge{ID: armEdgeFromEntryID, FromBlockID: entryBlockID, ToBlockID: armBlockID, Pattern: arm.Pattern},
 			core.Edge{ID: armEdgeToJoinID, FromBlockID: armBlockID, ToBlockID: joinBlockID, Pattern: arm.Pattern},
 		)
+		armEdgeIDs[entryBlockID+"->"+armBlockID] = armEdgeFromEntryID
 		armEdgeIDs[armBlockID+"->"+joinBlockID] = armEdgeToJoinID
 		armCFGBlocks = append(armCFGBlocks, cfgBlockSpec{id: armBlockID, operations: armOps, successors: []string{joinBlockID}})
 		matchArm := core.MatchArm{
@@ -2452,7 +2454,23 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	// local answer under this phase's topology, but the fixpoint machinery
 	// itself is general (see materializeLoanEndpoints's own multi-successor
 	// test coverage in check_test.go).
-	cfgBlocks := append(append([]cfgBlockSpec(nil), armCFGBlocks...), cfgBlockSpec{id: joinBlockID, successors: nil})
+	// The entry block owns the straight-line prefix before the computed match.
+	// Keeping it in the same CFG makes a prefix-created loan flow through the
+	// real fan-out, so edge endpoints are derived from production source facts.
+	entryCFGOperations := make([]core.LinearOperation, 0, len(entryOperationIDs))
+	if len(entryOperationIDs) > 0 {
+		operationByID := make(map[string]core.LinearOperation, len(linear.Operations))
+		for _, operation := range linear.Operations {
+			operationByID[operation.ID] = operation
+		}
+		for _, operationID := range entryOperationIDs {
+			if operation, ok := operationByID[operationID]; ok {
+				entryCFGOperations = append(entryCFGOperations, operation)
+			}
+		}
+	}
+	cfgBlocks := append([]cfgBlockSpec{{id: entryBlockID, operations: entryCFGOperations, successors: append([]string(nil), armBlockIDs...)}}, armCFGBlocks...)
+	cfgBlocks = append(cfgBlocks, cfgBlockSpec{id: joinBlockID, successors: nil})
 	fixpoint, diag := loanLivenessFixpoint(functionID, cfgBlocks, interproceduralSummaryTable{}, function.Body.Span)
 	if diag != nil {
 		diagnostics = append(diagnostics, *diag)
@@ -3053,7 +3071,7 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // the walk below never reaches every binding -- an independent oracle
 // populates the same fields the same way, over the same full body,
 // regardless of which fact fails first.
-func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
+func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, inheritedPlaces []core.Place, inheritedOperations []core.LinearOperation, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
@@ -3067,9 +3085,20 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 			})
 		}
 	}
-	places := map[string]*placeState{
-		parameterName: {place: core.Place{ID: parameterPlaceID, Name: parameterName, TypeID: typeFact.ID}, declared: parameterSpan, initialized: true},
+	places := make(map[string]*placeState, len(inheritedPlaces)+1)
+	movedPrefixPlaces := make(map[string]bool)
+	for _, operation := range inheritedOperations {
+		if operation.Kind == core.OpMove {
+			movedPrefixPlaces[operation.SourceID] = true
+		}
 	}
+	for _, inherited := range inheritedPlaces {
+		places[inherited.Name] = &placeState{place: inherited, declared: parameterSpan, initialized: !movedPrefixPlaces[inherited.ID]}
+	}
+	// Each arm gets its own scrutinee alias, overriding the shared prefix
+	// binding with the arm-local place while retaining other prefix places
+	// (such as a loan) as read-only inherited facts.
+	places[parameterName] = &placeState{place: core.Place{ID: parameterPlaceID, Name: parameterName, TypeID: typeFact.ID}, declared: parameterSpan, initialized: true}
 	activeLoans := make(map[string]map[string]int) // ownerID -> loanID -> lastUse (evidence only, D-09-08/D-09-09)
 	expiringLoans := make(map[int][]struct {
 		ownerID string

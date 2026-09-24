@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Completed 18-05-PLAN.md
-last_updated: "2026-09-24T18:07:10.917Z"
+stopped_at: Completed 18-06-PLAN.md
+last_updated: "2026-09-24T18:16:55.242Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 18 execution started
-state_head: b808fc858c8d8fbb622c4dc1b00c66c15da2a0f9
+state_head: 76c7bd1b78560a207dcde9fe59b76e5520d85e6b
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 63
+  completed_plans: 64
 ---
 
 # Project State
@@ -57,7 +57,7 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 ## Current Position
 
 Phase: 18 (Branch on a Computed Value) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-09-24 — Completed Phase 18 Plan 05; runtime payload value and wrong-slot mutation acceptance verified, with requirements open for phase-level verification
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -323,6 +323,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P03 | 23min | 2 tasks | 4 files |
 | Phase 18 P4 | 35m | 3 tasks | 11 files |
 | Phase 18 P5 | 24min | 3 tasks | 9 files |
+| Phase 18 P6 | 11min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -470,6 +471,7 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Serialize payload-bearing terminal ADTs with their runtime payload while retaining tag-only branch dispatch.
 - [Phase 18]: Seed interpreter data inputs with the canonical payload values emitted by native entry setup.
 - [Phase 18]: Keep CTL-01 through CTL-03 open until full Phase 18 verification.
+- [Phase 18]: 18-06: Keep S-010 loan endpoints within existing point and edge kinds, with the computed-match prefix participating in bounded CFG liveness.
 
 ### Pending Todos
 
@@ -623,8 +625,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T18:07:10.693Z
-Stopped at: Completed 18-05-PLAN.md
+Last session: 2026-09-24T18:16:55.020Z
+Stopped at: Completed 18-06-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

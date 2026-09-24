@@ -233,4 +233,81 @@ func TestPhase18LoanAcrossBranchFixture(t *testing.T) {
 	if len(parsed.Diagnostics) != 0 || !foundTerminalMatch {
 		t.Fatalf("terminal computed match did not parse into the linear-body form: diagnostics=%+v", parsed.Diagnostics)
 	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("production checker rejected S-010 fixture: %+v", checked.Diagnostics)
+	}
+	var selectFn *core.Function
+	for index := range checked.Program.Functions {
+		if checked.Program.Functions[index].Name == "select" {
+			selectFn = &checked.Program.Functions[index]
+		}
+	}
+	if selectFn == nil || selectFn.Linear == nil || selectFn.Match == nil {
+		t.Fatalf("checked source omitted select CFG: %+v", checked.Program.Functions)
+	}
+	var borrowID string
+	for _, op := range selectFn.Linear.Operations {
+		if op.Kind == core.OpBorrowShared {
+			borrowID = op.LoanID
+		}
+	}
+	if borrowID == "" {
+		t.Fatal("production linear prefix omitted source borrow")
+	}
+	var pointUses, edgeEnds int
+	var offEdge string
+	for _, endpoint := range selectFn.Linear.LoanEndpoints {
+		if endpoint.LoanID != borrowID {
+			continue
+		}
+		switch endpoint.Kind {
+		case "point":
+			pointUses++
+		case "edge":
+			edgeEnds++
+			offEdge = endpoint.EdgeID
+		default:
+			t.Fatalf("production endpoint introduced unsupported kind %q", endpoint.Kind)
+		}
+	}
+	if pointUses != 1 || edgeEnds != 1 {
+		t.Fatalf("borrow endpoints = %+v, want one point use and one diverging edge", selectFn.Linear.LoanEndpoints)
+	}
+	var offEdgeIsSibling bool
+	for _, edge := range selectFn.Linear.Edges {
+		if edge.ID == offEdge && edge.Pattern == "Off" {
+			offEdgeIsSibling = true
+		}
+	}
+	if !offEdgeIsSibling {
+		t.Fatalf("unused sibling did not receive the edge endpoint: edge=%q", offEdge)
+	}
+
+	// Controls keep the exactly-one-arm assumption explicit: the endpoint
+	// topology must change when the source use is present in both or neither arm.
+	for _, control := range []struct {
+		name   string
+		source string
+	}{
+		{name: "both arms", source: strings.Replace(string(source), "    Off => {\n      computed", "    Off => {\n      let alsoObserved = take view\n      computed", 1)},
+		{name: "neither arm", source: strings.Replace(string(source), "      let observed = take view\n", "", 1)},
+	} {
+		t.Run(control.name, func(t *testing.T) {
+			result := session.Check([]byte(control.source))
+			if len(result.Diagnostics) != 0 {
+				t.Fatalf("control source rejected: %+v", result.Diagnostics)
+			}
+			for _, fn := range result.Program.Functions {
+				if fn.Name != "select" || fn.Linear == nil {
+					continue
+				}
+				for _, endpoint := range fn.Linear.LoanEndpoints {
+					if endpoint.LoanID != borrowID || endpoint.Kind == "edge" {
+						t.Fatalf("control inherited one-arm edge classification: %+v", fn.Linear.LoanEndpoints)
+					}
+				}
+			}
+		})
+	}
 }

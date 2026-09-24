@@ -4659,7 +4659,7 @@ func TestCallConsumesNoncopyableArgument(t *testing.T) {
 			},
 			Result: "second",
 		}
-		support := analyzeArmBody("s1:m:fn:main", 0, "buffer", "s1:m:fn:main:place:0", diagnostic.Span{}, typeFact, body, contracts, nil)
+		support := analyzeArmBody("s1:m:fn:main", 0, "buffer", "s1:m:fn:main:place:0", diagnostic.Span{}, typeFact, body, contracts, nil, nil, nil)
 		if support.Diagnostic == nil {
 			t.Fatalf("expected the match-arm double-consume to be refused, got a clean result: %+v", support)
 		}

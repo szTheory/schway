@@ -11,14 +11,9 @@ data Switch =
   | On
   | Off
 
-fn identity(value: Switch) -> Switch {
-  let returned = take value
-  returned
-}
-
 fn select(input: Switch) -> Switch {
   let view = borrow input
-  let computed = identity(input)
+  let computed = input
   match computed {
     On => {
       let observed = take view
