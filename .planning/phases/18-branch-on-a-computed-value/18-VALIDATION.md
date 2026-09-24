@@ -42,6 +42,8 @@ created: "2026-09-24"
 | Wave 0 | 01 | 0 | CTL-02 | T-18-02 | A Result-returning callee's computed value reaches all five comparator axes through independent peer admission | integration, differential, smoke | `go test ./internal/compiler/session -run 'TestPhase18.*Result|TestPhase18.*Computed' -count=1` | ❌ W0 | ⬜ pending |
 | Wave 0 | 01 | 0 | CTL-03 | T-18-03 | Payload place is returned; injected wrong-slot corruption diverges at `axis:terminal-outcome` | integration, mutation-kill | `go test ./internal/compiler/session -run 'TestPhase18.*Payload|TestPhase18.*WrongSlot' -count=1` | ❌ W0 | ⬜ pending |
 | Wave 0 | 01 | 0 | CTL-01 | T-18-01 | A pre-match loan live in one arm is classified with existing endpoints and bounded fixpoint work | source integration, ownership | `go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase18.*Loan|TestEdgeSpecificLiveOut' -count=1` | ❌ W0 | ⬜ pending |
+| 18-08-T1 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-01 | Repeated cold/warm distributions and host/tool provenance are recorded and internally consistent | latency evidence | `bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh --measurements` | ❌ W0 | ⬜ pending |
+| 18-08-T2 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-03 | CI disposition is evidence-backed; added command runs in both matrix hosts or unchanged CI blob is proven | CI configuration evidence | `bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh --final` | ❌ W0 | ⬜ pending |
 
 Threat refs:
 
@@ -63,6 +65,91 @@ The five-axis acceptance must use the full session/program comparator and peer-v
 
 ---
 
+## Phase 18 Feedback and CI Evidence Record
+
+Plan 08 fills the fenced key/value record below after measuring each named lane
+with at least three cold and three warm runs. Times are seconds; include each
+sample and matching count/min/median/max. The helper validates arithmetic and
+provenance without imposing a time threshold. Record actual host, Go, Clang,
+and pre-decision workflow blob hash; do not leave placeholders in final evidence.
+
+```text
+phase18_evidence_version=1
+host=
+go_version=
+clang_version=
+focused_command=go test ./internal/compiler/session -run 'TestPhase18' -count=1
+focused_cold_seconds=
+focused_cold_count=
+focused_cold_min_seconds=
+focused_cold_median_seconds=
+focused_cold_max_seconds=
+focused_warm_seconds=
+focused_warm_count=
+focused_warm_min_seconds=
+focused_warm_median_seconds=
+focused_warm_max_seconds=
+vet_command=go vet ./...
+vet_cold_seconds=
+vet_cold_count=
+vet_cold_min_seconds=
+vet_cold_median_seconds=
+vet_cold_max_seconds=
+vet_warm_seconds=
+vet_warm_count=
+vet_warm_min_seconds=
+vet_warm_median_seconds=
+vet_warm_max_seconds=
+build_command=go build ./...
+build_cold_seconds=
+build_cold_count=
+build_cold_min_seconds=
+build_cold_median_seconds=
+build_cold_max_seconds=
+build_warm_seconds=
+build_warm_count=
+build_warm_min_seconds=
+build_warm_median_seconds=
+build_warm_max_seconds=
+full_test_command=go test ./... -count=1
+full_test_cold_seconds=
+full_test_cold_count=
+full_test_cold_min_seconds=
+full_test_cold_median_seconds=
+full_test_cold_max_seconds=
+full_test_warm_seconds=
+full_test_warm_count=
+full_test_warm_min_seconds=
+full_test_warm_median_seconds=
+full_test_warm_max_seconds=
+race_command=go test -race ./... -count=1
+race_cold_seconds=
+race_cold_count=
+race_cold_min_seconds=
+race_cold_median_seconds=
+race_cold_max_seconds=
+race_warm_seconds=
+race_warm_count=
+race_warm_min_seconds=
+race_warm_median_seconds=
+race_warm_max_seconds=
+ci_before_blob=
+ci_disposition=pending
+ci_command=
+ci_decision_rationale=
+```
+
+The verifier is phase-local at
+`.planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh`.
+`--measurements` validates all five lane distributions, actual host/tool
+versions, and `ci_before_blob` against `git hash-object .github/workflows/ci.yml`.
+`--final` additionally requires `ci_disposition=added` or `not_added`; for
+`added`, the exact `ci_command` must appear in the existing `checks` job whose
+matrix includes Ubuntu and macOS. For `not_added`, the workflow blob must still
+match `ci_before_blob`, and the rationale must explain the measured tradeoff.
+
+---
+
 ## Manual-Only Verifications
 
 All objective phase behaviors have automated verification. Human review may assess code/API readability, but no acceptance criterion is delegated to manual UAT when source fixtures, peer checks, differential execution, mutation controls, and CI can establish it.
@@ -76,6 +163,7 @@ All objective phase behaviors have automated verification. Human review may asse
 - [ ] Wave 0 covers all missing tests and fixtures above.
 - [ ] No watch-mode flags.
 - [ ] Feedback latency is measured and documented; recurring CI cost is justified.
+- [ ] The phase-local evidence verifier passes in both measurement and final-disposition modes.
 - [ ] `nyquist_compliant: true` set after Wave 0 and plan mapping are confirmed.
 
 **Approval:** pending plan and Wave 0 validation.

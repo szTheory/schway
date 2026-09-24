@@ -238,22 +238,48 @@ Not applicable as an external framework survey: this is an internal compiler-sem
 | A1 | A dedicated `testdata/phase18/` directory is the clearest place for new phase fixtures. | Architecture Patterns | Low; follow established testdata phase grouping if another local convention applies. |
 | A2 | A fast recurring CI lane should run focused CTL acceptance tests while broader Go/race suites retain whole-repository safety. | Validation Architecture | Medium; measure added test cost and use CI only where recurring regression value exceeds maintenance/runtime cost, per D-18-05. |
 
-## Open Questions
+## Resolved Planning Questions
 
-1. **What exact source grammar expresses “terminal match after linear prefix”?**
-   - What we know: AST `Body` currently holds mutually exclusive `MatchExpr` or `Linear`; linear bodies hold bindings and terminal result/defect.
-   - What's unclear: whether the parser can represent an embedded terminal match without a new AST variant or should add a narrowly-scoped terminal branch field.
-   - Recommendation: decide during planning from parser ownership and preserve lossless source spans; the concrete refused fixture should settle the source form before implementation.
+1. **Source grammar for a terminal match after a linear prefix — RESOLVED.**
+   Extend the existing `Body` representation with one narrowly scoped terminal
+   branch field/variant alongside its current linear prefix. Keep terminal
+   `match` as the only branch law and preserve spans through the existing
+   lossless parser. Wave 0 freezes the accepted source shape by checking in the
+   refused computed-place fixture and pinning the current checker diagnostic;
+   Plan 02 moves that same fixture through the production parser/checker.
+   Evidence: `ast.Body` is currently a closed `MatchExpr`/`Linear` form and the
+   parser round-trip test already exercises generated branch bodies;
+   `18-01-PLAN.md` pins before admission changes and `18-02-PLAN.md` extends the
+   existing body representation rather than adding `if`/`else` or another CFG
+   law. Preserve this as the implementation boundary if the exact parser
+   spelling changes while producing the pinned fixture.
 
-2. **Where should the prefix live in core?**
-   - What we know: `checkBranch` emits `Match` plus flattened `Linear` operations/blocks, and current match branch starts at the entry block.
-   - What's unclear: exact mapping from prefix operations to entry-block operations while preserving global ordinals and independent validator derivations.
-   - Recommendation: choose the smallest extension to the existing core and reject a parallel control-flow representation.
+2. **Core location for prefix operations — RESOLVED.**
+   Lower the linear-prefix operations into the existing core entry block before
+   its terminal `Match`; do not add a parallel prefix block or second branch
+   representation. Preserve stable global operation/place ordinals across the
+   prefix and all arms. `corevalidate` and `originvalidate` must independently
+   derive the resulting place/type/ownership/origin facts from the admitted
+   core inputs. Evidence: `checkBranch` already owns entry/join/arm block
+   construction, core already represents the terminal match, and the two peers
+   intentionally keep independent admission boundaries. Plans 02, 03, and 06
+   make those three obligations explicit.
 
-3. **How can the wrong-slot mutation be made observable in the source-level return path?**
-   - What we know: the existing Phase 12 probe reports a payload-byte observability gap; CTL-03 requires that the computed-place path construct D-12-43.
-   - What's unclear: whether the existing execution value projection can expose returned payload bytes directly, or whether the phase must extend the value projection within scope.
-   - Recommendation: make the acceptance fixture and mutation red/green proof an early planning task; do not relax the required axis if the first fixture shape is blind.
+3. **Observable wrong-slot mutation route — RESOLVED.**
+   The CTL-03 source fixture will match a computed data value, destructure the
+   selected payload, and return that payload place. The full session evidence
+   path must put a stable representation of the returned payload value/bytes
+   into the terminal outcome compared by `Phase5CompareEngines`. Existing
+   comparison checks `Outcome.Value`, but the Phase 12 mutation witness records
+   that the current payload-return projection exposes only the alternative tag
+   and therefore cannot observe the wrong-slot write. Plan 05 consequently
+   extends the CTL-03 session evidence projection/adapters as needed, within the
+   existing language construct and session evidence boundary, until the seeded
+   write produces exactly `axis:terminal-outcome`; its unmutated companion must
+   agree and injection must be positive. Evidence: `session_phase5_compare.go`
+   compares `Outcome.Value`; `session_payload_control_test.go` documents the
+   current tag-only blind spot and the mutation seam. No new language construct
+   or relaxation of CTL-03 is permitted.
 
 ## Environment Availability
 
