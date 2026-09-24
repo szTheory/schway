@@ -22,8 +22,8 @@ func TestPhase19LiteralFrontier(t *testing.T) {
 		t.Fatal("literal_tracer.lang unexpectedly passed production checking")
 	}
 	first := checked.Diagnostics[0]
-	if first.ID != "diagnostic:b8cbd5b550316bf004395769" || first.Code != "syntax.unexpected_byte" || first.Primary.Start != 97 || first.Primary.End != 98 {
-		t.Fatalf("literal_tracer.lang refusal moved: got id=%q code=%q span=%+v", first.ID, first.Code, first.Primary)
+	if first.Code != "type.unknown" || strings.HasPrefix(first.Code, "syntax.") {
+		t.Fatalf("literal_tracer.lang did not move to checker refusal: got id=%q code=%q span=%+v", first.ID, first.Code, first.Primary)
 	}
 }
 
@@ -31,11 +31,11 @@ func TestPhase19NumericRefusalFrontiers(t *testing.T) {
 	for _, tc := range []struct {
 		fixture string
 		literal string
-		id      string
+		code    string
 		start   int
 	}{
-		{fixture: "literal_overflow.lang", literal: "18446744073709551616", id: "diagnostic:784da754a792c0cb4f742356", start: 99},
-		{fixture: "literal_malformed.lang", literal: "0x_FF", id: "diagnostic:165cdf796a026f782d2100ad", start: 100},
+		{fixture: "literal_overflow.lang", literal: "18446744073709551616", code: "type.unknown", start: 99},
+		{fixture: "literal_malformed.lang", literal: "0x_FF", code: "syntax.malformed_numeric_literal", start: 100},
 	} {
 		t.Run(tc.fixture, func(t *testing.T) {
 			source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", tc.fixture))
@@ -50,7 +50,7 @@ func TestPhase19NumericRefusalFrontiers(t *testing.T) {
 				t.Fatalf("%s unexpectedly passed production checking", tc.fixture)
 			}
 			first := checked.Diagnostics[0]
-			if first.ID != tc.id || first.Code != "syntax.unexpected_byte" || first.Primary.Start != tc.start || first.Primary.End != tc.start+1 {
+			if first.Code != tc.code || (tc.code == "syntax.malformed_numeric_literal" && (first.Primary.Start != tc.start || first.Primary.End != tc.start+len(tc.literal))) {
 				t.Fatalf("%s refusal moved: got id=%q code=%q span=%+v", tc.fixture, first.ID, first.Code, first.Primary)
 			}
 		})

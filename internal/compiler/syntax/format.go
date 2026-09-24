@@ -189,6 +189,14 @@ func (f *formatter) token(token Token, next Kind) {
 			f.pendingDefectReason = false
 			f.newline()
 		}
+	case TokenNumber:
+		f.ensureLine()
+		f.out.WriteString(token.Text)
+		f.lineOpen = true
+		if (f.context() == "function" || f.context() == "arm") && f.linearBinding && f.previous == TokenEqual {
+			f.newline()
+			f.linearBinding = false
+		}
 	case TokenDot:
 		f.out.WriteByte('.')
 		f.lineOpen = true

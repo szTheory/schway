@@ -406,6 +406,16 @@ func (p *parser) linearBody(allowTerminalMatch bool) ast.LinearBody {
 			body.Span.End = end
 			continue
 		}
+		if number := p.peek(); number.Kind == TokenNumber {
+			p.advance()
+			body.Bindings = append(body.Bindings, ast.Binding{
+				Name: name.Text,
+				RHS:  ast.RHS{Kind: "numeric_literal", Source: number.Text, Span: number.Span},
+				Span: diagnostic.Span{Start: bindingStart.Span.Start, End: number.Span.End},
+			})
+			body.Span.End = number.Span.End
+			continue
+		}
 		kind := "read"
 		if p.accept(TokenTake) {
 			kind = "take"

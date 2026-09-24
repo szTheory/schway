@@ -172,6 +172,8 @@ type RHS struct {
 	Kind   string
 	Source string
 	Span   diagnostic.Span
+	// Numeric literals keep their exact source spelling in Source and their
+	// token bounds in Span until checker admission assigns numeric meaning.
 	// Callee and Arguments are populated when Kind == "try_call",
 	// Kind == "discard_call" (D-04-06): a fallible foreign call, admissible
 	// only as the operand of `try` or `discard ... because`; or
