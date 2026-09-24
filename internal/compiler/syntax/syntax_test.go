@@ -50,7 +50,7 @@ func TestPhase19NumericToken(t *testing.T) {
 }
 
 func TestPhase19NumericMalformed(t *testing.T) {
-	for _, spelling := range []string{"0x", "0b", "1_", "1__2", "0x_F", "0b2", "0o77", "42u64", "42abc"} {
+	for _, spelling := range []string{"0x", "0b", "1_", "1__2", "0x_F", "0b2", "0o77", "42u64", "42abc", "42λ"} {
 		tokens, diagnostics := syntax.Lex([]byte(spelling))
 		if len(diagnostics) != 1 || len(tokens) != 2 || tokens[0].Kind != syntax.TokenUnknown || tokens[0].Text != spelling || tokens[0].Span.Start != 0 || tokens[0].Span.End != len(spelling) || diagnostics[0].Primary.Start != 0 || diagnostics[0].Primary.End != len(spelling) {
 			t.Errorf("Lex(%q) = tokens %+v, diagnostics %+v; want one full-span malformed token", spelling, tokens, diagnostics)

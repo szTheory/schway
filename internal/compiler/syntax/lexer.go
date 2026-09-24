@@ -51,8 +51,12 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 			// invalid radix digits, and separator errors cannot be accepted as
 			// a valid numeric prefix followed by another token.
 			offset++
-			for offset < len(source) && isNumericCandidateByte(source[offset]) {
-				offset++
+			for offset < len(source) {
+				next, width := utf8.DecodeRune(source[offset:])
+				if !(isNumericCandidateByte(source[offset]) || unicode.IsLetter(next) || unicode.IsDigit(next)) {
+					break
+				}
+				offset += width
 			}
 			text := string(source[start:offset])
 			span := diagnostic.Span{Start: start, End: offset}
