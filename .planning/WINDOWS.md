@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 1
 waived_count: 0
-fixed_count: 0
+fixed_count: 2
 total_count: 3
-last_updated: 2026-09-23T22:41:36.175Z
+last_updated: 2026-09-24T06:37:27.152Z
 ---
 
 # Broken Windows Ledger
@@ -16,8 +16,8 @@ last_updated: 2026-09-23T22:41:36.175Z
 | id | phase | kind | file | line | description | status | reason | recorded_at | resolved_at |
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
 | 1 | 14 | unrun-verify | .planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md |  | Stale ~60s/~120s estimated-runtime prose (lines 27,39,94 in 08-VALIDATION.md; also 10/11/12/13-VALIDATION.md) not corrected by 14-05 -- out of scope (narrative, not a verification command span); no existing Phase 14 plan owns it, recommend QLT-10 | open |  | 2026-09-18T02:24:35.473Z |  |
-| 2 | 16 | unrun-verify | internal/compiler/cgen/cgen_n1_convergence_test.go |  | Package-wide cgen verification remains red until Plan 16-06 flips its intentional pre-cutover expectations. | open |  | 2026-09-19T21:48:08.202Z |  |
-| 3 | 16 | unrun-verify | .planning/phases/16-branch-match-emitter-port/16-19-PLAN.md |  | Full go test ./... ran but failed on pre-existing Phase 11 fixture, corpus, and validation-groundedness drift outside this plan scope. | open |  | 2026-09-23T22:41:36.175Z |  |
+| 2 | 16 | unrun-verify | internal/compiler/cgen/cgen_n1_convergence_test.go |  | Package-wide cgen verification remains red until Plan 16-06 flips its intentional pre-cutover expectations. | fixed |  | 2026-09-19T21:48:08.202Z | 2026-09-24T06:37:27.070Z |
+| 3 | 16 | unrun-verify | .planning/phases/16-branch-match-emitter-port/16-19-PLAN.md |  | Full go test ./... ran but failed on pre-existing Phase 11 fixture, corpus, and validation-groundedness drift outside this plan scope. | fixed |  | 2026-09-23T22:41:36.175Z | 2026-09-24T06:37:27.152Z |
 
 ````json
 [
@@ -40,10 +40,10 @@ last_updated: 2026-09-23T22:41:36.175Z
     "file": "internal/compiler/cgen/cgen_n1_convergence_test.go",
     "line": null,
     "description": "Package-wide cgen verification remains red until Plan 16-06 flips its intentional pre-cutover expectations.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-19T21:48:08.202Z",
-    "resolved_at": null,
+    "resolved_at": "2026-09-24T06:37:27.070Z",
     "milestone": null
   },
   {
@@ -53,10 +53,10 @@ last_updated: 2026-09-23T22:41:36.175Z
     "file": ".planning/phases/16-branch-match-emitter-port/16-19-PLAN.md",
     "line": null,
     "description": "Full go test ./... ran but failed on pre-existing Phase 11 fixture, corpus, and validation-groundedness drift outside this plan scope.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-23T22:41:36.175Z",
-    "resolved_at": null,
+    "resolved_at": "2026-09-24T06:37:27.152Z",
     "milestone": null
   }
 ]

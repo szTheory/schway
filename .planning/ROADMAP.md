@@ -433,17 +433,17 @@ milestone; not a hard gate.
 
 **Wave 1 — UAT gap closure**
 
-- [ ] 16-16-PLAN.md — migrate Phase 11 by-pointer evidence to refusal-first frozen inputs
-- [ ] 16-19-PLAN.md — synchronize historical witnesses and make budget probes deterministic
+- [x] 16-16-PLAN.md — migrate Phase 11 by-pointer evidence to refusal-first frozen inputs
+- [x] 16-19-PLAN.md — synchronize historical witnesses and make budget probes deterministic
 - [x] 16-20-PLAN.md — refresh machine-checked language maturity corpus counts
 
 **Wave 2**
 
-- [ ] 16-18-PLAN.md — reconcile the exact groundedness frontier and P20 ownership
+- [x] 16-18-PLAN.md — reconcile the exact groundedness frontier and P20 ownership
 
 **Wave 3**
 
-- [ ] 16-17-PLAN.md — regenerate the current validation corpus run record and manifest
+- [x] 16-17-PLAN.md — regenerate the current validation corpus run record and manifest
 
 ---
 
@@ -703,7 +703,7 @@ assurance-refactor milestone rather than a feature milestone.
 |-------|----------------|--------|-----------|
 | 14. Evidence Instrument and Honest Scoping | 13/13 | Complete    | 2026-09-18 |
 | 15. Event Identity (`lang.execution/2`) | 9/9 | Complete    | 2026-09-19 |
-| 16. Branch/Match Emitter Port | 15/15 | Complete    | 2026-09-21 |
+| 16. Branch/Match Emitter Port | 26/26 | Complete    | 2026-09-21 |
 | 17. Return Type ≠ Parameter Type | 9/9 | Complete    | 2026-09-22 |
 | 18. Branch on a Computed Value | 0/? | Not started (S-010 gate) | - |
 | 19. Numeric Literals and `OpConst` | 0/? | Not started | - |

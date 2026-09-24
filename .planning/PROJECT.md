@@ -245,18 +245,19 @@ milestone must measurably move the refusal forward.
   corpus-wide run record with a measured timing margin, a live `//go:build`
   suppression allowlist, and owner-required debt rows). Validated in Phase 14:
   Evidence Instrument and Honest Scoping.
+- ✓ Event identity distinguishes repeated activations of the same callee —
+  M003 Phase 15 (`lang.execution/2`); diamond, sibling-call, and caller-owned
+  callee identity controls are covered by the phase verification.
+- ✓ One emission law lowers all admitted programs — M003 Phase 16 (NAT-08,
+  NAT-09); branch/match lowering uses `emitProgram`, the retired emitters are
+  absent, and the remaining foreign/by-pointer families are an explicit M004
+  refusal boundary with assigned ownership.
 
 ### Active
 
 M003 scope, confirmed 2026-09-17. Each line is a milestone-level intent;
 `REQUIREMENTS.md` carries the testable REQ-IDs.
 
-- [ ] Give event identity an owner: shared-leaf diamond call graphs collide
-      (D-11-51), `OpCall` emits no event at all, and D-12-21 cannot close
-      until both are fixed.
-- [ ] Reduce two emission laws to one: port branch/match into `emitProgram`,
-      delete three emitters, formally cut the other three under a D-10-60
-      amendment rather than a silent third deferral.
 - [ ] Allow a function's return type to differ from its parameter type.
       Closes DX-07 and D-13-10a. Does **not** close DX-06 — see Current State.
 - [ ] Let a branch discriminate a computed value, by generalizing `match`'s
@@ -427,4 +428,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-18 after Phase 14 (Evidence Instrument and Honest Scoping) completed*
+*Last updated: 2026-09-24 after Phase 16 (Branch/Match Emitter Port) completed*

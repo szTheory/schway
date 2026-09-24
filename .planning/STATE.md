@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 15
-current_phase_name: Event Identity (`lang.execution/2`)
-status: executing
-stopped_at: Completed 16-21-PLAN.md
-last_updated: "2026-09-24T03:37:37.477Z"
-last_activity: 2026-09-23
+current_phase: 18
+current_phase_name: Branch on a Computed Value
+status: planning
+stopped_at: Phase 17 complete, ready to plan Phase 18
+last_updated: "2026-09-24T12:23:17.201Z"
+last_activity: 2026-09-24
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 11c269a7a96bb624ed186919cd2d27e52659cb6c
+state_head: 25f765d9738858a100e4953d4b6298b703df1a41
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 57
-  completed_plans: 52
+  total_plans: 58
+  completed_plans: 58
+  percent: 57
 ---
 
 # Project State
@@ -61,10 +62,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 15 (Event Identity (`lang.execution/2`)) — READY TO EXECUTE
+Phase: 18 — Branch on a Computed Value
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-23 - Completed quick task 260923-nvq: Automate verification by default and record project preference
+Status: Ready to plan
+Last activity: 2026-09-24 — Phase 17 complete, transitioned to Phase 18
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -149,7 +150,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 159
+- Total plans completed: 170
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -170,7 +171,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 12 | 8 | - | - |
 | 14 | 13 | - | - |
 | 15 | 9 | - | - |
-| 16 | 15 | - | - |
+| 16 | 26 | - | - |
 | 17 | 9 | - | - |
 **Per-Plan Metrics:**
 
@@ -613,7 +614,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-24T01:05:39.537Z
-Stopped at: Completed 16-21-PLAN.md
+Stopped at: Phase 17 complete, ready to plan Phase 18
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

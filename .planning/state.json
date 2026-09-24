@@ -11,17 +11,17 @@
     {
       "number": "15",
       "name": "Event Identity (`lang.execution/2`)",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "16",
       "name": "Branch/Match Emitter Port",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "17",
       "name": "Return Type ≠ Parameter Type",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "18",
@@ -41,8 +41,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 15 of 7 · executing"
+    "label": "Advance to the next step (plan phase 18)",
+    "reason": "Phase 18 of 8 — needs a plan"
   },
-  "updated_at": "2026-09-19T14:43:57.924Z"
+  "updated_at": "2026-09-24T12:23:17.214Z"
 }
