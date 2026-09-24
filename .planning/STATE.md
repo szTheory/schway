@@ -4,16 +4,16 @@ milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
-status: planning
+status: executing
 stopped_at: Phase 18 context gathered
-last_updated: "2026-09-24T12:57:18.914Z"
+last_updated: "2026-09-24T14:39:08.250Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 47b9cbe3b2ceaee81d4cac41653419eb20997c95
+last_activity_desc: Phase 18 execution started
+state_head: c349f52f10a30af56a6924f4d11e42016359cc0e
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 58
+  total_plans: 66
   completed_plans: 58
 ---
 
@@ -26,20 +26,14 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 17 — Return Type ≠ Parameter Type
-(evidence-instrument-and-honest-scoping) completed and verified 2026-09-18:
-13 plans, 11/11 requirements, zero `UNOWNED(none-yet-scheduled)` debt rows left
-in `PHASE-14-DEBT.md`. Prior milestone M002
-(07-13), 61 plans, 183 tasks. `OpCall` is real at all six dispatch sites, and a
-multi-function program now checks, is independently re-validated by three
-non-importing peers, interprets, lowers to multi-function C17, and agrees across
-interpreter / `-O0` / `-O3` / `-O3 -flto`. Closed as `override_closeout`: 29/31
-requirements satisfied, DX-06 and DX-07 ratified partial, 10 unowned debt items
-carried forward.
-**M003 — Computation and Honest Instruments is now active**: 7 phases (14-20),
-33 requirements mapped, ~48-57 plans estimated. Phase 14 done; next:
-`/gsd-discuss-phase 15`.
-No outstanding human verification.
+**Current focus:** Phase 18 — Branch on a Computed Value
+is executing its eight checked plans. Phases 14–17 are complete; Phase 18's
+full-suite pre-execution gate exposed six prospective verification commands in
+research/validation that the repository groundedness scanner correctly treats
+as unresolved. Those documents now use existing package-level commands while
+the precise future acceptance commands remain in the plans. The full suite is
+green again. Phase 18 execution is ready to resume at plan 18-01.
+M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -61,10 +55,10 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 18 — Branch on a Computed Value
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-24 — Phase 17 complete, transitioned to Phase 18
+Phase: 18 (Branch on a Computed Value) — EXECUTING
+Plan: 1 of 8
+Status: Executing Phase 18
+Last activity: 2026-09-24 — Completed quick task 260924-djg; Phase 18 regression gate is clear
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -74,7 +68,7 @@ under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
 14-VALIDATION.md's Per-Task Verification Map filled with 31 real rows, and
 all eleven phase requirements confirmed complete.
 
-**Next:** `/gsd-verify-work 14`, then `/gsd-plan-phase 15`
+**Next:** `/gsd-execute-phase 18`
 
 ## M003 Phase Map
 
@@ -599,6 +593,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 |---|-------------|------|--------|--------|-----------|
 | 260922-hfs | Correct Phase 17 Plan 07 traceability and reverify Phase 17 | 2026-09-22 | c7f3692 | passed | [260922-hfs-correct-phase-17-plan-07-traceability-so](./quick/260922-hfs-correct-phase-17-plan-07-traceability-so/) |
 | 260923-nvq | Automate verification by default and record project preference | 2026-09-23 | dd257c5 | passed | [260923-nvq-default-to-automated-integration-end-to-](./quick/260923-nvq-default-to-automated-integration-end-to-/) |
+| 260924-djg | Avoid groundedness false positives from Phase 18 preparatory commands | 2026-09-24 | c349f52 | passed | [260924-djg-avoid-groundedness-false-positives-from](./quick/260924-djg-avoid-groundedness-false-positives-from-/) |
 
 ## Deferred Items
 
