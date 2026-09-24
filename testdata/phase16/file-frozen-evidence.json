@@ -133,6 +133,22 @@
       "Artifact": "testdata/phase16/historical/file/21442368cd2f2a13f1094aa15aded0dfda0923b20d5b682188e4b5038f85a06e.c",
       "ArtifactSHA256": "105536d8a2d92ea6d08fee4c8dfdd7f78bf2a37911631153e23f73d4a6c2e720",
       "ProgramSHA256": "b146e3cd1f157d393fff9eecae8d5520db826ba6cbf635f4f1ef36ffd238886c"
+    },
+    {
+      "Fixture": "testdata/phase11/multi_function_gate_corpus.lang",
+      "FixtureSHA256": "07d4f26de0f3c6674592d4c97d6962049727a9bb9f7457c6cf21b31d68393daa",
+      "Artifact": "testdata/phase16/historical/phase11_gate_corpus.c",
+      "ArtifactSHA256": "fda311a1fab73a2832a6c88c3d095618b2055a6a341a9f0337d1fba247ad619c",
+      "ProgramSHA256": "fede66e6d64c3ec989c842ca8d4dc15be1ba824e4d6b2574ccb34af971b6fa2a",
+      "Refusal": "function \"s1:phase11.multi_function_gate_corpus:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase"
+    },
+    {
+      "Fixture": "testdata/phase11/multi_function_gate_n_two.lang",
+      "FixtureSHA256": "4bfaf7c7b5116671163a0ca933bf05a8b8bab418c7cb4d5d1d1d30516fcc5bc5",
+      "Artifact": "testdata/phase16/historical/phase11_gate_n_two.c",
+      "ArtifactSHA256": "79659b7626f6ff44fdc80bcfed2361e6b2a16d154bf5683c7847eba58d60a27a",
+      "ProgramSHA256": "c917524d607f8ed229810ad8c1e17e48da565f1f63cf7b5aa2db84be3a61ebf9",
+      "Refusal": "function \"s1:phase11.gate_n_two:fn:touchTwo\": by-pointer bodies are not supported by whole-program native emission this phase"
     }
   ]
 }
