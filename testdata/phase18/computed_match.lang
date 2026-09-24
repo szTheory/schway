@@ -1,0 +1,20 @@
+// Fixture-first refusal for Phase 18: the terminal match names an in-scope
+// local place rather than the function's parameter.
+module phase18.computed_match
+
+export {
+  type Choice
+  fn select
+}
+
+data Choice =
+  | Left
+  | Right
+
+fn select(input: Choice) -> Choice {
+  let computed = input
+  match computed {
+    Left => Left
+    Right => Right
+  }
+}
