@@ -271,6 +271,8 @@ func EnumeratePaths(functionID, entryBlockID string, idx blockIndex, cap int) ([
 // tracked while linearizePath replays a single concrete path forward.
 type loanState struct {
 	bornBlockID string
+	bornIndex   int
+	bornOpID    string
 	lastBlockID string
 	lastIndex   int
 	lastOpID    string
@@ -323,7 +325,8 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 			}
 			if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 				states[operation.LoanID] = loanState{
-					bornBlockID: blockID, lastBlockID: blockID, lastIndex: opIndex, lastOpID: operation.ID,
+					bornBlockID: blockID, bornIndex: opIndex, bornOpID: operation.ID,
+					lastBlockID: blockID, lastIndex: opIndex, lastOpID: operation.ID,
 				}
 				inherited = append(append([]string(nil), inherited...), operation.LoanID)
 			}
@@ -416,7 +419,7 @@ func RecomputeEndpoints(function core.Function, lookupCallee CalleeLookup) ([]co
 
 	work := 0
 	results := make([]pathResult, len(blockPaths))
-	deaths := map[string]loanState{}
+	deaths := map[string][]loanState{}
 	var endpoints []core.LoanEndpoint
 	for pi, blockIDs := range blockPaths {
 		var variantStates []map[string]loanState
@@ -474,22 +477,51 @@ func RecomputeEndpoints(function core.Function, lookupCallee CalleeLookup) ([]co
 				}
 				neededBeyond[beyond][loanID] = true
 			}
-			if existing, ok := deaths[loanID]; ok {
-				if existing.lastBlockID != state.lastBlockID || existing.lastIndex != state.lastIndex {
-					return nil, work, fmt.Errorf("pathoracle.inconsistent_path_death: loan %q dies at different positions across paths sharing its birth block", loanID)
+			for _, existing := range deaths[loanID] {
+				// Distinct concrete arms may legitimately end a loan at
+				// different blocks. Two replays that claim different final
+				// operation positions in the SAME block, however, describe
+				// inconsistent facts about one declared operation sequence.
+				if existing.lastBlockID == state.lastBlockID &&
+					(existing.lastIndex != state.lastIndex || existing.lastOpID != state.lastOpID) {
+					return nil, work, fmt.Errorf("pathoracle.inconsistent_path_death: loan %q dies at different positions within block %q", loanID, state.lastBlockID)
 				}
-			} else {
-				deaths[loanID] = state
 			}
+			deaths[loanID] = append(deaths[loanID], state)
 		}
 		results[pi] = pathResult{blockIDs: blockIDs, states: states, neededBeyond: neededBeyond}
 	}
 
-	for loanID, state := range deaths {
-		endpoints = append(endpoints, core.LoanEndpoint{
-			ID:               fmt.Sprintf("%s:point:%s:%d:%s", function.ID, state.lastBlockID, state.lastIndex, loanID),
-			LoanID:           loanID, Kind: "point", BlockID: state.lastBlockID, AfterOperationID: state.lastOpID,
-		})
+	for loanID, states := range deaths {
+		hasLaterReference := false
+		for _, state := range states {
+			if state.lastOpID != state.bornOpID {
+				hasLaterReference = true
+				break
+			}
+		}
+		if !hasLaterReference && len(states) > 0 {
+			state := states[0]
+			endpoints = append(endpoints, core.LoanEndpoint{
+				ID:     fmt.Sprintf("%s:point:%s:%d:%s", function.ID, state.bornBlockID, state.bornIndex, loanID),
+				LoanID: loanID, Kind: "point", BlockID: state.bornBlockID, AfterOperationID: state.bornOpID,
+			})
+			continue
+		}
+		seen := map[string]bool{}
+		for _, state := range states {
+			if state.lastOpID == state.bornOpID {
+				continue
+			}
+			id := fmt.Sprintf("%s:point:%s:%d:%s", function.ID, state.lastBlockID, state.lastIndex, loanID)
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			endpoints = append(endpoints, core.LoanEndpoint{
+				ID: id, LoanID: loanID, Kind: "point", BlockID: state.lastBlockID, AfterOperationID: state.lastOpID,
+			})
+		}
 	}
 
 	for _, block := range function.Linear.Blocks {
@@ -519,7 +551,17 @@ func RecomputeEndpoints(function core.Function, lookupCallee CalleeLookup) ([]co
 	}
 
 	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].ID < endpoints[j].ID })
-	return endpoints, work, nil
+	unique := endpoints[:0]
+	for _, endpoint := range endpoints {
+		if len(unique) > 0 && unique[len(unique)-1].ID == endpoint.ID {
+			if unique[len(unique)-1] != endpoint {
+				return nil, work, fmt.Errorf("pathoracle.inconsistent_endpoint: endpoint ID %q has conflicting replay facts", endpoint.ID)
+			}
+			continue
+		}
+		unique = append(unique, endpoint)
+	}
+	return unique, work, nil
 }
 
 // pathReachesLoanViaSuccessor reports whether some enumerated path that

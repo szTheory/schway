@@ -6,9 +6,9 @@ current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
 stopped_at: Completed 18-07-PLAN.md; Phase 18 pathoracle endpoint differential remains for scoped follow-up
-last_updated: "2026-09-24T18:25:23.712Z"
+last_updated: "2026-09-24T18:53:37Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 18 execution started
+last_activity_desc: Scoped Phase 18 pathoracle loan endpoint follow-up implemented; full-suite failures recorded for triage
 state_head: 537d4599f181d56abe2f72b9fbb13b1e245806a6
 progress:
   total_phases: 8
@@ -59,7 +59,7 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 Phase: 18 (Branch on a Computed Value) — EXECUTING
 Plan: 8 of 8
 Status: Ready to execute
-Last activity: 2026-09-24 — Completed Phase 18 Plan 05; runtime payload value and wrong-slot mutation acceptance verified, with requirements open for phase-level verification
+Last activity: 2026-09-24 — Completed Phase 18 Plan 05; scoped pathoracle endpoint reconciliation is implemented, with full-suite check/core failures awaiting triage and requirements open for phase-level verification
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -614,6 +614,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260923-nvq | Automate verification by default and record project preference | 2026-09-23 | dd257c5 | passed | [260923-nvq-default-to-automated-integration-end-to-](./quick/260923-nvq-default-to-automated-integration-end-to-/) |
 | 260924-djg | Avoid groundedness false positives from Phase 18 preparatory commands | 2026-09-24 | c349f52 | passed | [260924-djg-avoid-groundedness-false-positives-from](./quick/260924-djg-avoid-groundedness-false-positives-from-/) |
 | 260924-gee | Refresh derived language maturity guard and corpus counts | 2026-09-24 | f5bd7ae | passed | [260924-gee-refresh-language-maturity-derived-guard](./quick/260924-gee-refresh-language-maturity-derived-guard/) |
+| 260924-k1v | Reconcile pathoracle loan endpoints for Phase 18 computed match | 2026-09-24 | pending parent commit | needs-triage | [260924-k1v-reconcile-pathoracle-loan-endpoints-for-](./quick/260924-k1v-reconcile-pathoracle-loan-endpoints-for-/) |
 
 ## Deferred Items
 

@@ -84,7 +84,7 @@ and multi-function fixtures now exist for Phases 07, 08, and 10. The shape is
 still fixtures, not programs: every one exists to exercise one admission rule,
 and the biggest file is mostly comment.
 
-Corpus at re-assessment (2026-09-24, Phase 18 fixture-era check): **137 `.lang` programs, 4,577 lines total** (~33 lines average, 193-line maximum). The corpus has grown since the previous machine-verified snapshot; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
+Corpus at re-assessment (2026-09-24, Phase 18 fixture-era check): **137 `.lang` programs, 4,572 lines total** (~33 lines average, 193-line maximum). The corpus has grown since the previous machine-verified snapshot; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
 
 ## The single-function guard inventory (re-verified 2026-09-24, Phase 18 fixture-era check)
 

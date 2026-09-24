@@ -19,6 +19,7 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/pathoracle"
+	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -259,6 +260,101 @@ func TestOracleAgreesWithProduction(t *testing.T) {
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("%s: oracle disagrees with production\n got:  %+v\n want: %+v", fixture, got, want)
 		}
+	}
+}
+
+func TestOracleAgreesWithComputedMatchLoan(t *testing.T) {
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.lang"))
+	if err != nil {
+		t.Fatalf("session.CheckFile: %v", err)
+	}
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("checker refused computed-match loan fixture: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("corevalidate refused computed-match loan fixture: %+v", validated.Problems)
+	}
+	var selected *core.Function
+	for i := range checked.Program.Functions {
+		if checked.Program.Functions[i].Name == "select" {
+			selected = &checked.Program.Functions[i]
+			break
+		}
+	}
+	if selected == nil || selected.Linear == nil {
+		t.Fatal("checked program omitted select's linear CFG")
+	}
+	want := append([]core.LoanEndpoint(nil), selected.Linear.LoanEndpoints...)
+	sort.Slice(want, func(i, j int) bool { return want[i].ID < want[j].ID })
+	got, work, err := pathoracle.RecomputeEndpoints(*selected, pathoracle.BuildCalleeLookup(checked.Program))
+	if err != nil {
+		t.Fatalf("RecomputeEndpoints: %v", err)
+	}
+	if work == 0 {
+		t.Fatal("oracle performed zero work")
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("pathoracle disagrees with checker: got %+v, want %+v", got, want)
+	}
+	if !reflect.DeepEqual(got, validated.LoanEndpoints()[selected.ID]) {
+		t.Fatalf("pathoracle disagrees with corevalidate: got %+v, want %+v", got, validated.LoanEndpoints()[selected.ID])
+	}
+	if len(got) != 2 {
+		t.Fatalf("want exactly one point and one edge endpoint, got %+v", got)
+	}
+	var point, edge int
+	var borrowTarget string
+	for _, operation := range selected.Linear.Operations {
+		if operation.Kind == core.OpBorrowShared {
+			borrowTarget = operation.TargetID
+		}
+	}
+	for _, endpoint := range got {
+		switch endpoint.Kind {
+		case "point":
+			point++
+			if endpoint.AfterOperationID == "" || endpoint.BlockID == "" {
+				t.Errorf("point endpoint lacks production operation/block IDs: %+v", endpoint)
+			}
+			var afterTake bool
+			for _, operation := range selected.Linear.Operations {
+				if operation.ID == endpoint.AfterOperationID && operation.Kind == core.OpMove && operation.SourceID == borrowTarget {
+					afterTake = true
+				}
+			}
+			if !afterTake {
+				t.Errorf("point endpoint is not after the On-arm take operation: %+v", endpoint)
+			}
+			var isOnBlock bool
+			for _, edge := range selected.Linear.Edges {
+				if edge.ToBlockID == endpoint.BlockID && edge.Pattern == "On" && edge.ID != "" {
+					isOnBlock = true
+				}
+			}
+			if !isOnBlock {
+				t.Errorf("point endpoint is not in the On arm: %+v", endpoint)
+			}
+		case "edge":
+			edge++
+			if endpoint.EdgeID == "" || endpoint.BlockID != "" {
+				t.Errorf("edge endpoint has invalid production edge shape: %+v", endpoint)
+			}
+			var isOffEdge bool
+			for _, declared := range selected.Linear.Edges {
+				if declared.ID == endpoint.EdgeID && declared.Pattern == "Off" {
+					isOffEdge = true
+				}
+			}
+			if !isOffEdge {
+				t.Errorf("edge endpoint is not the declared Off successor: %+v", endpoint)
+			}
+		default:
+			t.Errorf("unexpected endpoint kind: %+v", endpoint)
+		}
+	}
+	if point != 1 || edge != 1 {
+		t.Fatalf("want one point and one edge endpoint, got point=%d edge=%d: %+v", point, edge, got)
 	}
 }
 
