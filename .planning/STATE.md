@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 18
-current_phase_name: Branch on a Computed Value
-status: planning
+current_phase: 15
+current_phase_name: Event Identity (`lang.execution/2`)
+status: executing
 stopped_at: Completed 16-21-PLAN.md
-last_updated: "2026-09-24T01:05:39.744Z"
+last_updated: "2026-09-24T03:37:37.477Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: c537e714a7cd44f5a4cf3c91f438c389a3ea6c5c
+state_head: 11c269a7a96bb624ed186919cd2d27e52659cb6c
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 4
-  total_plans: 52
+  total_plans: 57
   completed_plans: 52
 ---
 
@@ -61,9 +61,9 @@ No outstanding human verification.
 
 ## Current Position
 
-Phase: 18 — Branch on a Computed Value
+Phase: 15 (Event Identity (`lang.execution/2`)) — READY TO EXECUTE
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-23 - Completed quick task 260923-nvq: Automate verification by default and record project preference
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
