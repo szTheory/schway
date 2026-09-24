@@ -4379,6 +4379,10 @@ func TestPhase16EmitterCutsAreAmendedAndOwned(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	roadmap, err := os.ReadFile(testsupport.ProjectPath(".planning", "ROADMAP.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	registers, err := phaseArtifactGlob("16-branch-match-emitter-port", "PHASE-16-DEBT.md")
 	if err != nil {
 		t.Fatal(err)
@@ -4390,7 +4394,7 @@ func TestPhase16EmitterCutsAreAmendedAndOwned(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if problems := phase16EmitterCutProblems(string(requirements), string(debt)); len(problems) != 0 {
+	if problems := phase16EmitterCutProblems(string(requirements), string(roadmap), string(debt)); len(problems) != 0 {
 		t.Fatalf("Phase 16 NAT-09 amendment/debt mismatch:\n%s", strings.Join(problems, "\n"))
 	}
 
@@ -4398,13 +4402,26 @@ func TestPhase16EmitterCutsAreAmendedAndOwned(t *testing.T) {
 	// register. A passing control would prove this test only found a heading,
 	// not the required amendment-to-row bijection.
 	mutated := strings.Replace(string(debt), "emitLinearBorrowedByPointerPlain", "missingPointerFamily", 1)
-	if problems := phase16EmitterCutProblems(string(requirements), mutated); len(problems) == 0 {
+	if problems := phase16EmitterCutProblems(string(requirements), string(roadmap), mutated); len(problems) == 0 {
 		t.Fatal("seeded missing pointer family passed the NAT-09 amendment/debt control")
+	}
+	mutated = strings.Replace(string(debt), "| warning | P21 |", "| warning | UNOWNED(m004-native-emission-design) |", 1)
+	if problems := phase16EmitterCutProblems(string(requirements), string(roadmap), mutated); len(problems) == 0 {
+		t.Fatal("seeded unowned emitter cut passed the NAT-09 amendment/debt control")
+	}
+	mutatedRoadmap := strings.Replace(string(roadmap), "### Phase 21: Native Emission Ownership and Resource Discharge (M004)", "### Phase 21: Unrelated Phase (M004)", 1)
+	if problems := phase16EmitterCutProblems(string(requirements), mutatedRoadmap, string(debt)); len(problems) == 0 {
+		t.Fatal("seeded mistitled roadmap owner passed the NAT-09 amendment/debt control")
+	}
+	mutated = strings.Replace(string(debt), "checked resource ledger", "resource ledger", 1)
+	if problems := phase16EmitterCutProblems(string(requirements), string(roadmap), mutated); len(problems) == 0 {
+		t.Fatal("seeded missing family prerequisite passed the NAT-09 amendment/debt control")
 	}
 }
 
-func phase16EmitterCutProblems(requirements, debt string) []string {
+func phase16EmitterCutProblems(requirements, roadmap, debt string) []string {
 	const amendment = "### NAT-09 — Phase 16 D-10-60 amendment (2026-09-19)"
+	const ownerTitle = "Native Emission Ownership and Resource Discharge"
 	families := []struct{ id, name string }{
 		{"D-16-11", "emitLinearForeign"},
 		{"D-16-12", "emitLinearBorrowedByPointer"},
@@ -4414,6 +4431,13 @@ func phase16EmitterCutProblems(requirements, debt string) []string {
 	if !strings.Contains(requirements, amendment) || !strings.Contains(requirements, "cut-m004") || !strings.Contains(requirements, "PHASE-16-DEBT.md") {
 		problems = append(problems, "NAT-09 lacks the dated Phase 16 D-10-60 cut-m004 amendment linked to PHASE-16-DEBT.md")
 	}
+	if !strings.Contains(requirements, "M004 Phase 21: "+ownerTitle) {
+		problems = append(problems, "NAT-09 does not name the Phase 21 owner")
+	}
+	m003At, m004At := strings.Index(roadmap, "**M003 —"), strings.Index(roadmap, "**M004 —")
+	if m003At < 0 || m004At < 0 || m004At < m003At || !strings.Contains(roadmap, "### Phase 21: "+ownerTitle+" (M004)") || !strings.Contains(roadmap, "M003 Phases 14-20 complete before") {
+		problems = append(problems, "ROADMAP.md does not place the named Phase 21 owner after M003")
+	}
 	columns, rows, err := parseDebtRegisterTable("PHASE-16-DEBT.md", debt)
 	if err != nil {
 		return append(problems, err.Error())
@@ -4421,7 +4445,7 @@ func phase16EmitterCutProblems(requirements, debt string) []string {
 	if len(rows) != len(families) {
 		problems = append(problems, fmt.Sprintf("PHASE-16-DEBT.md has %d cut rows, want %d", len(rows), len(families)))
 	}
-	for _, column := range []string{"ID", "Item"} {
+	for _, column := range []string{"ID", "Item", "Landing phase"} {
 		if _, ok := columns[column]; !ok {
 			return append(problems, fmt.Sprintf("PHASE-16-DEBT.md lacks %q column", column))
 		}
@@ -4434,15 +4458,29 @@ func phase16EmitterCutProblems(requirements, debt string) []string {
 		for _, row := range rows {
 			if row[columns["ID"]] == family.id && strings.Contains(row[columns["Item"]], family.name) {
 				found = true
+				if row[columns["Landing phase"]] != "P21" {
+					problems = append(problems, fmt.Sprintf("%s is not assigned to P21", family.id))
+				}
 			}
 		}
 		if !found {
 			problems = append(problems, fmt.Sprintf("debt register has no bijective %s row for %s", family.id, family.name))
 		}
 		section := phase16DebtDetail(debt, family.id)
-		for _, required := range []string{"M004 owner:", "Prerequisite:", "Reopening condition:", "Witness:", "`-flto` consequence:"} {
+		for _, required := range []string{"M004 owner: Phase 21 — " + ownerTitle + ".", "Prerequisite:", "Reopening condition:", "Witness:", "`-flto` consequence:"} {
 			if !strings.Contains(section, required) {
 				problems = append(problems, fmt.Sprintf("%s detail omits %s", family.id, required))
+			}
+		}
+		familyPrerequisites := map[string][]string{
+			"D-16-11": {"checked resource ledger", "foreign-call blocks", "native witness demonstrating cleanup across every admitted foreign exit path"},
+			"D-16-12": {"full discharge-pair design", "macOS and Linux evidence", "both hosts"},
+			"D-16-13": {"shared-pointer alias and discharge contract", "family-specific ownership/alias proof"},
+		}
+		normalizedSection := strings.Join(strings.Fields(section), " ")
+		for _, required := range familyPrerequisites[family.id] {
+			if !strings.Contains(normalizedSection, required) {
+				problems = append(problems, fmt.Sprintf("%s detail omits family prerequisite %q", family.id, required))
 			}
 		}
 	}
