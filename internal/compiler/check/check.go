@@ -269,7 +269,7 @@ func Program(program ast.Program) Result {
 					result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.unknown", function.Parameter.Span, "unknown parameter type"))
 					continue
 				}
-				checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, semanticID(program.Module, "match", function.Name), branch, dataType, sealedNames(types), calleeContracts, foreignSymbols, function.Body.Linear)
+				checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, semanticID(program.Module, "match", function.Name), branch, dataType, types, sealedNames(types), calleeContracts, foreignSymbols, function.Body.Linear)
 				result.Work += work
 				result.Diagnostics = append(result.Diagnostics, diagnostics...)
 				if len(diagnostics) == 0 {
@@ -347,7 +347,7 @@ func Program(program ast.Program) Result {
 		// checkBranch's block/edge scaffolding exactly like an arm-body
 		// match, even though no arm carries a `{ ... }` body.
 		if hasArmBody || dataTypeHasPayload(dataType) {
-			checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, matchID, function, dataType, sealedNames(types), calleeContracts, foreignSymbols)
+			checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, matchID, function, dataType, types, sealedNames(types), calleeContracts, foreignSymbols)
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
@@ -2228,7 +2228,7 @@ const maxBlocksPerFunction = 128
 // switch/case lowering never needs a bare-alternative fallback case inside a
 // block-shaped function, and the interpreter/validator dispatch stays a
 // simple "every arm has a BlockID" invariant rather than a per-arm union.
-func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, sealed map[string]bool, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, prefixes ...*ast.LinearBody) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
+func checkBranch(module, functionID, matchID string, function ast.FuncDecl, dataType core.DataType, dataTypes map[string]core.DataType, sealed map[string]bool, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, prefixes ...*ast.LinearBody) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {
 	parameterType := coreType(function.Parameter.Type)
 	returnType := coreType(function.ReturnType)
 	derived, err := ability.DeriveSealed(parameterType, sealed)
@@ -2257,6 +2257,10 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		Places:     []core.Place{{ID: parameterID, Name: function.Parameter.Name, TypeID: typeID}},
 		Operations: []core.LinearOperation{},
 	}
+	returnDataType, ok := dataTypes[returnType.Constructor]
+	if !ok {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Span, "unknown return type")}, typeNodeCount(parameterType) + typeNodeCount(returnType), nil
+	}
 
 	work := typeNodeCount(parameterType)
 	nextIndex := 0
@@ -2269,7 +2273,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		prefix := *prefixes[0]
 		prefix.Result = scrutineeName
 		prefix.TerminalMatch = nil
-		support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, typeFact, &prefix, calleeContracts, foreignSymbols, linear.Types)
+		support := analyzeStraightLineMode(functionID, function.Parameter.Name, function.Parameter.Span, typeFact, &prefix, true, calleeContracts, foreignSymbols, linear.Types)
 		if support.Diagnostic != nil {
 			if support.Diagnostic.Code == "name.unknown" {
 				return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown_scrutinee", function.Body.Span, "match scrutinee is not a computed in-scope place")}, work + support.Work, nil
@@ -2299,6 +2303,14 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		}
 		if !found || scrutineeName == function.Parameter.Name {
 			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("name.unknown_scrutinee", function.Body.Span, "match scrutinee is not a computed in-scope place")}, work + support.Work, nil
+		}
+		computedTypeFact, factFound := phase18TypeFact(linear.Types, scrutineeTypeID)
+		if !factFound {
+			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("core.invalid_body", function.Body.Span, "computed match scrutinee has no checked type fact")}, work + support.Work, nil
+		}
+		dataType, ok = dataTypes[computedTypeFact.Shape.Constructor]
+		if !ok {
+			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Body.Span, "computed match scrutinee is not a declared data type")}, work + support.Work, nil
 		}
 		work += support.Work
 	}
@@ -2335,6 +2347,10 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 			diagnostics = append(diagnostics, diagnostic.Error("match.unreachable", arm.Span, "pattern is not an alternative of the scrutinee type"))
 			continue
 		}
+		if arm.Body == nil && !contains(returnDataType.Alternatives, arm.Value) {
+			diagnostics = append(diagnostics, diagnostic.Error("type.return_mismatch", arm.Span, "match arm value is not an alternative of the function's declared return type"))
+			continue
+		}
 		if anyBodyArm && arm.Body == nil {
 			diagnostics = append(diagnostics, diagnostic.Error(
 				"core.mixed_arm_forms", arm.Span,
@@ -2366,7 +2382,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		if arm.Body != nil {
 			support = analyzeArmBody(functionID, nextIndex, scrutineeName, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols, linear.Types)
 		} else {
-			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, typeID, dataType, arm, sealed)
+			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, scrutineeTypeID, returnTypeID, dataType, returnDataType, arm, sealed)
 		}
 		if support.Diagnostic != nil {
 			diagnostics = append(diagnostics, *support.Diagnostic)
@@ -2397,10 +2413,15 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		)
 		armEdgeIDs[armBlockID+"->"+joinBlockID] = armEdgeToJoinID
 		armCFGBlocks = append(armCFGBlocks, cfgBlockSpec{id: armBlockID, operations: armOps, successors: []string{joinBlockID}})
-		arms = append(arms, core.MatchArm{
+		matchArm := core.MatchArm{
 			ID: fmt.Sprintf("%s:arm:%d", functionID, index), EdgeID: fmt.Sprintf("%s:edge:%s", matchID, arm.Pattern),
 			Pattern: arm.Pattern, BlockID: armBlockID,
-		})
+		}
+		if support.ValuePlaceID != "" {
+			matchArm.Value = arm.Value
+			matchArm.ValuePlaceID = support.ValuePlaceID
+		}
+		arms = append(arms, matchArm)
 	}
 
 	missing := make([]string, 0)
@@ -2459,6 +2480,15 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 		Linear:     linear,
 		Span:       function.Span,
 	}, nil, work, callSpans
+}
+
+func phase18TypeFact(typeFacts []core.TypeFact, id string) (core.TypeFact, bool) {
+	for _, fact := range typeFacts {
+		if fact.ID == id {
+			return fact, true
+		}
+	}
+	return core.TypeFact{}, false
 }
 
 // ---------------------------------------------------------------------
@@ -4145,7 +4175,7 @@ func PayloadRecordLayout(dataType core.DataType) *core.RecordLayout {
 //     the same declared place this phase);
 //  4. a terminating core.OpReturn reading whichever place holds the arm's
 //     final value.
-func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceID, typeID string, dataType core.DataType, arm ast.MatchArm, sealed map[string]bool) ownershipSupport {
+func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceID, sourceTypeID, returnTypeID string, dataType, returnDataType core.DataType, arm ast.MatchArm, sealed map[string]bool) ownershipSupport {
 	result := ownershipSupport{Places: []core.Place{}, Operations: []core.LinearOperation{}, Types: []core.TypeFact{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{}, Work: 1}
 	fail := func(problem diagnostic.Diagnostic) ownershipSupport {
 		result.DiagnosticCode = problem.Code
@@ -4165,11 +4195,11 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 	}
 
 	patternDetail := lookupAlternativeDetail(dataType, arm.Pattern)
-	valueDetail := lookupAlternativeDetail(dataType, arm.Value)
+	valueDetail := lookupAlternativeDetail(returnDataType, arm.Value)
 
 	step := 0
 	currentSourceID := aliasPlaceID
-	currentSourceTypeID := typeID
+	currentSourceTypeID := sourceTypeID
 
 	if patternDetail.PayloadType != "" {
 		if binder == "" {
@@ -4192,7 +4222,7 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 		// OWN TypeID (payloadTypeID) below, never on the operation.
 		result.Operations = append(result.Operations, core.LinearOperation{
 			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
-			Kind: core.OpDestructurePayload, SourceID: aliasPlaceID, PayloadTargetID: binderPlaceID, PayloadType: patternDetail.PayloadType, TypeID: typeID,
+			Kind: core.OpDestructurePayload, SourceID: aliasPlaceID, PayloadTargetID: binderPlaceID, PayloadType: patternDetail.PayloadType, TypeID: sourceTypeID,
 		})
 		result.Places = append(result.Places, core.Place{ID: binderPlaceID, Name: binder, TypeID: payloadTypeID})
 		currentSourceID = binderPlaceID
@@ -4235,17 +4265,21 @@ func analyzePayloadArm(functionID string, startIndex, typeIndex int, aliasPlaceI
 			ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
 			Kind: core.OpConstructPayload, SourceID: currentSourceID, TargetID: targetID, PayloadType: valueDetail.PayloadType, TypeID: currentSourceTypeID,
 		})
-		result.Places = append(result.Places, core.Place{ID: targetID, Name: "_construct_" + arm.Value, TypeID: typeID})
+		result.Places = append(result.Places, core.Place{ID: targetID, Name: "_construct_" + arm.Value, TypeID: returnTypeID})
 		returnSourceID = targetID
 		step++
 	}
 
 	global := startIndex + step
+	if valueDetail.PayloadType == "" && returnTypeID != sourceTypeID {
+		returnSourceID = fmt.Sprintf("%s:place:%d", functionID, global+1)
+		result.ValuePlaceID = returnSourceID
+	}
 	result.Operations = append(result.Operations, core.LinearOperation{
 		ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global),
-		Kind: core.OpReturn, SourceID: returnSourceID, TypeID: typeID,
+		Kind: core.OpReturn, SourceID: returnSourceID, TypeID: returnTypeID,
 	})
-	result.Places = append(result.Places, core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: "_", TypeID: typeID})
+	result.Places = append(result.Places, core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: "_", TypeID: returnTypeID})
 	step++
 	result.Work += step
 	return result
@@ -4561,6 +4595,7 @@ type ownershipStateFact struct {
 type ownershipSupport struct {
 	Places         []core.Place
 	Operations     []core.LinearOperation
+	ValuePlaceID   string
 	LoanFinalUses  []loanFinalUseFact
 	States         []ownershipStateFact
 	Work           int
@@ -4635,6 +4670,10 @@ type placeState struct {
 // counted separately via FixpointWork (see its own doc comment), folded into
 // checkLinear's function-level RecomputedWork total.
 func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
+	return analyzeStraightLineMode(functionID, parameterName, parameterSpan, typeFact, body, false, calleeContracts, foreignSymbols, availableTypeFacts...)
+}
+
+func analyzeStraightLineMode(functionID, parameterName string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, prefixOnly bool, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
 	parameterID := functionID + ":place:0"
 	result := ownershipSupport{
 		Places:     []core.Place{{ID: parameterID, Name: parameterName, TypeID: typeFact.ID}},
@@ -4861,7 +4900,7 @@ func analyzeStraightLine(functionID, parameterName string, parameterSpan diagnos
 	if !returned.initialized {
 		return fail(useAfterMove(body.Span, returned))
 	}
-	if !returnPlaceMatchesDeclaration(functionID, returned.place.TypeID, availableTypeFacts, typeFact) {
+	if !prefixOnly && !returnPlaceMatchesDeclaration(functionID, returned.place.TypeID, availableTypeFacts, typeFact) {
 		return fail(diagnostic.Error("type.return_mismatch", body.Span, "linear result does not match the function's declared return type"))
 	}
 	ordinal := len(body.Bindings)

@@ -3,21 +3,25 @@
 module phase18.result_computed_match
 
 export {
-  type Result
   fn main
 }
+
+data Resource =
+  | Raw
 
 data Result =
   | Accepted
   | Rejected
 
-fn identity(value: Result) -> Result {
-  let returned = take value
-  returned
+fn produce(value: Resource) -> Result {
+  let computed = value
+  match computed {
+    Raw => Accepted
+  }
 }
 
-fn main(input: Result) -> Result {
-  let result = identity(input)
+fn main(input: Resource) -> Result {
+  let result = produce(input)
   match result {
     Accepted => Accepted
     Rejected => Rejected

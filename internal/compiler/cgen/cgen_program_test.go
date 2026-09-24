@@ -740,6 +740,29 @@ func TestEmitProgram(t *testing.T) {
 	}
 }
 
+func TestPhase18ResultComputedMatchNativeReturn(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "result_computed_match.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	runner := native.DefaultRunner()
+	output, err := runner.Run(context.Background(), generated, "-O0", []string{"Raw"})
+	if err != nil {
+		t.Fatalf("native execution: %v", err)
+	}
+	if len(output.Pairs) != 1 || output.Pairs[0].Execution.Outcome.Value != "Accepted" {
+		t.Fatalf("native result = %+v, want Accepted", output.Pairs)
+	}
+}
+
 func TestProgramInvocationIndexThreading(t *testing.T) {
 	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
 	generated, err := cgen.EmitNative(program)

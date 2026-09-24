@@ -358,6 +358,22 @@ func assertInterpFrameModelAgreesWithStaticVerdict(t *testing.T, fixture string,
 	for _, function := range program.Functions {
 		switch {
 		case function.Match != nil:
+			if function.Match.ScrutineeID != "" && function.Match.ScrutineeID != function.Parameter.ID {
+				// A computed match is selected from a prefix value, so its arm
+				// labels are not necessarily valid function inputs. Exercise
+				// every declared alternative of the actual parameter type.
+				for _, dataType := range program.DataTypes {
+					if dataType.Name != function.Parameter.Type {
+						continue
+					}
+					for _, alternative := range dataType.Alternatives {
+						if _, err := interp.Run(program, function.Name, alternative); err != nil {
+							t.Errorf("%s: interp.Run(%s, %q) disagreed with the static ACCEPT verdict (D-10-53's frame-model/static-verdict agreement claim): %v", fixture, function.Name, alternative, err)
+						}
+					}
+				}
+				continue
+			}
 			for _, arm := range function.Match.Arms {
 				if _, err := interp.Run(program, function.Name, arm.Pattern); err != nil {
 					t.Errorf("%s: interp.Run(%s, %q) disagreed with the static ACCEPT verdict (D-10-53's frame-model/static-verdict agreement claim): %v", fixture, function.Name, arm.Pattern, err)

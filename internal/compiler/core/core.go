@@ -996,6 +996,11 @@ type MatchArm struct {
 	EdgeID  string `json:"edge_id"`
 	Pattern string `json:"pattern"`
 	Value   string `json:"value"`
+	// ValuePlaceID is the arm-local, initialized result place for a bare
+	// alternative returned by a branch whose scrutinee type differs from its
+	// declared return type. It is populated only when BlockID is present and
+	// names the place OpReturn reads after this arm is selected.
+	ValuePlaceID string `json:"value_place_id,omitempty"`
 	// BlockID is the Phase 3 extension: present only when this arm's value
 	// position held a full linear body, naming the block its operations
 	// were lowered into. Exactly one of Value and BlockID is populated for

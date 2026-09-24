@@ -618,6 +618,17 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 	seeded := map[string]value{callee.Parameter.ID: argument}
 
 	if callee.Match != nil {
+		scrutineeID := callee.Match.ScrutineeID
+		if scrutineeID == "" {
+			scrutineeID = callee.Parameter.ID
+		}
+		if scrutineeID != callee.Parameter.ID {
+			f := newBlockFrame(callee, seeded, callee.ID+":block:entry")
+			f.returnTarget = operation.TargetID
+			f.hasCaller = true
+			caller.configureChild(&f, operation)
+			return pushResult{frame: &f, calleeID: callee.ID}, nil
+		}
 		argumentText := argument.String()
 		for _, arm := range callee.Match.Arms {
 			if arm.Pattern != argumentText {
@@ -761,7 +772,7 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				return Execution{}, fmt.Errorf("branch arm referencing block %q has no return operation", top.currentBlockID)
 			}
 			block := top.blocks[top.currentBlockID]
-			if len(block.Successors) > 1 && top.function.Match != nil {
+			if top.function.Match != nil && (len(block.Successors) > 1 || block.ID == top.function.ID+":block:entry") {
 				scrutineeID := top.function.Match.ScrutineeID
 				if scrutineeID == "" {
 					for _, place := range top.function.Linear.Places {
@@ -784,6 +795,11 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				}
 				if selected == "" {
 					return Execution{}, fmt.Errorf("match %q has no edge for %q", top.function.Match.ID, scrutinee.String())
+				}
+				for _, arm := range top.function.Match.Arms {
+					if arm.BlockID == selected && arm.ValuePlaceID != "" {
+						top.values[arm.ValuePlaceID] = value{payload: arm.Value}
+					}
 				}
 				top.currentBlockID = selected
 				top.idx = 0

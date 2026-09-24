@@ -923,6 +923,8 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 	armIDs := make(map[string]struct{}, len(match.Arms))
 	edgeIDs := make(map[string]struct{}, len(match.Arms))
 	patterns := make(map[string]struct{}, len(match.Arms))
+	valuePlaceIDs := make(map[string]core.MatchArm, len(match.Arms))
+	seenValuePlaceIDs := make(map[string]struct{}, len(match.Arms))
 	for _, arm := range match.Arms {
 		if !v.unique(armIDs, arm.ID, "core.duplicate_arm_id") || !v.unique(edgeIDs, arm.EdgeID, "core.duplicate_edge_id") {
 			return nil, nil, false
@@ -933,19 +935,80 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 		if _, known := alternatives[arm.Pattern]; !v.check(known, "core.unknown_alternative", arm.ID) {
 			return nil, nil, false
 		}
-		// This phase's scope decision (checkBranch): a match that carries
-		// any arm body requires every arm to carry one. Value and BlockID
-		// are therefore mutually exclusive per arm, and BlockID must be
-		// present here — a bare Value in a branch-shaped function is
-		// rejected rather than silently tolerated.
-		if !v.check(arm.Value == "" && arm.BlockID != "", "core.invalid_body", arm.ID) {
+		// A branch body ordinarily carries only BlockID. A differing
+		// scrutinee/return type can additionally carry Value and an
+		// edge-bound ValuePlaceID; the place is initialized only when this
+		// arm is selected and is consumed by its terminal OpReturn.
+		if !v.check(arm.BlockID != "" && ((arm.Value == "" && arm.ValuePlaceID == "") || (arm.Value != "" && arm.ValuePlaceID != "")), "core.invalid_body", arm.ID) {
 			return nil, nil, false
+		}
+		if arm.ValuePlaceID != "" {
+			returnDataType := dataNames[function.ReturnType]
+			if !v.check(containsAlternative(returnDataType, arm.Value), "core.unknown_alternative", arm.Value) ||
+				!v.unique(seenValuePlaceIDs, arm.ValuePlaceID, "core.duplicate_place_id") {
+				return nil, nil, false
+			}
+			valuePlaceIDs[arm.ValuePlaceID] = arm
 		}
 	}
 	if !v.check(len(patterns) == len(alternatives), "core.final_claim_mismatch", match.ID) {
 		return nil, nil, false
 	}
-	return v.linearStructural(function)
+	types, places, valid := v.linearStructural(function)
+	if !valid {
+		return nil, nil, false
+	}
+	for valuePlaceID, arm := range valuePlaceIDs {
+		place, exists := places[valuePlaceID]
+		fact, typeKnown := types[place.TypeID]
+		if !v.check(exists && typeKnown && fact.Shape.Constructor == function.ReturnType, "core.return_type_mismatch", valuePlaceID) {
+			return nil, nil, false
+		}
+		armBlock := ""
+		for _, candidate := range match.Arms {
+			if candidate.ID == arm.ID {
+				armBlock = candidate.BlockID
+				break
+			}
+		}
+		var matchingReturns int
+		for _, block := range function.Linear.Blocks {
+			for _, operationID := range block.OperationIDs {
+				operation := findLinearOperation(function.Linear.Operations, operationID)
+				if operation.SourceID != valuePlaceID {
+					continue
+				}
+				if block.ID == armBlock && operation.Kind == core.OpReturn && operation.TypeID == place.TypeID {
+					matchingReturns++
+				} else {
+					v.check(false, "core.return_type_mismatch", valuePlaceID)
+					return nil, nil, false
+				}
+			}
+		}
+		if !v.check(matchingReturns == 1, "core.return_type_mismatch", valuePlaceID) {
+			return nil, nil, false
+		}
+	}
+	return types, places, true
+}
+
+func containsAlternative(dataType core.DataType, name string) bool {
+	for _, alternative := range dataType.Alternatives {
+		if alternative == name {
+			return true
+		}
+	}
+	return false
+}
+
+func findLinearOperation(operations []core.LinearOperation, id string) core.LinearOperation {
+	for _, operation := range operations {
+		if operation.ID == id {
+			return operation
+		}
+	}
+	return core.LinearOperation{}
 }
 
 // computedScrutineeDefinedInEntry independently proves that a non-parameter
@@ -2033,6 +2096,13 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	}
 
 	initialized := map[string]bool{function.Parameter.ID: true}
+	if function.Match != nil {
+		for _, arm := range function.Match.Arms {
+			if arm.ValuePlaceID != "" {
+				initialized[arm.ValuePlaceID] = true // edge-bound value, selected before its arm replay
+			}
+		}
+	}
 	produced := map[string]bool{function.Parameter.ID: true}
 	loanOwner := make(map[string]string)
 	// See replayStraightLine's identical declaration for why a memoized

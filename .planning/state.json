@@ -26,7 +26,7 @@
     {
       "number": "18",
       "name": "Branch on a Computed Value",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "19",
@@ -44,5 +44,5 @@
     "label": "Advance to the next step",
     "reason": "Phase 18 of 8 · executing"
   },
-  "updated_at": "2026-09-24T16:11:50.880Z"
+  "updated_at": "2026-09-24T17:34:58.875Z"
 }

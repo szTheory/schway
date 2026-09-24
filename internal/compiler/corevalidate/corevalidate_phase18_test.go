@@ -2,12 +2,79 @@ package corevalidate_test
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/session"
 )
+
+func TestPhase18ResultArmValuePlace(t *testing.T) {
+	path := filepath.Join("..", "..", "..", "testdata", "phase18", "result_computed_match.lang")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check: %+v", checked.Diagnostics)
+	}
+	if got := corevalidate.Validate(checked.Program); !got.Valid {
+		t.Fatalf("valid typed arm rejected: %+v", got.Problems)
+	}
+	clone := func() core.Program {
+		data, err := json.Marshal(checked.Program)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var program core.Program
+		if err := json.Unmarshal(data, &program); err != nil {
+			t.Fatal(err)
+		}
+		return program
+	}
+	callee := func(program *core.Program) *core.Function {
+		for i := range program.Functions {
+			if program.Functions[i].Name == "produce" {
+				return &program.Functions[i]
+			}
+		}
+		t.Fatal("produce absent")
+		return nil
+	}
+	mutations := []struct {
+		name  string
+		apply func(*core.Function)
+	}{
+		{"source", func(fn *core.Function) {
+			for i := range fn.Linear.Operations {
+				if fn.Linear.Operations[i].Kind == core.OpReturn {
+					fn.Linear.Operations[i].SourceID = fn.Parameter.ID
+				}
+			}
+		}},
+		{"alternative", func(fn *core.Function) { fn.Match.Arms[0].Value = "Raw" }},
+		{"place", func(fn *core.Function) { fn.Match.Arms[0].ValuePlaceID = "missing" }},
+		{"type", func(fn *core.Function) {
+			for i := range fn.Linear.Places {
+				if fn.Linear.Places[i].ID == fn.Match.Arms[0].ValuePlaceID {
+					fn.Linear.Places[i].TypeID = fn.Parameter.Type
+				}
+			}
+		}},
+	}
+	for _, mutation := range mutations {
+		t.Run(mutation.name, func(t *testing.T) {
+			program := clone()
+			mutation.apply(callee(&program))
+			if got := corevalidate.Validate(program); got.Valid {
+				t.Fatal("forged arm return accepted")
+			}
+		})
+	}
+}
 
 // These are source-to-core controls. They deliberately use only the public
 // session entry point and corevalidate's admission API; no checker derivation

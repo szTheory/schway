@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Completed 18-03-PLAN.md
-last_updated: "2026-09-24T16:11:52.363Z"
+stopped_at: Completed 18-04-PLAN.md; full Go suite passed
+last_updated: "2026-09-24T17:42:53.569Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 18 execution started
-state_head: 8201c82017a3f986ecdb0124044f3cc5379f4c2c
+state_head: a99ec44c5f332d792641a3d9ffc09cee6d844d99
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 61
+  completed_plans: 62
 ---
 
 # Project State
@@ -55,7 +55,7 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 ## Current Position
 
 Phase: 18 (Branch on a Computed Value) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Ready to execute
 Last activity: 2026-09-24 — Completed quick task 260924-gee; Phase 18 computed match implementation is verified and Phase 18 plan execution can continue
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -319,6 +319,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P1 | 15min | 3 tasks | 6 files |
 | Phase 18 P2 | 31min | 2 tasks | 11 files |
 | Phase 18 P03 | 23min | 2 tasks | 4 files |
+| Phase 18 P4 | 35m | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -462,6 +463,7 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Keep CTL-01 open until full Phase 18 acceptance is verified.
 - [Phase 18]: Core computed scrutinee IDs must resolve to a definition in the shared branch entry prefix; ID-less matches remain parameter-only.
 - [Phase 18]: Origin derivation is bounded to earlier operations in the return arm and shared entry prefix, using block facts even if Match metadata is absent.
+- [Phase 18]: Computed Result match arms use an explicit edge-bound typed value place when the return type differs from the scrutinee type.
 
 ### Pending Todos
 
@@ -615,8 +617,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T16:11:52.165Z
-Stopped at: Completed 18-03-PLAN.md
+Last session: 2026-09-24T17:42:53.252Z
+Stopped at: Completed 18-04-PLAN.md; full Go suite passed
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

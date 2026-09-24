@@ -206,6 +206,32 @@ func mustReadFixture(t *testing.T, name string) []byte {
 	return source
 }
 
+func TestPhase18CallComputedMatchPrefix(t *testing.T) {
+	path := filepath.Join(interpProjectRoot(), "testdata", "phase18", "result_computed_match.lang")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check: %+v", checked.Diagnostics)
+	}
+	if peer := corevalidate.Validate(checked.Program); !peer.Valid {
+		t.Fatalf("core peer: %+v", peer.Problems)
+	}
+	result, err := Run(checked.Program, "main", "Raw")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Outcome.Kind != "returned" || result.Outcome.Value != "Accepted" {
+		t.Fatalf("outcome = %+v, want Accepted", result.Outcome)
+	}
+}
+
 // TestCallExecutesAcrossOneFrame is Task 1's tracer test (SEM-08, OWN-05b,
 // D-10-21/D-10-26): call_basic.lang's main calls identity across a real
 // heap frame boundary and gets back identity's own returned value, with at

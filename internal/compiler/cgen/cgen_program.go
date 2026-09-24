@@ -1009,8 +1009,15 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 	if !known || switchPlace.Name != function.Match.Scrutinee {
 		return fmt.Errorf("function %q: match scrutinee place %q is absent", function.ID, function.Match.Scrutinee)
 	}
+	scrutineeBranchType := parameterBranchType
+	for _, fact := range function.Linear.Types {
+		if fact.ID == switchPlace.TypeID && fact.Shape.Constructor == function.ReturnType {
+			scrutineeBranchType = returnBranchType
+			break
+		}
+	}
 	switchValue := locals[scrutineeID]
-	if parameterBranchType.hasPayload {
+	if scrutineeBranchType.hasPayload {
 		switchValue += ".tag"
 	}
 	fmt.Fprintf(out, "  switch (%s) {\n", switchValue)
@@ -1019,7 +1026,7 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 		if !known {
 			return fmt.Errorf("arm %q references unknown block %q", arm.ID, arm.BlockID)
 		}
-		pattern, known := parameterBranchType.bySource[arm.Pattern]
+		pattern, known := scrutineeBranchType.bySource[arm.Pattern]
 		if !known {
 			return fmt.Errorf("arm %q names unknown alternative %q", arm.ID, arm.Pattern)
 		}
@@ -1027,6 +1034,20 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 		declared := make(map[string]bool, len(declaredPrefix))
 		for placeID, isDeclared := range declaredPrefix {
 			declared[placeID] = isDeclared
+		}
+		if arm.ValuePlaceID != "" {
+			if _, exists := places[arm.ValuePlaceID]; !exists {
+				return fmt.Errorf("arm %q references unknown value place %q", arm.ID, arm.ValuePlaceID)
+			}
+			if declared[arm.ValuePlaceID] {
+				return fmt.Errorf("arm %q value place %q was already declared", arm.ID, arm.ValuePlaceID)
+			}
+			valueName, exists := returnBranchType.bySource[arm.Value]
+			if !exists {
+				return fmt.Errorf("arm %q names unknown return alternative %q", arm.ID, arm.Value)
+			}
+			fmt.Fprintf(out, "      %s %s = %s; /* selected arm value */\n", returnBranchType.typeName, locals[arm.ValuePlaceID], valueName)
+			declared[arm.ValuePlaceID] = true
 		}
 		for _, operationID := range block.OperationIDs {
 			operation, known := operations[operationID]
@@ -1060,7 +1081,8 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		} else if operation.Kind == core.OpBorrowExclusive {
 			label, eventKind = "exclusive borrow representation", "value.borrowed_exclusive"
 		}
-		fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n      (void)%s;\n", parameterBranchType.typeName, locals[operation.TargetID], locals[operation.SourceID], label, operation.ID, locals[operation.TargetID])
+		valueType := programBranchTypeForTypeID(function, operation.TypeID, parameterBranchType, returnBranchType)
+		fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n      (void)%s;\n", valueType.typeName, locals[operation.TargetID], locals[operation.SourceID], label, operation.ID, locals[operation.TargetID])
 		fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s, lang_invocations[invocation_index], NULL)) abort();\n", strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 		declared[operation.TargetID] = true
 	case core.OpReturn:
@@ -1150,6 +1172,15 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 	}
 	return nil
+}
+
+func programBranchTypeForTypeID(function core.Function, typeID string, parameterType, returnType programBranchType) programBranchType {
+	for _, fact := range function.Linear.Types {
+		if fact.ID == typeID && fact.Shape.Constructor == function.ReturnType {
+			return returnType
+		}
+	}
+	return parameterType
 }
 
 func branchPayloadAlternative(branchType programBranchType, operation core.LinearOperation) (string, error) {
