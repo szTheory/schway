@@ -73,67 +73,71 @@ sample and matching count/min/median/max. The helper validates arithmetic and
 provenance without imposing a time threshold. Record actual host, Go, Clang,
 and pre-decision workflow blob hash; do not leave placeholders in final evidence.
 
+Cold samples used a fresh isolated `GOCACHE` directory per run; warm samples
+used the shared writable `/tmp/ai-lang-gocache`. The Go module cache and host
+filesystem cache were retained. Every measured command completed successfully.
+
 ```text
 phase18_evidence_version=1
-host=
-go_version=
-clang_version=
+host=macOS 26.6.2 (Darwin arm64)
+go_version=go version go1.24.0 darwin/arm64
+clang_version=Apple clang version 21.0.1 (clang-2100.1.1.101)
 focused_command=go test ./internal/compiler/session -count=1
-focused_cold_seconds=
-focused_cold_count=
-focused_cold_min_seconds=
-focused_cold_median_seconds=
-focused_cold_max_seconds=
-focused_warm_seconds=
-focused_warm_count=
-focused_warm_min_seconds=
-focused_warm_median_seconds=
-focused_warm_max_seconds=
+focused_cold_seconds=123.411,118.698,125.921
+focused_cold_count=3
+focused_cold_min_seconds=118.698
+focused_cold_median_seconds=123.411
+focused_cold_max_seconds=125.921
+focused_warm_seconds=109.096,114.901,119.355
+focused_warm_count=3
+focused_warm_min_seconds=109.096
+focused_warm_median_seconds=114.901
+focused_warm_max_seconds=119.355
 vet_command=go vet ./...
-vet_cold_seconds=
-vet_cold_count=
-vet_cold_min_seconds=
-vet_cold_median_seconds=
-vet_cold_max_seconds=
-vet_warm_seconds=
-vet_warm_count=
-vet_warm_min_seconds=
-vet_warm_median_seconds=
-vet_warm_max_seconds=
+vet_cold_seconds=5.417,6.418,6.652
+vet_cold_count=3
+vet_cold_min_seconds=5.417
+vet_cold_median_seconds=6.418
+vet_cold_max_seconds=6.652
+vet_warm_seconds=0.631,0.548,0.563
+vet_warm_count=3
+vet_warm_min_seconds=0.548
+vet_warm_median_seconds=0.563
+vet_warm_max_seconds=0.631
 build_command=go build ./...
-build_cold_seconds=
-build_cold_count=
-build_cold_min_seconds=
-build_cold_median_seconds=
-build_cold_max_seconds=
-build_warm_seconds=
-build_warm_count=
-build_warm_min_seconds=
-build_warm_median_seconds=
-build_warm_max_seconds=
+build_cold_seconds=3.363,4.039,3.660
+build_cold_count=3
+build_cold_min_seconds=3.363
+build_cold_median_seconds=3.660
+build_cold_max_seconds=4.039
+build_warm_seconds=0.295,0.306,0.291
+build_warm_count=3
+build_warm_min_seconds=0.291
+build_warm_median_seconds=0.295
+build_warm_max_seconds=0.306
 full_test_command=go test ./... -count=1
-full_test_cold_seconds=
-full_test_cold_count=
-full_test_cold_min_seconds=
-full_test_cold_median_seconds=
-full_test_cold_max_seconds=
-full_test_warm_seconds=
-full_test_warm_count=
-full_test_warm_min_seconds=
-full_test_warm_median_seconds=
-full_test_warm_max_seconds=
+full_test_cold_seconds=147.574,146.818,142.119
+full_test_cold_count=3
+full_test_cold_min_seconds=142.119
+full_test_cold_median_seconds=146.818
+full_test_cold_max_seconds=147.574
+full_test_warm_seconds=135.031,137.819,165.716
+full_test_warm_count=3
+full_test_warm_min_seconds=135.031
+full_test_warm_median_seconds=137.819
+full_test_warm_max_seconds=165.716
 race_command=go test -race ./... -count=1
-race_cold_seconds=
-race_cold_count=
-race_cold_min_seconds=
-race_cold_median_seconds=
-race_cold_max_seconds=
-race_warm_seconds=
-race_warm_count=
-race_warm_min_seconds=
-race_warm_median_seconds=
-race_warm_max_seconds=
-ci_before_blob=
+race_cold_seconds=283.896,314.999,307.101
+race_cold_count=3
+race_cold_min_seconds=283.896
+race_cold_median_seconds=307.101
+race_cold_max_seconds=314.999
+race_warm_seconds=232.084,173.856,176.835
+race_warm_count=3
+race_warm_min_seconds=173.856
+race_warm_median_seconds=176.835
+race_warm_max_seconds=232.084
+ci_before_blob=ca3c80918b5942e429d0cf8c64de86a9afe42de3
 ci_disposition=pending
 ci_command=
 ci_decision_rationale=
