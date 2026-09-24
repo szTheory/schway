@@ -972,10 +972,11 @@ func (f Function) HasClosedBody() bool {
 }
 
 type Match struct {
-	ID        string     `json:"id"`
-	PointID   string     `json:"point_id"`
-	Scrutinee string     `json:"scrutinee"`
-	Arms      []MatchArm `json:"arms"`
+	ID          string     `json:"id"`
+	PointID     string     `json:"point_id"`
+	Scrutinee   string     `json:"scrutinee"`
+	ScrutineeID string     `json:"scrutinee_id,omitempty"`
+	Arms        []MatchArm `json:"arms"`
 }
 
 // HasBlocks reports whether any arm carries a block (an arm-body lowering).

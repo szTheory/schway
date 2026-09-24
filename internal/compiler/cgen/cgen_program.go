@@ -993,8 +993,11 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 			return err
 		}
 	}
-	scrutineeID := parameter.ID
-	if function.Match.Scrutinee != parameter.Name {
+	scrutineeID := function.Match.ScrutineeID
+	if scrutineeID == "" {
+		scrutineeID = parameter.ID
+	}
+	if function.Match.ScrutineeID == "" && function.Match.Scrutinee != parameter.Name {
 		for _, place := range function.Linear.Places {
 			if place.Name == function.Match.Scrutinee {
 				scrutineeID = place.ID

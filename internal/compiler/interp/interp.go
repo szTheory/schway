@@ -762,10 +762,13 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			}
 			block := top.blocks[top.currentBlockID]
 			if len(block.Successors) > 1 && top.function.Match != nil {
-				var scrutineeID string
-				for _, place := range top.function.Linear.Places {
-					if place.Name == top.function.Match.Scrutinee && scrutineeID == "" {
-						scrutineeID = place.ID
+				scrutineeID := top.function.Match.ScrutineeID
+				if scrutineeID == "" {
+					for _, place := range top.function.Linear.Places {
+						if place.Name == top.function.Match.Scrutinee {
+							scrutineeID = place.ID
+							break
+						}
 					}
 				}
 				scrutinee, initialized := top.values[scrutineeID]

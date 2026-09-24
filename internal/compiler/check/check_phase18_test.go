@@ -24,8 +24,17 @@ func TestPhase18ComputedScrutineeProductionPathAccepted(t *testing.T) {
 		t.Fatalf("checked function count = %d, want 1", len(checked.Program.Functions))
 	}
 	function := checked.Program.Functions[0]
-	if function.Match == nil || function.Match.Scrutinee != "computed" || function.Linear == nil {
+	if function.Match == nil || function.Match.Scrutinee != "computed" || function.Match.ScrutineeID == "" || function.Linear == nil {
 		t.Fatalf("computed match did not reach checked branch core: %+v", function)
+	}
+	matchedPlace := false
+	for _, place := range function.Linear.Places {
+		if place.ID == function.Match.ScrutineeID && place.Name == "computed" {
+			matchedPlace = true
+		}
+	}
+	if !matchedPlace {
+		t.Fatalf("match scrutinee identity %q does not identify the computed place", function.Match.ScrutineeID)
 	}
 	if len(function.Linear.Operations) < 2 || function.Linear.Operations[0].Kind == "return" {
 		t.Fatalf("linear prefix/branch operations are missing or malformed: %+v", function.Linear.Operations)

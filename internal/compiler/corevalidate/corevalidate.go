@@ -890,6 +890,12 @@ func (v *validator) matchBranchStructural(function *core.Function, dataNames map
 	if function.Linear != nil {
 		knownScrutinee = false
 		for _, place := range function.Linear.Places {
+			if match.ScrutineeID != "" && place.ID != match.ScrutineeID {
+				continue
+			}
+			if match.ScrutineeID == "" && place.Name != match.Scrutinee {
+				continue
+			}
 			if place.Name != match.Scrutinee {
 				continue
 			}
@@ -965,6 +971,12 @@ func (v *validator) match(function *core.Function, dataNames map[string]core.Dat
 	if function.Linear != nil {
 		knownScrutinee = false
 		for _, place := range function.Linear.Places {
+			if match.ScrutineeID != "" && place.ID != match.ScrutineeID {
+				continue
+			}
+			if match.ScrutineeID == "" && place.Name != match.Scrutinee {
+				continue
+			}
 			if place.Name != match.Scrutinee {
 				continue
 			}

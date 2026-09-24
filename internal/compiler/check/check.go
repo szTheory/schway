@@ -2445,13 +2445,17 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	}
 	linear.LoanEndpoints = materializeLoanEndpoints(functionID, cfgBlocks, edgeIDLookup, fixpoint, interproceduralSummaryTable{})
 	work += fixpoint.work
+	coreScrutineeID := ""
+	if len(prefixes) > 0 {
+		coreScrutineeID = scrutineePlaceID
+	}
 
 	return core.Function{
 		ID: functionID, Name: function.Name,
 		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
 		Parameter:  core.Parameter{ID: parameterID, Name: function.Parameter.Name, Type: parameterType.Constructor},
 		ReturnType: function.ReturnType.Constructor,
-		Match:      &core.Match{ID: matchID, PointID: functionID + ":point:match", Scrutinee: function.Body.Scrutinee, Arms: arms},
+		Match:      &core.Match{ID: matchID, PointID: functionID + ":point:match", Scrutinee: function.Body.Scrutinee, ScrutineeID: coreScrutineeID, Arms: arms},
 		Linear:     linear,
 		Span:       function.Span,
 	}, nil, work, callSpans
