@@ -4,17 +4,17 @@ milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
-status: executing
-stopped_at: Completed 18-07-PLAN.md; Phase 18 pathoracle endpoint differential remains for scoped follow-up
-last_updated: "2026-09-24T18:53:37Z"
+status: verifying
+stopped_at: Completed 18-08-PLAN.md; Phase 18 ready for automated verification
+last_updated: "2026-09-24T20:22:25.090Z"
 last_activity: 2026-09-24
-last_activity_desc: Scoped Phase 18 pathoracle loan endpoint follow-up implemented; full-suite failures recorded for triage
-state_head: 537d4599f181d56abe2f72b9fbb13b1e245806a6
+last_activity_desc: Completed Phase 18 Plan 08 measurement evidence and retained existing full/race CI lanes; all Phase 18 plans are ready for automated verification
+state_head: 04a590f23a2fe56a027aae9d3ddd5708c04c75ca
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 66
-  completed_plans: 65
+  completed_plans: 66
 ---
 
 # Project State
@@ -27,13 +27,14 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
 **Current focus:** Phase 18 — Branch on a Computed Value
-is executing its eight checked plans. Plans 18-01 through 18-05 have summaries;
+has completed its eight checked plans. Plans 18-01 through 18-08 have summaries;
 the independent core and origin peers validate computed branch places and
 payload provenance, and the interpreter/native terminal outcome now preserves
 returned payload values. The seeded wrong-slot mutation is observed on
 `axis:terminal-outcome`; the Phase 18 session checks and full Go suite are
 green. CTL-01 through CTL-03 remain open pending phase-level verification.
-Plans 18-06 through 18-08 remain to execute.
+The measured validation record and CI disposition are in 18-VALIDATION.md;
+objective acceptance remains assigned to automated phase-level verification.
 M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 
 **Durable context (survives context clears — read before re-deriving):**
@@ -56,10 +57,10 @@ M003 remains the active milestone; Phase 19 and Phase 20 are pending.
 
 ## Current Position
 
-Phase: 18 (Branch on a Computed Value) — EXECUTING
+Phase: 18 (Branch on a Computed Value) — VERIFYING
 Plan: 8 of 8
-Status: Ready to execute
-Last activity: 2026-09-24 — Completed quick regression closure 260924-kto: restored historical core/manifest pins, added valid S-010 both-arm CFG control, and passed the full Go suite; Phase 18 requirements remain open for phase-level verification
+Status: All plans complete; phase-level automated verification is next
+Last activity: 2026-09-24 — Completed Plan 18-08: measured all five feedback lanes, passed the phase-local evidence verifier, and retained existing Ubuntu/macOS full and race CI coverage; CTL requirements remain open pending phase verification
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -69,7 +70,7 @@ under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
 14-VALIDATION.md's Per-Task Verification Map filled with 31 real rows, and
 all eleven phase requirements confirmed complete.
 
-**Next:** `/gsd-execute-phase 18`
+**Next:** `$gsd-verify-work 18` (automated evidence review; no human UAT is required for the objective criteria)
 
 ## M003 Phase Map
 
@@ -325,6 +326,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P5 | 24min | 3 tasks | 9 files |
 | Phase 18 P6 | 11min | 3 tasks | 6 files |
 | Phase 18 P07 | 3m | 2 tasks | 2 files |
+| Phase 18 P08 | 64m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -473,6 +475,7 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Seed interpreter data inputs with the canonical payload values emitted by native entry setup.
 - [Phase 18]: Keep CTL-01 through CTL-03 open until full Phase 18 verification.
 - [Phase 18]: 18-06: Keep S-010 loan endpoints within existing point and edge kinds, with the computed-match prefix participating in bounded CFG liveness.
+- [Phase 18]: Plan 18-08 kept CI unchanged because existing macOS/Linux full and race suites already cover Phase 18 and duplicate focused coverage costs about two minutes per host.
 
 ### Pending Todos
 
@@ -629,10 +632,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T18:25:23.161Z
-Stopped at: Completed 18-07-PLAN.md; Phase 18 pathoracle endpoint differential remains for scoped follow-up
+Last session: 2026-09-24T20:22:24.943Z
+Stopped at: Completed 18-08-PLAN.md; Phase 18 ready for automated verification
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
-Resume file: 18-08-PLAN.md
+Resume file: 18-08-SUMMARY.md
 Next command: `/clear` then `/gsd-new-milestone`
 
 The notes below predate the close and are kept as durable context a
