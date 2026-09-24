@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 16-branch-match-emitter-port
 source: [16-01-SUMMARY.md, 16-02-SUMMARY.md, 16-03-SUMMARY.md, 16-04-SUMMARY.md, 16-05-SUMMARY.md, 16-06-SUMMARY.md, 16-07-SUMMARY.md, 16-08-SUMMARY.md, 16-09-SUMMARY.md, 16-10-SUMMARY.md, 16-11-SUMMARY.md, 16-12-SUMMARY.md, 16-13-SUMMARY.md, 16-14-SUMMARY.md, 16-15-SUMMARY.md]
 started: 2026-09-23T00:00:00Z
-updated: 2026-09-24T00:00:00Z
+updated: 2026-09-24T04:40:00Z
 ---
 
 ## Current Test
@@ -12,7 +12,7 @@ number: 21
 name: Run the Go integration and regression suite
 expected: |
   `go test ./...` completes successfully, including compiler emission, session evidence, and project invariant checks.
-awaiting: gap-closure planning
+[testing complete]
 
 ## Tests
 
@@ -132,15 +132,14 @@ coverage_id: D2
 
 ### 21. Run the Go integration and regression suite
 expected: `go test ./...` completes successfully, including compiler emission, session evidence, and project invariant checks.
-result: issue
-reported: "GOCACHE=/tmp/ai-lang-go-cache go test ./... exited 1. Failures include Phase 11 zero-attribute native gates refusing by-pointer fixtures; TestValidationRowGradesAreEarnedOverArchivedCorpus reporting a corpus digest mismatch; TestVerificationGroundednessFrontierIsPinned reporting new unowned rows; TestDebtRegistersAreWellFormed finding missing Phase 13 witness tests; ProbeMachine failures in Phase 6 budget tests; and LANGUAGE-MATURITY.md corpus counts differing from the re-derived counts."
-severity: blocker
+result: pass
+source: automated
 
 ## Summary
 
 total: 21
-passed: 20
-issues: 1
+passed: 21
+issues: 0
 pending: 0
 skipped: 0
 
@@ -148,7 +147,9 @@ skipped: 0
 
 - gap_id: G-16-21-A
   truth: Phase 11 native zero-attribute controls continue to verify their admitted evidence after the Phase 16 public M004 cut.
-  status: failed
+  status: resolved
+  resolved_by: 16-21-PLAN.md
+  resolved_at: 2026-09-24
   reason: "Automated regression tests TestPhase11ZeroAttributeGate, TestPhase11GateIsNonVacuous, TestPhase11GateCountsAdjacentWouldCarryFunctions, TestPhase11GateMutationKill, and TestPhase11SuppressionIsDiffLocal fail because current by-pointer emission is refused."
   severity: blocker
   test: 21
@@ -159,7 +160,9 @@ skipped: 0
   debug_session: ".planning/debug/phase16-m004-phase11-gates.md"
 - gap_id: G-16-21-B
   truth: Archived validation and groundedness evidence matches the current corpus and assigns every retained verification command.
-  status: failed
+  status: resolved
+  resolved_by: [16-17-PLAN.md, 16-18-PLAN.md]
+  resolved_at: 2026-09-24
   reason: "TestValidationRowGradesAreEarnedOverArchivedCorpus reports a corpus-pair digest mismatch. TestVerificationGroundednessFrontierIsPinned and TestVerificationGroundednessThreeClassesAreEmpty report newly surfaced unowned commands in Phase 14, 16, and 17 validation artifacts."
   severity: blocker
   test: 21
@@ -170,7 +173,9 @@ skipped: 0
   debug_session: ".planning/debug/phase16-validation-frontier-drift.md"
 - gap_id: G-16-21-C
   truth: Debt register evidence references executable tests and machine-budget probes succeed in the supported host environment.
-  status: failed
+  status: resolved
+  resolved_by: 16-19-PLAN.md
+  resolved_at: 2026-09-24
   reason: "TestDebtRegistersAreWellFormed finds missing Phase 13 witness test names. TestBudgetLaneCarriesMachineIDAndVerdict, TestBudgetAuditRefusesUndeclaredMachine, and TestQLT02InterproceduralGrowthExponent fail at ProbeMachine."
   severity: blocker
   test: 21
@@ -181,7 +186,9 @@ skipped: 0
   debug_session: ".planning/debug/phase16-debt-and-machine-probe.md"
 - gap_id: G-16-21-D
   truth: LANGUAGE-MATURITY.md reports corpus counts that match the current source fixtures.
-  status: failed
+  status: resolved
+  resolved_by: 16-20-PLAN.md
+  resolved_at: 2026-09-24
   reason: "TestLanguageMaturityCountsAreCurrent derives 133 programs and 4478 lines, while the document states 128 and 4311."
   severity: major
   test: 21
@@ -193,7 +200,9 @@ skipped: 0
 
 - gap_id: G-16-21-E
   truth: Every scanner-visible verification command in the Phase 16 report has an owned R2b landing phase, and the groundedness suite passes against the current report.
-  status: failed
+  status: resolved
+  resolved_by: 16-26-PLAN.md
+  resolved_at: 2026-09-24
   reason: "Fresh GOCACHE=/tmp/ai-lang-gocache go test ./... run fails only TestVerificationGroundednessFrontierIsPinned and TestVerificationGroundednessThreeClassesAreEmpty: the command at 16-VERIFICATION.md:143 is an unowned R2b finding."
   severity: blocker
   test: 21
