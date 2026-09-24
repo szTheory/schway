@@ -138,9 +138,9 @@ race_warm_min_seconds=173.856
 race_warm_median_seconds=176.835
 race_warm_max_seconds=232.084
 ci_before_blob=ca3c80918b5942e429d0cf8c64de86a9afe42de3
-ci_disposition=pending
-ci_command=
-ci_decision_rationale=
+ci_disposition=not_added
+ci_command=none
+ci_decision_rationale=The focused native differential command has a 123.411s cold median and 114.901s warm median. Existing checks already run go test ./... and go test -race ./... on both Ubuntu and macOS, and the Phase 18 tests are included in those suites. A separate focused step would repeat the same session package coverage for about two additional minutes on each host without adding a distinct acceptance signal; retain the existing full and race lanes.
 ```
 
 The verifier is phase-local at
