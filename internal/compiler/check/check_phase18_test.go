@@ -2,6 +2,7 @@ package check_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/session"
@@ -27,5 +28,24 @@ func TestPhase18ComputedScrutineeFrontierPinned(t *testing.T) {
 	}
 	if diagnostic.Primary.End > len(source) || string(source[diagnostic.Primary.Start:diagnostic.Primary.End]) != "match" {
 		t.Fatalf("diagnostic span = %q, want the terminal match token", source[diagnostic.Primary.Start:diagnostic.Primary.End])
+	}
+}
+
+func TestPhase18LoanAcrossBranchFixture(t *testing.T) {
+	path := testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.lang")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	if !strings.Contains(string(source), "let view = borrow input") || !strings.Contains(string(source), "let observed = take view") {
+		t.Fatal("fixture does not witness a pre-match borrow consumed in one arm")
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) == 0 || checked.Diagnostics[0].Code != "syntax.expected_linear_result" {
+		t.Fatalf("want the pinned terminal-match parser frontier, got %+v", checked.Diagnostics)
+	}
+	problem := checked.Diagnostics[0]
+	if problem.Primary.End > len(source) || string(source[problem.Primary.Start:problem.Primary.End]) != "match" {
+		t.Fatalf("diagnostic does not point at terminal match: %+v", problem.Primary)
 	}
 }

@@ -1,0 +1,31 @@
+// Production source witness for S-010: borrow before the terminal branch and
+// consume the borrow in exactly one arm.
+module phase18.loan_across_branch
+
+export {
+  type Switch
+  fn select
+}
+
+data Switch =
+  | On
+  | Off
+
+fn identity(value: Switch) -> Switch {
+  let returned = take value
+  returned
+}
+
+fn select(input: Switch) -> Switch {
+  let view = borrow input
+  let computed = identity(input)
+  match computed {
+    On => {
+      let observed = take view
+      computed
+    }
+    Off => {
+      computed
+    }
+  }
+}
