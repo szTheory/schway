@@ -58,9 +58,11 @@ status: complete
 - `git diff --quiet -- '.planning/phases/18-branch-on-a-computed-value/18-*-PLAN.md'` — PASS; no Phase 18 plan files changed.
 - Initial `go test ./...` using the default Go cache — blocked because the sandbox denied access to `~/Library/Caches/go-build` (`operation not permitted`).
 - `GOCACHE=/tmp/ai-lang-gocache go test ./...` — PASS for all packages; the session package completed in 89.743 seconds.
+- A later full-suite rerun found that the generated quick verification report included raw shell probes, which the repository groundedness tests classify as verification claims. The report was rewritten to describe observed results without embedding commands.
+- Final `GOCACHE=/tmp/ai-lang-gocache go test ./...` after that report correction — PASS for all packages; the session package completed in 91.988 seconds.
 - `git diff --check` on the two target documents — PASS.
 
-The passing full suite covers the existing repository tests; it does not claim the prospective Phase 18 named tests or fixtures have been implemented or passed.
+The final passing full suite covers the existing repository tests; it does not claim the prospective Phase 18 named tests or fixtures have been implemented or passed.
 
 ## Decisions Made
 
