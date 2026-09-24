@@ -140,7 +140,7 @@ re_verification:
 | Race regression | `GOCACHE=/tmp/ai-lang-go-cache-verify16 go test -race ./...` | 0; session completed in 184.467s | ✓ PASS |
 | Static analysis and build | `go vet ./... && go build ./...` | 0 | ✓ PASS |
 | Native compiler | `clang --version` | Apple clang 21.0.0 | ✓ PASS |
-| NAT-09 owner law | `go test ./internal/compiler/session -run '^(TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed)$' -count=1 -v` | 0; seeded `UNOWNED`, mistitled-roadmap, and missing-prerequisite faults rejected | ✓ PASS |
+| NAT-09 owner law | `go test ./internal/compiler/session -run '^TestPhase16EmitterCutsAreAmendedAndOwned$|^TestDebtRegistersAreWellFormed$' -count=1 -v` | 0; seeded `UNOWNED`, mistitled-roadmap, and missing-prerequisite faults rejected | ✓ PASS |
 
 ### Probe Execution
 
