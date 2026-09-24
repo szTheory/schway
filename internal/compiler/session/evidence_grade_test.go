@@ -1700,6 +1700,44 @@ func TestCheckedInCorpusRecordRejectsTamperingAndVacuity(t *testing.T) {
 	if _, err := checkedInCorpusRunRecord(requested, recordData, manifestData); err != nil {
 		t.Fatalf("valid checked-in record rejected: %v", err)
 	}
+	t.Run("changed requested pair bytes refuse the old pair digest", func(t *testing.T) {
+		changed := []pkgPattern{{Package: "./internal/compiler/core", Pattern: "^TestChanged$"}}
+		if _, err := checkedInCorpusRunRecord(changed, recordData, manifestData); err == nil || !strings.Contains(err.Error(), "pair digest") {
+			t.Fatalf("changed pair bytes should be refused by the bound pair digest, got: %v", err)
+		}
+	})
+	t.Run("changed run-record bytes refuse the old record digest", func(t *testing.T) {
+		changed := append(append([]byte(nil), recordData...), []byte("{\"Action\":\"output\",\"Output\":\"tampered\"}\n")...)
+		if _, err := checkedInCorpusRunRecord(requested, changed, manifestData); err == nil || !strings.Contains(err.Error(), "record digest") {
+			t.Fatalf("changed run-record bytes should be refused by the bound record digest, got: %v", err)
+		}
+	})
+	t.Run("missing persisted pair completion refuses a re-digested body", func(t *testing.T) {
+		pairWitness := []byte("{\"Action\":\"record_pair_complete\",\"Package\":\"./internal/compiler/core\",\"Pattern\":\"^TestSeeded$\"}\n")
+		missingPair := []byte(strings.Replace(string(recordData), string(pairWitness), "", 1))
+		mutated := manifest
+		mutated.RecordDigest = sha256Hex(missingPair)
+		data, err := json.Marshal(mutated)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := checkedInCorpusRunRecord(requested, missingPair, data); err == nil || !strings.Contains(err.Error(), "missing=") || !strings.Contains(err.Error(), requested[0].Pattern) {
+			t.Fatalf("missing persisted pair completion should be refused after its new body digest is bound, got: %v", err)
+		}
+	})
+	t.Run("missing persisted batch completion refuses a re-digested body", func(t *testing.T) {
+		batchWitness := []byte("{\"Action\":\"record_batch_complete\",\"Pairs\":1}\n")
+		missingBatch := []byte(strings.Replace(string(recordData), string(batchWitness), "", 1))
+		mutated := manifest
+		mutated.RecordDigest = sha256Hex(missingBatch)
+		data, err := json.Marshal(mutated)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := checkedInCorpusRunRecord(requested, missingBatch, data); err == nil || !strings.Contains(err.Error(), "completion witness") {
+			t.Fatalf("missing persisted batch completion should be refused after its new body digest is bound, got: %v", err)
+		}
+	})
 	for name, mutate := range map[string]func(*checkedInCorpusRecord){
 		"missing revision":    func(m *checkedInCorpusRecord) { m.Revision = "" },
 		"pair digest drift":   func(m *checkedInCorpusRecord) { m.PairDigest = "00" },
