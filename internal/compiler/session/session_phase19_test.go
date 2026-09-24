@@ -26,3 +26,33 @@ func TestPhase19LiteralFrontier(t *testing.T) {
 		t.Fatalf("literal_tracer.lang refusal moved: got id=%q code=%q span=%+v", first.ID, first.Code, first.Primary)
 	}
 }
+
+func TestPhase19NumericRefusalFrontiers(t *testing.T) {
+	for _, tc := range []struct {
+		fixture string
+		literal string
+		id      string
+		start   int
+	}{
+		{fixture: "literal_overflow.lang", literal: "18446744073709551616", id: "diagnostic:784da754a792c0cb4f742356", start: 99},
+		{fixture: "literal_malformed.lang", literal: "0x_FF", id: "diagnostic:165cdf796a026f782d2100ad", start: 100},
+	} {
+		t.Run(tc.fixture, func(t *testing.T) {
+			source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", tc.fixture))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(source), "let count = "+tc.literal) {
+				t.Fatalf("%s lost literal witness %q", tc.fixture, tc.literal)
+			}
+			checked := session.Check(source)
+			if len(checked.Diagnostics) == 0 {
+				t.Fatalf("%s unexpectedly passed production checking", tc.fixture)
+			}
+			first := checked.Diagnostics[0]
+			if first.ID != tc.id || first.Code != "syntax.unexpected_byte" || first.Primary.Start != tc.start || first.Primary.End != tc.start+1 {
+				t.Fatalf("%s refusal moved: got id=%q code=%q span=%+v", tc.fixture, first.ID, first.Code, first.Primary)
+			}
+		})
+	}
+}

@@ -1,0 +1,10 @@
+module phase19.literal_malformed
+
+export {
+  fn main
+}
+
+fn main(input: Byte) -> U64 {
+  let count = 0x_FF
+  count
+}

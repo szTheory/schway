@@ -1,0 +1,10 @@
+module phase19.literal_overflow
+
+export {
+  fn main
+}
+
+fn main(input: Byte) -> U64 {
+  let count = 18446744073709551616
+  count
+}
