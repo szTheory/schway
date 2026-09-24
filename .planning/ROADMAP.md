@@ -604,14 +604,21 @@ byte-identical scalar projection. If it cannot, every serialized-execution
 golden in the corpus moves — painful, but still an extension, not a redesign.
 This is the entire residual 15% behind the "arithmetic is ownership-inert"
 finding.
-**Gate that catches it being wrong**: criterion 4 is checked as the *first*
-plan's gate — widen the interpreter value domain and re-run the golden corpus
-before `OpConst` reaches any other dispatch site.
+**Gate that catches it being wrong**: criterion 4 is checked in the first
+production plan — widen the interpreter value domain and re-run the golden
+corpus before `OpConst` reaches any other dispatch site. The preceding fixture-
+only plan pins the current refused frontier and its diagnostics.
 **Sizing note**: 8-10 coordinated edits at six dispatch sites (the measured
 project base rate for a new `OperationKind`) plus a new interpreter value
 domain. Registering `OpConst` in `AllOperationKinds()` deliberately breaks all
 six exhaustive switches at once — a forcing function, per Phase 07's precedent.
-**Plans**: 6-8 (TBD at `/gsd-plan-phase 19`)
+**Plans**: 7, in seven dependency-ordered waves. Plan 01 pins the refused
+literal frontier; Plan 02 widens interpreter values and replays scalar goldens;
+Plan 03 adds lossless syntax; Plan 04 checks and lowers U64; Plan 05 updates
+independent core/path/origin peers; Plan 06 executes constants in the interpreter
+and native C emitter; Plan 07 registers all consumers and proves four-tier
+agreement. See `.planning/phases/19-numeric-literals-and-opconst/19-01-PLAN.md`
+through `19-07-PLAN.md`.
 
 ---
 
