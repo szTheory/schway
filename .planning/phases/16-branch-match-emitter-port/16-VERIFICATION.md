@@ -56,6 +56,7 @@ covered_files:
   - .planning/phases/16-branch-match-emitter-port/16-24-PLAN.md
   - .planning/phases/16-branch-match-emitter-port/16-24-SUMMARY.md
   - .planning/phases/16-branch-match-emitter-port/16-25-PLAN.md
+  - .planning/phases/16-branch-match-emitter-port/16-25-SUMMARY.md
   - .planning/phases/16-branch-match-emitter-port/16-CONTEXT.md
   - .planning/phases/16-branch-match-emitter-port/16-RESEARCH.md
   - .planning/phases/16-branch-match-emitter-port/16-VALIDATION.md
@@ -70,7 +71,7 @@ covered_files:
   - internal/compiler/session/session_phase16_frozen_evidence_external_test.go
   - internal/compiler/session/session_phase5.go
   - internal/compiler/session/verification_groundedness_test.go
-covered_digest: "v1:sha256:7b985338d816e3d04ff64c3ffc70a2733cf683aa499411739dd7d7a2ca538a91"
+covered_digest: "v1:sha256:69c46860e244f205b976bb77fec038fe060deba16c6d5ec7070328a3bb1f590a"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
