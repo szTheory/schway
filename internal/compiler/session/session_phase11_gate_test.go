@@ -385,10 +385,8 @@ func TestPhase11GateCountsAdjacentWouldCarryFunctions(t *testing.T) {
 	}
 }
 
-// TestPhase11GateMutationKill is D-11-18's own anti-vacuity proof:
-// re-running the SAME gate corpus through the SAME lane under the
-// JUSTIFIED profile makes the lane go RED. A gate green under both
-// profiles would be measuring nothing.
+// TestPhase11GateMutationKill is D-11-18's anti-vacuity proof: a seeded
+// restrict mutation in frozen evidence must turn the exact same scanner red.
 func TestPhase11GateMutationKill(t *testing.T) {
 	program := session.Check(phase11GateCorpusSource(t)).Program
 	_, refusal := cgen.EmitNative(program)
@@ -435,24 +433,27 @@ func TestPhase11SuppressionIsDiffLocal(t *testing.T) {
 	justified := phase11ReplaceOnce(t, suppressed, "static LANG_BUFFER LANG_TOUCH(LANG_BUFFER lang_value_buffer, unsigned int invocation_index) {", "static LANG_BUFFER LANG_TOUCH(LANG_BUFFER restrict lang_value_buffer, unsigned int invocation_index) {")
 
 	if suppressed == justified {
-		t.Fatal("expected the two profiles to produce different output for a would-carry function")
+		t.Fatal("expected the seeded restrict mutation to change the frozen bytes")
 	}
 	if strings.Contains(suppressed, "restrict") {
-		t.Fatal("expected the suppressed profile's output to contain no restrict token")
+		t.Fatal("expected frozen attribute-free C to contain no restrict token")
 	}
 	if !strings.Contains(justified, "restrict") {
-		t.Fatal("expected the justified profile's output to contain the restrict token")
+		t.Fatal("expected the seeded frozen C to contain the restrict token")
+	}
+	if found := cgen.ScanForBannedAttributes(justified); len(found) == 0 {
+		t.Fatal("expected the banned-attribute scan to detect seeded restrict")
 	}
 
 	suppressedNoreturn := strings.Contains(suppressed, cgen.NoreturnExemption)
 	justifiedNoreturn := strings.Contains(justified, cgen.NoreturnExemption)
 	if suppressedNoreturn != justifiedNoreturn {
-		t.Fatalf("expected NoreturnExemption presence to be symmetric across profiles, suppressed=%v justified=%v", suppressedNoreturn, justifiedNoreturn)
+		t.Fatalf("expected NoreturnExemption presence to be symmetric across frozen and seeded bytes, frozen=%v mutated=%v", suppressedNoreturn, justifiedNoreturn)
 	}
 
 	diffTokens := phase11DiffOutsideBannedTokens(suppressed, justified)
 	if len(diffTokens) != 0 {
-		t.Fatalf("expected the two profiles' output to differ ONLY in bytes belonging to BannedOptimizerAttributes, found non-banned divergent tokens: %v", diffTokens)
+		t.Fatalf("expected frozen and seeded C to differ ONLY in banned-attribute bytes, found non-banned divergent tokens: %v", diffTokens)
 	}
 }
 
