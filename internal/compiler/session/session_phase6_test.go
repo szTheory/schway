@@ -229,14 +229,24 @@ func TestCIWorkflowRunsCurrentAggregateGate(t *testing.T) {
 		"sh scripts/verify-phase6.sh",
 		"ubuntu-latest",
 		"macos-latest",
-		"TestDecodeExecutionSchema2AdmissionSeam",
-		"TestSchema2ComparisonRequiresPeerVerdict",
-		"TestPhase5CompareProgramEnginesPreservesLegacySchemas",
-		"TestPhase11InterproceduralDifferential/DiamondSharedLeaf",
-		"TestPhase15CollisionGuardIsNotInert",
 	} {
 		if !strings.Contains(text, required) {
 			t.Fatalf(".github/workflows/ci.yml is missing current aggregate requirement %q", required)
+		}
+	}
+
+	for _, required := range []struct {
+		pkg      string
+		testName string
+	}{
+		{"./internal/compiler/native", "TestDecodeExecutionSchema2AdmissionSeam"},
+		{"./internal/compiler/session", "TestSchema2ComparisonRequiresPeerVerdict"},
+		{"./internal/compiler/session", "TestPhase5CompareProgramEnginesPreservesLegacySchemas"},
+		{"./internal/compiler/session", "TestPhase11InterproceduralDifferential/DiamondSharedLeaf"},
+		{"./internal/compiler/session", "TestPhase15CollisionGuardIsNotInert"},
+	} {
+		if !workflowRunsTestInPackage(text, required.pkg, required.testName) {
+			t.Fatalf(".github/workflows/ci.yml must select %s from %s", required.testName, required.pkg)
 		}
 	}
 }
@@ -291,7 +301,32 @@ func TestCIWorkflowSelectionPinsPackageOwnership(t *testing.T) {
 // workflowRunsTestInPackage reports whether one focused go test invocation
 // couples a test selector with the package that owns the test.
 func workflowRunsTestInPackage(workflow, pkg, testName string) bool {
-	return strings.Contains(workflow, testName)
+	for _, line := range strings.Split(workflow, "\n") {
+		start := strings.Index(line, "go test ")
+		if start < 0 {
+			continue
+		}
+		args := strings.Fields(line[start:])
+		if len(args) < 4 || args[0] != "go" || args[1] != "test" || args[2] != pkg {
+			continue
+		}
+		for i, arg := range args[3:] {
+			selector := ""
+			switch {
+			case arg == "-run" && i+4 < len(args):
+				selector = args[i+4]
+			case strings.HasPrefix(arg, "-run="):
+				selector = strings.TrimPrefix(arg, "-run=")
+			default:
+				continue
+			}
+			selector = strings.Trim(selector, "'\"")
+			if strings.Contains(selector, testName) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // TestPhase6ScriptInvokesNoPriorGate asserts the script never references
