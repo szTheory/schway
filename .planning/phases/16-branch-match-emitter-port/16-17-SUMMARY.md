@@ -112,6 +112,7 @@ No guard was weakened and no out-of-scope validation document was changed. The i
 - `GOCACHE=/tmp/ai-lang-go-cache go test ./...` was run and failed in `internal/compiler/session`: the same two validation-row issues above, plus five existing Phase 11 gate tests reject by-pointer bodies as unsupported by whole-program native emission. Other reported packages passed.
 - The focused checked-in mutation test passed. The plan's focused grade command and full-suite gate remain red for the existing issues listed above; the validation guards were not relaxed to force a green result.
 - The sandbox denied `.git/index.lock` on the first GSD commit attempt. The same GSD commits succeeded after retrying with repository metadata access; no unrelated files were staged.
+- GSD kept the current position at Phase 18 while recording the Phase 16 backfill. `state.advance-plan` was not run because it has no phase argument and would advance the current Phase 18 plan counter; progress recalculation and roadmap plan progress also reported their existing unscoped/missing-phase-detail skips. NAT-08 and NAT-09 were already complete.
 
 ## User Setup Required
 
