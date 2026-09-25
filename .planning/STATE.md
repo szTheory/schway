@@ -6,10 +6,10 @@ current_phase: 19
 current_phase_name: Numeric Literals and `OpConst`
 status: verification
 stopped_at: Phase 18 complete; Phase 19 implementation complete, verification stale
-last_updated: "2026-09-25T19:47:51.928Z"
+last_updated: "2026-09-25T20:53:39.977Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 18 verified complete with automated UAT; transitioned to Phase 19 verification
-state_head: dfa559840492f829c46fa8e54116a66157377efa
+state_head: 550bd0f40fbd676f27ee6ded0fb91cf3bed78007
 progress:
   total_phases: 8
   completed_phases: 6
@@ -46,6 +46,15 @@ hiding runtime costs.
 
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
+
+- **GSD no-loop rule:** Before repeating a routed command, compare its inputs
+  and expected state transition with the previous attempt. Rerun only when the
+  evidence, inputs, or requested action changed. If the same blocker remains,
+  stop and reconcile the conflicting source or identify the exact owner of the
+  required update; do not present the same command as progress. When STATE,
+  ROADMAP, and live GSD routing disagree, inspect the structured resolver,
+  record the discrepancy in the handoff, and use the next action that advances
+  the earliest real blocker. Report what changed and what evidence proves it.
 
 ## Current Position
 
@@ -638,6 +647,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260924-kto | Restore historical core compatibility and Phase 18 liveness acceptance after full-suite regressions | 2026-09-24 | e91628c | passed | [260924-kto-restore-historical-core-compatibility-an](./quick/260924-kto-restore-historical-core-compatibility-an/) |
 | 260924-tsl | Fix Phase 19 full-suite regressions | 2026-09-24 | ed237ab | passed | [260924-tsl-fix-phase-19-full-suite-regressions-refr](./quick/260924-tsl-fix-phase-19-full-suite-regressions-refr/) |
 | 8 | Complete Phase 18 automated UAT with zero manual checks | 2026-09-25 | dfa5598 | passed | — |
+| 9 | Record GSD no-loop rule: compare routed command inputs and state transitions before rerun; resolve unchanged blockers rather than repeating commands. | 2026-09-25 | 550bd0f | — | — |
 
 ## Deferred Items
 
