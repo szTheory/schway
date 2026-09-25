@@ -152,7 +152,7 @@ arithmetic operators, and branching moves to M004.
 
 ### Values
 
-- [ ] **VAL-01**: A numeric literal can be written, checked, interpreted, and
+- [x] **VAL-01**: A numeric literal can be written, checked, interpreted, and
       lowered.
 
 - [ ] **VAL-02**: Every operation kind is handled at all six dispatch sites,
@@ -246,7 +246,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | CTL-01 | Phase 18 | Complete |
 | CTL-02 | Phase 18 | Complete |
 | CTL-03 | Phase 18 | Complete |
-| VAL-01 | Phase 19 | Pending |
+| VAL-01 | Phase 19 | Complete |
 | VAL-02 | Phase 19 | Pending |
 | VAL-03 | Phase 19 | Pending |
 | QLT-10 | Phase 20 | Pending |

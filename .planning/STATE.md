@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 19
 current_phase_name: Numeric Literals and OpConst
 status: executing
-stopped_at: Completed 19-02-PLAN.md
-last_updated: "2026-09-24T23:53:10.576Z"
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-09-25T00:02:48.622Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 19 execution started
-state_head: 5c100f5465a14099193788f4a31f4887ec90e3b9
+state_head: 3d43d672fe43ee223304053e1cc6c1a34c58cae8
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 73
-  completed_plans: 68
+  completed_plans: 69
 ---
 
 # Project State
@@ -59,7 +59,7 @@ Phase 20.
 ## Current Position
 
 Phase: 19 (Numeric Literals and OpConst) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-09-24 — Phase 19 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
@@ -330,6 +330,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P07 | 3m | 2 tasks | 2 files |
 | Phase 18 P08 | 64m | 2 tasks | 2 files |
 | Phase 19 P02 | 4min | 2 tasks | 4 files |
+| Phase 19 P03 | 9min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -481,6 +482,8 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Plan 18-08 kept CI unchanged because existing macOS/Linux full and race suites already cover Phase 18 and duplicate focused coverage costs about two minutes per host.
 - [Phase 19]: 19-02: store U64 as a discriminated interpreter value and serialize it as canonical decimal while preserving prior scalar projections
 - [Phase 19]: 19-02: require D-12-18 corpus replay and seeded projection mutation evidence before OpConst routing
+- [Phase 19]: Numeric syntax remains lossless in RHS.Source; checker owns numeric interpretation.
+- [Phase 19]: Lexer consumes adjacent Unicode letters and digits in malformed numeric candidates.
 
 ### Pending Todos
 
@@ -637,8 +640,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-24T23:52:23.781Z
-Stopped at: Completed 19-02-PLAN.md
+Last session: 2026-09-25T00:02:48.401Z
+Stopped at: Completed 19-03-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
