@@ -6,7 +6,7 @@ current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: verification
 stopped_at: Phase 16 verification passed; Phase 18 is the next stale verification
-last_updated: "2026-09-25T16:02:43Z"
+last_updated: "2026-09-25T16:07:38Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 16 verification passed; routed to Phase 18 verification
 state_head: ea38f6fde671474d2a74d0522381048079e7c1ab
@@ -645,11 +645,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T15:53:20.601Z
-Stopped at: Phase 16 complete, ready to plan Phase 17
-satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
+Last session: 2026-09-25T16:07:38Z
+Stopped at: Phase 16 verified complete; Phase 18 is next for automated verification
 Resume file: None
-Next command: `/clear` then `/gsd-new-milestone`
+Next command: `$gsd-verify-work 18`
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
