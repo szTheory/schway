@@ -1136,7 +1136,9 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		if !v.uniqueType(types, fact) {
 			return nil, nil, false
 		}
-		if !v.check(fact.ID == fmt.Sprintf("%s:type:%d", function.ID, index), "core.type_order", fact.ID) {
+		wantTypeID := fmt.Sprintf("%s:type:%d", function.ID, index)
+		literalU64ID := fact.ID == function.ID+":type:u64" && fact.Shape.Constructor == "U64" && len(fact.Shape.Arguments) == 0
+		if !v.check(fact.ID == wantTypeID || literalU64ID, "core.type_order", fact.ID) {
 			return nil, nil, false
 		}
 		abilities, witnesses, ok := v.derive(fact.Shape, 0)

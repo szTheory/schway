@@ -2253,6 +2253,18 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 	if returnFact.ID != typeFact.ID {
 		typeFacts = append(typeFacts, returnFact)
 	}
+	// Literal bindings can live in the computed-match entry prefix or in
+	// any arm body. Seed their shared U64 fact before either body is
+	// analyzed, so both independent linear analyzers lower the same typed
+	// OpConst contract.
+	literalBodies := make([]*ast.LinearBody, 0, len(function.Body.Arms)+1)
+	if len(prefixes) > 0 {
+		literalBodies = append(literalBodies, prefixes[0])
+	}
+	for _, arm := range function.Body.Arms {
+		literalBodies = append(literalBodies, arm.Body)
+	}
+	typeFacts = ensureLiteralTypeFact(functionID, typeFacts, literalBodies...)
 	linear := &core.LinearBody{
 		ID:         functionID + ":linear",
 		Types:      typeFacts,
@@ -2382,7 +2394,7 @@ func checkBranch(module, functionID, matchID string, function ast.FuncDecl, data
 
 		var support ownershipSupport
 		if arm.Body != nil {
-			support = analyzeArmBody(functionID, nextIndex, scrutineeName, aliasPlaceID, arm.Body.Span, typeFact, arm.Body, calleeContracts, foreignSymbols, linear.Places, linear.Operations, linear.Types)
+			support = analyzeArmBody(functionID, nextIndex, scrutineeName, aliasPlaceID, arm.Body.Span, typeFact, returnType, arm.Body, calleeContracts, foreignSymbols, linear.Places, linear.Operations, linear.Types)
 		} else {
 			support = analyzePayloadArm(functionID, nextIndex, len(linear.Types), aliasPlaceID, scrutineeTypeID, returnTypeID, dataType, returnDataType, arm, sealed, computedTerminal)
 		}
@@ -3076,7 +3088,7 @@ func materializeLoanEndpoints(functionID string, blocks []cfgBlockSpec, edgeID f
 // the walk below never reaches every binding -- an independent oracle
 // populates the same fields the same way, over the same full body,
 // regardless of which fact fails first.
-func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, inheritedPlaces []core.Place, inheritedOperations []core.LinearOperation, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
+func analyzeArmBody(functionID string, startIndex int, parameterName, parameterPlaceID string, parameterSpan diagnostic.Span, typeFact core.TypeFact, declaredReturnType core.TypeRef, body *ast.LinearBody, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo, inheritedPlaces []core.Place, inheritedOperations []core.LinearOperation, availableTypeFacts ...[]core.TypeFact) ownershipSupport {
 	result := ownershipSupport{
 		Places: []core.Place{}, Operations: []core.LinearOperation{}, LoanFinalUses: []loanFinalUseFact{}, States: []ownershipStateFact{},
 		Work: len(body.Bindings) + 1,
@@ -3335,7 +3347,7 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	if !returned.initialized {
 		return fail(useAfterMove(body.Span, returned))
 	}
-	if !returnPlaceMatchesDeclaration(functionID, returned.place.TypeID, availableTypeFacts, typeFact) {
+	if !returnPlaceMatchesType(returned.place.TypeID, availableTypeFacts, declaredReturnType) {
 		return fail(diagnostic.Error("type.return_mismatch", body.Span, "linear result does not match the function's declared return type"))
 	}
 	result.Operations = append(result.Operations, core.LinearOperation{
@@ -3358,6 +3370,17 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	endLoans(len(body.Bindings))
 	result.States = append(result.States, ownershipSnapshot(len(body.Bindings), places, activeLoans))
 	return result
+}
+
+func returnPlaceMatchesType(sourceTypeID string, available [][]core.TypeFact, declared core.TypeRef) bool {
+	for _, facts := range available {
+		for _, fact := range facts {
+			if fact.ID == sourceTypeID {
+				return typeKey(fact.Shape) == typeKey(declared)
+			}
+		}
+	}
+	return false
 }
 
 func checkLinear(module, functionID string, function ast.FuncDecl, calleeContracts map[string]calleeContract, foreignSymbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int, map[string]diagnostic.Span) {

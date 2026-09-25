@@ -638,6 +638,39 @@ func TestPerReturnOriginsCoverEveryArm(t *testing.T) {
 	}
 }
 
+func TestPhase19ConstantOriginStopsAtRoot(t *testing.T) {
+	source := []byte("module phase19.constant_origin\nexport {\n  fn main\n}\nfn main(input: Byte) -> U64 {\n  let view = borrow input\n  let value = 42\n  value\n}\n")
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("constant origin witness failed admission: %+v", checked.Diagnostics)
+	}
+	function := checked.Program.Functions[0]
+	operations := append([]core.LinearOperation(nil), function.Linear.Operations...)
+	var constIndex int = -1
+	var borrowedPlace string
+	for index, operation := range operations {
+		if operation.Kind == core.OpBorrowShared {
+			borrowedPlace = operation.TargetID
+		}
+		if operation.Kind == core.OpConst {
+			constIndex = index
+		}
+	}
+	if constIndex < 0 || borrowedPlace == "" {
+		t.Fatalf("witness lacks borrow and constant operations: %+v", operations)
+	}
+	// A forged source field must not let an origin walk cross the constant
+	// root into a borrow. Core admission rejects this mutation separately.
+	operations[constIndex].SourceID = borrowedPlace
+	linear := *function.Linear
+	linear.Operations = operations
+	function.Linear = &linear
+	origins := originvalidate.RecomputeOriginPerReturn(function, nil)
+	if len(origins) != 1 || origins[0].Derived || origins[0].Access != "" {
+		t.Fatalf("constant inherited a forged parameter origin: %+v", origins)
+	}
+}
+
 // TestMultiArmOmittedOriginRejected is Task 03-10-01's falsifier for
 // SC3/SC4: a match-bodied function whose first arm returns owned and second
 // arm returns a live borrow, with no declared origin (match functions cannot

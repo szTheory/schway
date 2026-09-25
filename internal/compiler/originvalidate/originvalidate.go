@@ -290,6 +290,10 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 			}
 		}
 		switch operation.Kind {
+		case core.OpConst:
+			// A constant introduces a fresh owned value. It has no parameter
+			// origin and is the terminal root for this backward walk.
+			return ReturnOrigin{OperationID: returnOp.ID}
 		case core.OpBorrowExclusive:
 			if derivedAccess == "" {
 				derivedAccess = "exclusive"

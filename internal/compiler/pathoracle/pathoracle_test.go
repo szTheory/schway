@@ -80,6 +80,69 @@ func checkedFunction(t *testing.T, fixture string) core.Function {
 	return result.Program.Functions[0]
 }
 
+func TestPhase19ConstantPathRoots(t *testing.T) {
+	source := []byte("module phase19.constant_path\nexport {\n  type Choice\n  fn select\n}\ndata Choice =\n  | Left\n  | Right\nfn select(input: Choice) -> Choice {\n  let view = borrow input\n  let prefix = 42\n  let computed = input\n  match computed {\n    Left => {\n      let arm = 7\n      computed\n    }\n    Right => {\n      computed\n    }\n  }\n}\n")
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("constant path source failed to parse: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("constant path source failed admission: %+v", checked.Diagnostics)
+	}
+	if validated := corevalidate.Validate(checked.Program); !validated.Valid {
+		t.Fatalf("corevalidate rejected constant path witness: %+v", validated.Problems)
+	}
+	function := checked.Program.Functions[0]
+	constants := 0
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpConst {
+			constants++
+			if operation.SourceID != "" {
+				t.Fatalf("constant acquired a source place: %+v", operation)
+			}
+		}
+	}
+	if constants != 2 {
+		t.Fatalf("expected entry-prefix and arm constants, got %d in %+v", constants, function.Linear.Operations)
+	}
+	endpoints, _, err := pathoracle.RecomputeEndpoints(function, nil)
+	if err != nil {
+		t.Fatalf("path traversal failed at source-free constants: %v", err)
+	}
+	mutated := checked.Program
+	mutated.Functions = append([]core.Function(nil), checked.Program.Functions...)
+	mutatedFunction := mutated.Functions[0]
+	mutatedLinear := *mutatedFunction.Linear
+	mutatedLinear.Operations = append([]core.LinearOperation(nil), mutatedFunction.Linear.Operations...)
+	var viewID string
+	constIndex := -1
+	for index, operation := range mutatedLinear.Operations {
+		if operation.Kind == core.OpBorrowShared {
+			viewID = operation.TargetID
+		}
+		if operation.Kind == core.OpConst {
+			constIndex = index
+		}
+	}
+	if viewID == "" || constIndex < 0 {
+		t.Fatalf("mutation witness lacks borrow or constant: %+v", mutatedLinear.Operations)
+	}
+	mutatedLinear.Operations[constIndex].SourceID = viewID
+	mutatedFunction.Linear = &mutatedLinear
+	mutated.Functions[0] = mutatedFunction
+	if admitted := corevalidate.Validate(mutated); admitted.Valid {
+		t.Fatal("corevalidate admitted a source-bearing OpConst")
+	}
+	mutatedEndpoints, _, err := pathoracle.RecomputeEndpoints(mutatedFunction, nil)
+	if err != nil {
+		t.Fatalf("path traversal followed a forged constant source: %v", err)
+	}
+	if !reflect.DeepEqual(mutatedEndpoints, endpoints) {
+		t.Fatalf("constant source mutation changed inherited loan endpoints: before=%+v after=%+v", endpoints, mutatedEndpoints)
+	}
+}
+
 // pathOracleForbiddenImports is pathoracle's own five-entry forbidden set
 // (T-03-13): the repo's most complete such list, covering check,
 // corevalidate, ast, interp, and cgen. 10-03 Task 3 hardens the MECHANISM

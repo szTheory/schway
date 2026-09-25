@@ -314,7 +314,14 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 			if isTerminatorKind(operation.Kind) {
 				sawTerminator = true
 			}
-			inherited := chain[operation.SourceID]
+			// OpConst is a fresh root: it has no source place and cannot
+			// inherit a loan, even if a malformed artifact supplies SourceID.
+			// Admission rejects that field; this peer independently keeps the
+			// constant source-free while traversing checked core.
+			var inherited []string
+			if operation.Kind != core.OpConst {
+				inherited = chain[operation.SourceID]
+			}
 			for _, loanID := range inherited {
 				state, known := states[loanID]
 				if !known {
@@ -330,7 +337,9 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 				}
 				inherited = append(append([]string(nil), inherited...), operation.LoanID)
 			}
-			if operation.TargetID != "" && len(inherited) > 0 {
+			if operation.Kind == core.OpConst && operation.TargetID != "" {
+				chain[operation.TargetID] = nil
+			} else if operation.TargetID != "" && len(inherited) > 0 {
 				chain[operation.TargetID] = inherited
 			}
 		}
