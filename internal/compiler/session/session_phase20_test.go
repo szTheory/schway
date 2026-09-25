@@ -33,6 +33,17 @@ func TestPhase20ChecksumFrontier(t *testing.T) {
 	if first.Code != "syntax.expected_rbrace" || first.Primary.Start != 521 || first.Primary.End != 527 {
 		t.Fatalf("current checksum refusal moved: got code=%q span=%+v", first.Code, first.Primary)
 	}
+	// This is a historical reconstruction, not a contemporaneous M003-open
+	// fixture pin. The baseline checker at d21db90 refused these exact bytes
+	// at the numeric literal; current checking reaches the unsupported loop.
+	const historicalRevision = "d21db90e67750bb19976c4206f4c23c68cd06207"
+	historical := struct {
+		code       string
+		start, end int
+	}{code: "syntax.unexpected_byte", start: 512, end: 513}
+	if first.Code == historical.code && first.Primary.Start == historical.start && first.Primary.End == historical.end {
+		t.Fatalf("checksum refusal did not move from M003-open %s (%s) at %d-%d", historicalRevision, historical.code, historical.start, historical.end)
+	}
 }
 
 func phase20SHA256(source []byte) string {

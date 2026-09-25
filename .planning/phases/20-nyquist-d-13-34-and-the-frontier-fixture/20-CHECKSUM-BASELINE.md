@@ -58,3 +58,13 @@ Historical revision: `d21db90e67750bb19976c4206f4c23c68cd06207` (`docs: start mi
 Both checker commands returned an invalid status, as expected. The historical checker also reported `syntax.expected_binding_source` at 512–513. The current checker also reported `syntax.expected_declaration` after the loop token. The first diagnostic moved from the numeric literal to the loop token for identical bytes. The historical first diagnostic ID was `diagnostic:f2a608b0eae7b9231352194d`; the current first diagnostic ID was `diagnostic:b301b1842cc7471a3b2002a9`.
 
 **Evidence limit:** this demonstrates movement relative to the M003-open compiler, not movement relative to a contemporaneously pinned fixture. If Plan 20-01 changes any source byte or the checked-in fixture's first diagnostic differs, it must replay both checker revisions and update this record and its test from actual output before claiming the gate.
+
+## Plan 20-01 pinned comparison
+
+`TestPhase20ChecksumFrontier` binds its current refusal assertion to the fixture
+digest above and records the reconstructed historical identity as
+`d21db90e67750bb19976c4206f4c23c68cd06207` + `syntax.unexpected_byte` at
+512–513. It independently asserts the current production check returns
+`syntax.expected_rbrace` at 521–527 and that these identities differ. No
+original M003-open checksum fixture or diagnostic pin existed; this test uses
+the later historical replay, not an invented contemporaneous baseline.
