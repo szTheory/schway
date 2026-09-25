@@ -1,9 +1,9 @@
 {
   "schema": "phase16-validation-corpus-run-record/v1",
-  "revision": "e359f17",
+  "revision": "aa13977",
   "pair_digest_sha256": "580587ae5b1763daf70b774a5dc862e076f023ec3674a1e22e639355285c3465",
-  "record_digest_sha256": "3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940",
+  "record_digest_sha256": "a1db41c803d69ceb7650f0adfce818c532f953bf664e8674e509eb57814c8a63",
   "completed": true,
-  "produced_at": "2026-09-25T06:26:40.584Z",
-  "elapsed": "439.585s"
+  "produced_at": "2026-09-25T06:44:34.501Z",
+  "elapsed": "142.108s"
 }

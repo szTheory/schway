@@ -16,10 +16,10 @@ affects: [20-08, 20-06, QLT-10, PRC-02]
 actuals:
   tasks: 2
   pairs: 33
-  recorder_elapsed: 439.585s
+  recorder_elapsed: 142.108s
   failed_pairs: 0
 plan_head_before: e359f17
-commits: [01485e5]
+commits: [01485e5, aa13977]
 key-files:
   created: []
   modified:
@@ -43,12 +43,13 @@ completed: 2026-09-25
 
 # Phase 20 Plan 10: Record the Exact Validation Corpus
 
-The final post-reconciliation archive contains 33 exact package-pattern pairs. The sequential recorder completed in 439.585 seconds with 33 pair-completion sentinels, one batch-completion sentinel, and no test or build failures. The manifest records source revision `e359f17`, the raw pair-export SHA-256 `580587ae5b1763daf70b774a5dc862e076f023ec3674a1e22e639355285c3465`, and run-record SHA-256 `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940`.
+The final post-reconciliation archive contains 33 exact package-pattern pairs. After the full-suite gate exposed a stale M004 test callsite, the provenance guard was aligned with the live `EmitNative` call and the corpus was regenerated. The final sequential recorder completed in 142.108 seconds with 33 pair-completion sentinels, one batch-completion sentinel, and no test or build failures. The manifest records source revision `aa13977`, the raw pair-export SHA-256 `580587ae5b1763daf70b774a5dc862e076f023ec3674a1e22e639355285c3465`, and run-record SHA-256 `a1db41c803d69ceb7650f0adfce818c532f953bf664e8674e509eb57814c8a63`.
 
 ## Accomplishments
 
 - Replaced the older corpus artifact with the complete run record and updated its provenance manifest.
 - Corrected validation row 20-04-01 to name the exact targeted native/cache test pattern, then regenerated the corpus from that row set.
+- Aligned the M004 provenance guard with the refreshed emitter inventory's live `EmitNative` callsite at line 501.
 - Added record revision and digest corroboration to D-14-50/51/52/54.
 - Confirmed the unreachable-claims view remains byte-identical to the test renderer after the debt detail updates.
 - Updated the Phase 20 validation map and plan-check inventory for this plan's actual six-file scope.
