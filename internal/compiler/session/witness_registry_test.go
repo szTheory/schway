@@ -298,7 +298,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 	for _, call := range []string{
 		"internal/compiler/cgen/cgen_test.go:Emit:193",
 		"internal/compiler/native/foreign_retained_test.go:EmitNative:48",
-		"internal/compiler/session/session_phase5_corpus_test.go:EmitNative:468",
+		"internal/compiler/session/session_phase5_corpus_test.go:EmitNative:501",
 	} {
 		if !refusalCalls[call] {
 			problems = append(problems, "M004 control was reclassified without provenance: "+call)
