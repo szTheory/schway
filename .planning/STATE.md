@@ -654,7 +654,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260924-tsl | Fix Phase 19 full-suite regressions | 2026-09-24 | ed237ab | passed | [260924-tsl-fix-phase-19-full-suite-regressions-refr](./quick/260924-tsl-fix-phase-19-full-suite-regressions-refr/) |
 | 8 | Complete Phase 18 automated UAT with zero manual checks | 2026-09-25 | dfa5598 | passed | — |
 | 9 | Record GSD no-loop rule: compare routed command inputs and state transitions before rerun; resolve unchanged blockers rather than repeating commands. | 2026-09-25 | 550bd0f | — | — |
-| 10 | Refresh stale Phase 15 and 19 verification and route GSD to Phase 21 | 2026-09-25 | f4ea9f7 | — | — |
+| 10 | Refresh stale Phase 15 and 19 verification and route GSD to Phase 21 | 2026-09-25 | 0124de9 | passed | — |
 
 ## Deferred Items
 
