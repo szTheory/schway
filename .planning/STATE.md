@@ -4,17 +4,17 @@ milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 19
 current_phase_name: Numeric Literals and OpConst
-status: executing
-stopped_at: Completed 19-06-PLAN.md
-last_updated: "2026-09-25T00:48:59.610Z"
+status: verifying
+stopped_at: Completed 19-07-PLAN.md
+last_updated: "2026-09-25T01:08:11.538Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 19 execution started
-state_head: 858e48211210acb19f0cbfe8a1169ed128ce4924
+state_head: c9232a79b84566f948d871c961c44cca78b136e5
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 73
-  completed_plans: 72
+  completed_plans: 73
 ---
 
 # Project State
@@ -60,7 +60,7 @@ Phase 20.
 
 Phase: 19 (Numeric Literals and OpConst) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-24 — Phase 19 execution started
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
@@ -334,6 +334,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 19 P4 | 10m | 2 tasks | 7 files |
 | Phase 19 P05 | 13min | 2 tasks | 8 files |
 | Phase 19 P6 | 9min | 2 tasks | 5 files |
+| Phase 19 P07 | 17 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -495,6 +496,8 @@ Standing architectural commitments carried into M002:
 - [Phase 19]: Supplemental branch U64 facts use the type:u64 identity and are independently constrained to zero-argument U64.
 - [Phase 19]: Phase 19-06 emits stdint exact-width support only when the checked program uses U64.
 - [Phase 19]: Native U64 decimal input and JSON string output use checked bounded digit-by-digit conversion.
+- [Phase 19]: Use the existing schema-2 comparison projection for the interpreter before comparing all four execution tiers.
+- [Phase 19]: Keep stale Phase 11 maturity and reconciliation findings as regression debt outside Plan 19-07.
 
 ### Pending Todos
 
@@ -651,8 +654,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T00:48:59.452Z
-Stopped at: Completed 19-06-PLAN.md
+Last session: 2026-09-25T01:08:11.252Z
+Stopped at: Completed 19-07-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
