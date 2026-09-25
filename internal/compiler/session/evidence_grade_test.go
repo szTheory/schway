@@ -1311,6 +1311,8 @@ var validationGradeBarExemptions = map[string]string{
 // you may not rewrite, route it through Task 2's row-scoped narrowing
 // with a debt witness").
 var validationGradeBarRowExemptions = map[string]string{
+	"20-VALIDATION.md:20-08-01": "D-14-128",
+	"20-VALIDATION.md:20-08-02": "D-14-129",
 	"14-VALIDATION.md:14-01-T2": "D-14-123",
 	"14-VALIDATION.md:14-02-T1": "D-14-124",
 	"14-VALIDATION.md:14-02-T2": "D-14-125",
@@ -1396,17 +1398,17 @@ func TestValidationGradeBarRowExemptionsAreOwned(t *testing.T) {
 	})
 
 	t.Run("an entry citing a real row whose cell is UNOWNED is refused, naming the row", func(t *testing.T) {
-		// D-14-45 is a real, currently UNOWNED(...) row in the live register.
-		if cell := register["D-14-45"]; !debtRegisterUnownedPattern.MatchString(cell) {
-			t.Fatalf("fixture assumption broken: D-14-45's Landing phase is %q, no longer UNOWNED(...)", cell)
+		// D-14-46 is a real, currently UNOWNED(...) row in the live register.
+		if cell := register["D-14-46"]; !debtRegisterUnownedPattern.MatchString(cell) {
+			t.Fatalf("fixture assumption broken: D-14-46's Landing phase is %q, no longer UNOWNED(...)", cell)
 		}
-		entries := map[string]string{"synthetic-doc.md:T2": "D-14-45"}
+		entries := map[string]string{"synthetic-doc.md:T2": "D-14-46"}
 		problems := rowExemptionProblems(entries, register)
 		if len(problems) != 1 {
 			t.Fatalf("expected exactly one problem, got %d: %v", len(problems), problems)
 		}
-		if !strings.Contains(problems[0], "D-14-45") {
-			t.Fatalf("problem %q does not name D-14-45", problems[0])
+		if !strings.Contains(problems[0], "D-14-46") {
+			t.Fatalf("problem %q does not name D-14-46", problems[0])
 		}
 	})
 
