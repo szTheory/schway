@@ -108,7 +108,7 @@ status: complete
 3. **Task 2 deviation: Keep the machine probe bounded under race load** - `f8477e8` (`fix`)
 4. **Task 2: Record repeated full-suite evidence** - `5cf3d3f` (`fix`)
 
-**Plan metadata:** recorded in the final GSD close-out commit.
+**Plan metadata:** `ea5d72f` (summary and STATE.md); GSD state snapshot sync: `7122d89`.
 
 ## Files Created/Modified
 
