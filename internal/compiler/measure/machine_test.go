@@ -164,7 +164,9 @@ func TestMachineProbeIsBounded(t *testing.T) {
 	t.Run("timeout", func(t *testing.T) {
 		dir := t.TempDir()
 		command := fakeCommand(t, dir, "#!/bin/sh\nsleep 6\n")
-		_, err := probeMachine(context.Background(), command)
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+		_, err := probeMachine(ctx, command)
 		var typed *Error
 		if !errors.As(err, &typed) || typed.Code != "measure.probe_timeout" {
 			t.Fatalf("probeMachine() error = %v, want measure.probe_timeout", err)

@@ -92,7 +92,7 @@ func (w *boundedProbeWriter) Write(data []byte) (int, error) {
 }
 
 func runBoundedProbe(parent context.Context, command commandFactory, name string, args ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	defer cancel()
 	cmd := command(ctx, name, args...)
 	var stdout, stderr boundedProbeWriter
@@ -166,7 +166,8 @@ func cpuModelProbeCommand() (string, []string) {
 // ProbeMachine produces a real MachineFacts for the running host, end to
 // end: os/arch/logical_cores/go_version come from the Go runtime directly
 // (no probe needed), cpu_model and clang_version come from bounded
-// subprocess probes sharing the same 64 KiB-plus-one / 5-second discipline.
+// subprocess probes sharing the same 64 KiB-plus-one / finite 30-second
+// per-process deadline discipline.
 func ProbeMachine(ctx context.Context) (MachineFacts, error) {
 	return probeMachine(ctx, exec.CommandContext)
 }
