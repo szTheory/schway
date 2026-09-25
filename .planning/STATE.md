@@ -5,10 +5,10 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: verification
-stopped_at: Phase 16 verification passed; Phase 18 is the next stale verification
+stopped_at: Phase 18 gap G-18-16 diagnosed; plan 18-09 verified and ready for gaps-only execution
 last_updated: "2026-09-25T16:07:38Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 16 verification passed; routed to Phase 18 verification
+last_activity_desc: Phase 18 automated verification found G-18-16; gap plan 18-09 passed independent plan check
 state_head: ea38f6fde671474d2a74d0522381048079e7c1ab
 progress:
   total_phases: 7
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phases 15, 16, 17, and 20 are verified complete. Phase 18 is the next stale verification, followed by Phase 19. Phase 20 has all ten plans executed, its four requirements verified, and the full repository Go suite passing. Resume with `$gsd-verify-work 18`; milestone closeout follows after both remaining stale verification gates are resolved.
+**Current focus:** Phases 15, 16, 17, and 20 are verified complete. Phase 18's product criteria are automatically covered; UAT diagnosed G-18-16 because unrestricted parallel full-suite runs failed twice while serialized and `-p=4` runs passed. Plan 18-09 is independently checked and ready to close that reliability gap. Phase 19 still has stale verification. Resume with `$gsd-execute-phase 18 --gaps-only`; then rerun phase 18 verification and continue to Phase 19.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -50,15 +50,15 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 18 — Branch on a Computed Value
-Plan: 8 of 8 (verification stale)
-Total Plans in Phase: 8
-Status: Verification required
-Last activity: 2026-09-25 — Phase 16 verification passed; routed to Phase 18 verification
+Plan: 8 of 9 (gap plan 18-09 ready; G-18-16 unresolved)
+Total Plans in Phase: 9
+Status: Gap closure planned; execution required
+Last activity: 2026-09-25 — Phase 18 gap plan 18-09 passed independent plan check
 Phase 19 still has a stale verification report. Phase 20 is verified complete; its 33-pair archive grades
 cleanly, the current open-unowned debt set is four, and the full repository
 suite passes.
 
-**Next:** `$gsd-verify-work 18` — refresh the earliest stale verification report.
+**Next:** `$gsd-execute-phase 18 --gaps-only` — execute the verified G-18-16 reliability fix plan.
 
 ## M003 Phase Map
 
