@@ -84,9 +84,9 @@ and multi-function fixtures now exist for Phases 07, 08, and 10. The shape is
 still fixtures, not programs: every one exists to exercise one admission rule,
 and the biggest file is mostly comment.
 
-Corpus at re-assessment (2026-09-24, Phase 18 fixture-era check): **137 `.lang` programs, 4,572 lines total** (~33 lines average, 193-line maximum). The corpus has grown since the previous machine-verified snapshot; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
+Corpus at re-assessment (2026-09-24, Phase 19 fixture-era check): **140 `.lang` programs, 4,602 lines total** (~33 lines average, 193-line maximum). The corpus has grown since the previous machine-verified snapshot; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
 
-## The single-function guard inventory (re-verified 2026-09-24, Phase 18 fixture-era check)
+## The single-function guard inventory (re-verified 2026-09-24, Phase 19 fixture-era check)
 
 Phases 07-10 made `OpCall` real in `check`, `corevalidate`, `originvalidate`,
 `pathoracle`, and (internally, via Go tests) `interp`. A two-function program
@@ -99,7 +99,7 @@ go run ./cmd/lang run --engine=native      testdata/…/call_basic.lang  # opera
 ```
 
 It cannot be executed by either engine. The refusal is **not** confined to the
-two `cgen` entry points the roadmap names. A non-test scan finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (46 including tests):
+two `cgen` entry points the roadmap names. A non-test scan finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (49 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|
