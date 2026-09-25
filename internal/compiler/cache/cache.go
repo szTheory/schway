@@ -52,12 +52,17 @@ const (
 	MaxMetaBytes     = 1 << 20
 )
 
-// Error is this package's stable typed failure, matching the {Code}-only
-// shape evidence.ValidationError/debugmap.Error already use, so callers can
-// dispatch on Code identically.
-type Error struct{ Code string }
+// Error is this package's stable typed failure, matching the Code field
+// evidence.ValidationError/debugmap.Error expose. Cause optionally retains a
+// lower-level failure for callers that need to inspect why an operation was
+// refused without changing the stable public code or message.
+type Error struct {
+	Code  string
+	Cause error
+}
 
 func (e *Error) Error() string { return e.Code }
+func (e *Error) Unwrap() error { return e.Cause }
 
 // Input is one declared input feeding a cache key (D-06-07): a named,
 // digested fact about what produced an artifact. Digest is a content

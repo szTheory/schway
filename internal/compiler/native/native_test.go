@@ -401,6 +401,10 @@ func TestNativeStreamsIndependentlyBounded(t *testing.T) {
 // stages -- never native.compile_failed or native.run_failed, which would
 // misreport a hang as a compile/run defect rather than a deadline.
 func TestNativeTimeoutHasFalsifier(t *testing.T) {
+	if got := DefaultRunner().Timeout; got != 30*time.Second {
+		t.Fatalf("DefaultRunner timeout = %s, want finite 30s per subprocess", got)
+	}
+
 	tests := []struct {
 		name  string
 		mode  string

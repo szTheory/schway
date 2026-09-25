@@ -26,6 +26,8 @@ import (
 
 const MaxStreamBytes = 64 * 1024
 
+const defaultSubprocessTimeout = 30 * time.Second
+
 type ToolError struct {
 	Code string
 	Err  error
@@ -147,7 +149,7 @@ func (r Runner) recordBinary(path string) {
 	r.recorder.mu.Unlock()
 }
 
-func DefaultRunner() Runner { return Runner{ClangPath: "clang", Timeout: 5 * time.Second} }
+func DefaultRunner() Runner { return Runner{ClangPath: "clang", Timeout: defaultSubprocessTimeout} }
 
 var clangTokenPattern = regexp.MustCompile(`"(?:[^"\\]|\\.)*"|\S+`)
 
@@ -404,7 +406,7 @@ func normalizeDriverCommands(output, sourcePath string) (string, bool) {
 func (r Runner) probe(parent context.Context, name string, args ...string) (string, bool) {
 	timeout := r.Timeout
 	if timeout <= 0 {
-		timeout = 5 * time.Second
+		timeout = defaultSubprocessTimeout
 	}
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
@@ -457,7 +459,7 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 		r.ClangPath = "clang"
 	}
 	if r.Timeout <= 0 {
-		r.Timeout = 5 * time.Second
+		r.Timeout = defaultSubprocessTimeout
 	}
 	directory, err := os.MkdirTemp("", "lang-native-")
 	if err != nil {
@@ -656,7 +658,7 @@ func (r Runner) CompileConformanceUnit(parent context.Context, source string) er
 		r.ClangPath = "clang"
 	}
 	if r.Timeout <= 0 {
-		r.Timeout = 5 * time.Second
+		r.Timeout = defaultSubprocessTimeout
 	}
 	directory, err := os.MkdirTemp("", "lang-conformance-")
 	if err != nil {

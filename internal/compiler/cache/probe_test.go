@@ -258,10 +258,18 @@ func TestCacheProbeFailureCause(t *testing.T) {
 			content:  "#!/bin/sh\nexit 23\n",
 			wantCode: "cache.probe_failed",
 		},
+		{
+			name:     "command unresolved",
+			wantCode: "cache.probe_unresolved",
+		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			spec := baseArtifactSpec(t)
-			spec.ClangPath = writeExecutableFixture(t, t.TempDir(), testCase.content)
+			if testCase.content != "" {
+				spec.ClangPath = writeExecutableFixture(t, t.TempDir(), testCase.content)
+			} else {
+				spec.ClangPath = filepath.Join(t.TempDir(), "missing-clang")
+			}
 			ctx := context.Background()
 			if testCase.deadline > 0 {
 				var cancel context.CancelFunc

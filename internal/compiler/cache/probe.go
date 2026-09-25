@@ -170,7 +170,7 @@ func InputsFor(ctx context.Context, spec ArtifactSpec) ([]Input, error) {
 
 	clangDigest, err := ProbeClangIdentity(ctx, spec.ClangPath)
 	if err != nil {
-		return nil, &Error{Code: "cache.input_undeclared"}
+		return nil, &Error{Code: "cache.input_undeclared", Cause: err}
 	}
 	byName["clang_identity"] = clangDigest
 
@@ -245,7 +245,7 @@ func (w *boundedProbeWriter) Write(data []byte) (int, error) {
 // output, so a Clang change that leaves the reported version string
 // unchanged (D-06-13 hole 2, the ccache __TIME__-class footgun) still moves
 // the resulting digest. The probe itself reuses the 64 KiB-plus-one bounded
-// writer and 5-second deadline every other tool-identity probe in this
+// writer and finite 30-second deadline every other tool-identity probe in this
 // project uses (evidence.runToolProbe's structure, duplicated rather than
 // imported per this package's dependency-free-leaf convention).
 func ProbeClangIdentity(ctx context.Context, clangPath string) (string, error) {
@@ -286,7 +286,7 @@ func resolveClangBinaryBytes(clangPath string) ([]byte, error) {
 }
 
 func runBoundedProbe(parent context.Context, command commandFactory, name string, args ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	defer cancel()
 	cmd := command(ctx, name, args...)
 	var stdout, stderr boundedProbeWriter
