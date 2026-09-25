@@ -55,7 +55,7 @@ Decimal, hexadecimal, and binary integer spellings now survive lexing, parsing, 
 1. **Task 1: Tokenize complete numeric spellings and reject malformed tails** - `d8ea2ea` (RED tests), `7ca8e6f` (implementation), `3d43d67` (Unicode suffix boundary fix)
 2. **Task 2: Parse literal bindings and preserve spellings under canonical format** - `7b82507` (RED tests), `2b72d15` (implementation)
 
-**Plan metadata:** pending final close-out commit.
+**Plan metadata:** `99d73ad` (docs: complete plan).
 
 ## Files Created/Modified
 
