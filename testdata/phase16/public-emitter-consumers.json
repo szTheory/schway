@@ -321,7 +321,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase6_injectors_test.go:EmitNative:497",
+      "call": "internal/compiler/session/session_phase6_injectors_test.go:EmitNative:459",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },

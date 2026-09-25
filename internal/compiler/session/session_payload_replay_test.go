@@ -122,9 +122,9 @@ var payloadCorpusBaseline = map[string]string{
 	"testdata/phase6/derivation_borrow_defect.lang":                "445ecaee7c936364a24802766f29d423a790ed537d8a3e67e62a34dbc03484ab",
 	"testdata/phase6/derivation_match_defect.lang":                 "3d31038add620c9f3d6ec0bd32d677a83436f9ebe5a878aa2d3066f3ac8e52eb",
 	"testdata/phase6/derivation_move_defect.lang":                  "d875445991a257506e5eece10afac4c3036fae8db670b374c7c9e374bec5e981",
-	"testdata/phase6/heldout_borrow_defect.lang":                   "f9c15a75e19ba71ba2d8106325e38edd2272e4333dbeb4841dd27dc702f7bfee",
+	"testdata/phase6/heldout_borrow_defect.lang":                   "bb20c5bf97e624e6d993920b40d81cba4b93c7cd9beed0c36e13fbe492125e4c",
 	"testdata/phase6/heldout_match_defect.lang":                    "3e054420dbb9907f7245d33bfe6e80a8b14f20932846dda5135f599929eb1d7d",
-	"testdata/phase6/heldout_move_defect.lang":                     "547cebbad44dba78b938abadd14d6e7b841d48ec98a1cb7b7a09e28b6cc02e8f",
+	"testdata/phase6/heldout_move_defect.lang":                     "91eb15080636142a8264eab31ae26efd2720638c070de0b2f34efdd64a2650c7",
 	"testdata/phase6/stale_evidence_subject.lang":                  "d0c214b7fbf9a97f5c9fbc6b0b311877ae8544a4e306e5b1421cb50c65197cd8",
 }
 

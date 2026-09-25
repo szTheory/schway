@@ -17,13 +17,12 @@ register: an `items:` count matching the `## Items` table, one `### <ID>` detail
 section per row, a severity from the closed vocabulary (blocker, warning, info),
 and a non-empty landing phase.
 
-This register carries three ratified terminal findings, all decided by the
-developer at plan 13-07's blocking-human checkpoints rather than absorbed
-silently: D-13-02b (DX-06's B1 contract-violation blame is structurally
-unreachable at this language maturity), D-13-10a (`use_matching_argument`
-withdrawn as unrepairable, narrowing DX-07 to two classes), and D-13-34
-(M001's own `testdata/phase6` move/borrow class pairs fail the retro-strengthened
-structural distinctness predicate D-13-33 required).
+This register preserves two ratified terminal findings and one later-resolved
+finding. D-13-02b records DX-06's structurally unreachable B1 contract-violation
+blame at this language maturity; D-13-10a records `use_matching_argument`
+withdrawn as unrepairable, narrowing DX-07 to two classes; D-13-34 records the
+M001 move/borrow alpha-rename weakness found by D-13-33 and its replacement
+closure in M003 Phase 20.
 
 ---
 
@@ -33,7 +32,7 @@ structural distinctness predicate D-13-33 required).
 |---|---|---|---|---|---|---|---|
 | D-13-02b | 13-CONTEXT.md (D-13-02b), established by 13-04, ratified at plan 07's checkpoint on the D-12-43 precedent | DX-06 | warning | P17 | WIRED | probe:TestPhase17B1RequiresUnverifiableDeclaredContract, callsite:internal/compiler/check.resolveBlame=0 | B1 (CONTRACT-VIOLATION BLAME) IS STRUCTURALLY UNREACHABLE IN PRODUCTION AT THIS LANGUAGE MATURITY. `sameType(function.ReturnType, function.Parameter.Type)` is enforced as an admission precondition on every function (`internal/compiler/check/check.go:255`, `:3148`, `:3399`), independent of any call — a callee whose own body contradicts its own declared contract is refused before the interprocedural pass could ever reach it. This is a structural property of the checker's ordering, not a gap in the fixture corpus. The contract-boundary rule (`resolveBlame`/`resolveCycleBlame`) is implemented, exhaustively unit-tested, and correct, and remains ready for the first B1-shaped class. Criterion 3's twin pair (`D-13-28`) genuinely discriminates detection-site blame from caller blame, which is real and useful, but does not exercise the contract-boundary rule's distinctive claim; DX-06 is reported as partially met rather than absorbed as fully met. The Phase 13 probe was superseded by Phase 17's `TestPhase17B1RequiresUnverifiableDeclaredContract`, which tests the current user-declared contract boundary and preserves the original finding's successor provenance |
 | D-13-10a | 13-CONTEXT.md (D-13-10a), found empirically by plan 13-05, ratified at plan 07's checkpoint | DX-07 | warning | P17 | DEFINED (withdrawn) | probe:TestPhase17B1RequiresUnverifiableDeclaredContract | `USE_MATCHING_ARGUMENT` IS WITHDRAWN AS UNREPAIRABLE AT THIS LANGUAGE MATURITY, NARROWING DX-07 TO TWO GENUINELY REPAIRABLE CLASSES. Every Lang function has exactly one parameter and one type fact, so every initialized in-scope place at a call-argument-type-mismatch site shares that one constructor — the unique match the uniqueness gate (D-13-10) could ever find is always the argument's own already-passed place, so the emitted `Replacement` reproduces the original token byte-for-byte. A no-op splice cannot make a mismatched program re-check clean; the driver reports `unrepairable`, not `repaired`. DX-07 ships with two classes instead of three: `move_after_interprocedural_loan` (backward direction only, per D-13-09b) and `wrap_call_in_try`. ROADMAP's scope-cut note already sanctions narrowing to "the two highest-value defect classes," though its stated trigger (phases 07-12 overrunning) did not occur — this is a different and better-evidenced reason. The former Phase 13 witness was retired when Phase 17 replaced that probe with `TestPhase17B1RequiresUnverifiableDeclaredContract`; the generated current view excludes this closed row |
-| D-13-34 | 13-07-PLAN.md Task 1, adjudicated Option B at plan 07's `gate="blocking-human"` checkpoint | M001 held-out evidence integrity (no live M002 requirement; the retro-strengthening obligation is D-13-33) | warning | UNOWNED(probe:TestPhase6HeldoutPairsAreAlphaRenamesOnly) | WIRED | probe:TestPhase6HeldoutPairsAreAlphaRenamesOnly | M001'S `testdata/phase6` MOVE AND BORROW CLASS PAIRS ARE STRUCTURALLY IDENTICAL UNDER THE RETRO-STRENGTHENED PREDICATE D-13-33 REQUIRED — a real hole in shipped M001 evidence, surfaced rather than weakened away. `TestPhase6DefectCorpusIsHeldOut`'s new structural predicate `(bindingCount, matchArmCount, borrowCount, takeCount, maxDepth)` found the `move` pair (`heldout_move_defect.lang` / `derivation_move_defect.lang`) and the `borrow` pair (`heldout_borrow_defect.lang` / `derivation_borrow_defect.lang`) identical on all five components — the pairs differ only in identifier spelling (`item`→`buffer`, `moved_once`→`delivered` for move; `item`→`buffer`, `alpha`/`beta`→`first`/`second` for borrow), exactly the alpha-rename weakness D-13-33 named. Byte-inequality passed on both pairs and always would have. Only the `match` class pair is structurally distinct (3 arms vs 2). Developer ratified **Option B**: leave the strengthened predicate in place, do not edit the shipped `testdata/phase6/` fixtures, and record this as permanent M001 evidence debt rather than closing it inside a Phase 13 budget (option C, replacement fixtures) or reversing the deliberately-chosen stricter scope (option D, scoping the predicate down to `testdata/phase13` only) |
+| D-13-34 | 13-07-PLAN.md Task 1, initially adjudicated Option B; replaced by M003 Phase 20 on 2026-09-25 at the user's explicit choice | M001 held-out evidence integrity (no live M002 requirement; retro-strengthening obligation D-13-33) | warning | CLOSED(4658eb1) | EXERCISED | probe:TestPhase6HeldoutPairsAreStructurallyDistinct | M001'S ORIGINAL MOVE/BORROW HELD-OUT PAIRS WERE ALPHA-RENAME ONLY, AS D-13-33'S FIVE-FIELD STRUCTURAL PREDICATE FOUND. On 2026-09-25 the user selected replacement fixtures in M003 Phase 20. The held-out move summary is now `{bindingCount:3, matchArmCount:0, borrowCount:0, takeCount:3, maxDepth:1}` versus derivation `{bindingCount:2, matchArmCount:0, borrowCount:0, takeCount:2, maxDepth:1}`; held-out borrow is `{bindingCount:4, matchArmCount:0, borrowCount:4, takeCount:0, maxDepth:1}` versus derivation `{bindingCount:3, matchArmCount:0, borrowCount:3, takeCount:0, maxDepth:1}`. All three fixture pairs now differ structurally; existing injectors still produce the intended single ownership defect. D-06-29 structural separation inference is restored for move and borrow while its small-corpus limitation remains.
 
 ## Detail
 
@@ -118,60 +117,29 @@ single-type-per-function invariant relaxes (this language currently admits
 exactly one parameter and one type fact per function; a future generics or
 multi-parameter surface could reintroduce a genuine uniqueness question).
 
-### D-13-34 — `testdata/phase6` move and borrow class pairs fail the retro-strengthened structural predicate — RATIFIED (plan 07)
+### D-13-34 — `testdata/phase6` move and borrow held-out pairs — CLOSED (M003 Phase 20)
 
 first-recorded: M002
+closed: 2026-09-25
 
-Plan 13-07 Task 1 replaced `TestPhase6DefectCorpusIsHeldOut`'s
-byte-inequality-only assertion with an identifier-independent structural
-predicate — `(bindingCount, matchArmCount, borrowCount, takeCount, maxDepth)`,
-computed from the parsed program — per D-13-33's instruction to
-retro-strengthen M001's own held-out distinctness control, not only Phase
-13's. `testdata/phase6` has zero interprocedural fixtures (verified by
-directory listing, 13-RESEARCH.md Sec.7), so D-13-26's topology triple
-degenerates completely there; this intraprocedural predicate is the mandatory
-weaker substitute.
+Plan 13-07 strengthened `TestPhase6DefectCorpusIsHeldOut` with the
+identifier-independent five-component predicate required by D-13-33. Its
+measured finding was real: the original move and borrow pairs were
+structurally identical, despite byte inequality. The Phase 13 developer
+checkpoint initially ratified keeping those fixtures as evidence debt
+(Option B).
 
-**Measured result, run and recorded rather than assumed:**
+At the Phase 20 blocking-human checkpoint, the user selected **replace**.
+The held-out move fixture now adds a third take hop and keeps the injector
+marker on that hop; the held-out borrow fixture adds a reborrow after the
+marked shared borrow. The derivation fixtures and predicate are unchanged.
+The probes now require structural inequality for all three classes, with no
+known-identical exceptions or skips. Measured summaries are recorded in
+`20-D-13-34-DECISION.md` and `20-06-SUMMARY.md`; injector and debt-cap evidence
+is recorded there as well.
 
-| Class | heldout summary | derivation summary | Structurally distinct? |
-|-------|------------------|---------------------|--------|
-| match | `{bindingCount:0 matchArmCount:3 borrowCount:0 takeCount:0 maxDepth:1}` | `{bindingCount:0 matchArmCount:2 borrowCount:0 takeCount:0 maxDepth:1}` | Yes — differs on `matchArmCount` |
-| move | `{bindingCount:2 matchArmCount:0 borrowCount:0 takeCount:2 maxDepth:1}` | `{bindingCount:2 matchArmCount:0 borrowCount:0 takeCount:2 maxDepth:1}` | **No — identical on every component** |
-| borrow | `{bindingCount:3 matchArmCount:0 borrowCount:3 takeCount:0 maxDepth:1}` | `{bindingCount:3 matchArmCount:0 borrowCount:3 takeCount:0 maxDepth:1}` | **No — identical on every component** |
-
-Only the `match` pair is structurally distinct. The `move` pair
-(`heldout_move_defect.lang` / `derivation_move_defect.lang`) and the `borrow`
-pair (`heldout_borrow_defect.lang` / `derivation_borrow_defect.lang`) are
-identical on all five components — they differ only in identifier spelling
-(`item`→`buffer`, `moved_once`→`delivered` for move; `item`→`buffer`,
-`alpha`/`beta`→`first`/`second` for borrow), exactly the alpha-rename
-weakness D-13-33 named and the reason byte-inequality alone (which still
-passes on both pairs) was never a real distinctness control.
-
-**`TestPhase6DefectCorpusDistinctnessGuardIsNotInert`** (D-13-30(b)'s required
-mutation kill at intraprocedural scale) confirms the predicate is genuinely
-discriminating, not merely lenient: an alpha-renamed copy of
-`derivation_match_defect.lang` produces a structural summary identical to the
-original, and the real `heldout_match_defect.lang` is structurally distinct
-from `derivation_match_defect.lang` — proving that had the renamed copy been
-submitted as the held-out member, the equality check would have caught it.
-
-**Adjudicated 2026-09-13 at plan 13-07's `gate="blocking-human"` checkpoint —
-Option B, "accept the finding as M001 evidence debt."** Rationale recorded
-verbatim from the developer: authoring replacement M001 fixtures (option C)
-is new M001 work re-opening a shipped milestone's corpus inside a Phase 13
-budget; scoping the predicate down to `testdata/phase13` only (option D)
-would reverse the stricter branch the developer deliberately chose during
-this phase's discussion (13-CONTEXT.md "Specifics"). The strengthened
-predicate stays in place, unweakened; the two failing class-pair assertions
-are explicitly `t.Skip`'d with a reason naming this finding and pointing at
-this debt item; the `match` class assertion and
-`TestPhase6DefectCorpusDistinctnessGuardIsNotInert` continue to run and pass.
-No `testdata/phase6/` fixture was edited (`git diff --quiet -- testdata/phase6/`
-exits 0).
-
-**Reopening condition:** a future plan authors replacement `testdata/phase6`
-move/borrow fixtures with genuinely distinct structure (option C), or needs to
-reason about M001's held-out evidence for those two classes for some other
-reason. No phase currently owns this.
+D-06-29's structural separation inference is restored for move and borrow.
+Its residual limit remains explicit: three classes and six fixtures cannot
+establish generalization across the full language program space. The initial
+Option B adjudication remains part of the chronology; this later replacement
+supersedes it. Closure landing commit is recorded in the Phase 20 summary.
