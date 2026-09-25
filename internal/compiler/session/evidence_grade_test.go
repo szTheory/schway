@@ -2048,20 +2048,32 @@ func TestValidationGradeCapArchivedDeadCitationsRemainAbsent(t *testing.T) {
 	}
 }
 
-// TestValidationGradeCapBarePackageRowHasNoNamedTest is D-14-50's witness
-// (12-VALIDATION.md's row 12-04-01): a `go test` cell naming packages but
-// no -run/-list/-fuzz/-bench flag derives WIRED because it names no exact
-// test identifier, not because anything is broken. Re-derives the row's
-// own verbatim evidence text and asserts the ceiling is exactly WIRED, so
-// a future edit that adds a pattern to this cell (which would change the
-// ceiling) is caught here rather than leaving the debt row stale.
+// TestValidationGradeCapBarePackageRowHasNoNamedTest keeps its historical
+// name as a stable witness. It now verifies Phase 12's repaired row against
+// its exact named-test command, rather than preserving the old WIRED ceiling.
 func TestValidationGradeCapBarePackageRowHasNoNamedTest(t *testing.T) {
 	index := buildTestIndex(t)
-	evidence := "go test ./internal/compiler/originvalidate/... ./internal/compiler/corevalidate/... -count=1"
-	ceiling, matched := deriveCeiling(index, nil, evidence)
-	if ceiling != "WIRED" {
-		t.Fatalf("12-VALIDATION.md row 12-04-01's evidence now derives %s (matched %v), not WIRED -- re-grade the debt row", ceiling, matched)
+	data, err := os.ReadFile(testsupport.ProjectPath(".planning", "milestones", "M002-phases", "12-result-payloads", "12-VALIDATION.md"))
+	if err != nil {
+		t.Fatal(err)
 	}
+	text := string(data)
+	_, rows, ok := primaryValidationTable(text)
+	if !ok {
+		t.Fatal("12-VALIDATION.md primary validation table missing")
+	}
+	for _, row := range rows {
+		if rowIdentifier(row) != "12-04-01" {
+			continue
+		}
+		evidence := rowEvidence(row)
+		ceiling, matched := deriveCeiling(index, nil, evidence)
+		if ceiling != "EXERCISED" || len(matched) != 6 {
+			t.Fatalf("12-VALIDATION.md row 12-04-01 evidence derives %s with %v; want EXERCISED over six exact tests (evidence %q)", ceiling, matched, evidence)
+		}
+		return
+	}
+	t.Fatal("12-VALIDATION.md row 12-04-01 not found")
 }
 
 // ---------------------------------------------------------------------
