@@ -13,7 +13,7 @@ affects: [phase-20-plan-07, phase-20-plan-03, validation-archives]
 actuals:
   tokens: 10666
   tasks: 3
-  commits: pending-parent-serialization
+  commits: 1
 tech-stack:
   added: []
   patterns: [live test-name inventory, exact command evidence, partial validation status]
@@ -75,7 +75,7 @@ status: complete
 
 ## Task Commits
 
-Commits are held for parent serialization because Wave 1 executors share one Git index. The parent will fill measured task commit hashes and `actuals.commits` after named-file commits complete.
+- `c4278ea` — validation maps, groundedness note, research snapshot, and this summary.
 
 ## Files Created/Modified
 
@@ -118,7 +118,7 @@ Plan 07 has the exact remaining R2 and the post-edit frontier counts needed to r
 
 ## Self-Check
 
-Summary and five Plan02 implementation files exist; `git diff --check` passes. Task commit existence and measured `actuals.commits` are pending parent serialization and must be completed before marking the commit self-check passed.
+Summary and five Plan02 implementation files exist; `git diff --check` passes. Named-file commit `c4278ea` contains the implementation files and summary.
 
 ---
 *Phase: 20-nyquist-d-13-34-and-the-frontier-fixture*
