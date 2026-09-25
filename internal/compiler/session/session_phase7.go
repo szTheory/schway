@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
@@ -311,7 +312,7 @@ const (
 // accepts (checks clean, bounded) -- a refusing fixture like
 // cycle_self.lang or cycle_mutual.lang must never be added to a list this
 // lane expects a clean check from.
-var phase07DispatchFixtures = []string{"call_basic.lang", "call_from_both_match_arms.lang", "deep_diamond_acyclic.lang"}
+var phase07DispatchFixtures = []string{"call_basic.lang", "call_from_both_match_arms.lang", "deep_diamond_acyclic.lang", "../phase19/literal_tracer.lang"}
 
 // phase07LaneDispatchFixturesOverride and phase07LaneRequiredKindsOverride
 // are Task 3's D-07-41/D-07-42 fault-injection seams for the phase07 lane
@@ -342,7 +343,7 @@ func phase07LaneRequiredKinds() []core.OperationKind {
 	if phase07LaneRequiredKindsOverride != nil {
 		return phase07LaneRequiredKindsOverride
 	}
-	return []core.OperationKind{core.OpCall}
+	return []core.OperationKind{core.OpCall, core.OpConst}
 }
 
 // phase07LinearProbeInput mirrors core_test.go's linearProbeInput: a
@@ -404,6 +405,13 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	corpus := nat03CorpusPath("testdata/phase07")
 	laneStarted := time.Now()
 	encounteredKinds := make(map[core.OperationKind]bool)
+	phase19FixturePresent := false
+	for _, fixture := range phase07LaneDispatchFixtures() {
+		if fixture == "../phase19/literal_tracer.lang" {
+			phase19FixturePresent = true
+		}
+	}
+	phase19ConstObserved := false
 	dispatchWork := 0
 	for _, fixtureName := range phase07LaneDispatchFixtures() {
 		fixtureSource, fixtureErr := readBoundedFile(filepath.Join(corpus, fixtureName), syntax.MaxSourceBytes)
@@ -429,15 +437,33 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			if function.Linear != nil {
 				for _, operation := range function.Linear.Operations {
 					encounteredKinds[operation.Kind] = true
+					if fixtureName == "../phase19/literal_tracer.lang" && operation.Kind == core.OpConst {
+						if operation.SourceID != "" || operation.ConstU64 != "42" || operation.TargetID == "" {
+							addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+							return fail(protocol.StatusInvalid, "verify.control_incomplete", "phase19 OpConst root facts are not canonical")
+						}
+						phase19ConstObserved = true
+					}
 				}
 				if function.Linear.ID != "" {
-					if _, _, oracleErr := pathoracle.RecomputeEndpoints(function, nil); oracleErr != nil {
+					endpoints, _, oracleErr := pathoracle.RecomputeEndpoints(function, nil)
+					if oracleErr != nil {
 						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 						return fail(protocol.StatusOperational, "verify.control_incomplete", "pathoracle dispatch error for "+fixtureName)
 					}
+					if fixtureName == "../phase19/literal_tracer.lang" && len(endpoints) != 0 {
+						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+						return fail(protocol.StatusInvalid, "verify.control_incomplete", "pathoracle treated OpConst as a loan-derived place")
+					}
 				}
 			}
-			_ = originvalidate.RecomputeOriginPerReturn(function, dispatchCalleeContracts)
+			origins := originvalidate.RecomputeOriginPerReturn(function, dispatchCalleeContracts)
+			if fixtureName == "../phase19/literal_tracer.lang" && function.Linear != nil {
+				if len(origins) != 1 || origins[0].Derived {
+					addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+					return fail(protocol.StatusInvalid, "verify.control_incomplete", "originvalidate did not preserve OpConst as an owned root")
+				}
+			}
 			dispatchWork++
 
 			switch {
@@ -452,9 +478,14 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			case function.Linear != nil:
 				input, ok := phase07LinearProbeInput(function)
 				if ok {
-					if _, interpErr := interp.Run(dispatchProgram, function.Name, input); interpErr != nil {
+					run, interpErr := interp.Run(dispatchProgram, function.Name, input)
+					if interpErr != nil {
 						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 						return fail(protocol.StatusOperational, "verify.control_incomplete", "interp dispatch error for "+fixtureName)
+					}
+					if fixtureName == "../phase19/literal_tracer.lang" && run.Outcome.Value != "42" {
+						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+						return fail(protocol.StatusInvalid, "verify.control_incomplete", "interp OpConst result differs from 42")
 					}
 					dispatchWork++
 				}
@@ -467,12 +498,21 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 		// widening this gate would not exercise anything new; NAT-06's
 		// own multi-function differential is a separate, new lane.
 		if len(dispatchProgram.Functions) == 1 {
-			if _, cgenErr := cgen.Emit(dispatchProgram); cgenErr != nil {
+			generated, cgenErr := cgen.Emit(dispatchProgram)
+			if cgenErr != nil {
 				addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 				return fail(protocol.StatusOperational, "verify.control_incomplete", "cgen dispatch error for "+fixtureName)
 			}
+			if fixtureName == "../phase19/literal_tracer.lang" && !strings.Contains(generated, "UINT64_C(42)") {
+				addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+				return fail(protocol.StatusInvalid, "verify.control_incomplete", "cgen did not lower phase19 OpConst")
+			}
 			dispatchWork++
 		}
+	}
+	if phase19FixturePresent && !phase19ConstObserved {
+		addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
+		return fail(protocol.StatusInvalid, "verify.control_missing", "control:kind.exhaustive_dispatch.phase07_lane (phase19 OpConst not observed)")
 	}
 	for _, kind := range phase07LaneRequiredKinds() {
 		if !encounteredKinds[kind] {

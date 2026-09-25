@@ -540,7 +540,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 12 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConstructPayload, OpDestructurePayload
+	const declaredCount = 13 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -617,6 +617,7 @@ var exhaustiveDispatchFixtures = []string{
 	"testdata/phase12/payload_tracer.lang",
 	"testdata/phase12/payload_drop_obligation.lang",
 	"testdata/phase12/payload_borrow_interaction.lang",
+	"testdata/phase19/literal_tracer.lang",
 }
 
 // runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's
@@ -637,6 +638,7 @@ var exhaustiveDispatchFixtures = []string{
 // (Test 1's "mutated" beat).
 func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.OperationKind) error {
 	encountered := make(map[core.OperationKind]bool)
+	phase19ConstObserved := false
 	for _, path := range fixtures {
 		source, err := os.ReadFile(testsupport.ProjectPath(splitPath(path)...))
 		if err != nil {
@@ -660,16 +662,32 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 			if function.Linear != nil {
 				for _, operation := range function.Linear.Operations {
 					encountered[operation.Kind] = true
+					if path == "testdata/phase19/literal_tracer.lang" && operation.Kind == core.OpConst {
+						if operation.SourceID != "" || operation.ConstU64 != "42" || operation.TargetID == "" {
+							return fmt.Errorf("%s: OpConst root facts are not canonical: %+v", path, operation)
+						}
+						phase19ConstObserved = true
+					}
 				}
 				// pathoracle site: must not error while walking.
 				if function.Linear.ID != "" {
-					if _, _, err := pathoracle.RecomputeEndpoints(function, nil); err != nil {
+					endpoints, _, err := pathoracle.RecomputeEndpoints(function, nil)
+					if err != nil {
 						return fmt.Errorf("%s/%s: pathoracle error: %w", path, function.Name, err)
+					}
+					if path == "testdata/phase19/literal_tracer.lang" && len(endpoints) != 0 {
+						return fmt.Errorf("%s/%s: constant root unexpectedly produced loan endpoints: %+v", path, function.Name, endpoints)
 					}
 				}
 			}
 			// originvalidate site: must not crash while walking.
-			_ = originvalidate.RecomputeOriginPerReturn(function, calleeContracts)
+			origins := originvalidate.RecomputeOriginPerReturn(function, calleeContracts)
+			if path == "testdata/phase19/literal_tracer.lang" && function.Linear != nil && len(origins) != 1 {
+				return fmt.Errorf("%s/%s: originvalidate returned %d origins for the constant return, want one", path, function.Name, len(origins))
+			}
+			if path == "testdata/phase19/literal_tracer.lang" && len(origins) == 1 && origins[0].Derived {
+				return fmt.Errorf("%s/%s: originvalidate derived constant return from parameter: %+v", path, function.Name, origins[0])
+			}
 
 			// interp site.
 			switch {
@@ -688,8 +706,12 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 			case function.Linear != nil:
 				input, ok := linearProbeInput(function)
 				if ok {
-					if _, err := interp.Run(program, function.Name, input); err != nil {
+					run, err := interp.Run(program, function.Name, input)
+					if err != nil {
 						return fmt.Errorf("%s/%s: interp error: %w", path, function.Name, err)
+					}
+					if path == "testdata/phase19/literal_tracer.lang" && run.Outcome.Value != "42" {
+						return fmt.Errorf("%s/%s: interpreter returned %q, want 42", path, function.Name, run.Outcome.Value)
 					}
 				}
 			}
@@ -697,13 +719,20 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 
 		// cgen site: Emit requires exactly one function.
 		if len(program.Functions) == 1 {
-			if _, err := cgen.Emit(program); err != nil {
+			generated, err := cgen.Emit(program)
+			if err != nil {
 				if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") || strings.Contains(err.Error(), "by-pointer bodies are not supported") {
 					continue
 				}
 				return fmt.Errorf("%s: cgen error: %w", path, err)
 			}
+			if path == "testdata/phase19/literal_tracer.lang" && !strings.Contains(generated, "UINT64_C(42)") {
+				return fmt.Errorf("%s: cgen output did not lower the encountered OpConst", path)
+			}
 		}
+	}
+	if containsFixture(fixtures, "testdata/phase19/literal_tracer.lang") && !phase19ConstObserved {
+		return fmt.Errorf("testdata/phase19/literal_tracer.lang: no canonical OpConst was observed")
 	}
 	for _, kind := range requiredKinds {
 		if !encountered[kind] {
@@ -711,6 +740,15 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 		}
 	}
 	return nil
+}
+
+func containsFixture(fixtures []string, want string) bool {
+	for _, fixture := range fixtures {
+		if fixture == want {
+			return true
+		}
+	}
+	return false
 }
 
 // TestAllOperationKindsHandledAtEverySite is the control:kind.exhaustive_dispatch

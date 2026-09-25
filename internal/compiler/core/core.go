@@ -822,7 +822,7 @@ const CalleeFrameNotDrained = "core.callee_frame_not_drained"
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConstructPayload, OpDestructurePayload}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
