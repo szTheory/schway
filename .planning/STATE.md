@@ -5,17 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 21
 current_phase_name: Native Emission Ownership and Resource Discharge (M004)
 status: planning
-stopped_at: M003 Phases 14-20 complete; Phase 21 is next and needs discussion
-last_updated: "2026-09-25T21:23:10.705Z"
+stopped_at: Phase 21 context gathered
+last_updated: "2026-09-25T22:00:37.422Z"
 last_activity: 2026-09-25
 last_activity_desc: Refreshed Phase 15 and 19 verification; GSD routes to Phase 21 discussion
-state_head: f4ea9f750eecbabc2c484bd263325fd71eb4debd
+state_head: 115f50dbf7c0ea17c7239e1d13fcc0b245d6e43f
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 84
   completed_plans: 84
-  percent: 86
 ---
 
 # Project State
@@ -668,9 +667,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T21:22:41Z
-Stopped at: M003 Phases 14-20 verified complete; Phase 21 discussion is next
-Resume file: None
+Last session: 2026-09-25T22:00:36.865Z
+Stopped at: Phase 21 context gathered
+Resume file: .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-CONTEXT.md
 Next command: `$gsd-discuss-phase 21`
 
 The notes below predate the close and are kept as durable context a
