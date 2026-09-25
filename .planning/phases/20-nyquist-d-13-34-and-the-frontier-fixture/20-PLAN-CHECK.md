@@ -36,12 +36,20 @@ Independent sign-off confirms that the sequence is sound: Plan 02 records the hi
 
 The historical checksum comparison is accurately bounded: no contemporaneous M003-open fixture pin existed, so Plan 01 reproduces the old checker result for identical bytes and explicitly labels it reconstructed. The cache plan requires a complete input manifest and bypass on undiscoverable inputs, keeps execution/comparison fresh, and records corruption/invalidation controls. The debt plan keeps the audit cohort, live M003 additions, generated-view subset, and raw archive count distinct; it specifies a source-derived 13-item population, evidence-backed disposition path, seeded overflow control, and retains D-13-34 as a blocking human choice. The 11 draft files and the copy-safe VALIDATION command map are covered. All seven plan structures validate; dependencies are acyclic and consistent, each automated task has Files/Action/Verify/Done, and 20-06 preserves the human checkpoint.
 
-### Timing-distribution revision submitted for sign-off
+### Timing-distribution sign-off
 
-Plan 20-04 Task 3 now specifies three paired cold/warm full-suite runs after prewarming a private Go build cache. Every run uses `-count=1`; each pair has a fresh empty closure-artifact cache followed by a warm reuse of that same cache. The helper is bounded to six full-suite invocations and 30 minutes total, with incomplete or failed pairs reported as non-passing evidence. `20-CLOSURE-TIMING.md` must show all six raw samples, min/median/max for cold and warm, paired deltas, exact environment facts, and warm-median comparisons against both Phase 14 references. The validation map now states the same contract. This resolves the sampling concern in the plan text; independent review still needs to confirm it.
+Plan 20-04 Task 3 specifies three paired cold/warm full-suite runs after prewarming a private Go build cache. Every run uses `-count=1`; each pair has a fresh empty closure-artifact cache followed by a warm reuse of that same cache. The helper is bounded to six full-suite invocations and 30 minutes total, with incomplete or failed pairs reported as non-passing evidence. `20-CLOSURE-TIMING.md` must show all six raw samples, min/median/max for cold and warm, paired deltas, exact environment facts, and warm-median comparisons against both Phase 14 references. Phase 14's recorded measurement is a cold `go test ./... -count=1` run on `machine:4797d76b7863` using Go 1.24.0 on darwin/arm64; the plan requires a non-comparable-baseline blocker when host/toolchain conditions differ. Three paired samples provide the requested distributions and expose spread while correctly avoiding a high-confidence percentile claim.
+
+### Verification-direction revision submitted for sign-off
+
+Each of the 18 runnable `<automated>` commands across Plans 20-01 through 20-07 now has an immediately adjacent `<fails_when>` sibling. The statements name non-zero exit or Go's no-tests-selected output and the task's specific rejected condition, including a wrong checksum diagnostic, empty scanner corpus, draft status, cache reuse on changed input, incomplete timing pairs, a seeded sixth debt item, and stale frontier ownership. A read-only command-grounding check confirmed 18 command/direction pairs, shell parsing, and regex parsing; all seven plans passed `frontmatter.validate` and `verify.plan-structure` without warnings. Independent review must still confirm the direction statements satisfy the contract.
 
 ```yaml
 issues_pending_recheck: []
 ```
 
-**Recommendation:** Re-run independent sign-off on the revised timing contract. Preserve the `blocking-human` D-13-34 checkpoint and exact frontier/owner equality at Plan 07.
+### Final structural and command checks
+
+All seven `verify.plan-structure` results are valid with no errors or warnings. The 18 automated rows in `20-VALIDATION.md` each have nine table cells, one intact command code span, and pass `bash -n`; the manual 20-06-02 checkpoint is intentionally absent from automated rows. These checks establish command syntax and table shape, but do not satisfy the missing `<fails_when>` direction.
+
+**Recommendation:** Re-run independent sign-off before execution. Preserve the `blocking-human` D-13-34 checkpoint and exact frontier/owner equality at Plan 07.
