@@ -158,7 +158,7 @@ arithmetic operators, and branching moves to M004.
 - [ ] **VAL-02**: Every operation kind is handled at all six dispatch sites,
       proven by the exhaustive-dispatch control.
 
-- [ ] **VAL-03**: A literal-bearing program agrees across interpreter, `-O0`,
+- [x] **VAL-03**: A literal-bearing program agrees across interpreter, `-O0`,
       `-O3`, and `-O3 -flto`.
 
 ### Quality and Frontier
@@ -248,7 +248,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | CTL-03 | Phase 18 | Complete |
 | VAL-01 | Phase 19 | Complete |
 | VAL-02 | Phase 19 | Pending |
-| VAL-03 | Phase 19 | Pending |
+| VAL-03 | Phase 19 | Complete |
 | QLT-10 | Phase 20 | Pending |
 | QLT-11 | Phase 20 | Pending |
 | QLT-12 | Phase 20 | Pending |
