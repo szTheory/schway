@@ -136,7 +136,7 @@ All Plan 19-07 tasks and VAL-01 through VAL-03 evidence are complete. Phase 19 f
 
 - Summary file exists at the required path.
 - Task commits `881a784` and `c9232a7` exist in Git history.
-- The plan ledger records base `ea6e4f12341acc684f75474c25364ed3cfbf181b`; two task commits are measured between that base and current HEAD.
+- At summary creation, the plan ledger recorded base `ea6e4f12341acc684f75474c25364ed3cfbf181b` and exactly two task commits. The closeout metadata commit is `b667488`.
 
 ---
 *Phase: 19-numeric-literals-and-opconst*
