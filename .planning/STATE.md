@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 19
-current_phase_name: Numeric Literals and OpConst
-status: verifying
-stopped_at: Completed 19-07-PLAN.md
-last_updated: "2026-09-25T01:08:11.538Z"
+current_phase: 20
+current_phase_name: Nyquist, D-13-34, and the Frontier Fixture
+status: planning
+stopped_at: Phase 19 complete, ready to plan Phase 20
+last_updated: "2026-09-25T01:37:32.029Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 19 execution started
-state_head: c9232a79b84566f948d871c961c44cca78b136e5
+last_activity_desc: Phase 19 complete, transitioned to Phase 20
+state_head: b055343fec0aad40c861e9026549dde1dc0d5061
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 73
   completed_plans: 73
+  percent: 86
 ---
 
 # Project State
@@ -26,17 +27,10 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 19 — Numeric Literals and OpConst
-automatically verified (21/21 must-haves; zero human UAT). CTL-01 through
-CTL-03 are complete. The independent core and origin peers validate computed
-branch places and payload provenance; interpreter and native tiers preserve
-returned payload values; the seeded wrong-slot mutation is observed on
-`axis:terminal-outcome`; and the production S-010 source fixture retains its
-bounded point/edge loan behavior. The measured validation record and
-evidence-based CI disposition are in
-`.planning/phases/18-branch-on-a-computed-value/18-VALIDATION.md`.
-M003 remains active; Phase 19 is ready for discussion and planning, followed by
-Phase 20.
+**Current focus:** Phase 20 — Nyquist, D-13-34, and the Frontier Fixture.
+Phase 19 — Numeric Literals and OpConst is complete: all seven plans executed,
+its verifier passed 4/4 roadmap truths, and the full repository Go suite passes.
+M003 remains active; Phase 20 is ready to plan.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -58,10 +52,10 @@ Phase 20.
 
 ## Current Position
 
-Phase: 19 (Numeric Literals and OpConst) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
-Last activity: 2026-09-24 — Completed quick task 260924-tsl: fix Phase 19 full-suite regressions
+Phase: 20 — Nyquist, D-13-34, and the Frontier Fixture
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-24 — Phase 19 complete, transitioned to Phase 20
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -146,7 +140,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 178
+- Total plans completed: 185
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -170,6 +164,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 16 | 26 | - | - |
 | 17 | 9 | - | - |
 | 18 | 8 | - | - |
+| 19 | 7 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -656,7 +651,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-25T01:08:11.252Z
-Stopped at: Completed 19-07-PLAN.md
+Stopped at: Phase 19 complete, ready to plan Phase 20
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

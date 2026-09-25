@@ -31,7 +31,7 @@
     {
       "number": "19",
       "name": "Numeric Literals and `OpConst`",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "20",
@@ -41,8 +41,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 19 of 8 · executing"
+    "label": "Advance to the next step (plan phase 20)",
+    "reason": "Phase 20 of 8 — needs a plan"
   },
-  "updated_at": "2026-09-24T21:48:29.863Z"
+  "updated_at": "2026-09-25T01:37:32.046Z"
 }
