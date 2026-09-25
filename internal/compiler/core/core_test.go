@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -96,6 +97,36 @@ func TestPhase17TwoTypeCoreFacts(t *testing.T) {
 		return
 	}
 	t.Fatal("main has no call operation")
+}
+
+func TestPhase19OpConstShape(t *testing.T) {
+	field, ok := reflect.TypeOf(core.LinearOperation{}).FieldByName("ConstU64")
+	if !ok {
+		t.Fatal("LinearOperation has no ConstU64 semantic payload")
+	}
+	if field.Type.Kind() != reflect.String || field.Tag.Get("json") != "const_u64,omitempty" {
+		t.Fatalf("ConstU64 field has type/tag %s/%q, want string/const_u64,omitempty", field.Type, field.Tag.Get("json"))
+	}
+	operation := core.LinearOperation{ID: "f:op:0", PointID: "f:point:linear:0", Kind: core.OperationKind("const"), TargetID: "f:place:1", TypeID: "f:type:0"}
+	reflect.ValueOf(&operation).Elem().FieldByIndex(field.Index).SetString("0")
+	encoded, err := json.Marshal(operation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded["const_u64"] != "0" {
+		t.Fatalf("OpConst zero payload serialized as %v", decoded["const_u64"])
+	}
+	legacy, err := json.Marshal(core.LinearOperation{ID: "f:op:1", PointID: "f:point:linear:1", Kind: core.OpReturn, SourceID: "f:place:0", TypeID: "f:type:0"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(legacy), "const_u64") {
+		t.Fatalf("unused constant field changed legacy operation JSON: %s", legacy)
+	}
 }
 
 // pinnedFixture is one fixture this pin asserts is byte-identical to its

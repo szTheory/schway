@@ -164,6 +164,20 @@ func TestNegativeWitnessPath(t *testing.T) {
 	}
 }
 
+func TestPhase19U64Ability(t *testing.T) {
+	result, err := Derive(core.TypeRef{Constructor: "U64"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []core.Ability{core.AbilityCopy, core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape}
+	if !reflect.DeepEqual(result.Granted, want) || len(result.NegativeWitnesses) != 0 {
+		t.Fatalf("U64 abilities=%v witnesses=%v, want all scalar abilities %v", result.Granted, result.NegativeWitnesses, want)
+	}
+	if _, err := Derive(core.TypeRef{Constructor: "U64", Arguments: []core.TypeRef{{Constructor: "Byte"}}}); err == nil {
+		t.Fatal("U64 with a type argument was accepted")
+	}
+}
+
 // TestShareIsUniversallyGrantedAfterBufferShare records, as an executable
 // fact, that no source-reachable type withholds share once Buffer grants it.
 // The four constructors are enumerated exhaustively to depth 4: Byte and
