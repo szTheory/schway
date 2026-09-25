@@ -228,7 +228,11 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 	if !found {
 		return Execution{}, fmt.Errorf("branch arm %q references unknown block %q", arm.ID, arm.BlockID)
 	}
-	base := newArmFrame(function, map[string]value{function.Parameter.ID: inputValue(program, function, input)}, arm.BlockID)
+	initial, err := inputValue(program, function, input)
+	if err != nil {
+		return Execution{}, err
+	}
+	base := newArmFrame(function, map[string]value{function.Parameter.ID: initial}, arm.BlockID)
 	return runProgramFrameStack(program, base)
 }
 
@@ -242,7 +246,11 @@ func runBranchArm(program core.Program, function core.Function, arm core.MatchAr
 // partitionFrameForCall helper and runFrameStack driver runLinear and
 // runBranchArm use, rather than a third hand-copied loop.
 func runLinearBlocks(program core.Program, function core.Function, input string) (Execution, error) {
-	base := newBlockFrame(function, map[string]value{function.Parameter.ID: inputValue(program, function, input)}, function.ID+":block:entry")
+	initial, err := inputValue(program, function, input)
+	if err != nil {
+		return Execution{}, err
+	}
+	base := newBlockFrame(function, map[string]value{function.Parameter.ID: initial}, function.ID+":block:entry")
 	return runProgramFrameStack(program, base)
 }
 
@@ -309,14 +317,25 @@ func runLinear(program core.Program, function core.Function, input string) (Exec
 	if len(function.Linear.Blocks) > 0 {
 		return runLinearBlocks(program, function, input)
 	}
-	base := newFlatFrame(function, map[string]value{function.Parameter.ID: inputValue(program, function, input)})
+	initial, err := inputValue(program, function, input)
+	if err != nil {
+		return Execution{}, err
+	}
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
 	return runProgramFrameStack(program, base)
 }
 
 // inputValue mirrors the production emitter's closed test-input convention:
 // data parameters receive the requested alternative and the same canonical
 // payload bytes that native main initializes for that alternative.
-func inputValue(program core.Program, function core.Function, input string) value {
+func inputValue(program core.Program, function core.Function, input string) (value, error) {
+	if function.Parameter.Type == "U64" {
+		parsed, err := strconv.ParseUint(input, 10, 64)
+		if err != nil {
+			return value{}, fmt.Errorf("function %q: invalid U64 input %q", function.ID, input)
+		}
+		return value{u64: parsed, isU64: true}, nil
+	}
 	for _, dataType := range program.DataTypes {
 		if dataType.Name != function.Parameter.Type {
 			continue
@@ -327,21 +346,21 @@ func inputValue(program core.Program, function core.Function, input string) valu
 			}
 			switch alternative.PayloadType {
 			case "Buffer":
-				return value{tag: input, payload: "01020304"}
+				return value{tag: input, payload: "01020304"}, nil
 			case "Byte":
-				return value{tag: input, payload: "7"}
+				return value{tag: input, payload: "7"}, nil
 			default:
 				for _, nested := range program.DataTypes {
 					if nested.Name != alternative.PayloadType || len(nested.Alternatives) == 0 {
 						continue
 					}
-					return value{tag: input, payload: nested.Alternatives[0]}
+					return value{tag: input, payload: nested.Alternatives[0]}, nil
 				}
-				return value{tag: input, payload: input}
+				return value{tag: input, payload: input}, nil
 			}
 		}
 	}
-	return value{payload: input}
+	return value{payload: input}, nil
 }
 
 // frame is one activation record on interp's own explicit call stack
@@ -865,12 +884,23 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 		if !known {
 			return Execution{}, fmt.Errorf("block or body references unknown operation %q", operationID)
 		}
-		sourceValue, initialized := top.values[operation.SourceID]
-		if !initialized {
-			return Execution{}, fmt.Errorf("operation %q reads uninitialized place %q", operation.ID, operation.SourceID)
+		var sourceValue value
+		if operation.Kind != core.OpConst {
+			var initialized bool
+			sourceValue, initialized = top.values[operation.SourceID]
+			if !initialized {
+				return Execution{}, fmt.Errorf("operation %q reads uninitialized place %q", operation.ID, operation.SourceID)
+			}
 		}
 
 		switch operation.Kind {
+		case core.OpConst:
+			parsed, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+			if err != nil {
+				return Execution{}, fmt.Errorf("operation %q has invalid canonical U64 constant", operation.ID)
+			}
+			top.values[operation.TargetID] = value{u64: parsed, isU64: true}
+			top.idx++
 		case core.OpCopy:
 			top.values[operation.TargetID] = sourceValue
 			events = append(events, ownedEvent(top, operation, "value.copied"))
