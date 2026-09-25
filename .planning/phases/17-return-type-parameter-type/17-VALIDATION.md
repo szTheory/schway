@@ -1,7 +1,7 @@
 ---
 phase: "17"
 slug: "return-type-parameter-type"
-status: draft
+status: validated
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-22"

@@ -1,7 +1,7 @@
 ---
 phase: "19"
 slug: "numeric-literals-and-opconst"
-status: draft
+status: validated
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-24"

@@ -1,7 +1,7 @@
 ---
 phase: "18"
 slug: "branch-on-a-computed-value"
-status: draft
+status: validated
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-24"

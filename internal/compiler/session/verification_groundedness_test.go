@@ -1424,6 +1424,44 @@ func TestVerificationGroundednessCorpusIsNotEmpty(t *testing.T) {
 	t.Logf("corpus floors: %d enforced-tier documents (floor %d), %d verification commands (floor %d)", len(docs), enforcedTierDocumentFloor, totalCommands, verificationCommandFloor)
 }
 
+// validationDocumentHasDraftStatus is the live lifecycle predicate used by
+// TestPhase20ValidationLifecycle. Keep a seeded control beside the scanner so
+// malformed or unreadable frontmatter cannot make the phase gate vacuously
+// pass.
+func validationDocumentHasDraftStatus(markdown string) bool {
+	return validationDocumentStatus(markdown) == "draft"
+}
+
+func TestPhase20ValidationLifecycle(t *testing.T) {
+	if !validationDocumentHasDraftStatus("---\nstatus: draft\n---\n# seeded control\n") {
+		t.Fatal("seeded draft frontmatter was not classified as draft")
+	}
+	if validationDocumentHasDraftStatus("---\nstatus: validated\n---\n# completed\n") {
+		t.Fatal("validated frontmatter was classified as draft")
+	}
+	docs, err := phaseArtifactGlob("*", "*-VALIDATION.md")
+	if err != nil {
+		t.Fatalf("phaseArtifactGlob *-VALIDATION.md: %v", err)
+	}
+	if len(docs) == 0 {
+		t.Fatal("validation lifecycle scan matched no documents")
+	}
+	var drafts []string
+	for _, path := range docs {
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			t.Fatalf("read validation document %s: %v", path, readErr)
+		}
+		if validationDocumentHasDraftStatus(string(data)) {
+			drafts = append(drafts, path)
+		}
+	}
+	if len(drafts) != 0 {
+		t.Fatalf("%d validation documents remain draft: %s", len(drafts), strings.Join(drafts, ", "))
+	}
+	t.Logf("validation lifecycle: scanned %d live and archived documents; zero drafts", len(docs))
+}
+
 // staticIndexAccuracyControlTimeout bounds the one `go test ./... -list .`
 // process this accuracy control spawns. D-14-10 measured this at 3.35s
 // warm on this tree; the generous ceiling exists so a wedged toolchain
@@ -2140,19 +2178,19 @@ var r2bLandingPhases = map[violationRecord]string{
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 97, Command: "go test ./internal/compiler/corevalidate -run 'ClosureCostScaling|GrowthExponent' -v", Classification: classR2b}:                                                                                                                                        "P20",
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 99, Command: "go test ./internal/compiler/check -run 'OrderingStability|DiagnosticSelectionOrder' -v", Classification: classR2b}:                                                                                                                                      "P20",
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 102, Command: "go test ./internal/compiler/check -run 'UseAfterMove|BorrowRequiresShare|TransferRequiresTake' -v", Classification: classR2b}:                                                                                                                          "P20",
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreAlphaRenamesOnly' -count=1 -v", Classification: classR2b}: "P20",
-	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b}: "P20",
-	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/session -run 'TestPhase19(LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(ScalarProjection|LiteralFrontier)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 50, Command: "go test ./internal/compiler/syntax -run 'TestPhase19Numeric(Token|Malformed)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 51, Command: "go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase19(LiteralAdmission|LiteralRange|LiteralType|LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 52, Command: "go test ./internal/compiler/corevalidate -run 'TestPhase19(OpConst|U64|Forged)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 53, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 54, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b}: "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 55, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b}: "P20",
+	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreAlphaRenamesOnly' -count=1 -v", Classification: classR2b}:                                                                 "P20",
+	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b}:                                                                                                        "P20",
+	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b}:                                                                                                    "P20",
+	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b}:                                                                                                                        "P20",
+	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b}:                                                                                                                                                              "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/session -run 'TestPhase19(LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}:                                                                                                                                              "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(ScalarProjection|LiteralFrontier)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b}:                                                                                  "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 50, Command: "go test ./internal/compiler/syntax -run 'TestPhase19Numeric(Token|Malformed)' -count=1", Classification: classR2b}:                                                                                                                                                                "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 51, Command: "go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase19(LiteralAdmission|LiteralRange|LiteralType|LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}:                                                                          "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 52, Command: "go test ./internal/compiler/corevalidate -run 'TestPhase19(OpConst|U64|Forged)' -count=1", Classification: classR2b}:                                                                                                                                                              "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 53, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b}:                                                                                                                                                            "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 54, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b}:                                                                                             "P20",
+	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 55, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b}:                                    "P20",
 }
 
 // TestVerificationGroundednessThreeClassesAreEmpty is plan 14-10 Task 3's

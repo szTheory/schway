@@ -3,7 +3,7 @@ phase: "5"
 slug: "native-equivalence-and-adversarial-evidence"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
+status: validated
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-05"
