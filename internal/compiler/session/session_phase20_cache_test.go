@@ -27,7 +27,7 @@ func TestPhase20EnumeratedClosureCacheControls(t *testing.T) {
 		}
 	}
 	if source == "" {
-		t.Skip("enumerated closure currently has no public native-emitter-accepted program; no native artifact is available to cache")
+		t.Skip("enumerated closure currently has no public native-emitter-accepted program; no native artifact is available to cache; see probe:TestPhase20EnumeratedClosureCacheControls")
 	}
 	program := programs[selectedIndex]
 	inputs, ok := phase5InputsForProgram(program)
@@ -39,7 +39,7 @@ func TestPhase20EnumeratedClosureCacheControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	if interpreted.Outcome.Kind != "returned" {
-		t.Skip("selected native closure program is not a returned-value cache control")
+		t.Skip("selected native closure program is not a returned-value cache control; see probe:TestPhase20EnumeratedClosureCacheControls")
 	}
 
 	store := &cache.Store{Root: t.TempDir()}

@@ -832,7 +832,7 @@ func TestNativeToolFailureIsOperational(t *testing.T) {
 
 func TestPhase20NativeCacheReusesArtifactButRunsFreshInputs(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin; see probe:TestPhase20NativeCacheReusesArtifactButRunsFreshInputs")
 	}
 	store := &cache.Store{Root: t.TempDir()}
 	const source = `#include <stdio.h>
@@ -870,7 +870,7 @@ int main(int argc, char **argv) {
 
 func TestPhase20NativeManifestTracksTransitiveAndLinkInputs(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin; see probe:TestPhase20NativeManifestTracksTransitiveAndLinkInputs")
 	}
 	dir := t.TempDir()
 	header := filepath.Join(dir, "dependency.h")
@@ -914,7 +914,7 @@ func TestPhase20NativeManifestTracksTransitiveAndLinkInputs(t *testing.T) {
 
 func TestPhase20ManifestInvalidatesOnHeaderSDKAndResolvedLibraryBytes(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin; see probe:TestPhase20ManifestInvalidatesOnHeaderSDKAndResolvedLibraryBytes")
 	}
 	root := t.TempDir()
 	sysroot := filepath.Join(root, "sdk")
@@ -1002,7 +1002,7 @@ func TestPhase20ManifestInvalidatesOnHeaderSDKAndResolvedLibraryBytes(t *testing
 
 func TestPhase20IncompleteNativeManifestBypassesReuse(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin; see probe:TestPhase20IncompleteNativeManifestBypassesReuse")
 	}
 	dir := t.TempDir()
 	header := filepath.Join(dir, "header with space.h")
