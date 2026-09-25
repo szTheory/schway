@@ -30,12 +30,12 @@ created: "2026-09-22"
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 17-01-01 | 01 | 1 | TYP-02, TYP-03 | — | Source frontier diagnostics move only to named call-contract causes. | source/integration | Focused `check` and `session` tests to be specified by plan. | ❌ W0 | ⬜ pending |
-| 17-02-01 | 02 | 2 | TYP-01, TYP-04 | — | Parameter and return facts are directional and peers independently derive abilities. | unit/mutation/import | Focused `check`, `corevalidate`, and `originvalidate` tests to be specified by plan. | ❌ W0 | ⬜ pending |
-| 17-03-01 | 03 | 3 | TYP-01 | — | The sole emitter preserves distinct parameter and return C types across all tiers. | C structure/differential | Focused `cgen` and `session` tests to be specified by plan. | ❌ W0 | ⬜ pending |
-| 17-04-01 | 04 | 4 | TYP-05 | — | A sealed held-out source repairs through protocol fields without fixture-path coupling. | subprocess/integration | Focused `cmd/lang-repair` and `session` tests to be specified by plan. | ❌ W0 | ⬜ pending |
+| 17-01-01 | 01 | 1 | TYP-02, TYP-03 | — | Source frontier diagnostics move only to named call-contract causes. | source/integration | `go test ./internal/compiler/check -run '^TestPhase17UseMatchingArgument$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 17-02-01 | 02 | 2 | TYP-01, TYP-04 | — | Parameter and return facts are directional and peers independently derive abilities. | unit/mutation/import | `go test ./internal/compiler/corevalidate -run '^TestPhase17CorePeerDirectionalCallContract$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 17-03-01 | 03 | 3 | TYP-01 | — | The sole emitter preserves distinct parameter and return C types across all tiers. | C structure/differential | `go test ./internal/compiler/session -run '^TestPhase17TwoTypeFourTierDifferential$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 17-04-01 | 04 | 4 | TYP-05 | — | A sealed held-out source repairs through protocol fields without fixture-path coupling. | subprocess/integration | `go test ./internal/compiler/session -run '^TestPhase17RepairCorpusReachable$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

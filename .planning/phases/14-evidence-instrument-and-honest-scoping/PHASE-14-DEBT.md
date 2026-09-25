@@ -3,7 +3,7 @@ phase: 14-evidence-instrument-and-honest-scoping
 recorded: 2026-09-18
 status: accepted
 disposition: phase-in-progress
-items: 83
+items: 85
 blocking: 0
 ---
 
@@ -57,11 +57,11 @@ finding).
 | D-14-47 | 14-02-SUMMARY.md "Debt rows to register" item 2 | DX-08 | info | UNOWNED(identity-bearing-cause-span-on-parse-success-path) | DEFINED | n/a | PUTTING MORE CONTENT ON `Cause.Span` DEEPENS THE ALREADY-RECORDED, HALF-ENFORCED RULE THAT A COORDINATE SHIFT MUST NEVER MOVE A DIAGNOSTIC'S ID. This is now bounded-widened for broken programs only -- a whitespace edit inside a broken program's tail (past the point where declaration recovery starts) can now move that program's diagnostic ID, where before plan 14-02's fix the swallowed region was never in the identity basis. This is an acceptable, deliberately bounded widening of an already-recorded hole (Phase 13's coordinate-shift discipline), not a new defect, but it should be reconciled explicitly rather than rediscovered |
 | D-14-48 | plan 14-09's grade derivation over 09-VALIDATION.md:85 | EVD-02 | warning | P14 | WIRED | probe:TestVerificationGroundednessFrontierIsPinned | 09-VALIDATION.MD ROW 09-01-01's SECOND EVIDENCE CELL (A `LoanChainIndex`-PATTERN GO TEST INVOCATION) CITES A PATTERN THAT MATCHES ZERO TEST NAMES -- IT WAS SHIPPED `✅ GREEN` BUT DERIVES ONLY WIRED. This is the same row plan 14-01's groundedness lint independently pinned as an R2 dead pattern in its own 125-entry frontier; the two instruments agree from two different mechanisms. Plan 14-10's Nyquist reconciliation is the scheduled closer for the groundedness frontier's R1/R2 class, which this row is a member of |
 | D-14-49 | plan 14-09's grade derivation over 09-VALIDATION.md:93 | EVD-02 | warning | P14 | WIRED | probe:TestVerificationGroundednessFrontierIsPinned | 09-VALIDATION.MD ROW 09-05-02's `Mode.*Invalid`-ALTERNATION EVIDENCE CELL ALSO MATCHES ZERO TEST NAMES -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. Same cross-instrument agreement as D-14-48: also a member of plan 14-01's pinned R2 frontier, closure scheduled at plan 14-10 |
-| D-14-50 | plan 14-09's grade derivation over 12-VALIDATION.md:52 (row 12-04-01) | EVD-02 | info | UNOWNED(probe:TestValidationGradeCapBarePackageRowHasNoNamedTest) | WIRED | probe:TestValidationGradeCapBarePackageRowHasNoNamedTest | 12-VALIDATION.MD ROW 12-04-01's EVIDENCE CELL NAMES TWO PACKAGES BUT NO `-run`/`-list`/`-fuzz`/`-bench` PATTERN, SO IT NAMES NO EXACT TEST IDENTIFIER THE CAP CAN CONFIRM EXECUTED -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED UNDER THE EXACT-IDENTIFIER DISCIPLINE. The package-wide invocation genuinely compiles and the code path is real; the row is simply not phrased as a resolvable claim. No phase currently owns rephrasing it |
-| D-14-51 | plan 14-09's grade derivation over 04-VALIDATION.md:74 (row 04-06-03) | EVD-02 | warning | UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent) | WIRED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 04-VALIDATION.MD ROW 04-06-03's EVIDENCE CELL NAMES `TestLastUseDiscoveryWorkIsCounted` AND `TestLastUseDiscoveryWorkSeries`, NEITHER OF WHICH EXISTS IN THE CURRENT MODULE -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. Both were real tests at the time 04-DEBT.md's "deferred retirement" item was written (04-06-SUMMARY.md cites them as coverage) and were retired alongside the `computeLoanLastUses` deletion (D-09-09) without this row being updated. This is a genuine hole in shipped M001 evidence being surfaced, not a regression to suppress -- the precedent D-13-33 and D-14-07 both name explicitly |
-| D-14-52 | plan 14-09's grade derivation over 06-VALIDATION.md:69 (row 06-08-T3) | EVD-02 | warning | UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent) | WIRED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-08-T3's EVIDENCE CELL NAMES `TestOnlyRecomputedWorkIsGateEligible`, WHICH DOES NOT EXIST -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. Plan 08-05 renamed it to `TestOnlyGateEligibleMetricsPassThrough` when `GateEligibleMetrics()` widened from one metric to a set (08-05-SUMMARY.md's own key-decisions record the rename and why), and this M001 row was never repointed. Same class of finding as D-14-51: a real rename left a stale citation in a document already marked satisfied |
+| D-14-50 | plan 14-09's grade derivation over 12-VALIDATION.md:52 (row 12-04-01) | EVD-02 | info | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapBarePackageRowHasNoNamedTest | 12-VALIDATION.MD ROW 12-04-01's EVIDENCE CELL NAMES TWO PACKAGES BUT NO `-run`/`-list`/`-fuzz`/`-bench` PATTERN, SO IT NAMES NO EXACT TEST IDENTIFIER THE CAP CAN CONFIRM EXECUTED -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapBarePackageRowHasNoNamedTest. |
+| D-14-51 | plan 14-09's grade derivation over 04-VALIDATION.md:74 (row 04-06-03) | EVD-02 | warning | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 04-VALIDATION.MD ROW 04-06-03's EVIDENCE CELL NAMES `TestLastUseDiscoveryWorkIsCounted` AND `TestLastUseDiscoveryWorkSeries`, NEITHER OF WHICH EXISTS IN THE CURRENT MODULE -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
+| D-14-52 | plan 14-09's grade derivation over 06-VALIDATION.md:69 (row 06-08-T3) | EVD-02 | warning | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-08-T3's EVIDENCE CELL NAMES `TestOnlyRecomputedWorkIsGateEligible`, WHICH DOES NOT EXIST -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
 | D-14-53 | plan 14-09's own satisfying-bar exemption for 14-VALIDATION.md | EVD-02 | info | CLOSED(128ecec) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | 14-VALIDATION.MD'S OWN PER-TASK VERIFICATION MAP, ORIGINALLY EXACTLY ONE UNFILLED PLACEHOLDER ROW, IS NOW POPULATED FOR REAL: 31 rows plan 14-10 filled plus 8 this plan (14-12) added (14-11-T1..T3, 14-13-T1..T2, 14-12-T1..T3), all executed and confirmed to resolve, all judged by the now-unexempted `>=EXERCISED` satisfying bar via `TestValidationRowGradesAreEarnedOverArchivedCorpus`. The premise this row recorded (the table was never filled in beyond its plan-time placeholder) no longer holds |
-| D-14-54 | plan 14-09's grade derivation over 06-VALIDATION.md:71 (row 06-09-T3) | EVD-02 | warning | UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent) | WIRED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-09-T3's EVIDENCE CELL NAMES `TestRecomputedWorkIsTheOnlyHardGate`, WHICH DOES NOT EXIST -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. `08-REVIEW.md`'s own WR-01 warning named this exact staleness (the test's name asserted "only hard gate" after plan 08-05 widened the gate-eligible set to two metrics) and recommended a rename; the rename that landed is `TestRecomputedWorkHardGateBoundComparison`. A third instance of the same class as D-14-51/D-14-52 -- a real, even self-documented rename left a stale citation behind in an M001 row already marked satisfied |
+| D-14-54 | plan 14-09's grade derivation over 06-VALIDATION.md:71 (row 06-09-T3) | EVD-02 | warning | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-09-T3's EVIDENCE CELL NAMES `TestRecomputedWorkIsTheOnlyHardGate`, WHICH DOES NOT EXIST -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
 | D-14-55 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:849` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-56 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:850` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-57 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:852` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
@@ -77,8 +77,8 @@ finding).
 | D-14-67 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `04-RESEARCH.md:570` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-68 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `08-RESEARCH.md:507` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
 | D-14-69 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `08-RESEARCH.md:514` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-70 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `08-VALIDATION.md:53` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
-| D-14-71 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `08-VALIDATION.md:65` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
+| D-14-70 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-71 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
 | D-14-72 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `09-RESEARCH.md:706` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-73 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `09-RESEARCH.md:708` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
 | D-14-74 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `09-VALIDATION.md:87` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
@@ -88,16 +88,16 @@ finding).
 | D-14-78 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `10-RESEARCH.md:684` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
 | D-14-79 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-RESEARCH.md:1041` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-80 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:28` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
-| D-14-81 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:53` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-82 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:58` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-83 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:60` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-84 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:62` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-85 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:63` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-86 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:65` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-87 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:66` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-88 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:70` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-89 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:71` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-90 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:73` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
+| D-14-81 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-82 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-83 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-84 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-85 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-86 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-87 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-88 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-89 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-90 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
 | D-14-91 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `12-RESEARCH.md:869` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-92 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `12-VALIDATION.md:26` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-93 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `07-VERIFICATION.md:87` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
@@ -135,6 +135,8 @@ finding).
 | D-14-125 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T2`'S EVIDENCE CELL NAMES THREE PACKAGES BUT NO `-run` PATTERN, SO `deriveCeiling` DERIVES `WIRED` STRUCTURALLY (THE SAME BARE-PACKAGE SHAPE GAP D-14-50 ALREADY RECORDED FOR `12-VALIDATION.md:52`) -- IT CAN NEVER REACH `EXERCISED` WITHOUT REWRITING THE CELL TO NAME A SPECIFIC TEST. Kept byte-unchanged (row belongs to plan 14-02) and narrowed here. |
 | D-14-126 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-03-T1` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-03-T1`'S EVIDENCE CELL, `go test ./cmd/lang-repair/... -count=1`, NAMES NO `-run` PATTERN -- SAME STRUCTURAL SHAPE GAP AS D-14-125, STRUCTURALLY CAPPED AT `WIRED`. Kept byte-unchanged (row belongs to plan 14-03) and narrowed here. |
 | D-14-127 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-10-T3` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-10-T3` DECLARES `WIRED`, BELOW THE NOW-ENFORCED BAR. Re-deriving its evidence cell (`TestVerificationGroundednessThreeClassesAreEmpty`) against the complete run record shows it genuinely passed and is matched -- TRUE ceiling `EXERCISED`, same finding shape as D-14-123. Kept byte-unchanged (row belongs to plan 14-10) and narrowed here. |
+| D-14-128 | Phase 20 planned validation map row 20-08-01 exact-test ceiling | EVD-02 | info | P20 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `20-VALIDATION.md` row `20-08-01` requires the unfiltered `go test ./... -count=1` preflight; the grader deliberately caps a bare package command with no `-run` at WIRED. Preserve the actual full-suite gate and narrow only this plan-time row until Plan 08 records its result. |
+| D-14-129 | Phase 20 planned validation map row 20-08-02 script ceiling | EVD-02 | info | P20 | REACHABLE | probe:TestValidationGradeBarRowExemptionsAreOwned | `20-VALIDATION.md` row `20-08-02` invokes the bounded full-suite timing script, which the grade ladder classifies as REACHABLE rather than an exact named Go test. Preserve the actual measurement command and narrow only this plan-time row; Plan 08 owns its recorded timing outcome. |
 
 ## Detail
 
@@ -248,6 +250,8 @@ currently owns rephrasing the row with a specific `-run` pattern.
 
 **Landing phase:** `UNOWNED(probe:TestValidationGradeCapBarePackageRowHasNoNamedTest)`.
 
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
+
 ### D-14-51 — `04-VALIDATION.md:74` cites two tests retired in a later phase
 
 first-recorded: M003
@@ -272,6 +276,8 @@ regression to suppress.
 current equivalent (if one still exists in the surviving law's own test
 suite) or retracting the claim.
 
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
+
 ### D-14-52 — `06-VALIDATION.md:69` cites a test renamed in plan 08-05
 
 first-recorded: M003
@@ -290,6 +296,8 @@ citation behind in a document already marked satisfied.
 — the same shared probe witnesses both D-14-51 and D-14-52, since both
 assert the same property (a named set of historically-real identifiers
 remains absent today).
+
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
 
 ### D-14-53 — `14-VALIDATION.md`'s own verification map was never filled in
 
@@ -362,6 +370,8 @@ is exactly what nothing currently re-checks.
 
 **Landing phase:** `UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent)`
 — the same shared probe now witnesses all three (D-14-51, D-14-52, D-14-54).
+
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
 
 ### D-14-55 — `03-RESEARCH.md:849` cites a superseded target
 
@@ -621,34 +631,19 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md
-line: 53
-command: go test ./internal/compiler/check/... -run TestComputeLoanLastUsesAndDerivePlaceLoansAgree
-classification: R2
-verdict: obsolete-by-design
-deleted-package: internal/compiler/check
-deleted-symbol: computeLoanLastUses
-deleting-phase: P09-09
-deleting-commit: b8fe3df
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `b8fe3df` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-71 — `08-VALIDATION.md:65` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/08-interprocedural-loan-liveness-in-check/08-VALIDATION.md
-line: 65
-command: go test ./internal/compiler/session/... -run TestAuditQLT02BudgetManifest
-classification: R2
-verdict: renamed
-replacement: go test ./internal/compiler/session/... -run TestBudgetLaneCarriesMachineIDAndVerdict
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-72 — `09-RESEARCH.md:706` cites a superseded target
 
@@ -803,151 +798,91 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 53
-command: grep -c -E 'D-11-(02|07|11|12|13|27|36|40|42)' …/PHASE-11-DEBT.md
-classification: R1
-verdict: renamed
-replacement: grep -c -E 'D-11-(02|07|11|12|13|27|36|40|42)' .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/PHASE-11-DEBT.md
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-82 — `11-VALIDATION.md:58` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 58
-command: go test ./internal/compiler/callgraph/... -run 'TestEntryFunction…' -v -count=1
-classification: R1
-verdict: renamed
-replacement: go test ./internal/compiler/callgraph/... -run 'TestEntryFunctionRefusesManyRoots|TestEntryFunctionRefusesZeroRoots' -v -count=1
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-83 — `11-VALIDATION.md:60` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 60
-command: go test ./internal/compiler/cgen/... -run 'TestEmittedAttributeSet…' -v -count=1
-classification: R1
-verdict: renamed
-replacement: go test ./internal/compiler/cgen/... -run 'TestEmittedAttributeSetIsExplicitlyEmpty' -v -count=1
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-84 — `11-VALIDATION.md:62` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 62
-command: grep -c -E 'function count|call-edge count|N =…' …/11-MIDPHASE-GATE.md
-classification: R1
-verdict: renamed
-replacement: grep -c -E 'function count|call-edge count|N =' .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-MIDPHASE-GATE.md
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-85 — `11-VALIDATION.md:63` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 63
-command: awk … | wc -l
-classification: R1
-verdict: renamed
-replacement: go test ./internal/compiler/session/... -count=1
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-86 — `11-VALIDATION.md:65` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 65
-command: grep -c 'D-11-25' …/session_phase11_differential_test.go
-classification: R1
-verdict: renamed
-replacement: grep -c 'D-11-25' internal/compiler/session/session_phase11_differential_test.go
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-87 — `11-VALIDATION.md:66` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 66
-command: go test ./internal/compiler/session/... -run 'TestQLT03GeneratorOpKindClosure…' -v -count=1
-classification: R1
-verdict: renamed
-replacement: go test ./internal/compiler/session/... -run 'TestQLT03GeneratorOpKindClosure' -v -count=1
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-88 — `11-VALIDATION.md:70` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 70
-command: go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames|TestCache…|TestNoClosureDigestInCache' -v -count=1
-classification: R1
-verdict: renamed
-replacement: go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames|TestCacheDirectImportGuardCanFail|TestCacheTransitiveImportGuardCanFail|TestNoClosureDigestInCache' -v -count=1
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-89 — `11-VALIDATION.md:71` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 71
-command: grep -c -E 'QLT-06a|QLT-06b|strictly dominates…' …/11-QLT06-ABSTENTION.md
-classification: R1
-verdict: renamed
-replacement: grep -c -E 'QLT-06a|QLT-06b|strictly dominates' .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-QLT06-ABSTENTION.md
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-90 — `11-VALIDATION.md:73` cites a dead pattern, corrected as a rename
 
 first-recorded: M003
 
-```reconciliation
-file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
-line: 73
-command: go test ./internal/compiler/reduce/... -run 'TestDropCallSite|TestDropOrphanFunction|…' -v -count=1
-classification: R1
-verdict: renamed
-replacement: go test ./internal/compiler/reduce/... -run 'TestDropCallSiteRewritesOneEdge|TestDropOrphanFunctionRemovesUncalledNonEntry|TestDropUnusedBindingRemovesOnlyUnreadOperation' -v -count=1
-```
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
+
+Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-91 — `12-RESEARCH.md:869` cites a superseded target
 
@@ -1672,6 +1607,25 @@ D-14-123, in a row belonging to plan 14-10 instead of plan 14-01.
 
 **Landing phase:** `P14` -- closed by this same plan (14-12) via the
 row-scoped exemption, same disposition as D-14-123.
+
+### D-14-128 — Phase 20's unfiltered suite gate is a bare package command
+
+first-recorded: M003
+
+The unfiltered `go test ./... -count=1` preflight in Phase 20 row
+`20-08-01` is intentionally executed by Plan 08 as a full-suite gate. The
+grade ladder does not infer an exact test identity from a package-wide
+command, so WIRED is the honest ceiling until that gate is run. The row is
+narrowed through `validationGradeBarRowExemptions` and is owned by Phase 20.
+
+### D-14-129 — Phase 20's timing script is a reachable non-test command
+
+first-recorded: M003
+
+The bounded full-suite timing runner in row `20-08-02` is a script, not a
+Go test identifier. The grade ladder therefore caps it at REACHABLE. The
+row remains tied to its actual measurement command and Plan 08 owns the
+result; the row-scoped exception is checked against this item.
 
 ---
 

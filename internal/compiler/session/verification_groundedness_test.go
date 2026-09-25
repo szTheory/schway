@@ -1000,12 +1000,8 @@ func TestVerificationGroundedness(t *testing.T) {
 		fileSuffix string
 		line       int
 	}{
-		// Line numbers shifted +2 at plan 14-09 (D-14-05's two new
-		// frontmatter keys, evidence_vocabulary and graded_rows, inserted
-		// ahead of the body of every migrated *-VALIDATION.md) -- a pure
-		// coordinate shift, re-measured rather than assumed unchanged.
-		{"08-VALIDATION.md", 53},
-		{"08-VALIDATION.md", 65},
+		// Plan 20-02 corrected Phase 08's two stale rows in-place; they are
+		// no longer live violations, so retain only the Phase 09 control.
 		{"09-VALIDATION.md", 87},
 	}
 	for _, want := range mustContain {

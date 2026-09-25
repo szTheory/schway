@@ -36,14 +36,14 @@ created: "2026-09-24"
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| Wave 0 | 01 | 0 | CTL-01 | T-18-01 | Pin the existing computed-scrutinee refusal; independent validators fail closed for malformed or forged core | fixture, unit | `go test ./internal/compiler/check ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
-| Wave 0 | 01 | 0 | CTL-02 | T-18-02 | A Result-returning callee's computed value reaches all five comparator axes through independent peer admission | integration, differential, smoke | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
-| Wave 0 | 01 | 0 | CTL-03 | T-18-03 | Payload place is returned; injected wrong-slot corruption diverges at `axis:terminal-outcome` | integration, mutation-kill | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
-| Wave 0 | 01 | 0 | CTL-01 | T-18-01 | A pre-match loan live in one arm is classified with existing endpoints and bounded fixpoint work | source integration, ownership | `go test ./internal/compiler/check ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
-| 18-08-T1 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-01 | Repeated cold/warm distributions and host/tool provenance are recorded and internally consistent; plan 08 will deliver the phase-local evidence verifier | latency evidence | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
-| 18-08-T2 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-03 | CI disposition is evidence-backed; added command runs in both matrix hosts or unchanged CI blob is proven; plan 08 will deliver the phase-local evidence verifier | CI configuration evidence | `go test ./internal/compiler/session -count=1` | ❌ W0 | ⬜ pending |
+| 18-01-T1 | 01 | 0 | CTL-01 | T-18-01 | Pin the existing computed-scrutinee refusal; independent validators fail closed for malformed or forged core | fixture, unit | `go test ./internal/compiler/check -run '^TestPhase18ComputedScrutineeProductionPathAccepted$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 18-01-T2 | 01 | 0 | CTL-02 | T-18-02 | A Result-returning callee's computed value reaches all five comparator axes through independent peer admission | integration, differential, smoke | `go test ./internal/compiler/session -run '^TestPhase18ResultComputedMatch$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 18-01-T3 | 01 | 0 | CTL-03 | T-18-03 | Payload place is returned; injected wrong-slot corruption diverges at `axis:terminal-outcome` | integration, mutation-kill | `go test ./internal/compiler/session -run '^TestPhase18ComputedSourceFourTierDifferential$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 18-01-T4 | 01 | 0 | CTL-01 | T-18-01 | A pre-match loan live in one arm is classified with existing endpoints and bounded fixpoint work | source integration, ownership | `go test ./internal/compiler/session -run '^TestPhase18WrongSlotMutation$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 18-08-T1 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-01 | Repeated cold/warm distributions and host/tool provenance are recorded and internally consistent; plan 08 will deliver the phase-local evidence verifier | latency evidence | `go test ./internal/compiler/session -run '^TestPhase18FiveAxis$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
+| 18-08-T2 | 08 | 6 | CTL-01, CTL-02, CTL-03 | T-18-03 | CI disposition is evidence-backed; added command runs in both matrix hosts or unchanged CI blob is proven; plan 08 will deliver the phase-local evidence verifier | CI configuration evidence | `go test ./internal/compiler/session -run '^TestPhase18ComparatorControlRejectsMissingExecutionTierAndRequiresPeer$' -count=1` | ❌ W0 | EXERCISED | — | ⬜ pending |
 
 Threat refs:
 

@@ -3093,7 +3093,6 @@ var phase20DebtStartingUnownedIDs = []string{
 
 var phase20DebtCurrentUnownedIDs = []string{
 	"D-10-C04", "D-12-43", "D-13-34", "D-14-46", "D-14-47",
-	"D-14-50", "D-14-51", "D-14-52", "D-14-54",
 }
 
 type phase20DebtDisposition struct {

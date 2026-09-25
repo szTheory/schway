@@ -38,9 +38,10 @@ rows, unknown landing syntax, and drift in the audit's ten IDs.
 
 At the Phase 20 execution start, 13 qualified IDs were open and unowned. After
 the evidence-backed Phase 16 ownership reconciliation and Phase 21's explicit
-ownership of D-14-45, the current source-derived set is nine:
-D-10-C04, D-12-43, D-13-34, D-14-46, D-14-47, D-14-50, D-14-51, D-14-52,
-and D-14-54. Four stale validation citations (D-14-50/51/52/54) are the
-remaining QLT-10 repair targets in Plan 07; that route reaches five without
-using D-13-34's human decision. D-10-C04 remains open and D-13-34 remains
-pending Plan 06.
+ownership of D-14-45 and Plan 07's exact validation-row repairs, the
+current source-derived set is five: D-10-C04, D-12-43, D-13-34, D-14-46,
+and D-14-47. D-14-50/51/52/54 are closed against the repaired rows and
+their passing named tests in commit `7dc8f64`. D-14-128/129 are explicitly
+owned by Phase 20 for the full-suite and timing-script grade ceilings; they
+do not count as unowned. D-10-C04 remains open and D-13-34 remains pending
+Plan 06.
