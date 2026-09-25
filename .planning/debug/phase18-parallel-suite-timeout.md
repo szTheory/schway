@@ -1,5 +1,5 @@
 ---
-status: investigating
+status: resolved
 trigger: "Phase 18 UAT G-18-16: default-parallel full Go suite fails cache probe and native execution with 5-second deadlines; isolated and serialized runs pass"
 created: 2026-09-25
 updated: 2026-09-25
@@ -7,11 +7,11 @@ updated: 2026-09-25
 
 ## Current Focus
 
-hypothesis: Fixed five-second subprocess deadlines are exceeded when default package parallelism competes for CPU and process resources; native branch is directly confirmed, cache branch remains unobserved at the inner error code.
+hypothesis: Five-second subprocess deadlines were insufficient under package-level load; the original cache refusal's erased inner cause remains unknown.
 bug_class: heisenbug-mandelbug
-test: Compare the observed cache error against the controlled delayed-probe reproduction and enumerate alternative transient probe failures.
-expecting: Direct original-cache probe sentinel is needed to confirm the cache half of the joint root cause.
-next_action: Have the fix-planning workflow preserve the cache probe's inner failure code, then validate a controlled package-parallelism candidate with a full `go test -p=4 ./... -count=1` run.
+test: Run repeated default-parallel full suites and verify retained typed causes and bounded subprocess falsifiers.
+expecting: Full suites pass under default package concurrency; any future Clang probe refusal exposes its underlying typed cause.
+next_action: none — Plan 18-09 and its final evidence gate closed G-18-16.
 reasoning_checkpoint:
   candidate_causes:
     - "code: fixed five-second subprocess timeout and lossy cache probe error mapping"
@@ -62,7 +62,14 @@ started: Observed during Phase 18 UAT on 2026-09-25; prior history unknown.
 
 ## Resolution
 
-root_cause: ""
-fix: ""
-verification: ""
-files_changed: []
+root_cause: "The native failure directly exceeded a five-second subprocess deadline under full-suite package load. The original cache failure was mapped to cache.input_undeclared before its inner cause was preserved, so its exact original cause remains unconfirmed."
+fix: "Raised the finite default subprocess budget to 30 seconds while retaining caller deadlines and parent cancellation; cache refusals now retain typed inner probe failures."
+verification: "Three independent default-parallel full suites, the -p=4 suite, the race suite, vet, build, and both Phase 18 evidence verifiers pass."
+files_changed:
+  - internal/compiler/cache/cache.go
+  - internal/compiler/cache/probe.go
+  - internal/compiler/cache/probe_test.go
+  - internal/compiler/native/native.go
+  - internal/compiler/native/native_test.go
+  - internal/compiler/measure/machine.go
+  - internal/compiler/measure/machine_test.go

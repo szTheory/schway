@@ -1,8 +1,8 @@
 ---
 phase: 18-branch-on-a-computed-value
-verified: 2026-09-24T20:47:13Z
+verified: 2026-09-25T19:32:21Z
 status: passed
-score: 21/21 must-haves verified
+score: 26/26 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .planning/LANGUAGE-MATURITY.md
@@ -72,13 +72,27 @@ covered_files:
   - testdata/phase18/loan_across_branch.lang
   - testdata/phase18/payload_return.lang
   - testdata/phase18/result_computed_match.lang
-covered_digest: "v1:sha256:da1c9699fef8f115fa6e7429b948d53c07e3cd2d24181bc49ae1e8ea737d126e"
+  - .planning/phases/18-branch-on-a-computed-value/18-09-PLAN.md
+  - .planning/phases/18-branch-on-a-computed-value/18-09-SUMMARY.md
+  - .planning/phases/18-branch-on-a-computed-value/18-09-RUNS.log
+  - .planning/phases/18-branch-on-a-computed-value/verify-phase18-postfix-evidence.sh
+  - internal/compiler/cache/cache.go
+  - internal/compiler/cache/probe.go
+  - internal/compiler/cache/probe_test.go
+  - internal/compiler/native/native.go
+  - internal/compiler/native/native_test.go
+  - internal/compiler/measure/machine.go
+  - internal/compiler/measure/machine_test.go
+  - testdata/phase16/validation-corpus-run-record.jsonl
+  - testdata/phase16/validation-corpus-run-record.manifest.json
+covered_digest: "v1:sha256:02154d567105d810a8415a5094524c47d265022fe7cf9f786a9b1dd09b14c2c8"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: passed
   previous_score: 21/21
-  gaps_closed: []
+  gaps_closed:
+    - "G-18-16: repeated default-parallel full-suite reliability"
   gaps_remaining: []
   regressions: []
 decision_coverage:
@@ -91,11 +105,11 @@ human_verification: []
 # Phase 18: Branch on a Computed Value — Verification
 
 **Phase Goal:** A branch can discriminate a value the function computed, not only its own parameter, by generalizing `match` to the terminal form of a linear body over an in-scope `data` place.
-**Verified:** 2026-09-24T20:47:13Z
+**Verified:** 2026-09-25T19:32:21Z
 **Status:** passed
-**Re-verification:** Yes — refreshed after GSD completion metadata changed.
+**Re-verification:** Yes — refreshed after Plan 18-09 closed G-18-16 and added bounded subprocess and repeated full-suite evidence.
 
-The Phase 18 goal and success criteria were rechecked against the completed roadmap entry. The fingerprint covers the phase plans and summaries, mapped requirements, implementation, fixtures, and validation evidence. Mutable progress files (`ROADMAP.md`, `STATE.md`, and `state.json`) are excluded because GSD completion and subsequent phase advancement edit those administrative records without changing the acceptance contract or implementation evidence; including them would make the phase report stale as a consequence of its own completion workflow.
+The Phase 18 goal and success criteria were rechecked against the roadmap entry. The fingerprint covers all nine phase plans and summaries, mapped requirements, implementation, fixtures, and both validation evidence gates. Mutable progress files (`ROADMAP.md`, `STATE.md`, and `state.json`) are excluded because GSD completion and subsequent phase advancement edit those administrative records without changing the acceptance contract or implementation evidence; including them would make the phase report stale as a consequence of its own completion workflow.
 
 ## Goal Achievement
 
@@ -124,12 +138,17 @@ The Phase 18 goal and success criteria were rechecked against the completed road
 | 19 | Recurring focused CI is used only when measured regression value justifies the duplication. | ✓ VERIFIED | `--final` passes; it proves the unchanged workflow hash and records why the focused native session command (about two minutes per host) duplicates the existing full/race coverage without a distinct signal. |
 | 20 | Existing macOS/Linux CI checks retain build, vet, full tests, race tests, and installed Clang coverage. | ✓ VERIFIED | `.github/workflows/ci.yml` matrix is Ubuntu/macOS, requires Clang, and runs `go vet ./...`, `go build ./...`, `go test ./...`, and `go test -race ./...`; the Phase 18 tests are in those packages. |
 | 21 | S-010 was clean for its pre-planning hard gate and was rerun through production source code. | ✓ VERIFIED | Spike 007 records the explicit CFG test and killed third-kind mutation. Phase 18 adds the production source fixture, production checker endpoint assertions, peer checks, and differential execution; the source validation passes. |
+| 22 | Default-parallel full-suite reliability is restored without weakening bounded subprocess behavior. | ✓ VERIFIED | Three independent `go test ./... -count=1` receipts pass; the current `verify-phase18-postfix-evidence.sh --final` validates their complete output sections, digests, durations, and source blobs. The runner and probe retain finite deadlines and parent cancellation; explicit short-deadline falsifiers pass in the selected package command recorded by Plan 18-09. |
+| 23 | Failed Clang identity probes refuse cache reuse while preserving their typed inner causes. | ✓ VERIFIED | `cache.InputsFor` wraps probe failures with the stable `cache.input_undeclared` refusal; `TestCacheProbeFailureCause` verifies timeout and non-timeout causes remain inspectable. The focused Plan 18-09 unit lane passes. |
+| 24 | Native and Clang subprocesses remain bounded under default package load and race instrumentation. | ✓ VERIFIED | The implementation uses a finite 30-second per-subprocess default while caller timeouts and parent cancellation remain authoritative. Focused falsifiers and the full race receipt pass under the final evidence gate. |
+| 25 | Repeated post-fix aggregate evidence is complete and internally bound to captured output. | ✓ VERIFIED | `verify-phase18-postfix-evidence.sh --final` passes with three distinct default-parallel suites, `-p=4`, race, vet, and build receipts; all seven output ranges, hashes, durations, and tool/source metadata validate. |
+| 26 | The existing CI contract remains the justified recurring coverage, with no manual UAT criterion for this compiler objective. | ✓ VERIFIED | Both Phase 18 evidence verifiers pass. Plan 08's verifier confirms the unchanged CI workflow blob and `not_added` disposition; all Phase 18 acceptance items are objectively covered, and the completed UAT records 16 automated passes with zero issues. |
 
-**Score:** 21/21 verified; behavior-unverified: 0.
+**Score:** 26/26 verified; behavior-unverified: 0.
 
 ### Required Artifacts
 
-All plan-declared artifacts passed `gsd-tools query verify.artifacts`: Plan 01 2/2, 02 2/2, 03 2/2, 04 10/10, 05 5/5, 06 2/2, 07 1/1, and 08 3/3. The checked artifacts are substantive; source fixtures are consumed by the named tests, checker/peer/emitter artifacts are invoked by the integration paths, and the evidence verifier is runnable in both modes.
+All plan-declared artifacts passed `gsd-tools query verify.artifacts`: Plan 01 2/2, 02 2/2, 03 2/2, 04 10/10, 05 5/5, 06 2/2, 07 1/1, 08 3/3, and 09 6/6. The checked artifacts are substantive; source fixtures are consumed by the named tests, checker/peer/emitter artifacts are invoked by the integration paths, and both evidence verifiers are runnable.
 
 ### Key Link Verification
 
@@ -140,6 +159,7 @@ All plan-declared artifacts passed `gsd-tools query verify.artifacts`: Plan 01 2
 | Destructured payload | Terminal outcome value | Arm value place → OpReturn → execution serialization → comparator | ✓ WIRED | Expected payload bytes survive native/interpreter execution; injected wrong-slot mutation diverges on the terminal axis. |
 | Pre-match borrow | Liveness endpoints on match edges | Production CFG → `loanLivenessFixpoint` → `materializeLoanEndpoints` | ✓ WIRED | Source test observes the point use and unused sibling edge endpoint, and production checker accepts both alternatives. |
 | Measured evidence | CI disposition | Evidence verifier → workflow blob and matrix checks | ✓ WIRED | `--measurements` and `--final` both pass; workflow retains Ubuntu/macOS full/race jobs. |
+| Post-fix lane receipts | Captured run output | Post-fix evidence verifier → section ranges, digests, source blobs, and tool versions | ✓ WIRED | `verify-phase18-postfix-evidence.sh --final` verifies all seven current receipts and delegates to the Plan 08 final verifier. |
 
 The generic key-link query cannot interpret the plans' descriptive component names as filesystem paths; these links were traced directly through implementation and the named behavioral tests above.
 
@@ -192,6 +212,7 @@ The GSD decision-coverage query reports all 5 trackable context decisions honore
 |---|---|---:|---:|---:|---|---|
 | Phase 18 syntax/check/corevalidate/originvalidate tests | CTL-01, CTL-02, CTL-03 | Yes | 0 | 0 | Behavioral/value and negative-control assertions | PASS |
 | Phase 18 session, payload, loan, and adversarial tests | CTL-01, CTL-02, CTL-03 | Yes | 0 | 0 | Cross-engine values, exact axes, mutation injection, peer execution | PASS |
+| Phase 18 cache, native, and machine probe tests | CTL-01, CTL-02 | Yes | 0 | 0 | Typed failure causes, bounded deadlines, caller-cancellation falsifiers | PASS |
 
 No disabled requirement tests or expected-value writers were found in the linked test files. The fixtures and payload expectations are authored inputs/contracts; they are not captured from the system under test.
 
@@ -207,9 +228,9 @@ N/A — compiler/toolchain foundation phase with no user-facing UX. Every accept
 
 ### Gaps Summary
 
-No gaps remain against the Phase 18 roadmap success criteria or the merged plan must-haves. CTL-01 through CTL-03 are now marked complete in `REQUIREMENTS.md`, and this refreshed report fingerprints that updated state. The roadmap updater still reports Phase 18 `roadmap_complete: false` because the phase entry is maintained differently from writable phase details; no roadmap text was modified to mask that condition.
+No gaps remain against the Phase 18 roadmap success criteria or the merged plan must-haves. CTL-01 through CTL-03 are marked complete in `REQUIREMENTS.md`; Phase 18 and all nine plans are marked complete in `ROADMAP.md`; G-18-16 is resolved in UAT and its debug record. The verification fingerprint includes the Phase 18-09 source and captured evidence artifacts.
 
 ---
 
-_Verified: 2026-09-24T20:47:13Z_  
+_Verified: 2026-09-25T19:32:21Z_  
 _Verifier: the agent (gsd-verifier)_

@@ -409,6 +409,8 @@ Canonical planning inputs:
 | Eliminate Phase 11's two human-judgment items with tests rather than adjudicate them | A debt note is read once; a test runs on every CI invocation | ✓ Good — `TestSeedEntryHazardIsReal` and `session_admission_divergence_test.go` both fail in *both* directions, catching a silently resolved divergence as well as a new one |
 | Ratify DX-06 and DX-07 as honest partials rather than downgrade the criteria | Both are blocked by one root cause — `sameType(ReturnType, Parameter.Type)` at function admission — and both close automatically when it lifts; restating the criterion to match what shipped would hide a real language limit | ⚠️ Revisit in M003 — the blame resolver and its exhaustiveness guard are already built and waiting on the type-system widening |
 | Reject the integration checker's requirement-satisfaction column while adopting its structural findings | It graded requirements from wiring, and wiring is exactly what a structurally unreachable defect class still has | ✓ Good — caught two would-be false greens (DX-06, DX-07) that contradicted both Phase 13's own verification and a `grep` of the tree |
+| Keep cache refusal codes stable while retaining typed Clang probe causes and finite subprocess deadlines | Callers keep a fail-closed contract while diagnostics distinguish timeout, launch, and command failures; bounded work remains cancellable | ✓ Good — three default-parallel full suites, capped-parallel and race suites, vet, and build all pass under verified captured receipts |
+| Reuse existing macOS/Linux full and race CI lanes when focused coverage adds no distinct signal | Recurring CI value must justify its runtime and maintenance cost | ✓ Good — Plan 08's unchanged CI blob and `not_added` disposition remain verified after G-18-16 closure |
 
 ## Evolution
 
@@ -428,4 +430,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-25 after Phase 16 verification (Branch/Match Emitter Port) passed*
+*Last updated: 2026-09-25 after Phase 18 verification (Branch on a Computed Value) passed*

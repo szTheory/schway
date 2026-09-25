@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 18
-current_phase_name: Branch on a Computed Value
+current_phase: 19
+current_phase_name: Numeric Literals and `OpConst`
 status: verification
-stopped_at: Completed 18-09-PLAN.md
-last_updated: "2026-09-25T18:54:30.653Z"
+stopped_at: Phase 18 complete; Phase 19 implementation complete, verification stale
+last_updated: "2026-09-25T19:47:51.928Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 18 automated verification found G-18-16; gap plan 18-09 passed independent plan check
-state_head: 5cf3d3f8a64d17dfd89c5ae41cd73c6fcc085d25
+last_activity_desc: Phase 18 verified complete with automated UAT; transitioned to Phase 19 verification
+state_head: dfa559840492f829c46fa8e54116a66157377efa
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 84
   completed_plans: 84
+  percent: 86
 ---
 
 # Project State
@@ -26,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phases 15, 16, 17, and 20 are verified complete. Phase 18's product criteria are automatically covered; UAT diagnosed G-18-16 because unrestricted parallel full-suite runs failed twice while serialized and `-p=4` runs passed. Plan 18-09 is independently checked and ready to close that reliability gap. Phase 19 still has stale verification. Resume with `$gsd-execute-phase 18 --gaps-only`; then rerun phase 18 verification and continue to Phase 19.
+**Current focus:** Phases 15, 16, 17, 18, and 20 are verified complete. Phase 18's G-18-16 reliability gap is closed with repeated default-parallel full-suite receipts and bounded, inspectable subprocess failures. Phase 19 implementation is complete but its verification is stale; resume with `$gsd-verify-work 19` before planning further work.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -48,16 +49,16 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 18 — Branch on a Computed Value
-Plan: 9 of 9 (gap plan 18-09 ready; G-18-16 unresolved)
-Total Plans in Phase: 9
-Status: Gap closure planned; execution required
-Last activity: 2026-09-25 — Phase 18 gap plan 18-09 passed independent plan check
+Phase: 19 — Numeric Literals and `OpConst`
+Plan: 7 of 7 — verification pending
+Total Plans in Phase: 7
+Status: Verification pending
+Last activity: 2026-09-25 — Phase 18 complete, transitioned to Phase 19
 Phase 19 still has a stale verification report. Phase 20 is verified complete; its 33-pair archive grades
 cleanly, the current open-unowned debt set is four, and the full repository
 suite passes.
 
-**Next:** `$gsd-execute-phase 18 --gaps-only` — execute the verified G-18-16 reliability fix plan.
+**Next:** `$gsd-verify-work 19` — refresh Phase 19 verification before advancing.
 
 ## M003 Phase Map
 
@@ -132,7 +133,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 186
+- Total plans completed: 187
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -155,7 +156,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 15 | 10 | - | - |
 | 16 | 26 | - | - |
 | 17 | 9 | - | - |
-| 18 | 8 | - | - |
+| 18 | 9 | - | - |
 | 19 | 7 | - | - |
 **Per-Plan Metrics:**
 
@@ -636,6 +637,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260924-k1v | Reconcile pathoracle loan endpoints for Phase 18 computed match | 2026-09-24 | bc71633 | passed | [260924-k1v-reconcile-pathoracle-loan-endpoints-for-](./quick/260924-k1v-reconcile-pathoracle-loan-endpoints-for-/) |
 | 260924-kto | Restore historical core compatibility and Phase 18 liveness acceptance after full-suite regressions | 2026-09-24 | e91628c | passed | [260924-kto-restore-historical-core-compatibility-an](./quick/260924-kto-restore-historical-core-compatibility-an/) |
 | 260924-tsl | Fix Phase 19 full-suite regressions | 2026-09-24 | ed237ab | passed | [260924-tsl-fix-phase-19-full-suite-regressions-refr](./quick/260924-tsl-fix-phase-19-full-suite-regressions-refr/) |
+| 8 | Complete Phase 18 automated UAT with zero manual checks | 2026-09-25 | dfa5598 | passed | — |
 
 ## Deferred Items
 
@@ -649,10 +651,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T18:54:30.328Z
-Stopped at: Completed 18-09-PLAN.md
+Last session: 2026-09-25T19:38:34Z
+Stopped at: Phase 18 verified complete; Phase 19 verification is stale
 Resume file: None
-Next command: `$gsd-verify-work 18`
+Next command: `$gsd-verify-work 19`
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
