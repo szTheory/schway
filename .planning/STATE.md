@@ -5,17 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: verification
-stopped_at: Phase 18 gap G-18-16 diagnosed; plan 18-09 verified and ready for gaps-only execution
-last_updated: "2026-09-25T16:07:38Z"
+stopped_at: Completed 18-09-PLAN.md
+last_updated: "2026-09-25T18:54:30.653Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 18 automated verification found G-18-16; gap plan 18-09 passed independent plan check
-state_head: ea38f6fde671474d2a74d0522381048079e7c1ab
+state_head: 5cf3d3f8a64d17dfd89c5ae41cd73c6fcc085d25
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 6
-  total_plans: 83
-  completed_plans: 83
-  percent: 86
+  total_plans: 84
+  completed_plans: 84
 ---
 
 # Project State
@@ -50,7 +49,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 18 — Branch on a Computed Value
-Plan: 8 of 9 (gap plan 18-09 ready; G-18-16 unresolved)
+Plan: 9 of 9 (gap plan 18-09 ready; G-18-16 unresolved)
 Total Plans in Phase: 9
 Status: Gap closure planned; execution required
 Last activity: 2026-09-25 — Phase 18 gap plan 18-09 passed independent plan check
@@ -324,6 +323,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 19 P6 | 9min | 2 tasks | 5 files |
 | Phase 19 P07 | 17 | 2 tasks | 7 files |
 | Phase 20 P01 | 5min | 2 tasks | 3 files |
+| Phase 18 P09 | 63min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -488,6 +488,10 @@ Standing architectural commitments carried into M002:
 - [Phase 19]: Use the existing schema-2 comparison projection for the interpreter before comparing all four execution tiers.
 - [Phase 19]: Keep stale Phase 11 maturity and reconciliation findings as regression debt outside Plan 19-07.
 - [Phase 20]: M003-open checksum refusal is treated as a historical reconstruction, not a contemporaneous fixture pin.
+- [Phase 18]: Keep cache.input_undeclared stable while unwrapping typed Clang probe failures through Cause.
+- [Phase 18]: Use a finite 30-second default per subprocess; explicit runner timeouts and parent cancellation remain authoritative.
+- [Phase 18]: Keep Plan 08 CI disposition unchanged because existing macOS and Linux full and race jobs cover Phase 18.
+- [Phase 18]: Regenerate the stale validation corpus from the live pair exporter and actual sequential test results.
 
 ### Pending Todos
 
@@ -645,8 +649,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T16:07:38Z
-Stopped at: Phase 16 verified complete; Phase 18 is next for automated verification
+Last session: 2026-09-25T18:54:30.328Z
+Stopped at: Completed 18-09-PLAN.md
 Resume file: None
 Next command: `$gsd-verify-work 18`
 
