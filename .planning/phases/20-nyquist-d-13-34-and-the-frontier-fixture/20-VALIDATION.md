@@ -20,14 +20,14 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 | Framework | Go 1.24 standard `testing` and the existing project CLI |
 | Config | `go.mod`; no new external dependency |
 | Interim corpus lane | `go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1`; the exact frontier pin is required only after Plan 07 reconciles all Phase 20 findings. |
-| Full suite timing | `go test ./... -count=1`; report both the roadmap's 192.7 s reference and Phase 14's measured 191.89 s cold manifest value. |
+| Full suite timing | Three paired cold/warm `go test ./... -count=1` runs under one 30-minute helper cap; report raw samples, min/median/max, paired deltas, the roadmap's 192.7 s reference, and Phase 14's measured 191.89 s cold manifest value. |
 | Host cache | Use `GOCACHE=/private/tmp/phase20-gocache` in this Codex sandbox; this is environment handling, not a repository setting. |
 
 ## Sampling Rate
 
 - Before any VALIDATION edit, preserve two distinct measurements: the historical research snapshot (R1/R2/R3 = 0, reconciled R2b = 23, raw R2b = 24, 639 documents, 708 commands) and a new scanner run immediately before Phase 20 execution. The 2026-09-25 planning scan was R2=10, R2b=25, 651 documents, 737 commands; remeasure at execution start rather than treating either snapshot as a required live count.
 - After each documentation task, run the named current test/CLI commands and the non-vacuous corpus check. Capture the full scanner's exact findings even while prospective Phase 20 tests keep its global pin red. Plan 07 reconciles identities and R2b owners and then requires the global frontier test green.
-- After the closure-cache task, run native/cache controls and the enumerated closure cold and warm. The phase gate runs the **full repository suite**, with cold and warm wall-clock evidence against Phase 14's 192.7 s baseline.
+- After the closure-cache task, run native/cache controls and the enumerated closure cold and warm. The phase gate gathers three controlled cold/warm **full repository suite** pairs, reports both distributions and their spread, and compares the warm median with the Phase 14 references.
 - At phase close, run the checksum, validation lifecycle, closure cache, debt cap, and held-out corpus controls plus `go test ./... -count=1`. A status transition to `validated` or `complete` requires actual run evidence, not document edits alone.
 
 ## Per-Task Verification Map
@@ -44,7 +44,7 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 | 20-03-03 | 03 | 2 | QLT-10 | Enforce zero draft and capture interim exact frontier findings and owners. | `go test ./internal/compiler/session -run '^TestPhase20ValidationLifecycle$' -count=1` | ❌ lifecycle W2 | DEFINED | ⬜ pending |
 | 20-04-01 | 04 | 1 | QLT-12 | Reuse only content-bound native build artifacts and execute outputs fresh. | `go test ./internal/compiler/native ./internal/compiler/cache -count=1` | ❌ W1 | DEFINED | ⬜ pending |
 | 20-04-02 | 04 | 1 | QLT-12 | Reuse unchanged closure evidence and invalidate seeded changed inputs. | `go test ./internal/compiler/session -run '^TestPhase20EnumeratedClosure' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
-| 20-04-03 | 04 | 1 | QLT-12 | Measure full-suite cold/warm cost against the Phase 14 baseline. | `go run scripts/phase20-closure-timing.go` | ❌ W1 | DEFINED | ⬜ pending |
+| 20-04-03 | 04 | 1 | QLT-12 | Measure three paired full-suite cold/warm samples and report distributions against both Phase 14 references. | `go run scripts/phase20-closure-timing.go` | ❌ W1 | DEFINED | ⬜ pending |
 | 20-05-01 | 05 | 1 | PRC-02 | Derive current debt population from the M002 ten-ID cohort plus live M003 rows. | `go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1` | ❌ population W1 | DEFINED | ⬜ pending |
 | 20-05-02 | 05 | 1 | PRC-02 | Reconcile the three Phase 16 emitter-debt closures. | `go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1` | ❌ population W1 | DEFINED | ⬜ pending |
 | 20-05-03 | 05 | 1 | PRC-02 | Assign the verified Phase 21 native/LTO owner and prove seeded cap rule. | `go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtCapRule$' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
@@ -68,6 +68,6 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 
 - [ ] All 18 automated task rows resolve to real commands and have recorded results.
 - [ ] Zero draft VALIDATION files remain; current Phase 20 status is updated from actual evidence.
-- [ ] The full suite passes; cold/warm suite and closure timings are recorded against the 192.7 s Phase 14 baseline.
+- [ ] Three cold and three warm full-suite runs pass within the helper cap; raw samples, min/median/max, and paired deltas are recorded against both Phase 14 references.
 - [ ] The live, source-derived open-unowned debt set contains no more than five IDs.
 - [ ] `nyquist_compliant: true` is set only after all applicable gates pass.

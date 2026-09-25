@@ -28,14 +28,20 @@ Plan estimates range from 12,000 to 26,000 tokens, below the 100,000-token budge
 
 The 18 `20-VALIDATION.md` command cells use exact test names, named prefixes, or separate commands joined by `&&`; none depends on a Markdown escape becoming shell syntax. An independent parser confirmed all 18 table rows have nine cells, one intact command code span, no pipe or backslash, and shell-parseable commands. The D-13-34 task remains a `blocking-human` checkpoint, and no plan selects an outcome in advance.
 
-### Resolution submitted for independent sign-off
+### Final independent sign-off
 
 Plan 20-02 Task 1 now identifies `R1/R2/R3=0`, reconciled `R2b=23`, raw `R2b=24`, 639 documents, and 708 commands as the historical research snapshot. It requires a fresh execution-start scan of the now-planned tree, records exact findings and provisional owners, and explicitly permits the global frontier test to be red before reconciliation. The measured 2026-09-25 planning snapshot (`R2=10`, `R2b=25`, 651 documents, 737 commands) is a point-in-time observation, not a required execution count. Plan 02's task verifications now run the passing non-vacuous corpus check; Plan 03 enforces zero draft while preserving interim findings; Plan 07 is the first task that requires the exact global frontier and owner gate green, after new Phase 20 tests and source-row repairs land. The validation map and research distinguish the two snapshots and this sequence.
 
-The new interim command passed in the current worktree. The global pin was intentionally observed red in the current worktree and remains a required Phase 20 completion gate. Independent sign-off must verify the revised dependency and verification sequence; this paragraph does not self-approve that check.
+Independent sign-off confirms that the sequence is sound: Plan 02 records the historical research baseline separately from a fresh execution-start scan and does not demand a green old pin; Plans 02/03 permit the expected interim red state while recording exact findings and owners; Plan 07 runs after those reconciliations and is the first plan requiring the exact global frontier and ownership gates to pass. The measured current planning scan (R2=10/R2b=25, 651 documents, 737 commands) is identified as a point-in-time observation, not an execution requirement.
+
+The historical checksum comparison is accurately bounded: no contemporaneous M003-open fixture pin existed, so Plan 01 reproduces the old checker result for identical bytes and explicitly labels it reconstructed. The cache plan requires a complete input manifest and bypass on undiscoverable inputs, keeps execution/comparison fresh, and records corruption/invalidation controls. The debt plan keeps the audit cohort, live M003 additions, generated-view subset, and raw archive count distinct; it specifies a source-derived 13-item population, evidence-backed disposition path, seeded overflow control, and retains D-13-34 as a blocking human choice. The 11 draft files and the copy-safe VALIDATION command map are covered. All seven plan structures validate; dependencies are acyclic and consistent, each automated task has Files/Action/Verify/Done, and 20-06 preserves the human checkpoint.
+
+### Timing-distribution revision submitted for sign-off
+
+Plan 20-04 Task 3 now specifies three paired cold/warm full-suite runs after prewarming a private Go build cache. Every run uses `-count=1`; each pair has a fresh empty closure-artifact cache followed by a warm reuse of that same cache. The helper is bounded to six full-suite invocations and 30 minutes total, with incomplete or failed pairs reported as non-passing evidence. `20-CLOSURE-TIMING.md` must show all six raw samples, min/median/max for cold and warm, paired deltas, exact environment facts, and warm-median comparisons against both Phase 14 references. The validation map now states the same contract. This resolves the sampling concern in the plan text; independent review still needs to confirm it.
 
 ```yaml
 issues_pending_recheck: []
 ```
 
-**Recommendation:** Re-run independent plan sign-off on the revised seven-plan set. Preserve the `blocking-human` D-13-34 checkpoint and exact frontier/owner equality at Plan 07.
+**Recommendation:** Re-run independent sign-off on the revised timing contract. Preserve the `blocking-human` D-13-34 checkpoint and exact frontier/owner equality at Plan 07.
