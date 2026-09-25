@@ -6,7 +6,7 @@ nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-25"
 evidence_vocabulary: v1
-graded_rows: 18
+graded_rows: 21
 ---
 
 # Phase 20 — Validation Strategy
@@ -27,7 +27,7 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 
 - Before any VALIDATION edit, preserve two distinct measurements: the historical research snapshot (R1/R2/R3 = 0, reconciled R2b = 23, raw R2b = 24, 639 documents, 708 commands) and a new scanner run immediately before Phase 20 execution. The 2026-09-25 planning scan was R2=10, R2b=25, 651 documents, 737 commands; remeasure at execution start rather than treating either snapshot as a required live count.
 - After each documentation task, run the named current test/CLI commands and the non-vacuous corpus check. Capture the full scanner's exact findings even while prospective Phase 20 tests keep its global pin red. Plan 07 reconciles identities and R2b owners and then requires the global frontier test green.
-- After the closure-cache task, run native/cache controls and the enumerated closure cold and warm. The phase gate gathers three controlled cold/warm **full repository suite** pairs, reports both distributions and their spread, and compares the warm median with the Phase 14 references.
+- In Wave 1, run native/cache and enumerated-closure controls plus the timing harness's deterministic smoke tests. Reconcile maturity counts, public-emitter consumers, skip witnesses, debt, and the exact frontier in Plan 07. Plan 08 requires a green unfiltered suite preflight before gathering three controlled cold/warm **full repository suite** pairs and comparing their distributions with the Phase 14 references.
 - At phase close, run the checksum, validation lifecycle, closure cache, debt cap, and held-out corpus controls plus `go test ./... -count=1`. A status transition to `validated` or `complete` requires actual run evidence, not document edits alone.
 
 ## Per-Task Verification Map
@@ -44,14 +44,17 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 | 20-03-03 | 03 | 2 | QLT-10 | Enforce zero draft and capture interim exact frontier findings and owners. | `go test ./internal/compiler/session -run '^TestPhase20ValidationLifecycle$' -count=1` | ❌ lifecycle W2 | DEFINED | ⬜ pending |
 | 20-04-01 | 04 | 1 | QLT-12 | Reuse only content-bound native build artifacts and execute outputs fresh. | `go test ./internal/compiler/native ./internal/compiler/cache -count=1` | ❌ W1 | DEFINED | ⬜ pending |
 | 20-04-02 | 04 | 1 | QLT-12 | Reuse unchanged closure evidence and invalidate seeded changed inputs. | `go test ./internal/compiler/session -run '^TestPhase20EnumeratedClosure' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
-| 20-04-03 | 04 | 1 | QLT-12 | Measure three paired full-suite cold/warm samples and report distributions against both Phase 14 references. | `go run scripts/phase20-closure-timing.go` | ❌ W1 | DEFINED | ⬜ pending |
+| 20-04-03 | 04 | 1 | QLT-12 | Implement and smoke-check the bounded timing harness without launching the full suite. | `go test ./scripts -run '^TestPhase20ClosureTimingHarness$' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
 | 20-05-01 | 05 | 1 | PRC-02 | Derive current debt population from the M002 ten-ID cohort plus live M003 rows. | `go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1` | ❌ population W1 | DEFINED | ⬜ pending |
 | 20-05-02 | 05 | 1 | PRC-02 | Reconcile the three Phase 16 emitter-debt closures. | `go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1` | ❌ population W1 | DEFINED | ⬜ pending |
 | 20-05-03 | 05 | 1 | PRC-02 | Assign the verified Phase 21 native/LTO owner and prove seeded cap rule. | `go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtCapRule$' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
-| 20-07-01 | 07 | 3 | QLT-10, PRC-02 | Repair four stale or underspecified validation rows with current test evidence. | `go test ./internal/compiler/session -run '^TestValidationGradeCapArchivedDeadCitationsRemainAbsent$' -count=1 && go test ./internal/compiler/session -run '^TestValidationGradeCapBarePackageRowHasNoNamedTest$' -count=1 && go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
-| 20-07-02 | 07 | 3 | QLT-10, PRC-02 | Close proved row debt and enforce a live five-item cap, seeded overflow, and current views. | `go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtCap$' -count=1 && go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run 'TestUnreachableClaimsView' -count=1 && go test ./internal/compiler/session -run 'TestVerificationGroundedness' -count=1` | ❌ cap W3 | DEFINED | ⬜ pending |
-| 20-06-01 | 06 | 4 | PRC-02 | Prepare measured D-13-34 alternatives for human choice. | `go test ./internal/compiler/session -run '^TestPhase6HeldoutPairsAreAlphaRenamesOnly$' -count=1 && go test ./internal/compiler/session -run '^TestPhase6DefectCorpusIsHeldOut$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
-| 20-06-03 | 06 | 4 | PRC-02 | Implement selected outcome and assert the live ≤5 debt cap. | `go test ./internal/compiler/session -run 'TestPhase6HeldoutPairs' -count=1 && go test ./internal/compiler/session -run '^TestPhase6DefectCorpusIsHeldOut$' -count=1 && go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run 'TestPhase20UnownedDebt' -count=1` | ❌ cap W4 | DEFINED | ⬜ pending |
+| 20-07-01 | 07 | 3 | QLT-10, PRC-02 | Repair four stale or underspecified validation rows and the corpus digest. | `go test ./internal/compiler/session -run '^TestValidationGradeCapArchivedDeadCitationsRemainAbsent$' -count=1 && go test ./internal/compiler/session -run '^TestValidationGradeCapBarePackageRowHasNoNamedTest$' -count=1 && go test ./internal/compiler/session -run '^TestValidationRowGradesAreEarnedOverArchivedCorpus$' -count=1 && go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
+| 20-07-02 | 07 | 3 | QLT-10, PRC-02 | Refresh maturity counts, classify final emitter calls, and cite all six new skip witnesses. | `go test ./internal/compiler/session -run '^TestLanguageMaturityCountsAreCurrent$' -count=1 && go test ./internal/compiler/session -run '^TestSelfDescribingDocsGuardIsNotInert$' -count=1 && go test ./internal/compiler/session -run '^TestPhase16PublicEmitterConsumerInventory$' -count=1 && go test ./internal/compiler/session -run '^TestNoSuppressionOutlivesItsWitness$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
+| 20-07-03 | 07 | 3 | QLT-10, PRC-02 | Close proved row debt and enforce a live five-item cap, seeded overflow, and current views. | `go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtCap$' -count=1 && go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run 'TestUnreachableClaimsView' -count=1 && go test ./internal/compiler/session -run '^TestReconciliationVerdictsCarryTheirObligations$' -count=1 && go test ./internal/compiler/session -run 'TestVerificationGroundedness' -count=1` | ❌ cap W3 | DEFINED | ⬜ pending |
+| 20-08-01 | 08 | 4 | QLT-12 | Require a green unfiltered full suite before timing starts. | `go test ./... -count=1` | ✅ existing | DEFINED | ⬜ pending |
+| 20-08-02 | 08 | 4 | QLT-12 | Measure three paired cold/warm full-suite distributions on the green reconciled tree. | `go run scripts/phase20-closure-timing.go` | ❌ harness W1 | DEFINED | ⬜ pending |
+| 20-06-01 | 06 | 5 | PRC-02 | Prepare measured D-13-34 alternatives for human choice. | `go test ./internal/compiler/session -run '^TestPhase6HeldoutPairsAreAlphaRenamesOnly$' -count=1 && go test ./internal/compiler/session -run '^TestPhase6DefectCorpusIsHeldOut$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
+| 20-06-03 | 06 | 5 | PRC-02 | Implement selected outcome and assert the live ≤5 debt cap. | `go test ./internal/compiler/session -run 'TestPhase6HeldoutPairs' -count=1 && go test ./internal/compiler/session -run '^TestPhase6DefectCorpusIsHeldOut$' -count=1 && go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run 'TestPhase20UnownedDebt' -count=1` | ❌ cap W5 | DEFINED | ⬜ pending |
 
 ## Wave 0 Requirements
 
@@ -66,8 +69,10 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 
 ## Validation Sign-Off
 
-- [ ] All 18 automated task rows resolve to real commands and have recorded results.
+- [ ] All 21 automated task rows resolve to real commands and have recorded results.
 - [ ] Zero draft VALIDATION files remain; current Phase 20 status is updated from actual evidence.
+- [ ] Maturity counts, public-emitter registry, skip witnesses, reconciliation view, and exact frontier gates are green before the timing preflight.
+- [ ] Plan 08's unfiltered full-suite preflight passes before any timed pair begins.
 - [ ] Three cold and three warm full-suite runs pass within the helper cap; raw samples, min/median/max, and paired deltas are recorded against both Phase 14 references.
 - [ ] The live, source-derived open-unowned debt set contains no more than five IDs.
 - [ ] `nyquist_compliant: true` is set only after all applicable gates pass.
