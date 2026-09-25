@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 18-branch-on-a-computed-value
-source: [18-01-SUMMARY.md, 18-02-SUMMARY.md, 18-03-SUMMARY.md, 18-04-SUMMARY.md, 18-05-SUMMARY.md, 18-06-SUMMARY.md, 18-07-SUMMARY.md, 18-08-SUMMARY.md]
+source: [18-01-SUMMARY.md, 18-02-SUMMARY.md, 18-03-SUMMARY.md, 18-04-SUMMARY.md, 18-05-SUMMARY.md, 18-06-SUMMARY.md, 18-07-SUMMARY.md, 18-08-SUMMARY.md, 18-09-SUMMARY.md]
 started: 2026-09-25T16:36:27Z
-updated: 2026-09-25T17:05:18Z
+updated: 2026-09-25T19:32:21Z
 ---
 
 ## Current Test
@@ -103,15 +103,19 @@ source: automated
 
 ### 16. Default-parallel full-suite reliability
 expected: `go test ./... -count=1` completes without cache-probe or native-execution timeouts.
-result: issue
+result: pass
 reported: "Two default-parallel full-suite runs failed in internal/compiler/cache with cache.input_undeclared at probe_test.go:86 (one run also failed line 156) and internal/compiler/cgen with native.timeout: context deadline exceeded at cgen_payload_tracer_test.go:30. The same focused tests pass alone; complete `go test -p=1 ./... -count=1` and `go test -p=4 ./... -count=1` runs pass."
-severity: blocker
+resolution: "Plan 18-09 retained typed Clang probe causes and finite subprocess deadlines, then passed three independent default-parallel full-suite runs, the capped-parallel and race suites, vet, and build. The current evidence verifier validates the captured receipts and Plan 08 CI disposition."
+source: automated
+verification:
+  - "bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-postfix-evidence.sh --final"
+  - "bash .planning/phases/18-branch-on-a-computed-value/verify-phase18-validation-evidence.sh --final"
 
 ## Summary
 
 total: 16
-passed: 15
-issues: 1
+passed: 16
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
@@ -120,7 +124,7 @@ blocked: 0
 
 - gap_id: G-18-16
   truth: "The default-parallel full Go suite completes without cache-probe or native-execution timeouts."
-  status: failed
+  status: resolved
   reason: "Repeated `go test ./... -count=1` runs exceed 5-second subprocess deadlines under package-level parallel load; serial execution and isolated tests pass."
   severity: blocker
   test: 16
@@ -137,3 +141,5 @@ blocked: 0
   missing:
     - "Make full-suite CI reliable under normal package parallelism while preserving bounded, fail-closed subprocess execution and the measured Phase 18 CI disposition."
   debug_session: ".planning/debug/phase18-parallel-suite-timeout.md"
+  resolved_by: 18-09-PLAN.md
+  resolved_at: 2026-09-25
