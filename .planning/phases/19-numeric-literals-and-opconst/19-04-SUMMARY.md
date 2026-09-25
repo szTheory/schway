@@ -75,7 +75,7 @@ status: complete
 1. **Task 1: Define the U64 type fact and kind-exclusive constant representation** — `88de2d4` (RED tests), `e03ed84` (GREEN implementation).
 2. **Task 2: Check range and lower direct literal bindings** — `a88a038` (RED tests), `e051fd0` (GREEN implementation).
 
-**Plan metadata:** pending final metadata commit.
+**Plan metadata:** `ef04321` (docs: complete plan).
 
 ## Files Created/Modified
 
@@ -124,5 +124,5 @@ The independent core validator and runtime/backend plans can now consume the typ
 ## Self-Check: PASSED
 
 - All seven planned source/test files exist and are included in the four task commits.
-- The task commit range measures four commits from `plan_head_before` to `HEAD`.
+- Four task commits were measured from `plan_head_before` before the separate metadata commit.
 - The focused ability/core/checker/session verification commands passed.
