@@ -164,6 +164,9 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
 			}
 			switch operation.Kind {
+			case core.OpConst:
+				// Constants change local state but intentionally add no public event.
+				continue
 			case core.OpCopy:
 				event.ID, event.Kind = operation.ID+":event", "value.copied"
 			case core.OpMove:
@@ -196,10 +199,17 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 			}
 		}
 	} else {
-		var err error
-		outcomeValue, _, _, err = linearInput(entry)
-		if err != nil {
-			return 0, err
+		if entry.ReturnType == "U64" {
+			// The canonical decimal representation is at most 20 digits. Use
+			// that bound here because the returned place may be an input, a
+			// constant, or a copy of either.
+			outcomeValue = "18446744073709551615"
+		} else {
+			var err error
+			outcomeValue, _, _, err = linearInput(entry)
+			if err != nil {
+				return 0, err
+			}
 		}
 	}
 	document := execution.Execution{
@@ -591,6 +601,8 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 				returnTypeNames[index] = "LANG_BUFFER"
 			case "Byte":
 				returnTypeNames[index] = "unsigned char"
+			case "U64":
+				returnTypeNames[index] = "uint64_t"
 			default:
 				return "", fmt.Errorf("function %q: unsupported linear C return type %q", function.ID, function.ReturnType)
 			}
@@ -616,6 +628,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 
 	needsBuffer := false
 	needsByte := false
+	needsU64 := false
 	needsDefect := false
 	for _, function := range functions {
 		switch function.Parameter.Type {
@@ -623,12 +636,23 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 			needsBuffer = true
 		case "Byte":
 			needsByte = true
+		case "U64":
+			needsU64 = true
 		}
 		switch function.ReturnType {
 		case "Buffer":
 			needsBuffer = true
 		case "Byte":
 			needsByte = true
+		case "U64":
+			needsU64 = true
+		}
+		if function.Linear != nil {
+			for _, operation := range function.Linear.Operations {
+				if operation.Kind == core.OpConst {
+					needsU64 = true
+				}
+			}
 		}
 		if functionHasDefect(function) {
 			needsDefect = true
@@ -644,6 +668,11 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")
 	out.WriteString(emitCallBoundaryAttributeComment(functions))
 	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n")
+	if needsU64 {
+		out.WriteString("#include <stdint.h>\n\n")
+		out.WriteString("#if !defined(UINT64_MAX)\n#error \"Codename Lang U64 requires exact-width uint64_t support\"\n#endif\n")
+		out.WriteString("#if UINT64_MAX != 18446744073709551615ULL\n#error \"Codename Lang U64 requires an exact 64-bit unsigned type\"\n#endif\n\n")
+	}
 	emitInvocationPathTable(&out, paths, childTableNames)
 	if needsBuffer {
 		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
@@ -660,6 +689,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	}
 	if needsByte {
 		emitProgramByteWriter(&out)
+	}
+	if needsU64 {
+		emitProgramU64Support(&out)
 	}
 	if err := emitProgramLiveResourcesWriter(&out, liveResources); err != nil {
 		return "", err
@@ -748,6 +780,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if needsByte {
 		out.WriteString("  (void)lang_write_byte;\n")
 	}
+	if needsU64 {
+		out.WriteString("  (void)lang_parse_u64_decimal;\n  (void)lang_write_u64;\n")
+	}
 	out.WriteString("  if (argc != 2) return 64;\n")
 	if entryIsBranch {
 		fmt.Fprintf(&out, "  %s lang_entry_input;\n", entryTypeName)
@@ -767,6 +802,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 			}
 		}
 		out.WriteString("  else return 65;\n")
+	} else if entryTypeName == "uint64_t" {
+		out.WriteString("  uint64_t lang_entry_input;\n")
+		out.WriteString("  if (!lang_parse_u64_decimal(argv[1], &lang_entry_input)) return 65;\n")
 	} else {
 		fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
 		fmt.Fprintf(&out, "  %s lang_entry_input = %s;\n", entryTypeName, initializer)
@@ -784,11 +822,14 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	} else if entryOutputType == "LANG_BUFFER" {
 		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 		out.WriteString("  if (!lang_write_buffer_hex(&lang_entry_output)) return 74;\n")
+	} else if entryOutputType == "uint64_t" {
+		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
+		out.WriteString("  if (!lang_write_u64(lang_entry_output)) return 74;\n")
 	} else {
 		out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
 		out.WriteString("  if (!lang_write_byte(lang_entry_output)) return 74;\n")
 	}
-	if entryIsBranch {
+	if entryIsBranch || entryOutputType == "uint64_t" {
 		out.WriteString("  if (!lang_write_literal(\"},\\\"events\\\":[\")) return 74;\n")
 	} else {
 		out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
@@ -824,6 +865,17 @@ func emitProgramByteWriter(out *strings.Builder) {
 	out.WriteString("static int lang_write_byte(unsigned char value) {\n")
 	out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
 	out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
+}
+
+// emitProgramU64Support parses decimal command-line inputs without relying on
+// host-sized integer conversions and writes the canonical U64 decimal value
+// as a bounded JSON string through the shared output-limit writer.
+func emitProgramU64Support(out *strings.Builder) {
+	out.WriteString("static int lang_parse_u64_decimal(const char *text, uint64_t *out) {\n")
+	out.WriteString("  uint64_t value = UINT64_C(0);\n  const unsigned char *cursor = (const unsigned char *)text;\n")
+	out.WriteString("  if (cursor == NULL || *cursor == 0u) return 0;\n")
+	out.WriteString("  for (; *cursor != 0u; ++cursor) {\n    unsigned int digit;\n    if (*cursor < (unsigned char)'0' || *cursor > (unsigned char)'9') return 0;\n    digit = (unsigned int)(*cursor - (unsigned char)'0');\n    if (value > (UINT64_MAX - digit) / UINT64_C(10)) return 0;\n    value = value * UINT64_C(10) + digit;\n  }\n  *out = value;\n  return 1;\n}\n\n")
+	out.WriteString("static int lang_write_u64(uint64_t value) {\n  char digits[20];\n  size_t length = 0u;\n  size_t index;\n  do { digits[length++] = (char)('0' + (value % UINT64_C(10))); value /= UINT64_C(10); } while (value != 0u && length < sizeof digits);\n  if (value != 0u || !lang_write_bytes(\"\\\"\", 1u)) return 0;\n  for (index = length; index > 0u; --index) if (!lang_write_bytes(&digits[index - 1u], 1u)) return 0;\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
 }
 
 // emitProgramTerminalValueWriter makes a returned payload-bearing ADT value
@@ -1118,10 +1170,19 @@ func emitProgramBranchFunction(out *strings.Builder, function core.Function, par
 }
 
 func emitProgramBranchOperation(out *strings.Builder, function core.Function, operation core.LinearOperation, parameterBranchType, returnBranchType programBranchType, locals map[string]string, places map[string]core.Place, declared map[string]bool, lookup *emitCallLookup, childTableNames map[string]string) error {
-	if _, known := places[operation.SourceID]; !known {
-		return fmt.Errorf("operation %q has invalid source", operation.ID)
+	if operation.Kind != core.OpConst {
+		if _, known := places[operation.SourceID]; !known {
+			return fmt.Errorf("operation %q has invalid source", operation.ID)
+		}
 	}
 	switch operation.Kind {
+	case core.OpConst:
+		target, exists := places[operation.TargetID]
+		if !exists || declared[operation.TargetID] {
+			return fmt.Errorf("operation %q has invalid target", operation.ID)
+		}
+		fmt.Fprintf(out, "      uint64_t %s = UINT64_C(%s); /* constant: %s */\n      (void)%s;\n", locals[target.ID], operation.ConstU64, operation.ID, locals[target.ID])
+		declared[operation.TargetID] = true
 	case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
 		if _, exists := places[operation.TargetID]; !exists || declared[operation.TargetID] {
 			return fmt.Errorf("operation %q has invalid target", operation.ID)
@@ -1323,14 +1384,31 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 	// function still receives the occurrence index. Keep generated C clean
 	// under -Werror while preserving the uniform ABI.
 	out.WriteString("  (void)invocation_index;\n")
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpConst {
+			fmt.Fprintf(out, "  (void)%s;\n", locals[parameter.ID])
+			break
+		}
+	}
 	declared := map[string]bool{parameter.ID: true}
 	returned := false
 	for _, operation := range function.Linear.Operations {
-		source, sourceKnown := places[operation.SourceID]
-		if !sourceKnown {
-			return fmt.Errorf("operation %q has invalid source", operation.ID)
+		var source core.Place
+		if operation.Kind != core.OpConst {
+			var sourceKnown bool
+			source, sourceKnown = places[operation.SourceID]
+			if !sourceKnown {
+				return fmt.Errorf("operation %q has invalid source", operation.ID)
+			}
 		}
 		switch operation.Kind {
+		case core.OpConst:
+			target, exists := places[operation.TargetID]
+			if !exists || declared[operation.TargetID] {
+				return fmt.Errorf("operation %q has invalid target", operation.ID)
+			}
+			fmt.Fprintf(out, "  uint64_t %s = UINT64_C(%s); /* constant: %s */\n  (void)%s;\n", locals[target.ID], operation.ConstU64, operation.ID, locals[target.ID])
+			declared[target.ID] = true
 		case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
 			target, exists := places[operation.TargetID]
 			if !exists || declared[operation.TargetID] {

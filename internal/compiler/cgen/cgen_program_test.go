@@ -132,6 +132,85 @@ func TestProgramOrdinaryLinearTracer(t *testing.T) {
 	}
 }
 
+func TestPhase19U64NativeExactWidthAndOutput(t *testing.T) {
+	const maximum = "18446744073709551615"
+	fixture, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []string{"0", maximum} {
+		t.Run(value, func(t *testing.T) {
+			source := strings.Replace(string(fixture), "= 42", "= "+value, 1)
+			checked := session.Check([]byte(source))
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+			}
+			validated := corevalidate.Validate(checked.Program)
+			if !validated.Valid {
+				t.Fatalf("corevalidate rejected: %+v", validated.Problems)
+			}
+			generated, err := cgen.EmitNative(validated.Program())
+			if err != nil {
+				t.Fatalf("EmitNative: %v", err)
+			}
+			for _, fragment := range []string{"#include <stdint.h>", "uint64_t", "UINT64_C(" + value + ")", "#if !defined(UINT64_MAX)"} {
+				if !strings.Contains(generated, fragment) {
+					t.Fatalf("generated C does not contain %q", fragment)
+				}
+			}
+			got, err := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{"7"})
+			if err != nil || len(got.Pairs) != 1 {
+				t.Fatalf("native run: pairs=%d err=%v", len(got.Pairs), err)
+			}
+			if got.Pairs[0].Execution.Outcome.Value != value {
+				t.Fatalf("native result = %q, want canonical decimal string %q", got.Pairs[0].Execution.Outcome.Value, value)
+			}
+		})
+	}
+}
+
+func TestPhase19ExactWidthTargetGuardRejectsMissingMacro(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	generated = strings.Replace(generated, "#include <stdint.h>\n", "#include <stdint.h>\n#undef UINT64_MAX\n", 1)
+	if _, cleanup, err := native.DefaultRunner().CompileOnly(context.Background(), generated, "-O0"); err == nil {
+		cleanup()
+		t.Fatal("expected deterministic missing-exact-width-macro control to fail compilation")
+	} else if !strings.Contains(err.Error(), "Codename Lang U64 requires exact-width uint64_t support") {
+		t.Fatalf("compile error does not identify exact-width guard: %v", err)
+	}
+}
+
+func TestPhase19U64NativeEntryInput(t *testing.T) {
+	const maximum = "18446744073709551615"
+	source := []byte("module phase19.u64_input\n\nexport { fn main }\n\nfn main(input: U64) -> U64 { input }\n")
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	got, err := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{maximum})
+	if err != nil || len(got.Pairs) != 1 {
+		t.Fatalf("native max input: pairs=%d err=%v", len(got.Pairs), err)
+	}
+	if got.Pairs[0].Execution.Outcome.Value != maximum {
+		t.Fatalf("native result = %q, want %q", got.Pairs[0].Execution.Outcome.Value, maximum)
+	}
+}
+
 // TestProgramBranchTracer drives the checked branch fixture through the
 // surviving whole-program writer. Both switch alternatives are exercised, and
 // arm-local linear operations share the schema-2 event buffer rather than

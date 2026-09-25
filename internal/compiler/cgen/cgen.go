@@ -183,6 +183,7 @@ var linearFixedNames = []string{
 	// helper functions
 	"lang_write_bytes", "lang_write_literal", "lang_write_json_string",
 	"lang_record_event", "lang_write_events", "lang_write_buffer_hex", "lang_write_byte",
+	"lang_write_u64", "lang_parse_u64_decimal",
 	// Phase 4 plan 02 resource ledger (D-04-07)
 	"lang_resource_ids", "lang_resource_live", "lang_write_live_resources", "first",
 	// Phase 4 plan 05 process-root nonlocal-exit landing pad (D-04-17)
@@ -2189,6 +2190,8 @@ func linearInput(function core.Function) (input, initializer, typeName string, e
 		return "01020304", "{{1u, 2u, 3u, 4u}, 4u}", "LANG_BUFFER", nil
 	case "Byte":
 		return "7", "7u", "unsigned char", nil
+	case "U64":
+		return "0", "UINT64_C(0)", "uint64_t", nil
 	default:
 		return "", "", "", fmt.Errorf("unsupported linear C type %q", function.Parameter.Type)
 	}
