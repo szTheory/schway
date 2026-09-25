@@ -250,7 +250,7 @@ currently owns rephrasing the row with a specific `-run` pattern.
 
 **Landing phase:** `UNOWNED(probe:TestValidationGradeCapBarePackageRowHasNoNamedTest)`.
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-51 — `04-VALIDATION.md:74` cites two tests retired in a later phase
 
@@ -276,7 +276,7 @@ regression to suppress.
 current equivalent (if one still exists in the surviving law's own test
 suite) or retracting the claim.
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-52 — `06-VALIDATION.md:69` cites a test renamed in plan 08-05
 
@@ -297,7 +297,7 @@ citation behind in a document already marked satisfied.
 assert the same property (a named set of historically-real identifiers
 remains absent today).
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-53 — `14-VALIDATION.md`'s own verification map was never filled in
 
@@ -371,7 +371,7 @@ is exactly what nothing currently re-checks.
 **Landing phase:** `UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent)`
 — the same shared probe now witnesses all three (D-14-51, D-14-52, D-14-54).
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The full corpus run record is refreshed in Plan 10.
+Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-55 — `03-RESEARCH.md:849` cites a superseded target
 
