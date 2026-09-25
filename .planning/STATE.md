@@ -6,10 +6,10 @@ current_phase: 21
 current_phase_name: Native Emission Ownership and Resource Discharge (M004)
 status: planning
 stopped_at: Phase 21 context gathered
-last_updated: "2026-09-25T22:00:37.422Z"
+last_updated: "2026-09-25T22:02:13.414Z"
 last_activity: 2026-09-25
-last_activity_desc: Refreshed Phase 15 and 19 verification; GSD routes to Phase 21 discussion
-state_head: 115f50dbf7c0ea17c7239e1d13fcc0b245d6e43f
+last_activity_desc: Phase 21 context captured; next is planning
+state_head: 02e09e7810e61a810a91001e760752e780b00e61
 progress:
   total_phases: 8
   completed_phases: 7
@@ -64,15 +64,15 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 21 — Native Emission Ownership and Resource Discharge (M004)
-Plan: Not started — discuss phase context
+Plan: Not started — Phase 21 context gathered; ready to plan
 Total Plans in Phase: 0
-Status: Ready to discuss
-Last activity: 2026-09-25 — Phases 15 and 19 verification refreshed; M003 Phases 14-20 verified complete
+Status: Ready to plan
+Last activity: 2026-09-25 — Phase 21 context captured; next is planning
 Phase 20 is verified complete; its 33-pair archive grades
 cleanly, the current open-unowned debt set is four, and the full repository
 suite passes.
 
-**Next:** `$gsd-discuss-phase 21` — gather context for M004's planned ownership and resource-discharge work before planning.
+**Next:** $gsd-plan-phase 21
 
 ## M003 Phase Map
 
@@ -670,7 +670,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 Last session: 2026-09-25T22:00:36.865Z
 Stopped at: Phase 21 context gathered
 Resume file: .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-CONTEXT.md
-Next command: `$gsd-discuss-phase 21`
+Next command: $gsd-plan-phase 21
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
