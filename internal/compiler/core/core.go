@@ -660,6 +660,10 @@ const (
 	// callee's function ID. It is never a terminator (see TerminatorKinds)
 	// -- a call is an ordinary binding, not a block-ending outcome.
 	OpCall OperationKind = "call"
+	// OpConst introduces a source-written scalar value. ConstU64 below is
+	// its canonical base-10 semantic value; source spelling belongs only to
+	// syntax/AST. It produces a fresh typed target and has no source place.
+	OpConst OperationKind = "const"
 	// OpConstructPayload is Phase 12's payload-construction operation
 	// (D-12-05): unlike OpCopy's plain value duplication, it builds a NEW
 	// tagged value from a source place and a declared alternative's payload
@@ -894,6 +898,10 @@ type LinearOperation struct {
 	// operation, and every operation kind other than OpDestructurePayload,
 	// leaves this empty.
 	PayloadTargetID string `json:"payload_target_id,omitempty"`
+	// ConstU64 is Phase 19's kind-exclusive canonical U64 value, represented
+	// as base-10 digits (including "0"). It is populated only on OpConst;
+	// all other operation kinds leave it empty so legacy core JSON is stable.
+	ConstU64 string `json:"const_u64,omitempty"`
 }
 
 type LinearBody struct {
