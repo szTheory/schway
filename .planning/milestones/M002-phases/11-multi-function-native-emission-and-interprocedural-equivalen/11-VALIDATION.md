@@ -2,7 +2,7 @@
 phase: "11"
 slug: "multi-function-native-emission-and-interprocedural-equivalen"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
-status: draft
+status: validated
 nyquist_compliant: false
 wave_0_complete: false   # gaps mapped to plan tasks by /gsd-plan-phase 11 (see § Wave 0 Requirements)
 created: "2026-09-11"
@@ -48,33 +48,33 @@ graded_rows: 27
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 11-01 T1 | 11-01 | 1 | QLT-05 | T-11-02 | spike verdict is a single-branch committed test, not prose | unit | `go test ./internal/compiler/corevalidate/... -run 'TestQ01' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-01 T2 | 11-01 | 1 | QLT-06 | T-11-01 | stale-artifact reuse is demonstrated or withdrawn | unit | `go test ./internal/compiler/session/... -run 'TestQ02' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-01 T3 | 11-01 | 1 | QLT-05, QLT-06 | T-11-02 | recorded-not-built decisions carry closing conditions | doc | `grep -c -E 'D-11-(02\|07\|11\|12\|13\|27\|36\|40\|42)' …/PHASE-11-DEBT.md` | ❌ creates | REACHABLE | — |
-| 11-02 T1 | 11-02 | 1 | NAT-07 | T-11-04 | false `restrict` confined to hand-written test C | integration | `go test ./internal/compiler/native/... -run 'TestCompositionOnlyLTODivergence' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-02 T2 | 11-02 | 1 | NAT-07 | T-11-03 | divergence pinned to a recorded toolchain identity | manual + cmd | `clang --version` | ❌ creates | DEFINED | — |
+| 11-01 T1 | 11-01 | 1 | QLT-05 | T-11-02 | spike verdict is a single-branch committed test, not prose | unit | `go test ./internal/compiler/corevalidate/... -run 'TestQ01' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-01 T2 | 11-01 | 1 | QLT-06 | T-11-01 | stale-artifact reuse is demonstrated or withdrawn | unit | `go test ./internal/compiler/session/... -run 'TestQ02' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-01 T3 | 11-01 | 1 | QLT-05, QLT-06 | T-11-02 | recorded-not-built decisions carry closing conditions | doc | `grep -c -E 'D-11-(02\|07\|11\|12\|13\|27\|36\|40\|42)' .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/PHASE-11-DEBT.md` | ✅ exists | REACHABLE | — |
+| 11-02 T1 | 11-02 | 1 | NAT-07 | T-11-04 | false `restrict` confined to hand-written test C | integration | `go test ./internal/compiler/native/... -run 'TestCompositionOnlyLTODivergence' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-02 T2 | 11-02 | 1 | NAT-07 | T-11-03 | divergence pinned to a recorded toolchain identity | manual + cmd | `clang --version` | ✅ available | DEFINED | — |
 | 11-02 T3 | 11-02 | 1 | NAT-07 | T-11-03 | criterion-3 amendments applied or declined, never silent | checkpoint | `grep -c -E 'flto\|escalation, not a pass' .planning/ROADMAP.md` | ✅ exists | REACHABLE | — |
-| 11-03 T1 | 11-03 | 2 | NAT-04 | T-11-07, T-11-08 | one entry resolver for oracle and binary; validation not bypassed | integration (tracer) | `go test ./internal/compiler/cgen/... -run 'TestEmitProgram' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-03 T2 | 11-03 | 2 | NAT-04 | T-11-07 | zero-or-many roots is a named fail-closed refusal | unit | `go test ./internal/compiler/callgraph/... -run 'TestEntryFunction…' -v -count=1` | ❌ creates | WIRED | — |
-| 11-03 T3 | 11-03 | 2 | NAT-04 | T-11-06 | two-tier name allocation preserves prefix confinement | unit | `go test ./internal/compiler/cgen/... -run 'TestMultiFunctionNameAllocation\|TestEmitProgram' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-04 T1 | 11-04 | 3 | NAT-05 | T-11-11 | empty attribute set is generated, not a literal | unit | `go test ./internal/compiler/cgen/... -run 'TestEmittedAttributeSet…' -v -count=1` | ❌ creates | WIRED | — |
-| 11-04 T2 | 11-04 | 3 | NAT-04, NAT-05 | T-11-09, T-11-10 | gate non-vacuous, mutation-killed, diff-local suppression | integration | `go test ./internal/compiler/session/... -run 'TestPhase11' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-04 T3 | 11-04 | 3 | NAT-05 | T-11-09 | gate verdict recorded with every conjunct's value | checkpoint | `grep -c -E 'function count\|call-edge count\|N =…' …/11-MIDPHASE-GATE.md` | ❌ creates | REACHABLE | — |
-| 11-05 T1 | 11-05 | 4 | NAT-06 | T-11-14 | every guard has a recorded WIDENED/KEPT disposition | structural | `awk … \| wc -l` + `go test ./internal/compiler/session/... -count=1` | ✅ exists | REACHABLE | — |
-| 11-05 T2 | 11-05 | 4 | NAT-06 | T-11-12 | four-tier agreement on all five comparator axes | differential | `go test ./internal/compiler/session/... -run 'TestPhase11InterproceduralDifferential' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-05 T3 | 11-05 | 4 | NAT-06 | T-11-13 | LTO inertness and lane-deferral declared, not implied | doc | `grep -c 'D-11-25' …/session_phase11_differential_test.go` | ❌ creates | REACHABLE | — |
-| 11-06 T1 | 11-06 | 4 | QLT-03 | T-11-15 | op-kind closure pinned against a committed literal | unit | `go test ./internal/compiler/session/... -run 'TestQLT03GeneratorOpKindClosure…' -v -count=1` | ❌ creates | WIRED | — |
-| 11-06 T2 | 11-06 | 4 | QLT-03 | T-11-16 | closed proof-mechanism set; no free-text negatives | unit | `go test ./internal/compiler/session/... -run 'TestQLT03Register' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-06 T3 | 11-06 | 4 | QLT-03 | T-11-15 | audit provably able to fail without editing its data file | unit | `go test ./internal/compiler/session/... -run 'TestQLT03' -v -count=2` | ❌ creates | EXERCISED | — |
-| 11-07 T1 | 11-07 | 5 | QLT-06 | T-11-18 | `cgen` source declared; key actually moves | unit | `go test ./internal/compiler/cache/... ./internal/compiler/session/... -run 'TestDeclaredInputNames\|TestQ02' -v -count=1` | ✅ exists | EXERCISED | — |
-| 11-07 T2 | 11-07 | 5 | QLT-06 | T-11-19, T-11-20, T-11-21 | dual import scans with negative controls; nothing cached | structural | `go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames\|TestCache…\|TestNoClosureDigestInCache' -v -count=1` | ✅ exists | EXERCISED | — |
-| 11-07 T3 | 11-07 | 5 | QLT-06 | T-11-20 | split row recorded; abstention argued | doc | `grep -c -E 'QLT-06a\|QLT-06b\|strictly dominates…' …/11-QLT06-ABSTENTION.md` | ❌ creates | REACHABLE | — |
-| 11-08 T1 | 11-08 | 5 | QLT-05 | T-11-23, T-11-24 | derived bound has a floor; `reduce` stays out of `callgraph` | unit | `go test ./internal/compiler/reduce/... -run 'TestReduce\|TestDerivedAttemptBound' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-08 T2 | 11-08 | 5 | QLT-05 | T-11-22 | no move renumbers; no move inlines | unit | `go test ./internal/compiler/reduce/... -run 'TestDropCallSite\|TestDropOrphanFunction\|…' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-08 T3 | 11-08 | 5 | QLT-05 | T-11-22 | every declined shape is named and exercised | unit | `go test ./internal/compiler/reduce/... -run 'TestRefusedShape\|TestNoFlakyPredicateTolerance' -v -count=1` | ❌ creates | EXERCISED | — |
+| 11-03 T1 | 11-03 | 2 | NAT-04 | T-11-07, T-11-08 | one entry resolver for oracle and binary; validation not bypassed | integration (tracer) | `go test ./internal/compiler/cgen/... -run 'TestEmitProgram' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-03 T2 | 11-03 | 2 | NAT-04 | T-11-07 | zero-or-many roots is a named fail-closed refusal | unit | `go test ./internal/compiler/callgraph/... -run 'TestEntryFunctionRefusesManyRoots|TestEntryFunctionRefusesZeroRoots' -v -count=1` | ✅ exists | WIRED | — |
+| 11-03 T3 | 11-03 | 2 | NAT-04 | T-11-06 | two-tier name allocation preserves prefix confinement | unit | `go test ./internal/compiler/cgen/... -run 'TestMultiFunctionNameAllocation|TestEmitProgram' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-04 T1 | 11-04 | 3 | NAT-05 | T-11-11 | empty attribute set is generated, not a literal | unit | `go test ./internal/compiler/cgen/... -run '^TestEmittedAttributeSetIsExplicitlyEmpty$' -v -count=1` | ✅ exists | WIRED | — |
+| 11-04 T2 | 11-04 | 3 | NAT-04, NAT-05 | T-11-09, T-11-10 | gate non-vacuous, mutation-killed, diff-local suppression | integration | `go test ./internal/compiler/session/... -run 'TestPhase11' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-04 T3 | 11-04 | 3 | NAT-05 | T-11-09 | gate verdict recorded with every conjunct's value | checkpoint | `grep -c -E 'function count\|call-edge count\|N =' .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-MIDPHASE-GATE.md` | ✅ exists | REACHABLE | — |
+| 11-05 T1 | 11-05 | 4 | NAT-06 | T-11-14 | Historical guard ledger is inspectable, but current completeness against source remains partial | doc audit | `awk 'substr($0,1,2) == sprintf("%c ",124) && index($0, "KEPT") + index($0, "WIDENED") > 0 { n++ } END { print n+0 }' .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-GUARD-LEDGER.md` | ✅ exists | DEFINED | Live inventory found 23 source sites and 24 ledger dispositions; completeness is not claimed |
+| 11-05 T2 | 11-05 | 4 | NAT-06 | T-11-12 | four-tier agreement on all five comparator axes | differential | `go test ./internal/compiler/session/... -run 'TestPhase11InterproceduralDifferential' -v -count=1` | ✅ exists | EXERCISED | DivergingCallee is an explicitly skipped case under D-11-02 |
+| 11-05 T3 | 11-05 | 4 | NAT-06 | T-11-13 | LTO inertness and lane-deferral declared, not implied | doc | `grep -c 'D-11-25' internal/compiler/session/session_phase11_differential_test.go` | ✅ exists | REACHABLE | — |
+| 11-06 T1 | 11-06 | 4 | QLT-03 | T-11-15 | op-kind closure pinned against a committed literal | unit | `go test ./internal/compiler/session/... -run '^TestQLT03GeneratorOpKindClosure$' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-06 T2 | 11-06 | 4 | QLT-03 | T-11-16 | closed proof-mechanism set; no free-text negatives | unit | `go test ./internal/compiler/session/... -run 'TestQLT03Register' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-06 T3 | 11-06 | 4 | QLT-03 | T-11-15 | audit provably able to fail without editing its data file | unit | `go test ./internal/compiler/session/... -run 'TestQLT03' -v -count=2` | ✅ exists | EXERCISED | — |
+| 11-07 T1 | 11-07 | 5 | QLT-06 | T-11-18 | `cgen` source declared; key actually moves | unit | `go test ./internal/compiler/cache/... ./internal/compiler/session/... -run 'TestDeclaredInputNames|TestQ02' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-07 T2 | 11-07 | 5 | QLT-06 | T-11-19, T-11-20, T-11-21 | dual import scans with negative controls; nothing cached | structural | `go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames|TestCacheDirectImportGuardCanFail|TestCacheTransitiveImportGuardCanFail|TestNoClosureDigestInCache' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-07 T3 | 11-07 | 5 | QLT-06 | T-11-20 | split row recorded; abstention argued | doc | `grep -c -E 'QLT-06a\|QLT-06b\|strictly dominates' .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-QLT06-ABSTENTION.md` | ✅ exists | REACHABLE | — |
+| 11-08 T1 | 11-08 | 5 | QLT-05 | T-11-23, T-11-24 | derived bound has a floor; `reduce` stays out of `callgraph` | unit | `go test ./internal/compiler/reduce/... -run 'TestReduce|TestDerivedAttemptBound' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-08 T2 | 11-08 | 5 | QLT-05 | T-11-22 | no move renumbers; no move inlines | unit | `go test ./internal/compiler/reduce/... -run 'TestDropCallSiteRewritesOneEdge|TestDropOrphanFunctionRemovesUncalledNonEntry|TestDropUnusedBindingRemovesOnlyUnreadOperation' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-08 T3 | 11-08 | 5 | QLT-05 | T-11-22 | every declined shape is named and exercised | unit | `go test ./internal/compiler/reduce/... -run 'TestRefusedShape|TestNoFlakyPredicateTolerance' -v -count=1` | ✅ exists | EXERCISED | — |
 | 11-09 T1 | 11-09 | 6 | QLT-05 | T-11-25 | foreign-call sequence derived twice, independently | unit | `go test ./internal/compiler/session/... -run 'TestForeignCallSequence' -v -count=1` | ✅ exists | EXERCISED | — |
-| 11-09 T2 | 11-09 | 6 | QLT-05 | T-11-26 | strict field equality; `CausalRole` drift rejected | differential | `go test ./internal/compiler/session/... -run 'TestQLT05\|TestMismatchDocumentSchemaUnchanged' -v -count=1` | ❌ creates | EXERCISED | — |
-| 11-09 T3 | 11-09 | 6 | QLT-05 | T-11-27 | gate non-vacuous on both sides | unit + doc | `go test ./internal/compiler/session/... -run 'TestQLT05Gate\|TestQLT05EmptyReduction' -v -count=1` | ❌ creates | EXERCISED | — |
+| 11-09 T2 | 11-09 | 6 | QLT-05 | T-11-26 | strict field equality; `CausalRole` drift rejected | differential | `go test ./internal/compiler/session/... -run 'TestQLT05|TestMismatchDocumentSchemaUnchanged' -v -count=1` | ✅ exists | EXERCISED | — |
+| 11-09 T3 | 11-09 | 6 | QLT-05 | T-11-27 | gate non-vacuous on both sides | unit + doc | `go test ./internal/compiler/session/... -run 'TestQLT05Gate|TestQLT05EmptyReduction' -v -count=1` | ✅ exists | EXERCISED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -132,6 +132,6 @@ experiments, each with a stated branch rather than an assumed outcome):
 - [ ] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
 - [ ] Feedback latency < 60s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [ ] `nyquist_compliant: true` set in frontmatter; ledger-to-source guard inventory remains partial (23 current sites vs 24 archived dispositions), and Phase 20's global groundedness pin still has one unresolved R2 row owned for later reconciliation.
 
-**Approval:** pending
+**Approval:** validated, partial (`nyquist_compliant: false`); tested rows passed, with the guard-inventory and global-frontier gaps retained explicitly.

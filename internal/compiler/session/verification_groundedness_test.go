@@ -1146,6 +1146,15 @@ func TestVerificationGroundednessScopeByIllocutionaryRole(t *testing.T) {
 // edit this slice in a reviewed commit, which is exactly what later plans
 // in this phase (and QLT-10) do.
 //
+// Phase 20 keeps two distinct measurements: the historical research snapshot
+// was R1/R2/R3=0 with reconciled R2b=23 (raw R2b=24), 639 enforced-tier
+// documents, and 708 verification commands. Plan 20-02's execution-start scan,
+// taken before archive edits, measured R1=0, R2=7, R3=0, R2b=25, 651
+// documents, and 737 commands. This pin intentionally remains at the prior
+// committed set while Phase 20 documents/tests are reconciled; Plan 20-07 owns
+// the final exact set equality and green assertion. The measurements and exact
+// interim findings are recorded in 20-RESEARCH.md.
+//
 // This literal grew from plan 14-01's 26 entries to 125 for two combined
 // reasons, both by design, neither a regression:
 //

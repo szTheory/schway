@@ -3,9 +3,9 @@ phase: "07"
 slug: "calls-signatures-and-call-graph-refusal"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
+status: validated
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-09-08"
 amended: "2026-09-08"
 evidence_vocabulary: v1
@@ -49,15 +49,15 @@ graded_rows: 9
 
 | Req ID | Behavior | Plan | Test Type | Automated Command | Grade | Non-inertness |
 |---|---|---|---|---|---|---|
-| SEM-05 | `lang.interface/1` strictly decoded; `/0` routed to a pinned struct; canonical non-self-referential digest preimage | 07-01 | unit | `go test ./internal/compiler/core/... -run 'DecodeInterface\|InterfaceV0'` | EXERCISED | — |
+| SEM-05 | `lang.interface/1` strictly decoded; `/0` routed to a pinned struct; canonical non-self-referential digest preimage | 07-01 | unit | `go test ./internal/compiler/core/... -run 'DecodeInterface|InterfaceV0'` | EXERCISED | — |
 | SEM-05, SEM-06 | `Callable` = publication safety; producer/peer zero divergence over the M001 corpus at BOTH replay sites; five seeded faults | 07-02 | unit | `go test ./internal/compiler/corevalidate/... ./internal/compiler/originvalidate/... -run MutationMatrix` | EXERCISED | — |
 | SEM-04 | `CalleeID` + `core.OpCall` recognized at all six dispatch sites; three `CalleeID` refusals at both sites; relocated foreign refusal | 07-03 | unit + CLI | `go test ./internal/compiler/{syntax,core,check,corevalidate,interp,cgen}/...` | WIRED | — |
 | SEM-04 | Both exhaustive-dispatch controls green with their own phase-07 lists, asserting recognition not execution, each mutation-killed | 07-04 | unit + CLI | `go test ./internal/compiler/core/... -run TestAllOperationKindsHandledAtEverySite` and `sh scripts/verify-phase7.sh` | EXERCISED | — |
 | SEM-06, SEM-05 | Pre-body signature table; call to a non-publishable callee refused; body-blindness falsifiable | 07-05 | unit + CLI | `go run ./cmd/lang --json check testdata/phase07/call_uncallable_callee.lang` | REACHABLE | — |
 | SEM-07 | `callgraph` three-color DFS; deterministic cycle ID; 32-cause bound; diamond corpus; gray/self-edge mutations killed | 07-06 | unit + CLI | `go test ./internal/compiler/callgraph/... -run MutationMatrix` | EXERCISED | — |
 | SEM-07, SEM-04 | Independent `corevalidate` cycle peer over synthetic artifacts; remaining corpora; phase-wide completeness by exact set equality | 07-07 | unit | `go test ./internal/compiler/session/... -run TestPhase7ControlsAreMutationKilled` | EXERCISED | — |
-| SEM-05 | `ClosureDigest` chained over callee summary digests in reverse postorder over a proven DAG; callee-changes-invalidates-caller | 07-08 | unit | `go test ./internal/compiler/originvalidate/... -run 'CalleeChange\|Chain'` | EXERCISED | — |
-| QLT-08 | Every control introduced this phase observed to fail against a seeded mutation **in the plan that introduced it** (D-07-41) | all | unit | `go test ./... -run 'MutationMatrix\|MutationKilled\|ControlsAreMutationKilled'` | EXERCISED | — |
+| SEM-05 | `ClosureDigest` chained over callee summary digests in reverse postorder over a proven DAG; callee-changes-invalidates-caller | 07-08 | unit | `go test ./internal/compiler/originvalidate/... -run 'CalleeChange|Chain'` | EXERCISED | — |
+| QLT-08 | Every control introduced this phase observed to fail against a seeded mutation **in the plan that introduced it** (D-07-41) | all | unit | `go test ./... -run 'MutationMatrix|MutationKilled|ControlsAreMutationKilled'` | WIRED | Scoped mutation controls passed, but aggregate run is blocked by current cross-phase failures recorded in 20-02-SUMMARY.md |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -69,40 +69,40 @@ Fixtures and infrastructure that do not exist and must be created before the
 gates that depend on them. **Corrected after review** — one item previously
 listed as missing was wrong.
 
-- [ ] `testdata/phase07/call_basic.lang`, `call_from_both_match_arms.lang` (`07-03`)
-- [ ] `testdata/phase07/clean_but_unpublishable.lang` — **EXTRACT, do not author.**
+- [x] `testdata/phase07/call_basic.lang`, `call_from_both_match_arms.lang` (`07-03`)
+- [x] `testdata/phase07/clean_but_unpublishable.lang` — **EXTRACT, do not author.**
       The witness already exists as inline Go source at
       `check/check_exclusive_test.go:46-58` (module `owned.exclusive_borrow_clean`,
       `fn relay`), asserted again at `originvalidate_test.go:230`. Amendment A-03
       checked `testdata/` for a *file* and reported the wrong conclusion; **D-07-44**
       corrects it. It is the *right* witness because it fails publication with
       `core.origin_omitted` — D-07-31's real predicate. (`07-02`)
-- [ ] `testdata/phase07/call_uncallable_callee.lang` (`07-05`)
-- [ ] `testdata/phase07/relay_escort_witness.lang` — **author, and deliberately
+- [x] `testdata/phase07/call_uncallable_callee.lang` (`07-05`)
+- [x] `testdata/phase07/relay_escort_witness.lang` — **author, and deliberately
       convert to A-normal form.** The D-04-03 narrative's
       `relay(borrow mut buffer)` is ungrammatical under D-07-01, so it cannot be
       copied verbatim; the equivalence argument goes in the fixture header
       (D-07-44). (`07-05`)
-- [ ] `testdata/phase07/cycle_mutual.lang` (length 2), `cycle_self.lang` (length 1),
+- [x] `testdata/phase07/cycle_mutual.lang` (length 2), `cycle_self.lang` (length 1),
       **`deep_diamond_acyclic.lang`** (`07-06`). The diamond corpus is
       **load-bearing**: a chain-only corpus cannot kill the gray-versus-visited
       mutation, because reverse postorder never revisits on a chain.
-- [ ] `testdata/phase07/cycle_indirect.lang` (length ≥ 3), `cycle_unreachable.lang`,
+- [x] `testdata/phase07/cycle_indirect.lang` (length ≥ 3), `cycle_unreachable.lang`,
       `cycle_through_match_arm.lang`, `foreign_symbol_shadowing.lang` (`07-07`)
-- [ ] **No `cycle_direct.lang`.** Fixtures are named by cycle length; the
+- [x] **No `cycle_direct.lang`.** Fixtures are named by cycle length; the
       superseded name is retired (codex's naming finding).
-- [ ] `internal/compiler/callgraph/callgraph.go` + `callgraph_test.go` — the package does not exist (`07-06`)
-- [ ] `internal/compiler/session/session_phase7.go` + `_test.go` + `scripts/verify-phase7.sh` (`07-04`)
-- [ ] `syntheticProgram(edges map[string][]string) core.Program` for the peer tests —
+- [x] `internal/compiler/callgraph/callgraph.go` + `callgraph_test.go` — the package and cycle tests exist (`07-06`)
+- [x] `internal/compiler/session/session_phase7.go` + `_test.go` + `scripts/verify-phase7.sh` (`07-04`)
+- [x] `syntheticProgram(edges map[string][]string) core.Program` for the peer tests —
       **hand-built, never through the parser** (D-07-19). Building them through the
       parser is what would make the peer inert. Must produce programs that pass every
       structural validation running before the cycle peer, so a rejection is
       unambiguously the cycle. (`07-07`)
-- [ ] A pinned `core.InterfaceV0` decode struct + frozen-bytes fixture proving no
+- [x] A pinned `core.InterfaceV0` decode struct + frozen-bytes fixture proving no
       `lang.interface/0` byte moved, **plus `core.DecodeInterface` with schema-peek
       dispatch** — without the decoder, nothing routes a `/0` document to the pinned
       struct and no required-field claim is enforceable (D-07-36). (`07-01`)
-- [ ] Framework install: **none.** Stdlib `testing` covers everything.
+- [x] Framework install: **none.** Stdlib `testing` covers everything.
 
 ---
 
@@ -149,6 +149,6 @@ not as per-task advice:
 - [ ] Feedback latency < 60s for the quick command
 - [ ] `go test -race ./...` green
 - [ ] `TestPhase7ControlsAreMutationKilled` green by exact set equality against `Phase7RequiredControls()`
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [ ] `nyquist_compliant: true` set in frontmatter; validation is partial because aggregate phase verification fails on concurrent cross-phase docs/debt/registry findings
 
-**Approval:** pending
+**Approval:** validated, partial (`nyquist_compliant: false`); phase-specific commands passed except aggregate completeness, which remains blocked by cross-phase findings documented in Phase 20 Plan02 summary.

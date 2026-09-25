@@ -3,7 +3,7 @@ phase: "08"
 slug: "interprocedural-loan-liveness-in-check"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
+status: validated
 nyquist_compliant: false
 wave_0_complete: true
 created: "2026-09-09"
@@ -50,19 +50,19 @@ graded_rows: 13
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Grade | Non-inertness |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TBD | TBD | 1 | OWN-06 | — | Both admission paths derive identical loan last-uses (D-07-49 entry defect fixed in both) | unit (differential) | `go test ./internal/compiler/check/... -run TestComputeLoanLastUsesAndDerivePlaceLoansAgree` | ❌ Wave 1 | WIRED | — |
+| TBD | TBD | 1 | OWN-06 | — | Historical dual-admission-path comparison is retired: `computeLoanLastUses` was deleted by P09-09, so this archived claim cannot be rerun | historical disposition | n/a — mechanism deleted by P09-09 | retired at P09-09 | DEFINED | No current verification claim |
 | TBD | TBD | 1 | OWN-06 | — | Native-recursion→explicit-stack conversion preserves fixpoint behavior | unit (existing) | `go test ./internal/compiler/check/... -run TestLoanLivenessFixpoint` | ✅ exists | EXERCISED | — |
-| TBD | TBD | 2 | OWN-06 | — | Refuse-case twin Pattern A (ReturnsBorrowOfParam) refused, safe twin admitted | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessTwinPatternA` | ❌ Wave 2 | EXERCISED | — |
-| TBD | TBD | 2 | OWN-06 | — | Refuse-case twin Pattern B (UsesParam) refused, safe twin admitted | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessTwinPatternB` | ❌ Wave 2 | EXERCISED | — |
-| TBD | TBD | 2 | OWN-06 | — | Composition-depth-≥2 relay chain resolved transitively via summaries | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessRelayDepth2` | ❌ Wave 2 | EXERCISED | — |
+| TBD | TBD | 2 | OWN-06 | — | Refuse-case twin Pattern A (ReturnsBorrowOfParam) refused, safe twin admitted | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessTwinPatternA` | ✅ exists | EXERCISED | — |
+| TBD | TBD | 2 | OWN-06 | — | Refuse-case twin Pattern B (UsesParam) refused, safe twin admitted | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessTwinPatternB` | ✅ exists | EXERCISED | — |
+| TBD | TBD | 2 | OWN-06 | — | Composition-depth-≥2 relay chain resolved transitively via summaries | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessRelayDepth2` | ✅ exists | EXERCISED | — |
 | TBD | TBD | 2 | OWN-06 | — | `relay_escort_witness.lang` flips clean→refused | unit (existing, assertion flips) | `go test ./internal/compiler/check/... -run TestRelayEscortWitness` | ✅ exists | EXERCISED | — |
-| TBD | TBD | 2 | OWN-06 | — | Negative control: `Fails`/`Foreign.*` summary fields do not move the verdict | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessNegativeControl` | ❌ Wave 2 | EXERCISED | — |
-| TBD | TBD | 2 | OWN-06 | — | Summary memo is rebuilt per invocation, never persisted across sessions | unit | `go test ./internal/compiler/check/... -run TestSummaryMemoNeverPersisted` | ❌ Wave 2 | EXERCISED | — |
-| TBD | TBD | 2 | OWN-06 | — | Summary derivation requires program order (invariant pinned) | unit | `go test ./internal/compiler/check/... -run TestSummaryDerivationRequiresProgramOrder` | ❌ Wave 2 | EXERCISED | — |
-| TBD | TBD | 3 | OWN-06 | — | Fail-closed iteration bound produces a named refusal, not a hang or silent under-approximation; seeded seam mutation is killed | unit + mutation-kill | `go test ./internal/compiler/check/... -run TestLoanLivenessBoundMutationKilled` | ❌ Wave 3 | EXERCISED | — |
-| TBD | TBD | 4 | EFF-02 | — | Growth exponent ≤ 1.2 vs operation count across all required call-graph shapes | integration | `go test ./internal/compiler/session/... -run TestQLT02InterproceduralGrowthExponent` | ❌ Wave 4 | EXERCISED | — |
+| TBD | TBD | 2 | OWN-06 | — | Negative control: `Fails`/`Foreign.*` summary fields do not move the verdict | unit | `go test ./internal/compiler/check/... -run TestInterproceduralLivenessNegativeControl` | ✅ exists | EXERCISED | — |
+| TBD | TBD | 2 | OWN-06 | — | Summary memo is rebuilt per invocation, never persisted across sessions | unit | `go test ./internal/compiler/check/... -run TestSummaryMemoNeverPersisted` | ✅ exists | EXERCISED | — |
+| TBD | TBD | 2 | OWN-06 | — | Summary derivation requires program order (invariant pinned) | unit | `go test ./internal/compiler/check/... -run TestSummaryDerivationRequiresProgramOrder` | ✅ exists | EXERCISED | — |
+| TBD | TBD | 3 | OWN-06 | — | Fail-closed iteration bound produces a named refusal, not a hang or silent under-approximation; seeded seam mutation is killed | unit + mutation-kill | `go test ./internal/compiler/check/... -run TestLoanLivenessBoundMutationKilled` | ✅ exists | EXERCISED | — |
+| TBD | TBD | 4 | EFF-02 | — | Growth exponent ≤ 1.2 vs operation count across all required call-graph shapes | integration | `go test ./internal/compiler/session/... -run TestQLT02InterproceduralGrowthExponent` | ✅ exists | EXERCISED | — |
 | TBD | TBD | 4 | EFF-02 | — | Chokepoint widening preserves exactly-one-promotion-passthrough (re-derived, not merely re-run) | unit (existing) | `go test ./internal/compiler/measure/... -run TestDemoteHasExactlyOnePromotionPassthrough` | ✅ exists | EXERCISED | — |
-| TBD | TBD | 4 | EFF-02 | — | Feedback-budget manifest row ratified with `machine_id` | integration | `go test ./internal/compiler/session/... -run TestAuditQLT02BudgetManifest` | ✅ framework exists, new row | WIRED | — |
+| TBD | TBD | 4 | EFF-02 | — | Feedback-budget lane carries `machine_id` and a verdict | integration | `go test ./internal/compiler/session/... -run '^TestBudgetLaneCarriesMachineIDAndVerdict$' -count=1` | ✅ exists | EXERCISED | — |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -94,6 +94,6 @@ install or shared fixture setup is required before implementation begins.
 - [ ] Wave 0 covers all MISSING references (none — infrastructure exists)
 - [ ] No watch-mode flags
 - [ ] Feedback latency < 60s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [ ] `nyquist_compliant: true` set in frontmatter; validation remains partial because historical mechanism was retired and manual mid-phase adjudication remains outside this rerun.
 
-**Approval:** pending
+**Approval:** validated, partial (`nyquist_compliant: false`); all extant mapped automated commands passed, with the deleted mechanism retained as an honest historical disposition.

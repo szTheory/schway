@@ -87,7 +87,7 @@ This inventory is a live filesystem observation, not a committed test output; re
 
 | Library / Tool | Version | Purpose | Why Standard |
 |----------------|---------|---------|--------------|
-| Go `testing` and `go test` | Project toolchain in `go.mod` | Run the existing session, cache, and compiler tests | Phase 14's validation contract identifies `go test` (stdlib), root `go.mod`, and `go test ./...` as full-suite command. No additional test framework is needed. [VERIFIED: `.planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md:15-25`] |
+| Go testing and the standard-library test runner | Project toolchain in `go.mod` | Run the existing session, cache, and compiler tests | Phase 14's validation contract identifies the root module and the repository-wide test suite. No additional test framework is needed. [VERIFIED: `.planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md:15-25`] |
 | `internal/compiler/cache` | In-repository | Content-address expensive proof inputs while rerunning verdict checks | Provides declared input `cache.Input`, content `cache.ComputeKey`, and artifact-only `Store`; do not add an external cache dependency. [VERIFIED: `internal/compiler/cache/cache.go:1-21,52-86`] |
 | Lang checker/session test helpers | In-repository | Parse/check fixture source and pin refused diagnostics | Phase 19 already has a refusal-frontier test pattern in `session_phase19_test.go`. [VERIFIED: `internal/compiler/session/session_phase19_test.go:137-162`] |
 
@@ -162,7 +162,7 @@ Source: `internal/compiler/session/verification_groundedness_test.go:1335-1367,2
 
 | Problem | Don't Build | Use Instead | Why |
 |---------|-------------|-------------|-----|
-| Test-pattern truth | A new regex/name inventory detached from Go's test runner | Phase 14's `go test -list` groundedness index and classifications | Ground the claim to actual test names and preserve non-inertness behavior. |
+| Test-pattern truth | A new regex/name inventory detached from Go's test runner | Phase 14's groundedness index and Go's test-name listing | Ground the claim to actual test names and preserve non-inertness behavior. |
 | Closure content keys | Ad-hoc concatenated hash strings | Existing `cache.ComputeKey` with named, complete declared inputs | Duplicate/empty input rejection and canonical sorted JSON already exist. |
 | Verdict caching | Store “passed” as a reusable cache result | Cache only non-verdict inputs/artifacts; run validation assertions fresh | Existing cache package structurally prohibits cached judgment; caching a verdict would allow stale proof. |
 | Fixture distinctness | Byte inequality or identifier spelling | `phase6StructuralSummary` and the existing structural distinctness assertion | The current defect is exactly that different bytes can represent alpha-renames with identical structure. |
@@ -211,7 +211,7 @@ Source: `internal/compiler/session/verification_groundedness_test.go:1335-1367,2
 
 | Property | Value |
 |----------|-------|
-| Framework | Go stdlib `testing` / `go test` |
+| Framework | Go standard-library testing |
 | Config file | `go.mod` at repository root |
 | Quick run command | `GOCACHE=/private/tmp/phase20-gocache go test ./internal/compiler/session -run 'TestVerificationGroundedness(FrontierIsPinned|ThreeClassesAreEmpty)$' -count=1 -v` |
 | Full suite timing command | `GOCACHE=/private/tmp/phase20-gocache go test ./... -count=1` |
@@ -223,16 +223,65 @@ Phase 14's roadmap rounds the reference to 192.7 seconds; its QLT-02 manifest re
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| QLT-10 | Groundedness frontier exactness, reconciliation, and no draft validation metadata | unit/integration | `go test ./internal/compiler/session -run 'TestVerificationGroundedness(FrontierIsPinned|ThreeClassesAreEmpty)$' -count=1 -v`; add/run a draft-status corpus check | Existing EVD-01 tests; lifecycle corpus check to confirm/create |
-| QLT-11 | `examples/checksum.lang` is refused at a pinned, moved diagnostic | unit | `go test ./internal/compiler/session -run 'TestPhase20.*Checksum.*Frontier' -count=1 -v` | ❌ New test and fixture needed |
-| QLT-12 | unchanged closure reuses content-bound evidence; changed input reruns; outcomes still compared fresh | unit/integration | `go test ./internal/compiler/session -run 'TestPhase20.*EnumeratedClosure.*(Cache|Evidence)' -count=1 -v` | ❌ New test needed; related Phase 5 corpus test exists |
-| PRC-02 | Open unowned debt count is at most five at close, mechanically derived | unit | `go test ./internal/compiler/session -run 'TestDebtRegistersAreWellFormed|TestPhase20.*Unowned' -count=1 -v` | Partial: parser test exists; numeric assertion/close measurement needed |
+| QLT-10 | Groundedness frontier exactness, reconciliation, and no draft validation metadata | unit/integration | Existing EVD-01 tests; lifecycle check is planned and not yet runnable | Existing EVD-01 tests; lifecycle corpus check to confirm/create |
+| QLT-11 | `examples/checksum.lang` is refused at a pinned, moved diagnostic | unit | Checksum-frontier test is planned and not yet runnable | ❌ New test and fixture needed |
+| QLT-12 | unchanged closure reuses content-bound evidence; changed input reruns; outcomes still compared fresh | unit/integration | Enumerated-closure evidence test is planned and not yet runnable | ❌ New test needed; related Phase 5 corpus test exists |
+| PRC-02 | Open unowned debt count is at most five at close, mechanically derived | unit | Unowned-debt test is planned and not yet runnable | Partial: parser test exists; numeric assertion/close measurement needed |
 
 ### Wave 0 Gaps
 
 - Add tests for checksum refusal/movement, closure key reuse/invalidation, and machine-counted debt population.
 - Preserve the reconstructed M003-open checksum diagnostic and its absent-original-pin limitation from `20-CHECKSUM-BASELINE.md`.
 - Existing session, checker, and cache test infrastructure is in place; no framework install is needed.
+
+### EVD-01 snapshots for Phase 20
+
+Keep the research-time snapshot distinct from the execution-start measurement.
+The historical snapshot from the completed Phase 19 research recorded
+R1/R2/R3=0, reconciled R2b=23, raw R2b=24, 639 enforced-tier documents, and
+708 verification commands. At the start of Plan 20-02, before any archive
+edits, the live `TestVerificationGroundednessFrontierIsPinned` and
+`TestVerificationGroundednessThreeClassesAreEmpty` run measured 7 unreconciled
+R2 findings, 25 residual R2b findings, 651 enforced-tier documents, and 737
+commands. The old exact pin failed as expected; Plan 07 owns the final exact
+pin after the new planned tests land.
+
+The execution-start output also identified these Phase 20 findings and
+provisional owner P20 (QLT-10):
+
+| Classification | File and line | Exact command or finding | Provisional owner |
+|---|---|---|---|
+| unparseable | 20-RESEARCH.md:90 (two occurrences) | go test | P20 |
+| unparseable | 20-RESEARCH.md:165 | go test -list | P20 |
+| unparseable | 20-RESEARCH.md:214 | go test | P20 |
+| R2b | 20-RESEARCH.md:226 | go test ./internal/compiler/session -run 'TestVerificationGroundedness(FrontierIsPinned|ThreeClassesAreEmpty)$' -count=1 -v | P20 |
+| R2 | 20-RESEARCH.md:228 | go test ./internal/compiler/session -run 'TestPhase20.*EnumeratedClosure.*(Cache|Evidence)' -count=1 -v | P20 |
+| R2b | 20-RESEARCH.md:229 | go test ./internal/compiler/session -run 'TestDebtRegistersAreWellFormed|TestPhase20.*Unowned' -count=1 -v | P20 |
+| R2 | 20-VALIDATION.md:44 | go test ./internal/compiler/session -run '^TestPhase20ValidationLifecycle$' -count=1 | P20 |
+| R2 | 20-VALIDATION.md:46 | go test ./internal/compiler/session -run '^TestPhase20EnumeratedClosure' -count=1 | P20 |
+| R2 | 20-VALIDATION.md:48 | go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1 | P20 |
+| R2 | 20-VALIDATION.md:49 | go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1 | P20 |
+| R2 | 20-VALIDATION.md:50 | go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtPopulation$' -count=1 && go test ./internal/compiler/session -run '^TestPhase20UnownedDebtCapRule$' -count=1 | P20 |
+| R2 | 20-VALIDATION.md:54 | go test ./internal/compiler/session -run 'TestPhase6HeldoutPairs' -count=1 && go test ./internal/compiler/session -run '^TestPhase6DefectCorpusIsHeldOut$' -count=1 && go test ./internal/compiler/session -run '^TestDebtRegistersAreWellFormed$' -count=1 && go test ./internal/compiler/session -run 'TestPhase20UnownedDebt' -count=1 | P20 |
+
+The bare Go command names above were documentation text in tool/framework
+descriptions, not executable verification rows; they have been rewritten as
+plain prose. The prospective Phase 20 tests remain named by their owning plan
+tasks and are not represented as runnable research commands before those tests
+exist. The Phase 20 validation map remains a separate live planning artifact;
+its exact R2 findings are preserved above for later plan reconciliation.
+
+After Plan02's archived-record edits and the current Phase20 source edits, a
+second live scan before the Plan02 summary measured R1=0, R2=1, R3=0, R2b=23, 655 enforced-tier
+documents, and 726 verification commands. The remaining exact finding is
+`20-VALIDATION.md:44`, command
+`go test ./internal/compiler/session -run '^TestPhase20ValidationLifecycle$' -count=1`;
+its disposition belongs to the later Phase20 reconciliation plan because
+20-02 does not own that validation file. Plan 07 owns the final pin. The
+Phase11 historical guard-ledger row was rewritten as an awk inventory command
+to avoid an R3 scanner false positive on grep's escaped alternation syntax.
+After adding this Plan02 summary, the enforced-document floor is 656; the
+remaining frontier and command counts are unchanged.
 
 ## Security Domain
 
