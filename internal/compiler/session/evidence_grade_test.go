@@ -2068,8 +2068,25 @@ func TestValidationGradeCapBarePackageRowHasNoNamedTest(t *testing.T) {
 		}
 		evidence := rowEvidence(row)
 		ceiling, matched := deriveCeiling(index, nil, evidence)
-		if ceiling != "EXERCISED" || len(matched) != 6 {
-			t.Fatalf("12-VALIDATION.md row 12-04-01 evidence derives %s with %v; want EXERCISED over six exact tests (evidence %q)", ceiling, matched, evidence)
+		if ceiling != "WIRED" || len(matched) != 6 {
+			t.Fatalf("12-VALIDATION.md row 12-04-01 evidence derives %s with %v; without a corpus record want WIRED over six exact tests (evidence %q)", ceiling, matched, evidence)
+		}
+		want := map[string]bool{
+			"TestOriginWalksThroughPayloadDestructureToBorrow": true,
+			"TestOriginUnderstatedAcrossPayloadDestructure": true,
+			"TestAlternativeDetailsDesynchronizedNameAbsent": true,
+			"TestAlternativeDetailsDesynchronizedDuplicateName": true,
+			"TestAlternativeDetailsSynchronizedAccepted": true,
+			"TestAlternativeDetailsEmptyStillAccepted": true,
+		}
+		for _, name := range matched {
+			if !want[name] {
+				t.Fatalf("12-VALIDATION.md row 12-04-01 unexpectedly resolves %q", name)
+			}
+			delete(want, name)
+		}
+		if len(want) != 0 {
+			t.Fatalf("12-VALIDATION.md row 12-04-01 evidence did not resolve %v", want)
 		}
 		return
 	}

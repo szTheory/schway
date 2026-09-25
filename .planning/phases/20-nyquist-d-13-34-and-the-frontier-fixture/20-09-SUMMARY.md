@@ -15,7 +15,7 @@ affects: [20-07, 20-10, QLT-10, PRC-02]
 actuals:
   tokens: 0 # Executor token telemetry was unavailable in the shared-worktree handoff.
   tasks: 1
-  commits: 1
+  commits: 2
 plan_head_before: bee2c21
 tech-stack:
   added: []
@@ -70,4 +70,4 @@ Four archived rows now name current tests, and the Phase 12 grade probe reads th
 
 ## Plan status
 
-Plan 09 source edits are committed as `bee2c21`. The final provenance-bound corpus record and its archive debt closures are intentionally scheduled after Plan 07 in Plan 10.
+Plan 09 source edits are committed as `bee2c21` and `e359ceb`. The final provenance-bound corpus record and its archive debt closures are intentionally scheduled after Plan 07 in Plan 10.
