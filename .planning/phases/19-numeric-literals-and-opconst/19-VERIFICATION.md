@@ -1,6 +1,6 @@
 ---
 phase: 19-numeric-literals-and-opconst
-verified: 2026-09-25T01:35:51Z
+verified: 2026-09-25T21:20:22Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
@@ -47,17 +47,23 @@ covered_files:
   - internal/compiler/syntax/syntax_test.go
   - testdata/phase16/public-emitter-consumers.json
   - testdata/phase19/literal_tracer.lang
-covered_digest: "v1:sha256:29f28c7c11badfe9720e67ab72bcc68c4ecb2b4593bd476cb0775184d166bae0"
+covered_digest: "v1:sha256:552d2deb13489e5453cb180105bb0630f75a4ee13ade5b2d807344c5eca9eb55"
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 4/4
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 19: Numeric Literals and `OpConst` Verification Report
 
 **Phase Goal:** Lang can name a value it was not given — the first value the language creates rather than moves.
-**Verified:** 2026-09-25T01:35:51Z
+**Verified:** 2026-09-25T21:20:22Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — refreshed the stale fingerprint; no prior gaps were open.
 
 ## Goal Achievement
 
@@ -103,8 +109,8 @@ overrides_applied: 0
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Phase 19 package and integration tests | `GOCACHE=/private/tmp/ai-lang-gocache go test ./internal/compiler/syntax ./internal/compiler/check ./internal/compiler/core ./internal/compiler/corevalidate ./internal/compiler/interp ./internal/compiler/pathoracle ./internal/compiler/originvalidate ./internal/compiler/cgen ./internal/compiler/session -run 'TestPhase19|TestAllOperationKinds(Registered|HandledAtEverySite)|TestPayloadCorpusCharacterizationReplay|TestPreviousPhaseGoldenCUnchanged|TestPhase16GoldenChangeLedger' -count=1` | All nine packages passed; session completed in 5.512s. | PASS |
-| Full repository regression suite | `GOCACHE=/private/tmp/ai-lang-gocache go test ./...` | The orchestrator reports the previously failing full suite passed after the regression fixes. | PASS (reported) |
+| Phase 19 implementation and evidence tests | `GOCACHE=/private/tmp/ai-lang-gocache go test ./internal/compiler/syntax ./internal/compiler/check ./internal/compiler/core ./internal/compiler/corevalidate ./internal/compiler/interp ./internal/compiler/pathoracle ./internal/compiler/originvalidate ./internal/compiler/cgen ./internal/compiler/session -run 'TestPhase19|TestAllOperationKinds(Registered|HandledAtEverySite)|TestPayloadCorpusCharacterizationReplay|TestPreviousPhaseGoldenCUnchanged|TestPhase16GoldenChangeLedger' -count=1` | Re-run during fingerprint refresh; all nine packages passed (session 5.727s). Covers literal parsing/checking/interpreter/native execution, four-tier comparison, and scalar/golden evidence. | PASS |
+| Both exhaustive-dispatch mutation controls | `GOCACHE=/private/tmp/ai-lang-gocache go test ./internal/compiler/core ./internal/compiler/session -run 'TestPhase7DispatchControlsMutationKilled|TestPhase7DispatchControlsMutationKilledPhase07Lane' -count=1` | Both packages passed; the in-process and CLI-observable controls reject seeded dispatch omissions. | PASS |
 
 ### Probe Execution
 
@@ -140,7 +146,7 @@ No goal gaps remain. The four roadmap truths and VAL-01 through VAL-03 are suppo
 
 ---
 
-_Verified: 2026-09-25T01:35:51Z_  
+_Verified: 2026-09-25T21:20:22Z_
 _Verifier: the agent (gsd-verifier)_
 
 ### Advisory (New Scope, Unevidenced)

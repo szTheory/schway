@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 19
-current_phase_name: Numeric Literals and `OpConst`
-status: verification
-stopped_at: Phase 18 complete; Phase 19 implementation complete, verification stale
-last_updated: "2026-09-25T20:53:39.977Z"
+current_phase: 21
+current_phase_name: Native Emission Ownership and Resource Discharge (M004)
+status: planning
+stopped_at: M003 Phases 14-20 complete; Phase 21 is next and needs discussion
+last_updated: "2026-09-25T21:23:10.705Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 18 verified complete with automated UAT; transitioned to Phase 19 verification
-state_head: 550bd0f40fbd676f27ee6ded0fb91cf3bed78007
+last_activity_desc: Refreshed Phase 15 and 19 verification; GSD routes to Phase 21 discussion
+state_head: f4ea9f750eecbabc2c484bd263325fd71eb4debd
 progress:
   total_phases: 8
   completed_phases: 6
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phases 15, 16, 17, 18, and 20 are verified complete. Phase 18's G-18-16 reliability gap is closed with repeated default-parallel full-suite receipts and bounded, inspectable subprocess failures. Phase 19 implementation is complete but its verification is stale; resume with `$gsd-verify-work 19` before planning further work.
+**Current focus:** M003 Phases 14-20 are verified complete. Phase 15 is 7/7 with 12/12 automated UAT checks; Phase 19 is 4/4 with 15/15 automated UAT checks. Phase 18's G-18-16 reliability gap is closed with repeated default-parallel full-suite receipts and bounded, inspectable subprocess failures. M004 Phase 21 is the next planned owner-designation phase; it has no context file yet, so discuss it before planning.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -55,19 +55,25 @@ hiding runtime costs.
   ROADMAP, and live GSD routing disagree, inspect the structured resolver,
   record the discrepancy in the handoff, and use the next action that advances
   the earliest real blocker. Report what changed and what evidence proves it.
+  Before recommending a verification command, inspect the existing UAT and
+  VERIFICATION artifacts and the canonical status. If UAT is already complete
+  and only the report fingerprint is stale, refresh the verifier report while
+  preserving UAT; do not rerun UAT or echo a stale router command. After closing
+  a blocker, re-query `init.progress` and update STATE/handoff from its result;
+  never carry forward an old next-action pointer.
 
 ## Current Position
 
-Phase: 19 — Numeric Literals and `OpConst`
-Plan: 7 of 7 — verification pending
-Total Plans in Phase: 7
-Status: Verification pending
-Last activity: 2026-09-25 — Phase 18 complete, transitioned to Phase 19
-Phase 19 still has a stale verification report. Phase 20 is verified complete; its 33-pair archive grades
+Phase: 21 — Native Emission Ownership and Resource Discharge (M004)
+Plan: Not started — discuss phase context
+Total Plans in Phase: 0
+Status: Ready to discuss
+Last activity: 2026-09-25 — Phases 15 and 19 verification refreshed; M003 Phases 14-20 verified complete
+Phase 20 is verified complete; its 33-pair archive grades
 cleanly, the current open-unowned debt set is four, and the full repository
 suite passes.
 
-**Next:** `$gsd-verify-work 19` — refresh Phase 19 verification before advancing.
+**Next:** `$gsd-discuss-phase 21` — gather context for M004's planned ownership and resource-discharge work before planning.
 
 ## M003 Phase Map
 
@@ -81,8 +87,8 @@ Phases 14-20. Structure is the ratified plan from
 | 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete |
 | 16 | Branch/Match Emitter Port | 2 | 8-10 | Complete |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
-| 18 | Branch on a Computed Value | 3 | 8-10 | Verification stale |
-| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Verification stale |
+| 18 | Branch on a Computed Value | 3 | 8-10 | Complete |
+| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Complete |
 | 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete |
 
 **Carry-forward context that must survive a context reset** (restated here
@@ -648,6 +654,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260924-tsl | Fix Phase 19 full-suite regressions | 2026-09-24 | ed237ab | passed | [260924-tsl-fix-phase-19-full-suite-regressions-refr](./quick/260924-tsl-fix-phase-19-full-suite-regressions-refr/) |
 | 8 | Complete Phase 18 automated UAT with zero manual checks | 2026-09-25 | dfa5598 | passed | — |
 | 9 | Record GSD no-loop rule: compare routed command inputs and state transitions before rerun; resolve unchanged blockers rather than repeating commands. | 2026-09-25 | 550bd0f | — | — |
+| 10 | Refresh stale Phase 15 and 19 verification and route GSD to Phase 21 | 2026-09-25 | f4ea9f7 | — | — |
 
 ## Deferred Items
 
@@ -661,10 +668,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T19:38:34Z
-Stopped at: Phase 18 verified complete; Phase 19 verification is stale
+Last session: 2026-09-25T21:22:41Z
+Stopped at: M003 Phases 14-20 verified complete; Phase 21 discussion is next
 Resume file: None
-Next command: `$gsd-verify-work 19`
+Next command: `$gsd-discuss-phase 21`
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths

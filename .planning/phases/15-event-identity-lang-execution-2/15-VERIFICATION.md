@@ -1,6 +1,6 @@
 ---
 phase: 15-event-identity-lang-execution-2
-verified: 2026-09-25T15:49:29Z
+verified: 2026-09-25T21:02:07Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -46,7 +46,7 @@ covered_files:
   - internal/compiler/session/session_phase5_compare.go
   - internal/compiler/session/session_phase5_compare_test.go
   - internal/compiler/session/session_phase6_test.go
-covered_digest: "v1:sha256:043f8000e9d67cebe523cf86672259030acd81bf399ff5de6e729f876542158f"
+covered_digest: "v1:sha256:59e52cf66c7b190537c0a18f09103ef5d14ce2b57f849f5e960bff932d058c71"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -55,14 +55,14 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  refresh_reason: "Re-ran current Phase 15 owning-package admission, interpreter, peer, native-emission, CI source-pin, and four-tier diamond/collision evidence after shared implementation and planning inputs changed. All targeted commands passed; the covered-file fingerprint now matches the current tree."
+  refresh_reason: "The prior covered-file fingerprint was stale. Re-ran current Phase 15 owning-package admission, interpreter, peer, native-emission, CI source-pin, and four-tier diamond/collision evidence. All targeted commands passed; the covered-file fingerprint now matches the current tree."
 advisory: []
 ---
 
 # Phase 15: Event Identity (`lang.execution/2`) Verification Report
 
 **Phase Goal:** Two activations of the same callee through a shared-leaf diamond are distinguishable, and the causal edge between caller and callee is observed rather than inferred.
-**Verified:** 2026-09-25T15:49:29Z
+**Verified:** 2026-09-25T21:02:07Z
 **Status:** passed
 **Re-verification:** Yes — refreshed the stale fingerprint and reran current Phase 15 automated evidence.
 
@@ -160,7 +160,7 @@ No unresolved `TBD`, `FIXME`, or `XXX` debt marker was found in the Phase 15 imp
 
 ### Fingerprint Refresh
 
-The previous digest (`v1:sha256:cf33f38b7875cd1eda5e8370a0e7b2473e8776c48f76ac84fd6218725630c203`) recomputed to `v1:sha256:043f8000e9d67cebe523cf86672259030acd81bf399ff5de6e729f876542158f`. The owning-package Schema 2 decoder seam, CI ownership/source pins, four-tier diamond and collision controls, frozen `/0` and `/1` behavior, interpreter call-edge/refusal tests, independent peer checks, and native invocation-table boundary/emission checks all passed on the current tree. Requirements remain complete; no requirement or STATE edits were needed.
+The previous digest (`v1:sha256:043f8000e9d67cebe523cf86672259030acd81bf399ff5de6e729f876542158f`) recomputed to `v1:sha256:59e52cf66c7b190537c0a18f09103ef5d14ce2b57f849f5e960bff932d058c71` for the complete covered-file set. The owning-package Schema 2 decoder seam, CI ownership/source pins, four-tier diamond and collision controls, frozen `/0` and `/1` behavior, interpreter call-edge/refusal tests, independent peer checks, and native invocation-table boundary/emission checks all passed on the current tree. Requirements remain complete; no requirement or STATE edits were needed.
 
 ### Advisory (New Scope, Unevidenced)
 
@@ -176,5 +176,5 @@ The implementation truths, including the four-tier diamond, caller-owned causal 
 
 ---
 
-_Verified: 2026-09-25T15:49:29Z_  
+_Verified: 2026-09-25T21:02:07Z_
 _Verifier: the agent (gsd-verifier)_
