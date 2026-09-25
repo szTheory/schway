@@ -2,7 +2,7 @@
 
 **Phase:** 20 — Nyquist, D-13-34, and the Frontier Fixture  
 **Plans checked:** 7  
-**Result:** REVISION READY — final independent sign-off pending
+**Result:** PASS — final independent sign-off
 
 ## Goal and requirement coverage
 
@@ -40,9 +40,9 @@ The historical checksum comparison is accurately bounded: no contemporaneous M00
 
 Plan 20-04 Task 3 specifies three paired cold/warm full-suite runs after prewarming a private Go build cache. Every run uses `-count=1`; each pair has a fresh empty closure-artifact cache followed by a warm reuse of that same cache. The helper is bounded to six full-suite invocations and 30 minutes total, with incomplete or failed pairs reported as non-passing evidence. `20-CLOSURE-TIMING.md` must show all six raw samples, min/median/max for cold and warm, paired deltas, exact environment facts, and warm-median comparisons against both Phase 14 references. Phase 14's recorded measurement is a cold `go test ./... -count=1` run on `machine:4797d76b7863` using Go 1.24.0 on darwin/arm64; the plan requires a non-comparable-baseline blocker when host/toolchain conditions differ. Three paired samples provide the requested distributions and expose spread while correctly avoiding a high-confidence percentile claim.
 
-### Verification-direction revision submitted for sign-off
+### Verification-direction sign-off
 
-Each of the 18 runnable `<automated>` commands across Plans 20-01 through 20-07 now has an immediately adjacent `<fails_when>` sibling. The statements name non-zero exit or Go's no-tests-selected output and the task's specific rejected condition, including a wrong checksum diagnostic, empty scanner corpus, draft status, cache reuse on changed input, incomplete timing pairs, a seeded sixth debt item, and stale frontier ownership. A read-only command-grounding check confirmed 18 command/direction pairs, shell parsing, and regex parsing; all seven plans passed `frontmatter.validate` and `verify.plan-structure` without warnings. Independent review must still confirm the direction statements satisfy the contract.
+Each of the 18 runnable `<automated>` commands across Plans 20-01 through 20-07 has an immediately adjacent, non-empty `<fails_when>` sibling. The statements identify non-zero exit or Go's no-tests-selected output and the task-specific rejected condition, including a wrong checksum diagnostic, empty scanner corpus, draft status, cache reuse on changed input, incomplete timing pairs, a seeded sixth debt item, and stale frontier ownership. Independent inspection confirms the pair count and specificity; all seven plans pass `verify.plan-structure` without errors or warnings.
 
 ```yaml
 issues_pending_recheck: []
@@ -50,6 +50,8 @@ issues_pending_recheck: []
 
 ### Final structural and command checks
 
-All seven `verify.plan-structure` results are valid with no errors or warnings. The 18 automated rows in `20-VALIDATION.md` each have nine table cells, one intact command code span, and pass `bash -n`; the manual 20-06-02 checkpoint is intentionally absent from automated rows. These checks establish command syntax and table shape, but do not satisfy the missing `<fails_when>` direction.
+All seven `verify.plan-structure` results are valid with no errors or warnings. The 18 automated rows in `20-VALIDATION.md` each have nine table cells, one intact command code span, and pass `bash -n`; the manual 20-06-02 checkpoint is intentionally absent from automated rows. Every automated check in the seven plans has a stated failing direction.
 
-**Recommendation:** Re-run independent sign-off before execution. Preserve the `blocking-human` D-13-34 checkpoint and exact frontier/owner equality at Plan 07.
+**Final independent sign-off: PASS.** All prior sign-off properties remain present in the revised plans: cold/warm timing distributions use three paired full-suite samples and compare against both Phase 14 references; Plan 02 separates historical and fresh execution-start groundedness snapshots and permits the expected interim red pin; validation commands remain executable and are sequenced so Plan 07 performs the final exact frontier/owner gate; the four requirements and five roadmap success criteria have coverage; the debt denominator is source-derived from the ten-ID M002 cohort plus seven distinct live M003 rows, with an evidence-backed disposition path and seeded cap control; the checksum comparison labels the historical result as reconstructed from the named commit; the closure cache key covers source, transitive/system headers, SDK/sysroot, link inputs, compiler/toolchain, target, and flags and bypasses reuse for incomplete inputs; and D-13-34 remains a blocking-human decision with both outcomes prepared from evidence.
+
+All seven plan files validate structurally, their declared dependencies are acyclic and wave-consistent, and every automated command has a specific adjacent `<fails_when>`. No blocker, warning, or advisory remains for plan execution. Preserve the blocking-human D-13-34 checkpoint and exact frontier/owner equality at Plan 07.
