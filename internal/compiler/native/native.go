@@ -3,6 +3,8 @@ package native
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,10 +12,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cache"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 )
 
@@ -38,6 +45,7 @@ type Result struct {
 	CompileTime  time.Duration
 	RunTime      time.Duration
 	OutputBytes  int
+	CacheStatus  cache.CacheStatus
 }
 
 type Runner struct {
@@ -54,6 +62,9 @@ type Runner struct {
 	// pre-Phase-4 caller, which keeps the original single-file compile-and-
 	// link invocation byte-for-byte unchanged.
 	ForeignSources []string
+	// BuildCache enables reuse of a content-bound native executable artifact.
+	// It never stores executions or comparator outcomes.
+	BuildCache *cache.Store
 	// LTO gates D-05-19's `-flto` tier: when true, `-flto` is appended to
 	// BOTH the per-TU foreign compile argument list and the final link
 	// argument list -- never just one, since LTO is inert if either is
@@ -138,6 +149,309 @@ func (r Runner) recordBinary(path string) {
 
 func DefaultRunner() Runner { return Runner{ClangPath: "clang", Timeout: 5 * time.Second} }
 
+var clangTokenPattern = regexp.MustCompile(`"(?:[^"\\]|\\.)*"|\S+`)
+
+// cacheInputs discovers byte-level compiler dependencies before permitting a
+// lookup. Anything this deliberately narrow Darwin toolchain probe cannot
+// resolve is not cacheable; callers still compile and execute normally.
+func (r Runner) cacheInputs(ctx context.Context, source, optimization string, foreign []string) ([]cache.Input, bool) {
+	if runtime.GOOS != "darwin" {
+		return nil, false // linker and SDK dependency discovery is host-specific
+	}
+	clang, err := exec.LookPath(r.ClangPath)
+	if err != nil {
+		return nil, false
+	}
+	clang, err = filepath.Abs(clang)
+	if err != nil {
+		return nil, false
+	}
+	clangBytes, err := os.ReadFile(clang)
+	if err != nil {
+		return nil, false
+	}
+	version, ok := r.probe(ctx, clang, "--version")
+	if !ok {
+		return nil, false
+	}
+	target, ok := r.probe(ctx, clang, "-dumpmachine")
+	if !ok || strings.TrimSpace(target) == "" {
+		return nil, false
+	}
+
+	temp, err := os.MkdirTemp("", "lang-native-deps-")
+	if err != nil {
+		return nil, false
+	}
+	defer os.RemoveAll(temp)
+	main := filepath.Join(temp, "program.c")
+	if err := os.WriteFile(main, []byte(source), 0o600); err != nil {
+		return nil, false
+	}
+	files := []string{main}
+	for _, path := range foreign {
+		files = append(files, path)
+	}
+
+	flags := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization}
+	if r.LTO {
+		flags = append(flags, "-flto")
+	}
+	inputs := []cache.Input{
+		{Name: "compiler", Digest: digestBytes(append([]byte(clang+"\x00"), clangBytes...))},
+		{Name: "compiler-version", Digest: digestBytes([]byte(version))},
+		{Name: "target-triple", Digest: digestBytes([]byte(strings.TrimSpace(target)))},
+		{Name: "host-target", Digest: digestBytes([]byte(runtime.GOOS + "/" + runtime.GOARCH))},
+		{Name: "optimization-and-flags", Digest: digestBytes([]byte(strings.Join(flags, "\x00")))},
+		{Name: "cache-schema", Digest: digestBytes([]byte(cache.Schema))},
+		{Name: "emitted-c", Digest: digestBytes([]byte(source))},
+	}
+	for i, file := range files {
+		depArgs := append([]string{"-M", "-MT", "lang-deps"}, flags...)
+		depArgs = append(depArgs, file)
+		depOutput, ok := r.probe(ctx, clang, depArgs...)
+		if !ok {
+			return nil, false
+		}
+		deps, ok := parseMakeDependencies(depOutput)
+		if !ok {
+			return nil, false
+		}
+		for j, dependency := range deps {
+			if filepath.Clean(dependency) == filepath.Clean(file) {
+				continue
+			}
+			data, readErr := os.ReadFile(dependency)
+			if readErr != nil {
+				return nil, false
+			}
+			inputs = append(inputs, cache.Input{Name: fmt.Sprintf("translation-unit-%d-header-%d:%s", i, j, dependency), Digest: digestBytes(data)})
+		}
+		if i > 0 {
+			data, readErr := os.ReadFile(foreign[i-1])
+			if readErr != nil {
+				return nil, false
+			}
+			inputs = append(inputs, cache.Input{Name: fmt.Sprintf("foreign-source-%d", i-1), Digest: digestBytes(data)})
+		}
+	}
+
+	// Ask the installed driver for its real link invocation. Hash every
+	// resolved executable/library and each SDK search root identity; unknown
+	// -l/-framework inputs force a fresh build.
+	linkArgs := append([]string{"-###"}, flags...)
+	linkArgs = append(linkArgs, main, "-o", filepath.Join(temp, "program"))
+	linkOutput, ok := r.probe(ctx, clang, linkArgs...)
+	if !ok {
+		return nil, false
+	}
+	normalizedDriver, ok := normalizeDriverCommands(linkOutput, main)
+	if !ok {
+		return nil, false
+	}
+	inputs = append(inputs, cache.Input{Name: "normalized-clang-driver-commands", Digest: digestBytes([]byte(normalizedDriver))})
+	words := clangTokenPattern.FindAllString(linkOutput, -1)
+	var sysroot string
+	search := []string{}
+	var paths []string
+	var libraries []string
+	for i := 0; i < len(words); i++ {
+		word := unquoteClangToken(words[i])
+		switch {
+		case word == "-framework" || strings.HasPrefix(word, "-framework"):
+			return nil, false
+		case word == "-lto_library":
+			if i+1 >= len(words) {
+				return nil, false
+			}
+			i++
+			libraryPath := unquoteClangToken(words[i])
+			if !filepath.IsAbs(libraryPath) {
+				return nil, false
+			}
+			paths = append(paths, libraryPath)
+		case word == "-syslibroot" || word == "-isysroot":
+			if i+1 >= len(words) {
+				return nil, false
+			}
+			i++
+			sysroot = unquoteClangToken(words[i])
+			search = append(search, sysroot)
+		case strings.HasPrefix(word, "-L") && len(word) > 2:
+			search = append(search, strings.TrimPrefix(word, "-L"))
+		case strings.HasPrefix(word, "-l") && len(word) > 2:
+			libraries = append(libraries, strings.TrimPrefix(word, "-l"))
+		case filepath.IsAbs(word):
+			if info, statErr := os.Stat(word); statErr == nil && info.Mode().IsRegular() && word != main && word != filepath.Join(temp, "program") {
+				paths = append(paths, word)
+			}
+		}
+	}
+	if sysroot == "" || len(search) == 0 {
+		return nil, false
+	}
+	sdkSettings, err := os.ReadFile(filepath.Join(sysroot, "SDKSettings.json"))
+	if err != nil {
+		return nil, false
+	}
+	inputs = append(inputs, cache.Input{Name: "sdk-settings:" + filepath.Join(sysroot, "SDKSettings.json"), Digest: digestBytes(sdkSettings)})
+	for _, library := range libraries {
+		if library != "System" {
+			return nil, false
+		}
+		// Search explicit roots in their emitted order, then the SDK's
+		// system-library root. Hash each possible name's presence as well
+		// as bytes: a newly-created higher-priority candidate must turn a
+		// prior key into a miss even if the previously resolved library is
+		// unchanged.
+		roots := append(append([]string(nil), search...), filepath.Join(sysroot, "usr", "lib"))
+		resolved := false
+		for rootIndex, root := range roots {
+			for _, suffix := range []string{".dylib", ".tbd", ".a"} {
+				candidate := filepath.Join(root, "libSystem"+suffix)
+				data, readErr := os.ReadFile(candidate)
+				present := readErr == nil
+				if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
+					return nil, false
+				}
+				marker := "absent"
+				if present {
+					marker = "present:" + digestBytes(data)
+					paths = append(paths, candidate)
+					if !resolved {
+						resolved = true
+					}
+				}
+				inputs = append(inputs, cache.Input{
+					Name:   fmt.Sprintf("link-resolution-candidate-%d:%s", rootIndex, candidate),
+					Digest: digestBytes([]byte(marker)),
+				})
+			}
+		}
+		if !resolved {
+			return nil, false
+		}
+	}
+	for i, root := range search {
+		inputs = append(inputs, cache.Input{Name: fmt.Sprintf("ordered-link-search-%d", i), Digest: digestBytes([]byte(root))})
+	}
+	seen := map[string]bool{}
+	for i, path := range paths {
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return nil, false
+		}
+		inputs = append(inputs, cache.Input{Name: fmt.Sprintf("link-input-%d:%s", i, path), Digest: digestBytes(data)})
+	}
+	return inputs, true
+}
+
+func normalizeDriverCommands(output, sourcePath string) (string, bool) {
+	var compile, link []string
+	for _, line := range strings.Split(output, "\n") {
+		raw := clangTokenPattern.FindAllString(line, -1)
+		if len(raw) == 0 {
+			continue
+		}
+		tokens := make([]string, len(raw))
+		for i, token := range raw {
+			tokens[i] = unquoteClangToken(token)
+		}
+		isCompile, isLink := false, false
+		for _, token := range tokens {
+			if token == "-cc1" {
+				isCompile = true
+			}
+			if filepath.Base(token) == "ld" {
+				isLink = true
+			}
+		}
+		if !isCompile && !isLink {
+			continue
+		}
+		filtered := make([]string, 0, len(tokens))
+		for i := 0; i < len(tokens); i++ {
+			token := tokens[i]
+			if token == "-o" || token == "-dumpdir" {
+				i++
+				if i >= len(tokens) {
+					return "", false
+				}
+				continue
+			}
+			if token == sourcePath || strings.HasSuffix(token, ".o") {
+				continue
+			}
+			filtered = append(filtered, token)
+		}
+		if isCompile {
+			compile = filtered
+		}
+		if isLink {
+			link = filtered
+		}
+	}
+	if len(compile) == 0 || len(link) == 0 {
+		return "", false
+	}
+	return "compile\x00" + strings.Join(compile, "\x00") + "\x00link\x00" + strings.Join(link, "\x00"), true
+}
+
+func (r Runner) probe(parent context.Context, name string, args ...string) (string, bool) {
+	timeout := r.Timeout
+	if timeout <= 0 {
+		timeout = 5 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(parent, timeout)
+	defer cancel()
+	command := r.commandContext(ctx, name, args...)
+	var stdout, stderr boundedWriter
+	command.Stdout, command.Stderr = &stdout, &stderr
+	if command.Run() != nil || ctx.Err() != nil || stdout.overflowed() || stderr.overflowed() {
+		return "", false
+	}
+	return string(stdout.bytes()) + string(stderr.bytes()), true
+}
+
+func parseMakeDependencies(output string) ([]string, bool) {
+	output = strings.ReplaceAll(output, "\\\n", " ")
+	colon := strings.IndexByte(output, ':')
+	if colon < 0 {
+		return nil, false
+	}
+	text := strings.TrimSpace(output[colon+1:])
+	if text == "" {
+		return nil, false
+	}
+	// Clang's escaped path syntax is intentionally rejected unless paths are
+	// plain whitespace-free tokens. A partial dependency parse is unsafe.
+	for _, r := range text {
+		if r == '\\' {
+			return nil, false
+		}
+	}
+	deps := strings.Fields(text)
+	if len(deps) == 0 {
+		return nil, false
+	}
+	return deps, true
+}
+
+func unquoteClangToken(token string) string {
+	if strings.HasPrefix(token, "\"") {
+		if value, err := strconv.Unquote(token); err == nil {
+			return value
+		}
+	}
+	return token
+}
+
+func digestBytes(data []byte) string { sum := sha256.Sum256(data); return hex.EncodeToString(sum[:]) }
+
 func (r Runner) Run(parent context.Context, cSource, optimization string, inputs []string) (Result, error) {
 	if r.ClangPath == "" {
 		r.ClangPath = "clang"
@@ -157,82 +471,112 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 		return Result{}, &ToolError{Code: "native.temp_failed", Err: err}
 	}
 
+	cacheStatus := cache.StatusNotCacheable
+	var cacheKey cache.Key
+	if r.BuildCache != nil {
+		if declared, complete := r.cacheInputs(parent, cSource, optimization, r.ForeignSources); complete {
+			cacheKey, err = cache.ComputeKey(declared)
+			if err == nil {
+				cacheStatus = cache.StatusArtifactRecomputed
+				if artifact, found, getErr := r.BuildCache.Get(cacheKey); getErr != nil {
+					cacheStatus = cache.StatusUnavailable
+				} else if found {
+					if writeErr := os.WriteFile(binaryPath, artifact, 0o700); writeErr == nil {
+						cacheStatus = cache.StatusArtifactReused
+					} else {
+						cacheStatus = cache.StatusUnavailable
+					}
+				}
+			}
+		}
+	}
+
 	// Per D-04-10, the frozen foreign translation unit is compiled as its
 	// own separate, bounded, timed invocation -- never merged into one
 	// clang invocation with program.c's own compile -- and only the
 	// resulting object is linked into the final binary below.
 	objectPaths := make([]string, 0, len(r.ForeignSources))
-	for index, foreignSource := range r.ForeignSources {
-		objectPath := filepath.Join(directory, fmt.Sprintf("foreign_%d.o", index))
-		foreignCtx, foreignCancel := context.WithTimeout(parent, r.Timeout)
-		foreignArguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization}
+	var compileTime time.Duration
+	if cacheStatus != cache.StatusArtifactReused {
+		for index, foreignSource := range r.ForeignSources {
+			objectPath := filepath.Join(directory, fmt.Sprintf("foreign_%d.o", index))
+			foreignCtx, foreignCancel := context.WithTimeout(parent, r.Timeout)
+			foreignArguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization}
+			if r.LTO {
+				foreignArguments = append(foreignArguments, "-flto")
+			}
+			foreignArguments = append(foreignArguments, "-c", foreignSource, "-o", objectPath)
+			foreignCommand := r.commandContext(foreignCtx, r.ClangPath, foreignArguments...)
+			r.recordCommandLine(r.ClangPath, foreignArguments)
+			var foreignStdout, foreignStderr boundedWriter
+			foreignCommand.Stdout = &foreignStdout
+			foreignCommand.Stderr = &foreignStderr
+			foreignErr := foreignCommand.Run()
+			deadlineExceeded := errors.Is(foreignCtx.Err(), context.DeadlineExceeded)
+			foreignCancel()
+			if deadlineExceeded {
+				return Result{}, &ToolError{Code: "native.timeout", Err: foreignCtx.Err()}
+			}
+			if foreignStdout.overflowed() {
+				return Result{}, streamError("native.compile_stdout_truncated")
+			}
+			if foreignStderr.overflowed() {
+				return Result{}, streamError("native.compile_stderr_truncated")
+			}
+			if foreignErr != nil {
+				code := "native.compile_failed"
+				if errors.Is(foreignErr, exec.ErrNotFound) || errors.Is(foreignErr, os.ErrNotExist) {
+					code = "native.tool_missing"
+				}
+				return Result{}, &ToolError{Code: code, Err: withStderr(foreignErr, foreignStderr.bytes())}
+			}
+			objectPaths = append(objectPaths, objectPath)
+		}
+
+		ctx, cancel := context.WithTimeout(parent, r.Timeout)
+		defer cancel()
+		started := time.Now()
+		arguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization}
 		if r.LTO {
-			foreignArguments = append(foreignArguments, "-flto")
+			arguments = append(arguments, "-flto")
 		}
-		foreignArguments = append(foreignArguments, "-c", foreignSource, "-o", objectPath)
-		foreignCommand := r.commandContext(foreignCtx, r.ClangPath, foreignArguments...)
-		r.recordCommandLine(r.ClangPath, foreignArguments)
-		var foreignStdout, foreignStderr boundedWriter
-		foreignCommand.Stdout = &foreignStdout
-		foreignCommand.Stderr = &foreignStderr
-		foreignErr := foreignCommand.Run()
-		deadlineExceeded := errors.Is(foreignCtx.Err(), context.DeadlineExceeded)
-		foreignCancel()
-		if deadlineExceeded {
-			return Result{}, &ToolError{Code: "native.timeout", Err: foreignCtx.Err()}
+		arguments = append(arguments, sourcePath)
+		arguments = append(arguments, objectPaths...)
+		arguments = append(arguments, "-o", binaryPath)
+		command := r.commandContext(ctx, r.ClangPath, arguments...)
+		r.recordCommandLine(r.ClangPath, arguments)
+		var compileStdout, compileStderr boundedWriter
+		command.Stdout = &compileStdout
+		command.Stderr = &compileStderr
+		err = command.Run()
+		compileTime = time.Since(started)
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return Result{}, &ToolError{Code: "native.timeout", Err: ctx.Err()}
 		}
-		if foreignStdout.overflowed() {
+		if compileStdout.overflowed() {
 			return Result{}, streamError("native.compile_stdout_truncated")
 		}
-		if foreignStderr.overflowed() {
+		if compileStderr.overflowed() {
 			return Result{}, streamError("native.compile_stderr_truncated")
 		}
-		if foreignErr != nil {
+		if err != nil {
 			code := "native.compile_failed"
-			if errors.Is(foreignErr, exec.ErrNotFound) || errors.Is(foreignErr, os.ErrNotExist) {
+			if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
 				code = "native.tool_missing"
 			}
-			return Result{}, &ToolError{Code: code, Err: withStderr(foreignErr, foreignStderr.bytes())}
+			return Result{}, &ToolError{Code: code, Err: withStderr(err, compileStderr.bytes())}
 		}
-		objectPaths = append(objectPaths, objectPath)
-	}
-
-	ctx, cancel := context.WithTimeout(parent, r.Timeout)
-	defer cancel()
-	started := time.Now()
-	arguments := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", optimization}
-	if r.LTO {
-		arguments = append(arguments, "-flto")
-	}
-	arguments = append(arguments, sourcePath)
-	arguments = append(arguments, objectPaths...)
-	arguments = append(arguments, "-o", binaryPath)
-	command := r.commandContext(ctx, r.ClangPath, arguments...)
-	r.recordCommandLine(r.ClangPath, arguments)
-	var compileStdout, compileStderr boundedWriter
-	command.Stdout = &compileStdout
-	command.Stderr = &compileStderr
-	err = command.Run()
-	compileTime := time.Since(started)
-	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return Result{}, &ToolError{Code: "native.timeout", Err: ctx.Err()}
-	}
-	if compileStdout.overflowed() {
-		return Result{}, streamError("native.compile_stdout_truncated")
-	}
-	if compileStderr.overflowed() {
-		return Result{}, streamError("native.compile_stderr_truncated")
-	}
-	if err != nil {
-		code := "native.compile_failed"
-		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
-			code = "native.tool_missing"
+		if cacheStatus == cache.StatusArtifactRecomputed {
+			if artifact, readErr := os.ReadFile(binaryPath); readErr == nil {
+				if putErr := r.BuildCache.Put(cacheKey, artifact); putErr != nil {
+					cacheStatus = cache.StatusUnavailable
+				}
+			}
 		}
-		return Result{}, &ToolError{Code: code, Err: withStderr(err, compileStderr.bytes())}
 	}
 	r.recordBinary(binaryPath)
 
-	result := Result{Optimization: optimization, CompileTime: compileTime, Pairs: make([]Pair, 0, len(inputs))}
+	result := Result{Optimization: optimization, CompileTime: compileTime, CacheStatus: cacheStatus, Pairs: make([]Pair, 0, len(inputs))}
 	for _, input := range inputs {
 		runStarted := time.Now()
 		runCtx, runCancel := context.WithTimeout(parent, r.Timeout)

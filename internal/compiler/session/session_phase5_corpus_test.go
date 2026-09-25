@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/cache"
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/execution"
@@ -367,7 +368,17 @@ func phase5ExpectForOutcomeKind(kind string) native.TerminalOutcome {
 // three documents to session.Phase4CompareThreeEngines -- the EXISTING
 // comparator (D-05-18/D-05-37), never a private copy (grep-verifiable:
 // this file calls session.Phase4CompareThreeEngines directly).
+type phase5CacheConfig struct {
+	store *cache.Store
+	stats *phase5CacheStats
+}
+type phase5CacheStats struct{ reused, recomputed, notCacheable, unavailable int }
+
 func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Program, functionName string, fixturePath ...string) {
+	phase5RunThreeEngineAgreementWithCache(t, fixture, program, functionName, nil, fixturePath...)
+}
+
+func phase5RunThreeEngineAgreementWithCache(t *testing.T, fixture string, program core.Program, functionName string, cacheConfig *phase5CacheConfig, fixturePath ...string) {
 	t.Helper()
 	inputs, ok := phase5InputsForProgram(program)
 	if !ok {
@@ -413,14 +424,23 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 			t.Fatalf("%s input=%q: schema-2 projection: %v", fixture, input, err)
 		}
 		runner := baseRunner
+		if cacheConfig != nil {
+			runner.BuildCache = cacheConfig.store
+		}
 		runner.Expect = phase5ExpectForOutcomeKind(interpreted.Outcome.Kind)
 		o0, err := runner.Run(context.Background(), cSource, "-O0", []string{input})
 		if err != nil || len(o0.Pairs) != 1 {
 			t.Fatalf("%s input=%q: -O0 run failed: err=%v pairs=%d", fixture, input, err, len(o0.Pairs))
 		}
+		if cacheConfig != nil {
+			cacheConfig.stats.add(o0.CacheStatus)
+		}
 		o3, err := runner.Run(context.Background(), cSource, "-O3", []string{input})
 		if err != nil || len(o3.Pairs) != 1 {
 			t.Fatalf("%s input=%q: -O3 run failed: err=%v pairs=%d", fixture, input, err, len(o3.Pairs))
+		}
+		if cacheConfig != nil {
+			cacheConfig.stats.add(o3.CacheStatus)
 		}
 		o0Execution, err := session.ProjectExecutionSchema2(program, o0.Pairs[0].Execution)
 		if err != nil {
@@ -433,6 +453,19 @@ func phase5RunThreeEngineAgreement(t *testing.T, fixture string, program core.Pr
 		if compareErr := session.Phase4CompareThreeEngines(fixture, interpreted, o0Execution, o3Execution); compareErr != nil {
 			t.Fatalf("%s input=%q: %v", fixture, input, compareErr)
 		}
+	}
+}
+
+func (s *phase5CacheStats) add(status cache.CacheStatus) {
+	switch status {
+	case cache.StatusArtifactReused:
+		s.reused++
+	case cache.StatusArtifactRecomputed:
+		s.recomputed++
+	case cache.StatusUnavailable:
+		s.unavailable++
+	default:
+		s.notCacheable++
 	}
 }
 
@@ -555,6 +588,16 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 		if len(programs) == 0 {
 			t.Fatal("EnumeratePhase5Closure returned no programs")
 		}
+		root := os.Getenv("LANG_PHASE5_CLOSURE_CACHE")
+		if root == "" {
+			root = filepath.Join(os.Getenv("GOCACHE"), "phase5-closure-artifacts")
+		}
+		if root == "phase5-closure-artifacts" || root == "" {
+			root = filepath.Join(os.TempDir(), "lang-phase5-closure-artifacts")
+		}
+		store := &cache.Store{Root: root}
+		stats := &phase5CacheStats{}
+		config := &phase5CacheConfig{store: store, stats: stats}
 		for index, program := range programs {
 			index, program := index, program
 			if len(program.Functions) != 1 {
@@ -562,9 +605,10 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 			}
 			fixture := fmt.Sprintf("enumerated[%d]:%s", index, program.Module)
 			t.Run(fixture, func(t *testing.T) {
-				phase5RunThreeEngineAgreement(t, fixture, program, program.Functions[0].Name)
+				phase5RunThreeEngineAgreementWithCache(t, fixture, program, program.Functions[0].Name, config)
 			})
 		}
+		t.Logf("phase20-closure-cache programs=%d reused=%d recomputed=%d not_cacheable=%d unavailable=%d", len(programs), stats.reused, stats.recomputed, stats.notCacheable, stats.unavailable)
 	})
 }
 

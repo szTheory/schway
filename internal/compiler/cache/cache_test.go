@@ -446,6 +446,23 @@ func TestCacheMismatchedMetaIsTreatedAsAbsent(t *testing.T) {
 	}
 }
 
+func TestCacheArtifactDigestMismatchIsTreatedAsAbsent(t *testing.T) {
+	store := &cache.Store{Root: t.TempDir()}
+	key, err := cache.ComputeKey([]cache.Input{{Name: "fixture_source", Digest: "abc"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Put(key, []byte("trusted-artifact")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(store.Path(key), "artifact"), []byte("tampered-artifact"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, found, err := store.Get(key); err != nil || found {
+		t.Fatalf("artifact digest mismatch must be a cache miss: found=%v err=%v", found, err)
+	}
+}
+
 func nonTestGoFiles(t *testing.T, dir string) []string {
 	t.Helper()
 	entries, err := os.ReadDir(dir)

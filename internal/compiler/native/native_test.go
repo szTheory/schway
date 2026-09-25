@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -18,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cache"
 	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -826,6 +828,205 @@ func TestNativeToolFailureIsOperational(t *testing.T) {
 	if !errors.As(err, &toolError) || toolError.Code != "native.tool_missing" {
 		t.Fatalf("expected native.tool_missing, got %T %v", err, err)
 	}
+}
+
+func TestPhase20NativeCacheReusesArtifactButRunsFreshInputs(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+	}
+	store := &cache.Store{Root: t.TempDir()}
+	const source = `#include <stdio.h>
+int main(int argc, char **argv) {
+  (void)argc;
+  printf("{\"schema\":\"lang.execution/1\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%s\"},\"events\":[{\"schema\":\"lang.execution/1\",\"id\":\"return\",\"kind\":\"function.returned\",\"function_id\":\"fn\",\"source_place\":\"place\",\"type_id\":\"type\"}],\"live_resources\":[]}\n", argv[1]);
+  return 0;
+}`
+	runner := Runner{BuildCache: store, Timeout: 10 * time.Second}
+	cold, err := runner.Run(context.Background(), source, "-O0", []string{"cold"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cold.CacheStatus != cache.StatusArtifactRecomputed {
+		t.Fatalf("cold status=%q", cold.CacheStatus)
+	}
+	warm, err := runner.Run(context.Background(), source, "-O0", []string{"fresh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if warm.CacheStatus != cache.StatusArtifactReused {
+		t.Fatalf("warm status=%q", warm.CacheStatus)
+	}
+	if len(warm.Pairs) != 1 || warm.Pairs[0].Execution.Outcome.Value != "fresh" {
+		t.Fatalf("cache hit reused an outcome instead of running the executable: %+v", warm.Pairs)
+	}
+	changed, err := runner.Run(context.Background(), strings.Replace(source, "return 0;", "return 0; /* changed source */", 1), "-O0", []string{"fresh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed.CacheStatus != cache.StatusArtifactRecomputed {
+		t.Fatalf("changed source status=%q", changed.CacheStatus)
+	}
+}
+
+func TestPhase20NativeManifestTracksTransitiveAndLinkInputs(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+	}
+	dir := t.TempDir()
+	header := filepath.Join(dir, "dependency.h")
+	if err := os.WriteFile(header, []byte("#define VALUE 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	source := `#include "` + header + `"` + "\n#include <stdio.h>\nint main(void) { return VALUE == 1 ? 0 : 1; }\n"
+	runner := DefaultRunner()
+	first, complete := runner.cacheInputs(context.Background(), source, "-O0", nil)
+	if !complete {
+		t.Fatal("expected complete Darwin dependency manifest")
+	}
+	if !hasManifestPath(first, header) {
+		t.Fatal("transitive header missing from manifest")
+	}
+	if !hasManifestPath(first, "MacOSX.sdk/usr/include/stdio.h") {
+		t.Fatal("SDK header missing from manifest")
+	}
+	if !hasManifestPath(first, "MacOSX.sdk/usr/lib/libSystem.tbd") {
+		t.Fatal("resolved system link input missing from manifest")
+	}
+	key1, err := cache.ComputeKey(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(header, []byte("#define VALUE 2\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	second, complete := runner.cacheInputs(context.Background(), source, "-O0", nil)
+	if !complete {
+		t.Fatal("changed header unexpectedly made manifest incomplete")
+	}
+	key2, err := cache.ComputeKey(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if key1.ID == key2.ID {
+		t.Fatal("changed transitive header did not invalidate cache key")
+	}
+}
+
+func TestPhase20ManifestInvalidatesOnHeaderSDKAndResolvedLibraryBytes(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+	}
+	root := t.TempDir()
+	sysroot := filepath.Join(root, "sdk")
+	libDir := filepath.Join(root, "lib")
+	for _, dir := range []string{filepath.Join(sysroot, "usr", "include"), filepath.Join(sysroot, "usr", "lib"), libDir} {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	header := filepath.Join(sysroot, "usr", "include", "stdio.h")
+	settings := filepath.Join(sysroot, "SDKSettings.json")
+	linkInput := filepath.Join(sysroot, "usr", "lib", "libSystem.tbd")
+	priorityLinkInput := filepath.Join(libDir, "libSystem.tbd")
+	linker := filepath.Join(root, "ld")
+	for path, data := range map[string]string{header: "header-v1", settings: `{"Version":"26.0"}`, linkInput: "link-v1", priorityLinkInput: "priority-link-v1", linker: "linker-v1"} {
+		if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	clang := filepath.Join(root, "clang")
+	script := fmt.Sprintf("#!/bin/sh\ncase \"$1\" in\n--version) echo 'Apple clang version 21.0.1';;\n-dumpmachine) echo arm64-apple-darwin25;;\n-M) printf 'lang-deps: %s\\n';;\n-###) printf '\"%s/clang\" \"-cc1\" \"-triple\" \"arm64-apple-darwin25\" \"-isysroot\" \"%s\" \"-o\" \"/tmp/program-123.o\" \"program.c\"\\n'; printf '\"%s\" \"-syslibroot\" \"%s\" \"-L%s\" \"-lSystem\"\\n';;\nesac\n", header, root, sysroot, linker, sysroot, libDir)
+	if err := os.WriteFile(clang, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{ClangPath: clang, Timeout: 5 * time.Second}
+	manifest := func(opt string, foreign []string) ([]cache.Input, string) {
+		t.Helper()
+		inputs, complete := runner.cacheInputs(context.Background(), "int main(void) { return 0; }", opt, foreign)
+		if !complete {
+			t.Fatal("mock toolchain manifest unexpectedly incomplete")
+		}
+		key, err := cache.ComputeKey(inputs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return inputs, key.ID
+	}
+	inputs, baseline := manifest("-O0", nil)
+	for _, fragment := range []string{"stdio.h", "SDKSettings.json", "libSystem.tbd", "ld"} {
+		if !hasManifestPath(inputs, fragment) {
+			t.Fatalf("manifest omitted required dependency %q", fragment)
+		}
+	}
+	for _, control := range []struct{ path, changed string }{{header, "header-v2"}, {settings, `{"Version":"26.0","ChangedBytes":true}`}, {linkInput, "link-v2"}, {priorityLinkInput, "priority-link-v2"}, {linker, "linker-v2"}} {
+		original, err := os.ReadFile(control.path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(control.path, []byte(control.changed), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		_, changed := manifest("-O0", nil)
+		if changed == baseline {
+			t.Errorf("same-version changed input %s did not invalidate manifest key", control.path)
+		}
+		if err := os.WriteFile(control.path, original, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, optimized := manifest("-O3", nil)
+	if optimized == baseline {
+		t.Fatal("changed optimization flags did not change manifest key")
+	}
+	foreign := filepath.Join(root, "foreign.c")
+	if err := os.WriteFile(foreign, []byte("int helper(void) { return 1; }\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, withForeign := manifest("-O0", []string{foreign})
+	if withForeign == baseline {
+		t.Fatal("declared foreign translation unit did not change manifest key")
+	}
+	if err := os.WriteFile(foreign, []byte("int helper(void) { return 2; }\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, changedForeign := manifest("-O0", []string{foreign})
+	if changedForeign == withForeign {
+		t.Fatal("changed foreign translation unit bytes did not invalidate manifest key")
+	}
+	runner.LTO = true
+	_, withLTO := manifest("-O0", nil)
+	if withLTO == baseline {
+		t.Fatal("changed LTO setting did not change manifest key")
+	}
+}
+
+func TestPhase20IncompleteNativeManifestBypassesReuse(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("complete linker dependency discovery is currently implemented for Darwin")
+	}
+	dir := t.TempDir()
+	header := filepath.Join(dir, "header with space.h")
+	if err := os.WriteFile(header, []byte("#define VALUE 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	source := `#include "` + header + `"` + "\n#include <stdio.h>\nint main(int argc,char **argv){(void)argc;printf(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"%s\\\"},\\\"events\\\":[{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\\\"return\\\",\\\"kind\\\":\\\"function.returned\\\",\\\"function_id\\\":\\\"fn\\\",\\\"source_place\\\":\\\"place\\\",\\\"type_id\\\":\\\"type\\\"}],\\\"live_resources\\\":[]}\\n\",argv[1]);return VALUE-1;}\n"
+	runner := Runner{BuildCache: &cache.Store{Root: filepath.Join(dir, "cache")}}
+	result, err := runner.Run(context.Background(), source, "-O0", []string{"fresh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.CacheStatus != cache.StatusNotCacheable {
+		t.Fatalf("incomplete escaped dependency list status=%q, want not_cacheable", result.CacheStatus)
+	}
+}
+
+func hasManifestPath(inputs []cache.Input, fragment string) bool {
+	for _, input := range inputs {
+		if strings.Contains(input.Name, fragment) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestNativeHelperProcess(t *testing.T) {

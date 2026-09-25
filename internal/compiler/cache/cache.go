@@ -41,7 +41,7 @@ import (
 // every other schema in the compiler (a new constant beside its peers --
 // core.Schema1, evidence.Schema1, debugmap.Schema, ... -- never editing an
 // existing one).
-const Schema = "lang.cache-meta/0"
+const Schema = "lang.cache-meta/1"
 
 // MaxArtifactBytes and MaxMetaBytes are declared byte caps (T-06-CACHE-05):
 // Get reads through them rather than accumulating an unbounded amount of
@@ -136,9 +136,10 @@ func (s *Store) Path(key Key) string {
 // record a reviewer can read directly (D-06-09), the analogue of
 // `go build -x` / `GODEBUG=gocachehash`.
 type storedMeta struct {
-	Schema string  `json:"schema"`
-	ID     string  `json:"id"`
-	Inputs []Input `json:"inputs"`
+	Schema         string  `json:"schema"`
+	ID             string  `json:"id"`
+	Inputs         []Input `json:"inputs"`
+	ArtifactDigest string  `json:"artifact_digest"`
 }
 
 // Put writes artifact and meta.json for key. Each file is written to a
@@ -155,7 +156,7 @@ func (s *Store) Put(key Key, artifact []byte) error {
 	if err := writeAtomic(dir, "artifact", artifact); err != nil {
 		return err
 	}
-	meta := storedMeta{Schema: Schema, ID: key.ID, Inputs: key.Inputs}
+	meta := storedMeta{Schema: Schema, ID: key.ID, Inputs: key.Inputs, ArtifactDigest: hashBytes(artifact)}
 	metaBytes, err := json.Marshal(meta)
 	if err != nil {
 		return err
@@ -228,6 +229,9 @@ func (s *Store) Get(key Key) ([]byte, bool, error) {
 	}
 	if len(data) > MaxArtifactBytes {
 		return nil, false, &Error{Code: "cache.artifact_too_large"}
+	}
+	if hashBytes(data) != meta.ArtifactDigest {
+		return nil, false, nil
 	}
 	return data, true, nil
 }
