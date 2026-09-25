@@ -671,7 +671,7 @@ before plans are written rather than estimated.
 **Sizing note**: the milestone's close condition lives here (PRC-02). If the
 unowned count is above 5 when this phase opens, the overflow is worked here or
 the milestone does not close.
-**Plans**: 6 plans
+**Plans**: 7 plans
 
 Plans:
 - [ ] 20-01-PLAN.md — Pin the refused checksum frontier and its M003-open comparison
@@ -680,6 +680,7 @@ Plans:
 - [ ] 20-04-PLAN.md — Reuse content-addressed closure artifacts with fresh judgments
 - [ ] 20-05-PLAN.md — Derive and enforce the open-unowned debt cap
 - [ ] 20-06-PLAN.md — Adjudicate D-13-34 and D-06-29 at a human decision gate
+- [ ] 20-07-PLAN.md — Repair four validation citations and satisfy the live debt cap before the decision gate
 
 ---
 

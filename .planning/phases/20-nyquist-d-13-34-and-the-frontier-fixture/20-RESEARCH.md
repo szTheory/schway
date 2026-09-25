@@ -2,7 +2,7 @@
 
 **Researched:** 2026-09-25  
 **Domain:** Go compiler validation infrastructure, project evidence/debt records, refused Lang source fixtures  
-**Confidence:** HIGH for repository state and implementation seams; MEDIUM for the intended PRC-02 counting denominator
+**Confidence:** HIGH for repository state, implementation seams, and the source-derived 13-item PRC-02 start population
 
 ## User Constraints
 
@@ -16,7 +16,7 @@ At research start, the Phase 14 instrument passes with **R1=0, R2=0, R3=0, R2b=2
 
 There are currently **11 VALIDATION files with `status: draft`** under `.planning`, not just the specifically named 07/08/11 plus the inline 12/13 files. A filesystem scan found Phase 14, 17, 18, 19, and several archived M001/M002 validation files among them. The plan must account for every remaining draft file or explain from authoritative evidence why the criterion's scope excludes it; do not silently report the criterion met after touching only five files. The draft inventory is reproduced in this research's Evidence Baseline section.
 
-**Primary recommendation:** Start the implementation plans with the exact EVD-01 frontier and debt baseline; reconcile and verify the named old evidence against current test names and current language reachability; add a checksum-intent refusal fixture whose diagnostic is compared against the M003-open pin; make the 112-program closure key depend on every declared input while never caching a pass/fail verdict; and keep the D-13-34 remedy and PRC-02 threshold audit behind an explicit human checkpoint where the governing record leaves a durable choice.
+**Primary recommendation:** Start the implementation plans with the exact EVD-01 frontier and 13-item debt baseline; reconcile and verify old evidence against current tests and language reachability; check in the exact checksum-intent source already replayed against the M003-open and current checkers, with its historical reconstruction labeled truthfully; make the 112-program closure key depend on every declared input while never caching a pass/fail verdict; and keep only D-13-34's durable choice behind the explicit human checkpoint.
 
 ## Architectural Responsibility Map
 
@@ -63,7 +63,8 @@ This inventory is a live filesystem observation, not a committed test output; re
 - Phase 14's generated `.planning/UNREACHABLE-CLAIMS.md` currently contains **8 table rows with an `UNOWNED(...)` landing value** (among the visible WIRED claim rows); this is one useful live-claim count, not proven to be PRC-02's complete denominator.
 - Parsing every historical `*-DEBT.md` table row in the current tree found **40 `UNOWNED(...)` cells** across 19 registers. That broader number includes archival M001/M002 rows which predate the M003 well-formedness rules and conflicts with the roadmap's statement that M002 closed with ten. Do not substitute the raw 40 for PRC-02 without resolving this scope mismatch.
 - The current PRC-01 gate `TestDebtRegistersAreWellFormed` validates register shape and ownership-field syntax; its source contains no explicit five-item count assertion. The milestone audit and current `STATE.md` record **10 open, unowned debt items entering M003**. [VERIFIED: `internal/compiler/session/session_test.go:3039-3071`; `.planning/STATE.md:531-533`; `.planning/ROADMAP.md:655-657`]
-- Planning implication: make the PRC-02 denominator explicit and machine-count it from the same authoritative set that supports the “M002 closed with 10” baseline. Preserve legacy/archive distinctions and avoid mass re-owning historical rows just to make a count green. Phase 20 starts with 8 current generated unowned claims as a visible lower-scope measure, above the ≤5 end target by at least 3.
+- **Resolved A1, 2026-09-25:** the M002 audit §4 names the authoritative starting cohort of ten IDs. Current register rows show six of those still `UNOWNED`: D-10-C04, D-11-02, D-11-27, D-12-36, D-12-43, D-13-34. D-11-51 and D-12-21 are `CLOSED(15ee061)`; D-13-02b and D-13-10a have P17 landings. The live M003 register adds seven distinct `UNOWNED` IDs: D-14-45, D-14-46, D-14-47, D-14-50, D-14-51, D-14-52, D-14-54. **Qualified current start count: 13 distinct open-unowned items**, subject to fresh machine re-derivation when execution starts. The eight generated claims are a probe-backed subset; 40 raw historical cells include frozen archival rows outside the audit's current liability set. The PRC-02 machine rule must take the audit cohort plus newly opened live M003 items, deduplicate by ID, apply current CLOSED/P<NN>/UNOWNED disposition, and fail on unknown or duplicate current provenance. This is the denominator that preserves the ten-item M002 baseline without dropping new M003 debt.
+- **Concrete cap route:** Phase 16's roadmap explicitly says it closes D-11-02, D-12-36, D-11-27; verify those closure claims against Phase 16 evidence and update stale rows (13→10). QLT-10's reconciliation must repair the cited rows for D-14-50/51/52/54 and close those four on executed evidence (10→6). Phase 21's already-recorded foreign/native ownership includes the one-TU/LTO limitation; explicitly accept D-14-45 as a P21 native/LTO work item in the Phase 21 roadmap and source register only if that linkage survives evidence review (6→5). If that ownership is not supported, work an additional real counted item to reach five; the cap may not be waived. D-13-34's human branch can reduce the count further but is not relied on to satisfy PRC-02.
 
 ## Phase Requirements
 
@@ -145,9 +146,9 @@ Source: `internal/compiler/session/verification_groundedness_test.go:1335-1367,2
 
 **What:** Read fixture bytes; assert the intent marker/path is present; call `session.Check`; assert refusal; compare the diagnostic code and stable location/identity against an explicitly retained M003-open baseline. Phase 19's `TestPhase19NumericRefusalFrontiers` is the closest local pattern.
 
-**When to use:** For `examples/checksum.lang`, which must remain a refused frontier fixture through M003 and compare as a moved diagnostic relative to the M003-open pin.
+**When to use:** For `examples/checksum.lang`, which must remain a refused frontier fixture through M003 and compare as a moved diagnostic relative to the historically reconstructed M003-open checker result.
 
-**Important:** The new fixture's exact refusing code is not yet known; determine it by running the real checker and pin the observed result. Do not guess from the roadmap prose. The M003-open code needs a durable source literal before it can be compared; research did not find an existing `examples/checksum.lang` or an obvious prior pin under the current tree.
+**Important:** The proposed exact fixture bytes and both observed codes/spans are recorded in `20-CHECKSUM-BASELINE.md`. No original M003-open fixture or pin exists. Plan 20-01 must copy the source byte-for-byte, verify its digest and current refusal, then pin the comparison with the explicitly reconstructed historical result. Any byte change requires both checker replays.
 
 ### Pattern 3: Cache inputs, never validation verdicts
 
@@ -188,7 +189,7 @@ Source: `internal/compiler/session/verification_groundedness_test.go:1335-1367,2
 
 ### Pitfall 4: Miscounting debt
 
-**What goes wrong:** Counting every `UNOWNED` text occurrence yields 40 historical table rows; counting only the generated claims view gives 8; neither denominator is yet demonstrated as the canonical PRC-02 metric. M002's documented entry baseline is 10.
+**What goes wrong:** Counting every `UNOWNED` text occurrence yields 40 historical table rows; counting only the generated claims view gives 8. The source-derived qualified current count is 13: six still-unowned IDs from M002's exact ten-item audit cohort plus seven distinct live M003 rows.
 
 **How to avoid:** Define the machine-counted population by reference to the authoritative M002 baseline and PRC-01 parser before asserting the cap. Preserve the generated view as a consistency check; do not suppress or rewrite legacy history to meet the number.
 
@@ -213,9 +214,10 @@ Source: `internal/compiler/session/verification_groundedness_test.go:1335-1367,2
 | Framework | Go stdlib `testing` / `go test` |
 | Config file | `go.mod` at repository root |
 | Quick run command | `GOCACHE=/private/tmp/phase20-gocache go test ./internal/compiler/session -run 'TestVerificationGroundedness(FrontierIsPinned|ThreeClassesAreEmpty)$' -count=1 -v` |
-| Full suite command | `GOCACHE=/private/tmp/phase20-gocache go test ./...` |
+| Full suite timing command | `GOCACHE=/private/tmp/phase20-gocache go test ./... -count=1` |
 
 The temporary `GOCACHE` override is needed in this Codex sandbox because the default user cache path returned `operation not permitted`; it is environment handling, not a repository setting.
+Phase 14's roadmap rounds the reference to 192.7 seconds; its QLT-02 manifest records a clean `go test ./... -count=1` observation of 191.89 seconds. The Phase 20 timing comparison must cite both and disable Go's test-result cache on each sample.
 
 ### Phase Requirements → Test Map
 
@@ -229,7 +231,7 @@ The temporary `GOCACHE` override is needed in this Codex sandbox because the def
 ### Wave 0 Gaps
 
 - Add tests for checksum refusal/movement, closure key reuse/invalidation, and machine-counted debt population.
-- Establish the durable M003-open checksum diagnostic literal if it is not already available from a prior recorded test/run artifact.
+- Preserve the reconstructed M003-open checksum diagnostic and its absent-original-pin limitation from `20-CHECKSUM-BASELINE.md`.
 - Existing session, checker, and cache test infrastructure is in place; no framework install is needed.
 
 ## Security Domain
@@ -240,23 +242,14 @@ This phase has no authentication, session, access-control, or cryptographic feat
 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
-| A1 | PRC-02's count should follow the same qualified population that produced M002's ten-item carry-forward, rather than every historical `UNOWNED(...)` cell now found across all old registers. | Evidence baseline / Pitfall 4 | The implementation could satisfy the wrong denominator; resolve against the milestone audit and make the test's population explicit. |
-| A2 | The M003-open diagnostic for the checksum source intent can be reconstructed or located from repository history before adding the Phase 20 comparator. | Pattern 2 / Wave 0 | QLT-11's “differs from M003 open” claim cannot be proven from a current-only pin. |
+| A1 — resolved | PRC-02 starts from the M002 audit's exact ten IDs plus distinct newly opened live M003 rows; the currently qualified unowned count is 13. | Evidence baseline / Pitfall 4 | Execution re-derives the set mechanically and retains the three different scope counts. |
+| A2 — resolved with evidence limit | No M003-open checksum fixture or contemporaneous pin exists; an identical proposed source was replayed against M003-open revision `d21db90` and current code, and its first refusal moved. | Pattern 2 / Wave 0; `20-CHECKSUM-BASELINE.md` | The replay proves historical movement, but must never be presented as a pin that existed at M003 open. |
 
-## Open Questions
+## Resolved Questions and Decision Gate
 
-1. **What exactly is the PRC-02 counted population?**
-   - What we know: M002 recorded ten open unowned items entering M003; current generated unreachable-claims view has eight unowned rows; a simple historical-register scan finds 40.
-   - What's unclear: the machine-counting rule that produced the milestone's “10” and whether the current view or some debt cluster subset is authoritative.
-   - Recommendation: locate the audit's exact ten-item table and make the gate consume that same classification/registry, updated by explicit closures/owners; retain the three counts in the plan until the rule is nailed down.
-2. **What was the exact M003-open checksum diagnostic?**
-   - What we know: `examples/checksum.lang` does not currently exist; Phase 19 already pins literal syntax/range refusals.
-   - What's unclear: the exact original source and code/span used for the M003-open pin.
-   - Recommendation: search Phase 19 summaries/commits and establish a durable source literal or fixture-as-of-open record before claiming QLT-11's diagnostic moved.
-3. **Which durable D-13-34 outcome is chosen?**
-   - What we know: the current probe asserts both move and borrow held-out pairs remain structurally identical; Phase 13 explicitly records Option B, no fixture edits, as ratified then.
-   - What's unclear: whether Phase 20 should replace those pairs now that the surface changed or re-ratify and assign the remaining risk to a future milestone.
-   - Recommendation: a blocking human checkpoint before the one-way fixture/history or permanent-debt choice; the plan must include D-06-29's restored or explicitly written-off inference.
+1. **PRC-02 population — resolved:** the audit's exact ten-ID M002 liability cohort plus distinct newly opened live M003 rows, with current register dispositions applied, yields 13 open-unowned IDs at planning time. The generated view's eight and raw archive scan's 40 have narrower/broader scopes and are cross-checks, not substitutes.
+2. **Checksum diagnostic — original artifact absent; historical replay resolved:** `git log --all -- examples/checksum.lang` has no commits. The exact 663-byte proposed source in `20-CHECKSUM-BASELINE.md` has SHA-256 `ae95e550df67114c3464dda9cc24779f8a2efd69bd2b99dd0ccb2acc235cc154`. M003-open revision `d21db90e67750bb19976c4206f4c23c68cd06207` refuses its first numeric literal at `syntax.unexpected_byte` span 512–513; the Phase 19-complete checker refuses at the later loop with `syntax.expected_rbrace` span 521–527. Both checks ran through `cmd/lang --json check` on identical bytes. This is a **reconstructed baseline**, not a contemporaneously pinned diagnostic; Plan 20-01 must preserve that distinction, and any fixture-byte change requires both replays.
+3. **D-13-34 outcome — explicit human decision:** current move/borrow held-out pairs are alpha-renames. Plan 20-06 prepares concrete replacement and re-ratification options, then stops at `gate="blocking-human"` before selecting one. D-06-29's inference is restored or explicitly written off accordingly.
 
 ## Environment Availability
 
@@ -288,7 +281,7 @@ Step 2.6 skipped for product dependencies: this is a code/docs-only phase with n
 **Confidence breakdown:**
 - Standard stack: HIGH — existing repository tests and cache APIs were opened directly.
 - Architecture and evidence counts: HIGH — measured with current EVD-01 tests and filesystem scan.
-- PRC-02 denominator: MEDIUM — current records show conflicting populations; resolve before codifying.
+- PRC-02 denominator: HIGH for the 13-item planning snapshot — derived from the audit's ten exact IDs and seven distinct live M003 rows; the execution test must rederive it after edits.
 - D-13-34 outcome: MEDIUM — roadmap permits alternatives, and user authorization requires the durable choice to remain a checkpoint.
 
 **Research date:** 2026-09-25  
