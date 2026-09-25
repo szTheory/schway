@@ -240,6 +240,52 @@ func TestClangDigestProbeIsBounded(t *testing.T) {
 	}
 }
 
+func TestCacheProbeFailureCause(t *testing.T) {
+	for _, testCase := range []struct {
+		name     string
+		content  string
+		deadline time.Duration
+		wantCode string
+	}{
+		{
+			name:     "timeout",
+			content:  "#!/bin/sh\nexec sleep 10\n",
+			deadline: 50 * time.Millisecond,
+			wantCode: "cache.probe_timeout",
+		},
+		{
+			name:     "command failure",
+			content:  "#!/bin/sh\nexit 23\n",
+			wantCode: "cache.probe_failed",
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			spec := baseArtifactSpec(t)
+			spec.ClangPath = writeExecutableFixture(t, t.TempDir(), testCase.content)
+			ctx := context.Background()
+			if testCase.deadline > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, testCase.deadline)
+				defer cancel()
+			}
+
+			inputs, err := InputsFor(ctx, spec)
+			if inputs != nil {
+				t.Fatalf("InputsFor returned inputs after a failed probe: %#v", inputs)
+			}
+			var cacheErr *Error
+			if !errors.As(err, &cacheErr) || cacheErr.Code != "cache.input_undeclared" {
+				t.Fatalf("outer error = %v, want cache.input_undeclared", err)
+			}
+			cause := errors.Unwrap(err)
+			var probeErr *Error
+			if !errors.As(cause, &probeErr) || probeErr.Code != testCase.wantCode {
+				t.Fatalf("probe cause = %v, want %s", cause, testCase.wantCode)
+			}
+		})
+	}
+}
+
 // TestCacheProbeHelper is a self-exec test helper (evidence's
 // TestEvidenceToolProbeHelper precedent): it only does anything when
 // launched as a subprocess by selfExecFactory above via os.Args[0].
