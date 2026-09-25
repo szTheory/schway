@@ -1,6 +1,6 @@
 ---
 phase: 15-event-identity-lang-execution-2
-verified: 2026-09-24T20:38:37Z
+verified: 2026-09-25T15:49:29Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -46,7 +46,7 @@ covered_files:
   - internal/compiler/session/session_phase5_compare.go
   - internal/compiler/session/session_phase5_compare_test.go
   - internal/compiler/session/session_phase6_test.go
-covered_digest: "v1:sha256:cf33f38b7875cd1eda5e8370a0e7b2473e8776c48f76ac84fd6218725630c203"
+covered_digest: "v1:sha256:043f8000e9d67cebe523cf86672259030acd81bf399ff5de6e729f876542158f"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -55,14 +55,14 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  refresh_reason: "Shared cgen/interpreter implementation files changed after Phase 18 work, and REQUIREMENTS.md was updated; the old covered-file digest no longer matched the current tree."
+  refresh_reason: "Re-ran current Phase 15 owning-package admission, interpreter, peer, native-emission, CI source-pin, and four-tier diamond/collision evidence after shared implementation and planning inputs changed. All targeted commands passed; the covered-file fingerprint now matches the current tree."
 advisory: []
 ---
 
 # Phase 15: Event Identity (`lang.execution/2`) Verification Report
 
 **Phase Goal:** Two activations of the same callee through a shared-leaf diamond are distinguishable, and the causal edge between caller and callee is observed rather than inferred.
-**Verified:** 2026-09-24T20:38:37Z
+**Verified:** 2026-09-25T15:49:29Z
 **Status:** passed
 **Re-verification:** Yes — refreshed the stale fingerprint and reran current Phase 15 automated evidence.
 
@@ -160,7 +160,7 @@ No unresolved `TBD`, `FIXME`, or `XXX` debt marker was found in the Phase 15 imp
 
 ### Fingerprint Refresh
 
-The previous digest (`v1:sha256:e62e02bd18df1503cc3c2e1a327e656d0f9423ee4c4b64bb8f661e53a2414453`) recomputed to `v1:sha256:cf33f38b7875cd1eda5e8370a0e7b2473e8776c48f76ac84fd6218725630c203`. `git log --since=2026-09-24T03:51:52Z` shows later Phase 18 changes to the covered shared emitter/interpreter files, and `REQUIREMENTS.md` was updated. The Phase 15 regression checks above were rerun against this current tree. Requirements were already complete; no requirement or STATE edits were needed.
+The previous digest (`v1:sha256:cf33f38b7875cd1eda5e8370a0e7b2473e8776c48f76ac84fd6218725630c203`) recomputed to `v1:sha256:043f8000e9d67cebe523cf86672259030acd81bf399ff5de6e729f876542158f`. The owning-package Schema 2 decoder seam, CI ownership/source pins, four-tier diamond and collision controls, frozen `/0` and `/1` behavior, interpreter call-edge/refusal tests, independent peer checks, and native invocation-table boundary/emission checks all passed on the current tree. Requirements remain complete; no requirement or STATE edits were needed.
 
 ### Advisory (New Scope, Unevidenced)
 
@@ -176,5 +176,5 @@ The implementation truths, including the four-tier diamond, caller-owned causal 
 
 ---
 
-_Verified: 2026-09-24T20:38:37Z_  
+_Verified: 2026-09-25T15:49:29Z_  
 _Verifier: the agent (gsd-verifier)_

@@ -122,8 +122,8 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
 ## Phases
 
 - [x] **Phase 14: Evidence Instrument and Honest Scoping** - The instruments stop reporting green for work that is merely wired.
-- [ ] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable. (implementation complete; verification stale)
-- [ ] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut. (implementation complete; verification stale)
+- [x] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable. (implementation complete; verification stale) (completed 2026-09-25)
+- [x] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut. (implementation complete; verification stale) (completed 2026-09-25)
 - [x] **Phase 17: Return Type ≠ Parameter Type** - A function may return a type it was not given. (completed 2026-09-22)
 - [ ] **Phase 18: Branch on a Computed Value** - A branch discriminates a value the function computed. **HARD-GATED on spike S-010.** (implementation complete; verification stale)
 - [ ] **Phase 19: Numeric Literals and `OpConst`** - Lang can name a value it was not given. (implementation complete; verification stale)
@@ -674,6 +674,7 @@ the milestone does not close.
 **Plans**: 10 plans
 
 Plans:
+
 - [x] 20-01-PLAN.md — Pin the refused checksum frontier and its M003-open comparison
 - [x] 20-02-PLAN.md — Reconcile Phases 07, 08, and 11 through the live lint
 - [x] 20-03-PLAN.md — Clear the remaining draft validation records and re-pin the frontier
@@ -732,7 +733,7 @@ assurance-refactor milestone rather than a feature milestone.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 14. Evidence Instrument and Honest Scoping | 13/13 | Complete    | 2026-09-18 |
-| 15. Event Identity (`lang.execution/2`) | 9/9 | Complete    | 2026-09-19 |
+| 15. Event Identity (`lang.execution/2`) | 10/10 | Complete    | 2026-09-19 |
 | 16. Branch/Match Emitter Port | 26/26 | Complete    | 2026-09-21 |
 | 17. Return Type ≠ Parameter Type | 9/9 | Complete    | 2026-09-22 |
 | 18. Branch on a Computed Value | 8/8 | Complete    | 2026-09-24 |

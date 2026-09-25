@@ -2,31 +2,32 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 15
-current_phase_name: Event Identity (lang.execution/2)
-status: in_progress
-stopped_at: Phase 15 verification is stale; resume with $gsd-verify-work 15
-last_updated: "2026-09-25T14:54:16Z"
+current_phase: 18
+current_phase_name: Branch on a Computed Value
+status: verification
+stopped_at: Phase 16 verification passed; Phase 18 is the next stale verification
+last_updated: "2026-09-25T16:02:43Z"
 last_activity: 2026-09-25
-last_activity_desc: Progress audit found stale verification reports in Phases 15, 16, 18, and 19
-state_head: 06a25c7
+last_activity_desc: Phase 16 verification passed; routed to Phase 18 verification
+state_head: ea38f6fde671474d2a74d0522381048079e7c1ab
 progress:
-  total_phases: 8
-  completed_phases: 3
+  total_phases: 7
+  completed_phases: 6
   total_plans: 83
   completed_plans: 83
+  percent: 86
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-14)
+See: .planning/PROJECT.md (updated 2026-09-25)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Clear stale verification in Phase 15 before routing onward. Phases 15, 16, 18, and 19 have all plans summarized but their verification reports are stale; Phase 20 is complete with all ten plans executed, its four requirements verified, and the final full repository Go suite passing. GSD currently routes to `$gsd-verify-work 15`; milestone closeout follows after the stale verification gates are resolved.
+**Current focus:** Phases 15, 16, 17, and 20 are verified complete. Phase 18 is the next stale verification, followed by Phase 19. Phase 20 has all ten plans executed, its four requirements verified, and the full repository Go suite passing. Resume with `$gsd-verify-work 18`; milestone closeout follows after both remaining stale verification gates are resolved.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -48,17 +49,16 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 15 — Event Identity (`lang.execution/2`)
-Plan: 10 of 10 (verification stale)
-Total Plans in Phase: 10
+Phase: 18 — Branch on a Computed Value
+Plan: 8 of 8 (verification stale)
+Total Plans in Phase: 8
 Status: Verification required
-Last activity: 2026-09-25 — progress audit
-All plans in Phases 15, 16, 18, and 19 have summaries, but their verification
-reports are stale. Phase 20 is verified complete; its 33-pair archive grades
+Last activity: 2026-09-25 — Phase 16 verification passed; routed to Phase 18 verification
+Phase 19 still has a stale verification report. Phase 20 is verified complete; its 33-pair archive grades
 cleanly, the current open-unowned debt set is four, and the full repository
 suite passes.
 
-**Next:** `$gsd-verify-work 15` — refresh the earliest stale verification report.
+**Next:** `$gsd-verify-work 18` — refresh the earliest stale verification report.
 
 ## M003 Phase Map
 
@@ -69,8 +69,8 @@ Phases 14-20. Structure is the ratified plan from
 | Phase | Name | Requirements | Plans (est.) | Status |
 |-------|------|--------------|--------------|--------|
 | 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
-| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Verification stale |
-| 16 | Branch/Match Emitter Port | 2 | 8-10 | Verification stale |
+| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete |
+| 16 | Branch/Match Emitter Port | 2 | 8-10 | Complete |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
 | 18 | Branch on a Computed Value | 3 | 8-10 | Verification stale |
 | 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Verification stale |
@@ -133,7 +133,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 185
+- Total plans completed: 186
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -153,7 +153,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 11 | 9 | - | - |
 | 12 | 8 | - | - |
 | 14 | 13 | - | - |
-| 15 | 9 | - | - |
+| 15 | 10 | - | - |
 | 16 | 26 | - | - |
 | 17 | 9 | - | - |
 | 18 | 8 | - | - |
@@ -645,8 +645,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T02:58:51.875Z
-Stopped at: Completed 20-01-PLAN.md
+Last session: 2026-09-25T15:53:20.601Z
+Stopped at: Phase 16 complete, ready to plan Phase 17
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`

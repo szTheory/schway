@@ -1,6 +1,6 @@
 ---
 phase: 16-branch-match-emitter-port
-verified: 2026-09-24T20:52:11Z
+verified: 2026-09-25T16:02:43Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
@@ -75,7 +75,7 @@ covered_files:
   - internal/compiler/session/session_phase16_production_paths_test.go
   - internal/compiler/session/session_test.go
   - internal/compiler/session/verification_groundedness_test.go
-covered_digest: "v1:sha256:c65bbd9c855857f42fe4c03b2274f65210780f10ea461c3ce7b4d3e0c51bdd1f"
+covered_digest: "v1:sha256:cc1be91d7bd40ec28777d68f28d3bccf20b1c809bd68fd7fc31a7f5b58ceb35c"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -95,7 +95,7 @@ decision_coverage:
 
 **Phase Goal:** One emission law lowers every admissible program, instead of two laws split by a function-count guard.
 
-**Verified:** 2026-09-24T20:52:11Z
+**Verified:** 2026-09-25T16:02:43Z
 
 **Status:** passed
 
@@ -154,14 +154,14 @@ The additional production-path smoke controls are also verified: `TestPhase16Pro
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Public/direct convergence and derived-resource serialization | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/cgen -run '^(TestN1ConvergenceDifferential|TestProgramLiveResourcesAreDerived|TestProgramLiveResourceDerivationIsNotInert)$' -count=1` | Rerun exit 0 | ✓ PASS |
-| Golden-C immutability and change ledger | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/core -run '^(TestPreviousPhaseGoldenCUnchanged|TestPhase16GoldenChangeLedger|TestPhase16GoldenChangeLedgerRejectsFaults)$' -count=1` | Rerun exit 0 | ✓ PASS |
-| NAT-09 ownership and groundedness frontier | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1` | Rerun exit 0 | ✓ PASS |
-| Independent native semantic differential | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^TestPhase16DirectProgramFourTierDifferential$' -count=1` | Rerun exit 0 | ✓ PASS |
-| Superseded-emitter deletion | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/cgen -run '^TestSupersededEmitterDefinitionsRemoved$' -count=1` | Rerun exit 0 | ✓ PASS |
-| Production refusal and bypass-mutation controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase16ProductionBypassMutationIsKilled|TestPhase16ProductionPathsPreserveM004Refusal|TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1` | Rerun exit 0 | ✓ PASS |
-| Build | `GOCACHE=/tmp/ai-lang-gocache go build ./...` | Rerun exit 0 | ✓ PASS |
-| Full workspace regression | `GOCACHE=/tmp/ai-lang-gocache go test ./... -count=1` | Full suite passed after the Phase 18 shared-emitter changes in the current orchestrated verification; no source changes followed, only planning-report refreshes. | ✓ PASS |
+| Public/direct convergence and derived-resource serialization | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/cgen -run '^(TestN1ConvergenceDifferential|TestProgramLiveResourcesAreDerived|TestProgramLiveResourceDerivationIsNotInert)$' -count=1` | Fresh rerun exit 0 on 2026-09-25 | ✓ PASS |
+| Golden-C immutability and change ledger | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/core -run '^(TestPreviousPhaseGoldenCUnchanged|TestPhase16GoldenChangeLedger|TestPhase16GoldenChangeLedgerRejectsFaults)$' -count=1` | Fresh rerun exit 0 on 2026-09-25 | ✓ PASS |
+| NAT-09 ownership and groundedness frontier | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1` | Fresh rerun exit 0 on 2026-09-25 | ✓ PASS |
+| Independent native semantic differential | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^TestPhase16DirectProgramFourTierDifferential$' -count=1` | Fresh rerun exit 0 on 2026-09-25 | ✓ PASS |
+| Superseded-emitter deletion | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/cgen -run '^TestSupersededEmitterDefinitionsRemoved$' -count=1` | Fresh rerun exit 0 on 2026-09-25 | ✓ PASS |
+| Production refusal and bypass-mutation controls | `GOCACHE=/tmp/ai-lang-gocache go test ./internal/compiler/session -run '^(TestPhase16ProductionBypassMutationIsKilled|TestPhase16ProductionPathsPreserveM004Refusal|TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1` | Fresh rerun exit 0 on 2026-09-25 | ✓ PASS |
+| Build | `GOCACHE=/tmp/ai-lang-gocache go build ./...` | Fresh rerun exit 0 on 2026-09-25 | ✓ PASS |
+| Full workspace regression | `GOCACHE=/tmp/ai-lang-gocache go test ./... -count=1` | Fresh complete suite passed on 2026-09-25, including `internal/compiler/session` (260.657s) and `internal/compiler/testsupport` (84.428s). | ✓ PASS |
 
 ### Validation Coverage Outcome
 
@@ -207,7 +207,7 @@ The decision-coverage gate found **11/11** trackable CONTEXT.md decisions honore
 
 ### Fingerprint Refresh
 
-The previous digest (`v1:sha256:776f4a76bba8c14ac5d0d5b0ff51f72d7f5e701bed4e9f8b057c1ef366c42e76`) recomputed to `v1:sha256:e541e3375b4086946c15be492161e4cf2c12ad766aadef19c005a9433e19438f`. Changes after the prior verification touched covered shared emitter and session artifacts during later Phase 18 work and updated `REQUIREMENTS.md`. I reran the Phase 16 convergence, golden ledger, NAT-09 ownership/groundedness, differential, legacy-emitter deletion, production-refusal/bypass, and build checks. The current full Go suite also passed after the shared source changes. Requirements and STATE already reflect the completed phase/active Phase 19 position, so neither was edited.
+The prior recorded digest (`v1:sha256:c65bbd9c855857f42fe4c03b2274f65210780f10ea461c3ce7b4d3e0c51bdd1f`) changed to `v1:sha256:cc1be91d7bd40ec28777d68f28d3bccf20b1c809bd68fd7fc31a7f5b58ceb35c`. I reran the Phase 16 convergence, golden ledger, NAT-09 ownership/groundedness, differential, legacy-emitter deletion, production-refusal/bypass, and build checks. A fresh complete `go test ./... -count=1` passed on 2026-09-25. No must-have gaps or human-only acceptance criteria remain.
 
 ### Human Verification
 
@@ -217,6 +217,6 @@ None. This compiler/infrastructure phase has no visual or user-flow criteria. Th
 
 No must-have gaps remain. Plan 16-26 corrected the scanner-visible owner-law selector into independently anchored branches. Fresh focused emitter-retirement, production-path refusal, bypass-mutation, owner-law, and groundedness tests pass; the complete Go test suite and build also pass. `16-VALIDATION.md` is Nyquist-compliant through Plan 26; `16-SECURITY.md` records 49/49 threats closed or accepted and zero open. The macOS/Linux CI matrix runs the full build and test commands. UAT records 21/21 checks passed, including the previously recorded `cut-m004` decision and fresh full-suite check.
 
-_Verified: 2026-09-24T20:52:11Z_
+_Verified: 2026-09-25T16:02:43Z_
 
 _Verifier: the agent (gsd-verifier)_
