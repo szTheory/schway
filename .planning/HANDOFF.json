@@ -24,6 +24,12 @@
   ],
   "remaining_tasks": [
     {
+      "id": "15-09-commit-reconcile",
+      "name": "Establish Phase 15 plan 09 execution commit window and reconcile its claim",
+      "status": "done",
+      "result": "f57cb00..4b6255c is exactly 3 commits, matching the 15-09 task-commit ledger"
+    },
+    {
       "id": "15-verify",
       "name": "Refresh Phase 15 verification",
       "status": "not_started"
@@ -39,11 +45,6 @@
       "description": "Current progress routing selects Phase 15 because its verification is stale; STATE.md still points to Phase 19.",
       "type": "technical",
       "workaround": "Follow the live roadmap/progress resolver; verify Phase 15 first."
-    },
-    {
-      "description": "15-09-SUMMARY.md claims 3 commits, while the prescribed base-to-current-HEAD measurement is 279 and includes later work.",
-      "type": "technical",
-      "workaround": "Reconcile the phase-specific commit accounting without attributing subsequent phase commits to Phase 15."
     }
   ],
   "async_jobs": [
@@ -89,6 +90,6 @@
     "?? .planning/research/.cache/",
     "?? .planning/ui-reviews/"
   ],
-  "next_action": "Run $gsd-verify-work 15; preserve the completed UAT session. Then refresh Phase 19 verification.",
+  "next_action": "Run $gsd-verify-work 15 once, preserving completed UAT. Its Plan 09 commit claim is reconciled to three scoped commits. Then refresh Phase 19 verification.",
   "context_notes": "The uncommitted_files snapshot was measured before committing these two handoff artifacts. See .planning/.continue-here.md for human-readable context. State/roadmap routing disagree: STATE says Phase 19, but live progress selects Phase 15 first. Do not clean or stage pre-existing dirty files."
 }
