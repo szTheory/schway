@@ -127,7 +127,7 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
 - [x] **Phase 17: Return Type ≠ Parameter Type** - A function may return a type it was not given. (completed 2026-09-22)
 - [x] **Phase 18: Branch on a Computed Value** - A branch discriminates a value the function computed. **HARD-GATED on spike S-010.** (completed 2026-09-24)
 - [x] **Phase 19: Numeric Literals and `OpConst`** - Lang can name a value it was not given. (completed 2026-09-24)
-- [ ] **Phase 20: Nyquist, D-13-34, and the Frontier Fixture** - The measuring corpus reconciles against the new surface and the refusal frontier is pinned as moved.
+- [x] **Phase 20: Nyquist, D-13-34, and the Frontier Fixture** - The measuring corpus reconciles against the new surface and the refusal frontier is pinned as moved.
 
 ## Phase Details
 
@@ -671,19 +671,19 @@ before plans are written rather than estimated.
 **Sizing note**: the milestone's close condition lives here (PRC-02). If the
 unowned count is above 5 when this phase opens, the overflow is worked here or
 the milestone does not close.
-**Plans**: 8 plans
+**Plans**: 10 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — Pin the refused checksum frontier and its M003-open comparison
-- [ ] 20-02-PLAN.md — Reconcile Phases 07, 08, and 11 through the live lint
-- [ ] 20-03-PLAN.md — Clear the remaining draft validation records and re-pin the frontier
-- [ ] 20-04-PLAN.md — Reuse content-addressed closure artifacts with fresh judgments
-- [ ] 20-05-PLAN.md — Derive and enforce the open-unowned debt cap
-- [ ] 20-06-PLAN.md — Adjudicate D-13-34 and D-06-29 at a human decision gate
-- [ ] 20-09-PLAN.md — Repair archived validation citations, regenerate the evidence record, and close proven debt
-- [ ] 20-07-PLAN.md — Repair four validation citations and satisfy the live debt cap before the decision gate
-- [ ] 20-10-PLAN.md — Generate the final post-reconciliation corpus record and close proven archive debt
-- [ ] 20-08-PLAN.md — Measure cold/warm full-suite distributions after reconciliation is green
+- [x] 20-01-PLAN.md — Pin the refused checksum frontier and its M003-open comparison
+- [x] 20-02-PLAN.md — Reconcile Phases 07, 08, and 11 through the live lint
+- [x] 20-03-PLAN.md — Clear the remaining draft validation records and re-pin the frontier
+- [x] 20-04-PLAN.md — Reuse content-addressed closure artifacts with fresh judgments
+- [x] 20-05-PLAN.md — Derive and enforce the open-unowned debt cap
+- [x] 20-06-PLAN.md — Adjudicate D-13-34 and D-06-29 at a human decision gate
+- [x] 20-09-PLAN.md — Repair archived validation citations, regenerate the evidence record, and close proven debt
+- [x] 20-07-PLAN.md — Repair four validation citations and satisfy the live debt cap before the decision gate
+- [x] 20-10-PLAN.md — Generate the final post-reconciliation corpus record and close proven archive debt
+- [x] 20-08-PLAN.md — Measure cold/warm full-suite distributions after reconciliation is green
 
 ---
 

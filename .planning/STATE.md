@@ -4,17 +4,17 @@ milestone: M003
 milestone_name: Computation and Honest Instruments
 current_phase: 20
 current_phase_name: Nyquist, D-13-34, and the Frontier Fixture
-status: planning
-stopped_at: Completed 20-01-PLAN.md
-last_updated: "2026-09-25T02:58:52.047Z"
-last_activity: 2026-09-24
-last_activity_desc: Phase 19 complete, transitioned to Phase 20
-state_head: 18b45827abc139f4e9cc5412b2474b0c699f1c96
+status: complete
+stopped_at: Completed Phase 20 execution and verification
+last_updated: "2026-09-25T13:10:44Z"
+last_activity: 2026-09-25
+last_activity_desc: Phase 20 complete; all ten plans executed and verified
+state_head: b1961d9
 progress:
   total_phases: 8
-  completed_phases: 6
-  total_plans: 80
-  completed_plans: 74
+  completed_phases: 7
+  total_plans: 90
+  completed_plans: 84
 ---
 
 # Project State
@@ -27,9 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
 **Current focus:** Phase 20 — Nyquist, D-13-34, and the Frontier Fixture.
-Phase 19 — Numeric Literals and OpConst is complete: all seven plans executed,
-its verifier passed 4/4 roadmap truths, and the full repository Go suite passes.
-M003 remains active; Phase 20 is ready to plan.
+Phase 20 — Nyquist, D-13-34, and the Frontier Fixture is complete: all ten plans executed, its four requirements verified, and the final full repository Go suite passes. The M003 milestone is ready for its closeout audit.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -52,20 +50,16 @@ M003 remains active; Phase 20 is ready to plan.
 ## Current Position
 
 Phase: 20 — Nyquist, D-13-34, and the Frontier Fixture
-Plan: 2 of 7
-Total Plans in Phase: 7
-Status: In progress
-Last activity: 2026-09-25 — Phase 20 Plan 01 complete
-66 runnability/groundedness/grep findings reconciled outside the archives
-under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
-under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
-(124 -> 58 entries; per-branch R2b stays pinned, owned by P20/QLT-10),
-`.planning/EVIDENCE-RECONCILIATION.md` generated as a byte-compared view,
-`scripts/assert-reconciliation-touched.sh` couples archive edits to it,
-14-VALIDATION.md's Per-Task Verification Map filled with 31 real rows, and
-all eleven phase requirements confirmed complete.
+Plan: 10 of 10
+Total Plans in Phase: 10
+Status: Complete
+Last activity: 2026-09-25 — Phase 20 complete
+All ten execution plans completed; the 33-pair archive grades cleanly, the
+source-derived open-unowned debt set is four, the checksum refusal frontier
+is pinned as moved, and the final unfiltered repository suite passes. D-13-34
+was closed with structurally distinct held-out move and borrow fixtures.
 
-**Next:** `$gsd-discuss-phase 19` — prior research recommends one fixed-width unsigned `U64` type lowered to `uint64_t`; confirm any remaining language-facing choices before planning.
+**Next:** `$gsd-audit-milestone` — audit M003 against its original intent before archival.
 
 ## M003 Phase Map
 
@@ -81,7 +75,7 @@ Phases 14-20. Structure is the ratified plan from
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
 | 18 | Branch on a Computed Value | 3 | 8-10 | Complete |
 | 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Ready to plan |
-| 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 4-5 | Not started |
+| 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete |
 
 **Carry-forward context that must survive a context reset** (restated here
 rather than left only in ROADMAP.md):
