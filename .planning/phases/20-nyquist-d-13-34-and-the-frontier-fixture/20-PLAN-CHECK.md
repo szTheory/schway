@@ -62,6 +62,14 @@ All seven plan files validate structurally, their declared dependencies are acyc
 
 ## Wave 1 integration revision awaiting review
 
+### Ten-plan dependency revision (2026-09-25)
+
+The source-backed archive repair found that the corpus record cannot be refreshed before the remaining current validation maps and status contracts are reconciled: the first complete recorder run correctly failed closed on Phase 14's pinned row and Phase 17–20 grade-schema gaps. Plan 09 therefore owns only the four exact archived row repairs and the live row parser. Plan 07 follows Plan 09 and performs the wider validation, maturity, emitter, skip-witness, debt-cap, and frontier work. Plan 10 then exports and records the exact post-Plan-07 corpus and closes the four row debts plus stale Plan 02 reconciliation entries. Plan 08 timing follows Plan 10; Plan 06's D-13-34 choice remains last and human-gated.
+
+The dependency graph is now Plans 01/02/04/05 (Wave 1), Plan 03 (Wave 2), Plan 09 (Wave 3), Plan 07 (Wave 4), Plan 10 (Wave 5), Plan 08 (Wave 6), and Plan 06 (Wave 7). This removes the corpus-record dependency cycle while retaining the timing and human-gate order. The current plan set has ten plans. Structural checks pass for Plans 06–10; Plan 09 has one automated task and four owned source files, while Plan 10 has two tasks and five owned files. The Phase 20 validation map contains 25 automated rows, each retaining a matching plan task and a named automated command; the decision task remains manual.
+
+This is a structural and dependency review only. It does not claim the corpus grade scan or full frontier is green; Plan 10 owns the post-reconciliation corpus run, and Plan 08's preflight remains the required full-suite gate.
+
 Plan 04 remains Wave 1 and now implements plus smoke-tests the bounded timing harness only. Its full-suite timing report moved to new autonomous Plan 08, Wave 4, after Plan 07's maturity, emitter-consumer, skip-witness, archive, debt, and exact-frontier reconciliation. Plan 08 first requires an unfiltered green `go test ./... -count=1` preflight, then runs three paired cold/warm full-suite samples. Plan 06's D-13-34 human checkpoint moves to Wave 5 after that timing plan. Plan 07 explicitly depends on Plans 01, 03, 04, and 05, so its source-derived registry updates use the final checksum fixture and cache code.
 
 The revised `20-VALIDATION.md` has 21 automated rows; the decision checkpoint remains manual. A local read-only pass found all eight plan frontmatters and structures valid without warnings, all 21 commands paired with immediate failing directions and shell/regex parseable, and all 21 table commands copy-safe without Markdown escape conversion. These checks do not claim the full suite is green while Wave 1 is still in progress. Plan 07 starts only after Plan 04's final source is committed and its integration inputs are remeasured.

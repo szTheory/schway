@@ -680,7 +680,9 @@ Plans:
 - [ ] 20-04-PLAN.md — Reuse content-addressed closure artifacts with fresh judgments
 - [ ] 20-05-PLAN.md — Derive and enforce the open-unowned debt cap
 - [ ] 20-06-PLAN.md — Adjudicate D-13-34 and D-06-29 at a human decision gate
+- [ ] 20-09-PLAN.md — Repair archived validation citations, regenerate the evidence record, and close proven debt
 - [ ] 20-07-PLAN.md — Repair four validation citations and satisfy the live debt cap before the decision gate
+- [ ] 20-10-PLAN.md — Generate the final post-reconciliation corpus record and close proven archive debt
 - [ ] 20-08-PLAN.md — Measure cold/warm full-suite distributions after reconciliation is green
 
 ---
