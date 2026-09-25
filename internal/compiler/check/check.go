@@ -3,6 +3,7 @@ package check
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/codename-lang/lang/internal/compiler/ability"
@@ -3140,6 +3141,29 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	for index, binding := range body.Bindings {
 		result.Work++
 		global := startIndex + index
+		if binding.RHS.Kind == "numeric_literal" {
+			value, err := parseU64Literal(binding.RHS.Source)
+			if err != nil {
+				return fail(diagnostic.Error("check.literal_out_of_range", binding.RHS.Span, "numeric literal is outside the U64 range"))
+			}
+			u64Fact, ok := findTypeFact(availableTypeFacts, "U64")
+			if !ok {
+				return fail(diagnostic.Error("type.unknown", binding.RHS.Span, "U64 type fact is unavailable"))
+			}
+			target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, global+1), Name: binding.Name, TypeID: u64Fact.ID}
+			operation := core.LinearOperation{ID: fmt.Sprintf("%s:op:%d", functionID, global), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, global), Kind: core.OpConst, TargetID: target.ID, TypeID: u64Fact.ID, ConstU64: strconv.FormatUint(value, 10)}
+			result.Places = append(result.Places, target)
+			places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
+			result.Operations = append(result.Operations, operation)
+			if result.CallSpans == nil {
+				result.CallSpans = map[string]diagnostic.Span{}
+			}
+			result.CallSpans[operation.ID] = binding.RHS.Span
+			result.CallSpans[operation.ID+":stmt"] = binding.Span
+			endLoans(index)
+			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
+			continue
+		}
 		if binding.RHS.Kind == "call" {
 			op, target, diag := resolveCallBinding(functionID, global, binding, places, calleeContracts, typeFact, foreignSymbols, availableTypeFacts...)
 			if diag != nil {
@@ -3402,6 +3426,7 @@ func checkLinear(module, functionID string, function ast.FuncDecl, calleeContrac
 	if returnTypeID != typeID {
 		linear.Types = append(linear.Types, core.TypeFact{ID: returnTypeID, Shape: returnType, Abilities: returnDerived.Granted, NegativeWitnesses: returnDerived.NegativeWitnesses})
 	}
+	linear.Types = ensureLiteralTypeFact(functionID, linear.Types, function.Body.Linear)
 	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, calleeContracts, foreignSymbols, linear.Types)
 	if support.Diagnostic != nil {
 		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work, nil
@@ -4794,6 +4819,29 @@ func analyzeStraightLineMode(functionID, parameterName string, parameterSpan dia
 	}
 	for index, binding := range body.Bindings {
 		result.Work++
+		if binding.RHS.Kind == "numeric_literal" {
+			value, err := parseU64Literal(binding.RHS.Source)
+			if err != nil {
+				return fail(diagnostic.Error("check.literal_out_of_range", binding.RHS.Span, "numeric literal is outside the U64 range"))
+			}
+			u64Fact, ok := findTypeFact(availableTypeFacts, "U64")
+			if !ok {
+				return fail(diagnostic.Error("type.unknown", binding.RHS.Span, "U64 type fact is unavailable"))
+			}
+			target := core.Place{ID: fmt.Sprintf("%s:place:%d", functionID, index+1), Name: binding.Name, TypeID: u64Fact.ID}
+			operation := core.LinearOperation{ID: fmt.Sprintf("%s:op:%d", functionID, index), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, index), Kind: core.OpConst, TargetID: target.ID, TypeID: u64Fact.ID, ConstU64: strconv.FormatUint(value, 10)}
+			result.Places = append(result.Places, target)
+			places[binding.Name] = &placeState{place: target, declared: binding.Span, initialized: true}
+			result.Operations = append(result.Operations, operation)
+			if result.CallSpans == nil {
+				result.CallSpans = map[string]diagnostic.Span{}
+			}
+			result.CallSpans[operation.ID] = binding.RHS.Span
+			result.CallSpans[operation.ID+":stmt"] = binding.Span
+			endLoans(index)
+			result.States = append(result.States, ownershipSnapshot(index, places, activeLoans))
+			continue
+		}
 		if binding.RHS.Kind == "call" {
 			op, target, diag := resolveCallBinding(functionID, index, binding, places, calleeContracts, typeFact, foreignSymbols, availableTypeFacts...)
 			if diag != nil {
@@ -5307,7 +5355,51 @@ func availableTypeFactDetails(facts []core.TypeFact) string {
 // emitBranch's enum-based lowering, so this gate is only consulted from
 // checkLinear.
 func executableShape(value core.TypeRef) bool {
-	return value.Constructor == "Byte" || value.Constructor == "Buffer"
+	return value.Constructor == "Byte" || value.Constructor == "Buffer" || (value.Constructor == "U64" && len(value.Arguments) == 0)
+}
+
+func ensureLiteralTypeFact(functionID string, facts []core.TypeFact, bodies ...*ast.LinearBody) []core.TypeFact {
+	for _, body := range bodies {
+		if body == nil {
+			continue
+		}
+		for _, binding := range body.Bindings {
+			if binding.RHS.Kind != "numeric_literal" {
+				continue
+			}
+			if _, ok := findTypeFact([][]core.TypeFact{facts}, "U64"); ok {
+				return facts
+			}
+			derived, err := ability.Derive(core.TypeRef{Constructor: "U64"})
+			if err != nil {
+				return facts
+			}
+			return append(facts, core.TypeFact{ID: functionID + ":type:u64", Shape: core.TypeRef{Constructor: "U64"}, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses})
+		}
+	}
+	return facts
+}
+
+func findTypeFact(available [][]core.TypeFact, constructor string) (core.TypeFact, bool) {
+	for _, facts := range available {
+		for _, fact := range facts {
+			if fact.Shape.Constructor == constructor && len(fact.Shape.Arguments) == 0 {
+				return fact, true
+			}
+		}
+	}
+	return core.TypeFact{}, false
+}
+
+func parseU64Literal(text string) (uint64, error) {
+	digits := strings.ReplaceAll(text, "_", "")
+	base := 10
+	if strings.HasPrefix(digits, "0x") {
+		base, digits = 16, digits[2:]
+	} else if strings.HasPrefix(digits, "0b") {
+		base, digits = 2, digits[2:]
+	}
+	return strconv.ParseUint(digits, base, 64)
 }
 
 func typeNodeCount(value core.TypeRef) int {
