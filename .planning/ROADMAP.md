@@ -557,7 +557,7 @@ position), a `checkBranch` re-architecture so the entry block can carry a
 straight-line prefix, and an ownership question that does not exist today. This
 is Austral Rule 3's territory arriving a full milestone before anyone budgeted
 for it.
-**Plans**: 8
+**Plans**: 9 (one G-18-16 gap-closure plan added)
 
 Plans:
 
@@ -569,6 +569,7 @@ Plans:
 - [x] 18-06-PLAN.md — Prove bounded production borrow-across-branch liveness
 - [x] 18-07-PLAN.md — Add peer, comparator, and mutation anti-vacuity controls
 - [x] 18-08-PLAN.md — Measure verification cost and justify focused recurring CI
+- [ ] 18-09-PLAN.md — Stabilize default-parallel full-suite verification while retaining bounded subprocesses and the Phase 18 CI evidence contract
 
 ---
 
