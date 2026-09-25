@@ -166,7 +166,7 @@ arithmetic operators, and branching moves to M004.
 - [ ] **QLT-10**: Phases 07, 08, and 11 reconcile against the post-M003 surface,
       with EVD-01's lint doing the finding; no VALIDATION file remains `draft`.
 
-- [ ] **QLT-11**: A refused frontier fixture for `examples/checksum.lang` is
+- [x] **QLT-11**: A refused frontier fixture for `examples/checksum.lang` is
       checked in with its refusing diagnostic pinned, and the milestone moved
       that diagnostic.
 
@@ -250,7 +250,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | VAL-02 | Phase 19 | Complete |
 | VAL-03 | Phase 19 | Complete |
 | QLT-10 | Phase 20 | Pending |
-| QLT-11 | Phase 20 | Pending |
+| QLT-11 | Phase 20 | Complete |
 | QLT-12 | Phase 20 | Pending |
 | DX-08 | Phase 14 | Complete |
 | DX-09 | Phase 14 | Complete |

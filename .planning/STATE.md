@@ -5,17 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 20
 current_phase_name: Nyquist, D-13-34, and the Frontier Fixture
 status: planning
-stopped_at: Phase 19 complete, ready to plan Phase 20
-last_updated: "2026-09-25T01:37:32.029Z"
+stopped_at: Completed 20-01-PLAN.md
+last_updated: "2026-09-25T02:58:52.047Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 19 complete, transitioned to Phase 20
-state_head: b055343fec0aad40c861e9026549dde1dc0d5061
+state_head: 18b45827abc139f4e9cc5412b2474b0c699f1c96
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 73
-  completed_plans: 73
-  percent: 86
+  total_plans: 80
+  completed_plans: 74
 ---
 
 # Project State
@@ -53,9 +52,10 @@ M003 remains active; Phase 20 is ready to plan.
 ## Current Position
 
 Phase: 20 — Nyquist, D-13-34, and the Frontier Fixture
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-24 — Phase 19 complete, transitioned to Phase 20
+Plan: 2 of 7
+Total Plans in Phase: 7
+Status: In progress
+Last activity: 2026-09-25 — Phase 20 Plan 01 complete
 66 runnability/groundedness/grep findings reconciled outside the archives
 under a closed verdict vocabulary (renamed/superseded/obsolete-by-design/
 under-scoped), the pinned groundedness frontier's R1/R2/R3 classes emptied
@@ -330,6 +330,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 19 P05 | 13min | 2 tasks | 8 files |
 | Phase 19 P6 | 9min | 2 tasks | 5 files |
 | Phase 19 P07 | 17 | 2 tasks | 7 files |
+| Phase 20 P01 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -493,6 +494,7 @@ Standing architectural commitments carried into M002:
 - [Phase 19]: Native U64 decimal input and JSON string output use checked bounded digit-by-digit conversion.
 - [Phase 19]: Use the existing schema-2 comparison projection for the interpreter before comparing all four execution tiers.
 - [Phase 19]: Keep stale Phase 11 maturity and reconciliation findings as regression debt outside Plan 19-07.
+- [Phase 20]: M003-open checksum refusal is treated as a historical reconstruction, not a contemporaneous fixture pin.
 
 ### Pending Todos
 
@@ -650,8 +652,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T01:08:11.252Z
-Stopped at: Phase 19 complete, ready to plan Phase 20
+Last session: 2026-09-25T02:58:51.875Z
+Stopped at: Completed 20-01-PLAN.md
 satisfied, DX-06/DX-07 ratified partial; 10 unowned debt items carried forward.
 Resume file: None
 Next command: `/clear` then `/gsd-new-milestone`
