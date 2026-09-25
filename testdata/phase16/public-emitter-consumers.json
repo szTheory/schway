@@ -201,11 +201,11 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:248",
+      "call": "internal/compiler/core/core_test.go:Emit:279",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:669",
+      "call": "internal/compiler/core/core_test.go:Emit:722",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -322,7 +322,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase7.go:Emit:470",
+      "call": "internal/compiler/session/session_phase7.go:Emit:501",
       "classification": "admitted-dynamic-schema2"
     },
     {

@@ -43,7 +43,7 @@ import (
 var linearOperationExpectedFields = []string{
 	"ID", "PointID", "Kind", "SourceID", "TargetID", "LoanID", "TypeID",
 	"OkEdgeID", "ErrEdgeID", "ErrTargetID", "ReleasesOperationID",
-	"Allocator", "Reason", "CalleeID", "PayloadType", "PayloadTargetID",
+	"Allocator", "Reason", "CalleeID", "PayloadType", "PayloadTargetID", "ConstU64",
 }
 
 // TestConventionOverrideNotExpressibleInCore is D-09-34/D-09-35's
