@@ -32,10 +32,10 @@ This preserves the derivation fixtures and the five-component predicate. The pro
 --- a/testdata/phase6/heldout_move_defect.lang
 +++ b/testdata/phase6/heldout_move_defect.lang
 @@
--  let echoed = take delivered // lang:move-target
+-  let echoed = take delivered
 -  echoed
-+  let echoed = take delivered
-+  let returned = take echoed // lang:move-target
++  let echoed = take delivered // lang:move-target
++  let returned = take echoed
 +  returned
 ```
 
@@ -43,7 +43,7 @@ Expected move summaries after implementation and measurement:
 
 - Proposed held-out: `{bindingCount:3, matchArmCount:0, borrowCount:0, takeCount:3, maxDepth:1}`.
 - Existing derivation: `{bindingCount:2, matchArmCount:0, borrowCount:0, takeCount:2, maxDepth:1}`.
-- The injector changes the marked third take back to the already-moved `buffer`; acceptance still requires the clean source to check and the mutated source to produce exactly one `ownership.use_after_move` with a driver-eligible repair.
+- The injector changes the marked middle take back to the already-moved `buffer`; acceptance still requires the clean source to check and the mutated source to produce exactly one `ownership.use_after_move` with a driver-eligible repair.
 
 ```diff
 --- a/testdata/phase6/heldout_borrow_defect.lang
@@ -89,7 +89,8 @@ Choose **replace** to restore structural separation for both classes, or **rerat
 ## Selected outcome and implementation evidence
 
 The user selected **replace**. The held-out move and borrow sources now include
-the proposed extra operation; the derivation fixtures and five-component
+structurally distinct extra operations; the move marker stays on the middle
+take so the existing repair driver can reverify the three-hop chain; the derivation fixtures and five-component
 predicate remain unchanged. `TestPhase6DefectCorpusIsHeldOut` and
 `TestPhase6HeldoutPairsAreStructurallyDistinct` passed: move summaries are
 `{bindingCount:3, matchArmCount:0, borrowCount:0, takeCount:3, maxDepth:1}` vs
@@ -100,6 +101,9 @@ maxDepth:1}`. Match remains 3 arms vs 2. The move and borrow injector controls
 passed with exactly their intended defect. D-06-29's structural inference is
 restored for all classes while the small-corpus residual is retained.
 
-The live D-13-34 row is closed as `CLOSED(P20)` and the current open-unowned
-population is four. Final commit and full-suite evidence are in
+The live D-13-34 row is closed against the implementation commit and the
+current open-unowned population is four. The first attempted marker placement
+on the final hop failed the existing end-to-end repair-driver control; moving
+the marker back to the original middle hop while retaining the added third
+take restored the repair control. Final commit and full-suite evidence are in
 `20-06-SUMMARY.md`.
