@@ -18,12 +18,11 @@ func TestPhase19LiteralFrontier(t *testing.T) {
 		t.Fatal("literal_tracer.lang lost its direct numeric let")
 	}
 	checked := session.Check(source)
-	if len(checked.Diagnostics) == 0 {
-		t.Fatal("literal_tracer.lang unexpectedly passed production checking")
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("literal_tracer.lang remains refused: %+v", checked.Diagnostics)
 	}
-	first := checked.Diagnostics[0]
-	if first.Code != "type.unknown" || strings.HasPrefix(first.Code, "syntax.") {
-		t.Fatalf("literal_tracer.lang did not move to checker refusal: got id=%q code=%q span=%+v", first.ID, first.Code, first.Primary)
+	if len(checked.Program.Functions) != 1 || checked.Program.Functions[0].Linear == nil || checked.Program.Functions[0].Linear.Operations[0].Kind != "const" {
+		t.Fatalf("literal_tracer.lang did not reach typed constant core: %+v", checked.Program.Functions)
 	}
 }
 
@@ -34,7 +33,7 @@ func TestPhase19NumericRefusalFrontiers(t *testing.T) {
 		code    string
 		start   int
 	}{
-		{fixture: "literal_overflow.lang", literal: "18446744073709551616", code: "type.unknown", start: 99},
+		{fixture: "literal_overflow.lang", literal: "18446744073709551616", code: "check.literal_out_of_range", start: 99},
 		{fixture: "literal_malformed.lang", literal: "0x_FF", code: "syntax.malformed_numeric_literal", start: 100},
 	} {
 		t.Run(tc.fixture, func(t *testing.T) {
@@ -50,7 +49,7 @@ func TestPhase19NumericRefusalFrontiers(t *testing.T) {
 				t.Fatalf("%s unexpectedly passed production checking", tc.fixture)
 			}
 			first := checked.Diagnostics[0]
-			if first.Code != tc.code || (tc.code == "syntax.malformed_numeric_literal" && (first.Primary.Start != tc.start || first.Primary.End != tc.start+len(tc.literal))) {
+			if first.Code != tc.code || first.Primary.Start != tc.start || first.Primary.End != tc.start+len(tc.literal) {
 				t.Fatalf("%s refusal moved: got id=%q code=%q span=%+v", tc.fixture, first.ID, first.Code, first.Primary)
 			}
 		})
