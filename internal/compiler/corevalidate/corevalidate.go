@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
@@ -1178,7 +1179,11 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		if !v.check(operation.ID == fmt.Sprintf("%s:op:%d", function.ID, index) && operation.PointID == fmt.Sprintf("%s:point:linear:%d", function.ID, index), "core.operation_order", operation.ID) {
 			return nil, nil, false
 		}
-		if _, ok := places[operation.SourceID]; !v.check(ok, "core.unknown_place", operation.SourceID) {
+		if operation.Kind == core.OpConst {
+			if !v.check(operation.SourceID == "", "core.source_kind_exclusive", operation.ID) {
+				return nil, nil, false
+			}
+		} else if _, ok := places[operation.SourceID]; !v.check(ok, "core.unknown_place", operation.SourceID) {
 			return nil, nil, false
 		}
 		if _, ok := types[operation.TypeID]; !v.check(ok, "core.unknown_type", operation.TypeID) {
@@ -1309,8 +1314,15 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			if !v.unique(loanIDs, operation.LoanID, "core.unknown_loan") {
 				return nil, nil, false
 			}
-		} else if !v.check(operation.LoanID == "", "core.unknown_loan", operation.LoanID) {
+		} else if !v.check(operation.LoanID == "" && (operation.Kind == core.OpConst || operation.ConstU64 == ""), "core.unknown_loan", operation.LoanID) {
 			return nil, nil, false
+		}
+		if operation.Kind == core.OpConst {
+			value, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+			shape := types[operation.TypeID].Shape
+			if !v.check(err == nil && strconv.FormatUint(value, 10) == operation.ConstU64 && operation.TargetID != "" && operation.TypeID != "" && shape.Constructor == "U64" && len(shape.Arguments) == 0 && operation.CalleeID == "" && operation.PayloadType == "" && operation.PayloadTargetID == "" && operation.ErrTargetID == "" && operation.OkEdgeID == "" && operation.ErrEdgeID == "" && operation.ReleasesOperationID == "" && operation.Allocator == "" && operation.Reason == "", "core.constant_invalid", operation.ID) {
+				return nil, nil, false
+			}
 		}
 	}
 	if len(linear.Blocks) > 0 || len(linear.Edges) > 0 {
@@ -1867,10 +1879,10 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	returned := false
 	for index, operation := range operations {
 		source := places[operation.SourceID]
-		if !v.check(operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
+		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
 			return false
 		}
-		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+		if !v.check(operation.Kind == core.OpConst || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
 			return false
 		}
 		// D-07-29: CalleeID is populated only on an OpCall -- every other
@@ -1882,6 +1894,12 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 		}
 		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
+		case core.OpConst:
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
 		case core.OpCopy:
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
 				return false
@@ -2136,10 +2154,10 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	returnedBlocks := make(map[string]bool, len(linear.Blocks))
 	for index, operation := range operations {
 		source := places[operation.SourceID]
-		if !v.check(operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
+		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
 			return false
 		}
-		if !v.check(initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+		if !v.check(operation.Kind == core.OpConst || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
 			return false
 		}
 		// See replayStraightLine's identical check (D-07-29): CalleeID is
@@ -2149,6 +2167,12 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		}
 		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
+		case core.OpConst:
+			if !v.targetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID] = true
+			produced[operation.TargetID] = true
 		case core.OpCopy:
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
 				return false
@@ -3468,7 +3492,7 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int, sealed
 		return true, nil, true
 	}
 	switch shape.Constructor {
-	case "Byte":
+	case "Byte", "U64":
 		if len(shape.Arguments) != 0 {
 			return false, nil, false
 		}
