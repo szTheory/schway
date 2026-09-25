@@ -1,0 +1,37 @@
+module examples.checksum
+
+export {
+  fn main
+}
+
+foreign C {
+  fn checksum_read(path: Buffer) -> Buffer {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: ReadError
+  }
+  fn checksum_print(value: U64) -> U64 {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: PrintError
+  }
+}
+
+data ReadError =
+  | ReadFailed
+
+data PrintError =
+  | PrintFailed
+
+fn main(path: Buffer) -> U64 {
+  let buffer = try checksum_read(path)
+  let total = 0
+  loop buffer {
+    let current_byte = next(buffer)
+    let total = add(total, current_byte)
+  }
+  let printed = try checksum_print(total)
+  total
+}
