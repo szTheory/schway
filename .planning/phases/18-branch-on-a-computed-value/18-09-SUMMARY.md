@@ -31,6 +31,7 @@ key-files:
     - .planning/phases/18-branch-on-a-computed-value/verify-phase18-postfix-evidence.sh
     - .planning/phases/18-branch-on-a-computed-value/18-09-RUNS.log
   modified:
+    - .planning/state.json
     - internal/compiler/cache/cache.go
     - internal/compiler/cache/probe.go
     - internal/compiler/cache/probe_test.go
@@ -163,6 +164,7 @@ status: complete
 ## Issues Encountered
 
 - The first seven-lane attempt recorded the stale corpus failure, one race-load machine-probe timeout, and vet/build cache access denied under the default home cache. The recorder was updated to set `GOCACHE=/tmp/ai-lang-gocache` for vet/build while preserving their exact command arguments. Its failure receipts remain in the log; the latest complete attempt is the passing one checked by `--final`.
+- `state.update-progress` skipped because phase scope was unscoped, and `roadmap.update-plan-progress 18` declined with `missing_phase_details`; the ROADMAP updater does not recognize the phase section before the archived `<details>` blocks. The updater left ROADMAP unchanged for phase-level verification to resolve.
 - The sandbox denied Git metadata writes on the initial commit attempt. The GSD task commits succeeded with repository metadata access; unrelated pre-existing workspace files were not staged.
 
 ## User Setup Required
