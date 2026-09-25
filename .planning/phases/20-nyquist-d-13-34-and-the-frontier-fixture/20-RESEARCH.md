@@ -12,7 +12,7 @@ No Phase 20 `CONTEXT.md` was present when research began. The phase scope and ga
 
 Phase 20 is a repository-evidence phase, not a library or language-runtime build phase. Use the existing Go standard-library test harness and Phase 14's executable groundedness instrument to reconcile the specified archived evidence. Keep `go test ./...` and targeted package tests as the verification path; do not install dependencies. Phase 14's validation file identifies the stdlib `go test` harness and gives the full suite command. [VERIFIED: `.planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md:15-25`]
 
-At research start, the Phase 14 instrument passes with **R1=0, R2=0, R3=0, R2b=23 post-reconciliation**, across **639 enforced-tier documents and 708 verification commands**. Its raw per-branch discovery subtest reports **24 R2b findings**; the reconciliation test excludes one already reconciled record. Preserve both numbers and their meanings in the plan. `go test ./internal/compiler/session -run 'TestVerificationGroundedness(FrontierIsPinned|ThreeClassesAreEmpty)$' -count=1 -v` passed with a temporary `GOCACHE`; the two tests and their log fields are in `verification_groundedness_test.go`. [VERIFIED: `internal/compiler/session/verification_groundedness_test.go:1137-1145,2060-2083,2190-2222`]
+At research start, the Phase 14 instrument passed with **R1=0, R2=0, R3=0, R2b=23 post-reconciliation**, across **639 enforced-tier documents and 708 verification commands**. Its raw per-branch discovery subtest reported **24 R2b findings**; the reconciliation test excluded one already reconciled record. These are historical research-time numbers, not a required Phase 20 execution-start state. After Phase 20 planning documents were added, a 2026-09-25 scan measured **R2=10, R2b=25, 651 documents, 737 commands** and the global pin was red. Re-run the scan immediately before execution, preserve both snapshots separately, and assert a green exact pin only after the Phase 20 findings are reconciled. The original passing research run and its log fields are in `verification_groundedness_test.go`. [VERIFIED: `internal/compiler/session/verification_groundedness_test.go:1137-1145,2060-2083,2190-2222`]
 
 There are currently **11 VALIDATION files with `status: draft`** under `.planning`, not just the specifically named 07/08/11 plus the inline 12/13 files. A filesystem scan found Phase 14, 17, 18, 19, and several archived M001/M002 validation files among them. The plan must account for every remaining draft file or explain from authoritative evidence why the criterion's scope excludes it; do not silently report the criterion met after touching only five files. The draft inventory is reproduced in this research's Evidence Baseline section.
 
@@ -130,7 +130,7 @@ examples/checksum.lang                   # planned refused checksum-intent fixtu
 
 ### Pattern 1: Measure before reconciling
 
-**What:** Run `TestVerificationGroundednessFrontierIsPinned` and `TestVerificationGroundednessThreeClassesAreEmpty` before touching evidence docs. The first asserts set equality between the source-literal frontier and a fresh scan. The latter separately reports reconciled R1/R2/R3 and owned R2b counts.
+**What:** Run `TestVerificationGroundednessFrontierIsPinned` and `TestVerificationGroundednessThreeClassesAreEmpty` before touching evidence docs to capture the fresh scan, even if they fail on newly planned references. The first asserts set equality between the source-literal frontier and a fresh scan. The latter separately reports reconciled R1/R2/R3 and owned R2b counts. Require them to pass only after Plan 07 updates the exact findings and owners.
 
 **When to use:** Before each reconciliation wave and after any edit to a document in the scanner's scope.
 
@@ -173,7 +173,7 @@ Source: `internal/compiler/session/verification_groundedness_test.go:1335-1367,2
 
 **What goes wrong:** Evidence gets edited before the exact EVD-01 findings are measured, making it impossible to show what moved or how much work the reconciliation required.
 
-**How to avoid:** Capture the exact pre-edit test output and counts first; retain the test's set-equality discipline when updating the pin.
+**How to avoid:** Capture the exact pre-edit test output and counts first, including expected failures from Phase 20 planning documents; retain the test's set-equality discipline when updating the final pin.
 
 ### Pitfall 2: Treating R2b as an R1/R2 failure
 

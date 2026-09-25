@@ -2,7 +2,7 @@
 
 **Phase:** 20 — Nyquist, D-13-34, and the Frontier Fixture  
 **Plans checked:** 7  
-**Result:** PASS — 0 blockers, 0 warnings, 0 advisories
+**Result:** REVISION READY — final independent sign-off pending
 
 ## Goal and requirement coverage
 
@@ -26,12 +26,16 @@ Plan estimates range from 12,000 to 26,000 tokens, below the 100,000-token budge
 
 ## Final command-map check
 
-The 18 `20-VALIDATION.md` command cells now use exact test names, named prefixes, or separate commands joined by `&&`; none needs a Markdown escape converted into shell syntax. A read-only parser check confirmed that every table row has the expected cell count, each command cell has one intact code span, contains no pipe or backslash, and splits into shell-parseable `go test` or `go run` invocations. The two relevant existing grade-cap tests pass together. All seven plans still pass `frontmatter.validate --schema plan` and `verify.plan-structure` with no errors or warnings.
+The 18 `20-VALIDATION.md` command cells use exact test names, named prefixes, or separate commands joined by `&&`; none depends on a Markdown escape becoming shell syntax. An independent parser confirmed all 18 table rows have nine cells, one intact command code span, no pipe or backslash, and shell-parseable commands. The D-13-34 task remains a `blocking-human` checkpoint, and no plan selects an outcome in advance.
 
-The existing Phase 14 groundedness gate was also run. It is red before Phase 20 execution because the newly added research and validation documents cite planned tests that do not exist yet, and because those documents move the measured corpus frontier. This is execution work assigned to Plans 01–03, 05, and 07; it is not evidence that the command-map cells are malformed. The gate reported R2=10 and R2b=25 post-reconciliation at this planning snapshot. Those counts must be remeasured and fully reconciled during the phase; the `20-VALIDATION.md` rows remain `pending` and `status: planned` until then.
+### Resolution submitted for independent sign-off
+
+Plan 20-02 Task 1 now identifies `R1/R2/R3=0`, reconciled `R2b=23`, raw `R2b=24`, 639 documents, and 708 commands as the historical research snapshot. It requires a fresh execution-start scan of the now-planned tree, records exact findings and provisional owners, and explicitly permits the global frontier test to be red before reconciliation. The measured 2026-09-25 planning snapshot (`R2=10`, `R2b=25`, 651 documents, 737 commands) is a point-in-time observation, not a required execution count. Plan 02's task verifications now run the passing non-vacuous corpus check; Plan 03 enforces zero draft while preserving interim findings; Plan 07 is the first task that requires the exact global frontier and owner gate green, after new Phase 20 tests and source-row repairs land. The validation map and research distinguish the two snapshots and this sequence.
+
+The new interim command passed in the current worktree. The global pin was intentionally observed red in the current worktree and remains a required Phase 20 completion gate. Independent sign-off must verify the revised dependency and verification sequence; this paragraph does not self-approve that check.
 
 ```yaml
-issues: []
+issues_pending_recheck: []
 ```
 
-**Recommendation:** Proceed with the seven-plan execution graph. Keep the D-13-34 human checkpoint, and require the planned live groundedness and debt-cap gates before phase close.
+**Recommendation:** Re-run independent plan sign-off on the revised seven-plan set. Preserve the `blocking-human` D-13-34 checkpoint and exact frontier/owner equality at Plan 07.

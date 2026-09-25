@@ -19,14 +19,14 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 |---|---|
 | Framework | Go 1.24 standard `testing` and the existing project CLI |
 | Config | `go.mod`; no new external dependency |
-| Focused lane | `go test ./internal/compiler/session -run 'TestVerificationGroundedness' -count=1` |
+| Interim corpus lane | `go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1`; the exact frontier pin is required only after Plan 07 reconciles all Phase 20 findings. |
 | Full suite timing | `go test ./... -count=1`; report both the roadmap's 192.7 s reference and Phase 14's measured 191.89 s cold manifest value. |
 | Host cache | Use `GOCACHE=/private/tmp/phase20-gocache` in this Codex sandbox; this is environment handling, not a repository setting. |
 
 ## Sampling Rate
 
-- Before any VALIDATION edit, record the Phase 14 lint's raw and reconciled counts separately. Baseline: R1/R2/R3 = 0, reconciled R2b = 23, raw R2b = 24, 639 documents, 708 commands.
-- After each documentation task, run the named current test/CLI commands and the focused scanner. Where an exact frontier pin moves, update only measured records and ownership.
+- Before any VALIDATION edit, preserve two distinct measurements: the historical research snapshot (R1/R2/R3 = 0, reconciled R2b = 23, raw R2b = 24, 639 documents, 708 commands) and a new scanner run immediately before Phase 20 execution. The 2026-09-25 planning scan was R2=10, R2b=25, 651 documents, 737 commands; remeasure at execution start rather than treating either snapshot as a required live count.
+- After each documentation task, run the named current test/CLI commands and the non-vacuous corpus check. Capture the full scanner's exact findings even while prospective Phase 20 tests keep its global pin red. Plan 07 reconciles identities and R2b owners and then requires the global frontier test green.
 - After the closure-cache task, run native/cache controls and the enumerated closure cold and warm. The phase gate runs the **full repository suite**, with cold and warm wall-clock evidence against Phase 14's 192.7 s baseline.
 - At phase close, run the checksum, validation lifecycle, closure cache, debt cap, and held-out corpus controls plus `go test ./... -count=1`. A status transition to `validated` or `complete` requires actual run evidence, not document edits alone.
 
@@ -36,12 +36,12 @@ This is the pre-execution validation contract. `planned` means no Phase 20 resul
 |---|---|---|---|---|---|---|---|---|
 | 20-01-01 | 01 | 1 | QLT-11 | Check in refused checksum-intent fixture and pin current code/span. | `go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
 | 20-01-02 | 01 | 1 | QLT-11 | Compare identical source bytes against the reproduced M003-open diagnostic. | `go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
-| 20-02-01 | 02 | 1 | QLT-10 | Reconcile Phase 07's commands from live lint and test names. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessFrontierIsPinned$' -count=1 && go test ./internal/compiler/session -run '^TestVerificationGroundednessThreeClassesAreEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
-| 20-02-02 | 02 | 1 | QLT-10 | Retire Phase 08's zero-test and deleted-mechanism cells. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessFrontierIsPinned$' -count=1 && go test ./internal/compiler/session -run '^TestVerificationGroundednessThreeClassesAreEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
-| 20-02-03 | 02 | 1 | QLT-10 | Replace Phase 11's elided command cells and re-pin exact findings. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessFrontierIsPinned$' -count=1 && go test ./internal/compiler/session -run '^TestVerificationGroundednessThreeClassesAreEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
+| 20-02-01 | 02 | 1 | QLT-10 | Measure the fresh execution-start frontier, then reconcile Phase 07's commands. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
+| 20-02-02 | 02 | 1 | QLT-10 | Retire Phase 08's zero-test and deleted-mechanism cells. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
+| 20-02-03 | 02 | 1 | QLT-10 | Replace Phase 11's elided command cells, recording exact findings for final pin. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
 | 20-03-01 | 03 | 2 | QLT-10 | Adjudicate active-milestone validation statuses. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
 | 20-03-02 | 03 | 2 | QLT-10 | Adjudicate remaining archived statuses and stale row evidence. | `go test ./internal/compiler/session -run '^TestVerificationGroundednessCorpusIsNotEmpty$' -count=1` | ✅ existing | DEFINED | ⬜ pending |
-| 20-03-03 | 03 | 2 | QLT-10 | Enforce zero draft, close proven stale-row debt, and exact frontier ownership. | `go test ./internal/compiler/session -run 'TestVerificationGroundedness' -count=1 && go test ./internal/compiler/session -run '^TestPhase20ValidationLifecycle$' -count=1` | ❌ lifecycle W2 | DEFINED | ⬜ pending |
+| 20-03-03 | 03 | 2 | QLT-10 | Enforce zero draft and capture interim exact frontier findings and owners. | `go test ./internal/compiler/session -run '^TestPhase20ValidationLifecycle$' -count=1` | ❌ lifecycle W2 | DEFINED | ⬜ pending |
 | 20-04-01 | 04 | 1 | QLT-12 | Reuse only content-bound native build artifacts and execute outputs fresh. | `go test ./internal/compiler/native ./internal/compiler/cache -count=1` | ❌ W1 | DEFINED | ⬜ pending |
 | 20-04-02 | 04 | 1 | QLT-12 | Reuse unchanged closure evidence and invalidate seeded changed inputs. | `go test ./internal/compiler/session -run '^TestPhase20EnumeratedClosure' -count=1` | ❌ W1 | DEFINED | ⬜ pending |
 | 20-04-03 | 04 | 1 | QLT-12 | Measure full-suite cold/warm cost against the Phase 14 baseline. | `go run scripts/phase20-closure-timing.go` | ❌ W1 | DEFINED | ⬜ pending |
