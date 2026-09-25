@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 20
-current_phase_name: Nyquist, D-13-34, and the Frontier Fixture
-status: complete
-stopped_at: Completed Phase 20 execution and verification
-last_updated: "2026-09-25T13:10:44Z"
+current_phase: 15
+current_phase_name: Event Identity (lang.execution/2)
+status: in_progress
+stopped_at: Phase 15 verification is stale; resume with $gsd-verify-work 15
+last_updated: "2026-09-25T14:54:16Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 20 complete; all ten plans executed and verified
-state_head: b1961d9
+last_activity_desc: Progress audit found stale verification reports in Phases 15, 16, 18, and 19
+state_head: 06a25c7
 progress:
   total_phases: 8
-  completed_phases: 7
-  total_plans: 90
-  completed_plans: 84
+  completed_phases: 3
+  total_plans: 83
+  completed_plans: 83
 ---
 
 # Project State
@@ -26,8 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 20 — Nyquist, D-13-34, and the Frontier Fixture.
-Phase 20 — Nyquist, D-13-34, and the Frontier Fixture is complete: all ten plans executed, its four requirements verified, and the final full repository Go suite passes. The M003 milestone is ready for its closeout audit.
+**Current focus:** Clear stale verification in Phase 15 before routing onward. Phases 15, 16, 18, and 19 have all plans summarized but their verification reports are stale; Phase 20 is complete with all ten plans executed, its four requirements verified, and the final full repository Go suite passing. GSD currently routes to `$gsd-verify-work 15`; milestone closeout follows after the stale verification gates are resolved.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -49,17 +48,17 @@ Phase 20 — Nyquist, D-13-34, and the Frontier Fixture is complete: all ten pla
 
 ## Current Position
 
-Phase: 20 — Nyquist, D-13-34, and the Frontier Fixture
-Plan: 10 of 10
+Phase: 15 — Event Identity (`lang.execution/2`)
+Plan: 10 of 10 (verification stale)
 Total Plans in Phase: 10
-Status: Complete
-Last activity: 2026-09-25 — Phase 20 complete
-All ten execution plans completed; the 33-pair archive grades cleanly, the
-source-derived open-unowned debt set is four, the checksum refusal frontier
-is pinned as moved, and the final unfiltered repository suite passes. D-13-34
-was closed with structurally distinct held-out move and borrow fixtures.
+Status: Verification required
+Last activity: 2026-09-25 — progress audit
+All plans in Phases 15, 16, 18, and 19 have summaries, but their verification
+reports are stale. Phase 20 is verified complete; its 33-pair archive grades
+cleanly, the current open-unowned debt set is four, and the full repository
+suite passes.
 
-**Next:** `$gsd-audit-milestone` — audit M003 against its original intent before archival.
+**Next:** `$gsd-verify-work 15` — refresh the earliest stale verification report.
 
 ## M003 Phase Map
 
@@ -70,11 +69,11 @@ Phases 14-20. Structure is the ratified plan from
 | Phase | Name | Requirements | Plans (est.) | Status |
 |-------|------|--------------|--------------|--------|
 | 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
-| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete |
-| 16 | Branch/Match Emitter Port | 2 | 8-10 | Complete |
+| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Verification stale |
+| 16 | Branch/Match Emitter Port | 2 | 8-10 | Verification stale |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
-| 18 | Branch on a Computed Value | 3 | 8-10 | Complete |
-| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Ready to plan |
+| 18 | Branch on a Computed Value | 3 | 8-10 | Verification stale |
+| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Verification stale |
 | 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete |
 
 **Carry-forward context that must survive a context reset** (restated here
