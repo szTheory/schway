@@ -46,7 +46,7 @@ coverage:
         ref: "go test ./internal/compiler/session -run '^TestEvidenceReconciliationViewIsCurrent$' -count=1"
         status: pass
     human_judgment: false
-duration: 53min
+duration: "not reliably recorded across context continuation"
 completed: 2026-09-25
 status: complete
 ---
@@ -57,9 +57,8 @@ status: complete
 
 ## Performance
 
-- **Duration:** approximately 53 minutes
-- **Started:** 2026-09-25T02:55:00Z
-- **Completed:** 2026-09-25T03:48:00Z
+- **Duration:** not reliably recorded across context continuation
+- **Completed:** 2026-09-25
 - **Tasks:** 3
 - **Files modified:** 9
 
