@@ -3742,12 +3742,12 @@ func debtRegisterOwnershipFixture(t *testing.T) string {
 }
 
 // debtRegisterFixtureLandingCell is the exact Landing phase cell value
-// debtRegisterOwnershipFixture's copy carries for row D-14-45 today. Seeded
+// debtRegisterOwnershipFixture's copy carries for row D-14-46 today. Seeded
 // faults below rewrite exactly this cell and nothing else, so a fault is
 // attributable to that one row.
-const debtRegisterFixtureLandingCell = "UNOWNED(probe:TestLTOInertnessOnMultiFunctionEmission)"
+const debtRegisterFixtureLandingCell = "UNOWNED(conditional-surface-lands-in-language)"
 
-// debtRegisterSeedLandingPhaseFault rewrites row D-14-45's Landing phase
+// debtRegisterSeedLandingPhaseFault rewrites row D-14-46's Landing phase
 // cell in the Items table (and only the Items table cell -- not the Detail
 // section's own prose mention of the same string) to newCell, following
 // TestInjectorMarkerCountGuardIsNotInert's temp-copy-and-seed-one-fault
@@ -3761,7 +3761,7 @@ func debtRegisterSeedLandingPhaseFault(t *testing.T, path, newCell string) {
 	text := string(data)
 	needle := "| " + debtRegisterFixtureLandingCell + " |"
 	if !strings.Contains(text, needle) {
-		t.Fatalf("fixture does not contain the expected D-14-45 Items-table cell %q -- fixture drifted from the seam this test seeds", needle)
+		t.Fatalf("fixture does not contain the expected D-14-46 Items-table cell %q -- fixture drifted from the seam this test seeds", needle)
 	}
 	text = strings.Replace(text, needle, "| "+newCell+" |", 1)
 	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
@@ -4071,8 +4071,8 @@ func TestDebtRegisterOwnershipGuardIsNotInert(t *testing.T) {
 		if len(problems) == 0 {
 			t.Fatal("emptied Landing phase cell should refuse, but debtRegisterProblems reported no problems")
 		}
-		if !containsSubstring(problems, "D-14-45") {
-			t.Fatalf("refusal does not name the offending row D-14-45: %v", problems)
+		if !containsSubstring(problems, "D-14-46") {
+			t.Fatalf("refusal does not name the offending row D-14-46: %v", problems)
 		}
 	})
 
@@ -4086,8 +4086,8 @@ func TestDebtRegisterOwnershipGuardIsNotInert(t *testing.T) {
 		if len(problems) == 0 {
 			t.Fatal("whitespace-only Landing phase cell should refuse, but debtRegisterProblems reported no problems")
 		}
-		if !containsSubstring(problems, "D-14-45") {
-			t.Fatalf("refusal does not name the offending row D-14-45: %v", problems)
+		if !containsSubstring(problems, "D-14-46") {
+			t.Fatalf("refusal does not name the offending row D-14-46: %v", problems)
 		}
 	})
 
@@ -4101,8 +4101,8 @@ func TestDebtRegisterOwnershipGuardIsNotInert(t *testing.T) {
 		if len(problems) == 0 {
 			t.Fatal("free-prose Landing phase cell should refuse, but debtRegisterProblems reported no problems")
 		}
-		if !containsSubstring(problems, "D-14-45") {
-			t.Fatalf("refusal does not name the offending row D-14-45: %v", problems)
+		if !containsSubstring(problems, "D-14-46") {
+			t.Fatalf("refusal does not name the offending row D-14-46: %v", problems)
 		}
 	})
 
