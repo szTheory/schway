@@ -15,5 +15,6 @@ fn relay(buffer: Buffer) -> borrow(buffer) Buffer {
   let first = borrow buffer
   let second = borrow buffer // lang:borrow-target
   let reviewed = borrow first
+  let audited = borrow reviewed
   second
 }

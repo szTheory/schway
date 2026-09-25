@@ -38,12 +38,13 @@ the fail-closed marker-count guard every injector shares):
 - `heldout_match_defect.lang` / `derivation_match_defect.lang` -- every arm
   self-maps (`Alt => Alt`), so re-adding a self-mapping arm for a removed
   alternative reproduces the file byte-for-byte (D-06-26).
-- `heldout_move_defect.lang` / `derivation_move_defect.lang` -- a two-hop
-  move chain; the injector corrupts the second `take`'s source back to the
-  already-moved parameter name.
+- `heldout_move_defect.lang` / `derivation_move_defect.lang` -- the held-out
+  fixture has a three-hop move chain while derivation has two; the injector
+  corrupts the marked third `take`'s source back to the already-moved parameter.
 - `heldout_borrow_defect.lang` / `derivation_borrow_defect.lang` -- two
-  overlapping shared borrows (legal); the injector escalates the marked one
-  to exclusive, producing a genuine loan conflict.
+  overlapping shared borrows (legal); held-out also reborrows the first loan
+  after the marked second borrow. The injector escalates the marked borrow to
+  exclusive, producing a genuine loan conflict.
 
 The cleanup class (D-06-25) needs no dedicated fixture here at all: it
 reuses `session.ReleaseOmissionMutationRunner` directly against whatever

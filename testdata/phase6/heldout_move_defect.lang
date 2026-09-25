@@ -13,6 +13,7 @@ export {
 
 fn relay(buffer: Buffer) -> Buffer {
   let delivered = take buffer
-  let echoed = take delivered // lang:move-target
-  echoed
+  let echoed = take delivered
+  let returned = take echoed // lang:move-target
+  returned
 }

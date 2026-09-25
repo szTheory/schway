@@ -1,6 +1,6 @@
 # D-13-34 Decision Brief — M001 Held-Out Move/Borrow Pairs
 
-**Status:** awaiting human choice. No fixture or debt-register change has been made.
+**Status:** selected and implemented — **replace** (user choice, 2026-09-25).
 
 ## Live evidence
 
@@ -85,3 +85,21 @@ P21 is the planned M004 phase named in the live roadmap and already used as a la
 ## Human choice required
 
 Choose **replace** to restore structural separation for both classes, or **reratify** to preserve the shipped examples and explicitly narrow D-06-29 under P21 ownership. After the choice, Plan 06 Task 3 will implement only that branch and rerun the held-out, injector, debt-register, and live cap controls.
+
+## Selected outcome and implementation evidence
+
+The user selected **replace**. The held-out move and borrow sources now include
+the proposed extra operation; the derivation fixtures and five-component
+predicate remain unchanged. `TestPhase6DefectCorpusIsHeldOut` and
+`TestPhase6HeldoutPairsAreStructurallyDistinct` passed: move summaries are
+`{bindingCount:3, matchArmCount:0, borrowCount:0, takeCount:3, maxDepth:1}` vs
+`{bindingCount:2, matchArmCount:0, borrowCount:0, takeCount:2, maxDepth:1}`;
+borrow summaries are `{bindingCount:4, matchArmCount:0, borrowCount:4, takeCount:0,
+maxDepth:1}` vs `{bindingCount:3, matchArmCount:0, borrowCount:3, takeCount:0,
+maxDepth:1}`. Match remains 3 arms vs 2. The move and borrow injector controls
+passed with exactly their intended defect. D-06-29's structural inference is
+restored for all classes while the small-corpus residual is retained.
+
+The live D-13-34 row is closed as `CLOSED(P20)` and the current open-unowned
+population is four. Final commit and full-suite evidence are in
+`20-06-SUMMARY.md`.

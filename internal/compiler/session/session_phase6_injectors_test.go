@@ -146,31 +146,9 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 		}
 	}
 
-	// D-13-33: retro-strengthen with an identifier-independent STRUCTURAL
-	// predicate. Byte-inequality alone (above) is defeated by a pure
-	// alpha-rename -- exactly the weakness M001's own heldout_move_defect.lang
-	// / derivation_move_defect.lang pair has (item -> buffer,
-	// moved_once -> delivered), and the reason this phase exists. A pair is
-	// genuinely distinct only when its structural summary -- (binding count,
-	// match arm count, borrow count, take count, max block nesting depth),
-	// computed from the parsed program, identifier-independent by
-	// construction -- differs in at least one component. testdata/phase6 has
-	// ZERO interprocedural fixtures (13-RESEARCH.md Sec.7, verified by
-	// directory listing), so D-13-26's topology triple degenerates completely
-	// here; this intraprocedural predicate is what D-13-33 requires instead.
-	//
-	// Escalation was run and adjudicated (D-13-33's mandate, and D-13-34 /
-	// PHASE-13-DEBT.md's record of the adjudication): the move and borrow
-	// class pairs came back structurally IDENTICAL -- a real hole in shipped
-	// M001 evidence -- and the developer ratified Option B at plan 13-07's
-	// checkpoint: keep the strengthened predicate unweakened, do not edit
-	// the shipped fixtures, and carry the two known-identical pairs as named
-	// debt rather than a silent or blanket skip. Each class gets its own
-	// subtest so `match` (the one pair that already discriminates) keeps
-	// running and passing, and a class flipping OUT of knownStructurallyIdentical
-	// (e.g. because someone edits a fixture) fails loudly instead of
-	// silently continuing to skip a debt row that no longer applies.
-	knownStructurallyIdentical := map[string]bool{"move": true, "borrow": true}
+	// D-13-33: each class must be structurally distinct under the
+	// identifier-independent summary. D-13-34's replacement branch restores
+	// this evidence for the move and borrow fixtures.
 	for _, class := range []string{"match", "move", "borrow"} {
 		class := class
 		t.Run(class+"_structural_distinctness", func(t *testing.T) {
@@ -179,40 +157,24 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 			heldoutSummary := computePhase6StructuralSummary(t, heldoutSource)
 			derivationSummary := computePhase6StructuralSummary(t, derivationSource)
 			t.Logf("%s class structural summary: heldout=%+v derivation=%+v", class, heldoutSummary, derivationSummary)
-			if knownStructurallyIdentical[class] {
-				if heldoutSummary != derivationSummary {
-					t.Fatalf("%s class is no longer structurally identical (heldout=%+v derivation=%+v) -- PHASE-13-DEBT.md's D-13-34 row is stale: either remove the class from knownStructurallyIdentical here, or the fixtures changed and the debt row needs updating", class, heldoutSummary, derivationSummary)
-				}
-				t.Skipf("D-13-34 (PHASE-13-DEBT.md): %s class heldout/derivation fixtures are structurally identical (%+v) -- an alpha-rename-only pair, the exact M001 weakness D-13-33 exists to close. Ratified as permanent M001 evidence debt (Option B) at plan 13-07's checkpoint rather than fixed inside Phase 13's budget; see PHASE-13-DEBT.md D-13-34 for the full adjudication, witnessed by probe:TestPhase6HeldoutPairsAreAlphaRenamesOnly (session_phase6_injectors_test.go).", class, heldoutSummary)
-			}
 			if heldoutSummary == derivationSummary {
-				t.Fatalf("%s class: heldout and derivation fixtures are structurally IDENTICAL (%+v) -- byte-inequality alone would have passed this pair, which is the exact M001 weakness D-13-33 exists to close; this class is not in knownStructurallyIdentical, so this is a NEW regression, not known debt", class, heldoutSummary)
+				t.Fatalf("%s class: heldout and derivation fixtures are structurally IDENTICAL (%+v) -- byte-inequality alone would have passed this pair, which is the exact M001 weakness D-13-33 exists to close", class, heldoutSummary)
 			}
 		})
 	}
 }
 
-// TestPhase6HeldoutPairsAreAlphaRenamesOnly is plan 14-07's executed probe
-// backing PHASE-13-DEBT.md's D-13-34 row (witness:
-// probe:TestPhase6HeldoutPairsAreAlphaRenamesOnly): it asserts the
-// described weakness STILL HOLDS exactly as described -- the move and
-// borrow class heldout/derivation pairs remain structurally identical
-// under phase6StructuralSummary, an alpha-rename-only pair. This is an
-// executed claim, not a phase-number citation: if a future fixture edit
-// makes either pair structurally distinct, this probe goes red (XPASS)
-// and forces D-13-34's closure, rather than silently continuing to carry
-// stale debt. TestPhase6DefectCorpusIsHeldOut's own class loop asserts the
-// identical fact per-class already; this is the STANDALONE, stably-named
-// probe the debt register's Witness column cites by name so a rename of
-// the class loop can never silently orphan the citation.
-func TestPhase6HeldoutPairsAreAlphaRenamesOnly(t *testing.T) {
-	for _, class := range []string{"move", "borrow"} {
+// TestPhase6HeldoutPairsAreStructurallyDistinct is the live D-13-34 closure
+// witness. It pins distinct structure for all three held-out/derivation
+// classes independently of identifier spelling.
+func TestPhase6HeldoutPairsAreStructurallyDistinct(t *testing.T) {
+	for _, class := range []string{"match", "move", "borrow"} {
 		class := class
 		t.Run(class, func(t *testing.T) {
 			heldoutSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "heldout_"+class+"_defect.lang"))
 			derivationSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "derivation_"+class+"_defect.lang"))
-			if heldoutSummary != derivationSummary {
-				t.Fatalf("D-13-34: the %s class heldout/derivation pair is no longer structurally identical (heldout=%+v derivation=%+v) -- the M001 weakness this probe witnesses has been closed; update PHASE-13-DEBT.md's D-13-34 row (and its Grade) instead of treating this failure as something to silence", class, heldoutSummary, derivationSummary)
+			if heldoutSummary == derivationSummary {
+				t.Fatalf("D-13-34: %s class heldout/derivation fixtures are structurally identical: %+v", class, heldoutSummary)
 			}
 		})
 	}
