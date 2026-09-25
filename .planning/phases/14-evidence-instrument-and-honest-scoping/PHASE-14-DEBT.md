@@ -52,7 +52,7 @@ finding).
 
 | ID | Source | Threat/Req | Severity | Landing phase | Grade | Witness | Item |
 |---|---|---|---|---|---|---|---|
-| D-14-45 | PROJECT.md `## Current State` (verified already correct, commit `d21db90`); 14-RESEARCH.md Open Question 1 | EVD-07 | warning | UNOWNED(probe:TestLTOInertnessOnMultiFunctionEmission) | WIRED | probe:TestLTOInertnessOnMultiFunctionEmission | `-flto` IS STRUCTURALLY INERT ON EVERY CGEN-EMITTED MULTI-FUNCTION PROGRAM, AND THIS CLAIM PREVIOUSLY HAD NO DEBT ROW. `cgen.emitProgram` emits one translation unit with no `restrict` attribute, and a foreign-boundary program is refused outright by multi-function emission -- so LTO's whole-program optimization has no cross-TU boundary to exploit and no alias attribute to hoist across. The two existing non-inertness proofs are both non-multi-function: `TestLTOTierIsNotInert` uses a single-function foreign fixture, and NAT-07's composition-only control is hand-written C explicitly not emitted by `cgen` (D-11-24). D-11-25 names this only in a test doc comment -- it has no debt row and was not among the ten unowned items PROJECT.md's `## Current State` enumerates. This row closes that gap |
+| D-14-45 | PROJECT.md `## Current State` (verified already correct, commit `d21db90`); 14-RESEARCH.md Open Question 1 | EVD-07 | warning | P21 | WIRED | probe:TestLTOInertnessOnMultiFunctionEmission | `-flto` IS STRUCTURALLY INERT ON EVERY CGEN-EMITTED MULTI-FUNCTION PROGRAM, AND THIS CLAIM PREVIOUSLY HAD NO DEBT ROW. `cgen.emitProgram` emits one translation unit with no `restrict` attribute, and a foreign-boundary program is refused outright by multi-function emission -- so LTO's whole-program optimization has no cross-TU boundary to exploit and no alias attribute to hoist across. The two existing non-inertness proofs are both non-multi-function: `TestLTOTierIsNotInert` uses a single-function foreign fixture, and NAT-07's composition-only control is hand-written C explicitly not emitted by `cgen` (D-11-24). D-11-25 names this only in a test doc comment -- it has no debt row and was not among the ten unowned items PROJECT.md's `## Current State` enumerates. Phase 21 owns the measured LTO-inertness and cut-emitter evidence boundary; this assignment does not claim that `-flto` becomes non-inert. |
 | D-14-46 | 14-02-SUMMARY.md "Debt rows to register" item 1 | DX-08 | info | UNOWNED(conditional-surface-lands-in-language) | DEFINED | n/a | NOTHING FORCES THE DISTINCTNESS CORPUS TO GROW AS THE LANGUAGE GROWS. When the conditional form (`if`) enters the language, the spiral trio (`spiral_full.lang`, `spiral_narrow.lang`, `spiral_bare.lang`) becomes a VALID program and must be replaced in `testdata/distinctness/` by the then-current not-in-language surface, or the corpus predicate would need to be re-derived against a program that no longer refuses to parse |
 | D-14-47 | 14-02-SUMMARY.md "Debt rows to register" item 2 | DX-08 | info | UNOWNED(identity-bearing-cause-span-on-parse-success-path) | DEFINED | n/a | PUTTING MORE CONTENT ON `Cause.Span` DEEPENS THE ALREADY-RECORDED, HALF-ENFORCED RULE THAT A COORDINATE SHIFT MUST NEVER MOVE A DIAGNOSTIC'S ID. This is now bounded-widened for broken programs only -- a whitespace edit inside a broken program's tail (past the point where declaration recovery starts) can now move that program's diagnostic ID, where before plan 14-02's fix the swallowed region was never in the identity basis. This is an acceptable, deliberately bounded widening of an already-recorded hole (Phase 13's coordinate-shift discipline), not a new defect, but it should be reconciled explicitly rather than rediscovered |
 | D-14-48 | plan 14-09's grade derivation over 09-VALIDATION.md:85 | EVD-02 | warning | P14 | WIRED | probe:TestVerificationGroundednessFrontierIsPinned | 09-VALIDATION.MD ROW 09-01-01's SECOND EVIDENCE CELL (A `LoanChainIndex`-PATTERN GO TEST INVOCATION) CITES A PATTERN THAT MATCHES ZERO TEST NAMES -- IT WAS SHIPPED `✅ GREEN` BUT DERIVES ONLY WIRED. This is the same row plan 14-01's groundedness lint independently pinned as an R2 dead pattern in its own 125-entry frontier; the two instruments agree from two different mechanisms. Plan 14-10's Nyquist reconciliation is the scheduled closer for the groundedness frontier's R1/R2 class, which this row is a member of |
@@ -167,16 +167,12 @@ comment (`session_phase11_differential_test.go`) and this phase's own
 planning documents (14-RESEARCH.md, 14-01-SUMMARY.md), neither of which is a
 debt register.
 
-**Landing phase:** `UNOWNED(probe:TestLTOInertnessOnMultiFunctionEmission)`.
-No phase currently claims closing this — closing it would mean either
-widening `emitProgram` to a genuine multi-translation-unit emission strategy
-(a significant architectural change with no current owner) or accepting the
-inertness as permanent and re-scoping NAT-07's own claim. The named witness
-probe does not exist yet; per D-14-24's stated hand-off, resolving a
-`UNOWNED(...)` witness identifier to an executed probe is plan 14-07's job
-(the plan that adds the register's `Witness` column). This row's own witness
-token is chosen to name the eventual probe's intended subject so 14-07 can
-wire it without renaming.
+**Landing phase:** `P21` — Phase 21's explicit ownership of the native/LTO
+evidence boundary includes this measured limitation, alongside the cut
+emitter families. The assignment does not claim LTO becomes non-inert; any
+future change to that claim still requires measured evidence. The named witness
+`TestLTOInertnessOnMultiFunctionEmission` is present and remains the executed
+claim; ownership and evidence status are separate facts.
 
 ### D-14-46 — the distinctness corpus does not grow itself
 

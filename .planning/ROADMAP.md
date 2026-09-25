@@ -839,7 +839,10 @@ M004 work is scheduled.
 contracts required before any M003-cut emitter family can be reconsidered.
 **Owns**: D-16-11 (`emitLinearForeign`), D-16-12
 (`emitLinearBorrowedByPointer`), and D-16-13
-(`emitLinearBorrowedByPointerPlain`).
+(`emitLinearBorrowedByPointerPlain`); the residual legacy-emitter retirement
+and convergence work in D-11-02/D-12-36; and D-14-45's measured one-TU/LTO
+inertness evidence. These are ownership assignments only: no emitter is
+reopened, and no claim says `-flto` becomes behaviorally non-inert.
 **Admission boundary**: This ownership assignment does not admit or reopen any
 emitter family. Each family retains its own prerequisites, cross-host evidence,
 refusal-fence requirements, and one-translation-unit/`-flto` limitation.

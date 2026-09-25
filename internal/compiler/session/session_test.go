@@ -3071,6 +3071,228 @@ func TestDebtRegistersAreWellFormed(t *testing.T) {
 	}
 }
 
+// phase20DebtAuditCohort is the M002 audit's explicitly enumerated ten-item
+// carry-forward. Keep this exact set pinned so edits to the source audit or
+// current registers cannot silently redefine PRC-02's starting population.
+var phase20DebtAuditCohort = []string{
+	"D-10-C04", "D-11-02", "D-11-27", "D-11-51", "D-12-21",
+	"D-12-36", "D-12-43", "D-13-02b", "D-13-10a", "D-13-34",
+}
+
+// phase20DebtNewM003IDs are the seven distinct rows introduced by the live
+// M003 PHASE-14-DEBT register. The eight-row UNREACHABLE-CLAIMS view is a
+// probe-backed subset and is not denominator authority.
+var phase20DebtNewM003IDs = []string{
+	"D-14-45", "D-14-46", "D-14-47", "D-14-50", "D-14-51", "D-14-52", "D-14-54",
+}
+
+var phase20DebtStartingUnownedIDs = []string{
+	"D-10-C04", "D-11-02", "D-11-27", "D-12-36", "D-12-43", "D-13-34",
+	"D-14-45", "D-14-46", "D-14-47", "D-14-50", "D-14-51", "D-14-52", "D-14-54",
+}
+
+var phase20DebtCurrentUnownedIDs = []string{
+	"D-10-C04", "D-12-43", "D-13-34", "D-14-46", "D-14-47",
+	"D-14-50", "D-14-51", "D-14-52", "D-14-54",
+}
+
+type phase20DebtDisposition struct {
+	ID, Landing, Register, Witness string
+}
+
+// phase20QualifiedDebtDispositions resolves only the historical M002 audit
+// cohort plus the new live M003 rows. It reads each current Landing phase
+// cell from the source register, rejecting missing/duplicate provenance and
+// unknown disposition syntax instead of counting raw UNOWNED prose.
+func phase20QualifiedDebtDispositions() (map[string]phase20DebtDisposition, error) {
+	root := testsupport.ProjectPath(".planning")
+	auditBytes, err := os.ReadFile(filepath.Join(root, "milestones", "M002-MILESTONE-AUDIT.md"))
+	if err != nil {
+		return nil, err
+	}
+	audit := string(auditBytes)
+	anchor := "### The 10 items that are OPEN and UNOWNED"
+	start := strings.Index(audit, anchor)
+	if start < 0 {
+		return nil, fmt.Errorf("M002 milestone audit is missing the ten-item carry-forward table")
+	}
+	section := audit[start+len(anchor):]
+	if end := strings.Index(section, "\n## "); end >= 0 {
+		section = section[:end]
+	}
+	var auditIDs []string
+	for _, line := range strings.Split(section, "\n") {
+		if !strings.HasPrefix(line, "| D-") {
+			continue
+		}
+		cells := strings.Split(strings.Trim(strings.TrimSpace(line), "|"), "|")
+		if len(cells) < 2 {
+			return nil, fmt.Errorf("malformed M002 audit carry-forward row %q", line)
+		}
+		auditIDs = append(auditIDs, strings.TrimSpace(cells[0]))
+	}
+	if !equalStringSets(auditIDs, phase20DebtAuditCohort) || len(auditIDs) != len(phase20DebtAuditCohort) {
+		return nil, fmt.Errorf("M002 audit cohort drift: got %v, want %v", auditIDs, phase20DebtAuditCohort)
+	}
+
+	qualified := make(map[string]bool, len(phase20DebtAuditCohort)+len(phase20DebtNewM003IDs))
+	for _, id := range phase20DebtAuditCohort {
+		qualified[id] = true
+	}
+	for _, id := range phase20DebtNewM003IDs {
+		if qualified[id] {
+			return nil, fmt.Errorf("duplicate qualified debt identifier %s", id)
+		}
+		qualified[id] = true
+	}
+	paths, err := phaseArtifactGlob("*", "*-DEBT.md")
+	if err != nil {
+		return nil, err
+	}
+	found := make(map[string]phase20DebtDisposition, len(qualified))
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		columns, rows, err := parseDebtRegisterTable(filepath.Base(path), string(data))
+		if err != nil {
+			continue // unrelated legacy register shape is checked by PRC-01 separately
+		}
+		idColumn, hasID := columns["ID"]
+		landingColumn, hasLanding := columns["Landing phase"]
+		if !hasID || !hasLanding {
+			continue
+		}
+		witnessColumn, hasWitness := columns["Witness"]
+		for _, row := range rows {
+			id := row[idColumn]
+			landing := strings.TrimSpace(row[landingColumn])
+			if filepath.Base(path) == "PHASE-14-DEBT.md" && strings.HasPrefix(landing, "UNOWNED(") && !containsString(phase20DebtNewM003IDs, id) {
+				return nil, fmt.Errorf("unknown current M003 debt provenance %s in %s", id, path)
+			}
+			if !qualified[id] {
+				continue
+			}
+			if _, duplicate := found[id]; duplicate {
+				return nil, fmt.Errorf("qualified debt identifier %s has duplicate current provenance", id)
+			}
+			if !debtRegisterOwningPhaseForm(landing) {
+				return nil, fmt.Errorf("qualified debt identifier %s has unknown current provenance %q", id, landing)
+			}
+			witness := ""
+			if hasWitness && witnessColumn < len(row) {
+				witness = row[witnessColumn]
+			}
+			found[id] = phase20DebtDisposition{ID: id, Landing: landing, Register: filepath.ToSlash(strings.TrimPrefix(path, root+string(filepath.Separator))), Witness: witness}
+		}
+	}
+	for id := range qualified {
+		if _, ok := found[id]; !ok {
+			return nil, fmt.Errorf("qualified debt identifier %s has no current source register row", id)
+		}
+	}
+	return found, nil
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+// equalStringSets compares exact membership while allowing source table order.
+func equalStringSets(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	seen := make(map[string]bool, len(a))
+	for _, value := range a {
+		if seen[value] {
+			return false
+		}
+		seen[value] = true
+	}
+	for _, value := range b {
+		if !seen[value] {
+			return false
+		}
+	}
+	return true
+}
+
+func phase20OpenUnownedIDs(dispositions map[string]phase20DebtDisposition) []string {
+	var ids []string
+	for id, disposition := range dispositions {
+		if strings.HasPrefix(disposition.Landing, "UNOWNED(") {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// phase20WithinUnownedDebtCap is intentionally pure so the seeded six-item
+// control proves the threshold independently from today's register contents.
+func phase20WithinUnownedDebtCap(ids []string) bool { return len(ids) <= 5 }
+
+func TestPhase20UnownedDebtPopulation(t *testing.T) {
+	dispositions, err := phase20QualifiedDebtDispositions()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(phase20DebtAuditCohort) != 10 {
+		t.Fatalf("authoritative M002 historical cohort has %d IDs, want 10", len(phase20DebtAuditCohort))
+	}
+	baselineBytes, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "20-nyquist-d-13-34-and-the-frontier-fixture", "20-DEBT-BASELINE.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var baselineIDs []string
+	for _, id := range phase20DebtStartingUnownedIDs {
+		if !strings.Contains(string(baselineBytes), "`"+id+"`") {
+			t.Fatalf("baseline does not pin starting identifier %s", id)
+		}
+		baselineIDs = append(baselineIDs, "`"+id+"`")
+	}
+	if !strings.Contains(string(baselineBytes), strings.Join(baselineIDs, ", ")) {
+		t.Fatal("baseline does not pin the exact 13-ID phase-start population")
+	}
+	got := phase20OpenUnownedIDs(dispositions)
+	if !equalStringSets(got, phase20DebtCurrentUnownedIDs) {
+		t.Fatalf("current source-derived open-unowned IDs changed: got %v, want %v", got, phase20DebtCurrentUnownedIDs)
+	}
+	viewBytes, err := os.ReadFile(testsupport.ProjectPath(".planning", "UNREACHABLE-CLAIMS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	view := string(viewBytes)
+	for _, id := range got {
+		if strings.Contains(dispositions[id].Witness, "probe:") && !strings.Contains(view, "| "+id+" | ") {
+			t.Errorf("probe-backed open row %s is absent from the generated claims view", id)
+		}
+	}
+}
+
+func TestPhase20UnownedDebtCapRule(t *testing.T) {
+	if !phase20WithinUnownedDebtCap([]string{"a", "b", "c", "d", "e"}) {
+		t.Fatal("five open-unowned rows should satisfy the cap")
+	}
+	if phase20WithinUnownedDebtCap([]string{"a", "b", "c", "d", "e", "f"}) {
+		t.Fatal("seeded sixth open-unowned row should exceed the five-item cap")
+	}
+	dispositions := map[string]phase20DebtDisposition{
+		"closed": {ID: "closed", Landing: "CLOSED(abc1234)"},
+		"owned":  {ID: "owned", Landing: "P21"},
+	}
+	if got := phase20OpenUnownedIDs(dispositions); len(got) != 0 {
+		t.Fatalf("closed/owned historical rows must not count as open-unowned: %v", got)
+	}
+}
+
 // debtRegisterGlobalIdentifierProblems is D-14-29's closure assertion (ii):
 // "every row of the generated view appears in exactly one register." The
 // generated view (Task 4, .planning/UNREACHABLE-CLAIMS.md) is derived

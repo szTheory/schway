@@ -39,12 +39,12 @@ was never run. See the Notes section at the end of this file.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Grade | Witness | Item |
 |---|---|---|---|---|---|---|---|
-| D-11-02 | 11-CONTEXT.md (D-11-02), RE-DEFERRED 2026-09-12 (D-12-36, `12-01-SUMMARY.md`) | NAT-04..NAT-07 | info | UNOWNED(single-function-emitter-deletion) | WIRED | probe:TestLTOInertnessOnMultiFunctionEmission | THE SIX SINGLE-FUNCTION EMITTERS ARE NOT DELETED THIS PHASE. `emitLinear`, `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, `emitLinearForeign`, `emitBranch`, and `emitMatch` remain in `cgen` unchanged by Phase 11's multi-function emission work. Their deletion was gated on Q-05's green N=1 convergence differential landing as part of Phase 12's own per-dispatch-site `Result` plans; that gate fired RE-DEFER, not DELETE — see the dated sub-paragraph below |
+| D-11-02 | 11-CONTEXT.md (D-11-02), RE-DEFERRED 2026-09-12 (D-12-36, `12-01-SUMMARY.md`); residual ownership reconciled in Phase 20 | NAT-04..NAT-07 | info | P21 | WIRED | probe:TestSupersededEmitterDefinitionsRemoved | Phase 16 removed the old `emitLinear`, `emitBranch`, and `emitMatch` definitions from the public production path. The three retained legacy implementations (`emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, `emitLinearForeign`) remain refusal-only and are explicitly owned by Phase 21 as D-16-11..13; this row tracks the residual emitter retirement/convergence work, not a claim that all six definitions were deleted. |
 | D-11-07 | 11-CONTEXT.md (D-11-07) | NAT-04, FFI-01 | warning | P11 | DEFINED | n/a | `singleForeignFunction` AND `singleManifestFunction` STAY SINGLE-FUNCTION AND GENERALIZE BY REFUSING a program with two foreign contracts, rather than being rewritten to support multiple. `lang.foreign/0` is NOT widened. These are single-function assumptions the phase's own `len(Functions) != 1` grep inventory does not catch, since they gate on foreign-contract count, not function count |
 | D-11-11 | 11-CONTEXT.md (D-11-11) | NAT-05 | info | UNOWNED(emittedattribute-discharge-pair-design) | DEFINED | n/a | THE `EmittedAttribute` DISCHARGE-PAIR DESIGN IS DESIGNED AND RECORDED, NOT BUILT. Callee-side `justified_by` plus caller-side `discharged_by`, refused on EQUALITY (never containment), is a complete design this phase writes down but does not implement, because Phase 11 emits zero call-boundary alias attributes by construction (D-11-09) |
 | D-11-12 | 11-CONTEXT.md (D-11-12) | NAT-05 | info | UNOWNED(sidecar-schema-verdict-design) | DEFINED | n/a | THE SIDECAR-NORMATIVE-PLUS-INLINE-COMMENT CHANNEL, WITH THE `lang.attributes/0` SCHEMA VERDICT, IS DESIGNED AND RECORDED, NOT BUILT. Companion to D-11-11: the channel a discharge pair would be published through is specified, not shipped, for the same reason (zero attributes to discharge this phase) |
 | D-11-13 | 11-CONTEXT.md (D-11-13) | TRU-02, OWN-04 | warning | P11 | DEFINED | n/a | PRE-EXISTING GAP, NOT INTRODUCED BY PHASE 11. `evidence.go:233` binds `ForeignDigest` only under `hasForeignContract`, so a pure-Lang `restrict` claim is never digest-bound into evidence. Live before Phase 11 opened; closing it is explicitly `lang.attributes/0`'s job, not this phase's emission work |
-| D-11-27 | 11-CONTEXT.md (D-11-27) | NAT-07 | info | UNOWNED(d-09-51-negative-control-review) | DEFINED | n/a | NAT-07's DESIGN DOES NOT DEPEND ON REVIEWING D-09-51's UNREVIEWED NEGATIVE-CONTROL VERDICT FLIP, because D-11-09 deletes the dependent emission rule the flip would have interacted with. The flip review itself (item 4 of the Phase 10 carry-forward list, D-10-C04 below) remains open and unowned by Phase 11 — recorded here so NAT-07's design is not mistaken for having closed it |
+| D-11-27 | 11-CONTEXT.md (D-11-27), residual relevance rechecked in Phase 20 | NAT-07 | info | P20 | DEFINED | n/a | Phase 16's sole public schema-2 emitter and M004 refusal boundary retire the old call-boundary emission rule that NAT-07's design explicitly did not depend on. Phase 20 owns this applicability check; the separate D-09-51 negative-control verdict review remains open as D-10-C04 and is not closed by this row. |
 | D-11-36 | 11-CONTEXT.md (D-11-36) | QLT-05 | warning | UNOWNED(flaky-predicate-escalation) | DEFINED | n/a | FLAKY-PREDICATE TOLERANCE IN THE REDUCER IS EXPLICITLY NOT BUILT THIS PHASE. If Phase 11's engineered control (the anti-vacuity criterion QLT-05's reducer must satisfy) turns out flaky, that is a criterion-3 problem surfacing in criterion 4, and it MUST be escalated as a defect in the criterion, not silently treated as a reducer tolerance requirement |
 | D-11-40 | 11-CONTEXT.md (D-11-40), corrects S-006 (`.planning/spikes/006-interprocedural-liveness-cost-scaling/`) | QLT-06 | warning | P11 | DEFINED | n/a | CORRECTION: S-006's 100% / 92% / 43% EVICTION FIGURES ARE AN UPPER BOUND ON A MODEL, NOT A MEASUREMENT. `ClosureDigest` chains over signature summaries only, and never over function bodies (`originvalidate.go:561-590`), so a body-only edit does not move a caller's digest at all. Any artifact that re-quotes these three figures as measured eviction rates MUST NOT do so; state them as the analytical upper bound they are |
 | D-11-42 | 11-CONTEXT.md (D-11-42) | QLT-02 | warning | P11 | DEFINED | n/a | `SelectLanesForFixture`'s CHANGE-STATE MECHANISM MUST NOT BE EXTENDED to any new Phase 11 lane without the same scrutiny D-11-41/Q-02 applied to the native-differential lane. Deferring a lane because its declared inputs did not move shares D-11-41's exact hole — an undeclared input can move silently while the declared set reports no change |
@@ -177,6 +177,19 @@ inside a multi-function program. The other fifteen rows in this file are
 `DEFINED`/`n/a` (decisions recorded and designed but not built, or
 carry-forward inputs — no executed claim beyond their own existence, per
 D-14-03's floor semantics).
+
+**2026-09-25 — Phase 20 residual ownership reconciliation.** Phase 16's
+`TestSupersededEmitterDefinitionsRemoved` confirms that `emitLinear`,
+`emitBranch`, and `emitMatch` are absent, while the explicit M004 refusal tests
+confirm that production `EmitNative` does not route to legacy fallback code.
+The retained by-pointer and foreign implementations remain in `cgen.go`, so
+this entry does not claim a six-definition deletion. Phase 16's
+`PHASE-16-DEBT.md` assigns those three cut families to Phase 21 (D-16-11..13),
+and Phase 21 now owns the residual deletion/convergence record here. The exact
+diagnostic boundary is retained: `TestInterproceduralDisclosedFieldSet` still
+expects `core.callee_not_callable` for both negative controls. This does not
+review that historical verdict; D-10-C04 remains the open record for that
+separate human review.
 
 ### D-11-07 — `singleForeignFunction`/`singleManifestFunction` generalize by refusal
 
