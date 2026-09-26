@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 21
 current_phase_name: Native emission ownership and resource discharge
 status: executing
-stopped_at: Phase 21 context gathered
-last_updated: "2026-09-26T01:28:26.205Z"
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-09-26T01:54:39.489Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 21 context captured; next is planning
-state_head: a6ad50b4fa0b6998ad0e8a39eeb958089c4f179e
+last_activity_desc: Phase 21 execution started
+state_head: cf333872745f6bd7ca9a77d8a7cba67bb5e0f11b
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 88
-  completed_plans: 84
+  completed_plans: 85
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M003 Phases 14-20 are verified complete. Phase 15 is 7/7 with 12/12 automated UAT checks; Phase 19 is 4/4 with 15/15 automated UAT checks. Phase 18's G-18-16 reliability gap is closed with repeated default-parallel full-suite receipts and bounded, inspectable subprocess failures. M004 Phase 21 is the next planned owner-designation phase; it has no context file yet, so discuss it before planning.
+**Current focus:** Phase 21 — Native emission ownership and resource discharge
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -63,11 +63,11 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 21 (Native emission ownership and resource discharge) — READY TO EXECUTE
-Plan: Not started — Phase 21 context gathered; ready to plan
+Phase: 21 (Native emission ownership and resource discharge) — EXECUTING
+Plan: 2 of 4
 Total Plans in Phase: 4
 Status: Ready to execute
-Last activity: 2026-09-25 — Phase 21 context captured; next is planning
+Last activity: 2026-09-25 — Phase 21 execution started
 Phase 20 is verified complete; its 33-pair archive grades
 cleanly, the current open-unowned debt set is four, and the full repository
 suite passes.
@@ -339,6 +339,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 19 P07 | 17 | 2 tasks | 7 files |
 | Phase 20 P01 | 5min | 2 tasks | 3 files |
 | Phase 18 P09 | 63min | 2 tasks | 12 files |
+| Phase 21 P01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -507,6 +508,7 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Use a finite 30-second default per subprocess; explicit runner timeouts and parent cancellation remain authoritative.
 - [Phase 18]: Keep Plan 08 CI disposition unchanged because existing macOS and Linux full and race jobs cover Phase 18.
 - [Phase 18]: Regenerate the stale validation corpus from the live pair exporter and actual sequential test results.
+- [Phase 21]: Phase 21 Plan 01: exit and discharge rules are machine-checkable; contract structure does not admit emitters or prove runtime cleanup.
 
 ### Pending Todos
 
@@ -667,9 +669,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-25T22:00:36.865Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-CONTEXT.md
+Last session: 2026-09-26T01:54:39.229Z
+Stopped at: Completed 21-01-PLAN.md
+Resume file: None
 Next command: $gsd-plan-phase 21
 
 The notes below predate the close and are kept as durable context a
