@@ -6,10 +6,10 @@ current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
 stopped_at: Completed 18-10-PLAN.md
-last_updated: "2026-09-26T14:35:28.941Z"
+last_updated: "2026-09-26T15:00:47.555Z"
 last_activity: 2026-09-26
 last_activity_desc: Completed Phase 18 Plan 10 implementation
-state_head: 211310194a11289d4a8bcb824e3df8c95e09fa99
+state_head: 7be22ab6852e44d17b9058c0eb7177a8e4e26f07
 progress:
   total_phases: 8
   completed_phases: 7
@@ -88,7 +88,7 @@ Phase: 18 (Branch on a Computed Value) — EXECUTING
 Plan: 10 of 10
 Total Plans in Phase: 10
 Status: Plans complete; phase verification remains
-Last activity: 2026-09-26 — Completed Phase 18 Plan 10 implementation
+Last activity: 2026-09-26 — Completed quick task 260926-ewj: Fix Phase 18 regression gate failures
 
 Phase 16 is complete: all 26 plans are summarized, the existing 21/21
 automated UAT remains complete and untouched, the refreshed verifier passed
@@ -704,6 +704,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 9 | Record GSD no-loop rule: compare routed command inputs and state transitions before rerun; resolve unchanged blockers rather than repeating commands. | 2026-09-25 | 550bd0f | — | — |
 | 10 | Refresh stale Phase 15 and 19 verification and route GSD to Phase 21 | 2026-09-25 | 0124de9 | passed | — |
 | 260926-bkj | Refresh Phase 15 evidence, repair CI planning guards, and record shift-left/no-loop defaults | 2026-09-26 | — | passed | [260926-bkj-close-the-ci-planning-integrity-findings](./quick/260926-bkj-close-the-ci-planning-integrity-findings/) |
+| 260926-ewj | Fix Phase 18 regression gate failures: preserve schema-1 emitter bytes and refresh corpus snapshot | 2026-09-26 | 7be22ab | passed | [260926-ewj-fix-phase-18-regression-gate-failures-pr](./quick/260926-ewj-fix-phase-18-regression-gate-failures-pr/) |
 
 ## Deferred Items
 
