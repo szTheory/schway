@@ -76,8 +76,18 @@ func TestPhase21ResourceDischargeContract(t *testing.T) {
 		apply func(*phase21DischargeContract)
 	}{
 		{"missing exit class", func(c *phase21DischargeContract) { c.Exits = c.Exits[1:] }},
+		{"unknown exit class", func(c *phase21DischargeContract) {
+			c.Exits[0].ID = "opaque_exit"
+		}},
+		{"duplicate exit class", func(c *phase21DischargeContract) {
+			c.Exits[1].ID = c.Exits[0].ID
+		}},
+		{"wrong exit disposition", func(c *phase21DischargeContract) {
+			c.Exits[0].Disposition = "admitted_without_proof"
+		}},
 		{"missing discharge evidence", func(c *phase21DischargeContract) { c.Exits[0].DischargeRule = "" }},
 		{"family admitted", func(c *phase21DischargeContract) { c.Families[0].ProductionAdmission = true }},
+		{"missing family", func(c *phase21DischargeContract) { c.Families = c.Families[1:] }},
 	} {
 		t.Run(mutate.name, func(t *testing.T) {
 			copyOfContract := clonePhase21Contract(t, contract)
