@@ -680,7 +680,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	for _, typeName := range branchTypeOrder {
 		emitProgramBranchType(&out, branchTypes[typeName])
 	}
-	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit)
+	entryReturnBranch, entryReturnIsBranch := branchTypes[entry.ReturnType]
+	needsTerminalJSONContent := entryReturnIsBranch && entryReturnBranch.hasPayload
+	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit, needsTerminalJSONContent)
 	if needsDefect {
 		emitDefectSupport(&out)
 	}
@@ -722,7 +724,6 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	}
 	input, initializer, entryTypeName, err := linearInput(entry)
 	entryBranch, entryIsBranch := branchTypes[entry.Parameter.Type]
-	entryReturnBranch, entryReturnIsBranch := branchTypes[entry.ReturnType]
 	entryIndexType := parameterTypeNames[entryIndex]
 	entryOutputType := returnTypeNames[entryIndex]
 	if entryReturnIsBranch && entryReturnBranch.hasPayload {
