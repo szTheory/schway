@@ -74,6 +74,10 @@ Use the emitted multi-function fixture, compile/execute under `-O3` and `-O3 -fl
 
 LLVM distinguishes focused regression tests from whole-program compile/run tests and recommends small reproducible cases; its test guide describes regression tests as routine checks and whole-program tests as compile-and-execute evidence ([LLVM Testing Infrastructure Guide](https://www.llvm.org/docs/TestingGuide.html)). Apply that separation here: cheap contract structure checks recur in current CI, while the specifically scoped compiler comparison is run once and its scope is recorded. Current CI already runs `go test ./...` on macOS and Linux; adding a second job that repeats the same comparator would need evidence of added regression value.
 
+### Residual legacy-emitter convergence
+
+Both public `cgen.Emit` and `cgen.EmitNative` validate the program and route to `emitProgram` (`internal/compiler/cgen/cgen.go`). The three retained foreign/by-pointer implementation functions have no production call sites in the current tree; the whole-program path explicitly refuses the corresponding foreign shapes (`internal/compiler/cgen/cgen_program.go`). This creates a bounded convergence option for D-11-02/D-12-36: confirm the absence of production/test API consumers, remove only unreachable private lowering code and helpers, and keep the current refusal behavior plus public manifest/header/conformance APIs. Do not port these families into `emitProgram`. If any live consumer is found, preserve its behavior and report the exact consumer rather than widening admission.
+
 ## Don't Hand-Roll
 
 - A second program semantic comparator or a new emitted-program execution protocol.
@@ -89,7 +93,8 @@ LLVM distinguishes focused regression tests from whole-program compile/run tests
 3. Reading the current multi-function LTO witness name as proof that Clang compiled the emitted fixture. Source inspection shows it currently only checks clean checking, multiple functions, successful emission, and schema-2 output (`internal/compiler/session/witness_registry_test.go`, `TestLTOInertnessOnMultiFunctionEmission`).
 4. Concluding that `-flto` performs no optimizations from behavioral equality. Equality answers semantic behavior for this fixture; it does not measure optimization activity or performance.
 5. Allowing this design artifact to reopen `emitLinearForeign`, `emitLinearBorrowedByPointer`, or `emitLinearBorrowedByPointerPlain`. `emitProgram` currently refuses foreign-call bodies and foreign contracts in multi-function programs (`internal/compiler/cgen/cgen_program.go`).
-6. Creating a duplicate CI lane: current `.github/workflows/ci.yml` runs the full Go suite on both initial host priorities, so a recurring structural test is already covered there.
+6. Deleting shared foreign manifest/header/conformance helpers merely because executable legacy bodies are unreachable; preserve their separately owned public functionality.
+7. Creating a duplicate CI lane: current `.github/workflows/ci.yml` runs the full Go suite on both initial host priorities, so a recurring structural test is already covered there.
 
 ## Code Examples / Repository Anchors
 
@@ -124,8 +129,8 @@ The named focused test pattern is a planning target and must be resolved to the 
 - Start repository edits through a GSD command and keep planning artifacts synchronized.
 - Use `$gsd-plan-phase` for this planned phase and preserve existing project patterns.
 
-## Open Questions
+## Research Questions — Resolved
 
-- The planner must choose the contract file encoding and exact owned path, then make its validator independent enough to catch missing/incorrect entries rather than merely echoing the same table.
-- Decide whether the one-shot emitted-fixture comparison can use an existing session/native harness without adding persistent complexity; if a small reusable command is needed, keep it opt-in and record the measured host/toolchain.
-- Do not claim Linux compiler evidence from this macOS research session. Use existing Linux CI only if the plan explicitly runs and records the scoped comparison there.
+- **Contract representation and independent check:** Use a versioned JSON artifact at `21-RESOURCE-DISCHARGE-CONTRACT.json`; the session test independently enumerates the required exit IDs, allowed disposition states, and D-16 family IDs, then mutation-tests absent cases/evidence. The artifact remains design-only and no production code consumes it.
+- **Existing one-shot compiler harness:** Reuse `phase16CompareDirectProgramFourTiers` from `internal/compiler/session/session_phase11_differential_test.go`. Add a build-tagged Phase 21 test to invoke the existing emitted-C path, runner, and comparator, then record its exact receipt; do not add a second comparator or recurring matrix.
+- **Host and toolchain scope:** This research session is macOS arm64 with Apple Clang 21.0.1. It makes no Linux compiler claim. The planned one-shot run records only its actual host/toolchain; existing Linux CI continues to run the cheap untagged structural tests.
