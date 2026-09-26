@@ -1,6 +1,6 @@
 ---
 phase: 15-event-identity-lang-execution-2
-verified: 2026-09-25T21:02:07Z
+verified: 2026-09-26T16:49:04Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -46,7 +46,7 @@ covered_files:
   - internal/compiler/session/session_phase5_compare.go
   - internal/compiler/session/session_phase5_compare_test.go
   - internal/compiler/session/session_phase6_test.go
-covered_digest: "v1:sha256:59e52cf66c7b190537c0a18f09103ef5d14ce2b57f849f5e960bff932d058c71"
+covered_digest: "v1:sha256:d73dab379ec1d6581c132cb0268396949dade4d49cf77f8e667709ce03ac4a8a"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -55,14 +55,14 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  refresh_reason: "The prior covered-file fingerprint was stale. Re-ran current Phase 15 owning-package admission, interpreter, peer, native-emission, CI source-pin, and four-tier diamond/collision evidence. All targeted commands passed; the covered-file fingerprint now matches the current tree."
+  refresh_reason: "The current shared compiler tree changed after the prior refresh, making its covered-file fingerprint stale. Re-ran the Phase 15 grammar, legacy-byte, interpreter event/refusal, independent-peer, native preflight/emission, Schema 2 admission, four-tier diamond/collision, comparator, and CI package-ownership selectors; all passed. The requester also reported the full Go suite passing. Refreshed the fingerprint against the complete covered-file set; preserved the existing 12/12 automated UAT unchanged."
 advisory: []
 ---
 
 # Phase 15: Event Identity (`lang.execution/2`) Verification Report
 
 **Phase Goal:** Two activations of the same callee through a shared-leaf diamond are distinguishable, and the causal edge between caller and callee is observed rather than inferred.
-**Verified:** 2026-09-25T21:02:07Z
+**Verified:** 2026-09-26T16:49:04Z
 **Status:** passed
 **Re-verification:** Yes — refreshed the stale fingerprint and reran current Phase 15 automated evidence.
 
@@ -90,7 +90,7 @@ advisory: []
 | `internal/compiler/interp/interp.go` | Frame-local occurrences and caller-owned call edges | ✓ VERIFIED | Wired into frame construction and `OpCall`; event path, preorder, removal, and refusal tests passed. |
 | `internal/compiler/executionpeer/executionpeer.go` | Independent causal peer | ✓ VERIFIED | Substantive traversal and observed-structure validation; import-boundary and refusal tests passed. |
 | `internal/compiler/cgen/cgen_program.go`, `cgen.go` | Native invocation table, event writer, and bounded preflight | ✓ VERIFIED | Preflight and C serialization are wired; measured/boundary and native event tests passed. |
-| `internal/compiler/native/native.go`, `native_test.go` | Strict Schema 2 serialized admission | ✓ VERIFIED | JSON-to-ToolError seam passes when run in the owning package; CI aggregate package selection is separately tracked as a gap. |
+| `internal/compiler/native/native.go`, `native_test.go` | Strict Schema 2 serialized admission | ✓ VERIFIED | JSON-to-ToolError seam passes in its owning package, and Plan 15-10 pins the recurring aggregate to `./internal/compiler/native`. |
 | `internal/compiler/session/session_phase5_compare.go` | `/2` peer validation before comparison; legacy behavior preserved | ✓ VERIFIED | Peer-gate and `/0`/`/1` wrapper regressions passed. |
 | `.github/workflows/ci.yml` | Both-host durable aggregate for the phase seams | ✓ VERIFIED | Separate focused commands run the native decoder admission test and the four session seams from their owning packages. The Ubuntu/macOS matrix, historical Phase 6 baseline, and existing `checks` job remain. |
 | `internal/compiler/session/session_phase6_test.go` | Package-aware source pin for CI aggregate contract | ✓ VERIFIED | `TestCIWorkflowRunsCurrentAggregateGate` and `TestCIWorkflowSelectionPinsPackageOwnership` passed, including the synthetic wrong-package rejection case. |
@@ -148,7 +148,7 @@ No additional requirement IDs mapped to Phase 15 were orphaned from the plans.
 | Comparator and CI source-pin tests | OBS-03, OBS-04, NAT-10 | Yes | 0 | No | Peer refusal, comparator behavior, workflow-source contract | Strong; source pin rejects package mismatch |
 | `session_phase6_test.go` | OBS-04, NAT-10 | Yes | 0 | No | Package ownership positive/negative controls and workflow contract | Strong; both named tests passed |
 
-No disabled requirement-only test or circular expected-value generator was found in the targeted evidence. The decoder test has independent refusal cases and is not circular; the failure is in recurring CI invocation, not test quality.
+No disabled requirement-only test or circular expected-value generator was found in the targeted evidence. The decoder test has independent refusal cases and is selected by the recurring aggregate from its owning package; Plan 15-10 and its source-pin controls close the earlier invocation gap.
 
 ### Anti-Patterns Found
 
@@ -160,7 +160,7 @@ No unresolved `TBD`, `FIXME`, or `XXX` debt marker was found in the Phase 15 imp
 
 ### Fingerprint Refresh
 
-The previous digest (`v1:sha256:043f8000e9d67cebe523cf86672259030acd81bf399ff5de6e729f876542158f`) recomputed to `v1:sha256:59e52cf66c7b190537c0a18f09103ef5d14ce2b57f849f5e960bff932d058c71` for the complete covered-file set. The owning-package Schema 2 decoder seam, CI ownership/source pins, four-tier diamond and collision controls, frozen `/0` and `/1` behavior, interpreter call-edge/refusal tests, independent peer checks, and native invocation-table boundary/emission checks all passed on the current tree. Requirements remain complete; no requirement or STATE edits were needed.
+The previous digest (`v1:sha256:cc43fc27b141703752e922772ddc1638b2dd42e0c587637688487ec6052ec9d1`) recomputed to `v1:sha256:d73dab379ec1d6581c132cb0268396949dade4d49cf77f8e667709ce03ac4a8a` for the complete covered-file set. Current focused runs passed across the execution grammar, frozen legacy bytes, interpreter call-edge and refusal paths, peer independence and fault controls, native preflight boundaries and event emission, serialized Schema 2 admission, four-tier diamond and collision negative control, comparator behavior, and CI package-ownership pins. The requester reported `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...` passed. The five Phase 15 requirements remain complete; the completed 12/12 automated UAT was preserved unchanged.
 
 ### Advisory (New Scope, Unevidenced)
 
@@ -176,5 +176,5 @@ The implementation truths, including the four-tier diamond, caller-owned causal 
 
 ---
 
-_Verified: 2026-09-25T21:02:07Z_
+_Verified: 2026-09-26T16:49:04Z_
 _Verifier: the agent (gsd-verifier)_

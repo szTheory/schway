@@ -2,17 +2,17 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 15
-current_phase_name: Event Identity (`lang.execution/2`)
-status: executing
-stopped_at: Phase 18 complete; Phase 15 stale verification is the earliest open gate
-last_updated: "2026-09-26T16:19:42.543Z"
+current_phase: 16
+current_phase_name: Branch/Match Emitter Port
+status: Verification fingerprint stale; all Phase 16 implementation plans are complete
+stopped_at: Phase 15 verification refreshed; Phase 16 stale verification is the earliest open gate
+last_updated: "2026-09-26T16:58:54.925Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 18 complete; init.progress routes next to refresh Phase 15 verification
-state_head: 939c120dcae0c731ce7230a743444c146a27a6c9
+last_activity_desc: Phase 15 verifier refreshed; Phase 16 stale verification is next
+state_head: 62db68918b0a6aef1bd75c9e8264811b2c622681
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 7
   total_plans: 89
   completed_plans: 89
 ---
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 18 — Branch on a Computed Value
+**Current focus:** Phase 16 — Branch/Match Emitter Port
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -84,26 +84,22 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 15 — Event Identity (`lang.execution/2`)
-Plan: 10 of 10 complete
-Total Plans in Phase: 10
-Status: Implementation complete; verification fingerprint is stale
-Last activity: 2026-09-26 — Phase 18 complete; progress routes to Phase 15 verification
+Phase: 16 — Branch/Match Emitter Port
+Plan: 26 of 26 complete
+Total Plans in Phase: 26
+Status: Verification fingerprint stale; all Phase 16 implementation plans are complete
+Last activity: 2026-09-26 — Phase 15 verifier refreshed; Phase 16 stale verification is next
 
-Phase 18 is verified complete. `init.progress` routes first to Phase 15 because
-the verification reports for Phases 15, 16, 19, and 21 are stale; Phase 15 has
-10/10 plans and no incomplete plans. Resume with `$gsd-execute-phase 15` to
-refresh its verification while preserving completed UAT, then re-query progress.
+Phase 15 verification was refreshed on 2026-09-26: all 7 must-haves passed,
+and its 12/12 automated UAT remains unchanged. The full Go suite passed during
+the execute-phase regression gate.
 
-Phase 18 is verified complete: all 10 plan summaries exist, its UAT remains
-16/16 complete and untouched, and the refreshed verifier passed 30/30 truths.
-The full Go suite passed after the final source and substantive traceability
-changes. `init.progress` now identifies Phase 15 as the earliest outstanding
-gate because its verifier is stale; Phases 16, 19, and 21 also have stale
-verifier reports. Phase 15 has 10/10 plan summaries and no incomplete plans.
-Resume with `$gsd-execute-phase 15` to refresh that report while preserving
-completed UAT, then re-query progress. Phase 21 remains under M004, after
-M003's Phases 14-20.
+`init.progress` now routes to Phase 16 because its verification fingerprint is
+stale. Phase 16 has 26/26 summaries and no incomplete plans. Resume with
+`$gsd-execute-phase 16` to refresh its report without replaying plans or UAT.
+Phase 19 also has a stale report; Phase 21 remains under M004 after M003's
+Phases 14-20. Phase 18 remains verified complete with 10/10 plans and 30/30
+truths passed.
 
 Phase 16 closeout recorded non-blocking planning-integrity warnings about
 historical summary references and S-010 traceability. The S-010 traceability
@@ -111,7 +107,7 @@ row was added during Phase 18 closeout. The Phase 16 code review still records
 an advisory warning (WR-01) about section-scoped ownership assertions; preserve
 that item for scoped follow-up.
 
-**Next:** $gsd-execute-phase 15
+**Next:** $gsd-execute-phase 16
 
 ## M003 Phase Map
 
@@ -122,7 +118,7 @@ Phases 14-20. Structure is the ratified plan from
 | Phase | Name | Requirements | Plans (est.) | Status |
 |-------|------|--------------|--------------|--------|
 | 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
-| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Implementation complete; verification stale |
+| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete; verification passed 2026-09-26 |
 | 16 | Branch/Match Emitter Port | 2 | 26 | Implementation complete; verification stale |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
 | 18 | Branch on a Computed Value | 3 | 10 | Complete; verification passed 2026-09-26 |
@@ -721,10 +717,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T16:19:42.543Z
-Stopped at: Phase 18 complete; Phase 15 stale verification is the earliest open gate
+Last session: 2026-09-26T16:58:53Z
+Stopped at: Phase 15 verification refreshed; Phase 16 stale verification is the earliest open gate
 Resume file: None
-Next command: $gsd-execute-phase 15
+Next command: $gsd-execute-phase 16
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
