@@ -36,13 +36,13 @@
     {
       "number": "20",
       "name": "Nyquist, D-13-34, and the Frontier Fixture",
-      "status": "pending"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step (plan phase 19)",
-    "reason": "Phase 19 of 8 — needs a plan"
+    "command": "/gsd:verify-work 15 --auto",
+    "label": "Refresh Phase 15 verification; retain completed UAT",
+    "reason": "Phase 15 UAT is complete; its verification fingerprint is stale after shared planning artifacts changed"
   },
-  "updated_at": "2026-09-25T19:36:51.062Z"
+  "updated_at": "2026-09-26T03:05:07Z"
 }

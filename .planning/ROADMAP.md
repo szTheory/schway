@@ -739,7 +739,7 @@ assurance-refactor milestone rather than a feature milestone.
 | 17. Return Type ≠ Parameter Type | 9/9 | Complete    | 2026-09-22 |
 | 18. Branch on a Computed Value | 9/9 | Complete    | 2026-09-24 |
 | 19. Numeric Literals and `OpConst` | 7/7 | Complete    | 2026-09-24 |
-| 20. Nyquist, D-13-34, and the Frontier Fixture | 0/? | Not started | - |
+| 20. Nyquist, D-13-34, and the Frontier Fixture | 10/10 | Complete    | 2026-09-25 |
 
 ## Requirement Coverage
 
@@ -838,8 +838,9 @@ real finding.
 
 ### Phase 21: Native Emission Ownership and Resource Discharge (M004)
 
-**Status**: Planned owner designation only; M003 Phases 14-20 complete before
-M004 work is scheduled.
+**Status**: Complete (2026-09-26). The checked contract, legacy-emitter
+retirement, bounded LTO evidence, and debt reconciliation are executed; no
+emitter family is admitted.
 **Goal**: Design checked resource discharge and foreign-boundary ownership
 contracts required before any M003-cut emitter family can be reconsidered.
 **Owns**: D-16-11 (`emitLinearForeign`), D-16-12

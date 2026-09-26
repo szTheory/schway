@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 21
-current_phase_name: Native emission ownership and resource discharge
-status: executing
-stopped_at: Completed 21-03-PLAN.md
-last_updated: "2026-09-26T02:12:45.291Z"
+current_phase: 15
+current_phase_name: Event Identity (`lang.execution/2`)
+status: verifying
+stopped_at: Phase 21 complete; Phase 15 verification refresh is next
+last_updated: "2026-09-26T03:05:07Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 21 execution started
-state_head: 9e0bfde18b6dbc81e2f6b76e9e0ce3b5dc51c8c0
+state_head: dcb5706d015719a54967c601a237b89b3e4f4a0d
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 6
   total_plans: 88
-  completed_plans: 87
+  completed_plans: 88
+last_activity_desc: Phase 21 complete; reconciling stale prior verification fingerprints
 ---
 
 # Project State
@@ -63,16 +63,20 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 21 (Native emission ownership and resource discharge) — EXECUTING
-Plan: 4 of 4
-Total Plans in Phase: 4
-Status: Ready to execute
-Last activity: 2026-09-25 — Phase 21 execution started
-Phase 20 is verified complete; its 33-pair archive grades
-cleanly, the current open-unowned debt set is four, and the full repository
-suite passes.
+Phase: 15 — Event Identity (`lang.execution/2`)
+Plan: Verification refresh
+Total Plans in Phase: 10
+Status: Implementation and UAT complete; verification fingerprint is stale
+Last activity: 2026-09-26 — Phase 21 complete; routing reconciled
 
-**Next:** $gsd-plan-phase 21
+Phase 21's four plans, automated UAT (7/7), and goal verification (5/5) are
+complete. The full Go suite passes. The live GSD resolver identifies Phase 15
+as the earliest remaining milestone gate because its existing verification
+fingerprint is stale after later shared-artifact changes; its UAT is already
+complete. Refresh the verifier report while preserving the completed UAT, then
+follow the refreshed resolver for other stale phase reports.
+
+**Next:** $gsd-verify-work 15 --auto
 
 ## M003 Phase Map
 
@@ -147,7 +151,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 187
+- Total plans completed: 191
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -172,6 +176,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 17 | 9 | - | - |
 | 18 | 9 | - | - |
 | 19 | 7 | - | - |
+| 21 | 4 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -676,7 +681,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-26T02:12:45.033Z
-Stopped at: Completed 21-03-PLAN.md
+Stopped at: Phase 21 complete, ready to plan Phase 19
 Resume file: None
 Next command: $gsd-plan-phase 21
 
