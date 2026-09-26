@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -96,6 +97,36 @@ func TestPhase21ResourceDischargeContract(t *testing.T) {
 				t.Fatal("invalid in-memory contract mutation was accepted")
 			}
 		})
+	}
+}
+
+// TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison keeps the opt-in
+// measurement and its committed receipt discoverable from the recurring
+// suite without running Clang's multi-lane integration test on every CI job.
+func TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison(t *testing.T) {
+	testSource, err := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "session", "session_phase21_lto_evidence_test.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "21-native-emission-ownership-and-resource-discharge-m004", "21-LTO-EVIDENCE.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.lang", "emitted_c_sha256", "runtime.GOOS", "clang_version"} {
+		if !strings.Contains(string(testSource), required) {
+			t.Errorf("tagged test does not expose required Phase 21 LTO evidence field %q", required)
+		}
+	}
+	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.lang", "d096fca69195eb63b09566387690a7b40fdc9c364f55b0b4a24209a895ff6416", "darwin/arm64", "Apple clang version 21.0.0", "does not measure optimizer activity or performance", "no evidence about resource discharge", "other hosts, or other toolchains"} {
+		if !strings.Contains(string(receipt), required) {
+			t.Errorf("evidence receipt does not contain recorded Phase 21 LTO field %q", required)
+		}
+	}
+	if !strings.Contains(string(testSource), "//go:build phase21_lto_evidence") {
+		t.Fatal("LTO comparison must remain opt-in behind phase21_lto_evidence")
+	}
+	if strings.Contains(string(receipt), "proves optimizer inactivity") || strings.Contains(string(receipt), "measured optimizer activity") {
+		t.Fatal("LTO evidence receipt overstates semantic equality as optimizer evidence")
 	}
 }
 

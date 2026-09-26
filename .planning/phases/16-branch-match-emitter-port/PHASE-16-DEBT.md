@@ -25,9 +25,9 @@ the D-16-08 non-inertness evidence obligation.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Grade | Witness | Item |
 |---|---|---|---|---|---|---|---|
-| D-16-11 | 16-CONTEXT.md D-16-11; NAT-09 | NAT-09, D-16-08 | warning | P21 | DEFINED | n/a | `emitLinearForeign` is cut from M003. M004 must design resource discharge and foreign-boundary ownership before this family can enter `emitProgram`; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
-| D-16-12 | 16-05-SUMMARY.md cut-m004; D-16-07 | NAT-09, D-16-08 | warning | P21 | DEFINED | n/a | `emitLinearBorrowedByPointer` is cut from M003. M004 must provide discharge-pair semantics and required macOS/Linux evidence before reopening; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
-| D-16-13 | 16-05-SUMMARY.md cut-m004; D-16-11 | NAT-09, D-16-08 | warning | P21 | DEFINED | n/a | `emitLinearBorrowedByPointerPlain` is cut from M003. M004 must prove its shared-pointer/alias contract and discharge behavior before reopening; one-TU pure-Lang output leaves `-flto` behaviorally inert. |
+| D-16-11 | 16-CONTEXT.md D-16-11; NAT-09 | NAT-09, D-16-08 | warning | P21 | EXERCISED | probe:TestPhase21ResourceDischargeContract, probe:TestForeignLandingPadEmitterRemainsRefused, probe:TestForeignResourceLedgerEmitterRemainsRefused | `emitLinearForeign` is retired and foreign program shapes remain refused. The machine-checkable contract at `21-RESOURCE-DISCHARGE-CONTRACT.json` classifies modeled exits but admits no family and proves no runtime cleanup. Reopening still requires checked foreign discharge proof across every admitted exit and a native witness; current refusal remains. The scoped Phase 21 LTO run is semantic equality for one fixture/host, not proof of optimizer inactivity or foreign behavior. |
+| D-16-12 | 16-05-SUMMARY.md cut-m004; D-16-07 | NAT-09, D-16-08 | warning | P21 | EXERCISED | probe:TestPhase21ResourceDischargeContract, probe:TestProgramBorrowedByPointerDisposition | `emitLinearBorrowedByPointer` is retired and by-pointer program shapes remain refused. The machine-checkable contract at `21-RESOURCE-DISCHARGE-CONTRACT.json` admits no family and proves no runtime cleanup. Reopening still requires the full discharge-pair semantics plus exact-shape macOS/Linux evidence and a live refusal fence; the scoped Phase 21 LTO sample does not substitute for that evidence. |
+| D-16-13 | 16-05-SUMMARY.md cut-m004; D-16-11 | NAT-09, D-16-08 | warning | P21 | EXERCISED | probe:TestPhase21ResourceDischargeContract, probe:TestProgramBorrowedByPointerDisposition | `emitLinearBorrowedByPointerPlain` is retired and shared by-pointer program shapes remain refused. The machine-checkable contract at `21-RESOURCE-DISCHARGE-CONTRACT.json` admits no family and proves no runtime cleanup. Reopening still requires the family-specific shared-pointer alias/discharge proof, cross-host witness, and refusal fence; exclusive-family evidence cannot substitute. The scoped Phase 21 LTO sample makes no claim about this family. |
 
 ## Detail
 
@@ -46,9 +46,9 @@ witness demonstrating cleanup across every admitted foreign exit path.
 Witness: the current named refusal in `emitProgram` and NAT-09's amendment;
 there is no M003 execution witness because this family is deliberately cut.
 
-`-flto` consequence: a foreign body is refused, while every admitted pure-Lang
-program is one translation unit; `-flto` is behaviorally inert for that
-one-TU subset and this row does not claim otherwise.
+`-flto` evidence: `21-LTO-EVIDENCE.md` records semantic equality for one
+emitted multi-function fixture on Darwin arm64 with Apple Clang 21.0.0. This
+does not measure optimizer activity or establish behavior for foreign bodies.
 
 ### D-16-12 — exclusive borrowed-by-pointer bodies
 
@@ -68,9 +68,9 @@ Witness: `16-05-SUMMARY.md` records `cut-m004`, the Linux-unavailable lane,
 and the refusal-fence control; `TestProgramBorrowedByPointerDisposition` pins
 the resulting whole-program refusal.
 
-`-flto` consequence: the probe is one translation unit and cannot establish
-behaviorally non-inert LTO; pure-Lang one-TU emission remains inert evidence,
-not authorization for this pointer lowering.
+`-flto` evidence: the Phase 21 receipt is bounded to its named pure-Lang
+fixture, compiler, and host. It does not establish optimizer activity or
+authorize this pointer lowering.
 
 ### D-16-13 — shared borrowed-by-pointer plain bodies
 
@@ -89,6 +89,5 @@ Witness: Plan 16-05's `cut-m004` decision explicitly keeps every by-pointer
 family unavailable in M003; the `emitProgram` named refusal is the M003
 behavioral witness.
 
-`-flto` consequence: pure-Lang program emission is one translation unit, so
-the current `-flto` lane is behaviorally inert and does not prove a future
-shared-pointer optimization or close D-16-08.
+`-flto` evidence: the Phase 21 receipt does not test this family and does not
+prove optimizer activity or close D-16-08.

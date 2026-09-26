@@ -39,7 +39,7 @@ was never run. See the Notes section at the end of this file.
 
 | ID | Source | Threat/Req | Severity | Landing phase | Grade | Witness | Item |
 |---|---|---|---|---|---|---|---|
-| D-11-02 | 11-CONTEXT.md (D-11-02), RE-DEFERRED 2026-09-12 (D-12-36, `12-01-SUMMARY.md`); residual ownership reconciled in Phase 20 | NAT-04..NAT-07 | info | P21 | WIRED | probe:TestSupersededEmitterDefinitionsRemoved | Phase 16 removed the old `emitLinear`, `emitBranch`, and `emitMatch` definitions from the public production path. The three retained legacy implementations (`emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, `emitLinearForeign`) remain refusal-only and are explicitly owned by Phase 21 as D-16-11..13; this row tracks the residual emitter retirement/convergence work, not a claim that all six definitions were deleted. |
+| D-11-02 | 11-CONTEXT.md (D-11-02), RE-DEFERRED 2026-09-12 (D-12-36, `12-01-SUMMARY.md`); residual ownership reconciled in Phase 20 | NAT-04..NAT-07 | info | P21 | EXERCISED | probe:TestPhase21LegacyEmitterBodiesRetired | Phase 16 retired the old `emitLinear`, `emitBranch`, and `emitMatch` definitions from the public production path; Phase 21 commit `3204db7` retired the three residual private bodies `emitLinearBorrowedByPointer`, `emitLinearBorrowedByPointerPlain`, and `emitLinearForeign`. The executed AST probe pins their absence and both public dispatchers' sole `emitProgram` path. Family admission remains refused at the whole-program boundary under D-16-11..13; public foreign manifest utilities remain separate. |
 | D-11-07 | 11-CONTEXT.md (D-11-07) | NAT-04, FFI-01 | warning | P11 | DEFINED | n/a | `singleForeignFunction` AND `singleManifestFunction` STAY SINGLE-FUNCTION AND GENERALIZE BY REFUSING a program with two foreign contracts, rather than being rewritten to support multiple. `lang.foreign/0` is NOT widened. These are single-function assumptions the phase's own `len(Functions) != 1` grep inventory does not catch, since they gate on foreign-contract count, not function count |
 | D-11-11 | 11-CONTEXT.md (D-11-11) | NAT-05 | info | UNOWNED(emittedattribute-discharge-pair-design) | DEFINED | n/a | THE `EmittedAttribute` DISCHARGE-PAIR DESIGN IS DESIGNED AND RECORDED, NOT BUILT. Callee-side `justified_by` plus caller-side `discharged_by`, refused on EQUALITY (never containment), is a complete design this phase writes down but does not implement, because Phase 11 emits zero call-boundary alias attributes by construction (D-11-09) |
 | D-11-12 | 11-CONTEXT.md (D-11-12) | NAT-05 | info | UNOWNED(sidecar-schema-verdict-design) | DEFINED | n/a | THE SIDECAR-NORMATIVE-PLUS-INLINE-COMMENT CHANNEL, WITH THE `lang.attributes/0` SCHEMA VERDICT, IS DESIGNED AND RECORDED, NOT BUILT. Companion to D-11-11: the channel a discharge pair would be published through is specified, not shipped, for the same reason (zero attributes to discharge this phase) |
@@ -116,7 +116,7 @@ run through that retroactive security review.
 
 ## Detail
 
-### D-11-02 — the six single-function emitters are not deleted this phase
+### D-11-02 — residual private emitter bodies retired in Phase 21; families remain refused
 
 first-recorded: M002
 
@@ -177,6 +177,14 @@ inside a multi-function program. The other fifteen rows in this file are
 `DEFINED`/`n/a` (decisions recorded and designed but not built, or
 carry-forward inputs — no executed claim beyond their own existence, per
 D-14-03's floor semantics).
+
+**2026-09-26 — Phase 21 closure of residual private bodies.** Commit
+`3204db7` removes the three unreachable foreign/by-pointer lowering bodies and
+their private-only helpers. `probe:TestPhase21LegacyEmitterBodiesRetired`
+passes and pins those declarations absent while both public emitter APIs keep
+`emitProgram` as their sole lowering route. This closes the residual source
+liability only: the whole-program emitter still refuses foreign and by-pointer
+program shapes, and the separate foreign manifest utilities remain available.
 
 **2026-09-25 — Phase 20 residual ownership reconciliation.** Phase 16's
 `TestSupersededEmitterDefinitionsRemoved` confirms that `emitLinear`,

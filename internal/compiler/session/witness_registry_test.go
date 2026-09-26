@@ -828,11 +828,12 @@ func scanSuppressionSurfaces(root string) ([]suppressionSite, error) {
 // citation that resolves under the EVD-04 witness grammar
 // (suppressionCitationsResolve) on the same //go:build line.
 var buildConstraintAllowlist = map[string]string{
-	"darwin": "AGENTS.md names macOS as an initial host priority",
-	"linux":  "AGENTS.md names Linux as an initial host priority",
-	"amd64":  "portable GOARCH target this project builds for",
-	"arm64":  "portable GOARCH target this project builds for (current Apple host)",
-	"cgo":    "Go's own cgo build tag, not a portability decision",
+	"darwin":               "AGENTS.md names macOS as an initial host priority",
+	"linux":                "AGENTS.md names Linux as an initial host priority",
+	"amd64":                "portable GOARCH target this project builds for",
+	"arm64":                "portable GOARCH target this project builds for (current Apple host)",
+	"cgo":                  "Go's own cgo build tag, not a portability decision",
+	"phase21_lto_evidence": "D-21-03: opt-in one-shot compiler evidence; see the Phase 21 receipt",
 }
 
 // buildConstraintTerms splits a //go:build constraint line into its bare
