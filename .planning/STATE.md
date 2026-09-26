@@ -5,11 +5,11 @@ milestone_name: Computation and Honest Instruments
 current_phase: 18
 current_phase_name: Branch on a Computed Value
 status: executing
-stopped_at: Completed 18-10-PLAN.md
-last_updated: "2026-09-26T15:00:47.555Z"
+stopped_at: Completed quick task 260926-ffr
+last_updated: "2026-09-26T15:13:38.215Z"
 last_activity: 2026-09-26
-last_activity_desc: Completed Phase 18 Plan 10 implementation
-state_head: 7be22ab6852e44d17b9058c0eb7177a8e4e26f07
+last_activity_desc: Completed quick task 260926-ffr: Ensure Phase 18 payload mutation seams restore after runner failure
+state_head: fe92bc3a2a103fe8bd33e1a15a2f7de36bd0a8b9
 progress:
   total_phases: 8
   completed_phases: 7
@@ -88,7 +88,7 @@ Phase: 18 (Branch on a Computed Value) — EXECUTING
 Plan: 10 of 10
 Total Plans in Phase: 10
 Status: Plans complete; phase verification remains
-Last activity: 2026-09-26 — Completed quick task 260926-ewj: Fix Phase 18 regression gate failures
+Last activity: 2026-09-26 — Completed quick task 260926-ffr: Ensure Phase 18 payload mutation seams restore after runner failure
 
 Phase 16 is complete: all 26 plans are summarized, the existing 21/21
 automated UAT remains complete and untouched, the refreshed verifier passed
@@ -705,6 +705,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 10 | Refresh stale Phase 15 and 19 verification and route GSD to Phase 21 | 2026-09-25 | 0124de9 | passed | — |
 | 260926-bkj | Refresh Phase 15 evidence, repair CI planning guards, and record shift-left/no-loop defaults | 2026-09-26 | — | passed | [260926-bkj-close-the-ci-planning-integrity-findings](./quick/260926-bkj-close-the-ci-planning-integrity-findings/) |
 | 260926-ewj | Fix Phase 18 regression gate failures: preserve schema-1 emitter bytes and refresh corpus snapshot | 2026-09-26 | 7be22ab | passed | [260926-ewj-fix-phase-18-regression-gate-failures-pr](./quick/260926-ewj-fix-phase-18-regression-gate-failures-pr/) |
+| 260926-ffr | Ensure Phase 18 payload mutation seams restore after runner failure | 2026-09-26 | fe92bc3 | passed | [260926-ffr-ensure-phase-18-payload-mutation-seams-r](./quick/260926-ffr-ensure-phase-18-payload-mutation-seams-r/) |
 
 ## Deferred Items
 
