@@ -6,9 +6,9 @@ current_phase: 20
 current_phase_name: Nyquist, D-13-34, and the Frontier Fixture
 status: M003 phases complete; milestone audit pending
 stopped_at: M003 Phases 14–20 verified complete; ready for milestone audit
-last_updated: "2026-09-26T18:32:07Z"
+last_updated: "2026-09-26T18:36:14Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 19 verification refreshed; M003 closeout ready
+last_activity_desc: Phase 16 fingerprint refreshed after roadmap correction; M003 closeout ready
 state_head: 3bfa11d3b1ce8f704dfd07259abec3cd900b5683
 progress:
   total_phases: 7
@@ -88,7 +88,7 @@ hiding runtime costs.
 Phase: M003 — Computation and Honest Instruments
 Plans: 85/85 complete across Phases 14–20
 Status: All phase verifications pass; milestone audit pending
-Last activity: 2026-09-26 — Phase 19 verification refreshed; M003 ready for audit
+Last activity: 2026-09-26 — Phase 16 fingerprint refreshed; M003 ready for audit
 
 Phases 14–20 are the complete M003 scope. Phase 16, Phase 19, and Phase 20
 verification reports all pass GSD's canonical fingerprint check; Phase 19 UAT
@@ -713,7 +713,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T18:32:07Z
+Last session: 2026-09-26T18:36:14Z
 Stopped at: M003 Phases 14–20 verified complete; milestone audit pending
 Resume file: None
 Next command: $gsd-audit-milestone M003

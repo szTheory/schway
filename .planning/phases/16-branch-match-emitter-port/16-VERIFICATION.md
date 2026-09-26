@@ -1,6 +1,6 @@
 ---
 phase: 16-branch-match-emitter-port
-verified: 2026-09-26T18:26:40Z
+verified: 2026-09-26T18:36:14Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
@@ -126,7 +126,7 @@ covered_files:
   - testdata/phase16/restrict_readonly_probe.c
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
-covered_digest: "v1:sha256:5d9e60a42636a8aa5221c150d9f863702a37fb9fab67e825d755b0626e6c826e"
+covered_digest: "v1:sha256:4c2c4f9908d309fd7ab8bea245dd451a1d00fc41d504514b78d30a8da1696ee8"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -146,11 +146,11 @@ decision_coverage:
 
 **Phase Goal:** One emission law lowers every admissible program, instead of two laws split by a function-count guard.
 
-**Verified:** 2026-09-26T18:26:40Z
+**Verified:** 2026-09-26T18:36:14Z
 
 **Status:** passed
 
-**Re-verification:** Yes — refreshed the stale verification using current code and targeted acceptance tests. The prior report had no gaps, so this was a fresh goal-backward review rather than gap-closure-only verification.
+**Re-verification:** Yes — refreshed the fingerprint after the M003 roadmap status correction. The latest full Go suite and existing acceptance evidence were reused because only planning documents changed after that run.
 
 ## Goal Achievement
 
@@ -245,6 +245,6 @@ None. The by-pointer scope decision is already recorded in UAT item 5 as `cut-m0
 
 No must-have gaps remain. The shared emitter is the only public emission law, the admissible-shape convergence and golden provenance checks pass, and NAT-09's three families have explicit M004 ownership and refusal fences. The full Go suite passed against the current tree. `16-UAT.md` remains unchanged at its completed 21/21 automated checks.
 
-_Verified: 2026-09-26T18:26:40Z_
+_Verified: 2026-09-26T18:36:14Z_
 
 _Verifier: the agent (gsd-verifier)_
