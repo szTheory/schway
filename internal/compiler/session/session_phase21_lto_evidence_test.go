@@ -3,6 +3,7 @@
 package session_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -24,11 +26,17 @@ func TestPhase21EmittedMultiFunctionLTOComparison(t *testing.T) {
 	if err != nil {
 		t.Fatalf("find clang: %v", err)
 	}
-	versionOutput, err := exec.Command(clangPath, "--version").CombinedOutput()
+	versionContext, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var versionOutput boundedVersionOutput
+	versionCommand := exec.CommandContext(versionContext, clangPath, "--version")
+	versionCommand.Stdout = &versionOutput
+	versionCommand.Stderr = &versionOutput
+	err = versionCommand.Run()
 	if err != nil {
-		t.Fatalf("clang --version: %v: %s", err, versionOutput)
+		t.Fatalf("clang --version: %v: %s", err, versionOutput.String())
 	}
-	version := strings.SplitN(strings.TrimSpace(string(versionOutput)), "\n", 2)[0]
+	version := strings.SplitN(strings.TrimSpace(versionOutput.String()), "\n", 2)[0]
 	program, entryName := phase16CheckedFixture(t, fixture)
 	if len(program.Functions) < 2 {
 		t.Fatalf("fixture must be multi-function, got %d functions", len(program.Functions))
@@ -57,4 +65,14 @@ func TestPhase21EmittedMultiFunctionLTOComparison(t *testing.T) {
 	digest := sha256.Sum256([]byte(emittedC))
 	fmt.Printf("Phase 21 emitted multi-function semantic comparison: fixture=%s fixture_sha256=%x emitted_c_sha256=%x host=%s/%s clang_path=%s clang_version=%q common_flags=[-std=c17,-Wall,-Wextra,-Werror,-pedantic] lanes=[interpreter,-O0,-O3,-O3 -flto] comparator=all-pairs-semantic-equality\n",
 		fixture, sha256.Sum256(fixtureBytes), digest, runtime.GOOS, runtime.GOARCH, clangPath, version)
+}
+
+type boundedVersionOutput struct{ bytes.Buffer }
+
+func (b *boundedVersionOutput) Write(p []byte) (int, error) {
+	const maxVersionOutput = 4096
+	if b.Len()+len(p) > maxVersionOutput {
+		return 0, fmt.Errorf("clang version output exceeded %d bytes", maxVersionOutput)
+	}
+	return b.Buffer.Write(p)
 }
