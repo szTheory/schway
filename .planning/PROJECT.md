@@ -72,14 +72,14 @@ recorded here were wrong and are restated below):
   `use_matching_argument` was withdrawn empirically, its repair byte-identical
   to the original on every real trigger. See `PHASE-13-DEBT.md` D-13-10a. This
   one *does* close when the invariant lifts.
-- **`-flto` is structurally inert on every cgen-emitted multi-function
-  program** — one translation unit, no `restrict`, foreign refused. Both live
-  non-inertness proofs are non-multi-function: `TestLTOTierIsNotInert` uses a
-  single-function foreign fixture, and NAT-07's composition-only control is
-  hand-written C explicitly not emitted by cgen (D-11-24). D-11-25 names this
-  only in a test doc comment — it has **no debt row** and is **not** among the
-  ten unowned items — while this document's NAT-07 bullet previously read as
-  though the proof covered the interprocedural corpus. It does not.
+- **LTO evidence is scoped.** `emitProgram` produces one translation unit
+  without `restrict` and refuses foreign/by-pointer program shapes. The
+  opt-in Phase 21 comparison found semantic equality across interpreter,
+  `-O0`, `-O3`, and `-O3 -flto` for one emitted multi-function fixture on
+  Darwin arm64 with Apple Clang 21.0.0; see D-14-45 and
+  `21-LTO-EVIDENCE.md`. This is not evidence about optimizer activity,
+  performance, cleanup, or other hosts/toolchains. NAT-07's composition
+  control remains hand-written C, not emitted by `cgen` (D-11-24).
 - **Nyquist validation is partial, and "cheap to close" was only half true** —
   Phases 12 and 13 are literal frontmatter flips; Phase 07 is roughly an hour.
   But Phase 11 has six or more command cells elided with `…` and therefore

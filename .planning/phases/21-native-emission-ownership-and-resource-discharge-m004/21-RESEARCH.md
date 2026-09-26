@@ -51,7 +51,7 @@ The repository already has one whole-program C emission law, refuses foreign and
 
 | Concern | Existing stack/pattern | Use in Phase 21 |
 |---------|-----------------------|-----------------|
-| Implementation and tests | Go 1.24, standard library, `go test` | No new dependencies. |
+| Implementation and tests | Go 1.24 standard library and Go testing package | No new dependencies. |
 | Native compiler | Installed Clang, C17 emission | Record exact compiler and host for the scoped comparison. |
 | Program behavior comparator | Existing schema-2 semantic comparator and independent controls | Reuse; do not fork or duplicate it. |
 | CI | `.github/workflows/ci.yml`, full tests on `ubuntu-latest` and `macos-latest` | Put only the cheap structural guard in recurring CI; existing full test lanes are already recurring. |
@@ -108,7 +108,7 @@ Both public `cgen.Emit` and `cgen.EmitNative` validate the program and route to 
 
 | Layer | Purpose | Candidate command | Recurring? |
 |-------|---------|-------------------|------------|
-| Focused contract validator | Reject malformed, incomplete, or unsupported exit/discharge cases; include a mutation control | `go test ./internal/compiler/session -run 'TestPhase21.*(Contract|Discharge)' -count=1` | Yes, through existing full-suite CI on macOS/Linux |
+| Focused contract validator | Reject malformed, incomplete, or unsupported exit/discharge cases; include a mutation control | `go test ./internal/compiler/session -run '^TestPhase21ResourceDischargeContract$' -count=1` | Yes, through existing full-suite CI on macOS/Linux |
 | Scoped emitted fixture comparison | Execute one real multi-function emitted fixture at `-O3` and `-O3 -flto`; reuse comparator and controls; record provenance | A named focused test or phase-specific command finalized by the planner after confirming the existing harness | One scoped evidence run, not a new recurring matrix |
 | Refusal regression | Keep cut foreign/by-pointer families refused through the existing whole-program admission boundary | `go test ./internal/compiler/cgen -run 'TestProgramBorrowedByPointerDisposition|TestUnsupportedProgramShapePrecedesSchema2Preflight' -count=1` | Yes, via full-suite CI |
 | Full phase preflight | Ensure all compiler/session tests remain green | `go test ./... -count=1` | Existing CI runs full suite; no duplicate job required |

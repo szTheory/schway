@@ -46,7 +46,7 @@ witness demonstrating cleanup across every admitted foreign exit path.
 Witness: the current named refusal in `emitProgram` and NAT-09's amendment;
 there is no M003 execution witness because this family is deliberately cut.
 
-`-flto` evidence: `21-LTO-EVIDENCE.md` records semantic equality for one
+`-flto` consequence: `21-LTO-EVIDENCE.md` records semantic equality for one
 emitted multi-function fixture on Darwin arm64 with Apple Clang 21.0.0. This
 does not measure optimizer activity or establish behavior for foreign bodies.
 
@@ -68,7 +68,7 @@ Witness: `16-05-SUMMARY.md` records `cut-m004`, the Linux-unavailable lane,
 and the refusal-fence control; `TestProgramBorrowedByPointerDisposition` pins
 the resulting whole-program refusal.
 
-`-flto` evidence: the Phase 21 receipt is bounded to its named pure-Lang
+`-flto` consequence: the Phase 21 receipt is bounded to its named pure-Lang
 fixture, compiler, and host. It does not establish optimizer activity or
 authorize this pointer lowering.
 
@@ -89,5 +89,5 @@ Witness: Plan 16-05's `cut-m004` decision explicitly keeps every by-pointer
 family unavailable in M003; the `emitProgram` named refusal is the M003
 behavioral witness.
 
-`-flto` evidence: the Phase 21 receipt does not test this family and does not
+`-flto` consequence: the Phase 21 receipt does not test this family and does not
 prove optimizer activity or close D-16-08.
