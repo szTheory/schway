@@ -5,16 +5,16 @@ milestone_name: Computation and Honest Instruments
 current_phase: 21
 current_phase_name: Native emission ownership and resource discharge
 status: executing
-stopped_at: Completed 21-02-PLAN.md
-last_updated: "2026-09-26T02:09:35.218Z"
+stopped_at: Completed 21-03-PLAN.md
+last_updated: "2026-09-26T02:12:45.291Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 21 execution started
-state_head: 681074d0338b909f4653292b5fbe9d2a7f331dec
+state_head: 9e0bfde18b6dbc81e2f6b76e9e0ce3b5dc51c8c0
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 88
-  completed_plans: 86
+  completed_plans: 87
 ---
 
 # Project State
@@ -64,7 +64,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 21 (Native emission ownership and resource discharge) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Total Plans in Phase: 4
 Status: Ready to execute
 Last activity: 2026-09-25 — Phase 21 execution started
@@ -341,6 +341,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 18 P09 | 63min | 2 tasks | 12 files |
 | Phase 21 P01 | 4min | 2 tasks | 2 files |
 | Phase 21 P02 | 11 | 2 tasks | 10 files |
+| Phase 21 P03 | 10 | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -512,6 +513,8 @@ Standing architectural commitments carried into M002:
 - [Phase 21]: Phase 21 Plan 01: exit and discharge rules are machine-checkable; contract structure does not admit emitters or prove runtime cleanup.
 - [Phase 21]: Retire unreachable program-lowering bodies and their exclusive helpers while retaining metadata/classification APIs and all refusal boundaries.
 - [Phase 21]: Treat archived foreign and by-pointer fixtures as historical evidence, not proof of current emitted behavior.
+- [Phase 21]: Use the existing Phase 14 multi-function fixture and run direct emitProgram output through the shared interpreter/-O0/-O3/-O3 -flto comparator.
+- [Phase 21]: Keep compiler measurement opt-in; behavioral equality does not prove optimizer activity, performance, cleanup, or other hosts/toolchains.
 
 ### Pending Todos
 
@@ -672,8 +675,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T02:09:34.945Z
-Stopped at: Completed 21-02-PLAN.md
+Last session: 2026-09-26T02:12:45.033Z
+Stopped at: Completed 21-03-PLAN.md
 Resume file: None
 Next command: $gsd-plan-phase 21
 
