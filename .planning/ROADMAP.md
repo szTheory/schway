@@ -123,11 +123,11 @@ in M004. It does **not** get added to M003 as a P21/P22 — that would make an
 
 - [x] **Phase 14: Evidence Instrument and Honest Scoping** - The instruments stop reporting green for work that is merely wired.
 - [x] **Phase 15: Event Identity (`lang.execution/2`)** - Two activations of the same callee through a shared-leaf diamond become distinguishable. (verified complete) (completed 2026-09-26)
-- [x] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut. (implementation complete; verification stale) (completed 2026-09-25)
+- [x] **Phase 16: Branch/Match Emitter Port** - One emission law lowers every admissible program; three emitters die, three are formally cut. (verified complete; verification refreshed 2026-09-26) (completed 2026-09-25)
 - [x] **Phase 17: Return Type ≠ Parameter Type** - A function may return a type it was not given. (completed 2026-09-22)
 - [x] **Phase 18: Branch on a Computed Value** - A branch discriminates a value the function computed. **HARD-GATED on spike S-010.** (verified complete) (completed 2026-09-25)
-- [ ] **Phase 19: Numeric Literals and `OpConst`** - Lang can name a value it was not given. (implementation complete; verification stale)
-- [x] **Phase 20: Nyquist, D-13-34, and the Frontier Fixture** - The measuring corpus reconciles against the new surface and the refusal frontier is pinned as moved.
+- [x] **Phase 19: Numeric Literals and `OpConst`** - Lang can name a value it was not given. (verified complete; verification refreshed 2026-09-26) (completed 2026-09-26)
+- [x] **Phase 20: Nyquist, D-13-34, and the Frontier Fixture** - The measuring corpus reconciles against the new surface and the refusal frontier is pinned as moved. (verified complete 2026-09-26)
 
 ## Phase Details
 

@@ -1,6 +1,6 @@
 ---
 phase: 19-numeric-literals-and-opconst
-verified: 2026-09-25T21:20:22Z
+verified: 2026-09-26T18:13:59Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
@@ -20,10 +20,21 @@ covered_files:
   - .planning/phases/19-numeric-literals-and-opconst/19-06-SUMMARY.md
   - .planning/phases/19-numeric-literals-and-opconst/19-07-PLAN.md
   - .planning/phases/19-numeric-literals-and-opconst/19-07-SUMMARY.md
+  - .planning/phases/19-numeric-literals-and-opconst/19-CONTEXT.md
+  - .planning/phases/19-numeric-literals-and-opconst/19-DISCUSSION-LOG.md
+  - .planning/phases/19-numeric-literals-and-opconst/19-PATTERNS.md
+  - .planning/phases/19-numeric-literals-and-opconst/19-RESEARCH.md
   - .planning/phases/19-numeric-literals-and-opconst/19-REVIEW.md
+  - .planning/phases/19-numeric-literals-and-opconst/19-SCALAR-GATE.md
   - .planning/phases/19-numeric-literals-and-opconst/19-SCALAR-REVIEW.md
+  - .planning/phases/19-numeric-literals-and-opconst/19-SECURITY.md
+  - .planning/phases/19-numeric-literals-and-opconst/19-UAT.md
   - .planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md
+  - internal/compiler/ability/ability.go
+  - internal/compiler/ability/ability_test.go
+  - internal/compiler/ast/ast.go
   - internal/compiler/cgen/cgen.go
+  - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
   - internal/compiler/check/check.go
   - internal/compiler/check/check_phase19_test.go
@@ -41,15 +52,25 @@ covered_files:
   - internal/compiler/session/session_phase19_test.go
   - internal/compiler/session/session_phase7.go
   - internal/compiler/session/session_phase7_mutation_test.go
-  - internal/compiler/session/verification_groundedness_test.go
+  - internal/compiler/session/session_payload_replay_test.go
+  - internal/compiler/session/session_phase11_differential_test.go
+  - internal/compiler/syntax/format.go
+  - internal/compiler/syntax/lexer.go
   - internal/compiler/syntax/parser.go
   - internal/compiler/syntax/parser_phase19_test.go
   - internal/compiler/syntax/syntax_test.go
+  - internal/compiler/syntax/token.go
   - testdata/phase16/public-emitter-consumers.json
+  - testdata/phase19/literal_malformed.lang
+  - testdata/phase19/literal_overflow.lang
   - testdata/phase19/literal_tracer.lang
-covered_digest: "v1:sha256:552d2deb13489e5453cb180105bb0630f75a4ee13ade5b2d807344c5eca9eb55"
+covered_digest: "v1:sha256:58709dbab791e285c5f8534b0ae52978b2f45e33b6cd93790e3671e310b9e728"
 behavior_unverified: 0
 overrides_applied: 0
+decision_coverage:
+  honored: 5
+  total: 5
+  not_honored: []
 re_verification:
   previous_status: passed
   previous_score: 4/4
@@ -61,9 +82,9 @@ re_verification:
 # Phase 19: Numeric Literals and `OpConst` Verification Report
 
 **Phase Goal:** Lang can name a value it was not given — the first value the language creates rather than moves.
-**Verified:** 2026-09-25T21:20:22Z
+**Verified:** 2026-09-26T18:13:59Z
 **Status:** passed
-**Re-verification:** Yes — refreshed the stale fingerprint; no prior gaps were open.
+**Re-verification:** Yes — refreshed against current shared compiler files and planning evidence; no prior gaps were open.
 
 ## Goal Achievement
 
@@ -109,8 +130,7 @@ re_verification:
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Phase 19 implementation and evidence tests | `GOCACHE=/private/tmp/ai-lang-gocache go test ./internal/compiler/syntax ./internal/compiler/check ./internal/compiler/core ./internal/compiler/corevalidate ./internal/compiler/interp ./internal/compiler/pathoracle ./internal/compiler/originvalidate ./internal/compiler/cgen ./internal/compiler/session -run 'TestPhase19|TestAllOperationKinds(Registered|HandledAtEverySite)|TestPayloadCorpusCharacterizationReplay|TestPreviousPhaseGoldenCUnchanged|TestPhase16GoldenChangeLedger' -count=1` | Re-run during fingerprint refresh; all nine packages passed (session 5.727s). Covers literal parsing/checking/interpreter/native execution, four-tier comparison, and scalar/golden evidence. | PASS |
-| Both exhaustive-dispatch mutation controls | `GOCACHE=/private/tmp/ai-lang-gocache go test ./internal/compiler/core ./internal/compiler/session -run 'TestPhase7DispatchControlsMutationKilled|TestPhase7DispatchControlsMutationKilledPhase07Lane' -count=1` | Both packages passed; the in-process and CLI-observable controls reject seeded dispatch omissions. | PASS |
+| Cross-phase regression gate and Phase 19 evidence | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...` | Passed all packages against the current tree; session completed in 184.816s. Includes Phase 19 syntax/checking, independent peers, interpreter/native execution, dispatch mutation controls, four-tier comparison, scalar replay, and frozen baselines. | PASS |
 
 ### Probe Execution
 
@@ -128,7 +148,21 @@ No additional Phase 19 requirement mappings were orphaned.
 
 ### Decision Coverage
 
-All five trackable `19-CONTEXT.md` decisions are honored by shipped artifacts (`check.decision-coverage-verify`, non-blocking gate).
+All five trackable `19-CONTEXT.md` decisions are honored by shipped artifacts (`check.decision-coverage-verify`, non-blocking gate). Structured result: `honored: 5`, `total: 5`, `not_honored: []`.
+
+### Test Quality Audit
+
+| Test Files | Linked Requirements | Active | Circular | Assertion Level | Verdict |
+|---|---|---:|---:|---|---|
+| `syntax/parser_phase19_test.go`, `syntax/syntax_test.go`, `check/check_phase19_test.go`, `ability/ability_test.go` | VAL-01 | Yes | No | Value and diagnostic-span assertions | PASS |
+| `corevalidate/corevalidate_phase19_test.go`, `pathoracle/pathoracle_test.go`, `originvalidate/originvalidate_test.go`, `core/core_test.go` | VAL-02 | Yes | No | Forged-fact and operation-consumer behavior | PASS |
+| `interp/interp_phase19_test.go`, `cgen/cgen_program_test.go`, `session/session_phase19_test.go`, `session/session_payload_replay_test.go` | VAL-01, VAL-03 | Yes | No | Exact outputs, negative control, four-tier behavior | PASS |
+
+**Disabled tests on requirements:** 0 → PASS
+
+**Circular patterns detected:** 0 → PASS
+
+**Insufficient assertions:** 0 → PASS
 
 ### Anti-Patterns Found
 
@@ -138,17 +172,17 @@ All five trackable `19-CONTEXT.md` decisions are honored by shipped artifacts (`
 
 ### Human Verification Required
 
-None. Phase validation states all behaviors have automated verification, and the scalar/frozen-C review found no golden movement requiring intent review.
+N/A — compiler infrastructure phase with no subjective user-facing behavior. All acceptance criteria are exercised by automated tests; scalar and frozen-C baselines show no unexplained movement.
 
 ### Gaps Summary
 
-No goal gaps remain. The four roadmap truths and VAL-01 through VAL-03 are supported by implementation evidence and passing focused behavioral tests. The full repository suite is reported as passing after the regression fixes.
+No goal gaps remain. The four roadmap truths and VAL-01 through VAL-03 are supported by current implementation evidence and the passing full Go suite. The Nyquist map covers all 14 plan tasks, and security verification closed all 14 declared threats.
 
 ---
 
-_Verified: 2026-09-25T21:20:22Z_
-_Verifier: the agent (gsd-verifier)_
+_Verified: 2026-09-26T18:13:59Z_
+_Verifier: Codex (gsd-verifier workflow)_
 
 ### Advisory (New Scope, Unevidenced)
 
-Not applicable: this was an initial verification, not a re-verification.
+No new-scope blocker findings. The existing Phase 19 code review remains `issues_found` with two advisory input-parsing findings (uppercase radix prefixes and leading-plus U64 input); they are documented in `19-REVIEW.md` and do not invalidate the literal goal truths or the passing required behaviors.

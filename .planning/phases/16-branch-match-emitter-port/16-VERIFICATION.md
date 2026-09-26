@@ -1,6 +1,6 @@
 ---
 phase: 16-branch-match-emitter-port
-verified: 2026-09-26T17:25:30Z
+verified: 2026-09-26T18:26:40Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
@@ -126,7 +126,7 @@ covered_files:
   - testdata/phase16/restrict_readonly_probe.c
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
-covered_digest: "v1:sha256:38cad106ebf62f64e747b9f00f0c548cdf86c951bb3cea27ba7464e6222e953a"
+covered_digest: "v1:sha256:5d9e60a42636a8aa5221c150d9f863702a37fb9fab67e825d755b0626e6c826e"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -135,7 +135,7 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  refresh_reason: "Fresh goal-backward verification, targeted acceptance tests, and complete covered-file fingerprint refresh."
+  refresh_reason: "Rechecked current shared emitter behavior with the full passing workspace suite and refreshed the complete covered-file fingerprint."
 decision_coverage:
   honored: 11
   total: 11
@@ -146,7 +146,7 @@ decision_coverage:
 
 **Phase Goal:** One emission law lowers every admissible program, instead of two laws split by a function-count guard.
 
-**Verified:** 2026-09-26T17:25:30Z
+**Verified:** 2026-09-26T18:26:40Z
 
 **Status:** passed
 
@@ -197,7 +197,7 @@ decision_coverage:
 | --- | --- | --- | --- |
 | Emitter retirement, public dispatch, convergence, golden ledger, previous golden immutability, and derived resources | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^(TestSupersededEmitterDefinitionsRemoved|TestPublicDispatchUsesOnlyEmitProgram|TestN1ConvergenceDifferential|TestPhase16GoldenChangeLedger|TestPreviousPhaseGoldenCUnchanged|TestProgramLiveResourcesAreDerived)$' -count=1` | `ok`, exit 0 | ✓ PASS |
 | NAT-09 ownership, debt structure, groundedness, independent four-tier comparison, production refusal, and bypass mutation | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase16EmitterCutsAreAmendedAndOwned|TestDebtRegistersAreWellFormed|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty|TestPhase16DirectProgramFourTierDifferential|TestPhase16ProductionPathsPreserveM004Refusal|TestPhase16ProductionBypassMutationIsKilled)$' -count=1` | `ok`, exit 0 | ✓ PASS |
-| Full workspace regression | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...` | Canonical current-tree run reported passed by the orchestrator; not rerun during this report refresh | ✓ PASS |
+| Full workspace regression after later shared compiler changes | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...` | Passed all packages against the current tree; the session package completed in 184.816s. Covers the shared emitter, Phase 16 convergence/golden tests, and the full later-phase regression set. | ✓ PASS |
 
 ### Probe Execution
 
@@ -243,8 +243,8 @@ None. The by-pointer scope decision is already recorded in UAT item 5 as `cut-m0
 
 ## Gaps Summary
 
-No must-have gaps remain. The shared emitter is the only public emission law, the admissible-shape convergence and golden provenance checks pass, and NAT-09's three families have explicit M004 ownership and refusal fences. The complete Go suite passed in the current tree as reported by the orchestrator. `16-UAT.md` remains unchanged at its completed 21/21 automated checks.
+No must-have gaps remain. The shared emitter is the only public emission law, the admissible-shape convergence and golden provenance checks pass, and NAT-09's three families have explicit M004 ownership and refusal fences. The full Go suite passed against the current tree. `16-UAT.md` remains unchanged at its completed 21/21 automated checks.
 
-_Verified: 2026-09-26T17:25:30Z_
+_Verified: 2026-09-26T18:26:40Z_
 
 _Verifier: the agent (gsd-verifier)_

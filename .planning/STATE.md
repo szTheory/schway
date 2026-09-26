@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 19
-current_phase_name: Numeric Literals and OpConst
-status: Verification fingerprint stale; Phase 19 implementation and UAT are complete
-stopped_at: Phase 16 complete; Phase 19 stale verification is the earliest open gate
-last_updated: "2026-09-26T17:37:47.775Z"
+current_phase: 20
+current_phase_name: Nyquist, D-13-34, and the Frontier Fixture
+status: M003 phases complete; milestone audit pending
+stopped_at: M003 Phases 14–20 verified complete; ready for milestone audit
+last_updated: "2026-09-26T18:32:07Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 16 verification passed; Phase 19 stale verification is next
-state_head: 6e6a245f4e9c7c92eeb62a15309a8c44b4212595
+last_activity_desc: Phase 19 verification refreshed; M003 closeout ready
+state_head: 3bfa11d3b1ce8f704dfd07259abec3cd900b5683
 progress:
-  total_phases: 8
+  total_phases: 7
   completed_phases: 7
-  total_plans: 89
-  completed_plans: 89
+  total_plans: 85
+  completed_plans: 85
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 19 — Numeric Literals and OpConst
+**Current focus:** M003 milestone closeout — audit before archive
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -84,26 +85,25 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 19 — Numeric Literals and OpConst
-Plan: 7/7 complete; verification pending
-Total Plans in Phase: 7
-Status: Verification fingerprint stale; Phase 19 implementation and UAT are complete
-Last activity: 2026-09-26 — Phase 16 verification passed; Phase 19 is next
+Phase: M003 — Computation and Honest Instruments
+Plans: 85/85 complete across Phases 14–20
+Status: All phase verifications pass; milestone audit pending
+Last activity: 2026-09-26 — Phase 19 verification refreshed; M003 ready for audit
 
-Phase 16 is complete: 26/26 plans, 4/4 goal truths, and the existing 21/21
-automated UAT passed. Its verification fingerprint now passes GSD's canonical
-status check. The latest full Go suite passed at the Phase 15 regression gate;
-only planning documents changed afterward, so that result was reused.
+Phases 14–20 are the complete M003 scope. Phase 16, Phase 19, and Phase 20
+verification reports all pass GSD's canonical fingerprint check; Phase 19 UAT
+remains complete at 15/15. The most recent full Go suite passed after Phase 19
+execution, and the verifier refreshes reused that evidence without replaying
+plans or UAT.
 
-`init.progress` now routes to Phase 19 because its verification fingerprint is
-stale. Phase 19 has 7/7 summaries and complete 15/15 UAT. Resume with
-`$gsd-execute-phase 19` to refresh verification without replaying plans or UAT.
-Phase 21 also has a stale report, but it follows M003's remaining Phase 19 gate.
-Phases 17, 18, and 20 are verified complete. Phase 16 closeout recorded four
-non-blocking historical-summary path warnings; its code review's WR-01 remains
-an advisory scoped follow-up.
+The roadmap places Phase 21 under M004 and says M003 Phases 14–20 must complete
+before M004 begins. Phase 21 already has 4/4 summaries and 7/7 automated UAT,
+but its verification fingerprint is stale. `init.progress` currently discovers
+its directory as if it belonged to M003 and suggests `$gsd-verify-work 21`; that
+is a scope leak, and that command would repeat completed UAT. Keep Phase 21 out
+of M003 audit scope; reconcile it when M004 is formally opened.
 
-**Next:** $gsd-execute-phase 19
+**Next:** `$gsd-audit-milestone M003`
 
 ## M003 Phase Map
 
@@ -115,11 +115,11 @@ Phases 14-20. Structure is the ratified plan from
 |-------|------|--------------|--------------|--------|
 | 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
 | 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete; verification passed 2026-09-26 |
-| 16 | Branch/Match Emitter Port | 2 | 26 | Complete; verification passed 2026-09-26 |
+| 16 | Branch/Match Emitter Port | 2 | 26 | Complete; verification refreshed and passed 2026-09-26 |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
 | 18 | Branch on a Computed Value | 3 | 10 | Complete; verification passed 2026-09-26 |
-| 19 | Numeric Literals and `OpConst` | 3 | 7 | Implementation and UAT complete; verification stale |
-| 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete |
+| 19 | Numeric Literals and `OpConst` | 3 | 7 | Complete; verification refreshed and passed 2026-09-26 |
+| 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete; verification passed 2026-09-26 |
 
 **Carry-forward context that must survive a context reset** (restated here
 rather than left only in ROADMAP.md):
@@ -713,10 +713,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T17:39:49Z
-Stopped at: Phase 16 complete; Phase 19 stale verification is the earliest open gate
+Last session: 2026-09-26T18:32:07Z
+Stopped at: M003 Phases 14–20 verified complete; milestone audit pending
 Resume file: None
-Next command: $gsd-execute-phase 19
+Next command: $gsd-audit-milestone M003
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -800,12 +800,13 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Run `$gsd-execute-phase 15`. Its ten plan summaries exist and none are
-  incomplete. This refreshes the stale verifier without replaying plans or
-  completed UAT. `init.progress` identifies Phase 15 as the earliest remaining
-  gate; Phases 16, 19, and 21 also have stale verification reports.
-- Phase 18 is complete with a passing 30/30 verification; its UAT and validation
-  records remain unchanged.
+- M003 Phases 14–20 have complete plan summaries and passing canonical
+  verification. The next command is `$gsd-audit-milestone M003`; if that audit
+  passes, continue with `$gsd-complete-milestone M003`.
+- Phase 21 is explicitly under M004 in ROADMAP.md. Its 4/4 summaries and 7/7
+  UAT are complete, but its verifier fingerprint is stale. The current progress
+  resolver incorrectly folds that directory into M003; do not follow its
+  `$gsd-verify-work 21` suggestion during M003 closeout.
 - Historical planning notes below describe completed work; they are not current
   next-action pointers.
 
