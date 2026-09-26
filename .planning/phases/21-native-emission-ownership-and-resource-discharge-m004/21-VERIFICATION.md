@@ -98,7 +98,7 @@ N/A — this compiler-contract phase has no rendered or user-facing data flow. T
 |---|---|---|---|
 | Contract mutation refusal | `go test ./internal/compiler/session -run '^TestPhase21ResourceDischargeContract$' -count=1 -v` | All seven seeded mutation subtests passed. | ✓ PASS |
 | Public dispatch and legacy-body retirement/refusal | `go test ./internal/compiler/cgen -run '^TestPhase21LegacyEmitterBodiesRetired$' -count=1 -v` plus focused checks of `TestForeignResourceLedgerEmitterRemainsRefused` and `TestPublicDispatchUsesOnlyEmitProgram` | All three named tests passed. | ✓ PASS |
-| Emitted multi-function semantics under compiler lanes | `go test -tags=phase21_lto_evidence ./internal/compiler/session -run '^TestPhase21EmittedMultiFunctionLTOComparison$' -count=1 -v` | All-pairs semantic equality on recorded Darwin/arm64 + Clang configuration. | ✓ PASS |
+| Recurring LTO evidence receipt binding | `go test ./internal/compiler/session -run '^TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison$' -count=1 -v` | The recurring untagged guard binds the recorded one-shot comparison to its tagged source and receipt; the measured Darwin/arm64 + Clang result remains in `21-LTO-EVIDENCE.md`. | ✓ PASS |
 | Comparator detects seeded disagreement | `go test ./internal/compiler/session -run '^TestPhase16EmitterPortSemanticGuardIsNotInert$' -count=1 -v` | Independent negative control passed. | ✓ PASS |
 
 ### Probe Execution
