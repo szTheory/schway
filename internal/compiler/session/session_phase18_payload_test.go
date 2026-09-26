@@ -44,6 +44,7 @@ func TestPhase18LongPayloadPlaceReturn(t *testing.T) {
 func TestPhase18WrongSlotMutation(t *testing.T) {
 	program := checkedProgram(t, "testdata", "phase18", "payload_return.lang")
 	restore := cgen.SetPayloadSlotSwapForTest(true)
+	defer restore()
 	mutated := phase11RunFourTiersWithSupplier(t, context.Background(), program, "return_payload", "Ok", cgen.EmitProgramNativeForTest, "emitProgram mutated")
 	restore()
 	if injected := cgen.PayloadSlotSwapInjectedWriteCount(); injected < 1 {
@@ -62,6 +63,7 @@ func TestPhase18LongTagWrongSlotMutation(t *testing.T) {
 	const tag = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 	program := checkedProgram(t, "testdata", "phase18", "long_payload_return.lang")
 	restore := cgen.SetPayloadSlotSwapForTest(true)
+	defer restore()
 	mutated := phase11RunFourTiersWithSupplier(t, context.Background(), program, "return_payload", tag, cgen.EmitProgramNativeForTest, "emitProgram long-tag mutated")
 	restore()
 	if injected := cgen.PayloadSlotSwapInjectedWriteCount(); injected < 1 {
