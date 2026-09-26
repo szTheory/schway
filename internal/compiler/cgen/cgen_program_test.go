@@ -649,7 +649,7 @@ func TestUnsupportedProgramShapePrecedesSchema2Preflight(t *testing.T) {
 // family in every program cardinality: adding an ordinary caller must not
 // turn the legacy single-function lowering into an admitted program shape.
 func TestProgramBorrowedByPointerDisposition(t *testing.T) {
-	decision, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "16-branch-match-emitter-port", "16-05-SUMMARY.md"))
+	decision, err := os.ReadFile(testsupport.ProjectPath(".planning", "milestones", "M003-phases", "16-branch-match-emitter-port", "16-05-SUMMARY.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
