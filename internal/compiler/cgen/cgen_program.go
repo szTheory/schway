@@ -885,34 +885,34 @@ func emitProgramU64Support(out *strings.Builder) {
 func emitProgramTerminalValueWriter(out *strings.Builder, branchType programBranchType, dataTypes []core.DataType) {
 	fmt.Fprintf(out, "static int lang_write_terminal_value(%s value) {\n", branchType.typeName)
 	fmt.Fprintf(out, "  const char *tag_name = %s(value);\n  if (tag_name == NULL) return 0;\n", branchType.nameFunction)
-	out.WriteString("  char rendered[128];\n  int length = -1;\n  switch (value.tag) {\n")
+	out.WriteString("  char payload_hex[8];\n  char payload_decimal[4];\n  int payload_length;\n  if (!lang_write_bytes(\"\\\"\", 1u) || !lang_write_json_string_content(tag_name)) return 0;\n  switch (value.tag) {\n")
 	for _, alternative := range branchType.alternatives {
 		field, hasPayload := branchType.fields[alternative.source]
 		fmt.Fprintf(out, "    case %s:\n", alternative.cName)
 		if !hasPayload {
-			out.WriteString("      length = snprintf(rendered, sizeof rendered, \"%s\", tag_name);\n      break;\n")
+			out.WriteString("      break;\n")
 			continue
 		}
 		if nestedType, nested := findProgramDataTypeByName(dataTypes, field.payloadType); nested && field.cType == "unsigned char" {
 			fmt.Fprintf(out, "      switch (value.%s) {\n", field.name)
 			for index, nestedAlternative := range nestedType.Alternatives {
-				fmt.Fprintf(out, "        case %du: length = snprintf(rendered, sizeof rendered, \"%%s:%%s\", tag_name, %s); break;\n", index, strconv.Quote(nestedAlternative))
+				fmt.Fprintf(out, "        case %du: if (!lang_write_bytes(\":\", 1u) || !lang_write_json_string_content(%s)) return 0; break;\n", index, strconv.Quote(nestedAlternative))
 			}
 			out.WriteString("        default: return 0;\n      }\n      break;\n")
 			continue
 		}
 		switch field.cType {
 		case "LANG_BUFFER":
-			fmt.Fprintf(out, "      if (value.%s.length > 4u) return 0;\n      char payload_hex[9];\n      static const char hex[] = \"0123456789abcdef\";\n      for (size_t i = 0u; i < value.%s.length; ++i) {\n        payload_hex[i * 2u] = hex[value.%s.bytes[i] >> 4u];\n        payload_hex[i * 2u + 1u] = hex[value.%s.bytes[i] & 15u];\n      }\n      payload_hex[value.%s.length * 2u] = '\\0';\n      length = snprintf(rendered, sizeof rendered, \"%%s:%%s\", tag_name, payload_hex);\n      break;\n", field.name, field.name, field.name, field.name, field.name)
+			fmt.Fprintf(out, "      if (value.%s.length > 4u) return 0;\n      static const char hex[] = \"0123456789abcdef\";\n      for (size_t i = 0u; i < value.%s.length; ++i) {\n        payload_hex[i * 2u] = hex[value.%s.bytes[i] >> 4u];\n        payload_hex[i * 2u + 1u] = hex[value.%s.bytes[i] & 15u];\n      }\n      if (!lang_write_bytes(\":\", 1u) || !lang_write_bytes(payload_hex, value.%s.length * 2u)) return 0;\n      break;\n", field.name, field.name, field.name, field.name, field.name)
 		case "unsigned char":
-			fmt.Fprintf(out, "      length = snprintf(rendered, sizeof rendered, \"%%s:%%u\", tag_name, (unsigned int)value.%s);\n      break;\n", field.name)
+			fmt.Fprintf(out, "      payload_length = snprintf(payload_decimal, sizeof payload_decimal, \"%%u\", (unsigned int)value.%s);\n      if (payload_length < 1 || (size_t)payload_length >= sizeof payload_decimal || !lang_write_bytes(\":\", 1u) || !lang_write_bytes(payload_decimal, (size_t)payload_length)) return 0;\n      break;\n", field.name)
 		default:
 			// Nested data payload serialization is outside this phase's
 			// admitted witness; preserve existing tag semantics for it.
-			out.WriteString("      length = snprintf(rendered, sizeof rendered, \"%s\", tag_name);\n      break;\n")
+			out.WriteString("      break;\n")
 		}
 	}
-	out.WriteString("    default: return 0;\n  }\n  return length >= 0 && (size_t)length < sizeof rendered && lang_write_json_string(rendered);\n}\n\n")
+	out.WriteString("    default: return 0;\n  }\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
 }
 
 func findProgramDataTypeByName(dataTypes []core.DataType, name string) (core.DataType, bool) {
