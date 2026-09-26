@@ -1,21 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: M003
-milestone_name: Computation and Honest Instruments
-status: Phase 21 verification refresh pending
-stopped_at: M003 archived; refresh Phase 21 verification before M004 kickoff
-last_updated: "2026-09-26T21:02:11Z"
+current_phase: 21
+current_phase_name: Native Emission Ownership and Resource Discharge
+status: executing
+stopped_at: Phase 21 gap plans 05–06 passed the plan checker; gap-only execution is next
+last_updated: "2026-09-26T23:50:45.025Z"
 last_activity: 2026-09-26
-last_activity_desc: M003 archived; Phase 21 verification refresh is next
-state_head: c01b96443aaad627b484f4f185f32314dba1433a
+last_activity_desc: Phase 21 execution started
+state_head: 871b2028e5fe6c8f5642b67811f03d509523aa6f
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 85
-  completed_plans: 85
-  percent: 100
-current_phase: null
-current_phase_name: null
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 6
+  completed_plans: 4
+milestone_name: Computation and Honest Instruments
 ---
 
 # Project State
@@ -27,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Refresh Phase 21 verification before opening M004; its requirements and full charter are not yet ratified
+**Current focus:** Phase 21 — Native Emission Ownership and Resource Discharge
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -85,10 +84,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: M003 complete; Phase 21 verification refresh pending; M004 not yet opened
-Plan: —
-Status: Phase 21 verification refresh pending
-Last activity: 2026-09-26 — Milestone M003 completed and archived
+Phase: 21 (Native Emission Ownership and Resource Discharge) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 21
+Last activity: 2026-09-26 — Phase 21 execution started
 
 ## M003 Closeout (archived)
 
@@ -107,15 +106,19 @@ completed quick-task folders remain under `.planning/quick/`.
 ## M004 Handoff
 
 M004 has not been formally opened; its requirements and full charter are not
-ratified. Phase 21 has all four plan summaries and all 7 automated UAT checks
-passing with no blockers (`phase uat-passed 21`). Its verification report file
-exists, but its fingerprint is stale after the recurring LTO evidence row was
-updated. The canonical `query verification status 21` reports `missing` and
-recommends `$gsd-execute-phase 21`; `init.progress` reports `stale` and offers
-`$gsd-verify-work 21`, but that route treats report staleness as a UAT blocker.
-The saved UAT is already complete, so do not rerun UAT. `init.execute-phase 21`
-shows four summaries and zero incomplete plans; run `$gsd-execute-phase 21` to
-resume at the verification gates without replaying plans or UAT.
+ratified. Phase 21's original four plans and summaries remain complete, and all
+7 automated UAT checks remain passing. The refreshed `21-VERIFICATION.md` is
+`gaps_found` against post-M003 archive paths and evidence records. Gap plans
+21-05 and 21-06 now cover all four findings; both passed gap-closure schema and
+structure checks, the independent plan checker, and 3/3 decision coverage.
+
+The Phase 21 entry is now machine-readable in ROADMAP, but M004 remains
+provisional. Preserve the completed UAT and do not replay Plans 01–04. Run
+`$gsd-execute-phase 21 --gaps-only` to execute only Plans 05–06.
+`init.progress` and `verification.status` still suggest `$gsd-plan-phase 21
+--gaps` because the verification report remains `gaps_found`; that pointer is
+stale now that the gap plans exist and passed review. `phase-plan-index 21`
+shows 21-05 and 21-06 as the two runnable plans.
 
 After Phase 21 verification passes, file its directory under
 `.planning/milestones/M004-phases/` before running
@@ -682,10 +685,11 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T21:02:11Z
-Stopped at: M003 archived; Phase 21 verification refresh pending before M004 kickoff
+Last session: 2026-09-26T23:02:09Z
+Stopped at: Phase 21 gap plans 05–06 passed planning gates; ready for gap-only execution
 Resume file: None
-Next command: $gsd-execute-phase 21
+Next command: $gsd-execute-phase 21 --gaps-only
+Routing note: init.progress still points to gap planning while VERIFICATION.md is gaps_found; the two reviewed gap plans already exist, so do not repeat planning.
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths

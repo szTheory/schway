@@ -30,10 +30,14 @@ Execution artifacts: `milestones/M003-phases/`
 <details>
 <summary>◷ M004 — Native Emission Ownership and Resource Discharge (provisional)</summary>
 
-Phase 21 implementation is complete (4/4 plans) and automated UAT passed (7/7).
-Its verification fingerprint is stale after the recurring LTO evidence row was
-updated. Run `$gsd-execute-phase 21` to resume at verification gates; preserve
-the completed UAT and do not replay plans or UAT.
+Phase 21's original implementation is complete (4/4 plans), and automated UAT
+is complete (7/7). The refreshed verification reports `gaps_found` against the
+post-M003 archive. Preserve UAT and do not replay the original plans or UAT.
+
+The two gap-closure plans (21-05 and 21-06) are prepared and registered below.
+`roadmap.get-phase 21` now resolves the existing phase. M004 remains provisional;
+this registration does not ratify its full charter or requirements. Execute only
+the gap-closure plans with `$gsd-execute-phase 21 --gaps-only`.
 
 After verification passes, file Phase 21 under
 `.planning/milestones/M004-phases/` before running M004 kickoff. The installed
@@ -47,9 +51,30 @@ replaces `pathoracle`'s cycle refusal before loop planning.
 
 </details>
 
+### Phase 21: Native Emission Ownership and Resource Discharge
+
+**Goal:** Close the archive-dependent findings in Phase 21 verification while preserving the completed implementation plans and UAT. M004 remains provisional; this entry registers only the already-existing gap-closure work.
+
+**Plans:** 6 plans
+
+Plans:
+**Wave 1**
+
+- [x] 21-01-PLAN.md — Define the checked resource-discharge contract.
+- [x] 21-02-PLAN.md — Retire unreachable emitter bodies and pin refusal.
+- [x] 21-03-PLAN.md — Record the scoped emitted-fixture LTO comparison.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 21-04-PLAN.md — Reconcile emitter debt and evidence records.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 21-05-PLAN.md — Restore archived Phase 16 decision and ownership guards.
+- [ ] 21-06-PLAN.md — Refresh validation corpus and groundedness reconciliation.
+
 ## Next Action
 
-After a context reset, run `$gsd-execute-phase 21` to refresh the stale Phase 21
-verification report. Once it passes, file that phase under M004 as described
-above, then run `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`
+Run `$gsd-execute-phase 21 --gaps-only`. Once verification passes, file Phase 21
+under M004 as described above, then run `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`
 to formalize M004 scope and requirements.

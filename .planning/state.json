@@ -1,48 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M003 — Computation and Honest Instruments",
-  "phases": [
-    {
-      "number": "14",
-      "name": "Evidence Instrument and Honest Scoping",
-      "status": "complete"
-    },
-    {
-      "number": "15",
-      "name": "Event Identity (`lang.execution/2`)",
-      "status": "complete"
-    },
-    {
-      "number": "16",
-      "name": "Branch/Match Emitter Port",
-      "status": "complete"
-    },
-    {
-      "number": "17",
-      "name": "Return Type ≠ Parameter Type",
-      "status": "complete"
-    },
-    {
-      "number": "18",
-      "name": "Branch on a Computed Value",
-      "status": "complete"
-    },
-    {
-      "number": "19",
-      "name": "Numeric Literals and `OpConst`",
-      "status": "complete"
-    },
-    {
-      "number": "20",
-      "name": "Nyquist, D-13-34, and the Frontier Fixture",
-      "status": "complete"
-    }
-  ],
+  "milestone": "M003",
+  "phases": [],
   "next": {
-    "command": "/gsd:execute-phase 21",
-    "label": "Refresh Phase 21 verification without replaying completed plans or UAT",
-    "reason": "All four plans and seven automated UAT checks are complete; the verification fingerprint is stale"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 21 of 1 · executing"
   },
-  "updated_at": "2026-09-26T21:02:11.000Z"
+  "updated_at": "2026-09-26T23:50:45.040Z"
 }
