@@ -246,6 +246,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 | CTL-01 | Phase 18 | Complete |
 | CTL-02 | Phase 18 | Complete |
 | CTL-03 | Phase 18 | Complete |
+| S-010 | Phase 18 gate | Complete — validated by spike 007 and re-run through production source |
 | VAL-01 | Phase 19 | Complete |
 | VAL-02 | Phase 19 | Complete |
 | VAL-03 | Phase 19 | Complete |
@@ -262,6 +263,7 @@ Mapped during roadmap creation, 2026-09-17. Phase numbering continues from M002
 - M003 requirements: 33 total
 - Mapped to phases: 33 ✓
 - Unmapped: 0
+- S-010 is a prerequisite-gate traceability row, not an M003 requirement, and is excluded from the requirement count above.
 
 **Per-phase counts:** P14 = 11, P15 = 5, P16 = 2, P17 = 5, P18 = 3, P19 = 3,
 P20 = 4. No orphans, no duplicates.
@@ -290,4 +292,4 @@ same pass. Coverage is re-validated at 33 rows; it does not silently drop to 30.
 
 ---
 *Requirements defined: 2026-09-17*
-*Last updated: 2026-09-17 after M003 roadmap creation (Phases 14-20)*
+*Last updated: 2026-09-26 after Phase 18 verification and S-010 gate traceability update*

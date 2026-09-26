@@ -114,7 +114,7 @@ status: complete
 
 ## Issues Encountered
 
-- The workspace sandbox initially denied GSD staging at `.git/index.lock`; the supported escalation enabled the requested GSD commits.
+- The workspace sandbox initially denied GSD staging because Git could not write its index lock; the supported escalation enabled the requested GSD commits.
 
 ## User Setup Required
 

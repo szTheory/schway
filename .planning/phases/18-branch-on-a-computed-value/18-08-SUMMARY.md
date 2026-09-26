@@ -92,7 +92,7 @@ The environment denied writes to the default Go build cache under the user Libra
 
 ## Issues Encountered
 
-The GSD commit helper initially could not create `.git/index.lock` under the workspace sandbox. Retrying the same scoped GSD operation with repository-write escalation succeeded. No unrelated files were staged.
+The GSD commit helper initially hit the workspace sandbox's Git index-write restriction. Retrying the same scoped GSD operation with repository-write escalation succeeded. No unrelated files were staged.
 
 The GSD roadmap progress updater reported `missing_phase_details` because `ROADMAP.md` has no writable Phase 18 entry. It left the roadmap unchanged; the canonical execution position is recorded in STATE.md.
 

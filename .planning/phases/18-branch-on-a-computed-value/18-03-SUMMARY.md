@@ -131,7 +131,7 @@ commits: 2
 
 ## Issues Encountered
 
-- The executor environment could not create `.git/index.lock`; the parent committed the scoped implementation and plan artifacts through the GSD helper.
+- The executor environment could not write Git's index lock; the parent committed the scoped implementation and plan artifacts through the GSD helper.
 - The CTL-03 payload fixture is not yet checker-valid at this plan boundary, so the valid-source origin acceptance control uses the already accepted computed-match fixture; synthetic core tests separately exercise computed payload provenance. Later phase plans retain full CTL acceptance responsibility.
 
 ## Next Phase Readiness
