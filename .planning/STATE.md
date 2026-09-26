@@ -2,31 +2,31 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 15
-current_phase_name: Event Identity (`lang.execution/2`)
-status: verifying
-stopped_at: Phase 21 complete; Phase 15 verification refresh is next
-last_updated: "2026-09-26T03:05:07Z"
-last_activity: 2026-09-25
-state_head: dcb5706d015719a54967c601a237b89b3e4f4a0d
+current_phase: 18
+current_phase_name: Branch on a Computed Value
+status: executing
+stopped_at: Completed 18-10-PLAN.md
+last_updated: "2026-09-26T14:35:28.941Z"
+last_activity: 2026-09-26
+last_activity_desc: Completed Phase 18 Plan 10 implementation
+state_head: 211310194a11289d4a8bcb824e3df8c95e09fa99
 progress:
   total_phases: 8
-  completed_phases: 6
-  total_plans: 88
-  completed_plans: 88
-last_activity_desc: Phase 21 complete; reconciling stale prior verification fingerprints
+  completed_phases: 7
+  total_plans: 89
+  completed_plans: 89
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-25)
+See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 21 — Native emission ownership and resource discharge
+**Current focus:** Phase 18 — Branch on a Computed Value
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -61,26 +61,55 @@ hiding runtime costs.
   a blocker, re-query `init.progress` and update STATE/handoff from its result;
   never carry forward an old next-action pointer.
 
+- **Shift-left verification default:** Turn objective acceptance criteria into
+  deterministic checks at the lowest layer that proves the claim: unit, seam,
+  smoke, integration, or end-to-end. Put a check in recurring CI when its
+  regression value justifies its runtime and maintenance cost. Keep expensive
+  measurements bounded to the runs that need them, with a cheaper recurring
+  structural or receipt-binding guard when that provides continuing value.
+  Target zero human UAT when automated evidence covers the criteria; hand off
+  only irreducibly subjective, external, or user-authority decisions.
+
+- **Stale-report route:** A complete UAT and a stale verification fingerprint
+  are different states. `$gsd-verify-work` handles UAT and can route back to
+  itself when the report is stale; it does not refresh that report. When
+  `init.execute-phase N` reports zero incomplete plans, use
+  `$gsd-execute-phase N` to resume at the phase gates and verifier without
+  replaying plans. Preserve completed UAT, then re-query `init.progress` and
+  update this file with the exact next route.
+
+- **Go test cache in this workspace:** The default Go cache path is outside
+  the writable sandbox. Prefix Go test commands with
+  `GOCACHE=/tmp/ai-lang-verification-gocache`.
+
 ## Current Position
 
-Phase: 15 — Event Identity (`lang.execution/2`)
-Plan: Verification refresh
+Phase: 18 (Branch on a Computed Value) — EXECUTING
+Plan: 10 of 10
 Total Plans in Phase: 10
-Status: Implementation and UAT complete; verification fingerprint is stale
-Last activity: 2026-09-26 — Phase 21 complete; routing reconciled
+Status: Plans complete; phase verification remains
+Last activity: 2026-09-26 — Completed Phase 18 Plan 10 implementation
 
-Phase 21's four plans, automated UAT (7/7), and goal verification (5/5) are
-complete. The full Go suite passes. The live GSD resolver identifies Phase 15
-as the earliest remaining milestone gate because its existing verification
-fingerprint is stale after later shared-artifact changes; its UAT is already
-complete. Refresh the verifier report while preserving the completed UAT, then
-follow the refreshed resolver for other stale phase reports. Routing
-discrepancy: `phase.complete 21` returned Phase 19 and did not update ROADMAP,
-while `init.progress` identifies Phase 15 as the earliest unfinished gate;
-Phase 21 is listed under M004 and is not a new M003 phase to plan. Do not
-rerun Phase 21 or plan Phase 19 from that stale transition result.
+Phase 16 is complete: all 26 plans are summarized, the existing 21/21
+automated UAT remains complete and untouched, the refreshed verifier passed
+4/4 goal truths, and the full Go suite passed. The completion command suggested
+Phase 17, but `init.progress` identifies Phase 18 as the earliest remaining
+gate because Phase 17 is already complete. Phase 18 has all 10 plan summaries
+and completed UAT; only its verification fingerprint is stale. Resume with
+`$gsd-execute-phase 18` so the phase gates and verifier can refresh without
+replaying implementation plans or UAT. The generic verification-status route
+currently advertises `$gsd-verify-work 18`, but Phase 18's 16/16 UAT is already
+complete and that command does not refresh a stale execution-verification
+report. Follow the stale-report route above. Phase 19 also has a stale report;
+Phase 21 remains under M004, after M003's Phases 14-20.
 
-**Next:** $gsd-verify-work 15 --auto
+Phase 16 closeout reported non-blocking planning-integrity warnings: several
+historical summary references point to deleted files, and S-010 appears in the
+requirements body without a traceability row. The Phase 16 code review also
+records one advisory warning (WR-01) about section-scoped ownership assertions.
+These do not change the passed verifier; preserve them for scoped follow-up.
+
+**Next:** $gsd-execute-phase 18
 
 ## M003 Phase Map
 
@@ -92,10 +121,10 @@ Phases 14-20. Structure is the ratified plan from
 |-------|------|--------------|--------------|--------|
 | 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
 | 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete |
-| 16 | Branch/Match Emitter Port | 2 | 8-10 | Complete |
+| 16 | Branch/Match Emitter Port | 2 | 26 | Complete |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
-| 18 | Branch on a Computed Value | 3 | 8-10 | Complete |
-| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Complete |
+| 18 | Branch on a Computed Value | 3 | 9 | Executed; verification stale |
+| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Executed; verification stale |
 | 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete |
 
 **Carry-forward context that must survive a context reset** (restated here
@@ -351,6 +380,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 21 P01 | 4min | 2 tasks | 2 files |
 | Phase 21 P02 | 11 | 2 tasks | 10 files |
 | Phase 21 P03 | 10 | 3 tasks | 2 files |
+| Phase 18 P10 | 8min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -524,6 +554,8 @@ Standing architectural commitments carried into M002:
 - [Phase 21]: Treat archived foreign and by-pointer fixtures as historical evidence, not proof of current emitted behavior.
 - [Phase 21]: Use the existing Phase 14 multi-function fixture and run direct emitProgram output through the shared interpreter/-O0/-O3/-O3 -flto comparator.
 - [Phase 21]: Keep compiler measurement opt-in; behavioral equality does not prove optimizer activity, performance, cleanup, or other hosts/toolchains.
+- [Phase 18]: Stream schema-2 terminal tags and payloads through the bounded JSON writer without tag-sized storage.
+- [Phase 18]: Emit terminal scratch buffers only for payload types present in the branch.
 
 ### Pending Todos
 
@@ -671,6 +703,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 8 | Complete Phase 18 automated UAT with zero manual checks | 2026-09-25 | dfa5598 | passed | — |
 | 9 | Record GSD no-loop rule: compare routed command inputs and state transitions before rerun; resolve unchanged blockers rather than repeating commands. | 2026-09-25 | 550bd0f | — | — |
 | 10 | Refresh stale Phase 15 and 19 verification and route GSD to Phase 21 | 2026-09-25 | 0124de9 | passed | — |
+| 260926-bkj | Refresh Phase 15 evidence, repair CI planning guards, and record shift-left/no-loop defaults | 2026-09-26 | — | passed | [260926-bkj-close-the-ci-planning-integrity-findings](./quick/260926-bkj-close-the-ci-planning-integrity-findings/) |
 
 ## Deferred Items
 
@@ -684,10 +717,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T02:12:45.033Z
-Stopped at: Phase 21 complete, ready to plan Phase 19
+Last session: 2026-09-26T14:35:28.710Z
+Stopped at: Completed 18-10-PLAN.md
 Resume file: None
-Next command: $gsd-plan-phase 21
+Next command: $gsd-execute-phase 18
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -771,9 +804,14 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Plan Phase 14 with /gsd-plan-phase 14
-- Run spikes S-009 and S-010 alongside Phase 14; S-010 is a hard entry gate on
-  planning Phase 18
+- Run `$gsd-execute-phase 18`. Its 9 plan summaries and completed automated UAT
+  already exist, so this is the GSD no-plan resume route for the stale verifier
+  report. It advances through phase gates and goal verification without
+  repeating plans or presenting completed UAT. The Phase 16 completion command
+  returned Phase 17, while the canonical `init.progress` resolver identifies
+  Phase 18 as the earliest remaining gate; use the resolver result.
+- Historical planning notes below describe completed work; they are not current
+  next-action pointers.
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 

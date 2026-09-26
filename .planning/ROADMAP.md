@@ -5,7 +5,7 @@
 - ✅ **M001 — Source-to-Native Semantic Spine** — Phases 1-6 (shipped 2026-09-07) — [archive](milestones/M001-ROADMAP.md)
 - ✅ **M002 — Interprocedural Semantic Spine** — Phases 07-13 (shipped 2026-09-14) — [archive](milestones/M002-ROADMAP.md)
 - 🚧 **M003 — Computation and Honest Instruments** — Phases 14-20 (active)
-- ◷ **M004 — Native Emission Ownership and Resource Discharge** — planned after M003; Phase 21 owns D-16-11 through D-16-13
+- ◷ **M004 — Native Emission Ownership and Resource Discharge** — M003 Phases 14-20 complete before M004 begins; Phase 21 owns D-16-11 through D-16-13
 
 ## Overview
 
@@ -557,19 +557,42 @@ position), a `checkBranch` re-architecture so the entry block can carry a
 straight-line prefix, and an ownership question that does not exist today. This
 is Austral Rule 3's territory arriving a full milestone before anyone budgeted
 for it.
-**Plans**: 9 (one G-18-16 gap-closure plan added)
+**Plans**: 10 (including the additive long-tag terminal-outcome gap closure)
 
 Plans:
+**Wave 1**
 
 - [x] 18-01-PLAN.md — Pin computed-place, Result-call, payload, and production-loan source frontiers
 - [x] 18-02-PLAN.md — Trace computed terminal match through source, peers, interpreter, and native emission
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [x] 18-03-PLAN.md — Independently validate computed places and payload origins
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [x] 18-04-PLAN.md — Match a Result-returning callee value across all five axes
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [x] 18-05-PLAN.md — Return destructured payload and kill the wrong-slot mutation
 - [x] 18-06-PLAN.md — Prove bounded production borrow-across-branch liveness
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [x] 18-07-PLAN.md — Add peer, comparator, and mutation anti-vacuity controls
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [x] 18-08-PLAN.md — Measure verification cost and justify focused recurring CI
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [x] 18-09-PLAN.md — Stabilize default-parallel full-suite verification while retaining bounded subprocesses and the Phase 18 CI evidence contract
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [x] 18-10-PLAN.md — Stream long terminal payload tags through bounded schema-2 evidence
 
 ---
 
@@ -737,7 +760,7 @@ assurance-refactor milestone rather than a feature milestone.
 | 15. Event Identity (`lang.execution/2`) | 10/10 | Complete    | 2026-09-19 |
 | 16. Branch/Match Emitter Port | 26/26 | Complete    | 2026-09-21 |
 | 17. Return Type ≠ Parameter Type | 9/9 | Complete    | 2026-09-22 |
-| 18. Branch on a Computed Value | 9/9 | Complete    | 2026-09-24 |
+| 18. Branch on a Computed Value | 10/10 | Complete    | 2026-09-26 |
 | 19. Numeric Literals and `OpConst` | 7/7 | Complete    | 2026-09-24 |
 | 20. Nyquist, D-13-34, and the Frontier Fixture | 10/10 | Complete    | 2026-09-25 |
 
