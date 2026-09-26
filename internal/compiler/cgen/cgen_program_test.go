@@ -61,6 +61,31 @@ func TestPublicDispatchUsesOnlyEmitProgram(t *testing.T) {
 	}
 }
 
+// TestPhase21LegacyEmitterBodiesRetired keeps the three cut private lowering
+// implementations out of production source. The live whole-program emitter
+// retains the refusal boundary for those families.
+func TestPhase21LegacyEmitterBodiesRetired(t *testing.T) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, testsupport.ProjectPath("internal", "compiler", "cgen", "cgen.go"), nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retired := map[string]bool{
+		"emitLinearForeign":                true,
+		"emitLinearBorrowedByPointer":      true,
+		"emitLinearBorrowedByPointerPlain": true,
+	}
+	for _, declaration := range file.Decls {
+		function, ok := declaration.(*ast.FuncDecl)
+		if !ok || function.Recv != nil {
+			continue
+		}
+		if retired[function.Name.Name] {
+			t.Errorf("retired lowering body %s remains in production cgen.go", function.Name.Name)
+		}
+	}
+}
+
 // checkedPhase07Program parses the tracked adversarial fixture through the
 // normal checker and independent core peer; the 61-node assertion below is
 // therefore derived from the checked source fixture, not restated data.
