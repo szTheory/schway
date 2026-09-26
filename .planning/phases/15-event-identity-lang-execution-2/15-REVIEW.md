@@ -1,11 +1,13 @@
 ---
 phase: 15-event-identity-lang-execution-2
-reviewed: 2026-09-19T20:19:32Z
-depth: deep
-files_reviewed: 2
+reviewed: 2026-09-26T16:00:00Z
+depth: standard
+files_reviewed: 4
 files_reviewed_list:
-  - internal/compiler/cgen/cgen_program.go
-  - internal/compiler/cgen/cgen_program_test.go
+  - .github/workflows/ci.yml
+  - internal/compiler/native/native_test.go
+  - internal/compiler/session/session_phase5_compare_test.go
+  - internal/compiler/session/session_phase6_test.go
 findings:
   critical: 0
   warning: 0
@@ -14,31 +16,23 @@ findings:
 status: clean
 ---
 
-# Phase 15: Focused Code Review Report
+# Phase 15: Code Review Report
 
-**Reviewed:** 2026-09-19T20:19:32Z
-**Depth:** deep
-**Files Reviewed:** 2
+**Reviewed:** 2026-09-26T16:00:00Z  
+**Depth:** standard  
+**Files Reviewed:** 4  
 **Status:** clean
 
 ## Summary
 
-Focused re-review of `b55c1fc` found no remaining defect. `emitProgram` still preserves call-graph and entry refusal as its first gates, then validates every ordered body against the established multi-function native-emission contract before schema-2 occurrence, event-capacity, and output-size preflight.
-
-The post-validation preflight remains effective for supported programs: it bounds activation occurrences before C serialization, derives occurrence-weighted event capacity, computes the canonical schema-2 document size, and refuses only output over the configured limit. `TestSchema2ExecutionOutputBoundIsPreflighted` retains N-1 refusal, exact-bound admission, and no-serialization assertions. The added `TestUnsupportedProgramShapePrecedesSchema2Preflight` uses a checker-clean multi-function `Match` fixture and proves its established structural diagnostic wins before C serialization.
-
-Verification run in this review:
-
-`go test ./internal/compiler/cgen -run 'Test(UnsupportedProgramShapePrecedesSchema2Preflight|Schema2ExecutionOutputBoundIsPreflighted|InvocationPathTableBoundary|DeepDiamondExecutesAcrossNativeOptimizationTiers|InvocationPreflightOrdering)$' -count=1`
-
-`go test ./internal/compiler/session -run 'TestPhase15|TestExecutionProducerFaultIsCaughtByPeer|TestExecutionPeerAcceptanceFaultIsCaughtByControl' -count=1`
+Reviewed the native Schema 2 decoder admission test, session comparison and package-selection tests, and CI aggregate selection. The focused test selectors are paired with the packages that own those tests, and the current workflow runs the decoder seam and session evidence seams from their owning packages. All reviewed files meet quality standards. No issues found.
 
 ## Narrative Findings (AI reviewer)
 
-No findings. All reviewed files meet the applicable correctness, security, and maintainability requirements.
+No findings.
 
 ---
 
-_Reviewed: 2026-09-19T20:19:32Z_
-_Reviewer: the agent (gsd-code-reviewer)_
-_Depth: deep_
+_Reviewed: 2026-09-26T16:00:00Z_  
+_Reviewer: the agent (gsd-code-reviewer)_  
+_Depth: standard_
