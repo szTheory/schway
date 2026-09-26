@@ -57,3 +57,20 @@ func TestPhase18WrongSlotMutation(t *testing.T) {
 	}
 
 }
+
+func TestPhase18LongTagWrongSlotMutation(t *testing.T) {
+	const tag = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+	program := checkedProgram(t, "testdata", "phase18", "long_payload_return.lang")
+	restore := cgen.SetPayloadSlotSwapForTest(true)
+	mutated := phase11RunFourTiersWithSupplier(t, context.Background(), program, "return_payload", tag, cgen.EmitProgramNativeForTest, "emitProgram long-tag mutated")
+	restore()
+	if injected := cgen.PayloadSlotSwapInjectedWriteCount(); injected < 1 {
+		t.Fatalf("long-tag wrong-slot mutation injected %d writes, want a positive count", injected)
+	}
+	mutated["interpreter"] = phase16ProjectInterpreterSchema2(t, program, mutated["interpreter"])
+	err := session.Phase5CompareProgramEngines("testdata/phase18/long_payload_return.lang:"+tag+"(mutated)", program, mutated)
+	var disagreement *session.Phase5EngineDisagreement
+	if !errors.As(err, &disagreement) || disagreement.Axis != session.AxisTerminalOutcome {
+		t.Fatalf("mutated long-tag program disagreement = %v, want exact %s divergence", err, session.AxisTerminalOutcome)
+	}
+}
