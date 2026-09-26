@@ -2,20 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 19
-current_phase_name: Numeric Literals and `OpConst`
-status: planning
-stopped_at: Phase 18 complete, ready to plan Phase 19
-last_updated: "2026-09-26T16:13:23.517Z"
+current_phase: 15
+current_phase_name: Event Identity (`lang.execution/2`)
+status: executing
+stopped_at: Phase 18 complete; Phase 15 stale verification is the earliest open gate
+last_updated: "2026-09-26T16:19:42.543Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 18 complete, transitioned to Phase 19
-state_head: 54014332de05f579e9a2857beaf5cadb3e29b241
+last_activity_desc: Phase 18 complete; init.progress routes next to refresh Phase 15 verification
+state_head: 939c120dcae0c731ce7230a743444c146a27a6c9
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 4
   total_plans: 89
   completed_plans: 89
-  percent: 100
 ---
 
 # Project State
@@ -85,32 +84,34 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 19 — Numeric Literals and `OpConst`
-Plan: Not started
+Phase: 15 — Event Identity (`lang.execution/2`)
+Plan: 10 of 10 complete
 Total Plans in Phase: 10
-Status: Ready to plan
-Last activity: 2026-09-26 — Phase 18 complete, transitioned to Phase 19
+Status: Implementation complete; verification fingerprint is stale
+Last activity: 2026-09-26 — Phase 18 complete; progress routes to Phase 15 verification
 
-Phase 16 is complete: all 26 plans are summarized, the existing 21/21
-automated UAT remains complete and untouched, the refreshed verifier passed
-4/4 goal truths, and the full Go suite passed. The completion command suggested
-Phase 17, but `init.progress` identifies Phase 18 as the earliest remaining
-gate because Phase 17 is already complete. Phase 18 has all 10 plan summaries
-and completed UAT; only its verification fingerprint is stale. Resume with
-`$gsd-execute-phase 18` so the phase gates and verifier can refresh without
-replaying implementation plans or UAT. The generic verification-status route
-currently advertises `$gsd-verify-work 18`, but Phase 18's 16/16 UAT is already
-complete and that command does not refresh a stale execution-verification
-report. Follow the stale-report route above. Phase 19 also has a stale report;
-Phase 21 remains under M004, after M003's Phases 14-20.
+Phase 18 is verified complete. `init.progress` routes first to Phase 15 because
+the verification reports for Phases 15, 16, 19, and 21 are stale; Phase 15 has
+10/10 plans and no incomplete plans. Resume with `$gsd-execute-phase 15` to
+refresh its verification while preserving completed UAT, then re-query progress.
 
-Phase 16 closeout reported non-blocking planning-integrity warnings: several
-historical summary references point to deleted files, and S-010 appears in the
-requirements body without a traceability row. The Phase 16 code review also
-records one advisory warning (WR-01) about section-scoped ownership assertions.
-These do not change the passed verifier; preserve them for scoped follow-up.
+Phase 18 is verified complete: all 10 plan summaries exist, its UAT remains
+16/16 complete and untouched, and the refreshed verifier passed 30/30 truths.
+The full Go suite passed after the final source and substantive traceability
+changes. `init.progress` now identifies Phase 15 as the earliest outstanding
+gate because its verifier is stale; Phases 16, 19, and 21 also have stale
+verifier reports. Phase 15 has 10/10 plan summaries and no incomplete plans.
+Resume with `$gsd-execute-phase 15` to refresh that report while preserving
+completed UAT, then re-query progress. Phase 21 remains under M004, after
+M003's Phases 14-20.
 
-**Next:** $gsd-execute-phase 18
+Phase 16 closeout recorded non-blocking planning-integrity warnings about
+historical summary references and S-010 traceability. The S-010 traceability
+row was added during Phase 18 closeout. The Phase 16 code review still records
+an advisory warning (WR-01) about section-scoped ownership assertions; preserve
+that item for scoped follow-up.
+
+**Next:** $gsd-execute-phase 15
 
 ## M003 Phase Map
 
@@ -121,11 +122,11 @@ Phases 14-20. Structure is the ratified plan from
 | Phase | Name | Requirements | Plans (est.) | Status |
 |-------|------|--------------|--------------|--------|
 | 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
-| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete |
-| 16 | Branch/Match Emitter Port | 2 | 26 | Complete |
+| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Implementation complete; verification stale |
+| 16 | Branch/Match Emitter Port | 2 | 26 | Implementation complete; verification stale |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
-| 18 | Branch on a Computed Value | 3 | 9 | Executed; verification stale |
-| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Executed; verification stale |
+| 18 | Branch on a Computed Value | 3 | 10 | Complete; verification passed 2026-09-26 |
+| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Implementation complete; verification stale |
 | 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete |
 
 **Carry-forward context that must survive a context reset** (restated here
@@ -720,10 +721,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T14:35:28.710Z
-Stopped at: Phase 18 complete, ready to plan Phase 19
+Last session: 2026-09-26T16:19:42.543Z
+Stopped at: Phase 18 complete; Phase 15 stale verification is the earliest open gate
 Resume file: None
-Next command: $gsd-execute-phase 18
+Next command: $gsd-execute-phase 15
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -807,12 +808,12 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Run `$gsd-execute-phase 18`. Its 9 plan summaries and completed automated UAT
-  already exist, so this is the GSD no-plan resume route for the stale verifier
-  report. It advances through phase gates and goal verification without
-  repeating plans or presenting completed UAT. The Phase 16 completion command
-  returned Phase 17, while the canonical `init.progress` resolver identifies
-  Phase 18 as the earliest remaining gate; use the resolver result.
+- Run `$gsd-execute-phase 15`. Its ten plan summaries exist and none are
+  incomplete. This refreshes the stale verifier without replaying plans or
+  completed UAT. `init.progress` identifies Phase 15 as the earliest remaining
+  gate; Phases 16, 19, and 21 also have stale verification reports.
+- Phase 18 is complete with a passing 30/30 verification; its UAT and validation
+  records remain unchanged.
 - Historical planning notes below describe completed work; they are not current
   next-action pointers.
 
