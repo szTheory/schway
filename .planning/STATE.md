@@ -74,7 +74,11 @@ complete. The full Go suite passes. The live GSD resolver identifies Phase 15
 as the earliest remaining milestone gate because its existing verification
 fingerprint is stale after later shared-artifact changes; its UAT is already
 complete. Refresh the verifier report while preserving the completed UAT, then
-follow the refreshed resolver for other stale phase reports.
+follow the refreshed resolver for other stale phase reports. Routing
+discrepancy: `phase.complete 21` returned Phase 19 and did not update ROADMAP,
+while `init.progress` identifies Phase 15 as the earliest unfinished gate;
+Phase 21 is listed under M004 and is not a new M003 phase to plan. Do not
+rerun Phase 21 or plan Phase 19 from that stale transition result.
 
 **Next:** $gsd-verify-work 15 --auto
 
