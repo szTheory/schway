@@ -1,7 +1,7 @@
 ---
 phase: "16"
 slug: "branch-match-emitter-port"
-status: complete
+status: validated
 nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-19"
@@ -151,3 +151,13 @@ Plans 17–21 and 23–26 explicitly declare `gap_ids`; their tests remain in th
 | Full build and test suite after report correction | `GOCACHE=/tmp/ai-lang-gocache go build ./...`; `GOCACHE=/tmp/ai-lang-gocache go test ./...` | Both PASS; fresh merged-branch results supplied by orchestrator and recorded in `16-VERIFICATION.md` |
 
 The scanner R3 finding recorded in the prior audit is resolved: the report now uses `TestSupersededEmitterDefinitionsRemoved`, and both groundedness controls pass. The Linux exact-shape `restrict` lane remains the documented manual-only admission condition because it requires Linux host evidence; the M004 cut disposition remains refusal-first. It does not require conversational UAT.
+
+## Validation Audit — 2026-09-26
+
+**Outcome: COMPLIANT.** The existing map covers all 26 plans and the documented Linux-only probe remains an intentional manual-only admission condition. The execute-phase regression gate passed with `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...`.
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |

@@ -90,6 +90,7 @@ created: "2026-09-24"
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
 | 2026-09-24 | 49 | 49 | 0 | gsd-security-auditor (ASVS L1) |
+| 2026-09-26 | 49 | 49 | 0 | GSD execute-phase security gate (ASVS L1) |
 
 ## Sign-Off
 

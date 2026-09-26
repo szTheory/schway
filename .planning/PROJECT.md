@@ -49,9 +49,16 @@ it did not finish producing, and the `>=EXERCISED` bar is applied reflexively to
 Phase 14's own validation artifact. Debt rows require a named owner; zero
 `UNOWNED(none-yet-scheduled)` rows remain in `PHASE-14-DEBT.md`.
 
-**Known gaps carried into M003** (corrected 2026-09-17 against the tree by the
-M003 research fan-out — `.planning/research/M003/`; three claims previously
-recorded here were wrong and are restated below):
+**Phase 16 complete (2026-09-26) — Branch/Match Emitter Port.** All 26 plans
+are complete. Branch and match lowering now use `emitProgram`, and the retired
+emitters are removed. The remaining foreign and by-pointer families stay an
+explicit M004 boundary under NAT-08/NAT-09. The refreshed verifier passed all
+4 goal truths, the full Go suite passed, and the already-complete 21/21
+automated UAT was preserved without rerunning it.
+
+**M003 entry-state gaps** (the snapshot as M003 began, corrected 2026-09-17
+against the tree by the research fan-out — `.planning/research/M003/`; three
+claims previously recorded here were wrong and are restated below):
 
 - **DX-06 (partial, and worse than recorded)** — this section previously said
   the contract-boundary blame resolver was "built, tested, and compile-time
@@ -130,9 +137,9 @@ instruments honest enough that the claim means what it says.
   identity under a `lang.execution/2` bump, uniqueness moved to
   `(invocation, id)`, independently re-derivable by a non-importing peer
   because the call graph is a guaranteed DAG.
-- One emission law instead of two — branch/match ported into `emitProgram`,
-  three emitters deleted, the other three formally cut by a D-10-60 amendment
-  with M004 landings.
+- One emission law instead of two — **completed in Phase 16**: branch/match
+  lowering uses `emitProgram`, three emitters were deleted, and the remaining
+  foreign/by-pointer families were formally cut with M004 ownership.
 - A function's return type may differ from its parameter type.
 - A branch that can discriminate a **computed** value — today `match` is a
   whole-function-body form whose scrutinee must be the function's own
@@ -411,6 +418,7 @@ Canonical planning inputs:
 | Reject the integration checker's requirement-satisfaction column while adopting its structural findings | It graded requirements from wiring, and wiring is exactly what a structurally unreachable defect class still has | ✓ Good — caught two would-be false greens (DX-06, DX-07) that contradicted both Phase 13's own verification and a `grep` of the tree |
 | Keep cache refusal codes stable while retaining typed Clang probe causes and finite subprocess deadlines | Callers keep a fail-closed contract while diagnostics distinguish timeout, launch, and command failures; bounded work remains cancellable | ✓ Good — three default-parallel full suites, capped-parallel and race suites, vet, and build all pass under verified captured receipts |
 | Reuse existing macOS/Linux full and race CI lanes when focused coverage adds no distinct signal | Recurring CI value must justify its runtime and maintenance cost | ✓ Good — Plan 08's unchanged CI blob and `not_added` disposition remain verified after G-18-16 closure |
+| Route branch and match lowering through the public `emitProgram` authority | A single emitter law prevents admitted source shapes from depending on a legacy backend | ✓ Good — M003 Phase 16 passed all 4 verification truths; foreign and by-pointer families retain explicit M004 ownership |
 
 ## Evolution
 
@@ -430,4 +438,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-25 after Phase 18 verification (Branch on a Computed Value) passed*
+*Last updated: 2026-09-26 after Phase 16 verification refresh passed*

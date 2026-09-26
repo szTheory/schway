@@ -1,8 +1,8 @@
 ---
 phase: 16-branch-match-emitter-port
-reviewed: 2026-09-23T00:00:00Z
+reviewed: 2026-09-26T12:59:22Z
 depth: standard
-files_reviewed: 13
+files_reviewed: 14
 files_reviewed_list:
   - .planning/milestones/M001-phases/04-fallible-resources-and-c-boundary/04-VALIDATION.md
   - internal/compiler/session/evidence_grade_test.go
@@ -17,30 +17,35 @@ files_reviewed_list:
   - testdata/phase16/public-emitter-consumers.json
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
+  - internal/compiler/session/session_test.go
 findings:
   critical: 0
-  warning: 0
+  warning: 1
   info: 0
-  total: 0
-status: clean
+  total: 1
+status: issues_found
 ---
 
 # Phase 16: Code Review Report
 
-**Reviewed:** 2026-09-23T00:00:00Z
+**Reviewed:** 2026-09-26T12:59:22Z
 **Depth:** standard
-**Files Reviewed:** 13
-**Status:** clean
+**Files Reviewed:** 14
+**Status:** issues_found
 
 ## Summary
 
-Reviewed the Phase 16 Plans 21–24 gap-closure commit range (`1b5fa64^..04d6154`), including the Phase 11 refusal-first migration, moved evidence-only fixture, inventory and provenance registry, validation-row eligibility change, generated run record, and the Phase 4 evidence-row correction.
+The existing review covered the Phase 16 Plans 21–24 gap-closure range (`1b5fa64^..04d6154`) across 13 files and found no issues. This update adds a standard-depth review of `internal/compiler/session/session_test.go` for Plan 25.
 
-The by-pointer route proves the exact current public refusal before reading frozen C, and the frozen artifact is bound to the checked fixture, canonical program, artifact digest, and refusal. The inventory still derives call sites from the Go AST and requires an exact registry bijection. The validation grader selects completed documents plus only draft/planned tables already carrying the Grade schema; its live record is bound to the current requested pairs and completion witnesses. No correctness, security, or test-reliability defect was found.
+The previously reviewed by-pointer route proves the exact current public refusal before reading frozen C, and the frozen artifact is bound to the checked fixture, canonical program, artifact digest, and refusal. The inventory derives call sites from the Go AST and requires an exact registry bijection. The validation grader selects completed documents plus only draft/planned tables already carrying the Grade schema; its live record is bound to the current requested pairs and completion witnesses. The Plan 25 guard checks expected debt rows and several seeded regressions, but its document-wide string checks do not bind the owner and family assertions to their intended roadmap section and requirements amendment.
 
 ## Narrative Findings (AI reviewer)
 
-No findings.
+### WR-01: Ownership guard does not bind text to its required sections
+
+**File:** `internal/compiler/session/session_test.go:4631`
+**Issue:** `phase16EmitterCutProblems` checks the NAT-09 header and marker in `requirements`, but later checks family names and the Phase 21 owner title with document-wide `strings.Contains` calls (lines 4634 and 4645). Likewise, it checks that M003 precedes M004 and that the Phase 21 title exists somewhere in the roadmap, without proving that the titled Phase 21 entry is inside M004 and after the M003 completion boundary. As a result, moving family names outside the amendment or moving the titled owner elsewhere while leaving the M004 heading intact can satisfy the guard even though the stated linkage is broken.
+**Fix:** Extract the NAT-09 amendment section and the relevant M004 roadmap section (bounded by the next headings), then assert the family names and owner title within those sections and verify the Phase 21 heading's position relative to the M003 completion marker.
 
 ## Verification Evidence
 
@@ -54,6 +59,6 @@ Also verified JSON syntax for the three changed evidence manifests and record me
 
 ---
 
-_Reviewed: 2026-09-23T00:00:00Z_
+_Reviewed: 2026-09-26T12:59:22Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_

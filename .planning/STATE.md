@@ -2,20 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 17
-current_phase_name: Return Type ≠ Parameter Type
-status: planning
-stopped_at: Phase 16 complete, ready to plan Phase 17
-last_updated: "2026-09-26T17:31:15.066Z"
+current_phase: 19
+current_phase_name: Numeric Literals and OpConst
+status: Verification fingerprint stale; Phase 19 implementation and UAT are complete
+stopped_at: Phase 16 complete; Phase 19 stale verification is the earliest open gate
+last_updated: "2026-09-26T17:37:47.775Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 16 complete, transitioned to Phase 17
-state_head: f009591cb6c5dd2271be3b533d34543adf0162cc
+last_activity_desc: Phase 16 verification passed; Phase 19 stale verification is next
+state_head: 6e6a245f4e9c7c92eeb62a15309a8c44b4212595
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 89
   completed_plans: 89
-  percent: 100
 ---
 
 # Project State
@@ -27,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 16 — Branch/Match Emitter Port
+**Current focus:** Phase 19 — Numeric Literals and OpConst
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -85,30 +84,26 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 17 — Return Type ≠ Parameter Type
-Plan: Not started
-Total Plans in Phase: 26
-Status: Ready to plan
-Last activity: 2026-09-26 — Phase 16 complete, transitioned to Phase 17
+Phase: 19 — Numeric Literals and OpConst
+Plan: 7/7 complete; verification pending
+Total Plans in Phase: 7
+Status: Verification fingerprint stale; Phase 19 implementation and UAT are complete
+Last activity: 2026-09-26 — Phase 16 verification passed; Phase 19 is next
 
-Phase 15 verification was refreshed on 2026-09-26: all 7 must-haves passed,
-and its 12/12 automated UAT remains unchanged. The full Go suite passed during
-the execute-phase regression gate.
+Phase 16 is complete: 26/26 plans, 4/4 goal truths, and the existing 21/21
+automated UAT passed. Its verification fingerprint now passes GSD's canonical
+status check. The latest full Go suite passed at the Phase 15 regression gate;
+only planning documents changed afterward, so that result was reused.
 
-`init.progress` now routes to Phase 16 because its verification fingerprint is
-stale. Phase 16 has 26/26 summaries and no incomplete plans. Resume with
-`$gsd-execute-phase 16` to refresh its report without replaying plans or UAT.
-Phase 19 also has a stale report; Phase 21 remains under M004 after M003's
-Phases 14-20. Phase 18 remains verified complete with 10/10 plans and 30/30
-truths passed.
+`init.progress` now routes to Phase 19 because its verification fingerprint is
+stale. Phase 19 has 7/7 summaries and complete 15/15 UAT. Resume with
+`$gsd-execute-phase 19` to refresh verification without replaying plans or UAT.
+Phase 21 also has a stale report, but it follows M003's remaining Phase 19 gate.
+Phases 17, 18, and 20 are verified complete. Phase 16 closeout recorded four
+non-blocking historical-summary path warnings; its code review's WR-01 remains
+an advisory scoped follow-up.
 
-Phase 16 closeout recorded non-blocking planning-integrity warnings about
-historical summary references and S-010 traceability. The S-010 traceability
-row was added during Phase 18 closeout. The Phase 16 code review still records
-an advisory warning (WR-01) about section-scoped ownership assertions; preserve
-that item for scoped follow-up.
-
-**Next:** $gsd-execute-phase 16
+**Next:** $gsd-execute-phase 19
 
 ## M003 Phase Map
 
@@ -120,10 +115,10 @@ Phases 14-20. Structure is the ratified plan from
 |-------|------|--------------|--------------|--------|
 | 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
 | 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete; verification passed 2026-09-26 |
-| 16 | Branch/Match Emitter Port | 2 | 26 | Implementation complete; verification stale |
+| 16 | Branch/Match Emitter Port | 2 | 26 | Complete; verification passed 2026-09-26 |
 | 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
 | 18 | Branch on a Computed Value | 3 | 10 | Complete; verification passed 2026-09-26 |
-| 19 | Numeric Literals and `OpConst` | 3 | 6-8 | Implementation complete; verification stale |
+| 19 | Numeric Literals and `OpConst` | 3 | 7 | Implementation and UAT complete; verification stale |
 | 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete |
 
 **Carry-forward context that must survive a context reset** (restated here
@@ -718,10 +713,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T16:58:53Z
-Stopped at: Phase 16 complete, ready to plan Phase 17
+Last session: 2026-09-26T17:39:49Z
+Stopped at: Phase 16 complete; Phase 19 stale verification is the earliest open gate
 Resume file: None
-Next command: $gsd-execute-phase 16
+Next command: $gsd-execute-phase 19
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
