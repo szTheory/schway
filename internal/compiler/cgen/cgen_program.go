@@ -885,7 +885,22 @@ func emitProgramU64Support(out *strings.Builder) {
 func emitProgramTerminalValueWriter(out *strings.Builder, branchType programBranchType, dataTypes []core.DataType) {
 	fmt.Fprintf(out, "static int lang_write_terminal_value(%s value) {\n", branchType.typeName)
 	fmt.Fprintf(out, "  const char *tag_name = %s(value);\n  if (tag_name == NULL) return 0;\n", branchType.nameFunction)
-	out.WriteString("  char payload_hex[8];\n  char payload_decimal[4];\n  int payload_length;\n  if (!lang_write_bytes(\"\\\"\", 1u) || !lang_write_json_string_content(tag_name)) return 0;\n  switch (value.tag) {\n")
+	needsBufferScratch, needsByteScratch := false, false
+	for _, alternative := range branchType.alternatives {
+		field, ok := branchType.fields[alternative.source]
+		if !ok {
+			continue
+		}
+		needsBufferScratch = needsBufferScratch || field.cType == "LANG_BUFFER"
+		needsByteScratch = needsByteScratch || field.cType == "unsigned char" && !isProgramNestedBytePayload(field, dataTypes)
+	}
+	if needsBufferScratch {
+		out.WriteString("  char payload_hex[8];\n")
+	}
+	if needsByteScratch {
+		out.WriteString("  char payload_decimal[4];\n  int payload_length;\n")
+	}
+	out.WriteString("  if (!lang_write_bytes(\"\\\"\", 1u) || !lang_write_json_string_content(tag_name)) return 0;\n  switch (value.tag) {\n")
 	for _, alternative := range branchType.alternatives {
 		field, hasPayload := branchType.fields[alternative.source]
 		fmt.Fprintf(out, "    case %s:\n", alternative.cName)
@@ -913,6 +928,14 @@ func emitProgramTerminalValueWriter(out *strings.Builder, branchType programBran
 		}
 	}
 	out.WriteString("    default: return 0;\n  }\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
+}
+
+func isProgramNestedBytePayload(field programPayloadField, dataTypes []core.DataType) bool {
+	if field.cType != "unsigned char" {
+		return false
+	}
+	_, ok := findProgramDataTypeByName(dataTypes, field.payloadType)
+	return ok
 }
 
 func findProgramDataTypeByName(dataTypes []core.DataType, name string) (core.DataType, bool) {
