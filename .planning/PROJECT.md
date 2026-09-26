@@ -198,7 +198,7 @@ research is not re-derived later.
 
 | Milestone | Charter | Gate that becomes meaningful |
 |---|---|---|
-| M004 | Native emission ownership/resource discharge, with the broader feature charter still provisional | Phase 21's implementation and UAT are complete, but its verification fingerprint needs refresh. If iteration remains in scope, a pre-phase spike must answer what replaces `pathoracle`, which refuses CFG cycles by name. |
+| M004 | Native emission ownership/resource discharge, with the broader feature charter still provisional | Phase 21's implementation and UAT are complete, but its verification fingerprint needs refresh before M004 kickoff. File Phase 21 under M004 before new-milestone cleanup; if iteration remains in scope, a pre-phase spike must answer what replaces `pathoracle`, which refuses CFG cycles by name. |
 | M005 | Aggregates and arity-N | D-12-43 finally becomes constructible — via a generalized-scrutinee arm returning a destructured payload, not via arithmetic alone. Arity 2 takes the `pathoracle` case space from ~12 to ~108. |
 | M006 | Modules and separate compilation | DX-06's B1 blame becomes real: the first user-declared contract field the declaring function's own admission cannot verify. |
 
@@ -296,10 +296,13 @@ milestone must measurably move the refusal forward.
 ### Active
 
 M004 requirements have not been ratified. Its provisional charter is
-not yet ratified. Phase 21 has completed implementation and automated UAT, with
-its verification fingerprint awaiting refresh. Formalize M004's full scope and
-acceptance criteria through the next milestone cycle; preserve Phase 21's
-completed UAT and refresh its verifier there without replaying UAT.
+not yet ratified. Phase 21 has completed implementation and all 7 automated
+UAT checks, with its verification fingerprint awaiting refresh. Run
+`$gsd-execute-phase 21` to resume at verification gates without replaying plans
+or UAT. After verification passes, file Phase 21 under M004 before running
+`$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`; the
+installed cleanup would otherwise archive every remaining physical phase
+directory under outgoing M003.
 
 ### Deferred — Named Landing, Not Dropped
 

@@ -84,8 +84,13 @@ The live resolver says Phase 16 is the earliest remaining gate. Its 26 plans and
 
 ## Current Routing (M003 Closeout)
 
-Phases 14–20 are now complete and M003 is archived. Do not rerun Phase 16. The
-next command is `$gsd-new-milestone "Native Emission Ownership and Resource
-Discharge"` to formalize M004. Phase 21 has 4/4 plans and 7/7 UAT complete; its
-verification fingerprint is stale and should be refreshed with
-`$gsd-execute-phase 21` after M004 is opened, without replaying UAT.
+Phases 14–20 are complete and M003 is archived. Do not rerun Phase 16. The
+current next command is `$gsd-execute-phase 21`: its four plan summaries and
+7/7 automated UAT checks are complete, while the verification fingerprint is
+stale. Resume at the verification gates without replaying plans or UAT.
+
+After Phase 21 verification passes, file its directory under
+`.planning/milestones/M004-phases/` before running
+`$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`.
+The installed new-milestone cleanup archives every remaining physical phase
+directory under outgoing M003, regardless of roadmap ownership.

@@ -2,12 +2,12 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-status: Awaiting next milestone
-stopped_at: M003 archived; ready to formalize M004
-last_updated: "2026-09-26T20:35:06Z"
+status: Phase 21 verification refresh pending
+stopped_at: M003 archived; refresh Phase 21 verification before M004 kickoff
+last_updated: "2026-09-26T21:02:11Z"
 last_activity: 2026-09-26
-last_activity_desc: Milestone M003 completed and archived
-state_head: 37f9cb2e3be9f699ea629a9f037bf29d98f94de0
+last_activity_desc: M003 archived; Phase 21 verification refresh is next
+state_head: c01b96443aaad627b484f4f185f32314dba1433a
 progress:
   total_phases: 7
   completed_phases: 7
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Start the M004 milestone cycle; its requirements and full charter are not yet ratified
+**Current focus:** Refresh Phase 21 verification before opening M004; its requirements and full charter are not yet ratified
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -85,9 +85,9 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: M003 complete; M004 not yet opened
+Phase: M003 complete; Phase 21 verification refresh pending; M004 not yet opened
 Plan: —
-Status: Awaiting next milestone
+Status: Phase 21 verification refresh pending
 Last activity: 2026-09-26 — Milestone M003 completed and archived
 
 ## M003 Closeout (archived)
@@ -96,7 +96,8 @@ M003 shipped on 2026-09-26: Phases 14–20, 7 phases, 85 plans, 114 tasks, and
 33/33 requirements with all seven phase verifications passing. The audit status
 is `tech_debt`, with partial Nyquist coverage in Phases 14, 17, and 18 and four
 open unowned debt items within the five-item cap. Phase 21 is assigned to M004
-and was excluded from M003.
+and was excluded from M003. The user chose to skip quick-task archival; all 11
+completed quick-task folders remain under `.planning/quick/`.
 
 - Full phase history: `.planning/milestones/M003-phases/`
 - Roadmap: `.planning/milestones/M003-ROADMAP.md`
@@ -106,11 +107,24 @@ and was excluded from M003.
 ## M004 Handoff
 
 M004 has not been formally opened; its requirements and full charter are not
-ratified. The existing Phase 21 work has all four plans complete and automated
-UAT at 7/7, but its verification fingerprint is stale after the report's
-recurring LTO evidence row was updated. After M004 is opened, resume with
-`$gsd-execute-phase 21` to refresh the report while preserving UAT; do not replay
-the completed plans or UAT.
+ratified. Phase 21 has all four plan summaries and all 7 automated UAT checks
+passing with no blockers (`phase uat-passed 21`). Its verification report file
+exists, but its fingerprint is stale after the recurring LTO evidence row was
+updated. The canonical `query verification status 21` reports `missing` and
+recommends `$gsd-execute-phase 21`; `init.progress` reports `stale` and offers
+`$gsd-verify-work 21`, but that route treats report staleness as a UAT blocker.
+The saved UAT is already complete, so do not rerun UAT. `init.execute-phase 21`
+shows four summaries and zero incomplete plans; run `$gsd-execute-phase 21` to
+resume at the verification gates without replaying plans or UAT.
+
+After Phase 21 verification passes, file its directory under
+`.planning/milestones/M004-phases/` before running
+`$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`.
+The installed new-milestone workflow clears every physical directory left in
+`.planning/phases/` under the outgoing milestone, without checking roadmap
+ownership; leaving Phase 21 there would incorrectly archive it under M003.
+Preserve this project's `M00x` identifiers: the installed latest-completed
+resolver only recognizes `vN.N` headings and currently returns null for M003.
 
 ## M002 Phase Map
 
@@ -668,10 +682,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T20:35:06Z
-Stopped at: M003 archived; M004 milestone kickoff is next
+Last session: 2026-09-26T21:02:11Z
+Stopped at: M003 archived; Phase 21 verification refresh pending before M004 kickoff
 Resume file: None
-Next command: $gsd-new-milestone "Native Emission Ownership and Resource Discharge"
+Next command: $gsd-execute-phase 21
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths

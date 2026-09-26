@@ -40,9 +40,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:new-milestone \"Native Emission Ownership and Resource Discharge\"",
-    "label": "Start M004 milestone cycle",
-    "reason": "M003 is archived; M004 scope and requirements have not yet been ratified"
+    "command": "/gsd:execute-phase 21",
+    "label": "Refresh Phase 21 verification without replaying completed plans or UAT",
+    "reason": "All four plans and seven automated UAT checks are complete; the verification fingerprint is stale"
   },
-  "updated_at": "2026-09-26T20:24:43.172Z"
+  "updated_at": "2026-09-26T21:02:11.000Z"
 }
