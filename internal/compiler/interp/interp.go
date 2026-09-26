@@ -254,19 +254,15 @@ func runLinearBlocks(program core.Program, function core.Function, input string)
 	return runProgramFrameStack(program, base)
 }
 
-// nonlocalExitDefectReason is duplicated VERBATIM from cgen.go's own
-// constant of the same name -- the two literal strings are kept in sync by
-// comment and convention on both sides, not by import, since interp and
-// cgen model the SAME shared probe convention through entirely different
-// mechanisms (a Go call counter here, a real longjmp there).
+// nonlocalExitDefectReason is the stable Phase 4 interpreter probe result.
+// Its wording preserves the historical native-emitter fixture convention;
+// current whole-program native emission refuses foreign-call bodies.
 const nonlocalExitDefectReason = "foreign nonlocal exit detected at process-root landing pad"
 
 // liveResourcePlaces projects the live-tracking map into the acquisition's
-// own TARGET PLACE id, not its operation id -- the same identifier
-// convention cgen.go's resourceLedger uses for its own lang_resource_ids
-// array, so the two engines report the identical strings for a nonlocal-
-// exit-triggered defect's live_resources field and its per-event
-// SourcePlace. This is a narrower, DIFFERENT convention than
+// own TARGET PLACE id, not its operation id -- the identifier convention
+// preserved by the historical native-emitter witness for its
+// lang_resource_ids array. This is a narrower, DIFFERENT convention than
 // liveResourceList's operation-id shape (used by every OTHER terminator
 // this phase), scoped only to the nonlocal-exit path this plan adds.
 func liveResourcePlaces(operations map[string]core.LinearOperation, live map[string]bool, order []string) []string {

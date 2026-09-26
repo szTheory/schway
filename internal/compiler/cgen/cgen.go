@@ -149,8 +149,7 @@ func EmitNative(program core.Program) (string, error) {
 // than silently aliasing two distinct core identities onto one C identifier.
 //
 // The lists are deliberately supersets: a name is kept even when no current
-// emitter path writes it (for example "input" in the linear emitter, or
-// LANG_BUFFER in the non-Buffer lowering). Over-reservation is inert, because
+// program-emission path writes it. Over-reservation is inert, because
 // property 1 guarantees no preferred name can equal a lowercase or
 // non-"LANG_"-prefixed reserved entry; under-reservation is the dangerous
 // direction, so the tests only forbid that one.
@@ -168,10 +167,9 @@ var matchFixedNames = []string{
 	"index", "kind", "lang_entry_name", "length", "source_place", "target_place", "type_id",
 }
 
-// linearFixedNames is every ordinary identifier emitLinear and
-// emitLinearOutputSupport write themselves, excluding C keywords and the libc
-// names they call. It covers the macros, typedefs, struct members, globals,
-// helper functions, and every helper parameter and local.
+// linearFixedNames is the reserved ordinary-identifier vocabulary for
+// whole-program emission of linear-shaped functions. It covers emitted
+// macros, typedefs, struct members, globals, helper functions, and locals.
 var linearFixedNames = []string{
 	// macros and typedefs
 	"LANG_BUFFER", "LANG_EVENT", "LANG_OUTPUT_LIMIT", "LANG_EVENT_CAPACITY",
@@ -184,9 +182,9 @@ var linearFixedNames = []string{
 	"lang_write_bytes", "lang_write_literal", "lang_write_json_string",
 	"lang_record_event", "lang_write_events", "lang_write_buffer_hex", "lang_write_byte",
 	"lang_write_u64", "lang_parse_u64_decimal",
-	// Phase 4 plan 02 resource ledger (D-04-07)
+	// Historical foreign resource-ledger output names remain reserved.
 	"lang_resource_ids", "lang_resource_live", "lang_write_live_resources", "first",
-	// Phase 4 plan 05 process-root nonlocal-exit landing pad (D-04-17)
+	// Historical foreign nonlocal-exit output name.
 	"lang_nonlocal_landing",
 	// helper parameters and locals
 	"data", "value", "hex", "byte", "escape", "encoded", "event", "index",
@@ -196,16 +194,7 @@ var linearFixedNames = []string{
 	"lang_entry_output", "lang_invocations",
 }
 
-// borrowByPointerMarker is the single, stable marker comment
-// emitLinearBorrowedByPointer places on its generated function's own
-// signature line (D-05-01/D-05-02): a later Phase 5 plan's mutation runner
-// locates this exact marker as its fail-closed single-occurrence target,
-// mirroring every existing mutation-site marker convention in this file
-// (mutationMarker in session.go, padInstallMarker/padEndMarker,
-// ledgerPopulateMarker above).
-const borrowByPointerMarker = "/* lang:by-pointer-param */"
-
-// selectsByPointerLowering is D-05-02's structural selection predicate. It
+// selectsByPointerLowering is D-05-02's structural shape classifier. It
 // returns true only when function's sole parameter is exclusively borrowed
 // as literally the FIRST operation of a straight-line (Match-less,
 // block-less) linear body, is never referenced again directly anywhere else
@@ -215,16 +204,17 @@ const borrowByPointerMarker = "/* lang:by-pointer-param */"
 // exclusive loan covering every operation from the parameter's first use to
 // the function terminator" (D-05-02) -- derived entirely from the core
 // artifact's own LinearOperation.SourceID/TargetID/Kind facts, never a
-// fixture name, function name, or allowlist. A branch-shaped body
-// (function.Match != nil) or a foreign-call body (len(linear.Blocks) > 0)
-// never selects this path; both keep their own existing lowering unchanged.
+// fixture name, function name, or allowlist. It is used to describe foreign
+// manifest metadata and classify shapes that emitProgram refuses; it does
+// not select a production lowering path. Branch-shaped and foreign-call
+// bodies do not match this classifier.
 //
 // PublicOrigin == nil is also required: a function whose return type
 // carries a declared `borrow(path)` annotation is already a distinct,
 // previously-shipped semantic category (OWN-04's public borrowed views,
 // e.g. testdata/phase3/public_view_mixed_access.lang) that can have the
 // exact same exclusive-borrow-then-reborrow-to-terminator operation shape
-// as this plan's own fixture -- PublicOrigin is the one genuinely
+// as the historical by-pointer fixture -- PublicOrigin is the one genuinely
 // structural fact (not a name or file match) that tells the two apart, and
 // is exactly what TestPhase5ByPointerLoweringIsAdditive asserts keeps every
 // Phase 1-4 fixture on its own existing lowering path.
@@ -235,9 +225,8 @@ const borrowByPointerMarker = "/* lang:by-pointer-param */"
 // on every corpus fixture (TestAliasFactAgreesWithByPointerSelection) --
 // D-12's three independent derivations still share zero HELPERS with each
 // other (this is read-only cross-package test verification, not a shared
-// implementation), and Emit/EmitNative's own internal dispatch keeps calling
-// the unexported selectsByPointerLowering directly, unaffected by this
-// export.
+// implementation). Emit/EmitNative route through emitProgram, which refuses
+// by-pointer program bodies before serialization.
 func SelectsByPointerLowering(function core.Function, linear *core.LinearBody) bool {
 	return selectsByPointerLowering(function, linear)
 }
@@ -278,21 +267,20 @@ func selectsByPointerLowering(function core.Function, linear *core.LinearBody) b
 	return terminatorIndex == len(operations)-1
 }
 
-// AttributeSuppressionProfile is D-11-16/D-11-17's PERMANENT suppression
-// control for the one optimizer-visible qualifier this package ever
-// writes on a by-pointer parameter (byPointerQualifier below).
+// AttributeSuppressionProfile is D-11-16/D-11-17's permanent suppression
+// control for by-pointer attribute metadata emitted by the foreign manifest
+// API. It does not admit a by-pointer program body.
 type AttributeSuppressionProfile int
 
 const (
-	// AttributesJustified is this package's zero value and its
-	// pre-Phase-11 default: emitLinearBorrowedByPointer's own qualifier is
-	// written exactly as it always has been (D-05-01..D-05-04), completely
-	// unaffected by Phase 11's call-boundary zero-attribute claim
+	// AttributesJustified is the metadata API's zero value and retains the
+	// established D-05-01..D-05-04 attribute claim, completely unaffected by
+	// Phase 11's call-boundary zero-attribute claim
 	// (D-11-09), which is scoped to Lang-to-Lang calls and never to this
 	// pre-existing FFI by-pointer boundary. Every production caller that
 	// never touches AttributeSuppressionProfile observes this value.
 	AttributesJustified AttributeSuppressionProfile = iota
-	// AttributesSuppressed withholds the qualifier even when the
+	// AttributesSuppressed withholds the manifest attribute even when the
 	// structural by-pointer condition would otherwise justify it. It
 	// exists ONLY as the mid-phase gate's own bisection tool (D-11-18):
 	// proving cgen.ScanForBannedAttributes' conjunct is not vacuous by
@@ -326,158 +314,6 @@ func SetAttributeSuppressionProfileForTest(profile AttributeSuppressionProfile) 
 	return func() { attributeSuppressionProfile = previous }
 }
 
-// byPointerQualifier is the one place this package ever returns the
-// literal "restrict" token as generated output text: a single helper
-// feeding the single Fprintf call site in emitLinearBorrowedByPointer, so
-// token-local suppression can never diverge from where the token is
-// actually written. wouldCarryRestrict is the caller's own
-// selectsByPointerLowering result (always true at emitLinearBorrowedByPointer's
-// one call site, since that emitter is reached only through that gate).
-func byPointerQualifier(wouldCarryRestrict bool) string {
-	if wouldCarryRestrict && attributeSuppressionProfile != AttributesSuppressed {
-		return "restrict "
-	}
-	return ""
-}
-
-// emitLinearBorrowedByPointer is D-05-02's additive by-pointer lowering: the
-// thin vertical slice proving a Buffer parameter whose exclusive loan
-// structurally covers the whole body (selectsByPointerLowering above) can
-// lower to a genuine C function taking that parameter BY POINTER, with a
-// single dereference at the one use site that reads the pointer's own
-// pointee value. Modeled exactly on emitLinearForeignOutputSupport's
-// additive-sibling shape (D-04-20): a brand-new function reached only
-// through selectsByPointerLowering, never called from emitLinear,
-// emitBranch, or emitLinearForeign, so every existing committed
-// generated-C golden stays byte-for-byte untouched (D-04-23/D-05-39). Scope
-// is deliberately narrow: exactly the chain shape selectsByPointerLowering
-// admits (one exclusive borrow of the parameter, zero or more reborrows,
-// terminated by OpReturn) -- a richer straight-line shape is out of this
-// plan's scope and this function errors rather than silently mishandling
-// it. D-05-01/D-05-03: this emitter now emits exactly one optimizer-visible
-// attribute, `restrict`, on the parameter -- see the emission site's own
-// comment for why that is legal without importing check's AliasFact type.
-// BannedOptimizerAttributes itself is untouched: `restrict` stays banned at
-// every foreign-extern declaration site (JustifiableAttributes narrows the
-// control, it does not delete it).
-func emitLinearBorrowedByPointer(function core.Function) (string, error) {
-	input, initializer, typeName, err := linearInput(function)
-	if err != nil {
-		return "", err
-	}
-	places := make(map[string]core.Place, len(function.Linear.Places))
-	for _, place := range function.Linear.Places {
-		places[place.ID] = place
-	}
-	parameter, ok := places[function.Parameter.ID]
-	if !ok {
-		return "", fmt.Errorf("linear parameter place is absent")
-	}
-	names := newCNames(linearFixedNames...)
-	placeIDs := make([]string, len(function.Linear.Places))
-	for index, place := range function.Linear.Places {
-		placeIDs[index] = place.ID
-	}
-	locals := make(map[string]string, len(placeIDs))
-	for index, id := range placeIDs {
-		locals[id] = names.allocate(cLocal(function.Linear.Places[index].Name), "place", index)
-	}
-	functionName := names.allocate(cName(function.Name), "function", 0)
-	parameterName := names.allocate(cName(parameter.Name), "parameter", 0)
-	resultLocal := names.allocate(cLocal("result"), "result", 0)
-
-	var out strings.Builder
-	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 */\n")
-	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")
-	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n\n")
-	if function.Parameter.Type == "Buffer" {
-		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
-	}
-	emitLinearOutputSupport(&out, function, typeName)
-
-	// D-05-01/D-05-03: this emitter is reached ONLY through
-	// selectsByPointerLowering's own gate (Emit/EmitNative's dispatch), and
-	// TestAliasFactAgreesWithByPointerSelection (check package) proves that
-	// gate is the EXACT SAME condition as check's independently-derived
-	// AliasFact -- so the qualifier byPointerQualifier returns below is
-	// legal here unconditionally, without cgen importing check's AliasFact
-	// type or re-deriving liveness itself (D-12: zero shared helpers
-	// between the three derivations).
-	fmt.Fprintf(&out, "static %s %s(%s *%s%s) { %s\n", typeName, functionName, typeName, byPointerQualifier(true), parameterName, borrowByPointerMarker)
-
-	declared := map[string]bool{parameter.ID: true}
-	returnLocal := ""
-	for index, operation := range function.Linear.Operations {
-		source := places[operation.SourceID]
-		switch operation.Kind {
-		case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
-			target, exists := places[operation.TargetID]
-			if !exists || declared[operation.TargetID] {
-				return "", fmt.Errorf("operation %q has invalid target", operation.ID)
-			}
-			label := "copy"
-			if operation.Kind == core.OpMove {
-				label = "authority transfer"
-			} else if operation.Kind == core.OpBorrowShared {
-				label = "shared borrow representation"
-			} else if operation.Kind == core.OpBorrowExclusive {
-				label = "exclusive borrow representation"
-			}
-			sourceExpr := locals[source.ID]
-			if index == 0 {
-				// The one dereference site: the exclusive loan's own
-				// creation reads the pointer parameter's pointee value.
-				sourceExpr = "*" + parameterName
-			}
-			fmt.Fprintf(&out, "  %s %s = %s; /* %s: %s */\n", typeName, locals[target.ID], sourceExpr, label, operation.ID)
-			fmt.Fprintf(&out, "  (void)%s;\n", locals[target.ID])
-			eventKind := "value.copied"
-			if operation.Kind == core.OpMove {
-				eventKind = "value.transferred"
-			} else if operation.Kind == core.OpBorrowShared {
-				eventKind = "value.borrowed"
-			} else if operation.Kind == core.OpBorrowExclusive {
-				eventKind = "value.borrowed_exclusive"
-			}
-			fmt.Fprintf(&out, "  (void)lang_record_event(%s, %s, %s, %s, %s, %s);\n",
-				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
-				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
-			declared[operation.TargetID] = true
-		case core.OpReturn:
-			fmt.Fprintf(&out, "  (void)lang_record_event(%s, %s, %s, %s, NULL, %s); /* returned place: %s */\n",
-				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
-				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
-			returnLocal = locals[source.ID]
-		case core.OpCall:
-			// See emitLinear's identical case (D-07-39/A-02).
-			return "", fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
-		default:
-			return "", fmt.Errorf("operation %q has unsupported kind %q for by-pointer lowering", operation.ID, operation.Kind)
-		}
-	}
-	if returnLocal == "" {
-		return "", fmt.Errorf("by-pointer lowering requires a terminal return")
-	}
-	fmt.Fprintf(&out, "  return %s;\n}\n\n", returnLocal)
-
-	out.WriteString("int main(int argc, char **argv) {\n")
-	out.WriteString("  if (argc != 2) return 64;\n")
-	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
-	fmt.Fprintf(&out, "  %s %s = %s;\n", typeName, locals[parameter.ID], initializer)
-	fmt.Fprintf(&out, "  %s %s = %s(&%s);\n", typeName, resultLocal, functionName, locals[parameter.ID])
-	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
-	if function.Parameter.Type == "Buffer" {
-		fmt.Fprintf(&out, "  if (!lang_write_buffer_hex(&%s)) return 74;\n", resultLocal)
-	} else {
-		fmt.Fprintf(&out, "  if (!lang_write_byte(%s)) return 74;\n", resultLocal)
-	}
-	out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
-	out.WriteString("  if (!lang_write_events()) return 74;\n")
-	out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
-	out.WriteString("  return 0;\n}\n")
-	return out.String(), nil
-}
-
 // selectsByPointerLoweringSharedOnly is D-05-05's adversarial-harness
 // sibling of selectsByPointerLowering: the exact same structural shape
 // (one borrow of the sole parameter as the function's first operation,
@@ -488,7 +324,8 @@ func emitLinearBorrowedByPointer(function core.Function) (string, error) {
 // subject: a shared loan alone never justifies `restrict` (unlike an
 // exclusive loan, D-05-01), so a function selected here is lowered by
 // pointer for structural symmetry with the exclusive case but carries no
-// restrict qualifier of its own — see emitLinearBorrowedByPointerPlain.
+// restrict qualifier of its own. emitProgram uses this classifier to refuse
+// the shape; manifest metadata may still describe it.
 // Mutually exclusive with selectsByPointerLowering by construction (the
 // two predicates differ only in first.Kind, which can never be both
 // OpBorrowExclusive and OpBorrowShared), so no function selectsByPointerLowering
@@ -530,145 +367,10 @@ func selectsByPointerLoweringSharedOnly(function core.Function, linear *core.Lin
 	return terminatorIndex == len(operations)-1
 }
 
-// aliasProbeParameterName is the second, purely-adversarial raw pointer
-// parameter emitLinearBorrowedByPointerPlain exposes (D-05-05). It is bound
-// by main() to the SAME address as the primary parameter, but is a
-// genuinely SEPARATE C parameter, never syntactically derived from ("based
-// on", C17 6.7.3.1) the primary parameter — a plain local pointer copy
-// (`unsigned char *alias = param;`) IS "based on" param and Clang correctly
-// treats it as safe under restrict, which would make this control
-// unexercisable; only a distinct parameter binding, with the aliasing
-// established solely by the CALLER passing the same address, defeats that
-// tracking (verified empirically on this host, D-05-38). The unmutated body
-// never reads or writes through it (silenced with `(void)`), so this
-// function's unmutated behavior is a genuine, correct pass-through for any
-// input — the parameter exists purely as dormant machinery for
-// AliasFactMutationRunner (session package) to attack.
-const aliasProbeParameterName = "lang_alias_probe"
-
-// emitLinearBorrowedByPointerPlain mirrors emitLinearBorrowedByPointer's
-// own chain-rendering loop exactly (D-05-02's shape, reused verbatim for
-// this sibling), reached ONLY through selectsByPointerLoweringSharedOnly
-// (mutually exclusive with selectsByPointerLowering's own gate), so it
-// never affects any existing committed generated-C golden. It differs from
-// emitLinearBorrowedByPointer in exactly two ways: no `restrict` on the
-// primary parameter, and one extra dormant raw pointer parameter
-// (aliasProbeParameterName) the unmutated body never touches.
-func emitLinearBorrowedByPointerPlain(function core.Function) (string, error) {
-	input, initializer, typeName, err := linearInput(function)
-	if err != nil {
-		return "", err
-	}
-	places := make(map[string]core.Place, len(function.Linear.Places))
-	for _, place := range function.Linear.Places {
-		places[place.ID] = place
-	}
-	parameter, ok := places[function.Parameter.ID]
-	if !ok {
-		return "", fmt.Errorf("linear parameter place is absent")
-	}
-	names := newCNames(append(append([]string(nil), linearFixedNames...), aliasProbeParameterName)...)
-	placeIDs := make([]string, len(function.Linear.Places))
-	for index, place := range function.Linear.Places {
-		placeIDs[index] = place.ID
-	}
-	locals := make(map[string]string, len(placeIDs))
-	for index, id := range placeIDs {
-		locals[id] = names.allocate(cLocal(function.Linear.Places[index].Name), "place", index)
-	}
-	functionName := names.allocate(cName(function.Name), "function", 0)
-	parameterName := names.allocate(cName(parameter.Name), "parameter", 0)
-	resultLocal := names.allocate(cLocal("result"), "result", 0)
-
-	var out strings.Builder
-	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 */\n")
-	out.WriteString("/* Phase 5 D-05-05 adversarial harness: lang_alias_probe is dormant machinery for control:alias.false_no_alias, never written by this unmutated function. */\n")
-	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n\n")
-	if function.Parameter.Type == "Buffer" {
-		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
-	}
-	emitLinearOutputSupport(&out, function, typeName)
-
-	fmt.Fprintf(&out, "static %s %s(%s *%s, %s *%s) { %s\n",
-		typeName, functionName, typeName, parameterName, typeName, aliasProbeParameterName, borrowByPointerMarker)
-	fmt.Fprintf(&out, "  (void)%s;\n", aliasProbeParameterName)
-
-	declared := map[string]bool{parameter.ID: true}
-	returnLocal := ""
-	for index, operation := range function.Linear.Operations {
-		source := places[operation.SourceID]
-		switch operation.Kind {
-		case core.OpCopy, core.OpMove, core.OpBorrowShared, core.OpBorrowExclusive:
-			target, exists := places[operation.TargetID]
-			if !exists || declared[operation.TargetID] {
-				return "", fmt.Errorf("operation %q has invalid target", operation.ID)
-			}
-			label := "copy"
-			if operation.Kind == core.OpMove {
-				label = "authority transfer"
-			} else if operation.Kind == core.OpBorrowShared {
-				label = "shared borrow representation"
-			} else if operation.Kind == core.OpBorrowExclusive {
-				label = "exclusive borrow representation"
-			}
-			sourceExpr := locals[source.ID]
-			if index == 0 {
-				sourceExpr = "*" + parameterName
-			}
-			fmt.Fprintf(&out, "  %s %s = %s; /* %s: %s */\n", typeName, locals[target.ID], sourceExpr, label, operation.ID)
-			fmt.Fprintf(&out, "  (void)%s;\n", locals[target.ID])
-			eventKind := "value.copied"
-			if operation.Kind == core.OpMove {
-				eventKind = "value.transferred"
-			} else if operation.Kind == core.OpBorrowShared {
-				eventKind = "value.borrowed"
-			} else if operation.Kind == core.OpBorrowExclusive {
-				eventKind = "value.borrowed_exclusive"
-			}
-			fmt.Fprintf(&out, "  (void)lang_record_event(%s, %s, %s, %s, %s, %s);\n",
-				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
-				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
-			declared[operation.TargetID] = true
-		case core.OpReturn:
-			fmt.Fprintf(&out, "  (void)lang_record_event(%s, %s, %s, %s, NULL, %s); /* returned place: %s */\n",
-				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
-				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
-			returnLocal = locals[source.ID]
-		case core.OpCall:
-			// See emitLinear's identical case (D-07-39/A-02).
-			return "", fmt.Errorf("operation %q: Lang-to-Lang calls are not supported by native emission this phase", operation.ID)
-		default:
-			return "", fmt.Errorf("operation %q has unsupported kind %q for by-pointer-plain lowering", operation.ID, operation.Kind)
-		}
-	}
-	if returnLocal == "" {
-		return "", fmt.Errorf("by-pointer-plain lowering requires a terminal return")
-	}
-	fmt.Fprintf(&out, "  return %s;\n}\n\n", returnLocal)
-
-	out.WriteString("int main(int argc, char **argv) {\n")
-	out.WriteString("  if (argc != 2) return 64;\n")
-	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
-	backingLocal := names.allocate(cLocal(parameter.Name), "backing", 0)
-	fmt.Fprintf(&out, "  %s %s = %s;\n", typeName, backingLocal, initializer)
-	fmt.Fprintf(&out, "  %s %s = %s(&%s, &%s);\n", typeName, resultLocal, functionName, backingLocal, backingLocal)
-	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
-	if function.Parameter.Type == "Buffer" {
-		fmt.Fprintf(&out, "  if (!lang_write_buffer_hex(&%s)) return 74;\n", resultLocal)
-	} else {
-		fmt.Fprintf(&out, "  if (!lang_write_byte(%s)) return 74;\n", resultLocal)
-	}
-	out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"events\\\":[\")) return 74;\n")
-	out.WriteString("  if (!lang_write_events()) return 74;\n")
-	out.WriteString("  if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
-	out.WriteString("  return 0;\n}\n")
-	return out.String(), nil
-}
-
 // emittedAttributeForByPointerParameter returns D-05-01's restrict
-// attribute binding for a function this file has ALREADY selected for
-// by-pointer lowering (selectsByPointerLowering, Emit/EmitNative's own
-// gate). The binding always exists in that case, since
+// attribute metadata for a shape classified by selectsByPointerLowering.
+// This manifest description does not admit the corresponding program body.
+// The binding always exists in that case, since
 // selectsByPointerLowering's own structural condition (an exclusive loan on
 // the parameter, unbroken to the terminator) IS check's independently
 // derived AliasFact condition (TestAliasFactAgreesWithByPointerSelection,
@@ -682,480 +384,6 @@ func emittedAttributeForByPointerParameter(function core.Function) EmittedAttrib
 		loanID = function.Linear.Operations[0].LoanID
 	}
 	return EmittedAttribute{Attr: "restrict", CoreNode: function.ID, Parameter: function.Parameter.ID, JustifiedBy: loanID}
-}
-
-// emitLinearForeign is the native lowering for a straight-line (Match-less)
-// function whose linear body forks on a fallible foreign call (D-04-04):
-// the shape checkFallibleLinear produces, distinguished from an ordinary
-// Phase 1/2/3 linear body by len(function.Linear.Blocks) > 0. This plan's
-// scope is narrow -- an entry block of exactly one OpForeignCall, an ok
-// block ending in OpReturn, and an err block ending in OpFail -- so this
-// emitter is intentionally not a general CFG-to-C translator; it errors
-// rather than silently mishandling any richer shape a later plan may add.
-//
-// Per D-04-10, the generated C here never opens the frozen foreign
-// translation unit's private header: it declares the extern symbol and its
-// result-record shape itself, from the compiler's own contract. Only the
-// conformance TU a later plan generates is permitted to include that
-// header.
-func emitLinearForeign(program core.Program, function core.Function) (string, error) {
-	if function.ForeignContract == nil || function.ForeignContract.Symbol == "" {
-		return "", fmt.Errorf("foreign-shaped function %q has no foreign contract", function.ID)
-	}
-	// Independent refusal (04-VERIFICATION.md gap 2, FFI-01/D-04-12):
-	// Emit/EmitNative already call corevalidate.Validate first, but this
-	// guard does not rely on that having happened -- see validForeignSymbol's
-	// doc comment for why a second implementation is deliberate here.
-	if !validForeignSymbol(function.ForeignContract.Symbol) {
-		return "", fmt.Errorf("foreign symbol %q is not a C identifier", function.ForeignContract.Symbol)
-	}
-	input, initializer, typeName, err := linearInput(function)
-	if err != nil {
-		return "", err
-	}
-	places := make(map[string]core.Place, len(function.Linear.Places))
-	for _, place := range function.Linear.Places {
-		places[place.ID] = place
-	}
-	parameter, ok := places[function.Parameter.ID]
-	if !ok {
-		return "", fmt.Errorf("linear parameter place is absent")
-	}
-	blocksByID := make(map[string]core.Block, len(function.Linear.Blocks))
-	for _, block := range function.Linear.Blocks {
-		blocksByID[block.ID] = block
-	}
-	edgesByID := make(map[string]core.Edge, len(function.Linear.Edges))
-	for _, edge := range function.Linear.Edges {
-		edgesByID[edge.ID] = edge
-	}
-	operationsByID := make(map[string]core.LinearOperation, len(function.Linear.Operations))
-	for _, operation := range function.Linear.Operations {
-		operationsByID[operation.ID] = operation
-	}
-
-	names := newCNames(linearFixedNames...)
-	locals := make(map[string]string, len(function.Linear.Places))
-	for index, place := range function.Linear.Places {
-		locals[place.ID] = names.allocate(cLocal(place.Name), "place", index)
-	}
-	symbolC := foreignExternName(function.ForeignContract.Symbol)
-	resultType := symbolC + "_result"
-
-	// ledger is Phase 4 plan 02's runtime live-resource accounting
-	// (D-04-07): populated only when the function actually declares
-	// OpRelease operations (the resource-lifecycle shape), so the 04-01
-	// tracer shape -- no OpRelease anywhere -- keeps emitting the literal
-	// "live_resources":[] it always has, byte-for-byte.
-	ledger := newResourceLedger(function)
-
-	var out strings.Builder
-	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 */\n")
-	// setjmp.h and stdlib.h back the process-root landing pad (D-04-17):
-	// setjmp/jmp_buf install and re-enter the single landing point, abort
-	// terminates the pad itself (D-04-18: no release, no unwinding, no
-	// containment -- see the pad body below).
-	out.WriteString("#include <setjmp.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n")
-	// This typedef/extern pair is the compiler's own contract, formed from
-	// the `foreign C {}` declaration alone (D-04-10) -- it never includes
-	// the frozen foreign translation unit's private header.
-	fmt.Fprintf(&out, "typedef struct %s {\n  unsigned char ok;\n  unsigned char value;\n} %s;\n\n", resultType, resultType)
-	fmt.Fprintf(&out, "extern %s %s(unsigned char argument);\n\n", resultType, symbolC)
-	// D-04-17: lang_nonlocal_landing is the ONE process-root landing point --
-	// one per process, never per call or per borrow. It is declared here with
-	// external linkage (no "static") so a foreign translation unit performing
-	// a genuine nonlocal exit (native/lang_foreign_nonlocal.c) can longjmp
-	// into it via its own `extern jmp_buf` declaration; nothing else in this
-	// generated file, or any other emitter, ever declares this symbol, so
-	// exactly one exists per linked program.
-	out.WriteString("jmp_buf lang_nonlocal_landing;\n\n")
-	// D-04-20: every function this emitter handles declares a foreign
-	// acquisition (checked at this function's own entry above), so it always
-	// takes the STREAMING event path -- the one selection site for D-04-20's
-	// additive emitter, never the buffered emitEventSupport plain emitLinear
-	// still uses byte-for-byte (D-04-23).
-	emitLinearForeignOutputSupport(&out, function, typeName)
-	ledger.emitDeclarations(&out)
-
-	out.WriteString("int main(int argc, char **argv) {\n")
-	out.WriteString("  if (argc != 2) return 64;\n")
-	fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
-	fmt.Fprintf(&out, "  %s %s = %s;\n", typeName, locals[parameter.ID], initializer)
-	// The events array opens FIRST, before any operation executes, so a
-	// streamed lang_record_event call always lands inside a syntactically
-	// valid (if not yet terminated) JSON array -- every terminal writer below
-	// closes it with "]" plus the outcome/live_resources tail, never the
-	// other order.
-	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"events\\\":[\")) return 74;\n")
-	emitNonlocalPad(&out, function, ledger)
-
-	currentBlockID := function.ID + ":block:entry"
-	visited := make(map[string]bool, len(function.Linear.Blocks))
-	step := 0
-	for {
-		if visited[currentBlockID] {
-			return "", fmt.Errorf("foreign call chain revisits block %q", currentBlockID)
-		}
-		visited[currentBlockID] = true
-		block, known := blocksByID[currentBlockID]
-		if !known || len(block.OperationIDs) == 0 {
-			return "", fmt.Errorf("block %q has an unsupported shape this phase", currentBlockID)
-		}
-		lastOp, known := operationsByID[block.OperationIDs[len(block.OperationIDs)-1]]
-		if !known {
-			return "", fmt.Errorf("block %q references an unknown operation", currentBlockID)
-		}
-		if lastOp.Kind != core.OpForeignCall {
-			// Terminal block: zero or more OpRelease, then OpReturn. An
-			// OpFail-terminated block is emitted inline at its own fork
-			// point below and is never visited by this outer walk.
-			if err := emitForeignReleasesAndReturn(&out, function, places, locals, operationsByID, block.OperationIDs, typeName, ledger); err != nil {
-				return "", err
-			}
-			out.WriteString("  return 0;\n}\n")
-			return out.String(), nil
-		}
-		if len(block.OperationIDs) != 1 {
-			return "", fmt.Errorf("block %q has an unsupported shape this phase", currentBlockID)
-		}
-		okEdge, known := edgesByID[lastOp.OkEdgeID]
-		if !known {
-			return "", fmt.Errorf("foreign call %q references an unknown ok edge", lastOp.ID)
-		}
-		errEdge, known := edgesByID[lastOp.ErrEdgeID]
-		if !known {
-			return "", fmt.Errorf("foreign call %q references an unknown err edge", lastOp.ID)
-		}
-		resultLocal := names.allocate(cLocal(fmt.Sprintf("foreign_result_%d", step)), "foreign_result", step)
-		step++
-		fmt.Fprintf(&out, "  %s %s = %s(%s); /* %s */\n", resultType, resultLocal, symbolC, locals[lastOp.SourceID], lastOp.ID)
-		fmt.Fprintf(&out, "  if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
-			strconv.Quote("foreign.called"), strconv.Quote(lastOp.ID+":event"), strconv.Quote(function.ID),
-			strconv.Quote(lastOp.SourceID), strconv.Quote(lastOp.TargetID), strconv.Quote(lastOp.TypeID))
-		fmt.Fprintf(&out, "  if (!%s.ok) {\n", resultLocal)
-		if errEdge.ToBlockID != okEdge.ToBlockID {
-			errBlock, known := blocksByID[errEdge.ToBlockID]
-			if !known {
-				return "", fmt.Errorf("foreign call %q references an unknown err block", lastOp.ID)
-			}
-			if err := emitForeignReleasesAndFail(&out, program, function, operationsByID, errBlock.OperationIDs, "    ", ledger); err != nil {
-				return "", err
-			}
-		}
-		out.WriteString("  }\n")
-		if ledger.tracks(lastOp.ID) {
-			fmt.Fprintf(&out, "  %s\n", ledger.markLive(lastOp.ID))
-		}
-		fmt.Fprintf(&out, "  %s %s = %s.value;\n", typeName, locals[lastOp.TargetID], resultLocal)
-		fmt.Fprintf(&out, "  (void)%s;\n", locals[lastOp.TargetID])
-		currentBlockID = okEdge.ToBlockID
-	}
-}
-
-// padInstallMarker/padEndMarker bracket the ENTIRE process-root landing pad
-// block (D-04-17), not just its installation line: control:foreign.
-// nonlocal_exit_undetected's first mutation-kill demonstration deletes every
-// line from padInstallMarker through padEndMarker inclusive, removing the
-// setjmp() call AND its whole pad body in one span so the remaining C stays
-// syntactically valid (an unmatched brace from a line-only deletion would
-// not compile). A program with the pad removed still declares
-// lang_nonlocal_landing (now unused) and still links against a foreign
-// symbol that may longjmp into it -- an uninitialized jmp_buf -- which is
-// exactly the "detection now silently absent" state this control exists to
-// catch.
-const padInstallMarker = "/* lang:nonlocal-pad-site */"
-const padEndMarker = "/* lang:nonlocal-pad-end */"
-
-// nonlocalExitDefectReason is the exact "output" string the process-root
-// pad's own function.defected event carries. It is duplicated verbatim (not
-// imported) in interp.go's runLinearBlocks, which models the identical
-// probe convention -- the two literal strings are kept textually identical
-// by convention and comment, exactly as native/lang_foreign_nonlocal.c's
-// "second call" rule is a shared, documented convention rather than a real
-// cross-engine call.
-const nonlocalExitDefectReason = "foreign nonlocal exit detected at process-root landing pad"
-
-// emitNonlocalPad writes D-04-17's ONE process-root landing pad: a single
-// setjmp() call installed immediately after the events array opens (so a
-// foreign nonlocal exit reached before ANY operation below ever executes is
-// still inside a syntactically valid, if not yet terminated, JSON events
-// array), guarding a body that, per D-04-18, runs NO release and touches NO
-// automatic storage changed since the setjmp call -- only the static-storage
-// ledger the resourceLedger type already declares. Called exactly once per
-// emitLinearForeign invocation, so "exactly one pad" is a structural
-// property of this call site, not a runtime count.
-//
-// REACHABILITY (D-04-21/D-10 -- accepted residual limitations, T-04-33,
-// named in uncheckedForeignObligations' sidecar list too, never claimed as
-// covered): a landing point established BELOW this pad by a foreign-invoked callback
-// that itself calls setjmp deeper in the call stack is invisible
-// to this single process-root pad, as is a foreign call that terminates the
-// process directly (exit()/_exit()) rather than performing a nonlocal exit
-// back into Lang-controlled code. Neither is claimed detected anywhere in
-// this project.
-func emitNonlocalPad(out *strings.Builder, function core.Function, ledger *resourceLedger) {
-	parameterTypeID := ""
-	for _, place := range function.Linear.Places {
-		if place.ID == function.Parameter.ID {
-			parameterTypeID = place.TypeID
-			break
-		}
-	}
-	fmt.Fprintf(out, "  if (setjmp(lang_nonlocal_landing) != 0) { %s\n", padInstallMarker)
-	// C17 7.13.2.1p3: every object of automatic storage duration that is
-	// local to the function containing the setjmp invocation, that does not
-	// have volatile-qualified type, and that is modified between the setjmp
-	// invocation and a later longjmp call has an indeterminate value after
-	// that longjmp. The pad below therefore reads ONLY the static-storage
-	// resource ledger (never an automatic local) and calls NO release
-	// function: releasing from an indeterminate handle would convert an
-	// honest leak into a use-after-free (D-04-18). This law is stated here,
-	// at the point it governs, not only in CONTEXT.md.
-	fmt.Fprintf(out, "    if (!lang_record_event(%s, %s, %s, NULL, NULL, NULL)) abort();\n",
-		strconv.Quote("foreign.nonlocal_exit"), strconv.Quote(function.ID+":event:nonlocal_exit"), strconv.Quote(function.ID))
-	ledger.emitLeakEvents(out, function.ID)
-	emitManualDefectEvent(out, function.ID+":event:nonlocal_defect", function.ID, function.Parameter.ID, parameterTypeID, nonlocalExitDefectReason)
-	out.WriteString("    if (!lang_write_literal(\"],\\\"outcome\\\":{\\\"kind\\\":\\\"defect\\\",\\\"value\\\":\\\"\\\"},\\\"live_resources\\\":[\")) abort();\n")
-	if len(ledger.ids) == 0 {
-		out.WriteString("    if (!lang_write_literal(\"]}\\n\")) abort();\n")
-	} else {
-		out.WriteString("    if (!lang_write_live_resources()) abort();\n")
-		out.WriteString("    if (!lang_write_literal(\"]}\\n\")) abort();\n")
-	}
-	// D-04-15/D-04-18: no catch, no containment, no unwinding, no cleanup --
-	// abort-only at the process root, exactly like the generated
-	// _Noreturn lang_defect function every ordinary defect path calls.
-	out.WriteString("    abort();\n")
-	fmt.Fprintf(out, "  } %s\n", padEndMarker)
-}
-
-// emitManualDefectEvent writes one function.defected event object directly
-// with lang_write_json_string/lang_write_literal calls, exactly like
-// emitBranchOperations' OpDefect case: the shared LANG_EVENT struct
-// lang_record_event uses has no "output" field for the required reason
-// string, and adding one there would move every other emitter's generated
-// C. Assumes at least one event was already recorded via lang_record_event
-// on this path (true here: emitNonlocalPad always records the
-// foreign.nonlocal_exit event first), so the leading "," separator is
-// unconditional rather than guarded by lang_event_count.
-func emitManualDefectEvent(out *strings.Builder, id, functionID, sourcePlace, typeID, reason string) {
-	out.WriteString("    if (!lang_write_bytes(\",\", 1u)) abort();\n")
-	out.WriteString("    if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\")) abort();\n")
-	fmt.Fprintf(out, "    if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(id))
-	out.WriteString("    if (!lang_write_literal(\",\\\"kind\\\":\\\"function.defected\\\",\\\"function_id\\\":\")) abort();\n")
-	fmt.Fprintf(out, "    if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(functionID))
-	out.WriteString("    if (!lang_write_literal(\",\\\"source_place\\\":\")) abort();\n")
-	fmt.Fprintf(out, "    if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(sourcePlace))
-	out.WriteString("    if (!lang_write_literal(\",\\\"type_id\\\":\")) abort();\n")
-	fmt.Fprintf(out, "    if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(typeID))
-	out.WriteString("    if (!lang_write_literal(\",\\\"output\\\":\")) abort();\n")
-	fmt.Fprintf(out, "    if (!lang_write_json_string(%s)) abort();\n", strconv.Quote(reason))
-	out.WriteString("    if (!lang_write_literal(\"}\")) abort();\n")
-}
-
-// resourceLedger is the generated C's own runtime live-resource accounting
-// (D-04-07/spike-005 ledger pattern): a compile-time-sized static array of
-// flags, one per tracked acquisition (an OpForeignCall whose ok/err edges
-// diverge AND is discharged by some OpRelease somewhere in the function),
-// set live right after a successful acquisition and cleared by the matching
-// release. It exists only so the release-omission mutation (deleting one
-// generated release line) is OBSERVABLE at the native layer: without runtime
-// tracking, a compile-time-only live_resources computation could never
-// reflect a line a mutation deleted.
-type resourceLedger struct {
-	slot map[string]int
-	ids  []string // parallel to slot: ids[slot[opID]] is opID's own place-based resource identifier
-}
-
-func newResourceLedger(function core.Function) *resourceLedger {
-	ledger := &resourceLedger{slot: make(map[string]int)}
-	placeByOp := make(map[string]string, len(function.Linear.Operations))
-	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpForeignCall {
-			placeByOp[operation.ID] = operation.TargetID
-		}
-	}
-	for _, operation := range function.Linear.Operations {
-		if operation.Kind != core.OpRelease || operation.ReleasesOperationID == "" {
-			continue
-		}
-		if _, already := ledger.slot[operation.ReleasesOperationID]; already {
-			continue
-		}
-		ledger.slot[operation.ReleasesOperationID] = len(ledger.ids)
-		ledger.ids = append(ledger.ids, placeByOp[operation.ReleasesOperationID])
-	}
-	return ledger
-}
-
-func (l *resourceLedger) tracks(opID string) bool {
-	_, ok := l.slot[opID]
-	return ok
-}
-
-func (l *resourceLedger) emitDeclarations(out *strings.Builder) {
-	if len(l.ids) == 0 {
-		return
-	}
-	fmt.Fprintf(out, "static const char *lang_resource_ids[%d] = {\n", len(l.ids))
-	for _, id := range l.ids {
-		fmt.Fprintf(out, "  %s,\n", strconv.Quote(id))
-	}
-	out.WriteString("};\n")
-	fmt.Fprintf(out, "static int lang_resource_live[%d];\n\n", len(l.ids))
-	out.WriteString("static int lang_write_live_resources(void) {\n")
-	out.WriteString("  size_t index; int first = 1;\n")
-	fmt.Fprintf(out, "  for (index = 0u; index < %du; index++) {\n", len(l.ids))
-	out.WriteString("    if (!lang_resource_live[index]) continue;\n")
-	out.WriteString("    if (!first && !lang_write_bytes(\",\", 1u)) return 0;\n")
-	out.WriteString("    first = 0;\n")
-	out.WriteString("    if (!lang_write_json_string(lang_resource_ids[index])) return 0;\n")
-	out.WriteString("  }\n  return 1;\n}\n\n")
-}
-
-// ledgerPopulateMarker is the mutation-kill seam control:foreign.
-// nonlocal_exit_undetected's second demonstration locates (D-04-21/D-10):
-// deleting the FIRST line bearing this marker drops one acquisition's own
-// live-tracking population, so the landing pad's own leak count understates
-// the true live set -- a different mutation than deleting the pad
-// installation itself (padInstallMarker/padEndMarker below), which instead
-// makes the pad never run at all.
-const ledgerPopulateMarker = "/* lang:ledger-populate-site */"
-
-func (l *resourceLedger) markLive(opID string) string {
-	return fmt.Sprintf("lang_resource_live[%d] = 1; %s", l.slot[opID], ledgerPopulateMarker)
-}
-
-// emitLeakEvents writes one lang_record_event("resource.leaked", ...) call
-// per ledger-tracked acquisition, each conditioned on that acquisition's own
-// live flag at the moment the process-root pad runs (D-04-17): unrolled in
-// Go at emission time (not a C loop) because the tracked set is small and
-// fixed per function, and because each event needs its own unique,
-// human-legible ID -- exactly one call per slot, in ledger (first-acquired)
-// order, so the reported leak sequence is deterministic rather than a
-// function of runtime iteration.
-func (l *resourceLedger) emitLeakEvents(out *strings.Builder, functionID string) {
-	for index, id := range l.ids {
-		fmt.Fprintf(out, "    if (lang_resource_live[%d] && !lang_record_event(%s, %s, %s, %s, NULL, NULL)) abort();\n",
-			index, strconv.Quote("resource.leaked"), strconv.Quote(fmt.Sprintf("%s:event:leaked:%d", functionID, index)),
-			strconv.Quote(functionID), strconv.Quote(id))
-	}
-}
-
-// releaseStatement returns the release line for a discharged acquisition:
-// the ordinary event-recording call plus, on the SAME generated line, the
-// ledger decrement -- so the omission mutation (deleting one line bearing
-// the marker below) removes both the event and the decrement together,
-// leaving the resource observably live at termination. lang:release-site is
-// a marker distinct from lang:mutation-site (D-02-07's owned-transfer
-// control), because the two mutation runners must locate different seams.
-func (l *resourceLedger) releaseStatement(function core.Function, operation core.LinearOperation) string {
-	ledgerClear := ""
-	if slot, ok := l.slot[operation.ReleasesOperationID]; ok {
-		ledgerClear = fmt.Sprintf(" lang_resource_live[%d] = 0;", slot)
-	}
-	return fmt.Sprintf("if (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74;%s /* lang:release-site */",
-		strconv.Quote("resource.released"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
-		strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), ledgerClear)
-}
-
-// emitForeignReleasesAndReturn writes a terminal (success) block: zero or
-// more OpRelease operations, then the single OpReturn.
-func emitForeignReleasesAndReturn(out *strings.Builder, function core.Function, places map[string]core.Place, locals map[string]string, operationsByID map[string]core.LinearOperation, operationIDs []string, typeName string, ledger *resourceLedger) error {
-	for _, operationID := range operationIDs {
-		operation, known := operationsByID[operationID]
-		if !known {
-			return fmt.Errorf("block references unknown operation %q", operationID)
-		}
-		switch operation.Kind {
-		case core.OpRelease:
-			fmt.Fprintf(out, "  %s\n", ledger.releaseStatement(function, operation))
-		case core.OpReturn:
-			source, known := places[operation.SourceID]
-			if !known {
-				return fmt.Errorf("operation %q has invalid source", operation.ID)
-			}
-			fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74; /* returned place: %s */\n",
-				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
-				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
-			// D-04-20: the events array was opened at the top of main(); this
-			// terminal writer closes it, then writes outcome/live_resources --
-			// the terminal record is the LAST write on this path.
-			out.WriteString("  if (!lang_write_literal(\"],\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"\")) return 74;\n")
-			fmt.Fprintf(out, "  if (!lang_write_byte(%s)) return 74;\n", locals[source.ID])
-			if len(ledger.ids) == 0 {
-				out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"live_resources\\\":[]}\\n\")) return 74;\n")
-			} else {
-				out.WriteString("  if (!lang_write_literal(\"\\\"},\\\"live_resources\\\":[\")) return 74;\n")
-				out.WriteString("  if (!lang_write_live_resources()) return 74;\n")
-				out.WriteString("  if (!lang_write_literal(\"]}\\n\")) return 74;\n")
-			}
-		default:
-			return fmt.Errorf("block operation %q has unsupported kind %q this phase", operation.ID, operation.Kind)
-		}
-	}
-	return nil
-}
-
-// emitForeignReleasesAndFail writes an err block: zero or more OpRelease
-// operations, then the single OpFail terminator. errorLiteral is the
-// compile-time-known value foreignFailureLiteral resolves (see its doc
-// comment for why one literal is honest this phase).
-func emitForeignReleasesAndFail(out *strings.Builder, program core.Program, function core.Function, operationsByID map[string]core.LinearOperation, operationIDs []string, indent string, ledger *resourceLedger) error {
-	for _, operationID := range operationIDs {
-		operation, known := operationsByID[operationID]
-		if !known {
-			return fmt.Errorf("err block references unknown operation %q", operationID)
-		}
-		switch operation.Kind {
-		case core.OpRelease:
-			fmt.Fprintf(out, "%s%s\n", indent, ledger.releaseStatement(function, operation))
-		case core.OpFail:
-			errorLiteral, err := foreignFailureLiteral(program, function)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(out, "%sif (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74;\n",
-				indent, strconv.Quote("function.failed"), strconv.Quote(operation.ID+":event:failed"), strconv.Quote(function.ID),
-				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID))
-			// D-04-20: close the events array opened at the top of main(),
-			// then write outcome/live_resources -- the terminal record is the
-			// LAST write on this path too.
-			fmt.Fprintf(out, "%sif (!lang_write_literal(\"],\\\"outcome\\\":{\\\"kind\\\":\\\"typed_failure\\\",\\\"value\\\":\")) return 74;\n", indent)
-			fmt.Fprintf(out, "%sif (!lang_write_json_string(%s)) return 74;\n", indent, strconv.Quote(errorLiteral))
-			if len(ledger.ids) == 0 {
-				fmt.Fprintf(out, "%sif (!lang_write_literal(\"},\\\"live_resources\\\":[]}\\n\")) return 74;\n", indent)
-			} else {
-				fmt.Fprintf(out, "%sif (!lang_write_literal(\"},\\\"live_resources\\\":[\")) return 74;\n", indent)
-				fmt.Fprintf(out, "%sif (!lang_write_live_resources()) return 74;\n", indent)
-				fmt.Fprintf(out, "%sif (!lang_write_literal(\"]}\\n\")) return 74;\n", indent)
-			}
-			fmt.Fprintf(out, "%sreturn 0;\n", indent)
-		default:
-			return fmt.Errorf("err block operation %q has unsupported kind %q this phase", operation.ID, operation.Kind)
-		}
-	}
-	return nil
-}
-
-// foreignFailureLiteral names the JSON string value an OpFail terminal
-// record carries. Per D-04-05 the err edge's payload is a place of an
-// ordinary declared nullary ADT, but this phase has no case-analysis syntax
-// to pick a specific alternative at the failure site -- both engines
-// deterministically agree on the ADT's FIRST declared alternative,
-// documented here as a known narrowing (a real per-cause error value is
-// future work), rather than silently picking an unreachable, engine-
-// specific value.
-func foreignFailureLiteral(program core.Program, function core.Function) (string, error) {
-	for _, dataType := range program.DataTypes {
-		if dataType.Name == function.ForeignContract.Fails {
-			if len(dataType.Alternatives) == 0 {
-				return "", fmt.Errorf("foreign failure type %q has no alternatives", dataType.Name)
-			}
-			return dataType.Alternatives[0], nil
-		}
-	}
-	return "", fmt.Errorf("foreign failure type %q is not declared", function.ForeignContract.Fails)
 }
 
 // validForeignSymbol is a DELIBERATE second implementation of the exact
@@ -1308,109 +536,6 @@ func unsafeForeignContractField(contract *core.ForeignContract) string {
 // (native/lang_foreign_resource.c) verbatim, by convention, not by
 // collision-avoidance allocation.
 func foreignExternName(symbol string) string { return "_LANG_" + symbol }
-
-func emitLinearOutputSupport(out *strings.Builder, function core.Function, typeName string) {
-	emitEventSupport(out, len(function.Linear.Operations))
-	if function.Parameter.Type == "Buffer" {
-		fmt.Fprintf(out, "static int lang_write_buffer_hex(const %s *value) {\n", typeName)
-		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  size_t index;\n")
-		out.WriteString("  if (value->length > sizeof value->bytes) return 0;\n")
-		out.WriteString("  for (index = 0u; index < value->length; index++) {\n")
-		out.WriteString("    char encoded[2] = {hex[value->bytes[index] >> 4u], hex[value->bytes[index] & 0x0fu]};\n")
-		out.WriteString("    if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n  }\n  return 1;\n}\n\n")
-	} else {
-		out.WriteString("static int lang_write_byte(unsigned char value) {\n")
-		out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
-		out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
-	}
-}
-
-// emitEventSupport writes the LANG_EVENT macros, struct, bounded output
-// writer, JSON-string escaper, and event recorder shared by every linear-
-// shaped emitter (emitLinear and, from Phase 3, emitBranch). It deliberately
-// excludes the scalar value writer (lang_write_buffer_hex / lang_write_byte)
-// because a branch-shaped function never needs one: its returned value is a
-// compile-time-known alternative name per case, written as a JSON string
-// literal, not a dynamically-encoded scalar (see emitBranchOperations).
-// emitLinearForeignOutputSupport is D-04-20's selection site: every function
-// emitLinearForeign handles carries a core.ForeignContract (checked at that
-// function's own entry), so it always takes the STREAMING event path
-// (emitStreamingEventSupport) instead of the buffered one
-// emitLinearOutputSupport/emitEventSupport give every other linear emitter.
-// The buffered lang_write_events() writes nothing until the function's own
-// terminal statement, so an aborting foreign-acquiring process would emit
-// zero events -- exactly the gap that would make SC4's interpreter/native
-// agreement unfalsifiable on the paths SC3 is about. This is a NEW sibling
-// of emitLinearOutputSupport, never called from emitLinear/emitBranch, so
-// every existing committed generated-C golden (Phase 1/2/3, and the frozen
-// foreign layout fixture) is untouched (D-04-23).
-func emitLinearForeignOutputSupport(out *strings.Builder, function core.Function, typeName string) {
-	emitStreamingEventSupport(out)
-	if function.Parameter.Type == "Buffer" {
-		fmt.Fprintf(out, "static int lang_write_buffer_hex(const %s *value) {\n", typeName)
-		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  size_t index;\n")
-		out.WriteString("  if (value->length > sizeof value->bytes) return 0;\n")
-		out.WriteString("  for (index = 0u; index < value->length; index++) {\n")
-		out.WriteString("    char encoded[2] = {hex[value->bytes[index] >> 4u], hex[value->bytes[index] & 0x0fu]};\n")
-		out.WriteString("    if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n  }\n  return 1;\n}\n\n")
-	} else {
-		out.WriteString("static int lang_write_byte(unsigned char value) {\n")
-		out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
-		out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
-	}
-}
-
-// emitStreamingEventSupport is D-04-20's additive streaming event emitter:
-// unlike emitEventSupport's lang_record_event (which appends to a fixed-size
-// array replayed once by lang_write_events at the very end), this variant's
-// lang_record_event writes the event's own JSON object to stdout the MOMENT
-// it is called, so every event recorded before an abort()/nonlocal exit
-// partway through a function has already reached the file descriptor. The
-// caller writes the "events":[ opening literal FIRST, before any operation
-// executes, and every terminal writer closes it with "]" plus the
-// outcome/live_resources tail -- never the other order -- which is why this
-// cannot simply replace emitEventSupport's lang_write_events in place.
-// emitEventSupport itself is completely unmodified by this function's
-// existence (D-04-23): every Phase 1/2/3 program, and every Phase 4 program
-// with no foreign acquisition, still uses it byte-for-byte.
-func emitStreamingEventSupport(out *strings.Builder) {
-	out.WriteString("#define LANG_OUTPUT_LIMIT 65536u\n\n")
-	out.WriteString("static size_t lang_event_count = 0u;\nstatic size_t lang_output_count = 0u;\n\n")
-	out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n")
-	out.WriteString("  if (length > LANG_OUTPUT_LIMIT - lang_output_count) return 0;\n")
-	out.WriteString("  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n")
-	out.WriteString("  lang_output_count += length;\n  return 1;\n}\n\n")
-	out.WriteString("static int lang_write_literal(const char *value) {\n  return lang_write_bytes(value, strlen(value));\n}\n\n")
-	out.WriteString("static int lang_write_json_string(const char *value) {\n")
-	out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n")
-	out.WriteString("  if (!lang_write_bytes(\"\\\"\", 1u)) return 0;\n")
-	out.WriteString("  for (; *value != '\\0'; value++) {\n")
-	out.WriteString("    unsigned char byte = (unsigned char)*value;\n")
-	out.WriteString("    const char *escape = NULL;\n")
-	out.WriteString("    if (byte == '\"') escape = \"\\\\\\\"\";\n")
-	out.WriteString("    else if (byte == '\\\\') escape = \"\\\\\\\\\";\n")
-	out.WriteString("    else if (byte == '\\b') escape = \"\\\\b\";\n")
-	out.WriteString("    else if (byte == '\\f') escape = \"\\\\f\";\n")
-	out.WriteString("    else if (byte == '\\n') escape = \"\\\\n\";\n")
-	out.WriteString("    else if (byte == '\\r') escape = \"\\\\r\";\n")
-	out.WriteString("    else if (byte == '\\t') escape = \"\\\\t\";\n")
-	out.WriteString("    if (escape != NULL) { if (!lang_write_literal(escape)) return 0; }\n")
-	out.WriteString("    else if (byte < 0x20u) {\n")
-	out.WriteString("      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n")
-	out.WriteString("      if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n")
-	out.WriteString("    } else if (!lang_write_bytes(value, 1u)) return 0;\n")
-	out.WriteString("  }\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
-	out.WriteString("static int lang_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id) {\n")
-	out.WriteString("  if (lang_event_count != 0u && !lang_write_bytes(\",\", 1u)) return 0;\n")
-	out.WriteString("  lang_event_count++;\n")
-	out.WriteString("  if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\") || !lang_write_json_string(id)) return 0;\n")
-	out.WriteString("  if (!lang_write_literal(\",\\\"kind\\\":\") || !lang_write_json_string(kind)) return 0;\n")
-	out.WriteString("  if (!lang_write_literal(\",\\\"function_id\\\":\") || !lang_write_json_string(function_id)) return 0;\n")
-	out.WriteString("  if (source_place != NULL && (!lang_write_literal(\",\\\"source_place\\\":\") || !lang_write_json_string(source_place))) return 0;\n")
-	out.WriteString("  if (target_place != NULL && (!lang_write_literal(\",\\\"target_place\\\":\") || !lang_write_json_string(target_place))) return 0;\n")
-	out.WriteString("  if (type_id != NULL && (!lang_write_literal(\",\\\"type_id\\\":\") || !lang_write_json_string(type_id))) return 0;\n")
-	out.WriteString("  return lang_write_bytes(\"}\", 1u);\n}\n\n")
-}
 
 func emitEventSupport(out *strings.Builder, capacity int) {
 	fmt.Fprintf(out, "#define LANG_OUTPUT_LIMIT 65536u\n#define LANG_EVENT_CAPACITY %du\n\n", capacity)

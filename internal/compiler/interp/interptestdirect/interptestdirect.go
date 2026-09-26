@@ -32,13 +32,11 @@ import (
 // entry. It exists because the project's frozen foreign translation unit
 // always succeeds at real runtime (D-04-10), so a resource-lifecycle
 // function's OWN failure block is otherwise unreachable through Run's
-// public entry point. It supports exactly the shape check.go ever produces
-// for such a block -- zero or more OpRelease operations, then a single
-// terminal OpFail -- matching cgen.go's emitForeignReleasesAndFail's own
-// supported shape, so the SAME block compiles to real, genuinely
-// executable C (dead code today given the frozen TU's real success-only
-// behavior, but valid C) that a test-only foreign object double can make
-// live. This is not used by any production CLI path; it exists solely so
+// public entry point. It supports the historical block shape: zero or more
+// OpRelease operations, then a terminal OpFail. The current whole-program
+// native emitter refuses foreign-call bodies, so this remains an
+// interpreter-only test seam and does not prove executable native cleanup.
+// It is not used by any production CLI path; it exists solely so
 // the interpreter's real OpRelease/OpFail event-emission logic can be
 // compared, genuinely executed, against the real native build's genuinely
 // executed same block.
@@ -86,10 +84,10 @@ func RunLinearBlockDirect(program core.Program, functionName, blockID string, pr
 		live[callID] = true
 		liveOrder = append(liveOrder, callID)
 	}
-	// cgen.go's emitLinearForeign records "foreign.called" unconditionally,
-	// immediately after the real call returns, BEFORE inspecting .ok -- so
-	// the failing call's own attempt is recorded exactly like any other,
-	// just never marked live (its acquisition never completed).
+	// The historical foreign emitter recorded "foreign.called" immediately
+	// after the call and before inspecting .ok. Preserve that event sequence
+	// in this interpreter-only direct block model; it does not authorize a
+	// current native foreign-call path.
 	if failingCallID != "" {
 		failingCall, known := operationsByID[failingCallID]
 		if !known || failingCall.Kind != core.OpForeignCall {
@@ -126,9 +124,9 @@ func RunLinearBlockDirect(program core.Program, functionName, blockID string, pr
 	return execution.Execution{}, fmt.Errorf("block %q has no terminal OpFail", blockID)
 }
 
-// foreignFailureLiteralDirect independently re-derives cgen.go's own
-// foreignFailureLiteral and interp.go's own foreignFailureLiteralDirect
-// (not imported -- matching this project's established convention of
+// foreignFailureLiteralDirect independently resolves the same first
+// alternative as the historical native emitter and interp.go's own
+// foreignFailureLiteralDirect (not imported -- matching this project's established convention of
 // independently re-deriving shared facts across packages rather than
 // sharing helpers, D-12): the err edge's payload is a place of an ordinary
 // declared nullary ADT, but this phase has no case-analysis syntax to pick

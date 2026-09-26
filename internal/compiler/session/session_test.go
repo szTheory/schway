@@ -1430,11 +1430,9 @@ func TestNoUnprovenAttributesEmitted(t *testing.T) {
 
 // TestAttributeInjectionIntoHeaderOnlyMakesControlFail is WR-01's dedicated
 // mutation-kill test: it injects a banned token into EmitForeignHeader's
-// output ALONE, leaving emitLinearForeign's own extern declaration (the
-// compiled-program C that TestAttributeInjectionMakesControlFail already
-// covers) untouched, proving the header artifact is independently scanned
-// rather than only incidentally covered because the two extern-declaration
-// format strings happen to collide.
+// output alone, leaving the digest-bound historical program C artifact
+// untouched. This proves the header artifact is independently scanned; the
+// archived program artifact is not emitted by today's public emitter.
 func TestAttributeInjectionIntoHeaderOnlyMakesControlFail(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
 	if err != nil {
@@ -1546,10 +1544,9 @@ func TestAttributeInjectionIntoConformanceOnlyMakesControlFail(t *testing.T) {
 }
 
 // TestAttributeInjectionMakesControlFail demonstrates D-04-13's
-// mutation-kill by injection (rather than by isolated assertion): a banned
-// token injected into a COPY of the REAL corpus-emitted C (as if the emitter
-// had produced it) makes the scan report it, proving the control is not
-// vacuously green.
+// mutation-kill by injecting a banned token into a copy of the digest-bound
+// historical C artifact. It proves the scanner is not vacuously green; it is
+// not evidence that the current emitter accepts foreign bodies.
 func TestAttributeInjectionMakesControlFail(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
 	if err != nil {
@@ -1874,13 +1871,10 @@ func nonlocalProbeChecked(t *testing.T) session.CheckResult {
 	return checked
 }
 
-// TestNonlocalExitEmitsLeakPerLiveAcquisition proves D-04-17 end to end
-// through the real generated pipeline: compiled and linked against the
-// second frozen foreign translation unit (native/lang_foreign_nonlocal.c),
-// the probe's second call performs a genuine longjmp back into the
-// process-root landing pad, which reports exactly the one still-live
-// acquisition as leaked, then terminates as a defect via a real SIGABRT --
-// never a hardcoded exit code (D-04-24, reused here).
+// TestNonlocalExitEmitsLeakPerLiveAcquisition replays Phase 16's
+// digest-bound historical C artifact against the frozen foreign translation
+// unit. It preserves the old D-04-17 receipt and does not claim the retired
+// emitter is available through current Emit/EmitNative.
 func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
 	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
@@ -1915,11 +1909,9 @@ func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 	}
 }
 
-// TestPadRunsNoRelease proves D-04-18: the generated pad's own body (the
-// span between the setjmp-installation marker and its matching end marker)
-// never calls a release -- it emits no resource.released event and never
-// clears a ledger slot -- so an honest leak can never be converted into a
-// use-after-free by a stray release running from indeterminate state.
+// TestPadRunsNoRelease inspects Phase 16's digest-bound historical C
+// artifact for the D-04-18 property. It is archival evidence for the removed
+// foreign lowering, not a current native-cleanup witness.
 func TestPadRunsNoRelease(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
 	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
@@ -1940,12 +1932,10 @@ func TestPadRunsNoRelease(t *testing.T) {
 	}
 }
 
-// TestNonlocalExitProbeInterpreterNative proves SC4 on exactly the path SC3
-// is about: the interpreter (which cannot actually call C, so it models the
-// same shared nonlocal-exit-on-second-call convention documented in both
-// cgen.go and interp.go) and the real compiled-and-linked native binary
-// agree, byte-for-byte, on the ordered event sequence and the defect
-// terminal record for this probe.
+// TestNonlocalExitProbeInterpreterNative replays the archived Phase 16 C
+// artifact and compares it with the interpreter's historical probe model.
+// Current whole-program emission refuses foreign-call bodies, so this is
+// retained as a bounded archival comparison only.
 func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
 	interpreted, err := interp.Run(checked.Program, "main", "7")
@@ -1973,14 +1963,10 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 	}
 }
 
-// TestNonlocalExitDetectionIsMutationKilled is control:foreign.
-// nonlocal_exit_undetected's FIRST mutation-kill demonstration (D-04-21/
-// D-09/D-10), standing alone from the session-level lane: removing the
-// process-root pad's entire generated span (setjmp installation through its
-// matching end marker) from the probe's own generated C must make the
-// probe's own defect terminal record and its foreign.nonlocal_exit/
-// resource.leaked events disappear -- proving detection by mutation rather
-// than by assertion alone.
+// TestNonlocalExitDetectionIsMutationKilled is the archival D-04-21
+// mutation-kill receipt for control:foreign.nonlocal_exit_undetected. It
+// mutates the digest-bound Phase 16 C artifact; it does not exercise a
+// current production emitter path.
 func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
 	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
@@ -2000,12 +1986,10 @@ func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 	}
 }
 
-// TestLeakCountMatchesLiveAcquisitions proves the golden probe's leak count
-// equals its true live-acquisition count (the positive case), then
-// mutation-kills control:foreign.nonlocal_exit_undetected a SECOND, DIFFERENT
-// way (D-09/D-10/D-21): dropping one ledger-population site must make the
-// mutated run's own leak count disagree with the golden run's -- checked
-// SPECIFICALLY as a leak-count disagreement, not merely "some difference."
+// TestLeakCountMatchesLiveAcquisitions preserves the archival D-09/D-10
+// mutation receipt for control:foreign.nonlocal_exit_undetected. Its golden
+// and mutated inputs are historical C artifacts; this does not demonstrate
+// current emitter cleanup behavior.
 func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
 	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
@@ -2307,10 +2291,11 @@ func TestExpectedEscapesAreVisibleNotSolved(t *testing.T) {
 // exists because the shipped foreign TU always succeeds at real runtime (a
 // genuine allocation failure is unreachable in practice), so proving the
 // interpreter and BOTH native optimization levels genuinely agree on a
-// typed-failure path's terminal outcome, events, and live resources
-// requires a real ok=0 SOMEWHERE in the toolchain -- this double supplies
-// it without touching production code cgen.go emits or the frozen TU it
-// links against for every other Phase 4 fixture.
+// typed-failure path's historical terminal outcome, events, and live
+// resources requires a real ok=0 SOMEWHERE in the archived toolchain -- this double supplies
+// it without touching production source or the frozen TU. Current
+// whole-program native emission refuses foreign-call bodies; later code in
+// this file uses the digest-bound historical C receipt.
 func writeFailingForeignDouble(t *testing.T, failOnCall int) string {
 	t.Helper()
 	source := fmt.Sprintf(`#include <stdint.h>
@@ -2343,20 +2328,14 @@ _LANG_lang_res_open_result _LANG_lang_res_open(unsigned char argument) {
 }
 
 // assertTypedFailurePathAgrees is task 04-07-02's shared engine-agreement
-// assertion for the second-stage and third-stage typed-failure path
-// shapes. Both are genuinely EXECUTED, not hand-constructed: the
-// interpreter runs the exact err block directly via
+// assertion for the historical second-stage and third-stage typed-failure
+// path shapes. The interpreter runs the exact err block directly via
 // interptestdirect.RunLinearBlockDirect (Run's own public entry point cannot reach
 // it, since the interpreter's documented discretionary stub always
 // simulates success for every OpForeignCall, D-04-04/04-PATTERNS Pattern
-// 3), and both native optimization levels compile and run the REAL,
-// UNMUTATED program's own generated C (already containing a compilable,
-// merely dead, "if (!result.ok) { <release*, fail> }" branch for every
-// call site) linked against writeFailingForeignDouble's test-only object
-// instead of the frozen production TU -- genuinely returning ok=0 on the
-// failing call, making that dead branch live. No engine is stubbed or fed
-// a constructed execution document; all three consume the SAME real
-// program through their ordinary machinery.
+// 3), while native optimization levels use the digest-bound historical C
+// artifact with writeFailingForeignDouble's test-only object. This retains
+// prior evidence but is not current emitter admission or cleanup proof.
 func assertTypedFailurePathAgrees(t *testing.T, fixture string, failOnCall int, liveOpIndexes []int, errBlockSuffix string) {
 	t.Helper()
 	corpus := testsupport.ProjectPath("testdata", "phase4")

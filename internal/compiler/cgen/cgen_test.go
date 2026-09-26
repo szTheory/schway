@@ -14,8 +14,8 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
-// foreignReleaseCheckedProgram checks the three-acquisition resource
-// fixture, reused by the D-04-20 streaming-emitter tests below.
+// foreignReleaseCheckedProgram checks the three-acquisition historical
+// resource fixture, reused by its archival-emitter evidence checks below.
 func foreignReleaseCheckedProgram(t *testing.T) session.CheckResult {
 	t.Helper()
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
@@ -29,12 +29,9 @@ func foreignReleaseCheckedProgram(t *testing.T) session.CheckResult {
 	return checked
 }
 
-// TestStreamingEmitterWritesAtPointOfOccurrence proves D-04-20's additive
-// streaming emitter is selected for a foreign-acquiring function: the
-// buffered lang_write_events replay is absent, and the events array opens
-// BEFORE the first event is recorded, so a lang_record_event call always
-// lands inside an already-open JSON array rather than one materialized only
-// at the very end.
+// TestStreamingEmitterWritesAtPointOfOccurrence checks the archived D-04-20
+// foreign-emitter artifact and separately pins today's public refusal. It
+// does not claim that the retired streaming body remains executable.
 func TestStreamingEmitterWritesAtPointOfOccurrence(t *testing.T) {
 	checked := foreignReleaseCheckedProgram(t)
 	if _, err := cgen.EmitNative(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
@@ -58,10 +55,9 @@ func TestStreamingEmitterWritesAtPointOfOccurrence(t *testing.T) {
 	}
 }
 
-// TestExistingEmittersAreByteIdentical is D-04-23's regression proof: adding
-// the streaming emitter must not move a single byte of any Phase 1/2/3
-// generated-C golden, since the buffered emitEventSupport those emitters
-// use is completely unmodified by this plan.
+// TestExistingEmittersAreByteIdentical keeps the admitted Phase 1/2 output
+// goldens stable while the archived foreign-emitter implementation is
+// retired.
 func TestExistingEmittersAreByteIdentical(t *testing.T) {
 	tests := []struct {
 		source []string
@@ -530,11 +526,10 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 	}
 }
 
-// TestExactlyOneLandingPadIsInstalled proves D-04-17's cost constraint is
-// falsifiable, not merely stated: regardless of how many acquisitions or
-// foreign calls a function performs, emitLinearForeign installs the
-// process-root setjmp landing pad exactly once.
-func TestExactlyOneLandingPadIsInstalled(t *testing.T) {
+// TestForeignLandingPadEmitterRemainsRefused pins the current public
+// whole-program refusal for fixtures whose historical C used a nonlocal
+// landing pad. The archived landing-pad implementation is not a live emitter.
+func TestForeignLandingPadEmitterRemainsRefused(t *testing.T) {
 	tests := []struct {
 		fixture      string
 		acquisitions int
@@ -554,34 +549,20 @@ func TestExactlyOneLandingPadIsInstalled(t *testing.T) {
 				t.Fatalf("fixture failed to check: %+v", checked.Diagnostics)
 			}
 			generated, err := cgen.EmitNative(checked.Program)
-			if err != nil {
-				if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
-					t.Skipf("historical landing-pad lowering is M004-frozen; current public refusal: %v; see probe:TestPhase16M004CorpusRefusal", err)
-				}
-				t.Fatal(err)
-			}
-			count := strings.Count(generated, "setjmp(")
-			if count != 1 {
-				t.Fatalf("%s (%d acquisitions): setjmp( appears %d times, want exactly 1:\n%s", test.fixture, test.acquisitions, count, generated)
+			if err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+				t.Fatalf("%s (%d acquisitions): current public emitter must refuse the foreign body, got source=%q err=%v", test.fixture, test.acquisitions, generated, err)
 			}
 		})
 	}
 }
 
-// TestLedgerIsStaticStorage proves D-04-17/D-04-18's ledger declaration
-// carries static storage duration -- never automatic -- since C17 leaves an
-// automatic object indeterminate after a longjmp crosses its setjmp call.
-func TestLedgerIsStaticStorage(t *testing.T) {
+// TestForeignResourceLedgerEmitterRemainsRefused prevents the old resource
+// ledger artifact from being mistaken for current native cleanup support.
+func TestForeignResourceLedgerEmitterRemainsRefused(t *testing.T) {
 	checked := nonlocalPadCheckedProgram(t, "nonlocal_exit_probe.lang")
 	generated, err := cgen.EmitNative(checked.Program)
-	if err != nil {
-		if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
-			t.Skipf("historical static-ledger lowering is M004-frozen; current public refusal: %v; see probe:TestPhase16M004CorpusRefusal", err)
-		}
-		t.Fatal(err)
-	}
-	if !strings.Contains(generated, "static int lang_resource_live[") {
-		t.Fatalf("expected the resource ledger to be declared with static storage duration:\n%s", generated)
+	if err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
+		t.Fatalf("current public emitter must refuse the foreign body, got source=%q err=%v", generated, err)
 	}
 }
 
@@ -665,11 +646,10 @@ func TestBlindSpotsAreNamedNotClaimed(t *testing.T) {
 	}
 }
 
-// TestPhase5ByPointerLoweringGolden pins testdata/phase5/restrict_borrow.lang's
-// generated C to its committed golden and asserts the by-pointer-param
-// marker (cgen.go's borrowByPointerMarker) appears exactly once, matching
-// this plan's acceptance criteria and giving 05-07's mutation runner a
-// fail-closed single-marker target (D-05-02).
+// TestPhase5ByPointerLoweringGolden pins the historical D-05-02 C artifact
+// beside the current named public refusal. The archived marker remains
+// useful to historical fixture controls; it is not emitted by production
+// Emit/EmitNative.
 func TestPhase5ByPointerLoweringGolden(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
 	if err != nil {
@@ -692,7 +672,7 @@ func TestPhase5ByPointerLoweringGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	if generated != string(golden) {
-		t.Fatalf("by-pointer lowering output moved from its committed golden:\n--- got ---\n%s\n--- want ---\n%s", generated, string(golden))
+		t.Fatalf("archived by-pointer output moved from its committed golden:\n--- got ---\n%s\n--- want ---\n%s", generated, string(golden))
 	}
 	if count := strings.Count(generated, "/* lang:by-pointer-param */"); count != 1 {
 		t.Fatalf("expected exactly one by-pointer-param marker, got %d in:\n%s", count, generated)
@@ -731,11 +711,10 @@ var phase1Through4AcceptingFixtures = []string{
 	"testdata/phase4/nonlocal_exit_probe.lang",
 }
 
-// TestPhase5ByPointerLoweringIsAdditive proves selectsByPointerLowering
-// never reaches into Phase 1-4: every accepting fixture from those phases
-// selects false for every one of its functions, so
-// emitLinear/emitBranch/emitLinearForeign's existing dispatch is genuinely
-// unperturbed by this plan (D-05-02/D-05-39).
+// TestPhase5ByPointerLoweringIsAdditive proves the retained structural
+// classifier does not mistake earlier accepted fixtures for the cut
+// by-pointer family. The classifier supports manifest description and
+// refusal checks; it does not dispatch production lowering.
 func TestPhase5ByPointerLoweringIsAdditive(t *testing.T) {
 	for _, path := range phase1Through4AcceptingFixtures {
 		t.Run(path, func(t *testing.T) {
@@ -749,36 +728,24 @@ func TestPhase5ByPointerLoweringIsAdditive(t *testing.T) {
 			}
 			for _, function := range checked.Program.Functions {
 				if cgen.SelectsByPointerLowering(function, function.Linear) {
-					t.Fatalf("function %q wrongly selects the by-pointer lowering path", function.Name)
+					t.Fatalf("function %q wrongly matches the cut by-pointer shape classifier", function.Name)
 				}
 			}
 		})
 	}
 }
 
-// TestPhase5ByPointerLoweringThreeEngineAgreement is what makes Task 2 a
-// tracer rather than a bare emitter change: session.RunNativeFile already
-// asserts interpreter/-O0/-O3 agreement internally (returning an
-// EngineMismatch error on divergence), so a clean run here proves the
-// by-pointer C function this plan adds is semantically correct end to end,
-// not merely syntactically distinct.
-func TestPhase5ByPointerLoweringThreeEngineAgreement(t *testing.T) {
+// TestPhase5ByPointerLoweringThreeEngineAgreementRemainsDeferred confirms
+// the historical three-engine experiment stays behind the whole-program
+// refusal until family-specific discharge evidence is admitted.
+func TestPhase5ByPointerLoweringThreeEngineAgreementRemainsDeferred(t *testing.T) {
 	path := testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if len(diagnostics) != 0 {
 		t.Fatalf("fixture failed to check: %+v", diagnostics)
 	}
-	if err != nil {
-		if strings.Contains(err.Error(), "by-pointer bodies are not supported") {
-			t.Skipf("by-pointer native tracer is frozen M004 evidence; current public refusal: %v; see probe:TestPhase16M004CorpusRefusal", err)
-		}
-		t.Fatalf("engines disagreed or native run failed: %v", err)
-	}
-	if len(result.Interpreter) == 0 || len(result.O0.Pairs) == 0 || len(result.O3.Pairs) == 0 {
-		t.Fatal("expected at least one execution from every engine")
-	}
-	if !strings.Contains(result.CSource, "/* lang:by-pointer-param */") {
-		t.Fatalf("expected the by-pointer lowering path to be selected, got:\n%s", result.CSource)
+	if err == nil || !strings.Contains(err.Error(), "by-pointer bodies are not supported") {
+		t.Fatalf("current public emitter must refuse the by-pointer body, got result=%+v err=%v", result, err)
 	}
 }
 
@@ -831,14 +798,15 @@ func TestEmitForeignNeverContainsAliasValue(t *testing.T) {
 }
 
 // restrictAbsentWithoutAliasFactSource is the negative half of
-// TestRestrictEmittedOnlyWithAliasFact (mirroring check_exclusive_test.go's
+// TestByPointerAttributeMetadataRemainsSeparateFromBodyAdmission (mirroring check_exclusive_test.go's
 // identical partialCoverageExclusiveSource fixture, duplicated here rather
 // than imported since it lives in an external _test package with no
 // exported symbol for it): the exclusive loan `first` never covers the
 // call's own terminator -- `relay` returns `buffer` directly, bypassing the
 // loan chain entirely (a borrow never moves ownership) -- so neither
 // check's AliasFact nor cgen's selectsByPointerLowering ever fire for this
-// function, and Emit falls back to the plain (non-by-pointer) lowering.
+// function, and the ordinary whole-program emitter can serialize it without
+// any by-pointer attribute claim.
 const restrictAbsentWithoutAliasFactSource = `module owned.alias_fact_partial_coverage
 
 export {
@@ -852,12 +820,12 @@ fn relay(buffer: Buffer) -> Buffer {
 }
 `
 
-// TestRestrictEmittedOnlyWithAliasFact is D-05-01's own falsifier: the
-// Phase 5 tracer fixture (whose exclusive loan genuinely covers the whole
-// call) emits exactly one `restrict` token, while a fixture whose loan does
-// NOT cover the terminator -- so no alias fact, and no by-pointer selection
-// -- emits none at all.
-func TestRestrictEmittedOnlyWithAliasFact(t *testing.T) {
+// TestByPointerAttributeMetadataRemainsSeparateFromBodyAdmission keeps the
+// historical D-05-01 attribute metadata distinct from executable body
+// admission. A selected by-pointer shape is refused by Emit; its separate
+// manifest may still describe the historical restrict fact. Ordinary
+// admitted output does not acquire that token.
+func TestByPointerAttributeMetadataRemainsSeparateFromBodyAdmission(t *testing.T) {
 	positive, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
 	if err != nil {
 		t.Fatal(err)
@@ -869,17 +837,12 @@ func TestRestrictEmittedOnlyWithAliasFact(t *testing.T) {
 	if _, err := cgen.Emit(positiveChecked.Program); err == nil || !strings.Contains(err.Error(), "by-pointer bodies are not supported") {
 		t.Fatalf("positive by-pointer fixture must retain named M004 refusal, got %v", err)
 	}
-	positiveBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase16", "historical", "restrict_borrow.c"))
+	manifest, err := cgen.EmitForeignManifest(positiveChecked.Program)
 	if err != nil {
 		t.Fatal(err)
 	}
-	positiveGenerated := string(positiveBytes)
-	// "restrict" as a substring also appears inside this fixture's own
-	// module/function identifiers ("phase5.restrict_borrow"), so the
-	// falsifiable count is the actual C `*restrict ` qualifier token, not a
-	// bare substring match.
-	if count := strings.Count(positiveGenerated, "*restrict "); count != 1 {
-		t.Fatalf("expected exactly one *restrict qualifier, got %d in:\n%s", count, positiveGenerated)
+	if !strings.Contains(manifest, `"attr":"restrict"`) {
+		t.Fatalf("expected manifest metadata to retain the historical restrict fact, got:\n%s", manifest)
 	}
 
 	negativeChecked := session.Check([]byte(restrictAbsentWithoutAliasFactSource))
@@ -893,8 +856,8 @@ func TestRestrictEmittedOnlyWithAliasFact(t *testing.T) {
 	if strings.Contains(negativeGenerated, "restrict") {
 		t.Fatalf("expected no restrict token without an alias fact, got:\n%s", negativeGenerated)
 	}
-	if strings.Contains(negativeGenerated, "/* lang:by-pointer-param */") {
-		t.Fatalf("expected the by-pointer path NOT to be selected without an alias fact, got:\n%s", negativeGenerated)
+	if strings.Contains(negativeGenerated, "restrict") {
+		t.Fatalf("ordinary emitted C must not carry the historical by-pointer attribute:\n%s", negativeGenerated)
 	}
 }
 

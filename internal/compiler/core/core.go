@@ -182,10 +182,10 @@ type ForeignContract struct {
 	// ordered field list with declared size, alignment, and offset, plus the
 	// record's own declared size and alignment. This phase's foreign surface
 	// has exactly one declared record shape (the {ok, value} two-field
-	// by-value ABI result cgen's emitLinearForeign always generates), so
-	// every foreign symbol's Layout is currently checker-derived -- a fixed
-	// structural fact, not a per-symbol declaration (see check.go's
-	// standardForeignLayout).
+	// by-value ABI result recorded by the foreign contract), so every foreign
+	// symbol's Layout is checker-derived -- a fixed structural fact, not a
+	// per-symbol declaration (see check.go's standardForeignLayout).
+	// Whole-program native emission currently refuses foreign-call bodies.
 	Layout *RecordLayout `json:"layout,omitempty"`
 	// Alias is Phase 4 plan 06's additive omitempty fact (D-04-28/FFI-01): a
 	// declared foreign symbol's own aliasing obligation toward the return

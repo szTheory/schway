@@ -19,13 +19,11 @@ func ForeignNonlocalSourcePath() string {
 
 // ForeignSourcePathForSymbol resolves a declared `foreign C {}` symbol name
 // to the frozen translation unit that defines it (D-04-10/D-04-17). This
-// project's model is one symbol per foreign-acquiring function
-// (cgen.go's emitLinearForeign calls exactly one extern per function), so a
-// caller needing to auto-link a foreign-shaped program's frozen TU (see
-// session.RunNative) resolves it by symbol name rather than by hardcoding a
-// single path -- the moment a second frozen TU exists (this plan adds one),
-// hardcoding the first one silently breaks linking any program declaring
-// the second.
+// A foreign interface identifies its frozen translation unit by symbol
+// name. The former executable foreign-body emitter linked one extern per
+// function, but whole-program native emission now refuses that body shape;
+// this resolver remains for the native fixture/tooling boundary and must not
+// be read as emitter admission.
 func ForeignSourcePathForSymbol(symbol string) (string, bool) {
 	switch symbol {
 	case "lang_res_open":

@@ -35,26 +35,17 @@ func nat03CorpusPath(relative string) string {
 	return filepath.Join(nat03ProjectRoot(), filepath.FromSlash(relative))
 }
 
-// byPointerParamMarker is duplicated, verbatim, from cgen.go's own
-// borrowByPointerMarker constant (D-05-01/D-05-02) — matching this file's
-// own established precedent (session.go's releaseMarker/padInstallMarker/
-// padEndMarker/ledgerPopulateMarker, all duplicated verbatim from cgen.go
-// rather than exported and shared). It is the mutation's single target:
-// AliasFactMutationRunner refuses to run when it does not appear on
-// exactly one line.
+// byPointerParamMarker names the historical D-05-01/D-05-02 generated-C
+// marker. It is retained only for archived fixture controls; the retired
+// private emitter bodies no longer produce it, and current whole-program
+// emission refuses these shapes. AliasFactMutationRunner remains fail-closed
+// when the marker is absent or ambiguous.
 const byPointerParamMarker = "/* lang:by-pointer-param */"
 
-// aliasProbeParameterName is duplicated, verbatim, from cgen.go's own
-// constant of the same name (D-05-05): the dormant second raw pointer
-// parameter emitLinearBorrowedByPointerPlain exposes on a function
-// selectsByPointerLoweringSharedOnly selects. Its PRESENCE on the marked
-// line is how this runner decides whether a genuine aliasing-hoist
-// demonstration is possible for the given fixture (testdata/phase5/
-// false_restrict_hoist.lang) or whether the marked function has no such
-// probe (e.g. testdata/phase5/restrict_borrow.lang's EXCLUSIVE, already-
-// justified by-pointer path), in which case only the (already-satisfied,
-// idempotent) restrict insertion applies and no divergence is possible —
-// exactly the load-bearing negative case D-05-05 requires.
+// aliasProbeParameterName is the marker used by the historical D-05-05
+// by-pointer artifact. The current emitter does not produce that body;
+// archived fixture controls still use the identifier to classify their
+// input and remain fail-closed when it is absent.
 const aliasProbeParameterName = "lang_alias_probe"
 
 // ControlAliasFalseNoAlias is D-05-05's control identifier: the mutation

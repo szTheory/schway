@@ -50,6 +50,9 @@ func validatePhase16FileFrozenEvidence(record phase16FileFrozenEvidenceRecord, f
 	return nil
 }
 
+// phase16FileFrozenEvidenceC validates the fixture and its current public
+// refusal, then returns the digest-bound historical C artifact. It must never
+// be treated as output produced by the current emitter.
 func phase16FileFrozenEvidenceC(t *testing.T, supplied core.Program, fixture string) (string, error) {
 	t.Helper()
 	manifestBytes, err := os.ReadFile(testsupport.ProjectPath("testdata/phase16/file-frozen-evidence.json"))
