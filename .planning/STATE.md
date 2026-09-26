@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M003
 milestone_name: Computation and Honest Instruments
-current_phase: 20
-current_phase_name: Nyquist, D-13-34, and the Frontier Fixture
-status: M003 phases complete; milestone audit pending
-stopped_at: M003 Phases 14–20 verified complete; ready for milestone audit
-last_updated: "2026-09-26T18:36:14Z"
+status: Awaiting next milestone
+stopped_at: M003 archived; ready to formalize M004
+last_updated: "2026-09-26T20:35:06Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 16 fingerprint refreshed after roadmap correction; M003 closeout ready
-state_head: 3bfa11d3b1ce8f704dfd07259abec3cd900b5683
+last_activity_desc: Milestone M003 completed and archived
+state_head: 37f9cb2e3be9f699ea629a9f037bf29d98f94de0
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 85
   completed_plans: 85
   percent: 100
+current_phase: null
+current_phase_name: null
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M003 milestone closeout — audit before archive
+**Current focus:** Start the M004 milestone cycle; its requirements and full charter are not yet ratified
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -85,78 +85,32 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: M003 — Computation and Honest Instruments
-Plans: 85/85 complete across Phases 14–20
-Status: All phase verifications pass; milestone audit pending
-Last activity: 2026-09-26 — Phase 16 fingerprint refreshed; M003 ready for audit
+Phase: M003 complete; M004 not yet opened
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-26 — Milestone M003 completed and archived
 
-Phases 14–20 are the complete M003 scope. Phase 16, Phase 19, and Phase 20
-verification reports all pass GSD's canonical fingerprint check; Phase 19 UAT
-remains complete at 15/15. The most recent full Go suite passed after Phase 19
-execution, and the verifier refreshes reused that evidence without replaying
-plans or UAT.
+## M003 Closeout (archived)
 
-The roadmap places Phase 21 under M004 and says M003 Phases 14–20 must complete
-before M004 begins. Phase 21 already has 4/4 summaries and 7/7 automated UAT,
-but its verification fingerprint is stale. `init.progress` currently discovers
-its directory as if it belonged to M003 and suggests `$gsd-verify-work 21`; that
-is a scope leak, and that command would repeat completed UAT. Keep Phase 21 out
-of M003 audit scope; reconcile it when M004 is formally opened.
+M003 shipped on 2026-09-26: Phases 14–20, 7 phases, 85 plans, 114 tasks, and
+33/33 requirements with all seven phase verifications passing. The audit status
+is `tech_debt`, with partial Nyquist coverage in Phases 14, 17, and 18 and four
+open unowned debt items within the five-item cap. Phase 21 is assigned to M004
+and was excluded from M003.
 
-**Next:** `$gsd-audit-milestone M003`
+- Full phase history: `.planning/milestones/M003-phases/`
+- Roadmap: `.planning/milestones/M003-ROADMAP.md`
+- Requirements: `.planning/milestones/M003-REQUIREMENTS.md`
+- Audit: `.planning/milestones/M003-MILESTONE-AUDIT.md`
 
-## M003 Phase Map
+## M004 Handoff
 
-Phase numbering **continues** from M002, which ended at Phase 13. M003 runs
-Phases 14-20. Structure is the ratified plan from
-`.planning/research/M003/ADVERSARIAL-SYNTHESIS.md` § "What I would actually do".
-
-| Phase | Name | Requirements | Plans (est.) | Status |
-|-------|------|--------------|--------------|--------|
-| 14 | Evidence Instrument and Honest Scoping | 11 | 6-8 | Complete |
-| 15 | Event Identity (`lang.execution/2`) | 5 | 6-8 | Complete; verification passed 2026-09-26 |
-| 16 | Branch/Match Emitter Port | 2 | 26 | Complete; verification refreshed and passed 2026-09-26 |
-| 17 | Return Type ≠ Parameter Type | 5 | 8-10 | Complete |
-| 18 | Branch on a Computed Value | 3 | 10 | Complete; verification passed 2026-09-26 |
-| 19 | Numeric Literals and `OpConst` | 3 | 7 | Complete; verification refreshed and passed 2026-09-26 |
-| 20 | Nyquist, D-13-34, Frontier Fixture | 4 | 10 | Complete; verification passed 2026-09-26 |
-
-**Carry-forward context that must survive a context reset** (restated here
-rather than left only in ROADMAP.md):
-
-- **The governing gate applies to every phase.** No requirement is admitted
-  unless its `.lang` fixture is checked in *first* as a refused frontier fixture
-  with its diagnostic pinned by a test. The phase gate is that the pinned
-  diagnostic **moved**. Every phase opens with a fixture-first plan.
-
-- **Two mandatory pre-phase spikes.** **S-010** (does a loan crossing a branch
-  point force a redesign?) is a **hard entry gate on planning Phase 18**;
-  **S-009** (fresh-agent authoring probe, with M001 Phase 6's lorem-ipsum
-  falsifiability control) runs early, alongside Phase 14.
-
-- **S-010's contingency, recorded so it is not re-litigated.** If a loan created
-  before a branch and live in exactly one arm needs a third `LoanEndpoint` kind
-  or a per-arm ownership-state merge, then Phase 18 is **CUT**; CTL-01/02/03
-  move to M004 with loops; Phase 18 is replaced by `OpBinary` + arithmetic under
-  optimization (which depends on Phase 19, so the two swap order); new `ARI-NN`
-  requirement rows are amended into REQUIREMENTS.md so coverage stays at 33;
-  comparison operators and `Bool` stay out regardless.
-
-- **The load-bearing structural fact (ADVERSARIAL-SYNTHESIS C3).** `match` is a
-  whole-function-body form whose scrutinee must be the function's own parameter,
-  and a linear body has no branch form at all. Branching on a computed value
-  does **not** exist and is **not** reachable by desugaring. Do not plan as if
-  `if` is a parser desugaring.
-
-- **DX-06 does not close in M003.** The entire blame subsystem is test-only dead
-  code; lifting the single-type invariant is necessary-not-sufficient. Phase 14
-  corrects PROJECT.md, the M002 audit, and PHASE-13-DEBT, which all state
-  otherwise. Phase 17 ratifies D-13-02b permanent with a corrected reopening
-  condition (separate compilation, M006).
-
-- **Ordering rationale.** Emitter port (16) before type widening (17), so the
-  two-type model is paid once instead of twice; event identity (15) before the
-  port, so branch-arm event emission is not written twice.
+M004 has not been formally opened; its requirements and full charter are not
+ratified. The existing Phase 21 work has all four plans complete and automated
+UAT at 7/7, but its verification fingerprint is stale after the report's
+recurring LTO evidence row was updated. After M004 is opened, resume with
+`$gsd-execute-phase 21` to refresh the report while preserving UAT; do not replay
+the completed plans or UAT.
 
 ## M002 Phase Map
 
@@ -645,8 +599,9 @@ that grades requirements from wiring will convert an honest partial into a false
 green**, because wiring is exactly what a structurally unreachable defect class
 still has. Grade requirements against the tree, not the wiring diagram.
 
-- Full go test ./... remains red on Phase 11 gate fixtures, stale corpus counts and validation digest, and unpinned groundedness findings outside Plan 16-19 scope.
-- Phase 18 full session suite: testdata/phase18/loan_across_branch.lang is admitted by check and corevalidate (same point-after-op:3 arm:0 plus Off-edge endpoint), while pathoracle.RecomputeEndpoints(select) returns pathoracle.inconsistent_path_death: loan dies at different positions across paths sharing its birth block. Plan 18-07 focused controls pass; resolve in a scoped follow-up before phase acceptance.
+- The Phase 16 gate's earlier full-suite and Phase 18 pathoracle findings were
+  resolved by later M003 work. Treat those old blocker notes as historical; the
+  M003 phase artifacts and audit are the current record.
 
 ### Roadmap Evolution
 
@@ -697,7 +652,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 8 | Complete Phase 18 automated UAT with zero manual checks | 2026-09-25 | dfa5598 | passed | — |
 | 9 | Record GSD no-loop rule: compare routed command inputs and state transitions before rerun; resolve unchanged blockers rather than repeating commands. | 2026-09-25 | 550bd0f | — | — |
 | 10 | Refresh stale Phase 15 and 19 verification and route GSD to Phase 21 | 2026-09-25 | 0124de9 | passed | — |
-| 260926-bkj | Refresh Phase 15 evidence, repair CI planning guards, and record shift-left/no-loop defaults | 2026-09-26 | — | passed | [260926-bkj-close-the-ci-planning-integrity-findings](./quick/260926-bkj-close-the-ci-planning-integrity-findings/) |
+| 260926-bkj | Refresh Phase 15 evidence, repair CI planning guards, and record shift-left/no-loop defaults | 2026-09-26 | 27cb078 | passed | [260926-bkj-close-the-ci-planning-integrity-findings](./quick/260926-bkj-close-the-ci-planning-integrity-findings/) |
 | 260926-ewj | Fix Phase 18 regression gate failures: preserve schema-1 emitter bytes and refresh corpus snapshot | 2026-09-26 | 7be22ab | passed | [260926-ewj-fix-phase-18-regression-gate-failures-pr](./quick/260926-ewj-fix-phase-18-regression-gate-failures-pr/) |
 | 260926-ffr | Ensure Phase 18 payload mutation seams restore after runner failure | 2026-09-26 | fe92bc3 | passed | [260926-ffr-ensure-phase-18-payload-mutation-seams-r](./quick/260926-ffr-ensure-phase-18-payload-mutation-seams-r/) |
 
@@ -713,10 +668,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T18:36:14Z
-Stopped at: M003 Phases 14–20 verified complete; milestone audit pending
+Last session: 2026-09-26T20:35:06Z
+Stopped at: M003 archived; M004 milestone kickoff is next
 Resume file: None
-Next command: $gsd-audit-milestone M003
+Next command: $gsd-new-milestone "Native Emission Ownership and Resource Discharge"
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -800,15 +755,7 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- M003 Phases 14–20 have complete plan summaries and passing canonical
-  verification. The next command is `$gsd-audit-milestone M003`; if that audit
-  passes, continue with `$gsd-complete-milestone M003`.
-- Phase 21 is explicitly under M004 in ROADMAP.md. Its 4/4 summaries and 7/7
-  UAT are complete, but its verifier fingerprint is stale. The current progress
-  resolver incorrectly folds that directory into M003; do not follow its
-  `$gsd-verify-work 21` suggestion during M003 closeout.
-- Historical planning notes below describe completed work; they are not current
-  next-action pointers.
+- Start the next milestone with $gsd-new-milestone
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 

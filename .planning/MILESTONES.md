@@ -1,5 +1,75 @@
 # Milestones
 
+## M003 Computation and Honest Instruments (Shipped: 2026-09-26)
+
+**Phases completed:** 7 phases, 85 plans, 114 tasks
+
+**Closeout:** verified closeout; audit status `tech_debt` with no requirement,
+integration, or flow gaps. The user chose to skip quick-task archival, so the 11
+completed quick-task folders remain under `.planning/quick/`.
+
+**Key accomplishments:**
+
+- A Go test (`internal/compiler/session/verification_groundedness_test.go`) that statically resolves every `go test -run` pattern cited across 27 archived and live evidence documents against a `go/parser`-built test index, classifies unrunnable and dead commands, and pins the measured 26-violation frontier as an exact, bidirectionally-provable literal.
+- A `skipped_region` diagnostic.Cause attached to `syntax.expected_declaration` separates three structurally distinct broken programs that previously collided on one diagnostic ID and one `result:` ID, shipped alongside a lexer-only distinctness gate proven non-inert against a frozen pre-fix capture.
+- `lang-repair --json` no longer emits a silent `unrepairable` decline: every decline now carries a non-empty `diagnosis_code`, the full ordered `diagnosis_codes` list, and a coded `decline_reason` from a closed three-value vocabulary.
+- Independent go/parser AST re-derivation makes `.planning/LANGUAGE-MATURITY.md`'s counts machine-checked (32→22 guards corrected) and records the first real cold `go test ./...` wall-clock baseline (191.89s) in `qlt02_budget_manifest.json`.
+- Extended the plan 14-01 groundedness lint with D-14-11 illocutionary-role document scoping, argv-form-only grep execution (R3), per-branch alternation groundedness (R2b), two corpus floors, a whole-module `go test -list` accuracy control, and a re-measured, re-pinned 125-entry exact violation frontier (up from 26).
+- A closed four-kind executed witness grammar (`probe:`/`callsite:`/`escape:`/`env:`) now backs every unreachable claim in four fully-migrated debt registers, four new probes prove the day-one claims currently hold, a module-wide suppression enumerator requires every `Skip` call to cite a resolvable witness, and `.planning/UNREACHABLE-CLAIMS.md` is a generated, byte-compared view derived from the registers.
+- The mutation axis-movement law has exactly one implementation and zero per-row exclusions: the thin cross-plan dispatcher is deleted, the sanitizer allocator-mismatch control is folded directly into the surviving switch, the callback-invocation row is admitted with a witnessed declared escape instead of a silent skip, and the superseded single-file marker guard is deleted in favor of plan 14-07's module-wide suppression enumerator, which is proven to cover strictly more surface.
+- 66 runnability/groundedness/grep findings reconciled outside the archives under a closed four-verdict vocabulary with mechanically checked obligations, the pinned groundedness frontier driven from 124 to 58 entries (three of four classes now empty), `.planning/EVIDENCE-RECONCILIATION.md` shipped as a byte-compared generated view, and 14-VALIDATION.md's own verification map filled with 31 real, executed rows — closing Phase 14.
+- A run record can no longer claim coverage it did not finish producing, a near-timeout run is refused rather than graded, and the run-record producer now executes exactly the anchored, resolved names the grader consults -- closing WR-01 and WR-02 from 14-REVIEW.md and dropping the corpus-wide run's measured cost from 269-347s to ~90s.
+- 14-VALIDATION.md's file-scoped grade-bar exemption is gone for good -- the corpus-wide `>=EXERCISED` bar now holds for it with a complete run record (90-92s against the 480s budget), guarded by a permanent two-half check, and D-14-121/D-14-53 both close `CLOSED(128ecec)` instead of staying `UNOWNED`.
+- `suppressionProblems` now checks the `//go:build` surface it always collected but never gated -- a declared `buildConstraintAllowlist`, a moved `MatchFile` gate so host-excluded files can't hide their own constraint, and a fourth seeded fault proving the branch is live.
+- The interpreter now publishes activation-qualified `/2` evidence and preorder caller-to-callee call edges for multi-function executions.
+- Native multi-function C now carries static per-occurrence identities and emits interpreter-equivalent `/2` call evidence without changing legacy writer bytes.
+- Schema-2 four-tier comparison now validates every engine document with the independent causal peer before it can report agreement.
+- The Phase 15 CI aggregate now executes each named Go test from its owning package and the source pin rejects package/test mismatches.
+- Direct `emitProgram` now executes the tracked ordinary-linear transfer as schema-2 evidence, with its `live_resources` tail serialized from an emitter-owned derivation.
+- Nullary branch blocks now lower through the whole-program C writer, retaining schema-2 event identity and ordered admission failures.
+- The surviving program emitter now lowers checker-shaped tagged payload matches and streams schema-2 defect evidence before its sole abort-only helper.
+- A checked-in one-TU C17 `restrict` microprogram now records macOS lane evidence and an explicit Linux-unavailable result, alongside a non-inert test-local refusal fence.
+- The resolved `cut-m004` checkpoint retains every by-pointer emitter family as owned M004 debt: macOS evidence and the source/refusal fence passed, but Linux is unavailable and macOS-only evidence cannot authorize admission.
+- The program emitter now enforces the reviewed `cut-m004` boundary for every pointer-specialized body, while NAT-09 names each excluded family and its M004 reopening work.
+- The retained N=1 paths now document their real legacy protocol divergence from direct schema-2 emission, bind every frozen golden-C file to an honest cut state, and execute direct-program C through all four semantic tiers.
+- The public emitter now validates once and delegates only to schema-2 `emitProgram`; the legacy public-dispatch implementation was removed atomically in `0607486`.
+- Phase 11 N=1/N=2 source, canonical programs, historical C artifacts, and exact cut-m004 refusal witnesses are bound by digests and mutation-tested.
+- The corpus evidence now binds to the live 31-pair set and a completed sequential run, with persisted tampering and missing-witness controls.
+- The live scanner and pinned frontier now match across 63 records, with all 15 surviving R2b findings assigned to P20 under QLT-10.
+- Phase 13 debt rows now cite the current Phase 17 witness, and budget lane tests use injected machine facts while real probe controls remain deterministic.
+- The machine-checked maturity snapshot now reports 133 `.lang` fixtures and 4,478 total lines.
+- Phase 11’s by-pointer assurance now proves the exact cut-m004 refusal before loading fixture-bound frozen C, while inventory and mutation controls validate the full provenance chain.
+- NAT-09 now assigns all three cut emitter families to M004 Phase 21, and CI-facing controls reject ownerless or drifted assignments.
+- The NAT-09 owner-law evidence command now uses independently anchored branches, and both groundedness controls plus a fresh full Go suite pass.
+- Parser-valid Resource-to-Result source fixtures now exercise checker admission and directional call contracts.
+- Checker-local Drops/Fresh derivation and reducer projections now preserve parameter and return contracts independently.
+- Core validation now derives parameter and return ownership facts independently and rejects directional contract drift.
+- Origin validation now derives parameter `Drops` and return `Fresh` from separate local type-fact lookups.
+- Independent checker, core-validator, and origin-validator return facts now face a session-local oracle, while the Resource-to-Result tracer proves directional core facts and deterministic interpreter execution.
+- Phase 17 now has a structurally distinct, byte-sealed held-out repair corpus before repair emission.
+- The checker now offers a single machine-applicable argument replacement only when a distinct initialized caller place uniquely satisfies the callee's parameter contract.
+- The sealed Phase 17 held-out mismatch now repairs through structured JSON alone, while B1 blame stays explicitly unwired until M006 separate compilation creates a declarer-unverifiable contract.
+- Four source fixtures and focused tests pin the pre-implementation terminal-match boundary and the production S-010 borrow shape.
+- A computed terminal match now runs through the existing branch CFG, interpreter, production C emitter, and five-axis source-to-native evidence path.
+- Core admission now proves computed scrutinees come from the shared entry prefix, while origin admission confines payload provenance to the return arm and that prefix.
+- A Result-returning callee now carries its selected alternative through checked core, interpreter execution, and native code emission.
+- Computed-match terminal records now expose the runtime payload value, and the seeded wrong-slot mutation is caught at the terminal-outcome axis.
+- Cache and native probes retain inspectable failures and finite 30-second subprocess budgets; seven full-suite and build lanes now pass with captured evidence.
+- Schema-2 terminal serialization now streams long alternative names and runtime payloads within the existing bounded output contract.
+- Three literal-bearing `.lang` witnesses now pin the compiler’s pre-implementation refusal identities and source spans.
+- Interpreter values now carry a distinct U64 fact, serialize it as canonical decimal, and retain the prior scalar projection proven by the D-12-18 replay.
+- Direct numeric bindings now become fresh typed `OpConst` places carrying canonical U64 values, with overflow and return-type mismatches rejected before executable core.
+- Corevalidation now independently admits canonical U64 constants, while path and origin analysis stop at each source-free constant root.
+- Canonical U64 constants now execute in the interpreter and production C emitter, with exact-width target checks and decimal-string output.
+- OpConst is registered and proven through both exhaustive controls, while five literal forms return exact U64 values across interpreter and three native optimization tiers.
+- A 663-byte checksum-intent Lang fixture is pinned at the current loop refusal and compared to the reconstructed M003-open numeric-literal refusal.
+- Phase 07, 08, and 11 validation maps now name live commands and state exactly where current evidence remains partial.
+- All eight remaining validation records now have a non-draft status, and a live/archive test prevents draft records from returning unnoticed.
+- The enumerated native closure reuses cached executables only when every discovered build input matches, while rerunning native execution and comparison on each pass.
+- PRC-02 now derives its starting liability from ten audited carry-forward IDs plus seven live M003 additions, and a seeded sixth-item control proves the five-item cap predicate refuses overflow.
+
+---
+
 ## M002 Interprocedural Semantic Spine (Shipped: 2026-09-14)
 
 **Phases completed:** 7 phases (07-13), 61 plans, 183 tasks

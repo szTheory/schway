@@ -67,7 +67,7 @@ status: complete
 - The first full-suite run surfaced four planning-integrity failures: the Phase 21 one-shot LTO command was represented as recurring CI evidence, and the roadmap omitted the explicit M003-to-M004 prerequisite. Both documentation defects were corrected; the focused assertions and the full suite then passed.
 - The default Go cache path was not writable in the sandbox. Setting `GOCACHE=/tmp/ai-lang-verification-gocache` allowed the complete suite to run.
 - Phase 15 completion reported three non-blocking metadata warnings: two historical summary references point to paths no longer present, and S-010 is mentioned in `REQUIREMENTS.md` but lacks a traceability row. They were recorded in `STATE.md`; Phase 15 passed and was closed. No repeat of Phase 15 is needed.
-- The scoped GSD commit attempt could not write `.git/index.lock` because `.git` is read-only in this workspace sandbox. The completed planning artifacts remain in the working tree and were not staged.
+- The original scoped GSD commit attempt could not write `.git/index.lock` because `.git` was read-only in the workspace sandbox. The completed Phase 21 evidence update and quick-task artifacts were later committed as `27cb078` during M003 closeout.
 
 ## Next Phase Readiness (historical when written)
 

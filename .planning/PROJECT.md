@@ -8,11 +8,12 @@ structured feedback with a small coherent semantic core, usable low-level
 ownership and resource control, deterministic evidence, and a calm canonical
 source form that remains readable when humans mostly review rather than type it.
 
-The first two milestones were deliberately narrower than the full vision: prove
-one real source-to-native semantic spine (M001), then prove it survives a
-function boundary (M002), before expanding into effects, services, agents,
-databases, GUIs, or an ecosystem. Lang-to-Lang calls now exist end to end; loops,
-arithmetic, and generic user code still do not.
+The first three milestones were deliberately narrower than the full vision:
+prove one real source-to-native semantic spine (M001), prove it survives a
+function boundary (M002), then prove it survives computation (M003), before
+expanding into effects, services, agents, databases, GUIs, or an ecosystem.
+Lang-to-Lang calls, computed-value matches, and U64 constants now exist end to
+end; loops, arithmetic, and generic user code still do not.
 
 ## Core Value
 
@@ -55,6 +56,22 @@ emitters are removed. The remaining foreign and by-pointer families stay an
 explicit M004 boundary under NAT-08/NAT-09. The refreshed verifier passed all
 4 goal truths, the full Go suite passed, and the already-complete 21/21
 automated UAT was preserved without rerunning it.
+
+**Shipped M003 — Computation and Honest Instruments (2026-09-26).** Phases
+14–20: 7 phases, 85 plans, and 114 tasks. All 33 requirements are complete and
+all seven phase verifications pass. The milestone audit is `tech_debt`: Nyquist
+validation remains partial for Phases 14, 17, and 18, and four open unowned debt
+items remain within the PRC-02 cap. Phase 21 belongs to M004 and is excluded
+from these totals. See `.planning/milestones/M003-MILESTONE-AUDIT.md` for the
+audit and `.planning/milestones/M003-ROADMAP.md` for the full phase record.
+
+The evidence layer now grades claims against exercised behavior and pins moved
+refusal frontiers. Schema `/2` event identity distinguishes repeated callee
+activations. Branch and match lowering use the single `emitProgram` authority;
+the retired emitters are gone, while three foreign/by-pointer families remain
+explicitly refused under M004 ownership. Return facts are independent from
+parameter facts; computed `Result` matches and U64 `OpConst` values run through
+the checked core, interpreter, and native path.
 
 **M003 entry-state gaps** (the snapshot as M003 began, corrected 2026-09-17
 against the tree by the research fan-out — `.planning/research/M003/`; three
@@ -116,7 +133,11 @@ is wired, not because it runs.* It is the same mode the M002 audit caught in
 the integration checker. M003 Phase 14 mechanizes the fix rather than patching
 the instances.
 
-## Current Milestone: M003 Computation and Honest Instruments
+## Shipped Milestone: M003 Computation and Honest Instruments
+
+Completed 2026-09-26: 7 phases, 85 plans, 114 tasks, 33/33 requirements, and
+7/7 passing phase verifications. The audit records non-blocking technical debt
+and no requirement, integration, or flow gaps.
 
 **Goal:** Prove a meaning survives *computation* — the first value Lang creates
 rather than moves — on instruments that cannot report green for work that is
@@ -126,7 +147,7 @@ merely wired.
 function boundary. M003 proves it survives computation, and makes the measuring
 instruments honest enough that the claim means what it says.
 
-**Target features:**
+**Delivered scope:**
 
 - Evidence instruments that grade at EXERCISED+ or name themselves unreachable —
   a groundedness lint, a closed evidence vocabulary
@@ -177,7 +198,7 @@ research is not re-derived later.
 
 | Milestone | Charter | Gate that becomes meaningful |
 |---|---|---|
-| M004 | Iteration | Back edges exist. Must first answer what replaces `pathoracle`, which refuses every CFG cycle by name (`pathoracle.cfg_back_edge`) — iteration does not make it expensive, it makes it impossible. A pre-phase spike is mandatory. |
+| M004 | Native emission ownership/resource discharge, with the broader feature charter still provisional | Phase 21's implementation and UAT are complete, but its verification fingerprint needs refresh. If iteration remains in scope, a pre-phase spike must answer what replaces `pathoracle`, which refuses CFG cycles by name. |
 | M005 | Aggregates and arity-N | D-12-43 finally becomes constructible — via a generalized-scrutinee arm returning a destructured payload, not via arithmetic alone. Arity 2 takes the `pathoracle` case space from ~12 to ~108. |
 | M006 | Modules and separate compilation | DX-06's B1 blame becomes real: the first user-declared contract field the declaring function's own admission cannot verify. |
 
@@ -260,20 +281,27 @@ milestone must measurably move the refusal forward.
   absent, and the remaining foreign/by-pointer families are an explicit M004
   refusal boundary with assigned ownership.
 
+- ✓ A function's return type can differ from its parameter type — M003 Phase 17;
+  checker, core validator, origin validator, interpreter, and native emission
+  preserve the separate facts, and the held-out JSON repair path is exercised.
+- ✓ A branch can discriminate a computed value — M003 Phase 18; computed
+  terminal matches and payload values execute through checked core, interpreter,
+  and native emission.
+- ✓ Lang can name a U64 value through a source literal — M003 Phase 19; canonical
+  `OpConst` facts are independently validated and agree across interpreter and
+  native optimization tiers.
+- ✓ The post-M003 evidence corpus and refused checksum frontier are reconciled —
+  M003 Phase 20; remaining partial Nyquist coverage is documented in the audit.
+
 ### Active
 
-M003 scope, confirmed 2026-09-17. Each line is a milestone-level intent;
-`REQUIREMENTS.md` carries the testable REQ-IDs.
+M004 requirements have not been ratified. Its provisional charter is
+not yet ratified. Phase 21 has completed implementation and automated UAT, with
+its verification fingerprint awaiting refresh. Formalize M004's full scope and
+acceptance criteria through the next milestone cycle; preserve Phase 21's
+completed UAT and refresh its verifier there without replaying UAT.
 
-- [ ] Allow a function's return type to differ from its parameter type.
-      Closes DX-07 and D-13-10a. Does **not** close DX-06 — see Current State.
-- [ ] Let a branch discriminate a computed value, by generalizing `match`'s
-      scrutinee beyond the function's own parameter. Spike-gated.
-- [ ] Let Lang name a value it was not given: literals and `OpConst`.
-- [ ] Close the reconcilable Nyquist debt (07, 08, 11) and pin a refused
-      frontier fixture whose diagnostic each milestone must move.
-
-Deferred with a named landing, not dropped:
+### Deferred — Named Landing, Not Dropped
 
 - Loops and back edges → M004, after a spike answers what replaces
   `pathoracle`.
@@ -315,6 +343,15 @@ Deferred with a named landing, not dropped:
 +130,172 / -1,527 lines, 61 new `.lang` fixtures. ~102,280 lines of Go across
 25 packages; `go build ./...`, `go vet ./...`, and `go test ./...` are clean.
 Details in `.planning/milestones/M002-ROADMAP.md`.
+
+**Shipped M003 — Computation and Honest Instruments (2026-09-26).** Phases
+14–20: 7 phases, 85 plans, 114 tasks, and 33/33 requirements verified. The
+milestone audit is `tech_debt`: partial Nyquist coverage in Phases 14, 17, and
+18 plus four open unowned debt items within the five-item limit. Phase 21 is
+assigned to M004 and excluded. Full records are in
+`.planning/milestones/M003-ROADMAP.md`,
+`.planning/milestones/M003-REQUIREMENTS.md`, and
+`.planning/milestones/M003-MILESTONE-AUDIT.md`.
 
 What exists now is a real vertical compiler that crosses function boundaries:
 lossless canonical frontend → typed core with a per-function CFG and `OpCall` →
@@ -414,11 +451,12 @@ Canonical planning inputs:
 | Cut M002 phases where a *gate* becomes meaningful, not where implementation could parallelize | A new `OperationKind` at six dispatch sites has no safe partial state; the useful boundary is "can this claim now be independently checked?" | ✓ Good — all 7 phases verified passed, and each gate caught something (Phase 09's requirement-vs-traceability defect, Phase 10's fixture escape hatch, Phase 12's blocker) |
 | Split OWN-05 into OWN-05a/OWN-05b (D-09-37) rather than flip one row Complete on two of three derivers | A single-row overclaim is exactly the requirement-vs-code failure the debt registers exist to catch | ✓ Good — the split is why the milestone audit found zero orphaned or overclaimed requirements across three independent sources |
 | Eliminate Phase 11's two human-judgment items with tests rather than adjudicate them | A debt note is read once; a test runs on every CI invocation | ✓ Good — `TestSeedEntryHazardIsReal` and `session_admission_divergence_test.go` both fail in *both* directions, catching a silently resolved divergence as well as a new one |
-| Ratify DX-06 and DX-07 as honest partials rather than downgrade the criteria | Both are blocked by one root cause — `sameType(ReturnType, Parameter.Type)` at function admission — and both close automatically when it lifts; restating the criterion to match what shipped would hide a real language limit | ⚠️ Revisit in M003 — the blame resolver and its exhaustiveness guard are already built and waiting on the type-system widening |
+| Keep DX-06 and DX-07 evidence-based instead of weakening their criteria | DX-06 needs a user-declared contract field its declaring function cannot verify; DX-07's `use_matching_argument` repair was byte-identical on real triggers | ✓ Good — M003 closes DX-07 through a sealed held-out repair proof; DX-06 remains assigned to M006 with separate compilation (D-13-02b) |
 | Reject the integration checker's requirement-satisfaction column while adopting its structural findings | It graded requirements from wiring, and wiring is exactly what a structurally unreachable defect class still has | ✓ Good — caught two would-be false greens (DX-06, DX-07) that contradicted both Phase 13's own verification and a `grep` of the tree |
 | Keep cache refusal codes stable while retaining typed Clang probe causes and finite subprocess deadlines | Callers keep a fail-closed contract while diagnostics distinguish timeout, launch, and command failures; bounded work remains cancellable | ✓ Good — three default-parallel full suites, capped-parallel and race suites, vet, and build all pass under verified captured receipts |
 | Reuse existing macOS/Linux full and race CI lanes when focused coverage adds no distinct signal | Recurring CI value must justify its runtime and maintenance cost | ✓ Good — Plan 08's unchanged CI blob and `not_added` disposition remain verified after G-18-16 closure |
 | Route branch and match lowering through the public `emitProgram` authority | A single emitter law prevents admitted source shapes from depending on a legacy backend | ✓ Good — M003 Phase 16 passed all 4 verification truths; foreign and by-pointer families retain explicit M004 ownership |
+| Require a fixture-first constructibility gate for every admitted language requirement | It catches built-but-unreachable behavior before production implementation begins | ✓ Good — M003's phases used refused frontier fixtures and pinned diagnostics to make each new surface constructible |
 
 ## Evolution
 
@@ -438,4 +476,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-26 after Phase 16 verification refresh passed*
+*Last updated: 2026-09-26 after M003 milestone closeout*
