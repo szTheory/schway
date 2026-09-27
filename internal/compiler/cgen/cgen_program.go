@@ -555,7 +555,18 @@ func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeNa
 // future multi-function branch body; it is unused today because this
 // phase's assembler always writes the lang.execution/1 JSON document (the
 // single behavior emitLinear's own single-function path already has).
+type programEntryShell uint8
+
+const (
+	programExecutionShell programEntryShell = iota
+	programApplicationShell
+)
+
 func emitProgram(program core.Program, executionJSON bool) (string, error) {
+	return emitProgramWithShell(program, programExecutionShell, executionJSON)
+}
+
+func emitProgramWithShell(program core.Program, shell programEntryShell, executionJSON bool) (string, error) {
 	_ = executionJSON
 	// Every caller observes whether THIS attempt crossed into C
 	// serialization; ordered-refusal tests must not inherit a prior success.
@@ -568,6 +579,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	entry, err := callgraph.EntryFunction(program)
 	if err != nil {
 		return "", err
+	}
+	if shell == programApplicationShell && (entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || entry.ReturnType != "U64") {
+		return "", fmt.Errorf("application entry %q: only a linear U64-to-U64 entry is supported", entry.ID)
 	}
 
 	byID := make(map[string]core.Function, len(program.Functions))
@@ -770,6 +784,9 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	}
 	if needsU64 {
 		emitProgramU64Support(&out)
+		if shell == programApplicationShell {
+			emitProgramU64ApplicationWriter(&out)
+		}
 	}
 	if err := emitProgramLiveResourcesWriter(&out, liveResources); err != nil {
 		return "", err
@@ -860,7 +877,23 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 	if needsU64 {
 		out.WriteString("  (void)lang_parse_u64_decimal;\n  (void)lang_write_u64;\n")
 	}
+	if shell == programApplicationShell {
+		// The application keeps semantic event recording in the shared body
+		// lowering, but does not serialize those events onto application stdout.
+		// Taking the evidence writers' addresses keeps this shared support
+		// translation unit valid under the strict -Wunused-function build.
+		out.WriteString("  (void)lang_write_events;\n  (void)lang_write_live_resources;\n")
+	}
 	out.WriteString("  if (argc != 2) return 64;\n")
+	if shell == programApplicationShell {
+		out.WriteString("  if (strlen(argv[1]) > 4096u) return 65;\n")
+		out.WriteString("  uint64_t lang_entry_input;\n")
+		out.WriteString("  if (!lang_parse_u64_decimal(argv[1], &lang_entry_input)) return 65;\n")
+		fmt.Fprintf(&out, "  %s lang_entry_output = %s(lang_entry_input, 0u);\n", entryOutputType, functionNames[entryIndex])
+		out.WriteString("  if (!lang_write_u64_plain(lang_entry_output) || !lang_write_literal(\"\\n\")) return 74;\n")
+		out.WriteString("  return 0;\n}\n")
+		return out.String(), nil
+	}
 	if entryIsBranch {
 		fmt.Fprintf(&out, "  %s lang_entry_input;\n", entryTypeName)
 		for index, alternative := range entryBranch.alternatives {
@@ -953,6 +986,13 @@ func emitProgramU64Support(out *strings.Builder) {
 	out.WriteString("  if (cursor == NULL || *cursor == 0u) return 0;\n")
 	out.WriteString("  for (; *cursor != 0u; ++cursor) {\n    unsigned int digit;\n    if (*cursor < (unsigned char)'0' || *cursor > (unsigned char)'9') return 0;\n    digit = (unsigned int)(*cursor - (unsigned char)'0');\n    if (value > (UINT64_MAX - digit) / UINT64_C(10)) return 0;\n    value = value * UINT64_C(10) + digit;\n  }\n  *out = value;\n  return 1;\n}\n\n")
 	out.WriteString("static int lang_write_u64(uint64_t value) {\n  char digits[20];\n  size_t length = 0u;\n  size_t index;\n  do { digits[length++] = (char)('0' + (value % UINT64_C(10))); value /= UINT64_C(10); } while (value != 0u && length < sizeof digits);\n  if (value != 0u || !lang_write_bytes(\"\\\"\", 1u)) return 0;\n  for (index = length; index > 0u; --index) if (!lang_write_bytes(&digits[index - 1u], 1u)) return 0;\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
+}
+
+// emitProgramU64ApplicationWriter emits the plain decimal result path used by
+// retained applications. The conformance shell keeps lang_write_u64's JSON
+// string encoding unchanged.
+func emitProgramU64ApplicationWriter(out *strings.Builder) {
+	out.WriteString("static int lang_write_u64_plain(uint64_t value) {\n  char digits[20];\n  size_t length = 0u;\n  do { digits[length++] = (char)('0' + (value % UINT64_C(10))); value /= UINT64_C(10); } while (value != 0u && length < sizeof digits);\n  if (value != 0u) return 0;\n  while (length > 0u) { --length; if (!lang_write_bytes(&digits[length], 1u)) return 0; }\n  return 1;\n}\n\n")
 }
 
 // emitProgramTerminalValueWriter makes a returned payload-bearing ADT value

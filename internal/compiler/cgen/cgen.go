@@ -126,6 +126,17 @@ func EmitNative(program core.Program) (string, error) {
 	return emitProgram(validated.Program(), true)
 }
 
+// EmitApplication lowers a checked U64-to-U64 entry through the same function
+// bodies as the conformance emitter, with an ordinary decimal application
+// boundary instead of an execution-document boundary.
+func EmitApplication(program core.Program) (string, error) {
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return "", fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	return emitProgramWithShell(validated.Program(), programApplicationShell, false)
+}
+
 // The generated-C ordinary-identifier namespace is closed by two cooperating
 // properties, not by the reserved lists alone. Both are load-bearing and both
 // are enforced by tests (see cgen_names_test.go and names_internal_test.go):

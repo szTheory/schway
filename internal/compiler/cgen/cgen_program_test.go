@@ -1447,3 +1447,64 @@ func TestCallSitesEmitNoArithmeticConversion(t *testing.T) {
 		}
 	}
 }
+
+func TestPhase22ApplicationEmitterSharesBodyAndSeparatesOutputShell(t *testing.T) {
+	source := []byte("module phase22.identity\n\nexport { fn main }\n\nfn main(input: U64) -> U64 { input }\n")
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("Check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("corevalidate problems: %+v", validated.Problems)
+	}
+
+	application, err := cgen.EmitApplication(validated.Program())
+	if err != nil {
+		t.Fatalf("EmitApplication: %v", err)
+	}
+	conformance, err := cgen.EmitNative(validated.Program())
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	appMain := strings.LastIndex(application, "\nint main(")
+	conformanceMain := strings.LastIndex(conformance, "\nint main(")
+	if appMain < 0 || conformanceMain < 0 {
+		t.Fatal("generated output is missing main")
+	}
+	appBodyStart := strings.LastIndex(application[:appMain], "\nstatic ")
+	conformanceBodyStart := strings.LastIndex(conformance[:conformanceMain], "\nstatic ")
+	if appBodyStart < 0 || conformanceBodyStart < 0 || application[appBodyStart:appMain] != conformance[conformanceBodyStart:conformanceMain] {
+		t.Fatal("application entry changed the checked function-body lowering")
+	}
+	appEntry := application[appMain:]
+	parse := strings.Index(appEntry, "lang_parse_u64_decimal(argv[1]")
+	call := strings.Index(appEntry, "lang_entry_output = ")
+	if parse < 0 || call < 0 || parse >= call {
+		t.Fatalf("generated application does not validate input before the Lang body:\n%s", appEntry)
+	}
+	if !strings.Contains(appEntry, "strlen(argv[1]) > 4096u") || !strings.Contains(appEntry, "lang_write_u64_plain(lang_entry_output)") || !strings.Contains(appEntry, "lang_write_literal(\"\\n\")") {
+		t.Fatalf("application shell is missing its transport bound or plain decimal output:\n%s", appEntry)
+	}
+	if strings.Contains(appEntry, "lang.execution/2") || strings.Contains(appEntry, "lang_write_events()") {
+		t.Fatalf("application shell serializes compiler evidence on ordinary stdout:\n%s", appEntry)
+	}
+	if !strings.Contains(conformance[conformanceMain:], "lang.execution/2") || !strings.Contains(conformance[conformanceMain:], "lang_write_events()") {
+		t.Fatal("conformance emitter lost its execution-document shell")
+	}
+}
+
+func TestPhase22ApplicationEmitterRefusesOtherEntryShapes(t *testing.T) {
+	for _, source := range []string{
+		"module phase22.byte_result\n\nexport { fn main }\n\nfn main(input: Byte) -> Byte {\n  input\n}\n",
+		"module phase22.byte_input\n\nexport { fn main }\n\nfn main(input: Byte) -> U64 {\n  let count = 42\n  count\n}\n",
+	} {
+		checked := session.Check([]byte(source))
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("unexpected checker diagnostics: %+v", checked.Diagnostics)
+		}
+		if _, err := cgen.EmitApplication(checked.Program); err == nil {
+			t.Fatalf("EmitApplication accepted unsupported entry shape for %q", source)
+		}
+	}
+}

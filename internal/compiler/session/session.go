@@ -1137,6 +1137,47 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 	return runNative(ctx, source, runner, "")
 }
 
+// BuildApplication checks and independently validates source, then emits and
+// compiles a retained U64 application without executing its entry point.
+func BuildApplication(ctx context.Context, source []byte, outputPath string, runner native.Runner) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
+	checked := Check(source)
+	if len(checked.Diagnostics) > 0 {
+		return native.BuildReceipt{}, checked.Diagnostics, nil
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		if len(validated.Problems) == 0 {
+			return native.BuildReceipt{}, nil, errors.New("core validation failed without a named problem")
+		}
+		return native.BuildReceipt{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program := validated.Program()
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return native.BuildReceipt{}, nil, err
+	}
+	if entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || entry.ReturnType != "U64" {
+		return native.BuildReceipt{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64 entry is supported", entry.ID)
+	}
+	cSource, err := cgen.EmitApplication(program)
+	if err != nil {
+		return native.BuildReceipt{}, nil, err
+	}
+	receipt, err := runner.BuildApplication(ctx, source, cSource, outputPath)
+	if err != nil {
+		return native.BuildReceipt{}, nil, err
+	}
+	return receipt, nil, nil
+}
+
+func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, runner native.Runner) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
+	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
+	if err != nil {
+		return native.BuildReceipt{}, nil, err
+	}
+	return BuildApplication(ctx, source, outputPath, runner)
+}
+
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
 // shipped binary on out-of-corpus programs per D-04-21: `lang run
 // --engine=native` previously ran every input through ONE shared,

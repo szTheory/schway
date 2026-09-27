@@ -1,0 +1,9 @@
+module phase22.identity
+
+export {
+  fn main
+}
+
+fn main(input: U64) -> U64 {
+  input
+}

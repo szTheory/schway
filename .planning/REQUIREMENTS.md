@@ -16,9 +16,9 @@ IDs continue existing categories, including reserved historical future IDs.
 ### Native application execution
 
 - [ ] **APP-02**: A developer can build a retained native executable from an admitted Lang source using a documented public command; building does not execute application effects, and the artifact runs outside the compiler's temporary build directory with its runtime dependencies declared.
-- [ ] **APP-03**: A developer can supply bounded input through the public application route; two caller-selected scalar inputs produce independently specified results, and malformed or oversized input is rejected with a defined outcome.
+- [x] **APP-03**: A developer can supply bounded input through the public application route; two caller-selected scalar inputs produce independently specified results, and malformed or oversized input is rejected with a defined outcome.
 - [ ] **APP-04**: One application-run request launches the selected native artifact exactly once, without prior interpretation or hidden optimization-tier replay of application effects.
-- [ ] **APP-05**: An application has defined stdout, stderr, and process-exit behavior; ordinary output and successful stderr are not parsed as or rejected for violating compiler execution JSON.
+- [x] **APP-05**: An application has defined stdout, stderr, and process-exit behavior; ordinary output and successful stderr are not parsed as or rejected for violating compiler execution JSON.
 - [ ] **APP-06**: A developer can obtain compiler execution evidence separately from application streams, with explicit disabled, incomplete, and capacity-exhausted states that cannot be reported as successful verification.
 
 ### Explicit foreign boundaries
@@ -143,9 +143,9 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 | Requirement | Phase | Status |
 |---|---|---|
 | APP-02 | Phase 22 | Pending |
-| APP-03 | Phase 22 | Pending |
+| APP-03 | Phase 22 | Complete |
 | APP-04 | Phase 22 | Pending |
-| APP-05 | Phase 22 | Pending |
+| APP-05 | Phase 22 | Complete |
 | APP-06 | Phase 22 | Pending |
 | FFI-02 | Phase 22 | Pending |
 | FFI-03 | Phase 23 | Pending |
