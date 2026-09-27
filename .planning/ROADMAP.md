@@ -59,14 +59,14 @@ runnable source/input/output witness; no implementation plans exist yet.
 4. A developer can request execution evidence through a separate channel and distinguish disabled, incomplete, and capacity-exhausted states from successful verification.
 5. Explicit differential verification uses isolated or replayable inputs and independent expected answers; declared foreign outcomes are distinguished from actual host IO, and verification replay does not occur on the ordinary application route.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 **Wave 1**
 
 - [x] 22-01-PLAN.md — Retained identity application with bounded input and one launch
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 22-02-PLAN.md — Relocatable local C linkage and content-bound build identity
+- [x] 22-02-PLAN.md — Relocatable local C linkage and content-bound build identity
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -205,7 +205,7 @@ by roadmap creation. Plan counts remain TBD until phase planning.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 22. Native Application Build and Single Execution | 1/3 | In Progress|  |
+| 22. Native Application Build and Single Execution | 2/3 | In Progress|  |
 | 23. Live Local Allocation and Discharge | 0/TBD | Not started | - |
 | 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
