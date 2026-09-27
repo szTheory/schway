@@ -81,6 +81,8 @@ type Runner struct {
 	// build (D-05-19/D-05-38). Nil for every production caller.
 	recorder *commandRecorder
 	command  func(context.Context, string, ...string) *exec.Cmd
+	// evidenceLimit is an internal test seam for capacity-exhaustion controls.
+	evidenceLimit int
 }
 
 // commandRecorder is a pointer-shared recording sink: Runner is used by

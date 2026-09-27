@@ -13,10 +13,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/codename-lang/lang/internal/compiler/execution"
 )
 
 const (
 	ApplicationBuildSchema      = "lang.app-build/1"
+	ApplicationEvidenceSchema   = "lang.app-evidence/1"
+	applicationCaptureSchema    = "lang.app-capture/1"
 	MaxApplicationArgumentBytes = 4096
 	maxApplicationReceiptBytes  = 64 * 1024
 )
@@ -58,6 +62,53 @@ type RunOutcome struct {
 	Signal       string         `json:"signal,omitempty"`
 	SignalNumber int            `json:"signal_number,omitempty"`
 	Diagnostic   string         `json:"diagnostic,omitempty"`
+}
+
+type EvidenceMode string
+
+const (
+	EvidenceDisabled EvidenceMode = "disabled"
+	EvidenceEvents   EvidenceMode = "events"
+)
+
+type EvidenceCaptureStatus string
+
+const (
+	EvidenceStatusDisabled          EvidenceCaptureStatus = "disabled"
+	EvidenceStatusComplete          EvidenceCaptureStatus = "complete"
+	EvidenceStatusIncomplete        EvidenceCaptureStatus = "incomplete"
+	EvidenceStatusCapacityExhausted EvidenceCaptureStatus = "capacity_exhausted"
+)
+
+// ApplicationEvidenceReport is a status-bearing record of one app process.
+// A complete capture records structure and identity; it is never a differential
+// semantic verdict.
+type ApplicationEvidenceReport struct {
+	Schema         string                `json:"schema"`
+	BuildID        string                `json:"build_id"`
+	InputID        string                `json:"input_id"`
+	ArtifactDigest string                `json:"artifact_digest"`
+	SourceDigest   string                `json:"source_digest"`
+	InputDigest    string                `json:"input_digest"`
+	ProcessOutcome RunOutcome            `json:"process_outcome"`
+	CaptureStatus  EvidenceCaptureStatus `json:"capture_status"`
+	Execution      *execution.Execution  `json:"execution,omitempty"`
+	Verified       bool                  `json:"verified"`
+}
+
+type applicationCapture struct {
+	Schema    string          `json:"schema"`
+	Status    string          `json:"status"`
+	Execution json.RawMessage `json:"execution,omitempty"`
+}
+
+// evidenceLimit is a test seam for capacity exhaustion controls. Production
+// reports use the fixed execution.MaxApplicationEvidenceBytes limit.
+func (r Runner) evidenceCapacityLimit() int {
+	if r.evidenceLimit > 0 {
+		return r.evidenceLimit
+	}
+	return execution.MaxApplicationEvidenceBytes
 }
 
 var applicationFlags = []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-O0"}
@@ -231,26 +282,107 @@ func RunApplication(ctx context.Context, artifactPath, input string, stdout, std
 }
 
 func (r Runner) RunApplication(parent context.Context, artifactPath, input string, stdout, stderr io.Writer) (RunOutcome, error) {
+	outcome, _, err := r.runApplication(parent, artifactPath, input, "", stdout, stderr)
+	return outcome, err
+}
+
+// RunApplicationWithEvidence runs the retained application once, optionally
+// captures its compiler events through a private file, and atomically publishes
+// a separate report. Incomplete or exhausted requested evidence is a tool
+// error even though the child process outcome remains recorded and unchanged.
+func RunApplicationWithEvidence(ctx context.Context, artifactPath, input, reportPath string, mode EvidenceMode, stdout, stderr io.Writer) (RunOutcome, ApplicationEvidenceReport, error) {
+	return DefaultRunner().RunApplicationWithEvidence(ctx, artifactPath, input, reportPath, mode, stdout, stderr)
+}
+
+func (r Runner) RunApplicationWithEvidence(parent context.Context, artifactPath, input, reportPath string, mode EvidenceMode, stdout, stderr io.Writer) (RunOutcome, ApplicationEvidenceReport, error) {
+	if strings.TrimSpace(reportPath) == "" {
+		return RunOutcome{}, ApplicationEvidenceReport{}, &ToolError{Code: "native.evidence_report_required", Err: errors.New("a report path is required")}
+	}
+	if mode != EvidenceDisabled && mode != EvidenceEvents {
+		return RunOutcome{}, ApplicationEvidenceReport{}, &ToolError{Code: "native.evidence_mode_invalid", Err: errors.New("evidence mode must be disabled or events")}
+	}
+
+	captureDirectory := ""
+	capturePath := ""
+	if mode == EvidenceEvents {
+		var err error
+		captureDirectory, err = os.MkdirTemp("", "lang-app-evidence-")
+		if err != nil {
+			return RunOutcome{}, ApplicationEvidenceReport{}, &ToolError{Code: "native.evidence_capture_setup_failed", Err: err}
+		}
+		defer os.RemoveAll(captureDirectory)
+		capturePath = filepath.Join(captureDirectory, "capture.json")
+	}
+
+	outcome, receipt, err := r.runApplication(parent, artifactPath, input, capturePath, stdout, stderr)
+	if err != nil {
+		return outcome, ApplicationEvidenceReport{}, err
+	}
+	report := ApplicationEvidenceReport{
+		Schema: ApplicationEvidenceSchema, BuildID: receipt.BuildID, InputID: receipt.InputID,
+		ArtifactDigest: receipt.ExecutableDigest, SourceDigest: receipt.SourceDigest,
+		InputDigest: digestBytes([]byte(input)), ProcessOutcome: outcome,
+		CaptureStatus: EvidenceStatusDisabled, Verified: false,
+	}
+	if mode == EvidenceEvents {
+		report.CaptureStatus = EvidenceStatusIncomplete
+		data, readErr := os.ReadFile(capturePath)
+		limit := r.evidenceCapacityLimit()
+		switch {
+		case readErr == nil && len(data) >= limit:
+			report.CaptureStatus = EvidenceStatusCapacityExhausted
+		case readErr == nil:
+			capture, captureErr := decodeApplicationCapture(data, limit)
+			if captureErr == nil && capture.Status == EvidenceStatusCapacityExhausted {
+				report.CaptureStatus = EvidenceStatusCapacityExhausted
+			} else if captureErr == nil && capture.Status == EvidenceStatusComplete {
+				report.Execution = &capture.Execution
+				report.CaptureStatus = EvidenceStatusComplete
+			}
+		}
+	}
+
+	encoded, encodeErr := json.Marshal(report)
+	if encodeErr != nil {
+		return outcome, report, &ToolError{Code: "native.evidence_report_encode_failed", Err: encodeErr}
+	}
+	if len(encoded)+1 > execution.MaxApplicationEvidenceBytes {
+		report.CaptureStatus = EvidenceStatusCapacityExhausted
+		report.Execution = nil
+	}
+	if err := writeApplicationEvidenceReport(reportPath, report); err != nil {
+		return outcome, report, err
+	}
+	if report.CaptureStatus == EvidenceStatusIncomplete {
+		return outcome, report, &ToolError{Code: "native.evidence_incomplete", Err: errors.New("requested application evidence is missing or invalid")}
+	}
+	if report.CaptureStatus == EvidenceStatusCapacityExhausted {
+		return outcome, report, &ToolError{Code: "native.evidence_capacity_exhausted", Err: errors.New("application evidence exceeds the capture limit")}
+	}
+	return outcome, report, nil
+}
+
+func (r Runner) runApplication(parent context.Context, artifactPath, input, capturePath string, stdout, stderr io.Writer) (RunOutcome, BuildReceipt, error) {
 	if len(input) > MaxApplicationArgumentBytes {
-		return RunOutcome{}, &ToolError{Code: "native.input_too_long", Err: fmt.Errorf("argument is %d bytes; limit is %d", len(input), MaxApplicationArgumentBytes)}
+		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.input_too_long", Err: fmt.Errorf("argument is %d bytes; limit is %d", len(input), MaxApplicationArgumentBytes)}
 	}
 	if artifactPath == "" {
-		return RunOutcome{}, &ToolError{Code: "native.artifact_required", Err: errors.New("an executable artifact path is required")}
+		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.artifact_required", Err: errors.New("an executable artifact path is required")}
 	}
 	artifactPath, err := filepath.Abs(artifactPath)
 	if err != nil {
-		return RunOutcome{}, &ToolError{Code: "native.artifact_invalid", Err: err}
+		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.artifact_invalid", Err: err}
 	}
 	receipt, err := readApplicationReceipt(applicationReceiptPath(artifactPath))
 	if err != nil {
-		return RunOutcome{}, err
+		return RunOutcome{}, BuildReceipt{}, err
 	}
 	actualDigest, err := digestFile(artifactPath)
 	if err != nil {
-		return RunOutcome{}, &ToolError{Code: "native.artifact_unreadable", Err: err}
+		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.artifact_unreadable", Err: err}
 	}
 	if actualDigest != receipt.ExecutableDigest {
-		return RunOutcome{}, &ToolError{Code: "native.artifact_digest_mismatch", Err: errors.New("executable bytes do not match the build receipt")}
+		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.artifact_digest_mismatch", Err: errors.New("executable bytes do not match the build receipt")}
 	}
 	timeout := r.Timeout
 	if timeout <= 0 {
@@ -260,22 +392,125 @@ func (r Runner) RunApplication(parent context.Context, artifactPath, input strin
 	defer cancel()
 	command := r.commandContext(runCtx, artifactPath, input)
 	command.Stdout, command.Stderr = stdout, stderr
+	if capturePath != "" {
+		command.Env = replaceEnvironment(command.Env, "LANG_APP_EVIDENCE_PATH", capturePath)
+	}
 	err = command.Run()
 	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
-		return RunOutcome{Kind: RunTimedOut, Diagnostic: "application exceeded the run timeout"}, nil
+		return RunOutcome{Kind: RunTimedOut, Diagnostic: "application exceeded the run timeout"}, receipt, nil
 	}
 	if err == nil {
-		return RunOutcome{Kind: RunExited, ExitCode: 0}, nil
+		return RunOutcome{Kind: RunExited, ExitCode: 0}, receipt, nil
 	}
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
 		if adjudication, known := adjudicateExit(err); known && adjudication.Signaled {
 			signal := adjudication.Signal
-			return RunOutcome{Kind: RunSignaled, Signal: signal.String(), SignalNumber: int(signal)}, nil
+			return RunOutcome{Kind: RunSignaled, Signal: signal.String(), SignalNumber: int(signal)}, receipt, nil
 		}
-		return RunOutcome{Kind: RunExited, ExitCode: exitError.ExitCode()}, nil
+		return RunOutcome{Kind: RunExited, ExitCode: exitError.ExitCode()}, receipt, nil
 	}
-	return RunOutcome{Kind: RunLaunchError, Diagnostic: err.Error()}, nil
+	return RunOutcome{Kind: RunLaunchError, Diagnostic: err.Error()}, receipt, nil
+}
+
+func replaceEnvironment(environment []string, key, value string) []string {
+	if environment == nil {
+		environment = os.Environ()
+	}
+	result := make([]string, 0, len(environment)+1)
+	for _, entry := range environment {
+		name, _, _ := strings.Cut(entry, "=")
+		if name != key {
+			result = append(result, entry)
+		}
+	}
+	return append(result, key+"="+value)
+}
+
+func decodeApplicationCapture(data []byte, limit int) (struct {
+	Status    EvidenceCaptureStatus
+	Execution execution.Execution
+}, error) {
+	result := struct {
+		Status    EvidenceCaptureStatus
+		Execution execution.Execution
+	}{}
+	if len(data) == 0 || len(data) >= limit {
+		return result, errors.New("application capture is empty or at capacity")
+	}
+	if err := rejectDuplicateJSONKeys(data); err != nil {
+		return result, err
+	}
+	var envelope applicationCapture
+	decoder := json.NewDecoder(strings.NewReader(string(data)))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&envelope); err != nil {
+		return result, err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		return result, errors.New("trailing application capture document")
+	}
+	if envelope.Schema != applicationCaptureSchema {
+		return result, errors.New("unsupported application capture schema")
+	}
+	if envelope.Status == string(EvidenceStatusCapacityExhausted) {
+		result.Status = EvidenceStatusCapacityExhausted
+		return result, nil
+	}
+	if envelope.Status != string(EvidenceStatusComplete) || len(envelope.Execution) == 0 {
+		return result, errors.New("application capture is not complete")
+	}
+	executionValue, err := decodeExecution(envelope.Execution, ExpectValue)
+	if err != nil {
+		return result, err
+	}
+	if executionValue.Schema != execution.Schema2 {
+		return result, errors.New("application capture must contain a schema-2 execution")
+	}
+	result.Status = EvidenceStatusComplete
+	result.Execution = executionValue
+	return result, nil
+}
+
+func writeApplicationEvidenceReport(path string, report ApplicationEvidenceReport) error {
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
+	}
+	encoded, err := json.Marshal(report)
+	if err != nil {
+		return &ToolError{Code: "native.evidence_report_encode_failed", Err: err}
+	}
+	encoded = append(encoded, '\n')
+	if len(encoded) > execution.MaxApplicationEvidenceBytes {
+		return &ToolError{Code: "native.evidence_report_encode_failed", Err: errors.New("application evidence report exceeds the size limit")}
+	}
+	file, err := os.CreateTemp(filepath.Dir(absolutePath), ".lang-app-evidence-*")
+	if err != nil {
+		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
+	}
+	temporaryPath := file.Name()
+	defer os.Remove(temporaryPath)
+	if err := file.Chmod(0o600); err != nil {
+		_ = file.Close()
+		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
+	}
+	if _, err := file.Write(encoded); err != nil {
+		_ = file.Close()
+		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
+	}
+	if err := file.Sync(); err != nil {
+		_ = file.Close()
+		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
+	}
+	if err := file.Close(); err != nil {
+		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
+	}
+	if err := os.Rename(temporaryPath, absolutePath); err != nil {
+		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
+	}
+	return nil
 }
 
 func readApplicationReceipt(path string) (BuildReceipt, error) {

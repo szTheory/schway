@@ -173,11 +173,60 @@ func runBuild(sourcePath, outputPath string, jsonMode bool, manifestPath ...stri
 }
 
 func runApplication(args []string) int {
-	if len(args) != 5 || args[1] != "run" || args[3] != "--" {
-		fmt.Fprintln(os.Stderr, "usage: lang app run ARTIFACT -- INPUT")
+	if len(args) < 5 || args[1] != "run" {
+		fmt.Fprintln(os.Stderr, "usage: lang app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT")
 		return exitUsage
 	}
-	outcome, err := native.RunApplication(context.Background(), args[2], args[4], os.Stdout, os.Stderr)
+	separator := -1
+	for index := 3; index < len(args); index++ {
+		if args[index] == "--" {
+			separator = index
+			break
+		}
+	}
+	if separator < 0 || separator+2 != len(args) {
+		fmt.Fprintln(os.Stderr, "usage: lang app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT")
+		return exitUsage
+	}
+	reportPath := ""
+	evidenceMode := native.EvidenceDisabled
+	seenReport, seenEvidence := false, false
+	for index := 3; index < separator; index++ {
+		switch {
+		case args[index] == "--report":
+			if seenReport || index+1 >= separator || args[index+1] == "" {
+				fmt.Fprintln(os.Stderr, "lang app run: --report requires one path and may appear only once")
+				return exitUsage
+			}
+			seenReport = true
+			reportPath = args[index+1]
+			index++
+		case args[index] == "--evidence=events":
+			if seenEvidence {
+				fmt.Fprintln(os.Stderr, "lang app run: --evidence may appear only once")
+				return exitUsage
+			}
+			seenEvidence = true
+			evidenceMode = native.EvidenceEvents
+		case strings.HasPrefix(args[index], "--evidence="):
+			fmt.Fprintln(os.Stderr, "lang app run: --evidence supports only events")
+			return exitUsage
+		default:
+			fmt.Fprintln(os.Stderr, "lang app run: unknown option")
+			return exitUsage
+		}
+	}
+	if seenEvidence && !seenReport {
+		fmt.Fprintln(os.Stderr, "lang app run: --evidence=events requires --report")
+		return exitUsage
+	}
+	var outcome native.RunOutcome
+	var err error
+	if seenReport {
+		outcome, _, err = native.RunApplicationWithEvidence(context.Background(), args[2], args[separator+1], reportPath, evidenceMode, os.Stdout, os.Stderr)
+	} else {
+		outcome, err = native.RunApplication(context.Background(), args[2], args[separator+1], os.Stdout, os.Stderr)
+	}
 	if err != nil {
 		var toolError *native.ToolError
 		if errors.As(err, &toolError) && toolError.Code == "native.input_too_long" {
@@ -549,5 +598,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] build SOURCE --output ARTIFACT | app run ARTIFACT -- INPUT | format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] build SOURCE --output ARTIFACT | app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT | app verify SOURCE --cases CASES --report REPORT | format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
 }

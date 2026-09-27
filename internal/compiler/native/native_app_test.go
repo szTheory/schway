@@ -16,7 +16,196 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/codename-lang/lang/internal/compiler/execution"
 )
+
+func TestPhase22EvidenceDisabledCompleteAndStreamIsolation(t *testing.T) {
+	t.Run("disabled", func(t *testing.T) {
+		root := t.TempDir()
+		marker := filepath.Join(root, "launches.txt")
+		artifact := writePhase22EvidenceScript(t, fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout\\n'\nprintf 'app stderr\\n' >&2\n", shellQuote(marker)))
+		reportPath := filepath.Join(root, "disabled.json")
+		var stdout, stderr bytes.Buffer
+		outcome, report, err := DefaultRunner().RunApplicationWithEvidence(context.Background(), artifact, "7", reportPath, EvidenceDisabled, &stdout, &stderr)
+		if err != nil || outcome.Kind != RunExited || outcome.ExitCode != 0 {
+			t.Fatalf("outcome=%+v err=%v", outcome, err)
+		}
+		if report.Schema != ApplicationEvidenceSchema || report.CaptureStatus != EvidenceStatusDisabled || report.Verified || report.Execution != nil {
+			t.Fatalf("disabled report=%+v", report)
+		}
+		if stdout.String() != "app stdout\n" || stderr.String() != "app stderr\n" {
+			t.Fatalf("streams stdout=%q stderr=%q", stdout.String(), stderr.String())
+		}
+		assertPhase22LaunchCount(t, marker, 1)
+		assertPhase22ReportFile(t, reportPath, report)
+	})
+
+	t.Run("complete capture keeps app bytes unchanged and launches once", func(t *testing.T) {
+		root := t.TempDir()
+		marker := filepath.Join(root, "launches.txt")
+		capture := phase22CompleteCapture(t)
+		artifact := writePhase22EvidenceScript(t, fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout {ordinary}\\n'\nprintf 'app stderr\\n' >&2\nprintf %%s %s > \"$LANG_APP_EVIDENCE_PATH\"\n", shellQuote(marker), shellQuote(capture)))
+		reportPath := filepath.Join(root, "complete.json")
+		var stdout, stderr bytes.Buffer
+		outcome, report, err := DefaultRunner().RunApplicationWithEvidence(context.Background(), artifact, "7", reportPath, EvidenceEvents, &stdout, &stderr)
+		if err != nil || outcome.Kind != RunExited || outcome.ExitCode != 0 {
+			t.Fatalf("outcome=%+v err=%v", outcome, err)
+		}
+		if report.CaptureStatus != EvidenceStatusComplete || report.Verified || report.Execution == nil || report.BuildID == "" || report.InputID == "" || report.InputDigest != digestBytes([]byte("7")) {
+			t.Fatalf("complete report=%+v", report)
+		}
+		if stdout.String() != "app stdout {ordinary}\n" || stderr.String() != "app stderr\n" {
+			t.Fatalf("capture polluted app streams: stdout=%q stderr=%q", stdout.String(), stderr.String())
+		}
+		assertPhase22LaunchCount(t, marker, 1)
+		assertPhase22ReportFile(t, reportPath, report)
+	})
+}
+
+func TestPhase22EvidenceMissingPartialAndCapacityControls(t *testing.T) {
+	t.Run("missing capture", func(t *testing.T) {
+		phase22AssertIncompleteEvidence(t, "printf 'app\\n'\n", nil)
+	})
+	t.Run("partial capture", func(t *testing.T) {
+		phase22AssertIncompleteEvidence(t, "printf 'app\\n'\nprintf '{\\\"schema\\\":' > \"$LANG_APP_EVIDENCE_PATH\"\n", nil)
+	})
+	t.Run("capacity exhausted", func(t *testing.T) {
+		capture := phase22CompleteCapture(t)
+		body := fmt.Sprintf("printf 'app\\n'\nprintf %%s %s > \"$LANG_APP_EVIDENCE_PATH\"\n", shellQuote(capture))
+		phase22AssertIncompleteEvidence(t, body, func(runner *Runner) { runner.evidenceLimit = 8 })
+	})
+}
+
+func TestPhase22EvidenceReportWriteFailurePreservesAppOutcome(t *testing.T) {
+	root := t.TempDir()
+	marker := filepath.Join(root, "launches.txt")
+	artifact := writePhase22EvidenceScript(t, fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout\\n'\nprintf 'app stderr\\n' >&2\n", shellQuote(marker)))
+	var stdout, stderr bytes.Buffer
+	outcome, report, err := DefaultRunner().RunApplicationWithEvidence(context.Background(), artifact, "7", filepath.Join(root, "missing", "report.json"), EvidenceDisabled, &stdout, &stderr)
+	var toolError *ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.evidence_report_write_failed" {
+		t.Fatalf("report error=%v, want native.evidence_report_write_failed", err)
+	}
+	if outcome.Kind != RunExited || outcome.ExitCode != 0 || report.ProcessOutcome != outcome || report.CaptureStatus != EvidenceStatusDisabled {
+		t.Fatalf("outcome=%+v report=%+v", outcome, report)
+	}
+	if stdout.String() != "app stdout\n" || stderr.String() != "app stderr\n" {
+		t.Fatalf("streams stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	assertPhase22LaunchCount(t, marker, 1)
+}
+
+func phase22AssertIncompleteEvidence(t *testing.T, body string, configure func(*Runner)) {
+	t.Helper()
+	root := t.TempDir()
+	marker := filepath.Join(root, "launches.txt")
+	artifact := writePhase22EvidenceScript(t, fmt.Sprintf("printf 'launch\\n' >> %s\n%s", shellQuote(marker), body))
+	reportPath := filepath.Join(root, "report.json")
+	runner := DefaultRunner()
+	if configure != nil {
+		configure(&runner)
+	}
+	var stdout, stderr bytes.Buffer
+	outcome, report, err := runner.RunApplicationWithEvidence(context.Background(), artifact, "7", reportPath, EvidenceEvents, &stdout, &stderr)
+	var toolError *ToolError
+	if !errors.As(err, &toolError) {
+		t.Fatalf("RunApplicationWithEvidence error=%v, want a tool error", err)
+	}
+	wantStatus, wantCode := EvidenceStatusIncomplete, "native.evidence_incomplete"
+	if runner.evidenceLimit > 0 {
+		wantStatus, wantCode = EvidenceStatusCapacityExhausted, "native.evidence_capacity_exhausted"
+	}
+	if toolError.Code != wantCode || report.CaptureStatus != wantStatus || report.Verified || report.Execution != nil {
+		t.Fatalf("error=%v report=%+v, want %s/%s", err, report, wantCode, wantStatus)
+	}
+	if outcome.Kind != RunExited || outcome.ExitCode != 0 || report.ProcessOutcome != outcome {
+		t.Fatalf("child outcome=%+v report=%+v", outcome, report)
+	}
+	if stdout.String() != "app\n" || stderr.Len() != 0 {
+		t.Fatalf("streams stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	assertPhase22LaunchCount(t, marker, 1)
+	assertPhase22ReportFile(t, reportPath, report)
+}
+
+func phase22CompleteCapture(t *testing.T) string {
+	t.Helper()
+	document := execution.Execution{
+		Schema:  execution.Schema2,
+		Outcome: execution.Outcome{Kind: execution.OutcomeReturned, Value: "7"},
+		Events: []execution.Event{{
+			Schema: execution.Schema2, ID: "return:event:returned", Kind: "function.returned",
+			FunctionID: "identity", SourcePlace: "place:input", TypeID: "U64", Invocation: "inv:entry:identity",
+		}},
+		LiveResources: []string{},
+	}
+	encodedExecution, err := json.Marshal(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encodedCapture, err := json.Marshal(applicationCapture{Schema: applicationCaptureSchema, Status: string(EvidenceStatusComplete), Execution: encodedExecution})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(encodedCapture)
+}
+
+func writePhase22EvidenceScript(t *testing.T, body string) string {
+	t.Helper()
+	artifact := writePhase22Script(t, body)
+	receiptData, err := os.ReadFile(applicationReceiptPath(artifact))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var receipt BuildReceipt
+	if err := json.Unmarshal(receiptData, &receipt); err != nil {
+		t.Fatal(err)
+	}
+	identity := BuildIdentityInputs{
+		SourceDigest: receipt.SourceDigest, EmittedCDigest: receipt.EmittedCDigest,
+		CompilerDigest: digestBytes([]byte("test compiler")), CompilerVersion: receipt.CompilerVersion,
+		Target: receipt.Target, HostABI: runtime.GOOS + "/" + runtime.GOARCH,
+		Flags: receipt.Flags, RuntimeDependencies: receipt.RuntimeDependencies,
+		ExecutableDigest: receipt.ExecutableDigest,
+	}
+	receipt.Identity = &identity
+	receipt.BuildID, receipt.InputID = identity.ID(), identity.InputID()
+	encoded, err := json.Marshal(receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(applicationReceiptPath(artifact), encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return artifact
+}
+
+func assertPhase22LaunchCount(t *testing.T, path string, expected int) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("launch marker: %v", err)
+	}
+	if count := len(strings.Fields(string(data))); count != expected {
+		t.Fatalf("launch count=%d marker=%q, want %d", count, data, expected)
+	}
+}
+
+func assertPhase22ReportFile(t *testing.T, path string, expected ApplicationEvidenceReport) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read report: %v", err)
+	}
+	var actual ApplicationEvidenceReport
+	if err := json.Unmarshal(data, &actual); err != nil {
+		t.Fatalf("decode report %q: %v", data, err)
+	}
+	if actual.Schema != expected.Schema || actual.BuildID != expected.BuildID || actual.InputID != expected.InputID || actual.InputDigest != expected.InputDigest || actual.CaptureStatus != expected.CaptureStatus || actual.Verified {
+		t.Fatalf("published report=%+v, returned=%+v", actual, expected)
+	}
+}
 
 func TestPhase22BuildRetainsRelocatableArtifactWithoutLaunching(t *testing.T) {
 	root := t.TempDir()

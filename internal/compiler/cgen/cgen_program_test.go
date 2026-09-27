@@ -1486,8 +1486,12 @@ func TestPhase22ApplicationEmitterSharesBodyAndSeparatesOutputShell(t *testing.T
 	if !strings.Contains(appEntry, "strlen(argv[1]) > 4096u") || !strings.Contains(appEntry, "lang_write_u64_plain(lang_entry_output)") || !strings.Contains(appEntry, "lang_write_literal(\"\\n\")") {
 		t.Fatalf("application shell is missing its transport bound or plain decimal output:\n%s", appEntry)
 	}
-	if strings.Contains(appEntry, "lang.execution/2") || strings.Contains(appEntry, "lang_write_events()") {
-		t.Fatalf("application shell serializes compiler evidence on ordinary stdout:\n%s", appEntry)
+	evidenceBranch := strings.Index(appEntry, "const char *lang_evidence_path = getenv(\"LANG_APP_EVIDENCE_PATH\")")
+	if evidenceBranch < 0 || strings.Contains(appEntry[:evidenceBranch], "lang.execution/2") || strings.Contains(appEntry[:evidenceBranch], "lang_write_events()") {
+		t.Fatalf("application shell serializes compiler evidence before the private capture branch:\n%s", appEntry)
+	}
+	if !strings.Contains(appEntry[evidenceBranch:], "lang_output_stream = lang_evidence_file") || !strings.Contains(appEntry[evidenceBranch:], "lang_write_events()") {
+		t.Fatalf("application shell does not direct captured events to the private file:\n%s", appEntry)
 	}
 	if !strings.Contains(conformance[conformanceMain:], "lang.execution/2") || !strings.Contains(conformance[conformanceMain:], "lang_write_events()") {
 		t.Fatal("conformance emitter lost its execution-document shell")
