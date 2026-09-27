@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/native"
 	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -112,6 +113,63 @@ func TestPhase22IdentityApplicationBuildAndRunCLI(t *testing.T) {
 	if code != 64 {
 		t.Fatalf("extra app-run token exit=%d, want usage 64", code)
 	}
+}
+
+func TestPhase22READMEContract(t *testing.T) {
+	readme, err := os.ReadFile(testsupport.ProjectPath("examples", "phase22", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(readme)
+	commands := normalizePhase22READMECommands(text)
+	for name, command := range map[string]string{
+		"build":             "lang build examples/phase22/identity.lang --output ./identity",
+		"run":               "lang app run ./identity -- 7",
+		"manifest build":    "lang build examples/phase22/identity.lang --manifest examples/phase22/identity.bindings.json --output ./identity",
+		"same-run evidence": "lang app run ./identity --report ./identity-evidence.json --evidence=events -- 7",
+		"explicit replay":   "lang app verify examples/phase22/identity.lang --cases examples/phase22/identity.cases.json --report ./identity-verification.json",
+	} {
+		if !strings.Contains(commands, command) {
+			t.Errorf("command form: missing runnable %s example", name)
+		}
+	}
+	categories := map[string][]string{
+		"input and process":               {"canonical decimal `U64`", "4,096-byte", "one retained application process", "30-second", "without an added output cap", "exit, signal, timeout, and launch"},
+		"evidence and conformance bounds": {"64 KiB", "16 MiB", "capacity_exhausted", "write errors fail", "`verified: false`"},
+		"local C boundary":                {"64 KiB", "4 MiB", "16 MiB", "fixed C17 flags", "not a sandbox for hostile C", "does not admit Lang foreign calls or pointers"},
+		"host closure":                    {"`incomplete` on macOS and Linux", "not cacheable"},
+		"replay scope":                    {"independently authored expected `U64`", "explicit empty `foreign_outcomes`", "does not launch the retained application", "`verifier_model_only`", "`actual_host_io` and `physical_cleanup` to `false`", "does not establish host IO or physical resource cleanup"},
+	}
+	for category, clauses := range categories {
+		if diagnostic := phase22READMECategoryDiagnostic(text, category, clauses); diagnostic != "" {
+			t.Error(diagnostic)
+		}
+		// Each in-memory omission must be reached and diagnosed under its own category.
+		mutated := strings.Replace(text, clauses[len(clauses)-1], "", 1)
+		if diagnostic := phase22READMECategoryDiagnostic(mutated, category, clauses); !strings.Contains(diagnostic, category) {
+			t.Errorf("negative control for %q did not fail by category: %q", category, diagnostic)
+		}
+	}
+	if native.MaxApplicationArgumentBytes != 4096 || execution.MaxApplicationEvidenceBytes != 64*1024 || execution.MaxDocumentBytes != 16*1024*1024 || session.MaxReplayCasesBytes != 64*1024 {
+		t.Fatal("Phase 22 exported limits changed; update the README contract expectations")
+	}
+	// This is a documentation-contract check. Runtime behavior is established by
+	// TestPhase22BindingsRejectInvalidInputs, TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes,
+	// TestPhase22EvidenceDisabledCompleteAndStreamIsolation, and TestPhase22AppVerifyIndependentIdentityCases.
+}
+
+func phase22READMECategoryDiagnostic(text, category string, clauses []string) string {
+	for _, clause := range clauses {
+		if !strings.Contains(text, clause) {
+			return "contract category " + category + ": missing " + clause
+		}
+	}
+	return ""
+}
+
+func normalizePhase22READMECommands(text string) string {
+	text = strings.ReplaceAll(text, "\\\n", " ")
+	return strings.Join(strings.Fields(text), " ")
 }
 
 func TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus(t *testing.T) {
