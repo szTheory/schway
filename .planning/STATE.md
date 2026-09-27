@@ -6,10 +6,10 @@ current_phase: 22
 current_phase_name: Native Application Build and Single Execution
 status: executing
 stopped_at: Phase 22 planning complete; ready to execute three plans via $gsd-execute-phase 22
-last_updated: "2026-09-27T16:47:41.179Z"
+last_updated: "2026-09-27T17:49:05.705Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 22 execution started
-state_head: aa89e1b9957e9c7126bc84fb8c722e39e787ee04
+state_head: 961069f76d1e489c58bccad674958a5aec0487bc
 progress:
   total_phases: 4
   completed_phases: 0
@@ -709,6 +709,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260926-uzs | Archive completed Phase 21 under provisional M004 and refresh the verification/evidence handoff | 2026-09-27 | 397753f | Verified | [260926-uzs-prepare-the-completed-phase-21-for-the-m](./quick/260926-uzs-prepare-the-completed-phase-21-for-the-m/) |
 | 15 | Preserve approved Phase 22 decisions and M004 research links for context-clear handoff | 2026-09-27 | — | — | — |
 | 260927-ha3 | Refresh Phase 22 execution handoff in STATE.md after planning completion | 2026-09-27 | — | passed | [260927-ha3-refresh-phase-22-execution-handoff-in-st](./quick/260927-ha3-refresh-phase-22-execution-handoff-in-st/) |
+| 260927-j11 | Allow dotted GSD gate IDs and resume Phase 22 wave dispatch | 2026-09-27 | 961069f | — | [260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-](./quick/260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-/) |
 
 ## Deferred Items
 
