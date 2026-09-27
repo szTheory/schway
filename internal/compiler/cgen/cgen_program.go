@@ -29,6 +29,37 @@ func EmitProgramNativeForTest(program core.Program) (string, error) {
 
 var executionOutputLimit = execution.MaxDocumentBytes
 
+// These bounds are shared by the terminal writer and its output-size
+// preflight. A Buffer payload is rejected above four bytes and Byte payloads
+// are emitted as unsigned decimal values.
+const (
+	maxTerminalBufferPayloadBytes = 4
+	maxTerminalBytePayloadValue   = 255
+	maxTerminalBytePayloadDigits  = 3
+)
+
+type terminalPayloadEncoding uint8
+
+const (
+	terminalPayloadOmitted terminalPayloadEncoding = iota
+	terminalPayloadBuffer
+	terminalPayloadByte
+	terminalPayloadNestedTag
+)
+
+func terminalPayloadEncodingFor(field programPayloadField, dataTypes []core.DataType) terminalPayloadEncoding {
+	if field.cType == "LANG_BUFFER" {
+		return terminalPayloadBuffer
+	}
+	if field.cType == "unsigned char" {
+		if _, nested := findProgramDataTypeByName(dataTypes, field.payloadType); nested {
+			return terminalPayloadNestedTag
+		}
+		return terminalPayloadByte
+	}
+	return terminalPayloadOmitted
+}
+
 // programLiveResourcesForTest is a narrow mutation seam for the surviving
 // emitter's schema-2 resource tail. Production derivation has no admitted
 // resource-owning shapes yet, so it returns an empty collection; the seam
@@ -138,11 +169,11 @@ func invocationEventCapacity(nodes []invocationPreflightNode, byID map[string]co
 	return capacity, nil
 }
 
-// schema2ExecutionDocumentSize calculates the exact canonical byte count of
-// the straight-line document represented by the bounded occurrence table. The
-// event order does not affect JSON length; field presence and spellings mirror
-// emitProgramFunction and emitEventSupportSchema2.
-func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflightNode, paths invocationPathTable, byID map[string]core.Function, liveResources []string) (int, error) {
+// schema2ExecutionDocumentSize calculates a conservative canonical byte bound
+// for the straight-line document represented by the bounded occurrence table.
+// The event order does not affect JSON length; field presence and spellings
+// mirror emitProgramFunction and emitEventSupportSchema2.
+func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflightNode, paths invocationPathTable, byID map[string]core.Function, liveResources []string, dataTypes []core.DataType) (int, error) {
 	events := make([]execution.Event, 0)
 	for index, node := range nodes {
 		function, ok := byID[node.functionID]
@@ -193,9 +224,45 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 	}
 	outcomeValue := ""
 	if entry.Match != nil {
-		for _, arm := range entry.Match.Arms {
-			if len(arm.Value) > len(outcomeValue) {
-				outcomeValue = arm.Value
+		var returnedType core.DataType
+		for _, candidate := range dataTypes {
+			if candidate.Name == entry.ReturnType {
+				returnedType = candidate
+				break
+			}
+		}
+		if returnedType.Name == "" {
+			return 0, fmt.Errorf("execution-size entry %q has unknown returned data type %q", entry.ID, entry.ReturnType)
+		}
+		layout := check.PayloadRecordLayout(returnedType)
+		for _, alternative := range returnedType.Alternatives {
+			value := alternative
+			var layoutField *core.LayoutField
+			for index := range layout.Fields {
+				if layout.Fields[index].Name == "field_"+alternative {
+					layoutField = &layout.Fields[index]
+					break
+				}
+			}
+			if detail := core.LookupAlternativeDetail(returnedType, alternative); detail.PayloadType != "" && layoutField != nil {
+				switch terminalPayloadEncodingFor(programPayloadField{name: layoutField.Name, cType: layoutField.CType, payloadType: detail.PayloadType}, dataTypes) {
+				case terminalPayloadBuffer:
+					value += ":" + strings.Repeat("f", maxTerminalBufferPayloadBytes*2)
+				case terminalPayloadByte:
+					value += fmt.Sprintf(":%d", maxTerminalBytePayloadValue)
+				case terminalPayloadNestedTag:
+					nested, _ := findProgramDataTypeByName(dataTypes, detail.PayloadType)
+					for _, nestedAlternative := range nested.Alternatives {
+						candidate := value + ":" + nestedAlternative
+						if encodedStringContentLength(candidate) > encodedStringContentLength(outcomeValue) {
+							outcomeValue = candidate
+						}
+					}
+					continue
+				}
+			}
+			if encodedStringContentLength(value) > encodedStringContentLength(outcomeValue) {
+				outcomeValue = value
 			}
 		}
 	} else {
@@ -221,6 +288,15 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 		return 0, fmt.Errorf("size schema-2 execution document: %w", err)
 	}
 	return len(encoded) + 1, nil // generated stdout terminates the document with '\n'
+}
+
+// encodedStringContentLength bounds the byte expansion in
+// lang_write_json_string_content.
+// Marshal's additional HTML/U+2028 escaping only makes the estimate more
+// conservative for source names containing those characters.
+func encodedStringContentLength(value string) int {
+	encoded, _ := json.Marshal(value)
+	return len(encoded) - 2 // exclude the enclosing quotes
 }
 
 // preflightInvocationPathTable unfolds the validated call DAG in the same
@@ -546,7 +622,7 @@ func emitProgram(program core.Program, executionJSON bool) (string, error) {
 		eventCapacity = 1
 	}
 	liveResources := deriveProgramLiveResources(program)
-	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID, liveResources)
+	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID, liveResources, program.DataTypes)
 	if err != nil {
 		return "", err
 	}
@@ -864,7 +940,7 @@ func emitProgramBufferWriter(out *strings.Builder, typeName string) {
 
 func emitProgramByteWriter(out *strings.Builder) {
 	out.WriteString("static int lang_write_byte(unsigned char value) {\n")
-	out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
+	fmt.Fprintf(out, "  char encoded[%d];\n  int length = snprintf(encoded, sizeof encoded, \"%%u\", (unsigned int)value);\n", maxTerminalBytePayloadDigits+1)
 	out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
 }
 
@@ -892,14 +968,15 @@ func emitProgramTerminalValueWriter(out *strings.Builder, branchType programBran
 		if !ok {
 			continue
 		}
-		needsBufferScratch = needsBufferScratch || field.cType == "LANG_BUFFER"
-		needsByteScratch = needsByteScratch || field.cType == "unsigned char" && !isProgramNestedBytePayload(field, dataTypes)
+		encoding := terminalPayloadEncodingFor(field, dataTypes)
+		needsBufferScratch = needsBufferScratch || encoding == terminalPayloadBuffer
+		needsByteScratch = needsByteScratch || encoding == terminalPayloadByte
 	}
 	if needsBufferScratch {
-		out.WriteString("  char payload_hex[8];\n")
+		fmt.Fprintf(out, "  char payload_hex[%d];\n", maxTerminalBufferPayloadBytes*2)
 	}
 	if needsByteScratch {
-		out.WriteString("  char payload_decimal[4];\n  int payload_length;\n")
+		fmt.Fprintf(out, "  char payload_decimal[%d];\n  int payload_length;\n", maxTerminalBytePayloadDigits+1)
 	}
 	out.WriteString("  if (!lang_write_bytes(\"\\\"\", 1u) || !lang_write_json_string_content(tag_name)) return 0;\n  switch (value.tag) {\n")
 	for _, alternative := range branchType.alternatives {
@@ -909,7 +986,8 @@ func emitProgramTerminalValueWriter(out *strings.Builder, branchType programBran
 			out.WriteString("      break;\n")
 			continue
 		}
-		if nestedType, nested := findProgramDataTypeByName(dataTypes, field.payloadType); nested && field.cType == "unsigned char" {
+		encoding := terminalPayloadEncodingFor(field, dataTypes)
+		if nestedType, nested := findProgramDataTypeByName(dataTypes, field.payloadType); nested && encoding == terminalPayloadNestedTag {
 			fmt.Fprintf(out, "      switch (value.%s) {\n", field.name)
 			for index, nestedAlternative := range nestedType.Alternatives {
 				fmt.Fprintf(out, "        case %du: if (!lang_write_bytes(\":\", 1u) || !lang_write_json_string_content(%s)) return 0; break;\n", index, strconv.Quote(nestedAlternative))
@@ -917,10 +995,10 @@ func emitProgramTerminalValueWriter(out *strings.Builder, branchType programBran
 			out.WriteString("        default: return 0;\n      }\n      break;\n")
 			continue
 		}
-		switch field.cType {
-		case "LANG_BUFFER":
-			fmt.Fprintf(out, "      if (value.%s.length > 4u) return 0;\n      static const char hex[] = \"0123456789abcdef\";\n      for (size_t i = 0u; i < value.%s.length; ++i) {\n        payload_hex[i * 2u] = hex[value.%s.bytes[i] >> 4u];\n        payload_hex[i * 2u + 1u] = hex[value.%s.bytes[i] & 15u];\n      }\n      if (!lang_write_bytes(\":\", 1u) || !lang_write_bytes(payload_hex, value.%s.length * 2u)) return 0;\n      break;\n", field.name, field.name, field.name, field.name, field.name)
-		case "unsigned char":
+		switch encoding {
+		case terminalPayloadBuffer:
+			fmt.Fprintf(out, "      if (value.%s.length > %du) return 0;\n      static const char hex[] = \"0123456789abcdef\";\n      for (size_t i = 0u; i < value.%s.length; ++i) {\n        payload_hex[i * 2u] = hex[value.%s.bytes[i] >> 4u];\n        payload_hex[i * 2u + 1u] = hex[value.%s.bytes[i] & 15u];\n      }\n      if (!lang_write_bytes(\":\", 1u) || !lang_write_bytes(payload_hex, value.%s.length * 2u)) return 0;\n      break;\n", field.name, maxTerminalBufferPayloadBytes, field.name, field.name, field.name, field.name)
+		case terminalPayloadByte:
 			fmt.Fprintf(out, "      payload_length = snprintf(payload_decimal, sizeof payload_decimal, \"%%u\", (unsigned int)value.%s);\n      if (payload_length < 1 || (size_t)payload_length >= sizeof payload_decimal || !lang_write_bytes(\":\", 1u) || !lang_write_bytes(payload_decimal, (size_t)payload_length)) return 0;\n      break;\n", field.name)
 		default:
 			// Nested data payload serialization is outside this phase's

@@ -83,7 +83,7 @@ func ExecutionOutputSizeForTest(program core.Program) (int, error) {
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
-	return schema2ExecutionDocumentSize(entry, nodes, paths, byID, deriveProgramLiveResources(program))
+	return schema2ExecutionDocumentSize(entry, nodes, paths, byID, deriveProgramLiveResources(program), program.DataTypes)
 }
 
 // SetProgramLiveResourcesForTest replaces the surviving emitter's derived

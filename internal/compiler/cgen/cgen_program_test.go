@@ -589,6 +589,39 @@ func TestSchema2ExecutionOutputBoundIsPreflighted(t *testing.T) {
 	}
 }
 
+// TestSchema2PayloadOutcomeBoundIsPreflighted keeps the terminal payload
+// writer's maximum representation inside the size preflight contract. With a
+// limit one byte below that conservative document size, emission must refuse
+// before generated-C serialization begins.
+func TestSchema2PayloadOutcomeBoundIsPreflighted(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("payload_tracer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	observed, err := cgen.ExecutionOutputSizeForTest(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if observed <= 1 {
+		t.Fatalf("payload document size %d is too small for a boundary control", observed)
+	}
+
+	restore := cgen.SetExecutionOutputLimitForTest(observed - 1)
+	_, err = cgen.EmitNative(checked.Program)
+	restore()
+	bound, ok := cgen.ExecutionOutputExceededError(err)
+	if !ok || bound.Limit() != observed-1 || bound.Observed() != observed {
+		t.Fatalf("want payload output-bound refusal at N-1, got %v", err)
+	}
+	if cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("payload output-bound refusal reached C serialization")
+	}
+}
+
 func TestInvocationPreflightOrdering(t *testing.T) {
 	t.Run("call_graph_refusal_precedes_expansion", func(t *testing.T) {
 		restore := cgen.SetInvocationPreflightBypassForTest(false)
