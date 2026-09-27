@@ -940,7 +940,7 @@ func emitProgramBufferWriter(out *strings.Builder, typeName string) {
 
 func emitProgramByteWriter(out *strings.Builder) {
 	out.WriteString("static int lang_write_byte(unsigned char value) {\n")
-	fmt.Fprintf(out, "  char encoded[%d];\n  int length = snprintf(encoded, sizeof encoded, \"%%u\", (unsigned int)value);\n", maxTerminalBytePayloadDigits+1)
+	out.WriteString("  char encoded[3];\n  int length = snprintf(encoded, sizeof encoded, \"%u\", (unsigned int)value);\n")
 	out.WriteString("  return length > 0 && (size_t)length < sizeof encoded && lang_write_bytes(encoded, (size_t)length);\n}\n\n")
 }
 

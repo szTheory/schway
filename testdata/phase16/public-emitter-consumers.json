@@ -26,39 +26,35 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:Emit:1097",
+      "call": "internal/compiler/cgen/cgen_program_test.go:Emit:1130",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:Emit:1268",
+      "call": "internal/compiler/cgen/cgen_program_test.go:Emit:1301",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1005",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1020",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1009",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1038",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1019",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1042",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1163",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1052",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1195",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1196",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1306",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1331",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1228",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -70,15 +66,23 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1368",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1372",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1380",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1397",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1398",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1401",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1413",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1431",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -110,43 +114,43 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:746",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:614",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:751",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:779",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:762",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:784",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:771",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:795",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:783",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:804",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:819",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:816",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:856",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:852",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:872",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:889",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:956",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:905",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:987",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:989",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -244,6 +248,10 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
+      "call": "internal/compiler/session/session.go:EmitNative:2675",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
       "call": "internal/compiler/session/session_payload_control_test.go:EmitNative:158",
       "classification": "admitted-dynamic-schema2"
     },
@@ -296,6 +304,10 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
+      "call": "internal/compiler/session/session_phase5.go:EmitNative:25",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
       "call": "internal/compiler/session/session_phase5_corpus_test.go:EmitNative:501",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
@@ -306,10 +318,6 @@
     },
     {
       "call": "internal/compiler/session/session_phase5_mismatch.go:EmitNative:583",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session_phase5.go:EmitNative:25",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -335,10 +343,6 @@
     },
     {
       "call": "internal/compiler/session/session_test.go:EmitNative:852",
-      "classification": "admitted-dynamic-schema2"
-    },
-    {
-      "call": "internal/compiler/session/session.go:EmitNative:2675",
       "classification": "admitted-dynamic-schema2"
     },
     {
