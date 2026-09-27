@@ -48,7 +48,7 @@ design exploration, not a supported language specification.
 
 ## Corpus and guard census
 
-Corpus: **142 `.lang` programs, 4,661 lines total** (~33 lines average,
+Corpus: **143 `.lang` programs, 4,670 lines total** (~33 lines average,
 193-line maximum). These counts are retained from the machine-checked snapshot;
 the corpus predominantly contains focused semantic fixtures, not applications.
 

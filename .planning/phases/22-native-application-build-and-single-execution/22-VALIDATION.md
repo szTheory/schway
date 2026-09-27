@@ -1,7 +1,7 @@
 ---
 phase: "22"
 slug: "native-application-build-and-single-execution"
-status: draft
+status: in_progress
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-27"
@@ -9,7 +9,7 @@ created: "2026-09-27"
 
 # Phase 22 — Validation Strategy
 
-> Seeded from `22-RESEARCH.md` § Validation Architecture. Commands and cases below are proposed for execution after implementation; no tests were run during planning.
+> Seeded from `22-RESEARCH.md` § Validation Architecture. Execution evidence is recorded as each dependent plan completes; planning itself made no acceptance claims.
 
 ---
 
@@ -17,7 +17,7 @@ created: "2026-09-27"
 
 | Property | Value |
 |----------|-------|
-| **Framework** | Go standard `testing` package (`go test`); no external test framework |
+| **Framework** | Go standard `testing` package; no external test framework |
 | **Config file** | `go.mod`; no test-runner configuration |
 | **Quick run command** | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native ./internal/compiler/session ./internal/compiler/cgen ./cmd/lang` |
 | **Full suite command** | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...` |
@@ -41,9 +41,9 @@ Task and plan IDs are assigned by the planner; the planner or `$gsd-validate-pha
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 22-01-T1, 22-01-T2, 22-02-T2 | 22-01, 22-02 | 1, 2 | APP-02 | T-22-01, T-22-03 | Build does not execute the app; retained artifact runs after temporary build cleanup and checkout relocation | integration | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native ./internal/compiler/session ./cmd/lang` | ❌ Wave 0/new tests | ⬜ pending |
-| 22-01-T1, 22-01-T2 | 22-01 | 1 | APP-03 | T-22-04 | Bounded decimal U64 accepts `7` and `42`; malformed, overlong, extra, and overflowing input is rejected before app effects | unit + CLI integration | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen ./internal/compiler/session ./cmd/lang` | ❌ Wave 0/new tests | ⬜ pending |
+| 22-01-T1, 22-01-T2 | 22-01 | 1 | APP-03 | T-22-04 | Bounded decimal U64 accepts `7` and `42`; malformed, overlong, extra, and overflowing input is rejected before app effects | unit + CLI integration | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen ./internal/compiler/session ./cmd/lang` | ✅ tests exist | ✅ green |
 | 22-01-T1, 22-01-T2, 22-03-T1 | 22-01, 22-03 | 1, 3 | APP-04 | T-22-02 | One application request starts exactly one selected artifact; verification replay remains explicit | integration | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native ./internal/compiler/session ./cmd/lang` | ❌ Wave 0/new tests | ⬜ pending |
-| 22-01-T1, 22-01-T2 | 22-01 | 1 | APP-05 | T-22-02 | Application stdout/stderr pass through; nonzero exit, signal, timeout, and launch failure remain distinct from compiler protocol errors | integration | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native ./cmd/lang` | ❌ Wave 0/new tests | ⬜ pending |
+| 22-01-T1, 22-01-T2 | 22-01 | 1 | APP-05 | T-22-02 | Application stdout/stderr pass through; nonzero exit, signal, timeout, and launch failure remain distinct from compiler protocol errors | integration | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native ./cmd/lang` | ✅ tests exist | ✅ green |
 | 22-03-T1 | 22-03 | 3 | APP-06 | T-22-05 | Separate evidence reports distinguish complete, disabled, incomplete, and capacity-exhausted states; incomplete evidence never verifies success | unit + mutation/control | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session ./internal/compiler/native` | ❌ Wave 0/new tests | ⬜ pending |
 | 22-02-T1, 22-02-T2 | 22-02 | 2 | FFI-02 | T-22-01, T-22-03, T-22-06 | Declared local inputs resolve after relocation; missing/incompatible inputs fail; every relevant input changes build/evidence identity | unit + integration | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native ./internal/compiler/session` | ❌ Wave 0/new tests | ⬜ pending |
 | 22-03-T2 | 22-03 | 3 | EVD-11 | T-22-05, T-22-06 | Isolated identity replay checks independent answers; a separate verifier-only `fixture.value` model case consumes and compares declared U64 42, while missing/duplicate/unconsumed/mismatched outcomes fail closed and reports deny host-IO/cleanup claims | integration + positive model witness + negative controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/lang -run '^TestPhase22(AppVerify|Replay)' -count=1 -v` | ❌ Wave 0/new tests | ⬜ pending |
@@ -54,9 +54,9 @@ Task and plan IDs are assigned by the planner; the planner or `$gsd-validate-pha
 
 ## Wave 0 Requirements
 
-- [ ] 22-01-T1/T2: identity Lang source and independent expected pairs `7 → 7` and `42 → 42`.
+- [x] 22-01-T1/T2: identity Lang source and independent expected pairs `7 → 7` and `42 → 42`.
 - [ ] 22-02-T1/T2: versioned local C binding manifest plus relocation fixture for source, header, symbol, ABI, and runtime dependency declarations.
-- [ ] 22-01-T2 and 22-02-T2: side-effect marker proving build performs no app launch, plus a process counter proving one launch per app-run request.
+- [x] 22-01-T2 and 22-02-T2: side-effect marker proving build performs no app launch, plus a process counter proving one launch per app-run request.
 - [ ] 22-03-T1: evidence schema/state tests for disabled, incomplete, complete, and capacity exhaustion, including missing and partial report writes.
 - [ ] 22-03-T2: positive verifier-only modeled `fixture.value` outcome consumption/comparison plus missing, duplicate, unconsumed, and mismatched outcome controls; this does not execute Lang FFI or local C and does not claim host IO or cleanup.
 - [ ] 22-02-T2: build identity invalidation cases for Lang source, C source, header, manifest ABI/symbols, flags/compiler/target, and runtime dependency declarations.

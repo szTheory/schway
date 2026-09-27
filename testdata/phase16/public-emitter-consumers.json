@@ -86,6 +86,10 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:1466",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:177",
       "classification": "admitted-dynamic-schema2"
     },
@@ -248,7 +252,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session.go:EmitNative:2675",
+      "call": "internal/compiler/session/session.go:EmitNative:2716",
       "classification": "admitted-dynamic-schema2"
     },
     {
