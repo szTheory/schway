@@ -1493,6 +1493,9 @@ func TestPhase22ApplicationEmitterSharesBodyAndSeparatesOutputShell(t *testing.T
 	if !strings.Contains(appEntry[evidenceBranch:], "lang_output_stream = lang_evidence_file") || !strings.Contains(appEntry[evidenceBranch:], "lang_write_events()") {
 		t.Fatalf("application shell does not direct captured events to the private file:\n%s", appEntry)
 	}
+	if !strings.Contains(application, "static FILE *lang_output_stream = NULL;") || !strings.Contains(application, "lang_output_stream != NULL ? lang_output_stream : stdout") {
+		t.Fatal("application evidence writer must use a portable runtime stdout fallback")
+	}
 	if !strings.Contains(conformance[conformanceMain:], "lang.execution/2") || !strings.Contains(conformance[conformanceMain:], "lang_write_events()") {
 		t.Fatal("conformance emitter lost its execution-document shell")
 	}

@@ -610,8 +610,8 @@ func emitEventSupportSchema2(out *strings.Builder, capacity, outputLimit int, ne
 	out.WriteString("static LANG_EVENT lang_events[LANG_EVENT_CAPACITY];\n")
 	out.WriteString("static size_t lang_event_count = 0u;\nstatic size_t lang_output_count = 0u;\n\n")
 	if applicationEvidence {
-		out.WriteString("static FILE *lang_output_stream = stdout;\nstatic size_t lang_output_limit = LANG_OUTPUT_LIMIT;\nstatic int lang_event_overflow = 0;\n\n")
-		out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n  if (lang_output_count > lang_output_limit || length > lang_output_limit - lang_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, lang_output_stream) != length) return 0;\n  lang_output_count += length;\n  return 1;\n}\n\n")
+		out.WriteString("static FILE *lang_output_stream = NULL;\nstatic size_t lang_output_limit = LANG_OUTPUT_LIMIT;\nstatic int lang_event_overflow = 0;\n\n")
+		out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n  FILE *stream = lang_output_stream != NULL ? lang_output_stream : stdout;\n  if (lang_output_count > lang_output_limit || length > lang_output_limit - lang_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stream) != length) return 0;\n  lang_output_count += length;\n  return 1;\n}\n\n")
 	} else {
 		out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n  if (length > LANG_OUTPUT_LIMIT - lang_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n  lang_output_count += length;\n  return 1;\n}\n\n")
 	}
