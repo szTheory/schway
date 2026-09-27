@@ -266,11 +266,12 @@ func (r Runner) BuildApplication(parent context.Context, source []byte, cSource,
 	if err := os.WriteFile(stagedReceipt, receiptBytes, 0o600); err != nil {
 		return BuildReceipt{}, &ToolError{Code: "native.receipt_write_failed", Err: err}
 	}
-	if err := os.Rename(stagedArtifact, artifactPath); err != nil {
+	if err := publishApplicationPair(stagedArtifact, stagedReceipt, artifactPath, stageDirectory, os.Rename); err != nil {
+		var toolError *ToolError
+		if errors.As(err, &toolError) {
+			return BuildReceipt{}, err
+		}
 		return BuildReceipt{}, &ToolError{Code: "native.artifact_publish_failed", Err: err}
-	}
-	if err := os.Rename(stagedReceipt, applicationReceiptPath(artifactPath)); err != nil {
-		return BuildReceipt{}, &ToolError{Code: "native.receipt_publish_failed", Err: err}
 	}
 	return receipt, nil
 }
@@ -429,6 +430,70 @@ func replaceEnvironment(environment []string, key, value string) []string {
 		}
 	}
 	return append(result, key+"="+value)
+}
+
+// publishApplicationPair stages the old artifact and receipt out of the way
+// before publishing a new generation. If publishing the receipt fails, it
+// removes the new executable and restores the previous pair.
+func publishApplicationPair(stagedArtifact, stagedReceipt, artifactPath, stageDirectory string, rename func(string, string) error) error {
+	receiptPath := applicationReceiptPath(artifactPath)
+	for _, destination := range []string{artifactPath, receiptPath} {
+		info, err := os.Lstat(destination)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return &ToolError{Code: "native.artifact_publish_failed", Err: err}
+		}
+		if err == nil && !info.Mode().IsRegular() {
+			code := "native.artifact_publish_failed"
+			if destination == receiptPath {
+				code = "native.receipt_publish_failed"
+			}
+			return &ToolError{Code: code, Err: fmt.Errorf("publication destination %q is not a regular file", destination)}
+		}
+	}
+	oldArtifact := filepath.Join(stageDirectory, "previous-program")
+	oldReceipt := filepath.Join(stageDirectory, "previous-program.lang-build.json")
+	_, artifactErr := os.Lstat(artifactPath)
+	_, receiptErr := os.Lstat(receiptPath)
+	hadArtifact := artifactErr == nil
+	hadReceipt := receiptErr == nil
+	if hadArtifact {
+		if err := rename(artifactPath, oldArtifact); err != nil {
+			return &ToolError{Code: "native.artifact_publish_failed", Err: err}
+		}
+	}
+	if hadReceipt {
+		if err := rename(receiptPath, oldReceipt); err != nil {
+			if hadArtifact {
+				_ = rename(oldArtifact, artifactPath)
+			}
+			return &ToolError{Code: "native.receipt_publish_failed", Err: err}
+		}
+	}
+	restore := func() error {
+		var restoreErr error
+		if hadArtifact {
+			if err := rename(oldArtifact, artifactPath); err != nil {
+				restoreErr = errors.Join(restoreErr, err)
+			}
+		}
+		if hadReceipt {
+			if err := rename(oldReceipt, receiptPath); err != nil {
+				restoreErr = errors.Join(restoreErr, err)
+			}
+		}
+		return restoreErr
+	}
+	if err := rename(stagedArtifact, artifactPath); err != nil {
+		return errors.Join(&ToolError{Code: "native.artifact_publish_failed", Err: err}, restore())
+	}
+	if err := rename(stagedReceipt, receiptPath); err != nil {
+		removeErr := os.Remove(artifactPath)
+		if errors.Is(removeErr, os.ErrNotExist) {
+			removeErr = nil
+		}
+		return errors.Join(&ToolError{Code: "native.receipt_publish_failed", Err: err}, removeErr, restore())
+	}
+	return nil
 }
 
 func decodeApplicationCapture(data []byte, limit int) (struct {

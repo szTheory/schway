@@ -466,3 +466,42 @@ func cString(value string) string {
 func shellQuote(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }
+
+func TestPhase22ReceiptPublicationFailureRestoresPreviousPair(t *testing.T) {
+	root := t.TempDir()
+	stage := filepath.Join(root, "stage")
+	if err := os.Mkdir(stage, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	artifact := filepath.Join(root, "program")
+	receipt := applicationReceiptPath(artifact)
+	stagedArtifact := filepath.Join(stage, "new-program")
+	stagedReceipt := filepath.Join(stage, "new-receipt")
+	for path, data := range map[string]string{
+		artifact: "old artifact", receipt: "old receipt",
+		stagedArtifact: "new artifact", stagedReceipt: "new receipt",
+	} {
+		if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	call := 0
+	rename := func(oldPath, newPath string) error {
+		call++
+		if call == 4 { // old pair backups, artifact publish, then receipt publish
+			return errors.New("injected receipt rename failure")
+		}
+		return os.Rename(oldPath, newPath)
+	}
+	err := publishApplicationPair(stagedArtifact, stagedReceipt, artifact, stage, rename)
+	var toolError *ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.receipt_publish_failed" {
+		t.Fatalf("publication error=%v, want native.receipt_publish_failed", err)
+	}
+	for path, want := range map[string]string{artifact: "old artifact", receipt: "old receipt"} {
+		got, readErr := os.ReadFile(path)
+		if readErr != nil || string(got) != want {
+			t.Fatalf("restored %s=%q err=%v; want %q", path, got, readErr, want)
+		}
+	}
+}
