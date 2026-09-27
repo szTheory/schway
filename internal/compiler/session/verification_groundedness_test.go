@@ -70,10 +70,18 @@ var testFuncNamePattern = regexp.MustCompile(`^(Test|Fuzz|Benchmark|Example)([A-
 // OS/arch-excluded test file is not counted as live.
 func buildTestIndex(t testing.TB) *testIndex {
 	t.Helper()
-	root := testsupport.ProjectPath()
+	index, err := buildTestIndexWithTags(testsupport.ProjectPath(), nil)
+	if err != nil {
+		t.Fatalf("buildTestIndex: %v", err)
+	}
+	return index
+}
+
+func buildTestIndexWithTags(root string, tags []string) (*testIndex, error) {
 	index := &testIndex{byImportPath: make(map[string]map[string]bool), root: root}
 	fset := token.NewFileSet()
 	buildCtx := build.Default
+	buildCtx.BuildTags = append(append([]string(nil), buildCtx.BuildTags...), tags...)
 
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -120,9 +128,9 @@ func buildTestIndex(t testing.TB) *testIndex {
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("buildTestIndex: %v", err)
+		return nil, err
 	}
-	return index
+	return index, nil
 }
 
 func (index *testIndex) importPathFor(dir string) string {
@@ -391,6 +399,7 @@ func classifyRunnability(command string) bool {
 type parsedGoTestCommand struct {
 	Packages []string
 	Pattern  string
+	Tags     []string
 }
 
 var (
@@ -486,6 +495,7 @@ func parseGoTestCommand(command string) (parsedGoTestCommand, bool) {
 	i++
 	var packages []string
 	var pattern string
+	var tags []string
 	for i < len(tokens) {
 		tok := tokens[i]
 		switch {
@@ -499,12 +509,26 @@ func parseGoTestCommand(command string) (parsedGoTestCommand, bool) {
 			}
 			pattern = tokens[i]
 			i++
+		case tok == "-tags":
+			i++
+			if i >= len(tokens) || tokens[i] == "" {
+				return parsedGoTestCommand{}, false
+			}
+			tags = append(tags, strings.Split(tokens[i], ",")...)
+			i++
 		case strings.HasPrefix(tok, "-run=") || strings.HasPrefix(tok, "-list=") || strings.HasPrefix(tok, "-fuzz=") || strings.HasPrefix(tok, "-bench="):
 			parts := strings.SplitN(tok, "=", 2)
 			if len(parts) != 2 || parts[1] == "" {
 				return parsedGoTestCommand{}, false
 			}
 			pattern = parts[1]
+			i++
+		case strings.HasPrefix(tok, "-tags="):
+			parts := strings.SplitN(tok, "=", 2)
+			if len(parts) != 2 || parts[1] == "" {
+				return parsedGoTestCommand{}, false
+			}
+			tags = append(tags, strings.Split(parts[1], ",")...)
 			i++
 		default:
 			i++
@@ -513,7 +537,7 @@ func parseGoTestCommand(command string) (parsedGoTestCommand, bool) {
 	if len(packages) == 0 {
 		return parsedGoTestCommand{}, false
 	}
-	return parsedGoTestCommand{Packages: packages, Pattern: pattern}, true
+	return parsedGoTestCommand{Packages: packages, Pattern: pattern, Tags: tags}, true
 }
 
 // classifyGroundedness applies R2: build the union of top-level names
@@ -569,6 +593,13 @@ func classifyCommand(index *testIndex, command string) classification {
 			return classUnparseable
 		}
 		if parsed.Pattern != "" {
+			if len(parsed.Tags) > 0 {
+				taggedIndex, err := buildTestIndexWithTags(index.root, parsed.Tags)
+				if err != nil {
+					return classUnparseable
+				}
+				index = taggedIndex
+			}
 			if !classifyGroundedness(index, parsed.Packages, parsed.Pattern) {
 				return classR2
 			}
@@ -584,6 +615,18 @@ func classifyCommand(index *testIndex, command string) classification {
 		}
 	}
 	return classOK
+}
+
+func TestGoTestTagsAreIncludedInGroundedness(t *testing.T) {
+	index := buildTestIndex(t)
+	command := "go test -tags=phase21_lto_evidence ./internal/compiler/session -run '^TestPhase21EmittedMultiFunctionLTOComparison$'"
+	if got := classifyCommand(index, command); got != classOK {
+		t.Fatalf("tagged command classified as %s, want ok", got)
+	}
+	withoutTag := "go test ./internal/compiler/session -run '^TestPhase21EmittedMultiFunctionLTOComparison$'"
+	if got := classifyCommand(index, withoutTag); got != classR2 {
+		t.Fatalf("untagged command classified as %s, want R2", got)
+	}
 }
 
 // classifyDocument runs the classifier over one document path, returning
@@ -1258,21 +1301,21 @@ var pinnedFrontier = []violationRecord{
 	{File: ".planning/milestones/M002-phases/12-result-payloads/12-VALIDATION.md", Line: 24, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-RESEARCH.md", Line: 572, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md", Line: 25, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-PLAN.md", Line: 280, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 158, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 159, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 161, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 164, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 167, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 168, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 180, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 182, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-DISCUSSION-LOG.md", Line: 108, Command: "go test -list", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 59, Command: "go test -list", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 59, Command: "go test -json", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 205, Command: "go test -run", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 446, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 502, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-PLAN.md", Line: 280, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 158, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 159, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 161, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 164, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 167, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 168, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 180, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md", Line: 182, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-DISCUSSION-LOG.md", Line: 108, Command: "go test -list", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 59, Command: "go test -list", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 59, Command: "go test -json", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 205, Command: "go test -run", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 446, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md", Line: 502, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/research/M003/EVIDENCE-AND-DEBT.md", Line: 828, Command: "go test -list", Classification: classUnparseable},
 	{File: ".planning/research/STACK.md", Line: 29, Command: "go test", Classification: classUnparseable},
 	{File: ".planning/research/STACK.md", Line: 30, Command: "go test -fuzz", Classification: classUnparseable},
@@ -1286,22 +1329,27 @@ var pinnedFrontier = []violationRecord{
 	// describing what the lint detects, not a command it runs). Same
 	// unparseable prose-fragment shape as the STACK.md/SUMMARY.md/
 	// 14-RESEARCH.md entries above.
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 359, Command: "go test", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 390, Command: "go test -run", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md", Line: 90, Command: "go test -run", Classification: classUnparseable},
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreStructurallyDistinct' -count=1 -v", Classification: classR2b},
-	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b},
-	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/session -run 'TestPhase19(LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(ScalarProjection|LiteralFrontier)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 50, Command: "go test ./internal/compiler/syntax -run 'TestPhase19Numeric(Token|Malformed)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 51, Command: "go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase19(LiteralAdmission|LiteralRange|LiteralType|LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 52, Command: "go test ./internal/compiler/corevalidate -run 'TestPhase19(OpConst|U64|Forged)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 53, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 54, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 55, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 359, Command: "go test", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-11-PLAN.md", Line: 390, Command: "go test -run", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VERIFICATION.md", Line: 90, Command: "go test -run", Classification: classUnparseable},
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreStructurallyDistinct' -count=1 -v", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/session -run 'TestPhase19(LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 50, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(ScalarProjection|LiteralFrontier)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 52, Command: "go test ./internal/compiler/syntax -run 'TestPhase19Numeric(Token|Malformed)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 53, Command: "go test ./internal/compiler/syntax ./internal/compiler/session -run 'TestPhase19(Numeric|LiteralFrontier)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 54, Command: "go test ./internal/compiler/ability ./internal/compiler/core -run 'TestPhase19(U64Ability|OpConstShape)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 55, Command: "go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase19(LiteralAdmission|LiteralRange|LiteralType|LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 56, Command: "go test ./internal/compiler/corevalidate -run 'TestPhase19(OpConst|U64|Forged)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 57, Command: "go test ./internal/compiler/pathoracle ./internal/compiler/originvalidate -run 'TestPhase19(OpConst|ConstantOrigin|ConstantPath)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 58, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(OpConstInterpreter|ScalarProjection)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 59, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 60, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b},
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 61, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b},
+	{File: ".planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md", Line: 133, Command: "go test ./internal/compiler/cgen -run '^(TestPhase21LegacyEmitterBodiesRetired|TestPublicDispatchUsesOnlyEmitProgram|TestForeignResourceLedgerEmitterRemainsRefused)$' -count=1 -v", Classification: classR2b},
 }
 
 // measuredViolations runs the classifier once over the whole Tier-A
@@ -2174,19 +2222,24 @@ var r2bLandingPhases = map[violationRecord]string{
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 97, Command: "go test ./internal/compiler/corevalidate -run 'ClosureCostScaling|GrowthExponent' -v", Classification: classR2b}:                                                                                                                                        "P20",
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 99, Command: "go test ./internal/compiler/check -run 'OrderingStability|DiagnosticSelectionOrder' -v", Classification: classR2b}:                                                                                                                                      "P20",
 	{File: ".planning/milestones/M002-phases/09-peer-re-derivation-and-d-03-02-closure/09-VALIDATION.md", Line: 102, Command: "go test ./internal/compiler/check -run 'UseAfterMove|BorrowRequiresShare|TransferRequiresTake' -v", Classification: classR2b}:                                                                                                                          "P20",
-	{File: ".planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreStructurallyDistinct' -count=1 -v", Classification: classR2b}:                                                             "P20",
-	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b}:                                                                                                        "P20",
-	{File: ".planning/phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b}:                                                                                                    "P20",
-	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b}:                                                                                                                        "P20",
-	{File: ".planning/phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b}:                                                                                                                                                              "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/session -run 'TestPhase19(LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}:                                                                                                                                              "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(ScalarProjection|LiteralFrontier)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b}:                                                                                  "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 50, Command: "go test ./internal/compiler/syntax -run 'TestPhase19Numeric(Token|Malformed)' -count=1", Classification: classR2b}:                                                                                                                                                                "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 51, Command: "go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase19(LiteralAdmission|LiteralRange|LiteralType|LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}:                                                                          "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 52, Command: "go test ./internal/compiler/corevalidate -run 'TestPhase19(OpConst|U64|Forged)' -count=1", Classification: classR2b}:                                                                                                                                                              "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 53, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b}:                                                                                                                                                            "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 54, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b}:                                                                                             "P20",
-	{File: ".planning/phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 55, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b}:                                    "P20",
+	{File: ".planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md", Line: 74, Command: "go test ./internal/compiler/session/... -run 'TestB1BlameIsStructurallyUnreachable|TestD1243ControlIsUnconstructible|TestPhase6HeldoutPairsAreStructurallyDistinct' -count=1 -v", Classification: classR2b}:                                                             "P20",
+	{File: ".planning/milestones/M003-phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 48, Command: "go test ./internal/compiler/cgen -run 'Test(LegacyEmitterEvidence|FileFrozenEvidenceRejectsFaults|GeneratedFrozenEvidenceRejectsFaults)' -count=1", Classification: classR2b}:                                                                                                        "P20",
+	{File: ".planning/milestones/M003-phases/16-branch-match-emitter-port/16-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test.*(QLT|Admission|Payload|Witness|EmitterInventory|PreviousPhaseCore)' -count=1", Classification: classR2b}:                                                                                                    "P20",
+	{File: ".planning/milestones/M003-phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 86, Command: "go test ./internal/compiler/core ./internal/compiler/reduce -run 'TestPhase17|Test.*Return.*Type|Test.*Type.*Fact' -count=1 -v", Classification: classR2b}:                                                                                                                        "P20",
+	{File: ".planning/milestones/M003-phases/17-return-type-parameter-type/17-VERIFICATION.md", Line: 87, Command: "go test ./internal/compiler/session -run 'TestPhase17(RepairCorpus|Heldout)' -count=1 -v", Classification: classR2b}:                                                                                                                                                              "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 49, Command: "go test ./internal/compiler/session -run 'TestPhase19(LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}:                                                                                                                                              "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 50, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(ScalarProjection|LiteralFrontier)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b}:                                                                                  "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 52, Command: "go test ./internal/compiler/syntax -run 'TestPhase19Numeric(Token|Malformed)' -count=1", Classification: classR2b}:                                                                                                                                                                "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 53, Command: "go test ./internal/compiler/syntax ./internal/compiler/session -run 'TestPhase19(Numeric|LiteralFrontier)' -count=1", Classification: classR2b}:                                                                                                                                                "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 54, Command: "go test ./internal/compiler/ability ./internal/compiler/core -run 'TestPhase19(U64Ability|OpConstShape)' -count=1", Classification: classR2b}:                                                                                                                                                          "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 55, Command: "go test ./internal/compiler/check ./internal/compiler/session -run 'TestPhase19(LiteralAdmission|LiteralRange|LiteralType|LiteralFrontier|NumericRefusalFrontiers)' -count=1", Classification: classR2b}:                                                                          "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 56, Command: "go test ./internal/compiler/corevalidate -run 'TestPhase19(OpConst|U64|Forged)' -count=1", Classification: classR2b}:                                                                                                                                                              "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 57, Command: "go test ./internal/compiler/pathoracle ./internal/compiler/originvalidate -run 'TestPhase19(OpConst|ConstantOrigin|ConstantPath)' -count=1", Classification: classR2b}:                                                                                                                "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 58, Command: "go test ./internal/compiler/interp ./internal/compiler/session -run 'TestPhase19(OpConstInterpreter|ScalarProjection)|TestPayloadCorpusCharacterizationReplay' -count=1", Classification: classR2b}:                                                                  "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 59, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b}:                                                                                                                                                            "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 60, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b}:                                                                                             "P20",
+	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 61, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b}:                                    "P20",
+	{File: ".planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md", Line: 133, Command: "go test ./internal/compiler/cgen -run '^(TestPhase21LegacyEmitterBodiesRetired|TestPublicDispatchUsesOnlyEmitProgram|TestForeignResourceLedgerEmitterRemainsRefused)$' -count=1 -v", Classification: classR2b}: "P21",
 }
 
 // TestVerificationGroundednessThreeClassesAreEmpty is plan 14-10 Task 3's
