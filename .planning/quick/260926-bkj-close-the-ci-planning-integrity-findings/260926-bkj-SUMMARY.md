@@ -22,7 +22,7 @@ key-files:
     - .planning/STATE.md
     - .planning/state.json
     - .planning/phases/15-event-identity-lang-execution-2/15-VERIFICATION.md
-    - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
+    - .planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
 decisions:
   - Keep Phase 21's tagged LTO measurement one-shot and use the recurring untagged receipt-binding guard in CI.
   - Use $gsd-execute-phase 16 as the next command because all 26 plans and 21 automated UAT checks are complete while only the report is stale.
@@ -82,15 +82,11 @@ $gsd-execute-phase 16
 
 The live resolver says Phase 16 is the earliest remaining gate. Its 26 plans and 21 automated UAT checks are already complete; only its verifier report is stale. Do not rerun `$gsd-verify-work 16` unchanged.
 
-## Current Routing (M003 Closeout)
+## Current Routing (M004 Kickoff)
 
-Phases 14–20 are complete and M003 is archived. Do not rerun Phase 16. The
-current next command is `$gsd-execute-phase 21`: its four plan summaries and
-7/7 automated UAT checks are complete, while the verification fingerprint is
-stale. Resume at the verification gates without replaying plans or UAT.
-
-After Phase 21 verification passes, file its directory under
-`.planning/milestones/M004-phases/` before running
+Phase 21 is complete: all six plans and all seven automated UAT checks are
+preserved, its verification passes 6/6, and its archive is filed under
+`.planning/milestones/M004-phases/`. M003 remains the shipped outgoing
+milestone; M004 is still provisional. The next command is
 `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`.
-The installed new-milestone cleanup archives every remaining physical phase
-directory under outgoing M003, regardless of roadmap ownership.
+Do not rerun Phase 21 planning, execution, verification, or UAT.

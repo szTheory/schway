@@ -178,7 +178,7 @@ for `testdata/phase14/multi_function_match_refusal.lang` on Darwin arm64 with
 Apple Clang 21.0.0. The interpreter, `-O0`, `-O3`, and `-O3 -flto` documents
 were semantically equal under the existing all-pairs comparator. Exact fixture
 and emitted-C digests and flags are in
-`.planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-LTO-EVIDENCE.md`.
+`.planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/21-LTO-EVIDENCE.md`.
 The recurring `TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison` guard
 keeps the tagged test and receipt discoverable without repeating the compiler
 run. This evidence does not establish optimizer activity, performance, native

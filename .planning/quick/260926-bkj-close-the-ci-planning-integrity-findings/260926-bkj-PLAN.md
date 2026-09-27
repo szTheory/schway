@@ -12,7 +12,7 @@ files_modified:
   - .planning/STATE.md
   - .planning/state.json
   - .planning/phases/15-event-identity-lang-execution-2/15-VERIFICATION.md
-  - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
+  - .planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
   - .planning/quick/260926-bkj-close-the-ci-planning-integrity-findings/260926-bkj-PLAN.md
   - .planning/quick/260926-bkj-close-the-ci-planning-integrity-findings/260926-bkj-SUMMARY.md
 autonomous: true
@@ -31,14 +31,14 @@ must_haves:
       provides: Durable shift-left, zero-routine-UAT, and no-loop workflow defaults with a live next action
     - path: .planning/ROADMAP.md
       provides: Explicit M003 completion prerequisite for Phase 21
-    - path: .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
+    - path: .planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
       provides: Correct distinction between one-shot tagged evidence and recurring CI evidence
   key_links:
     - from: .planning/phases/15-event-identity-lang-execution-2/15-VERIFICATION.md
       to: .planning/phases/15-event-identity-lang-execution-2/15-UAT.md
       via: Preserve completed automated UAT as the acceptance record; refresh only verifier evidence
-    - from: .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
-      to: .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-LTO-EVIDENCE.md
+    - from: .planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md
+      to: .planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/21-LTO-EVIDENCE.md
       via: Keep the measured tagged comparison in its scoped receipt and use an untagged binding test for recurring CI
 
 <objective>
@@ -52,7 +52,7 @@ Output: Fresh Phase 15 verification, corrected planning evidence, durable workfl
 
 <task type="auto">
   <name>Task 1: Correct CI evidence lane and M004 ordering statement</name>
-  <files>.planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md, .planning/ROADMAP.md</files>
+  <files>.planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md, .planning/ROADMAP.md</files>
   <action>In Phase 21's Behavioral Spot-Checks, leave the actual tagged LTO run and its bounded result in 21-LTO-EVIDENCE.md and the existing report narrative, but make the recurring test row invoke the untagged TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison guard that binds that receipt to its tagged source. Keep the comparison one-shot and keep all evidence limitations. In ROADMAP.md's milestone list, explicitly state the exact prerequisite that M003 Phases 14-20 complete before M004 Phase 21 starts. Do not change the groundedness implementation, reconciliation ledger, Phase 16 debt table, or any source code.</action>
   <verify>
     <automated>GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison$' -count=1 -v</automated>

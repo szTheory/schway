@@ -60,7 +60,7 @@ var phase21RequiredFamilies = map[string]string{
 }
 
 func TestPhase21ResourceDischargeContract(t *testing.T) {
-	data, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "21-native-emission-ownership-and-resource-discharge-m004", "21-RESOURCE-DISCHARGE-CONTRACT.json"))
+	data, err := os.ReadFile(testsupport.ProjectPath(".planning", "milestones", "M004-phases", "21-native-emission-ownership-and-resource-discharge-m004", "21-RESOURCE-DISCHARGE-CONTRACT.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	receipt, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "21-native-emission-ownership-and-resource-discharge-m004", "21-LTO-EVIDENCE.md"))
+	receipt, err := os.ReadFile(testsupport.ProjectPath(".planning", "milestones", "M004-phases", "21-native-emission-ownership-and-resource-discharge-m004", "21-LTO-EVIDENCE.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
