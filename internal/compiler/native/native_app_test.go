@@ -63,6 +63,25 @@ func TestPhase22EvidenceDisabledCompleteAndStreamIsolation(t *testing.T) {
 	})
 }
 
+func TestPhase22OrdinaryRunIgnoresAmbientEvidencePath(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "must-survive.txt")
+	if err := os.WriteFile(target, []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANG_APP_EVIDENCE_PATH", target)
+	artifact := writePhase22EvidenceScript(t, "if [ -n \"${LANG_APP_EVIDENCE_PATH:-}\" ]; then printf 'overwritten' > \"$LANG_APP_EVIDENCE_PATH\"; fi\nprintf 'app\\n'\n")
+	var stdout, stderr bytes.Buffer
+	outcome, err := DefaultRunner().RunApplication(context.Background(), artifact, "7", &stdout, &stderr)
+	if err != nil || outcome.Kind != RunExited || outcome.ExitCode != 0 {
+		t.Fatalf("outcome=%+v err=%v", outcome, err)
+	}
+	data, err := os.ReadFile(target)
+	if err != nil || string(data) != "original" {
+		t.Fatalf("ambient evidence target=%q err=%v; want unchanged original", data, err)
+	}
+}
+
 func TestPhase22EvidenceMissingPartialAndCapacityControls(t *testing.T) {
 	t.Run("missing capture", func(t *testing.T) {
 		phase22AssertIncompleteEvidence(t, "printf 'app\\n'\n", nil)

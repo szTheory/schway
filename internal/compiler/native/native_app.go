@@ -392,7 +392,11 @@ func (r Runner) runApplication(parent context.Context, artifactPath, input, capt
 	defer cancel()
 	command := r.commandContext(runCtx, artifactPath, input)
 	command.Stdout, command.Stderr = stdout, stderr
-	if capturePath != "" {
+	// Evidence capture is an explicit runner capability. Never let an inherited
+	// environment value authorize the generated application to write a file.
+	if capturePath == "" {
+		command.Env = removeEnvironment(command.Env, "LANG_APP_EVIDENCE_PATH")
+	} else {
 		command.Env = replaceEnvironment(command.Env, "LANG_APP_EVIDENCE_PATH", capturePath)
 	}
 	err = command.Run()
@@ -580,4 +584,18 @@ func validSHA256(value string) bool {
 	}
 	_, err := hex.DecodeString(value)
 	return err == nil
+}
+
+func removeEnvironment(environment []string, key string) []string {
+	if environment == nil {
+		environment = os.Environ()
+	}
+	result := make([]string, 0, len(environment))
+	for _, entry := range environment {
+		name, _, _ := strings.Cut(entry, "=")
+		if name != key {
+			result = append(result, entry)
+		}
+	}
+	return result
 }
