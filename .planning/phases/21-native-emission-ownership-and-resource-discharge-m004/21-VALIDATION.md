@@ -1,7 +1,7 @@
 ---
 phase: "21"
 slug: "native-emission-ownership-and-resource-discharge-m004"
-status: complete
+status: validated
 nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-25"
@@ -44,6 +44,10 @@ created: "2026-09-25"
 | 21-03-01 | 03 | 1 | Phase goal | — | The tagged compiler comparison is bound to its recorded receipt by a cheap recurring structural test; the one-shot four-lane run is recorded below | unit | `go test ./internal/compiler/session -run '^TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison$' -count=1 -v` | ✅ | EXERCISED | — | ✅ passed |
 | 21-03-02 | 03 | 1 | Phase goal | — | Existing seeded semantic control still detects comparator divergence | unit | `go test ./internal/compiler/session -run '^TestPhase16EmitterPortSemanticGuardIsNotInert$' -count=1 -v` | ✅ | EXERCISED | — | ✅ passed |
 | 21-04-01 | 04 | 2 | Phase goal | — | Debt records and generated claims view reflect measured/retired evidence without widening the claim | unit | `go test ./internal/compiler/session -run 'TestDebtRegistersAreWellFormed|TestUnreachableClaimsViewIsCurrent' -count=1 -v` | ✅ | EXERCISED | — | ✅ passed |
+| 21-05-01 | 05 | 3 | Phase goal | — | Archived Phase 16 cut decision resolves and unsupported by-pointer lowering refuses before serialization | unit | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^TestProgramBorrowedByPointerDisposition$' -count=1 -v` | ✅ | EXERCISED | — | ✅ passed |
+| 21-05-02 | 05 | 3 | Phase goal | — | NAT-09 family ownership matches archived debt and current provisional roadmap registration; seeded mutations are rejected | unit | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase16EmitterCutsAreAmendedAndOwned$' -count=1 -v` | ✅ | EXERCISED | — | ✅ passed |
+| 21-06-01 | 06 | 3 | Phase goal | — | Validation corpus exactly matches the consumer request and rejects tampering or vacuity | unit | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestValidationCorpusPairExportMatchesConsumer|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestCheckedInCorpusRecordRejectsTamperingAndVacuity)$' -count=1 -v` | ✅ | EXERCISED | — | ✅ passed |
+| 21-06-02 | 06 | 3 | Phase goal | — | Groundedness findings and reconciliation obligations match the archived M003 corpus | unit | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestVerificationGroundednessThreeClassesAreEmpty|TestVerificationGroundednessFrontierIsPinned|TestReconciliationVerdictsCarryTheirObligations|TestEvidenceReconciliationViewIsCurrent)$' -count=1 -v` | ✅ | EXERCISED | — | ✅ passed |
 
 ---
 
@@ -74,3 +78,13 @@ All phase behaviors have automated verification. Human judgment is reserved for 
 - [x] `nyquist_compliant: true` set in frontmatter after execution
 
 **Approval:** automated verification complete; no human-only checks remain for this phase.
+
+## Validation Audit 2026-09-27
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+The four tasks added by gap-closure Plans 21-05 and 21-06 are now mapped to their focused automated checks. The review-fix regression test `TestSchema2PayloadOutcomeBoundIsPreflighted` also passes in the full suite and asserts refusal before C serialization. Full `go test ./...` and `go build ./...` pass on the current tree.
