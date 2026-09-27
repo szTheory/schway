@@ -59,6 +59,12 @@ write errors fail the tool operation. Every app evidence report has
 `verified: false`: a complete trace records one execution and is not a
 differential verdict.
 
+Capture the same run with a separate report and event evidence:
+
+```sh
+lang app run ./identity --report ./identity-evidence.json --evidence=events -- 7
+```
+
 ## Explicit replay verification
 
 ```sh

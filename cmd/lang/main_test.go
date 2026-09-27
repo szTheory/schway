@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -121,6 +122,7 @@ func TestPhase22READMEContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(readme)
+	contractText := strings.Join(strings.Fields(text), " ")
 	commands := normalizePhase22READMECommands(text)
 	for name, command := range map[string]string{
 		"build":             "lang build examples/phase22/identity.lang --output ./identity",
@@ -134,18 +136,18 @@ func TestPhase22READMEContract(t *testing.T) {
 		}
 	}
 	categories := map[string][]string{
-		"input and process":               {"canonical decimal `U64`", "4,096-byte", "one retained application process", "30-second", "without an added output cap", "exit, signal, timeout, and launch"},
+		"input and process":               {"Canonical decimal `U64`", "4,096-byte", "one retained application process", "30-second", "without an added output cap", "exit, signal, timeout, and launch"},
 		"evidence and conformance bounds": {"64 KiB", "16 MiB", "capacity_exhausted", "write errors fail", "`verified: false`"},
-		"local C boundary":                {"64 KiB", "4 MiB", "16 MiB", "fixed C17 flags", "not a sandbox for hostile C", "does not admit Lang foreign calls or pointers"},
-		"host closure":                    {"`incomplete` on macOS and Linux", "not cacheable"},
+		"local C boundary":                {"64 KiB", "4 MiB", "16 MiB", "fixed C17 flags", "not a sandbox for hostile C", "authority does not admit Lang foreign calls or pointers"},
+		"host closure":                    {"closure remains `incomplete` on macOS and Linux", "not cacheable"},
 		"replay scope":                    {"independently authored expected `U64`", "explicit empty `foreign_outcomes`", "does not launch the retained application", "`verifier_model_only`", "`actual_host_io` and `physical_cleanup` to `false`", "does not establish host IO or physical resource cleanup"},
 	}
 	for category, clauses := range categories {
-		if diagnostic := phase22READMECategoryDiagnostic(text, category, clauses); diagnostic != "" {
+		if diagnostic := phase22READMECategoryDiagnostic(contractText, category, clauses); diagnostic != "" {
 			t.Error(diagnostic)
 		}
 		// Each in-memory omission must be reached and diagnosed under its own category.
-		mutated := strings.Replace(text, clauses[len(clauses)-1], "", 1)
+		mutated := strings.ReplaceAll(contractText, clauses[len(clauses)-1], "")
 		if diagnostic := phase22READMECategoryDiagnostic(mutated, category, clauses); !strings.Contains(diagnostic, category) {
 			t.Errorf("negative control for %q did not fail by category: %q", category, diagnostic)
 		}
@@ -153,9 +155,27 @@ func TestPhase22READMEContract(t *testing.T) {
 	if native.MaxApplicationArgumentBytes != 4096 || execution.MaxApplicationEvidenceBytes != 64*1024 || execution.MaxDocumentBytes != 16*1024*1024 || session.MaxReplayCasesBytes != 64*1024 {
 		t.Fatal("Phase 22 exported limits changed; update the README contract expectations")
 	}
+	for _, documentedLimit := range []string{
+		fmt.Sprintf("%s-byte", phase22CommaInt(native.MaxApplicationArgumentBytes)),
+		fmt.Sprintf("%d KiB", execution.MaxApplicationEvidenceBytes/1024),
+		fmt.Sprintf("%d MiB", execution.MaxDocumentBytes/(1024*1024)),
+		fmt.Sprintf("%d KiB", session.MaxReplayCasesBytes/1024),
+	} {
+		if !strings.Contains(text, documentedLimit) {
+			t.Errorf("README does not document exported limit %q", documentedLimit)
+		}
+	}
 	// This is a documentation-contract check. Runtime behavior is established by
 	// TestPhase22BindingsRejectInvalidInputs, TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes,
 	// TestPhase22EvidenceDisabledCompleteAndStreamIsolation, and TestPhase22AppVerifyIndependentIdentityCases.
+}
+
+func phase22CommaInt(value int) string {
+	formatted := fmt.Sprintf("%d", value)
+	if len(formatted) > 3 {
+		return formatted[:len(formatted)-3] + "," + formatted[len(formatted)-3:]
+	}
+	return formatted
 }
 
 func phase22READMECategoryDiagnostic(text, category string, clauses []string) string {
