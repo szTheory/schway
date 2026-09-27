@@ -15,15 +15,15 @@ IDs continue existing categories, including reserved historical future IDs.
 
 ### Native application execution
 
-- [ ] **APP-02**: A developer can build a retained native executable from an admitted Lang source using a documented public command; building does not execute application effects, and the artifact runs outside the compiler's temporary build directory with its runtime dependencies declared.
+- [x] **APP-02**: A developer can build a retained native executable from an admitted Lang source using a documented public command; building does not execute application effects, and the artifact runs outside the compiler's temporary build directory with its runtime dependencies declared.
 - [x] **APP-03**: A developer can supply bounded input through the public application route; two caller-selected scalar inputs produce independently specified results, and malformed or oversized input is rejected with a defined outcome.
-- [ ] **APP-04**: One application-run request launches the selected native artifact exactly once, without prior interpretation or hidden optimization-tier replay of application effects.
+- [x] **APP-04**: One application-run request launches the selected native artifact exactly once, without prior interpretation or hidden optimization-tier replay of application effects.
 - [x] **APP-05**: An application has defined stdout, stderr, and process-exit behavior; ordinary output and successful stderr are not parsed as or rejected for violating compiler execution JSON.
-- [ ] **APP-06**: A developer can obtain compiler execution evidence separately from application streams, with explicit disabled, incomplete, and capacity-exhausted states that cannot be reported as successful verification.
+- [x] **APP-06**: A developer can obtain compiler execution evidence separately from application streams, with explicit disabled, incomplete, and capacity-exhausted states that cannot be reported as successful verification.
 
 ### Explicit foreign boundaries
 
-- [ ] **FFI-02**: A developer declares the local C sources/headers, symbols, and ABI inputs required by a build; path resolution survives checkout relocation, missing/incompatible inputs fail clearly, and relevant input changes invalidate the artifact/evidence identity without fixture-symbol lookup or ambient repository paths.
+- [x] **FFI-02**: A developer declares the local C sources/headers, symbols, and ABI inputs required by a build; path resolution survives checkout relocation, missing/incompatible inputs fail clearly, and relevant input changes invalidate the artifact/evidence identity without fixture-symbol lookup or ambient repository paths.
 - [ ] **FFI-03**: Each admitted foreign operation resolves its own checked signature, operand modes, acquisition/failure behavior, and release pairing; distinct acquire/use/release operations can consume admitted local values without inheriting the function's first foreign symbol contract.
 
 ### Live local resource ownership
@@ -51,7 +51,7 @@ IDs continue existing categories, including reserved historical future IDs.
 
 - [ ] **EVD-09**: An observer independent of compiler release events establishes actual allocation, post-acquisition use, and destruction before process exit; reached controls for omitted, premature, duplicate, and wrong-resource destruction fail even when reported events remain plausible.
 - [ ] **EVD-10**: Every admitted foreign/shared/exclusive family has its own reproducible macOS and Linux native receipt identifying source/build inputs, compiler, target, flags, expected result, and applicable optimizer/sanitizer lanes; missing host or lane evidence keeps that claim incomplete.
-- [ ] **EVD-11**: Explicit differential verification uses isolated or replayable inputs and declared foreign outcomes, compares against independent expected answers, and never claims that modeled foreign success proves actual host IO or that process reclamation proves cleanup.
+- [x] **EVD-11**: Explicit differential verification uses isolated or replayable inputs and declared foreign outcomes, compares against independent expected answers, and never claims that modeled foreign success proves actual host IO or that process reclamation proves cleanup.
 
 ### Developer usability
 
@@ -142,12 +142,12 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 
 | Requirement | Phase | Status |
 |---|---|---|
-| APP-02 | Phase 22 | Pending |
+| APP-02 | Phase 22 | Complete |
 | APP-03 | Phase 22 | Complete |
-| APP-04 | Phase 22 | Pending |
+| APP-04 | Phase 22 | Complete |
 | APP-05 | Phase 22 | Complete |
-| APP-06 | Phase 22 | Pending |
-| FFI-02 | Phase 22 | Pending |
+| APP-06 | Phase 22 | Complete |
+| FFI-02 | Phase 22 | Complete |
 | FFI-03 | Phase 23 | Pending |
 | RES-04 | Phase 23 | Pending |
 | RES-05 | Phase 24 | Pending |
@@ -163,7 +163,7 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 | NAT-13 | Phase 25 | Pending |
 | EVD-09 | Phase 24 | Pending |
 | EVD-10 | Phase 25 | Pending |
-| EVD-11 | Phase 22 | Pending |
+| EVD-11 | Phase 22 | Complete |
 | DX-14 | Phase 25 | Pending |
 | DX-15 | Phase 25 | Pending |
 

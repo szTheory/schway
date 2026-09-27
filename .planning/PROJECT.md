@@ -37,11 +37,18 @@ This preference does not waive mandatory workflow gates, required user authoriza
 ## Current State
 
 **M004 opened 2026-09-27.** Phase 21 is completed, archived contract/retirement
-prework; its six plans and seven UAT cases must not be replayed. New work starts
-at Phase 22. Current native `run` is still a conformance harness: inputs are
-synthesized and native execution runs two optimization tiers. All three native
-foreign/by-pointer families remain refused. M004 will deliver a separate
-application path and real Lang-owned resource lifetime before broader syntax.
+prework; its six plans and seven UAT cases must not be replayed. Phase 22's
+implementation is complete, with one README clarity UAT pending: `lang app build` retains an artifact from the admitted source and
+declared local build inputs, while `lang app run` accepts bounded U64 input,
+starts the selected app once, and preserves ordinary output and process
+outcomes. Evidence capture and explicit replay use separate routes. The older
+`lang run` remains a synthetic-input conformance harness with optimization-tier
+replay. Phase 22 linked local C but did not admit Lang foreign calls or live
+foreign ownership; all three foreign/by-pointer families remain refused. Its
+macOS receipt reports incomplete dependency closure and `cacheable: false`, and
+no Linux result is claimed. The refreshed verifier confirms 17/17 automated
+truths; phase advancement waits on the public README review in `22-UAT.md`.
+Phase 23 is next for a real Lang-owned allocation after that check passes.
 The following shipped records describe evidence at their recorded revisions.
 
 **Shipped M002 — Interprocedural Semantic Spine (2026-09-14).** Phases 07-13,
@@ -226,6 +233,11 @@ The successor corrects Phase 21's contract-only wording without rewriting its
 historical evidence. The user authorized adopting the second review's
 recommendations automatically on 2026-09-27.
 
+Phase 22 delivered the application/build/evidence boundary (17/17 automated
+truths verified; one README clarity UAT remains). Resource acquisition,
+Lang-directed use and physical cleanup, interprocedural transfer/error behavior,
+and the bounded pointer families remain the active M004 work.
+
 ## Milestone Arc
 
 [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) is the living authority for future
@@ -330,10 +342,15 @@ milestone number.
   native optimization tiers.
 - ✓ The post-M003 evidence corpus and refused checksum frontier are reconciled —
   M003 Phase 20; remaining partial Nyquist coverage is documented in the audit.
+- ✓ A retained native application accepts bounded caller U64 input, runs once
+  with ordinary streams, and keeps execution evidence separate from explicit
+  differential replay; local build inputs use a closed manifest and content-bound
+  identity — M004 Phase 22 (APP-02–06, FFI-02, EVD-11). The current evidence is
+  macOS-only; host dependency closure remains incomplete/non-cacheable, and local
+  C behavior is still trusted input rather than a Lang foreign call.
 
 ### Active
 
-- [ ] Build and run a native application once with explicit inputs and outputs.
 - [ ] Keep a real foreign allocation live across Lang acquisition, use, transfer,
   and generated cleanup on normal and typed-error exits.
 - [ ] Admit bounded shared/exclusive pointer shapes only with their own proof;
@@ -498,6 +515,9 @@ Canonical planning inputs:
 | Eliminate Phase 11's two human-judgment items with tests rather than adjudicate them | A debt note is read once; a test runs on every CI invocation | ✓ Good — `TestSeedEntryHazardIsReal` and `session_admission_divergence_test.go` both fail in *both* directions, catching a silently resolved divergence as well as a new one |
 | Keep DX-06 and DX-07 evidence-based instead of weakening their criteria | DX-06 needs a user-declared contract field its declaring function cannot verify; DX-07's `use_matching_argument` repair was byte-identical on real triggers | ✓ Good — M003 closes DX-07 through a sealed held-out repair proof; DX-06 remains owned by the future separate-compilation contract capability (D-13-02b) |
 | Reject the integration checker's requirement-satisfaction column while adopting its structural findings | It graded requirements from wiring, and wiring is exactly what a structurally unreachable defect class still has | ✓ Good — caught two would-be false greens (DX-06, DX-07) that contradicted both Phase 13's own verification and a `grep` of the tree |
+| Keep the first public application ABI to checked `U64 -> U64` with one bounded opaque argv token | A small caller-selected input/output witness proves ordinary application execution without prematurely defining general strings or IO | ✓ Phase 22 — inputs `7` and `42` produce independent results through one retained-app launch; wider inputs remain deferred |
+| Separate ordinary app capture from explicit differential verification | Application effects must occur once on the caller's route; evidence capture alone cannot prove semantic correctness | ✓ Phase 22 — one run emits ordinary streams; `app verify` separately checks isolated/replayable inputs against independent expected values |
+| Keep local C build authority closed and mark incomplete host closure honestly | Declared inputs and stable identity do not prove the installed SDK/linker/runtime inventory is complete | ✓ Phase 22 — manifest and known inputs are content-bound; receipts remain `dependency_closure: incomplete` and `cacheable: false` |
 | Keep cache refusal codes stable while retaining typed Clang probe causes and finite subprocess deadlines | Callers keep a fail-closed contract while diagnostics distinguish timeout, launch, and command failures; bounded work remains cancellable | ✓ Good — three default-parallel full suites, capped-parallel and race suites, vet, and build all pass under verified captured receipts |
 | Reuse existing macOS/Linux full and race CI lanes when focused coverage adds no distinct signal | Recurring CI value must justify its runtime and maintenance cost | ✓ Good — Plan 08's unchanged CI blob and `not_added` disposition remain verified after G-18-16 closure |
 | Route branch and match lowering through the public `emitProgram` authority | A single emitter law prevents admitted source shapes from depending on a legacy backend | ✓ Good — M003 Phase 16 passed all 4 verification truths; foreign and by-pointer families retain explicit M004 ownership |
@@ -526,4 +546,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-27 during M004 kickoff and second adversarial fan-out*
+*Last updated: 2026-09-27 after Phase 22 implementation and verification refresh*

@@ -25,9 +25,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 22 of 4 · 0% · executing"
+    "command": "/gsd:verify-work 22",
+    "label": "Complete Phase 22 human verification",
+    "reason": "Phase 22 has one pending README clarity UAT"
   },
-  "updated_at": "2026-09-27T16:47:41.206Z"
+  "updated_at": "2026-09-27T21:17:48Z"
 }

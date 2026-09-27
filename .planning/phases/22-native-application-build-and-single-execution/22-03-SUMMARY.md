@@ -147,9 +147,9 @@ status: complete
 
 ### Auto-fixed Issues
 
-**1. [Rule 3 - Blocking] The read-first list referenced a missing session file**
+**1. [Rule 3 - Blocking] Dated artifact correction (2026-09-27): the plan's read-first list named a separate session-entry source that was not present**
 - **Found during:** Task 2 read-first gate.
-- **Issue:** `internal/compiler/session/session_app.go` does not exist; Phase 22-02 had already placed the application entry in `session.go`.
+- **Issue:** Phase 22-02 had already placed the application entry in the existing `session.go`, so a separate session-entry source was unnecessary.
 - **Fix:** Reused the existing session APIs and implemented this plan's verifier in `session_app_verify.go`, avoiding a duplicate application entry.
 - **Files modified:** `internal/compiler/session/session_app_verify.go`.
 - **Verification:** Full session package and Phase 22 CLI tests passed.

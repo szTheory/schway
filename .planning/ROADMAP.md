@@ -17,7 +17,10 @@ Shared and exclusive read-copy pointers have separate bounded admissions.
 Scope: [REQUIREMENTS](REQUIREMENTS.md). Adopted decisions and inspected boundaries:
 [research synthesis](research/M004/SUMMARY.md). Future order:
 [PRODUCT-ROADMAP](PRODUCT-ROADMAP.md); observed capability:
-[LANGUAGE-MATURITY](LANGUAGE-MATURITY.md). All new requirements remain Pending.
+[LANGUAGE-MATURITY](LANGUAGE-MATURITY.md). Phase 22's implementation
+requirements are complete; one README clarity UAT remains. The remaining
+M004 requirements are tracked as pending in
+REQUIREMENTS.md.
 
 ## Completed Historical Prework
 
@@ -39,7 +42,7 @@ borrow leaves ownership unchanged.** M003 remains the shipped predecessor.
 Sequential IDs continue after archived Phase 21. Every new phase delivers a
 runnable source/input/output witness; no implementation plans exist yet.
 
-- [ ] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams.
+- [ ] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; README clarity UAT pending)
 - [ ] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Lang-owned allocation.
 - [ ] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors.
 - [ ] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible.
@@ -59,7 +62,7 @@ runnable source/input/output witness; no implementation plans exist yet.
 4. A developer can request execution evidence through a separate channel and distinguish disabled, incomplete, and capacity-exhausted states from successful verification.
 5. Explicit differential verification uses isolated or replayable inputs and independent expected answers; declared foreign outcomes are distinguished from actual host IO, and verification replay does not occur on the ordinary application route.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 **Wave 1**
 
 - [x] 22-01-PLAN.md — Retained identity application with bounded input and one launch
@@ -70,7 +73,7 @@ runnable source/input/output witness; no implementation plans exist yet.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 22-03-PLAN.md — Separate execution evidence and explicit differential replay
+- [x] 22-03-PLAN.md — Separate execution evidence and explicit differential replay
 
 **Runnable witness**: Check in a scalar identity source with input/output pairs
 `7 → 7` and `42 → 42`, then build/run its retained artifact through documented
@@ -205,13 +208,13 @@ by roadmap creation. Plan counts remain TBD until phase planning.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 22. Native Application Build and Single Execution | 2/3 | In Progress|  |
+| 22. Native Application Build and Single Execution | 3/3 | Human verification pending | - |
 | 23. Live Local Allocation and Discharge | 0/TBD | Not started | - |
 | 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
 
 ## Next Action
 
-Run `$gsd-plan-phase 22`. Milestone initialization is complete; implementation
-has not started. Phase 22 planning fixes the scalar witness and the public
-application/build/evidence boundary using the adopted M004 research.
+Run `$gsd-verify-work 22` and record the one README clarity result in
+`22-UAT.md`. The refreshed verifier confirms 17/17 automated truths; Phase 23
+discussion and planning resume after this human UAT passes.

@@ -15,11 +15,17 @@ VM or LLVM backend is not a prerequisite for useful programs.
 
 M001 established source-to-native behavior; M002 added executable Lang calls;
 M003 added independent returns, computed matches/payloads, and U64 constants.
-Phase 21 completed contract/retirement prework. Arithmetic, loops, ordinary
-application IO, and real emitted foreign ownership remain missing. The current
-public native runner supplies fixture inputs and executes O0 and O3. The
-resource shim frees its allocation before returning. Those boundaries explain
-why compiler infrastructure has advanced further than application usefulness.
+Phase 21 completed contract/retirement prework. Phase 22 delivered its
+application/build/evidence implementation; phase closeout awaits one README
+clarity UAT. The separate `lang app build` / `lang app run` route retains a native app, accepts a
+bounded U64 input, starts it once, and preserves ordinary streams and process
+outcomes. Evidence capture and explicit differential replay remain separate.
+The older `lang run` path is still the synthetic-input O0/O3 conformance
+harness. Phase 22 links declared local C inputs but does not admit Lang foreign
+calls or prove live resource ownership; the existing resource shim still frees
+its allocation before returning. These boundaries make Phase 23's live file-byte
+allocation and physical cleanup the next useful slice. Current app build
+receipts remain incomplete/non-cacheable, and Phase 22 has no Linux host result.
 
 The user explicitly requested another deep fan-out and automatic adoption of
 recommendations. The 2026-09-27 decision integrates product/DX, compiler and
@@ -30,7 +36,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Build a native executable; run once on caller input; read a bounded file byte through a live Lang-owned foreign buffer | Application/evidence separation, explicit local C links, per-operation contracts, acquisition-derived obligations, transfer/error cleanup, bounded shared/exclusive read-copy pointers | Two input files yield independently expected results; real allocations survive transfer and are freed once; unsupported shapes fail closed; macOS/Linux receipts |
+| **Now: M004** | Application build/run is in place; finish reading a bounded file byte through a live Lang-owned foreign buffer | Phase 22's 17 automated truths pass; its README clarity UAT remains. Delivered application/evidence separation and explicit local C links. Remaining: per-operation contracts, acquisition-derived obligations, transfer/error cleanup, bounded shared/exclusive read-copy pointers | Two input files yield independently expected results; real allocations survive transfer and are freed once; unsupported shapes fail closed; macOS/Linux receipts |
 | **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
@@ -70,7 +76,7 @@ engine agreement alone cannot prove correctness.
 
 | Capability trigger | Analysis/contract that changes | Decisive evidence and refusal boundary | Owner |
 |---|---|---|---|
-| Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | One native execution, distinct external expected answers, output-channel separation; differential replay isolated | M004 application phase |
+| Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | Phase 22's automated tests establish bounded U64 input, one native launch, ordinary streams, separate evidence capture, and explicit independent replay; general file IO remains unimplemented | Implementation delivered; closeout waits on README clarity UAT; extend only for a concrete consumer |
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
 | Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Use after callee return, repeated site in distinct calls, failure after acquisition; reject double/wrong release and cleanup on transfer | M004 transfer phase |
 | Shared/exclusive pointer access | Borrow endpoints, escape/capture refusal, actual C ABI and emitted attributes | Separate family witnesses on macOS/Linux; no unsupported alias/alignment/capture promises | M004 pointer phase |
@@ -88,24 +94,53 @@ roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations
 
-1. **Application boundary first.** A public scalar example consumes a supplied
-   argument, builds a retained executable, and runs once. Blocker: canned inputs,
-   strict execution-JSON stdout, duplicated native runs. Include IO/exit contract
-   and explicit build authority; independent expected answers expose canned
-   results. Next action: plan Phase 22 with the resource consumer in view.
-2. **A genuinely live owned allocation.** The bounded file-byte utility is the
-   smallest resource program. Blocker: native foreign refusal, singular binding,
-   cleanup-derived tracking. Add acquire/use/release, then transfer/error paths;
-   physical allocator witnesses must detect false cleanup events. D-16-11 is the
-   historical family owner; Phase 21's archive is contract-only prework.
-3. **Finish FizzBuzz next.** Blocker: operators, comparison/continuation,
-   cycles, fixed-text/number output. Scope the loop spike around scalar state;
-   do not demand a full String runtime, modules, generic containers, or VM.
-   Change priority only if an actual consumer or measured safety constraint
-   demonstrates a more valuable complete slice.
+1. **Prove one Lang-owned file byte (Phase 23).** User-visible program: read
+   files containing `0x41` and `0x42` through a returned allocation and report
+   the matching byte, plus a failed-acquisition case. Blocker: Phase 22 only
+   links local C; all Lang foreign operations and by-pointer shapes remain
+   refused, and the existing shim frees before returning. Smallest complete
+   slice: a constructible opaque noncopyable value, distinct acquire/use/release
+   contracts, bounded input/failure behavior, Lang-directed use, generated
+   release, and an independent physical destructor observer. This changes
+   checker/guarantee work in `check`, `corevalidate`, `originvalidate`,
+   `pathoracle`, `interp`, and `cgen`; successful acquisition must create the
+   cleanup obligation. Evidence/debt: FFI-03, RES-04/07/08/09, EVD-09 admission;
+   keep Phase 22's EVD-11 replay boundary and FFI-02 manifest limits. Owner and
+   next action: Phase 23, discuss and plan the source shape, byte encoding,
+   maximum size, and cleanup control before implementation. Reorder only if the
+   required physical observer or narrow ABI cannot be built without broadening
+   the committed resource contract.
+2. **Carry that owner through a call and a typed error (Phase 24).** User-visible
+   program: the byte reader delegates use to a helper and still releases once
+   on both a normal result and a real later error. Blocker: static resource
+   ownership is not yet tracked by dynamic callee activation, transfer, or
+   typed-error cleanup. Smallest complete slice: one transferred live owner,
+   one caller/callee activation distinction, and one post-acquisition typed
+   error, with reverse-order generated cleanup and an independent observer.
+   Checker/guarantee changes cover interprocedural resource identities and
+   operation-derived cleanup in the same independent peers; never infer the
+   acquisition from a later release. Evidence/debt: RES-05/06, OWN-10/11/12,
+   EVD-09, extending EVD-11. Owner: Phase 24 after the Phase 23 owner model is
+   exercised. Reprioritize only if Phase 23's runnable utility needs this
+   transfer/error behavior to prove its minimum use/release contract.
+3. **Complete the bounded pointer families and utility (Phase 25).**
+   User-visible program: a documented file/byte utility whose shared and
+   exclusive read-copy helpers have separate admitted source witnesses. Blocker:
+   `emitProgram` refuses both families and the checker has no family-specific
+   pointer contract yet. Smallest complete slice: one bounded helper per family,
+   independent borrow/access checks, no unsupported `restrict`/`noalias`/
+   capture claims, plus the reproducible utility command and negative controls.
+   Checker/guarantee changes are family-specific across admission, peer
+   validation, interpreter, and C emission. Evidence/debt: NAT-11/12/13,
+   EVD-10, DX-14/15; retain the explicit FFI-03 transfer boundary. Owner:
+   Phase 25. Move this earlier only if the Phase 23/24 source witnesses show
+   that a pointer family is required for the bounded file-byte operation.
 
-M004's pointer families remain committed work with exact phase ownership in
-ROADMAP; ranking these three capability suggestions does not defer them.
+The next milestone can then deliver `sum_to_n` and FizzBuzz. Its current
+blockers are defined U64 arithmetic/remainder, comparison/Bool, scalar loop
+fixed points, and minimal text/decimal output. Do not pull that work ahead of
+M004 unless a selected consumer or measured safety constraint demonstrates a
+more valuable complete program.
 
 ## Maintaining pace and truth
 
@@ -134,8 +169,12 @@ ROADMAP; ranking these three capability suggestions does not defer them.
 
 ## Provenance
 
-Repository baseline: `d9bde05`; research date 2026-09-27. Current observations
-come from the second specialist fan-out and source inspection. Roadmap rows are
+Repository research baseline: `d9bde05`; research date 2026-09-27. Current
+observations are refreshed after Phase 22 from source inspection, its named
+tests, and the full Go suite. The refreshed verifier reports 17/17 automated
+truths and `human_needed` for the README clarity judgment; this is not a passed
+phase closeout. These are macOS
+observations; Linux remains a separate required host lane. Roadmap rows are
 proposed future acceptance, not evidence of implementation. Detailed source
 paths, official ecosystem references, and adversarial findings are in
 [research/M004](research/M004/SUMMARY.md).

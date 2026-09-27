@@ -4,17 +4,17 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 22
 current_phase_name: Native Application Build and Single Execution
-status: executing
-stopped_at: Phase 22 planning complete; ready to execute three plans via $gsd-execute-phase 22
-last_updated: "2026-09-27T17:49:05.705Z"
+status: verification
+stopped_at: Phase 22 awaiting the public README clarity UAT
+last_updated: "2026-09-27T21:17:48Z"
 last_activity: 2026-09-27
-last_activity_desc: Phase 22 execution started
-state_head: 961069f76d1e489c58bccad674958a5aec0487bc
+last_activity_desc: Phase 22 automated truths pass; one human README review remains
+state_head: 78de4ca0d38df189d03588203178f4db97fe7144
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 3
   percent: 0
 ---
 
@@ -27,18 +27,18 @@ See: .planning/PROJECT.md (updated 2026-09-27)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 22 — Native Application Build and Single Execution
+**Current focus:** Finish Phase 22 UAT; then discuss Phase 23 — Live Local Allocation and Discharge
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- `.planning/LANGUAGE-MATURITY.md` — current source-grounded capability snapshot:
-  calls, computed Result payloads and U64 constants execute; arithmetic/loops and
-  ordinary application IO do not. Native run is still a canned-input differential
-  harness. Foreign/by-pointer program families remain refused. No completeness
-  percentages are meaningful. The wiki tour remains a design target.
-- `.planning/PRODUCT-ROADMAP.md` — living near/mid/long capability order and
-  current three recommendations. AGENTS.md requires proactive review at planning
-  transitions. M004 is real application/resource ownership; FizzBuzz follows.
+- `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
+  route retains and runs a native U64 identity app once with ordinary streams;
+  evidence capture is not verification. General IO and all Lang foreign/by-pointer
+  families remain refused. The macOS receipt has incomplete dependency closure
+  and is non-cacheable; no Linux run is claimed.
+- `.planning/PRODUCT-ROADMAP.md` — living capability order and current three
+  recommendations. Phase 22 delivered the application boundary; Phase 23 is the
+  live Lang-owned allocation and physical cleanup witness; FizzBuzz follows M004.
 
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
@@ -81,12 +81,12 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 22 (Native Application Build and Single Execution) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 22
-Last activity: 2026-09-27 — Phase 22 execution started
+Phase: 22 — Native Application Build and Single Execution
+Plan: Not started
+Status: Awaiting human verification (3/3 implementation plans complete)
+Last activity: 2026-09-27 — Refreshed verification reports 17/17 automated truths; README clarity UAT pending
 
-Progress: [░░░░░░░░░░] 0% of new M004 implementation; completed Phase 21 remains archived prework
+Progress: Phase 22 implementation is complete; its UAT remains pending. Phases 23–25 remain. Phase 21 is archived prework.
 
 ## M003 Closeout (archived)
 
@@ -183,7 +183,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 194
+- Total plans completed: 197
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -209,6 +209,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 18 | 10 | - | - |
 | 19 | 7 | - | - |
 | 21 | 6 | - | - |
+| 22 | 3 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -402,6 +403,16 @@ Standing architectural commitments carried into M002:
 - Trust-crossing facts are re-derived independently (`corevalidate`,
   `originvalidate`), never trusted from the producer.
 
+**Phase 22 decisions (2026-09-27):**
+
+- Keep the first public app ABI to checked `U64 -> U64` input/output and one
+  bounded opaque argument; wider input and general IO remain future work.
+- Keep ordinary application execution/capture separate from explicit
+  differential replay; a capture report never claims semantic verification.
+- Treat the local C manifest as explicit build authority, not a Lang foreign-call
+  admission. Known build inputs are identity-bound, while incomplete host closure
+  keeps app receipts non-cacheable; evidence remains macOS-only so far.
+
 - [Phase 07]: 07-01: DecodeInterface routes CheckSummary; /0 stays decodable but never admissible for a call — D-07-36 closes codex's HIGH finding that strict /1 decoding was unspecified and /0 dispatch was unwired
 - [Phase 07]: Callable is publication safety (D-04-03), not export membership: PublishProblemsFor extracted, corevalidate summary peer wired at both replay sites, narrowed to core.origin_omitted (D-07-33) — 07-02 review-driven decisions D-07-31/D-07-32/D-07-33/D-07-20/D-07-21/D-07-22 landed exactly as ratified at the checkpoint
 - [Phase 07]: core.LinearOperation.CalleeID added additive+omitempty per D-07-29; the parser change and the foreign-bare-call refusal relocation to check (D-07-40) landed together in Task 1 since they are inseparable within one green commit.
@@ -581,7 +592,20 @@ Carried into M003 as cheap, unowned cleanup:
 
 ### Blockers/Concerns
 
-**No open blockers.** M002's only `blocker`-severity item ever filed (D-12-44,
+**Phase 22 closeout (2026-09-27):** The implementation and automated checks are
+complete, and the refreshed verifier confirms 17/17 automated truths. Phase
+advancement waits on the README clarity judgment explicitly reserved in Plan
+22-03; `.planning/phases/22-native-application-build-and-single-execution/22-UAT.md`
+records the single pending check. Phase 23's live allocation/cleanup witness,
+Phase 24's transfer/error cleanup, and Phase 25's bounded pointer families
+remain the next M004 capabilities. Phase 22 provides no Linux host result;
+later M004 evidence must keep that lane open. Local app receipts remain
+`dependency_closure: incomplete` and `cacheable: false`.
+
+The entries below are historical M002/M003 debt and blocker records; retain their
+original owners and evidence rather than treating them as new Phase 23 findings.
+
+M002's only `blocker`-severity item ever filed (D-12-44,
 CR-01's duplicate payload-type ambiguity) closed in plans 12-06 and 12-07.
 
 **Closed at the M002 boundary** — do not re-derive these as open: D-03-02 (closed
@@ -723,11 +747,11 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-27T16:32:36.904Z
-Stopped at: Phase 22 planning complete; ready to execute three plans via $gsd-execute-phase 22
-Resume file: .planning/phases/22-native-application-build-and-single-execution/22-CONTEXT.md
-Next command: $gsd-execute-phase 22
-Routing note: Live `init.progress` identifies Phase 22 as current with `plan_count: 3`, `summary_count: 0`, and `verification_next_command: "$gsd-execute-phase 22"`; `roadmap.get-phase 22` lists plans 22-01, 22-02, and 22-03. Phase 21 remains the last completed implementation phase and is archived prework; do not replay it.
+Last session: 2026-09-27T17:17:48
+Stopped at: Phase 22 implementation complete; README clarity UAT pending
+Resume file: None
+Next command: $gsd-verify-work 22
+Routing note: The refreshed `.planning/phases/22-native-application-build-and-single-execution/22-VERIFICATION.md` status is `human_needed`: 17/17 automated truths pass, with the Plan 22-03 README clarity judgment awaiting user UAT. The prior `phase.complete` transition was premature after the verifier input summary changed; ROADMAP and STATE now point back to this gate. After UAT passes, proceed to `$gsd-discuss-phase 23`. Phase 21 remains archived prework; do not replay its UAT.
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths

@@ -1,16 +1,19 @@
 # Language Maturity — Where Codename Lang Actually Stands
 
-**Re-assessed:** 2026-09-27, M004 kickoff, against source at `d9bde05`.
-This is a current capability snapshot. Inspected test code and archived
-verification identify the evidence boundary; this review does not claim to
-have rerun every implementation suite. Future direction lives in
-[PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
+**Re-assessed:** 2026-09-27, after Phase 22 implementation, against the current
+source and Phase 22 artifacts. Source inspection, named tests, the full Go test
+suite, and the refreshed goal-verification report were checked. It confirms
+17/17 automated truths and records `human_needed` for the README clarity UAT.
+Evidence is macOS-only; this does not claim a Linux run. Future direction lives
+in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ## What exists
 
 | Capability | Observed boundary | Source / evidence anchor |
 |---|---|---|
 | Source → checked core → interpreter/native C17 | A working compiler exists; Go 1.24/Clang remain the development path | `cmd/lang/main.go`, `internal/compiler/session/session.go` |
+| Retained native application build/run | `lang app build` creates a retained artifact from an admitted source and closed local-C manifest; `lang app run` accepts bounded U64 input, launches once, and preserves ordinary streams/outcomes | `cmd/lang/main.go`, `session.go`, `internal/compiler/native/native_app.go`; Phase 22 `TestPhase22IdentityApplicationBuildAndRunCLI`, `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes` |
+| Separate application evidence | Capture is a distinct report with disabled/incomplete/complete/capacity states and never claims verification; explicit `app verify` replays isolated inputs against independent expected answers | `native_app.go`, `main.go`; `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22AppVerifyIndependentIdentityCases`, `TestPhase22AppVerifyModelOnlyOutcomes` |
 | Lang-to-Lang calls | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.lang`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
@@ -27,19 +30,21 @@ The available compiler is not a general application runtime yet.
 
 | Missing or constrained | Practical consequence | Current evidence |
 |---|---|---|
-| Caller-selected public inputs / application mode | Public `run` synthesizes Byte/Buffer inputs; lower-layer U64 input support is not a complete CLI feature | `session.go:interpreterInputs`, `cmd/lang/main.go` |
-| Single application execution | Native `run` interprets, then runs O0 and O3; real side effects would be duplicated | `session.go:runNative` |
-| Ordinary stdout/stderr and retained executable | Native runner expects execution JSON, rejects successful stderr, and deletes temporary executable | `native/native.go`, `cgen/cgen_program.go` |
-| Real native foreign resources | All three foreign/by-pointer families remain refused by `emitProgram` | `cgen_program.go:emitProgram` and Phase 16 public refusal tests |
+| General caller input and IO | The app route currently accepts one bounded U64 token; it does not provide general file, byte-string, or network IO | `cmd/lang/main.go:runApplicationRun`, Phase 22 CLI tests |
+| Legacy differential run route | `lang run --engine=native` remains a conformance harness with synthesized inputs and O0/O3 comparison; effectful application code must use `lang app run` | `session.go:runNative`, `cmd/lang/main.go` |
+| Lang foreign operations and pointer parameters | Local C can be declared and linked, but Lang foreign-call and both by-pointer families remain structurally refused by the sole emitter | `cgen_program.go:emitProgram`, `TestPhase22AppVerifyRejectsOrdinaryForeignScriptsAndLocalC`, Phase 22 verification |
+| Host build closure | Known source/header/compiler/target inputs are identity-bound, but the SDK/linker/runtime closure is incomplete; app artifacts are not cacheable | `native/bindings.go`, `examples/phase22/BINDINGS.md`, Phase 22 build receipts |
 | Lang-owned physical cleanup | The old C resource shim allocates and frees before returning a byte; current tracking cannot establish a live resource crossing Lang calls | `native/lang_foreign_resource.c`, M004 architecture research |
 | Arithmetic/comparison and scalar iteration | Cannot add, compute remainder, loop, or write FizzBuzz | syntax/core operation inventory; `pathoracle` rejects CFG cycles |
 | General strings, arrays, collections, usable library modules | Ordinary JSON/HTTP libraries are not yet writable | current syntax/checker frontier; design wiki is prospective |
 | Recursion and broader resource control | Call cycles, nonlocal exits, cancellation, general fallible cleanup and escaped pointers require further contracts | callgraph and current foreign refusal boundaries |
 
-There is no currently admitted public foreign-C hello-world path. A named
-foreign declaration or historical standalone C probe is not native source
-admission. M004 starts by separating application execution from evidence replay,
-then proving an allocation returned live from C is owned and discharged by Lang.
+There is no currently admitted public foreign-C hello-world path. Phase 22 can
+compile/link declared local C, but the identity program does not call it; a
+named foreign declaration or historical standalone C probe is not native
+source admission. Phase 22 completed application execution/evidence separation.
+Phase 23 must now prove that an allocation returned live from C is owned, used,
+and physically discharged by Lang.
 
 `examples/checksum.lang` is a refused integration target with provisional syntax.
 Its Phase 20 test pins the `loop` refusal; moving that diagnostic does not by
@@ -71,17 +76,30 @@ Machine check: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/com
 
 ## Next useful thresholds
 
-1. **M004:** a public build/run command takes actual input, executes once, and
-   proves Lang's ownership of a live foreign allocation across use, calls,
-   errors, and cleanup. Shared/exclusive read-copy pointers have separate
-   admission/evidence boundaries without additional alias promises.
-2. **Following milestone:** defined arithmetic and comparisons, scalar loops,
-   fixed text and decimal output make `sum_to_n` and FizzBuzz possible. A loop
-   design spike must address fixed points, dynamic event identity, and bounded
-   evidence before implementation; a full String runtime is unnecessary.
-3. **Reusable libraries:** byte views/indexing and small data/API/module features
-   support file utilities and bounded JSON. HTTP is an independent branch with
-   explicit protocol, timeout and resource requirements.
+1. **Phase 23 — live file-byte allocation:** the `0x41`/`0x42` file consumer
+   must hold a bounded malloc-backed value after acquisition, use it through
+   Lang, and prove generated destruction with an observer independent of
+   compiler events. Blockers are the refused foreign call, missing acquisition-
+   derived obligation, and absent physical destructor witness. Trigger changes
+   in `check`, `corevalidate`, `originvalidate`, `pathoracle`, `interp`, and
+   `cgen`; cover FFI-03, RES-04/07/08/09 and the Phase 23 EVD-09 slice. Owner:
+   Phase 23; choose the source contract and negative controls before planning.
+2. **Phase 24 — transfer and typed errors:** pass that live owner through a
+   helper, then prove exactly-once cleanup on normal and actual post-acquisition
+   error paths. Blockers are activation-specific resource identity and
+   cross-frame cleanup. Trigger the same independent checker peers and emitted
+   cleanup; evidence covers RES-05/06, OWN-10/11/12 and EVD-09. Owner: Phase 24
+   after Phase 23 establishes the local owner contract.
+3. **Phase 25 — bounded pointer families and utility:** admit distinct shared
+   and exclusive read-copy helpers, each with positive, conflict/escape
+   controls and macOS/Linux evidence, then document the complete byte utility.
+   The emitter currently refuses these shapes. Trigger family-specific borrow
+   checks and conservative C lowering with no unproved alias attributes;
+   evidence covers NAT-11/12/13, EVD-10 and DX-14/15. Owner: Phase 25.
+
+After M004, practical computation can target `sum_to_n` and FizzBuzz. Its
+blockers remain defined arithmetic/remainder, comparison/Bool, scalar-loop
+fixed points, and bounded text/decimal output.
 
 Do not assign percentages to assurance or language completeness: neither has
 a stable denominator. Report runnable witnesses, known refusals, observed
