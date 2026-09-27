@@ -300,18 +300,16 @@ func (b ResolvedBindings) stage(directory string) error {
 	return nil
 }
 
-func (b ResolvedBindings) probeSource() string {
+func bindingProbeSource(s BindingSymbol, index int) string {
 	var out strings.Builder
-	for _, h := range b.Manifest.Headers {
-		fmt.Fprintf(&out, "#include \"local/%s\"\n", h)
-	}
-	for i, s := range b.Manifest.Symbols {
-		fmt.Fprintf(&out, "#ifdef %s\n#error declared symbol %s must not be a macro\n#endif\n", s.Name, s.Name)
-		// C17 function-designator conversion distinguishes function typedefs
-		// from object and function-pointer typedefs without executing a call.
-		fmt.Fprintf(&out, "_Static_assert(_Generic(*(%s *)0, %s *: 1, default: 0), \"%s must name a function type\");\n", s.FunctionType, s.FunctionType, s.FunctionType)
-		fmt.Fprintf(&out, "%s *volatile lang_binding_probe_%d = &%s;\n", s.FunctionType, i, s.Name)
-	}
+	// Each symbol is checked in isolation against its own named header. A
+	// sibling header must not accidentally supply the missing declaration.
+	fmt.Fprintf(&out, "#include \"local/%s\"\n", s.Header)
+	fmt.Fprintf(&out, "#ifdef %s\n#error declared symbol %s must not be a macro\n#endif\n", s.Name, s.Name)
+	// C17 function-designator conversion distinguishes function typedefs
+	// from object and function-pointer typedefs without executing a call.
+	fmt.Fprintf(&out, "_Static_assert(_Generic(*(%s *)0, %s *: 1, default: 0), \"%s must name a function type\");\n", s.FunctionType, s.FunctionType, s.FunctionType)
+	fmt.Fprintf(&out, "%s *volatile lang_binding_probe_%d = &%s;\n", s.FunctionType, index, s.Name)
 	return out.String()
 }
 
@@ -518,9 +516,15 @@ func (r Runner) compileBindings(ctx context.Context, clang, directory string, b 
 	if err := b.stage(directory); err != nil {
 		return nil, nil, nil, "", err
 	}
-	probe := b.probeSource()
-	if err := os.WriteFile(filepath.Join(directory, "bindings-probe.c"), []byte(probe), 0o600); err != nil {
-		return nil, nil, nil, "", err
+	var units, probes []string
+	for i, symbol := range b.Manifest.Symbols {
+		unit := fmt.Sprintf("bindings-probe-%d.c", i)
+		probe := bindingProbeSource(symbol, i)
+		if err := os.WriteFile(filepath.Join(directory, unit), []byte(probe), 0o600); err != nil {
+			return nil, nil, nil, "", err
+		}
+		units = append(units, unit)
+		probes = append(probes, probe)
 	}
 	roots, err := r.systemIncludeRoots(ctx, clang, directory)
 	if err != nil {
@@ -530,7 +534,6 @@ func (r Runner) compileBindings(ctx context.Context, clang, directory string, b 
 	for _, name := range b.Manifest.IncludeDirs {
 		flags = append(flags, "-I", "local/"+name)
 	}
-	units := []string{"bindings-probe.c"}
 	for _, source := range b.Manifest.Sources {
 		units = append(units, "local/"+source)
 	}
@@ -562,5 +565,6 @@ func (r Runner) compileBindings(ctx context.Context, clang, directory string, b 
 			unique = append(unique, h)
 		}
 	}
-	return objects, commands, unique, digestBytes([]byte(probe)), nil
+	probeBytes, _ := json.Marshal(probes)
+	return objects, commands, unique, digestBytes(probeBytes), nil
 }
