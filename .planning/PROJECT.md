@@ -37,8 +37,8 @@ This preference does not waive mandatory workflow gates, required user authoriza
 ## Current State
 
 **M004 opened 2026-09-27.** Phase 21 is completed, archived contract/retirement
-prework; its six plans and seven UAT cases must not be replayed. Phase 22's
-implementation is complete, with one README clarity UAT pending: `lang app build` retains an artifact from the admitted source and
+prework; its six plans and seven UAT cases must not be replayed. Phase 22 is
+complete: `lang app build` retains an artifact from the admitted source and
 declared local build inputs, while `lang app run` accepts bounded U64 input,
 starts the selected app once, and preserves ordinary output and process
 outcomes. Evidence capture and explicit replay use separate routes. The older
@@ -46,9 +46,9 @@ outcomes. Evidence capture and explicit replay use separate routes. The older
 replay. Phase 22 linked local C but did not admit Lang foreign calls or live
 foreign ownership; all three foreign/by-pointer families remain refused. Its
 macOS receipt reports incomplete dependency closure and `cacheable: false`, and
-no Linux result is claimed. The refreshed verifier confirms 17/17 automated
-truths; phase advancement waits on the public README review in `22-UAT.md`.
-Phase 23 is next for a real Lang-owned allocation after that check passes.
+no Linux result is claimed. The refreshed verifier confirms 17/17 truths and
+the objective README contract UAT passes. Subjective readability is not
+claimed. Phase 23 is next for a real Lang-owned allocation.
 The following shipped records describe evidence at their recorded revisions.
 
 **Shipped M002 — Interprocedural Semantic Spine (2026-09-14).** Phases 07-13,
@@ -233,8 +233,9 @@ The successor corrects Phase 21's contract-only wording without rewriting its
 historical evidence. The user authorized adopting the second review's
 recommendations automatically on 2026-09-27.
 
-Phase 22 delivered the application/build/evidence boundary (17/17 automated
-truths verified; one README clarity UAT remains). Resource acquisition,
+Phase 22 delivered the application/build/evidence boundary (17/17 truths
+verified and objective README contract UAT passed). Subjective README
+readability is not claimed. Resource acquisition,
 Lang-directed use and physical cleanup, interprocedural transfer/error behavior,
 and the bounded pointer families remain the active M004 work.
 
@@ -546,4 +547,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-27 after Phase 22 implementation and verification refresh*
+*Last updated: 2026-09-27 after Phase 22 UAT and verification closeout*

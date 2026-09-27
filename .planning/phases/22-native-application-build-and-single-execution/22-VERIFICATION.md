@@ -1,7 +1,7 @@
 ---
 phase: 22-native-application-build-and-single-execution
-verified: 2026-09-27T21:13:10Z
-status: human_needed
+verified: 2026-09-27T23:05:37Z
+status: passed
 score: 17/17 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
@@ -11,6 +11,7 @@ covered_files:
   - .planning/phases/22-native-application-build-and-single-execution/22-02-SUMMARY.md
   - .planning/phases/22-native-application-build-and-single-execution/22-03-PLAN.md
   - .planning/phases/22-native-application-build-and-single-execution/22-03-SUMMARY.md
+  - .planning/phases/22-native-application-build-and-single-execution/22-UAT.md
   - cmd/lang/main.go
   - cmd/lang/main_test.go
   - examples/phase22/BINDINGS.md
@@ -33,20 +34,16 @@ covered_files:
   - internal/compiler/session/session.go
   - internal/compiler/session/session_app_verify.go
   - internal/compiler/session/session_app_verify_test.go
-covered_digest: "v1:sha256:fcc3fb354fc04434004590406518e41b743630e6fbd4c25721298873d8da8beb"
+covered_digest: "v1:sha256:06855797fcc2e3057445559bc911b793e809336ce4ce17d8f944e2e1aa7c6fdd"
 behavior_unverified: 0
 overrides_applied: 0
-human_verification:
-  - test: "Review the Phase 22 README as a developer following the documented build, run, evidence, replay, and local C workflows."
-    expected: "A developer can understand the command sequence, input and report bounds, failure states, local C trust boundary, and limits of modeled outcomes without ambiguous or misleading wording."
-    why_human: "Plan 22-03 records this documentation-clarity review as human judgment; implementation accuracy is checked in code, but clarity and usability require a reader. No Phase 22 UAT artifact records this review."
 ---
 
 # Phase 22: Native Application Build and Single Execution Verification Report
 
 **Phase Goal:** A developer can retain and execute a native application once on bounded real input, with application streams separate from compiler evidence.
-**Verified:** 2026-09-27T21:13:10Z
-**Status:** human_needed
+**Verified:** 2026-09-27T23:05:37Z
+**Status:** passed
 **Re-verification:** No — the previous report had no `gaps:` section, so the verification workflow's initial-mode must-have rule applies. All truths were re-established against the current tree after the dated summary correction.
 
 ## Goal Achievement
@@ -73,7 +70,7 @@ human_verification:
 | 16 | Explicit identity replay checks isolated inputs against independent 7/42 results and interpreter/O0/O3 outcomes, with a separate verifier-only modeled outcome. | ✓ VERIFIED | Independent fixture and named CLI replay/model tests passed; ordinary source cases have no scripted foreign outcomes and local C is refused on replay route. |
 | 17 | Missing, duplicate, unconsumed, or mismatched model outcomes fail; model success and process reclamation do not claim host IO or physical cleanup. | ✓ VERIFIED | Model negative controls and `TestDecodeReplayCasesRejectsDuplicateJSONKeys` passed; report labels/false claim fields are inspected by tests and documented in README. |
 
-**Score:** 17/17 truths verified (0 present, behavior-unverified). The goal's automated and code-verifiable truths pass; a separate human documentation-clarity review remains, so the phase status is `human_needed`.
+**Score:** 17/17 truths verified (0 present, behavior-unverified). All current phase acceptance criteria pass. The historical readability judgment has been superseded as a release gate; no subjective readability claim is made.
 
 ### Required Artifacts
 
@@ -85,7 +82,7 @@ human_verification:
 | `internal/compiler/native/bindings.go` | Closed local-C manifest resolver | ✓ VERIFIED | Strict manifest/path/header/ABI resolution, content inventory and identity; wired through public build dispatch and native build. |
 | `examples/phase22/identity.bindings.json`, `support.h`, `support.c`, `BINDINGS.md` | Declared relocatable C/ABI inputs and contract | ✓ VERIFIED | All exist with substantive declarations; actual build tests resolve and link the fixture, whose C function is intentionally not called by the Lang app. |
 | `internal/compiler/session/session_app_verify.go` | Explicit replay service | ✓ VERIFIED | Closed case parsing and explicit interpreter/O0/O3 replay; called only by `lang app verify`. |
-| `examples/phase22/identity.cases.json`, `examples/phase22/README.md` | Independent replay fixture and public contract | ✓ VERIFIED | Cases carry pinned expected answers and empty foreign scripts; README describes commands, limits, evidence states, C trust boundary, and modeled-world limits. Clarity remains subject to human review. |
+| `examples/phase22/identity.cases.json`, `examples/phase22/README.md` | Independent replay fixture and public contract | ✓ VERIFIED | Cases carry pinned expected answers and empty foreign scripts. `TestPhase22READMEContract` passed and checks objective command forms, bounds, failure states, local-C authority, incomplete host closure, and modeled-world limits. It does not prove subjective readability, and this report makes no such claim. The plan, summary, and UAT preserve the original readability request as history while superseding it as a current release criterion. |
 | `cmd/lang/main_test.go`, `native_app_test.go`, `bindings_test.go`, `cgen_program_test.go`, `session_app_verify_test.go` | Reached positive and negative controls | ✓ VERIFIED | Relevant named tests passed in this verification run. |
 
 ### Key Link Verification
@@ -101,7 +98,7 @@ human_verification:
 | `native_app.go` | evidence report | validate after child wait and atomic publication | ✓ WIRED | Status/report construction follows the single child wait and carries build/input/process identity. |
 | `cmd/lang/main.go` | `session_app_verify.go` | explicit `app verify` dispatch | ✓ WIRED | CLI calls `VerifyApplicationCasesFile`; ordinary app run dispatch does not. |
 
-The generic `verify.key-links` heuristic reports false negatives for indirect Go package references and the intentional planned-path substitution. Manual call tracing and passing integration tests resolve these links; no missing link was inferred from the heuristic alone.
+The generic `verify.key-links` heuristic reports false negatives for indirect Go package references and the intentional planned-path substitution. Manual call tracing and passing integration tests resolve these links; no missing link was inferred from the heuristic alone. `verify.artifacts` finds the planned `internal/compiler/session/session_app.go` path absent; the checked build entry is implemented in `session.go`, and CLI wiring and behavior tests confirm the documented implementation-path substitution.
 
 ### Data-Flow Trace (Level 4)
 
@@ -116,10 +113,26 @@ The generic `verify.key-links` heuristic reports false negatives for indirect Go
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Public identity, malformed U64, streams/process outcomes, local-C relocation/identity, evidence/replay controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/lang ./internal/compiler/native ./internal/compiler/cgen -run '^TestPhase22' -count=1` | Exit 0; cmd/lang, native, and cgen passed (0.822s, 8.420s, 0.011s). | ✓ PASS |
+| Objective README contract | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/lang -run '^TestPhase22READMEContract$' -count=1` | Exit 0; named test passed (0.009s). Checks objective contract categories; it does not assess subjective readability. | ✓ PASS |
+| Identity, streams/process outcomes, evidence isolation, replay answers | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/lang -run '^TestPhase22IdentityApplicationBuildAndRunCLI$|^TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes$|^TestPhase22EvidenceDisabledCompleteAndStreamIsolation$|^TestPhase22AppVerifyIndependentIdentityCases$' -count=1` | Exit 0; named tests passed (0.405s). | ✓ PASS |
+| Retained/relocated build, launch count, concurrency, bounded evidence | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase22BindingsBuildNeverLaunchesAndRunLaunchesOnce$|^TestPhase22BuildRetainsRelocatableArtifactWithoutLaunching$|^TestPhase22ConcurrentRequestsLaunchIndependently$|^TestPhase22EvidenceMissingPartialAndCapacityControls$' -count=1` | Exit 0; named tests passed (0.509s). | ✓ PASS |
 | Duplicate replay JSON keys rejected | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestDecodeReplayCasesRejectsDuplicateJSONKeys$' -count=1` | Exit 0; named test passed (0.010s). | ✓ PASS |
 
-No server or external service was started. Checks ran on macOS; Linux host evidence is unavailable and not claimed.
+No server or external service was started. Tests run for this report ran on macOS. The UAT documents a prior full Go suite pass on this host, but this verification pass did not rerun the full suite. No Linux run or CI result is claimed.
+
+### Test Quality Audit
+
+| Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
+|---|---|---:|---:|---|---|---|
+| `cmd/lang/main_test.go` | APP-02–APP-06, EVD-11 | Yes | 0 skip markers found | No; expected values are checked-in literals and negative controls | Behavioral/value | PASS |
+| `internal/compiler/native/native_app_test.go`, `bindings_test.go` | APP-02, APP-04–APP-06, FFI-02 | Yes | 0 skip markers found | No; build/runtime assertions use independent process results and input mutations | Behavioral/value | PASS |
+| `internal/compiler/cgen/cgen_program_test.go`, `session_app_verify_test.go` | APP-03, EVD-11 | Yes | 0 skip markers found | No; independent fixtures and explicit refusal controls | Behavioral/value | PASS |
+
+**Disabled tests on requirements:** 0. **Circular patterns detected:** 0 in the reviewed evidence paths. **Insufficient assertions:** 0 found for the covered claims.
+
+### Decision Coverage
+
+The `check.decision-coverage-verify` gate reported 7/7 trackable CONTEXT.md decisions honored; no unhonored decisions were returned. This gate is non-blocking.
 
 ### Probe Execution
 
@@ -149,17 +162,13 @@ The plan prohibitions are also respected: linked local C is not represented as p
 
 ### Human Verification Required
 
-#### 1. Public README clarity
-
-**Test:** Review `examples/phase22/README.md` as a developer following its build, run, evidence, replay, and local C workflows.
-**Expected:** The command sequence, bounds, failure states, local C trust boundary, and modeled-outcome limits are clear and not misleading.
-**Why human:** Plan 22-03 explicitly marks this README clarity check as human judgment. Its implementation accuracy is verifiable against source, but reader clarity cannot be established by source inspection or tests. No Phase 22 UAT artifact records this review.
+None. The completed UAT records the objective README contract as the current D3 acceptance check. Its historical manual readability criterion is explicitly superseded and is not required; no claim that subjective readability has been proven is made.
 
 ### Gaps Summary
 
-No automated truth, artifact behavior, key link, or requirement is missing. The former planned `session_app.go` artifact path is absent by the dated correction; the checked build entry and CLI wiring are present in `session.go`, and the replay service remains in `session_app_verify.go`. The report therefore retains a full automated score, while status remains `human_needed` until the explicit documentation-clarity check is recorded. Host SDK/linker/runtime closure remains incomplete and non-cacheable as declared; no Linux-host result is claimed.
+No automated truth, artifact behavior, key link, or requirement is missing. The former planned `session_app.go` artifact path is absent by the dated correction; the checked build entry and CLI wiring are present in `session.go`, and the replay service remains in `session_app_verify.go`. The objective README contract test and named behavior tests pass, preserving the 17/17 implementation score. The original subjective readability judgment remains visible as historical context but is no longer a release requirement; no subjective readability claim is made. Host SDK/linker/runtime closure remains incomplete and non-cacheable as declared; tests were observed on macOS only, with no Linux-host result claimed.
 
 ---
 
-_Verified: 2026-09-27T21:13:10Z_  
+_Verified: 2026-09-27T23:05:37Z_
 _Verifier: the agent (gsd-verifier)_

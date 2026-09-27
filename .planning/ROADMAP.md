@@ -42,7 +42,7 @@ borrow leaves ownership unchanged.** M003 remains the shipped predecessor.
 Sequential IDs continue after archived Phase 21. Every new phase delivers a
 runnable source/input/output witness; no implementation plans exist yet.
 
-- [ ] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; README clarity UAT pending)
+- [x] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; objective README contract passed; subjective readability not claimed) (completed 2026-09-27)
 - [ ] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Lang-owned allocation.
 - [ ] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors.
 - [ ] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible.
@@ -62,7 +62,7 @@ runnable source/input/output witness; no implementation plans exist yet.
 4. A developer can request execution evidence through a separate channel and distinguish disabled, incomplete, and capacity-exhausted states from successful verification.
 5. Explicit differential verification uses isolated or replayable inputs and independent expected answers; declared foreign outcomes are distinguished from actual host IO, and verification replay does not occur on the ordinary application route.
 
-**Plans**: 3/3 plans executed
+**Plans**: 3/3 plans complete
 **Wave 1**
 
 - [x] 22-01-PLAN.md — Retained identity application with bounded input and one launch
@@ -208,7 +208,7 @@ by roadmap creation. Plan counts remain TBD until phase planning.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 22. Native Application Build and Single Execution | 3/3 | Human verification pending | - |
+| 22. Native Application Build and Single Execution | 3/3 | Complete   | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 0/TBD | Not started | - |
 | 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |

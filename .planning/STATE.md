@@ -4,18 +4,18 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 22
 current_phase_name: Native Application Build and Single Execution
-status: verification
-stopped_at: Phase 22 awaiting the public README clarity UAT
-last_updated: "2026-09-27T21:17:48Z"
+status: complete
+stopped_at: Phase 22 UAT and verification closeout complete
+last_updated: "2026-09-27T23:11:09.532Z"
 last_activity: 2026-09-27
-last_activity_desc: Phase 22 automated truths pass; one human README review remains
-state_head: 78de4ca0d38df189d03588203178f4db97fe7144
+last_activity_desc: Phase 22 17/17 truths and objective README contract UAT passed; Phase 23 is next
+state_head: 6610ffbc3d2f5cccf47450170e57b1be71128a34
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
   completed_plans: 3
-  percent: 0
+  percent: 25
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-27)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Finish Phase 22 UAT; then discuss Phase 23 — Live Local Allocation and Discharge
+**Current focus:** Discuss Phase 23 — Live Local Allocation and Discharge
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -81,12 +81,12 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 22 — Native Application Build and Single Execution
-Plan: Not started
-Status: Awaiting human verification (3/3 implementation plans complete)
-Last activity: 2026-09-27 — Refreshed verification reports 17/17 automated truths; README clarity UAT pending
+Phase: 22 — Native Application Build and Single Execution (complete)
+Plan: 3/3 implementation plans complete
+Status: Phase 22 verification and objective README contract UAT passed; Phase 23 is next
+Last activity: 2026-09-27 — Refreshed Phase 22 verification (17/17 truths) and closed objective README contract UAT
 
-Progress: Phase 22 implementation is complete; its UAT remains pending. Phases 23–25 remain. Phase 21 is archived prework.
+Progress: [███░░░░░░░] 25%
 
 ## M003 Closeout (archived)
 
@@ -747,10 +747,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-27T17:17:48
-Stopped at: Phase 22 implementation complete; README clarity UAT pending
+Last session: 2026-09-27T23:11:09.498Z
+Stopped at: Phase 22 complete; ready to discuss Phase 23
 Resume file: None
-Next command: $gsd-verify-work 22
+Next command: $gsd-discuss-phase 23
 Routing note: The refreshed `.planning/phases/22-native-application-build-and-single-execution/22-VERIFICATION.md` status is `human_needed`: 17/17 automated truths pass, with the Plan 22-03 README clarity judgment awaiting user UAT. The prior `phase.complete` transition was premature after the verifier input summary changed; ROADMAP and STATE now point back to this gate. After UAT passes, proceed to `$gsd-discuss-phase 23`. Phase 21 remains archived prework; do not replay its UAT.
 
 The notes below predate the close and are kept as durable context a

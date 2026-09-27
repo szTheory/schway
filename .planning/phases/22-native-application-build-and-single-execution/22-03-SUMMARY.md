@@ -93,10 +93,27 @@ coverage:
         status: pass
     human_judgment: false
   - id: D3
-    description: "The Phase 22 README documents build, run, evidence, replay, input bounds, local C authority, and modeled-world limits."
-    verification: []
-    human_judgment: true
-    rationale: "The accuracy is checked against implementation, but clarity of the public contract benefits from human review."
+    description: "The Phase 22 README's runnable commands, documented bounds, trust boundaries, closure limits, and modeled-world claims match the objective contract; the check does not prove subjective readability."
+    verification:
+      - kind: unit
+        ref: "cmd/lang/main_test.go#TestPhase22READMEContract"
+        status: pass
+      - kind: integration
+        ref: "cmd/lang/main_test.go#TestPhase22IdentityApplicationBuildAndRunCLI"
+        status: pass
+      - kind: integration
+        ref: "cmd/lang/main_test.go#TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes"
+        status: pass
+      - kind: integration
+        ref: "cmd/lang/main_test.go#TestPhase22EvidenceDisabledCompleteAndStreamIsolation"
+        status: pass
+      - kind: integration
+        ref: "cmd/lang/main_test.go#TestPhase22AppVerifyIndependentIdentityCases"
+        status: pass
+      - kind: other
+        ref: "GOCACHE=/tmp/ai-lang-verification-gocache go test ./..."
+        status: pass
+    human_judgment: false
 duration: 43 min
 completed: 2026-09-27
 status: complete
@@ -164,6 +181,19 @@ status: complete
 - **Committed in:** `214c6cb`.
 
 **Total deviations:** 2 auto-fixed (1 Rule 1 bug, 1 Rule 3 blocking path correction). **Impact:** Both changes were needed to complete the planned verifier and compile the generated application on this host; no language semantics or dependencies were added.
+
+## Dated amendment — 2026-09-27
+
+The original D3 judgment treated overall README clarity as human review and
+recorded `human_judgment: true`. The user's later-approved shift to objective
+contract testing supersedes that human-only criterion as a release gate. D3
+now covers only the mechanically checkable README contract: command forms,
+limits, process outcomes, trust boundaries, host closure, and modeled-world
+claims. `TestPhase22READMEContract` and the named CLI/native behavior tests
+passed, including the full Go suite on this macOS host. This evidence does not
+decide whether the prose feels clear to a reader, and no readability claim is
+made. The original human-review judgment is preserved here as history, not a
+current acceptance requirement or an automated result.
 
 ## Issues Encountered
 

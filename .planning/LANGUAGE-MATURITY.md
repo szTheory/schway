@@ -2,9 +2,10 @@
 
 **Re-assessed:** 2026-09-27, after Phase 22 implementation, against the current
 source and Phase 22 artifacts. Source inspection, named tests, the full Go test
-suite, and the refreshed goal-verification report were checked. It confirms
-17/17 automated truths and records `human_needed` for the README clarity UAT.
-Evidence is macOS-only; this does not claim a Linux run. Future direction lives
+suite, and the regenerated goal-verification report were checked. It confirms
+17/17 truths with `passed` status after the objective README contract UAT.
+Subjective readability is not claimed. Evidence is macOS-only; this does not
+claim a Linux run. Future direction lives
 in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ### Documentation-gate amendment — 2026-09-27
@@ -14,9 +15,9 @@ manifest, evidence, replay, trust, and closure boundaries but lacked an explicit
 same-run event-evidence command. The focused `TestPhase22READMEContract` and
 named CLI checks passed on this macOS host after adding that example; no CI run
 or Linux execution is claimed here. These are newly executed documentation and
-CLI checks, distinct from the historical Phase 22 verifier receipt, which still
-records 17/17 truths and a human-needed README review until regenerated. The
-contract test does not establish subjective readability. The three capability
+CLI checks, distinct from the earlier Phase 22 verifier receipt. The regenerated
+report at `2026-09-27T23:05:37Z` passes with 17/17 truths and the objective README
+contract UAT. The contract test does not establish subjective readability. The three capability
 recommendations and Phase 23/24/25 ordering below remain unchanged.
 
 ## What exists
