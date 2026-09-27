@@ -5,10 +5,10 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 22
 current_phase_name: Native Application Build and Single Execution
 status: planning
-stopped_at: M004 roadmap complete; Phase 22 ready for planning
-last_updated: "2026-09-27T14:03:02.899Z"
+stopped_at: M004 kickoff complete; Phase 22 context saved; next plan-phase 22
+last_updated: "2026-09-27T14:08:46.676Z"
 last_activity: 2026-09-27
-state_head: 9cd53d5eb46d0987475c927ef6f1128b7be0c720
+state_head: 7550e19654b6a0106e1e0d5d022171a706e1ae61
 progress:
   total_phases: 4
   completed_phases: 0
@@ -137,6 +137,12 @@ the Phase 25 coverage owner does not defer family evidence. No production
 implementation or new runtime verification occurred during roadmap creation.
 
 Next command: `$gsd-plan-phase 22`.
+Context-clear handoff: Phase 22's `22-CONTEXT.md` now captures the approved
+decisions and explicitly requires the milestone research and living roadmap.
+`init.plan-phase 22` must discover that context before planning. The just-finished
+work was M004 kickoff/requirements/roadmap; Phase 21 remains the latest completed
+implementation phase. Phase 22 has no plans yet. After its plans and checks
+complete, proceed to `$gsd-execute-phase 22`.
 Routing checked after creating the four empty phase directories: `init.progress`
 reports M004, four unstarted phases and next phase 22; `state.validate --strict`
 passes. The canonical state-contract publisher reports `plan phase 22` through
@@ -689,6 +695,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260926-ewj | Fix Phase 18 regression gate failures: preserve schema-1 emitter bytes and refresh corpus snapshot | 2026-09-26 | 7be22ab | passed | [260926-ewj-fix-phase-18-regression-gate-failures-pr](./quick/260926-ewj-fix-phase-18-regression-gate-failures-pr/) |
 | 260926-ffr | Ensure Phase 18 payload mutation seams restore after runner failure | 2026-09-26 | fe92bc3 | passed | [260926-ffr-ensure-phase-18-payload-mutation-seams-r](./quick/260926-ffr-ensure-phase-18-payload-mutation-seams-r/) |
 | 260926-uzs | Archive completed Phase 21 under provisional M004 and refresh the verification/evidence handoff | 2026-09-27 | 397753f | Verified | [260926-uzs-prepare-the-completed-phase-21-for-the-m](./quick/260926-uzs-prepare-the-completed-phase-21-for-the-m/) |
+| 15 | Preserve approved Phase 22 decisions and M004 research links for context-clear handoff | 2026-09-27 | — | — | — |
 
 ## Deferred Items
 
@@ -702,9 +709,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-27T14:03:02.876Z
-Stopped at: M004 roadmap complete; Phase 22 ready for planning
-Resume file: .planning/ROADMAP.md
+Last session: 2026-09-27T14:08:46.351Z
+Stopped at: M004 kickoff complete; Phase 22 context saved; next plan-phase 22
+Resume file: .planning/phases/22-native-application-build-and-single-execution/22-CONTEXT.md
 Next command: $gsd-plan-phase 22
 Routing note: Active milestone is M004; init.progress and the generated state contract route to planning Phase 22, and strict state validation passes. Phase 21 remains completed archived prework with six historical verification truths and seven preserved UAT cases; do not replay it.
 
