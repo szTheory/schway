@@ -772,7 +772,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	}
 	entryReturnBranch, entryReturnIsBranch := branchTypes[entry.ReturnType]
 	needsTerminalJSONContent := entryReturnIsBranch && entryReturnBranch.hasPayload
-	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit, needsTerminalJSONContent)
+	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit, needsTerminalJSONContent, shell == programApplicationShell, execution.MaxApplicationEvidenceBytes)
 	if needsDefect {
 		emitDefectSupport(&out)
 	}
@@ -891,6 +891,16 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		out.WriteString("  if (!lang_parse_u64_decimal(argv[1], &lang_entry_input)) return 65;\n")
 		fmt.Fprintf(&out, "  %s lang_entry_output = %s(lang_entry_input, 0u);\n", entryOutputType, functionNames[entryIndex])
 		out.WriteString("  if (!lang_write_u64_plain(lang_entry_output) || !lang_write_literal(\"\\n\")) return 74;\n")
+		out.WriteString("  const char *lang_evidence_path = getenv(\"LANG_APP_EVIDENCE_PATH\");\n")
+		out.WriteString("  if (lang_evidence_path != NULL && lang_evidence_path[0] != '\\0') {\n")
+		out.WriteString("    FILE *lang_evidence_file = fopen(lang_evidence_path, \"wb\");\n")
+		out.WriteString("    if (lang_evidence_file != NULL) {\n      lang_output_stream = lang_evidence_file;\n      lang_output_limit = LANG_EVIDENCE_OUTPUT_LIMIT;\n      lang_output_count = 0u;\n")
+		out.WriteString("      if (lang_event_overflow) {\n        (void)lang_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\");\n      } else {\n")
+		out.WriteString("        (void)lang_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"complete\\\",\\\"execution\\\":{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\");\n")
+		out.WriteString("        (void)lang_write_u64(lang_entry_output);\n")
+		out.WriteString("        (void)lang_write_literal(\"},\\\"events\\\":[\");\n        (void)lang_write_events();\n")
+		out.WriteString("        (void)lang_write_literal(\"],\\\"live_resources\\\":\");\n        (void)lang_write_live_resources();\n")
+		out.WriteString("        (void)lang_write_literal(\"}}\\n\");\n      }\n      (void)fclose(lang_evidence_file);\n    }\n  }\n")
 		out.WriteString("  return 0;\n}\n")
 		return out.String(), nil
 	}

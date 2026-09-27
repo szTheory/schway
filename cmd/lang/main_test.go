@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/native"
+	"github.com/codename-lang/lang/internal/compiler/session"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -127,6 +128,162 @@ func TestPhase22ConformanceRunStillEmitsExecutionDocument(t *testing.T) {
 	if code != 0 || stderr != "" || !strings.Contains(stdout, `"schema":"lang.execution/2"`) {
 		t.Fatalf("conformance run code=%d stdout=%q stderr=%q, want its existing execution document", code, stdout, stderr)
 	}
+}
+
+func TestPhase22AppVerifyIndependentIdentityCases(t *testing.T) {
+	source := testsupport.ProjectPath("examples", "phase22", "identity.lang")
+	cases := testsupport.ProjectPath("examples", "phase22", "identity.cases.json")
+	reportPath := filepath.Join(t.TempDir(), "identity-verification.json")
+	code, stdout, stderr := captureLangRun(t, []string{"app", "verify", source, "--cases", cases, "--report", reportPath})
+	report := readCLIReplayReport(t, reportPath)
+	if code != exitSuccess || stdout != "verified 2 replay cases\n" || stderr != "" {
+		t.Fatalf("identity verification code=%d stdout=%q stderr=%q report=%+v", code, stdout, stderr, report)
+	}
+	if report.Schema != session.ApplicationVerifySchema || !report.Verified || report.Status != session.ReplayStatusPass {
+		t.Fatalf("identity verification report has wrong verdict: %+v", report)
+	}
+	if report.DependencyClosure != "incomplete" || report.Cacheable || report.SourceDigest == "" || report.BuildID == "" || report.InputSetID == "" || report.EmittedCDigest == "" {
+		t.Fatalf("verification report overstates provenance or omits identity: %+v", report)
+	}
+	if report.ActualHostIO || report.PhysicalCleanup || len(report.Cases) != 2 {
+		t.Fatalf("verification report has wrong scope or case count: %+v", report)
+	}
+	for index, want := range []string{"7", "42"} {
+		caseReport := report.Cases[index]
+		if caseReport.Status != session.ReplayStatusPass || caseReport.InputID == "" || len(caseReport.Engines) != 3 {
+			t.Fatalf("case %q did not carry three-tier evidence: %+v", caseReport.ID, caseReport)
+		}
+		for tier, execution := range caseReport.Engines {
+			if execution.Outcome.Kind != "returned" || execution.Outcome.Value != want {
+				t.Fatalf("case %q tier %s returned %+v, want %s", caseReport.ID, tier, execution.Outcome, want)
+			}
+		}
+	}
+}
+
+func TestPhase22AppVerifyWrongExpectedAnswerControl(t *testing.T) {
+	cases := session.ReplayCases{Schema: session.ReplayCasesSchema, Cases: []session.ReplayCase{{
+		ID: "wrong-answer", Kind: session.ReplayCaseSource, Input: "7",
+		Expected: session.ReplayExpected{Kind: "returned", Value: "8"}, ForeignOutcomes: []session.ReplayForeignOutcome{},
+	}}}
+	code, report := runCLIReplayCases(t, cases)
+	if code != exitOperational || report.Verified || report.Cases[0].Status != session.ReplayStatusFail {
+		t.Fatalf("wrong expected-answer control passed: code=%d report=%+v", code, report)
+	}
+	if len(report.Cases[0].Engines) != 3 || !strings.Contains(report.Cases[0].Diagnostic, "expected returned:8") {
+		t.Fatalf("wrong-answer report omitted completed comparison evidence: %+v", report.Cases[0])
+	}
+}
+
+func TestPhase22AppVerifyModelOnlyOutcomes(t *testing.T) {
+	validOutcome := session.ReplayForeignOutcome{Operation: "fixture.value", Type: "U64", Value: "42"}
+	for _, tc := range []struct {
+		name     string
+		outcomes []session.ReplayForeignOutcome
+		want     string
+		expected string
+		pass     bool
+	}{
+		{name: "positive", outcomes: []session.ReplayForeignOutcome{validOutcome}, want: session.ReplayStatusPass, pass: true},
+		{name: "missing", outcomes: []session.ReplayForeignOutcome{}, want: "modeled outcome is missing"},
+		{name: "duplicate", outcomes: []session.ReplayForeignOutcome{validOutcome, validOutcome}, want: "modeled outcome is duplicated"},
+		{name: "unconsumed", outcomes: []session.ReplayForeignOutcome{validOutcome, {Operation: "fixture.unused", Type: "U64", Value: "7"}}, want: "not consumed"},
+		{name: "mismatched_expected", outcomes: []session.ReplayForeignOutcome{validOutcome}, want: "expected returned:43", expected: "43"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			expected := tc.expected
+			if expected == "" {
+				expected = "42"
+			}
+			cases := session.ReplayCases{Schema: session.ReplayCasesSchema, Cases: []session.ReplayCase{{
+				ID: tc.name, Kind: session.ReplayCaseVerifierModel, Operation: "fixture.value",
+				Expected: session.ReplayExpected{Kind: "returned", Value: expected}, ForeignOutcomes: tc.outcomes,
+			}}}
+			code, report := runCLIReplayCases(t, cases)
+			caseReport := report.Cases[0]
+			if tc.pass {
+				if code != exitSuccess || !report.Verified || caseReport.Status != session.ReplayStatusPass {
+					t.Fatalf("positive model outcome failed: code=%d report=%+v", code, report)
+				}
+				if caseReport.ModeledOutcome == nil || caseReport.ModeledOutcome.Value != "42" || caseReport.ActualHostIO || caseReport.PhysicalCleanup {
+					t.Fatalf("model report overstates the scripted world: %+v", caseReport)
+				}
+				return
+			}
+			if code != exitOperational || report.Verified || caseReport.Status == session.ReplayStatusPass || !strings.Contains(caseReport.Diagnostic, tc.want) {
+				t.Fatalf("negative model control %s passed or was not reached: code=%d report=%+v", tc.name, code, report)
+			}
+		})
+	}
+}
+
+func TestPhase22AppVerifyRejectsOrdinaryForeignScriptsAndLocalC(t *testing.T) {
+	caseWithScript := session.ReplayCases{Schema: session.ReplayCasesSchema, Cases: []session.ReplayCase{{
+		ID: "ordinary-script", Kind: session.ReplayCaseSource, Input: "7",
+		Expected:        session.ReplayExpected{Kind: "returned", Value: "7"},
+		ForeignOutcomes: []session.ReplayForeignOutcome{{Operation: "fixture.value", Type: "U64", Value: "7"}},
+	}}}
+	code, report := runCLIReplayCases(t, caseWithScript)
+	if code != exitOperational || report.Verified || report.Cases[0].Status != session.ReplayStatusUnsupported || !strings.Contains(report.Cases[0].Diagnostic, "does not consume") {
+		t.Fatalf("ordinary source script was not explicitly refused: code=%d report=%+v", code, report)
+	}
+
+	casesPath := writeCLIReplayCases(t, session.ReplayCases{Schema: session.ReplayCasesSchema, Cases: []session.ReplayCase{{
+		ID: "identity-7", Kind: session.ReplayCaseSource, Input: "7",
+		Expected: session.ReplayExpected{Kind: "returned", Value: "7"}, ForeignOutcomes: []session.ReplayForeignOutcome{},
+	}}})
+	reportPath := filepath.Join(t.TempDir(), "local-c-report.json")
+	source := testsupport.ProjectPath("examples", "phase22", "identity.lang")
+	code, _, stderr := captureLangRun(t, []string{"app", "verify", source, "--cases", casesPath, "--report", reportPath, "--manifest", testsupport.ProjectPath("examples", "phase22", "identity.bindings.json")})
+	if code != exitUsage || !strings.Contains(stderr, "local C manifests are unsupported") {
+		t.Fatalf("local C manifest was not rejected on replay route: code=%d stderr=%q", code, stderr)
+	}
+	if _, err := os.Stat(reportPath); !os.IsNotExist(err) {
+		t.Fatalf("manifest rejection unexpectedly created a verification report: err=%v", err)
+	}
+}
+
+func TestPhase22OrdinaryAppRunDoesNotEnterReplayRoute(t *testing.T) {
+	artifact := writeCLIPhase22Script(t, "printf 'ordinary:%s\\n' \"$1\"\n")
+	code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", "7"})
+	if code != 0 || stdout != "ordinary:7\n" || stderr != "" {
+		t.Fatalf("ordinary app run changed route or output: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+}
+
+func runCLIReplayCases(t *testing.T, cases session.ReplayCases) (int, session.ReplayReport) {
+	t.Helper()
+	casesPath := writeCLIReplayCases(t, cases)
+	reportPath := filepath.Join(t.TempDir(), "report.json")
+	source := testsupport.ProjectPath("examples", "phase22", "identity.lang")
+	code, _, _ := captureLangRun(t, []string{"app", "verify", source, "--cases", casesPath, "--report", reportPath})
+	return code, readCLIReplayReport(t, reportPath)
+}
+
+func writeCLIReplayCases(t *testing.T, cases session.ReplayCases) string {
+	t.Helper()
+	encoded, err := json.Marshal(cases)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "cases.json")
+	if err := os.WriteFile(path, encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func readCLIReplayReport(t *testing.T, path string) session.ReplayReport {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read verification report: %v", err)
+	}
+	var report session.ReplayReport
+	if err := json.Unmarshal(data, &report); err != nil {
+		t.Fatalf("decode verification report: %v", err)
+	}
+	return report
 }
 
 func captureLangRun(t *testing.T, args []string) (int, string, string) {

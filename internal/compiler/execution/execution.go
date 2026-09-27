@@ -9,6 +9,10 @@ const (
 	Schema0 = "lang.execution/0"
 	Schema1 = "lang.execution/1"
 	Schema2 = "lang.execution/2"
+
+	// MaxApplicationEvidenceBytes bounds a same-run application capture and
+	// its published report independently from conformance execution documents.
+	MaxApplicationEvidenceBytes = 64 * 1024
 )
 
 // MaxDocumentBytes is the native execution-document capture ceiling. Schema-2

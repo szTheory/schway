@@ -1,0 +1,19 @@
+{
+  "schema": "lang.replay-cases/1",
+  "cases": [
+    {
+      "id": "identity-7",
+      "kind": "source",
+      "input": "7",
+      "expected": {"kind": "returned", "value": "7"},
+      "foreign_outcomes": []
+    },
+    {
+      "id": "identity-42",
+      "kind": "source",
+      "input": "42",
+      "expected": {"kind": "returned", "value": "42"},
+      "foreign_outcomes": []
+    }
+  ]
+}
