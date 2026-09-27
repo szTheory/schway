@@ -1139,7 +1139,7 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 
 // BuildApplication checks and independently validates source, then emits and
 // compiles a retained U64 application without executing its entry point.
-func BuildApplication(ctx context.Context, source []byte, outputPath string, runner native.Runner) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
+func BuildApplication(ctx context.Context, source []byte, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
 	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
 		return native.BuildReceipt{}, checked.Diagnostics, nil
@@ -1163,19 +1163,19 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
-	receipt, err := runner.BuildApplication(ctx, source, cSource, outputPath)
+	receipt, err := runner.BuildApplication(ctx, source, cSource, outputPath, manifestPath...)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
 	return receipt, nil, nil
 }
 
-func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, runner native.Runner) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
+func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
 	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
-	return BuildApplication(ctx, source, outputPath, runner)
+	return BuildApplication(ctx, source, outputPath, runner, manifestPath...)
 }
 
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the

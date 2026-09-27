@@ -1,0 +1,10 @@
+{
+  "schema": "lang.local-c/1",
+  "sources": ["support.c"],
+  "headers": ["support.h"],
+  "include_dirs": ["."],
+  "symbols": [
+    {"name": "support_identity", "header": "support.h", "function_type": "support_identity_fn"}
+  ],
+  "runtime_dependencies": ["platform-c-runtime"]
+}

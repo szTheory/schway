@@ -57,6 +57,14 @@ func run(args []string) int {
 	if len(args) == 4 && args[0] == "build" && args[2] == "--output" {
 		return runBuild(args[1], args[3], jsonMode)
 	}
+	if len(args) == 6 && args[0] == "build" {
+		if args[2] == "--manifest" && args[4] == "--output" {
+			return runBuild(args[1], args[5], jsonMode, args[3])
+		}
+		if args[2] == "--output" && args[4] == "--manifest" {
+			return runBuild(args[1], args[3], jsonMode, args[5])
+		}
+	}
 	if len(args) == 3 && args[0] == "explain" {
 		return runExplain(args[1], args[2], depth, jsonMode)
 	}
@@ -135,8 +143,8 @@ func runNative(path string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
-func runBuild(sourcePath, outputPath string, jsonMode bool) int {
-	receipt, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, outputPath, native.DefaultRunner())
+func runBuild(sourcePath, outputPath string, jsonMode bool, manifestPath ...string) int {
+	receipt, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, outputPath, native.DefaultRunner(), manifestPath...)
 	if len(diagnostics) > 0 {
 		result := protocol.New("build", protocol.StatusInvalid)
 		result.Diagnostics = diagnostics
