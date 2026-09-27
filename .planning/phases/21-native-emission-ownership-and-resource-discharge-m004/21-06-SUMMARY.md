@@ -94,7 +94,7 @@ status: complete
 1. **Task 2: Reconcile full groundedness findings and R2b owners** — `914713a` (`fix`)
 2. **Task 2 follow-up: Keep the new reconciliation entry in the debt table** — `4079258` (`fix`)
 3. **Task 1: Reproduce the exact validation corpus** — `d1b2499` (`fix`)
-4. **Merged-tree corpus refresh:** Regenerated after the 21-05 archive-path repair was integrated.
+4. **Merged-tree corpus refresh** — `e2dc6b7` (`fix`), regenerated after the 21-05 archive-path repair was integrated.
 
 Task 2 ran before the final Task 1 corpus generation because the corpus grade guard depends on the repaired archive paths and well-formed reconciliation register. The final producer run followed both Task 2 commits.
 
@@ -166,7 +166,7 @@ Both Phase 21 gap-closure plans are integrated. The combined build, full test su
 PASSED
 
 - All task artifacts and the summary file exist.
-- Task commits `914713a`, `4079258`, `d1b2499`, and the post-merge corpus refresh are present; four production commits are measured from `plan_head_before`.
+- Task commits `914713a`, `4079258`, `d1b2499`, and `e2dc6b7` are present; four production commits are measured from `plan_head_before`.
 - Both exact plan acceptance commands passed.
 
 ---
