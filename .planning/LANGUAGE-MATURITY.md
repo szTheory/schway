@@ -1,220 +1,100 @@
 # Language Maturity — Where Codename Lang Actually Stands
 
-**Assessed:** 2026-09-08, at the start of M002.
-**Re-assessed:** 2026-09-11, after Phase 10, at the Phase 11 planning gate.
-**Re-assessed:** 2026-09-17, Phase 14 (EVD-06 landed a machine check for this
-file's own counts; the guard total corrected 32→22 and the corpus figures
-refreshed — see "The single-function guard inventory" below).
-**Re-assessed:** 2026-09-24, Phase 18 fixture-era snapshot (current corpus and
-guard counts refreshed; EVD-06's machine check was introduced on 2026-09-17).
-**Purpose:** stop re-discovering the gap between how sophisticated the
-verification stack sounds and how little the language can currently express.
-Planning vocabulary ("semantic spine", "interprocedural equivalence") describes
-the assurance machinery, not the language surface. Read this before believing a
-roadmap makes the language usable.
+**Re-assessed:** 2026-09-27, M004 kickoff, against source at `d9bde05`.
+This is a current capability snapshot. Inspected test code and archived
+verification identify the evidence boundary; this review does not claim to
+have rerun every implementation suite. Future direction lives in
+[PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
-**Second trap, same shape:** `wiki/example-tour.md` shows effect rows
-(`with { Inventory, Payments }`), `?` propagation, `defer ... unless`, generics,
-named arguments, and inline `spec`/`property` blocks. **None of those tokens are
-in the lexer.** It is a design target and the README says so ("candidate designs,
-not settled specifications"), but it reads like a language description. When
-calibrating what exists, read `internal/compiler/syntax/token.go`, never the tour.
+## What exists
 
-## The two axes
+| Capability | Observed boundary | Source / evidence anchor |
+|---|---|---|
+| Source → checked core → interpreter/native C17 | A working compiler exists; Go 1.24/Clang remain the development path | `cmd/lang/main.go`, `internal/compiler/session/session.go` |
+| Lang-to-Lang calls | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.lang`; `session.RunInterpreter` / native path |
+| Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
+| Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
+| U64 constants | Literals and `OpConst` run; arithmetic does not exist | `session_phase19_test.go`, `testdata/phase19/` |
+| Ownership/borrow checking | Affine ownership, interprocedural loans, independent core/origin validation, bounded path oracle | `check`, `corevalidate`, `originvalidate`, `pathoracle` |
+| Evidence | Interpreter/native comparison, mutation controls, manifests, scoped optimizer/sanitizer lanes, structured diagnostics/repair | Phase 14–20 records; each claim retains its scope/grade |
+| Phase 21 | Completed contract and emitter-retirement work, six plans, seven UAT cases | `milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/` |
 
-A language has two independent axes: **expressiveness** (what you can say) and
-**assurance** (how much you can trust what it does). Most languages climb
-expressiveness first and retrofit assurance later, or never — Rust took years,
-C++ never did.
+Calls became executable in Phase 11. U64 constants landed in Phase 19. Older
+claims that calls only check or that Byte is the only scalar are superseded.
+The available compiler is not a general application runtime yet.
 
-This project deliberately inverted that. **Assurance is unusually far along;
-expressiveness is near zero.** Every progress question should be answered
-against both axes or it will be misleading.
+## What prevents ordinary programs
 
-## Snapshot, verified 2026-09-08
+| Missing or constrained | Practical consequence | Current evidence |
+|---|---|---|
+| Caller-selected public inputs / application mode | Public `run` synthesizes Byte/Buffer inputs; lower-layer U64 input support is not a complete CLI feature | `session.go:interpreterInputs`, `cmd/lang/main.go` |
+| Single application execution | Native `run` interprets, then runs O0 and O3; real side effects would be duplicated | `session.go:runNative` |
+| Ordinary stdout/stderr and retained executable | Native runner expects execution JSON, rejects successful stderr, and deletes temporary executable | `native/native.go`, `cgen/cgen_program.go` |
+| Real native foreign resources | All three foreign/by-pointer families remain refused by `emitProgram` | `cgen_program.go:emitProgram` and Phase 16 public refusal tests |
+| Lang-owned physical cleanup | The old C resource shim allocates and frees before returning a byte; current tracking cannot establish a live resource crossing Lang calls | `native/lang_foreign_resource.c`, M004 architecture research |
+| Arithmetic/comparison and scalar iteration | Cannot add, compute remainder, loop, or write FizzBuzz | syntax/core operation inventory; `pathoracle` rejects CFG cycles |
+| General strings, arrays, collections, usable library modules | Ordinary JSON/HTTP libraries are not yet writable | current syntax/checker frontier; design wiki is prospective |
+| Recursion and broader resource control | Call cycles, nonlocal exits, cancellation, general fallible cleanup and escaped pointers require further contracts | callgraph and current foreign refusal boundaries |
 
-### Assurance — real and working
+There is no currently admitted public foreign-C hello-world path. A named
+foreign declaration or historical standalone C probe is not native source
+admission. M004 starts by separating application execution from evidence replay,
+then proving an allocation returned live from C is owned and discharged by Lang.
 
-Lossless parser + formatter · typed IR with per-function CFGs · affine
-ownership and borrow checker · **two independent re-implementations** of the
-admission rules (`corevalidate`, `originvalidate`) · deterministic interpreter
-as semantic oracle · C17 codegen through Clang at `-O0`/`-O3`/`-flto` ·
-ASan/UBSan lane · five-axis differential comparator · core-level HDD reducer ·
-content-bound evidence manifests + verdict-free cache · structured diagnostics
-as a versioned API · `lang explain` bounded cause DAG · `lang-repair`
-automated repair through the JSON protocol · changed-risk lane selection ·
-measured p50/p95/CoV feedback budget.
+`examples/checksum.lang` is a refused integration target with provisional syntax.
+Its Phase 20 test pins the `loop` refusal; moving that diagnostic does not by
+itself demonstrate a checksum, file IO, or output. `wiki/example-tour.md` remains
+design exploration, not a supported language specification.
 
-Independent re-derivation at trust crossings and differential testing against
-an interpreter oracle are rare even in funded language projects. This is the
-project's actual asset.
+## Corpus and guard census
 
-### Expressiveness — the honest inventory
+Corpus: **142 `.lang` programs, 4,661 lines total** (~33 lines average,
+193-line maximum). These counts are retained from the machine-checked snapshot;
+the corpus predominantly contains focused semantic fixtures, not applications.
 
-Complete keyword set (`internal/compiler/syntax/token.go`):
-
-```
-module export fn data type let mut match try take borrow discard because defect foreign
-```
-
-What that list does **not** contain, and what therefore does not exist:
-
-| Missing | Consequence |
-|---|---|
-| `if` / `else` | `match` is the only control flow |
-| `while` / `for` / `loop` | **no iteration of any kind** |
-| Arithmetic operators (`+ - * / %`) | **you cannot add two numbers** |
-| Lang-to-Lang calls | **partially landed** — multi-function programs now *check* (Phases 07-10) but cannot *run* on either engine; see "The single-function guard inventory" below |
-| Recursion | refused by design in M002 (cycle refusal) |
-| Numeric types beyond `Byte` | no integers, no floats |
-| Strings, arrays, collections | absent as value types |
-| Generics, stdlib, non-C I/O | deferred, unscheduled |
-
-**Concrete calibration: you cannot write FizzBuzz.** No loop, no modulo, no
-print without calling out to C. Hello-world is only reachable through a
-`foreign C` declaration.
-
-Corpus at first assessment (2026-09-08): 58 `.lang` programs, 1,633 lines
-total (~28 lines average, 193-line maximum), all single-function.
-
-Corpus at re-assessment (2026-09-11): 89 programs, 3,096 lines (~35 lines
-average, 167-line maximum). No longer all single-function — the largest is a
-13-function call-graph fixture (`testdata/phase07/deep_diamond_acyclic.lang`),
-and multi-function fixtures now exist for Phases 07, 08, and 10. The shape is
-still fixtures, not programs: every one exists to exercise one admission rule,
-and the biggest file is mostly comment.
-
-Corpus at re-assessment (2026-09-26, Phase 18 long-payload fixture check): **142 `.lang` programs, 4,661 lines total** (~33 lines average, 193-line maximum). The corpus has grown since the previous machine-verified snapshot; the shape claim above (fixtures, not programs) still holds. This count is machine-checked by `TestLanguageMaturityCountsAreCurrent` in `internal/compiler/session/self_describing_docs_test.go`, independently of the "re-verify cheaply" block below.
-
-## The single-function guard inventory (re-verified 2026-09-24, Phase 19 fixture-era check)
-
-Phases 07-10 made `OpCall` real in `check`, `corevalidate`, `originvalidate`,
-`pathoracle`, and (internally, via Go tests) `interp`. A two-function program
-now passes `lang check` clean:
-
-```bash
-go run ./cmd/lang check testdata/phase07/call_basic.lang        # check pass
-go run ./cmd/lang run --engine=interpreter testdata/…/call_basic.lang  # operational_failure
-go run ./cmd/lang run --engine=native      testdata/…/call_basic.lang  # operational_failure
-```
-
-It cannot be executed by either engine. The refusal is **not** confined to the
-two `cgen` entry points the roadmap names. A non-test scan finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (49 including tests):
+A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (49 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|
-| `session` | 19 | `RunInterpreter`, `RunNative` (the CLI run path); `verifyOwnedCorpus`, `verifyBorrowedCorpus` (×8), `TransposeReleaseOrder`; Phase 5/6 verification lanes; `admitPhase5Candidate` |
+| `session` | 19 | Bounded historical verification/reducer lanes; inspect each site's purpose rather than inferring that public multi-function run is refused |
 
-**This table is now machine-checked, not self-certified.**
-`internal/compiler/session/self_describing_docs_test.go`'s
-`TestLanguageMaturityCountsAreCurrent` re-derives every number above
-independently, in Go, by walking the module tree with `go/parser` — never by
-executing the `awk` line below. The `awk` line is a text match and cannot tell
-a real guard from a comment that merely *mentions* the pattern (this tree has
-several, e.g. `session.go`'s own "the old len(program.Functions) != 1 guard"
-prose), so it overcounts; it originally reported 32 where the Go test's
-comment-immune AST walk finds 22. The Go test is now this file's authority —
-treat any drift between the table above and its output as this file being
-stale, not the test being wrong.
+`internal/compiler/session/self_describing_docs_test.go` independently derives
+these numbers with Go's parser. The count describes a syntactic predicate; it
+cannot determine public capability. Multi-function production execution and
+historical single-function evidence lanes coexist. The reducer also supports
+multi-function seeds; its `<= 1` and `== 1` shortcuts are outside this census.
 
-Re-verify (approximate only — see the overcounting note above; kept as a cheap
-human convenience, not an authority): `awk '/^func /{f=$0;l=NR} /Functions\) != 1/{print FILENAME": "f}' $(find internal cmd -name '*.go' -not -name '*_test.go')`
+Re-verify (approximate only — Go AST evidence is authoritative):
+`rg 'len\([^)]*Functions\) != 1' internal cmd`.
 
-Two consequences worth carrying into planning, one of them corrected by this
-re-verification:
+Machine check: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestLanguageMaturityCountsAreCurrent|TestSelfDescribingDocsGuardIsNotInert)$' -count=1`.
 
-- **The reducer is no longer single-function.** Phase 11 (D-11-29/D-11-30)
-  widened `reduce.Reduce` to accept a multi-function `Seed`: two whole-program
-  moves (drop-call-site, drop-orphan-function) run first, then the original
-  per-function moves loop over every function in the seed. `reduce` therefore
-  no longer appears in the guard table above — its remaining `len(Functions)`
-  comparisons use `<= 1` / `== 1`, single-function-path shortcuts rather than
-  `!= 1` refusals, so they fall outside this table's predicate. This corrects
-  this file's prior claim that "`reduce.Reduce` refuses a multi-function seed
-  outright," which was accurate at the 2026-09-11 re-assessment and has since
-  been overtaken by Phase 11.
-- **The comparator and gate scaffolding are still mostly single-function.**
-  The 19 `session` guards include the verification lanes that *are* the
-  five-axis equivalence proof. Making multi-function programs runnable and
-  making them *provable* remain separate costs.
+## Next useful thresholds
 
-### Re-verify cheaply — do this rather than trusting this file
+1. **M004:** a public build/run command takes actual input, executes once, and
+   proves Lang's ownership of a live foreign allocation across use, calls,
+   errors, and cleanup. Shared/exclusive read-copy pointers have separate
+   admission/evidence boundaries without additional alias promises.
+2. **Following milestone:** defined arithmetic and comparisons, scalar loops,
+   fixed text and decimal output make `sum_to_n` and FizzBuzz possible. A loop
+   design spike must address fixed points, dynamic event identity, and bounded
+   evidence before implementation; a full String runtime is unnecessary.
+3. **Reusable libraries:** byte views/indexing and small data/API/module features
+   support file utilities and bounded JSON. HTTP is an independent branch with
+   explicit protocol, timeout and resource requirements.
 
-As of 2026-09-17 (EVD-06), the guard-count and corpus figures above have been
-machine-checked. The current values below are refreshed as of 2026-09-24; EVD-06
-introduced the check on 2026-09-17. The guard-count and corpus figures are
-machine-checked by `TestLanguageMaturityCountsAreCurrent`
-(`go test ./internal/compiler/session/... -run TestLanguageMaturityCountsAreCurrent -count=1`)
-independently of the commands below — the commands below stay for humans
-who want a fast, approximate sanity check, but they are no longer this
-file's authority.
+Do not assign percentages to assurance or language completeness: neither has
+a stable denominator. Report runnable witnesses, known refusals, observed
+feedback cost, and next dependencies. D-12-43's wrong-slot mutation became
+constructible in Phase 18; its historical unconstructibility was not a reason
+to wait for arithmetic or aggregates.
 
-```bash
-grep -oE '"[a-z_]+"' internal/compiler/syntax/token.go | sort -u   # keyword set
-find . -name '*.lang' -not -path './.git/*' | wc -l                # corpus size
-wc -l $(find . -name '*.lang' -not -path './.git/*') | tail -1     # corpus lines
-grep -nE 'Plus|Minus|Star|Slash|Percent' internal/compiler/syntax/token.go  # arithmetic: empty == still absent
-```
+## Refresh triggers
 
-## Rough proportions
-
-Judgments, not measurements — useful for calibration, not for reporting:
-
-- As a **verification platform**: ~60-70% of the foundational machinery exists.
-- As a **language you could write a program in**: ~5-10%.
-
-## Distance to "usable", in dependency order
-
-| # | Capability | Status |
-|---|---|---|
-| 1 | Lang-to-Lang calls | **M002, partially landed** — admitted and checked (07-10); *executable* is Phase 11 |
-| 2 | Arithmetic + real numeric types | **not started, not scheduled** |
-| 3 | Iteration (loops, or admitted bounded recursion) | not started; M002 actively refuses recursion |
-| 4 | Strings, arrays, collections | not started |
-| 5 | Modules / separate compilation | M003 lead candidate |
-| 6 | Ability-bounded generics | deferred (ranked #1 of post-M002 features) |
-| 7 | Standard library | deferred |
-| 8 | I/O beyond raw foreign C calls (effect surface) | deferred, flagged premature |
-
-Items 2-4 are what actually make the language writable, and **none of them are
-on any roadmap yet.** That is the single most important thing this file
-records. Expect several more milestones the size of M002.
-
-## Strategic read, and the real risk
-
-**The ordering is defensible.** Adding arithmetic to a sound ownership core is
-comparatively easy; retrofitting ownership soundness onto an expressive
-language is what historically takes years or never lands. The bet is that the
-hard part is the part that got built first.
-
-**The real risk is different, and it is not "we built the wrong thing."** An
-assurance stack this elaborate has only ever been exercised against 28-line,
-single-function, loop-free programs. Whether `loanLivenessFixpoint`, the
-five-axis comparator, the HDD reducer, and the cache invalidation story hold up
-once programs have real shape is genuinely unknown. **M002 is the first real
-load test of machinery built in the absence of load** — which is exactly why
-spike S-006 (cost-scaling probe) hard-gates Phase 08's planning.
-
-Watch for the tell: analysis or corpora that were linear on one function
-becoming superlinear across a call graph. Go 1.18's generics front-end
-regression and Rust's Polonius performance wall are the named precedents.
-
-## When this file goes stale
-
-Rewrite the snapshot when any of these happen:
-
-- ~~Lang-to-Lang calls land (M002 Phase 07) — the "single function" framing dies.~~
-  **FIRED 2026-09-09; snapshot refreshed 2026-09-11.** Calls are admitted and
-  checked but not executable, so the framing narrowed rather than died.
-- Arithmetic or iteration is added — the proportions move materially.
-- The corpus stops being dominated by <50-line single-function programs.
-- Any milestone closes.
-- ~~This file's own guard-count and corpus figures silently drift from the
-  tree.~~ **FIRED repeatedly (32 claimed vs. 22 actual, corpus stale in both
-  directions) — closed 2026-09-17 (EVD-06): `TestLanguageMaturityCountsAreCurrent`
-  now re-derives every stated count independently and fails the suite if this
-  file and the tree disagree, so this bullet can no longer silently fire
-  again.**
-
-Related: [STANDING-VERDICTS.md](STANDING-VERDICTS.md) — decisions already
-researched, so they are not re-litigated each milestone.
+Refresh after a capability lands, a refusal changes, a milestone closes, or a
+selected user program exposes an incorrect claim. At each planning transition,
+review the current three recommendations in PRODUCT-ROADMAP and connect changed
+syntax/core operations to the necessary checker/evidence obligations. Keep
+historical receipts scoped to their revision, host, compiler, and exercised
+paths. AGENTS.md specifies this agent-executed review; no background automation
+is implied.

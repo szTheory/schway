@@ -3071,7 +3071,7 @@ var phase20DebtStartingUnownedIDs = []string{
 }
 
 var phase20DebtCurrentUnownedIDs = []string{
-	"D-10-C04", "D-12-43", "D-14-46", "D-14-47",
+	"D-10-C04", "D-14-46", "D-14-47",
 }
 
 type phase20DebtDisposition struct {
@@ -4579,14 +4579,16 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 // TestPhase16EmitterCutsAreAmendedAndOwned is the anti-decay control for
 // NAT-09/D-10-60. It deliberately uses parseDebtRegisterTable, the shared
 // debt-register parser, so this semantic law cannot grow a second Markdown
-// grammar that disagrees with TestDebtRegistersAreWellFormed.
+// grammar that disagrees with TestDebtRegistersAreWellFormed. The archived
+// M003 roadmap records this historical assignment; a later milestone may
+// change its live charter or status without changing the Phase 16 cut.
 func TestPhase16EmitterCutsAreAmendedAndOwned(t *testing.T) {
 	requirementsPath := testsupport.ProjectPath(".planning", "milestones", "M003-REQUIREMENTS.md")
 	requirements, err := os.ReadFile(requirementsPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	roadmap, err := os.ReadFile(testsupport.ProjectPath(".planning", "ROADMAP.md"))
+	roadmap, err := os.ReadFile(testsupport.ProjectPath(".planning", "milestones", "M003-ROADMAP.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4644,11 +4646,11 @@ func phase16EmitterCutProblems(requirements, roadmap, debt string) []string {
 	if !strings.Contains(requirements, "M004 Phase 21: "+ownerTitle) {
 		problems = append(problems, "NAT-09 does not name the Phase 21 owner")
 	}
-	const shippedM003 = "✅ **M003 — Computation and Honest Instruments**"
-	const provisionalM004 = "◷ **M004 — Native Emission Ownership and Resource Discharge**"
-	m003At, m004At := strings.Index(roadmap, shippedM003), strings.Index(roadmap, provisionalM004)
-	if m003At < 0 || m004At < 0 || m004At < m003At || !strings.Contains(roadmap, provisionalM004+" — provisional;") || !strings.Contains(roadmap, "### Phase 21: "+ownerTitle) {
-		problems = append(problems, "ROADMAP.md does not place the named Phase 21 owner after M003")
+	const historicalM003 = "**M003 — Computation and Honest Instruments**"
+	const historicalM004 = "**M004 — Native Emission Ownership and Resource Discharge**"
+	m003At, m004At := strings.Index(roadmap, historicalM003), strings.Index(roadmap, historicalM004)
+	if m003At < 0 || m004At < 0 || m004At < m003At || !strings.Contains(roadmap, "### Phase 21: "+ownerTitle+" (M004)") {
+		problems = append(problems, "archived M003-ROADMAP.md does not place the named M004 Phase 21 owner after M003")
 	}
 	columns, rows, err := parseDebtRegisterTable("PHASE-16-DEBT.md", debt)
 	if err != nil {

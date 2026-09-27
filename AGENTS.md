@@ -94,3 +94,29 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 > Profile not yet configured. Run `$gsd-profile-user` to generate your developer profile.
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
+
+## Living language roadmap and proactive planning
+
+At milestone kickoff, before phase discussion/planning, and after phase
+completion, read `.planning/PRODUCT-ROADMAP.md` and
+`.planning/LANGUAGE-MATURITY.md`. Compare their claims with current source
+witnesses, implementation refusal boundaries, and named evidence tests.
+
+Surface the three most useful next capabilities without waiting for another
+user request. For each, name the user-visible program, current blocker,
+smallest complete slice, checker/guarantee changes triggered, evidence/debt
+references, owner or next action, and what observation would change priority.
+Update the living documents when these facts change, within the active GSD
+workflow. Distinguish source inspection, newly executed checks, and historical
+receipts. Preserve archived decisions except for explicit dated amendments.
+
+Prefer a runnable gain in each feature phase. A second consecutive enabling
+phase without one triggers scope review; growing plan counts require a named
+user witness or safety obligation. Keep independent validation and negative
+controls tied to the capability being introduced. Do not invent completeness
+percentages, require a new backend, or expand into a general planning framework
+without evidence that a concrete consumer needs it.
+
+This is agent-executed planning behavior at workflow transitions, not a
+background scheduler. Active milestone requirements and phase ownership remain
+in `.planning/REQUIREMENTS.md` and `.planning/ROADMAP.md`.

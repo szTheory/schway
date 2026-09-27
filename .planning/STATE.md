@@ -1,46 +1,39 @@
 ---
 gsd_state_version: "1.0"
-milestone: M003
-current_phase: 21
-status: completed
-stopped_at: Phase 21 archived and verified — M004 kickoff ready
-last_updated: "2026-09-27T12:45:10Z"
+milestone: M004
+milestone_name: Native Emission Ownership and Resource Discharge
+status: planning
+last_updated: "2026-09-27T13:42:25.661Z"
 last_activity: 2026-09-27
-last_activity_desc: Completed Phase 21 archive handoff for provisional M004
-state_head: 397753f8873dfb2621a434367da720a771088d94
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
-milestone_name: Computation and Honest Instruments
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-26)
+See: .planning/PROJECT.md (updated 2026-09-27)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Start the provisional M004 milestone — Phase 21 is complete and archived
+**Current focus:** Define M004 requirements and roadmap; new implementation starts at Phase 22
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- `.planning/LANGUAGE-MATURITY.md` — the language is far less expressive than
-  the roadmap vocabulary implies: no arithmetic, no iteration, no `if`, no
-  strings/arrays, `Byte`/`Buffer` only. **Lang-to-Lang calls became executable in
-  Phase 11** — `lang run` no longer refuses a multi-function program on either
-  engine, and the interpreter and all three native tiers agree on the phase-11
-  corpus; the "not executable" note below the 2026-09-11 assessment is
-  superseded. Assurance stack ~70-75% built; language surface still ~5-10%.
-  The file's own 32-site single-function guard inventory is worked through: all
-  29 re-verified guards carry a recorded WIDENED/KEPT disposition. Re-assess
-  before the next "how far along are we" answer.
-  Do not read `wiki/example-tour.md` as a description of the language — its
-  effect rows, `?`, generics, and `spec` blocks are unimplemented design target.
+- `.planning/LANGUAGE-MATURITY.md` — current source-grounded capability snapshot:
+  calls, computed Result payloads and U64 constants execute; arithmetic/loops and
+  ordinary application IO do not. Native run is still a canned-input differential
+  harness. Foreign/by-pointer program families remain refused. No completeness
+  percentages are meaningful. The wiki tour remains a design target.
+- `.planning/PRODUCT-ROADMAP.md` — living near/mid/long capability order and
+  current three recommendations. AGENTS.md requires proactive review at planning
+  transitions. M004 is real application/resource ownership; FizzBuzz follows.
 
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
@@ -83,10 +76,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 21 (complete; archived under M004)
-Plan: All six plans complete
-Status: Phase 21 complete; M004 remains provisional
-Last activity: 2026-09-27 — Archived Phase 21 and refreshed its verification
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-27 — Milestone M004 started
 
 ## M003 Closeout (archived)
 
@@ -105,22 +98,34 @@ completed quick tasks remain under `.planning/quick/`.
 
 ## M004 Handoff
 
-M004 has not been formally opened; its requirements and full charter are not
-ratified. Phase 21 is complete: all 6/6 plans are complete, all 7/7 automated
-UAT cases are preserved, and the refreshed `21-VERIFICATION.md` passes 6/6.
-Its full archive is filed at
-`.planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/`,
-outside M003's outgoing cleanup. M003 remains the shipped outgoing milestone.
+M004 opened 2026-09-27 under the user's explicit authorization to apply the
+second specialist review automatically. The SDK switched STATE/state.json from
+M003 to M004; outgoing phase cleanup found zero physical phase directories.
+New phases start at 22. Phase 21 remains completed, archived prework with six
+plans and seven preserved UAT cases; do not replay it.
 
-Next command: `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`.
-It will formalize the provisional M004 scope and requirements. Do not rerun
-Phase 21 plans or UAT. No M004 requirements have
-been ratified or assigned IDs. Current `init.progress` reports M003 with zero
-discoverable phases and `next_phase: null`; it does not index completed phases
-archived under `milestones/M004-phases/`. Use the explicit handoff above rather
-than treating that empty resolver result as a reason to repeat Phase 21. The
-installed latest-completed resolver also may not identify M003 because this
-project preserves its `M00x` identifiers.
+The accepted scope is a single-run native application boundary, a real live
+foreign allocation owned through Lang, acquisition-based obligations and
+per-operation contracts, transfer/error cleanup, and bounded shared/exclusive
+read-copy pointers with no additional alias attributes. Arithmetic/loops and
+FizzBuzz move to the following milestone. See PROJECT and PRODUCT-ROADMAP.
+
+Phase 21's archive is
+`.planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/`.
+Its historical verification passed 6/6 at its recorded revision. This kickoff
+amends the D-12-43 debt disposition and historical Phase 16 ownership guard;
+those inputs occur in archived Phase 16/21 fingerprints. Their receipts remain
+historical, not freshly verified at this revision. Focused planning/debt checks
+are separate evidence; completed UAT is preserved.
+
+D-12-43's Phase 18 wrong-slot witness is now reflected in the authored debt and
+canonical generated view. Current qualified unowned debt is three:
+D-10-C04, D-14-46, D-14-47. M003's four-item closeout count remains historical.
+
+Next command after roadmap creation: `$gsd-plan-phase 22`.
+The installed resolver may not identify latest completed `M00x` milestones;
+M003 is the shipped predecessor and Phase 21 is archived M004 prework. Do not
+reset numbering or infer that archived Phase 21 must run again.
 
 ## M002 Phase Map
 
@@ -680,9 +685,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-09-27T12:45:10Z
-Stopped at: Phase 21 archived and verified — M004 kickoff ready
+Stopped at: M004 kickoff — requirements and roadmap being defined
 Resume file: None
-Next command: $gsd-new-milestone "Native Emission Ownership and Resource Discharge"
+Next command: $gsd-plan-phase 22 (after milestone roadmap creation)
 Routing note: Phase 21 is complete, verified 6/6, and archived under M004-phases. `init.progress` sees M003 with zero phases and no next phase because it omits archived phase directories; follow the explicit M004 handoff. Do not repeat Phase 21 planning, execution, verification, or UAT.
 
 The notes below predate the close and are kept as durable context a

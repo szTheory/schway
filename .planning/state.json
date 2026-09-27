@@ -1,12 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M003",
+  "milestone": "M004",
   "phases": [],
   "next": {
-    "command": "/gsd:new-milestone",
-    "label": "Start a new milestone",
-    "reason": "All phases complete — start a new milestone"
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
   },
-  "updated_at": "2026-09-27T01:38:48.867Z"
+  "updated_at": "2026-09-27T13:42:25.663Z"
 }

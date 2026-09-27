@@ -15,6 +15,13 @@ expanding into effects, services, agents, databases, GUIs, or an ecosystem.
 Lang-to-Lang calls, computed-value matches, and U64 constants now exist end to
 end; loops, arithmetic, and generic user code still do not.
 
+The development destination is a usable general-purpose language: small native
+programs, FizzBuzz and file utilities, reusable byte-oriented libraries, JSON,
+HTTP, and low-level systems libraries. These are capability goals, with new
+surface admitted through real programs and explicit safety evidence. See
+[PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) for the living delivery order and
+[LANGUAGE-MATURITY.md](LANGUAGE-MATURITY.md) for the observed frontier.
+
 ## Core Value
 
 Give an AI agent and a human reviewer the shortest reliable path from intent to
@@ -28,6 +35,14 @@ GSD defaults to automating verification wherever practical, using integration, e
 This preference does not waive mandatory workflow gates, required user authorization, or acceptance decisions explicitly designated as human-only. Future phase plans must name the concrete automated verification commands that prove their acceptance criteria and arrange for high-value recurring checks to run in CI.
 
 ## Current State
+
+**M004 opened 2026-09-27.** Phase 21 is completed, archived contract/retirement
+prework; its six plans and seven UAT cases must not be replayed. New work starts
+at Phase 22. Current native `run` is still a conformance harness: inputs are
+synthesized and native execution runs two optimization tiers. All three native
+foreign/by-pointer families remain refused. M004 will deliver a separate
+application path and real Lang-owned resource lifetime before broader syntax.
+The following shipped records describe evidence at their recorded revisions.
 
 **Shipped M002 — Interprocedural Semantic Spine (2026-09-14).** Phases 07-13,
 61 plans, 183 tasks over 6 days; 386 commits, 441 files changed,
@@ -89,7 +104,7 @@ claims previously recorded here were wrong and are restated below):
   B1-shaped diagnostic needs a *user-declared* contract field that the
   declaring function's own admission cannot verify, and every
   `FunctionSignature` field today is producer-derived. B1's real home is
-  separate compilation (M006). M003 corrects D-13-02b's reopening condition
+  separate compilation (previously forecast as M006). M003 corrects D-13-02b's reopening condition
   rather than restating the automatic-closure claim a third time.
 - **DX-07 (partial)** — two of three new repairable interprocedural classes
   ship (`move_after_interprocedural_loan`, `wrap_call_in_try`);
@@ -163,9 +178,8 @@ instruments honest enough that the claim means what it says.
   foreign/by-pointer families were formally cut with M004 ownership.
 - A function's return type may differ from its parameter type.
 - A branch that can discriminate a **computed** value — today `match` is a
-  whole-function-body form whose scrutinee must be the function's own
-  parameter, so branching on a computed value does not exist and cannot be
-  reached by desugaring. Hard-gated on spike S-010.
+  whole-function-body form; Phase 18 admitted computed scrutinees and exposed
+  payload results after spike S-010. This is not general statement branching.
 - Literals and `OpConst` — Lang can name a value it was not given.
 - A moved refusal frontier, pinned by a test.
 
@@ -180,32 +194,56 @@ diagnostic moved. This is the only gate that fires *before* the work, and it
 would have refused comparison operators on day one — a `Bool` that cannot be
 branched on is the DX-06 failure mode for the fourth time.
 
-**Named risk.** Arithmetic is ownership-inert (~15% redesign risk), but **any
-branch on a computed value is ~60%** against `loanLivenessFixpoint`, the
-comparator, and `corevalidate`. Early warning: a `borrow` created before a
-branch and live in one arm has no `LoanEndpoint` classification today. That is
-why the branch phase is spike-gated, and why the bet is declared lost — with
-M004 becoming an assurance-refactor milestone — if arithmetic forces a
-*redesign* rather than an extension.
+**Historical risk assessment.** The M003 research anticipated ownership and
+evidence changes at computed branches. Its percentage estimates were judgments
+without calibration and are not current forecasts. Future estimates name the
+specific changing assumption, executable witness, and decision gate instead.
 
 **WIP limits.** M003 may not close with more than 5 unowned debt items. Every
 debt item names an owning phase when it is recorded.
 
-## Milestone Arc (M004–M006)
+## Current Milestone: M004 Native Emission Ownership and Resource Discharge
 
-Provisional, revised at each milestone boundary. Recorded here so the M003
-research is not re-derived later.
+**Goal:** A developer can build and run a native program once on real input,
+with a resource acquired in C, owned and used through Lang, and released or
+transferred exactly once according to checked obligations.
 
-| Milestone | Charter | Gate that becomes meaningful |
+**Target features:**
+- An application build/run path with caller-selected bounded input, explicit
+  C build inputs, ordinary output/exit behavior, and separate compiler evidence.
+- One opaque, noncopyable allocation returned live by an audited C adapter;
+  Lang performs its use, ownership transfer, and generated infallible cleanup.
+- Acquisition-derived resource identities and per-operation foreign contracts,
+  with independent checking across calls, normal returns, and typed errors.
+- Bounded shared/exclusive read-copy pointer families through `emitProgram`,
+  no additional alias promises, and family-specific macOS/Linux evidence.
+
+The first resource consumer reads a bounded byte from a caller-selected file.
+The C adapter owns its internal file descriptor; Lang owns the returned
+allocation. This proves buffer ownership, not Lang-managed file close.
+Release consumes a live obligation; transfer preserves it under a new owner.
+The successor corrects Phase 21's contract-only wording without rewriting its
+historical evidence. The user authorized adopting the second review's
+recommendations automatically on 2026-09-27.
+
+## Milestone Arc
+
+[PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) is the living authority for future
+capability order. The M003-era M004–M006 forecast is superseded prospectively:
+
+| Horizon | Capability | Promotion gate |
 |---|---|---|
-| M004 | Native emission ownership/resource discharge, with the broader feature charter still provisional | Phase 21's implementation and UAT are complete, but its verification fingerprint needs refresh before M004 kickoff. File Phase 21 under M004 before new-milestone cleanup; if iteration remains in scope, a pre-phase spike must answer what replaces `pathoracle`, which refuses CFG cycles by name. |
-| M005 | Aggregates and arity-N | D-12-43 finally becomes constructible — via a generalized-scrutinee arm returning a destructured payload, not via arithmetic alone. Arity 2 takes the `pathoracle` case space from ~12 to ~108. |
-| M006 | Modules and separate compilation | DX-06's B1 blame becomes real: the first user-declared contract field the declaring function's own admission cannot verify. |
+| Current M004 | Real native application execution and bounded resource ownership | Real external input, physical cleanup evidence, explicit family admission |
+| Following milestone | Arithmetic/comparison, scalar iteration, minimal output; `sum_to_n` and FizzBuzz | Decide cycle analysis, dynamic event identity, and bounded evidence before loop planning |
+| Mid term | Reusable byte-oriented libraries, arity-N/aggregates as needed, local modules, bounded JSON; HTTP as a separate branch | A consumer needs each abstraction; untrusted byte/error/resource behavior is specified |
+| Long term | Separate compilation/contracts, ecosystem, richer generics/effects/concurrency | Concrete clients and measured limits justify the added semantic surface |
 
-**First real program:** `examples/checksum.lang` — read a file through foreign
-C, loop-accumulate a byte checksum, print it. Lands end of M005. Checked in
-during M003 as a *refused* frontier fixture with its diagnostic pinned, so each
-milestone must measurably move the refusal forward.
+`examples/checksum.lang` remains a refused integration target. Its syntax is
+provisional; advancing its first diagnostic alone does not establish a usable
+program. Small runnable witnesses precede it. D-12-43 already became
+constructible in Phase 18; aggregates are not its reopening gate. DX-06 remains
+tied to a separately checked user-declared contract, without a speculative
+milestone number.
 
 ## Requirements
 
@@ -295,24 +333,28 @@ milestone must measurably move the refusal forward.
 
 ### Active
 
-M004 requirements have not been ratified. Its provisional charter is
-not yet ratified. Phase 21 has completed implementation and all 7 automated
-UAT checks, with its verification fingerprint awaiting refresh. Run
-`$gsd-execute-phase 21` to resume at verification gates without replaying plans
-or UAT. After verification passes, file Phase 21 under M004 before running
-`$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`; the
-installed cleanup would otherwise archive every remaining physical phase
-directory under outgoing M003.
+- [ ] Build and run a native application once with explicit inputs and outputs.
+- [ ] Keep a real foreign allocation live across Lang acquisition, use, transfer,
+  and generated cleanup on normal and typed-error exits.
+- [ ] Admit bounded shared/exclusive pointer shapes only with their own proof;
+  reconcile D-16-11, D-16-12, and D-16-13 against exact successor requirements.
+- [ ] Deliver a documented file/byte utility and physical cleanup controls on
+  the admitted macOS/Linux lanes.
+
+Atomic IDs and acceptance live in [REQUIREMENTS.md](REQUIREMENTS.md); phase
+ownership lives in [ROADMAP.md](ROADMAP.md). Phase 21 remains completed prework.
 
 ### Deferred — Named Landing, Not Dropped
 
-- Loops and back edges → M004, after a spike answers what replaces
-  `pathoracle`.
-- Arity-N and aggregates → M005, where D-12-43 becomes constructible.
-- DX-06 / B1 blame → M006, with separate compilation.
-- D-13-34's alpha-renamed held-out pairs → attached to the grammar-widening
-  phase; the admissible space is 112 programs, so "structurally distinct" is
-  cosmetic at this maturity.
+- Arithmetic and scalar loops → the following practical-program milestone;
+  cycle analysis and event identity are explicit preconditions for loops.
+- Arity-N, aggregates, local modules → reusable byte-oriented library consumers.
+- DX-06 / B1 blame → the separate-compilation contract boundary (D-13-02b).
+- General strings, recursive data, collections, and generics → promote only
+  the minimum needed by a selected library/program. FizzBuzz needs none of them.
+- CI lane duplication and partial historical Nyquist coverage → named
+  maintenance candidates; fix when they block or measurably slow a selected
+  capability, preserving the evidence each lane supplies.
 
 ### Out of Scope
 
@@ -450,16 +492,19 @@ Canonical planning inputs:
 | Keep syntax provisional but canonical | Enables real parser/formatter evidence without freezing decorative choices early | ✓ Good — losslessness and idempotence held through generated programs and malformed AI edits |
 | Treat structured diagnostics and evidence as a versioned product API | AI effectiveness depends more on precise verifier feedback than exotic syntax | ✓ Good — the `/0`→`/1` schema bump landed across 12 literal sites with `/0` bytes provably frozen; `cmd/lang-repair` repairs 5 defect classes through the JSON protocol alone |
 | Defer `OpCall` and interprocedural equivalence out of M001 | Landing a new `OperationKind` at six dispatch sites alongside alias facts, sanitizers, the reducer, and the QLT-01 registry matched the fingerprint of the failures that cost Phases 2-4 extra remediation rounds | ✓ Good — M002 spent 7 phases and 61 plans on exactly that one addition, which vindicates the deferral; `OpCall` is now real at all six sites |
-| Ratify D-12-43: accept that the decisive wrong-slot value-divergence control is unconstructible at this language maturity | The hazard is independently policed at compile time by D-12-37, and the current grammar never lets a match arm's result expose raw payload bytes — so a wrong-slot write is invisible to every comparator axis by construction, not by weak testing. Escalated as a defect in the criterion rather than a downgraded assertion (D-12-41/D-11-36 precedent) | ⚠️ Revisit when the grammar widens to expose bound payload content, or when a payload-value-aware harness observation channel exists; ratified at a blocking-human checkpoint on 2026-09-13, no owning phase named |
+| Historical D-12-43 unconstructibility ratification (2026-09-13) | Phase 12 could not expose the wrong payload slot through its grammar; the historical ratification and measurements remain archived | Superseded by Phase 18's source-constructible payload return and wrong-slot mutation; the dated debt disposition records current evidence |
 | Cut M002 phases where a *gate* becomes meaningful, not where implementation could parallelize | A new `OperationKind` at six dispatch sites has no safe partial state; the useful boundary is "can this claim now be independently checked?" | ✓ Good — all 7 phases verified passed, and each gate caught something (Phase 09's requirement-vs-traceability defect, Phase 10's fixture escape hatch, Phase 12's blocker) |
 | Split OWN-05 into OWN-05a/OWN-05b (D-09-37) rather than flip one row Complete on two of three derivers | A single-row overclaim is exactly the requirement-vs-code failure the debt registers exist to catch | ✓ Good — the split is why the milestone audit found zero orphaned or overclaimed requirements across three independent sources |
 | Eliminate Phase 11's two human-judgment items with tests rather than adjudicate them | A debt note is read once; a test runs on every CI invocation | ✓ Good — `TestSeedEntryHazardIsReal` and `session_admission_divergence_test.go` both fail in *both* directions, catching a silently resolved divergence as well as a new one |
-| Keep DX-06 and DX-07 evidence-based instead of weakening their criteria | DX-06 needs a user-declared contract field its declaring function cannot verify; DX-07's `use_matching_argument` repair was byte-identical on real triggers | ✓ Good — M003 closes DX-07 through a sealed held-out repair proof; DX-06 remains assigned to M006 with separate compilation (D-13-02b) |
+| Keep DX-06 and DX-07 evidence-based instead of weakening their criteria | DX-06 needs a user-declared contract field its declaring function cannot verify; DX-07's `use_matching_argument` repair was byte-identical on real triggers | ✓ Good — M003 closes DX-07 through a sealed held-out repair proof; DX-06 remains owned by the future separate-compilation contract capability (D-13-02b) |
 | Reject the integration checker's requirement-satisfaction column while adopting its structural findings | It graded requirements from wiring, and wiring is exactly what a structurally unreachable defect class still has | ✓ Good — caught two would-be false greens (DX-06, DX-07) that contradicted both Phase 13's own verification and a `grep` of the tree |
 | Keep cache refusal codes stable while retaining typed Clang probe causes and finite subprocess deadlines | Callers keep a fail-closed contract while diagnostics distinguish timeout, launch, and command failures; bounded work remains cancellable | ✓ Good — three default-parallel full suites, capped-parallel and race suites, vet, and build all pass under verified captured receipts |
 | Reuse existing macOS/Linux full and race CI lanes when focused coverage adds no distinct signal | Recurring CI value must justify its runtime and maintenance cost | ✓ Good — Plan 08's unchanged CI blob and `not_added` disposition remain verified after G-18-16 closure |
 | Route branch and match lowering through the public `emitProgram` authority | A single emitter law prevents admitted source shapes from depending on a legacy backend | ✓ Good — M003 Phase 16 passed all 4 verification truths; foreign and by-pointer families retain explicit M004 ownership |
 | Require a fixture-first constructibility gate for every admitted language requirement | It catches built-but-unreachable behavior before production implementation begins | ✓ Good — M003's phases used refused frontier fixtures and pinned diagnostics to make each new surface constructible |
+| Separate application execution from differential replay | Real IO cannot safely run once per optimization tier on the user's input | Adopted for M004; explicit verification uses isolated/replayable inputs |
+| Lower bounded pointer borrows without `restrict` | Lang exclusivity and an optimizer alias promise are distinct obligations | Prospective D-16-07 amendment; retain per-family proofs and broad-shape refusals |
+| Maintain a program-driven living roadmap | The user wants automatic planning suggestions and steady progress toward usable software | Agent-executed planning reviews in AGENTS.md; no background service or new planning framework |
 
 ## Evolution
 
@@ -471,6 +516,8 @@ This document evolves at phase transitions and milestone boundaries.
 3. Add requirements exposed by reduced counterexamples.
 4. Record decisions and their measured outcomes.
 5. Check that the description and core value have not drifted.
+6. Refresh PRODUCT-ROADMAP and LANGUAGE-MATURITY when observed facts change;
+   propose the three most useful next capabilities with examples and checker gates.
 
 **After each milestone:**
 1. Review all sections against shipped behavior.
@@ -479,4 +526,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-26 after M003 milestone closeout*
+*Last updated: 2026-09-27 during M004 kickoff and second adversarial fan-out*
