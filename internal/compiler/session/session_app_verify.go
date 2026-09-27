@@ -104,6 +104,9 @@ func DecodeReplayCases(data []byte) (ReplayCases, error) {
 	if len(data) == 0 || len(data) > MaxReplayCasesBytes {
 		return ReplayCases{}, fmt.Errorf("replay cases must be between 1 and %d bytes", MaxReplayCasesBytes)
 	}
+	if err := native.RejectDuplicateJSONKeys(data); err != nil {
+		return ReplayCases{}, fmt.Errorf("decode replay cases: %w", err)
+	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	var cases ReplayCases

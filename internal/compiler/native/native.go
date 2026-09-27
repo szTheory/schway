@@ -856,6 +856,12 @@ const (
 	ExpectDefect TerminalOutcome = "defect"
 )
 
+// RejectDuplicateJSONKeys recursively rejects repeated keys in JSON objects.
+// It is shared by strict JSON readers in other internal compiler packages.
+func RejectDuplicateJSONKeys(data []byte) error {
+	return rejectDuplicateJSONKeys(data)
+}
+
 func rejectDuplicateJSONKeys(data []byte) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	var scan func() error
