@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -28,6 +30,14 @@ const (
 func main() { os.Exit(run(os.Args[1:])) }
 
 func run(args []string) int {
+	// Route the application command before global flag extraction so the token
+	// after `--` stays opaque, even when it is spelled like a lang flag.
+	if len(args) > 0 && args[0] == "app" {
+		return runApplication(args)
+	}
+	if len(args) > 1 && args[0] == "--json" && args[1] == "app" {
+		return runApplication(args[1:])
+	}
 	args, jsonMode, ok := extractJSON(args)
 	if !ok {
 		return emit(usageResult(), true, false)
@@ -43,6 +53,9 @@ func run(args []string) int {
 	args, expand, ok := extractExpand(args)
 	if !ok {
 		return emit(usageResult(), jsonMode, false)
+	}
+	if len(args) == 4 && args[0] == "build" && args[2] == "--output" {
+		return runBuild(args[1], args[3], jsonMode)
 	}
 	if len(args) == 3 && args[0] == "explain" {
 		return runExplain(args[1], args[2], depth, jsonMode)
@@ -120,6 +133,67 @@ func runNative(path string, jsonMode bool) int {
 		return emit(problemResult("run", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
 	}
 	return emit(result, jsonMode, false)
+}
+
+func runBuild(sourcePath, outputPath string, jsonMode bool) int {
+	receipt, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, outputPath, native.DefaultRunner())
+	if len(diagnostics) > 0 {
+		result := protocol.New("build", protocol.StatusInvalid)
+		result.Diagnostics = diagnostics
+		return emit(result, jsonMode, false)
+	}
+	if err != nil {
+		code := "native.build_failed"
+		var toolError *native.ToolError
+		if errors.As(err, &toolError) && toolError.Code != "" {
+			code = toolError.Code
+		}
+		message := "unable to build retained application: " + err.Error()
+		return emit(problemResult("build", protocol.StatusOperational, code, message), jsonMode, false)
+	}
+	if jsonMode {
+		if err := json.NewEncoder(os.Stdout).Encode(receipt); err != nil {
+			fmt.Fprintln(os.Stderr, "build: unable to write build receipt summary")
+			return exitOperational
+		}
+		return exitSuccess
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "built %s\n", outputPath); err != nil {
+		return exitOperational
+	}
+	return exitSuccess
+}
+
+func runApplication(args []string) int {
+	if len(args) != 5 || args[1] != "run" || args[3] != "--" {
+		fmt.Fprintln(os.Stderr, "usage: lang app run ARTIFACT -- INPUT")
+		return exitUsage
+	}
+	outcome, err := native.RunApplication(context.Background(), args[2], args[4], os.Stdout, os.Stderr)
+	if err != nil {
+		var toolError *native.ToolError
+		if errors.As(err, &toolError) && toolError.Code == "native.input_too_long" {
+			fmt.Fprintf(os.Stderr, "lang app run: %v\n", err)
+			return 65
+		}
+		fmt.Fprintf(os.Stderr, "lang app run: %v\n", err)
+		return 125
+	}
+	switch outcome.Kind {
+	case native.RunExited:
+		return outcome.ExitCode
+	case native.RunSignaled:
+		return 128 + outcome.SignalNumber
+	case native.RunTimedOut:
+		fmt.Fprintf(os.Stderr, "lang app run: %s\n", outcome.Diagnostic)
+		return 124
+	case native.RunLaunchError:
+		fmt.Fprintf(os.Stderr, "lang app run: %s\n", outcome.Diagnostic)
+		return 125
+	default:
+		fmt.Fprintln(os.Stderr, "lang app run: invalid process outcome")
+		return 125
+	}
 }
 
 func runCheck(path string, jsonMode bool) int {
@@ -467,5 +541,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] build SOURCE --output ARTIFACT | app run ARTIFACT -- INPUT | format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
 }
