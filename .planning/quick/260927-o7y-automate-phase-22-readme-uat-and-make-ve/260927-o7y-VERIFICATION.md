@@ -1,6 +1,6 @@
 ---
 phase: quick-260927-o7y
-verified: 2026-09-27T23:17:10Z
+verified: 2026-09-27T23:20:26Z
 status: passed
 score: 4/4 must-haves verified
 covered_files:
@@ -17,7 +17,7 @@ covered_files:
   - .planning/quick/260927-o7y-automate-phase-22-readme-uat-and-make-ve/260927-o7y-automate-phase-22-readme-uat-and-make-ve-PLAN.md
   - cmd/lang/main_test.go
   - examples/phase22/README.md
-covered_digest: "v1:sha256:94889495455227874d528fd1e05b1c0359d2cfeba0582fc5abd9466b85128d88"
+covered_digest: "v1:sha256:69b607ba83ad539fbee718225202ef9c7a1b4afc811b9b0dd160071c9aca3e2f"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -25,7 +25,7 @@ overrides_applied: 0
 # Quick Task 260927-o7y Verification Report
 
 **Goal:** Replace Phase 22's mechanically checkable README UAT gate with recurring documentation-contract evidence and record the project's shift-left verification preference.
-**Verified:** 2026-09-27T23:17:10Z
+**Verified:** 2026-09-27T23:20:26Z
 **Status:** passed
 
 ## Goal Achievement
@@ -65,6 +65,8 @@ The shared query returned `passed` for `verification.status` and `true` for `pha
 
 The regenerated Phase 22 report records `verified: 2026-09-27T23:05:37Z` and digest `v1:sha256:06855797fcc2e3057445559bc911b793e809336ce4ce17d8f944e2e1aa7c6fdd`. Recomputing `verification.fingerprint` over the report's exact `covered_files` produced the same digest. The dated amendment in the quick summary records the pre-edit digest `v1:sha256:fcc3fb354fc04434004590406518e41b743630e6fbd4c25721298873d8da8beb` at `2026-09-27T21:13:10Z`; the accepted digest is different and timestamped later. The intermediate human-needed regeneration is also explicitly recorded rather than confused with the accepted report.
 
+This quick verification was refreshed after the summary's `## Self-Check: PASSED` addition. The changed summary is included in the quick report's recomputed `covered_files` digest below; the implementation, UAT, and Phase 22 verification inputs remain unchanged.
+
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
@@ -91,5 +93,5 @@ No must-have, artifact, or wiring gap was found. The verification preserves the 
 
 ---
 
-_Verified: 2026-09-27T23:17:10Z_  
+_Verified: 2026-09-27T23:20:26Z_
 _Verifier: the agent_
