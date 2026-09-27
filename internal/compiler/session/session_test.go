@@ -4574,7 +4574,7 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 // debt-register parser, so this semantic law cannot grow a second Markdown
 // grammar that disagrees with TestDebtRegistersAreWellFormed.
 func TestPhase16EmitterCutsAreAmendedAndOwned(t *testing.T) {
-	requirementsPath := testsupport.ProjectPath(".planning", "REQUIREMENTS.md")
+	requirementsPath := testsupport.ProjectPath(".planning", "milestones", "M003-REQUIREMENTS.md")
 	requirements, err := os.ReadFile(requirementsPath)
 	if err != nil {
 		t.Fatal(err)
@@ -4609,7 +4609,10 @@ func TestPhase16EmitterCutsAreAmendedAndOwned(t *testing.T) {
 	if problems := phase16EmitterCutProblems(string(requirements), string(roadmap), mutated); len(problems) == 0 {
 		t.Fatal("seeded unowned emitter cut passed the NAT-09 amendment/debt control")
 	}
-	mutatedRoadmap := strings.Replace(string(roadmap), "### Phase 21: Native Emission Ownership and Resource Discharge (M004)", "### Phase 21: Unrelated Phase (M004)", 1)
+	mutatedRoadmap := strings.Replace(string(roadmap), "### Phase 21: Native Emission Ownership and Resource Discharge", "### Phase 21: Unrelated Phase", 1)
+	if mutatedRoadmap == string(roadmap) {
+		t.Fatal("seeded roadmap mutation did not change the registered Phase 21 heading")
+	}
 	if problems := phase16EmitterCutProblems(string(requirements), mutatedRoadmap, string(debt)); len(problems) == 0 {
 		t.Fatal("seeded mistitled roadmap owner passed the NAT-09 amendment/debt control")
 	}
@@ -4634,8 +4637,10 @@ func phase16EmitterCutProblems(requirements, roadmap, debt string) []string {
 	if !strings.Contains(requirements, "M004 Phase 21: "+ownerTitle) {
 		problems = append(problems, "NAT-09 does not name the Phase 21 owner")
 	}
-	m003At, m004At := strings.Index(roadmap, "**M003 —"), strings.Index(roadmap, "**M004 —")
-	if m003At < 0 || m004At < 0 || m004At < m003At || !strings.Contains(roadmap, "### Phase 21: "+ownerTitle+" (M004)") || !strings.Contains(roadmap, "M003 Phases 14-20 complete before") {
+	const shippedM003 = "✅ **M003 — Computation and Honest Instruments**"
+	const provisionalM004 = "◷ **M004 — Native Emission Ownership and Resource Discharge**"
+	m003At, m004At := strings.Index(roadmap, shippedM003), strings.Index(roadmap, provisionalM004)
+	if m003At < 0 || m004At < 0 || m004At < m003At || !strings.Contains(roadmap, provisionalM004+" — provisional;") || !strings.Contains(roadmap, "### Phase 21: "+ownerTitle) {
 		problems = append(problems, "ROADMAP.md does not place the named Phase 21 owner after M003")
 	}
 	columns, rows, err := parseDebtRegisterTable("PHASE-16-DEBT.md", debt)
