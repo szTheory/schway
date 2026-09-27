@@ -5,11 +5,11 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 22
 current_phase_name: Native Application Build and Single Execution
 status: executing
-stopped_at: M004 kickoff complete; Phase 22 context saved; next plan-phase 22
-last_updated: "2026-09-27T15:06:45.582Z"
+stopped_at: Phase 22 planning complete; ready to execute three plans via $gsd-execute-phase 22
+last_updated: "2026-09-27T16:37:01.704Z"
 last_activity: 2026-09-27
-last_activity_desc: Phase 22 planning complete
-state_head: 8cfda1a9f07f3dd8da09a6bf473fe3089bbfd5f9
+last_activity_desc: "Completed quick task 260927-ha3: Refresh Phase 22 execution handoff in STATE.md after planning completion"
+state_head: 38bb5ea3946b3bddae9e24920fa58a06d594b571
 progress:
   total_phases: 4
   completed_phases: 0
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-27)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Plan Phase 22 — Native Application Build and Single Execution; M004 requirements and roadmap are defined
+**Current focus:** Execute Phase 22 — Native Application Build and Single Execution; three plans are ready
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -82,9 +82,9 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 22 (Native Application Build and Single Execution) — READY TO EXECUTE
-Plan: 0 of TBD in current phase
+Plan: 0 of 3 in current phase
 Status: Ready to execute
-Last activity: 2026-09-27 — Phase 22 planning complete
+Last activity: 2026-09-27 — Completed quick task 260927-ha3: Refresh Phase 22 execution handoff in STATE.md after planning completion
 
 Progress: [░░░░░░░░░░] 0% of new M004 implementation; completed Phase 21 remains archived prework
 
@@ -137,6 +137,8 @@ cleanup proof is required in Phase 23, with transfer/error controls in Phase 24;
 the Phase 25 coverage owner does not defer family evidence. No production
 implementation or new runtime verification occurred during roadmap creation.
 
+### Kickoff routing snapshot — 2026-09-27 (historical)
+
 Next command: `$gsd-plan-phase 22`.
 Context-clear handoff: Phase 22's `22-CONTEXT.md` now captures the approved
 decisions and explicitly requires the milestone research and living roadmap.
@@ -151,6 +153,15 @@ passes. The canonical state-contract publisher reports `plan phase 22` through
 The installed resolver may not identify latest completed `M00x` milestones;
 M003 is the shipped predecessor and Phase 21 is archived M004 prework. Do not
 reset numbering or infer that archived Phase 21 must run again.
+
+### Planning-complete amendment — 2026-09-27 (current route)
+
+This dated amendment supersedes the kickoff snapshot's next-command pointer.
+Phase 22 planning is complete, and plans 22-01, 22-02, and 22-03 are committed
+under `.planning/phases/22-native-application-build-and-single-execution/`.
+Phase 22 is ready to execute. The exact next command is `$gsd-execute-phase 22`.
+Phase 21 remains the last completed implementation phase; its archived prework
+is complete and must not be replayed.
 
 ## M002 Phase Map
 
@@ -697,6 +708,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260926-ffr | Ensure Phase 18 payload mutation seams restore after runner failure | 2026-09-26 | fe92bc3 | passed | [260926-ffr-ensure-phase-18-payload-mutation-seams-r](./quick/260926-ffr-ensure-phase-18-payload-mutation-seams-r/) |
 | 260926-uzs | Archive completed Phase 21 under provisional M004 and refresh the verification/evidence handoff | 2026-09-27 | 397753f | Verified | [260926-uzs-prepare-the-completed-phase-21-for-the-m](./quick/260926-uzs-prepare-the-completed-phase-21-for-the-m/) |
 | 15 | Preserve approved Phase 22 decisions and M004 research links for context-clear handoff | 2026-09-27 | — | — | — |
+| 260927-ha3 | Refresh Phase 22 execution handoff in STATE.md after planning completion | 2026-09-27 | — | passed | [260927-ha3-refresh-phase-22-execution-handoff-in-st](./quick/260927-ha3-refresh-phase-22-execution-handoff-in-st/) |
 
 ## Deferred Items
 
@@ -710,11 +722,11 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-27T14:08:46.351Z
-Stopped at: M004 kickoff complete; Phase 22 context saved; next plan-phase 22
+Last session: 2026-09-27T16:32:36.904Z
+Stopped at: Phase 22 planning complete; ready to execute three plans via $gsd-execute-phase 22
 Resume file: .planning/phases/22-native-application-build-and-single-execution/22-CONTEXT.md
-Next command: $gsd-plan-phase 22
-Routing note: Active milestone is M004; init.progress and the generated state contract route to planning Phase 22, and strict state validation passes. Phase 21 remains completed archived prework with six historical verification truths and seven preserved UAT cases; do not replay it.
+Next command: $gsd-execute-phase 22
+Routing note: Live `init.progress` identifies Phase 22 as current with `plan_count: 3`, `summary_count: 0`, and `verification_next_command: "$gsd-execute-phase 22"`; `roadmap.get-phase 22` lists plans 22-01, 22-02, and 22-03. Phase 21 remains the last completed implementation phase and is archived prework; do not replay it.
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -798,7 +810,7 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Run `$gsd-plan-phase 22` to plan the native application witness; M004 kickoff and requirement mapping are complete.
+- Run `$gsd-execute-phase 22` to execute the three committed native application plans.
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 
