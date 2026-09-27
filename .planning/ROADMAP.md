@@ -55,7 +55,7 @@ replaces `pathoracle`'s cycle refusal before loop planning.
 
 **Goal:** Close the archive-dependent findings in Phase 21 verification while preserving the completed implementation plans and UAT. M004 remains provisional; this entry registers only the already-existing gap-closure work.
 
-**Plans:** 6/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 **Wave 1**
