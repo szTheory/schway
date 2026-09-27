@@ -505,3 +505,52 @@ func TestPhase22ReceiptPublicationFailureRestoresPreviousPair(t *testing.T) {
 		}
 	}
 }
+
+func TestPhase22BuildPreservesBackupWhenRollbackRenameFails(t *testing.T) {
+	root := t.TempDir()
+	artifact := filepath.Join(root, "program")
+	priorReceipt := applicationReceiptPath(artifact)
+	if err := os.WriteFile(artifact, []byte("prior executable bytes"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(priorReceipt, []byte("prior receipt bytes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	call := 0
+	runner := DefaultRunner()
+	runner.publishRename = func(oldPath, newPath string) error {
+		call++
+		switch call {
+		case 4:
+			return errors.New("injected receipt publication failure")
+		case 5:
+			return errors.New("injected prior artifact restore failure")
+		default:
+			return os.Rename(oldPath, newPath)
+		}
+	}
+	_, err := runner.BuildApplication(context.Background(), []byte("source"), "int main(void) { return 0; }\n", artifact)
+	var recoveryError *applicationPublicationRecoveryError
+	if !errors.As(err, &recoveryError) {
+		t.Fatalf("BuildApplication error=%v, want recovery error", err)
+	}
+	if !strings.Contains(err.Error(), recoveryError.directory) {
+		t.Fatalf("error %q does not identify recovery directory %q", err, recoveryError.directory)
+	}
+	info, statErr := os.Stat(recoveryError.directory)
+	if statErr != nil || info.Mode().Perm() != 0o700 {
+		t.Fatalf("recovery directory info=%v err=%v; want private 0700 directory", info, statErr)
+	}
+	recoverableArtifact := filepath.Join(recoveryError.directory, "previous-program")
+	data, readErr := os.ReadFile(recoverableArtifact)
+	if readErr != nil || string(data) != "prior executable bytes" {
+		t.Fatalf("recoverable prior artifact=%q err=%v; want prior executable bytes", data, readErr)
+	}
+	if _, err := os.Stat(artifact); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("public artifact stat error=%v; want absent after injected rollback failure", err)
+	}
+	receiptData, readErr := os.ReadFile(priorReceipt)
+	if readErr != nil || string(receiptData) != "prior receipt bytes" {
+		t.Fatalf("prior public receipt=%q err=%v; want prior receipt bytes", receiptData, readErr)
+	}
+}

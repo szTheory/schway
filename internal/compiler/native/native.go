@@ -81,6 +81,8 @@ type Runner struct {
 	// build (D-05-19/D-05-38). Nil for every production caller.
 	recorder *commandRecorder
 	command  func(context.Context, string, ...string) *exec.Cmd
+	// publishRename is an internal test seam for retained application publication.
+	publishRename func(string, string) error
 	// evidenceLimit is an internal test seam for capacity-exhaustion controls.
 	evidenceLimit int
 }

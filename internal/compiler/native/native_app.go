@@ -183,7 +183,12 @@ func (r Runner) BuildApplication(parent context.Context, source []byte, cSource,
 	if err != nil {
 		return BuildReceipt{}, &ToolError{Code: "native.temp_failed", Err: err}
 	}
-	defer os.RemoveAll(stageDirectory)
+	preserveStage := false
+	defer func() {
+		if !preserveStage {
+			_ = os.RemoveAll(stageDirectory)
+		}
+	}()
 	// EvalSymlinks keeps dependency comparisons consistent on /var -> /private/var.
 	stageDirectory, err = filepath.EvalSymlinks(stageDirectory)
 	if err != nil {
@@ -266,7 +271,15 @@ func (r Runner) BuildApplication(parent context.Context, source []byte, cSource,
 	if err := os.WriteFile(stagedReceipt, receiptBytes, 0o600); err != nil {
 		return BuildReceipt{}, &ToolError{Code: "native.receipt_write_failed", Err: err}
 	}
-	if err := publishApplicationPair(stagedArtifact, stagedReceipt, artifactPath, stageDirectory, os.Rename); err != nil {
+	rename := r.publishRename
+	if rename == nil {
+		rename = os.Rename
+	}
+	if err := publishApplicationPair(stagedArtifact, stagedReceipt, artifactPath, stageDirectory, rename); err != nil {
+		var recoveryError *applicationPublicationRecoveryError
+		if errors.As(err, &recoveryError) {
+			preserveStage = true
+		}
 		var toolError *ToolError
 		if errors.As(err, &toolError) {
 			return BuildReceipt{}, err
@@ -464,7 +477,12 @@ func publishApplicationPair(stagedArtifact, stagedReceipt, artifactPath, stageDi
 	if hadReceipt {
 		if err := rename(receiptPath, oldReceipt); err != nil {
 			if hadArtifact {
-				_ = rename(oldArtifact, artifactPath)
+				if restoreErr := rename(oldArtifact, artifactPath); restoreErr != nil {
+					return &applicationPublicationRecoveryError{directory: stageDirectory, cause: errors.Join(
+						&ToolError{Code: "native.receipt_publish_failed", Err: err},
+						fmt.Errorf("restoring prior artifact: %w", restoreErr),
+					)}
+				}
 			}
 			return &ToolError{Code: "native.receipt_publish_failed", Err: err}
 		}
@@ -484,17 +502,36 @@ func publishApplicationPair(stagedArtifact, stagedReceipt, artifactPath, stageDi
 		return restoreErr
 	}
 	if err := rename(stagedArtifact, artifactPath); err != nil {
-		return errors.Join(&ToolError{Code: "native.artifact_publish_failed", Err: err}, restore())
+		publishErr := &ToolError{Code: "native.artifact_publish_failed", Err: err}
+		if restoreErr := restore(); restoreErr != nil {
+			return &applicationPublicationRecoveryError{directory: stageDirectory, cause: errors.Join(publishErr, restoreErr)}
+		}
+		return publishErr
 	}
 	if err := rename(stagedReceipt, receiptPath); err != nil {
 		removeErr := os.Remove(artifactPath)
 		if errors.Is(removeErr, os.ErrNotExist) {
 			removeErr = nil
 		}
-		return errors.Join(&ToolError{Code: "native.receipt_publish_failed", Err: err}, removeErr, restore())
+		publishErr := errors.Join(&ToolError{Code: "native.receipt_publish_failed", Err: err}, removeErr)
+		if restoreErr := restore(); restoreErr != nil {
+			return &applicationPublicationRecoveryError{directory: stageDirectory, cause: errors.Join(publishErr, restoreErr)}
+		}
+		return publishErr
 	}
 	return nil
 }
+
+type applicationPublicationRecoveryError struct {
+	directory string
+	cause     error
+}
+
+func (e *applicationPublicationRecoveryError) Error() string {
+	return fmt.Sprintf("application publication rollback failed; recovery files retained at %q: %v", e.directory, e.cause)
+}
+
+func (e *applicationPublicationRecoveryError) Unwrap() error { return e.cause }
 
 func decodeApplicationCapture(data []byte, limit int) (struct {
 	Status    EvidenceCaptureStatus
