@@ -6,7 +6,7 @@
     {
       "number": "22",
       "name": "Native Application Build and Single Execution",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "23",
@@ -25,9 +25,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:verify-work 22",
-    "label": "Complete Phase 22 human verification",
-    "reason": "Phase 22 has one pending README clarity UAT"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 23)",
+    "reason": "Phase 23 of 4 — needs a plan"
   },
-  "updated_at": "2026-09-27T21:17:48Z"
+  "updated_at": "2026-09-27T23:38:15.799Z"
 }

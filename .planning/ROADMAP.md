@@ -208,13 +208,15 @@ by roadmap creation. Plan counts remain TBD until phase planning.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 22. Native Application Build and Single Execution | 3/3 | Complete   | 2026-09-27 |
+| 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 0/TBD | Not started | - |
 | 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
 
 ## Next Action
 
-Run `$gsd-verify-work 22` and record the one README clarity result in
-`22-UAT.md`. The refreshed verifier confirms 17/17 automated truths; Phase 23
-discussion and planning resume after this human UAT passes.
+Run `$gsd-discuss-phase 23 --auto` to settle the source shape, byte encoding,
+maximum size, cleanup control, and independent physical-destruction witness
+before planning implementation.
+Phase 22 is complete: its objective README contract UAT passed, the refreshed
+verifier confirms 17/17 truths, and no subjective readability claim is made.

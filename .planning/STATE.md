@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
-current_phase: 22
-current_phase_name: Native Application Build and Single Execution
-status: complete
-stopped_at: Phase 22 UAT and verification closeout complete
-last_updated: "2026-09-27T23:11:09.532Z"
+current_phase: 23
+current_phase_name: Live Local Allocation and Discharge
+status: planning
+stopped_at: Phase 22 complete, ready to discuss Phase 23
+last_updated: "2026-09-27T23:42:19Z"
 last_activity: 2026-09-27
-last_activity_desc: Completed quick task 260927-o7y; Phase 22 passed 17/17 truths and objective README contract UAT
-state_head: 6610ffbc3d2f5cccf47450170e57b1be71128a34
+last_activity_desc: Phase 22 complete, transitioned to Phase 23
+state_head: 4a663e4cc2ad10743936fd0bfbf6a833d7f06e29
 progress:
   total_phases: 4
   completed_phases: 1
@@ -81,10 +81,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 22 — Native Application Build and Single Execution (complete)
-Plan: 3/3 implementation plans complete
-Status: Phase 22 verification and objective README contract UAT passed; Phase 23 is next
-Last activity: 2026-09-27 — Refreshed Phase 22 verification (17/17 truths) and closed objective README contract UAT
+Phase: 23 — Live Local Allocation and Discharge
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-27 — Phase 22 complete, transitioned to Phase 23
 
 Progress: [███░░░░░░░] 25%
 
@@ -748,11 +748,14 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-27T23:11:09.498Z
-Stopped at: Phase 22 complete; ready to discuss Phase 23
+Last session: 2026-09-27T23:42:19Z
+Stopped at: Phase 22 complete, ready to discuss Phase 23
 Resume file: None
-Next command: $gsd-discuss-phase 23
-Routing note: The refreshed `.planning/phases/22-native-application-build-and-single-execution/22-VERIFICATION.md` status is `human_needed`: 17/17 automated truths pass, with the Plan 22-03 README clarity judgment awaiting user UAT. The prior `phase.complete` transition was premature after the verifier input summary changed; ROADMAP and STATE now point back to this gate. After UAT passes, proceed to `$gsd-discuss-phase 23`. Phase 21 remains archived prework; do not replay its UAT.
+Next command: $gsd-discuss-phase 23 --auto
+Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
+the refreshed verifier is `passed` at 17/17 truths, and the old subjective
+readability gate is historical only. Phase 22 is transitioned; continue with
+Phase 23 discussion. Phase 21 remains archived prework; do not replay its UAT.
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -836,7 +839,8 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Run `$gsd-execute-phase 22` to execute the three committed native application plans.
+- Continue with `$gsd-discuss-phase 23 --auto` to lock the live allocation witness,
+  bounded input contract, and physical cleanup evidence before planning.
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 
