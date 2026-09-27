@@ -1,13 +1,14 @@
 ---
 phase: 21-native-emission-ownership-and-resource-discharge-m004
-reviewed: 2026-09-27T00:49:08Z
+reviewed: 2026-09-27T01:04:23Z
 depth: standard
-files_reviewed: 14
+files_reviewed: 15
 files_reviewed_list:
   - internal/compiler/cgen/cgen.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
   - internal/compiler/cgen/cgen_test.go
+  - internal/compiler/cgen/export_test.go
   - internal/compiler/core/core.go
   - internal/compiler/interp/interp.go
   - internal/compiler/interp/interptestdirect/interptestdirect.go
@@ -19,39 +20,30 @@ files_reviewed_list:
   - internal/compiler/session/session_test.go
   - internal/compiler/session/verification_groundedness_test.go
 findings:
-  critical: 1
+  critical: 0
   warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 21: Code Review Report
 
-**Reviewed:** 2026-09-27T00:49:08Z  
+**Reviewed:** 2026-09-27T01:04:23Z  
 **Depth:** standard  
-**Files Reviewed:** 14  
-**Status:** issues_found
+**Files Reviewed:** 15  
+**Status:** clean
 
 ## Summary
 
-Reviewed the Phase 21 source scope and the whole-program emitter implementation it dispatches to. The schema-2 output-size preflight does not account for bytes added when a returned payload-bearing ADT is serialized. An input at the configured output limit can therefore begin emitting a document and then exit with status 74 partway through, instead of being refused before execution output starts.
+Re-reviewed the original 14-file scope plus `internal/compiler/cgen/export_test.go` after fix commit `d63e2c2`. CR-01 is resolved: output preflight now includes the maximum serialized Buffer, Byte, and nested-tag payload representations and sizes JSON string content conservatively. The added regression test obtains the calculated bound, sets the limit one byte below it, checks the stable output-bound error, and asserts that C serialization was not reached. No remaining correctness, security, or quality findings were identified in scope.
 
-## Critical Issues
+## Narrative Findings (AI reviewer)
 
-### CR-01: [BLOCKER] Payload return bytes are omitted from output-size preflight
-
-**File:** `internal/compiler/cgen/cgen_program.go:194-213`
-**Issue:** For a match entry, `schema2ExecutionDocumentSize` estimates the returned value using only the longest raw `arm.Value`. The terminal writer in `emitProgramTerminalValueWriter` serializes payload-bearing results as the alternative name followed by `:` and the payload representation (up to eight hex bytes for Buffer or a decimal Byte value). Those bytes are absent from this estimate. As a result, a program whose actual document is just over `executionOutputLimit` can pass the preflight and begin writing; `lang_write_bytes` then fails partway through and `main` returns 74 with truncated, invalid JSON. This violates the preflight’s guarantee that oversized execution documents are rejected before C serialization/runtime output.
-
-**Fix:** Compute the worst-case returned value using the same payload encoding contract as `lang_write_terminal_value` (including separator, payload width, and JSON escaping), or serialize a bounded canonical worst-case `execution.Execution` with the actual possible terminal values before comparing against the limit. Keep this calculation shared with the terminal writer’s representation so the two cannot drift.
-
-## Warnings
-
-## Info
+No findings.
 
 ---
 
-_Reviewed: 2026-09-27T00:49:08Z_  
+_Reviewed: 2026-09-27T01:04:23Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
