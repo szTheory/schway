@@ -1,8 +1,8 @@
 # Phase 22 — UI Review
 
-**Audited:** 2026-09-27  
-**Baseline:** Abstract 6-pillar standards; no `UI-SPEC.md` exists.  
-**Screenshots:** Not captured. The phase has no frontend assets; ports 3000 and 5173 were unavailable, and port 8080 returned a 308 redirect rather than the expected 200 response.
+- **Audited:** 2026-09-27
+- **Baseline:** Abstract 6-pillar standards; no `UI-SPEC.md` exists.
+- **Screenshots:** Not captured. The phase has no frontend assets; ports 3000 and 5173 were unavailable, and port 8080 returned a 308 redirect rather than the expected 200 response.
 
 ## Scope
 
