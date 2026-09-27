@@ -1,12 +1,33 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M004",
-  "phases": [],
+  "milestone": "M004 — Native Emission Ownership and Resource Discharge",
+  "phases": [
+    {
+      "number": "22",
+      "name": "Native Application Build and Single Execution",
+      "status": "pending"
+    },
+    {
+      "number": "23",
+      "name": "Live Local Allocation and Discharge",
+      "status": "pending"
+    },
+    {
+      "number": "24",
+      "name": "Ownership Transfer Through Calls and Errors",
+      "status": "pending"
+    },
+    {
+      "number": "25",
+      "name": "Separate Pointer Successors and Integrated Utility",
+      "status": "pending"
+    }
+  ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 22)",
+    "reason": "Phase 22 of 4 — needs a plan"
   },
-  "updated_at": "2026-09-27T13:42:25.663Z"
+  "updated_at": "2026-09-27T14:03:22.356Z"
 }

@@ -132,14 +132,42 @@ milestone numbers. Promote at the next milestone boundary with fresh evidence.
 
 ## Traceability
 
-The roadmapper assigns each of the 24 requirements to exactly one delivery
-phase, continuing at Phase 22. Cross-phase regression duties do not create
-duplicate requirement ownership. All start Pending.
+Each of the 24 requirements has exactly one completion owner in Phases 22–25.
+Cross-phase admission/regression duties do not create duplicate ownership.
+RES-05/06 and EVD-09 finish in Phase 24; local cleanup and physical controls
+are mandatory at Phase 23 admission. EVD-10 finishes the coverage matrix in
+Phase 25; each family's native host evidence is required when it lands.
+EVD-11 starts in Phase 22 and extends with every admitted foreign outcome.
+No new requirement maps to completed historical Phase 21. All remain Pending.
 
 | Requirement | Phase | Status |
 |---|---|---|
+| APP-02 | Phase 22 | Pending |
+| APP-03 | Phase 22 | Pending |
+| APP-04 | Phase 22 | Pending |
+| APP-05 | Phase 22 | Pending |
+| APP-06 | Phase 22 | Pending |
+| FFI-02 | Phase 22 | Pending |
+| FFI-03 | Phase 23 | Pending |
+| RES-04 | Phase 23 | Pending |
+| RES-05 | Phase 24 | Pending |
+| RES-06 | Phase 24 | Pending |
+| RES-07 | Phase 23 | Pending |
+| RES-08 | Phase 23 | Pending |
+| RES-09 | Phase 23 | Pending |
+| OWN-10 | Phase 24 | Pending |
+| OWN-11 | Phase 24 | Pending |
+| OWN-12 | Phase 24 | Pending |
+| NAT-11 | Phase 25 | Pending |
+| NAT-12 | Phase 25 | Pending |
+| NAT-13 | Phase 25 | Pending |
+| EVD-09 | Phase 24 | Pending |
+| EVD-10 | Phase 25 | Pending |
+| EVD-11 | Phase 22 | Pending |
+| DX-14 | Phase 25 | Pending |
+| DX-15 | Phase 25 | Pending |
 
-Coverage: 24 requirements; pending phase assignment.
+Coverage: 24/24 requirements mapped; zero orphans, zero duplicate owners.
 
 ---
-*Last updated: 2026-09-27 during M004 requirements definition.*
+*Last updated: 2026-09-27 during M004 roadmap creation.*

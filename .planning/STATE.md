@@ -2,11 +2,15 @@
 gsd_state_version: "1.0"
 milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
+current_phase: 22
+current_phase_name: Native Application Build and Single Execution
 status: planning
-last_updated: "2026-09-27T13:42:25.661Z"
+stopped_at: M004 roadmap complete; Phase 22 ready for planning
+last_updated: "2026-09-27T14:03:02.899Z"
 last_activity: 2026-09-27
+state_head: 9cd53d5eb46d0987475c927ef6f1128b7be0c720
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -22,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-27)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Define M004 requirements and roadmap; new implementation starts at Phase 22
+**Current focus:** Plan Phase 22 — Native Application Build and Single Execution; M004 requirements and roadmap are defined
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -76,10 +80,12 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-27 — Milestone M004 started
+Phase: 22 (Native Application Build and Single Execution); first of four new M004 delivery phases
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-09-27
+
+Progress: [░░░░░░░░░░] 0% of new M004 implementation; completed Phase 21 remains archived prework
 
 ## M003 Closeout (archived)
 
@@ -122,7 +128,19 @@ D-12-43's Phase 18 wrong-slot witness is now reflected in the authored debt and
 canonical generated view. Current qualified unowned debt is three:
 D-10-C04, D-14-46, D-14-47. M003's four-item closeout count remains historical.
 
-Next command after roadmap creation: `$gsd-plan-phase 22`.
+The final roadmap assigns all 24 pending requirements exactly once across
+Phases 22–25: application execution, live local allocation, call/error transfer,
+and separate pointer successors plus the integrated utility. Each has a public
+source/input/output witness and five observable success criteria. Local native
+cleanup proof is required in Phase 23, with transfer/error controls in Phase 24;
+the Phase 25 coverage owner does not defer family evidence. No production
+implementation or new runtime verification occurred during roadmap creation.
+
+Next command: `$gsd-plan-phase 22`.
+Routing checked after creating the four empty phase directories: `init.progress`
+reports M004, four unstarted phases and next phase 22; `state.validate --strict`
+passes. The canonical state-contract publisher reports `plan phase 22` through
+`/gsd:progress --next`. No implementation plan or completion is implied.
 The installed resolver may not identify latest completed `M00x` milestones;
 M003 is the shipped predecessor and Phase 21 is archived M004 prework. Do not
 reset numbering or infer that archived Phase 21 must run again.
@@ -684,11 +702,11 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-27T12:45:10Z
-Stopped at: M004 kickoff — requirements and roadmap being defined
-Resume file: None
-Next command: $gsd-plan-phase 22 (after milestone roadmap creation)
-Routing note: Phase 21 is complete, verified 6/6, and archived under M004-phases. `init.progress` sees M003 with zero phases and no next phase because it omits archived phase directories; follow the explicit M004 handoff. Do not repeat Phase 21 planning, execution, verification, or UAT.
+Last session: 2026-09-27T14:03:02.876Z
+Stopped at: M004 roadmap complete; Phase 22 ready for planning
+Resume file: .planning/ROADMAP.md
+Next command: $gsd-plan-phase 22
+Routing note: Active milestone is M004; init.progress and the generated state contract route to planning Phase 22, and strict state validation passes. Phase 21 remains completed archived prework with six historical verification truths and seven preserved UAT cases; do not replay it.
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -772,7 +790,7 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Run `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"` to formalize M004.
+- Run `$gsd-plan-phase 22` to plan the native application witness; M004 kickoff and requirement mapping are complete.
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 
