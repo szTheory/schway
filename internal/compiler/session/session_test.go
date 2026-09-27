@@ -3225,7 +3225,14 @@ func TestPhase20UnownedDebtPopulation(t *testing.T) {
 	if len(phase20DebtAuditCohort) != 10 {
 		t.Fatalf("authoritative M002 historical cohort has %d IDs, want 10", len(phase20DebtAuditCohort))
 	}
-	baselineBytes, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "20-nyquist-d-13-34-and-the-frontier-fixture", "20-DEBT-BASELINE.md"))
+	baselines, err := phaseArtifactGlob("20-nyquist-d-13-34-and-the-frontier-fixture", "20-DEBT-BASELINE.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(baselines) != 1 {
+		t.Fatalf("expected exactly one Phase 20 debt baseline, found %d: %v", len(baselines), baselines)
+	}
+	baselineBytes, err := os.ReadFile(baselines[0])
 	if err != nil {
 		t.Fatal(err)
 	}

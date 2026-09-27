@@ -1000,7 +1000,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 160
 command: grep -nE 'TBD|FIXME|XXX'
 classification: R1
@@ -1017,7 +1017,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 162
 command: go test ./internal/compiler/check/... -run TestComputeLoanLastUsesAndDerivePlaceLoansAgree
 classification: R2
@@ -1035,7 +1035,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above exerci
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 163
 command: go test ./internal/compiler/session/... -run TestAuditQLT02BudgetManifest
 classification: R2
@@ -1050,7 +1050,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 165
 command: go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -v
 classification: R2
@@ -1067,7 +1067,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 166
 command: go test ./internal/compiler/corevalidate -run 'Mode.*Invalid|DecodeMode' -v
 classification: R2
@@ -1084,7 +1084,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 169
 command: go test ./internal/compiler/<touched-package>/...
 classification: R1
@@ -1101,7 +1101,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 170
 command: grep -c -E 'D-11-(02|07|11|12|13|27|36|40|42)' …/PHASE-11-DEBT.md
 classification: R1
@@ -1116,7 +1116,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 171
 command: go test ./internal/compiler/callgraph/... -run 'TestEntryFunction…' -v -count=1
 classification: R1
@@ -1131,7 +1131,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 172
 command: go test ./internal/compiler/cgen/... -run 'TestEmittedAttributeSet…' -v -count=1
 classification: R1
@@ -1146,7 +1146,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 173
 command: grep -c -E 'function count|call-edge count|N =…' …/11-MIDPHASE-GATE.md
 classification: R1
@@ -1161,7 +1161,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 174
 command: awk … | wc -l
 classification: R1
@@ -1176,7 +1176,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 175
 command: grep -c 'D-11-25' …/session_phase11_differential_test.go
 classification: R1
@@ -1191,7 +1191,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 176
 command: go test ./internal/compiler/session/... -run 'TestQLT03GeneratorOpKindClosure…' -v -count=1
 classification: R1
@@ -1206,7 +1206,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 177
 command: go test ./internal/compiler/cache/... -run 'TestDeclaredInputNames|TestCache…|TestNoClosureDigestInCache' -v -count=1
 classification: R1
@@ -1221,7 +1221,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 178
 command: grep -c -E 'QLT-06a|QLT-06b|strictly dominates…' …/11-QLT06-ABSTENTION.md
 classification: R1
@@ -1236,7 +1236,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 179
 command: go test ./internal/compiler/reduce/... -run 'TestDropCallSite|TestDropOrphanFunction|…' -v -count=1
 classification: R1
@@ -1251,7 +1251,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 181
 command: go test ./internal/compiler/<package>/... -run <TestName> -count=1
 classification: R1
@@ -1268,7 +1268,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-01-SUMMARY.md
 line: 183
 command: go test ./<changed-package>/...
 classification: R1
@@ -1285,7 +1285,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md
 line: 448
 command: go test ./internal/compiler/<package>/... -run <TestName> -count=1
 classification: R1
@@ -1302,7 +1302,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above names 
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md
 line: 459
 command: go test ./internal/compiler/session/... -run TestLanguageMaturityGuardCountIsCurrent -v
 classification: R2
@@ -1317,7 +1317,7 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 ```reconciliation
-file: .planning/phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md
 line: 26
 command: go test ./<changed-package>/...
 classification: R1
@@ -1635,6 +1635,24 @@ The bounded full-suite timing runner in row `20-08-02` is a script, not a
 Go test identifier. The grade ladder therefore caps it at REACHABLE. The
 row remains tied to its actual measurement command and Plan 08 owns the
 result; the row-scoped exception is checked against this item.
+
+### D-14-130 — `11-VALIDATION.md:56` still targets the pre-archive roadmap
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/11-VALIDATION.md
+line: 56
+command: grep -c -E 'flto|escalation, not a pass' .planning/ROADMAP.md
+classification: R3
+verdict: renamed
+replacement: grep -c -E 'flto|escalation, not a pass' .planning/milestones/M002-ROADMAP.md
+```
+
+The root roadmap is now the milestone index, while the cited Phase 11 evidence
+remains in the M002 archive. The replacement targets that archived roadmap and
+resolves against its retained Phase 11 entry; the historical validation row is
+left unchanged.
 
 ---
 
