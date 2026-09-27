@@ -55,7 +55,7 @@ replaces `pathoracle`'s cycle refusal before loop planning.
 
 **Goal:** Close the archive-dependent findings in Phase 21 verification while preserving the completed implementation plans and UAT. M004 remains provisional; this entry registers only the already-existing gap-closure work.
 
-**Plans:** 6 plans
+**Plans:** 6/6 plans executed
 
 Plans:
 **Wave 1**
@@ -70,8 +70,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 21-05-PLAN.md — Restore archived Phase 16 decision and ownership guards.
-- [ ] 21-06-PLAN.md — Refresh validation corpus and groundedness reconciliation.
+- [x] 21-05-PLAN.md — Restore archived Phase 16 decision and ownership guards.
+- [x] 21-06-PLAN.md — Refresh validation corpus and groundedness reconciliation.
 
 ## Next Action
 
