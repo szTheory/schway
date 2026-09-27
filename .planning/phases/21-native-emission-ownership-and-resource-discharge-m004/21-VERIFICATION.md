@@ -1,19 +1,22 @@
 ---
 phase: 21-native-emission-ownership-and-resource-discharge-m004
-verified: 2026-09-26T21:40:34Z
-status: gaps_found
-score: 2/5 must-haves verified
+verified: 2026-09-27T01:15:37Z
+status: passed
+score: 5/5 must-haves verified
 covered_files:
   - .planning/PROJECT.md
   - .planning/ROADMAP.md
   - .planning/STATE.md
   - .planning/UNREACHABLE-CLAIMS.md
+  - .planning/EVIDENCE-RECONCILIATION.md
   - .planning/milestones/M002-phases/11-multi-function-native-emission-and-interprocedural-equivalen/PHASE-11-DEBT.md
   - .planning/milestones/M002-phases/12-result-payloads/PHASE-12-DEBT.md
   - .planning/milestones/M003-REQUIREMENTS.md
   - .planning/milestones/M003-ROADMAP.md
+  - .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md
   - .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/PHASE-14-DEBT.md
   - .planning/milestones/M003-phases/16-branch-match-emitter-port/PHASE-16-DEBT.md
+  - .planning/milestones/M003-phases/16-branch-match-emitter-port/16-05-SUMMARY.md
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-CONTEXT.md
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-01-PLAN.md
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-01-SUMMARY.md
@@ -23,6 +26,10 @@ covered_files:
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-03-SUMMARY.md
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-04-PLAN.md
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-04-SUMMARY.md
+  - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-05-PLAN.md
+  - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-05-SUMMARY.md
+  - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-06-PLAN.md
+  - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-06-SUMMARY.md
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-RESOURCE-DISCHARGE-CONTRACT.json
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-LTO-EVIDENCE.md
   - .planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VALIDATION.md
@@ -31,60 +38,48 @@ covered_files:
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
   - internal/compiler/cgen/cgen_test.go
+  - internal/compiler/cgen/export_test.go
   - internal/compiler/core/core.go
   - internal/compiler/interp/interp.go
   - internal/compiler/interp/interptestdirect/interptestdirect.go
   - internal/compiler/native/foreign_nonlocal.go
+  - internal/compiler/session/evidence_grade_test.go
   - internal/compiler/session/session_phase16_frozen_evidence_external_test.go
   - internal/compiler/session/session_phase18_payload_test.go
   - internal/compiler/session/session_phase21_contract_test.go
   - internal/compiler/session/session_phase21_lto_evidence_test.go
   - internal/compiler/session/session_phase5_alias.go
   - internal/compiler/session/session_test.go
-  - internal/compiler/session/witness_registry_test.go
-  - internal/compiler/session/evidence_grade_test.go
   - internal/compiler/session/verification_groundedness_test.go
+  - internal/compiler/session/witness_registry_test.go
   - testdata/phase16/public-emitter-consumers.json
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
-covered_digest: "v1:sha256:fda1730b65f6650f960405378033e9b62f71e6ee542fbe56e447479a8b4a961e"
-behavior_unverified: 1
+covered_digest: "v1:sha256:5816f5c8e25dbfab497efd25644992f2d8f6780212c632b5a40db095a9596cad"
+behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: passed
-  previous_score: 5/5
-  gaps_closed: []
-  gaps_remaining:
-    - "Archive-dependent validation and refusal guards no longer resolve their inputs."
-  regressions:
-    - "The archived M003 tree exposes pre-archive path and corpus assumptions in recurring guards."
-behavior_unverified_items:
-  - "The by-pointer disposition test cannot reach its behavioral assertions until it resolves the archived Phase 16 summary path."
-gaps:
-  - truth: "Archive-dependent Phase 16 and corpus guards pass against the current M003 tree."
-    status: failed
-    reason: "Current checks depend on paths and corpus fingerprints that changed when M003 artifacts were archived."
-    artifacts:
-      - path: "internal/compiler/cgen/cgen_program_test.go"
-        issue: "TestProgramBorrowedByPointerDisposition still reads the old .planning/phases/ path."
-      - path: "internal/compiler/session/session_test.go"
-        issue: "TestPhase16EmitterCutsAreAmendedAndOwned still reads the removed root .planning/REQUIREMENTS.md."
-      - path: "internal/compiler/session/evidence_grade_test.go"
-        issue: "The checked-in validation corpus pair digest differs from the current requested corpus."
-      - path: "internal/compiler/session/verification_groundedness_test.go"
-        issue: "The reconciliation and landing-phase inventory no longer matches findings in the archived tree."
-    missing:
-      - "Update the affected path resolvers and reconciliation data for M003 archive locations."
-      - "Refresh the validation corpus pair record and rerun its guard."
+  previous_status: gaps_found
+  previous_score: 2/5
+  gaps_closed:
+    - "Archive-dependent Phase 16 pointer-refusal and NAT-09 ownership guards resolve archived M003 inputs."
+    - "The checked-in validation corpus record matches the consumer's exported request."
+    - "Groundedness and reconciliation inventories match the archived M003 tree."
+  gaps_remaining: []
+  regressions: []
+decision_coverage:
+  honored: 3
+  total: 3
+  not_honored: []
 ---
 
 # Phase 21: Native Emission Ownership and Resource Discharge — Verification
 
-**Phase Goal:** Design checked resource-discharge and foreign-boundary ownership contracts required before any M003-cut emitter family can be reconsidered.
+**Phase Goal:** Close the archive-dependent findings in Phase 21 verification while preserving the completed implementation plans and UAT. M004 remains provisional; this entry registers only the already-existing gap-closure work.
 
-**Verified:** 2026-09-26 21:40:34 UTC
-**Status:** gaps_found
-**Re-verification:** Yes — refreshed against the post-M003-archive tree. The completed UAT was preserved.
+**Verified:** 2026-09-27 01:15:37 UTC
+**Status:** passed
+**Re-verification:** Yes — after closure of the previous archive-dependent gaps. The six plans and existing UAT were preserved.
 
 ## Goal Achievement
 
@@ -92,67 +87,91 @@ gaps:
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | The checked contract classifies all seven modeled foreign exits and rejects incomplete or over-admitting mutations. | ✓ VERIFIED | `TestPhase21ResourceDischargeContract` passed with mutation controls for missing, unknown, duplicate, and misclassified exits, missing discharge evidence, and attempted family admission. The JSON keeps all D-16-11..13 families unadmitted. |
-| 2 | The three cut emitter families remain refused, and public lowering has one production authority. | ◷ PARTIAL | `TestPublicDispatchUsesOnlyEmitProgram`, `TestPhase21LegacyEmitterBodiesRetired`, and `TestForeignResourceLedgerEmitterRemainsRefused` passed. The whole cgen package currently fails in `TestProgramBorrowedByPointerDisposition` because it tries to read the archived path `.planning/phases/16-branch-match-emitter-port/16-05-SUMMARY.md`; the live summary is now under `.planning/milestones/M003-phases/`. |
-| 3 | The emitted multi-function fixture agrees across interpreter, `-O0`, `-O3`, and `-O3 -flto`, with bounded provenance. | ✓ VERIFIED | Re-ran the tagged comparison successfully. It produced the same emitted-C digest `d096fca69195eb63b09566387690a7b40fdc9c364f55b0b4a24209a895ff6416`, fixture digest, Darwin/arm64 host, and Apple Clang 21.0.0 recorded in the receipt. The independent comparator negative control passed. |
-| 4 | Historical emitter debt rows and the derived claims view preserve family-specific gates and current ownership. | ◷ PARTIAL | `TestDebtRegistersAreWellFormed` and `TestUnreachableClaimsViewIsCurrent` passed. `TestPhase16EmitterCutsAreAmendedAndOwned` cannot reach its assertions because it reads removed `.planning/REQUIREMENTS.md`; M003 requirements are archived at `.planning/milestones/M003-REQUIREMENTS.md`, and Phase 21 has no ratified M004 requirement IDs. |
-| 5 | The recurring evidence-grade and groundedness controls match the archived project corpus. | ✗ NOT VERIFIED | `TestValidationRowGradesAreEarnedOverArchivedCorpus` fails because the checked-in corpus pair digest differs from the current requested corpus. `TestVerificationGroundednessThreeClassesAreEmpty` reports unresolved findings and landing-phase entries after M003 artifacts moved under `.planning/milestones/M003-phases/`. These checks passed in the original plan run but are stale against the archived tree. |
+| 1 | Archive-dependent Phase 16 refusal and ownership guards resolve the tracked M003 archive and preserve their behavioral and mutation assertions. | ✓ VERIFIED | `TestProgramBorrowedByPointerDisposition` and `TestPhase16EmitterCutsAreAmendedAndOwned` both passed. The former reads `.planning/milestones/M003-phases/16-branch-match-emitter-port/16-05-SUMMARY.md`, checks `cut-m004`, multi-function refusal, and that serialization was not reached. The latter reads `.planning/milestones/M003-REQUIREMENTS.md`, finds the archived Phase 16 debt register, checks all three NAT-09 families against the current Phase 21 owner, and rejects four seeded mutations. |
+| 2 | The three cut emitter families remain refused and public lowering has one production authority. | ✓ VERIFIED | `TestPublicDispatchUsesOnlyEmitProgram`, `TestPhase21LegacyEmitterBodiesRetired`, `TestProgramBorrowedByPointerDisposition`, and `TestForeignResourceLedgerEmitterRemainsRefused` passed in `internal/compiler/cgen`. The full Go suite also passed according to the current verification run evidence provided for this tree. |
+| 3 | The emitted multi-function fixture agrees across interpreter, `-O0`, `-O3`, and `-O3 -flto`, with bounded provenance. | ✓ VERIFIED | The previous verification recorded the one-shot tagged four-lane comparison passing with emitted-C digest `d096fca69195eb63b09566387690a7b40fdc9c364f55b0b4a24209a895ff6416`. This re-verification regression-checked the preserved source/receipt binding via `TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison`; the receipt remains bounded to the named fixture, Darwin/arm64, and Apple Clang 21.0.0. The expensive tagged comparison was not repeated. |
+| 4 | Historical emitter debt rows and the derived claims view preserve family-specific gates and current ownership. | ✓ VERIFIED | `TestDebtRegistersAreWellFormed`, `TestUnreachableClaimsViewIsCurrent`, and `TestPhase16EmitterCutsAreAmendedAndOwned` passed. The Phase 16 debt artifact resolves from the M003 archive, and no unratified M004 requirement IDs were assigned. |
+| 5 | The recurring evidence-grade and groundedness controls match the archived project corpus. | ✓ VERIFIED | `TestValidationCorpusPairExportMatchesConsumer`, `TestValidationRowGradesAreEarnedOverArchivedCorpus`, `TestCheckedInCorpusRecordRejectsTamperingAndVacuity`, `TestVerificationGroundednessThreeClassesAreEmpty`, `TestVerificationGroundednessFrontierIsPinned`, `TestReconciliationVerdictsCarryTheirObligations`, and `TestEvidenceReconciliationViewIsCurrent` passed. The record binds a completed 34-pair consumer request; groundedness reports R1=0, R2=0, R3=0 and 28 owned R2b findings, with 710 enforced-tier documents and 765 verification commands meeting the corpus floors. |
 
-**Score:** 2/5 truths verified; 2 partial; 1 not verified.
+**Score:** 5/5 truths verified (0 present, behavior-unverified)
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `21-RESOURCE-DISCHARGE-CONTRACT.json` | Checked exit and family contract | ✓ VERIFIED | Versioned, design-only contract. Supported paths carry discharge and future evidence rules; opaque paths are refused or outside cleanup guarantees. |
-| `session_phase21_contract_test.go` | Structural guard wired to contract | ✓ VERIFIED | The untagged test reads the checked-in JSON and rejects seeded mutations. |
-| `cgen.go` and `cgen_program_test.go` | Single dispatch and retired bodies remain absent | ◷ PARTIAL | The dedicated dispatch, retirement, and foreign-ledger refusal probes pass. The full cgen suite is blocked by an archive-relative summary path in a separate by-pointer disposition test. |
-| `session_phase21_lto_evidence_test.go` and `21-LTO-EVIDENCE.md` | One-shot emitted-fixture comparison and bounded receipt | ✓ VERIFIED | Re-run passed, and current emitted-C digest matches the committed receipt. |
-| Debt records and `.planning/UNREACHABLE-CLAIMS.md` | Source rows and derived view stay aligned | ◷ PARTIAL | Register parsing and derived-view equality pass; the ownership regression test still reads the deleted root requirements file. |
-| Validation corpus record and groundedness register | Current archived corpus snapshot | ✗ NOT VERIFIED | The checked-in pair digest and reconciliation inventory need refresh for the M003 archive paths. |
+| `21-RESOURCE-DISCHARGE-CONTRACT.json` | Checked exit and family contract | ✓ VERIFIED | `TestPhase21ResourceDischargeContract` passes missing, unknown, duplicate, misclassified, missing-evidence, over-admission, and missing-family mutation controls. |
+| `session_phase21_contract_test.go` | Contract guard wired to checked-in JSON | ✓ VERIFIED | The named test reads the contract through the project path helper and validates the parsed data plus mutations. |
+| `cgen.go`, `cgen_program.go`, `cgen_program_test.go` | Single dispatch, retired bodies, and refused cuts | ✓ VERIFIED | The named cgen checks pass; the archive-backed pointer-refusal test now passes as well. |
+| `session_phase21_lto_evidence_test.go`, `21-LTO-EVIDENCE.md` | Bounded emitted-fixture evidence | ✓ VERIFIED | Source/receipt binding regression check passes; historical one-shot four-lane result and its evidence bounds remain recorded. |
+| Archived debt registers, `UNREACHABLE-CLAIMS.md`, and reconciliation view | Authored evidence and derived views stay aligned | ✓ VERIFIED | Debt parsing, claims rendering, reconciliation obligation, and current-view checks pass against archive paths. |
+| Validation corpus JSONL and manifest | Completed pair record matches consumer request | ✓ VERIFIED | Consumer export, 34-pair record validation, tamper controls, and all archived validation-grade rows pass. Manifest pair digest: `f0b7cf7f48c81745e372dab6999cf4b5c0a2d4385749e41c6b70f8241791ec28`. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| `session_phase21_contract_test.go` | `21-RESOURCE-DISCHARGE-CONTRACT.json` | `testsupport.ProjectPath` + JSON decoder + mutation validator | ✓ WIRED | Focused test passed. |
-| `cgen_program_test.go` | `cgen.go` | Go AST checks | ✓ WIRED | Sole dispatch and retired-body assertions passed; by-pointer disposition integration test is blocked by its stale fixture path. |
-| `session_phase21_lto_evidence_test.go` | Phase 14 fixture and comparator | Direct emission + shared four-tier runner + all-pairs comparison | ✓ WIRED | Tagged comparison passed and receipt digest remained unchanged. |
-| `PHASE-16-DEBT.md` | Contract and refusal witness | Named witness + contract reference | ◷ PARTIAL | Debt register parses, but its anti-decay ownership test cannot read the removed root requirements file. |
+| `session_phase21_contract_test.go` | `21-RESOURCE-DISCHARGE-CONTRACT.json` | Project path helper, JSON decoder, and mutation validator | ✓ WIRED | Focused contract test passed. |
+| `cgen_program_test.go` | Archived Phase 16 Plan 16-05 summary | `testsupport.ProjectPath` | ✓ WIRED | The file resolves under `.planning/milestones/M003-phases/`; cut selection and refusal assertions passed. |
+| `session_test.go` | Archived NAT-09, Phase 16 debt, and Phase 21 roadmap registration | Archive resolver, shared debt parser, and ownership mutation controls | ✓ WIRED | `TestPhase16EmitterCutsAreAmendedAndOwned` passed, including four seeded mutations. |
+| `evidence_grade_test.go` | Consumer-request export and checked-in corpus pair record | Exported request, digests, completion witnesses | ✓ WIRED | Consumer-pair equality, row grading, and tamper/vacuity tests passed. |
+| `verification_groundedness_test.go` | Archived M003 corpus and reconciliation register | Live corpus scan, reconciled finding obligations, derived view | ✓ WIRED | Groundedness, frontier, obligations, and generated view tests passed. |
+| `session_phase21_lto_evidence_test.go` | Phase 14 fixture and emitted-code comparator | Tagged test source bound to evidence receipt | ✓ WIRED | Receipt-binding regression check passed; tagged run evidence is unchanged. |
 
-### Data-Flow Trace
+### Data-Flow Trace (Level 4)
 
-Not applicable — no user-facing data flow. The emitted-C test traces its checked fixture through direct emission, native execution, and the existing semantic comparator.
+Not applicable to a user-facing feature. The relevant validation evidence flows from the exported test request to the producer run record and manifest; the test verifies requested-pair identity, pair and record digests, and completion witnesses. Groundedness findings are measured from the live archived corpus and reconciled against the authored Phase 14 register; the generated reconciliation view is compared with the shared renderer.
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Contract completeness and mutation refusal | `go test ./internal/compiler/session -run '^TestPhase21ResourceDischargeContract$' -count=1 -v` | All seeded contract mutations were rejected. | ✓ PASS |
-| Current emitted multi-function comparison | `go test -tags=phase21_lto_evidence ./internal/compiler/session -run '^TestPhase21EmittedMultiFunctionLTOComparison$' -count=1 -v` | Four-lane semantic equality; current emitted-C digest matches the receipt. | ✓ PASS |
-| Sole dispatcher, retired bodies, foreign-ledger refusal | `go test ./internal/compiler/cgen -run '^(TestPhase21LegacyEmitterBodiesRetired|TestPublicDispatchUsesOnlyEmitProgram|TestForeignResourceLedgerEmitterRemainsRefused)$' -count=1 -v` | All three focused probes passed. | ✓ PASS |
-| Archived validation corpus snapshot | `go test ./internal/compiler/session -run '^TestValidationRowGradesAreEarnedOverArchivedCorpus$' -count=1` | Checked-in corpus pair digest does not match the current requested corpus. | ✗ FAIL |
-| Archived debt ownership guard | `go test ./internal/compiler/session -run '^TestPhase16EmitterCutsAreAmendedAndOwned$' -count=1` | Cannot open removed `.planning/REQUIREMENTS.md`. | ✗ FAIL |
-| Groundedness closure | `go test ./internal/compiler/session -run '^TestVerificationGroundednessThreeClassesAreEmpty$' -count=1` | Unresolved R1/R2/R3 findings and R2b landing entries remain after archiving. | ✗ FAIL |
-| Full cgen package suite | `go test ./internal/compiler/cgen -count=1` | Fails in `TestProgramBorrowedByPointerDisposition` while opening the pre-archive Phase 16 summary path. | ✗ FAIL |
+| Archived by-pointer decision/refusal and emitter dispatch boundaries | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^(TestProgramBorrowedByPointerDisposition|TestPhase21LegacyEmitterBodiesRetired|TestPublicDispatchUsesOnlyEmitProgram|TestForeignResourceLedgerEmitterRemainsRefused)$' -count=1 -v` | All four named tests passed; refusal occurred before serialization. | ✓ PASS |
+| NAT-09 ownership and archive agreement | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase16EmitterCutsAreAmendedAndOwned$' -count=1 -v` | Passed with four seeded rejection controls. | ✓ PASS |
+| Validation corpus pairing, grades, and integrity | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestValidationCorpusPairExportMatchesConsumer|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestCheckedInCorpusRecordRejectsTamperingAndVacuity)$' -count=1 -v` | All named tests passed across 21 validation documents and the completed 34-pair record. | ✓ PASS |
+| Groundedness/reconciliation against archived M003 | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestVerificationGroundednessThreeClassesAreEmpty|TestVerificationGroundednessFrontierIsPinned|TestReconciliationVerdictsCarryTheirObligations|TestEvidenceReconciliationViewIsCurrent)$' -count=1 -v` | All named tests passed; 0 unresolved R1/R2/R3 and 28 owned R2b findings. | ✓ PASS |
+| Resource-discharge contract and LTO receipt binding | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase21ResourceDischargeContract|TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison)$' -count=1 -v` | Contract mutation controls and receipt/source binding passed. | ✓ PASS |
+| Complete repository suite/build | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...`; `GOCACHE=/tmp/ai-lang-verification-gocache go build ./...` | Both pass on the current source tree, per current-run evidence supplied with the verification task. | ✓ PASS |
+
+The completed `21-UAT.md` reports 7/7 automated checks passed. It was neither replayed nor modified.
+
+### Probe Execution
+
+Not applicable — this phase is a compiler/testing and evidence-reconciliation phase, and its plans/success criteria do not declare shell probes.
 
 ### Requirements Coverage
 
-Phase 21 plans declare no requirement IDs, and `phase_req_ids` is null. M004 requirements have not been ratified. The old report's NAT-09 linkage to the root M003 requirements file was removed from this refresh; no unratified M004 requirement is claimed as satisfied.
+No requirement IDs are declared by any of the six phase plans. The archived M003 requirement NAT-09 is checked as historical ownership evidence, but it is not claimed as a new M004 requirement. M004 remains provisional and has no ratified requirements. No orphaned requirements are mapped to Phase 21.
 
 ### Decision Coverage
 
-The three decisions in `21-CONTEXT.md` remain honored: contract checks stay structural, unsupported exits remain refused or outside cleanup guarantees, and LTO evidence is bounded to the named fixture/compiler/host.
+All trackable decisions in `21-CONTEXT.md` are honored by shipped artifacts (3/3, zero unhonored). The contract stays structural, unsupported exits remain refused or outside cleanup guarantees, and LTO evidence remains bounded to its recorded fixture/compiler/host.
+
+### Test Quality Audit
+
+| Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
+|---|---|---:|---:|---:|---|---|
+| `internal/compiler/cgen/cgen_program_test.go` | None | Yes | 0 found for phase checks | No | Behavioral refusal plus pre-serialization state assertion | PASS |
+| `internal/compiler/session/session_test.go` | None | Yes | 0 found for phase check | No | Value-level archive/owner assertions and seeded mutation rejection | PASS |
+| `internal/compiler/session/evidence_grade_test.go` | None | Yes | 0 found for phase checks | No | Pair/digest/completion and per-row value assertions | PASS |
+| `internal/compiler/session/verification_groundedness_test.go` | None | Yes | 0 found for phase checks | No | Measured findings, obligations, and exact derived-view equality | PASS |
+
+No Phase 21 requirement-linked tests exist because the plans declare no requirement IDs. The refresh producer consumes the consumer-exported exact request, and tests validate its recorded outcomes and digests rather than generating expected results from the system under test.
+
+### Anti-Patterns Found
+
+| File | Line | Pattern | Severity | Impact |
+|---|---:|---|---|---|
+| None | — | No actionable debt markers or stubs in the phase-modified implementation paths | — | The broad stub-pattern scan produced only legitimate empty-slice returns, test fixtures, and scanner-pattern literals; no user-visible stub or unreferenced TBD/FIXME/XXX marker was found. |
 
 ### Human Verification Required
 
-None. `21-UAT.md` remains `status: complete` with all seven automated checks passed. It was not rerun or modified. Runtime cleanup witnesses and emitter admission remain explicit future requirements.
+N/A — infrastructure/foundation phase with no user-facing elements to test manually. All current acceptance criteria are verified programmatically. The four-lane compiler measurement remains intentionally bounded to the prior named fixture/toolchain evidence and does not claim cleanup behavior or performance.
 
 ### Gaps Summary
 
-Phase 21's contract and scoped LTO evidence remain valid, but archived-artifact consumers no longer pass. Refresh the validation-corpus record, update path resolution and groundedness reconciliation for M003's archived files, then rerun the affected guards before refreshing Phase 21 verification again. Do not rerun UAT.
+All carried-forward archive-dependent gaps are closed. Both archive consumers now resolve the M003 archive; NAT-09, the archived Phase 16 debt rows, and the current provisional Phase 21 owner agree; the corpus record matches its exact exported request; and the groundedness/reconciliation controls pass on the archived corpus. All previously passed truths received regression checks, the full repository test/build passes per current-run evidence, and the existing 7/7 UAT remains preserved. No gaps or deferred items remain for this provisional phase entry.
 
 ---
 
-_Verified: 2026-09-26T21:40:34Z_
-_Verifier: Codex (inline execution fallback)_
+_Verified: 2026-09-27T01:15:37Z_
+_Verifier: Codex (gsd-verifier re-verification)_
