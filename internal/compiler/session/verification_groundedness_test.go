@@ -1349,7 +1349,6 @@ var pinnedFrontier = []violationRecord{
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 59, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b},
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 60, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b},
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 61, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b},
-	{File: ".planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md", Line: 133, Command: "go test ./internal/compiler/cgen -run '^(TestPhase21LegacyEmitterBodiesRetired|TestPublicDispatchUsesOnlyEmitProgram|TestForeignResourceLedgerEmitterRemainsRefused)$' -count=1 -v", Classification: classR2b},
 }
 
 // measuredViolations runs the classifier once over the whole Tier-A
@@ -2239,7 +2238,6 @@ var r2bLandingPhases = map[violationRecord]string{
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 59, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b}:                                                                                                                                                            "P20",
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 60, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b}:                                                                                             "P20",
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 61, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b}:                                    "P20",
-	{File: ".planning/phases/21-native-emission-ownership-and-resource-discharge-m004/21-VERIFICATION.md", Line: 133, Command: "go test ./internal/compiler/cgen -run '^(TestPhase21LegacyEmitterBodiesRetired|TestPublicDispatchUsesOnlyEmitProgram|TestForeignResourceLedgerEmitterRemainsRefused)$' -count=1 -v", Classification: classR2b}: "P21",
 }
 
 // TestVerificationGroundednessThreeClassesAreEmpty is plan 14-10 Task 3's

@@ -539,11 +539,7 @@ func deriveCeiling(index *testIndex, record *runRecord, evidence string) (ceilin
 	if assertGoTestsInvocationPattern.MatchString(evidence) {
 		return deriveAssertGoTestsCeiling(index, record, evidence)
 	}
-	if strings.HasPrefix(evidence, "go test") {
-		parsed, ok := parseGoTestCommand(evidence)
-		if !ok {
-			return "DEFINED", nil
-		}
+	if parsed, ok := parseGoTestCommand(evidence); ok {
 		names := make(map[string]bool)
 		for _, operand := range parsed.Packages {
 			set, _ := index.resolvePackageNames(operand)
@@ -573,6 +569,11 @@ func deriveCeiling(index *testIndex, record *runRecord, evidence string) (ceilin
 			}
 		}
 		return "WIRED", matchedNames
+	}
+	if strings.HasPrefix(evidence, "go test") {
+		// Keep malformed go-test-shaped cells at DEFINED; a command with
+		// environment assignments is handled by parseGoTestCommand above.
+		return "DEFINED", nil
 	}
 	if verificationCommandPattern.MatchString(evidence) || strings.Contains(evidence, "scripts/") {
 		// grep/rg/awk/sed/git/./scripts/go run, or any other shell
@@ -1112,9 +1113,6 @@ func resolvedPkgPatterns(index *testIndex, evidence string) []pkgPattern {
 	evidence = strings.TrimSpace(evidence)
 	if assertGoTestsInvocationPattern.MatchString(evidence) {
 		return pkgPatternsFor(evidence)
-	}
-	if !strings.HasPrefix(evidence, "go test") {
-		return nil
 	}
 	parsed, ok := parseGoTestCommand(evidence)
 	if !ok || parsed.Pattern == "" || len(parsed.Packages) == 0 {
