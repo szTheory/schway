@@ -7,6 +7,18 @@ suite, and the refreshed goal-verification report were checked. It confirms
 Evidence is macOS-only; this does not claim a Linux run. Future direction lives
 in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
+### Documentation-gate amendment — 2026-09-27
+
+Source inspection found the existing Phase 22 README covers its build, run,
+manifest, evidence, replay, trust, and closure boundaries but lacked an explicit
+same-run event-evidence command. The focused `TestPhase22READMEContract` and
+named CLI checks passed on this macOS host after adding that example; no CI run
+or Linux execution is claimed here. These are newly executed documentation and
+CLI checks, distinct from the historical Phase 22 verifier receipt, which still
+records 17/17 truths and a human-needed README review until regenerated. The
+contract test does not establish subjective readability. The three capability
+recommendations and Phase 23/24/25 ordering below remain unchanged.
+
 ## What exists
 
 | Capability | Observed boundary | Source / evidence anchor |

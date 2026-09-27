@@ -30,9 +30,9 @@ costs.
 
 ## Verification Operating Preference
 
-GSD defaults to automating verification wherever practical, using integration, end-to-end, smoke, and seam tests as suitable evidence. Move recurring checks into CI when their ongoing regression value justifies their maintenance and runtime cost. For claims established deterministically, target zero human verification or UAT. Reserve human handoff for irreducible judgment, external access or hardware unavailable to the agent, and decisions reserved to the user.
+Define acceptance checks while planning, then choose the lowest reachable evidence layer that proves each claim: unit, seam, integration, end-to-end, or smoke checks, with negative controls and failure-path cases where relevant. Automate deterministic claims instead of handing them to a user for UAT. Put fast, stable checks into existing CI when their regression value exceeds their runtime and maintenance cost. Keep human handoff for irreducibly subjective judgment, real external systems or devices, and user-owned access or authority.
 
-This preference does not waive mandatory workflow gates, required user authorization, or acceptance decisions explicitly designated as human-only. Future phase plans must name the concrete automated verification commands that prove their acceptance criteria and arrange for high-value recurring checks to run in CI.
+This preference does not waive mandatory workflow gates, required user authorization, or acceptance decisions explicitly designated as human-only. Future phase plans must name the concrete verification commands that prove their acceptance criteria and arrange for high-value recurring checks to run in existing CI.
 
 ## Current State
 

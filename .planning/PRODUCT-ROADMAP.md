@@ -16,8 +16,10 @@ VM or LLVM backend is not a prerequisite for useful programs.
 M001 established source-to-native behavior; M002 added executable Lang calls;
 M003 added independent returns, computed matches/payloads, and U64 constants.
 Phase 21 completed contract/retirement prework. Phase 22 delivered its
-application/build/evidence implementation; phase closeout awaits one README
-clarity UAT. The separate `lang app build` / `lang app run` route retains a native app, accepts a
+application/build/evidence implementation. Its objective README contract now
+has a focused recurring test; the previous verifier still needs regeneration
+before closeout. The test does not judge subjective readability. The separate
+`lang app build` / `lang app run` route retains a native app, accepts a
 bounded U64 input, starts it once, and preserves ordinary streams and process
 outcomes. Evidence capture and explicit differential replay remain separate.
 The older `lang run` path is still the synthetic-input O0/O3 conformance
@@ -36,7 +38,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Application build/run is in place; finish reading a bounded file byte through a live Lang-owned foreign buffer | Phase 22's 17 automated truths pass; its README clarity UAT remains. Delivered application/evidence separation and explicit local C links. Remaining: per-operation contracts, acquisition-derived obligations, transfer/error cleanup, bounded shared/exclusive read-copy pointers | Two input files yield independently expected results; real allocations survive transfer and are freed once; unsupported shapes fail closed; macOS/Linux receipts |
+| **Now: M004** | Application build/run is in place; finish reading a bounded file byte through a live Lang-owned foreign buffer | Phase 22's 17 implementation truths passed historically; its README command/limit/boundary contract now has `TestPhase22READMEContract`; regenerate the verifier before closeout. Remaining: per-operation contracts, acquisition-derived obligations, transfer/error cleanup, bounded shared/exclusive read-copy pointers | Two input files yield independently expected results; real allocations survive transfer and are freed once; unsupported shapes fail closed; macOS/Linux receipts |
 | **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
@@ -76,7 +78,7 @@ engine agreement alone cannot prove correctness.
 
 | Capability trigger | Analysis/contract that changes | Decisive evidence and refusal boundary | Owner |
 |---|---|---|---|
-| Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | Phase 22's automated tests establish bounded U64 input, one native launch, ordinary streams, separate evidence capture, and explicit independent replay; general file IO remains unimplemented | Implementation delivered; closeout waits on README clarity UAT; extend only for a concrete consumer |
+| Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | Phase 22's automated tests establish bounded U64 input, one native launch, ordinary streams, separate evidence capture, and explicit independent replay; `TestPhase22READMEContract` pins the public documented forms and limits; general file IO remains unimplemented | Implementation delivered; verifier refresh remains before closeout; extend only for a concrete consumer |
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
 | Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Use after callee return, repeated site in distinct calls, failure after acquisition; reject double/wrong release and cleanup on transfer | M004 transfer phase |
 | Shared/exclusive pointer access | Borrow endpoints, escape/capture refusal, actual C ABI and emitted attributes | Separate family witnesses on macOS/Linux; no unsupported alias/alignment/capture promises | M004 pointer phase |
