@@ -115,6 +115,27 @@ func TestPhase22EvidenceReportWriteFailurePreservesAppOutcome(t *testing.T) {
 	assertPhase22LaunchCount(t, marker, 1)
 }
 
+func TestPhase22CompleteEvidenceReportWriteFailureIsNotVerified(t *testing.T) {
+	root := t.TempDir()
+	marker := filepath.Join(root, "launches.txt")
+	capture := phase22CompleteCapture(t)
+	body := fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout\\n'\nprintf 'app stderr\\n' >&2\nprintf %%s %s > \"$LANG_APP_EVIDENCE_PATH\"\n", shellQuote(marker), shellQuote(capture))
+	artifact := writePhase22EvidenceScript(t, body)
+	var stdout, stderr bytes.Buffer
+	outcome, report, err := DefaultRunner().RunApplicationWithEvidence(context.Background(), artifact, "7", filepath.Join(root, "missing", "report.json"), EvidenceEvents, &stdout, &stderr)
+	var toolError *ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.evidence_report_write_failed" {
+		t.Fatalf("report error=%v, want native.evidence_report_write_failed", err)
+	}
+	if outcome.Kind != RunExited || outcome.ExitCode != 0 || report.ProcessOutcome != outcome || report.CaptureStatus != EvidenceStatusComplete || report.Execution == nil || report.Verified {
+		t.Fatalf("outcome=%+v report=%+v; complete capture must remain explicitly unverified when report publication fails", outcome, report)
+	}
+	if stdout.String() != "app stdout\n" || stderr.String() != "app stderr\n" {
+		t.Fatalf("streams stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	assertPhase22LaunchCount(t, marker, 1)
+}
+
 func phase22AssertIncompleteEvidence(t *testing.T, body string, configure func(*Runner)) {
 	t.Helper()
 	root := t.TempDir()
