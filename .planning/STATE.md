@@ -3,11 +3,11 @@ gsd_state_version: "1.0"
 milestone: M003
 current_phase: 21
 status: completed
-stopped_at: Phase 21 complete — all phases complete
-last_updated: "2026-09-27T01:38:48.854Z"
-last_activity: 2026-09-26
-last_activity_desc: Phase 21 complete
-state_head: 516f8859d9f6bebbe1d498acbbad075dc76d3ce8
+stopped_at: Phase 21 archived and verified — M004 kickoff ready
+last_updated: "2026-09-27T12:45:10Z"
+last_activity: 2026-09-27
+last_activity_desc: Completed Phase 21 archive handoff for provisional M004
+state_head: 397753f8873dfb2621a434367da720a771088d94
 progress:
   total_phases: 1
   completed_phases: 1
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 21 — Native Emission Ownership and Resource Discharge
+**Current focus:** Start the provisional M004 milestone — Phase 21 is complete and archived
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -83,19 +83,20 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 21
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-09-26 — Phase 21 complete
+Phase: 21 (complete; archived under M004)
+Plan: All six plans complete
+Status: Phase 21 complete; M004 remains provisional
+Last activity: 2026-09-27 — Archived Phase 21 and refreshed its verification
 
 ## M003 Closeout (archived)
 
 M003 shipped on 2026-09-26: Phases 14–20, 7 phases, 85 plans, 114 tasks, and
 33/33 requirements with all seven phase verifications passing. The audit status
 is `tech_debt`, with partial Nyquist coverage in Phases 14, 17, and 18 and four
-open unowned debt items within the five-item cap. Phase 21 is assigned to M004
-and was excluded from M003. The user chose to skip quick-task archival; all 11
-completed quick-task folders remain under `.planning/quick/`.
+open unowned debt items within the five-item cap. Phase 21 is the provisional
+M004 follow-on and is now filed under `.planning/milestones/M004-phases/`,
+outside M003's outgoing cleanup. The user chose to skip quick-task archival;
+completed quick tasks remain under `.planning/quick/`.
 
 - Full phase history: `.planning/milestones/M003-phases/`
 - Roadmap: `.planning/milestones/M003-ROADMAP.md`
@@ -105,28 +106,21 @@ completed quick-task folders remain under `.planning/quick/`.
 ## M004 Handoff
 
 M004 has not been formally opened; its requirements and full charter are not
-ratified. Phase 21's original four plans and summaries remain complete, and all
-7 automated UAT checks remain passing. The refreshed `21-VERIFICATION.md` is
-`gaps_found` against post-M003 archive paths and evidence records. Gap plans
-21-05 and 21-06 now cover all four findings; both passed gap-closure schema and
-structure checks, the independent plan checker, and 3/3 decision coverage.
+ratified. Phase 21 is complete: all 6/6 plans are complete, all 7/7 automated
+UAT cases are preserved, and the refreshed `21-VERIFICATION.md` passes 6/6.
+Its full archive is filed at
+`.planning/milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/`,
+outside M003's outgoing cleanup. M003 remains the shipped outgoing milestone.
 
-The Phase 21 entry is now machine-readable in ROADMAP, but M004 remains
-provisional. Preserve the completed UAT and do not replay Plans 01–04. Run
-`$gsd-execute-phase 21 --gaps-only` to execute only Plans 05–06.
-`init.progress` and `verification.status` still suggest `$gsd-plan-phase 21
---gaps` because the verification report remains `gaps_found`; that pointer is
-stale now that the gap plans exist and passed review. `phase-plan-index 21`
-shows 21-05 and 21-06 as the two runnable plans.
-
-After Phase 21 verification passes, file its directory under
-`.planning/milestones/M004-phases/` before running
-`$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`.
-The installed new-milestone workflow clears every physical directory left in
-`.planning/phases/` under the outgoing milestone, without checking roadmap
-ownership; leaving Phase 21 there would incorrectly archive it under M003.
-Preserve this project's `M00x` identifiers: the installed latest-completed
-resolver only recognizes `vN.N` headings and currently returns null for M003.
+Next command: `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`.
+It will formalize the provisional M004 scope and requirements. Do not rerun
+Phase 21 plans or UAT. No M004 requirements have
+been ratified or assigned IDs. Current `init.progress` reports M003 with zero
+discoverable phases and `next_phase: null`; it does not index completed phases
+archived under `milestones/M004-phases/`. Use the explicit handoff above rather
+than treating that empty resolver result as a reason to repeat Phase 21. The
+installed latest-completed resolver also may not identify M003 because this
+project preserves its `M00x` identifiers.
 
 ## M002 Phase Map
 
@@ -671,6 +665,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260926-bkj | Refresh Phase 15 evidence, repair CI planning guards, and record shift-left/no-loop defaults | 2026-09-26 | 27cb078 | passed | [260926-bkj-close-the-ci-planning-integrity-findings](./quick/260926-bkj-close-the-ci-planning-integrity-findings/) |
 | 260926-ewj | Fix Phase 18 regression gate failures: preserve schema-1 emitter bytes and refresh corpus snapshot | 2026-09-26 | 7be22ab | passed | [260926-ewj-fix-phase-18-regression-gate-failures-pr](./quick/260926-ewj-fix-phase-18-regression-gate-failures-pr/) |
 | 260926-ffr | Ensure Phase 18 payload mutation seams restore after runner failure | 2026-09-26 | fe92bc3 | passed | [260926-ffr-ensure-phase-18-payload-mutation-seams-r](./quick/260926-ffr-ensure-phase-18-payload-mutation-seams-r/) |
+| 260926-uzs | Archive completed Phase 21 under provisional M004 and refresh the verification/evidence handoff | 2026-09-27 | 397753f | Verified | [260926-uzs-prepare-the-completed-phase-21-for-the-m](./quick/260926-uzs-prepare-the-completed-phase-21-for-the-m/) |
 
 ## Deferred Items
 
@@ -684,11 +679,11 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-26T23:02:09Z
-Stopped at: Phase 21 complete — all phases complete
+Last session: 2026-09-27T12:45:10Z
+Stopped at: Phase 21 archived and verified — M004 kickoff ready
 Resume file: None
-Next command: $gsd-execute-phase 21 --gaps-only
-Routing note: init.progress still points to gap planning while VERIFICATION.md is gaps_found; the two reviewed gap plans already exist, so do not repeat planning.
+Next command: $gsd-new-milestone "Native Emission Ownership and Resource Discharge"
+Routing note: Phase 21 is complete, verified 6/6, and archived under M004-phases. `init.progress` sees M003 with zero phases and no next phase because it omits archived phase directories; follow the explicit M004 handoff. Do not repeat Phase 21 planning, execution, verification, or UAT.
 
 The notes below predate the close and are kept as durable context a
 context-cleared planner would otherwise re-derive. Their phase-directory paths
@@ -772,7 +767,7 @@ not exist yet (`MILESTONES.md` holds M001 only).
 
 ## Operator Next Steps
 
-- Start the next milestone with $gsd-new-milestone
+- Run `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"` to formalize M004.
 
 ### Gate override — Phase 08 decision coverage (2026-09-09)
 

@@ -5,7 +5,7 @@
 - ✅ **M001 — Source-to-Native Semantic Spine** — Phases 1–6 (shipped 2026-09-07) — [archive](milestones/M001-ROADMAP.md)
 - ✅ **M002 — Interprocedural Semantic Spine** — Phases 07–13 (shipped 2026-09-14) — [archive](milestones/M002-ROADMAP.md)
 - ✅ **M003 — Computation and Honest Instruments** — Phases 14–20 (shipped 2026-09-26; audit: tech debt) — [archive](milestones/M003-ROADMAP.md)
-- ◷ **M004 — Native Emission Ownership and Resource Discharge** — provisional; formal requirements and full charter not yet ratified — [milestone kickoff](milestones/M003-ROADMAP.md)
+- ◷ **M004 — Native Emission Ownership and Resource Discharge** — provisional; formal requirements and full charter not yet ratified
 
 ## Phases
 
@@ -30,20 +30,15 @@ Execution artifacts: `milestones/M003-phases/`
 <details>
 <summary>◷ M004 — Native Emission Ownership and Resource Discharge (provisional)</summary>
 
-Phase 21's original implementation is complete (4/4 plans), and automated UAT
-is complete (7/7). The refreshed verification reports `gaps_found` against the
-post-M003 archive. Preserve UAT and do not replay the original plans or UAT.
+Phase 21 is complete: all six plans are complete, all seven UAT cases are
+preserved, and current verification passes 6/6. Its execution archive is filed
+under [M004 phase artifacts](milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/),
+outside M003's outgoing cleanup. M003 remains the shipped outgoing milestone.
 
-The two gap-closure plans (21-05 and 21-06) are prepared and registered below.
-`roadmap.get-phase 21` now resolves the existing phase. M004 remains provisional;
-this registration does not ratify its full charter or requirements. Execute only
-the gap-closure plans with `$gsd-execute-phase 21 --gaps-only`.
-
-After verification passes, file Phase 21 under
-`.planning/milestones/M004-phases/` before running M004 kickoff. The installed
-`gsd-new-milestone` cleanup archives every directory still under
-`.planning/phases/` as part of the outgoing milestone, regardless of roadmap
-ownership; leaving Phase 21 there would place it in M003's archive.
+M004 is still provisional; this entry does not ratify its full charter or
+requirements. No M004 requirement IDs have been assigned. The next action is to
+run `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"` to
+formalize M004's scope and requirements.
 
 The full M004 charter and requirements have not been ratified. The provisional
 forward arc includes iteration, which requires a pre-phase spike to decide what
@@ -53,9 +48,9 @@ replaces `pathoracle`'s cycle refusal before loop planning.
 
 ### Phase 21: Native Emission Ownership and Resource Discharge
 
-**Goal:** Close the archive-dependent findings in Phase 21 verification while preserving the completed implementation plans and UAT. M004 remains provisional; this entry registers only the already-existing gap-closure work.
+**Goal:** Close the archive-dependent findings in Phase 21 verification while preserving the completed implementation plans and UAT. M004 remains provisional; this entry records the completed gap-closure work.
 
-**Plans:** 6/6 plans complete
+**Plans:** 6/6 complete · **UAT:** 7/7 preserved · **Verification:** 6/6 passed
 
 Plans:
 **Wave 1**
@@ -75,6 +70,5 @@ Plans:
 
 ## Next Action
 
-Run `$gsd-execute-phase 21 --gaps-only`. Once verification passes, file Phase 21
-under M004 as described above, then run `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"`
-to formalize M004 scope and requirements.
+Run `$gsd-new-milestone "Native Emission Ownership and Resource Discharge"` to
+formalize the provisional M004 scope and requirements.

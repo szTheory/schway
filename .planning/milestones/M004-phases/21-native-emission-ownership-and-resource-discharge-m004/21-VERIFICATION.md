@@ -1,6 +1,6 @@
 ---
 phase: 21-native-emission-ownership-and-resource-discharge-m004
-verified: 2026-09-27T01:35:42Z
+verified: 2026-09-27T12:45:36Z
 status: passed
 score: 6/6 must-haves verified
 covered_files:
@@ -58,7 +58,7 @@ covered_files:
   - testdata/phase16/public-emitter-consumers.json
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
-covered_digest: "v1:sha256:ed457078622f1cf6b29eab4d5e4f9a5d53cbe516b194cdcbfb55a82a161de9c2"
+covered_digest: "v1:sha256:14fb1d0920c0e10d542a94af45a5c4c86c8ef42d008799900bcd3ca05758427a"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -80,7 +80,7 @@ decision_coverage:
 
 **Phase Goal:** Close the archive-dependent findings in Phase 21 verification while preserving the completed implementation plans and UAT. M004 remains provisional; this entry registers only the already-existing gap-closure work.
 
-**Verified:** 2026-09-27 01:35:42 UTC
+**Verified:** 2026-09-27 12:45:36 UTC
 **Status:** passed
 **Re-verification:** Yes — after closure of the previous archive-dependent gaps. The six plans and existing UAT were preserved.
 
@@ -181,5 +181,5 @@ All carried-forward archive-dependent gaps are closed. Both archive consumers no
 
 ---
 
-_Verified: 2026-09-27T01:35:42Z_
+_Verified: 2026-09-27T12:45:36Z_
 _Verifier: Codex (gsd-verifier re-verification)_
