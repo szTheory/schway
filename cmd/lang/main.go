@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/codename-lang/lang/internal/compiler/diagnostic"
 	"github.com/codename-lang/lang/internal/compiler/evidence"
@@ -173,6 +174,13 @@ func runBuild(sourcePath, outputPath string, jsonMode bool, manifestPath ...stri
 }
 
 func runApplication(args []string) int {
+	if len(args) > 1 && args[1] == "verify" {
+		return runApplicationVerify(args)
+	}
+	return runApplicationRun(args)
+}
+
+func runApplicationRun(args []string) int {
 	if len(args) < 5 || args[1] != "run" {
 		fmt.Fprintln(os.Stderr, "usage: lang app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT")
 		return exitUsage
@@ -251,6 +259,58 @@ func runApplication(args []string) int {
 		fmt.Fprintln(os.Stderr, "lang app run: invalid process outcome")
 		return 125
 	}
+}
+
+func runApplicationVerify(args []string) int {
+	if len(args) < 3 {
+		fmt.Fprintln(os.Stderr, "usage: lang app verify SOURCE --cases CASES --report REPORT")
+		return exitUsage
+	}
+	casesPath, reportPath := "", ""
+	seenCases, seenReport := false, false
+	for index := 3; index < len(args); index++ {
+		switch args[index] {
+		case "--cases":
+			if seenCases || index+1 >= len(args) || args[index+1] == "" {
+				fmt.Fprintln(os.Stderr, "lang app verify: --cases requires one path and may appear only once")
+				return exitUsage
+			}
+			seenCases = true
+			casesPath = args[index+1]
+			index++
+		case "--report":
+			if seenReport || index+1 >= len(args) || args[index+1] == "" {
+				fmt.Fprintln(os.Stderr, "lang app verify: --report requires one path and may appear only once")
+				return exitUsage
+			}
+			seenReport = true
+			reportPath = args[index+1]
+			index++
+		case "--manifest":
+			fmt.Fprintln(os.Stderr, "lang app verify: local C manifests are unsupported on the replay route")
+			return exitUsage
+		default:
+			fmt.Fprintln(os.Stderr, "lang app verify: unknown option")
+			return exitUsage
+		}
+	}
+	if !seenCases || !seenReport {
+		fmt.Fprintln(os.Stderr, "usage: lang app verify SOURCE --cases CASES --report REPORT")
+		return exitUsage
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	report, err := session.VerifyApplicationCasesFile(ctx, args[2], casesPath, reportPath, native.DefaultRunner())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "lang app verify: %v\n", err)
+		return exitOperational
+	}
+	if !report.Verified {
+		fmt.Fprintf(os.Stderr, "lang app verify: verification failed; see %s\n", reportPath)
+		return exitOperational
+	}
+	fmt.Fprintf(os.Stdout, "verified %d replay cases\n", len(report.Cases))
+	return exitSuccess
 }
 
 func runCheck(path string, jsonMode bool) int {
