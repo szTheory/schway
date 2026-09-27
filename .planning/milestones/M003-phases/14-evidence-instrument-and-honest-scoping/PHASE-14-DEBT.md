@@ -3,7 +3,7 @@ phase: 14-evidence-instrument-and-honest-scoping
 recorded: 2026-09-18
 status: accepted
 disposition: phase-in-progress
-items: 85
+items: 86
 blocking: 0
 ---
 
@@ -137,6 +137,7 @@ finding).
 | D-14-127 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-10-T3` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-10-T3` DECLARES `WIRED`, BELOW THE NOW-ENFORCED BAR. Re-deriving its evidence cell (`TestVerificationGroundednessThreeClassesAreEmpty`) against the complete run record shows it genuinely passed and is matched -- TRUE ceiling `EXERCISED`, same finding shape as D-14-123. Kept byte-unchanged (row belongs to plan 14-10) and narrowed here. |
 | D-14-128 | Phase 20 planned validation map row 20-08-01 exact-test ceiling | EVD-02 | info | P20 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `20-VALIDATION.md` row `20-08-01` requires the unfiltered `go test ./... -count=1` preflight; the grader deliberately caps a bare package command with no `-run` at WIRED. Preserve the actual full-suite gate and narrow only this plan-time row until Plan 08 records its result. |
 | D-14-129 | Phase 20 planned validation map row 20-08-02 script ceiling | EVD-02 | info | P20 | REACHABLE | probe:TestValidationGradeBarRowExemptionsAreOwned | `20-VALIDATION.md` row `20-08-02` invokes the bounded full-suite timing script, which the grade ladder classifies as REACHABLE rather than an exact named Go test. Preserve the actual measurement command and narrow only this plan-time row; Plan 08 owns its recorded timing outcome. |
+| D-14-130 | plan 14-10's reconciliation of an archived Phase 11 groundedness finding | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R3) — `11-VALIDATION.md:56` cites a verification command whose roadmap target moved into the M002 archive; the historical command remains unchanged and the replacement is recorded in the reconciliation block (see Detail section). |
 
 ## Detail
 
