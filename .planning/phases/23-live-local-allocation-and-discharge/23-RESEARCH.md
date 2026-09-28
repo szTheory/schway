@@ -427,6 +427,23 @@ AGENTS.md asks for the three next useful capabilities at planning transitions. T
    - Recommendation: Specify read/size/close/allocation failures and pointer/length state in the contract; ensure any allocated pointer is freed on every failure branch. [ASSUMED]
    - **RESOLVED (2026-09-27):** After successful open and regular-file `fstat`, allocate one byte before reading. Empty, second-byte, read, and close failures after allocation all free that partial byte and return the matching initialized typed failure with no Lang owner. `malloc` failure returns `AllocFailed`; open/path and non-regular failures precede allocation. Retry interrupted reads, probe EOF/second byte, and treat close failure as `CloseFailed` before publishing a successful owner. The `0x43` case is a separate `UnsupportedByte` use failure after ownership has been published; generated cleanup releases the owner before the ordinary nonzero diagnostic.
 
+### Plan 23-04 implementation status — 2026-09-28
+
+**Owner:** Plan 23-04 owns the adapter's acquisition error boundary and its
+native/public boundary tests. The regular-file policy above is now implemented:
+open uses `O_RDONLY | O_NONBLOCK`, `fstat` admits regular files before any
+allocation or read, and all opened descriptors receive one adapter close call.
+Empty, two-byte, read, and close failures after allocation return their distinct
+status with a null pointer and zero length after freeing the partial byte.
+Failures carry a bounded constant diagnostic naming the typed status; caller
+path bytes are never copied into diagnostics.
+
+**Newly executed evidence:** on the local macOS arm64 host,
+`GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase23AcquireFailuresInitializeAndFreePartialAllocations$' -count=1`
+passed with injected open, `fstat`, allocation, read, and close outcomes,
+including both read positions and `EINTR` retry. This is a local focused test,
+not a Linux receipt; the Ubuntu CI lane remains the owner for Linux evidence.
+
 ## Environment Availability
 
 | Dependency | Required By | Available | Version | Fallback |

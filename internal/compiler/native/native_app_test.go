@@ -322,6 +322,8 @@ int main(void) {
   }
   return 0;
 }
+
+#include <adapter.c>
 `
 	if err := os.WriteFile(harnessPath, []byte(harness), 0o600); err != nil {
 		t.Fatal(err)
@@ -336,7 +338,7 @@ int main(void) {
 		"-DLANG_FILE_BYTE_FREE=phase23_test_free",
 		"-DLANG_FILE_BYTE_READ=phase23_test_read",
 		"-DLANG_FILE_BYTE_CLOSE=phase23_test_close",
-		"-I", root, harnessPath, filepath.Join(root, "adapter.c"), "-o", binaryPath)
+		"-I", root, harnessPath, "-o", binaryPath)
 	if output, err := compile.CombinedOutput(); err != nil {
 		t.Fatalf("compile acquisition fault harness: %v\n%s", err, output)
 	}
