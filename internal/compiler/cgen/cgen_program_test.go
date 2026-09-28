@@ -1516,6 +1516,22 @@ func TestPhase22ApplicationEmitterRefusesOtherEntryShapes(t *testing.T) {
 	}
 }
 
+func TestPhase23PhysicalDestructorControlsKeepEventsPlausible(t *testing.T) {
+	generated, err := cgen.EmitApplication(phase23ProgramForEmitter(t))
+	if err != nil {
+		t.Fatalf("EmitApplication: %v", err)
+	}
+	if !strings.Contains(generated, "lang.execution/2") || !strings.Contains(generated, `lang_record_event("function.returned"`) {
+		t.Fatal("compiler-side event capture lost its ordinary schema-2 returned execution record")
+	}
+	if !strings.Contains(generated, "lang_file_byte_release(") {
+		t.Fatal("generated app no longer carries the physical destructor call targeted by native mutation controls")
+	}
+	if strings.Contains(generated, `lang_record_event("resource.released"`) || strings.Contains(generated, `lang_record_event("allocation.freed"`) {
+		t.Fatal("compiler events claim physical destructor behavior instead of remaining semantic records")
+	}
+}
+
 func phase23ProgramForEmitter(t *testing.T) core.Program {
 	t.Helper()
 	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))

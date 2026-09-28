@@ -42,7 +42,7 @@ import (
 // through a substring filter that happens not to match it.
 var linearOperationExpectedFields = []string{
 	"ID", "PointID", "Kind", "SourceID", "TargetID", "LoanID", "TypeID",
-	"OkEdgeID", "ErrEdgeID", "ErrTargetID", "ReleasesOperationID",
+	"Foreign", "OkEdgeID", "ErrEdgeID", "ErrTargetID", "ReleasesOperationID",
 	"Allocator", "Reason", "CalleeID", "PayloadType", "PayloadTargetID", "ConstU64",
 }
 

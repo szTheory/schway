@@ -140,6 +140,17 @@ func TestPhase23PublicFileByte(t *testing.T) {
 			}
 		})
 	}
+	t.Run("use-error/unsupported-byte", func(t *testing.T) {
+		input := filepath.Join(t.TempDir(), "unsupported-byte.bin")
+		if err := os.WriteFile(input, []byte{0x43}, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
+		const wantDiagnostic = "lang_file_byte_use: UnsupportedByte\n"
+		if code != 65 || stdout != "" || stderr != wantDiagnostic || len(stderr) > 128 {
+			t.Fatalf("post-acquisition use error code=%d stdout=%q stderr=%q; want bounded diagnostic %q", code, stdout, stderr, wantDiagnostic)
+		}
+	})
 	for _, test := range []struct {
 		name       string
 		input      string

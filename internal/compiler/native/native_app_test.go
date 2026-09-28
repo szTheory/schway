@@ -47,6 +47,7 @@ func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
 		t.Fatal(err)
 	}
 	useAt := strings.Index(cSource, "lang_file_byte_use(")
+	useErrorDiagnosticAt := strings.Index(cSource, `fputs("lang_file_byte_use: UnsupportedByte\n", stderr);`)
 	var releasePositions []int
 	for offset := 0; offset < len(cSource); {
 		next := strings.Index(cSource[offset:], "lang_file_byte_release(")
@@ -56,14 +57,14 @@ func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
 		releasePositions = append(releasePositions, offset+next)
 		offset += next + len("lang_file_byte_release(")
 	}
-	if useAt < 0 || len(releasePositions) != 2 || releasePositions[1] <= useAt {
+	if useAt < 0 || len(releasePositions) != 2 || releasePositions[1] <= useAt || useErrorDiagnosticAt <= releasePositions[1] {
 		t.Fatalf("generated app does not call borrowed use then the successful-path destructor: use=%d release=%v", useAt, releasePositions)
 	}
 	useArgStart := useAt + len("lang_file_byte_use(")
 	useArgEnd := strings.Index(cSource[useArgStart:], ");")
 	releaseArgStart := releasePositions[1] + len("lang_file_byte_release(")
 	releaseArgEnd := strings.Index(cSource[releaseArgStart:], ");")
-	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], "status != 0) exit(65)") {
+	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], `status != 0) { fputs("lang_file_byte_use: UnsupportedByte\n", stderr); exit(65); }`) {
 		t.Fatal("generated cleanup does not retain the acquired owner through use and release it before a use failure exits")
 	}
 }
@@ -363,24 +364,30 @@ int main(int argc, char **argv) {
 		"-DLANG_FILE_BYTE_READ=phase23_test_read",
 		"-DLANG_FILE_BYTE_CLOSE=phase23_test_close",
 		"-I", root, harnessPath, "-o", binaryPath)
-	if output, err := compile.CombinedOutput(); err != nil {
-		t.Fatalf("compile acquisition fault harness: %v\n%s", err, output)
+	var compileStdout, compileStderr boundedWriter
+	compile.Stdout, compile.Stderr = &compileStdout, &compileStderr
+	if err := compile.Run(); err != nil || compileStdout.overflowed() || compileStderr.overflowed() {
+		t.Fatalf("compile acquisition fault harness: %v stdout=%q stderr=%q", err, compileStdout.bytes(), compileStderr.bytes())
 	}
 	runCtx, cancelRun := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelRun()
 	run := exec.CommandContext(runCtx, binaryPath)
-	if output, err := run.CombinedOutput(); err != nil {
-		t.Fatalf("acquisition fault harness: %v\n%s", err, output)
+	var runStdout, runStderr boundedWriter
+	run.Stdout, run.Stderr = &runStdout, &runStderr
+	if err := run.Run(); err != nil || runStdout.overflowed() || runStderr.overflowed() {
+		t.Fatalf("acquisition fault harness: %v stdout=%q stderr=%q", err, runStdout.bytes(), runStderr.bytes())
 	}
 	// Permission bits may not produce an open failure for privileged test users;
 	// the table above injects OpenFailed directly at this adapter boundary.
 	for _, path := range []string{"/", strings.Repeat("p", 4096)} {
 		pathRunCtx, cancelPathRun := context.WithTimeout(context.Background(), 10*time.Second)
 		pathRun := exec.CommandContext(pathRunCtx, binaryPath, path)
-		pathOutput, pathErr := pathRun.CombinedOutput()
+		var pathStdout, pathStderr boundedWriter
+		pathRun.Stdout, pathRun.Stderr = &pathStdout, &pathStderr
+		pathErr := pathRun.Run()
 		cancelPathRun()
-		if pathErr != nil || string(pathOutput) != "lang_file_byte_acquire: OpenFailed\n" {
-			t.Fatalf("unchanged path length=%d: err=%v output=%q", len(path), pathErr, pathOutput)
+		if pathErr != nil || pathStdout.overflowed() || pathStderr.overflowed() || len(pathStdout.bytes()) != 0 || string(pathStderr.bytes()) != "lang_file_byte_acquire: OpenFailed\n" {
+			t.Fatalf("unchanged path length=%d: err=%v stdout=%q stderr=%q", len(path), pathErr, pathStdout.bytes(), pathStderr.bytes())
 		}
 	}
 }
