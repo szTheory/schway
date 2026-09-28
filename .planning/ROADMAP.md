@@ -101,8 +101,8 @@ to later foreign outcomes; extend its fixtures without reassigning ownership.
 **Plans**: 5 plans
 
 Plans:
-- [ ] 23-01-PLAN.md — Public live-owner tracer and acquisition boundaries
-- [ ] 23-02-PLAN.md — Independent acquisition-seeded ownership validation
+- [ ] 23-01-PLAN.md — Public live-owner tracer and three operation ABIs
+- [ ] 23-02-PLAN.md — Independent ownership validation and acquisition boundaries
 - [ ] 23-03-PLAN.md — Model-only outcomes and successor discharge contract
 - [ ] 23-04-PLAN.md — Independent native lifetime observer and reached controls
 - [ ] 23-05-PLAN.md — Documented witness and macOS/Linux focused CI gate

@@ -107,8 +107,11 @@ roadmap does not promise to prove arbitrary foreign C correct.
    `pathoracle`, `interp`, and `cgen`; successful acquisition must create the
    cleanup obligation. Evidence/debt: FFI-03, RES-04/07/08/09, EVD-09 admission;
    keep Phase 22's EVD-11 replay boundary and FFI-02 manifest limits. Owner and
-   next action: Phase 23, discuss and plan the source shape, byte encoding,
-   maximum size, and cleanup control before implementation. Reorder only if the
+   next action: Phase 23, execute the 2026-09-27 resolved
+   `PathToken`/`FileByteOwner` source and C17 ABI contract, 4096-byte token
+   bound, one-byte adapter, and independent cleanup controls in
+   `23-RESEARCH.md`; these planning decisions are not implementation receipts.
+   Reorder only if the
    required physical observer or narrow ABI cannot be built without broadening
    the committed resource contract.
 2. **Carry that owner through a call and a typed error (Phase 24).** User-visible

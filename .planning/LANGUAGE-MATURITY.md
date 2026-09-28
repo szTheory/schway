@@ -96,7 +96,7 @@ Machine check: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/com
    derived obligation, and absent physical destructor witness. Trigger changes
    in `check`, `corevalidate`, `originvalidate`, `pathoracle`, `interp`, and
    `cgen`; cover FFI-03, RES-04/07/08/09 and the Phase 23 EVD-09 slice. Owner:
-   Phase 23; choose the source contract and negative controls before planning.
+   Phase 23; its 2026-09-27 research resolution fixes source spellings, the C17 ABI, and the negative-control design for execution, without claiming the capability is implemented.
 2. **Phase 24 — transfer and typed errors:** pass that live owner through a
    helper, then prove exactly-once cleanup on normal and actual post-acquisition
    error paths. Blockers are activation-specific resource identity and
