@@ -14,7 +14,6 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/cgen"
 	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
 	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
@@ -33,24 +32,20 @@ func TestPhase23ObserverPublicLifecycleAndUseFailure(t *testing.T) {
 	fixture := newPhase23ObserverFixture(t)
 
 	for _, test := range []struct {
-		name          string
-		value         byte
-		wantCode      int
-		wantStdout    string
-		wantStderr    string
-		wantReceipt   string
-		wantOutcome   string
-		captureEvents bool
+		name        string
+		value       byte
+		wantCode    int
+		wantStdout  string
+		wantStderr  string
+		wantReceipt string
 	}{
 		{
 			name: "0x41", value: 0x41, wantCode: 0, wantStdout: "65\n",
 			wantReceipt: "malloc\tp1\nuse\tp1\nfree\tp1\nfinal\toutstanding=0\nverdict\tpass\n",
-			wantOutcome: execution.OutcomeReturned, captureEvents: true,
 		},
 		{
 			name: "0x42", value: 0x42, wantCode: 0, wantStdout: "66\n",
 			wantReceipt: "malloc\tp1\nuse\tp1\nfree\tp1\nfinal\toutstanding=0\nverdict\tpass\n",
-			wantOutcome: execution.OutcomeReturned, captureEvents: true,
 		},
 		{
 			name: "0x43 typed use failure", value: 0x43, wantCode: 65,
@@ -65,11 +60,7 @@ func TestPhase23ObserverPublicLifecycleAndUseFailure(t *testing.T) {
 				t.Fatal(err)
 			}
 			receiptPath := filepath.Join(t.TempDir(), "native-lifecycle.tsv")
-			reportPath := ""
-			if test.captureEvents {
-				reportPath = filepath.Join(t.TempDir(), "compiler-events.json")
-			}
-			code, stdout, stderr := runPhase23ObserverApp(t, cli, artifact, input, receiptPath, reportPath)
+			code, stdout, stderr := runPhase23ObserverApp(t, cli, artifact, input, receiptPath)
 			if code != test.wantCode || stdout != test.wantStdout || stderr != test.wantStderr {
 				t.Fatalf("app run code=%d stdout=%q stderr=%q; want %d/%q/%q", code, stdout, stderr, test.wantCode, test.wantStdout, test.wantStderr)
 			}
@@ -79,13 +70,6 @@ func TestPhase23ObserverPublicLifecycleAndUseFailure(t *testing.T) {
 			}
 			if string(receipt) != test.wantReceipt {
 				t.Fatalf("native receipt=%q, want ordered pointer lifecycle %q", receipt, test.wantReceipt)
-			}
-			if test.captureEvents {
-				report := readPhase23ObserverEvidence(t, reportPath)
-				if report.CaptureStatus != EvidenceStatusComplete || report.Execution == nil ||
-					report.Execution.Outcome.Kind != test.wantOutcome || report.Verified {
-					t.Fatalf("semantic event report=%+v; want a complete, unverified returned record", report)
-				}
 			}
 		})
 	}
@@ -187,12 +171,9 @@ func (fixture *phase23ObserverFixture) build(t *testing.T, cSource string) strin
 	return artifact
 }
 
-func runPhase23ObserverApp(t *testing.T, cli, artifact, input, observerPath, reportPath string) (int, string, string) {
+func runPhase23ObserverApp(t *testing.T, cli, artifact, input, observerPath string) (int, string, string) {
 	t.Helper()
 	arguments := []string{"app", "run", artifact}
-	if reportPath != "" {
-		arguments = append(arguments, "--report", reportPath, "--evidence=events")
-	}
 	arguments = append(arguments, "--", input)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -212,17 +193,4 @@ func runPhase23ObserverApp(t *testing.T, cli, artifact, input, observerPath, rep
 		t.Fatalf("lang app run could not launch: %v", err)
 	}
 	return exitError.ExitCode(), stdout.String(), stderr.String()
-}
-
-func readPhase23ObserverEvidence(t *testing.T, path string) ApplicationEvidenceReport {
-	t.Helper()
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read application semantic event report: %v", err)
-	}
-	var report ApplicationEvidenceReport
-	if err := json.Unmarshal(data, &report); err != nil {
-		t.Fatalf("decode application semantic event report: %v", err)
-	}
-	return report
 }

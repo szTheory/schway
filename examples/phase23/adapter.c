@@ -23,6 +23,9 @@
 #ifndef LANG_FILE_BYTE_FREE
 #define LANG_FILE_BYTE_FREE free
 #endif
+#ifndef LANG_FILE_BYTE_LOAD_BYTE
+#define LANG_FILE_BYTE_LOAD_BYTE(pointer) (*(pointer))
+#endif
 #ifndef LANG_FILE_BYTE_READ
 #define LANG_FILE_BYTE_READ read
 #endif
@@ -39,9 +42,7 @@ enum {
   LANG_FILE_BYTE_READ_FAILED = 5,
   LANG_FILE_BYTE_ALLOC_FAILED = 6,
   LANG_FILE_BYTE_CLOSE_FAILED = 7,
-  LANG_FILE_BYTE_INVALID_PATH = 8,
-  LANG_FILE_BYTE_UNSUPPORTED = 1,
-  LANG_FILE_BYTE_INVALID_OWNER = 2
+  LANG_FILE_BYTE_INVALID_PATH = 8
 };
 
 static const char *acquire_status_name(int32_t status) {
@@ -128,14 +129,16 @@ lang_file_byte_acquire_result lang_file_byte_acquire(const char *path) {
 }
 
 lang_file_byte_use_result lang_file_byte_use(lang_file_byte_owner owner) {
-  lang_file_byte_use_result result = {LANG_FILE_BYTE_INVALID_OWNER, UINT64_C(0)};
+  unsigned char value;
+  lang_file_byte_use_result result = {LANG_FILE_BYTE_USE_INVALID_OWNER, UINT64_C(0)};
   if (owner.data == NULL || owner.length != UINT64_C(1)) return result;
-  if (owner.data[0] != 0x41u && owner.data[0] != 0x42u) {
-    result.status = LANG_FILE_BYTE_UNSUPPORTED;
+  value = LANG_FILE_BYTE_LOAD_BYTE(owner.data);
+  if (value != 0x41u && value != 0x42u) {
+    result.status = LANG_FILE_BYTE_USE_UNSUPPORTED;
     return result;
   }
-  result.status = LANG_FILE_BYTE_OK;
-  result.value = (uint64_t)owner.data[0];
+  result.status = LANG_FILE_BYTE_USE_OK;
+  result.value = (uint64_t)value;
   return result;
 }
 

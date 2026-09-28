@@ -1172,7 +1172,7 @@ func emitProgramLocalFileByteFunction(out *strings.Builder, function core.Functi
 	fmt.Fprintf(out, "  if (%s.data == NULL || %s.length != UINT64_C(1)) { %s(%s); exit(65); }\n", ownerName, ownerName, release.Foreign.Symbol, ownerName)
 	fmt.Fprintf(out, "  lang_file_byte_use_result %s = %s(%s);\n", useResultName, use.Foreign.Symbol, ownerName)
 	fmt.Fprintf(out, "  %s(%s);\n", release.Foreign.Symbol, ownerName)
-	fmt.Fprintf(out, "  if (%s.status != 0) exit(65);\n", useResultName)
+	fmt.Fprintf(out, "  if (%s.status != 0) { fputs(\"lang_file_byte_use: UnsupportedByte\\n\", stderr); exit(65); }\n", useResultName)
 	fmt.Fprintf(out, "  uint64_t %s = %s.value;\n", valueName, useResultName)
 	fmt.Fprintf(out, "  return %s;\n", valueName)
 	out.WriteString("}\n\n")
