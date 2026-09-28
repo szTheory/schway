@@ -53,6 +53,96 @@ import (
 	"github.com/codename-lang/lang/internal/compiler/core"
 )
 
+// ValidateLocalOwnerPaths independently replays the Phase 23 straight-line
+// local-owner path. Acquisition seeds obligations; a borrow must observe the
+// live owner and exactly one matching consuming release must discharge it.
+func ValidateLocalOwnerPaths(program core.Program) error {
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		local := false
+		for _, operation := range function.Linear.Operations {
+			local = local || operation.Foreign != nil
+		}
+		if !local {
+			continue
+		}
+		if function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 {
+			return fmt.Errorf("pathoracle.local_owner_shape: function %q is outside the admitted PathToken-to-U64 path", function.ID)
+		}
+		type owner struct {
+			place    string
+			contract *core.ForeignOperationContract
+			borrowed bool
+			released bool
+		}
+		owners := map[string]owner{}
+		ownerByPlace := map[string]string{}
+		var returnedFrom string
+		for _, operation := range function.Linear.Operations {
+			contract := operation.Foreign
+			if contract == nil {
+				if operation.Kind == core.OpReturn {
+					returnedFrom = operation.SourceID
+				}
+				continue
+			}
+			if !pathOracleIdentifier(contract.Symbol) || !pathOracleIdentifier(contract.ABIType) || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" {
+				return fmt.Errorf("pathoracle.local_owner_contract: operation %q has incomplete ABI or exit facts", operation.ID)
+			}
+			switch contract.Mode {
+			case "acquire":
+				if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails == "" || contract.Allocator != "libc_malloc" || !pathOracleIdentifier(contract.Release) || ownerByPlace[operation.TargetID] != "" {
+					return fmt.Errorf("pathoracle.local_owner_acquire: operation %q is not a valid owner seed", operation.ID)
+				}
+				owners[operation.ID] = owner{place: operation.TargetID, contract: contract}
+				ownerByPlace[operation.TargetID] = operation.ID
+			case "borrow":
+				acquireID := ownerByPlace[operation.SourceID]
+				acquired, exists := owners[acquireID]
+				if operation.Kind != core.OpForeignCall || !exists || acquired.released || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails == "" || acquired.borrowed {
+					return fmt.Errorf("pathoracle.local_owner_borrow: operation %q does not borrow one live acquired owner", operation.ID)
+				}
+				acquired.borrowed = true
+				owners[acquireID] = acquired
+			case "consume":
+				acquired, exists := owners[operation.ReleasesOperationID]
+				if operation.Kind != core.OpRelease || !exists || acquired.released || !acquired.borrowed || acquired.place != operation.SourceID || acquired.contract.Release != contract.Symbol || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Allocator != acquired.contract.Allocator || contract.Fails != "" {
+					return fmt.Errorf("pathoracle.local_owner_release: operation %q does not discharge its acquired owner", operation.ID)
+				}
+				acquired.released = true
+				owners[operation.ReleasesOperationID] = acquired
+				delete(ownerByPlace, operation.SourceID)
+			default:
+				return fmt.Errorf("pathoracle.local_owner_mode: operation %q has unsupported mode", operation.ID)
+			}
+		}
+		if len(owners) != 1 || len(ownerByPlace) != 0 {
+			return fmt.Errorf("pathoracle.local_owner_unreleased: function %q has no complete acquisition discharge", function.ID)
+		}
+		for _, acquired := range owners {
+			if !acquired.borrowed || !acquired.released || returnedFrom == "" {
+				return fmt.Errorf("pathoracle.local_owner_terminal: function %q returns before owner discharge", function.ID)
+			}
+		}
+	}
+	return nil
+}
+
+func pathOracleIdentifier(value string) bool {
+	if value == "" || !(value[0] == '_' || value[0] >= 'A' && value[0] <= 'Z' || value[0] >= 'a' && value[0] <= 'z') {
+		return false
+	}
+	for i := 1; i < len(value); i++ {
+		b := value[i]
+		if !(b == '_' || b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= '0' && b <= '9') {
+			return false
+		}
+	}
+	return true
+}
+
 // MaxPaths bounds the number of acyclic entry-to-return paths this package
 // will enumerate for one function. Today's language caps a match at
 // maxArmsPerMatch (64) arms and gives each arm exactly one linear

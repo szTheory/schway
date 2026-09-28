@@ -319,6 +319,12 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 			// continues the walk into the borrow (or further chain) that
 			// produced the destructured alias.
 		case core.OpForeignCall:
+			if operation.Foreign != nil {
+				// Phase 23's borrowed use reads one byte into an owned U64.
+				// The operand mode does not make that scalar result a pointer
+				// origin, so this foreign boundary terminates the origin walk.
+				return ReturnOrigin{OperationID: returnOp.ID}
+			}
 			// D-04-28: a foreign declaration is itself a signature carrying
 			// origin and access facts -- declaring a call foreign-only does
 			// not escape origin reasoning, it moves the facts somewhere they

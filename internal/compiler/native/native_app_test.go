@@ -17,8 +17,124 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/check"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("core validation problems: %+v", validated.Problems)
+	}
+	cSource, err := cgen.EmitApplication(validated.Program())
+	if err != nil {
+		t.Fatal(err)
+	}
+	useAt := strings.Index(cSource, "lang_file_byte_use(")
+	var releasePositions []int
+	for offset := 0; offset < len(cSource); {
+		next := strings.Index(cSource[offset:], "lang_file_byte_release(")
+		if next < 0 {
+			break
+		}
+		releasePositions = append(releasePositions, offset+next)
+		offset += next + len("lang_file_byte_release(")
+	}
+	if useAt < 0 || len(releasePositions) != 2 || releasePositions[1] <= useAt {
+		t.Fatalf("generated app does not call borrowed use then the successful-path destructor: use=%d release=%v", useAt, releasePositions)
+	}
+	useArgStart := useAt + len("lang_file_byte_use(")
+	useArgEnd := strings.Index(cSource[useArgStart:], ");")
+	releaseArgStart := releasePositions[1] + len("lang_file_byte_release(")
+	releaseArgEnd := strings.Index(cSource[releaseArgStart:], ");")
+	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], "status != 0) exit(65)") {
+		t.Fatal("generated cleanup does not retain the acquired owner through use and release it before a use failure exits")
+	}
+}
+
+func TestPhase23OperationABI(t *testing.T) {
+	headerBytes, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "adapter.h"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := string(headerBytes)
+	manifest := BindingManifest{
+		Schema: BindingSchema, Headers: []string{"adapter.h"}, IncludeDirs: []string{"."},
+		Symbols: []BindingSymbol{
+			{Name: "lang_file_byte_acquire", Header: "adapter.h", FunctionType: "lang_file_byte_acquire_fn"},
+			{Name: "lang_file_byte_use", Header: "adapter.h", FunctionType: "lang_file_byte_use_fn"},
+			{Name: "lang_file_byte_release", Header: "adapter.h", FunctionType: "lang_file_byte_release_fn"},
+		},
+	}
+	runner := DefaultRunner()
+	clang, err := exec.LookPath("clang")
+	if err != nil {
+		t.Skip("Clang is required for operation ABI checks")
+	}
+
+	compile := func(t *testing.T, content string) error {
+		t.Helper()
+		directory, err := filepath.EvalSymlinks(t.TempDir())
+		if err != nil {
+			t.Fatal(err)
+		}
+		resolved := ResolvedBindings{
+			Manifest: manifest,
+			files:    map[string][]byte{"adapter.h": []byte(content)},
+		}
+		_, _, _, _, compileErr := runner.compileBindings(context.Background(), clang, directory, resolved)
+		return compileErr
+	}
+	if err := compile(t, header); err != nil {
+		t.Fatalf("baseline operation header failed to compile: %v", err)
+	}
+
+	for _, test := range []struct {
+		name string
+		from string
+		to   string
+	}{
+		{"acquire", "lang_file_byte_acquire_result lang_file_byte_acquire(const char *path);", "lang_file_byte_acquire_result lang_file_byte_acquire(uint64_t path);"},
+		{"use", "lang_file_byte_use_result lang_file_byte_use(lang_file_byte_owner owner);", "lang_file_byte_use_result lang_file_byte_use(const lang_file_byte_owner *owner);"},
+		{"release", "void lang_file_byte_release(lang_file_byte_owner owner);", "void lang_file_byte_release(const lang_file_byte_owner *owner);"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			mutated := strings.Replace(header, test.from, test.to, 1)
+			if mutated == header {
+				t.Fatal("prototype mutation did not match the fixture")
+			}
+			if err := compile(t, mutated); err == nil {
+				t.Fatal("mismatched operation prototype passed its independent Clang probe")
+			}
+		})
+	}
+
+	t.Run("target layout", func(t *testing.T) {
+		mutated := strings.Replace(header, "  unsigned char *data;\n  uint64_t length;", "  uint64_t length;\n  unsigned char *data;", 1)
+		if mutated == header {
+			t.Fatal("layout mutation did not match the fixture")
+		}
+		if err := compile(t, mutated); err == nil {
+			t.Fatal("target record layout mutation passed the C17 probes")
+		}
+	})
+}
 
 func TestPhase22EvidenceDisabledCompleteAndStreamIsolation(t *testing.T) {
 	t.Run("disabled", func(t *testing.T) {

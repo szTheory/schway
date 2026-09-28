@@ -216,6 +216,11 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				event.ID, event.Kind = operation.ID+":event", "value.payload_constructed"
 			case core.OpDefect:
 				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", operation.Reason
+			case core.OpForeignCall, core.OpRelease:
+				// The Phase 23 retained app records model output only. Its
+				// operation ABI and cleanup are checked independently; compiler
+				// event rows are not physical allocation evidence.
+				continue
 			default:
 				return 0, fmt.Errorf("operation %q has unsupported schema-2 output kind %q", operation.ID, operation.Kind)
 			}
@@ -580,7 +585,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	if err != nil {
 		return "", err
 	}
-	if shell == programApplicationShell && (entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || entry.ReturnType != "U64") {
+	localFileByteEntry := isLocalFileByteFunction(entry)
+	if shell == programApplicationShell && (entry.Match != nil || entry.Linear == nil || entry.ReturnType != "U64" || (entry.Parameter.Type != "U64" && !localFileByteEntry)) {
 		return "", fmt.Errorf("application entry %q: only a linear U64-to-U64 entry is supported", entry.ID)
 	}
 
@@ -610,6 +616,10 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			return "", fmt.Errorf("function %q: multi-function foreign contracts are not supported by native emission this phase", function.ID)
 		}
 		functions = append(functions, function)
+	}
+	localFileByteProgram := false
+	for _, function := range functions {
+		localFileByteProgram = localFileByteProgram || isLocalFileByteFunction(function)
 	}
 
 	// D-15-18: graph and entry refusal always win. The supported-shape
@@ -758,6 +768,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")
 	out.WriteString(emitCallBoundaryAttributeComment(functions))
 	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n")
+	if localFileByteProgram {
+		out.WriteString("#include \"local/adapter.h\"\n\n")
+	}
 	if needsU64 {
 		out.WriteString("#include <stdint.h>\n\n")
 		out.WriteString("#if !defined(UINT64_MAX)\n#error \"Codename Lang U64 requires exact-width uint64_t support\"\n#endif\n")
@@ -803,6 +816,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		var err error
 		if function.Match != nil {
 			err = emitProgramBranchFunction(&out, function, branchTypes[function.Parameter.Type], branchTypes[function.ReturnType], functionNames[index], globalNames, lookup, childTableNames)
+		} else if isLocalFileByteFunction(function) {
+			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
 		} else {
 			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
 		}
@@ -886,9 +901,14 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	}
 	out.WriteString("  if (argc != 2) return 64;\n")
 	if shell == programApplicationShell {
-		out.WriteString("  if (strlen(argv[1]) > 4096u) return 65;\n")
-		out.WriteString("  uint64_t lang_entry_input;\n")
-		out.WriteString("  if (!lang_parse_u64_decimal(argv[1], &lang_entry_input)) return 65;\n")
+		if entry.Parameter.Type == "PathToken" {
+			out.WriteString("  if (argv[1][0] == '\\0' || strlen(argv[1]) > 4096u) return 65;\n")
+			out.WriteString("  const char *lang_entry_input = argv[1];\n")
+		} else {
+			out.WriteString("  if (strlen(argv[1]) > 4096u) return 65;\n")
+			out.WriteString("  uint64_t lang_entry_input;\n")
+			out.WriteString("  if (!lang_parse_u64_decimal(argv[1], &lang_entry_input)) return 65;\n")
+		}
 		fmt.Fprintf(&out, "  %s lang_entry_output = %s(lang_entry_input, 0u);\n", entryOutputType, functionNames[entryIndex])
 		out.WriteString("  if (!lang_write_u64_plain(lang_entry_output) || !lang_write_literal(\"\\n\")) return 74;\n")
 		out.WriteString("  const char *lang_evidence_path = getenv(\"LANG_APP_EVIDENCE_PATH\");\n")
@@ -979,6 +999,63 @@ func emitProgramBufferWriter(out *strings.Builder, typeName string) {
 	out.WriteString("  for (index = 0u; index < value->length; index++) {\n")
 	out.WriteString("    char encoded[2] = {hex[value->bytes[index] >> 4u], hex[value->bytes[index] & 0x0fu]};\n")
 	out.WriteString("    if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n  }\n  return 1;\n}\n\n")
+}
+
+func isLocalFileByteFunction(function core.Function) bool {
+	if function.Name != "main" || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || function.Linear == nil || len(function.Linear.Blocks) != 0 || len(function.Linear.Operations) != 4 {
+		return false
+	}
+	operations := function.Linear.Operations
+	acquire, use, release, returned := operations[0], operations[1], operations[2], operations[3]
+	return acquire.Kind == core.OpForeignCall && acquire.Foreign != nil && acquire.Foreign.Mode == "acquire" && acquire.Foreign.Symbol == "lang_file_byte_acquire" &&
+		use.Kind == core.OpForeignCall && use.Foreign != nil && use.Foreign.Mode == "borrow" && use.Foreign.Symbol == "lang_file_byte_use" && use.SourceID == acquire.TargetID &&
+		release.Kind == core.OpRelease && release.Foreign != nil && release.Foreign.Mode == "consume" && release.Foreign.Symbol == acquire.Foreign.Release && release.SourceID == acquire.TargetID && release.ReleasesOperationID == acquire.ID &&
+		returned.Kind == core.OpReturn && returned.SourceID == use.TargetID && returned.TypeID != "" && acquire.Foreign.Allocator == "libc_malloc" && release.Foreign.Allocator == acquire.Foreign.Allocator
+}
+
+func emitProgramLocalFileByteFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string) error {
+	if !isLocalFileByteFunction(function) {
+		return fmt.Errorf("function %q: unsupported local-owner C shape", function.ID)
+	}
+	operations := function.Linear.Operations
+	acquire, use, release := operations[0], operations[1], operations[2]
+	for _, contract := range []*core.ForeignOperationContract{acquire.Foreign, use.Foreign, release.Foreign} {
+		if !validForeignSymbol(contract.Symbol) || !validForeignSymbol(contract.ABIType) || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" {
+			return fmt.Errorf("function %q: local-owner ABI contract is not a closed C identifier shape", function.ID)
+		}
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	owner, ownerOK := places[acquire.TargetID]
+	value, valueOK := places[use.TargetID]
+	releaseOwner, releaseOwnerOK := places[release.SourceID]
+	returned := operations[3]
+	if !parameterOK || !ownerOK || !valueOK || !releaseOwnerOK || owner.TypeID != release.TypeID || releaseOwner.ID != owner.ID || value.TypeID != returned.TypeID {
+		return fmt.Errorf("function %q: local-owner operation places do not agree", function.ID)
+	}
+	reserved := append(append([]string(nil), linearFixedNames...), globalNames...)
+	names := newCNames(reserved...)
+	parameterName := names.allocate(cLocal(parameter.Name), "place", 0)
+	ownerName := names.allocate(cLocal(owner.Name), "place", 1)
+	valueName := names.allocate(cLocal(value.Name), "place", 2)
+	acquireResultName := names.allocate("lang_local_acquire_result", "ffi", 0)
+	useResultName := names.allocate("lang_local_use_result", "ffi", 1)
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n", returnTypeName, functionName, parameterTypeName, parameterName)
+	out.WriteString("  (void)invocation_index;\n")
+	fmt.Fprintf(out, "  lang_file_byte_acquire_result %s = %s(%s);\n", acquireResultName, acquire.Foreign.Symbol, parameterName)
+	fmt.Fprintf(out, "  if (%s.status != 0) exit(65);\n", acquireResultName)
+	fmt.Fprintf(out, "  lang_file_byte_owner %s = %s.owner;\n", ownerName, acquireResultName)
+	fmt.Fprintf(out, "  if (%s.data == NULL || %s.length != UINT64_C(1)) { %s(%s); exit(65); }\n", ownerName, ownerName, release.Foreign.Symbol, ownerName)
+	fmt.Fprintf(out, "  lang_file_byte_use_result %s = %s(%s);\n", useResultName, use.Foreign.Symbol, ownerName)
+	fmt.Fprintf(out, "  %s(%s);\n", release.Foreign.Symbol, ownerName)
+	fmt.Fprintf(out, "  if (%s.status != 0) exit(65);\n", useResultName)
+	fmt.Fprintf(out, "  uint64_t %s = %s.value;\n", valueName, useResultName)
+	fmt.Fprintf(out, "  return %s;\n", valueName)
+	out.WriteString("}\n\n")
+	return nil
 }
 
 func emitProgramByteWriter(out *strings.Builder) {
