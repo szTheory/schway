@@ -101,12 +101,23 @@ to later foreign outcomes; extend its fixtures without reassigning ownership.
 **Plans**: 7 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 23-01-PLAN.md — Public live-owner tracer and three operation ABIs
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 23-02-PLAN.md — Acquisition-seeded independent peer validation and reached mutations
 - [ ] 23-03-PLAN.md — Source and emitter ownership refusal, including discarded acquisition
 - [ ] 23-04-PLAN.md — Bounded acquisition and partial-allocation cleanup
 - [ ] 23-05-PLAN.md — Model-only outcomes and successor discharge contract
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 23-06-PLAN.md — Independent native lifetime observer and reached controls
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 23-07-PLAN.md — Documented witness and macOS/Linux focused CI gate
 
 **Execution waves**: Wave 1: 23-01 public tracer. Wave 2: 23-02 peer proof, 23-03 source/emitter refusal, 23-04 acquisition boundaries, and 23-05 model/contract in parallel. Wave 3: 23-06 physical observer after peer, refusal, and acquisition proof. Wave 4: 23-07 documented host evidence after model and observer. The extra plan isolates RES-08/RES-09 and D-23-05 safety controls without narrowing the public tracer.
