@@ -21,7 +21,7 @@
     },
     {
       "id": "borrow",
-      "effect": "preserves_same_owners_obligation",
+      "effect": "preserves_same_owner_obligation",
       "infallible": false,
       "phase_23_execution": "runnable_borrowed_use",
       "evidence_scope": "native_observer_required_for_physical_use"

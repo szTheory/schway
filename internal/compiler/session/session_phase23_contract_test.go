@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
@@ -89,7 +90,7 @@ var phase23RequiredTransitions = map[string]phase23ContractTransition{
 		Phase23Execution: "runnable_local_release", EvidenceScope: "native_observer_required_for_physical_cleanup",
 	},
 	"borrow": {
-		ID: "borrow", Effect: "preserves_same_owners_obligation", Infallible: false,
+		ID: "borrow", Effect: "preserves_same_owner_obligation", Infallible: false,
 		Phase23Execution: "runnable_borrowed_use", EvidenceScope: "native_observer_required_for_physical_use",
 	},
 	"transfer": {
@@ -129,9 +130,9 @@ func TestPhase23ContractTransitionsAndEvidenceScopes(t *testing.T) {
 		{"missing transition", func(c *phase23DischargeContract) { c.Transitions = c.Transitions[1:] }},
 		{"duplicate transition", func(c *phase23DischargeContract) { c.Transitions[1].ID = c.Transitions[0].ID }},
 		{"unknown transition", func(c *phase23DischargeContract) { c.Transitions[0].ID = "opaque_transition" }},
-		{"release does not consume", func(c *phase23DischargeContract) { c.Transitions[0].Effect = "preserves_same_owners_obligation" }},
+		{"release does not consume", func(c *phase23DischargeContract) { c.Transitions[0].Effect = "preserves_same_owner_obligation" }},
 		{"borrow consumes", func(c *phase23DischargeContract) { c.Transitions[1].Effect = "consumes_one_local_obligation" }},
-		{"transfer lacks new owner", func(c *phase23DischargeContract) { c.Transitions[2].Effect = "preserves_same_owners_obligation" }},
+		{"transfer lacks new owner", func(c *phase23DischargeContract) { c.Transitions[2].Effect = "preserves_same_owner_obligation" }},
 		{"transfer admitted in phase 23", func(c *phase23DischargeContract) { c.Transitions[2].Phase23Execution = "runnable_transfer" }},
 		{"production admitted", func(c *phase23DischargeContract) { c.ProductionAdmission = true }},
 		{"failed acquire creates owner", func(c *phase23DischargeContract) { c.Claims.FailedOrPartialAcquisitionMintsOwner = true }},
@@ -152,6 +153,10 @@ func TestPhase23ContractTransitionsAndEvidenceScopes(t *testing.T) {
 	if _, err := decodePhase23Contract(unknownField); err == nil {
 		t.Fatal("strict contract decoder accepted an unknown field")
 	}
+	missingFalseClaim := bytes.Replace(data, []byte(`"proves_host_io": false,`), nil, 1)
+	if _, err := decodePhase23Contract(missingFalseClaim); err == nil {
+		t.Fatal("strict contract decoder accepted an omitted false-valued evidence claim")
+	}
 }
 
 func decodePhase23Contract(data []byte) (phase23DischargeContract, error) {
@@ -168,7 +173,70 @@ func decodePhase23Contract(data []byte) (phase23DischargeContract, error) {
 		}
 		return phase23DischargeContract{}, err
 	}
+	if err := requirePhase23BooleanFields(data); err != nil {
+		return phase23DischargeContract{}, err
+	}
 	return contract, nil
+}
+
+func requirePhase23BooleanFields(data []byte) error {
+	paths := []string{
+		"contract_only", "production_admission",
+		"claims.failed_or_partial_acquisition_mints_owner",
+		"claims.use_error_cleanup_precedes_ordinary_error_reporting",
+		"claims.structural_validation_proves_runtime_cleanup",
+		"claims.interpreter_model_proves_host_io",
+		"claims.interpreter_model_proves_physical_cleanup",
+		"claims.model_and_native_receipts_are_distinct",
+		"claims.transfer_implemented_in_phase_23",
+		"evidence_scopes.structural_validation.proves_runtime_cleanup",
+		"evidence_scopes.interpreter_model.proves_host_io",
+		"evidence_scopes.interpreter_model.proves_physical_cleanup",
+		"evidence_scopes.native_receipt.required_for_physical_io_and_cleanup_claims",
+	}
+	for _, path := range paths {
+		var value json.RawMessage = data
+		for _, key := range strings.Split(path, ".") {
+			var object map[string]json.RawMessage
+			if err := json.Unmarshal(value, &object); err != nil {
+				return fmt.Errorf("decode %q: %w", path, err)
+			}
+			var ok bool
+			value, ok = object[key]
+			if !ok {
+				return fmt.Errorf("required boolean %q is missing", path)
+			}
+		}
+		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return fmt.Errorf("required boolean %q cannot be null", path)
+		}
+		var boolean bool
+		if err := json.Unmarshal(value, &boolean); err != nil {
+			return fmt.Errorf("required field %q is not a boolean: %w", path, err)
+		}
+	}
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(data, &root); err != nil {
+		return err
+	}
+	var transitions []map[string]json.RawMessage
+	if err := json.Unmarshal(root["transitions"], &transitions); err != nil {
+		return fmt.Errorf("decode transitions: %w", err)
+	}
+	for i, transition := range transitions {
+		raw, ok := transition["infallible"]
+		if !ok {
+			return fmt.Errorf("required boolean transitions.%d.infallible is missing", i)
+		}
+		if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+			return fmt.Errorf("required boolean transitions.%d.infallible cannot be null", i)
+		}
+		var boolean bool
+		if err := json.Unmarshal(raw, &boolean); err != nil {
+			return fmt.Errorf("required field transitions.%d.infallible is not a boolean: %w", i, err)
+		}
+	}
+	return nil
 }
 
 func phase23ContractProblems(contract phase23DischargeContract) []string {
