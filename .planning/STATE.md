@@ -5,16 +5,16 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
 status: executing
-stopped_at: Phase 23 plans drafted for checker review
-last_updated: "2026-09-28T01:57:07.922Z"
+stopped_at: Completed 23-01-PLAN.md; next runnable work is Phase 23 Wave 2
+last_updated: "2026-09-28T02:51:47.375Z"
 last_activity: 2026-09-27
-last_activity_desc: Phase 22 complete, transitioned to Phase 23
-state_head: 73ccbb857cb7b767e0ef94a7ad074632f17d548a
+last_activity_desc: Phase 23 execution started
+state_head: ef7faab8061c2fc0881f3e0157856a8017042e10
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 10
-  completed_plans: 3
+  completed_plans: 4
   percent: 25
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-27)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Plan Phase 23 — Live Local Allocation and Discharge
+**Current focus:** Phase 23 — Live Local Allocation and Discharge
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -81,10 +81,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 23 (Live Local Allocation and Discharge) — READY TO EXECUTE
-Plan: Not started
+Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-09-27 — Phase 22 complete, transitioned to Phase 23
+Last activity: 2026-09-27 — Phase 23 execution started
 
 Progress: [███░░░░░░░] 25%
 
@@ -381,6 +381,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 21 P02 | 11 | 2 tasks | 10 files |
 | Phase 21 P03 | 10 | 3 tasks | 2 files |
 | Phase 18 P10 | 8min | 2 tasks | 4 files |
+| Phase 23 P23-01 | 25min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -566,6 +567,8 @@ Standing architectural commitments carried into M002:
 - [Phase 21]: Keep compiler measurement opt-in; behavioral equality does not prove optimizer activity, performance, cleanup, or other hosts/toolchains.
 - [Phase 18]: Stream schema-2 terminal tags and payloads through the bounded JSON writer without tag-sized storage.
 - [Phase 18]: Emit terminal scratch buffers only for payload types present in the branch.
+- [Phase 23]: Keep PathToken as direct bounded argv data and admit only the frozen straight-line owner shape. — This preserves the existing one-token app-run boundary, bounds untrusted path input, and refuses broader ownership shapes.
+- [Phase 23]: Check each C symbol against its own function type and prove record layout in the shared C17 header. — The compiled host probe must fail on a mismatched acquire, use, release, or target record layout before the native app is accepted.
 
 ### Pending Todos
 
@@ -748,9 +751,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-27T23:54:56.921Z
-Stopped at: Phase 23 context gathered
-Resume file: .planning/phases/23-live-local-allocation-and-discharge/23-CONTEXT.md
+Last session: 2026-09-28T02:51:47.353Z
+Stopped at: Completed 23-01-PLAN.md; next runnable work is Phase 23 Wave 2
+Resume file: None
 Next command: $gsd-discuss-phase 23 --auto
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
 the refreshed verifier is `passed` at 17/17 truths, and the old subjective
