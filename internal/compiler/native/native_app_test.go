@@ -136,6 +136,218 @@ func TestPhase23OperationABI(t *testing.T) {
 	})
 }
 
+func TestPhase23AcquireFailuresInitializeAndFreePartialAllocations(t *testing.T) {
+	clang, err := exec.LookPath("clang")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := testsupport.ProjectPath("examples", "phase23")
+	directory := t.TempDir()
+	harnessPath := filepath.Join(directory, "acquire_harness.c")
+	binaryPath := filepath.Join(directory, "acquire_harness")
+	const harness = `#define _POSIX_C_SOURCE 200809L
+#include "adapter.h"
+
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+enum {
+  SC_OPEN_FAILED = 1,
+  SC_NON_REGULAR = 2,
+  SC_FSTAT_FAILED = 3,
+  SC_ALLOC_FAILED = 4,
+  SC_EMPTY = 5,
+  SC_TOO_LONG = 6,
+  SC_READ_FAILED = 7,
+  SC_READ_PROBE_FAILED = 8,
+  SC_CLOSE_FAILED = 9,
+  SC_RETRY_EINTR = 10,
+  SC_SUCCESS = 11
+};
+
+static int scenario;
+static int open_calls;
+static int fstat_calls;
+static int allocation_calls;
+static int free_calls;
+static int read_calls;
+static int close_calls;
+static const char *expected_path;
+static int path_unchanged;
+
+int phase23_test_open(const char *path, int flags) {
+  open_calls++;
+  path_unchanged = strcmp(path, expected_path) == 0;
+  if (flags != (O_RDONLY | O_NONBLOCK)) return -1;
+  if (scenario == SC_OPEN_FAILED) {
+    errno = ENOENT;
+    return -1;
+  }
+  return 77;
+}
+
+int phase23_test_fstat(int descriptor, struct stat *details) {
+  fstat_calls++;
+  if (descriptor != 77) return -1;
+  if (scenario == SC_FSTAT_FAILED) {
+    errno = EIO;
+    return -1;
+  }
+  memset(details, 0, sizeof(*details));
+  details->st_mode = scenario == SC_NON_REGULAR ? S_IFIFO : S_IFREG;
+  return 0;
+}
+
+void *phase23_test_malloc(size_t size) {
+  allocation_calls++;
+  if (size != 1u || scenario == SC_ALLOC_FAILED) return NULL;
+  return malloc(size);
+}
+
+void phase23_test_free(void *pointer) {
+  if (pointer != NULL) free_calls++;
+  free(pointer);
+}
+
+ssize_t phase23_test_read(int descriptor, void *buffer, size_t count) {
+  int call = read_calls++;
+  if (descriptor != 77 || count != 1u) return -1;
+  if (scenario == SC_EMPTY) return 0;
+  if (scenario == SC_READ_FAILED && call == 0) {
+    errno = EIO;
+    return -1;
+  }
+  if (scenario == SC_READ_PROBE_FAILED && call == 1) {
+    errno = EIO;
+    return -1;
+  }
+  if (scenario == SC_RETRY_EINTR && (call == 0 || call == 2)) {
+    errno = EINTR;
+    return -1;
+  }
+  if (call == 0 || (scenario == SC_RETRY_EINTR && call == 1)) {
+    *(unsigned char *)buffer = 0x41u;
+    return 1;
+  }
+  if (scenario == SC_TOO_LONG && call == 1) {
+    *(unsigned char *)buffer = 0x42u;
+    return 1;
+  }
+  return 0;
+}
+
+int phase23_test_close(int descriptor) {
+  close_calls++;
+  if (descriptor != 77) return -1;
+  if (scenario == SC_CLOSE_FAILED) {
+    errno = EIO;
+    return -1;
+  }
+  return 0;
+}
+
+struct test_case {
+  const char *name;
+  const char *path;
+  int scenario;
+  int status;
+  int opens;
+  int fstats;
+  int allocations;
+  int frees;
+  int reads;
+  int closes;
+};
+
+static int run_case(const struct test_case *test) {
+  lang_file_byte_acquire_result result;
+  scenario = test->scenario;
+  open_calls = fstat_calls = allocation_calls = free_calls = 0;
+  read_calls = close_calls = 0;
+  expected_path = test->path;
+  path_unchanged = 0;
+  result = lang_file_byte_acquire(test->path);
+  if (result.status != test->status || open_calls != test->opens ||
+      fstat_calls != test->fstats || allocation_calls != test->allocations ||
+      free_calls != test->frees || read_calls != test->reads ||
+      close_calls != test->closes || (test->opens != 0 && !path_unchanged)) {
+    fprintf(stderr,
+            "%s: status=%d owner=%p length=%llu open=%d fstat=%d alloc=%d free=%d read=%d close=%d path_same=%d\n",
+            test->name, result.status, (void *)result.owner.data,
+            (unsigned long long)result.owner.length, open_calls, fstat_calls,
+            allocation_calls, free_calls, read_calls, close_calls, path_unchanged);
+    return 1;
+  }
+  if (test->status == 0) {
+    if (result.owner.data == NULL || result.owner.length != 1u || result.owner.data[0] != 0x41u) {
+      fprintf(stderr, "%s: success owner not initialized with byte 0x41\n", test->name);
+      return 1;
+    }
+    lang_file_byte_release(result.owner);
+    if (free_calls != test->frees + 1) {
+      fprintf(stderr, "%s: release did not free the successful allocation exactly once\n", test->name);
+      return 1;
+    }
+    return 0;
+  }
+  if (result.owner.data != NULL || result.owner.length != 0u) {
+    fprintf(stderr, "%s: failure published an owner\n", test->name);
+    return 1;
+  }
+  return 0;
+}
+
+int main(void) {
+  static const struct test_case cases[] = {
+    {"open", "open-failed", SC_OPEN_FAILED, 3, 1, 0, 0, 0, 0, 0},
+    {"non-regular", "non-regular", SC_NON_REGULAR, 4, 1, 1, 0, 0, 0, 1},
+    {"fstat", "stat-failed", SC_FSTAT_FAILED, 4, 1, 1, 0, 0, 0, 1},
+    {"allocation", "allocation-failed", SC_ALLOC_FAILED, 6, 1, 1, 1, 0, 0, 1},
+    {"empty", "empty", SC_EMPTY, 1, 1, 1, 1, 1, 1, 1},
+    {"two-byte", "two-byte", SC_TOO_LONG, 2, 1, 1, 1, 1, 2, 1},
+    {"read", "read-failed", SC_READ_FAILED, 5, 1, 1, 1, 1, 1, 1},
+    {"read-probe", "read-probe-failed", SC_READ_PROBE_FAILED, 5, 1, 1, 1, 1, 2, 1},
+    {"close", "close-failed", SC_CLOSE_FAILED, 7, 1, 1, 1, 1, 2, 1},
+    {"eintr-retry", "eintr-retry", SC_RETRY_EINTR, 0, 1, 1, 1, 0, 4, 1},
+    {"success", "success", SC_SUCCESS, 0, 1, 1, 1, 0, 2, 1}
+  };
+  size_t index;
+  for (index = 0u; index < sizeof cases / sizeof cases[0]; index++) {
+    if (run_case(&cases[index]) != 0) return 1;
+  }
+  return 0;
+}
+`
+	if err := os.WriteFile(harnessPath, []byte(harness), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	compileCtx, cancelCompile := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelCompile()
+	compile := exec.CommandContext(compileCtx, clang,
+		"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic",
+		"-DLANG_FILE_BYTE_OPEN=phase23_test_open",
+		"-DLANG_FILE_BYTE_FSTAT=phase23_test_fstat",
+		"-DLANG_FILE_BYTE_MALLOC=phase23_test_malloc",
+		"-DLANG_FILE_BYTE_FREE=phase23_test_free",
+		"-DLANG_FILE_BYTE_READ=phase23_test_read",
+		"-DLANG_FILE_BYTE_CLOSE=phase23_test_close",
+		"-I", root, harnessPath, filepath.Join(root, "adapter.c"), "-o", binaryPath)
+	if output, err := compile.CombinedOutput(); err != nil {
+		t.Fatalf("compile acquisition fault harness: %v\n%s", err, output)
+	}
+	runCtx, cancelRun := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelRun()
+	run := exec.CommandContext(runCtx, binaryPath)
+	if output, err := run.CombinedOutput(); err != nil {
+		t.Fatalf("acquisition fault harness: %v\n%s", err, output)
+	}
+}
+
 func TestPhase22EvidenceDisabledCompleteAndStreamIsolation(t *testing.T) {
 	t.Run("disabled", func(t *testing.T) {
 		root := t.TempDir()
