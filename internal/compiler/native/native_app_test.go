@@ -302,7 +302,29 @@ static int run_case(const struct test_case *test) {
   return 0;
 }
 
-int main(void) {
+static int run_unchanged_path_case(const char *path) {
+  char expected[4097];
+  size_t path_length = strlen(path);
+  lang_file_byte_acquire_result result;
+  if (path_length > sizeof expected - 1u) return 2;
+  memcpy(expected, path, path_length + 1u);
+  scenario = SC_OPEN_FAILED;
+  open_calls = fstat_calls = allocation_calls = free_calls = 0;
+  read_calls = close_calls = 0;
+  expected_path = expected;
+  path_unchanged = 0;
+  result = lang_file_byte_acquire(path);
+  if (result.status != 3 || result.owner.data != NULL || result.owner.length != 0u ||
+      open_calls != 1 || fstat_calls != 0 || allocation_calls != 0 ||
+      free_calls != 0 || read_calls != 0 || close_calls != 0 || !path_unchanged) {
+    fprintf(stderr, "path length=%llu was changed or did not reach the open hook\n",
+            (unsigned long long)path_length);
+    return 1;
+  }
+  return 0;
+}
+
+int main(int argc, char **argv) {
   static const struct test_case cases[] = {
     {"open", "open-failed", SC_OPEN_FAILED, 3, 1, 0, 0, 0, 0, 0},
     {"non-regular", "non-regular", SC_NON_REGULAR, 4, 1, 1, 0, 0, 0, 1},
@@ -317,6 +339,8 @@ int main(void) {
     {"success", "success", SC_SUCCESS, 0, 1, 1, 1, 0, 2, 1}
   };
   size_t index;
+  if (argc == 2) return run_unchanged_path_case(argv[1]);
+  if (argc != 1) return 2;
   for (index = 0u; index < sizeof cases / sizeof cases[0]; index++) {
     if (run_case(&cases[index]) != 0) return 1;
   }
@@ -347,6 +371,17 @@ int main(void) {
 	run := exec.CommandContext(runCtx, binaryPath)
 	if output, err := run.CombinedOutput(); err != nil {
 		t.Fatalf("acquisition fault harness: %v\n%s", err, output)
+	}
+	// Permission bits may not produce an open failure for privileged test users;
+	// the table above injects OpenFailed directly at this adapter boundary.
+	for _, path := range []string{"/", strings.Repeat("p", 4096)} {
+		pathRunCtx, cancelPathRun := context.WithTimeout(context.Background(), 10*time.Second)
+		pathRun := exec.CommandContext(pathRunCtx, binaryPath, path)
+		pathOutput, pathErr := pathRun.CombinedOutput()
+		cancelPathRun()
+		if pathErr != nil || string(pathOutput) != "lang_file_byte_acquire: OpenFailed\n" {
+			t.Fatalf("unchanged path length=%d: err=%v output=%q", len(path), pathErr, pathOutput)
+		}
 	}
 }
 
