@@ -10,6 +10,7 @@ static void *allocation;
 static int finalizer_registered;
 static int allocation_live;
 static int use_seen;
+static int release_attempt_seen;
 static int observer_rejected;
 
 static void phase23_observer_finalize(void);
@@ -79,6 +80,7 @@ unsigned char phase23_observer_load_byte(const unsigned char *pointer) {
 
 void phase23_observer_free(void *pointer) {
   ensure_finalizer();
+  release_attempt_seen = 1;
   if (pointer == NULL || pointer != allocation) {
     observer_rejected = 1;
     record_event("attempt", "wrong-resource");
@@ -109,6 +111,9 @@ void phase23_observer_report_boundary(void) {
 }
 
 static void phase23_observer_finalize(void) {
+	if (allocation_live && use_seen && !release_attempt_seen) {
+		record_event("attempt", "omitted-release");
+	}
   int reject = observer_rejected || allocation_live || !use_seen;
   record_event("final", allocation_live ? "outstanding=1" : "outstanding=0");
   record_event("verdict", reject ? "reject" : "pass");

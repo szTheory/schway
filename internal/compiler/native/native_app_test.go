@@ -364,24 +364,30 @@ int main(int argc, char **argv) {
 		"-DLANG_FILE_BYTE_READ=phase23_test_read",
 		"-DLANG_FILE_BYTE_CLOSE=phase23_test_close",
 		"-I", root, harnessPath, "-o", binaryPath)
-	if output, err := compile.CombinedOutput(); err != nil {
-		t.Fatalf("compile acquisition fault harness: %v\n%s", err, output)
+	var compileStdout, compileStderr boundedWriter
+	compile.Stdout, compile.Stderr = &compileStdout, &compileStderr
+	if err := compile.Run(); err != nil || compileStdout.overflowed() || compileStderr.overflowed() {
+		t.Fatalf("compile acquisition fault harness: %v stdout=%q stderr=%q", err, compileStdout.bytes(), compileStderr.bytes())
 	}
 	runCtx, cancelRun := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelRun()
 	run := exec.CommandContext(runCtx, binaryPath)
-	if output, err := run.CombinedOutput(); err != nil {
-		t.Fatalf("acquisition fault harness: %v\n%s", err, output)
+	var runStdout, runStderr boundedWriter
+	run.Stdout, run.Stderr = &runStdout, &runStderr
+	if err := run.Run(); err != nil || runStdout.overflowed() || runStderr.overflowed() {
+		t.Fatalf("acquisition fault harness: %v stdout=%q stderr=%q", err, runStdout.bytes(), runStderr.bytes())
 	}
 	// Permission bits may not produce an open failure for privileged test users;
 	// the table above injects OpenFailed directly at this adapter boundary.
 	for _, path := range []string{"/", strings.Repeat("p", 4096)} {
 		pathRunCtx, cancelPathRun := context.WithTimeout(context.Background(), 10*time.Second)
 		pathRun := exec.CommandContext(pathRunCtx, binaryPath, path)
-		pathOutput, pathErr := pathRun.CombinedOutput()
+		var pathStdout, pathStderr boundedWriter
+		pathRun.Stdout, pathRun.Stderr = &pathStdout, &pathStderr
+		pathErr := pathRun.Run()
 		cancelPathRun()
-		if pathErr != nil || string(pathOutput) != "lang_file_byte_acquire: OpenFailed\n" {
-			t.Fatalf("unchanged path length=%d: err=%v output=%q", len(path), pathErr, pathOutput)
+		if pathErr != nil || pathStdout.overflowed() || pathStderr.overflowed() || len(pathStdout.bytes()) != 0 || string(pathStderr.bytes()) != "lang_file_byte_acquire: OpenFailed\n" {
+			t.Fatalf("unchanged path length=%d: err=%v stdout=%q stderr=%q", len(path), pathErr, pathStdout.bytes(), pathStderr.bytes())
 		}
 	}
 }

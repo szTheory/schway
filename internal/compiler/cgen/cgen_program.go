@@ -1030,11 +1030,11 @@ func isLocalFileByteFunction(function core.Function) bool {
 		returned.Kind == core.OpReturn && returned.SourceID == use.TargetID && returned.TypeID != "" && acquire.Foreign.Allocator == "libc_malloc" && release.Foreign.Allocator == acquire.Foreign.Allocator
 }
 
-// hasLocalOwnerFacts keeps malformed candidates on the local-owner admission
-// path even when a mutation removes the operation or contract that would make
-// isLocalFileByteFunction recognize the complete success shape. Without this
-// preflight, generic operation lowering can begin serializing C before it
-// encounters an unsupported foreign or release operation.
+// hasLocalOwnerFacts keeps malformed local-owner candidates on the admission
+// path even when a mutation removes an operation or contract from the complete
+// success shape. PathToken and FileByteOwner facts identify this deliberately
+// narrow feature; an unrelated foreign operation or release is not evidence
+// that a function uses the Phase 23 local-owner ABI.
 func hasLocalOwnerFacts(function core.Function) bool {
 	if function.Parameter.Type == "PathToken" || function.ReturnType == "FileByteOwner" {
 		return true
@@ -1044,11 +1044,6 @@ func hasLocalOwnerFacts(function core.Function) bool {
 	}
 	for _, typeFact := range function.Linear.Types {
 		if typeFact.Shape.Constructor == "PathToken" || typeFact.Shape.Constructor == "FileByteOwner" {
-			return true
-		}
-	}
-	for _, operation := range function.Linear.Operations {
-		if operation.Foreign != nil || operation.Kind == core.OpRelease {
 			return true
 		}
 	}
@@ -1165,7 +1160,6 @@ func emitProgramLocalFileByteFunction(out *strings.Builder, function core.Functi
 	acquireResultName := names.allocate("lang_local_acquire_result", "ffi", 0)
 	useResultName := names.allocate("lang_local_use_result", "ffi", 1)
 	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n", returnTypeName, functionName, parameterTypeName, parameterName)
-	out.WriteString("  (void)invocation_index;\n")
 	fmt.Fprintf(out, "  lang_file_byte_acquire_result %s = %s(%s);\n", acquireResultName, acquire.Foreign.Symbol, parameterName)
 	fmt.Fprintf(out, "  if (%s.status != 0) exit(65);\n", acquireResultName)
 	fmt.Fprintf(out, "  lang_file_byte_owner %s = %s.owner;\n", ownerName, acquireResultName)
@@ -1174,6 +1168,9 @@ func emitProgramLocalFileByteFunction(out *strings.Builder, function core.Functi
 	fmt.Fprintf(out, "  %s(%s);\n", release.Foreign.Symbol, ownerName)
 	fmt.Fprintf(out, "  if (%s.status != 0) { fputs(\"lang_file_byte_use: UnsupportedByte\\n\", stderr); exit(65); }\n", useResultName)
 	fmt.Fprintf(out, "  uint64_t %s = %s.value;\n", valueName, useResultName)
+	fmt.Fprintf(out, "  if (!lang_record_event(%s, %s, %s, %s, NULL, %s, lang_invocations[invocation_index], NULL)) abort();\n",
+		strconv.Quote("function.returned"), strconv.Quote(returned.ID+":event:returned"), strconv.Quote(function.ID),
+		strconv.Quote(returned.SourceID), strconv.Quote(returned.TypeID))
 	fmt.Fprintf(out, "  return %s;\n", valueName)
 	out.WriteString("}\n\n")
 	return nil
