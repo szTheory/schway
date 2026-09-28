@@ -2,6 +2,7 @@ package interp
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/codename-lang/lang/internal/compiler/core"
@@ -162,6 +163,166 @@ var moveAsCopyForTest = false
 type Outcome = execution.Outcome
 type Event = execution.Event
 type Execution = execution.Execution
+
+const EvidenceScopeModelOnly = "interpreter_model_only"
+
+// ForeignOutcome is an independently supplied semantic result for one
+// checked foreign operation. It is consumed by operation ID and never
+// performs host IO or represents a physical allocation/free.
+type ForeignOutcome struct {
+	Kind  string `json:"kind"` // "success" or "failure"
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+// ModelResult keeps semantic interpretation separate from host observations.
+// ActualHostIO and PhysicalCleanup are always false for this runner.
+type ModelResult struct {
+	Execution       Execution `json:"execution"`
+	EvidenceScope   string    `json:"evidence_scope"`
+	ActualHostIO    bool      `json:"actual_host_io"`
+	PhysicalCleanup bool      `json:"physical_cleanup"`
+}
+
+// RunWithForeignOutcomes executes the checked single-entry local-owner model
+// using deterministic outcomes keyed by each core operation ID. The opaque
+// input is treated only as a modeled PathToken; this function never opens it.
+func RunWithForeignOutcomes(program core.Program, functionName, input string, outcomes map[string]ForeignOutcome) (ModelResult, error) {
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return ModelResult{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program = validated.Program()
+	if len(program.Functions) != 1 {
+		return ModelResult{}, fmt.Errorf("model-only foreign outcomes require one checked entry function")
+	}
+	function, ok := findFunction(program, functionName)
+	if !ok {
+		return ModelResult{}, fmt.Errorf("function %q is absent from checked core", functionName)
+	}
+	if !function.HasClosedBody() || function.Linear == nil || function.Match != nil || len(function.Linear.Blocks) != 0 || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" {
+		return ModelResult{}, fmt.Errorf("model-only foreign outcomes require the checked PathToken-to-U64 local-owner entry")
+	}
+	initial, err := inputValue(program, function, input)
+	if err != nil {
+		return ModelResult{}, err
+	}
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
+	base.modeledOutcomes = make(map[string]ForeignOutcome, len(outcomes))
+	for operationID, outcome := range outcomes {
+		base.modeledOutcomes[operationID] = outcome
+	}
+	result, err := runProgramFrameStack(program, base)
+	if err != nil {
+		return ModelResult{}, err
+	}
+	if len(base.modeledOutcomes) != 0 {
+		return ModelResult{}, fmt.Errorf("modeled foreign outcomes were not consumed for operations %v", sortedOutcomeIDs(base.modeledOutcomes))
+	}
+	if len(result.LiveResources) != 0 {
+		return ModelResult{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
+	}
+	return ModelResult{
+		Execution: result, EvidenceScope: EvidenceScopeModelOnly,
+		ActualHostIO: false, PhysicalCleanup: false,
+	}, nil
+}
+
+func sortedOutcomeIDs(outcomes map[string]ForeignOutcome) []string {
+	ids := make([]string, 0, len(outcomes))
+	for id := range outcomes {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+func modeledForeignResult(program core.Program, frame *frame, operation core.LinearOperation, source value, outcome ForeignOutcome) (value, bool, error) {
+	contract := operation.Foreign
+	if contract == nil {
+		return value{}, false, fmt.Errorf("foreign operation %q has no checked per-operation contract", operation.ID)
+	}
+	switch outcome.Kind {
+	case "success":
+		if outcome.Type != contract.ResultType {
+			return value{}, false, fmt.Errorf("foreign operation %q modeled result type %q does not match its checked result type %q", operation.ID, outcome.Type, contract.ResultType)
+		}
+		switch contract.Mode {
+		case "acquire":
+			parsed, err := strconv.ParseUint(outcome.Value, 10, 8)
+			if err != nil || strconv.FormatUint(parsed, 10) != outcome.Value {
+				return value{}, false, fmt.Errorf("foreign acquire %q model value must be one canonical byte", operation.ID)
+			}
+		case "borrow":
+			owner, ok := modeledOwnerForBorrow(frame, operation.SourceID)
+			if !ok {
+				return value{}, false, fmt.Errorf("foreign borrow %q has no live modeled acquire for source place %q", operation.ID, operation.SourceID)
+			}
+			if contract.ParameterType != owner.Foreign.ResultType {
+				return value{}, false, fmt.Errorf("foreign borrow %q parameter type %q does not match acquired owner type %q", operation.ID, contract.ParameterType, owner.Foreign.ResultType)
+			}
+			if outcome.Value != source.payload {
+				return value{}, false, fmt.Errorf("foreign borrow %q modeled byte %q does not match acquired byte %q", operation.ID, outcome.Value, source.payload)
+			}
+			if !canonicalModeledU64(outcome.Value) {
+				return value{}, false, fmt.Errorf("foreign borrow %q model result must be one canonical U64", operation.ID)
+			}
+		default:
+			return value{}, false, fmt.Errorf("foreign operation %q has unsupported modeled mode %q", operation.ID, contract.Mode)
+		}
+		return value{payload: outcome.Value}, true, nil
+	case "failure":
+		if contract.Fails == "" || outcome.Type != contract.Fails || !modeledFailureAlternative(program, outcome.Type, outcome.Value) {
+			return value{}, false, fmt.Errorf("foreign operation %q modeled failure does not match its checked failure contract", operation.ID)
+		}
+		if contract.Mode != "acquire" && contract.Mode != "borrow" {
+			return value{}, false, fmt.Errorf("foreign operation %q has unsupported modeled failure mode %q", operation.ID, contract.Mode)
+		}
+		return value{}, false, nil
+	default:
+		return value{}, false, fmt.Errorf("foreign operation %q has unsupported modeled outcome kind %q", operation.ID, outcome.Kind)
+	}
+}
+
+func modeledOwnerForBorrow(frame *frame, sourcePlace string) (core.LinearOperation, bool) {
+	for _, operation := range frame.operations {
+		if operation.Kind == core.OpForeignCall && operation.TargetID == sourcePlace && operation.Foreign != nil && operation.Foreign.Mode == "acquire" && frame.live[operation.ID] {
+			return operation, true
+		}
+	}
+	return core.LinearOperation{}, false
+}
+
+func modeledFailureAlternative(program core.Program, typeName, alternative string) bool {
+	for _, dataType := range program.DataTypes {
+		if dataType.Name != typeName {
+			continue
+		}
+		for _, candidate := range dataType.Alternatives {
+			if candidate == alternative {
+				return true
+			}
+		}
+		return false
+	}
+	return false
+}
+
+func canonicalModeledU64(text string) bool {
+	parsed, err := strconv.ParseUint(text, 10, 64)
+	return err == nil && strconv.FormatUint(parsed, 10) == text
+}
+
+func validateModeledRelease(frame *frame, operation core.LinearOperation) error {
+	acquire, ok := frame.operations[operation.ReleasesOperationID]
+	if !ok || acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || acquire.Foreign.Mode != "acquire" {
+		return fmt.Errorf("release %q does not name a checked modeled acquisition", operation.ID)
+	}
+	if operation.Foreign == nil || operation.Foreign.Mode != "consume" || operation.Foreign.Symbol != acquire.Foreign.Release || operation.Foreign.ParameterType != acquire.Foreign.ResultType || operation.Foreign.Allocator != acquire.Foreign.Allocator {
+		return fmt.Errorf("release %q does not match its acquisition's checked consume contract", operation.ID)
+	}
+	return nil
+}
 
 func Run(program core.Program, functionName, input string) (Execution, error) {
 	validated := corevalidate.Validate(program)
@@ -421,6 +582,8 @@ type frame struct {
 	tracked            map[string]bool
 	nonlocalExitPolicy bool
 	nonlocalExitCalls  int
+	modeledOutcomes    map[string]ForeignOutcome
+	modeledFailure     *ForeignOutcome
 
 	// placeTypes and types index this frame's OWN function's declared
 	// places and type facts by ID -- present on every frame shape (not
@@ -881,7 +1044,8 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			return Execution{}, fmt.Errorf("block or body references unknown operation %q", operationID)
 		}
 		var sourceValue value
-		if operation.Kind != core.OpConst {
+		modeledFailureContinuation := top.modeledFailure != nil && (operation.Kind == core.OpForeignCall || operation.Kind == core.OpRelease || operation.Kind == core.OpReturn)
+		if operation.Kind != core.OpConst && !modeledFailureContinuation {
 			var initialized bool
 			sourceValue, initialized = top.values[operation.SourceID]
 			if !initialized {
@@ -956,10 +1120,52 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			})
 			top.idx++
 		case core.OpRelease:
+			if top.modeledOutcomes != nil {
+				if !top.live[operation.ReleasesOperationID] {
+					top.idx++
+					continue
+				}
+				if err := validateModeledRelease(top, operation); err != nil {
+					return Execution{}, err
+				}
+			}
 			top.live[operation.ReleasesOperationID] = false
 			events = append(events, ownedEvent(top, operation, "resource.released"))
 			top.idx++
 		case core.OpForeignCall:
+			if top.modeledOutcomes != nil {
+				if top.modeledFailure != nil {
+					top.idx++
+					continue
+				}
+				outcome, supplied := top.modeledOutcomes[operation.ID]
+				if !supplied {
+					return Execution{}, fmt.Errorf("modeled outcome for foreign operation %q is missing", operation.ID)
+				}
+				delete(top.modeledOutcomes, operation.ID)
+				modeledValue, succeeded, err := modeledForeignResult(program, top, operation, sourceValue, outcome)
+				if err != nil {
+					return Execution{}, err
+				}
+				event := Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
+					SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+				}
+				if !succeeded {
+					top.modeledFailure = &outcome
+					event.Kind = "foreign.failed"
+					event.TypeID = outcome.Type
+				} else {
+					top.values[operation.TargetID] = modeledValue
+					if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+						top.live[operation.ID] = true
+						top.liveOrder = append(top.liveOrder, operation.ID)
+					}
+				}
+				events = append(events, event)
+				top.idx++
+				continue
+			}
 			top.nonlocalExitCalls++
 			if top.nonlocalExitPolicy && top.nonlocalExitCalls == 2 {
 				events = append(events, Event{
@@ -1039,6 +1245,13 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:
 			outcome, event := terminalOutcome(top, operation, sourceValue.terminalString())
+			if operation.Kind == core.OpReturn && top.modeledFailure != nil {
+				outcome = Outcome{Kind: execution.OutcomeTypedFailure, Value: top.modeledFailure.Value}
+				event = Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
+					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: top.modeledFailure.Type,
+				}
+			}
 			events = append(events, event)
 			if operation.Kind == core.OpReturn && top.hasCaller {
 				returnTarget, returnValue := top.returnTarget, outcome.Value
@@ -1046,10 +1259,7 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				stack[len(stack)-1].values[returnTarget] = value{tag: "", payload: returnValue}
 				continue
 			}
-			liveResources := []string{}
-			if top.blocks != nil && !top.singleBlockOnly {
-				liveResources = liveResourceList(top.live, top.liveOrder)
-			}
+			liveResources := liveResourceList(top.live, top.liveOrder)
 			return Execution{Schema: top.eventSchema(), Outcome: outcome, Events: events, LiveResources: liveResources}, nil
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)

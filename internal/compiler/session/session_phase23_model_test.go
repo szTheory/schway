@@ -41,7 +41,7 @@ func TestPhase23ModelReportUsesModelOnlyEvidenceVocabulary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, required := range []string{`"evidence_scope":"interpreter_model_only"`, `"actual_host_io":false`, `"physical_cleanup":false`} {
+	for _, required := range []string{`"evidence_scope":"verifier_model_only"`, `"actual_host_io":false`, `"physical_cleanup":false`} {
 		if !strings.Contains(string(encoded), required) {
 			t.Errorf("model report omits required evidence boundary %s: %s", required, encoded)
 		}
