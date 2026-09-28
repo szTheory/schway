@@ -5,16 +5,16 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
 status: executing
-stopped_at: Completed 23-01-PLAN.md; next runnable work is Phase 23 Wave 2
-last_updated: "2026-09-28T02:51:47.375Z"
+stopped_at: Completed Phase 23 Wave 2; next runnable plan is 23-06
+last_updated: "2026-09-28T09:14:43.685Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 23 execution started
-state_head: ef7faab8061c2fc0881f3e0157856a8017042e10
+state_head: 7de2ff49060b44331a623c4a9579e2a603ae2dcc
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 8
   percent: 25
 ---
 
@@ -82,7 +82,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
-Plan: 2 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-09-27 — Phase 23 execution started
 
@@ -382,6 +382,10 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 21 P03 | 10 | 3 tasks | 2 files |
 | Phase 18 P10 | 8min | 2 tasks | 4 files |
 | Phase 23 P23-01 | 25min | 2 tasks | 16 files |
+| Phase 23 P23-02 | 17min | 2 tasks | 6 files |
+| Phase 23 P23-03 | 13min | 2 tasks | 5 files |
+| Phase 23 P23-04 | 76min | 2 tasks | 6 files |
+| Phase 23 P23-05 | 209min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -569,6 +573,15 @@ Standing architectural commitments carried into M002:
 - [Phase 18]: Emit terminal scratch buffers only for payload types present in the branch.
 - [Phase 23]: Keep PathToken as direct bounded argv data and admit only the frozen straight-line owner shape. — This preserves the existing one-token app-run boundary, bounds untrusted path input, and refuses broader ownership shapes.
 - [Phase 23]: Check each C symbol against its own function type and prove record layout in the shared C17 header. — The compiled host probe must fail on a mismatched acquire, use, release, or target record layout before the native app is accepted.
+- [Phase 23]: Keep each peer owner-lifecycle validator independently authored while enforcing the same narrow PathToken-to-U64 contract. — Independent evidence prevents the validators from trusting checker-produced facts or one another.
+- [Phase 23]: Tie borrow and release obligations to successful acquire identity and exact resource place. — Mutating symbol names or surviving release lists must not erase the acquired owner obligation.
+- [Phase 23]: Refuse discarded successful acquisition at source admission with an operation and source-place diagnostic. — A dropped owner must be rejected before lowering can lose its cleanup obligation.
+- [Phase 23]: Gate malformed owner candidates before C serialization using exact operation contracts and owner facts. — The sole emitter must not trust candidate shape alone after independent mutation.
+- [Phase 23]: Keep descriptor closure and partial-allocation cleanup inside the C adapter before publishing acquisition failure. — A failed acquisition must return initialized error state with no leaked descriptor or allocation.
+- [Phase 23]: Reject embedded NUL in the retained Go runner before launching the native app. — The operating-system process boundary cannot transport embedded NUL as an argv byte.
+- [Phase 23]: Supply deterministic outcomes per checked foreign operation and never treat model results as host IO. — Semantic model receipts must remain separate from native file access and physical cleanup evidence.
+- [Phase 23]: Keep release local and consuming, borrow obligation-preserving, and transfer contract-only until Phase 24. — The current implementation proves local discharge without prematurely admitting ownership transfer.
+- [Phase 23]: Preserve the archived Phase 21 contract and leave shared requirements pending until every phase plan passes. — New evidence belongs in a successor artifact, and shared IDs are phase-level until their remaining plans finish.
 
 ### Pending Todos
 
@@ -751,8 +764,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-28T02:51:47.353Z
-Stopped at: Completed 23-01-PLAN.md; next runnable work is Phase 23 Wave 2
+Last session: 2026-09-28T09:14:43.510Z
+Stopped at: Completed Phase 23 Wave 2; next runnable plan is 23-06
 Resume file: None
 Next command: $gsd-discuss-phase 23 --auto
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,

@@ -98,7 +98,7 @@ to later foreign outcomes; extend its fixtures without reassigning ownership.
 4. Discarded owning success is rejected or immediately destroyed. Independent acquisition-derived validation rejects missing, duplicate, wrong-resource, or fabricated cleanup even when every release operation is removed from candidate core.
 5. Native runs exercise normal completion and a real later operation/output failure after successful acquisition. Generated local cleanup consumes each remaining obligation exactly once; independent physical observation rejects reached omitted or premature destruction despite plausible compiler events.
 
-**Plans**: 1/7 plans executed
+**Plans**: 5/7 plans executed
 
 Plans:
 **Wave 1**
@@ -107,10 +107,10 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 23-02-PLAN.md — Acquisition-seeded independent peer validation and reached mutations
-- [ ] 23-03-PLAN.md — Source and emitter ownership refusal, including discarded acquisition
-- [ ] 23-04-PLAN.md — Bounded acquisition and partial-allocation cleanup
-- [ ] 23-05-PLAN.md — Model-only outcomes and successor discharge contract
+- [x] 23-02-PLAN.md — Acquisition-seeded independent peer validation and reached mutations
+- [x] 23-03-PLAN.md — Source and emitter ownership refusal, including discarded acquisition
+- [x] 23-04-PLAN.md — Bounded acquisition and partial-allocation cleanup
+- [x] 23-05-PLAN.md — Model-only outcomes and successor discharge contract
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -231,7 +231,7 @@ by roadmap creation. Plan counts remain TBD until phase planning.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
-| 23. Live Local Allocation and Discharge | 1/7 | In Progress|  |
+| 23. Live Local Allocation and Discharge | 5/7 | In Progress|  |
 | 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
 
