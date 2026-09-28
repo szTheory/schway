@@ -47,6 +47,7 @@ func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
 		t.Fatal(err)
 	}
 	useAt := strings.Index(cSource, "lang_file_byte_use(")
+	useErrorDiagnosticAt := strings.Index(cSource, `fputs("lang_file_byte_use: UnsupportedByte\n", stderr);`)
 	var releasePositions []int
 	for offset := 0; offset < len(cSource); {
 		next := strings.Index(cSource[offset:], "lang_file_byte_release(")
@@ -56,14 +57,14 @@ func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
 		releasePositions = append(releasePositions, offset+next)
 		offset += next + len("lang_file_byte_release(")
 	}
-	if useAt < 0 || len(releasePositions) != 2 || releasePositions[1] <= useAt {
+	if useAt < 0 || len(releasePositions) != 2 || releasePositions[1] <= useAt || useErrorDiagnosticAt <= releasePositions[1] {
 		t.Fatalf("generated app does not call borrowed use then the successful-path destructor: use=%d release=%v", useAt, releasePositions)
 	}
 	useArgStart := useAt + len("lang_file_byte_use(")
 	useArgEnd := strings.Index(cSource[useArgStart:], ");")
 	releaseArgStart := releasePositions[1] + len("lang_file_byte_release(")
 	releaseArgEnd := strings.Index(cSource[releaseArgStart:], ");")
-	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], "status != 0) exit(65)") {
+	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], `status != 0) { fputs("lang_file_byte_use: UnsupportedByte\n", stderr); exit(65); }`) {
 		t.Fatal("generated cleanup does not retain the acquired owner through use and release it before a use failure exits")
 	}
 }
