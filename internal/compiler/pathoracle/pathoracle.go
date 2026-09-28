@@ -68,32 +68,48 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 		if !local {
 			continue
 		}
-		if function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 {
+		if function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
 			return fmt.Errorf("pathoracle.local_owner_shape: function %q is outside the admitted PathToken-to-U64 path", function.ID)
+		}
+		types := make(map[string]string, len(function.Linear.Types))
+		for _, fact := range function.Linear.Types {
+			types[fact.ID] = fact.Shape.Constructor
+		}
+		places := make(map[string]string, len(function.Linear.Places))
+		for _, place := range function.Linear.Places {
+			places[place.ID] = types[place.TypeID]
 		}
 		type owner struct {
 			place    string
+			result   string
 			contract *core.ForeignOperationContract
 			borrowed bool
 			released bool
 		}
 		owners := map[string]owner{}
 		ownerByPlace := map[string]string{}
+		modes := make([]string, 0, 3)
 		var returnedFrom string
 		for _, operation := range function.Linear.Operations {
 			contract := operation.Foreign
 			if contract == nil {
 				if operation.Kind == core.OpReturn {
+					if returnedFrom != "" || len(ownerByPlace) != 0 {
+						return fmt.Errorf("pathoracle.local_owner_terminal: function %q returns with an outstanding owner", function.ID)
+					}
 					returnedFrom = operation.SourceID
+				} else {
+					return fmt.Errorf("pathoracle.local_owner_operation: operation %q escapes the admitted local-owner shape", operation.ID)
 				}
 				continue
 			}
 			if !pathOracleIdentifier(contract.Symbol) || !pathOracleIdentifier(contract.ABIType) || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" {
 				return fmt.Errorf("pathoracle.local_owner_contract: operation %q has incomplete ABI or exit facts", operation.ID)
 			}
+			modes = append(modes, contract.Mode)
 			switch contract.Mode {
 			case "acquire":
-				if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails == "" || contract.Allocator != "libc_malloc" || !pathOracleIdentifier(contract.Release) || ownerByPlace[operation.TargetID] != "" {
+				if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || places[operation.SourceID] != "PathToken" || places[operation.TargetID] != "FileByteOwner" || types[operation.TypeID] != "FileByteOwner" || contract.Symbol != "lang_file_byte_acquire" || contract.ABIType != "lang_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "lang_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" || owners[operation.ID].contract != nil || ownerByPlace[operation.TargetID] != "" {
 					return fmt.Errorf("pathoracle.local_owner_acquire: operation %q is not a valid owner seed", operation.ID)
 				}
 				owners[operation.ID] = owner{place: operation.TargetID, contract: contract}
@@ -101,14 +117,15 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 			case "borrow":
 				acquireID := ownerByPlace[operation.SourceID]
 				acquired, exists := owners[acquireID]
-				if operation.Kind != core.OpForeignCall || !exists || acquired.released || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails == "" || acquired.borrowed {
+				if operation.Kind != core.OpForeignCall || !exists || acquired.released || acquired.borrowed || places[operation.SourceID] != "FileByteOwner" || places[operation.TargetID] != "U64" || types[operation.TypeID] != "U64" || contract.Symbol != "lang_file_byte_use" || contract.ABIType != "lang_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
 					return fmt.Errorf("pathoracle.local_owner_borrow: operation %q does not borrow one live acquired owner", operation.ID)
 				}
 				acquired.borrowed = true
+				acquired.result = operation.TargetID
 				owners[acquireID] = acquired
 			case "consume":
 				acquired, exists := owners[operation.ReleasesOperationID]
-				if operation.Kind != core.OpRelease || !exists || acquired.released || !acquired.borrowed || acquired.place != operation.SourceID || acquired.contract.Release != contract.Symbol || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Allocator != acquired.contract.Allocator || contract.Fails != "" {
+				if operation.Kind != core.OpRelease || !exists || acquired.released || !acquired.borrowed || acquired.place != operation.SourceID || places[operation.SourceID] != "FileByteOwner" || types[operation.TypeID] != "FileByteOwner" || acquired.contract.Release != contract.Symbol || acquired.contract.Allocator != contract.Allocator || contract.Symbol != "lang_file_byte_release" || contract.ABIType != "lang_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Allocator != "libc_malloc" || contract.Release != "" || contract.Fails != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
 					return fmt.Errorf("pathoracle.local_owner_release: operation %q does not discharge its acquired owner", operation.ID)
 				}
 				acquired.released = true
@@ -118,11 +135,11 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 				return fmt.Errorf("pathoracle.local_owner_mode: operation %q has unsupported mode", operation.ID)
 			}
 		}
-		if len(owners) != 1 || len(ownerByPlace) != 0 {
+		if len(owners) != 1 || len(ownerByPlace) != 0 || len(modes) != 3 || modes[0] != "acquire" || modes[1] != "borrow" || modes[2] != "consume" {
 			return fmt.Errorf("pathoracle.local_owner_unreleased: function %q has no complete acquisition discharge", function.ID)
 		}
 		for _, acquired := range owners {
-			if !acquired.borrowed || !acquired.released || returnedFrom == "" {
+			if !acquired.borrowed || !acquired.released || returnedFrom == "" || returnedFrom != acquired.result {
 				return fmt.Errorf("pathoracle.local_owner_terminal: function %q returns before owner discharge", function.ID)
 			}
 		}

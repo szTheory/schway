@@ -1363,16 +1363,16 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 	switch contract.Mode {
 	case "acquire":
 		target, targetOK := places[operation.TargetID]
-		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails == "" || contract.Allocator != "libc_malloc" || !validCIdentifier(contract.Release) || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "lang_file_byte_acquire" || contract.ABIType != "lang_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "lang_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	case "borrow":
 		target, targetOK := places[operation.TargetID]
-		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails == "" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "lang_file_byte_use" || contract.ABIType != "lang_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	case "consume":
-		if operation.Kind != core.OpRelease || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
+		if operation.Kind != core.OpRelease || contract.Symbol != "lang_file_byte_release" || contract.ABIType != "lang_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	default:
@@ -1397,26 +1397,38 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 // then replays borrow and release transitions in source order. It never
 // discovers an owner by scanning the release list.
 func localOwnerLifecycleValid(function *core.Function) bool {
-	if function == nil || function.Linear == nil {
+	if function == nil || function.Linear == nil || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
 		return false
 	}
 	type ownerState struct {
 		placeID  string
+		resultID string
 		contract *core.ForeignOperationContract
 		live     bool
+		borrowed bool
 		released bool
 	}
 	owners := map[string]ownerState{}
 	activeByPlace := map[string]string{}
-	borrows := 0
+	var returnedFrom string
+	foreignModes := make([]string, 0, 3)
 	for _, operation := range function.Linear.Operations {
 		contract := operation.Foreign
 		if contract == nil {
+			if operation.Kind == core.OpReturn {
+				if returnedFrom != "" {
+					return false
+				}
+				returnedFrom = operation.SourceID
+			} else {
+				return false
+			}
 			continue
 		}
+		foreignModes = append(foreignModes, contract.Mode)
 		switch contract.Mode {
 		case "acquire":
-			if operation.Kind != core.OpForeignCall || operation.TargetID == "" || owners[operation.ID].contract != nil {
+			if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || operation.TargetID == "" || owners[operation.ID].contract != nil || activeByPlace[operation.TargetID] != "" {
 				return false
 			}
 			owners[operation.ID] = ownerState{placeID: operation.TargetID, contract: contract, live: true}
@@ -1424,13 +1436,15 @@ func localOwnerLifecycleValid(function *core.Function) bool {
 		case "borrow":
 			acquireID, found := activeByPlace[operation.SourceID]
 			owner, known := owners[acquireID]
-			if operation.Kind != core.OpForeignCall || !found || !known || !owner.live || owner.released || operation.TargetID == "" {
+			if operation.Kind != core.OpForeignCall || !found || !known || !owner.live || owner.borrowed || owner.released || operation.TargetID == "" {
 				return false
 			}
-			borrows++
+			owner.borrowed = true
+			owner.resultID = operation.TargetID
+			owners[acquireID] = owner
 		case "consume":
 			owner, known := owners[operation.ReleasesOperationID]
-			if operation.Kind != core.OpRelease || !known || !owner.live || owner.released || owner.placeID != operation.SourceID || owner.contract.Release != contract.Symbol || owner.contract.Allocator != contract.Allocator {
+			if operation.Kind != core.OpRelease || !known || !owner.live || !owner.borrowed || owner.released || owner.placeID != operation.SourceID || owner.contract.Release != contract.Symbol || owner.contract.Allocator != contract.Allocator {
 				return false
 			}
 			owner.live = false
@@ -1441,11 +1455,11 @@ func localOwnerLifecycleValid(function *core.Function) bool {
 			return false
 		}
 	}
-	if len(owners) == 0 || borrows == 0 || len(activeByPlace) != 0 {
+	if len(owners) != 1 || len(foreignModes) != 3 || foreignModes[0] != "acquire" || foreignModes[1] != "borrow" || foreignModes[2] != "consume" || len(activeByPlace) != 0 {
 		return false
 	}
 	for _, owner := range owners {
-		if owner.live || !owner.released {
+		if owner.live || !owner.borrowed || !owner.released || owner.resultID == "" || returnedFrom != owner.resultID {
 			return false
 		}
 	}

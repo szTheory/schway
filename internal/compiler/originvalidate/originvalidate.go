@@ -320,9 +320,10 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 			// produced the destructured alias.
 		case core.OpForeignCall:
 			if operation.Foreign != nil {
-				// Phase 23's borrowed use reads one byte into an owned U64.
-				// The operand mode does not make that scalar result a pointer
-				// origin, so this foreign boundary terminates the origin walk.
+				// Phase 23's borrow operation has its own source place and
+				// result contract. Its U64 result is owned, so this boundary
+				// terminates origin derivation instead of borrowing facts from
+				// another foreign operation in the function.
 				return ReturnOrigin{OperationID: returnOp.ID}
 			}
 			// D-04-28: a foreign declaration is itself a signature carrying
@@ -519,6 +520,9 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 // list: the word "export" does not appear on this path, because publication
 // safety and export membership are different rules (D-07-31).
 func PublishProblemsFor(function core.Function, calleeContracts map[string]calleeOriginFact) []Problem {
+	if problem := localOwnerOriginProblem(function); problem != nil {
+		return []Problem{*problem}
+	}
 	if problem := checkForeignOriginOmitted(function); problem != nil {
 		return []Problem{*problem}
 	}
@@ -556,6 +560,116 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 		}}
 	}
 	return nil
+}
+
+// localOwnerOriginProblem independently checks the operation-specific owner
+// path before origin publication. The checker emits one straight-line
+// success path: an acquire error has no FileByteOwner result, while a borrow
+// error leaves its input owner live until the following consuming release.
+// The local format deliberately refuses CFGs and other operations rather than
+// pretending a flat list proves branches it does not represent.
+func localOwnerOriginProblem(function core.Function) *Problem {
+	if function.Linear == nil {
+		return nil
+	}
+	local := false
+	for _, operation := range function.Linear.Operations {
+		local = local || operation.Foreign != nil
+	}
+	if !local {
+		return nil
+	}
+	fail := func(operationID string) *Problem {
+		return &Problem{Code: "core.local_owner_lifecycle", Detail: fmt.Sprintf("%s: invalid local owner operation %q", function.ID, operationID)}
+	}
+	linear := function.Linear
+	if function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(linear.Blocks) != 0 || len(linear.Edges) != 0 {
+		return fail(function.ID)
+	}
+	types := make(map[string]string, len(linear.Types))
+	for _, fact := range linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]string, len(linear.Places))
+	for _, place := range linear.Places {
+		places[place.ID] = types[place.TypeID]
+	}
+	type ownerFact struct {
+		placeID   string
+		resultID  string
+		release   string
+		allocator string
+		borrowed  bool
+		released  bool
+	}
+	owners := make(map[string]ownerFact)
+	ownerByPlace := make(map[string]string)
+	modeOrder := make([]string, 0, 3)
+	returnedFrom := ""
+	for _, operation := range linear.Operations {
+		contract := operation.Foreign
+		if contract == nil {
+			if operation.Kind != core.OpReturn || returnedFrom != "" || len(ownerByPlace) != 0 {
+				return fail(operation.ID)
+			}
+			returnedFrom = operation.SourceID
+			continue
+		}
+		if !originIdentifier(contract.Symbol) || !originIdentifier(contract.ABIType) || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" {
+			return fail(operation.ID)
+		}
+		modeOrder = append(modeOrder, contract.Mode)
+		sourceType := places[operation.SourceID]
+		switch contract.Mode {
+		case "acquire":
+			if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || sourceType != "PathToken" || places[operation.TargetID] != "FileByteOwner" || operation.TypeID == "" || types[operation.TypeID] != "FileByteOwner" || contract.Symbol != "lang_file_byte_acquire" || contract.ABIType != "lang_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "lang_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" || owners[operation.ID].placeID != "" || ownerByPlace[operation.TargetID] != "" {
+				return fail(operation.ID)
+			}
+			owners[operation.ID] = ownerFact{placeID: operation.TargetID, release: contract.Release, allocator: contract.Allocator}
+			ownerByPlace[operation.TargetID] = operation.ID
+		case "borrow":
+			acquireID := ownerByPlace[operation.SourceID]
+			owner, exists := owners[acquireID]
+			if operation.Kind != core.OpForeignCall || !exists || owner.borrowed || owner.released || sourceType != "FileByteOwner" || places[operation.TargetID] != "U64" || operation.TypeID == "" || types[operation.TypeID] != "U64" || contract.Symbol != "lang_file_byte_use" || contract.ABIType != "lang_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				return fail(operation.ID)
+			}
+			owner.borrowed = true
+			owner.resultID = operation.TargetID
+			owners[acquireID] = owner
+		case "consume":
+			owner, exists := owners[operation.ReleasesOperationID]
+			if operation.Kind != core.OpRelease || !exists || !owner.borrowed || owner.released || owner.placeID != operation.SourceID || sourceType != "FileByteOwner" || operation.TypeID == "" || types[operation.TypeID] != "FileByteOwner" || owner.release != contract.Symbol || owner.allocator != contract.Allocator || contract.Symbol != "lang_file_byte_release" || contract.ABIType != "lang_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
+				return fail(operation.ID)
+			}
+			owner.released = true
+			owners[operation.ReleasesOperationID] = owner
+			delete(ownerByPlace, operation.SourceID)
+		default:
+			return fail(operation.ID)
+		}
+	}
+	if len(owners) != 1 || len(ownerByPlace) != 0 || len(modeOrder) != 3 || modeOrder[0] != "acquire" || modeOrder[1] != "borrow" || modeOrder[2] != "consume" || returnedFrom == "" {
+		return fail(function.ID)
+	}
+	for _, owner := range owners {
+		if !owner.borrowed || !owner.released || returnedFrom != owner.resultID {
+			return fail(function.ID)
+		}
+	}
+	return nil
+}
+
+func originIdentifier(value string) bool {
+	if value == "" || !(value[0] == '_' || value[0] >= 'A' && value[0] <= 'Z' || value[0] >= 'a' && value[0] <= 'z') {
+		return false
+	}
+	for i := 1; i < len(value); i++ {
+		b := value[i]
+		if !(b == '_' || b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= '0' && b <= '9') {
+			return false
+		}
+	}
+	return true
 }
 
 // ValidatePublished recomputes every function's origin from its body and
