@@ -150,7 +150,7 @@ func TestPhase23PublicFileByte(t *testing.T) {
 		{name: "one byte reaches adapter", input: "/", wantCode: 65, wantStderr: "lang_file_byte_acquire: NotRegular\n"},
 		{name: "4096 bytes reaches adapter", input: strings.Repeat("p", 4096), wantCode: 65, wantStderr: "lang_file_byte_acquire: OpenFailed\n"},
 		{name: "4097 bytes rejected by runner", input: strings.Repeat("p", 4097), wantCode: 65, wantStderr: fmt.Sprintf("lang app run: native.input_too_long: argument is %d bytes; limit is %d\n", 4097, native.MaxApplicationArgumentBytes)},
-		{name: "embedded NUL rejected by runner", input: "safe\x00tail", wantCode: 65, wantStderr: "lang app run: argument contains an embedded NUL byte\n"},
+		{name: "embedded NUL rejected by runner", input: "safe\x00tail", wantCode: 65, wantStderr: "lang app run: native.input_contains_nul: argument contains an embedded NUL byte\n"},
 	} {
 		t.Run("path-boundary/"+test.name, func(t *testing.T) {
 			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", test.input})
