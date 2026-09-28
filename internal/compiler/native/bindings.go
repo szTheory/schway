@@ -309,6 +309,10 @@ func bindingProbeSource(s BindingSymbol, index int) string {
 	// C17 function-designator conversion distinguishes function typedefs
 	// from object and function-pointer typedefs without executing a call.
 	fmt.Fprintf(&out, "_Static_assert(_Generic(*(%s *)0, %s *: 1, default: 0), \"%s must name a function type\");\n", s.FunctionType, s.FunctionType, s.FunctionType)
+	// Compare the declared symbol itself with the named function type. This
+	// makes every manifest entry an independent exact-prototype ABI check,
+	// rather than relying on assignment diagnostics to reject a mismatch.
+	fmt.Fprintf(&out, "_Static_assert(_Generic(&%s, %s *: 1, default: 0), \"%s prototype does not match %s\");\n", s.Name, s.FunctionType, s.Name, s.FunctionType)
 	fmt.Fprintf(&out, "%s *volatile lang_binding_probe_%d = &%s;\n", s.FunctionType, index, s.Name)
 	return out.String()
 }

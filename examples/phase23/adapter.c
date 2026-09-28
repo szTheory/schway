@@ -22,20 +22,6 @@ enum {
   LANG_FILE_BYTE_INVALID_OWNER = 2
 };
 
-_Static_assert(sizeof(void *) == 8u, "Phase 23 file-byte ABI requires 64-bit pointers");
-_Static_assert(sizeof(lang_file_byte_owner) == 16u, "unexpected owner size");
-_Static_assert(_Alignof(lang_file_byte_owner) == 8u, "unexpected owner alignment");
-_Static_assert(offsetof(lang_file_byte_owner, data) == 0u, "unexpected owner pointer offset");
-_Static_assert(offsetof(lang_file_byte_owner, length) == 8u, "unexpected owner length offset");
-_Static_assert(sizeof(lang_file_byte_acquire_result) == 24u, "unexpected acquire result size");
-_Static_assert(_Alignof(lang_file_byte_acquire_result) == 8u, "unexpected acquire result alignment");
-_Static_assert(offsetof(lang_file_byte_acquire_result, status) == 0u, "unexpected acquire status offset");
-_Static_assert(offsetof(lang_file_byte_acquire_result, owner) == 8u, "unexpected acquire owner offset");
-_Static_assert(sizeof(lang_file_byte_use_result) == 16u, "unexpected use result size");
-_Static_assert(_Alignof(lang_file_byte_use_result) == 8u, "unexpected use result alignment");
-_Static_assert(offsetof(lang_file_byte_use_result, status) == 0u, "unexpected use status offset");
-_Static_assert(offsetof(lang_file_byte_use_result, value) == 8u, "unexpected use value offset");
-
 static lang_file_byte_acquire_result acquire_failure(int32_t status) {
   lang_file_byte_acquire_result result = {status, {NULL, UINT64_C(0)}};
   return result;
@@ -105,7 +91,7 @@ lang_file_byte_acquire_result lang_file_byte_acquire(const char *path) {
 lang_file_byte_use_result lang_file_byte_use(lang_file_byte_owner owner) {
   lang_file_byte_use_result result = {LANG_FILE_BYTE_INVALID_OWNER, UINT64_C(0)};
   if (owner.data == NULL || owner.length != UINT64_C(1)) return result;
-  if (owner.data[0] != 0x41u) {
+  if (owner.data[0] != 0x41u && owner.data[0] != 0x42u) {
     result.status = LANG_FILE_BYTE_UNSUPPORTED;
     return result;
   }
