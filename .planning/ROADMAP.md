@@ -98,7 +98,14 @@ to later foreign outcomes; extend its fixtures without reassigning ownership.
 4. Discarded owning success is rejected or immediately destroyed. Independent acquisition-derived validation rejects missing, duplicate, wrong-resource, or fabricated cleanup even when every release operation is removed from candidate core.
 5. Native runs exercise normal completion and a real later operation/output failure after successful acquisition. Generated local cleanup consumes each remaining obligation exactly once; independent physical observation rejects reached omitted or premature destruction despite plausible compiler events.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 23-01-PLAN.md — Public live-owner tracer and acquisition boundaries
+- [ ] 23-02-PLAN.md — Independent acquisition-seeded ownership validation
+- [ ] 23-03-PLAN.md — Model-only outcomes and successor discharge contract
+- [ ] 23-04-PLAN.md — Independent native lifetime observer and reached controls
+- [ ] 23-05-PLAN.md — Documented witness and macOS/Linux focused CI gate
 
 **Runnable witness**: A file-byte source consumes two supplied one-byte files
 containing `0x41` and `0x42` and reports the corresponding expected byte. Add a

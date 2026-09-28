@@ -5,7 +5,7 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
 status: planning
-stopped_at: Phase 23 context gathered
+stopped_at: Phase 23 plans drafted for checker review
 last_updated: "2026-09-27T23:54:56.956Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 22 complete, transitioned to Phase 23
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-09-27)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Discuss Phase 23 — Live Local Allocation and Discharge
+**Current focus:** Plan Phase 23 — Live Local Allocation and Discharge
 
 **Durable context (survives context clears — read before re-deriving):**
 
