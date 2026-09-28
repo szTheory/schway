@@ -68,6 +68,74 @@ func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
 	}
 }
 
+func TestPhase23OperationABI(t *testing.T) {
+	headerBytes, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "adapter.h"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := string(headerBytes)
+	manifest := BindingManifest{
+		Schema: BindingSchema, Headers: []string{"adapter.h"}, IncludeDirs: []string{"."},
+		Symbols: []BindingSymbol{
+			{Name: "lang_file_byte_acquire", Header: "adapter.h", FunctionType: "lang_file_byte_acquire_fn"},
+			{Name: "lang_file_byte_use", Header: "adapter.h", FunctionType: "lang_file_byte_use_fn"},
+			{Name: "lang_file_byte_release", Header: "adapter.h", FunctionType: "lang_file_byte_release_fn"},
+		},
+	}
+	runner := DefaultRunner()
+	clang, err := exec.LookPath("clang")
+	if err != nil {
+		t.Skip("Clang is required for operation ABI checks")
+	}
+
+	compile := func(t *testing.T, content string) error {
+		t.Helper()
+		directory, err := filepath.EvalSymlinks(t.TempDir())
+		if err != nil {
+			t.Fatal(err)
+		}
+		resolved := ResolvedBindings{
+			Manifest: manifest,
+			files:    map[string][]byte{"adapter.h": []byte(content)},
+		}
+		_, _, _, _, compileErr := runner.compileBindings(context.Background(), clang, directory, resolved)
+		return compileErr
+	}
+	if err := compile(t, header); err != nil {
+		t.Fatalf("baseline operation header failed to compile: %v", err)
+	}
+
+	for _, test := range []struct {
+		name string
+		from string
+		to   string
+	}{
+		{"acquire", "lang_file_byte_acquire_result lang_file_byte_acquire(const char *path);", "lang_file_byte_acquire_result lang_file_byte_acquire(uint64_t path);"},
+		{"use", "lang_file_byte_use_result lang_file_byte_use(lang_file_byte_owner owner);", "lang_file_byte_use_result lang_file_byte_use(const lang_file_byte_owner *owner);"},
+		{"release", "void lang_file_byte_release(lang_file_byte_owner owner);", "void lang_file_byte_release(const lang_file_byte_owner *owner);"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			mutated := strings.Replace(header, test.from, test.to, 1)
+			if mutated == header {
+				t.Fatal("prototype mutation did not match the fixture")
+			}
+			if err := compile(t, mutated); err == nil {
+				t.Fatal("mismatched operation prototype passed its independent Clang probe")
+			}
+		})
+	}
+
+	t.Run("target layout", func(t *testing.T) {
+		mutated := strings.Replace(header, "  unsigned char *data;\n  uint64_t length;", "  uint64_t length;\n  unsigned char *data;", 1)
+		if mutated == header {
+			t.Fatal("layout mutation did not match the fixture")
+		}
+		if err := compile(t, mutated); err == nil {
+			t.Fatal("target record layout mutation passed the C17 probes")
+		}
+	})
+}
+
 func TestPhase22EvidenceDisabledCompleteAndStreamIsolation(t *testing.T) {
 	t.Run("disabled", func(t *testing.T) {
 		root := t.TempDir()

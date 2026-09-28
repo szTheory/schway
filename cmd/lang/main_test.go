@@ -124,13 +124,21 @@ func TestPhase23PublicFileByte(t *testing.T) {
 	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
 		t.Fatalf("build code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
-	input := filepath.Join(t.TempDir(), "byte.bin")
-	if err := os.WriteFile(input, []byte{0x41}, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	code, stdout, stderr = captureLangRun(t, []string{"app", "run", artifact, "--", input})
-	if code != 0 || stdout != "65\n" || stderr != "" {
-		t.Fatalf("app run code=%d stdout=%q stderr=%q, want 65", code, stdout, stderr)
+	for _, test := range []struct {
+		name  string
+		input byte
+		want  string
+	}{{"first", 0x41, "65\n"}, {"second", 0x42, "66\n"}} {
+		t.Run(test.name, func(t *testing.T) {
+			input := filepath.Join(t.TempDir(), "byte.bin")
+			if err := os.WriteFile(input, []byte{test.input}, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
+			if code != 0 || stdout != test.want || stderr != "" {
+				t.Fatalf("app run code=%d stdout=%q stderr=%q, want %q", code, stdout, stderr, test.want)
+			}
+		})
 	}
 
 	identity := testsupport.ProjectPath("examples", "phase22", "identity.lang")
