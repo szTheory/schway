@@ -140,6 +140,78 @@ func TestPhase23PublicFileByte(t *testing.T) {
 			}
 		})
 	}
+	for _, test := range []struct {
+		name       string
+		input      string
+		wantCode   int
+		wantStderr string
+	}{
+		{name: "empty token", input: "", wantCode: 65},
+		{name: "one byte reaches adapter", input: "/", wantCode: 65, wantStderr: "lang_file_byte_acquire: NotRegular\n"},
+		{name: "4096 bytes reaches adapter", input: strings.Repeat("p", 4096), wantCode: 65, wantStderr: "lang_file_byte_acquire: OpenFailed\n"},
+		{name: "4097 bytes rejected by runner", input: strings.Repeat("p", 4097), wantCode: 65, wantStderr: fmt.Sprintf("lang app run: native.input_too_long: argument is %d bytes; limit is %d\n", 4097, native.MaxApplicationArgumentBytes)},
+		{name: "embedded NUL rejected by runner", input: "safe\x00tail", wantCode: 65, wantStderr: "lang app run: native.input_contains_nul: argument contains an embedded NUL byte\n"},
+	} {
+		t.Run("path-boundary/"+test.name, func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", test.input})
+			if code != test.wantCode || stdout != "" || stderr != test.wantStderr || len(stderr) > 128 {
+				t.Fatalf("path=%q code=%d stdout=%q stderr=%q; want code=%d empty stdout bounded stderr=%q", test.input, code, stdout, stderr, test.wantCode, test.wantStderr)
+			}
+		})
+	}
+	for _, test := range []struct {
+		name    string
+		content []byte
+		status  string
+	}{
+		{name: "empty file", content: nil, status: "EmptyFile"},
+		{name: "two byte file", content: []byte{0x41, 0x42}, status: "FileTooLong"},
+	} {
+		t.Run("acquire-error/"+test.name, func(t *testing.T) {
+			input := filepath.Join(t.TempDir(), "input.bin")
+			if err := os.WriteFile(input, test.content, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
+			wantDiagnostic := "lang_file_byte_acquire: " + test.status + "\n"
+			if code != 65 || stdout != "" || stderr != wantDiagnostic || len(stderr) > 128 {
+				t.Fatalf("%s code=%d stdout=%q stderr=%q; want typed diagnostic %q", test.name, code, stdout, stderr, wantDiagnostic)
+			}
+		})
+	}
+	t.Run("acquire-error/non-regular", func(t *testing.T) {
+		input := t.TempDir()
+		code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
+		if code != 65 || stdout != "" || stderr != "lang_file_byte_acquire: NotRegular\n" {
+			t.Fatalf("directory code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
+	t.Run("acquire-error/open-failed", func(t *testing.T) {
+		input := filepath.Join(t.TempDir(), "missing.bin")
+		code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
+		if code != 65 || stdout != "" || stderr != "lang_file_byte_acquire: OpenFailed\n" {
+			t.Fatalf("missing file code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
+	t.Run("acquire-error/unreadable", func(t *testing.T) {
+		input := filepath.Join(t.TempDir(), "unreadable.bin")
+		if err := os.WriteFile(input, []byte{0x41}, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(input, 0); err != nil {
+			t.Fatal(err)
+		}
+		probe, err := os.Open(input)
+		if err == nil {
+			probe.Close()
+			t.Log("this host permits opening mode-000 files; open failure is injected at the native adapter seam in TestPhase23AcquireFailuresInitializeAndFreePartialAllocations")
+			return
+		}
+		code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
+		if code != 65 || stdout != "" || stderr != "lang_file_byte_acquire: OpenFailed\n" {
+			t.Fatalf("unreadable file code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
 
 	identity := testsupport.ProjectPath("examples", "phase22", "identity.lang")
 	identityArtifact := filepath.Join(t.TempDir(), "identity")

@@ -237,7 +237,7 @@ func runApplicationRun(args []string) int {
 	}
 	if err != nil {
 		var toolError *native.ToolError
-		if errors.As(err, &toolError) && toolError.Code == "native.input_too_long" {
+		if errors.As(err, &toolError) && (toolError.Code == "native.input_too_long" || toolError.Code == "native.input_contains_nul") {
 			fmt.Fprintf(os.Stderr, "lang app run: %v\n", err)
 			return 65
 		}

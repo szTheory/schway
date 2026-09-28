@@ -380,6 +380,9 @@ func (r Runner) runApplication(parent context.Context, artifactPath, input, capt
 	if len(input) > MaxApplicationArgumentBytes {
 		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.input_too_long", Err: fmt.Errorf("argument is %d bytes; limit is %d", len(input), MaxApplicationArgumentBytes)}
 	}
+	if strings.IndexByte(input, '\x00') >= 0 {
+		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.input_contains_nul", Err: errors.New("argument contains an embedded NUL byte")}
+	}
 	if artifactPath == "" {
 		return RunOutcome{}, BuildReceipt{}, &ToolError{Code: "native.artifact_required", Err: errors.New("an executable artifact path is required")}
 	}
