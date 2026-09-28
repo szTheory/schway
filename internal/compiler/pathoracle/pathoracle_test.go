@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"go/parser"
 	"go/token"
 	"os"
@@ -113,6 +114,160 @@ func TestPhase23PathOracleSeedsObligationFromAcquire(t *testing.T) {
 	function.Linear.Operations = operations
 	if err := pathoracle.ValidateLocalOwnerPaths(program); err == nil {
 		t.Fatal("pathoracle accepted successful acquisition after every release was removed")
+	}
+}
+
+func phase23MutationIndex(program *core.Program, mode string) int {
+	for index, operation := range program.Functions[0].Linear.Operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == mode {
+			return index
+		}
+	}
+	return -1
+}
+
+func renumberPhase23Operations(function *core.Function) {
+	for index := range function.Linear.Operations {
+		function.Linear.Operations[index].ID = fmt.Sprintf("%s:op:%d", function.ID, index)
+		function.Linear.Operations[index].PointID = fmt.Sprintf("%s:point:linear:%d", function.ID, index)
+	}
+}
+
+func phase23OwnerMutations() []struct {
+	name string
+	edit func(*core.Program) bool
+} {
+	return []struct {
+		name string
+		edit func(*core.Program) bool
+	}{
+		{"all releases deleted", func(program *core.Program) bool {
+			release := phase23MutationIndex(program, "consume")
+			if release < 0 {
+				return false
+			}
+			operations := make([]core.LinearOperation, 0, len(program.Functions[0].Linear.Operations)-1)
+			for _, operation := range program.Functions[0].Linear.Operations {
+				if operation.Kind != core.OpRelease {
+					operations = append(operations, operation)
+				}
+			}
+			program.Functions[0].Linear.Operations = operations
+			renumberPhase23Operations(&program.Functions[0])
+			return true
+		}},
+		{"release before borrowed use", func(program *core.Program) bool {
+			function := &program.Functions[0]
+			borrow, release := phase23MutationIndex(program, "borrow"), phase23MutationIndex(program, "consume")
+			if borrow < 0 || release < 0 {
+				return false
+			}
+			function.Linear.Operations[borrow], function.Linear.Operations[release] = function.Linear.Operations[release], function.Linear.Operations[borrow]
+			renumberPhase23Operations(function)
+			return true
+		}},
+		{"duplicate release", func(program *core.Program) bool {
+			function := &program.Functions[0]
+			release := phase23MutationIndex(program, "consume")
+			if release < 0 {
+				return false
+			}
+			operations := function.Linear.Operations
+			copyOfRelease := operations[release]
+			mutated := make([]core.LinearOperation, 0, len(operations)+1)
+			mutated = append(mutated, operations[:release+1]...)
+			mutated = append(mutated, copyOfRelease)
+			mutated = append(mutated, operations[release+1:]...)
+			function.Linear.Operations = mutated
+			renumberPhase23Operations(function)
+			return true
+		}},
+		{"wrong owner operation identity", func(program *core.Program) bool {
+			borrow, release := phase23MutationIndex(program, "borrow"), phase23MutationIndex(program, "consume")
+			if borrow < 0 || release < 0 {
+				return false
+			}
+			program.Functions[0].Linear.Operations[release].ReleasesOperationID = program.Functions[0].Linear.Operations[borrow].ID
+			return true
+		}},
+		{"wrong resource place", func(program *core.Program) bool {
+			borrow, release := phase23MutationIndex(program, "borrow"), phase23MutationIndex(program, "consume")
+			if borrow < 0 || release < 0 {
+				return false
+			}
+			program.Functions[0].Linear.Operations[release].SourceID = program.Functions[0].Linear.Operations[borrow].TargetID
+			return true
+		}},
+		{"fabricated release identity", func(program *core.Program) bool {
+			release := phase23MutationIndex(program, "consume")
+			if release < 0 {
+				return false
+			}
+			program.Functions[0].Linear.Operations[release].ReleasesOperationID = "fabricated-acquire"
+			return true
+		}},
+		{"release omitted after typed use error", func(program *core.Program) bool {
+			borrow := phase23MutationIndex(program, "borrow")
+			if borrow < 0 || program.Functions[0].Linear.Operations[borrow].Foreign.Fails != "UseError" || phase23MutationIndex(program, "acquire") < 0 {
+				return false
+			}
+			operations := make([]core.LinearOperation, 0, len(program.Functions[0].Linear.Operations)-1)
+			for _, operation := range program.Functions[0].Linear.Operations {
+				if operation.Kind != core.OpRelease {
+					operations = append(operations, operation)
+				}
+			}
+			program.Functions[0].Linear.Operations = operations
+			renumberPhase23Operations(&program.Functions[0])
+			return true
+		}},
+		{"wrong use symbol", func(program *core.Program) bool {
+			index := phase23MutationIndex(program, "borrow")
+			if index < 0 {
+				return false
+			}
+			program.Functions[0].Linear.Operations[index].Foreign.Symbol = "lang_file_byte_acquire"
+			return true
+		}},
+		{"wrong use ABI", func(program *core.Program) bool {
+			index := phase23MutationIndex(program, "borrow")
+			if index < 0 {
+				return false
+			}
+			program.Functions[0].Linear.Operations[index].Foreign.ABIType = "wrong_file_byte_use_fn"
+			return true
+		}},
+		{"missing use error status", func(program *core.Program) bool {
+			index := phase23MutationIndex(program, "borrow")
+			if index < 0 {
+				return false
+			}
+			program.Functions[0].Linear.Operations[index].Foreign.Fails = ""
+			return true
+		}},
+		{"mismatched release allocator", func(program *core.Program) bool {
+			index := phase23MutationIndex(program, "consume")
+			if index < 0 {
+				return false
+			}
+			program.Functions[0].Linear.Operations[index].Foreign.Allocator = "other_allocator"
+			program.Functions[0].Linear.Operations[index].Allocator = "other_allocator"
+			return true
+		}},
+	}
+}
+
+func TestPhase23ResourceMutationPathoracle(t *testing.T) {
+	for _, mutation := range phase23OwnerMutations() {
+		t.Run(mutation.name, func(t *testing.T) {
+			program := phase23LocalOwnerProgram(t)
+			if !mutation.edit(&program) {
+				t.Fatal("mutation target was not reached")
+			}
+			if err := pathoracle.ValidateLocalOwnerPaths(program); err == nil {
+				t.Fatal("pathoracle accepted the reached ownership mutation")
+			}
+		})
 	}
 }
 
