@@ -1515,3 +1515,184 @@ func TestPhase22ApplicationEmitterRefusesOtherEntryShapes(t *testing.T) {
 		}
 	}
 }
+
+func phase23ProgramForEmitter(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("file_byte.lang checker diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("file_byte.lang core validation problems: %+v", validated.Problems)
+	}
+	return validated.Program()
+}
+
+func mutatePhase23Entry(program *core.Program, mutate func(*core.Function)) {
+	program.Functions = append([]core.Function(nil), program.Functions...)
+	for index := range program.Functions {
+		if program.Functions[index].Name != "main" || program.Functions[index].Linear == nil {
+			continue
+		}
+		function := program.Functions[index]
+		linear := *function.Linear
+		linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
+		function.Linear = &linear
+		mutate(&function)
+		program.Functions[index] = function
+		return
+	}
+	panic("Phase 23 emitter fixture has no linear main")
+}
+
+func mutatePhase23Contract(program *core.Program, operationIndex int, mutate func(*core.ForeignOperationContract)) {
+	mutatePhase23Entry(program, func(function *core.Function) {
+		if operationIndex < 0 || operationIndex >= len(function.Linear.Operations) {
+			panic("Phase 23 emitter fixture operation index out of range")
+		}
+		operation := function.Linear.Operations[operationIndex]
+		if operation.Foreign == nil {
+			panic("Phase 23 emitter fixture operation has no checked foreign contract")
+		}
+		contract := *operation.Foreign
+		mutate(&contract)
+		operation.Foreign = &contract
+		function.Linear.Operations[operationIndex] = operation
+	})
+}
+
+func requirePhase23EmitterRefusalBeforeSerialization(t *testing.T, program core.Program, name string) {
+	t.Helper()
+	generated, err := cgen.EmitProgramForTest(program)
+	if err == nil {
+		t.Fatalf("%s candidate reached native emission; generated C length=%d", name, len(generated))
+	}
+	if generated != "" {
+		t.Fatalf("%s refusal returned partial C (%d bytes): %v", name, len(generated), err)
+	}
+	if cgen.InvocationSerializationReachedForTest() {
+		t.Fatalf("%s candidate was refused only after C serialization began: %v", name, err)
+	}
+}
+
+func TestPhase23DiscardRefusedBeforeCSerialization(t *testing.T) {
+	program := phase23ProgramForEmitter(t)
+	mutatePhase23Entry(&program, func(function *core.Function) {
+		operations := function.Linear.Operations
+		// The acquire remains, but no consumer or release is allowed to erase
+		// its successful owner result from the candidate program.
+		function.Linear.Operations = []core.LinearOperation{operations[0], operations[3]}
+	})
+	requirePhase23EmitterRefusalBeforeSerialization(t, program, "discarded acquisition")
+}
+
+func TestPhase23SourceRefusalBeforeCSerialization(t *testing.T) {
+	program := phase23ProgramForEmitter(t)
+	generated, err := cgen.EmitProgramForTest(program)
+	if err != nil || generated == "" || !cgen.InvocationSerializationReachedForTest() {
+		t.Fatalf("valid local acquire/borrow/release path was not emitted: bytes=%d err=%v", len(generated), err)
+	}
+
+	for _, tc := range []struct {
+		name   string
+		mutate func(*core.Function)
+	}{
+		{
+			name: "owner copy",
+			mutate: func(function *core.Function) {
+				operations := function.Linear.Operations
+				copyOwner := core.LinearOperation{ID: "candidate:copy", Kind: core.OpCopy, SourceID: operations[0].TargetID, TargetID: "candidate:copy-result", TypeID: operations[0].TypeID}
+				function.Linear.Operations = []core.LinearOperation{operations[0], copyOwner, operations[1], operations[2], operations[3]}
+			},
+		},
+		{
+			name: "moved-from use",
+			mutate: func(function *core.Function) {
+				operations := function.Linear.Operations
+				moveOwner := core.LinearOperation{ID: "candidate:move", Kind: core.OpMove, SourceID: operations[0].TargetID, TargetID: "candidate:moved-owner", TypeID: operations[0].TypeID}
+				function.Linear.Operations = []core.LinearOperation{operations[0], moveOwner, operations[1], operations[2], operations[3]}
+			},
+		},
+		{
+			name: "owner escape",
+			mutate: func(function *core.Function) {
+				operations := function.Linear.Operations
+				operations[3].SourceID = operations[0].TargetID
+				function.Linear.Operations = operations
+			},
+		},
+		{
+			name: "cross-call transfer",
+			mutate: func(function *core.Function) {
+				operations := function.Linear.Operations
+				transfer := core.LinearOperation{ID: "candidate:transfer", Kind: core.OpCall, SourceID: operations[0].TargetID, TargetID: "candidate:transfer-result", TypeID: operations[0].TypeID}
+				function.Linear.Operations = []core.LinearOperation{operations[0], transfer, operations[1], operations[2], operations[3]}
+			},
+		},
+		{
+			name: "unsupported exit",
+			mutate: func(function *core.Function) {
+				operations := function.Linear.Operations
+				operations[3].Kind = core.OpFail
+				function.Linear.Operations = operations
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			candidate := phase23ProgramForEmitter(t)
+			mutatePhase23Entry(&candidate, tc.mutate)
+			requirePhase23EmitterRefusalBeforeSerialization(t, candidate, tc.name)
+		})
+	}
+}
+
+func TestPhase23OperationContractRefusalBeforeCSerialization(t *testing.T) {
+	valid := phase23ProgramForEmitter(t)
+	if _, err := cgen.EmitProgramForTest(valid); err != nil {
+		t.Fatalf("valid three-operation owner contract refused: %v", err)
+	}
+	if !cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("valid local owner contract did not reach C serialization")
+	}
+
+	for _, tc := range []struct {
+		name           string
+		operationIndex int
+		mutate         func(*core.ForeignOperationContract)
+	}{
+		{"acquire status type", 0, func(contract *core.ForeignOperationContract) { contract.Fails = "WrongAcquireError" }},
+		{"acquire symbol", 0, func(contract *core.ForeignOperationContract) { contract.Symbol = "lang_other_acquire" }},
+		{"acquire mode", 0, func(contract *core.ForeignOperationContract) { contract.Mode = "borrow" }},
+		{"acquire ABI type", 0, func(contract *core.ForeignOperationContract) { contract.ABIType = "wrong_acquire_fn" }},
+		{"acquire operand type", 0, func(contract *core.ForeignOperationContract) { contract.ParameterType = "FileByteOwner" }},
+		{"acquire result type", 0, func(contract *core.ForeignOperationContract) { contract.ResultType = "U64" }},
+		{"acquire allocator", 0, func(contract *core.ForeignOperationContract) { contract.Allocator = "another_allocator" }},
+		{"use status type", 1, func(contract *core.ForeignOperationContract) { contract.Fails = "WrongUseError" }},
+		{"use symbol", 1, func(contract *core.ForeignOperationContract) { contract.Symbol = "lang_other_use" }},
+		{"use mode", 1, func(contract *core.ForeignOperationContract) { contract.Mode = "consume" }},
+		{"use ABI type", 1, func(contract *core.ForeignOperationContract) { contract.ABIType = "wrong_use_fn" }},
+		{"use operand type", 1, func(contract *core.ForeignOperationContract) { contract.ParameterType = "PathToken" }},
+		{"use result type", 1, func(contract *core.ForeignOperationContract) { contract.ResultType = "FileByteOwner" }},
+		{"release symbol", 2, func(contract *core.ForeignOperationContract) { contract.Symbol = "lang_other_release" }},
+		{"release mode", 2, func(contract *core.ForeignOperationContract) { contract.Mode = "borrow" }},
+		{"release failure type", 2, func(contract *core.ForeignOperationContract) { contract.Fails = "ReleaseError" }},
+		{"release ABI type", 2, func(contract *core.ForeignOperationContract) { contract.ABIType = "wrong_release_fn" }},
+		{"release operand type", 2, func(contract *core.ForeignOperationContract) { contract.ParameterType = "PathToken" }},
+		{"release result type", 2, func(contract *core.ForeignOperationContract) { contract.ResultType = "U64" }},
+		{"allocator mismatch", 2, func(contract *core.ForeignOperationContract) { contract.Allocator = "another_allocator" }},
+		{"destructor pairing", 0, func(contract *core.ForeignOperationContract) { contract.Release = "lang_other_release" }},
+		{"unwind policy", 1, func(contract *core.ForeignOperationContract) { contract.Unwind = "allowed" }},
+		{"nonlocal exit policy", 1, func(contract *core.ForeignOperationContract) { contract.NonlocalExit = "allowed" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			candidate := phase23ProgramForEmitter(t)
+			mutatePhase23Contract(&candidate, tc.operationIndex, tc.mutate)
+			requirePhase23EmitterRefusalBeforeSerialization(t, candidate, tc.name)
+		})
+	}
+}

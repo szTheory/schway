@@ -586,6 +586,14 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		return "", err
 	}
 	localFileByteEntry := isLocalFileByteFunction(entry)
+	if hasLocalOwnerFacts(entry) {
+		if !localFileByteEntry {
+			return "", fmt.Errorf("entry function %q: unsupported local-owner C shape", entry.ID)
+		}
+		if err := validateLocalFileByteFunction(entry); err != nil {
+			return "", err
+		}
+	}
 	if shell == programApplicationShell && (entry.Match != nil || entry.Linear == nil || entry.ReturnType != "U64" || (entry.Parameter.Type != "U64" && !localFileByteEntry)) {
 		return "", fmt.Errorf("application entry %q: only a linear U64-to-U64 entry is supported", entry.ID)
 	}
@@ -619,7 +627,16 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	}
 	localFileByteProgram := false
 	for _, function := range functions {
-		localFileByteProgram = localFileByteProgram || isLocalFileByteFunction(function)
+		if !hasLocalOwnerFacts(function) {
+			continue
+		}
+		if !isLocalFileByteFunction(function) {
+			return "", fmt.Errorf("function %q: unsupported local-owner C shape", function.ID)
+		}
+		if err := validateLocalFileByteFunction(function); err != nil {
+			return "", err
+		}
+		localFileByteProgram = true
 	}
 
 	// D-15-18: graph and entry refusal always win. The supported-shape
@@ -1011,6 +1028,110 @@ func isLocalFileByteFunction(function core.Function) bool {
 		use.Kind == core.OpForeignCall && use.Foreign != nil && use.Foreign.Mode == "borrow" && use.Foreign.Symbol == "lang_file_byte_use" && use.SourceID == acquire.TargetID &&
 		release.Kind == core.OpRelease && release.Foreign != nil && release.Foreign.Mode == "consume" && release.Foreign.Symbol == acquire.Foreign.Release && release.SourceID == acquire.TargetID && release.ReleasesOperationID == acquire.ID &&
 		returned.Kind == core.OpReturn && returned.SourceID == use.TargetID && returned.TypeID != "" && acquire.Foreign.Allocator == "libc_malloc" && release.Foreign.Allocator == acquire.Foreign.Allocator
+}
+
+// hasLocalOwnerFacts keeps malformed candidates on the local-owner admission
+// path even when a mutation removes the operation or contract that would make
+// isLocalFileByteFunction recognize the complete success shape. Without this
+// preflight, generic operation lowering can begin serializing C before it
+// encounters an unsupported foreign or release operation.
+func hasLocalOwnerFacts(function core.Function) bool {
+	if function.Parameter.Type == "PathToken" || function.ReturnType == "FileByteOwner" {
+		return true
+	}
+	if function.Linear == nil {
+		return false
+	}
+	for _, typeFact := range function.Linear.Types {
+		if typeFact.Shape.Constructor == "PathToken" || typeFact.Shape.Constructor == "FileByteOwner" {
+			return true
+		}
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Foreign != nil || operation.Kind == core.OpRelease {
+			return true
+		}
+	}
+	return false
+}
+
+// validateLocalFileByteFunction rechecks the narrow source/emission contract
+// from candidate core immediately before any C serialization. The function
+// shape alone is not enough: each emitted symbol, ABI typedef, operand and
+// result type, status type, allocator, destructor pairing, and exit policy is
+// pinned independently at the sole serializer boundary.
+func validateLocalFileByteFunction(function core.Function) error {
+	if !isLocalFileByteFunction(function) || function.Linear == nil || len(function.Linear.Edges) != 0 {
+		return fmt.Errorf("function %q: unsupported local-owner C shape", function.ID)
+	}
+	operations := function.Linear.Operations
+	acquire, use, release, returned := operations[0], operations[1], operations[2], operations[3]
+	wantAcquire := core.ForeignOperationContract{
+		Symbol: "lang_file_byte_acquire", ABIType: "lang_file_byte_acquire_fn", Mode: "acquire",
+		ParameterType: "PathToken", ResultType: "FileByteOwner", Fails: "AcquireError",
+		Allocator: "libc_malloc", Release: "lang_file_byte_release", Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	wantUse := core.ForeignOperationContract{
+		Symbol: "lang_file_byte_use", ABIType: "lang_file_byte_use_fn", Mode: "borrow",
+		ParameterType: "FileByteOwner", ResultType: "U64", Fails: "UseError",
+		Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	wantRelease := core.ForeignOperationContract{
+		Symbol: "lang_file_byte_release", ABIType: "lang_file_byte_release_fn", Mode: "consume",
+		ParameterType: "FileByteOwner", ResultType: "Unit", Allocator: "libc_malloc",
+		Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	if acquire.Foreign == nil || *acquire.Foreign != wantAcquire {
+		return fmt.Errorf("function %q: acquire operation contract does not match the selected FileByteOwner ABI", function.ID)
+	}
+	if use.Foreign == nil || *use.Foreign != wantUse {
+		return fmt.Errorf("function %q: borrowed-use operation contract does not match the selected FileByteOwner ABI", function.ID)
+	}
+	if release.Foreign == nil || *release.Foreign != wantRelease {
+		return fmt.Errorf("function %q: consuming-release operation contract does not match the selected FileByteOwner ABI", function.ID)
+	}
+	if acquire.ID == "" || use.ID == "" || release.ID == "" || returned.ID == "" ||
+		acquire.SourceID != function.Parameter.ID || acquire.TargetID == "" ||
+		use.SourceID != acquire.TargetID || use.TargetID == "" ||
+		release.SourceID != acquire.TargetID || release.ReleasesOperationID != acquire.ID ||
+		returned.SourceID != use.TargetID || acquire.TypeID != release.TypeID ||
+		use.TypeID != returned.TypeID {
+		return fmt.Errorf("function %q: local-owner operation places and discharge facts do not agree", function.ID)
+	}
+	if len(function.Linear.Types) != 3 || len(function.Linear.Places) != 3 {
+		return fmt.Errorf("function %q: local-owner facts must contain exactly the path, owner, and byte-result places", function.ID)
+	}
+	types := make(map[string]core.TypeFact, len(function.Linear.Types))
+	for _, typeFact := range function.Linear.Types {
+		if typeFact.ID == "" {
+			return fmt.Errorf("function %q: local-owner type fact has no identity", function.ID)
+		}
+		if _, duplicate := types[typeFact.ID]; duplicate {
+			return fmt.Errorf("function %q: local-owner type fact identity is duplicated", function.ID)
+		}
+		types[typeFact.ID] = typeFact
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		if place.ID == "" || place.TypeID == "" {
+			return fmt.Errorf("function %q: local-owner place is missing its identity or type", function.ID)
+		}
+		if _, duplicate := places[place.ID]; duplicate {
+			return fmt.Errorf("function %q: local-owner place identity is duplicated", function.ID)
+		}
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	owner, ownerOK := places[acquire.TargetID]
+	value, valueOK := places[use.TargetID]
+	if !parameterOK || !ownerOK || !valueOK || parameter.TypeID == owner.TypeID || owner.TypeID == value.TypeID || parameter.TypeID == value.TypeID ||
+		types[parameter.TypeID].Shape.Constructor != "PathToken" ||
+		types[owner.TypeID].Shape.Constructor != "FileByteOwner" ||
+		types[value.TypeID].Shape.Constructor != "U64" ||
+		acquire.TypeID != owner.TypeID || use.TypeID != value.TypeID || release.TypeID != owner.TypeID || returned.TypeID != value.TypeID {
+		return fmt.Errorf("function %q: local-owner path, owner, and result type facts do not agree", function.ID)
+	}
+	return nil
 }
 
 func emitProgramLocalFileByteFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string) error {

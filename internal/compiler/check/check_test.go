@@ -2261,6 +2261,101 @@ func readPhase4Fixture(t *testing.T, name string) []byte {
 	return source
 }
 
+func readPhase23Fixture(t *testing.T, name string) []byte {
+	t.Helper()
+	source, err := os.ReadFile("../../../testdata/phase23/" + name)
+	if err != nil {
+		t.Fatalf("read Phase 23 fixture %q: %v", name, err)
+	}
+	return source
+}
+
+func TestPhase23DiscardRequiresOwnerBinding(t *testing.T) {
+	source := readPhase23Fixture(t, "discard_owner.lang")
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) == 0 {
+		t.Fatal("discarded successful owner acquisition was admitted")
+	}
+	for _, problem := range result.Diagnostics {
+		if problem.Code != "check.local_owner_discarded" {
+			continue
+		}
+		if problem.Primary.Start < 0 || problem.Primary.End <= problem.Primary.Start || problem.Primary.End > len(source) {
+			t.Fatalf("discard diagnostic has invalid source span: %+v", problem)
+		}
+		if !strings.Contains(problem.Message, "lang_file_byte_acquire") || !strings.Contains(problem.Message, "path") {
+			t.Fatalf("discard diagnostic does not identify the operation and source place: %+v", problem)
+		}
+		if len(problem.Message) > 200 {
+			t.Fatalf("discard diagnostic exceeds bounded message size: %d bytes", len(problem.Message))
+		}
+		return
+	}
+	t.Fatalf("discarded owner was not refused with check.local_owner_discarded: %+v", result.Diagnostics)
+}
+
+func TestPhase23SourceRefusal(t *testing.T) {
+	canonical, err := os.ReadFile("../../../examples/phase23/file_byte.lang")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result := Program(mustParseProgram(t, canonical)); len(result.Diagnostics) != 0 {
+		t.Fatalf("valid acquire/borrow/release source was refused: %+v", result.Diagnostics)
+	}
+
+	const useLine = "  let value = try lang_file_byte_use(owner)\n"
+	tests := []struct {
+		name   string
+		source string
+	}{
+		{
+			name: "owner copied into another binding",
+			source: strings.Replace(string(canonical), useLine,
+				"  let duplicate = owner\n"+useLine, 1),
+		},
+		{
+			name: "owner moved then used from the old place",
+			source: strings.Replace(string(canonical), useLine,
+				"  let moved = take owner\n"+useLine, 1),
+		},
+		{
+			name: "owner escapes as the function result",
+			source: strings.Replace(strings.Replace(string(canonical), "fn main(path: PathToken) -> U64", "fn main(path: PathToken) -> FileByteOwner", 1),
+				"  let value = try lang_file_byte_use(owner)\n  value", "  owner", 1),
+		},
+		{
+			name: "owner is passed across a Lang call",
+			source: strings.Replace(string(canonical), useLine,
+				"  let forwarded = transfer(owner)\n"+useLine, 1),
+		},
+		{
+			name: "unsupported early exit with a live owner",
+			source: strings.Replace(string(canonical),
+				"  let value = try lang_file_byte_use(owner)\n  value",
+				"  defect \"owner remains live\"", 1),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Program(mustParseProgram(t, []byte(tc.source)))
+			if len(result.Diagnostics) == 0 {
+				t.Fatalf("unsupported owner source was admitted:\n%s", tc.source)
+			}
+			for _, problem := range result.Diagnostics {
+				if problem.Code != "check.local_owner_shape_unsupported" {
+					t.Fatalf("refusal did not identify the unsupported local-owner source shape: %+v", result.Diagnostics)
+				}
+				if problem.Primary.Start < 0 || problem.Primary.End <= problem.Primary.Start || problem.Primary.End > len(tc.source) {
+					t.Fatalf("refusal has invalid source span: %+v", problem)
+				}
+				if len(problem.Message) > 200 {
+					t.Fatalf("refusal exceeds bounded message size: %d bytes", len(problem.Message))
+				}
+			}
+		})
+	}
+}
+
 // TestUnwindPolicyUndeclaredRejected pins D-04-16: a foreign symbol declared
 // without an unwind policy is refused, with no default value, carrying a
 // span, causal detail, and a repair.

@@ -3705,6 +3705,9 @@ func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols m
 	refusal := func(code, message string) (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, body.Span, message)}, 1
 	}
+	if problem := discardedFileByteOwnerAcquisition(body, symbols); problem != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*problem}, 1
+	}
 	if function.Name != "main" || function.ReturnType.Constructor != "U64" || body == nil || len(body.Bindings) != 2 || body.Result != body.Bindings[1].Name {
 		return refusal("check.local_owner_shape_unsupported", "PathToken is admitted only for the checked acquire, borrow, and generated release entry shape")
 	}
@@ -3757,6 +3760,42 @@ func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols m
 		Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64",
 		Linear: linear, Span: function.Span,
 	}, nil, 12
+}
+
+// discardedFileByteOwnerAcquisition refuses a fallible foreign result that
+// would otherwise disappear before the checker can attach the acquired
+// allocation's release obligation to a local place. A declaration returning
+// FileByteOwner is conservatively treated as owning even when its remaining
+// contract facts are malformed; an invalid declaration must not make discard
+// an escape hatch around owner admission.
+func discardedFileByteOwnerAcquisition(body *ast.LinearBody, symbols map[string]foreignSymbolInfo) *diagnostic.Diagnostic {
+	if body == nil {
+		return nil
+	}
+	for _, binding := range body.Bindings {
+		if binding.RHS.Kind != "discard_call" {
+			continue
+		}
+		symbol, ok := symbols[binding.RHS.Callee]
+		if !ok || symbol.ReturnType.Constructor != "FileByteOwner" {
+			continue
+		}
+		sourcePlace := "<missing>"
+		if len(binding.RHS.Arguments) > 0 {
+			sourcePlace = binding.RHS.Arguments[0]
+		}
+		causes := []diagnostic.Cause{
+			{Kind: "operation", Detail: symbol.Name},
+			{Kind: "source_place", Detail: sourcePlace},
+		}
+		problem := diagnostic.Error(
+			"check.local_owner_discarded", binding.Span,
+			fmt.Sprintf("owning acquisition %q from source place %q cannot be discarded; bind it so its release obligation remains visible", symbol.Name, sourcePlace),
+			causes...,
+		)
+		return &problem
+	}
+	return nil
 }
 
 func foreignSignature(symbol foreignSymbolInfo, parameter, result string) bool {
