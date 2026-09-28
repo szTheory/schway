@@ -229,7 +229,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/corevalidate/corevalidate_test.go:Emit:785",
+      "call": "internal/compiler/corevalidate/corevalidate_test.go:Emit:979",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -252,7 +252,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session.go:EmitNative:2716",
+      "call": "internal/compiler/session/session.go:EmitNative:2774",
       "classification": "admitted-dynamic-schema2"
     },
     {

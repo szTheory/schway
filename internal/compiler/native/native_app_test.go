@@ -86,7 +86,7 @@ func TestPhase23OperationABI(t *testing.T) {
 	runner := DefaultRunner()
 	clang, err := exec.LookPath("clang")
 	if err != nil {
-		t.Skip("Clang is required for operation ABI checks")
+		t.Skip("Clang is required for operation ABI checks; see probe:TestPhase23PublicFileByte")
 	}
 
 	compile := func(t *testing.T, content string) error {

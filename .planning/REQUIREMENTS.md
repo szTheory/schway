@@ -24,16 +24,16 @@ IDs continue existing categories, including reserved historical future IDs.
 ### Explicit foreign boundaries
 
 - [x] **FFI-02**: A developer declares the local C sources/headers, symbols, and ABI inputs required by a build; path resolution survives checkout relocation, missing/incompatible inputs fail clearly, and relevant input changes invalidate the artifact/evidence identity without fixture-symbol lookup or ambient repository paths.
-- [ ] **FFI-03**: Each admitted foreign operation resolves its own checked signature, operand modes, acquisition/failure behavior, and release pairing; distinct acquire/use/release operations can consume admitted local values without inheriting the function's first foreign symbol contract.
+- [x] **FFI-03**: Each admitted foreign operation resolves its own checked signature, operand modes, acquisition/failure behavior, and release pairing; distinct acquire/use/release operations can consume admitted local values without inheriting the function's first foreign symbol contract.
 
 ### Live local resource ownership
 
-- [ ] **RES-04**: A source-constructible opaque noncopyable resource can receive a real bounded malloc-backed buffer from an explicitly linked C adapter, remain live after the adapter returns, and supply a byte determined by a caller-selected file through Lang-directed use.
+- [x] **RES-04**: A source-constructible opaque noncopyable resource can receive a real bounded malloc-backed buffer from an explicitly linked C adapter, remain live after the adapter returns, and supply a byte determined by a caller-selected file through Lang-directed use.
 - [ ] **RES-05**: Generated release invokes the resource's declared infallible consuming destructor exactly once; a borrow preserves the owner's obligation, and transfer preserves the live resource under its new owner without calling the destructor.
 - [ ] **RES-06**: On admitted normal and typed-error exits, every successfully acquired locally owned resource that is not transferred is released in reverse successful-acquisition completion order, including an actual operation/output failure after acquisition.
-- [ ] **RES-07**: A failed foreign acquisition creates no Lang-owned resource; the bounded adapter contract specifies maximum size, empty input, initialization/length, failure representation, and cleanup of its own partial acquisition before exposing a result.
-- [ ] **RES-08**: Discarding an owning acquisition cannot erase its obligation: the admitted form either performs immediate consuming cleanup or is rejected before C serialization.
-- [ ] **RES-09**: Independent validation derives obligations from successful acquisitions and follows each admitted path; missing, duplicate, wrong-resource, or fabricated cleanup is rejected without relying on the presence of an existing release operation to discover the obligation.
+- [x] **RES-07**: A failed foreign acquisition creates no Lang-owned resource; the bounded adapter contract specifies maximum size, empty input, initialization/length, failure representation, and cleanup of its own partial acquisition before exposing a result.
+- [x] **RES-08**: Discarding an owning acquisition cannot erase its obligation: the admitted form either performs immediate consuming cleanup or is rejected before C serialization.
+- [x] **RES-09**: Independent validation derives obligations from successful acquisitions and follows each admitted path; missing, duplicate, wrong-resource, or fabricated cleanup is rejected without relying on the presence of an existing release operation to discover the obligation.
 
 ### Ownership across Lang calls
 
@@ -148,13 +148,13 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 | APP-05 | Phase 22 | Complete |
 | APP-06 | Phase 22 | Complete |
 | FFI-02 | Phase 22 | Complete |
-| FFI-03 | Phase 23 | Pending |
-| RES-04 | Phase 23 | Pending |
+| FFI-03 | Phase 23 | Complete |
+| RES-04 | Phase 23 | Complete |
 | RES-05 | Phase 24 | Pending |
 | RES-06 | Phase 24 | Pending |
-| RES-07 | Phase 23 | Pending |
-| RES-08 | Phase 23 | Pending |
-| RES-09 | Phase 23 | Pending |
+| RES-07 | Phase 23 | Complete |
+| RES-08 | Phase 23 | Complete |
+| RES-09 | Phase 23 | Complete |
 | OWN-10 | Phase 24 | Pending |
 | OWN-11 | Phase 24 | Pending |
 | OWN-12 | Phase 24 | Pending |

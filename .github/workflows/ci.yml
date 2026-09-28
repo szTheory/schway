@@ -71,6 +71,8 @@ jobs:
           cache: true
       - name: Require clang
         run: clang --version
+      - name: scripts/verify-phase23.sh
+        run: sh scripts/verify-phase23.sh
       - name: scripts/verify-phase6.sh
         run: sh scripts/verify-phase6.sh
       - name: Phase 15 native admission seam

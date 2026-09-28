@@ -159,6 +159,84 @@ func TestPhase23ContractTransitionsAndEvidenceScopes(t *testing.T) {
 	}
 }
 
+func TestPhase23ReadmeExpectedAnswersAreIndependentConstants(t *testing.T) {
+	type publicCase struct {
+		ID           string `json:"id"`
+		FileBytesHex string `json:"file_bytes_hex"`
+		ExitCode     int    `json:"exit_code"`
+		Stdout       string `json:"stdout"`
+		Stderr       string `json:"stderr"`
+	}
+	var expected struct {
+		Schema string       `json:"schema"`
+		Cases  []publicCase `json:"cases"`
+	}
+	path := testsupport.ProjectPath("examples", "phase23", "file_byte.expected.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&expected); err != nil {
+		t.Fatal(err)
+	}
+	if expected.Schema != "lang.phase23-file-byte-expected/1" || len(expected.Cases) != 5 {
+		t.Fatalf("unexpected independent Phase 23 answer fixture: schema=%q cases=%+v", expected.Schema, expected.Cases)
+	}
+	want := []publicCase{
+		{ID: "byte-41", FileBytesHex: "41", ExitCode: 0, Stdout: "65\n", Stderr: ""},
+		{ID: "byte-42", FileBytesHex: "42", ExitCode: 0, Stdout: "66\n", Stderr: ""},
+		{ID: "empty-acquire-error", FileBytesHex: "", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_acquire: EmptyFile\n"},
+		{ID: "two-byte-acquire-error", FileBytesHex: "4142", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_acquire: FileTooLong\n"},
+		{ID: "unsupported-byte-use-error", FileBytesHex: "43", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_use: UnsupportedByte\n"},
+	}
+	for index, test := range expected.Cases {
+		if test != want[index] {
+			t.Errorf("independent answer %d is %+v, want literal %+v", index, test, want[index])
+		}
+	}
+}
+
+func TestPhase23VerifierScriptContract(t *testing.T) {
+	path := testsupport.ProjectPath("scripts", "verify-phase23.sh")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, required := range []string{
+		"for tool in go clang git uname date mktemp rm cat grep sed",
+		"clang -dumpmachine",
+		"host identity is incomplete",
+		"status=incomplete",
+		"status=pass",
+		"grep -Fq -- '--- SKIP:'",
+		"testing: warning: no tests to run",
+		"run_phase23_tests source-admission",
+		"run_phase23_tests independent-peers",
+		"run_phase23_tests model-only",
+		"run_phase23_tests native-observer",
+		"run_phase23_tests public-contract",
+	} {
+		if !strings.Contains(text, required) {
+			t.Errorf("focused Phase 23 verifier is missing fail-closed contract %q", required)
+		}
+	}
+	for _, duplicateLane := range []string{
+		"go test ./...",
+		"go test -race",
+		"go vet ./...",
+		"ASAN_OPTIONS=",
+		"UBSAN_OPTIONS=",
+		"scripts/verify-phase6.sh",
+	} {
+		if strings.Contains(text, duplicateLane) {
+			t.Errorf("focused Phase 23 verifier duplicates an existing full or sanitizer lane: %q", duplicateLane)
+		}
+	}
+}
+
 func decodePhase23Contract(data []byte) (phase23DischargeContract, error) {
 	var contract phase23DischargeContract
 	decoder := json.NewDecoder(bytes.NewReader(data))

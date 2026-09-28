@@ -66,15 +66,16 @@ design exploration, not a supported language specification.
 
 ## Corpus and guard census
 
-Corpus: **143 `.lang` programs, 4,670 lines total** (~33 lines average,
-193-line maximum). These counts are retained from the machine-checked snapshot;
-the corpus predominantly contains focused semantic fixtures, not applications.
+Corpus: **145 `.lang` programs, 4,759 lines total** (~33 lines average,
+193-line maximum). These counts match the current machine-checked tree; the
+corpus predominantly contains focused semantic fixtures, not applications.
 
-A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (49 including tests):
+A non-test AST census finds **20 `len(Functions) != 1` guards across 7 files in 2 packages** (51 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|
 | `session` | 19 | Bounded historical verification/reducer lanes; inspect each site's purpose rather than inferring that public multi-function run is refused |
+| `interp` | 1 | The model-only foreign-outcome helper requires one checked entry function |
 
 `internal/compiler/session/self_describing_docs_test.go` independently derives
 these numbers with Go's parser. The count describes a syntactic predicate; it
