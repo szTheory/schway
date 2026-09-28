@@ -59,6 +59,99 @@ func checkedCallBasicProgram(t *testing.T) core.Program {
 	return validated.Program()
 }
 
+type phase23ModelOutcome struct {
+	kind  string
+	type_ string
+	value string
+}
+
+func checkedPhase23FileByteProgram(t *testing.T) core.Program {
+	t.Helper()
+	path := filepath.Join(interpProjectRoot(), "examples", "phase23", "file_byte.lang")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("parse: unexpected diagnostics: %v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) > 0 {
+		t.Fatalf("check: unexpected diagnostics: %v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("corevalidate rejected: %v", validated.Problems)
+	}
+	return validated.Program()
+}
+
+func phase23OutcomesForByte(t *testing.T, program core.Program, byteValue uint64) map[string]phase23ModelOutcome {
+	t.Helper()
+	if len(program.Functions) != 1 || program.Functions[0].Linear == nil {
+		t.Fatalf("expected one linear file-byte function, got %+v", program.Functions)
+	}
+	outcomes := make(map[string]phase23ModelOutcome)
+	for _, operation := range program.Functions[0].Linear.Operations {
+		if operation.Foreign == nil {
+			continue
+		}
+		switch operation.Foreign.Mode {
+		case "acquire":
+			outcomes[operation.ID] = phase23ModelOutcome{kind: "success", type_: "FileByteOwner", value: fmt.Sprint(byteValue)}
+		case "borrow":
+			outcomes[operation.ID] = phase23ModelOutcome{kind: "success", type_: "U64", value: fmt.Sprint(byteValue)}
+		}
+	}
+	if len(outcomes) != 2 {
+		t.Fatalf("expected distinct acquire and borrow outcomes keyed by operation, got %+v", outcomes)
+	}
+	return outcomes
+}
+
+func runPhase23Model(program core.Program, input string, outcomes map[string]phase23ModelOutcome) (Execution, error) {
+	// This RED-phase adapter intentionally uses the public default interpreter.
+	// The GREEN implementation will route these explicit operation outcomes to
+	// the model-only runner.
+	_ = outcomes
+	return Run(program, "main", input)
+}
+
+func TestPhase23ModelByteOutcomesAreDeterministicAndReleaseLocally(t *testing.T) {
+	program := checkedPhase23FileByteProgram(t)
+	for _, test := range []struct {
+		name      string
+		byteValue uint64
+		want      string
+	}{
+		{name: "0x41", byteValue: 65, want: "65"},
+		{name: "0x42", byteValue: 66, want: "66"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := runPhase23Model(program, "model-only-path-token", phase23OutcomesForByte(t, program, test.byteValue))
+			if err != nil {
+				t.Fatalf("model execution failed: %v", err)
+			}
+			if result.Outcome.Kind != "returned" || result.Outcome.Value != test.want {
+				t.Fatalf("modeled outcome = %+v, want returned:%s", result.Outcome, test.want)
+			}
+			if len(result.LiveResources) != 0 {
+				t.Fatalf("model left local obligations live: %v", result.LiveResources)
+			}
+			releaseEvents := 0
+			for _, event := range result.Events {
+				if event.Kind == "resource.released" {
+					releaseEvents++
+				}
+			}
+			if releaseEvents != 1 {
+				t.Fatalf("modeled local release events = %d, want exactly one", releaseEvents)
+			}
+		})
+	}
+}
+
 // moveAsCopyProbeProgram hand-builds a minimal two-function core.Program
 // (never fed through the parser) whose caller re-reads its OWN call
 // argument place immediately after the call. No LEGAL Lang source can
