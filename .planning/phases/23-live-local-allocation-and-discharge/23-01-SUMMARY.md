@@ -126,7 +126,7 @@ Each task was committed atomically using a RED test commit followed by its GREEN
 
 ## Deviations from Plan
 
-None - plan executed as written.
+The declared file inventory omitted two implementation seams: `internal/compiler/ability/ability.go` registers the new type capability, and `internal/compiler/cgen/cgen.go` serializes the admitted entry type. Both changes were required by the planned `PathToken`/`FileByteOwner` path and are included in the actual-files list above. GSD worktree cleanup surfaced these as out-of-declared-scope paths; no additional capability or behavior was introduced.
 
 ## Issues Encountered
 
