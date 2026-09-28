@@ -159,6 +159,45 @@ func TestPhase23ContractTransitionsAndEvidenceScopes(t *testing.T) {
 	}
 }
 
+func TestPhase23ReadmeExpectedAnswersAreIndependentConstants(t *testing.T) {
+	type publicCase struct {
+		ID           string `json:"id"`
+		FileBytesHex string `json:"file_bytes_hex"`
+		ExitCode     int    `json:"exit_code"`
+		Stdout       string `json:"stdout"`
+		Stderr       string `json:"stderr"`
+	}
+	var expected struct {
+		Schema string       `json:"schema"`
+		Cases  []publicCase `json:"cases"`
+	}
+	path := testsupport.ProjectPath("examples", "phase23", "file_byte.expected.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&expected); err != nil {
+		t.Fatal(err)
+	}
+	if expected.Schema != "lang.phase23-file-byte-expected/1" || len(expected.Cases) != 5 {
+		t.Fatalf("unexpected independent Phase 23 answer fixture: schema=%q cases=%+v", expected.Schema, expected.Cases)
+	}
+	want := []publicCase{
+		{ID: "byte-41", FileBytesHex: "41", ExitCode: 0, Stdout: "65\n", Stderr: ""},
+		{ID: "byte-42", FileBytesHex: "42", ExitCode: 0, Stdout: "66\n", Stderr: ""},
+		{ID: "empty-acquire-error", FileBytesHex: "", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_acquire: EmptyFile\n"},
+		{ID: "two-byte-acquire-error", FileBytesHex: "4142", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_acquire: FileTooLong\n"},
+		{ID: "unsupported-byte-use-error", FileBytesHex: "43", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_use: UnsupportedByte\n"},
+	}
+	for index, test := range expected.Cases {
+		if test != want[index] {
+			t.Errorf("independent answer %d is %+v, want literal %+v", index, test, want[index])
+		}
+	}
+}
+
 func decodePhase23Contract(data []byte) (phase23DischargeContract, error) {
 	var contract phase23DischargeContract
 	decoder := json.NewDecoder(bytes.NewReader(data))

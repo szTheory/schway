@@ -124,33 +124,43 @@ func TestPhase23PublicFileByte(t *testing.T) {
 	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
 		t.Fatalf("build code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
-	for _, test := range []struct {
-		name  string
-		input byte
-		want  string
-	}{{"first", 0x41, "65\n"}, {"second", 0x42, "66\n"}} {
-		t.Run(test.name, func(t *testing.T) {
-			input := filepath.Join(t.TempDir(), "byte.bin")
-			if err := os.WriteFile(input, []byte{test.input}, 0o600); err != nil {
+	var expected struct {
+		Schema string `json:"schema"`
+		Cases  []struct {
+			ID           string `json:"id"`
+			FileBytesHex string `json:"file_bytes_hex"`
+			ExitCode     int    `json:"exit_code"`
+			Stdout       string `json:"stdout"`
+			Stderr       string `json:"stderr"`
+		} `json:"cases"`
+	}
+	expectedPath := testsupport.ProjectPath("examples", "phase23", "file_byte.expected.json")
+	data, err := os.ReadFile(expectedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(data, &expected); err != nil {
+		t.Fatal(err)
+	}
+	if expected.Schema != "lang.phase23-file-byte-expected/1" || len(expected.Cases) != 5 {
+		t.Fatalf("independent file-byte answer fixture has wrong identity or cases: %+v", expected)
+	}
+	for _, test := range expected.Cases {
+		t.Run(test.ID, func(t *testing.T) {
+			fileBytes, err := hex.DecodeString(test.FileBytesHex)
+			if err != nil {
+				t.Fatalf("invalid independent file bytes %q: %v", test.FileBytesHex, err)
+			}
+			input := filepath.Join(t.TempDir(), "input.bin")
+			if err := os.WriteFile(input, fileBytes, 0o600); err != nil {
 				t.Fatal(err)
 			}
 			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
-			if code != 0 || stdout != test.want || stderr != "" {
-				t.Fatalf("app run code=%d stdout=%q stderr=%q, want %q", code, stdout, stderr, test.want)
+			if code != test.ExitCode || stdout != test.Stdout || stderr != test.Stderr || len(stderr) > 128 {
+				t.Fatalf("public file-byte case %s: code=%d stdout=%q stderr=%q; want code=%d stdout=%q stderr=%q (diagnostic limit 128 bytes)", test.ID, code, stdout, stderr, test.ExitCode, test.Stdout, test.Stderr)
 			}
 		})
 	}
-	t.Run("use-error/unsupported-byte", func(t *testing.T) {
-		input := filepath.Join(t.TempDir(), "unsupported-byte.bin")
-		if err := os.WriteFile(input, []byte{0x43}, 0o600); err != nil {
-			t.Fatal(err)
-		}
-		code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
-		const wantDiagnostic = "lang_file_byte_use: UnsupportedByte\n"
-		if code != 65 || stdout != "" || stderr != wantDiagnostic || len(stderr) > 128 {
-			t.Fatalf("post-acquisition use error code=%d stdout=%q stderr=%q; want bounded diagnostic %q", code, stdout, stderr, wantDiagnostic)
-		}
-	})
 	for _, test := range []struct {
 		name       string
 		input      string
@@ -167,26 +177,6 @@ func TestPhase23PublicFileByte(t *testing.T) {
 			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", test.input})
 			if code != test.wantCode || stdout != "" || stderr != test.wantStderr || len(stderr) > 128 {
 				t.Fatalf("path=%q code=%d stdout=%q stderr=%q; want code=%d empty stdout bounded stderr=%q", test.input, code, stdout, stderr, test.wantCode, test.wantStderr)
-			}
-		})
-	}
-	for _, test := range []struct {
-		name    string
-		content []byte
-		status  string
-	}{
-		{name: "empty file", content: nil, status: "EmptyFile"},
-		{name: "two byte file", content: []byte{0x41, 0x42}, status: "FileTooLong"},
-	} {
-		t.Run("acquire-error/"+test.name, func(t *testing.T) {
-			input := filepath.Join(t.TempDir(), "input.bin")
-			if err := os.WriteFile(input, test.content, 0o600); err != nil {
-				t.Fatal(err)
-			}
-			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
-			wantDiagnostic := "lang_file_byte_acquire: " + test.status + "\n"
-			if code != 65 || stdout != "" || stderr != wantDiagnostic || len(stderr) > 128 {
-				t.Fatalf("%s code=%d stdout=%q stderr=%q; want typed diagnostic %q", test.name, code, stdout, stderr, wantDiagnostic)
 			}
 		})
 	}
@@ -234,6 +224,63 @@ func TestPhase23PublicFileByte(t *testing.T) {
 	if code != 0 || stdout != "7\n" || stderr != "" {
 		t.Fatalf("Phase 22 run code=%d stdout=%q stderr=%q, want 7", code, stdout, stderr)
 	}
+}
+
+func TestPhase23ReadmeContract(t *testing.T) {
+	readmePath := testsupport.ProjectPath("examples", "phase23", "README.md")
+	readme, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(readme)
+	contractText := strings.Join(strings.Fields(text), " ")
+	commands := normalizePhase23ReadmeCommands(text)
+	for name, command := range map[string]string{
+		"clean-checkout CLI build":   "go build -o ./lang ./cmd/lang",
+		"native application build":   "./lang build examples/phase23/file_byte.lang --manifest examples/phase23/file_byte.bindings.json --output ./file-byte",
+		"0x41 success":               "./lang app run ./file-byte -- ./byte-41.bin",
+		"0x42 success":               "./lang app run ./file-byte -- ./byte-42.bin",
+		"empty acquisition error":    "./lang app run ./file-byte -- ./empty.bin",
+		"two-byte acquisition error": "./lang app run ./file-byte -- ./two-bytes.bin",
+		"0x43 use error":             "./lang app run ./file-byte -- ./byte-43.bin",
+	} {
+		if !strings.Contains(commands, command) {
+			t.Errorf("command form: missing %s example", name)
+		}
+	}
+	categories := map[string][]string{
+		"bounded raw-byte input": {"caller-created raw-byte files", "exactly one raw file byte", "probes for EOF", "4,096-byte"},
+		"independent answers":    {"file_byte.expected.json", "0x41 → 65", "0x42 → 66", "not values copied from compiler events"},
+		"failure provenance":     {"lang_file_byte_acquire: EmptyFile", "lang_file_byte_acquire: FileTooLong", "lang_file_byte_use: UnsupportedByte", "performs the matching release, and only then reports", "bounded to 128 bytes"},
+		"evidence scope":         {"independent native observer", "exact binary and host exercised", "Interpreter receipts are", "they do not perform host IO or prove physical cleanup"},
+		"Phase 22 compatibility": {"Phase 22 U64 application example", "still prints `7`"},
+	}
+	for category, clauses := range categories {
+		if diagnostic := phase23ReadmeCategoryDiagnostic(contractText, category, clauses); diagnostic != "" {
+			t.Error(diagnostic)
+		}
+		mutated := strings.ReplaceAll(contractText, clauses[len(clauses)-1], "")
+		if diagnostic := phase23ReadmeCategoryDiagnostic(mutated, category, clauses); !strings.Contains(diagnostic, category) {
+			t.Errorf("negative control for %q did not fail by category: %q", category, diagnostic)
+		}
+	}
+	if native.MaxApplicationArgumentBytes != 4096 {
+		t.Fatalf("Phase 23 path-token limit changed to %d; update the README contract", native.MaxApplicationArgumentBytes)
+	}
+}
+
+func normalizePhase23ReadmeCommands(text string) string {
+	text = strings.ReplaceAll(text, "\\\n", " ")
+	return strings.Join(strings.Fields(text), " ")
+}
+
+func phase23ReadmeCategoryDiagnostic(text, category string, clauses []string) string {
+	for _, clause := range clauses {
+		if !strings.Contains(text, clause) {
+			return "contract category " + category + ": missing " + clause
+		}
+	}
+	return ""
 }
 
 func TestPhase22READMEContract(t *testing.T) {
