@@ -45,7 +45,7 @@ created: "2026-09-27"
 | 23-06-01 | 06 | 3 | RES-04, RES-07 | ASVS L1 | Public success/use error show actual allocation, later use, matching free, and no outstanding pointer before exit. | native observer | `go test ./internal/compiler/native ./cmd/lang -run '^TestPhase23(Observer|PublicFileByte|PublicUseError)' -count=1` | ✅ tests present | ✅ macOS pass |
 | 23-06-02 | 06 | 3 | RES-09 | ASVS L1 | Four reached physical destructor controls are rejected despite plausible compiler events. | native mutations | `go test ./internal/compiler/native ./internal/compiler/cgen -run '^TestPhase23(ObserverMutation|PhysicalDestructorControl)' -count=1` | ✅ tests present | ✅ macOS pass |
 | 23-07-01 | 07 | 4 | RES-04 | ASVS L1 | Published clean-checkout commands and independent answers are machine checked. | documentation contract | `go test ./cmd/lang ./internal/compiler/session -run '^TestPhase23(Readme|Public|Contract)' -count=1` | ✅ tests present | ✅ macOS pass |
-| 23-07-02 | 07 | 4 | FFI-03, RES-04, RES-07, RES-08, RES-09 | ASVS L1 | Focused evidence runs on macOS/Linux with distinct host receipts and without duplicate full suites. | cross-host CI | `sh scripts/verify-phase23.sh` | ✅ script and workflow step | ✅ macOS pass; ⚠️ Linux CI receipt pending |
+| 23-07-02 | 07 | 4 | FFI-03, RES-04, RES-07, RES-08, RES-09 | ASVS L1 | Focused evidence runs on macOS/Linux with distinct host receipts and without duplicate full suites. | cross-host CI | `sh scripts/verify-phase23.sh` | ✅ script and workflow step | ✅ macOS pass; ✅ Linux container pass; ⚠️ hosted Linux CI receipt pending |
 
 ## Host Receipts and Feedback Latency
 
@@ -58,7 +58,28 @@ The focused aggregate ran on macOS Darwin/arm64 with Go 1.24.0 and Apple Clang 2
 
 Cold runs each used a fresh Go build cache; warm runs reused one cache. The Go module cache and host toolchain were shared, so these are Go build-cache samples rather than cold machine/toolchain starts. Every run reported `status=pass` with no skipped or unmatched tests.
 
-The existing `evidence-aggregate` workflow matrix contains the single Phase 23 script step for both Ubuntu and macOS. No Linux CI job ran during this execution, so Linux remains incomplete and has no passing receipt.
+The existing `evidence-aggregate` workflow matrix contains the single Phase 23 script step for both Ubuntu and macOS. At Plan 23-07 completion no Linux CI job had run; the later local Linux-container receipt is recorded below and does not claim a hosted CI result.
+
+### Post-fix host receipts — 2026-09-28
+
+The focused aggregate was rerun after the WR-01 close-failure fix at revision
+`c50430d9fa1490b393c5d22805f094787ee99186`. Both runs passed all five groups,
+including the injected close-failure and partial-allocation controls:
+
+| Environment | Go | Clang | Target | Elapsed | Result |
+|-------------|----|-------|--------|---------|--------|
+| macOS Darwin/arm64 | go1.24.0 | Apple Clang 21.0.0 | `arm64-apple-darwin25.6.0` | 8 s | pass |
+| Linux ARM64 container (`golang:1.24-bookworm`, image digest `sha256:1a6d4452c65dea36aac2e2d606b01a4b029ec90cc1ae53890540ce6173ea77ac`) | go1.24.13 | Debian Clang 14.0.6 | `aarch64-unknown-linux-gnu` | 14 s | pass |
+
+The Linux receipt is a local Docker Linux environment, not a hosted CI job. The
+Ubuntu `evidence-aggregate` runner remains pending; the phase stays
+`in-progress` with `nyquist_compliant: false` until that configured CI lane has
+actually passed. The checkout has no Git remote configured, so this session
+could not trigger or observe the hosted workflow.
+
+After the same fix, `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...`
+passed on macOS. This full-suite result is separate from the focused host
+receipts above.
 
 ## Wave 0 Requirements
 
@@ -84,3 +105,15 @@ All phase behaviors have automated verification. No conversational UAT or subjec
 - [ ] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** partial automated evidence recorded 2026-09-28; Linux host receipt outstanding
+
+## Shift-Left Audit — 2026-09-28
+
+All 14 plan-task rows map to executable tests or the focused host script; no
+objective behavior requires conversational UAT. The focused script passed on
+macOS and in a local Linux ARM64 container after `c50430d`, and the full Go
+suite passed on macOS. The container receipt does not substitute for the
+explicitly required hosted Ubuntu `evidence-aggregate` receipt. Preserve
+`status: in-progress` and `nyquist_compliant: false` until that CI lane passes.
+No test-coverage gap calls for another plan or a duplicate suite; the next
+action is the existing hosted CI job when a repository remote is available,
+then resume Phase 23 at verifier gates without replaying plans or UAT.

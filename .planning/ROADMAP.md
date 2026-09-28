@@ -98,7 +98,7 @@ to later foreign outcomes; extend its fixtures without reassigning ownership.
 4. Discarded owning success is rejected or immediately destroyed. Independent acquisition-derived validation rejects missing, duplicate, wrong-resource, or fabricated cleanup even when every release operation is removed from candidate core.
 5. Native runs exercise normal completion and a real later operation/output failure after successful acquisition. Generated local cleanup consumes each remaining obligation exactly once; independent physical observation rejects reached omitted or premature destruction despite plausible compiler events.
 
-**Plans**: 6/7 plans executed
+**Plans**: 7/7 plans executed
 
 Plans:
 **Wave 1**
@@ -118,7 +118,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 23-07-PLAN.md — Documented witness and macOS/Linux focused CI gate
+- [x] 23-07-PLAN.md — Documented witness and macOS/Linux focused CI gate
 
 **Execution waves**: Wave 1: 23-01 public tracer. Wave 2: 23-02 peer proof, 23-03 source/emitter refusal, 23-04 acquisition boundaries, and 23-05 model/contract in parallel. Wave 3: 23-06 physical observer after peer, refusal, and acquisition proof. Wave 4: 23-07 documented host evidence after model and observer. The extra plan isolates RES-08/RES-09 and D-23-05 safety controls without narrowing the public tracer.
 
@@ -231,7 +231,7 @@ by roadmap creation. Plan counts remain TBD until phase planning.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
-| 23. Live Local Allocation and Discharge | 6/7 | In Progress|  |
+| 23. Live Local Allocation and Discharge | 7/7 | In Progress|  |
 | 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
 

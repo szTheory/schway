@@ -1,8 +1,8 @@
 ---
 phase: 22-native-application-build-and-single-execution
-verified: 2026-09-27T23:05:37Z
+verified: 2026-09-28T16:11:19Z
 status: passed
-score: 17/17 must-haves verified
+score: 5/5 roadmap truths verified
 covered_files:
   - .planning/REQUIREMENTS.md
   - .planning/phases/22-native-application-build-and-single-execution/22-01-PLAN.md
@@ -11,7 +11,6 @@ covered_files:
   - .planning/phases/22-native-application-build-and-single-execution/22-02-SUMMARY.md
   - .planning/phases/22-native-application-build-and-single-execution/22-03-PLAN.md
   - .planning/phases/22-native-application-build-and-single-execution/22-03-SUMMARY.md
-  - .planning/phases/22-native-application-build-and-single-execution/22-UAT.md
   - cmd/lang/main.go
   - cmd/lang/main_test.go
   - examples/phase22/BINDINGS.md
@@ -22,9 +21,10 @@ covered_files:
   - examples/phase22/identity.lang
   - examples/phase22/support.c
   - examples/phase22/support.h
-  - internal/compiler/cgen/cgen.go
+  - examples/phase23/adapter.c
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
+  - internal/compiler/cgen/cgen.go
   - internal/compiler/execution/execution.go
   - internal/compiler/native/bindings.go
   - internal/compiler/native/bindings_test.go
@@ -34,141 +34,130 @@ covered_files:
   - internal/compiler/session/session.go
   - internal/compiler/session/session_app_verify.go
   - internal/compiler/session/session_app_verify_test.go
-covered_digest: "v1:sha256:06855797fcc2e3057445559bc911b793e809336ce4ce17d8f944e2e1aa7c6fdd"
+covered_digest: "v1:sha256:c0055f165f24b8f352250692d878f1d228bfe41886662bd3920c88e74f87786f"
 behavior_unverified: 0
 overrides_applied: 0
 ---
 
-# Phase 22: Native Application Build and Single Execution Verification Report
+# Phase 22: Native Application Build and Single Execution — Verification Report
 
 **Phase Goal:** A developer can retain and execute a native application once on bounded real input, with application streams separate from compiler evidence.
-**Verified:** 2026-09-27T23:05:37Z
+**Verified:** 2026-09-28T16:11:19Z
 **Status:** passed
-**Re-verification:** No — the previous report had no `gaps:` section, so the verification workflow's initial-mode must-have rule applies. All truths were re-established against the current tree after the dated summary correction.
+**Re-verification:** No. The existing report had no `gaps:` section; this is an initial-mode refresh against the merged repository.
 
 ## Goal Achievement
+
+The five roadmap success criteria are the contract for this verification. I checked their current source and wiring rather than treating the three plan summaries as proof. The prior completed UAT remains intact; its objective README contract is included among the freshly run CLI tests.
 
 ### Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | From a relocated checkout, a developer can build a retained executable with declared local C sources, headers, symbols, ABI inputs, and runtime dependencies. Build has no application effects; invalid inputs fail clearly and relevant changes invalidate identity. | ✓ VERIFIED | `native.BuildApplication` resolves the manifest, compiles/links, and publishes retained artifact plus receipt; `TestPhase22RelocatedBindingsCLI` exercises a relocated checkout, `TestPhase22BindingsBuildNeverLaunchesAndRunLaunchesOnce` checks build launches zero app processes and run launches one, and bindings tests cover invalid paths/types/symbols and declared-input identity mutations. The receipt declares `platform-c-runtime` while correctly marking unknown host closure incomplete and non-cacheable. |
-| 2 | Caller inputs `7` and `42` produce independently specified identity results; malformed or oversized input has a defined outcome. | ✓ VERIFIED | `identity.lang` returns its U64 input and `identity.expected.json` independently pins both values. `TestPhase22IdentityApplicationBuildAndRunCLI` exercises public build/run and malformed, signed, nonnumeric, overlong, and overflowing values; generated entry parsing bounds/rejects before entering the Lang body. |
-| 3 | Each public app-run request launches the selected artifact once; streams and process outcomes are defined without execution-JSON parsing or hidden replay. | ✓ VERIFIED | CLI dispatch calls `native.RunApplication` or `RunApplicationWithEvidence`, converging on one `runApplication` child `Run`. `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes`, `TestPhase22ConcurrentRequestsLaunchIndependently`, `TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus`, and `TestPhase22OrdinaryAppRunDoesNotEnterReplayRoute` exercise byte streams, child outcomes, independent launches, and replay separation. |
-| 4 | Requested execution evidence is separate from app streams and distinguishes disabled, incomplete, and capacity-exhausted capture from verification success. | ✓ VERIFIED | `RunApplicationWithEvidence` captures through a private bounded file, validates after the child wait, and publishes a separate status-bearing report with `verified:false`. `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22EvidenceMissingPartialAndCapacityControls`, and write-failure controls exercise the states and stream isolation. |
-| 5 | Explicit replay uses independent expected answers and isolates declared model outcomes from actual host IO; ordinary app runs do not replay. | ✓ VERIFIED | `VerifyApplicationCasesFile` and explicit CLI `app verify` dispatch compare isolated source cases against independent expected values and interpreter/O0/O3 results. `TestPhase22AppVerifyIndependentIdentityCases`, wrong-answer and verifier-model controls, duplicate-key test, local-C/script refusal test, and ordinary-run routing test cover positive and negative behavior. Reports label modeled outcomes and set host-IO/physical-cleanup claims false. |
-| 6 | Build publishes a retained executable without starting it; the executable remains usable after temporary build cleanup. | ✓ VERIFIED | `TestPhase22BuildRetainsRelocatableArtifactWithoutLaunching` and `TestPhase22BindingsBuildNeverLaunchesAndRunLaunchesOnce` exercise retention, relocation, cleanup, zero build launches, and successful run. |
-| 7 | The same checked source returns exactly `7\n` and `42\n`; malformed and oversized input is refused before Lang body effects. | ✓ VERIFIED | Public CLI integration test uses pinned identity source; emitter and CLI tests cover canonical bounded U64 parsing and refusal cases. |
-| 8 | An ordinary app request starts exactly one selected child, including stderr and unsuccessful exit cases. | ✓ VERIFIED | Named native stream/process and launch-counter tests passed. |
-| 9 | Ordinary streams remain bytes, and exit, signal, timeout, and launch errors are distinguishable. | ✓ VERIFIED | `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes` plus CLI opaque-token/child-status test passed. |
-| 10 | A relocated checkout builds with explicit local C source, header, symbol, ABI function type, and runtime dependency declaration. | ✓ VERIFIED | `identity.bindings.json`, `support.h`, `support.c`, and `BINDINGS.md` provide the declaration and contract; `TestPhase22RelocatedBindingsCLI` passes. |
-| 11 | Declared local C inputs build without launching the app; retained artifact runs after temporary files are removed. | ✓ VERIFIED | Native bindings build/run counter test passed; native retained artifact test also exercises relocation and cleanup. |
-| 12 | Missing/out-of-root inputs, incompatible header types, and unresolved symbols fail by declared input before publication. | ✓ VERIFIED | `TestPhase22BindingsRejectInvalidInputs`, closed-manifest/path controls, and actual compile/link controls passed. |
-| 13 | Changes to Lang/C/header/manifest ABI or symbols, flags, compiler, target, and runtime declarations affect identity or are explicitly non-cacheable. | ✓ VERIFIED | `TestPhase22BuildIdentityDeclaredInputMutations` exercises the mutation matrix. Runtime closure is explicitly incomplete and receipts/reports are non-cacheable where host facts are unknown. |
-| 14 | Requested app evidence is a separate sidecar with build/input identity and closed capture states; disabled, incomplete, and exhausted never mean verified success. | ✓ VERIFIED | Evidence tests exercise disabled/complete/incomplete/capacity-exhausted and publication failures; report implementation retains `verified:false`. |
-| 15 | Same-run event capture does not create another app launch or invoke interpreter/O0/O3 replay. | ✓ VERIFIED | The one-child evidence integration test and `TestPhase22OrdinaryAppRunDoesNotEnterReplayRoute` passed; capture writes to a process-private channel. |
-| 16 | Explicit identity replay checks isolated inputs against independent 7/42 results and interpreter/O0/O3 outcomes, with a separate verifier-only modeled outcome. | ✓ VERIFIED | Independent fixture and named CLI replay/model tests passed; ordinary source cases have no scripted foreign outcomes and local C is refused on replay route. |
-| 17 | Missing, duplicate, unconsumed, or mismatched model outcomes fail; model success and process reclamation do not claim host IO or physical cleanup. | ✓ VERIFIED | Model negative controls and `TestDecodeReplayCasesRejectsDuplicateJSONKeys` passed; report labels/false claim fields are inspected by tests and documented in README. |
+| 1 | A relocated checkout can build and retain an executable from declared local C sources, headers, symbols, ABI inputs, and runtime dependencies; build does not launch the app; invalid inputs fail; relevant input changes affect identity. | ✓ VERIFIED | `BuildApplication` resolves the optional manifest before emitting/linking; `ResolveBindings` confines paths and validates declared inputs. Build receipt records input identity and honestly marks incomplete runtime closure non-cacheable. `TestPhase22RelocatedBindingsCLI`, `TestPhase22BindingsRejectInvalidInputs`, `TestPhase22BuildIdentityDeclaredInputMutations`, and launch-count tests all passed in the focused run. |
+| 2 | Caller inputs 7 and 42 produce independent expected results, while malformed or oversized inputs have a defined refusal. | ✓ VERIFIED | `examples/phase22/identity.lang` and `identity.expected.json` provide the source and literal expectations. Generated entry parsing is bounded; `TestPhase22IdentityApplicationBuildAndRunCLI` and the README contract test passed. |
+| 3 | One public app-run request launches once with defined streams and process outcomes, without parsing ordinary output as execution JSON or replaying tiers. | ✓ VERIFIED | CLI dispatch reaches `RunApplication` or `RunApplicationWithEvidence`; both converge on one child `Run`. `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes`, `TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus`, `TestPhase22ConcurrentRequestsLaunchIndependently`, and `TestPhase22OrdinaryAppRunDoesNotEnterReplayRoute` passed. |
+| 4 | Requested compiler evidence is separate from app streams and distinguishes disabled, incomplete, and capacity-exhausted capture from successful verification. | ✓ VERIFIED | `RunApplicationWithEvidence` captures through a bounded private file after launching the same single child, validates capture after wait, and publishes a separate `verified:false` report. `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22EvidenceMissingPartialAndCapacityControls`, and report-write failure controls passed. |
+| 5 | Explicit differential verification uses isolated inputs and independent expected values, separates modeled foreign outcomes from actual host IO, and never runs on the ordinary app route. | ✓ VERIFIED | `app verify` alone calls `VerifyApplicationCasesFile`; cases compare interpreter/O0/O3 outcomes against checked-in 7/42 literals. Model-only outcome handling is isolated and reports false for host IO/physical cleanup claims. Positive/negative model controls and ordinary-route separation tests passed. |
 
-**Score:** 17/17 truths verified (0 present, behavior-unverified). All current phase acceptance criteria pass. The historical readability judgment has been superseded as a release gate; no subjective readability claim is made.
+**Score:** 5/5 roadmap truths verified (0 present, behavior-unverified).
 
-### Required Artifacts
+## Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `examples/phase22/identity.lang`, `identity.expected.json` | Checked scalar program and independent expected pairs | ✓ VERIFIED | Substantive source and literal expected pairs; consumed by CLI and replay checks. |
-| `internal/compiler/session/session_app.go` (planned path) | Checked build path | ✓ VERIFIED (implementation-path substitution) | This exact file is absent. Current implementation is in `internal/compiler/session/session.go`: `BuildApplication` performs check, independent core validation, entry resolution, and `cgen.EmitApplication`; public CLI calls `BuildApplicationFile`. This matches the dated correction and is not a missing behavior. |
-| `internal/compiler/native/native_app.go` | Retained build, receipt, one-child runner, evidence | ✓ VERIFIED | Substantive build/publish/integrity/run/evidence implementation. Public CLI calls the runner; named integration tests passed. |
-| `internal/compiler/native/bindings.go` | Closed local-C manifest resolver | ✓ VERIFIED | Strict manifest/path/header/ABI resolution, content inventory and identity; wired through public build dispatch and native build. |
-| `examples/phase22/identity.bindings.json`, `support.h`, `support.c`, `BINDINGS.md` | Declared relocatable C/ABI inputs and contract | ✓ VERIFIED | All exist with substantive declarations; actual build tests resolve and link the fixture, whose C function is intentionally not called by the Lang app. |
-| `internal/compiler/session/session_app_verify.go` | Explicit replay service | ✓ VERIFIED | Closed case parsing and explicit interpreter/O0/O3 replay; called only by `lang app verify`. |
-| `examples/phase22/identity.cases.json`, `examples/phase22/README.md` | Independent replay fixture and public contract | ✓ VERIFIED | Cases carry pinned expected answers and empty foreign scripts. `TestPhase22READMEContract` passed and checks objective command forms, bounds, failure states, local-C authority, incomplete host closure, and modeled-world limits. It does not prove subjective readability, and this report makes no such claim. The plan, summary, and UAT preserve the original readability request as history while superseding it as a current release criterion. |
-| `cmd/lang/main_test.go`, `native_app_test.go`, `bindings_test.go`, `cgen_program_test.go`, `session_app_verify_test.go` | Reached positive and negative controls | ✓ VERIFIED | Relevant named tests passed in this verification run. |
+| `examples/phase22/identity.lang`, `identity.expected.json` | Checked scalar program and independent expected values | ✓ VERIFIED | Present, substantive, consumed by CLI and replay behavior. |
+| `internal/compiler/session/session_app.go` (planned path) | Checked build path | ✓ VERIFIED — implementation path corrected | That exact file is absent. `BuildApplication` and `BuildApplicationFile` are implemented in `internal/compiler/session/session.go`; source traces and CLI integration tests verify the actual path. |
+| `internal/compiler/native/native_app.go` | Retained build, receipt, single-child runner, evidence | ✓ VERIFIED | Substantive implementation wired from public CLI; focused native and CLI tests passed. |
+| `internal/compiler/native/bindings.go` plus Phase 22 binding fixtures | Closed local C manifest resolution | ✓ VERIFIED | Manifest, C/header ABI fixture, and contract docs exist; relocation, invalid-input, and identity mutation tests passed. |
+| `internal/compiler/session/session_app_verify.go`, `identity.cases.json` | Explicit independent replay service and fixture | ✓ VERIFIED | Wired only by explicit `app verify`; CLI tests pass independent answers and model controls. |
+| `examples/phase22/README.md` | Public command and limitations contract | ✓ VERIFIED | Objective contract test passed; no subjective readability claim is made. |
 
-### Key Link Verification
+## Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| `cmd/lang/main.go` | `session/session.go` | `build` dispatch → `BuildApplicationFile` → `BuildApplication` | ✓ WIRED | Manual symbol trace confirms public CLI reaches Check/core validation/emission. Exact planned `session_app.go` target was corrected to existing `session.go`. |
-| `session/session.go` | `cgen/cgen.go`, `cgen/cgen_program.go` | `BuildApplication` → `EmitApplication` → shared application emitter/body lowering | ✓ WIRED | Source calls and shared emitter implementation verified. |
-| `cmd/lang/main.go` | `native/native_app.go` | app run dispatch → single retained runner | ✓ WIRED | Both ordinary and evidence modes call the same one-child run path. |
-| `cmd/lang/main.go` | `native/bindings.go` | `--manifest` build option | ✓ WIRED | Manifest argument reaches session/native build and `ResolveBindings`. |
-| `bindings.go` | `native_app.go` / build receipt | resolved files and digests | ✓ WIRED | Resolved inventory feeds compilation/link input and receipt identity. |
-| `cgen_program.go` | `native_app.go` | private event capture | ✓ WIRED | Generated app selects private capture path only when parent supplies it; ordinary output remains separate. |
-| `native_app.go` | evidence report | validate after child wait and atomic publication | ✓ WIRED | Status/report construction follows the single child wait and carries build/input/process identity. |
-| `cmd/lang/main.go` | `session_app_verify.go` | explicit `app verify` dispatch | ✓ WIRED | CLI calls `VerifyApplicationCasesFile`; ordinary app run dispatch does not. |
+| `cmd/lang/main.go` | `session/session.go` | build dispatch → `BuildApplicationFile` → check/core validation/emission | ✓ WIRED | Direct source trace; then `native.BuildApplication`. |
+| `session/session.go` | `cgen/cgen_program.go` | checked build → `EmitApplication` → shared lowering | ✓ WIRED | Direct call and shared emitter source verified. |
+| `cmd/lang/main.go` | `native/native_app.go` | app run dispatch → one-child runner | ✓ WIRED | Both normal and evidence modes reach the shared application run path. |
+| `cmd/lang/main.go` | `native/bindings.go` | `--manifest` → session/native resolver | ✓ WIRED | Manifest argument flows to `ResolveBindings`; resolved input digests feed compile and receipt identity. |
+| `cgen_program.go` | `native_app.go` | private event capture | ✓ WIRED | Generated application shell writes only when the runner supplies a private capture path. |
+| `native_app.go` | evidence sidecar | wait → validate → atomically publish | ✓ WIRED | Status and build/input identity are built after the single child completes. |
+| `cmd/lang/main.go` | `session_app_verify.go` | explicit `app verify` dispatch | ✓ WIRED | Ordinary app run does not enter this replay path. |
 
-The generic `verify.key-links` heuristic reports false negatives for indirect Go package references and the intentional planned-path substitution. Manual call tracing and passing integration tests resolve these links; no missing link was inferred from the heuristic alone. `verify.artifacts` finds the planned `internal/compiler/session/session_app.go` path absent; the checked build entry is implemented in `session.go`, and CLI wiring and behavior tests confirm the documented implementation-path substitution.
+The generic `verify.key-links` checker returned false negatives because it checks direct textual target references and does not resolve Go package calls/indirection; its target-file result for the planned `session_app.go` is also superseded by the implementation path in `session.go`. Manual source call traces above plus passing reached integration tests verify the links; the false negatives are not being counted as green automated link checks.
 
-### Data-Flow Trace (Level 4)
+## Data-Flow Trace (Level 4)
 
 | Artifact | Data variable | Source | Produces real data | Status |
 |---|---|---|---|---|
-| Identity application | argv token → parsed U64 → Lang result → stdout | Caller token is parsed by generated entry shell and passed to checked entry; result encoded as decimal bytes | Yes | ✓ FLOWING |
-| Local C build | manifest paths → source/header bytes and ABI probe inputs | Root-confined local files are read, hashed, compiled and linked | Yes | ✓ FLOWING |
-| App evidence | private capture file → validated execution document → sidecar | Same child writes bounded events; parent validates schema/status and publishes separate report | Yes | ✓ FLOWING |
-| Replay report | fixture inputs/expected values → interpreter/O0/O3 outcomes | Case file plus independent literals feed explicit replay and comparisons | Yes | ✓ FLOWING |
+| Identity app | argv token → bounded U64 → Lang result → stdout | Caller token parsed by generated application entry; decimal result emitted by the checked body | Yes | ✓ FLOWING |
+| Local C build | manifest paths → source/header bytes and ABI inputs | Root-confined filesystem reads and content digests determine compilation/link inputs and receipt identity | Yes | ✓ FLOWING |
+| App evidence | private capture file → validated capture → sidecar | Same child writes bounded events; parent validates status and publishes separately | Yes | ✓ FLOWING |
+| Replay | fixture inputs and pinned expected values → interpreter/O0/O3 outcomes | Explicit case file and independent literal answers feed comparisons | Yes | ✓ FLOWING |
 
-### Behavioral Spot-Checks
+## Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Objective README contract | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/lang -run '^TestPhase22READMEContract$' -count=1` | Exit 0; named test passed (0.009s). Checks objective contract categories; it does not assess subjective readability. | ✓ PASS |
-| Identity, streams/process outcomes, evidence isolation, replay answers | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/lang -run '^TestPhase22IdentityApplicationBuildAndRunCLI$|^TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes$|^TestPhase22EvidenceDisabledCompleteAndStreamIsolation$|^TestPhase22AppVerifyIndependentIdentityCases$' -count=1` | Exit 0; named tests passed (0.405s). | ✓ PASS |
-| Retained/relocated build, launch count, concurrency, bounded evidence | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase22BindingsBuildNeverLaunchesAndRunLaunchesOnce$|^TestPhase22BuildRetainsRelocatableArtifactWithoutLaunching$|^TestPhase22ConcurrentRequestsLaunchIndependently$|^TestPhase22EvidenceMissingPartialAndCapacityControls$' -count=1` | Exit 0; named tests passed (0.509s). | ✓ PASS |
-| Duplicate replay JSON keys rejected | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestDecodeReplayCasesRejectsDuplicateJSONKeys$' -count=1` | Exit 0; named test passed (0.010s). | ✓ PASS |
+| All Phase 22 CLI controls, including objective README contract, identity, one-run, evidence, replay, and model controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/lang -run '^TestPhase22' -count=1` | Exit 0; package passed in 1.379s. | ✓ PASS |
+| Phase 22 native build, bindings, process outcomes, single launch, and evidence controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase22' -count=1` | Exit 0; package passed in 11.907s. | ✓ PASS |
+| Session replay decoder/model controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase22|TestDecodeReplayCasesRejectsDuplicateJSONKeys)' -count=1` | Exit 0; package passed in 0.012s. | ✓ PASS |
+| Application emitter and refusal controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^TestPhase22' -count=1` | Exit 0; package passed in 0.014s. | ✓ PASS |
+| Full current repository suite | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./...` | Passed on macOS after source commit `c50430d`; supplied as current merged-tree evidence, distinct from historical Phase 22 summary receipts. | ✓ PASS |
+| Phase 23 adapter acquisition-failure cleanup, including the new empty-read/close-failure case | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase23AcquireFailuresInitializeAndFreePartialAllocations$' -count=1 -v` | Exit 0; named test passed on the current tree (0.073s). The latest shared-test-file edit exercises the Phase 23 adapter; `native_app.go` and the Phase 22 public runner were unchanged by `c50430d`. | ✓ PASS |
 
-No server or external service was started. Tests run for this report ran on macOS. The UAT documents a prior full Go suite pass on this host, but this verification pass did not rerun the full suite. No Linux run or CI result is claimed.
+No server or external service was started. All newly run checks and the supplied full-suite result are local macOS evidence. No hosted CI run, Linux host run, or Linux result is claimed. The Phase 23 close-failure amendment changes `examples/phase23/adapter.c` and its fault-injection case in `native_app_test.go`; the named current-tree test passed. Runtime dependency closure remains explicitly incomplete and non-cacheable when host facts are unknown.
 
-### Test Quality Audit
+## Test Quality Audit
 
-| Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
+| Test File | Linked requirement | Active | Skipped | Circular | Assertion level | Verdict |
 |---|---|---:|---:|---|---|---|
-| `cmd/lang/main_test.go` | APP-02–APP-06, EVD-11 | Yes | 0 skip markers found | No; expected values are checked-in literals and negative controls | Behavioral/value | PASS |
-| `internal/compiler/native/native_app_test.go`, `bindings_test.go` | APP-02, APP-04–APP-06, FFI-02 | Yes | 0 skip markers found | No; build/runtime assertions use independent process results and input mutations | Behavioral/value | PASS |
-| `internal/compiler/cgen/cgen_program_test.go`, `session_app_verify_test.go` | APP-03, EVD-11 | Yes | 0 skip markers found | No; independent fixtures and explicit refusal controls | Behavioral/value | PASS |
+| `cmd/lang/main_test.go` | APP-02–APP-06, EVD-11 | Yes | 0 skip markers found | No; independent checked-in answers and negative controls | Behavioral/value | PASS |
+| `internal/compiler/native/native_app_test.go`, `bindings_test.go` | APP-02, APP-04–APP-06, FFI-02 | Yes | 0 skip markers found | No; process outputs and input mutations are asserted | Behavioral/value | PASS |
+| `internal/compiler/cgen/cgen_program_test.go`, session replay tests | APP-03, EVD-11 | Yes | 0 skip markers found | No; independent fixtures and refusal controls | Behavioral/value | PASS |
 
-**Disabled tests on requirements:** 0. **Circular patterns detected:** 0 in the reviewed evidence paths. **Insufficient assertions:** 0 found for the covered claims.
+**Disabled tests on requirements:** 0 found. **Circular patterns:** 0 found in reviewed requirement evidence. **Insufficient assertions:** 0 found.
 
-### Decision Coverage
+## Decision Coverage
 
-The `check.decision-coverage-verify` gate reported 7/7 trackable CONTEXT.md decisions honored; no unhonored decisions were returned. This gate is non-blocking.
+The decision-coverage gate returned 7/7 trackable CONTEXT.md decisions honored; no unhonored decisions.
 
-### Probe Execution
+## Probe Execution
 
-No declared probes or conventional `scripts/*/tests/probe-*.sh` files were found for this phase.
+No Phase 22-declared probes or conventional `scripts/*/tests/probe-*.sh` files were found.
 
-### Requirements Coverage
+## Requirements Coverage
 
-| Requirement | Source Plan | Description | Status | Evidence |
-|---|---|---|---|---|
-| APP-02 | 22-01, 22-02 | Retained documented build, no build effects, relocated executable and declared dependencies | ✓ SATISFIED | Relocation and launch-counter tests; receipt declares `platform-c-runtime`, with incomplete host closure/non-cacheable state documented. |
-| APP-03 | 22-01 | Bounded caller input and independent scalar answers; malformed/oversize refusal | ✓ SATISFIED | Public identity CLI controls, expected fixture, and input refusal tests. |
-| APP-04 | 22-01, 22-03 | Exactly one ordinary application launch; replay explicit | ✓ SATISFIED | Native launch counter, stream/process controls and ordinary-run replay exclusion. |
-| APP-05 | 22-01 | Byte streams and defined exit/signal/timeout/launch behavior | ✓ SATISFIED | Named native and CLI stream/process tests passed. |
-| APP-06 | 22-03 | Separate evidence with fail-closed capture states | ✓ SATISFIED | Disabled/complete/incomplete/capacity and publication-failure controls passed; evidence cannot claim verification. |
-| FFI-02 | 22-02 | Declared local C/header/symbol/ABI/runtime inputs, relocation, errors and identity invalidation | ✓ SATISFIED | Manifest positive/negative, relocation, mutation-matrix and receipt checks passed. |
-| EVD-11 | 22-03 | Independent replay, declared modeled outcomes, no host IO/cleanup overclaim | ✓ SATISFIED | Replay fixture, expected-value and model controls passed; reports bound the claim scope. |
+| Requirement | Source plans | Status | Evidence |
+|---|---|---|---|
+| APP-02 | 22-01, 22-02 | ✓ SATISFIED | Retained build, zero build launches, relocation, and declared runtime dependency receipt behavior. |
+| APP-03 | 22-01 | ✓ SATISFIED | Bounded identity input, literal 7/42 expectations, malformed/oversized controls. |
+| APP-04 | 22-01, 22-03 | ✓ SATISFIED | One-child launch tests and ordinary-route replay exclusion. |
+| APP-05 | 22-01 | ✓ SATISFIED | Byte streams and exit/signal/timeout/launch outcome controls. |
+| APP-06 | 22-03 | ✓ SATISFIED | Separate evidence states and failure controls. |
+| FFI-02 | 22-02 | ✓ SATISFIED | Local C declaration, ABI/input failures, relocation, content-bound identity. |
+| EVD-11 | 22-03 | ✓ SATISFIED | Explicit independent replay and modeled outcome scope limits. |
 
-`REQUIREMENTS.md` checkboxes and its Phase 22 traceability table mark these as complete. Its introductory sentence says “All requirements below are new pending work,” which conflicts with the completion checkboxes/table; this report relies on current implementation evidence rather than that stale sentence.
+All seven Phase 22 requirement IDs in the plans match the Phase 22 traceability table; no orphaned Phase 22 requirement was found.
 
-### Anti-Patterns Found
+## Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| — | — | No unreferenced TBD/FIXME/XXX debt marker, stub, or placeholder was found in the covered implementation and example files. | — | — |
+| — | — | No unreferenced debt markers, placeholders, or behavior stubs found in covered implementation and example files. Empty slice returns found by broad pattern scans are control/data-shape returns, not user-visible stubs. | — | — |
 
-The plan prohibitions are also respected: linked local C is not represented as proof of arbitrary C behavior; complete same-run capture is not represented as semantic verification; verifier-only modeled outcomes claim neither actual host IO nor physical cleanup.
+The plan prohibitions hold in code and tests: linking local C does not claim arbitrary C behavior; complete same-run capture does not claim semantic verification; modeled outcomes do not claim actual host IO or physical cleanup.
 
-### Human Verification Required
+## Human Verification Required
 
-None. The completed UAT records the objective README contract as the current D3 acceptance check. Its historical manual readability criterion is explicitly superseded and is not required; no claim that subjective readability has been proven is made.
+None. Phase 22 has no outstanding human UAT: `22-UAT.md` is already `status: complete`, and the objective README contract test is part of the current passing CLI test group. The retired subjective readability criterion is not claimed as proven and is not a release gate.
 
-### Gaps Summary
+## Gaps Summary
 
-No automated truth, artifact behavior, key link, or requirement is missing. The former planned `session_app.go` artifact path is absent by the dated correction; the checked build entry and CLI wiring are present in `session.go`, and the replay service remains in `session_app_verify.go`. The objective README contract test and named behavior tests pass, preserving the 17/17 implementation score. The original subjective readability judgment remains visible as historical context but is no longer a release requirement; no subjective readability claim is made. Host SDK/linker/runtime closure remains incomplete and non-cacheable as declared; tests were observed on macOS only, with no Linux-host result claimed.
+No roadmap truth, requirement, wired artifact, or data flow is missing. The absent planned `session_app.go` file is an implementation-path correction: the checked build path resides in `session.go`, and the actual public call chain is exercised by passing CLI integration tests. This refresh verifies the merged tree; plan-summary test claims remain historical receipts except where the current runs above independently reproduce them. The full repository test suite also passed after the Phase 23 merge. Host runtime closure remains explicitly non-cacheable when incomplete, and this report makes no Linux or subjective README readability claim.
 
 ---
 
-_Verified: 2026-09-27T23:05:37Z_
+_Verified: 2026-09-28T16:11:19Z_
 _Verifier: the agent (gsd-verifier)_

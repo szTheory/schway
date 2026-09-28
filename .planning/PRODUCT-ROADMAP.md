@@ -1,6 +1,6 @@
 # Codename Lang — Living Product Roadmap
 
-Updated 2026-09-27. This document carries current direction; ROADMAP.md owns
+Updated 2026-09-28. This document carries current direction; ROADMAP.md owns
 committed milestone phases, REQUIREMENTS.md owns acceptance, and
 LANGUAGE-MATURITY.md records demonstrated capability. Historical milestone
 forecasts and evidence remain in their archives.
@@ -16,17 +16,24 @@ VM or LLVM backend is not a prerequisite for useful programs.
 M001 established source-to-native behavior; M002 added executable Lang calls;
 M003 added independent returns, computed matches/payloads, and U64 constants.
 Phase 21 completed contract/retirement prework. Phase 22 delivered its
-application/build/evidence implementation and passed its objective README
-contract UAT. The test does not judge subjective readability. The separate
-`lang app build` / `lang app run` route retains a native app, accepts a
-bounded U64 input, starts it once, and preserves ordinary streams and process
-outcomes. Evidence capture and explicit differential replay remain separate.
-The older `lang run` path is still the synthetic-input O0/O3 conformance
-harness. Phase 22 links declared local C inputs but does not admit Lang foreign
-calls or prove live resource ownership; the existing resource shim still frees
-its allocation before returning. These boundaries make Phase 23's live file-byte
-allocation and physical cleanup the next useful slice. Current app build
-receipts remain incomplete/non-cacheable, and Phase 22 has no Linux host result.
+application/build/evidence implementation and passed objective README contract
+UAT; its refreshed 2026-09-28 verifier report passes 5/5 truths. No subjective
+readability claim or human UAT remains. The separate `lang app build` /
+`lang app run` route retains a native app, accepts a bounded U64 input, starts
+it once, and preserves ordinary streams and process outcomes. Evidence capture
+and explicit differential replay remain separate. The older `lang run` path is
+still the synthetic-input O0/O3 conformance harness.
+
+Phase 23 now admits a bounded file-byte allocation that remains live through
+Lang-directed use and generated local cleanup. Its independent physical
+observer and close-failure control pass in the focused aggregate on macOS and a
+local Linux ARM64 container; the full Go suite passes on macOS, the security
+audit closes 18/18 declared threats, and the standard-depth code review is
+clean. The hosted Ubuntu `evidence-aggregate` CI receipt has not run, so Phase
+23 validation remains `in-progress` and Nyquist remains false as required by
+23-07. The local Linux receipt is not described as hosted CI. Phase 23 does not
+yet admit ownership transfer through Lang calls or typed errors. App build
+receipts remain incomplete/non-cacheable when runtime closure is unknown.
 
 The user explicitly requested another deep fan-out and automatic adoption of
 recommendations. The 2026-09-27 decision integrates product/DX, compiler and
@@ -37,7 +44,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Application build/run is in place; finish reading a bounded file byte through a live Lang-owned foreign buffer | Phase 22 is complete with 17/17 verified truths and passing `TestPhase22READMEContract`; subjective README readability is not claimed. Remaining: per-operation contracts, acquisition-derived obligations, transfer/error cleanup, bounded shared/exclusive read-copy pointers | Two input files yield independently expected results; real allocations survive transfer and are freed once; unsupported shapes fail closed; macOS/Linux receipts |
+| **Now: M004** | Close the hosted Ubuntu Phase 23 evidence receipt, then transfer the live file-byte owner through calls and typed errors | Phase 23 source behavior, physical cleanup, refusal controls, and local macOS/Linux focused gates pass; its existing Ubuntu CI matrix job has not run from this checkout. Remaining feature work: transfer/error cleanup and bounded shared/exclusive read-copy pointers | Hosted Ubuntu gate passes on the current code; then the owner survives transfer/error paths and is freed once, unsupported shapes fail closed, and pointer-family receipts cover macOS/Linux |
 | **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
@@ -95,25 +102,25 @@ roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations
 
-1. **Prove one Lang-owned file byte (Phase 23).** User-visible program: read
-   files containing `0x41` and `0x42` through a returned allocation and report
-   the matching byte, plus a failed-acquisition case. Blocker: Phase 22 only
-   links local C; all Lang foreign operations and by-pointer shapes remain
-   refused, and the existing shim frees before returning. Smallest complete
-   slice: a constructible opaque noncopyable value, distinct acquire/use/release
-   contracts, bounded input/failure behavior, Lang-directed use, generated
-   release, and an independent physical destructor observer. This changes
-   checker/guarantee work in `check`, `corevalidate`, `originvalidate`,
-   `pathoracle`, `interp`, and `cgen`; successful acquisition must create the
-   cleanup obligation. Evidence/debt: FFI-03, RES-04/07/08/09, EVD-09 admission;
-   keep Phase 22's EVD-11 replay boundary and FFI-02 manifest limits. Owner and
-   next action: Phase 23, execute the 2026-09-27 resolved
-   `PathToken`/`FileByteOwner` source and C17 ABI contract, 4096-byte token
-   bound, one-byte adapter, and independent cleanup controls in
-   `23-RESEARCH.md`; these planning decisions are not implementation receipts.
-   Reorder only if the
-   required physical observer or narrow ABI cannot be built without broadening
-   the committed resource contract.
+1. **Close Phase 23 host verification for the live file-byte program.**
+   User-visible program: read files containing `0x41` and `0x42` through a
+   returned allocation and report the matching byte, with acquisition and
+   post-acquisition failure cases. Current witness: the implementation, public
+   README, independent physical observer, reached destructor controls, and
+   focused macOS plus local Linux ARM64 receipts all pass; 18/18 declared
+   threats are closed and the code review is clean. Blocker: the existing
+   hosted Ubuntu `evidence-aggregate` job has not run, and this checkout has no
+   Git remote configured. Smallest complete slice: run the already-wired
+   `sh scripts/verify-phase23.sh` step on Ubuntu at the current source commit
+   or a successor commit; do not add another implementation plan or duplicate
+   the full/race/sanitizer suites. No checker or guarantee changes remain for
+   this slice. Evidence/debt: FFI-03, RES-04/07/08/09, EVD-09, and the new
+   `23-VALIDATION.md` local Linux receipt; Phase 22's EVD-11 replay boundary
+   and FFI-02 manifest limits remain intact. Owner/next action: hosted CI after
+   the branch is available to its runner; then resume `$gsd-execute-phase 23`
+   directly at verifier gates. No human UAT is required. Reprioritize only if
+   the hosted runner is unavailable or its result exposes a reproducible
+   platform-specific failure.
 2. **Carry that owner through a call and a typed error (Phase 24).** User-visible
    program: the byte reader delegates use to a helper and still releases once
    on both a normal result and a real later error. Blocker: static resource
@@ -172,6 +179,15 @@ more valuable complete program.
   The charter may change; record why, successor ownership, and affected claims.
 
 ## Provenance
+
+**2026-09-28 current-state amendment.** Phase 22's verification fingerprint
+was refreshed against the merged tree and passes 5/5 roadmap truths; its
+completed objective UAT is preserved. Phase 23's implementation is now
+source-inspected and its focused gate passes on macOS and a local Linux ARM64
+container after the close-failure fix; a current full Go suite passes on macOS.
+The hosted Linux CI result is still pending. These are distinct receipts, and
+the historical 2026-09-27 observations below remain true of their recorded
+revision.
 
 Repository research baseline: `d9bde05`; research date 2026-09-27. Current
 observations are refreshed after Phase 22 from source inspection, its named

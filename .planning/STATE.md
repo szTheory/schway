@@ -4,17 +4,17 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: executing
-stopped_at: Completed 23-06-PLAN.md; next execute 23-07
-last_updated: "2026-09-28T12:26:05.853Z"
+status: Phase 23 local gates pass; waiting for hosted Ubuntu CI receipt.
+stopped_at: Waiting for the hosted Ubuntu evidence-aggregate receipt; after a pass, resume GSD execute-phase 23 at verifier gates without replaying completed plans or UAT.
+last_updated: "2026-09-28T17:06:53.318Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 23 execution started
-state_head: 6c3cdeb026014a93e8f51b3a0ee493768482a51a
+state_head: c50430d9fa1490b393c5d22805f094787ee99186
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
   percent: 25
 ---
 
@@ -83,7 +83,7 @@ hiding runtime costs.
 
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase 23 local gates pass; waiting for hosted Ubuntu CI receipt.
 Last activity: 2026-09-27 — Phase 23 execution started
 
 Progress: [███░░░░░░░] 25%
@@ -139,7 +139,7 @@ implementation or new runtime verification occurred during roadmap creation.
 
 ### Kickoff routing snapshot — 2026-09-27 (historical)
 
-Next command: `$gsd-plan-phase 22`.
+Next command: After hosted Ubuntu CI receipt at c50430d or later: $gsd-execute-phase 23 (verifier-only; no plan or UAT replay).
 Context-clear handoff: Phase 22's `22-CONTEXT.md` now captures the approved
 decisions and explicitly requires the milestone research and living roadmap.
 `init.plan-phase 22` must discover that context before planning. The just-finished
@@ -191,23 +191,6 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 02 | 7 | - | - |
-| 03 | 10 | - | - |
-| 04 | 13 | - | - |
-| 05 | 14 | - | - |
-| 06 | 15 | - | - |
-| 07 | 12 | - | - |
-| 08 | 6 | - | - |
-| 09 | 10 | - | - |
-| 10 | 9 | - | - |
-| 11 | 9 | - | - |
-| 12 | 8 | - | - |
-| 14 | 13 | - | - |
-| 15 | 10 | - | - |
-| 16 | 26 | - | - |
-| 17 | 9 | - | - |
-| 18 | 10 | - | - |
-| 19 | 7 | - | - |
 | 21 | 6 | - | - |
 | 22 | 3 | - | - |
 **Per-Plan Metrics:**
@@ -387,6 +370,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 23 P23-04 | 76min | 2 tasks | 6 files |
 | Phase 23 P23-05 | 209min | 2 tasks | 6 files |
 | Phase 23 P23-06 | 3h | 2 tasks | 9 files |
+| Phase 23 P23-07 | 2h 1m | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -419,84 +403,7 @@ Standing architectural commitments carried into M002:
   admission. Known build inputs are identity-bound, while incomplete host closure
   keeps app receipts non-cacheable; evidence remains macOS-only so far.
 
-- [Phase 07]: 07-01: DecodeInterface routes CheckSummary; /0 stays decodable but never admissible for a call — D-07-36 closes codex's HIGH finding that strict /1 decoding was unspecified and /0 dispatch was unwired
-- [Phase 07]: Callable is publication safety (D-04-03), not export membership: PublishProblemsFor extracted, corevalidate summary peer wired at both replay sites, narrowed to core.origin_omitted (D-07-33) — 07-02 review-driven decisions D-07-31/D-07-32/D-07-33/D-07-20/D-07-21/D-07-22 landed exactly as ratified at the checkpoint
-- [Phase 07]: core.LinearOperation.CalleeID added additive+omitempty per D-07-29; the parser change and the foreign-bare-call refusal relocation to check (D-07-40) landed together in Task 1 since they are inseparable within one green commit.
-- [Phase 07]: 07-04: phase07 lane fires all three Phase 07 controls (phase07_in_process, phase07_lane, dispatch.recognized_not_executed) since the lane's own fixtures genuinely re-prove all three claims through the CLI path; cmd/lang main.go isPhase7Corpus dispatch added as Rule 3 blocking fix (not in plan's files_modified) since the lane is not CLI-observable without it
-- [Phase 07]: 07-05: check.Program builds an immutable post-body signature table (reusing core.FunctionSignature, structurally body-free) and refuses a call to a non-Callable callee with core.callee_not_callable; corevalidate independently re-derives the same refusal via peerCallable. Discovered relay_escort_witness.lang checks clean while corevalidate refuses (core.move_while_borrowed) -- the interprocedural half of D-03-02, left open for Phase 08/09. — Two genuinely independent SEM-06 derivations (check's table consult, corevalidate's own peerCallable) satisfy QLT-08 without collapsing to one derivation read twice; the D-03-02 divergence is documented as a named, tested finding rather than hidden.
-- [Phase 07]: 07-06: callgraph.Order (iterative white/gray/black DFS, no native recursion, roots = all declared functions, edges from CalleeID only) wired into check before it returns a core.Program; canonical rotation plus cross-cycle lexicographically-smallest witness selection makes the core.call_graph_cycle diagnostic ID deterministic regardless of discovery order (D-07-16/D-07-43); diagnostic bounded at 32 cycle_member causes while the traversal itself stays unbounded; spans projected from OpCall operation IDs via new check-side emission bookkeeping, no Span added to core.LinearOperation (D-07-35); three fault-injection seams (gray-vs-visited, self-edge, unresolved-edge-drop) each independently mutation-killed against a diamond/shared-leaf corpus a chain fixture could never kill.
-- [Phase 07]: 07-07: corevalidate grows its own independently-written whole-program cycle peer (checkCallGraphAcyclic) over disjoint synthetic-only input space; run() split into structural-then-replay passes to place it correctly; remaining SEM-07 corpus (indirect/unreachable/match-arm/shadowing) landed; bilateral independent-disable proof and phase-wide completeness matrix close QLT-08 for Phase 07.
-- [Phase 07]: [Phase 07] 07-08: ClosureDigest chained over callee summary digests only after callgraph.Order proves acyclicity; corevalidate independently re-derives the chain over its own postorder, matching the producer byte-for-byte wherever D-07-33's narrowed Callable scope already agrees; callee-changes-invalidates-caller mutation-killed on both sides; SEM-05 closed.
-- [Phase 07]: Checkpoint auto-ratified: accepted all four proposed diagnostic code strings (check.call_argument_type_mismatch, check.call_return_type_unrepresentable, core.CallArgumentTypeMismatch, core.CallReturnTypeMismatch) and both ordered Causes shapes verbatim.
-- [Phase 07]: 07-09: check.resolveCallBinding gates argument-type match and derives OpCall's TargetID.TypeID from the callee's declared return contract (fail-closed); corevalidate independently re-derives both refusals with no shared helper. Closes 07-VERIFICATION.md's single FAILED truth and 07-REVIEW.md CR-01.
-- [Phase 07]: 07-10: CheckCommandFile consults corevalidate.Validate (refusing union, fixed precedence check-then-peer-then-originvalidate); interface export/core report a peer refusal as StatusInvalid with the peer's own code instead of tool.operation_failed. Closes 07-REVIEW.md CR-04/PVG-03.
-- [Phase 07]: 07-11: consume-on-call closes CR-01/PVG-01 -- resolveCallBinding consumes call arguments (ability-decided), corevalidate independently re-derives from the core artifact alone; D-07-07 corrected, D-07-52 records the accepted implicit-transfer residual — Checkpoint auto-ratified under auto_advance/yolo mode
-- [Phase 07]: 07-12: Foreign/Fails made closure-derived over the proven-acyclic call graph in both originvalidate (joinForeignReach/joinFails) and corevalidate (peerJoinForeignReach/peerJoinFails, independently written, no shared helper beyond core.ForeignReachConflict); closes 07-REVIEW.md CR-03/PVG-02 and incidentally IN-01 (index-coupling fix). Phase 07 has no open post-verification gaps.
-- [Phase 08]: 08-01: interprocedural fact enters through derivePlaceLoans' forward canonicalization pass (D-08-07), never the backward transfer function; new post-acyclicity check.interprocedural_loan_liveness law closes D-03-02's interprocedural half on relay_escort_witness.lang, with both admission paths proven to agree via a mutation-tested differential (D-08-09).
-- [Phase 08]: 08-02: fixed a real callgraph.Order ordering-direction bug in buildInterproceduralSummaries (its result is caller-before-callee, not callee-before-caller as previously assumed) -- required for UsesParam transitivity to hold; deriveFunctionUsesParam's fixpoint-loop shape makes the program-order-vs-reversed cost claim genuinely falsifiable (171.3x observed multiplier at k=512, matching spike S-006's 192x finding).
-- [Phase 08]: 08-03: fixture-header + peerDivergenceExpected register the corevalidate residual for the two ACCEPT twins (check admits, corevalidate's still-intraprocedural loanChainIndex refuses via core.move_while_borrowed) as concrete input for Phase 09's peer re-derivation.
-- [Phase 08]: 08-03: Pattern B's real .lang twin pair cannot demonstrate a differing end-to-end CLI verdict (computeLoanLastUses' summary-blind AST-shadow path refuses both members identically, ownership.move_while_borrowed) -- tests assert the TRUE observed outcome; the contract-driven backward gate itself stays proven at the checked-core level (08-02's own synthetic test).
-- [Phase 08]: 08-04: loanLivenessFixpoint's cycle pre-walk converted to an explicit-stack DFS ported from callgraph.Order, its cycle refusal promoted to a coded check.cfg_back_edge diagnostic, and the worklist given a derived fail-closed bound (factor*blocks*(loans+1), the +1 floor a Rule 1 auto-fix over the plan's literal formula) with a named check.loan_liveness_bound_exceeded refusal, mutation-killed via loanLivenessBoundSeam and proven identity-stable against its own retuning — Success criterion 2 required the only genuinely iterative fixpoint in Phase 08 to terminate under a fail-closed bound with a named refusal rather than a hang or silent truncation; the literal blockCount*distinctLoanCount formula computes zero for any loan-free function and would have refused nearly every legal program, caught by reasoning through the existing suite before committing
-- [Phase 08]: 08-05: interprocedural cost gate shipped -- five-shape synthetic call-graph corpus fits buildInterproceduralSummaries' own deterministic work counter to <=1.2 growth exponent against operation count; both hardcoded gate-eligibility chokepoints (measure.Demote, session.QLT02GateEligibleMetrics) widened together and proven to agree; a latent EvaluateBudget bug (literal-string gating instead of set membership) surfaced by that widening was Rule-1-fixed so the new metric genuinely blocks on its bound; ratified hard manifest row + lane:interprocedural-cost-scaling changed-risk lane land the gate in the feedback-budget ledger
-- [Phase 08]: 08-06: Mid-phase gate adjudicated all four agenda items from re-run evidence (a/b carried as named debt, c/d resolved), scope-cut trigger did not fire, liveness law declared final; debt register expanded 5->9 items; manifest row re-ratified at gate's own commit; OWN-06/EFF-02 confirmed complete (found already marked by 08-03/08-05 ahead of the gate, a process-ordering deviation documented, not reverted since correct in substance).
-- [Phase 09]: 09-01: corevalidate's own forward-derived interprocedural loan-carry peer (derivePeerLoanCarry/chainPeerLoanCarry) folded into the existing v.peerPostorder substrate; buildLoanChainIndex's OpCall consult retires both peerDivergenceExpected accept-twin divergences (D-08-40 resolved); bidirectional seeded-fault companion assertions prove the agreement load-bearing. Discovered and documented (not fixed) a pre-existing originvalidate OpCall-transparency defect this fix unmasks (PHASE-09-DEBT.md D-09-51) -- the full CLI's clean-check claim for both fixtures is not satisfied end-to-end, a separate validator's pre-existing bug.
-- [Phase 09]: [Phase 09]: 09-02: generateCallGraphCorpus relocated verbatim from check's costcorpus_test.go to testsupport.GenerateCallGraphCorpus/CallGraphCorpusShapes (D-09-46), unblocking session/corevalidate consumption with zero production import of check; a third gate-eligible metric (peer_closure_recomputed_work_growth_exponent) declared at both chokepoints plus the QLT-02 vocabulary with no manifest row yet (D-09-28); spike-006's QLT-01 registry gap closed (waived, since AllShippedControlIDs predates Phase 08), making go test ./... unconditionally green for the rest of Phase 09 (D-08-43 resolved).
-- [Phase 09]: [Phase 09] 09-03: peerDeriveOriginFacts adds an access-mode payload to peerReturnDerivesFromBorrow's existing forward walk; peerOriginContained performs a containment check (never a recomputation of originvalidate's backward combination law); peerForeignOriginOmitted independently re-derives the fourth class with a bounded, function-local walk. peerCallable now consults all four PublishProblemsFor classes, closing D-07-33; TestPeerDoesNotRederiveNarrowedClasses flipped to TestPeerRederivesFormerlyNarrowedClasses. D-09-21's fallback did not fire. OWN-08 stays Pending in REQUIREMENTS.md since 09-08's mid-phase gate also carries it.
-- [Phase 09]: [Phase 09]: 09-04: synthetic-shape zero-divergence differential (package check, D-09-50's vehicle split) proves TRU-04 criterion 1 over diamond/deep-chain/dense/parser-shaped/forward shapes; discovered the five shapes never contain a borrow op, making the natural sweep provably vacuous, so Task 3's mutation-kill hand-built a twin_a_accept.lang-shaped fixture instead. TRU-04's 'recursion' shape settled as a cycle-peer witness-agreement differential (self/mutual/indirect), never a liveness one -- category-error disposition recorded in code (D-09-22).
-- [Phase 09]: OWN-05 stays Pending after 09-05 (D-09-37): only check+corevalidate proven this plan; interp is Phase 10
-- [Phase 09]: No new seam minted for core-layer convention override (D-09-35): existing ParameterContract.Mode closed-set decode check confirmed as the fail-closed control
-- [Phase 09]: [Phase 09] 09-07: D-09-49 Q1 settled by enumeration (no fixture exhibits the interaction across all 6 move_while_borrowed fixtures); shadowPathReachableCodes={move_while_borrowed,borrow_conflict} proven by source scan + testOnlyForceUniformLoanJoin perturbation, not merely predicted
-- [Phase 09]: [Phase 09]: 09-06: peer's cost sweep injects a genuine borrow into every generated function (raw corpus has none, D-09-04) via injectBorrowForLoanCarry, fits flat-linear against a self-derived 1300 milli-exponent bound (all five shapes ~999-1000), and mutation-kills it via peerClosureUnmemoizedSeamForTest (foldChain memo-write skip) on the 'forward' shape (0.999->1.396 exponent, 4.58x checks at n=512); Result.PeerConsultedFields() closes D-08-26's positive half, proven identical to check's set (D-09-30). No qlt02_budget_manifest.json row added (D-09-28 -- ratified at 09-08's gate).
-- [Phase 09]: Deleted computeLoanLastUses; checkInterproceduralLoanLiveness is now the sole loan-liveness decision point (D-09-07/D-09-08/D-09-09)
-- [Phase 09]: Pattern B's twin split does not materialize; recorded as new debt D-09-53 (pre-existing deriveFunctionUsesParam defect), not fixed in this plan
-- [Phase 09]: OWN-05 split into OWN-05a (Phase 09, Complete) and OWN-05b (Phase 10, Pending); QLT-07 closed for the loan-liveness subset, ratified in 09-VALIDATION.md; OWN-09/TRU-04 requirement texts corrected in place
-- [Phase 10]: 10-01: interp executes calls across an explicit []frame heap stack (D-10-21); OWN-05b falls out of observable execution, ability-aware per D-07-11; move-as-copy mutant proven via a synthetic core.Program since no legal Lang source can express the shape
-- [Phase 10]: OpCall origin walk now consults a callee's DECLARED PublicOrigin via a narrow, unexported calleeOriginFact map built by exported BuildCalleeOriginFacts — Closes D-09-51; mirrors corevalidate.buildLoanChainIndex's shipped peerLoanCarry precedent, threaded through RecomputeOriginPerReturn/RecomputeOrigin/PublishProblemsFor without widening ValidatePublished/BuildInterface's own signatures
-- [Phase 10]: Corrected two check-package negative-control fixtures/tests (negative_control_fails.lang, negative_control_infallible.lang) whose expected diagnostic depended on the same pre-existing D-09-51 transparent-walk defect — relay's declared borrow(buffer) return was never honestly derivable given leaf's genuinely owned return; check's own SEM-06 Callable gate now correctly fires first with core.callee_not_callable
 - [Phase ?]: 10-03: pathoracle composes callee paths across OpCall via its own EnumeratePaths (composeCall/composeCarriesOwnLoan), re-deriving per-path (never per-function-contract) whether a loan survives the call; MaxCompositionDepth + compositionCycleError guard recursion independently of MaxPaths/EnumeratePaths' own back-edge guard; D-10-14 discriminating fixture (two-arm callee, one borrows one owns) proven via the D-10-55 seeded contract-hop fault, stitched across two separately-checked fixtures since the shape cannot be one joint Callable program
-- [Phase 10]: [Phase 10]: 10-04: MaxCallDepth = 128 declared deliberately BELOW the real 1024-function structural ceiling (inverse of pathoracle.MaxPaths' above-maximum direction); depth-exceeded refusal modeled as a typed Outcome/Event (never a bare error); a subprocess probe (first in this repo) directly observes the host-stack limit and the language-level call-depth bound are structurally unrelated
-- [Phase 10]: 10-05: interp's cross-frame drain order (D-10-33/D-10-35) plus corevalidate's per-declaration callee-frame-drain invariant (D-10-34) are the two independent knowers of drop order; cgen's multi-frame pad stays named Phase 11 debt
-- [Phase 10]: D-10-59 trigger measured at plan 10-06's gate: 0.19x (71,773 actual vs 375,000 estimated across plans 10-01-10-05) — DID NOT FIRE, no cut taken — All four hard ordering constraints confirmed against git history; plans 10-07/10-08 proceed unchanged
-- [Phase 10-trusted-interprocedural-oracle]: Composition depth declared at 3 (D-10-46) with a bidirectional gate (D-10-50); a previously-undocumented corevalidate peerDeriveOriginFacts gap (no OpCall case) discovered and reported per plan 10-07's own escape hatch.
-- [Phase 10]: Result.LoanEndpoints() captures loanEndpointsMatch's computed value in-flight during Validate rather than recomputing via a fresh throwaway validator, avoiding a silent divergence from missing interprocedural loan-carry facts
-- [Phase 10]: The three-way endpoint comparator skips a CFG-carrying function when corevalidate did not fully validate the program, since corevalidate's fail-fast replay may never reach that function's own loan-endpoint check
-- [Phase 10]: D-10-55/D-10-41 seeded-fault companion tests landed in pathoracle_test.go and corevalidate_endpoint_test.go respectively (not session_peer_gate_test.go) because both fault seams are _test.go-only symbols invisible outside their own package's test binary
-- [Phase 10]: Phase 10 plan 10-09: interp is STABLE per the roadmap's Phase 11 precondition -- a 6-program byte-for-byte golden corpus (testdata/phase10/interp_oracle/), determinism proven at -count=10 over the full corpus, and the structural coverage floor (D-10-58) shipped as three enumerated tables in 10-VALIDATION.md with zero blank cells. SEM-08/SEM-09/OWN-05b all complete; Phase 10 done.
-- [Phase 11]: 11-01: Q-01=BRANCH A (accepted), Q-02=BRANCH A (hole reproduces) -- committed single-branch verdict tests decide plan 11-08's reducer proceeds unnarrowed and plan 11-07 ships a real eighth cache input — Both spikes settled as committed Go tests, not prose, per D-11-29/D-11-41; PHASE-11-DEBT.md opened at phase start with nine recorded-not-built decisions and five Phase 10 carry-forward items
-- [Phase 11]: Q-04 topology found empirically: composition-only LTO divergence requires a 4-way TU split (callee, writer, a SEPARATE coordination wrapper calling the callee twice, caller) -- merging wrapper+main lets the compiler prove pointer identity and refuse the hoist at every tier — Five of six tried topologies either diverged without LTO or never diverged at all on Apple clang 21.0.0
-- [Phase 11]: Task 3 ratification auto-selected Option A (approve all five items: D-11-20/21/22 roadmap amendments, D-11-09/10 zero-attribute terminal state, D-11-39 QLT-06 split) since it carried no gate=blocking-human — Auto-mode checkpoint protocol; flagged human_judgment:true in SUMMARY coverage for human review
-- [Phase 11]: 11-03: callgraph.EntryFunction resolves via in-degree-zero roots with a closure-size tie-break (never Functions[0]); emitProgram is the new whole-program C17 assembler with emitCall as sole Lang-to-Lang call writer — Reconciles the plan's own conflicting must_haves (unreachable function must not block resolution vs never guess); native.go's execution validator widened (Rule 3) for legitimate multi-FunctionID/non-terminal-return events, a pre-existing single-function assumption Phase 11 first exercises
-- [Phase 11]: Mid-phase gate ratified PASS (11-MIDPHASE-GATE.md): zero-attribute state terminal for Phase 11, NAT-05 written up as requirement weakened by evidence; waves 4-6 admitted.
-- [Phase 11]: 11-05: session's three CLI run sites were already widened at plan 11-03; Task 1 re-verified the 29-site baseline and KEPT every remaining single-function guard as legitimately fixed-fixture-bound (Phase 2-7) or deferred to plan 11-08 -- zero additional widening needed. — Guard ledger's mechanical awk re-verification (29, not the ROADMAP's expected 32) plus row-by-row disposition in 11-GUARD-LEDGER.md
-- [Phase 11]: 11-05: DiamondSharedLeaf discovered a genuine event-ID collision (D-11-51) when a callee is invoked from two static call sites; DivergingCallee is not expressible in a multi-function program this phase (D-11-52, extends D-11-02). Both recorded as new PHASE-11-DEBT.md debt, not silently fixed or narrowed. — Real fixes touch interp.go/cgen_program.go/emitMatch's multi-function generalization, outside this plan's files_modified and each large enough to need its own reviewed plan
-- [Phase 11]: Q-01 BRANCH A: drop-call-site ships as a live whole-program reduce move, not narrowed behind RefusedShapes(). — corevalidate accepts the core-level OpCall-to-OpCopy rewrite (11-01 spike).
-- [Phase 11]: 11-07: cache.DeclaredInputNames() widened to eight (cgen_source appended, D-11-41 closed); QLT-06 split QLT-06a/QLT-06b recorded in 11-QLT06-ABSTENTION.md per OWN-05a/05b precedent — Q-02 BRANCH A confirmed the stale-cgen cache-reuse hole reproduces; whole-program FixtureSource hash strictly dominates any closure key so QLT-06b is discharged by abstention, structurally gated by dual import scans
-- [Phase 11]: 11-09: foreignCallSequenceFor widened to a two-independent-knower guard (static callgraph.Order walk + dynamic -O0 event-stream walk), closing the multi-function nil-compares-nil slippage hole (D-11-33); QLT05Reverify implements strict, cold-start re-verification with no positional/causal-role fallback, reported as control:reduce.reverified (D-11-32/D-11-37); anti-vacuity gate proven on both sides via testdata/phase11/multi_function_reduce_gate.lang (D-11-34); 11-VERIFICATION-INPUTS.md collects the phase's four evidence-weakened claims. QLT-05 closed. Phase 11 complete (last plan, wave 6).
-- [Phase 11]: Phase 11 UAT closed with ZERO human verification: both items 11-VERIFICATION.md routed to a human were converted into committed tests instead of being answered once. WR-01 is FIXED not accepted — reduce.Seed.Validate (internal/compiler/reduce/seed_validate.go) refuses a multi-function seed whose EntryFunctionID is empty or unmatched with core.seed_entry_invalid, mirroring callgraph.EntryFunction's own fail-closed shape; TestSeedEntryHazardIsReal is an anti-vacuity control that fails if the deletion hazard ever stops existing. The 11-MIDPHASE-GATE.md CLI-check divergence is PINNED not filed as debt — session_admission_divergence_test.go sweeps every committed .lang fixture through both admission surfaces and asserts the divergence set exactly, failing on a new divergence AND on a silently resolved one (mutation-checked both ways). — Operator directive: shift left, automate the world, target 0 human UAT, in CI only where value recurs. Both land in CI unchanged (`go test ./...` already runs on both hosts); no debt rows added, because a debt note is read once and a test is checked forever.
-- [Phase 11]: 11-SECURITY.md written at phase close: 28 threats (T-11-01..T-11-27 plus T-11-SC), all closed, threats_open 0 at ASVS L1 with block_on high. Register was authored at plan time (all 9 plans carry <threat_model>), so this verified a pre-declared register rather than reconstructing one. Every mitigate row was closed by locating its named control and RUNNING it, not by reading mitigation prose — the Verification Evidence table names each one, so deleting or renaming a control breaks the audit. Note: Phase 10 by contrast ran with security_enforcement=true and never produced 10-SECURITY.md.
-- [Phase 12]: D-12-31 branch ratified as RE-DEFER: the measured N=1 differential shows emitProgram refuses 4/5 single-function shapes and diverges on the 5th, so D-12-36's fallback trigger fired.
-- [Phase 12]: PHASE-11-DEBT.md's D-11-02 landing-phase commitment is superseded with a stated reversal quoting the original text verbatim, per the D-09-08/D-09-30/D-10-27 precedent.
-- [Phase 12]: The six legacy cgen emitters stay in cgen.go, byte-untouched, with no currently-owned landing phase for their eventual deletion.
-- [Phase 12]: Ratified as proposed: source spelling Ok(Buffer)/Ok(v)=>/Ok(v), six diagnostic codes, one-globbing-test D-12-19 replay
-- [Phase 12]: check.payload_arity_mismatch required an additive ast.MatchArm.ConstructBinder field (Rule 2) since the collapsed single Binder field made the refusal structurally unconstructible
-- [Phase 12]: D-12-27's resource-payload refusal matches on foreign-return-type name equality (deliberately over-inclusive, fail-closed) since this project's type system has no ability-derived resource provenance marker
-- [Phase 12]: originvalidate's RecomputeOriginPerReturn needed a sourceOf-indexing fix (PayloadTargetID, not TargetID) for OpDestructurePayload before its new origin-walk arm could be reachable at all
-- [Phase 12]: Cross-package test-only mutation-kill seams must be production-visible functions (corevalidate.SetDisableCyclePeerForTest's D-07-42 shape), never export_test.go symbols, which are invisible outside the defining package's own test binary
-- [Phase 12]: 12-06: check.duplicate_payload_type closes CR-01's source-layer half (D-12-44); a control asserts the code directly since interp/cgen share the flawed derivation; WR-01's nullary-binder message now names the construction side, code unchanged.
-- [Phase 12]: PayloadSlotSwapInjectedWriteCount is production-visible (cgen.go), not export_test.go — cross-package need mirrors SetPayloadSlotSwapForTest's own precedent
-- [Phase 12]: D-12-43 ratified at plan 12-08 Task 1's blocking-human checkpoint (developer chose 'ratify') — Closes 12-VERIFICATION.md's human-verification item 2; no enabling work scheduled, no future phase named as owner
-- [Phase 12]: D-12-44 recorded: CR-01's disposition is FIX (check.duplicate_payload_type + shared core resolver), restriction on the source language, lifting condition named as GEN-01 — CR-01 was the code review's sole CRITICAL finding and the verifier's only hard gap
-- [Phase 12]: D-12-45 recorded: WR-01/WR-02/IN-01 dispositions, all closed, none deferred — Every secondary review finding must have an explicit recorded disposition
-- [Phase 13]: 13-01: check.interprocedural_loan_liveness's move_after_interprocedural_loan repair is emitted ONLY for the BACKWARD direction (call is the loan's own recorded last use) — the FORWARD direction (loan propagated through the call onto a place read still later) is not fixed by swapping the move and call statements, discovered empirically by splicing the repair onto real testdata/phase07-08 fixtures both ways. A `callIsLastUse` gate added to `interproceduralLoanLivenessDiagnostic`. Re-pinned FIVE (not the plan's stated four) check_ordering_stability_test.go rows — phase08/twin_b_accept.lang also carries this code. Fixed a latent syntax/parser.go call-binding Span truncation (Rule 1) the new repair's :stmt span channel exposed.
-- [Phase 13]: Blame resolver (resolveBlame/resolveCycleBlame) built and exhaustively tested but not wired into the eight existing diagnostic emission sites -- D-13-04 verified empirically that all eight already select B2's Primary span, so wiring is a no-op today; the resolver is ready infrastructure for the first B1-shaped defect class. — Avoids touching identity-bearing Primary spans on published diagnostics for zero behavioral gain, per D-13-04's empirical verification (TestBlameMovesNoPrimarySpanToday).
-- [Phase 13]: checkCallGraphAcyclic routed through the new calleeBeforeCallerOrder helper instead of calling callgraph.Order directly, making it check.go's sole callgraph.Order call site. — Required to satisfy the plan's 'exactly one non-comment callgraph.Order call site' acceptance criterion, and strengthens D-13-03's 'no new ordering authority' claim by construction; behavior-preserving since only the error is ever consulted.
-- [Phase 13]: 13-03: peer-disagreement refusal scoped to core-claims-and-AST-disagrees, not core's mere absence — core.Program.Functions only includes cleanly-checked functions; treating absence as disagreement broke most of the existing explain corpus
-- [Phase 13]: D-13-02a resolved: no B1-shaped interprocedural diagnostic is constructible at this language maturity (sameType is a precondition of every interprocedural pass, checked before any call site is reached).
-- [Phase 13]: Set A repair-emission logic implemented with the uniqueness-gate comparison target changed from contract.ParameterType to the caller's own type fact — the literal plan-specified comparison is mathematically unsatisfiable at this language's single-type-per-function maturity.
-- [Phase 13]: 13-06: DX-06/DX-07 requirement checkboxes deliberately left unmarked (Pending) despite the plan completing -- D-13-10a resolved use_matching_argument as unrepairable (2 of 3 repairable classes, not 3) and D-13-28's twin pair proved only detection-site-vs-position-hardcoded blame, not the B1-shaped discrimination DX-06's literal text describes (D-13-02b: unconstructible at this maturity). Full evidence in 13-06-SUMMARY.md; final ratification deferred to 13-07's checkpoint per D-13-10a's own closing instruction.
-- [Phase 13]: 13-07: D-13-33 adjudicated Option B (developer, blocking-human checkpoint) -- testdata/phase6 move/borrow pairs are structurally identical (alpha-rename only), predicate kept unweakened, carried as permanent M001 evidence debt (D-13-34, PHASE-13-DEBT.md) rather than fixed or reversed
-- [Phase 13]: 13-07: DX-06 and DX-07 ratified Partial (not Complete) -- B1 contract-violation blame structurally unreachable at this maturity (D-13-02b, D-12-43 precedent); use_matching_argument withdrawn as unrepairable, every Lang function sharing one type fact (D-13-10a). Both recorded in PHASE-13-DEBT.md, REQUIREMENTS.md traceability updated
-- [Phase 13]: 13-07: 13-VALIDATION.md corrected against real test names -- two instances of the same go-test-run-matches-nothing defect class found and fixed (D-13-09a's TestOrderingStability -> TestInterproceduralDiagnosticOrderingStability; import-boundary row's TestImportBoundary pattern, which missed the actual lint TestRepairDriverImportsStayOutsideInternal). wave_0_complete/nyquist_compliant set true from evidence; go test ./... green (25 packages)
 - [Phase ?]: Groundedness lint (EVD-01) shipped end-to-end: static Go test index over *_test.go, Tier-A document scanner via phaseArtifactGlob, R1/R2/unparseable classification, 26-record pinned violation frontier, three-fault non-inertness proof. Fixed a real backtick-awareness bug in table-row splitting and a Contains-vs-HasPrefix substring bug found via testing against the live corpus. — Both bugs were caught by running the lint against the real .planning/** corpus rather than trusting the plan's literal algorithm description -- exactly the discipline this phase exists to install.
 - [Phase ?]: 14-02: recoverRegion advances past the unexpected token before measuring the discarded extent, so causes[0].span never overlaps primary_span; the third spiral member's skipped region lands at exactly one token.
 - [Phase ?]: 14-02: skipped_region cause attached only when recoverRegion actually discarded >=1 token, confining published-ID churn to fixtures that reach the declaration-recovery arm with a non-empty discard.
@@ -504,74 +411,19 @@ Standing architectural commitments carried into M002:
 - [Phase ?]: [Phase 14]: 14-03: DX-09 closed -- unrepairable decline now carries DiagnosisCodes/DeclineReason/BestApplicability, populated via a new classifyDecline sibling (not a widened selectRepair, to keep antitheater_test.go/repair_test.go byte-unchanged); DiagnosisCodes is a comparable diagnosisCodeList string type (custom JSON marshaling) since a bare []string broke Outcome's existing == comparison in antitheater_test.go; no_diagnostics decline sets diagnosis_code to the reason itself rather than leaving it empty, honoring the plan's unqualified never-empty truth
 - [Phase ?]: 14-04: mechanized PRC-01's closed owning-phase vocabulary (P<NN>|CLOSED(sha)|UNOWNED(witness)) inside checkDebtRegister and migrated all twelve pre-existing debt registers to it cell-format-only, via a documented rule (CLOSED only on explicit closure language, P<NN> on a single named phase, else UNOWNED); D-09-53 migrated CLOSED (not the P10 its own cell text implies) since PHASE-10-DEBT.md's D-10-27/D-10-30 explicitly withdrew its premise — PRC-01 requires every debt item to name a resolvable owning phase; the prior law only checked non-empty
 - [Phase ?]: 14-04: opened PHASE-14-DEBT.md and closed EVD-07's outstanding half by registering the -flto multi-function inertness claim (D-14-45) with an owning-phase cell; PROJECT.md's DX-06/-flto text confirmed already correct (commit d21db90), not re-edited — the debt row was the one remaining task; the text correction had already landed
-- [Phase 14]: 14-05: Machine-checked LANGUAGE-MATURITY.md via independent go/parser AST re-derivation (never shelling out to the doc's own awk command); corrected guard total 32->22 and removed the stale reduce-package row (Phase 11 already widened reduce.Reduce to accept multi-function seeds). Recorded a real cold go test ./... wall-clock baseline (191.89s) as an observed qlt02_budget_manifest.json row.
 - [Phase ?]: 14-06: D-14-11 role-based document scoping wired with promotion; grep execution (R3) and per-branch groundedness (R2b) wired; frontier re-pinned 26->125 entries (full .planning/**/*.md scope, no documents yet declare the proposal exemption)
-- [Phase 14-evidence-instrument-and-honest-scoping]: 14-07: closed four-kind witness grammar (probe:/callsite:/escape:/env:) mechanized in checkDebtRegister; four executed probes back D-13-02b/D-13-10a/D-13-34/D-14-45/D-12-43/D-11-02; module-wide suppression enumerator requires every t.Skip to cite a resolvable witness (scoped to PENDING-only for the live module's blanket comment/string-literal surface after a full-grammar attempt produced 115 false positives against this codebase's own unrelated escape:/D-XX-NN conventions); .planning/UNREACHABLE-CLAIMS.md generated and byte-compared, holding exactly the six known qualifying rows. EVD-03/EVD-04 complete. 87 debt-register rows across 02-DEBT.md..PHASE-10-DEBT.md remain unmigrated to Grade/Witness, recorded as debt.
 - [Phase ?]: Task 2's per-row-exclusion removal shipped as a single test commit (no separate GREEN): Task 1's collapse already made the real mutation table satisfy the check; RED was demonstrated by temporarily clearing the real EscapeID field, observing failure, then reverting before commit. — Data already valid post-Task1, but genuine RED evidence was still produced rather than asserted from memory.
 - [Phase ?]: Found and fixed two stale PENDING-05-08 prose occurrences beyond the plan's named five sites (a test's own negative-assertion literal, and a witness_registry_test.go hand-off comment), since the plan's acceptance criterion is a repo-wide grep, not a fixed site list. — Rule 2 - missing critical: satisfying the literal 'marker survives nowhere' truth required a full repo scan, not just the five research-identified sites.
 - [Phase ?]: EVD-02 grade cap: declared grade authored at its derived ceiling (capped, never MUTATION-KILLED) across all 14 migrated VALIDATION docs; 6 rows derive below shipped verdict, recorded as PHASE-14-DEBT.md rows D-14-48..54 rather than suppressed
 - [Phase ?]: Run-record generation for the ~230-row corpus is genuinely several minutes (not milliseconds as T-14-56 first assumed); a parallelism attempt thrashed and was reverted to sequential, documented in scripts/evidence-run-record.sh
-- [Phase 14]: 14-10 (Nyquist reconciliation, closes the phase): 66 runnability/groundedness/grep findings reconciled under a closed four-verdict vocabulary (renamed/superseded/obsolete-by-design/under-scoped) as debt rows with a witness in PHASE-14-DEBT.md (D-14-55..D-14-120), never rewriting the archived documents they were found in; the pinned groundedness frontier emptied for those three classes (124->58 entries), per-branch (R2b, 10 entries) stays pinned and owned by P20 (ROADMAP QLT-10). `.planning/EVIDENCE-RECONCILIATION.md` generated and byte-compared; `scripts/assert-reconciliation-touched.sh` couples future archive edits to it. Filling in 14-VALIDATION.md's own Per-Task Verification Map (31 real rows) exposed a genuine performance regression -- an unanchored `TestValidationRowGradesAreEarned` pattern substring-matched the expensive `TestValidationRowGradesAreEarnedOverArchivedCorpus` itself, recursively re-invoking it inside the run-record generator and pushing the session package past Go's 600s default timeout; fixed by anchoring each alternation branch with a trailing `$` (not wrapping the whole group in `^(...)$`, which breaks the R2b per-branch splitter). Attempted removing 14-VALIDATION.md's stale grade-bar exemption; reverted after it exposed the same corpus-wide timeout risk on nine unrelated files under this specific machine's load -- recorded as debt D-14-121, not landed under uncertainty.
 - [Phase ?]: 14-11: raised evidenceRunRecordTimeout 300s->480s with a measured-honest doc comment, added a 0.75 margin fraction that fails closed on a near-timeout run, and replaced raw-pattern run-record batching with resolvedPkgPatterns (anchored, index-resolved names) -- closing WR-01/WR-02; corpus-wide measured elapsed dropped 269-347s -> ~90s
 - [Phase ?]: 14-13: buildConstraintAllowlist (darwin/linux/amd64/arm64/cgo) closes EVD-04's inert //go:build branch; scanSuppressionSurfaces reordered so MatchFile gates only AST passes, never the textual constraint pass, closing T-14-13-02's constraint-hides-itself hole
 - [Phase ?]: 14-12: removed 14-VALIDATION.md's file-scoped grade-bar exemption, confirmed the corpus-wide >=EXERCISED bar with a complete run record (90-92s vs 480s budget), added the row-scoped validationGradeBarRowExemptions narrowing (5 entries, each debt-witnessed) since Task 2's own ship-empty expectation was falsified by real execution, and closed D-14-121/D-14-53 as CLOSED(128ecec). EVD-02 and PRC-01 complete.
-- [Phase 15]: Ratified Phase 15 /2 invocation grammar and caller-owned callee_function_id contract before publication.
-- [Phase 16]: Preserved public dispatch while proving direct ordinary-linear emitProgram behavior.
-- [Phase 16]: Derived schema-2 live_resources from emitProgram without introducing a resource ledger.
-- [Phase 16]: Keep restrict admission evidence test-local; no production routing changes before Plan 05 human disposition.
-- [Phase 16]: Linux restrict-probe lane is unresolved on macOS and cannot be counted as success.
-- [Phase 16]: Admit nullary branch blocks through emitProgram while retaining explicit refusals for match-only, payload, foreign, and N=1 by-pointer shapes.
-- [Phase 16]: Keep main as the sole schema-2 document writer; branch helpers only record events and return C values.
-- [Phase 16]: Selected cut-m004: unavailable Linux evidence means macOS-only probe results cannot admit emitLinearBorrowedByPointer or any by-pointer family in M003.
-- [Phase 16]: emitProgram reads checker-owned payload layout and shared alternative identity; defect evidence is written before the narrow abort helper.
-- [Phase 16]: Applied cut-m004: no pointer-specialized family is admitted by emitProgram at any program cardinality.
-- [Phase 16]: Recorded foreign and by-pointer emitter families as M004 debt; one-TU pure-Lang -flto remains behaviorally inert evidence.
-- [Phase 16]: AST-derived public-emitter calls are authoritative; registry rows classify each exactly once.
-- [Phase 16]: Mutation controls require intended validator error classes, not generic cardinality drift.
-- [Phase 16]: 16-19: replaced stale archived witness names with the current Phase 17 witness and used deterministic injected MachineFacts for budget audit tests; preserved the existing generated-view disposition rules.
-- [Phase 18]: 16-18: Keep the Phase 16 research command explicit and executable while preserving its characterization purpose.
-- [Phase 18]: 16-18: Pin every current groundedness finding and assign all surviving R2b rows to P20 under QLT-10; preserve exact-set equality and empty R1/R2/R3 gates.
-- [Phase 16]: Refresh the Phase 16 validation record only from the live consumer-derived pair export and actual sequential producer output.
-- [Phase 16]: Bind each checked-in record body to exact pair bytes and require persisted per-pair and batch completion witnesses, including under re-digested mutations.
-- [Phase 18]: Phase 16 Plan 21: Keep Phase 11 assurance test-only; require exact cut-m004 refusal before loading provenance-checked frozen C.
-- [Phase 18]: Phase 16 Plan 21: Keep zero-call entry ambiguity as an independently typed refusal, without by-pointer frozen-evidence mapping.
-- [Phase 18]: Phase 18's current source frontier is the parser diagnostic syntax.expected_linear_result at terminal match; preserve it until computed match is admitted.
-- [Phase 18]: Represent a linear prefix followed by one terminal match in the existing body and branch CFG.
-- [Phase 18]: Keep CTL-01 open until full Phase 18 acceptance is verified.
-- [Phase 18]: Core computed scrutinee IDs must resolve to a definition in the shared branch entry prefix; ID-less matches remain parameter-only.
-- [Phase 18]: Origin derivation is bounded to earlier operations in the return arm and shared entry prefix, using block facts even if Match metadata is absent.
-- [Phase 18]: Computed Result match arms use an explicit edge-bound typed value place when the return type differs from the scrutinee type.
-- [Phase 18]: Serialize payload-bearing terminal ADTs with their runtime payload while retaining tag-only branch dispatch.
-- [Phase 18]: Seed interpreter data inputs with the canonical payload values emitted by native entry setup.
-- [Phase 18]: Keep CTL-01 through CTL-03 open until full Phase 18 verification.
-- [Phase 18]: 18-06: Keep S-010 loan endpoints within existing point and edge kinds, with the computed-match prefix participating in bounded CFG liveness.
-- [Phase 18]: Plan 18-08 kept CI unchanged because existing macOS/Linux full and race suites already cover Phase 18 and duplicate focused coverage costs about two minutes per host.
-- [Phase 19]: 19-02: store U64 as a discriminated interpreter value and serialize it as canonical decimal while preserving prior scalar projections
-- [Phase 19]: 19-02: require D-12-18 corpus replay and seeded projection mutation evidence before OpConst routing
-- [Phase 19]: Numeric syntax remains lossless in RHS.Source; checker owns numeric interpretation.
-- [Phase 19]: Lexer consumes adjacent Unicode letters and digits in malformed numeric candidates.
-- [Phase 19]: U64 is a zero-argument structural scalar granting copy, drop, share, send, and escape abilities.
-- [Phase 19]: OpConst carries only a canonical decimal U64 semantic value in an omitempty ConstU64 field; source spelling stays in syntax/AST.
-- [Phase 19]: The checker uses checked 64-bit radix conversion, rejects overflow at the literal span before core creation, and applies no contextual numeric conversion.
-- [Phase 19]: Corevalidation independently parses canonical decimal OpConst values and re-derives U64 abilities.
-- [Phase 19]: Path and origin analysis treat OpConst as a source-free root.
-- [Phase 19]: Supplemental branch U64 facts use the type:u64 identity and are independently constrained to zero-argument U64.
-- [Phase 19]: Phase 19-06 emits stdint exact-width support only when the checked program uses U64.
-- [Phase 19]: Native U64 decimal input and JSON string output use checked bounded digit-by-digit conversion.
-- [Phase 19]: Use the existing schema-2 comparison projection for the interpreter before comparing all four execution tiers.
-- [Phase 19]: Keep stale Phase 11 maturity and reconciliation findings as regression debt outside Plan 19-07.
-- [Phase 20]: M003-open checksum refusal is treated as a historical reconstruction, not a contemporaneous fixture pin.
-- [Phase 18]: Keep cache.input_undeclared stable while unwrapping typed Clang probe failures through Cause.
-- [Phase 18]: Use a finite 30-second default per subprocess; explicit runner timeouts and parent cancellation remain authoritative.
-- [Phase 18]: Keep Plan 08 CI disposition unchanged because existing macOS and Linux full and race jobs cover Phase 18.
-- [Phase 18]: Regenerate the stale validation corpus from the live pair exporter and actual sequential test results.
 - [Phase 21]: Phase 21 Plan 01: exit and discharge rules are machine-checkable; contract structure does not admit emitters or prove runtime cleanup.
 - [Phase 21]: Retire unreachable program-lowering bodies and their exclusive helpers while retaining metadata/classification APIs and all refusal boundaries.
 - [Phase 21]: Treat archived foreign and by-pointer fixtures as historical evidence, not proof of current emitted behavior.
 - [Phase 21]: Use the existing Phase 14 multi-function fixture and run direct emitProgram output through the shared interpreter/-O0/-O3/-O3 -flto comparator.
 - [Phase 21]: Keep compiler measurement opt-in; behavioral equality does not prove optimizer activity, performance, cleanup, or other hosts/toolchains.
-- [Phase 18]: Stream schema-2 terminal tags and payloads through the bounded JSON writer without tag-sized storage.
-- [Phase 18]: Emit terminal scratch buffers only for payload types present in the branch.
 - [Phase 23]: Keep PathToken as direct bounded argv data and admit only the frozen straight-line owner shape. — This preserves the existing one-token app-run boundary, bounds untrusted path input, and refuses broader ownership shapes.
 - [Phase 23]: Check each C symbol against its own function type and prove record layout in the shared C17 header. — The compiled host probe must fail on a mismatched acquire, use, release, or target record layout before the native app is accepted.
 - [Phase 23]: Keep each peer owner-lifecycle validator independently authored while enforcing the same narrow PathToken-to-U64 contract. — Independent evidence prevents the validators from trusting checker-produced facts or one another.
@@ -586,6 +438,11 @@ Standing architectural commitments carried into M002:
 - [Phase 23]: Keep physical pointer lifetime receipts separate from compiler semantic events. — Semantic events describe language execution and cannot prove actual allocation identity or cleanup.
 - [Phase 23]: Emit the checked function.returned semantic event for the specialized local-owner body. — The application evidence decoder requires a valid schema-2 execution event, while physical resource claims remain independently witnessed by the native observer.
 - [Phase 23]: Route only PathToken/FileByteOwner facts through the narrow local-owner emitter. — Unrelated foreign operations retain their existing refusal behavior and evidence paths.
+- [Phase 23]: Phase 23 focused verification runs once in the existing Ubuntu/macOS evidence-aggregate matrix. — It gives recurring coverage on both host priorities without duplicating the full, race, vet, or sanitizer lanes; macOS measurements are 18–23s cold and 8–11s warm.
+- [Phase 23]: Phase 23 host validation remains in progress until a Linux CI receipt exists. — This execution verified macOS only; wiring Linux in CI is not evidence that the Linux job passed.
+- [Phase 23]: Public file-byte CLI answers are pinned as authored fixture constants independent of compiler events. — This avoids deriving expected results from the same implementation events being checked.
+- [Phase 23]: Shift-left and stale-verifier route: keep passed UAT; refresh stale reports from current automated evidence. If a roadmap-complete phase makes execute-phase no-op, run gsd-verifier directly, then re-query progress. Keep local container and hosted CI receipts distinct; do not route objective checks back to human UAT. — Phase 22 UAT was already complete and objective. Its verification fingerprint went stale after Phase 23 source changes, while the roadmap still marked Phase 22 complete. The canonical progress resolver exposed the mismatch; direct GSD verification refreshed the report to passed 5/5 without repeating UAT.
+- [Phase 23]: External CI receipt gap: when source truths and local Linux-container tests pass but a required hosted Ubuntu receipt is missing, do not plan implementation fixes or ask for UAT. Keep Phase 23 open, run the existing evidence-aggregate job when a remote is available, then resume execute-phase at verifier gates. — The Phase 23 verifier found 5/5 roadmap truths and one hosted Ubuntu receipt gap; the current checkout has no Git remote. The canonical gaps_found router suggests plan-phase --gaps, but that would add no code or test value for this external evidence blocker.
 
 ### Pending Todos
 
@@ -768,8 +625,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-28T12:26:05.829Z
-Stopped at: Completed 23-06-PLAN.md; next execute 23-07
+Last session: 2026-09-28T17:06:53.271Z
+Stopped at: Waiting for the hosted Ubuntu evidence-aggregate receipt; after a pass, resume GSD execute-phase 23 at verifier gates without replaying completed plans or UAT.
 Resume file: None
 Next command: $gsd-discuss-phase 23 --auto
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,

@@ -1,11 +1,13 @@
 # Language Maturity — Where Codename Lang Actually Stands
 
-**Re-assessed:** 2026-09-27, after Phase 22 implementation, against the current
-source and Phase 22 artifacts. Source inspection, named tests, the full Go test
-suite, and the regenerated goal-verification report were checked. It confirms
-17/17 truths with `passed` status after the objective README contract UAT.
-Subjective readability is not claimed. Evidence is macOS-only; this does not
-claim a Linux run. Future direction lives
+**Re-assessed:** 2026-09-28, against the current source and Phases 22–23
+artifacts. Phase 22's refreshed report passes 5/5 truths and its completed
+objective README UAT remains preserved. Focused Phase 23 checks passed on
+macOS and a local Linux ARM64 container, and the full Go suite passed on macOS.
+The Linux container is not a hosted CI receipt; the configured Ubuntu job
+remains pending. Phase 23 security review covers 18/18 threats and source code
+review is clean. Objective checks cover acceptance; subjective readability is
+not claimed. Future direction lives
 in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ### Documentation-gate amendment — 2026-09-27
@@ -27,6 +29,7 @@ recommendations and Phase 23/24/25 ordering below remain unchanged.
 | Source → checked core → interpreter/native C17 | A working compiler exists; Go 1.24/Clang remain the development path | `cmd/lang/main.go`, `internal/compiler/session/session.go` |
 | Retained native application build/run | `lang app build` creates a retained artifact from an admitted source and closed local-C manifest; `lang app run` accepts bounded U64 input, launches once, and preserves ordinary streams/outcomes | `cmd/lang/main.go`, `session.go`, `internal/compiler/native/native_app.go`; Phase 22 `TestPhase22IdentityApplicationBuildAndRunCLI`, `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes` |
 | Separate application evidence | Capture is a distinct report with disabled/incomplete/complete/capacity states and never claims verification; explicit `app verify` replays isolated inputs against independent expected answers | `native_app.go`, `main.go`; `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22AppVerifyIndependentIdentityCases`, `TestPhase22AppVerifyModelOnlyOutcomes` |
+| Live local foreign allocation | A public file-byte path admits only exact acquire/use/release contracts; Lang holds the acquired byte until the local release, and a physical observer plus negative controls prove malloc → use → matching free → exit | `examples/phase23/file_byte.lang`, `examples/phase23/adapter.c`, `internal/compiler/cgen/cgen_program.go`, `internal/compiler/native/phase23_observer_test.go`, `scripts/verify-phase23.sh`; focused script passes on macOS and a local Linux ARM64 container after `c50430d` |
 | Lang-to-Lang calls | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.lang`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
@@ -45,19 +48,23 @@ The available compiler is not a general application runtime yet.
 |---|---|---|
 | General caller input and IO | The app route currently accepts one bounded U64 token; it does not provide general file, byte-string, or network IO | `cmd/lang/main.go:runApplicationRun`, Phase 22 CLI tests |
 | Legacy differential run route | `lang run --engine=native` remains a conformance harness with synthesized inputs and O0/O3 comparison; effectful application code must use `lang app run` | `session.go:runNative`, `cmd/lang/main.go` |
-| Lang foreign operations and pointer parameters | Local C can be declared and linked, but Lang foreign-call and both by-pointer families remain structurally refused by the sole emitter | `cgen_program.go:emitProgram`, `TestPhase22AppVerifyRejectsOrdinaryForeignScriptsAndLocalC`, Phase 22 verification |
+| Lang foreign operations and pointer parameters | Phase 23 admits only its exact acquire/use/release operation contracts; other foreign-call shapes and both shared/exclusive by-pointer families remain structurally refused | `cgen_program.go:emitProgram`, `TestPhase23OperationContract`, Phase 23 source/emitter refusal tests |
 | Host build closure | Known source/header/compiler/target inputs are identity-bound, but the SDK/linker/runtime closure is incomplete; app artifacts are not cacheable | `native/bindings.go`, `examples/phase22/BINDINGS.md`, Phase 22 build receipts |
-| Lang-owned physical cleanup | The old C resource shim allocates and frees before returning a byte; current tracking cannot establish a live resource crossing Lang calls | `native/lang_foreign_resource.c`, M004 architecture research |
+| Lang-owned physical cleanup | A local owner now stays live through use and is physically released before function exit; ownership transfer across calls, typed errors, and general cleanup remain unadmitted. The C adapter owns file descriptors and frees partial buffers on acquisition failures | `examples/phase23/adapter.c`, `internal/compiler/native/native_app_test.go`, `native/phase23_observer_test.go`; Phase 24 owns transfer and error cleanup |
 | Arithmetic/comparison and scalar iteration | Cannot add, compute remainder, loop, or write FizzBuzz | syntax/core operation inventory; `pathoracle` rejects CFG cycles |
 | General strings, arrays, collections, usable library modules | Ordinary JSON/HTTP libraries are not yet writable | current syntax/checker frontier; design wiki is prospective |
 | Recursion and broader resource control | Call cycles, nonlocal exits, cancellation, general fallible cleanup and escaped pointers require further contracts | callgraph and current foreign refusal boundaries |
 
-There is no currently admitted public foreign-C hello-world path. Phase 22 can
-compile/link declared local C, but the identity program does not call it; a
-named foreign declaration or historical standalone C probe is not native
-source admission. Phase 22 completed application execution/evidence separation.
-Phase 23 must now prove that an allocation returned live from C is owned, used,
-and physically discharged by Lang.
+Phase 23 adds the first public foreign-C file-byte path. Its three exact
+operation contracts acquire a byte allocation from a file, keep the local
+owner live through use, and discharge it before returning. An independent
+observer witnesses physical allocation, use, the matching free, and no
+outstanding pointer; reached negative controls reject omitted, premature,
+duplicate, and wrong-resource destruction. Acquisition tests include partial
+allocation and injected close failures. The focused macOS and local Linux
+container receipts passed after the close-failure fix; the configured hosted
+Ubuntu CI receipt is still pending. Transfer through calls, typed errors, and
+shared/exclusive pointer families remain separate successors.
 
 `examples/checksum.lang` is a refused integration target with provisional syntax.
 Its Phase 20 test pins the `loop` refusal; moving that diagnostic does not by
@@ -90,14 +97,14 @@ Machine check: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/com
 
 ## Next useful thresholds
 
-1. **Phase 23 — live file-byte allocation:** the `0x41`/`0x42` file consumer
-   must hold a bounded malloc-backed value after acquisition, use it through
-   Lang, and prove generated destruction with an observer independent of
-   compiler events. Blockers are the refused foreign call, missing acquisition-
-   derived obligation, and absent physical destructor witness. Trigger changes
-   in `check`, `corevalidate`, `originvalidate`, `pathoracle`, `interp`, and
-   `cgen`; cover FFI-03, RES-04/07/08/09 and the Phase 23 EVD-09 slice. Owner:
-   Phase 23; its 2026-09-27 research resolution fixes source spellings, the C17 ABI, and the negative-control design for execution, without claiming the capability is implemented.
+1. **Phase 23 closeout — hosted Linux receipt:** the implementation and focused
+   script already pass on macOS and a local Linux ARM64 container; the configured
+   Ubuntu `evidence-aggregate` job has not produced a hosted receipt because this
+   checkout has no Git remote. No checker changes or human UAT are needed. The
+   evidence covers FFI-03, RES-04/07/08/09 and EVD-09, including physical cleanup
+   and negative controls. Owner/action: once the repository remote is available,
+   run the existing CI job at `c50430d` or later and refresh the verifier report.
+   Reprioritize only if hosted Linux exposes a failure not reproduced locally.
 2. **Phase 24 — transfer and typed errors:** pass that live owner through a
    helper, then prove exactly-once cleanup on normal and actual post-acquisition
    error paths. Blockers are activation-specific resource identity and

@@ -34,6 +34,20 @@ Define acceptance checks while planning, then choose the lowest reachable eviden
 
 This preference does not waive mandatory workflow gates, required user authorization, or acceptance decisions explicitly designated as human-only. Future phase plans must name the concrete verification commands that prove their acceptance criteria and arrange for high-value recurring checks to run in existing CI.
 
+When an automated verification report becomes stale, preserve completed UAT and
+refresh the report from current source and automated evidence instead of
+replaying user checkpoints. If the phase is already marked complete and
+`$gsd-execute-phase` therefore no-ops, dispatch the GSD verifier directly; then
+re-query `init.progress` and update the handoff. Keep hosted CI receipts distinct
+from local or container runs, and reserve human UAT for criteria that remain
+subjective, external, or user-authority decisions after automation.
+
+When a verifier reports only a required hosted CI receipt that cannot be run
+because this checkout has no remote or runner access, treat it as an external
+blocker: do not create an implementation gap plan or human UAT. Record the
+existing CI job as the next action, keep the phase incomplete, and resume its
+verifier after the receipt arrives without replaying completed plans.
+
 ## Current State
 
 **M004 opened 2026-09-27.** Phase 21 is completed, archived contract/retirement
@@ -45,10 +59,20 @@ outcomes. Evidence capture and explicit replay use separate routes. The older
 `lang run` remains a synthetic-input conformance harness with optimization-tier
 replay. Phase 22 linked local C but did not admit Lang foreign calls or live
 foreign ownership; all three foreign/by-pointer families remain refused. Its
-macOS receipt reports incomplete dependency closure and `cacheable: false`, and
-no Linux result is claimed. The refreshed verifier confirms 17/17 truths and
-the objective README contract UAT passes. Subjective readability is not
-claimed. Phase 23 is next for a real Lang-owned allocation.
+macOS receipt reports incomplete dependency closure and `cacheable: false`.
+The refreshed 2026-09-28 verifier confirms 5/5 roadmap truths and the completed
+objective README contract UAT remains unchanged. Subjective readability is not
+claimed.
+
+Phase 23 now admits a bounded file-byte allocation that stays live through
+Lang-directed use and generated local cleanup. Its focused script passes on
+macOS and in a local Linux ARM64 container; the full Go suite passes on macOS.
+Security review covers 18/18 declared threats, and code review is clean. The
+configured hosted Ubuntu CI receipt remains pending, and Phase 23 stays in
+progress with its required CI evidence outstanding. No Git remote is configured
+in this checkout, so the hosted job could not be run here. Phase 24 owns
+transfer and typed-error cleanup; Phase 25 owns the bounded shared/exclusive
+pointer families.
 The following shipped records describe evidence at their recorded revisions.
 
 **Shipped M002 — Interprocedural Semantic Spine (2026-09-14).** Phases 07-13,
