@@ -226,6 +226,7 @@ func TestCIWorkflowRunsCurrentAggregateGate(t *testing.T) {
 		"checks:",
 		"evidence-aggregate:",
 		"current evidence aggregate",
+		"sh scripts/verify-phase23.sh",
 		"sh scripts/verify-phase6.sh",
 		"ubuntu-latest",
 		"macos-latest",
@@ -233,6 +234,9 @@ func TestCIWorkflowRunsCurrentAggregateGate(t *testing.T) {
 		if !strings.Contains(text, required) {
 			t.Fatalf(".github/workflows/ci.yml is missing current aggregate requirement %q", required)
 		}
+	}
+	if count := strings.Count(text, "sh scripts/verify-phase23.sh"); count != 1 {
+		t.Fatalf(".github/workflows/ci.yml invokes the focused Phase 23 aggregate %d times in its host matrix, want one shared step", count)
 	}
 
 	for _, required := range []struct {

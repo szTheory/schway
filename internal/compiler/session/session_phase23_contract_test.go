@@ -198,6 +198,45 @@ func TestPhase23ReadmeExpectedAnswersAreIndependentConstants(t *testing.T) {
 	}
 }
 
+func TestPhase23VerifierScriptContract(t *testing.T) {
+	path := testsupport.ProjectPath("scripts", "verify-phase23.sh")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, required := range []string{
+		"for tool in go clang git uname date mktemp rm cat grep sed",
+		"clang -dumpmachine",
+		"host identity is incomplete",
+		"status=incomplete",
+		"status=pass",
+		"grep -Fq -- '--- SKIP:'",
+		"testing: warning: no tests to run",
+		"run_phase23_tests source-admission",
+		"run_phase23_tests independent-peers",
+		"run_phase23_tests model-only",
+		"run_phase23_tests native-observer",
+		"run_phase23_tests public-contract",
+	} {
+		if !strings.Contains(text, required) {
+			t.Errorf("focused Phase 23 verifier is missing fail-closed contract %q", required)
+		}
+	}
+	for _, duplicateLane := range []string{
+		"go test ./...",
+		"go test -race",
+		"go vet ./...",
+		"ASAN_OPTIONS=",
+		"UBSAN_OPTIONS=",
+		"scripts/verify-phase6.sh",
+	} {
+		if strings.Contains(text, duplicateLane) {
+			t.Errorf("focused Phase 23 verifier duplicates an existing full or sanitizer lane: %q", duplicateLane)
+		}
+	}
+}
+
 func decodePhase23Contract(data []byte) (phase23DischargeContract, error) {
 	var contract phase23DischargeContract
 	decoder := json.NewDecoder(bytes.NewReader(data))
