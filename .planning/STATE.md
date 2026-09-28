@@ -5,16 +5,16 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
 status: executing
-stopped_at: Completed Phase 23 Wave 2; next runnable plan is 23-06
-last_updated: "2026-09-28T09:14:43.685Z"
+stopped_at: Completed 23-06-PLAN.md; next execute 23-07
+last_updated: "2026-09-28T12:26:05.853Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 23 execution started
-state_head: 7de2ff49060b44331a623c4a9579e2a603ae2dcc
+state_head: 6c3cdeb026014a93e8f51b3a0ee493768482a51a
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
   percent: 25
 ---
 
@@ -82,7 +82,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-09-27 — Phase 23 execution started
 
@@ -386,6 +386,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | Phase 23 P23-03 | 13min | 2 tasks | 5 files |
 | Phase 23 P23-04 | 76min | 2 tasks | 6 files |
 | Phase 23 P23-05 | 209min | 2 tasks | 6 files |
+| Phase 23 P23-06 | 3h | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -582,6 +583,9 @@ Standing architectural commitments carried into M002:
 - [Phase 23]: Supply deterministic outcomes per checked foreign operation and never treat model results as host IO. — Semantic model receipts must remain separate from native file access and physical cleanup evidence.
 - [Phase 23]: Keep release local and consuming, borrow obligation-preserving, and transfer contract-only until Phase 24. — The current implementation proves local discharge without prematurely admitting ownership transfer.
 - [Phase 23]: Preserve the archived Phase 21 contract and leave shared requirements pending until every phase plan passes. — New evidence belongs in a successor artifact, and shared IDs are phase-level until their remaining plans finish.
+- [Phase 23]: Keep physical pointer lifetime receipts separate from compiler semantic events. — Semantic events describe language execution and cannot prove actual allocation identity or cleanup.
+- [Phase 23]: Emit the checked function.returned semantic event for the specialized local-owner body. — The application evidence decoder requires a valid schema-2 execution event, while physical resource claims remain independently witnessed by the native observer.
+- [Phase 23]: Route only PathToken/FileByteOwner facts through the narrow local-owner emitter. — Unrelated foreign operations retain their existing refusal behavior and evidence paths.
 
 ### Pending Todos
 
@@ -764,8 +768,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-28T09:14:43.510Z
-Stopped at: Completed Phase 23 Wave 2; next runnable plan is 23-06
+Last session: 2026-09-28T12:26:05.829Z
+Stopped at: Completed 23-06-PLAN.md; next execute 23-07
 Resume file: None
 Next command: $gsd-discuss-phase 23 --auto
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
