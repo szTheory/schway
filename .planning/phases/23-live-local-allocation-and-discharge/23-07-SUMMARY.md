@@ -164,6 +164,17 @@ Each task was committed atomically:
 
 None.
 
+## Cleanup Scope Warnings
+
+The worktree merge reported these six files outside the plan's declared file list. Each was needed to close an observed integrity or documentation dependency:
+
+- `.planning/LANGUAGE-MATURITY.md` — refreshed the source-derived program and guard census required by the project's living-document workflow.
+- `.planning/REQUIREMENTS.md` — marked FFI-03, RES-04, RES-07, RES-08, and RES-09 complete after their verification records passed.
+- `internal/compiler/native/native_app_test.go` — added the source witness to an existing Clang-dependent test skip so the repository's suppression-witness check passes.
+- `internal/compiler/session/session_phase6_test.go` — extended the CI workflow contract to pin the new aggregate step.
+- `internal/compiler/session/verification_groundedness_test.go` — pinned the seven Phase 23 validation commands to their groundedness owner.
+- `testdata/phase16/public-emitter-consumers.json` — refreshed two emitter source locators that moved as Phase 23 tests were added.
+
 ## Next Phase Readiness
 
 Plan 23-07 implementation and local verification are complete. Phase 23 host validation remains in progress until the existing Linux CI lane produces a passing focused receipt; do not treat the macOS receipt or workflow wiring as Linux evidence.
