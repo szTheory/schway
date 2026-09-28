@@ -59,6 +59,171 @@ func checkedCallBasicProgram(t *testing.T) core.Program {
 	return validated.Program()
 }
 
+type phase23ModelOutcome struct {
+	kind  string
+	type_ string
+	value string
+}
+
+func checkedPhase23FileByteProgram(t *testing.T) core.Program {
+	t.Helper()
+	path := filepath.Join(interpProjectRoot(), "examples", "phase23", "file_byte.lang")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) > 0 {
+		t.Fatalf("parse: unexpected diagnostics: %v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) > 0 {
+		t.Fatalf("check: unexpected diagnostics: %v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("corevalidate rejected: %v", validated.Problems)
+	}
+	return validated.Program()
+}
+
+func phase23OutcomesForByte(t *testing.T, program core.Program, byteValue uint64) map[string]phase23ModelOutcome {
+	t.Helper()
+	if len(program.Functions) != 1 || program.Functions[0].Linear == nil {
+		t.Fatalf("expected one linear file-byte function, got %+v", program.Functions)
+	}
+	outcomes := make(map[string]phase23ModelOutcome)
+	for _, operation := range program.Functions[0].Linear.Operations {
+		if operation.Foreign == nil {
+			continue
+		}
+		switch operation.Foreign.Mode {
+		case "acquire":
+			outcomes[operation.ID] = phase23ModelOutcome{kind: "success", type_: "FileByteOwner", value: fmt.Sprint(byteValue)}
+		case "borrow":
+			outcomes[operation.ID] = phase23ModelOutcome{kind: "success", type_: "U64", value: fmt.Sprint(byteValue)}
+		}
+	}
+	if len(outcomes) != 2 {
+		t.Fatalf("expected distinct acquire and borrow outcomes keyed by operation, got %+v", outcomes)
+	}
+	return outcomes
+}
+
+func runPhase23Model(program core.Program, input string, outcomes map[string]phase23ModelOutcome) (ModelResult, error) {
+	modeled := make(map[string]ForeignOutcome, len(outcomes))
+	for operationID, outcome := range outcomes {
+		modeled[operationID] = ForeignOutcome{Kind: outcome.kind, Type: outcome.type_, Value: outcome.value}
+	}
+	return RunWithForeignOutcomes(program, "main", input, modeled)
+}
+
+func TestPhase23ModelByteOutcomesAreDeterministicAndReleaseLocally(t *testing.T) {
+	program := checkedPhase23FileByteProgram(t)
+	for _, test := range []struct {
+		name      string
+		byteValue uint64
+		want      string
+	}{
+		{name: "0x41", byteValue: 65, want: "65"},
+		{name: "0x42", byteValue: 66, want: "66"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := runPhase23Model(program, "model-only-path-token", phase23OutcomesForByte(t, program, test.byteValue))
+			if err != nil {
+				t.Fatalf("model execution failed: %v", err)
+			}
+			if result.Execution.Outcome.Kind != "returned" || result.Execution.Outcome.Value != test.want {
+				t.Fatalf("modeled outcome = %+v, want returned:%s", result.Execution.Outcome, test.want)
+			}
+			if len(result.Execution.LiveResources) != 0 {
+				t.Fatalf("model left local obligations live: %v", result.Execution.LiveResources)
+			}
+			releaseEvents := 0
+			for _, event := range result.Execution.Events {
+				if event.Kind == "resource.released" {
+					releaseEvents++
+				}
+			}
+			if releaseEvents != 1 {
+				t.Fatalf("modeled local release events = %d, want exactly one", releaseEvents)
+			}
+			if result.EvidenceScope != EvidenceScopeModelOnly || result.ActualHostIO || result.PhysicalCleanup {
+				t.Fatalf("model result overstates its evidence scope: %+v", result)
+			}
+		})
+	}
+}
+
+func phase23AcquireFailureOutcome(t *testing.T, program core.Program) map[string]phase23ModelOutcome {
+	t.Helper()
+	for _, operation := range program.Functions[0].Linear.Operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			return map[string]phase23ModelOutcome{operation.ID: {kind: "failure", type_: "AcquireError", value: "AcquireFailed"}}
+		}
+	}
+	t.Fatal("checked file-byte entry has no acquire operation")
+	return nil
+}
+
+func phase23UseFailureOutcomes(t *testing.T, program core.Program) map[string]phase23ModelOutcome {
+	t.Helper()
+	outcomes := phase23OutcomesForByte(t, program, 67)
+	for _, operation := range program.Functions[0].Linear.Operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+			outcomes[operation.ID] = phase23ModelOutcome{kind: "failure", type_: "UseError", value: "UnsupportedByte"}
+			return outcomes
+		}
+	}
+	t.Fatal("checked file-byte entry has no borrowed use operation")
+	return nil
+}
+
+func TestPhase23ModelAcquireFailureCreatesNoOwner(t *testing.T) {
+	program := checkedPhase23FileByteProgram(t)
+	result, err := runPhase23Model(program, "model-only-path-token", phase23AcquireFailureOutcome(t, program))
+	if err != nil {
+		t.Fatalf("modeled acquisition failure: %v", err)
+	}
+	if result.Execution.Outcome.Kind != execution.OutcomeTypedFailure || result.Execution.Outcome.Value != "AcquireFailed" {
+		t.Fatalf("modeled acquisition failure = %+v", result.Execution.Outcome)
+	}
+	if len(result.Execution.LiveResources) != 0 {
+		t.Fatalf("failed acquisition minted a live owner: %v", result.Execution.LiveResources)
+	}
+	for _, event := range result.Execution.Events {
+		if event.Kind == "resource.released" {
+			t.Fatalf("failed acquisition must not release a nonexistent owner: %+v", event)
+		}
+	}
+}
+
+func TestPhase23ModelUseFailureKeepsOwnerLiveUntilRelease(t *testing.T) {
+	program := checkedPhase23FileByteProgram(t)
+	result, err := runPhase23Model(program, "model-only-path-token", phase23UseFailureOutcomes(t, program))
+	if err != nil {
+		t.Fatalf("modeled borrowed-use failure: %v", err)
+	}
+	if result.Execution.Outcome.Kind != execution.OutcomeTypedFailure || result.Execution.Outcome.Value != "UnsupportedByte" {
+		t.Fatalf("modeled use failure = %+v", result.Execution.Outcome)
+	}
+	if len(result.Execution.LiveResources) != 0 {
+		t.Fatalf("modeled failure path left a local owner live: %v", result.Execution.LiveResources)
+	}
+	failedAt, releasedAt := -1, -1
+	for index, event := range result.Execution.Events {
+		if event.Kind == "foreign.failed" {
+			failedAt = index
+		}
+		if event.Kind == "resource.released" {
+			releasedAt = index
+		}
+	}
+	if failedAt < 0 || releasedAt <= failedAt {
+		t.Fatalf("modeled error must retain the acquired owner until local release: %+v", result.Execution.Events)
+	}
+}
+
 // moveAsCopyProbeProgram hand-builds a minimal two-function core.Program
 // (never fed through the parser) whose caller re-reads its OWN call
 // argument place immediately after the call. No LEGAL Lang source can

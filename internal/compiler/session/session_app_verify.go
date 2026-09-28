@@ -34,6 +34,8 @@ const (
 	ReplayStatusPass         = "pass"
 	ReplayStatusFail         = "fail"
 	ReplayStatusUnsupported  = "unsupported"
+	ReplayEvidenceSource     = "source_replay_conformance"
+	ReplayEvidenceModel      = "verifier_model_only"
 	verifierModelOperation   = "fixture.value"
 	verifierModelOutcomeType = "U64"
 )
@@ -76,6 +78,7 @@ type ReplayCaseReport struct {
 	Expected        ReplayExpected                 `json:"expected"`
 	Engines         map[string]execution.Execution `json:"engines,omitempty"`
 	ModeledOutcome  *ReplayForeignOutcome          `json:"modeled_outcome,omitempty"`
+	EvidenceScope   string                         `json:"evidence_scope"`
 	Diagnostic      string                         `json:"diagnostic,omitempty"`
 	ActualHostIO    bool                           `json:"actual_host_io"`
 	PhysicalCleanup bool                           `json:"physical_cleanup"`
@@ -227,8 +230,10 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 		caseReport := ReplayCaseReport{
 			ID: replayCase.ID, Kind: replayCase.Kind, Status: ReplayStatusFail,
 			Expected: replayCase.Expected, ActualHostIO: false, PhysicalCleanup: false,
+			EvidenceScope: ReplayEvidenceSource,
 		}
 		if replayCase.Kind == ReplayCaseVerifierModel {
+			caseReport.EvidenceScope = ReplayEvidenceModel
 			caseReport = verifyVerifierModelCase(caseReport, replayCase)
 			report.Cases = append(report.Cases, caseReport)
 			continue
