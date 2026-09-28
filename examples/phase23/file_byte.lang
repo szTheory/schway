@@ -1,0 +1,38 @@
+module phase23.file_byte
+
+export {
+  fn main
+}
+
+foreign C {
+  fn lang_file_byte_acquire(path: PathToken) -> FileByteOwner {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    release: "lang_file_byte_release"
+    fails: AcquireError
+  }
+
+  fn lang_file_byte_use(owner: FileByteOwner) -> U64 {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    fails: UseError
+  }
+
+  fn lang_file_byte_release(owner: FileByteOwner) -> U64 {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+  }
+}
+
+data AcquireError =
+  | AcquireFailed
+
+data UseError =
+  | UnsupportedByte
+
+fn main(path: PathToken) -> U64 {
+  let owner = try lang_file_byte_acquire(path)
+  let value = try lang_file_byte_use(owner)
+  value
+}

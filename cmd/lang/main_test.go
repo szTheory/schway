@@ -116,6 +116,35 @@ func TestPhase22IdentityApplicationBuildAndRunCLI(t *testing.T) {
 	}
 }
 
+func TestPhase23PublicFileByte(t *testing.T) {
+	source := testsupport.ProjectPath("examples", "phase23", "file_byte.lang")
+	manifest := testsupport.ProjectPath("examples", "phase23", "file_byte.bindings.json")
+	artifact := filepath.Join(t.TempDir(), "file-byte")
+	code, stdout, stderr := captureLangRun(t, []string{"build", source, "--manifest", manifest, "--output", artifact})
+	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
+		t.Fatalf("build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	input := filepath.Join(t.TempDir(), "byte.bin")
+	if err := os.WriteFile(input, []byte{0x41}, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", artifact, "--", input})
+	if code != 0 || stdout != "65\n" || stderr != "" {
+		t.Fatalf("app run code=%d stdout=%q stderr=%q, want 65", code, stdout, stderr)
+	}
+
+	identity := testsupport.ProjectPath("examples", "phase22", "identity.lang")
+	identityArtifact := filepath.Join(t.TempDir(), "identity")
+	code, stdout, stderr = captureLangRun(t, []string{"build", identity, "--output", identityArtifact})
+	if code != 0 || stdout != "built "+identityArtifact+"\n" || stderr != "" {
+		t.Fatalf("Phase 22 build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", identityArtifact, "--", "7"})
+	if code != 0 || stdout != "7\n" || stderr != "" {
+		t.Fatalf("Phase 22 run code=%d stdout=%q stderr=%q, want 7", code, stdout, stderr)
+	}
+}
+
 func TestPhase22READMEContract(t *testing.T) {
 	readme, err := os.ReadFile(testsupport.ProjectPath("examples", "phase22", "README.md"))
 	if err != nil {

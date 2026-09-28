@@ -1,0 +1,12 @@
+{
+  "schema": "lang.local-c/1",
+  "sources": ["adapter.c"],
+  "headers": ["adapter.h"],
+  "include_dirs": ["."],
+  "symbols": [
+    {"name": "lang_file_byte_acquire", "header": "adapter.h", "function_type": "lang_file_byte_acquire_fn"},
+    {"name": "lang_file_byte_use", "header": "adapter.h", "function_type": "lang_file_byte_use_fn"},
+    {"name": "lang_file_byte_release", "header": "adapter.h", "function_type": "lang_file_byte_release_fn"}
+  ],
+  "runtime_dependencies": ["platform-c-runtime"]
+}
