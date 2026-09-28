@@ -18,9 +18,11 @@ import (
 
 	"github.com/codename-lang/lang/internal/compiler/core"
 	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/codename-lang/lang/internal/compiler/check"
 	"github.com/codename-lang/lang/internal/compiler/originvalidate"
 	"github.com/codename-lang/lang/internal/compiler/protocol"
 	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
 	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
 
@@ -117,6 +119,46 @@ const maxGoListDepsOutputBytes = 1 << 20 // 1 MiB: far more than any real depend
 // goListDepsTimeout bounds the spawn itself, satisfying the lint's
 // exec.CommandContext requirement.
 const goListDepsTimeout = 2 * time.Minute
+
+func phase23LocalOwnerProgram(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("Phase 23 source failed to parse: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("Phase 23 source failed checking: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+func removePhase23Releases(program *core.Program) {
+	function := &program.Functions[0]
+	operations := function.Linear.Operations[:0]
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpRelease {
+			operations = append(operations, operation)
+		}
+	}
+	function.Linear.Operations = operations
+}
+
+func TestPhase23OriginPeerTracksAcquiredOwnerThroughBorrowedUse(t *testing.T) {
+	program := phase23LocalOwnerProgram(t)
+	if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
+		t.Fatalf("valid acquire/use/release core rejected: %+v", problems)
+	}
+
+	removePhase23Releases(&program)
+	if problems := originvalidate.ValidatePublished(program); len(problems) == 0 {
+		t.Fatal("originvalidate accepted successful acquisition after every release was removed")
+	}
+}
 
 // boundedGoListWriter caps the bytes captured from `go list -deps`,
 // mirroring testsupport's own boundedWriter shape without depending on its

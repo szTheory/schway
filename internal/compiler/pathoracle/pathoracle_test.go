@@ -80,6 +80,42 @@ func checkedFunction(t *testing.T, fixture string) core.Function {
 	return result.Program.Functions[0]
 }
 
+func phase23LocalOwnerProgram(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("Phase 23 source failed to parse: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("Phase 23 source failed checking: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+func TestPhase23PathOracleSeedsObligationFromAcquire(t *testing.T) {
+	program := phase23LocalOwnerProgram(t)
+	if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {
+		t.Fatalf("valid acquire/use/release core rejected: %v", err)
+	}
+
+	function := &program.Functions[0]
+	operations := function.Linear.Operations[:0]
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpRelease {
+			operations = append(operations, operation)
+		}
+	}
+	function.Linear.Operations = operations
+	if err := pathoracle.ValidateLocalOwnerPaths(program); err == nil {
+		t.Fatal("pathoracle accepted successful acquisition after every release was removed")
+	}
+}
+
 func TestPhase19ConstantPathRoots(t *testing.T) {
 	source := []byte("module phase19.constant_path\nexport {\n  type Choice\n  fn select\n}\ndata Choice =\n  | Left\n  | Right\nfn select(input: Choice) -> Choice {\n  let view = borrow input\n  let prefix = 42\n  let computed = input\n  match computed {\n    Left => {\n      let arm = 7\n      computed\n    }\n    Right => {\n      computed\n    }\n  }\n}\n")
 	parsed := syntax.Parse(source)
