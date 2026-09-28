@@ -121,7 +121,7 @@ status: complete
 3. **The test subprocess helper exceeded the bounded-output policy.** Replaced three `CombinedOutput` calls in the acquisition-fault harness with separate bounded stdout/stderr writers.
 4. **The core field inventory had not recorded the already-added `Foreign` field.** Updated its explicit expected set so the full suite checks the current structure.
 
-These fixes were needed to keep Phase 23's public evidence valid and preserve existing compiler contracts. The core inventory adjustment is outside the plan's declared file list and will be reported by GSD cleanup as a scope warning.
+These fixes were needed to keep Phase 23's public evidence valid and preserve existing compiler contracts. On 2026-09-28, GSD cleanup reported `scope_out_of_declared` for `internal/compiler/core/core_convention_absence_test.go`; that exact-field expectation update was needed because the repository-wide run caught the already-added `Foreign` field.
 
 ## Issues Encountered
 
