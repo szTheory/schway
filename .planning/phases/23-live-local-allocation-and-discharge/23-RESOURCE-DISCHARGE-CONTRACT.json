@@ -1,0 +1,105 @@
+{
+  "schema": "codename.lang.resource-discharge-contract.v2",
+  "contract_only": true,
+  "production_admission": false,
+  "claims": {
+    "failed_or_partial_acquisition_mints_owner": false,
+    "use_error_cleanup_precedes_ordinary_error_reporting": true,
+    "structural_validation_proves_runtime_cleanup": false,
+    "interpreter_model_proves_host_io": false,
+    "interpreter_model_proves_physical_cleanup": false,
+    "model_and_native_receipts_are_distinct": true,
+    "transfer_implemented_in_phase_23": false
+  },
+  "transitions": [
+    {
+      "id": "release",
+      "effect": "consumes_one_local_obligation",
+      "infallible": true,
+      "phase_23_execution": "runnable_local_release",
+      "evidence_scope": "native_observer_required_for_physical_cleanup"
+    },
+    {
+      "id": "borrow",
+      "effect": "preserves_same_owners_obligation",
+      "infallible": false,
+      "phase_23_execution": "runnable_borrowed_use",
+      "evidence_scope": "native_observer_required_for_physical_use"
+    },
+    {
+      "id": "transfer",
+      "effect": "preserves_live_resource_under_new_owner",
+      "infallible": false,
+      "phase_23_execution": "contract_only",
+      "target_phase": 24,
+      "evidence_scope": "future_phase_native_observer"
+    }
+  ],
+  "acquisition": {
+    "successful_acquire": "creates_one_noncopyable_local_owner",
+    "failed_or_partial_acquire": "creates_no_owner",
+    "partial_allocation_cleanup": "adapter_before_failure_return"
+  },
+  "error_path": {
+    "use_error": "ordinary_typed_failure",
+    "required_order": [
+      "keep_owner_live",
+      "run_infallible_local_release",
+      "report_ordinary_error"
+    ]
+  },
+  "evidence_scopes": {
+    "structural_validation": {
+      "scope": "checked_core_structure",
+      "proves_runtime_cleanup": false
+    },
+    "interpreter_model": {
+      "scope": "deterministic_supplied_operation_outcomes",
+      "proves_host_io": false,
+      "proves_physical_cleanup": false
+    },
+    "native_receipt": {
+      "scope": "independent_native_observer",
+      "required_for_physical_io_and_cleanup_claims": true
+    }
+  },
+  "exits": [
+    {
+      "id": "normal_return",
+      "disposition": "supported",
+      "discharge_rule": "Consume every successful local acquisition before returning the ordinary result.",
+      "future_evidence": "A native observer must establish acquisition, use, and destruction before successful exit."
+    },
+    {
+      "id": "error_return",
+      "disposition": "supported",
+      "discharge_rule": "Release each still-live local owner before reporting the ordinary typed use failure.",
+      "future_evidence": "A native observer must establish cleanup and the observed error result together."
+    },
+    {
+      "id": "supported_unwind",
+      "disposition": "refused",
+      "reason": "No Lang unwind semantics or ABI-specific cleanup proof is admitted by this contract."
+    },
+    {
+      "id": "nonlocal_transfer",
+      "disposition": "refused",
+      "reason": "Opaque nonlocal control transfer cannot establish that local obligations are discharged."
+    },
+    {
+      "id": "defect",
+      "disposition": "outside_cleanup_guarantee",
+      "reason": "Defects terminate the ordinary cleanup guarantee; this classification does not define recovery semantics."
+    },
+    {
+      "id": "cancellation",
+      "disposition": "refused",
+      "reason": "Cancellation is not currently modeled with a checked cleanup protocol."
+    },
+    {
+      "id": "process_termination",
+      "disposition": "outside_cleanup_guarantee",
+      "reason": "Process termination cannot promise language-level discharge of live resources."
+    }
+  ]
+}
