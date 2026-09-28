@@ -115,7 +115,13 @@ status: complete
 - **Verification:** Both focused Phase 23 test commands passed.
 - **Committed in:** `7e3ddf2`
 
-**Total deviations:** 1 auto-fixed (Rule 2 - Missing Critical). **Impact:** Required to satisfy the plan’s invalid-token admission guarantee; no scope expansion.
+**2. GSD worktree scope warning — declared inventory omitted three actual files**
+- **Found during:** Wave 2 `worktree.cleanup-wave` reconciliation.
+- **Issue:** The plan’s `files_modified` list omitted `internal/compiler/native/native_app.go`, `cmd/lang/main.go`, and this dated update to `23-RESEARCH.md`.
+- **Disposition:** The two Go files implement the plan’s required pre-launch path-token rejection; the research update records the observed failure-injection and input-boundary evidence. No new behavior beyond the plan’s acceptance criteria was introduced.
+- **Reported by:** GSD cleanup as `scope_out_of_declared` for all three paths; merge succeeded.
+
+**Total deviations:** 1 auto-fixed (Rule 2 - Missing Critical) and 1 plan-inventory correction. **Impact:** Behavioral scope is unchanged; the actual file scope exceeded the declared inventory for the paths listed above.
 
 ## Issues Encountered
 
