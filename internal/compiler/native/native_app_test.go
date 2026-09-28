@@ -168,7 +168,8 @@ enum {
   SC_READ_PROBE_FAILED = 8,
   SC_CLOSE_FAILED = 9,
   SC_RETRY_EINTR = 10,
-  SC_SUCCESS = 11
+  SC_SUCCESS = 11,
+  SC_EMPTY_CLOSE_FAILED = 12
 };
 
 static int scenario;
@@ -218,7 +219,7 @@ void phase23_test_free(void *pointer) {
 ssize_t phase23_test_read(int descriptor, void *buffer, size_t count) {
   int call = read_calls++;
   if (descriptor != 77 || count != 1u) return -1;
-  if (scenario == SC_EMPTY) return 0;
+  if (scenario == SC_EMPTY || scenario == SC_EMPTY_CLOSE_FAILED) return 0;
   if (scenario == SC_READ_FAILED && call == 0) {
     errno = EIO;
     return -1;
@@ -245,7 +246,7 @@ ssize_t phase23_test_read(int descriptor, void *buffer, size_t count) {
 int phase23_test_close(int descriptor) {
   close_calls++;
   if (descriptor != 77) return -1;
-  if (scenario == SC_CLOSE_FAILED) {
+  if (scenario == SC_CLOSE_FAILED || scenario == SC_EMPTY_CLOSE_FAILED) {
     errno = EIO;
     return -1;
   }
@@ -336,6 +337,7 @@ int main(int argc, char **argv) {
     {"read", "read-failed", SC_READ_FAILED, 5, 1, 1, 1, 1, 1, 1},
     {"read-probe", "read-probe-failed", SC_READ_PROBE_FAILED, 5, 1, 1, 1, 1, 2, 1},
     {"close", "close-failed", SC_CLOSE_FAILED, 7, 1, 1, 1, 1, 2, 1},
+    {"empty-close", "empty-close-failed", SC_EMPTY_CLOSE_FAILED, 7, 1, 1, 1, 1, 1, 1},
     {"eintr-retry", "eintr-retry", SC_RETRY_EINTR, 0, 1, 1, 1, 0, 4, 1},
     {"success", "success", SC_SUCCESS, 0, 1, 1, 1, 0, 2, 1}
   };

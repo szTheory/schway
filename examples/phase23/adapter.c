@@ -67,6 +67,16 @@ static lang_file_byte_acquire_result acquire_failure(int32_t status) {
   return result;
 }
 
+static lang_file_byte_acquire_result acquire_cleanup_failure(
+    int descriptor, unsigned char *data, int32_t primary_status) {
+  int32_t status = primary_status;
+  if (data != NULL) LANG_FILE_BYTE_FREE(data);
+  if (LANG_FILE_BYTE_CLOSE(descriptor) != 0) {
+    status = LANG_FILE_BYTE_CLOSE_FAILED;
+  }
+  return acquire_failure(status);
+}
+
 lang_file_byte_acquire_result lang_file_byte_acquire(const char *path) {
   int descriptor = -1;
   int close_error = 0;
@@ -80,13 +90,11 @@ lang_file_byte_acquire_result lang_file_byte_acquire(const char *path) {
   descriptor = LANG_FILE_BYTE_OPEN(path, O_RDONLY | O_NONBLOCK);
   if (descriptor < 0) return acquire_failure(LANG_FILE_BYTE_OPEN_FAILED);
   if (LANG_FILE_BYTE_FSTAT(descriptor, &details) != 0 || !S_ISREG(details.st_mode)) {
-    (void)LANG_FILE_BYTE_CLOSE(descriptor);
-    return acquire_failure(LANG_FILE_BYTE_NOT_REGULAR);
+    return acquire_cleanup_failure(descriptor, NULL, LANG_FILE_BYTE_NOT_REGULAR);
   }
   data = (unsigned char *)LANG_FILE_BYTE_MALLOC(1u);
   if (data == NULL) {
-    (void)LANG_FILE_BYTE_CLOSE(descriptor);
-    return acquire_failure(LANG_FILE_BYTE_ALLOC_FAILED);
+    return acquire_cleanup_failure(descriptor, NULL, LANG_FILE_BYTE_ALLOC_FAILED);
   }
   while (received < 1u) {
     ssize_t amount = LANG_FILE_BYTE_READ(descriptor, data + received, 1u - received);
@@ -95,27 +103,19 @@ lang_file_byte_acquire_result lang_file_byte_acquire(const char *path) {
       continue;
     }
     if (amount == 0) {
-      LANG_FILE_BYTE_FREE(data);
-      (void)LANG_FILE_BYTE_CLOSE(descriptor);
-      return acquire_failure(LANG_FILE_BYTE_EMPTY);
+      return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_EMPTY);
     }
     if (errno == EINTR) continue;
-    LANG_FILE_BYTE_FREE(data);
-    (void)LANG_FILE_BYTE_CLOSE(descriptor);
-    return acquire_failure(LANG_FILE_BYTE_READ_FAILED);
+    return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_READ_FAILED);
   }
   for (;;) {
     ssize_t amount = LANG_FILE_BYTE_READ(descriptor, &extra, 1u);
     if (amount == 0) break;
     if (amount > 0) {
-      LANG_FILE_BYTE_FREE(data);
-      (void)LANG_FILE_BYTE_CLOSE(descriptor);
-      return acquire_failure(LANG_FILE_BYTE_TOO_LONG);
+      return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_TOO_LONG);
     }
     if (errno == EINTR) continue;
-    LANG_FILE_BYTE_FREE(data);
-    (void)LANG_FILE_BYTE_CLOSE(descriptor);
-    return acquire_failure(LANG_FILE_BYTE_READ_FAILED);
+    return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_READ_FAILED);
   }
   if (LANG_FILE_BYTE_CLOSE(descriptor) != 0) close_error = 1;
   if (close_error) {
