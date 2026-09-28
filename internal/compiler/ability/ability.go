@@ -133,7 +133,7 @@ func (d *deriver) deriveAt(shape core.TypeRef, depth int) (derivedShape, error) 
 	}
 
 	switch shape.Constructor {
-	case "Byte", "U64":
+	case "Byte", "U64", "PathToken", "Unit":
 		if len(shape.Arguments) != 0 {
 			return derivedShape{}, fmt.Errorf("%s takes no type arguments", shape.Constructor)
 		}
@@ -153,6 +153,14 @@ func (d *deriver) deriveAt(shape core.TypeRef, depth int) (derivedShape, error) 
 			witnesses: map[core.Ability][]string{
 				core.AbilityCopy: {"Buffer"},
 			},
+		}, nil
+	case "FileByteOwner":
+		if len(shape.Arguments) != 0 {
+			return derivedShape{}, fmt.Errorf("FileByteOwner takes no type arguments")
+		}
+		return derivedShape{
+			set:       abilitySet{drop: true, share: true, send: true, escape: true},
+			witnesses: map[core.Ability][]string{core.AbilityCopy: {"FileByteOwner"}},
 		}, nil
 	case "Box":
 		if len(shape.Arguments) != 1 {

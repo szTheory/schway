@@ -17,8 +17,56 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codename-lang/lang/internal/compiler/cgen"
+	"github.com/codename-lang/lang/internal/compiler/check"
+	"github.com/codename-lang/lang/internal/compiler/corevalidate"
 	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/codename-lang/lang/internal/compiler/testsupport"
 )
+
+func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("core validation problems: %+v", validated.Problems)
+	}
+	cSource, err := cgen.EmitApplication(validated.Program())
+	if err != nil {
+		t.Fatal(err)
+	}
+	useAt := strings.Index(cSource, "lang_file_byte_use(")
+	var releasePositions []int
+	for offset := 0; offset < len(cSource); {
+		next := strings.Index(cSource[offset:], "lang_file_byte_release(")
+		if next < 0 {
+			break
+		}
+		releasePositions = append(releasePositions, offset+next)
+		offset += next + len("lang_file_byte_release(")
+	}
+	if useAt < 0 || len(releasePositions) != 2 || releasePositions[1] <= useAt {
+		t.Fatalf("generated app does not call borrowed use then the successful-path destructor: use=%d release=%v", useAt, releasePositions)
+	}
+	useArgStart := useAt + len("lang_file_byte_use(")
+	useArgEnd := strings.Index(cSource[useArgStart:], ");")
+	releaseArgStart := releasePositions[1] + len("lang_file_byte_release(")
+	releaseArgEnd := strings.Index(cSource[releaseArgStart:], ");")
+	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], "status != 0) exit(65)") {
+		t.Fatal("generated cleanup does not retain the acquired owner through use and release it before a use failure exits")
+	}
+}
 
 func TestPhase22EvidenceDisabledCompleteAndStreamIsolation(t *testing.T) {
 	t.Run("disabled", func(t *testing.T) {

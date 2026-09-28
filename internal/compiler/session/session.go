@@ -1156,8 +1156,24 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
-	if entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || entry.ReturnType != "U64" {
-		return native.BuildReceipt{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64 entry is supported", entry.ID)
+	localOwnerEntry := entry.Parameter.Type == "PathToken" && hasLocalForeignOperations(program)
+	if entry.Match != nil || entry.Linear == nil || (entry.Parameter.Type != "U64" && !localOwnerEntry) || entry.ReturnType != "U64" {
+		return native.BuildReceipt{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64 or checked PathToken-to-U64 entry is supported", entry.ID)
+	}
+	if localOwnerEntry {
+		if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {
+			return native.BuildReceipt{}, nil, err
+		}
+		if len(manifestPath) != 1 {
+			return native.BuildReceipt{}, nil, errors.New("local-owner application requires one explicit binding manifest")
+		}
+		bindings, err := native.ResolveBindings(manifestPath[0])
+		if err != nil {
+			return native.BuildReceipt{}, nil, err
+		}
+		if err := validateLocalOperationBindings(program, bindings.Manifest); err != nil {
+			return native.BuildReceipt{}, nil, err
+		}
 	}
 	cSource, err := cgen.EmitApplication(program)
 	if err != nil {
@@ -1168,6 +1184,48 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 		return native.BuildReceipt{}, nil, err
 	}
 	return receipt, nil, nil
+}
+
+func hasLocalForeignOperations(program core.Program) bool {
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Foreign != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func validateLocalOperationBindings(program core.Program, manifest native.BindingManifest) error {
+	expected := map[string]string{}
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Foreign == nil {
+				continue
+			}
+			if previous, exists := expected[operation.Foreign.Symbol]; exists && previous != operation.Foreign.ABIType {
+				return fmt.Errorf("local binding %q has conflicting checked ABI types", operation.Foreign.Symbol)
+			}
+			expected[operation.Foreign.Symbol] = operation.Foreign.ABIType
+		}
+	}
+	if len(expected) == 0 || len(expected) != len(manifest.Symbols) {
+		return errors.New("local binding manifest symbols do not exactly cover checked foreign operations")
+	}
+	for _, symbol := range manifest.Symbols {
+		abiType, exists := expected[symbol.Name]
+		if !exists || abiType != symbol.FunctionType {
+			return fmt.Errorf("local binding %q does not match its checked operation ABI", symbol.Name)
+		}
+	}
+	return nil
 }
 
 func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {

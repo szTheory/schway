@@ -8,6 +8,8 @@ foreign C {
   fn lang_file_byte_acquire(path: PathToken) -> FileByteOwner {
     unwind: forbidden
     nonlocal_exit: forbidden
+    mode: "acquire"
+    abi: lang_file_byte_acquire_fn
     allocator: "libc_malloc"
     release: "lang_file_byte_release"
     fails: AcquireError
@@ -16,12 +18,17 @@ foreign C {
   fn lang_file_byte_use(owner: FileByteOwner) -> U64 {
     unwind: forbidden
     nonlocal_exit: forbidden
+    mode: "borrow"
+    abi: lang_file_byte_use_fn
     fails: UseError
   }
 
-  fn lang_file_byte_release(owner: FileByteOwner) -> U64 {
+  fn lang_file_byte_release(owner: FileByteOwner) -> Unit {
     unwind: forbidden
     nonlocal_exit: forbidden
+    mode: "consume"
+    abi: lang_file_byte_release_fn
+    allocator: "libc_malloc"
   }
 }
 

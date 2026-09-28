@@ -1213,102 +1213,112 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			}
 		}
 		if operation.Kind == core.OpForeignCall {
-			if _, ok := places[operation.ErrTargetID]; !v.check(ok, "core.unknown_place", operation.ErrTargetID) {
-				return nil, nil, false
+			if operation.Foreign != nil {
+				if !v.validateLocalForeignOperation(function, operation, types, places) {
+					return nil, nil, false
+				}
+			} else {
+				if _, ok := places[operation.ErrTargetID]; !v.check(ok, "core.unknown_place", operation.ErrTargetID) {
+					return nil, nil, false
+				}
+				if !v.check(operation.OkEdgeID != "" && operation.ErrEdgeID != "", "core.foreign_call_edges_missing", operation.ID) {
+					return nil, nil, false
+				}
+				if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
+					return nil, nil, false
+				}
+				// Phase 4 plan 12 (D-04-12/FFI-01, 04-VERIFICATION.md gap 2):
+				// check.go refuses a malformed symbol at parse-resolution time by
+				// inspecting the AST, an AST-level fact this validator never
+				// sees; this validator re-derives an equivalent refusal purely
+				// from the one flat string field core.ForeignContract itself
+				// carries. The refusal exists because cgen splices this exact
+				// string into generated C at three sites plus a header comment,
+				// so an unaudited value is arbitrary C source injection at the
+				// boundary the phase goal calls audited. Pass operation.ID, not
+				// the Symbol itself, as the detail: Problem.Detail is serialized
+				// into diagnostic JSON, and echoing an attacker-controlled
+				// string containing newlines or quotes into an output channel is
+				// the same class of defect this check exists to close.
+				if !v.check(validCIdentifier(function.ForeignContract.Symbol), "foreign.symbol_not_identifier", operation.ID) {
+					return nil, nil, false
+				}
+				// D-04-16, independently derived: check.go refuses a missing
+				// unwind/nonlocal_exit policy at admission time by inspecting
+				// ast.ForeignPolicy (never emitting a core artifact for such a
+				// symbol at all); this validator never reads that AST-level
+				// fact -- it re-derives the SAME refusal purely from the two
+				// policy string fields core.ForeignContract itself carries, so
+				// a corrupted core artifact that skipped check.go's gate is
+				// still caught here.
+				if !v.check(function.ForeignContract.Unwind != "" && function.ForeignContract.NonlocalExit != "", "foreign.unwind_policy_undeclared", operation.ID) {
+					return nil, nil, false
+				}
+				// 04-13 (04-VERIFICATION.md gap 2b, FFI-01): check.go now refuses
+				// a hostile policy value at source-admission time by inspecting
+				// ast.ForeignPolicy.Value's span-bearing AST node (Task 1), an
+				// AST-level fact this validator never sees. This validator
+				// re-derives an equivalent refusal purely from the three flat
+				// string fields core.ForeignContract itself carries, so a
+				// corrupted core artifact that skipped check.go's gate is still
+				// caught. The check immediately above is a PRESENCE claim
+				// (non-empty); this is the SHAPE claim (C-identifier), and it
+				// exists because cgen.EmitForeignHeader splices these exact three
+				// strings raw into C comments at cgen.go:1333-1335, in a unit
+				// session.go hands to native.Runner.CompileConformanceUnit for
+				// real compilation. Placed AFTER foreign.unwind_policy_undeclared
+				// so an OMITTED unwind/nonlocal_exit policy keeps reporting that
+				// existing code, and AFTER foreign.symbol_not_identifier so
+				// 04-12's audit still fires first for a hostile Symbol. Passes
+				// operation.ID, never a field value, for the same
+				// diagnostic-JSON-echo reason as every sibling check in this
+				// block.
+				if !v.check(validCIdentifier(function.ForeignContract.Allocator) && validCIdentifier(function.ForeignContract.Unwind) && validCIdentifier(function.ForeignContract.NonlocalExit), "foreign.policy_value_not_identifier", operation.ID) {
+					return nil, nil, false
+				}
+				// D-04-02, independently derived: check.go refuses a callee that
+				// resolves to a Lang function name at parse-resolution time (an
+				// AST-level, pre-core fact this validator never sees). This
+				// validator re-derives the same refusal by a materially
+				// different mechanism -- a straight name collision scan against
+				// every OTHER function this core.Program itself declares --
+				// reading only the core artifact, never check's own name table.
+				if !v.check(!isDeclaredFunctionName(v.program.Functions, function.ID, function.ForeignContract.Symbol), "core.call_target_not_foreign", operation.ID) {
+					return nil, nil, false
+				}
+				// Phase 4 plan 03 (D-04-12/FFI-01): every foreign obligation
+				// category must be present -- no default value that would let an
+				// omission pass as a declaration -- and the declared Layout must
+				// be internally consistent. This is independently derived from
+				// check's own admission gate: it reads only the four flat string
+				// fields and the Layout struct core.ForeignContract itself
+				// carries, never check's AST-level foreignSymbolInfo.
+				if !v.check(function.ForeignContract.InitializedState != "" && function.ForeignContract.Capture != "" && function.ForeignContract.Retention != "" && function.ForeignContract.Aliasing != "", "foreign.obligation_undeclared", operation.ID) {
+					return nil, nil, false
+				}
+				// 04-13 Task 3 (04-VERIFICATION.md gap 2b, FFI-01): audit every
+				// REMAINING core.ForeignContract string field cgen splices into
+				// generated C -- Fails, InitializedState, Capture, Retention,
+				// Aliasing (cgen.go:1336-1348's comment block) and, when a
+				// Layout is declared, Layout.ForeignTypeName and each
+				// Layout.Fields[].Name / .CType (spliced as REAL C tokens into
+				// EmitForeignConformance's _Static_assert operands, not merely
+				// into a comment). Placed immediately after
+				// foreign.obligation_undeclared so an OMITTED obligation keeps
+				// reporting that existing code; this is the SHAPE/safety claim
+				// for the fields the presence check above does not inspect.
+				// Passes operation.ID, never a field value, for the same
+				// diagnostic-JSON-echo reason as every sibling check in this
+				// block.
+				if !v.check(foreignContractFieldsCSafe(function.ForeignContract), "foreign.contract_field_not_c_safe", operation.ID) {
+					return nil, nil, false
+				}
+				if !v.foreignLayoutConsistent(function.ForeignContract.Layout, operation.ID) {
+					return nil, nil, false
+				}
 			}
-			if !v.check(operation.OkEdgeID != "" && operation.ErrEdgeID != "", "core.foreign_call_edges_missing", operation.ID) {
-				return nil, nil, false
-			}
-			if !v.check(function.ForeignContract != nil && function.ForeignContract.Symbol != "", "core.foreign_contract_missing", operation.ID) {
-				return nil, nil, false
-			}
-			// Phase 4 plan 12 (D-04-12/FFI-01, 04-VERIFICATION.md gap 2):
-			// check.go refuses a malformed symbol at parse-resolution time by
-			// inspecting the AST, an AST-level fact this validator never
-			// sees; this validator re-derives an equivalent refusal purely
-			// from the one flat string field core.ForeignContract itself
-			// carries. The refusal exists because cgen splices this exact
-			// string into generated C at three sites plus a header comment,
-			// so an unaudited value is arbitrary C source injection at the
-			// boundary the phase goal calls audited. Pass operation.ID, not
-			// the Symbol itself, as the detail: Problem.Detail is serialized
-			// into diagnostic JSON, and echoing an attacker-controlled
-			// string containing newlines or quotes into an output channel is
-			// the same class of defect this check exists to close.
-			if !v.check(validCIdentifier(function.ForeignContract.Symbol), "foreign.symbol_not_identifier", operation.ID) {
-				return nil, nil, false
-			}
-			// D-04-16, independently derived: check.go refuses a missing
-			// unwind/nonlocal_exit policy at admission time by inspecting
-			// ast.ForeignPolicy (never emitting a core artifact for such a
-			// symbol at all); this validator never reads that AST-level
-			// fact -- it re-derives the SAME refusal purely from the two
-			// policy string fields core.ForeignContract itself carries, so
-			// a corrupted core artifact that skipped check.go's gate is
-			// still caught here.
-			if !v.check(function.ForeignContract.Unwind != "" && function.ForeignContract.NonlocalExit != "", "foreign.unwind_policy_undeclared", operation.ID) {
-				return nil, nil, false
-			}
-			// 04-13 (04-VERIFICATION.md gap 2b, FFI-01): check.go now refuses
-			// a hostile policy value at source-admission time by inspecting
-			// ast.ForeignPolicy.Value's span-bearing AST node (Task 1), an
-			// AST-level fact this validator never sees. This validator
-			// re-derives an equivalent refusal purely from the three flat
-			// string fields core.ForeignContract itself carries, so a
-			// corrupted core artifact that skipped check.go's gate is still
-			// caught. The check immediately above is a PRESENCE claim
-			// (non-empty); this is the SHAPE claim (C-identifier), and it
-			// exists because cgen.EmitForeignHeader splices these exact three
-			// strings raw into C comments at cgen.go:1333-1335, in a unit
-			// session.go hands to native.Runner.CompileConformanceUnit for
-			// real compilation. Placed AFTER foreign.unwind_policy_undeclared
-			// so an OMITTED unwind/nonlocal_exit policy keeps reporting that
-			// existing code, and AFTER foreign.symbol_not_identifier so
-			// 04-12's audit still fires first for a hostile Symbol. Passes
-			// operation.ID, never a field value, for the same
-			// diagnostic-JSON-echo reason as every sibling check in this
-			// block.
-			if !v.check(validCIdentifier(function.ForeignContract.Allocator) && validCIdentifier(function.ForeignContract.Unwind) && validCIdentifier(function.ForeignContract.NonlocalExit), "foreign.policy_value_not_identifier", operation.ID) {
-				return nil, nil, false
-			}
-			// D-04-02, independently derived: check.go refuses a callee that
-			// resolves to a Lang function name at parse-resolution time (an
-			// AST-level, pre-core fact this validator never sees). This
-			// validator re-derives the same refusal by a materially
-			// different mechanism -- a straight name collision scan against
-			// every OTHER function this core.Program itself declares --
-			// reading only the core artifact, never check's own name table.
-			if !v.check(!isDeclaredFunctionName(v.program.Functions, function.ID, function.ForeignContract.Symbol), "core.call_target_not_foreign", operation.ID) {
-				return nil, nil, false
-			}
-			// Phase 4 plan 03 (D-04-12/FFI-01): every foreign obligation
-			// category must be present -- no default value that would let an
-			// omission pass as a declaration -- and the declared Layout must
-			// be internally consistent. This is independently derived from
-			// check's own admission gate: it reads only the four flat string
-			// fields and the Layout struct core.ForeignContract itself
-			// carries, never check's AST-level foreignSymbolInfo.
-			if !v.check(function.ForeignContract.InitializedState != "" && function.ForeignContract.Capture != "" && function.ForeignContract.Retention != "" && function.ForeignContract.Aliasing != "", "foreign.obligation_undeclared", operation.ID) {
-				return nil, nil, false
-			}
-			// 04-13 Task 3 (04-VERIFICATION.md gap 2b, FFI-01): audit every
-			// REMAINING core.ForeignContract string field cgen splices into
-			// generated C -- Fails, InitializedState, Capture, Retention,
-			// Aliasing (cgen.go:1336-1348's comment block) and, when a
-			// Layout is declared, Layout.ForeignTypeName and each
-			// Layout.Fields[].Name / .CType (spliced as REAL C tokens into
-			// EmitForeignConformance's _Static_assert operands, not merely
-			// into a comment). Placed immediately after
-			// foreign.obligation_undeclared so an OMITTED obligation keeps
-			// reporting that existing code; this is the SHAPE/safety claim
-			// for the fields the presence check above does not inspect.
-			// Passes operation.ID, never a field value, for the same
-			// diagnostic-JSON-echo reason as every sibling check in this
-			// block.
-			if !v.check(foreignContractFieldsCSafe(function.ForeignContract), "foreign.contract_field_not_c_safe", operation.ID) {
-				return nil, nil, false
-			}
-			if !v.foreignLayoutConsistent(function.ForeignContract.Layout, operation.ID) {
+		} else if operation.Foreign != nil {
+			if operation.Kind != core.OpRelease || !v.validateLocalForeignOperation(function, operation, types, places) {
 				return nil, nil, false
 			}
 		}
@@ -1333,6 +1343,113 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		}
 	}
 	return types, places, true
+}
+
+func (v *validator) validateLocalForeignOperation(function *core.Function, operation core.LinearOperation, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	contract := operation.Foreign
+	if contract == nil {
+		return false
+	}
+	if !v.check(validCIdentifier(contract.Symbol) && validCIdentifier(contract.ABIType), "foreign.operation_identifier_invalid", operation.ID) {
+		return false
+	}
+	if !v.check(contract.Unwind == "forbidden" && contract.NonlocalExit == "forbidden", "foreign.operation_exit_policy_invalid", operation.ID) {
+		return false
+	}
+	source, sourceOK := places[operation.SourceID]
+	if !v.check(sourceOK && types[source.TypeID].Shape.Constructor == contract.ParameterType, "foreign.operation_parameter_mismatch", operation.ID) {
+		return false
+	}
+	switch contract.Mode {
+	case "acquire":
+		target, targetOK := places[operation.TargetID]
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails == "" || contract.Allocator != "libc_malloc" || !validCIdentifier(contract.Release) || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	case "borrow":
+		target, targetOK := places[operation.TargetID]
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails == "" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	case "consume":
+		if operation.Kind != core.OpRelease || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	default:
+		return v.check(false, "foreign.operation_mode_invalid", operation.ID)
+	}
+	if contract.Fails != "" && !validCIdentifier(contract.Fails) {
+		return v.check(false, "foreign.operation_failure_invalid", operation.ID)
+	}
+	if contract.Allocator != "" && !validCIdentifier(contract.Allocator) {
+		return v.check(false, "foreign.operation_allocator_invalid", operation.ID)
+	}
+	if contract.Release != "" && !validCIdentifier(contract.Release) {
+		return v.check(false, "foreign.operation_release_invalid", operation.ID)
+	}
+	if isDeclaredFunctionName(v.program.Functions, function.ID, contract.Symbol) {
+		return v.check(false, "core.call_target_not_foreign", operation.ID)
+	}
+	return true
+}
+
+// localOwnerLifecycleValid seeds obligations from every acquire operation,
+// then replays borrow and release transitions in source order. It never
+// discovers an owner by scanning the release list.
+func localOwnerLifecycleValid(function *core.Function) bool {
+	if function == nil || function.Linear == nil {
+		return false
+	}
+	type ownerState struct {
+		placeID  string
+		contract *core.ForeignOperationContract
+		live     bool
+		released bool
+	}
+	owners := map[string]ownerState{}
+	activeByPlace := map[string]string{}
+	borrows := 0
+	for _, operation := range function.Linear.Operations {
+		contract := operation.Foreign
+		if contract == nil {
+			continue
+		}
+		switch contract.Mode {
+		case "acquire":
+			if operation.Kind != core.OpForeignCall || operation.TargetID == "" || owners[operation.ID].contract != nil {
+				return false
+			}
+			owners[operation.ID] = ownerState{placeID: operation.TargetID, contract: contract, live: true}
+			activeByPlace[operation.TargetID] = operation.ID
+		case "borrow":
+			acquireID, found := activeByPlace[operation.SourceID]
+			owner, known := owners[acquireID]
+			if operation.Kind != core.OpForeignCall || !found || !known || !owner.live || owner.released || operation.TargetID == "" {
+				return false
+			}
+			borrows++
+		case "consume":
+			owner, known := owners[operation.ReleasesOperationID]
+			if operation.Kind != core.OpRelease || !known || !owner.live || owner.released || owner.placeID != operation.SourceID || owner.contract.Release != contract.Symbol || owner.contract.Allocator != contract.Allocator {
+				return false
+			}
+			owner.live = false
+			owner.released = true
+			owners[operation.ReleasesOperationID] = owner
+			delete(activeByPlace, operation.SourceID)
+		default:
+			return false
+		}
+	}
+	if len(owners) == 0 || borrows == 0 || len(activeByPlace) != 0 {
+		return false
+	}
+	for _, owner := range owners {
+		if owner.live || !owner.released {
+			return false
+		}
+	}
+	return true
 }
 
 // blocksAndEdges independently validates the Phase 3 CFG facts: every block
@@ -2005,12 +2122,14 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
-			errTarget, errKnown := places[operation.ErrTargetID]
-			if !v.check(errKnown && operation.ErrTargetID != operation.TargetID && operation.ErrTargetID != operation.SourceID && !produced[operation.ErrTargetID] && errTarget.TypeID != "", "core.invalid_target", operation.ErrTargetID) {
-				return false
+			if operation.Foreign == nil {
+				errTarget, errKnown := places[operation.ErrTargetID]
+				if !v.check(errKnown && operation.ErrTargetID != operation.TargetID && operation.ErrTargetID != operation.SourceID && !produced[operation.ErrTargetID] && errTarget.TypeID != "", "core.invalid_target", operation.ErrTargetID) {
+					return false
+				}
+				initialized[operation.ErrTargetID] = true
+				produced[operation.ErrTargetID] = true
 			}
-			initialized[operation.ErrTargetID] = true
-			produced[operation.ErrTargetID] = true
 		case core.OpFail:
 			if !v.check(index == len(operations)-1 && !returned && operation.TargetID == "", "core.final_claim_mismatch", operation.ID) {
 				return false
@@ -2044,7 +2163,15 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			return v.check(false, "core.unknown_operation", string(operation.Kind))
 		}
 	}
-	return v.check(returned, "core.final_claim_mismatch", function.ID)
+	if !v.check(returned, "core.final_claim_mismatch", function.ID) {
+		return false
+	}
+	for _, operation := range operations {
+		if operation.Foreign != nil {
+			return v.check(localOwnerLifecycleValid(function), "core.local_owner_lifecycle", function.ID)
+		}
+	}
+	return true
 }
 
 // releaseAllocatorMatches independently re-derives T-04-14's
@@ -3499,6 +3626,11 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int, sealed
 			return false, nil, false
 		}
 		return true, nil, true
+	case "PathToken", "Unit":
+		if len(shape.Arguments) != 0 {
+			return false, nil, false
+		}
+		return true, nil, true
 	case "Buffer":
 		if len(shape.Arguments) != 0 {
 			return false, nil, false
@@ -3508,6 +3640,14 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int, sealed
 		// ability package's structural combiner.
 		if requested == core.AbilityCopy {
 			return false, []string{"Buffer"}, true
+		}
+		return true, nil, true
+	case "FileByteOwner":
+		if len(shape.Arguments) != 0 {
+			return false, nil, false
+		}
+		if requested == core.AbilityCopy {
+			return false, []string{"FileByteOwner"}, true
 		}
 		return true, nil, true
 	case "Box":

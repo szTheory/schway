@@ -1348,6 +1348,8 @@ func linearInput(function core.Function) (input, initializer, typeName string, e
 		return "7", "7u", "unsigned char", nil
 	case "U64":
 		return "0", "UINT64_C(0)", "uint64_t", nil
+	case "PathToken":
+		return "", "NULL", "const char *", nil
 	default:
 		return "", "", "", fmt.Errorf("unsupported linear C type %q", function.Parameter.Type)
 	}

@@ -201,6 +201,22 @@ type ForeignContract struct {
 	Alias string `json:"alias,omitempty"`
 }
 
+// ForeignOperationContract is the per-operation FFI fact for the narrow
+// retained local-owner path. It is carried by the operation itself so an
+// acquire, borrow, and release cannot inherit a sibling symbol's contract.
+type ForeignOperationContract struct {
+	Symbol        string `json:"symbol"`
+	ABIType       string `json:"abi_type"`
+	Mode          string `json:"mode"`
+	ParameterType string `json:"parameter_type"`
+	ResultType    string `json:"result_type"`
+	Fails         string `json:"fails,omitempty"`
+	Allocator     string `json:"allocator,omitempty"`
+	Release       string `json:"release,omitempty"`
+	Unwind        string `json:"unwind"`
+	NonlocalExit  string `json:"nonlocal_exit"`
+}
+
 // RecordLayout is one declared record's layout obligation: its own declared
 // size and alignment, plus an ordered field list. LayoutField carries a
 // field's name and its declared size, alignment, and offset within the
@@ -840,6 +856,11 @@ type LinearOperation struct {
 	TargetID string        `json:"target_id,omitempty"`
 	LoanID   string        `json:"loan_id,omitempty"`
 	TypeID   string        `json:"type_id"`
+	// Foreign is the checked symbol-specific ABI/ownership contract for a
+	// Phase 23 local foreign operation. Unlike ForeignContract on Function,
+	// this fact belongs to one operation and is omitted by every older core
+	// operation.
+	Foreign *ForeignOperationContract `json:"foreign,omitempty"`
 	// OkEdgeID, ErrEdgeID, and ErrTargetID are Phase 4 additive omitempty
 	// facts populated only on an OpForeignCall operation (D-04-04): the ok
 	// edge continues at TargetID (an ordinary place, exactly like OpCopy's

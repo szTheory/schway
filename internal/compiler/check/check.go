@@ -3512,6 +3512,9 @@ type foreignSymbolInfo struct {
 	HasNonlocal  bool
 	Fails        string
 	HasFails     bool
+	Mode         string
+	ABIType      string
+	Release      string
 	// Alias is Phase 4 plan 06's new optional policy key (D-04-28): "borrow"
 	// or "retain" when the symbol's ok-edge return is declared to alias its
 	// own argument, "" (the default) meaning fully owned. Unlike
@@ -3607,6 +3610,12 @@ func collectForeignSymbols(program ast.Program) (map[string]foreignSymbolInfo, [
 					info.Fails, info.HasFails = policy.Value, true
 				case "alias":
 					info.Alias = policy.Value
+				case "mode":
+					info.Mode = policy.Value
+				case "abi":
+					info.ABIType = policy.Value
+				case "release":
+					info.Release = policy.Value
 				}
 			}
 			symbols[symbol.Name] = info
@@ -3647,6 +3656,9 @@ func hasTryCall(body *ast.LinearBody) bool {
 func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	returnType := coreType(function.ReturnType)
+	if parameterType.Constructor == "PathToken" {
+		return checkLocalFileByteEntry(functionID, function, foreignSymbols)
+	}
 	derived, err := ability.Derive(parameterType)
 	if err != nil {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.unknown", function.Parameter.Span, err.Error())}, typeNodeCount(parameterType)
@@ -3682,6 +3694,86 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 		"check.foreign_call_shape_unsupported", body.Span,
 		"this phase supports only a single fallible foreign call immediately returned, or a sequence of try/discard foreign calls whose result is the function's own parameter",
 	)}, work
+}
+
+// checkLocalFileByteEntry admits one closed Phase 23 success shape. All
+// operation facts are lowered from the symbol declaration that each source
+// call actually names; the release is materialized from the acquire's own
+// destructor policy.
+func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int) {
+	body := function.Body.Linear
+	refusal := func(code, message string) (core.Function, []diagnostic.Diagnostic, int) {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, body.Span, message)}, 1
+	}
+	if function.Name != "main" || function.ReturnType.Constructor != "U64" || body == nil || len(body.Bindings) != 2 || body.Result != body.Bindings[1].Name {
+		return refusal("check.local_owner_shape_unsupported", "PathToken is admitted only for the checked acquire, borrow, and generated release entry shape")
+	}
+	acquireBinding, useBinding := body.Bindings[0], body.Bindings[1]
+	if acquireBinding.RHS.Kind != "try_call" || acquireBinding.RHS.Callee != "lang_file_byte_acquire" || len(acquireBinding.RHS.Arguments) != 1 || acquireBinding.RHS.Arguments[0] != function.Parameter.Name ||
+		useBinding.RHS.Kind != "try_call" || useBinding.RHS.Callee != "lang_file_byte_use" || len(useBinding.RHS.Arguments) != 1 || useBinding.RHS.Arguments[0] != acquireBinding.Name {
+		return refusal("check.local_owner_shape_unsupported", "PathToken is admitted only for acquire followed by borrowed use and generated consuming release")
+	}
+	acquire, hasAcquire := symbols["lang_file_byte_acquire"]
+	use, hasUse := symbols["lang_file_byte_use"]
+	release, hasRelease := symbols["lang_file_byte_release"]
+	if !hasAcquire || !hasUse || !hasRelease {
+		return refusal("check.local_owner_contract_missing", "local file-byte source must declare acquire, borrow, and release symbols")
+	}
+	if !foreignSignature(acquire, "PathToken", "FileByteOwner") || !foreignSignature(use, "FileByteOwner", "U64") || !foreignSignature(release, "FileByteOwner", "Unit") {
+		return refusal("check.local_owner_signature_mismatch", "local file-byte operation signatures do not match the frozen PathToken/owner/U64 contract")
+	}
+	if !localForeignPolicy(acquire, "acquire", "lang_file_byte_acquire_fn", "AcquireError") || acquire.Allocator != "libc_malloc" || acquire.Release != release.Name ||
+		!localForeignPolicy(use, "borrow", "lang_file_byte_use_fn", "UseError") ||
+		!localForeignPolicy(release, "consume", "lang_file_byte_release_fn", "") || release.Allocator != "libc_malloc" {
+		return refusal("check.local_owner_contract_invalid", "local file-byte operations require explicit per-operation ABI, mode, failure, allocator, and release facts")
+	}
+	pathType := core.TypeRef{Constructor: "PathToken"}
+	ownerType := core.TypeRef{Constructor: "FileByteOwner"}
+	u64Type := core.TypeRef{Constructor: "U64"}
+	pathAbilities, _ := ability.Derive(pathType)
+	ownerAbilities, _ := ability.Derive(ownerType)
+	u64Abilities, _ := ability.Derive(u64Type)
+	types := []core.TypeFact{
+		{ID: functionID + ":type:0", Shape: pathType, Abilities: pathAbilities.Granted, NegativeWitnesses: pathAbilities.NegativeWitnesses},
+		{ID: functionID + ":type:1", Shape: ownerType, Abilities: ownerAbilities.Granted, NegativeWitnesses: ownerAbilities.NegativeWitnesses},
+		{ID: functionID + ":type:2", Shape: u64Type, Abilities: u64Abilities.Granted, NegativeWitnesses: u64Abilities.NegativeWitnesses},
+	}
+	places := []core.Place{
+		{ID: functionID + ":place:0", Name: function.Parameter.Name, TypeID: types[0].ID},
+		{ID: functionID + ":place:1", Name: acquireBinding.Name, TypeID: types[1].ID},
+		{ID: functionID + ":place:2", Name: useBinding.Name, TypeID: types[2].ID},
+	}
+	acquireID := functionID + ":op:0"
+	operations := []core.LinearOperation{
+		{ID: acquireID, PointID: functionID + ":point:linear:0", Kind: core.OpForeignCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: types[1].ID, Allocator: acquire.Allocator, Foreign: localForeignContract(acquire)},
+		{ID: functionID + ":op:1", PointID: functionID + ":point:linear:1", Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: types[2].ID, Foreign: localForeignContract(use)},
+		{ID: functionID + ":op:2", PointID: functionID + ":point:linear:2", Kind: core.OpRelease, SourceID: places[1].ID, TypeID: types[1].ID, ReleasesOperationID: acquireID, Allocator: release.Allocator, Foreign: localForeignContract(release)},
+		{ID: functionID + ":op:3", PointID: functionID + ":point:linear:3", Kind: core.OpReturn, SourceID: places[2].ID, TypeID: types[2].ID},
+	}
+	linear := &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: []core.Block{}, Edges: []core.Edge{}}
+	return core.Function{
+		ID: functionID, Name: function.Name,
+		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64",
+		Linear: linear, Span: function.Span,
+	}, nil, 12
+}
+
+func foreignSignature(symbol foreignSymbolInfo, parameter, result string) bool {
+	return symbol.Parameter.Type.Constructor == parameter && symbol.ReturnType.Constructor == result
+}
+
+func localForeignPolicy(symbol foreignSymbolInfo, mode, abi, fails string) bool {
+	return symbol.Mode == mode && symbol.ABIType == abi && symbol.Fails == fails && symbol.HasUnwind && symbol.Unwind == "forbidden" && symbol.HasNonlocal && symbol.NonlocalExit == "forbidden"
+}
+
+func localForeignContract(symbol foreignSymbolInfo) *core.ForeignOperationContract {
+	return &core.ForeignOperationContract{
+		Symbol: symbol.Name, ABIType: symbol.ABIType, Mode: symbol.Mode,
+		ParameterType: symbol.Parameter.Type.Constructor, ResultType: symbol.ReturnType.Constructor,
+		Fails: symbol.Fails, Allocator: symbol.Allocator, Release: symbol.Release,
+		Unwind: symbol.Unwind, NonlocalExit: symbol.NonlocalExit,
+	}
 }
 
 // resolveCallBinding implements D-07-01's call admission predicate, shared
@@ -5378,7 +5470,7 @@ func availableTypeFactDetails(facts []core.TypeFact) string {
 // emitBranch's enum-based lowering, so this gate is only consulted from
 // checkLinear.
 func executableShape(value core.TypeRef) bool {
-	return value.Constructor == "Byte" || value.Constructor == "Buffer" || (value.Constructor == "U64" && len(value.Arguments) == 0)
+	return value.Constructor == "Byte" || value.Constructor == "Buffer" || value.Constructor == "PathToken" || (value.Constructor == "U64" && len(value.Arguments) == 0)
 }
 
 func ensureLiteralTypeFact(functionID string, facts []core.TypeFact, bodies ...*ast.LinearBody) []core.TypeFact {

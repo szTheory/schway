@@ -105,7 +105,7 @@ lang_file_byte_acquire_result lang_file_byte_acquire(const char *path) {
 lang_file_byte_use_result lang_file_byte_use(lang_file_byte_owner owner) {
   lang_file_byte_use_result result = {LANG_FILE_BYTE_INVALID_OWNER, UINT64_C(0)};
   if (owner.data == NULL || owner.length != UINT64_C(1)) return result;
-  if (owner.data[0] != 0x41u && owner.data[0] != 0x42u) {
+  if (owner.data[0] != 0x41u) {
     result.status = LANG_FILE_BYTE_UNSUPPORTED;
     return result;
   }
