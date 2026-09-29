@@ -521,7 +521,7 @@ func TestReleaseOmissionMutationIsMismatch(t *testing.T) {
 	// design, per its own doc comment), so the frozen foreign TU must be
 	// linked in here explicitly, before wrapping.
 	inner := native.DefaultRunner()
-	inner.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	inner.ForeignSources = native.ForeignLegacyResourceSourcePaths()
 	runner := session.NewReleaseOmissionMutationRunner(inner)
 	_, _, err := session.RunNativeFile(context.Background(), path, runner)
 	if err != nil {
@@ -1883,7 +1883,7 @@ func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
 	result, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if err != nil {
 		t.Fatalf("native run failed: %v", err)
@@ -1948,7 +1948,7 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
 	result, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if err != nil {
 		t.Fatalf("native run failed: %v", err)
@@ -1975,7 +1975,7 @@ func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
 	mutationRunner := session.NewNonlocalPadOmissionMutationRunner(runner)
 	result, runErr := mutationRunner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if runErr == nil && len(result.Pairs) == 1 && result.Pairs[0].Execution.Outcome.Kind == "defect" {
@@ -1998,7 +1998,7 @@ func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
 	goldenResult, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if err != nil || len(goldenResult.Pairs) != 1 {
 		t.Fatalf("golden run failed: err=%v result=%+v", err, goldenResult)

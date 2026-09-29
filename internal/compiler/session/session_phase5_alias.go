@@ -557,7 +557,7 @@ func assertLayoutMismatchMovesAxis(ctx context.Context, mutation NAT03Mutation) 
 // dimension that hard-reject protects.
 func assertReleaseOmissionMovesAxis(ctx context.Context, mutation NAT03Mutation) error {
 	inner := native.DefaultRunner()
-	inner.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	inner.ForeignSources = native.ForeignLegacyResourceSourcePaths()
 	runner := NewReleaseOmissionMutationRunner(inner)
 	_, _, err := RunNativeFile(ctx, nat03CorpusPath(mutation.CorpusProgram), runner)
 	if err == nil {
@@ -624,7 +624,7 @@ func assertNonlocalExitMovesAxis(ctx context.Context, mutation NAT03Mutation) er
 	}
 	base := native.DefaultRunner()
 	base.Expect = native.ExpectDefect
-	base.ForeignSources = []string{native.ForeignNonlocalSourcePath()}
+	base.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
 	golden, err := base.Run(ctx, generated, "-O0", []string{"7"})
 	if err != nil || len(golden.Pairs) != 1 {
 		return fmt.Errorf("%s: golden run failed: err=%v result=%+v", mutation.ControlID, err, golden)

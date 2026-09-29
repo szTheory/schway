@@ -2,16 +2,16 @@
 //
 // D-05-06/D-05-09: a real allocate / use / free / use-again cycle across
 // three successive calls to the SAME declared symbol -- the identical
-// call-count convention native/schway_foreign_nonlocal.c already establishes
+// call-count convention native/lang_foreign_nonlocal.c already establishes
 // for a shared-symbol foreign shape (D-04-17/D-04-18), reused here because
 // core.Function/cgen carry exactly one ForeignContract per function, so a
 // resource-lifecycle sequence always calls its FIRST declared symbol for
 // every step (verified empirically while authoring this fixture). The
-// first call (native/schway_foreign_retained.c's `schway_retained_open`
+// first call (native/lang_foreign_retained.c's `lang_retained_open`
 // helper) genuinely allocates a one-byte buffer and stashes its pointer in
 // `static` storage -- FFI-003's retained-pointer lifetime shape, needing
 // no calls-into-Lang (M001 has none by design). The second call reads it
-// back while still live. The third call (`schway_retained_stale`) frees the
+// back while still live. The third call (`lang_retained_stale`) frees the
 // SAME stashed pointer and immediately reads through it again -- a genuine
 // heap-use-after-free, reached through this real Lang program's declared
 // foreign calls, never injected into cgen's own release emission and
@@ -27,7 +27,7 @@ export {
 
 foreign C {
 
-  fn schway_retained_touch(request: Byte) -> Byte {
+  fn lang_retained_touch(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -39,8 +39,8 @@ data RetainedError =
   | RetainedFailed
 
 fn main(request: Byte) -> Byte {
-  let opened = try schway_retained_touch(request)
-  let touched = try schway_retained_touch(request)
-  let staled = try schway_retained_touch(request)
+  let opened = try lang_retained_touch(request)
+  let touched = try lang_retained_touch(request)
+  let staled = try lang_retained_touch(request)
   request
 }

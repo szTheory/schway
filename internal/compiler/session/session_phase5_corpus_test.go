@@ -410,8 +410,8 @@ func phase5RunThreeEngineAgreementWithCache(t *testing.T, fixture string, progra
 		if function.Name != functionName || function.ForeignContract == nil {
 			continue
 		}
-		if sourcePath, known := native.ForeignSourcePathForSymbol(function.ForeignContract.Symbol); known {
-			baseRunner.ForeignSources = append(append([]string(nil), baseRunner.ForeignSources...), sourcePath)
+		if sourcePaths := native.ForeignSourcePathsForSymbol(function.ForeignContract.Symbol); len(sourcePaths) != 0 {
+			baseRunner.ForeignSources = append(append([]string(nil), baseRunner.ForeignSources...), sourcePaths...)
 		}
 	}
 	for _, input := range inputs {

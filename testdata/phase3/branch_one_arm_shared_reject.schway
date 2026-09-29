@@ -1,4 +1,4 @@
-// The same shape as branch_one_arm_shared_accept.schway, but the mutation is
+// The same shape as branch_one_arm_shared_accept.lang, but the mutation is
 // reachable from the BORROWING arm's own edge: the "On" arm moves flag
 // while its own loan is still live. Rejected with the ordinary
 // move_while_borrowed diagnostic, whose cause chain names the loan; the

@@ -4,7 +4,7 @@
 // an ordinary, checker-accepted, natively-executable ownership transfer:
 // `relay` takes full ownership of its buffer parameter and hands it
 // straight back to the caller (the exact shape of testdata/phase2/
-// owned_transfer.schway). Read alone, both by a human and by `check` plus
+// owned_transfer.lang). Read alone, both by a human and by `check` plus
 // `originvalidate`, this program honestly claims: the caller's buffer is
 // MOVED into the function and returned, a complete ownership transfer.
 //

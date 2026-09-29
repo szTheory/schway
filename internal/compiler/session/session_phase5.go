@@ -385,8 +385,8 @@ func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) 
 		if function.Name != functionName || function.ForeignContract == nil {
 			continue
 		}
-		if sourcePath, known := native.ForeignSourcePathForSymbol(function.ForeignContract.Symbol); known {
-			nativeRunner.ForeignSources = append(append([]string(nil), nativeRunner.ForeignSources...), sourcePath)
+		if sourcePaths := native.ForeignSourcePathsForSymbol(function.ForeignContract.Symbol); len(sourcePaths) != 0 {
+			nativeRunner.ForeignSources = append(append([]string(nil), nativeRunner.ForeignSources...), sourcePaths...)
 		}
 	}
 
@@ -430,7 +430,7 @@ func assertAllocatorMismatchMovesAxis(ctx context.Context, mutation NAT03Mutatio
 		return err
 	}
 	runner := phase5DefaultRunner()
-	runner.ForeignSources = []string{native.ForeignArenaSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyArenaSourcePaths()
 	report, runErr := runner.RunSanitized(ctx, cSource, []string{"7"})
 	wantSignature := sanitizerSignatureFor("alloc-dealloc-mismatch")
 	if runErr != nil || report.ExitCode == 0 || report.ReportSignature != wantSignature {

@@ -174,7 +174,7 @@ func VerifyPhase5SanitizeLane(ctx context.Context, runner native.Runner) (Phase5
 		return Phase5SanitizeResult{}, err
 	}
 	retainedRunner := runner
-	retainedRunner.ForeignSources = []string{native.ForeignRetainedSourcePath()}
+	retainedRunner.ForeignSources = native.ForeignLegacyRetainedSourcePaths()
 	retainedReport, retainedErr := retainedRunner.RunSanitized(ctx, retainedSource, []string{"7"})
 	wantUseAfterFree := sanitizerSignatureFor("heap-use-after-free")
 	if retainedErr != nil || retainedReport.ExitCode == 0 || retainedReport.ReportSignature != wantUseAfterFree {
@@ -199,7 +199,7 @@ func VerifyPhase5SanitizeLane(ctx context.Context, runner native.Runner) (Phase5
 		return Phase5SanitizeResult{}, err
 	}
 	allocatorRunner := runner
-	allocatorRunner.ForeignSources = []string{native.ForeignArenaSourcePath()}
+	allocatorRunner.ForeignSources = native.ForeignLegacyArenaSourcePaths()
 	allocatorReport, allocatorErr := allocatorRunner.RunSanitized(ctx, allocatorSource, []string{"7"})
 	wantAllocMismatch := sanitizerSignatureFor("alloc-dealloc-mismatch")
 	if allocatorErr != nil || allocatorReport.ExitCode == 0 || allocatorReport.ReportSignature != wantAllocMismatch {

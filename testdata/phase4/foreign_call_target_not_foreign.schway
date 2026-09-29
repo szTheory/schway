@@ -13,7 +13,7 @@ export {
 
 foreign C {
 
-  fn schway_res_open(request: Byte) -> Byte {
+  fn lang_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"

@@ -434,8 +434,8 @@ func phase4RunThreeEngines(ctx context.Context, fixture string, program core.Pro
 		if function.Name != functionName || function.ForeignContract == nil {
 			continue
 		}
-		if sourcePath, known := native.ForeignSourcePathForSymbol(function.ForeignContract.Symbol); known {
-			nativeRunner.ForeignSources = append(append([]string(nil), nativeRunner.ForeignSources...), sourcePath)
+		if sourcePaths := native.ForeignSourcePathsForSymbol(function.ForeignContract.Symbol); len(sourcePaths) != 0 {
+			nativeRunner.ForeignSources = append(append([]string(nil), nativeRunner.ForeignSources...), sourcePaths...)
 		}
 	}
 	o0Result, o0Err := nativeRunner.Run(ctx, cSource, "-O0", []string{input})
@@ -1073,12 +1073,10 @@ func runNative(ctx context.Context, source []byte, runner NativeRunner, fixture 
 	// since none of those exercise a foreign-call program today.
 	if contract := entry.ForeignContract; contract != nil {
 		if concrete, ok := runner.(native.Runner); ok {
-			// D-04-17 added a second frozen foreign TU: resolve by the
-			// function's OWN declared symbol (native.ForeignSourcePathForSymbol)
-			// rather than hardcoding the first TU, so a program declaring the
-			// newer symbol links against the TU that actually defines it.
-			if sourcePath, known := native.ForeignSourcePathForSymbol(contract.Symbol); known {
-				concrete.ForeignSources = append(append([]string(nil), concrete.ForeignSources...), sourcePath)
+			// Resolve by the function's own symbol so the implementation and
+			// any historical fixture adapter required by that symbol are linked.
+			if sourcePaths := native.ForeignSourcePathsForSymbol(contract.Symbol); len(sourcePaths) != 0 {
+				concrete.ForeignSources = append(append([]string(nil), concrete.ForeignSources...), sourcePaths...)
 				runner = concrete
 			}
 		}
@@ -2577,7 +2575,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// native.Runner value; this lane's fixture is foreign-shaped, so the
 	// frozen foreign TU must be linked in explicitly before wrapping.
 	foreignRunner := runner
-	foreignRunner.ForeignSources = append(append([]string(nil), foreignRunner.ForeignSources...), native.ForeignResourceSourcePath())
+	foreignRunner.ForeignSources = append(append([]string(nil), foreignRunner.ForeignSources...), native.ForeignLegacyResourceSourcePaths()...)
 	omissionRunner := NewReleaseOmissionMutationRunner(foreignRunner)
 	_, _, omissionErr := runNative(ctx, releaseSource, omissionRunner, "testdata/phase4/acquire_three_success.schway")
 	if omissionErr == nil {
@@ -2682,7 +2680,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// behavior): the LINKED BINARY's own undefined-symbol table.
 	laneStarted = time.Now()
 	symbolRunner := runner
-	symbolRunner.ForeignSources = append(append([]string(nil), symbolRunner.ForeignSources...), native.ForeignResourceSourcePath())
+	symbolRunner.ForeignSources = append(append([]string(nil), symbolRunner.ForeignSources...), native.ForeignLegacyResourceSourcePaths()...)
 	symbolBinaryPath, symbolCleanup, symbolCompileErr := symbolRunner.CompileOnly(ctx, tracerCSource, "-O0")
 	if symbolCompileErr != nil {
 		addLane("lane:foreign-unwind-forbidden", "fail", nil, 1, 0, laneStarted)
@@ -2825,7 +2823,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	}
 	nonlocalRunner := runner
 	nonlocalRunner.Expect = native.ExpectDefect
-	nonlocalRunner.ForeignSources = append(append([]string(nil), nonlocalRunner.ForeignSources...), native.ForeignNonlocalSourcePath())
+	nonlocalRunner.ForeignSources = append(append([]string(nil), nonlocalRunner.ForeignSources...), native.ForeignLegacyNonlocalSourcePaths()...)
 	goldenResult, goldenErr := nonlocalRunner.Run(ctx, nonlocalCSource, "-O0", []string{"7"})
 	if goldenErr != nil || len(goldenResult.Pairs) != 1 {
 		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+3, len(nonlocalCSource), laneStarted)

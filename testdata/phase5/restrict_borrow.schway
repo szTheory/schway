@@ -11,7 +11,7 @@
 // The return type is a PLAIN owned `-> Buffer`, not a declared
 // `borrow(...)` view: selectsByPointerLowering additionally requires
 // function.PublicOrigin == nil, so a declared borrow-return function (e.g.
-// testdata/phase3/public_view_mixed_access.schway, which has the identical
+// testdata/phase3/public_view_mixed_access.lang, which has the identical
 // exclusive-borrow-then-reborrow-to-terminator operation shape) never
 // selects this path -- PublicOrigin is a genuinely distinct, already-shipped
 // semantic category this plan does not touch. check.go admits a plain

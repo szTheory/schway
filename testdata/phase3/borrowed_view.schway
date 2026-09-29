@@ -13,7 +13,7 @@
 // return (a plain linear function, `-> borrow(path) Type`) cannot live in
 // this same file alongside this branch function. verifyBorrowedCorpus
 // exercises the public-borrowed-return controls (understated/impossible/
-// stale-summary) against the existing testdata/phase3/public_view*.schway
+// stale-summary) against the existing testdata/phase3/public_view*.lang
 // fixtures instead, in the same verify lane.
 
 module owned.borrowed_view

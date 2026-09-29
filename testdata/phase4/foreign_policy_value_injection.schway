@@ -1,5 +1,5 @@
 // 04-13 (04-VERIFICATION.md gap 2b, FFI-01): an otherwise ordinary, honest
-// program -- identical in every other respect to foreign_acquire_one.schway --
+// program -- identical in every other respect to foreign_acquire_one.lang --
 // whose sole `allocator:` policy value carries a comment-terminator payload.
 // Before this plan's fix, session.Check admitted this source with ZERO
 // diagnostics and cgen.EmitForeignHeader spliced the payload directly into
@@ -17,7 +17,7 @@ export {
 
 foreign C {
 
-  fn schway_res_open(request: Byte) -> Byte {
+  fn lang_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "*/ int injected(void){return 1;} /*"
@@ -29,6 +29,6 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try schway_res_open(request)
+  let handle = try lang_res_open(request)
   handle
 }

@@ -1,7 +1,7 @@
 // adversarial-target: defect-terminating-by-signal
 //
 // D-05-18a: a real, reachable, deliberately terminal `defect`, peering
-// testdata/phase4/defect_terminal.schway's own shape (a new file per this
+// testdata/phase4/defect_terminal.lang's own shape (a new file per this
 // phase's own corpus, D-05-18, not a fork of the Phase 4 fixture): the
 // "Halt" arm aborts the process directly from a match arm with no call
 // surface at all, giving D-05-20's added "exit status and signal" compared

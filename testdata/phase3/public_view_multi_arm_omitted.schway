@@ -6,7 +6,7 @@
 // Operations list; check.go's arm lowering appends one OpReturn per arm
 // into that same list, so the second arm's borrow-derived return was
 // invisible and this program exported with no public_origin field at all,
-// indistinguishable from a fully-owned return. `schway check` accepts this
+// indistinguishable from a fully-owned return. `lang check` accepts this
 // program unchanged; `lang interface export` must refuse it with
 // core.origin_omitted.
 

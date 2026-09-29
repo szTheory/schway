@@ -8,7 +8,7 @@
 // selectsByPointerLoweringSharedOnly path (emitLinearBorrowedByPointerPlain),
 // which lowers this parameter by pointer WITHOUT restrict (a shared loan
 // alone never justifies it) and exposes a second, purely-adversarial raw
-// pointer parameter (schway_alias_probe) that the unmutated body never reads
+// pointer parameter (lang_alias_probe) that the unmutated body never reads
 // or writes. session.AliasFactMutationRunner is the only thing that ever
 // touches that dormant parameter: it injects a FALSE restrict onto the
 // primary parameter and rewrites the body to demonstrate the resulting

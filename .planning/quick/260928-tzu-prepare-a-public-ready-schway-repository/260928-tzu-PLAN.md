@@ -85,10 +85,14 @@ snapshots; the new migration commit records the current-tree transition.
 Stage the complete migration before the tracked-path gate below. Its active
 text scope is `go.mod`, `.gitignore`, `.github/workflows/ci.yml`, `README.md`,
 `AGENTS.md`, `cmd/`, `native/`, `internal/compiler/`, `scripts/`, `examples/`,
-`testdata/`, and the current `.claude/skills/` guidance. Exclude only
-`testdata/phase16/historical/` and `.claude/skills/*/sources/` from the text
-gate because those are archived generated material and independent spike
-sources; keep them in the privacy scan.
+`testdata/`, and the current `.claude/skills/` guidance. Exclude
+`testdata/phase1/` through `testdata/phase5/`,
+`testdata/phase16/historical/`, the immutable
+`testdata/phase16/validation-corpus-run-record.jsonl` receipt, and
+`.claude/skills/*/sources/` from the text gate because the Phase 1-5 source
+bytes are frozen historical fixtures, the later paths are archived generated
+material or a historical run record, and the skill paths are independent spike
+sources; keep every path in the privacy scan.
 In each listed active planning document, mark its current publication-facing
 identity or command guidance with one `<!-- schway-current:start -->` and
 `<!-- schway-current:end -->` pair and update that region to the settled
@@ -104,19 +108,22 @@ only family counts, never matching lines or values. Every `old_*` count must
 be zero; every required positive check and the exact source count must pass.
 
     set -eu
-    scope='go.mod .gitignore .github/workflows/ci.yml README.md AGENTS.md cmd native internal/compiler scripts examples testdata .claude/skills'
-    exclusions=':(exclude)testdata/phase16/historical/** :(exclude).claude/skills/*/sources/**'
-    count_text() { git grep --cached -I -l -E "$1" -- $scope $exclusions | wc -l | tr -d '[:space:]'; }
+    scope=(go.mod .gitignore .github/workflows/ci.yml README.md AGENTS.md cmd native internal/compiler scripts examples testdata .claude/skills)
+    exclusions=(':(exclude)testdata/phase1/**' ':(exclude)testdata/phase2/**' ':(exclude)testdata/phase3/**' ':(exclude)testdata/phase4/**' ':(exclude)testdata/phase5/**' ':(exclude)testdata/phase16/historical/**' ':(exclude)testdata/phase16/validation-corpus-run-record.jsonl' ':(exclude)internal/compiler/native/foreign_legacy.go' ':(exclude).claude/skills/*/sources/**')
+    count_text() { git grep --cached -I -l -E "$1" -- "${scope[@]}" "${exclusions[@]}" | wc -l | tr -d '[:space:]'; }
     old_module=$(count_text 'github[.]com/codename-lang/lang')
     old_cli=$(count_text 'cmd/lang(-repair)?(/|[^[:alnum:]_-])|/lang(-repair)?([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang-repair([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang[[:space:]]+(app|build|check|run|verify)([^[:alnum:]_]|$)')
     old_extension=$(count_text '[.]lang([^[:alnum:]_]|$)')
-    # Versioned lang.* schema identifiers are compatibility wire values and
-    # remain frozen; reject unversioned legacy namespaces and lang: labels.
-    old_protocol=$(count_text '(^|[^[:alnum:]_])lang:|(^|[^[:alnum:]_])lang[.]([a-z0-9][a-z0-9.-]*)([^/[:alnum:]_]|$)')
+    # Already-versioned lang.* schema names are frozen wire identifiers.
+    # Reject old lang: annotation labels; current namespaces stay schway.*.
+    old_protocol=$(count_text '(^|[^[:alnum:]_])lang:')
     old_abi=$(count_text '(^|[^[:alnum:]_])(lang_|LANG_)')
     old_paths=$(git ls-files | rg '(^cmd/lang(-repair)?/|^native/lang_|[.]lang$)' | wc -l | tr -d '[:space:]')
     printf 'old_module=%s old_cli=%s old_extension=%s old_protocol=%s old_abi=%s old_paths=%s\n' "$old_module" "$old_cli" "$old_extension" "$old_protocol" "$old_abi" "$old_paths"
-    test "$old_module" -eq 0 && test "$old_cli" -eq 0 && test "$old_extension" -eq 0 && test "$old_protocol" -eq 0 && test "$old_abi" -eq 0 && test "$old_paths" -eq 0
+    if [ "$old_module" -ne 0 ] || [ "$old_cli" -ne 0 ] || [ "$old_extension" -ne 0 ] || [ "$old_protocol" -ne 0 ] || [ "$old_abi" -ne 0 ] || [ "$old_paths" -ne 0 ]; then
+      printf 'rename_gate=failed\n'
+      exit 1
+    fi
     test "$(git ls-files '*.schway' | wc -l | tr -d '[:space:]')" -eq 145
     test "$(git ls-files '*.lang' | wc -l | tr -d '[:space:]')" -eq 0
     test "$(git ls-files 'cmd/schway/main.go' 'cmd/schway-repair/main.go' | wc -l | tr -d '[:space:]')" -eq 2
@@ -126,17 +133,19 @@ be zero; every required positive check and the exact source count must pass.
     git grep --cached -I -q -E '(^|[^[:alnum:]_])SCHWAY_' -- native internal/compiler examples
     git grep --cached -I -q 'cmd/schway' -- .github/workflows/ci.yml scripts README.md
     git grep --cached -I -q '[.]schway' -- cmd internal/compiler scripts examples testdata README.md
-    planning_docs='.planning/PROJECT.md .planning/STATE.md .planning/phases/22-native-application-build-and-single-execution/22-VERIFICATION.md .planning/phases/22-native-application-build-and-single-execution/22-VALIDATION.md .planning/phases/23-live-local-allocation-and-discharge/23-VERIFICATION.md .planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md .planning/phases/23-live-local-allocation-and-discharge/23-SECURITY.md .planning/quick/260928-tzu-prepare-a-public-ready-schway-repository/260928-tzu-CONTEXT.md .planning/quick/260928-tzu-prepare-a-public-ready-schway-repository/260928-tzu-PLAN.md'
+    planning_docs=(.planning/PROJECT.md .planning/STATE.md .planning/phases/22-native-application-build-and-single-execution/22-VERIFICATION.md .planning/phases/22-native-application-build-and-single-execution/22-VALIDATION.md .planning/phases/23-live-local-allocation-and-discharge/23-VERIFICATION.md .planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md .planning/phases/23-live-local-allocation-and-discharge/23-SECURITY.md .planning/quick/260928-tzu-prepare-a-public-ready-schway-repository/260928-tzu-CONTEXT.md .planning/quick/260928-tzu-prepare-a-public-ready-schway-repository/260928-tzu-PLAN.md)
     doc_old=0
-    for doc in $planning_docs; do
+    doc_count=0
+    for doc in "${planning_docs[@]}"; do
       current=$(git show ":$doc" | sed -n '/^<!-- schway-current:start -->$/,/^<!-- schway-current:end -->$/p')
       test "$(printf '%s\n' "$current" | rg -c '^<!-- schway-current:start -->$')" -eq 1
       test "$(printf '%s\n' "$current" | rg -c '^<!-- schway-current:end -->$')" -eq 1
       printf '%s\n' "$current" | rg -qi 'schway'
       hits=$(printf '%s\n' "$current" | rg -c 'github[.]com/codename-lang/lang|cmd/lang(-repair)?|/lang(-repair)?([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang-repair([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang[[:space:]]+(app|build|check|run|verify)([^[:alnum:]_]|$)|[.]lang([^[:alnum:]_]|$)|(^|[^[:alnum:]_])lang[.:]|(^|[^[:alnum:]_])(lang_|LANG_)' || true)
       doc_old=$((doc_old + hits))
+      doc_count=$((doc_count + 1))
     done
-    printf 'active_planning_docs=%s planning_old_lines=%s\n' "$(printf '%s\n' $planning_docs | wc -l | tr -d '[:space:]')" "$doc_old"
+    printf 'active_planning_docs=%s planning_old_lines=%s\n' "$doc_count" "$doc_old"
     test "$doc_old" -eq 0
 
 Do not run the project test suite locally. The existing GitHub workflow owns
@@ -253,17 +262,23 @@ remaining work:
    their matching legacy adapter. For current Schway ABI changes, use the
    existing change-ledger pattern: old/new hashes, moved responsibility,
    structural reason, executable semantic witness, fixture, and disposition.
-4. Reconcile migration-caused source/diagnostic IDs and rewritten commit/line
-   references with explicit provenance. Do not bulk-regenerate expected hashes
-   or edit archived receipts to claim fresh verification.
+4. Preserve Phase 1-5 fixture contents byte-for-byte under the selected
+   `.schway` filenames; isolate legacy source-level foreign symbols in
+   `internal/compiler/native/foreign_legacy.go` and
+   `testdata/phase16/historical/foreign_phase1_5_legacy_adapter.c`. These are
+   the only current shim exceptions to the old-ABI rename scan. Reconcile
+   remaining source/diagnostic IDs and rewritten commit/line references with
+   explicit provenance. Do not bulk-regenerate expected hashes or edit
+   archived receipts to claim fresh verification.
 5. Refresh current corpus counts and move current-identity guidance so it does
    not shift archived line-pinned findings. Run `git diff --check`, then use
    hosted Ubuntu/macOS CI as the verification path. Before each additive push,
    rerun the full reachable-ref privacy scan and require zero confirmed and
    zero unclassified candidates.
 
-Complete the work in these batches: (A) `/0` schema compatibility; (B) current
-versus historical C ABI and source/diagnostic fingerprints; (C) rewritten
+Complete the work in these batches: (A) versioned schema compatibility; (B)
+frozen Phase 1-5 fixtures plus current versus historical C ABI and
+source/diagnostic fingerprints; (C) rewritten
 commit references, groundedness line pins, and corpus docs; (D) full hosted CI
 green on both operating systems and both evidence aggregates. A batch is
 accepted only when its hosted checks pass or its remaining red checks are

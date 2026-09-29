@@ -88,7 +88,7 @@ func TestLTOFlagReachesCompileAndLink(t *testing.T) {
 	cSource := phase5LTOFixtureSource(t)
 	runner := native.DefaultRunner().EnableCommandRecording()
 	runner.LTO = true
-	runner.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyResourceSourcePaths()
 	if _, err := runner.Run(context.Background(), cSource, "-O3", []string{"7"}); err != nil {
 		t.Fatalf("expected the LTO build+run to succeed, got %v", err)
 	}
@@ -118,7 +118,7 @@ func TestLTOFlagReachesCompileAndLink(t *testing.T) {
 func TestLTODisabledLeavesCommandLineUnchanged(t *testing.T) {
 	cSource := phase5LTOFixtureSource(t)
 	runner := native.DefaultRunner().EnableCommandRecording()
-	runner.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyResourceSourcePaths()
 	if _, err := runner.Run(context.Background(), cSource, "-O0", []string{"7"}); err != nil {
 		t.Fatalf("expected the non-LTO build+run to succeed, got %v", err)
 	}
@@ -162,14 +162,14 @@ func TestLTOTierIsNotInert(t *testing.T) {
 	cSource := phase5LTOFixtureSource(t)
 
 	nonLTO := native.DefaultRunner().EnableCommandRecording()
-	nonLTO.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	nonLTO.ForeignSources = native.ForeignLegacyResourceSourcePaths()
 	if _, err := nonLTO.Run(context.Background(), cSource, "-O3", []string{"7"}); err != nil {
 		t.Fatalf("non-LTO -O3 build failed: %v", err)
 	}
 
 	withLTO := native.DefaultRunner().EnableCommandRecording()
 	withLTO.LTO = true
-	withLTO.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	withLTO.ForeignSources = native.ForeignLegacyResourceSourcePaths()
 	if _, err := withLTO.Run(context.Background(), cSource, "-O3", []string{"7"}); err != nil {
 		t.Fatalf("LTO -O3 build failed: %v", err)
 	}

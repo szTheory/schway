@@ -4,7 +4,7 @@
 // exclusive when the body only ever borrows shared) — is injected by
 // mutating the checked core.Program's own PublicOrigin fact in
 // TestOriginAccessMismatchRejected, not by this source, for the same reason
-// public_view_understated.schway documents: check.go's honest producer can
+// public_view_understated.lang documents: check.go's honest producer can
 // never construct the impossible declaration itself.
 
 module owned.public_view_impossible

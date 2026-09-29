@@ -12,7 +12,7 @@ export {
 
 foreign C {
 
-  fn schway_res_open(request: Byte) -> Byte {
+  fn lang_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -24,6 +24,6 @@ data ProbeError =
   | ProbeFailed
 
 fn main(request: Byte) -> Byte {
-  discard schway_res_open(request) because "the probe result is advisory and its failure is not actionable here"
+  discard lang_res_open(request) because "the probe result is advisory and its failure is not actionable here"
   request
 }

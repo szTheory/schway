@@ -5,7 +5,7 @@
 // publication-path law under test: a function whose declared return type
 // carries no `borrow`/`borrow mut` annotation, yet whose body's only
 // return is a borrow-derived place, must be refused publication by
-// `lang interface export` even though `schway check` still accepts it
+// `lang interface export` even though `lang check` still accepts it
 // unchanged.
 
 module owned.public_view_omitted

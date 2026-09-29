@@ -1,5 +1,5 @@
 // A move of an owner while an exclusive loan is live is rejected exactly
-// like the existing shared-loan rule, mirroring move_while_borrowed.schway.
+// like the existing shared-loan rule, mirroring move_while_borrowed.lang.
 
 module owned.exclusive_move_reject
 

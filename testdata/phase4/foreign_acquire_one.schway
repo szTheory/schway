@@ -12,7 +12,7 @@ export {
 
 foreign C {
 
-  fn schway_res_open(request: Byte) -> Byte {
+  fn lang_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -24,6 +24,6 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try schway_res_open(request)
+  let handle = try lang_res_open(request)
   handle
 }

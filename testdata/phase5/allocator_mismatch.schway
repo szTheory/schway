@@ -1,13 +1,13 @@
 // adversarial-target: allocator-mismatch-dynamic
 //
 // D-05-08: this program's own static contract layer is untouched -- it
-// declares `allocator: "libc_malloc"` for `schway_arena_open`, and check.go/
+// declares `allocator: "libc_malloc"` for `lang_arena_open`, and check.go/
 // corevalidate's release_allocator_mismatch refusal continues to compare
 // only that DECLARED string against its own paired auto-generated release,
 // which can never disagree with itself (T-04-14). The DYNAMIC defect lives
-// entirely inside native/schway_foreign_arena.c's real C implementation: the
+// entirely inside native/lang_foreign_arena.c's real C implementation: the
 // frozen TU actually allocates via posix_memalign (a real, different
-// physical allocator identity from schway_foreign_resource.c's plain
+// physical allocator identity from lang_foreign_resource.c's plain
 // malloc) and releases via the mismatched operator-delete entry point --
 // a genuine allocator-identity mismatch the STATIC declared-string check
 // cannot see, because it never inspects the real C implementation behind
@@ -24,7 +24,7 @@ export {
 
 foreign C {
 
-  fn schway_arena_open(request: Byte) -> Byte {
+  fn lang_arena_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -36,6 +36,6 @@ data ArenaError =
   | ArenaOpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try schway_arena_open(request)
+  let handle = try lang_arena_open(request)
   request
 }

@@ -9,7 +9,7 @@ export {
 
 foreign C {
 
-  fn schway_res_open(request: Byte) -> Byte {
+  fn lang_res_open(request: Byte) -> Byte {
     allocator: "libc_malloc"
     fails: AcquireError
   }
@@ -19,6 +19,6 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try schway_res_open(request)
+  let handle = try lang_res_open(request)
   handle
 }

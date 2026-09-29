@@ -3,7 +3,7 @@
 // parameter and whose second arm returns a live exclusive borrow of it.
 // Neither arm's answer may silently win: RecomputeOrigin must report the
 // AccessConflicting sentinel, and no declaration (undeclared, declared
-// shared, or declared exclusive) may be accepted for it. `schway check`
+// shared, or declared exclusive) may be accepted for it. `lang check`
 // accepts this program unchanged; `lang interface export` must refuse it.
 
 module owned.public_view_multi_arm_access_conflict
