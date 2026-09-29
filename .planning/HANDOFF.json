@@ -1,0 +1,80 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-09-29T00:20:20.621Z",
+  "phase": "23",
+  "phase_name": "Live Local Allocation and Discharge",
+  "phase_dir": ".planning/phases/23-live-local-allocation-and-discharge",
+  "plan": 7,
+  "task": 0,
+  "total_tasks": 7,
+  "status": "paused",
+  "completed_tasks": [
+    {
+      "id": 1,
+      "name": "Phase 23 implementation plans 23-01 through 23-07 complete at revision c50430d",
+      "status": "done",
+      "commit": "c50430d"
+    },
+    {
+      "id": 2,
+      "name": "Record Schway as the chosen public language name and update active identity docs",
+      "status": "done",
+      "commit": "f4315ae"
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": 3,
+      "name": "Choose the public GitHub owner/repository path and coordinate technical identifiers before the first public source push",
+      "status": "not_started"
+    },
+    {
+      "id": 4,
+      "name": "Obtain the hosted Ubuntu evidence-aggregate receipt, then resume Phase 23 verifier gates",
+      "status": "blocked"
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Phase 23 requires a passing hosted Ubuntu evidence-aggregate receipt; this checkout has no Git remote, and local macOS/container receipts do not substitute for hosted CI.",
+      "type": "external",
+      "workaround": "After the public repository path is settled and the hosted job can run, obtain the receipt at c50430d or later, then run $gsd-execute-phase 23. It resumes at verifier gates; do not replay completed plans or UAT."
+    }
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {
+      "action": "End this LLM session, rename ~/projects/ai-lang to ~/projects/schway, open a new session rooted at the renamed checkout, and run $gsd-resume-work.",
+      "context": "The user wants the local checkout to match the chosen language name before preparing the public GitHub repository. The target path was checked and is free; this is the sole registered worktree.",
+      "blocking": true
+    },
+    {
+      "action": "Choose the GitHub owner and canonical repository path (intended repository name: schway) before publishing the source tree.",
+      "context": "The Go module is still github.com/codename-lang/lang. The owner/path determines its replacement and the coordinated CLI, extension, schema, build, CI, fixture, and documentation migration. The user wants that work complete before the first public source push.",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Schway is the settled public name for the language and project.",
+      "rationale": "The user selected Schway on 2026-09-28. An exact-name search did not surface a programming language; the unrelated schway.com content-marketing service was accepted. Do not reopen naming absent a material direct conflict.",
+      "phase": "project"
+    },
+    {
+      "decision": "Rename technical distribution identifiers together after the GitHub owner/path is chosen and before the first public source push.",
+      "rationale": "The user's original reason for settling the name now was to avoid a painful rename after public GitHub upload. Keep old implementation identifiers private until the coordinated migration is ready.",
+      "phase": "project"
+    },
+    {
+      "decision": "Keep Phase 23 incomplete until the hosted Ubuntu evidence-aggregate receipt exists; after receipt, resume at verifier gates without plan or UAT replay.",
+      "rationale": "The current verification report has one external hosted-CI gap; local host evidence does not satisfy it.",
+      "phase": "23"
+    }
+  ],
+  "uncommitted_files": [
+    "?? .planning/milestone.lock",
+    "?? .planning/research/.cache/"
+  ],
+  "next_action": "After the user renames the checkout and opens a new session, run $gsd-resume-work. Then settle the GitHub owner/path and complete the coordinated technical rename before the first public source push. Resume Phase 23 with $gsd-execute-phase 23 only after its hosted Ubuntu receipt is available.",
+  "context_notes": "The active phase is Phase 23 at its verifier gate: all seven plans are complete. The current checkout is on branch gsd/phase-16-gap-closure even though STATE.md correctly identifies Phase 23; trust the phase handoff and do not replay Phase 22 or Phase 23 plans. The phase-detection glob in pause-work.md expects PLAN.md, while this repository uses numbered files such as 23-07-PLAN.md; phase 23 was selected from canonical STATE.md and its artifacts. A placeholder scan matched 23-05-SUMMARY.md only because it says no placeholder stubs were found; inspection confirmed this is not placeholder content. The stale-by-age advisory .planning/milestone.lock and .planning/research/.cache/ were pre-existing and left untouched."
+}
