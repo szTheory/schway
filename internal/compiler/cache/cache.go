@@ -41,7 +41,7 @@ import (
 // every other schema in the compiler (a new constant beside its peers --
 // core.Schema1, evidence.Schema1, debugmap.Schema, ... -- never editing an
 // existing one).
-const Schema = "schway.cache-meta/1"
+const Schema = "lang.cache-meta/1"
 
 // MaxArtifactBytes and MaxMetaBytes are declared byte caps (T-06-CACHE-05):
 // Get reads through them rather than accumulating an unbounded amount of

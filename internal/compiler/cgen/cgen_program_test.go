@@ -409,7 +409,7 @@ func TestProgramNoreturnExemptionIsNarrow(t *testing.T) {
 	if strings.Count(generated, "_Noreturn") != 1 || !strings.Contains(generated, "_Noreturn static void schway_defect") {
 		t.Fatalf("_Noreturn must appear only on schway_defect:\n%s", generated)
 	}
-	if strings.Index(generated, "schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/2") > strings.Index(generated, "schway_defect(\"halt requested\")") {
+	if strings.Index(generated, "schway_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2") > strings.Index(generated, "schway_defect(\"halt requested\")") {
 		t.Fatalf("defect document must be emitted before schway_defect:\n%s", generated)
 	}
 }
@@ -1053,7 +1053,7 @@ func TestProgramWritesExecutionSchema2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	for _, want := range []string{"{\\\"schema\\\":\\\"schway.execution/2\\\"", ",\\\"invocation\\\":", ",\\\"callee_function_id\\\":"} {
+	for _, want := range []string{"{\\\"schema\\\":\\\"lang.execution/2\\\"", ",\\\"invocation\\\":", ",\\\"callee_function_id\\\":"} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("schema-2 generated C is missing %q:\n%s", want, generated)
 		}
@@ -1138,7 +1138,7 @@ func TestLegacyEventWritersFrozen(t *testing.T) {
 
 // TestEmitProgramEndToEndAgreesWithInterpreterAtO0 drives
 // multi_function_entry_basic.schway through session's own run path on both
-// engines and asserts the two schway.execution/1 documents are equal --
+// engines and asserts the two lang.execution/1 documents are equal --
 // end to end through session, not only through a unit test calling cgen
 // directly.
 func TestEmitProgramEndToEndAgreesWithInterpreterAtO0(t *testing.T) {
@@ -1487,7 +1487,7 @@ func TestPhase22ApplicationEmitterSharesBodyAndSeparatesOutputShell(t *testing.T
 		t.Fatalf("application shell is missing its transport bound or plain decimal output:\n%s", appEntry)
 	}
 	evidenceBranch := strings.Index(appEntry, "const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\")")
-	if evidenceBranch < 0 || strings.Contains(appEntry[:evidenceBranch], "schway.execution/2") || strings.Contains(appEntry[:evidenceBranch], "schway_write_events()") {
+	if evidenceBranch < 0 || strings.Contains(appEntry[:evidenceBranch], "lang.execution/2") || strings.Contains(appEntry[:evidenceBranch], "schway_write_events()") {
 		t.Fatalf("application shell serializes compiler evidence before the private capture branch:\n%s", appEntry)
 	}
 	if !strings.Contains(appEntry[evidenceBranch:], "schway_output_stream = schway_evidence_file") || !strings.Contains(appEntry[evidenceBranch:], "schway_write_events()") {
@@ -1496,7 +1496,7 @@ func TestPhase22ApplicationEmitterSharesBodyAndSeparatesOutputShell(t *testing.T
 	if !strings.Contains(application, "static FILE *schway_output_stream = NULL;") || !strings.Contains(application, "schway_output_stream != NULL ? schway_output_stream : stdout") {
 		t.Fatal("application evidence writer must use a portable runtime stdout fallback")
 	}
-	if !strings.Contains(conformance[conformanceMain:], "schway.execution/2") || !strings.Contains(conformance[conformanceMain:], "schway_write_events()") {
+	if !strings.Contains(conformance[conformanceMain:], "lang.execution/2") || !strings.Contains(conformance[conformanceMain:], "schway_write_events()") {
 		t.Fatal("conformance emitter lost its execution-document shell")
 	}
 }
@@ -1521,7 +1521,7 @@ func TestPhase23PhysicalDestructorControlsKeepEventsPlausible(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmitApplication: %v", err)
 	}
-	if !strings.Contains(generated, "schway.execution/2") || !strings.Contains(generated, `schway_record_event("function.returned"`) {
+	if !strings.Contains(generated, "lang.execution/2") || !strings.Contains(generated, `schway_record_event("function.returned"`) {
 		t.Fatal("compiler-side event capture lost its ordinary schema-2 returned execution record")
 	}
 	if !strings.Contains(generated, "schway_file_byte_release(") {

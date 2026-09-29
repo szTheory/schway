@@ -508,7 +508,7 @@ func runDebugMap(source, query string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
-// runExplain is D-06-02's/D-06-04's CLI seam for the net-new `schway.explain/0`
+// runExplain is D-06-02's/D-06-04's CLI seam for the net-new `lang.explain/0`
 // schema: it re-derives the requested diagnostic's bounded cause DAG from
 // SRC on this cold invocation alone (D-06-02 forbids any persisted store or
 // daemon a bare ID could resolve against, matching the `debug-map SRC
@@ -521,7 +521,7 @@ func runExplain(source, id string, depth int, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
-// runQuery is D-06-01's CLI seam for the net-new `schway.query/0` schema: one
+// runQuery is D-06-01's CLI seam for the net-new `lang.query/0` schema: one
 // joined addressing surface over the five stable ID vocabularies already
 // shipped in the tree, re-derived from SRC on this cold invocation alone
 // (matching explain/debug-map's no-persisted-store discipline).

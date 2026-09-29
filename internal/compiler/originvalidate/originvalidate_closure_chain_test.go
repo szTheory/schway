@@ -285,7 +285,7 @@ func TestClosureDigestDeterministicAcrossCorpus(t *testing.T) {
 }
 
 // TestClosureDigestSummaryCarriesNoEdgeList is Task 1 Test 6 (D-07-11):
-// over a multi-function program, the marshalled schway.interface/1 document
+// over a multi-function program, the marshalled lang.interface/1 document
 // contains no callee_id field at all -- the closure-digest chain reads
 // call-graph edges to BUILD a preimage, but never publishes them. Edges
 // stay in callgraph; the summary carries only closure-derived scalars.

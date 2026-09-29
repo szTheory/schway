@@ -108,7 +108,7 @@ func TestBorrowConflictMatrix(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.fixture, func(t *testing.T) {
 			problem := borrowConflictDiagnostic(t, test.fixture, test.code)
-			if problem.Schema != "schway.diagnostic/1" || len(problem.Repairs) == 0 {
+			if problem.Schema != "lang.diagnostic/1" || len(problem.Repairs) == 0 {
 				t.Fatalf("%s: rejection must join the repair-bearing taxonomy: %+v", test.fixture, problem)
 			}
 		})

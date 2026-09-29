@@ -182,7 +182,7 @@ var interproceduralOrderingBaselineDirs = []string{
 // built to prevent.
 var interproceduralOrderingBaseline = map[string][2]string{
 	"phase07/call_argument_used_twice.schway": {"ownership.use_after_move", "diagnostic:8e3116d77bcb23bd6b84396b"},
-	// 13-05 Task 3 (D-13-09a): re-pinned once (schema schway.diagnostic/0 ->
+	// 13-05 Task 3 (D-13-09a): re-pinned once (schema lang.diagnostic/0 ->
 	// /1, plus a use_matching_argument repair on the one-match partition).
 	// 13-06 (D-13-10a) re-pins it a SECOND time: the use_matching_argument
 	// repair was adjudicated empirically to be a byte-identical no-op on
@@ -201,8 +201,8 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	"phase07/foreign_symbol_shadowing.schway": {"core.call_graph_cycle", "diagnostic:3fa66ee8773176867ffb9b4e"},
 	// Updated 13-01 (D-13-09a): re-pinned, not an ordering change. Attaching
 	// a repair to check.interprocedural_loan_liveness forces the emission
-	// site to switch from diagnostic.Error (schema schway.diagnostic/0) to
-	// diagnostic.ErrorWithRepairs (schema schway.diagnostic/1) UNCONDITIONALLY
+	// site to switch from diagnostic.Error (schema lang.diagnostic/0) to
+	// diagnostic.ErrorWithRepairs (schema lang.diagnostic/1) UNCONDITIONALLY
 	// -- the Schema string itself is inside the hashed identity struct, so
 	// every fixture of this code churns its ID whether or not a repair
 	// actually fires here. This fixture is the FORWARD direction (the loan
@@ -335,7 +335,7 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	"phase3/exclusive_move_reject.schway":      {"ownership.move_while_borrowed", "diagnostic:8038bd1955c8b4cbd98b445d"},
 	"phase3/shared_exclusive_reject.schway":    {"ownership.borrow_conflict", "diagnostic:2ac14b431c0d5a98db75e10d"},
 	// 13-05 Task 1/3 (D-13-09a): re-pinned. This code now builds via
-	// diagnostic.ErrorWithRepairs unconditionally (schema schway.diagnostic/0
+	// diagnostic.ErrorWithRepairs unconditionally (schema lang.diagnostic/0
 	// -> /1) and carries a wrap_call_in_try repair when the callee name and
 	// its single argument name are both non-empty (true here). Source bytes
 	// unchanged; only the schema switch and the new repair, both deliberate.

@@ -26,11 +26,11 @@ import (
 )
 
 const (
-	Schema0           = "schway.evidence/0"
-	Schema1           = "schway.evidence/1"
+	Schema0           = "lang.evidence/0"
+	Schema1           = "lang.evidence/1"
 	Schema            = Schema0
 	IDAlgorithm       = "sha256-v1"
-	SourceSchema      = "schway.source/s1"
+	SourceSchema      = "lang.source/s1"
 	DigestClaim       = "content-identity-only"
 	MaxManifestBytes  = 1 << 20
 	MaxToolProbeBytes = 64 * 1024
@@ -66,7 +66,7 @@ type Manifest struct {
 	DigestClaim      string   `json:"digest_claim,omitempty"`
 	KnownEscape      string   `json:"known_escape,omitempty"`
 	// ForeignDigest is Phase 4 plan 03's additive omitempty field
-	// (D-04-12c/D-04-23): the content digest of the program's schway.foreign/0
+	// (D-04-12c/D-04-23): the content digest of the program's lang.foreign/0
 	// sidecar manifest, set only when the program declares a foreign block.
 	// It is a new trailing field on the /1 identity struct only (manifestID)
 	// -- never inserted into the /0 struct -- so a program with no foreign

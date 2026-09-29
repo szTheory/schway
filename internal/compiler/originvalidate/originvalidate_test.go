@@ -1157,7 +1157,7 @@ func TestStaleSummaryRejectedBeforeOtherChecks(t *testing.T) {
 // JSON validity and CoreDigest").
 func TestCheckSummaryRoutesThroughDecodeInterface(t *testing.T) {
 	missingModeDoc := []byte(`{
-		"schema": "schway.interface/1",
+		"schema": "lang.interface/1",
 		"module_id": "m",
 		"core_digest": "` + validClosureDigestPlaceholder + `",
 		"functions": [{
@@ -1177,19 +1177,19 @@ func TestCheckSummaryRoutesThroughDecodeInterface(t *testing.T) {
 }
 
 // TestCheckSummaryRefusesV0Document is D-07-36/T-07-02's CheckSummary-level
-// falsifier: a schway.interface/0 document is decodable but never admissible
+// falsifier: a lang.interface/0 document is decodable but never admissible
 // for a call, so CheckSummary must refuse it rather than silently answering
 // origin questions from a frozen legacy shape it was never validated
 // against.
 func TestCheckSummaryRefusesV0Document(t *testing.T) {
 	if _, err := originvalidate.CheckSummary([]byte(pinnedV0DocumentForCheckSummary), []byte(`{}`)); err == nil {
-		t.Fatal("expected CheckSummary to refuse a schway.interface/0 document")
+		t.Fatal("expected CheckSummary to refuse a lang.interface/0 document")
 	} else if code := errorCode(err); code != "origin.summary_not_admissible" {
 		t.Fatalf("expected origin.summary_not_admissible, got %q (%v)", code, err)
 	}
 }
 
-const pinnedV0DocumentForCheckSummary = `{"schema":"schway.interface/0","module_id":"m1","core_digest":"` + validClosureDigestPlaceholder + `","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","abilities":[]}]}`
+const pinnedV0DocumentForCheckSummary = `{"schema":"lang.interface/0","module_id":"m1","core_digest":"` + validClosureDigestPlaceholder + `","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","abilities":[]}]}`
 
 // residual: a coordinated frontend-and-summary lie is declared as a named
 // expected escape, never solved and never silently absent.

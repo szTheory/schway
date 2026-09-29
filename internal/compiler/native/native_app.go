@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	ApplicationBuildSchema      = "schway.app-build/1"
-	ApplicationEvidenceSchema   = "schway.app-evidence/1"
-	applicationCaptureSchema    = "schway.app-capture/1"
+	ApplicationBuildSchema      = "lang.app-build/1"
+	ApplicationEvidenceSchema   = "lang.app-evidence/1"
+	applicationCaptureSchema    = "lang.app-capture/1"
 	MaxApplicationArgumentBytes = 4096
 	maxApplicationReceiptBytes  = 64 * 1024
 )

@@ -28,7 +28,7 @@ func TestUnexecutableShapeRejectedWithSpan(t *testing.T) {
 		if problem.Code != "check.unexecutable_shape" {
 			t.Fatalf("unexpected code %q: %+v", problem.Code, problem)
 		}
-		if problem.Schema != "schway.diagnostic/1" {
+		if problem.Schema != "lang.diagnostic/1" {
 			t.Fatalf("unexecutable-shape rejection must join the repair-bearing taxonomy: %+v", problem)
 		}
 		if problem.Primary.Start == 0 && problem.Primary.End == 0 {

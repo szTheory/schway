@@ -42,7 +42,7 @@ const maxStdoutBytes = 1 << 20
 const subprocessTimeout = 30 * time.Second
 
 // jsonSpan, jsonRepair, jsonDiagnostic, and checkResult are the driver's own
-// minimal local re-declarations of the `schway.command/1` document shape it
+// minimal local re-declarations of the `lang.command/1` document shape it
 // consumes (D-06-28: the driver may not import
 // internal/compiler/protocol or internal/compiler/diagnostic). They
 // deliberately omit every prose field -- the diagnostic's own top-level

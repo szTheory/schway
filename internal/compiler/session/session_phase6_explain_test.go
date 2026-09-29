@@ -528,7 +528,7 @@ var wantExplainEdgeKindsBeforeGuard = map[string][]string{
 	"phase3/shared_exclusive_reject.schway|diagnostic:2ac14b431c0d5a98db75e10d":         {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
 	// 13-05 Task 1/3 (D-13-09a): re-pinned. syntax.fallible_call_not_consumed
 	// now builds via diagnostic.ErrorWithRepairs unconditionally (schema
-	// schway.diagnostic/0 -> /1), which churns this diagnostic's ID; edge
+	// lang.diagnostic/0 -> /1), which churns this diagnostic's ID; edge
 	// kinds are unaffected (still zero edges -- this diagnostic carries no
 	// Causes, only a wrap_call_in_try Repair, and Repairs never produce
 	// explain edges).
@@ -546,9 +546,9 @@ var wantExplainEdgeKindsBeforeGuard = map[string][]string{
 // baseline captured before Task 3's guard landed. Run again after the
 // guard lands (this same test, unchanged), its pass/fail IS the D-13-20
 // observation: if it still passes, zero edge kinds flipped on unchanged
-// single-function input and ExplainSchema stays at schway.explain/0; if it
+// single-function input and ExplainSchema stays at lang.explain/0; if it
 // fails, the SUMMARY must record exactly what changed and ExplainSchema
-// must bump to schway.explain/1 in the same commit as the guard (never
+// must bump to lang.explain/1 in the same commit as the guard (never
 // silently).
 func TestExplainEdgeKindsAreRecordedForGuardComparison(t *testing.T) {
 	got := map[string][]string{}
@@ -581,7 +581,7 @@ func TestExplainEdgeKindsAreRecordedForGuardComparison(t *testing.T) {
 			t.Fatalf("baseline entry %q missing from the current corpus run", key)
 		}
 		if fmt.Sprint(gotKinds) != fmt.Sprint(wantKinds) {
-			t.Fatalf("D-13-20 OBSERVATION: edge kinds changed for %s: got %v, want (pre-guard baseline) %v -- this is a semantic change to published output; ExplainSchema must bump to schway.explain/1 in the same commit as the guard, and the SUMMARY must name this exact change", key, gotKinds, wantKinds)
+			t.Fatalf("D-13-20 OBSERVATION: edge kinds changed for %s: got %v, want (pre-guard baseline) %v -- this is a semantic change to published output; ExplainSchema must bump to lang.explain/1 in the same commit as the guard, and the SUMMARY must name this exact change", key, gotKinds, wantKinds)
 		}
 	}
 }

@@ -22,7 +22,7 @@ func TestOwnedEvidenceBindings(t *testing.T) {
 		t.Fatalf("owned evidence golden differs:\n--- got ---\n%s\n--- want ---\n%s", product.ManifestBytes, golden)
 	}
 	manifest := product.Manifest
-	if manifest.Schema != "schway.evidence/1" || manifest.CoreSchema != "schway.core/1" || manifest.ExecutionSchema != "schway.execution/1" || manifest.DiagnosticSchema != "schway.diagnostic/1" {
+	if manifest.Schema != "lang.evidence/1" || manifest.CoreSchema != "lang.core/1" || manifest.ExecutionSchema != "lang.execution/1" || manifest.DiagnosticSchema != "lang.diagnostic/1" {
 		t.Fatalf("owned evidence omitted concrete schemas: %+v", manifest)
 	}
 	if manifest.DigestClaim != "content-identity-only" || manifest.KnownEscape != corevalidate.KnownEscape {
@@ -61,7 +61,7 @@ func TestOwnedEvidenceMutationMatrix(t *testing.T) {
 		code string
 		edit func(*evidence.Manifest)
 	}{
-		{"diagnostic schema", "evidence.diagnostic_schema_mismatch", func(v *evidence.Manifest) { v.DiagnosticSchema = "schway.diagnostic/0" }},
+		{"diagnostic schema", "evidence.diagnostic_schema_mismatch", func(v *evidence.Manifest) { v.DiagnosticSchema = "lang.diagnostic/0" }},
 		{"execution digest", "evidence.execution_mismatch", func(v *evidence.Manifest) { v.ExecutionDigests[0] = staleDigest() }},
 		{"escape", "evidence.escape_mismatch", func(v *evidence.Manifest) { v.KnownEscape = "detected:coordinated-source-core-lie" }},
 		{"digest claim", "evidence.digest_claim_mismatch", func(v *evidence.Manifest) { v.DigestClaim = "translation-proof" }},
@@ -172,7 +172,7 @@ func walkKeys(value any, visit func(string)) {
 // whatever code Build ever returns is preserved end to end.
 // TestForeignSidecarManifestDigestBinds proves Task 04-03-01: a program
 // declaring a foreign block produces a non-empty ForeignDigest that is
-// exactly the content digest of its own schway.foreign/0 sidecar manifest
+// exactly the content digest of its own lang.foreign/0 sidecar manifest
 // (D-04-12c), and a program with no foreign block leaves it empty.
 func TestForeignEvidenceIsRefusedAfterM004Cut(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
@@ -327,7 +327,7 @@ func TestEvidenceMutationMatrix(t *testing.T) {
 		code string
 		edit func(*evidence.Manifest)
 	}{
-		{"schema", "evidence.schema_mismatch", func(value *evidence.Manifest) { value.Schema = "schway.evidence/9" }},
+		{"schema", "evidence.schema_mismatch", func(value *evidence.Manifest) { value.Schema = "lang.evidence/9" }},
 		{"id algorithm", "evidence.id_algorithm_mismatch", func(value *evidence.Manifest) { value.IDAlgorithm = "other" }},
 		{"source schema", "evidence.source_schema_mismatch", func(value *evidence.Manifest) { value.SourceSchema = "other" }},
 		{"core schema", "evidence.core_schema_mismatch", func(value *evidence.Manifest) { value.CoreSchema = "other" }},
@@ -416,7 +416,7 @@ func TestEvidenceCLI(t *testing.T) {
 func FuzzEvidenceDecode(f *testing.F) {
 	product := goldenProduct(f)
 	f.Add(product.ManifestBytes)
-	f.Add([]byte(`{"schema":"schway.evidence/0"}`))
+	f.Add([]byte(`{"schema":"lang.evidence/0"}`))
 	f.Add([]byte("not json"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		manifest, err := evidence.DecodeStrict(data)

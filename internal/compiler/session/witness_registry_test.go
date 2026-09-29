@@ -500,7 +500,7 @@ func TestLTOInertnessOnMultiFunctionEmission(t *testing.T) {
 	if emitErr != nil {
 		t.Fatalf("Phase 16 match admission regressed: %v", emitErr)
 	}
-	if !strings.Contains(generated, "schway.execution/2") {
+	if !strings.Contains(generated, "lang.execution/2") {
 		t.Fatal("Phase 16 match admission did not emit the schema-2 one-TU program")
 	}
 }

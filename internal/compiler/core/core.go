@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	Schema  = "schway.core/0"
-	Schema1 = "schway.core/1"
+	Schema  = "lang.core/0"
+	Schema1 = "lang.core/1"
 )
 
 type Program struct {
@@ -171,7 +171,7 @@ type ForeignContract struct {
 	// calls into Lang, so all four are structurally fixed facts the compiler
 	// derives identically for every declared symbol (check.go's
 	// standardForeignObligations) rather than per-symbol declarations.
-	// Capture/Retention/Aliasing are additionally named in the schway.foreign/0
+	// Capture/Retention/Aliasing are additionally named in the lang.foreign/0
 	// sidecar manifest's unchecked_obligations list (D-04-12c), since nothing
 	// in this phase exercises them.
 	InitializedState string `json:"initialized_state,omitempty"`
@@ -272,12 +272,12 @@ type Interface struct {
 
 // InterfaceSchema versions the Interface artifact independently of the core
 // schema it summarizes: adding a field here never moves a core.Program byte.
-// Frozen (D-07-08): a schway.interface/0 document is decodable only by the
+// Frozen (D-07-08): a lang.interface/0 document is decodable only by the
 // pinned legacy struct InterfaceV0/FunctionSignatureV0, and is never
 // admissible for a call.
-const InterfaceSchema = "schway.interface/0"
+const InterfaceSchema = "lang.interface/0"
 
-// InterfaceSchema1 mints schway.interface/1 (D-07-08): the interprocedural
+// InterfaceSchema1 mints lang.interface/1 (D-07-08): the interprocedural
 // call contract. Every required field on FunctionSignature/ParameterContract/
 // ReturnContract below carries no omitempty and is refused when missing or
 // empty by DecodeInterface (07-01 Task 2) -- absence is an error, not a
@@ -285,10 +285,10 @@ const InterfaceSchema = "schway.interface/0"
 // never admissible for a call; this bump moves no core.Program byte, which
 // is exactly the property InterfaceSchema's independent versioning was
 // created to buy.
-const InterfaceSchema1 = "schway.interface/1"
+const InterfaceSchema1 = "lang.interface/1"
 
 // FunctionSignature is one function's body-stripped public surface under
-// schway.interface/1 (D-07-08/D-07-09): identity, the callee's per-parameter
+// lang.interface/1 (D-07-08/D-07-09): identity, the callee's per-parameter
 // ownership contract, its total return contract, its granted abilities,
 // whether it may be called at all, its failure vocabulary, its worst-case
 // foreign reach, and a canonical digest binding it to its own transitive
@@ -355,7 +355,7 @@ type FunctionSignature struct {
 }
 
 // ParameterContract is one parameter's ownership contract under
-// schway.interface/1 (D-07-09). Every field is required.
+// lang.interface/1 (D-07-09). Every field is required.
 type ParameterContract struct {
 	// ID, Name, and Type are copied verbatim from core.Function.Parameter
 	// (R-01).
@@ -378,7 +378,7 @@ type ParameterContract struct {
 }
 
 // ReturnContract is a function's total return contract under
-// schway.interface/1 (D-07-09) — it subsumes the old optional PublicOrigin
+// lang.interface/1 (D-07-09) — it subsumes the old optional PublicOrigin
 // (R-01): the same two access modes, now total rather than optional. Every
 // field is required except where noted.
 type ReturnContract struct {
@@ -423,7 +423,7 @@ type ForeignReach struct {
 // granularity limits.
 const ForeignReachConflict = "conflict"
 
-// InterfaceV0 and FunctionSignatureV0 pin the frozen schway.interface/0 shape
+// InterfaceV0 and FunctionSignatureV0 pin the frozen lang.interface/0 shape
 // (D-07-08): exactly the pre-/1-bump field set. A /0 document is decodable
 // but never admissible for a call: FunctionSignatureV0 has no Callable,
 // Parameters, Return, or ClosureDigest field at all — admission is
@@ -503,7 +503,7 @@ func isValidDigest(value string) bool {
 }
 
 // DecodeInterface implements D-07-36: it peeks only the schema string, then
-// dispatches schway.interface/0 to the pinned InterfaceV0 path, schway.interface/1
+// dispatches lang.interface/0 to the pinned InterfaceV0 path, lang.interface/1
 // to strict validation, and any other schema value to a refusal. The
 // accepted-schema set {InterfaceSchema, InterfaceSchema1} is fail-closed
 // and is never widened to make a test pass.
@@ -526,7 +526,7 @@ func DecodeInterface(data []byte) (DecodedInterface, error) {
 	}
 }
 
-// decodeInterfaceV1 is DecodeInterface's strict schway.interface/1 validation
+// decodeInterfaceV1 is DecodeInterface's strict lang.interface/1 validation
 // path (D-07-36): every required field named on FunctionSignature/
 // ParameterContract/ReturnContract's doc comments is checked present and
 // non-empty, Mode is checked against its closed set, both digest fields are

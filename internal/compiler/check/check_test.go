@@ -430,7 +430,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 	if refused.DiagnosticCode != "ownership.borrow_requires_share" || refused.Diagnostic == nil {
 		t.Fatalf("borrow of a type without share was admitted: %+v", refused)
 	}
-	if refused.Diagnostic.Schema != "schway.diagnostic/1" || len(refused.Diagnostic.Repairs) != 1 {
+	if refused.Diagnostic.Schema != "lang.diagnostic/1" || len(refused.Diagnostic.Repairs) != 1 {
 		t.Fatalf("borrow gate did not select the repair-bearing schema: %+v", refused.Diagnostic)
 	}
 	if got, want := refused.Diagnostic.Primary, (diagnostic.Span{Start: 10, End: 13}); got != want {

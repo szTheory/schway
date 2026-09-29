@@ -1,5 +1,5 @@
 {
-  "schema": "schway.replay-cases/1",
+  "schema": "lang.replay-cases/1",
   "cases": [
     {
       "id": "identity-7",

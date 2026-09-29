@@ -6,8 +6,8 @@
 // match-bodied function with a straight-line one -- core.mixed_body_versions
 // -- and a bare-arm match function cannot share a program with an arm-bodied
 // one either, since corevalidate's per-function schema dispatch requires
-// schway.core/0 for a bare match but the whole program is bumped to
-// schway.core/1 the moment any function carries an arm body).
+// lang.core/0 for a bare match but the whole program is bumped to
+// lang.core/1 the moment any function carries an arm body).
 
 module phase07.call_from_both_match_arms
 

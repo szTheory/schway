@@ -794,7 +794,7 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		code string
 	}{
 		{name: "missing document fields", data: []byte(`{}`), code: "native.invalid_execution"},
-		{name: "unknown field", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[],"unknown":true}`), code: "native.invalid_execution"},
+		{name: "unknown field", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[],"unknown":true}`), code: "native.invalid_execution"},
 		{name: "duplicate document", data: append(append([]byte{}, valid...), valid...), code: "native.trailing_execution"},
 		{name: "trailing value", data: append(append([]byte{}, valid...), []byte(` true`)...), code: "native.trailing_execution"},
 		// D-04-20: an input that ends before a value finishes decoding (both
@@ -805,13 +805,13 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		{name: "malformed", data: []byte(`{"schema":`), code: "native.terminal_record_absent"},
 		{name: "truncated", data: append([]byte{}, valid[:len(valid)-1]...), code: "native.terminal_record_absent"},
 		{name: "oversized", data: append(append([]byte{}, valid...), []byte(strings.Repeat(" ", execution.MaxDocumentBytes))...), code: "native.run_stdout_truncated"},
-		{name: "duplicate key", data: []byte(`{"schema":"schway.execution/1","schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "unknown schema", data: []byte(`{"schema":"schway.execution/9","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "unknown outcome", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"mystery","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "empty outcome", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":""},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "unknown event", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"schway.execution/1","id":"e","kind":"mystery","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "missing transition fields", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"schway.execution/1","id":"e","kind":"value.copied","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "return before transition", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"schway.execution/1","id":"r","kind":"function.returned","function_id":"f","source_place":"p","type_id":"t"},{"schema":"schway.execution/1","id":"e","kind":"value.copied","function_id":"f","source_place":"p","target_place":"q","type_id":"t"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "duplicate key", data: []byte(`{"schema":"lang.execution/1","schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown schema", data: []byte(`{"schema":"lang.execution/9","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown outcome", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"mystery","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "empty outcome", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":""},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown event", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"e","kind":"mystery","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "missing transition fields", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"e","kind":"value.copied","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "return before transition", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"r","kind":"function.returned","function_id":"f","source_place":"p","type_id":"t"},{"schema":"lang.execution/1","id":"e","kind":"value.copied","function_id":"f","source_place":"p","target_place":"q","type_id":"t"}],"live_resources":[]}`), code: "native.invalid_execution"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -842,7 +842,7 @@ func TestPhase20NativeCacheReusesArtifactButRunsFreshInputs(t *testing.T) {
 	const source = `#include <stdio.h>
 int main(int argc, char **argv) {
   (void)argc;
-  printf("{\"schema\":\"schway.execution/1\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%s\"},\"events\":[{\"schema\":\"schway.execution/1\",\"id\":\"return\",\"kind\":\"function.returned\",\"function_id\":\"fn\",\"source_place\":\"place\",\"type_id\":\"type\"}],\"live_resources\":[]}\n", argv[1]);
+  printf("{\"schema\":\"lang.execution/1\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%s\"},\"events\":[{\"schema\":\"lang.execution/1\",\"id\":\"return\",\"kind\":\"function.returned\",\"function_id\":\"fn\",\"source_place\":\"place\",\"type_id\":\"type\"}],\"live_resources\":[]}\n", argv[1]);
   return 0;
 }`
 	runner := Runner{BuildCache: store, Timeout: 10 * time.Second}
@@ -1013,7 +1013,7 @@ func TestPhase20IncompleteNativeManifestBypassesReuse(t *testing.T) {
 	if err := os.WriteFile(header, []byte("#define VALUE 1\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	source := `#include "` + header + `"` + "\n#include <stdio.h>\nint main(int argc,char **argv){(void)argc;printf(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"%s\\\"},\\\"events\\\":[{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"id\\\":\\\"return\\\",\\\"kind\\\":\\\"function.returned\\\",\\\"function_id\\\":\\\"fn\\\",\\\"source_place\\\":\\\"place\\\",\\\"type_id\\\":\\\"type\\\"}],\\\"live_resources\\\":[]}\\n\",argv[1]);return VALUE-1;}\n"
+	source := `#include "` + header + `"` + "\n#include <stdio.h>\nint main(int argc,char **argv){(void)argc;printf(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"%s\\\"},\\\"events\\\":[{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\\\"return\\\",\\\"kind\\\":\\\"function.returned\\\",\\\"function_id\\\":\\\"fn\\\",\\\"source_place\\\":\\\"place\\\",\\\"type_id\\\":\\\"type\\\"}],\\\"live_resources\\\":[]}\\n\",argv[1]);return VALUE-1;}\n"
 	runner := Runner{BuildCache: &cache.Store{Root: filepath.Join(dir, "cache")}}
 	result, err := runner.Run(context.Background(), source, "-O0", []string{"fresh"})
 	if err != nil {
@@ -1077,7 +1077,7 @@ func TestNativeHelperProcess(t *testing.T) {
 		// then die by SIGABRT -- exactly the shape a real schway_defect()
 		// call leaves behind if fired mid-stream. Proves the parent's own
 		// stdout capture retains every byte written before the signal.
-		_, _ = os.Stdout.WriteString(`{"schema":"schway.execution/1","events":[{"schema":"schway.execution/1","id":"op:0:event","kind":"value.copied","function_id":"fn:probe","source_place":"place:0","target_place":"place:1","type_id":"type:0"}`)
+		_, _ = os.Stdout.WriteString(`{"schema":"lang.execution/1","events":[{"schema":"lang.execution/1","id":"op:0:event","kind":"value.copied","function_id":"fn:probe","source_place":"place:0","target_place":"place:1","type_id":"type:0"}`)
 		_ = os.Stdout.Sync()
 		_ = syscall.Kill(os.Getpid(), syscall.SIGABRT)
 		time.Sleep(5 * time.Second) // should never be reached
@@ -1169,7 +1169,7 @@ func TestValidateExecutionSchema2(t *testing.T) {
 		{"extra callee", func(v execution.Execution) execution.Execution { v.Events[1].CalleeFunctionID = "fn:other"; return v }},
 		{"duplicate pair", func(v execution.Execution) execution.Execution { v.Events[2].ID = v.Events[0].ID; return v }},
 		{"unknown kind", func(v execution.Execution) execution.Execution { v.Events[1].Kind = "future.event"; return v }},
-		{"unknown schema", func(v execution.Execution) execution.Execution { v.Schema = "schway.execution/3"; return v }},
+		{"unknown schema", func(v execution.Execution) execution.Execution { v.Schema = "lang.execution/3"; return v }},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := validateExecution(test.mutate(clone(valid)), ExpectValue); err == nil {
@@ -1317,7 +1317,7 @@ func TestDefectExpectationRejectsReturnedDocument(t *testing.T) {
 // with its own distinct code, never an ordinary "invalid_execution" parse
 // error and never tolerated as a passing run.
 func TestTerminalRecordAbsenceIsHardFailure(t *testing.T) {
-	_, err := decodeExecution([]byte(`{"schema":"schway.execution/1","events":[`), ExpectValue)
+	_, err := decodeExecution([]byte(`{"schema":"lang.execution/1","events":[`), ExpectValue)
 	var toolError *ToolError
 	if !errors.As(err, &toolError) || toolError.Code != "native.terminal_record_absent" {
 		t.Fatalf("code=%v want=native.terminal_record_absent err=%v", toolError, err)
@@ -1335,7 +1335,7 @@ func TestTruncationAndAbsenceReportDistinctCodes(t *testing.T) {
 	if !errors.As(truncErr, &truncToolError) || truncToolError.Code != "native.run_stdout_truncated" {
 		t.Fatalf("truncation code=%v want=native.run_stdout_truncated err=%v", truncToolError, truncErr)
 	}
-	_, absentErr := decodeExecution([]byte(`{"schema":"schway.execution/1"`), ExpectValue)
+	_, absentErr := decodeExecution([]byte(`{"schema":"lang.execution/1"`), ExpectValue)
 	var absentToolError *ToolError
 	if !errors.As(absentErr, &absentToolError) || absentToolError.Code != "native.terminal_record_absent" {
 		t.Fatalf("absence code=%v want=native.terminal_record_absent err=%v", absentToolError, absentErr)

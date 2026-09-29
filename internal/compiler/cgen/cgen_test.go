@@ -513,7 +513,7 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 					t.Fatalf("generated C omits runtime serialization %q:\n%s", required, generated)
 				}
 			}
-			if strings.Contains(generated, `puts("{\"schema\":\"schway.execution/1\"`) {
+			if strings.Contains(generated, `puts("{\"schema\":\"lang.execution/1\"`) {
 				t.Fatalf("generated C embeds a precomputed execution document:\n%s", generated)
 			}
 			operation := strings.Index(generated, test.transfer)

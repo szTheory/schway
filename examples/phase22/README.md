@@ -49,7 +49,7 @@ The app's caller-owned stdout and stderr streams are passed through without a
 byte cap. Conformance runs used by `app verify` cap each execution document at
 16 MiB and compiler/process diagnostic streams at 64 KiB.
 
-`--report` by itself writes a `schway.app-evidence/1` record with
+`--report` by itself writes a `lang.app-evidence/1` record with
 `capture_status: "disabled"`. Adding `--evidence=events` asks the same child
 process to write its checked compiler events through a private file channel.
 The event/report bound is 64 KiB. A report includes build, artifact, source,
@@ -73,7 +73,7 @@ schway app verify examples/phase22/identity.schway \
   --report ./identity-verification.json
 ```
 
-The closed `schway.replay-cases/1` file holds one to sixteen isolated cases. Each
+The closed `lang.replay-cases/1` file holds one to sixteen isolated cases. Each
 `source` case supplies a canonical decimal input, an independently authored
 expected `U64` result, and an explicit empty `foreign_outcomes` array. The
 verifier checks the source once, then compares each case's ordered execution
@@ -97,7 +97,7 @@ It never compiles Lang foreign calls or executes C. The report names this kind
 and sets `actual_host_io` and `physical_cleanup` to `false`; a scripted result
 does not establish host IO or physical resource cleanup.
 
-Application verification writes `schway.app-verification/1`. Only a report whose
+Application verification writes `lang.app-verification/1`. Only a report whose
 every case passed the engine comparisons and independent expected answer has
 `verified: true`. This is controlled local evidence, not a claim of complete
 toolchain provenance or behavior on another host.

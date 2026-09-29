@@ -60,7 +60,7 @@ func signatureByID(summary core.Interface) map[string]core.FunctionSignature {
 	return out
 }
 
-// structuralFieldsEqual compares every field of a schway.interface/1
+// structuralFieldsEqual compares every field of a lang.interface/1
 // FunctionSignature EXCEPT Callable and ClosureDigest: ClosureDigest is a
 // digest over the signature itself (comparing it is circular, not
 // independent evidence), and Callable's narrowed peer agreement is this

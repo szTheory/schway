@@ -13,7 +13,7 @@ import "testing"
 // exercise it directly.
 func TestDecodeInterfaceRequiredModeMutationKilled(t *testing.T) {
 	const missingModeDoc = `{
-		"schema": "schway.interface/1",
+		"schema": "lang.interface/1",
 		"module_id": "m",
 		"core_digest": "sha256:` + sixtyFourHex + `",
 		"functions": [{

@@ -63,7 +63,7 @@ resolution. After resolution the exact captured bytes are compiled and hashed.
 
 ## Build and evidence identity
 
-The adjacent `schway.app-build/1` receipt now contains `input_id`, `build_id`,
+The adjacent `lang.app-build/1` receipt now contains `input_id`, `build_id`,
 `identity`, the canonical `bindings`, the artifact digest and closure status.
 SHA-256 hashes a length-framed schema domain and canonical JSON fields:
 

@@ -1,5 +1,5 @@
 {
-  "schema": "schway.core/1",
+  "schema": "lang.core/1",
   "module": "phase5.coordinated_lie",
   "module_id": "s1:phase5.coordinated_lie:module:phase5.coordinated_lie",
   "data_types": null,

@@ -1,8 +1,8 @@
-// mismatch.go defines schway.mismatch/0 (D-05-26): the document an AI repair
+// mismatch.go defines lang.mismatch/0 (D-05-26): the document an AI repair
 // agent consumes to propose a fix for one interpreter-mismatch observation
 // without opening the full execution log. It is a NEW top-level schema at
-// /0 per this project's convention -- schway.diagnostic/1 and
-// schway.execution/0 identities do not move (D-05-39). See mismatch_test.go
+// /0 per this project's convention -- lang.diagnostic/1 and
+// lang.execution/0 identities do not move (D-05-39). See mismatch_test.go
 // for the golden round-trip and field-set enforcement tests, and
 // mutationkill_test.go for the three reducer vacuity-mode kills D-05-27
 // requires.
@@ -16,14 +16,14 @@ import (
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
 )
 
-// MismatchSchema is schway.mismatch/0's schema identity. Publishing a new
+// MismatchSchema is lang.mismatch/0's schema identity. Publishing a new
 // top-level schema identity is a one-way, published-contract commitment
 // (D-05-26): once emitted, consumers -- principally the AI repair agent
 // D-05-26 names as this document's primary consumer -- bind to its exact
 // field set, and changing the set later means a /1 bump, never an edit.
-// No other schema identity moves in this plan (D-05-39): no schway.core/2,
-// no schway.evidence/2, no schway.diagnostic/2.
-const MismatchSchema = "schway.mismatch/0"
+// No other schema identity moves in this plan (D-05-39): no lang.core/2,
+// no lang.evidence/2, no lang.diagnostic/2.
+const MismatchSchema = "lang.mismatch/0"
 
 // EventWindowSize is the bounded number of trailing events retained per
 // engine side in MismatchDocument.EventWindow (D-05-26/T-05-47): bounded
@@ -55,11 +55,11 @@ type CausalStep struct {
 	Place       string `json:"place,omitempty"`
 }
 
-// MismatchDocument is schway.mismatch/0.
+// MismatchDocument is lang.mismatch/0.
 //
 // Field set (Claude's Discretion -- see 05-12-SUMMARY.md's recorded
 // discretionary deviation, licensed by 05-CONTEXT.md's "Claude's
-// Discretion" block naming "the schway.mismatch/0 field encoding details"):
+// Discretion" block naming "the lang.mismatch/0 field encoding details"):
 // D-05-26's twelve fields (schema, diverging_axis, engine_pair,
 // diverging_operation_id, reduced_core, reduced_source, minimality,
 // total_recomputed_work, reduction_attempts, event_window, causal_chain,
@@ -68,7 +68,7 @@ type CausalStep struct {
 // one-way and D-05-39 pins every other identity against moving, so the
 // cost of adding evidence_id now (free, additive) is far lower than
 // adding it after publication (a /1 bump this discretion call avoids).
-// Causes REUSES schway.diagnostic/1's own []diagnostic.Cause shape
+// Causes REUSES lang.diagnostic/1's own []diagnostic.Cause shape
 // verbatim, so a repair agent parses one cause format project-wide.
 type MismatchDocument struct {
 	Schema               string                   `json:"schema"`

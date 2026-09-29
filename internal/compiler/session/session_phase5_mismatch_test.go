@@ -207,7 +207,7 @@ func TestForeignCallSequenceSeededDisagreement(t *testing.T) {
 
 // TestMismatchDocumentEmittedOnSeededDivergence drives plan 05-07's
 // AliasFactMutationRunner to a REAL divergence over
-// testdata/phase5/false_restrict_hoist.schway and asserts a schway.mismatch/0
+// testdata/phase5/false_restrict_hoist.schway and asserts a lang.mismatch/0
 // document is emitted with a non-empty reduced_source, a diverging_axis
 // matching the comparator's own verdict, and a minimality of fixpoint or
 // budget_exhausted (D-05-26).

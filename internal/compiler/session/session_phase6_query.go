@@ -129,7 +129,7 @@ type QueryOptions struct {
 // fact from SRC on this cold invocation alone (D-06-02's no-persisted-store
 // discipline extends to query, matching explain/debug-map), routes address
 // through the closed five-vocabulary dispatcher, optionally filters by
-// --kind, and returns a bounded, cursor-paginated page under schway.query/0.
+// --kind, and returns a bounded, cursor-paginated page under lang.query/0.
 func QueryCommandFile(path, address string, options QueryOptions) (protocol.Result, error) {
 	started := time.Now()
 	result := protocol.New("query", protocol.StatusPass)

@@ -109,7 +109,7 @@ func TestPeerCalleeFrameDrainedAdmitsDiscardedAcquisition(t *testing.T) {
 	}
 }
 
-// TestPeerCalleeFrameDrainedAdmitsNoLinearBody: a pure schway.core/0 match
+// TestPeerCalleeFrameDrainedAdmitsNoLinearBody: a pure lang.core/0 match
 // function (Linear == nil) trivially drains -- it acquires nothing.
 func TestPeerCalleeFrameDrainedAdmitsNoLinearBody(t *testing.T) {
 	function := core.Function{ID: "fn:match_only"}

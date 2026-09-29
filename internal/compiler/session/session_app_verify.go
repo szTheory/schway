@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	ReplayCasesSchema        = "schway.replay-cases/1"
-	ApplicationVerifySchema  = "schway.app-verification/1"
+	ReplayCasesSchema        = "lang.replay-cases/1"
+	ApplicationVerifySchema  = "lang.app-verification/1"
 	MaxReplayCasesBytes      = 64 * 1024
 	MaxReplayCaseCount       = 16
 	ReplayCaseSource         = "source"

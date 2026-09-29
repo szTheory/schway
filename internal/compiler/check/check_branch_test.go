@@ -115,8 +115,8 @@ func TestArmBodyLowersToBlocksAndEdges(t *testing.T) {
 
 // TestArmBodySchemaCrossLock proves the extended body/schema cross-lock
 // (03-PATTERNS I-7, corevalidate.go:106/109 extended): a match carrying any
-// arm body requires schway.core/1, an all-bare-arm match still requires
-// schway.core/0, and the reverse pairing is rejected fail-closed by the
+// arm body requires lang.core/1, an all-bare-arm match still requires
+// lang.core/0, and the reverse pairing is rejected fail-closed by the
 // independent validator, both directions.
 func TestArmBodySchemaCrossLock(t *testing.T) {
 	checked := session.Check([]byte(branchSource))
@@ -161,7 +161,7 @@ fn toggle(flag: Switch) -> Switch {
 	mislabeledBare := bareChecked.Program
 	mislabeledBare.Schema = core.Schema1
 	if result := corevalidate.Validate(mislabeledBare); result.Valid {
-		t.Fatalf("validator admitted a bare-arm match mislabeled schway.core/1")
+		t.Fatalf("validator admitted a bare-arm match mislabeled lang.core/1")
 	}
 
 	// Reverse pairing 2: the branch program forcibly relabeled /0 is
@@ -169,7 +169,7 @@ fn toggle(flag: Switch) -> Switch {
 	mislabeledBranch := checked.Program
 	mislabeledBranch.Schema = core.Schema
 	if result := corevalidate.Validate(mislabeledBranch); result.Valid {
-		t.Fatalf("validator admitted an arm-body match mislabeled schway.core/0")
+		t.Fatalf("validator admitted an arm-body match mislabeled lang.core/0")
 	}
 }
 

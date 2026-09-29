@@ -342,7 +342,7 @@ type BuildIdentityInputs struct {
 func (in BuildIdentityInputs) ID() string {
 	h := sha256.New()
 	encoded, _ := json.Marshal(in)
-	for _, field := range [][]byte{[]byte("schway.build-identity/1"), encoded} {
+	for _, field := range [][]byte{[]byte("lang.build-identity/1"), encoded} {
 		var size [8]byte
 		binary.BigEndian.PutUint64(size[:], uint64(len(field)))
 		h.Write(size[:])

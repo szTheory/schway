@@ -106,7 +106,7 @@ func cliVerify(t *testing.T, binary, corpus string) protocol.Result {
 
 // TestExplainCLIReturnsBoundedCauseDAG is the shipped-binary falsifier for
 // DX-02's explain half: `lang explain` answers a stable diagnostic ID with a
-// bounded, well-formed cause DAG under schway.explain/0 -- never a dump of the
+// bounded, well-formed cause DAG under lang.explain/0 -- never a dump of the
 // whole program.
 func TestExplainCLIReturnsBoundedCauseDAG(t *testing.T) {
 	binary := phase6CLI(t)
@@ -132,8 +132,8 @@ func TestExplainCLIReturnsBoundedCauseDAG(t *testing.T) {
 	if summary.Schema != protocol.ExplainSchema {
 		t.Fatalf("explain schema = %q, want %q", summary.Schema, protocol.ExplainSchema)
 	}
-	if !bytes.Contains(run.Stdout, []byte(`"schema":"schway.explain/0"`)) {
-		t.Fatalf("explain stdout omitted the literal schway.explain/0 schema: %s", run.Stdout)
+	if !bytes.Contains(run.Stdout, []byte(`"schema":"lang.explain/0"`)) {
+		t.Fatalf("explain stdout omitted the literal lang.explain/0 schema: %s", run.Stdout)
 	}
 	if summary.RootID != id {
 		t.Fatalf("explain root_id = %q, want the requested %q", summary.RootID, id)
@@ -265,8 +265,8 @@ func TestQueryCLIResolvesEveryStableIDVocabulary(t *testing.T) {
 			if decoded.Query.Schema != protocol.QuerySchema {
 				t.Fatalf("query schema = %q, want %q", decoded.Query.Schema, protocol.QuerySchema)
 			}
-			if !bytes.Contains(run.Stdout, []byte(`"schema":"schway.query/0"`)) {
-				t.Fatalf("query stdout omitted the literal schway.query/0 schema: %s", run.Stdout)
+			if !bytes.Contains(run.Stdout, []byte(`"schema":"lang.query/0"`)) {
+				t.Fatalf("query stdout omitted the literal lang.query/0 schema: %s", run.Stdout)
 			}
 			if len(decoded.Query.Facts) == 0 {
 				t.Fatalf("query %s returned no facts at all", address.address)
@@ -408,7 +408,7 @@ func TestQueryCLIUnknownIDReportsNotCaptured(t *testing.T) {
 
 // TestVerifyPhase1CLIEmitsCoordinatedSchemaBump is the shipped-binary
 // falsifier for D-06-31's coordinated additive bump: a real `verify` emits
-// schway.command/1 at the top level and schway.verify-lane/1 on every lane, with
+// lang.command/1 at the top level and lang.verify-lane/1 on every lane, with
 // no /0 string left anywhere in the document.
 func TestVerifyPhase1CLIEmitsCoordinatedSchemaBump(t *testing.T) {
 	binary := phase6CLI(t)
@@ -428,14 +428,14 @@ func TestVerifyPhase1CLIEmitsCoordinatedSchemaBump(t *testing.T) {
 			t.Fatalf("lane %s schema = %q, want %q", lane.ID, lane.Schema, protocol.LaneSchema1)
 		}
 	}
-	for _, literal := range []string{`"schema":"schway.command/1"`, `"schema":"schway.verify-lane/1"`} {
+	for _, literal := range []string{`"schema":"lang.command/1"`, `"schema":"lang.verify-lane/1"`} {
 		if !bytes.Contains(run.Stdout, []byte(literal)) {
 			t.Fatalf("verify stdout omitted %s", literal)
 		}
 	}
 	// The bump is coordinated: a half-landed or partially reverted change
 	// would leave a /0 string behind in real output.
-	for _, stale := range []string{"schway.command/0", "schway.verify-lane/0"} {
+	for _, stale := range []string{"lang.command/0", "lang.verify-lane/0"} {
 		if bytes.Contains(run.Stdout, []byte(stale)) {
 			t.Fatalf("verify stdout still carries %s -- the coordinated bump half-landed", stale)
 		}

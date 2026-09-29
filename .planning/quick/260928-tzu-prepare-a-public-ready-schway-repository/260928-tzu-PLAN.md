@@ -110,7 +110,9 @@ be zero; every required positive check and the exact source count must pass.
     old_module=$(count_text 'github[.]com/codename-lang/lang')
     old_cli=$(count_text 'cmd/lang(-repair)?(/|[^[:alnum:]_-])|/lang(-repair)?([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang-repair([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang[[:space:]]+(app|build|check|run|verify)([^[:alnum:]_]|$)')
     old_extension=$(count_text '[.]lang([^[:alnum:]_]|$)')
-    old_protocol=$(count_text '(^|[^[:alnum:]_])lang[.:]')
+    # Versioned lang.* schema identifiers are compatibility wire values and
+    # remain frozen; reject unversioned legacy namespaces and lang: labels.
+    old_protocol=$(count_text '(^|[^[:alnum:]_])lang:|(^|[^[:alnum:]_])lang[.]([a-z0-9][a-z0-9.-]*)([^/[:alnum:]_]|$)')
     old_abi=$(count_text '(^|[^[:alnum:]_])(lang_|LANG_)')
     old_paths=$(git ls-files | rg '(^cmd/lang(-repair)?/|^native/lang_|[.]lang$)' | wc -l | tr -d '[:space:]')
     printf 'old_module=%s old_cli=%s old_extension=%s old_protocol=%s old_abi=%s old_paths=%s\n' "$old_module" "$old_cli" "$old_extension" "$old_protocol" "$old_abi" "$old_paths"
@@ -231,3 +233,38 @@ receipt. Do not add GitHub secrets; the current workflow requires none.
 | T2 | Tampering | History filtering silently drops, reorders, or changes parent relationships or milestone tag targets. | high | Keep pruning disabled and compare every old commit's ordered parents through the old-to-new map; verify tag target mapping before pushing. |
 | T3 | Elevation of privilege | A history-rewrite command or GitHub operation reaches the public remote before the privacy gate passes. | high | Work in an isolated copy; keep the existing repository empty until the final scan is clean; push only the approved `main` and milestone tags. |
 </threat_model>
+
+## Dated CI reconciliation amendment (2026-09-29)
+
+The public repository is live and history preservation/privacy gates have
+passed. CI run `36596749598` confirms the first additive repair fixed Phase 23
+contract validation and Linux libc++ setup, but the overall checks and evidence
+aggregates remain red. Apply the following compatibility boundary to the
+remaining work:
+
+1. Keep Schway as the current public identity: module path, commands, `.schway`
+   source extension, active documentation, and current capability contracts.
+2. Preserve already-versioned wire identifiers (`/0`, `/1`, and other issued
+   versions) and their exact bytes. In particular, retain historical `lang.*`
+   schema strings until a separately versioned schema migration is designed. A
+   brand rename alone does not
+   authorize changing a frozen wire contract.
+3. Keep historical Phase 16/generated-C controls byte-frozen and linked to
+   their matching legacy adapter. For current Schway ABI changes, use the
+   existing change-ledger pattern: old/new hashes, moved responsibility,
+   structural reason, executable semantic witness, fixture, and disposition.
+4. Reconcile migration-caused source/diagnostic IDs and rewritten commit/line
+   references with explicit provenance. Do not bulk-regenerate expected hashes
+   or edit archived receipts to claim fresh verification.
+5. Refresh current corpus counts and move current-identity guidance so it does
+   not shift archived line-pinned findings. Run `git diff --check`, then use
+   hosted Ubuntu/macOS CI as the verification path. Before each additive push,
+   rerun the full reachable-ref privacy scan and require zero confirmed and
+   zero unclassified candidates.
+
+Complete the work in these batches: (A) `/0` schema compatibility; (B) current
+versus historical C ABI and source/diagnostic fingerprints; (C) rewritten
+commit references, groundedness line pins, and corpus docs; (D) full hosted CI
+green on both operating systems and both evidence aggregates. A batch is
+accepted only when its hosted checks pass or its remaining red checks are
+clearly isolated to the next batch.

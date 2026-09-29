@@ -11,7 +11,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
-const Schema = "schway.c17/0"
+const Schema = "lang.c17/0"
 
 // opCallGroupedArmForTest is Task 3's D-07-41/D-07-42 fault-injection seam
 // (QLT-08, plan 07-04's Test 4): when true, emitLinear's core.OpCall case
@@ -587,7 +587,7 @@ func emitEventSupport(out *strings.Builder, capacity int) {
 	out.WriteString("  size_t index;\n  for (index = 0u; index < schway_event_count; index++) {\n")
 	out.WriteString("    const SCHWAY_EVENT *event = &schway_events[index];\n")
 	out.WriteString("    if (index != 0u && !schway_write_bytes(\",\", 1u)) return 0;\n")
-	out.WriteString("    if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"id\\\":\") || !schway_write_json_string(event->id)) return 0;\n")
+	out.WriteString("    if (!schway_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\") || !schway_write_json_string(event->id)) return 0;\n")
 	out.WriteString("    if (!schway_write_literal(\",\\\"kind\\\":\") || !schway_write_json_string(event->kind)) return 0;\n")
 	out.WriteString("    if (!schway_write_literal(\",\\\"function_id\\\":\") || !schway_write_json_string(event->function_id)) return 0;\n")
 	out.WriteString("    if (event->source_place != NULL && (!schway_write_literal(\",\\\"source_place\\\":\") || !schway_write_json_string(event->source_place))) return 0;\n")
@@ -634,7 +634,7 @@ func emitEventSupportSchema2(out *strings.Builder, capacity, outputLimit int, ne
 		out.WriteString("static int schway_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id, const char *invocation, const char *callee_function_id) {\n  if (schway_event_count >= SCHWAY_EVENT_CAPACITY) return 0;\n  schway_events[schway_event_count++] = (SCHWAY_EVENT){kind, id, function_id, source_place, target_place, type_id, invocation, callee_function_id};\n  return 1;\n}\n\n")
 	}
 	out.WriteString("static int schway_write_events(void) {\n  size_t index;\n  for (index = 0u; index < schway_event_count; index++) {\n    const SCHWAY_EVENT *event = &schway_events[index];\n    if (index != 0u && !schway_write_bytes(\",\", 1u)) return 0;\n")
-	out.WriteString("    if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/2\\\",\\\"id\\\":\") || !schway_write_json_string(event->id)) return 0;\n    if (!schway_write_literal(\",\\\"kind\\\":\") || !schway_write_json_string(event->kind)) return 0;\n    if (!schway_write_literal(\",\\\"function_id\\\":\") || !schway_write_json_string(event->function_id)) return 0;\n")
+	out.WriteString("    if (!schway_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"id\\\":\") || !schway_write_json_string(event->id)) return 0;\n    if (!schway_write_literal(\",\\\"kind\\\":\") || !schway_write_json_string(event->kind)) return 0;\n    if (!schway_write_literal(\",\\\"function_id\\\":\") || !schway_write_json_string(event->function_id)) return 0;\n")
 	out.WriteString("    if (event->source_place != NULL && (!schway_write_literal(\",\\\"source_place\\\":\") || !schway_write_json_string(event->source_place))) return 0;\n    if (event->target_place != NULL && (!schway_write_literal(\",\\\"target_place\\\":\") || !schway_write_json_string(event->target_place))) return 0;\n    if (event->type_id != NULL && (!schway_write_literal(\",\\\"type_id\\\":\") || !schway_write_json_string(event->type_id))) return 0;\n")
 	out.WriteString("    if (!schway_write_literal(\",\\\"invocation\\\":\") || !schway_write_json_string(event->invocation)) return 0;\n    if (event->callee_function_id != NULL && (!schway_write_literal(\",\\\"callee_function_id\\\":\") || !schway_write_json_string(event->callee_function_id))) return 0;\n    if (!schway_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
 }
@@ -746,7 +746,7 @@ func payloadCTypeName(payloadType string) string {
 }
 
 // emitBranchOperations writes one arm block's straight-line C, in core
-// order, ending with the schway.execution/1 JSON document for that arm's
+// order, ending with the lang.execution/1 JSON document for that arm's
 // return. returnLiteral is the compile-time-known alternative name this
 // block always returns (see emitBranch's doc comment).
 func emitBranchOperations(out *strings.Builder, function core.Function, dataType core.DataType, alternativeBySource, payloadFieldBySource map[string]string, places map[string]core.Place, locals map[string]string, operationsByID map[string]core.LinearOperation, operationIDs []string, typeName, returnLiteral string) error {
@@ -790,7 +790,7 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 			fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, NULL, %s)) return 74; /* returned place: %s */\n",
 				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
-			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
+			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
 			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(returnLiteral))
 			out.WriteString("      if (!schway_write_literal(\"},\\\"events\\\":[\")) return 74;\n")
 			out.WriteString("      if (!schway_write_events()) return 74;\n")
@@ -814,10 +814,10 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 			// struct those helpers use (emitEventSupport, frozen for every
 			// other emitter, D-04-23) has no "output" field, and adding one
 			// there would move every existing committed generated-C golden.
-			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"defect\\\",\\\"value\\\":\\\"\\\"},\\\"events\\\":[\")) return 74;\n")
+			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"defect\\\",\\\"value\\\":\\\"\\\"},\\\"events\\\":[\")) return 74;\n")
 			out.WriteString("      if (!schway_write_events()) return 74;\n")
 			out.WriteString("      if (schway_event_count != 0u && !schway_write_bytes(\",\", 1u)) return 74;\n")
-			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"id\\\":\")) return 74;\n")
+			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\")) return 74;\n")
 			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(operation.ID+":event:defected"))
 			out.WriteString("      if (!schway_write_literal(\",\\\"kind\\\":\\\"function.defected\\\",\\\"function_id\\\":\")) return 74;\n")
 			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(function.ID))
@@ -951,13 +951,13 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 // ordinary Emit/EmitNative output is completely unaffected by this section.
 // ---------------------------------------------------------------------
 
-// ForeignManifestSchema identifies the schway.foreign/0 sidecar manifest
+// ForeignManifestSchema identifies the lang.foreign/0 sidecar manifest
 // (D-04-12c): a separate schema/artifact from schway.core/*, digest-bound into
 // evidence.Manifest.ForeignDigest but never merged into the core artifact
 // itself.
-const ForeignManifestSchema = "schway.foreign/0"
+const ForeignManifestSchema = "lang.foreign/0"
 
-// foreignManifestDocument is the schway.foreign/0 sidecar's exact field
+// foreignManifestDocument is the lang.foreign/0 sidecar's exact field
 // layout: the complete core.ForeignContract plus two fields no
 // ForeignContract itself carries. EmittedAttributes has no omitempty tag
 // (D-04-13): it is deliberately a present, empty JSON array this phase when
@@ -985,7 +985,7 @@ type foreignManifestDocument struct {
 	UncheckedObligations []string           `json:"unchecked_obligations"`
 }
 
-// EmittedAttribute is one schway.foreign/0 sidecar emitted_attributes entry
+// EmittedAttribute is one lang.foreign/0 sidecar emitted_attributes entry
 // (D-05-04): the optimizer-visible attribute cgen emitted, which core node
 // and parameter it was emitted on, and the borrow-fact identity that
 // justifies it. corevalidate independently re-derives JustifiedBy from
@@ -1054,7 +1054,7 @@ func singleForeignFunction(program core.Program) (core.Function, error) {
 }
 
 // singleManifestFunction returns the one function in program that
-// EmitForeignManifest has a schway.foreign/0 sidecar to say something about:
+// EmitForeignManifest has a lang.foreign/0 sidecar to say something about:
 // either a declared foreign contract (singleForeignFunction's existing
 // Phase 4 scope, delegated to verbatim so its validation/error behavior is
 // completely unchanged for every foreign-shaped program) or, when no
@@ -1078,7 +1078,7 @@ func singleManifestFunction(program core.Program) (core.Function, error) {
 }
 
 // EmitForeignManifest serializes program's single foreign contract (or, as
-// of D-05-01, its single by-pointer-lowered function) as a schway.foreign/0
+// of D-05-01, its single by-pointer-lowered function) as a lang.foreign/0
 // sidecar manifest document (D-04-12c): the JSON is authoritative, and
 // EmitForeignHeader's obligation comment block is generated FROM the same
 // contract value, so the two can never drift (D-04-12).
@@ -1136,10 +1136,10 @@ func EmitForeignHeader(program core.Program) (string, error) {
 	guard := "SCHWAY_FOREIGN_" + strings.ToUpper(cName(contract.Symbol)) + "_H"
 
 	var out strings.Builder
-	out.WriteString("/* generated by Schway; schema schway.c17/0 (foreign header, D-04-12a) */\n")
+	out.WriteString("/* generated by Schway; schema lang.c17/0 (foreign header, D-04-12a) */\n")
 	fmt.Fprintf(&out, "#ifndef %s\n#define %s\n\n", guard, guard)
 	out.WriteString("#include <stddef.h>\n\n")
-	out.WriteString("/* schway.foreign/0 obligations -- generated from the sidecar manifest;\n")
+	out.WriteString("/* lang.foreign/0 obligations -- generated from the sidecar manifest;\n")
 	out.WriteString(" * see EmitForeignManifest. Never hand-edit this block: a hand-written\n")
 	out.WriteString(" * comment beside a generated JSON is a second source of truth that will\n")
 	out.WriteString(" * drift, which is exactly what D-04-12 forbids. */\n")
@@ -1197,7 +1197,7 @@ func EmitForeignConformance(program core.Program, privateHeaderPath string) (str
 	layout := contract.Layout
 
 	var out strings.Builder
-	out.WriteString("/* generated by Schway; schema schway.c17/0 (conformance TU, D-04-11).\n")
+	out.WriteString("/* generated by Schway; schema lang.c17/0 (conformance TU, D-04-11).\n")
 	out.WriteString(" * This is the single explicit, auditable place Lang's own declaration and\n")
 	out.WriteString(" * the foreign translation unit's private header are permitted to meet. It\n")
 	out.WriteString(" * defines no symbol and is compiled but never linked. */\n")
@@ -1236,7 +1236,7 @@ func EmitPayloadConformance(dataType core.DataType, privateHeaderPath string) (s
 	}
 
 	var out strings.Builder
-	out.WriteString("/* generated by Schway; schema schway.c17/0 (payload conformance TU, D-12-37).\n")
+	out.WriteString("/* generated by Schway; schema lang.c17/0 (payload conformance TU, D-12-37).\n")
 	out.WriteString(" * This is the single explicit, auditable place the checker-derived payload\n")
 	out.WriteString(" * struct layout (check.PayloadRecordLayout) and a private struct declaration\n")
 	out.WriteString(" * are permitted to meet. It defines no symbol and is compiled but never\n")
@@ -1311,7 +1311,7 @@ func ScanForBannedAttributes(sources ...string) []string {
 // the zero-attribute control (NoreturnExemption above is the first). Unlike
 // NoreturnExemption -- a property of a function cgen itself emits, requiring
 // no justification at all -- a JustifiableAttributes token is legal ONLY
-// inside a schway.foreign/0 manifest's emitted_attributes entry, ONLY when
+// inside a lang.foreign/0 manifest's emitted_attributes entry, ONLY when
 // that entry carries a non-empty JustifiedBy binding corevalidate
 // independently re-derives (ScanForUnjustifiedAttributes below,
 // ValidateEmittedAttributes in corevalidate.go), and NEVER inside a foreign

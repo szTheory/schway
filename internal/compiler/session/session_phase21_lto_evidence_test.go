@@ -45,7 +45,7 @@ func TestPhase21EmittedMultiFunctionLTOComparison(t *testing.T) {
 	if err != nil {
 		t.Fatalf("direct emitProgram: %v", err)
 	}
-	if !strings.Contains(emittedC, "schway.execution/2") {
+	if !strings.Contains(emittedC, "lang.execution/2") {
 		t.Fatal("direct emitProgram did not emit schema-2 C")
 	}
 	fixtureBytes, err := os.ReadFile(testsupport.ProjectPath(fixture))

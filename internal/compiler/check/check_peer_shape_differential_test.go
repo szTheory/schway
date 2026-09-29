@@ -219,7 +219,7 @@ func findSyntheticShapeDivergences(t *testing.T) map[string]string {
 			// (D-09-46: it builds bare core.Program values for check's own
 			// work-counter sweep, which never consults those fields).
 			// corevalidate's structural pass DOES require Schema ==
-			// schway.core/1 before it will even reach the loan-liveness
+			// lang.core/1 before it will even reach the loan-liveness
 			// replay this differential cares about -- set it here so an
 			// unrelated core.schema refusal is never mistaken for the
 			// interprocedural loan-liveness divergence this test tracks.

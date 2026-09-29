@@ -716,7 +716,7 @@ func digest(data []byte) string {
 // everywhere else the preimage is built. It is not itself a digest of
 // anything -- it exists solely so a future digest with a superficially
 // similar preimage shape can never collide with this one.
-const ClosureDigestDomainSeparator = "schway.closure_digest/1\x00"
+const ClosureDigestDomainSeparator = "lang.closure_digest/1\x00"
 
 // calleeDigestPair is one callee's (ID, ClosureDigest) pair, part of
 // D-07-37's canonical preimage. Field order is fixed by declaration (never
@@ -796,7 +796,7 @@ func computeClosureDigest(signature core.FunctionSignature, callees []calleeDige
 // ValidatePublished against program first: BuildInterface packages what the
 // producer already proved rather than re-deriving it.
 //
-// D-07-08: this emits Schema core.InterfaceSchema1 (schway.interface/1) —
+// D-07-08: this emits Schema core.InterfaceSchema1 (lang.interface/1) —
 // every function.ID+":type:0" abilities is unchanged from /0.
 // Every /1 field is populated from its R-01 authority (see the field-level
 // doc comments on core.FunctionSignature); Callable is derived per function
@@ -1320,7 +1320,7 @@ func decodeErrorCode(err error) string {
 // core.DecodeInterface per D-07-36: a document is now schema-peeked and
 // strictly validated (presence, non-emptiness, Mode's closed set, digest
 // shape, and function-ID uniqueness) before this function ever asks an
-// origin or access question of it, and a schway.interface/0 document is
+// origin or access question of it, and a lang.interface/0 document is
 // refused outright (T-07-02: never admissible for a call).
 //
 // coreBytes is the RAW, UNPARSED bytes of the core artifact the summary

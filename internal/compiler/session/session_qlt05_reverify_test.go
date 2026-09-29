@@ -266,13 +266,13 @@ func TestQLT05ReverificationIsIdempotent(t *testing.T) {
 }
 
 // TestMismatchDocumentSchemaUnchanged asserts MismatchDocument's schema
-// identifier is still schway.mismatch/0 and its field set is unchanged
+// identifier is still lang.mismatch/0 and its field set is unchanged
 // (D-05-39/D-11-37): QLT-05 is a gate claim about the reducer's own
 // output, not a document field, so declaring control:reduce.reverified
 // must never bump this schema.
 func TestMismatchDocumentSchemaUnchanged(t *testing.T) {
-	if reduce.MismatchSchema != "schway.mismatch/0" {
-		t.Fatalf("MismatchSchema = %q, want %q", reduce.MismatchSchema, "schway.mismatch/0")
+	if reduce.MismatchSchema != "lang.mismatch/0" {
+		t.Fatalf("MismatchSchema = %q, want %q", reduce.MismatchSchema, "lang.mismatch/0")
 	}
 	want := []string{
 		"Schema", "DivergingAxis", "EnginePair", "DivergingOperationID",

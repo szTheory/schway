@@ -218,7 +218,7 @@ func phase16CompareDirectProgramFourTiers(t *testing.T, ctx context.Context, fix
 	if err != nil {
 		t.Fatalf("%s: direct emitProgram(..., true): %v", fixture, err)
 	}
-	if !strings.Contains(directC, "schway.execution/2") {
+	if !strings.Contains(directC, "lang.execution/2") {
 		t.Fatalf("%s: direct emitProgram(..., true) did not supply schema-2 C", fixture)
 	}
 	engines := phase11RunFourTiersWithSupplier(t, ctx, program, entryName, input, func(core.Program) (string, error) {

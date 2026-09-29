@@ -103,7 +103,7 @@ func SetPhase5Schema2PeerValidatorForTest(validate func(core.Program, execution.
 	return func() { phase5Schema2PeerValidate = previous }
 }
 
-// Phase5CompareProgramEngines validates every schway.execution/2 document with
+// Phase5CompareProgramEngines validates every lang.execution/2 document with
 // the independent peer before comparing engine pairs. Legacy /0 and /1
 // documents deliberately retain Phase5CompareEngines' historical behavior:
 // there is no invocation grammar for the peer to validate in those schemas.

@@ -1,6 +1,6 @@
 // session_phase5_mismatch.go wires plan 05-10's dependency-free
 // internal/compiler/reduce package into a real, seeded interpreter
-// mismatch, producing a reduce.MismatchDocument (schway.mismatch/0, D-05-26).
+// mismatch, producing a reduce.MismatchDocument (lang.mismatch/0, D-05-26).
 // SignatureFromDisagreement lives HERE, not in reduce, because reduce must
 // stay a leaf package (05-10-SUMMARY.md): this plan is the session -> reduce
 // wiring direction, and a reduce -> session dependency in the other
@@ -50,7 +50,7 @@ const (
 	// "declared, not yet gate-wired" precedent (see the comment above)
 	// rather than double-encoding pass/fail into the control set itself.
 	// Declaring this control never bumps MismatchDocument's own schema
-	// (schway.mismatch/0 stays pinned, D-05-39): QLT-05 is a gate claim
+	// (lang.mismatch/0 stays pinned, D-05-39): QLT-05 is a gate claim
 	// about the reducer's own output, not a document field.
 	ControlReduceReverified = "control:reduce.reverified"
 )
@@ -330,7 +330,7 @@ func mismatchPredicate(baseRunner native.Runner, fixturePath, fallbackInput stri
 
 // ReduceSeededAliasMismatch drives plan 05-07's AliasFactMutationRunner
 // over false_restrict_hoist.schway to a REAL -O0-vs--O3 divergence, then
-// reduces it via reduce.Reduce, emitting a schway.mismatch/0 document that is
+// reduces it via reduce.Reduce, emitting a lang.mismatch/0 document that is
 // self-sufficient for an AI repair agent (D-05-26): its causal_chain and
 // event_window are populated from the SAME seeded run that produced the
 // divergence, never fabricated.

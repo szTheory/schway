@@ -86,7 +86,7 @@ type Result struct {
 	// AliasFacts is D-05-01's admission-gating alias-lattice fact set
 	// (deriveAliasFacts): exposed here, on the checker's existing result,
 	// rather than as a new core.Program field, so cgen's restrict emission
-	// and the evidence path can reach it without a schway.core/2 schema bump
+	// and the evidence path can reach it without a lang.core/2 schema bump
 	// (D-05-39). Empty for every Phase 1-4 program.
 	AliasFacts []AliasFact
 }
@@ -407,7 +407,7 @@ func Program(program ast.Program) Result {
 			// does NOT self-map) there is no principled way to guess the
 			// missing arm's target, and offering one anyway would be
 			// exactly the fail-open shape this project refuses. This
-			// condition is also what keeps schway.diagnostic/0's frozen Phase
+			// condition is also what keeps lang.diagnostic/0's frozen Phase
 			// 1 golden (TestPhase1DiagnosticGoldenUnchanged) byte-identical:
 			// diagnostic.Error (schema /0) is used whenever no repair
 			// applies, and ErrorWithRepairs (schema /1) always changes the
@@ -1696,7 +1696,7 @@ func borrowConflictDiagnosticPostAssembly(newBorrow, blockingBorrow core.LinearO
 // 13-01 Task 1 (D-13-09.1/D-13-09a): this now builds via
 // diagnostic.ErrorWithRepairs unconditionally -- including on the
 // zero-repair fallback path below -- which is the deliberate, reviewable
-// schema schway.diagnostic/0 -> /1 switch D-13-09a records. That switch
+// schema lang.diagnostic/0 -> /1 switch D-13-09a records. That switch
 // changes the hashed identity struct's Schema string and therefore churns
 // this code's sha256 ID on EVERY fixture, whether or not a repair fires;
 // check_ordering_stability_test.go's four affected rows are re-pinned in
@@ -1953,7 +1953,7 @@ func buildCalleeContracts(program ast.Program) map[string]calleeContract {
 }
 
 // callSignatureTable is D-07-34's immutable signature table: a same-package,
-// read-only view over each declared function's schway.interface/1
+// read-only view over each declared function's lang.interface/1
 // FunctionSignature (ID, name, parameter contract, return contract, and the
 // Callable bit -- D-07-31/D-07-32's publication-safety predicate, never
 // export membership). It reuses core.FunctionSignature verbatim rather than
@@ -1982,7 +1982,7 @@ func (t callSignatureTable) lookup(calleeID string) (core.FunctionSignature, boo
 // it, originvalidate.PublishProblemsFor -- as Callable's SOLE authority
 // (D-07-31/D-07-32, landed in 07-02). This is a deliberate reuse of the
 // established single source of truth for what a "signature" is under
-// schway.interface/1, not a second, competing derivation: the two genuinely
+// lang.interface/1, not a second, competing derivation: the two genuinely
 // independent derivations of the D-04-03 predicate this phase's threat
 // register (T-07-31) requires are check's OWN admission-time consult of
 // this table versus corevalidate's own, separately-implemented peer
@@ -3966,7 +3966,7 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		//
 		// Unconditional diagnostic.ErrorWithRepairs, even on the
 		// zero-repair fallback path, mirrors 13-01's deliberate,
-		// reviewable schway.diagnostic/0 -> /1 schema switch (D-13-09a):
+		// reviewable lang.diagnostic/0 -> /1 schema switch (D-13-09a):
 		// this code's sha256 ID churns on every fixture whether or not a
 		// repair fires. check_ordering_stability_test.go's affected row
 		// is re-pinned in this plan's Task 3.

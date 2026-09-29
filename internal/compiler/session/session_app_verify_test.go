@@ -13,11 +13,11 @@ func TestDecodeReplayCasesRejectsDuplicateJSONKeys(t *testing.T) {
 	}{
 		{
 			name: "top-level schema",
-			data: `{"schema":"wrong","schema":"schway.replay-cases/1","cases":[{"id":"case-1","kind":"source","input":"1","expected":{"kind":"returned","value":"1"},"foreign_outcomes":[]}]}`,
+			data: `{"schema":"wrong","schema":"lang.replay-cases/1","cases":[{"id":"case-1","kind":"source","input":"1","expected":{"kind":"returned","value":"1"},"foreign_outcomes":[]}]}`,
 		},
 		{
 			name: "nested expected value",
-			data: `{"schema":"schway.replay-cases/1","cases":[{"id":"case-1","kind":"source","input":"1","expected":{"kind":"returned","value":"0","value":"1"},"foreign_outcomes":[]}]}`,
+			data: `{"schema":"lang.replay-cases/1","cases":[{"id":"case-1","kind":"source","input":"1","expected":{"kind":"returned","value":"0","value":"1"},"foreign_outcomes":[]}]}`,
 		},
 	}
 	for _, test := range tests {

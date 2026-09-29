@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	Schema  = "schway.diagnostic/0"
-	Schema1 = "schway.diagnostic/1"
+	Schema  = "lang.diagnostic/0"
+	Schema1 = "lang.diagnostic/1"
 )
 
 type Span struct {

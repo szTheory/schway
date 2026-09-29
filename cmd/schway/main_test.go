@@ -370,7 +370,7 @@ func TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus(t *testing.T) {
 func TestPhase22ConformanceRunStillEmitsExecutionDocument(t *testing.T) {
 	fixture := testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway")
 	code, stdout, stderr := captureLangRun(t, []string{"--json", "run", "--engine=native", fixture})
-	if code != 0 || stderr != "" || !strings.Contains(stdout, `"schema":"schway.execution/2"`) {
+	if code != 0 || stderr != "" || !strings.Contains(stdout, `"schema":"lang.execution/2"`) {
 		t.Fatalf("conformance run code=%d stdout=%q stderr=%q, want its existing execution document", code, stdout, stderr)
 	}
 }

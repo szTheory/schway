@@ -1598,7 +1598,7 @@ func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 }
 
 // interfaceProjection builds the R-02 deliberately-lossy CLI projection of a
-// schway.interface/1 summary (protocol.InterfaceSummary is the artifact of
+// lang.interface/1 summary (protocol.InterfaceSummary is the artifact of
 // record's lossy peer, never a second copy of it — see
 // protocol.InterfaceFunctionAnswer's doc comment). Function.Return replaces
 // the pre-/1 optional PublicOrigin field: Mode == "owned" carries no
@@ -2616,7 +2616,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// Scans every emitted C artifact for the tracer and release fixtures --
 	// the compiled program, the generated header, and the generated
 	// conformance unit (D-04-12's three named inspectable layers) -- plus
-	// their schway.foreign/0 sidecar manifests, for a banned optimizer-visible
+	// their lang.foreign/0 sidecar manifests, for a banned optimizer-visible
 	// attribute token, and requires the manifest's emitted_attributes field
 	// to be present and empty. EmitForeignHeader/EmitForeignConformance are
 	// scanned here too (not just cgen.Emit's compiled-program output): a

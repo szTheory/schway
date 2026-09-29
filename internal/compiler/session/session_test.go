@@ -86,12 +86,12 @@ func TestLoanLivenessIsTransitive(t *testing.T) {
 
 func TestDiagnosticSchemaCompatibility(t *testing.T) {
 	legacy := diagnostic.Error("syntax.example", diagnostic.Span{Start: 2, End: 3}, "legacy prose")
-	if legacy.Schema != "schway.diagnostic/0" || len(legacy.Repairs) != 0 {
+	if legacy.Schema != "lang.diagnostic/0" || len(legacy.Repairs) != 0 {
 		t.Fatalf("legacy diagnostic changed schema: %+v", legacy)
 	}
 	for _, name := range []string{"implicit_noncopy.schway", "use_after_move.schway", "move_while_borrowed.schway"} {
 		problem := ownershipDiagnostic(t, name, "")
-		if problem.Schema != "schway.diagnostic/1" || len(problem.Repairs) == 0 {
+		if problem.Schema != "lang.diagnostic/1" || len(problem.Repairs) == 0 {
 			t.Fatalf("ownership diagnostic did not select /1 with repairs: %+v", problem)
 		}
 	}
@@ -106,7 +106,7 @@ func TestPhase1DiagnosticGoldenUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"schema":"schway.diagnostic/0","id":"diagnostic:f9582fb8c4ad9f90fbe75fa8","code":"match.non_exhaustive","severity":"error","primary_span":{"start":131,"end":158},"message":"match does not cover every alternative","causes":[{"kind":"missing_alternative","detail":"On"}]}`
+	want := `{"schema":"lang.diagnostic/0","id":"diagnostic:f9582fb8c4ad9f90fbe75fa8","code":"match.non_exhaustive","severity":"error","primary_span":{"start":131,"end":158},"message":"match does not cover every alternative","causes":[{"kind":"missing_alternative","detail":"On"}]}`
 	if string(encoded) != want {
 		t.Fatalf("Phase 1 diagnostic golden changed:\ngot  %s\nwant %s", encoded, want)
 	}
@@ -162,7 +162,7 @@ func TestTogglePipeline(t *testing.T) {
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", result.Diagnostics)
 	}
-	if result.Program.Schema != "schway.core/0" || len(result.Program.Functions) != 1 {
+	if result.Program.Schema != "lang.core/0" || len(result.Program.Functions) != 1 {
 		t.Fatalf("unexpected core: %+v", result.Program)
 	}
 	function := result.Program.Functions[0]
@@ -177,7 +177,7 @@ func TestOwnedTransferInterpreter(t *testing.T) {
 	if err != nil || len(checked.Diagnostics) != 0 {
 		t.Fatalf("owned check failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
 	}
-	if checked.Program.Schema != "schway.core/1" || len(checked.Program.Functions) != 1 {
+	if checked.Program.Schema != "lang.core/1" || len(checked.Program.Functions) != 1 {
 		t.Fatalf("unexpected owned core: %+v", checked.Program)
 	}
 	linear := checked.Program.Functions[0].Linear
@@ -197,7 +197,7 @@ func TestOwnedTransferInterpreter(t *testing.T) {
 	if err != nil || len(diagnostics) != 0 || len(executions) != 1 {
 		t.Fatalf("owned interpreter failed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, executions)
 	}
-	if executions[0].Schema != "schway.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.transferred" || executions[0].Events[1].Kind != "function.returned" {
+	if executions[0].Schema != "lang.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.transferred" || executions[0].Events[1].Kind != "function.returned" {
 		t.Fatalf("unexpected owned execution: %+v", executions[0])
 	}
 }
@@ -219,7 +219,7 @@ func TestImplicitByteCopy(t *testing.T) {
 	if err != nil || len(diagnostics) != 0 || len(executions) != 1 {
 		t.Fatalf("copy interpreter failed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, executions)
 	}
-	if executions[0].Schema != "schway.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.copied" {
+	if executions[0].Schema != "lang.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.copied" {
 		t.Fatalf("unexpected copy execution: %+v", executions[0])
 	}
 }
@@ -343,19 +343,19 @@ func TestFeatureSpecificCoreExecutionSchemas(t *testing.T) {
 	phase1Path := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	phase2Path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	phase1, err := session.CheckFile(phase1Path)
-	if err != nil || len(phase1.Diagnostics) != 0 || phase1.Program.Schema != "schway.core/0" {
+	if err != nil || len(phase1.Diagnostics) != 0 || phase1.Program.Schema != "lang.core/0" {
 		t.Fatalf("phase 1 core schema changed: err=%v result=%+v", err, phase1)
 	}
 	phase2, err := session.CheckFile(phase2Path)
-	if err != nil || len(phase2.Diagnostics) != 0 || phase2.Program.Schema != "schway.core/1" {
+	if err != nil || len(phase2.Diagnostics) != 0 || phase2.Program.Schema != "lang.core/1" {
 		t.Fatalf("phase 2 core schema missing: err=%v result=%+v", err, phase2)
 	}
 	oldExecution, diagnostics, err := session.RunInterpreterFile(phase1Path)
-	if err != nil || len(diagnostics) != 0 || len(oldExecution) == 0 || oldExecution[0].Schema != "schway.execution/0" {
+	if err != nil || len(diagnostics) != 0 || len(oldExecution) == 0 || oldExecution[0].Schema != "lang.execution/0" {
 		t.Fatalf("phase 1 execution schema changed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, oldExecution)
 	}
 	ownedExecution, diagnostics, err := session.RunInterpreterFile(phase2Path)
-	if err != nil || len(diagnostics) != 0 || len(ownedExecution) != 1 || ownedExecution[0].Schema != "schway.execution/1" {
+	if err != nil || len(diagnostics) != 0 || len(ownedExecution) != 1 || ownedExecution[0].Schema != "lang.execution/1" {
 		t.Fatalf("phase 2 execution schema missing: err=%v diagnostics=%+v executions=%+v", err, diagnostics, ownedExecution)
 	}
 }
@@ -739,7 +739,7 @@ func TestOwnedTransferInterpreterNative(t *testing.T) {
 			t.Fatalf("owned C does not derive execution from runtime state at %q:\n%s", required, result.CSource)
 		}
 	}
-	if strings.Contains(result.CSource, `puts("{\"schema\":\"schway.execution/1\"`) {
+	if strings.Contains(result.CSource, `puts("{\"schema\":\"lang.execution/1\"`) {
 		t.Fatalf("owned C still embeds a precomputed execution document:\n%s", result.CSource)
 	}
 	for _, forbidden := range []string{"restrict", "noalias", "malloc", "free("} {
@@ -1387,7 +1387,7 @@ typedef struct schway_foreign_layout_probe_block {
 // (D-04-13): every emitted C artifact for the tracer and release-lifecycle
 // fixtures -- the compiled program, the generated header, and the generated
 // conformance unit (D-04-12's three named inspectable layers) -- plus their
-// schway.foreign/0 sidecar manifests, carries no banned optimizer-visible
+// lang.foreign/0 sidecar manifests, carries no banned optimizer-visible
 // attribute token, and each manifest's emitted_attributes field is present
 // and empty (not omitted). EmitForeignHeader/EmitForeignConformance are
 // scanned here too (WR-01): the header is the artifact a human reviewer is

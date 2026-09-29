@@ -276,7 +276,7 @@ unsigned char schway_composition_probe_wrapper(unsigned char *%[1]sprimary, unsi
 // aliased controls whether probe is bound to the SAME object as primary
 // (the actual violation input) or a genuinely distinct object (the
 // restrict-only row's non-violating input). The program prints a minimal,
-// schema-valid `schway.execution/0` document so native.Runner's own
+// schema-valid `lang.execution/0` document so native.Runner's own
 // decodeExecution accepts it -- this hand-written control still goes
 // through the SAME execute-and-decode path as every other native.Runner
 // caller, per D-11-24 (native.Runner itself is never widened).
@@ -298,7 +298,7 @@ int main(int argc, char **argv) {
   if (argc != 2) return 64;
   unsigned char value = (unsigned char)atoi(argv[1]);
 %[2]s  unsigned char result = schway_composition_probe_wrapper(&value, %[3]s);
-  printf("{\"schema\":\"schway.execution/0\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%%u\"},\"events\":[{\"schema\":\"schway.execution/0\",\"id\":\"e0\",\"kind\":\"function.returned\",\"function_id\":\"fn:probe\",\"input\":\"in\",\"output\":\"out\"}],\"live_resources\":[]}\n", (unsigned int)result);
+  printf("{\"schema\":\"lang.execution/0\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%%u\"},\"events\":[{\"schema\":\"lang.execution/0\",\"id\":\"e0\",\"kind\":\"function.returned\",\"function_id\":\"fn:probe\",\"input\":\"in\",\"output\":\"out\"}],\"live_resources\":[]}\n", (unsigned int)result);
   return 0;
 }
 `, qualifier, preamble, probeExpr)

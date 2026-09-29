@@ -920,29 +920,29 @@ func cloneCoreProgram(t *testing.T, program core.Program) core.Program {
 	return clone
 }
 
-// pinnedInterfaceV0JSON is a hand-written schway.interface/0 document, pinned
+// pinnedInterfaceV0JSON is a hand-written lang.interface/0 document, pinned
 // at the exact bytes a pre-Stage-0 producer would have emitted (D-07-08).
 // Following protocol_test.go:169-192's frozen-literal discipline: this
 // string must never be regenerated to make a later test pass — a failure
 // here means already-published /0 document bytes would have been
 // perturbed.
-const pinnedInterfaceV0JSON = `{"schema":"schway.interface/0","module_id":"m1","core_digest":"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","public_origin":{"paths":["buffer"],"access":"shared"},"abilities":["share"]}]}`
+const pinnedInterfaceV0JSON = `{"schema":"lang.interface/0","module_id":"m1","core_digest":"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","public_origin":{"paths":["buffer"],"access":"shared"},"abilities":["share"]}]}`
 
 // TestFrozenInterfaceV0BytesUnchanged is 07-01 Task 2's Test 1 (D-07-08): a
 // pinned /0 JSON literal decodes into core.InterfaceV0 field-for-field
 // against a hand-written expected value, then re-encodes to those identical
 // pinned bytes. core.InterfaceSchema itself must still be the exported
-// "schway.interface/0" constant after the /1 bump.
+// "lang.interface/0" constant after the /1 bump.
 func TestFrozenInterfaceV0BytesUnchanged(t *testing.T) {
-	if core.InterfaceSchema != "schway.interface/0" {
-		t.Fatalf("core.InterfaceSchema = %q, want frozen %q", core.InterfaceSchema, "schway.interface/0")
+	if core.InterfaceSchema != "lang.interface/0" {
+		t.Fatalf("core.InterfaceSchema = %q, want frozen %q", core.InterfaceSchema, "lang.interface/0")
 	}
 	var v0 core.InterfaceV0
 	if err := json.Unmarshal([]byte(pinnedInterfaceV0JSON), &v0); err != nil {
 		t.Fatalf("decode pinned /0 literal: %v", err)
 	}
 	want := core.InterfaceV0{
-		Schema: "schway.interface/0", ModuleID: "m1",
+		Schema: "lang.interface/0", ModuleID: "m1",
 		CoreDigest: "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd",
 		Functions: []core.FunctionSignatureV0{{
 			ID: "f1", Name: "identity",
@@ -979,10 +979,10 @@ func TestDecodeInterfaceV0NeverAdmissible(t *testing.T) {
 		t.Fatalf("expected a /0 document to decode cleanly, got %v", err)
 	}
 	if decoded.V0 == nil {
-		t.Fatal("expected V0 to be populated for a schway.interface/0 document")
+		t.Fatal("expected V0 to be populated for a lang.interface/0 document")
 	}
 	if decoded.V1 != nil {
-		t.Fatal("expected V1 to stay nil for a schway.interface/0 document")
+		t.Fatal("expected V1 to stay nil for a lang.interface/0 document")
 	}
 	if decoded.Admissible {
 		t.Fatal("expected a /0 document to never be Admissible")
@@ -995,13 +995,13 @@ func TestDecodeInterfaceV0NeverAdmissible(t *testing.T) {
 const validHexDigest = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd" + "ef"
 
 // validInterfaceV1Document returns a fresh, independent map[string]any
-// representation of a minimal but fully valid schway.interface/1 document, so
+// representation of a minimal but fully valid lang.interface/1 document, so
 // each subtest below can safely mutate its own copy without cross-test
 // interference.
 func validInterfaceV1Document(t *testing.T) map[string]any {
 	t.Helper()
 	return map[string]any{
-		"schema":      "schway.interface/1",
+		"schema":      "lang.interface/1",
 		"module_id":   "m1",
 		"core_digest": validHexDigest,
 		"functions": []any{
@@ -1178,7 +1178,7 @@ func TestDecodeInterfaceV1ValueDomainRefused(t *testing.T) {
 	})
 	t.Run("unknown schema", func(t *testing.T) {
 		document := deepCopyJSON(t, validInterfaceV1Document(t))
-		document["schema"] = "schway.interface/2"
+		document["schema"] = "lang.interface/2"
 		data, _ := json.Marshal(document)
 		_, err := core.DecodeInterface(data)
 		if code := decodeErrorCode(err); code != "core.interface_unknown_schema" {

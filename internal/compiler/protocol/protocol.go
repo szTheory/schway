@@ -16,27 +16,27 @@ import (
 // reproducible forever (D-06-31); Schema1 is the coordinated additive bump
 // every new Result now carries, following diagnostic.go's/evidence.go's own
 // two-constant coexistence shape.
-const Schema = "schway.command/0"
+const Schema = "lang.command/0"
 
-// Schema1 is the coordinated schway.command/1 bump (D-06-31): protocol.New()
-// now returns Schema1, while Schema ("schway.command/0") remains declared and
+// Schema1 is the coordinated lang.command/1 bump (D-06-31): protocol.New()
+// now returns Schema1, while Schema ("lang.command/0") remains declared and
 // bound to its original string so already-published /0 documents stay
 // reproducible.
-const Schema1 = "schway.command/1"
+const Schema1 = "lang.command/1"
 
 // LaneSchema is the frozen /0 record for schway.verify-lane. Its bytes must
 // remain reproducible forever (D-06-31); LaneSchema1 is the coordinated
 // additive bump landing at the same commit as Schema1.
-const LaneSchema = "schway.verify-lane/0"
+const LaneSchema = "lang.verify-lane/0"
 
-// LaneSchema1 is the coordinated schway.verify-lane/1 bump (D-06-31): every one
+// LaneSchema1 is the coordinated lang.verify-lane/1 bump (D-06-31): every one
 // of the 12 lane-schema composite literal sites across session.go,
 // session_phase5.go, session_phase5_mismatch.go, and
 // session_phase5_sanitize.go moves to this constant in the same commit as
-// Schema1. LaneSchema ("schway.verify-lane/0") remains declared and bound to
+// Schema1. LaneSchema ("lang.verify-lane/0") remains declared and bound to
 // its original string so already-published /0 lane documents stay
 // reproducible.
-const LaneSchema1 = "schway.verify-lane/1"
+const LaneSchema1 = "lang.verify-lane/1"
 
 const (
 	StatusPass        = "pass"
@@ -146,7 +146,7 @@ type TraceSummary struct {
 // directly from a core.Interface summary — never from a body field.
 //
 // R-02 (planner resolution, 07-01-PLAN.md): this is a DELIBERATELY LOSSY
-// projection of core.FunctionSignature's full schway.interface/1 fact set —
+// projection of core.FunctionSignature's full lang.interface/1 fact set —
 // what a body-blind CLI consumer can act on today (origin/access) — never a
 // second copy of the /1 artifact. core.Interface is the artifact of record;
 // mirroring every /1 field here would create a second schema that can drift
@@ -193,9 +193,9 @@ type DebugMapSummary struct {
 // ExplainSchema versions the `lang explain` command's cause-DAG projection
 // independently of every other schema in the compiler. explain is a
 // net-new capability (D-06-04): it gets a net-new /0 schema rather than
-// folding into Schema ("schway.command/0"), and does not trigger that
+// folding into Schema ("lang.command/0"), and does not trigger that
 // constant's coordinated /1 bump on its own account.
-const ExplainSchema = "schway.explain/0"
+const ExplainSchema = "lang.explain/0"
 
 // Edge kind vocabulary for ExplainSummary.Edges is closed to exactly these
 // three values (D-06-03's Claude's-discretion edge typing).
@@ -285,10 +285,10 @@ type ExplainSummary struct {
 // QuerySchema versions `lang query`'s joined-addressing-surface projection
 // independently of every other schema in the compiler. query is a net-new
 // capability (D-06-04): it gets a net-new /0 schema rather than folding into
-// Schema ("schway.command/0"), and does not trigger that constant's
+// Schema ("lang.command/0"), and does not trigger that constant's
 // coordinated /1 bump on its own account (D-06-31 names the actual
 // coordinated bump separately).
-const QuerySchema = "schway.query/0"
+const QuerySchema = "lang.query/0"
 
 // QueryMaxFactsPerPage bounds how many QueryFact entries a single
 // QuerySummary page may carry (D-06-03: query pages by cursor, never by

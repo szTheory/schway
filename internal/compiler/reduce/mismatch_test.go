@@ -22,7 +22,7 @@ import (
 // a reduced core artifact.
 func goldenMismatchProgram() core.Program {
 	return core.Program{
-		Schema:   "schway.core/1",
+		Schema:   "lang.core/1",
 		Module:   "phase5.mismatch_golden",
 		ModuleID: "phase5.mismatch_golden",
 		Functions: []core.Function{
@@ -159,7 +159,7 @@ func TestMismatchCausesReusesDiagnosticShape(t *testing.T) {
 	fieldType := reflect.TypeOf(reduce.MismatchDocument{}).Field(fieldIndex(t, "Causes")).Type
 	wantType := reflect.TypeOf([]diagnostic.Cause(nil))
 	if fieldType != wantType {
-		t.Fatalf("Causes field type = %v, want %v (the existing schway.diagnostic/1 cause-graph shape, verbatim)", fieldType, wantType)
+		t.Fatalf("Causes field type = %v, want %v (the existing lang.diagnostic/1 cause-graph shape, verbatim)", fieldType, wantType)
 	}
 }
 
@@ -176,9 +176,9 @@ func fieldIndex(t testing.TB, name string) int {
 }
 
 // TestNoNewSchemaVersionsIntroduced is D-05-39's own source-scan falsifier:
-// the only new schema this phase introduces is schway.mismatch/0. Any
-// occurrence of the QUOTED Go string literal "schway.core/2", "schway.evidence/2",
-// or "schway.diagnostic/2" anywhere under internal/ is a violation -- matching
+// the only new schema this phase introduces is lang.mismatch/0. Any
+// occurrence of the QUOTED Go string literal "lang.core/2", "lang.evidence/2",
+// or "lang.diagnostic/2" anywhere under internal/ is a violation -- matching
 // only the quoted literal (not bare prose) is deliberate: check.go and this
 // very plan's own doc comments discuss these identifiers BY NAME, in prose,
 // to explain that no such schema bump occurs (D-05-39), and a bare-substring
@@ -186,7 +186,7 @@ func fieldIndex(t testing.TB, name string) int {
 // schema-version introduction is always a quoted Go string constant, never
 // unquoted prose.
 func TestNoNewSchemaVersionsIntroduced(t *testing.T) {
-	forbidden := []string{`"schway.core/2"`, `"schway.evidence/2"`, `"schway.diagnostic/2"`}
+	forbidden := []string{`"lang.core/2"`, `"lang.evidence/2"`, `"lang.diagnostic/2"`}
 	root := testsupport.ProjectPath("internal")
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
