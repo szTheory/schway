@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestBranchInterpreterNative is 03-01-02's end-to-end tracer falsifier:
@@ -17,7 +17,7 @@ import (
 // checker -> corevalidate -> interpreter -> cgen -> Clang path exactly as
 // session.RunNative already proves for Phase 2's straight-line fixture.
 func TestBranchInterpreterNative(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase3", "branch_view.lang")
+	path := testsupport.ProjectPath("testdata", "phase3", "branch_view.schway")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("branch native run failed: err=%v diagnostics=%+v", err, diagnostics)

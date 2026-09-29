@@ -1,0 +1,31 @@
+// Disagreeing-arms control fixture (03-VERIFICATION.md SC3/SC4 gaps): a
+// match-bodied function whose first arm returns a live shared borrow of the
+// parameter and whose second arm returns a live exclusive borrow of it.
+// Neither arm's answer may silently win: RecomputeOrigin must report the
+// AccessConflicting sentinel, and no declaration (undeclared, declared
+// shared, or declared exclusive) may be accepted for it. `schway check`
+// accepts this program unchanged; `lang interface export` must refuse it.
+
+module owned.public_view_multi_arm_access_conflict
+
+export {
+  type Switch
+  fn choose
+}
+
+data Switch =
+  | On
+  | Off
+
+fn choose(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let shared = borrow flag
+      shared
+    }
+    Off => {
+      let exclusive = borrow mut flag
+      exclusive
+    }
+  }
+}

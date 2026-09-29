@@ -9,10 +9,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 type phase16FileFrozenEvidenceManifest struct {
@@ -105,7 +105,7 @@ func phase16FileFrozenEvidenceC(t *testing.T, supplied core.Program, fixture str
 
 func TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram(t *testing.T) {
 	for _, fixture := range []string{
-		"testdata/phase11/multi_function_gate_corpus.lang",
+		"testdata/phase11/multi_function_gate_corpus.schway",
 		"testdata/phase16/historical/phase11_gate_n_two.fixture",
 	} {
 		checked := checkedPhase16Fixture(t, fixture)
@@ -117,7 +117,7 @@ func TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram(t *testing.T) {
 }
 
 func TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults(t *testing.T) {
-	fixture := "testdata/phase11/multi_function_gate_corpus.lang"
+	fixture := "testdata/phase11/multi_function_gate_corpus.schway"
 	checked := checkedPhase16Fixture(t, fixture)
 	source, err := os.ReadFile(testsupport.ProjectPath(fixture))
 	if err != nil {
@@ -159,7 +159,7 @@ func TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults(t *testing.T) {
 			*e = fmt.Errorf("different emitter refusal")
 		},
 		"fixture identity": func(r *phase16FileFrozenEvidenceRecord, _ *[]byte, _ *[]byte, _ *[]byte, _ *error) {
-			r.Fixture = "testdata/phase11/other.lang"
+			r.Fixture = "testdata/phase11/other.schway"
 		},
 		"canonical program": func(r *phase16FileFrozenEvidenceRecord, _ *[]byte, p *[]byte, _ *[]byte, _ *error) {
 			*p = append(*p, 0)
@@ -179,15 +179,15 @@ func TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults(t *testing.T) {
 }
 
 func TestPhase16FileFrozenEvidenceBindsCanonicalProgram(t *testing.T) {
-	checked := checkedPhase16Fixture(t, "testdata/phase4/nonlocal_exit_probe.lang")
-	if got, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang"); err != nil || got == "" {
+	checked := checkedPhase16Fixture(t, "testdata/phase4/nonlocal_exit_probe.schway")
+	if got, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.schway"); err != nil || got == "" {
 		t.Fatal("empty frozen artifact")
 	}
 }
 
 func TestPhase16FileFrozenEvidenceRejectsProgramSubstitution(t *testing.T) {
-	checked := checkedPhase16Fixture(t, "testdata/phase4/nonlocal_exit_probe.lang")
-	substitute := checkedPhase16Fixture(t, "testdata/phase4/acquire_three_success.lang")
+	checked := checkedPhase16Fixture(t, "testdata/phase4/nonlocal_exit_probe.schway")
+	substitute := checkedPhase16Fixture(t, "testdata/phase4/acquire_three_success.schway")
 	canonical, err := json.Marshal(checked.Program)
 	if err != nil {
 		t.Fatal(err)

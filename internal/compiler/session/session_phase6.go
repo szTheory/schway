@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/evidence"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 // Phase6RequiredControls is the complete Phase 6 required-control list
@@ -26,7 +26,7 @@ import (
 // budget-manifest audit (session_phase6_budget.go). control:interpreter-o0-o3
 // is 06-04's artifact-cache-backed native differential
 // (verifyPhase6NativeDifferentialLane, session_phase6_verify.go), driven
-// here over testdata/phase1 (the corpus carrying the shared toggle.lang
+// here over testdata/phase1 (the corpus carrying the shared toggle.schway
 // fixture). The final five are DX-04's defect-injection exercise
 // (session_phase6_injectors.go), one control per injector class, each
 // proving that class's injector fires and produces a genuinely rejected
@@ -61,14 +61,14 @@ const (
 
 // phase6NativeDifferentialCorpus is the corpus this gate drives
 // control:interpreter-o0-o3 against: testdata/phase1, the corpus already
-// carrying the shared toggle.lang fixture VerifyPhase6ChangedRisk's own
+// carrying the shared toggle.schway fixture VerifyPhase6ChangedRisk's own
 // lane reads (session_phase6_verify.go).
 const phase6NativeDifferentialCorpus = "testdata/phase1"
 
 // phase6CleanupFixture is the cleanup injector's source fixture: an
 // already-shipped Phase 4 fixture whose generated C carries a real
-// lang:release-site marker (README, testdata/phase6).
-const phase6CleanupFixture = "testdata/phase4/acquire_three_success.lang"
+// schway:release-site marker (README, testdata/phase6).
+const phase6CleanupFixture = "testdata/phase4/acquire_three_success.schway"
 
 // phase6DefaultRunner mirrors phase5DefaultRunner's shape for this file's
 // own native-differential lane.
@@ -129,7 +129,7 @@ func VerifyPhase6ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	}
 
 	// Lane: control:interpreter-o0-o3 (D-06-06), the cache-backed native
-	// differential, driven here over testdata/phase1's toggle.lang.
+	// differential, driven here over testdata/phase1's toggle.schway.
 	nativeStarted := time.Now()
 	runner := phase6DefaultRunner()
 	store, storeErr := phase6Store()
@@ -137,7 +137,7 @@ func VerifyPhase6ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 		addLane(phase6NativeDifferentialLane, protocol.StatusOperational, nil, 1, nativeStarted)
 		markFail(protocol.StatusOperational)
 	} else {
-		source, readErr := os.ReadFile(nat03CorpusPath(phase6NativeDifferentialCorpus + "/toggle.lang"))
+		source, readErr := os.ReadFile(nat03CorpusPath(phase6NativeDifferentialCorpus + "/toggle.schway"))
 		if readErr != nil {
 			addLane(phase6NativeDifferentialLane, protocol.StatusOperational, nil, 1, nativeStarted)
 			markFail(protocol.StatusOperational)
@@ -156,7 +156,7 @@ func VerifyPhase6ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 				// covers artifact_recomputed / not_cacheable / unavailable,
 				// none of which is a reuse. The prior `+= 0` made the counter
 				// structurally zero in this function, which is the one
-				// `lang verify testdata/phase6` actually runs, so FND-04's
+				// `schway verify testdata/phase6` actually runs, so FND-04's
 				// cache-status reporting was false here while the sibling
 				// VerifyPhase6ChangedRisk reported it correctly.
 				if lane.CacheStatus == string(cache.StatusArtifactReused) {
@@ -237,7 +237,7 @@ func VerifyPhase6ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 // pass (D-06-27.3's fail-closed discipline, exercised here rather than
 // merely asserted by go test).
 func phase6RunMatchInjectionLane() (status, control string, work int) {
-	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/heldout_match_defect.lang"))
+	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/heldout_match_defect.schway"))
 	if err != nil {
 		return protocol.StatusOperational, "", 1
 	}
@@ -249,7 +249,7 @@ func phase6RunMatchInjectionLane() (status, control string, work int) {
 }
 
 func phase6RunMoveInjectionLane() (status, control string, work int) {
-	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/heldout_move_defect.lang"))
+	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/heldout_move_defect.schway"))
 	if err != nil {
 		return protocol.StatusOperational, "", 1
 	}
@@ -261,7 +261,7 @@ func phase6RunMoveInjectionLane() (status, control string, work int) {
 }
 
 func phase6RunBorrowInjectionLane() (status, control string, work int) {
-	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/heldout_borrow_defect.lang"))
+	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/heldout_borrow_defect.schway"))
 	if err != nil {
 		return protocol.StatusOperational, "", 1
 	}
@@ -274,7 +274,7 @@ func phase6RunBorrowInjectionLane() (status, control string, work int) {
 
 // phase6RunCleanupInjectionLane compiles phase6CleanupFixture's checked,
 // validated core to real generated C (the artifact carrying a genuine
-// lang:release-site marker), drives CleanupInjector.Inject against it, and
+// schway:release-site marker), drives CleanupInjector.Inject against it, and
 // requires a real mutation -- distinct bytes from the unmutated source --
 // proving the shared release-omission mutation runner (D-06-25's "reuse
 // verbatim" instruction) still finds and removes a real release site.
@@ -306,7 +306,7 @@ func phase6RunCleanupInjectionLane() (status, control string, work int) {
 }
 
 // phase6RunStaleEvidenceInjectionLane builds a real evidence manifest for
-// stale_evidence_subject.lang (evidence.Build, the same construction
+// stale_evidence_subject.schway (evidence.Build, the same construction
 // `lang evidence` itself uses), re-touches the source with
 // StaleEvidenceInjector, and requires evidence.Validate to report a
 // mismatch against the ORIGINAL manifest -- the same locator
@@ -314,7 +314,7 @@ func phase6RunCleanupInjectionLane() (status, control string, work int) {
 // proving the stale-evidence defect class is genuinely detectable through
 // already-shipped surface, per D-06-25's own instruction.
 func phase6RunStaleEvidenceInjectionLane(ctx context.Context) (status, control string, work int) {
-	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/stale_evidence_subject.lang"))
+	source, err := os.ReadFile(nat03CorpusPath("testdata/phase6/stale_evidence_subject.schway"))
 	if err != nil {
 		return protocol.StatusOperational, "", 1
 	}

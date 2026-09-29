@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ability"
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/ability"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // --- Plan 10-05 Task 2: peerCalleeFrameDrained (D-10-33/D-10-34, SEM-09) ---
@@ -40,7 +40,7 @@ func TestPeerCalleeFrameDrainedAdmitsReleasedAcquisition(t *testing.T) {
 }
 
 // TestPeerCalleeFrameDrainedAdmitsReturnEscapedAcquisition:
-// foreign_acquire_one.lang's own shape -- no release exists at all, but the
+// foreign_acquire_one.schway's own shape -- no release exists at all, but the
 // acquired value is the function's own returned value directly.
 func TestPeerCalleeFrameDrainedAdmitsReturnEscapedAcquisition(t *testing.T) {
 	function := core.Function{
@@ -86,7 +86,7 @@ func TestPeerCalleeFrameDrainedAdmitsReturnEscapeThroughMoveChain(t *testing.T) 
 }
 
 // TestPeerCalleeFrameDrainedAdmitsDiscardedAcquisition:
-// discard_because.lang's own shape -- an acquisition whose OkEdgeID and
+// discard_because.schway's own shape -- an acquisition whose OkEdgeID and
 // ErrEdgeID converge on the SAME ToBlockID is check's own structural
 // encoding of `discard ... because`, exempt from the drain obligation
 // entirely: no release, no return escape, still admitted.
@@ -109,7 +109,7 @@ func TestPeerCalleeFrameDrainedAdmitsDiscardedAcquisition(t *testing.T) {
 	}
 }
 
-// TestPeerCalleeFrameDrainedAdmitsNoLinearBody: a pure lang.core/0 match
+// TestPeerCalleeFrameDrainedAdmitsNoLinearBody: a pure schway.core/0 match
 // function (Linear == nil) trivially drains -- it acquires nothing.
 func TestPeerCalleeFrameDrainedAdmitsNoLinearBody(t *testing.T) {
 	function := core.Function{ID: "fn:match_only"}

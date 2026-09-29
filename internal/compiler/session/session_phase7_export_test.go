@@ -1,9 +1,9 @@
 package session
 
 import (
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 )
 
 // This file is compiled ONLY into test binaries (Go excludes every

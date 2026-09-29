@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPhase6ExpectedEscapesAreDeclared asserts the four D-06-13 cache

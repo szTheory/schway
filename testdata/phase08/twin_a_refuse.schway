@@ -1,0 +1,46 @@
+// Phase 08 Task 1 -- Pattern A (ReturnsBorrowOfParam), REFUSING member.
+// Twin of twin_a_accept.schway: the two members' CALLER body (escort) is
+// byte-identical apart from this module header/name -- verified mechanically
+// by TestInterproceduralTwinPairsDifferOnlyInTheCallee, which parses both
+// members and asserts the caller's own ast.LinearBody (binding count, each
+// binding's RHS.Kind/RHS.Source/RHS.Callee/RHS.Arguments, and Result) match
+// exactly. The ONE thing that differs is escortee's DECLARED return type:
+// here, `-> borrow(buffer) Buffer` (a shared borrow of escortee's own
+// parameter), giving `core.FunctionSignature.Return.Mode == "shared"` and
+// `returnsBorrowOfParam == true` in the interprocedural summary table.
+//
+// Expected: `check` refuses with check.interprocedural_loan_liveness. escort
+// borrows buffer, calls escortee (which the summary table proves extends the
+// loan across the call boundary onto `aliased`, D-08-07), then takes buffer
+// while that interprocedurally-extended loan is still live (`aliased` is
+// returned afterward) -- exactly the shape 08-01's relay_escort_witness.schway
+// already proved for an EXCLUSIVE borrow; this fixture is the SHARED-borrow
+// sibling, landed as a byte-comparable twin pair rather than a lone witness
+// (T-08-09's mitigation: a caller-varying pair would pass with the
+// interprocedural law deleted; this pair varies only the callee).
+//
+// This is the ONLY member of this plan's real .schway corpus that the plan's
+// own <verify> block checks via the shipped CLI end to end (`go run ./cmd/schway
+// --json check`) -- see 08-03-SUMMARY.md's Deviations for why the ACCEPT twin
+// cannot make the same end-to-end claim (corevalidate's own, still
+// intraprocedural loanChainIndex unconditionally treats an OpCall's target as
+// inheriting every loan its SourceID carries, D-03-02's peer half, Phase 09
+// scope).
+
+module phase08.twin_a_refuse
+
+export {
+  fn escort
+}
+
+fn escortee(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}
+
+fn escort(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let aliased = escortee(borrowed)
+  let delivered = take buffer
+  aliased
+}

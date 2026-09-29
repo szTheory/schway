@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // collidingPayloadDataType mirrors session.PayloadProbeDataType's own
@@ -37,7 +37,7 @@ func collidingPayloadDataType(t *testing.T) core.DataType {
 }
 
 // unambiguousPayloadDataType is a data type whose alternatives declare
-// distinct payload types, mirroring payload_tracer.lang's own Outcome
+// distinct payload types, mirroring payload_tracer.schway's own Outcome
 // shape (D-12-41).
 func unambiguousPayloadDataType(t *testing.T) core.DataType {
 	t.Helper()
@@ -89,7 +89,7 @@ func TestAlternativeNameForPayloadTypeAmbiguityRefused(t *testing.T) {
 
 	t.Run("no alternative declares the payload type: distinguishable from ambiguity", func(t *testing.T) {
 		dataType := unambiguousPayloadDataType(t)
-		name, err := core.AlternativeNameForPayloadType(dataType, "LANG_NONEXISTENT")
+		name, err := core.AlternativeNameForPayloadType(dataType, "SCHWAY_NONEXISTENT")
 		if err == nil {
 			t.Fatalf("expected no-match error, got nil (name %q)", name)
 		}

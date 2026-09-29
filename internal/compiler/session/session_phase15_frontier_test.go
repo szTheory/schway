@@ -5,15 +5,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 // TestPhase15DiamondFrontierMoved preserves the old static-ID collision as
 // evidence while requiring /2 to distinguish its two occurrence contexts.
 func TestPhase15DiamondFrontierMoved(t *testing.T) {
-	const fixture = "multi_function_diamond_call.lang"
+	const fixture = "multi_function_diamond_call.schway"
 	program, entryName := phase11CheckedFixture(t, fixture)
 	entry := phase11EntryFunction(t, program, entryName)
 	input := phase11EntryInput(t, entry.Parameter.Type)
@@ -39,7 +39,7 @@ func TestPhase15DiamondFrontierMoved(t *testing.T) {
 // TestPhase15CollisionGuardIsNotInert restores the old collision in one
 // document and proves that the /2 peer gate rejects the duplicate pair.
 func TestPhase15CollisionGuardIsNotInert(t *testing.T) {
-	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.lang")
+	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.schway")
 	entry := phase11EntryFunction(t, program, entryName)
 	engines := phase11RunFourTiers(t, context.Background(), program, entryName, phase11EntryInput(t, entry.Parameter.Type))
 	broken := engines["interpreter"]
@@ -63,7 +63,7 @@ func corruptExecutionProducerInvocation(document *execution.Execution) {
 // producer run while leaving executionpeer intact. The named peer refusal is
 // the observable proving producer and peer do not share this derivation.
 func TestExecutionProducerFaultIsCaughtByPeer(t *testing.T) {
-	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.lang")
+	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.schway")
 	entry := phase11EntryFunction(t, program, entryName)
 	engines := phase11RunFourTiers(t, context.Background(), program, entryName, phase11EntryInput(t, entry.Parameter.Type))
 	broken := engines["interpreter"]
@@ -81,7 +81,7 @@ func TestExecutionProducerFaultIsCaughtByPeer(t *testing.T) {
 // acceptance fault falsely blesses matching bad documents; after restoration,
 // the intact peer rejects those identical bytes.
 func TestExecutionPeerAcceptanceFaultIsCaughtByControl(t *testing.T) {
-	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.lang")
+	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.schway")
 	entry := phase11EntryFunction(t, program, entryName)
 	engines := phase11RunFourTiers(t, context.Background(), program, entryName, phase11EntryInput(t, entry.Parameter.Type))
 	for name, document := range engines {

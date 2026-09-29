@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // CalleeLookup is the narrowest possible callee-resolution capability
@@ -45,7 +45,7 @@ type CalleeLookup func(functionID string) (core.Function, bool)
 // internal/ returned nothing), while corevalidate_peer_liveness.go's own
 // prose already asserted depth-2, depth-3, and beyond all resolve from the
 // same pass -- prose with no fixture behind it until plan 10-07's own
-// relay_depth3_accept.lang/relay_depth3_refuse.lang pair and
+// relay_depth3_accept.schway/relay_depth3_refuse.schway pair and
 // TestCompositionDepthCorpusReachesDeclaredBound's bidirectional gate
 // (D-10-50) closed that gap.
 //

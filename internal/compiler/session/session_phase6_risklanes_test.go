@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestRiskLaneRegistryLoads proves the embedded risk_lanes.json parses to a

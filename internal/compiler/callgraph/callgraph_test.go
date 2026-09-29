@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // checkedPhase07Fixture parses and checks a testdata/phase07 fixture,
@@ -660,11 +660,11 @@ func depthOf(edges map[string][]string, startID string) int {
 }
 
 // TestDeepDiamondAcyclicHasFourDiamondsAndDepthEight is Task 3's own
-// acceptance criterion: deep_diamond_acyclic.lang's BUILT graph (not a
+// acceptance criterion: deep_diamond_acyclic.schway's BUILT graph (not a
 // comment) contains at least four distinct diamond subgraphs at a
 // call-graph depth of at least 8, and checks clean.
 func TestDeepDiamondAcyclicHasFourDiamondsAndDepthEight(t *testing.T) {
-	program := checkedPhase07Fixture(t, "deep_diamond_acyclic.lang")
+	program := checkedPhase07Fixture(t, "deep_diamond_acyclic.schway")
 	edges := buildCallEdges(program)
 	if got := countDiamonds(edges); got < 4 {
 		t.Fatalf("want at least 4 diamond subgraphs, got %d (edges=%v)", got, edges)
@@ -683,7 +683,7 @@ func TestDeepDiamondAcyclicHasFourDiamondsAndDepthEight(t *testing.T) {
 	}
 	order, err := callgraph.Order(program)
 	if err != nil {
-		t.Fatalf("expected deep_diamond_acyclic.lang to check clean, got: %v", err)
+		t.Fatalf("expected deep_diamond_acyclic.schway to check clean, got: %v", err)
 	}
 	if len(order) != len(program.Functions) {
 		t.Fatalf("want every function ordered, got %d for %d functions", len(order), len(program.Functions))
@@ -697,9 +697,9 @@ func TestDeepDiamondAcyclicHasFourDiamondsAndDepthEight(t *testing.T) {
 // TestTerminatorWalkMutationKilled established.
 func TestCallGraphMutationMatrix(t *testing.T) {
 	t.Run("gray_reentry", func(t *testing.T) {
-		diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.lang")
+		diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.schway")
 		if _, err := callgraph.Order(diamond); err != nil {
-			t.Fatalf("expected deep_diamond_acyclic.lang to check clean at the default, got: %v", err)
+			t.Fatalf("expected deep_diamond_acyclic.schway to check clean at the default, got: %v", err)
 		}
 
 		restore := callgraph.SetGrayVsVisitedMutationForTest(true)
@@ -715,17 +715,17 @@ func TestCallGraphMutationMatrix(t *testing.T) {
 	})
 
 	t.Run("self_edge", func(t *testing.T) {
-		selfCycle := core.Program{Functions: []core.Function{syntheticFunction("fn:loop_forever", "fn:loop_forever", "fn:loop_forever:op:0")}} // mirrors cycle_self.lang
+		selfCycle := core.Program{Functions: []core.Function{syntheticFunction("fn:loop_forever", "fn:loop_forever", "fn:loop_forever:op:0")}} // mirrors cycle_self.schway
 		_, defaultErr := callgraph.Order(selfCycle)
 		if _, ok := callgraph.CycleError(defaultErr); !ok {
-			t.Fatalf("expected cycle_self.lang to be refused with a cycle error at the default, got: %v", defaultErr)
+			t.Fatalf("expected cycle_self.schway to be refused with a cycle error at the default, got: %v", defaultErr)
 		}
 
 		restore := callgraph.SetSkipSelfEdgeForTest(true)
 		defer restore()
 		_, mutatedErr := callgraph.Order(selfCycle)
 		if mutatedErr != nil {
-			t.Fatalf("mutation (skip self-edge) had no observable effect: expected cycle_self.lang to be wrongly accepted, got: %v", mutatedErr)
+			t.Fatalf("mutation (skip self-edge) had no observable effect: expected cycle_self.schway to be wrongly accepted, got: %v", mutatedErr)
 		}
 	})
 
@@ -755,8 +755,8 @@ func TestCallGraphMutationMatrix(t *testing.T) {
 	})
 
 	t.Run("restored_after_every_override", func(t *testing.T) {
-		diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.lang")
-		selfCycle := core.Program{Functions: []core.Function{syntheticFunction("fn:loop_forever", "fn:loop_forever", "fn:loop_forever:op:0")}} // mirrors cycle_self.lang
+		diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.schway")
+		selfCycle := core.Program{Functions: []core.Function{syntheticFunction("fn:loop_forever", "fn:loop_forever", "fn:loop_forever:op:0")}} // mirrors cycle_self.schway
 
 		restoreGray := callgraph.SetGrayVsVisitedMutationForTest(true)
 		restoreGray()
@@ -769,7 +769,7 @@ func TestCallGraphMutationMatrix(t *testing.T) {
 			t.Fatalf("expected the diamond corpus to check clean again after every override was restored, got: %v", err)
 		}
 		if _, err := callgraph.Order(selfCycle); err == nil {
-			t.Fatalf("expected cycle_self.lang to be refused again after every override was restored")
+			t.Fatalf("expected cycle_self.schway to be refused again after every override was restored")
 		}
 	})
 }

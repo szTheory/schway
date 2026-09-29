@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 func TestPhase20EnumeratedClosureCacheControls(t *testing.T) {

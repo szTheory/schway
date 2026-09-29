@@ -3,8 +3,8 @@ package corevalidate_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
 // programWithDataType returns a minimal, otherwise-valid core.Program (the

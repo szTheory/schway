@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -27,7 +27,7 @@ import (
 // lives INSIDE package check, the only package that can reach both the
 // unexported post-assembly liveness pass (checkInterproceduralLoanLiveness)
 // and corevalidate.Validate (already an ordinary test dependency of this
-// package, check_test.go:1-25). The `.lang` corpus gate
+// package, check_test.go:1-25). The `.schway` corpus gate
 // (session_peer_gate_test.go's peerDivergenceExpected) stays exactly where
 // it is. This is a split of VEHICLE, never of TRUTH: both harnesses share
 // ONE definition of divergence (check admits with zero diagnostics, the
@@ -203,7 +203,7 @@ func checkSyntheticProgramVerdict(program core.Program) []diagnostic.Diagnostic 
 // sizes, returning every "<shape>/<n>" key where check admits and
 // corevalidate.Validate independently refuses -- peerDivergenceExpected's
 // own divergence definition, applied to the synthetic corpus instead of the
-// `.lang` corpus. Factored out of the test function itself so Task 3's
+// `.schway` corpus. Factored out of the test function itself so Task 3's
 // mutation-kill can assert on the returned map directly, rather than on the
 // test binary's own pass/fail.
 func findSyntheticShapeDivergences(t *testing.T) map[string]string {
@@ -219,7 +219,7 @@ func findSyntheticShapeDivergences(t *testing.T) map[string]string {
 			// (D-09-46: it builds bare core.Program values for check's own
 			// work-counter sweep, which never consults those fields).
 			// corevalidate's structural pass DOES require Schema ==
-			// lang.core/1 before it will even reach the loan-liveness
+			// schway.core/1 before it will even reach the loan-liveness
 			// replay this differential cares about -- set it here so an
 			// unrelated core.schema refusal is never mistaken for the
 			// interprocedural loan-liveness divergence this test tracks.
@@ -564,7 +564,7 @@ func TestCyclePeerAndCheckBothAcceptAcyclicDiamond(t *testing.T) {
 // ---------------------------------------------------------------------
 
 // mutationCandidateProgram hand-builds a minimal two-function synthetic
-// core.Program mirroring testdata/phase08/twin_a_accept.lang's own proven
+// core.Program mirroring testdata/phase08/twin_a_accept.schway's own proven
 // shape (escort borrows its own parameter, calls escortee with the
 // borrowed place, then moves its own parameter after the call returns):
 // escortee's body genuinely just moves-and-returns its own parameter (no
@@ -680,7 +680,7 @@ func TestSyntheticShapeDifferentialMutationReintroducesDivergence(t *testing.T) 
 	program := mutationCandidateProgram()
 
 	// Baseline: both peers must independently agree the program is clean,
-	// mirroring twin_a_accept.lang's own already-proven post-Plan-09-01
+	// mirroring twin_a_accept.schway's own already-proven post-Plan-09-01
 	// agreement (see mutationCandidateProgram's own doc comment).
 	if diags := checkSyntheticProgramVerdict(program); len(diags) != 0 {
 		t.Fatalf("expected check to admit the baseline mutation-candidate program, got %+v", diags)

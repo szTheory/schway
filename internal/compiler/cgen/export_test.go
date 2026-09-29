@@ -1,8 +1,8 @@
 package cgen
 
 import (
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // Test-only accessors. These make the emitters' reserved sets and the two

@@ -42,7 +42,7 @@ func fixedFacts() MachineFacts {
 
 func TestMachineFactFieldsAreClosed(t *testing.T) {
 	got := FactFieldNames()
-	want := []string{"os", "arch", "cpu_model", "logical_cores", "go_version", "clang_version"}
+	want := []string{"os", "arch", "cpu_model", "logical_cores", "go_version", "cschway_version"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("FactFieldNames() = %v, want %v", got, want)
 	}
@@ -90,7 +90,7 @@ func TestMachineIDIsDerivedFromDeclaredFacts(t *testing.T) {
 		{"cpu_model", func(f *MachineFacts) { f.CPUModel = "Intel i9" }},
 		{"logical_cores", func(f *MachineFacts) { f.LogicalCores = 16 }},
 		{"go_version", func(f *MachineFacts) { f.GoVersion = "go1.25.0" }},
-		{"clang_version", func(f *MachineFacts) { f.ClangVersion = "clang version 16.0.0" }},
+		{"cschway_version", func(f *MachineFacts) { f.ClangVersion = "clang version 16.0.0" }},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

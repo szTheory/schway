@@ -14,13 +14,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
 const (
-	ApplicationBuildSchema      = "lang.app-build/1"
-	ApplicationEvidenceSchema   = "lang.app-evidence/1"
-	applicationCaptureSchema    = "lang.app-capture/1"
+	ApplicationBuildSchema      = "schway.app-build/1"
+	ApplicationEvidenceSchema   = "schway.app-evidence/1"
+	applicationCaptureSchema    = "schway.app-capture/1"
 	MaxApplicationArgumentBytes = 4096
 	maxApplicationReceiptBytes  = 64 * 1024
 )
@@ -114,7 +114,7 @@ func (r Runner) evidenceCapacityLimit() int {
 var applicationFlags = []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-O0"}
 
 func applicationReceiptPath(artifactPath string) string {
-	return artifactPath + ".lang-build.json"
+	return artifactPath + ".schway-build.json"
 }
 
 // BuildApplication compiles the generated translation unit and publishes a
@@ -179,7 +179,7 @@ func (r Runner) BuildApplication(parent context.Context, source []byte, cSource,
 		return BuildReceipt{}, &ToolError{Code: "native.compiler_probe_failed", Err: err}
 	}
 
-	stageDirectory, err := os.MkdirTemp(outputDirectory, ".lang-build-")
+	stageDirectory, err := os.MkdirTemp(outputDirectory, ".schway-build-")
 	if err != nil {
 		return BuildReceipt{}, &ToolError{Code: "native.temp_failed", Err: err}
 	}
@@ -267,7 +267,7 @@ func (r Runner) BuildApplication(parent context.Context, source []byte, cSource,
 	if len(receiptBytes) > maxApplicationReceiptBytes {
 		return BuildReceipt{}, &ToolError{Code: "native.receipt_encode_failed", Err: errors.New("build receipt exceeds size limit")}
 	}
-	stagedReceipt := filepath.Join(stageDirectory, "program.lang-build.json")
+	stagedReceipt := filepath.Join(stageDirectory, "program.schway-build.json")
 	if err := os.WriteFile(stagedReceipt, receiptBytes, 0o600); err != nil {
 		return BuildReceipt{}, &ToolError{Code: "native.receipt_write_failed", Err: err}
 	}
@@ -412,9 +412,9 @@ func (r Runner) runApplication(parent context.Context, artifactPath, input, capt
 	// Evidence capture is an explicit runner capability. Never let an inherited
 	// environment value authorize the generated application to write a file.
 	if capturePath == "" {
-		command.Env = removeEnvironment(command.Env, "LANG_APP_EVIDENCE_PATH")
+		command.Env = removeEnvironment(command.Env, "SCHWAY_APP_EVIDENCE_PATH")
 	} else {
-		command.Env = replaceEnvironment(command.Env, "LANG_APP_EVIDENCE_PATH", capturePath)
+		command.Env = replaceEnvironment(command.Env, "SCHWAY_APP_EVIDENCE_PATH", capturePath)
 	}
 	err = command.Run()
 	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
@@ -467,7 +467,7 @@ func publishApplicationPair(stagedArtifact, stagedReceipt, artifactPath, stageDi
 		}
 	}
 	oldArtifact := filepath.Join(stageDirectory, "previous-program")
-	oldReceipt := filepath.Join(stageDirectory, "previous-program.lang-build.json")
+	oldReceipt := filepath.Join(stageDirectory, "previous-program.schway-build.json")
 	_, artifactErr := os.Lstat(artifactPath)
 	_, receiptErr := os.Lstat(receiptPath)
 	hadArtifact := artifactErr == nil
@@ -595,7 +595,7 @@ func writeApplicationEvidenceReport(path string, report ApplicationEvidenceRepor
 	if len(encoded) > execution.MaxApplicationEvidenceBytes {
 		return &ToolError{Code: "native.evidence_report_encode_failed", Err: errors.New("application evidence report exceeds the size limit")}
 	}
-	file, err := os.CreateTemp(filepath.Dir(absolutePath), ".lang-app-evidence-*")
+	file, err := os.CreateTemp(filepath.Dir(absolutePath), ".schway-app-evidence-*")
 	if err != nil {
 		return &ToolError{Code: "native.evidence_report_write_failed", Err: err}
 	}

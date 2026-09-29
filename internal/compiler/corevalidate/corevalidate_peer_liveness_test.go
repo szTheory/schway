@@ -8,16 +8,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // mustCheckFixture parses and checks a testdata fixture through the real
 // front end, exactly like check_test.go's own mustParseProgram +
 // Program(...) pair, so the two mutation-kill tests below drive the same
-// real .lang fixtures the retired peerDivergenceExpected entries named,
+// real .schway fixtures the retired peerDivergenceExpected entries named,
 // not a hand-built synthetic program.
 func mustCheckFixture(t *testing.T, pathParts ...string) check.Result {
 	t.Helper()
@@ -295,12 +295,12 @@ func TestPeerLivenessFileImportsStayIndependent(t *testing.T) {
 // OpCall is treated as carrying its argument's loan regardless of what
 // derivePeerLoanCarry actually derived -- reverting corevalidate to its
 // pre-Phase-09 unconditional-propagation shape -- and BOTH retired
-// peerDivergenceExpected fixtures (testdata/phase08/twin_a_accept.lang,
-// testdata/phase08/relay_depth2_accept.lang) must refuse again with
+// peerDivergenceExpected fixtures (testdata/phase08/twin_a_accept.schway,
+// testdata/phase08/relay_depth2_accept.schway) must refuse again with
 // core.move_while_borrowed, proving D-09-03's retirement is genuinely this
 // mechanism's doing.
 func TestPeerLoanCarryForcedTrueReintroducesRetiredDivergence(t *testing.T) {
-	for _, fixture := range []string{"testdata/phase08/twin_a_accept.lang", "testdata/phase08/relay_depth2_accept.lang"} {
+	for _, fixture := range []string{"testdata/phase08/twin_a_accept.schway", "testdata/phase08/relay_depth2_accept.schway"} {
 		result := mustCheckFixture(t, strings.Split(fixture, "/")...)
 		restore := SetForcePeerLoanCarryTrueForTest(true)
 		coreResult := Validate(result.Program)
@@ -329,7 +329,7 @@ func TestPeerLoanCarryForcedTrueReintroducesRetiredDivergence(t *testing.T) {
 // reintroduced-divergence result, so the two seams each independently kill
 // the mutation they were built to catch.
 func TestPeerLoanCarryConsultDisabledReintroducesRetiredDivergence(t *testing.T) {
-	for _, fixture := range []string{"testdata/phase08/twin_a_accept.lang", "testdata/phase08/relay_depth2_accept.lang"} {
+	for _, fixture := range []string{"testdata/phase08/twin_a_accept.schway", "testdata/phase08/relay_depth2_accept.schway"} {
 		result := mustCheckFixture(t, strings.Split(fixture, "/")...)
 		restore := SetDisablePeerLoanCarryConsultForTest(true)
 		coreResult := Validate(result.Program)

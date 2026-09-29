@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
-// phase5LTOFixtureSource checks and lowers testdata/phase5/inline_across_foreign.lang
+// phase5LTOFixtureSource checks and lowers testdata/phase5/inline_across_foreign.schway
 // (05-05's own D-05-18a fixture, engineered so a single foreign acquisition's
 // result feeds the function's own return -- exactly the shape under which
 // `-flto` legally lets Clang inline the separately-compiled foreign TU's tiny
@@ -27,7 +27,7 @@ import (
 // session itself imports native.
 func phase5LTOFixtureSource(t *testing.T) string {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "inline_across_foreign.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "inline_across_foreign.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestLTODisabledLeavesCommandLineUnchanged(t *testing.T) {
 // the resulting binaries differ. A lane whose LTO and non-LTO outputs are
 // byte-identical is not exercising LTO at all -- it merely builds, which is
 // exactly the false-green shape D-05-24 exists to prevent. This uses
-// testdata/phase5/inline_across_foreign.lang, engineered by 05-05
+// testdata/phase5/inline_across_foreign.schway, engineered by 05-05
 // specifically because its cross-TU inlining is an observable codegen
 // difference under -flto (05-05-SUMMARY.md).
 func TestLTOTierIsNotInert(t *testing.T) {
@@ -198,10 +198,10 @@ func TestLTOTierIsNotInert(t *testing.T) {
 // experimentation -- "measured, not asserted"):
 //
 //  1. compositionOnlyCalleeSource: the callee TU. Its one function,
-//     lang_composition_probe_read, carries the FALSE `restrict` qualifier
+//     schway_composition_probe_read, carries the FALSE `restrict` qualifier
 //     on its by-pointer parameter (site 1).
 //  2. compositionOnlyWriterSource: a THIRD, entirely separate TU. Its one
-//     function, lang_composition_probe_write, performs the aliasing write
+//     function, schway_composition_probe_write, performs the aliasing write
 //     (site 2). It has no idea a restrict promise exists anywhere.
 //  3. compositionOnlyWrapperSource: the coordination point. It calls the
 //     callee TWICE -- once before, once after the writer's call -- through
@@ -234,17 +234,17 @@ func TestLTOTierIsNotInert(t *testing.T) {
 // wide reference): "none" and "restrict-only" must stay internally
 // consistent (green) at every tier, and "restrict+write" must diverge from
 // its own -O0 value at EXACTLY one tier: -O3 with -flto.
-const compositionOnlyCalleeSource = `unsigned char lang_composition_probe_read(unsigned char *restrict primary) {
+const compositionOnlyCalleeSource = `unsigned char schway_composition_probe_read(unsigned char *restrict primary) {
   return *primary;
 }
 `
 
-const compositionOnlyCalleePlainSource = `unsigned char lang_composition_probe_read(unsigned char *primary) {
+const compositionOnlyCalleePlainSource = `unsigned char schway_composition_probe_read(unsigned char *primary) {
   return *primary;
 }
 `
 
-const compositionOnlyWriterSource = `void lang_composition_probe_write(unsigned char *probe) {
+const compositionOnlyWriterSource = `void schway_composition_probe_write(unsigned char *probe) {
   *probe = 99;
 }
 `
@@ -260,12 +260,12 @@ func compositionOnlyWrapperSource(restrictQualifier bool) string {
 	if restrictQualifier {
 		qualifier = "restrict "
 	}
-	return fmt.Sprintf(`extern unsigned char lang_composition_probe_read(unsigned char *%[1]sprimary);
-extern void lang_composition_probe_write(unsigned char *probe);
-unsigned char lang_composition_probe_wrapper(unsigned char *%[1]sprimary, unsigned char *probe) {
-  unsigned char before = lang_composition_probe_read(primary);
-  lang_composition_probe_write(probe);
-  unsigned char after = lang_composition_probe_read(primary);
+	return fmt.Sprintf(`extern unsigned char schway_composition_probe_read(unsigned char *%[1]sprimary);
+extern void schway_composition_probe_write(unsigned char *probe);
+unsigned char schway_composition_probe_wrapper(unsigned char *%[1]sprimary, unsigned char *probe) {
+  unsigned char before = schway_composition_probe_read(primary);
+  schway_composition_probe_write(probe);
+  unsigned char after = schway_composition_probe_read(primary);
   return (unsigned char)(before + after);
 }
 `, qualifier)
@@ -276,7 +276,7 @@ unsigned char lang_composition_probe_wrapper(unsigned char *%[1]sprimary, unsign
 // aliased controls whether probe is bound to the SAME object as primary
 // (the actual violation input) or a genuinely distinct object (the
 // restrict-only row's non-violating input). The program prints a minimal,
-// schema-valid `lang.execution/0` document so native.Runner's own
+// schema-valid `schway.execution/0` document so native.Runner's own
 // decodeExecution accepts it -- this hand-written control still goes
 // through the SAME execute-and-decode path as every other native.Runner
 // caller, per D-11-24 (native.Runner itself is never widened).
@@ -293,12 +293,12 @@ func compositionOnlyMainSource(restrictQualifier, aliased bool) string {
 	}
 	return fmt.Sprintf(`#include <stdio.h>
 #include <stdlib.h>
-extern unsigned char lang_composition_probe_wrapper(unsigned char *%[1]sprimary, unsigned char *probe);
+extern unsigned char schway_composition_probe_wrapper(unsigned char *%[1]sprimary, unsigned char *probe);
 int main(int argc, char **argv) {
   if (argc != 2) return 64;
   unsigned char value = (unsigned char)atoi(argv[1]);
-%[2]s  unsigned char result = lang_composition_probe_wrapper(&value, %[3]s);
-  printf("{\"schema\":\"lang.execution/0\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%%u\"},\"events\":[{\"schema\":\"lang.execution/0\",\"id\":\"e0\",\"kind\":\"function.returned\",\"function_id\":\"fn:probe\",\"input\":\"in\",\"output\":\"out\"}],\"live_resources\":[]}\n", (unsigned int)result);
+%[2]s  unsigned char result = schway_composition_probe_wrapper(&value, %[3]s);
+  printf("{\"schema\":\"schway.execution/0\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%%u\"},\"events\":[{\"schema\":\"schway.execution/0\",\"id\":\"e0\",\"kind\":\"function.returned\",\"function_id\":\"fn:probe\",\"input\":\"in\",\"output\":\"out\"}],\"live_resources\":[]}\n", (unsigned int)result);
   return 0;
 }
 `, qualifier, preamble, probeExpr)

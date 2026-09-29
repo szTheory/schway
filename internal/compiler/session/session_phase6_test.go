@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/measure"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/measure"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestVerifyPhase6ControlsAndWork runs Phase 6's own control-and-work gate
@@ -32,7 +32,7 @@ func TestVerifyPhase6ControlsAndWork(t *testing.T) {
 		if !foundTerminalLane {
 			t.Fatalf("VerifyPhase6ControlsAndWork failed outside the terminal cleanup lane: status=%s lanes=%+v diagnostics=%+v", result.Status, result.Lanes, result.Diagnostics)
 		}
-		path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+		path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway")
 		_, _, refusal := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 		requirePhase16M004Refusal(t, refusal, "foreign")
 		return

@@ -1,0 +1,41 @@
+// adversarial-target: tail-collapse-of-a-release-ladder
+//
+// D-05-18a: three successive foreign acquisitions A, B, C, all succeeding,
+// released in the exact reverse of completed-acquisition order -- C, then
+// B, then A -- before the function returns its own untouched parameter
+// (RES-01, D-04-07's law, structurally identical to
+// testdata/phase4/acquire_three_success.schway, a new file per this phase's
+// own D-05-18 corpus rather than a fork of the Phase 4 fixture). The three
+// generated release calls are structurally identical tails (each an
+// `if (!schway_record_event(...)) return 74;` guard around the same
+// `schway_foreign_resource_release_impl` call, differing only in which
+// resource's handle they name), exactly the shape a tail-merging optimizer
+// (ICF / tail-call collapsing under `-O3`/LTO) is free to fold into a
+// shared tail -- which must still preserve the release ladder's own
+// observable count and order (D-05-20).
+
+module phase5.tail_collapse_release_ladder
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn schway_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let a = try schway_res_open(request)
+  let b = try schway_res_open(request)
+  let c = try schway_res_open(request)
+  request
+}

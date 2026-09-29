@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 type phase23DischargeContract struct {
@@ -181,15 +181,15 @@ func TestPhase23ReadmeExpectedAnswersAreIndependentConstants(t *testing.T) {
 	if err := decoder.Decode(&expected); err != nil {
 		t.Fatal(err)
 	}
-	if expected.Schema != "lang.phase23-file-byte-expected/1" || len(expected.Cases) != 5 {
+	if expected.Schema != "schway.phase23-file-byte-expected/1" || len(expected.Cases) != 5 {
 		t.Fatalf("unexpected independent Phase 23 answer fixture: schema=%q cases=%+v", expected.Schema, expected.Cases)
 	}
 	want := []publicCase{
 		{ID: "byte-41", FileBytesHex: "41", ExitCode: 0, Stdout: "65\n", Stderr: ""},
 		{ID: "byte-42", FileBytesHex: "42", ExitCode: 0, Stdout: "66\n", Stderr: ""},
-		{ID: "empty-acquire-error", FileBytesHex: "", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_acquire: EmptyFile\n"},
-		{ID: "two-byte-acquire-error", FileBytesHex: "4142", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_acquire: FileTooLong\n"},
-		{ID: "unsupported-byte-use-error", FileBytesHex: "43", ExitCode: 65, Stdout: "", Stderr: "lang_file_byte_use: UnsupportedByte\n"},
+		{ID: "empty-acquire-error", FileBytesHex: "", ExitCode: 65, Stdout: "", Stderr: "schway_file_byte_acquire: EmptyFile\n"},
+		{ID: "two-byte-acquire-error", FileBytesHex: "4142", ExitCode: 65, Stdout: "", Stderr: "schway_file_byte_acquire: FileTooLong\n"},
+		{ID: "unsupported-byte-use-error", FileBytesHex: "43", ExitCode: 65, Stdout: "", Stderr: "schway_file_byte_use: UnsupportedByte\n"},
 	}
 	for index, test := range expected.Cases {
 		if test != want[index] {
@@ -319,7 +319,7 @@ func requirePhase23BooleanFields(data []byte) error {
 
 func phase23ContractProblems(contract phase23DischargeContract) []string {
 	var problems []string
-	if contract.Schema != "codename.lang.resource-discharge-contract.v2" {
+	if contract.Schema != "codename.schway.resource-discharge-contract.v2" {
 		problems = append(problems, "unexpected schema")
 	}
 	if !contract.ContractOnly || contract.ProductionAdmission {

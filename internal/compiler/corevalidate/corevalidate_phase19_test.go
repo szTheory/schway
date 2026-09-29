@@ -3,10 +3,10 @@ package corevalidate_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 func phase19ConstantProgram(t *testing.T) core.Program {

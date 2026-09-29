@@ -1,0 +1,24 @@
+// Derivation-only match-defect fixture (D-06-29): the ONLY fixture 06-13's
+// repair driver may consult when hand-deriving its kind->edit mapping for
+// the match class. Never scored by the CI gate -- see
+// heldout_match_defect.schway for the corpus the gate actually runs against.
+// Deliberately carries no "// schway:match-target" marker: no injector runner
+// is ever wired against this file.
+
+module phase6.derivation_match_defect
+
+export {
+  type Mode
+  fn relay
+}
+
+data Mode =
+  | Idle
+  | Active
+
+fn relay(state: Mode) -> Mode {
+  match state {
+    Idle => Idle
+    Active => Active
+  }
+}

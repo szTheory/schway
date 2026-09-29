@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase19NumericLiteralRoundTrip(t *testing.T) {
-	base, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang"))
+	base, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

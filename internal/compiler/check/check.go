@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/ability"
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/ability"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
 )
 
 // testOnlyForceUniformLoanJoin is a fault-injection seam for
@@ -86,7 +86,7 @@ type Result struct {
 	// AliasFacts is D-05-01's admission-gating alias-lattice fact set
 	// (deriveAliasFacts): exposed here, on the checker's existing result,
 	// rather than as a new core.Program field, so cgen's restrict emission
-	// and the evidence path can reach it without a lang.core/2 schema bump
+	// and the evidence path can reach it without a schway.core/2 schema bump
 	// (D-05-39). Empty for every Phase 1-4 program.
 	AliasFacts []AliasFact
 }
@@ -403,11 +403,11 @@ func Program(program ast.Program) Result {
 			// always a legal match result, but "which value" is only a safe
 			// guess, not a certainty, when the arms already in source
 			// establish that identity-mapping convention -- otherwise (as
-			// in testdata/phase1/non_exhaustive.lang's Off => On, which
+			// in testdata/phase1/non_exhaustive.schway's Off => On, which
 			// does NOT self-map) there is no principled way to guess the
 			// missing arm's target, and offering one anyway would be
 			// exactly the fail-open shape this project refuses. This
-			// condition is also what keeps lang.diagnostic/0's frozen Phase
+			// condition is also what keeps schway.diagnostic/0's frozen Phase
 			// 1 golden (TestPhase1DiagnosticGoldenUnchanged) byte-identical:
 			// diagnostic.Error (schema /0) is used whenever no repair
 			// applies, and ErrorWithRepairs (schema /1) always changes the
@@ -930,7 +930,7 @@ func blameUndeterminedRepairs(outcome blameOutcome, calleeSpan, callerSpan diagn
 // travelling declared callee return contract -> in-memory summary bit ->
 // forward canonicalization in derivePlaceLoans -> backward liveness -> a
 // newly minted check.interprocedural_loan_liveness diagnostic -> the
-// `lang check` CLI. Wires exactly ONE direction (a callee that returns a
+// `schway check` CLI. Wires exactly ONE direction (a callee that returns a
 // borrow of its own parameter, D-08-07); no transitivity, no bound -- those
 // are later plans' expansion work.
 // ---------------------------------------------------------------------
@@ -1319,7 +1319,7 @@ func cfgBlocksForFunction(function core.Function) []cfgBlockSpec {
 //
 // The liveness law is declared FINAL as of Phase 08's mandatory mid-phase
 // gate (08-06-PLAN.md, PHASE-08-DEBT.md): criterion 1's nine-fixture
-// adversarial corpus plus relay_escort_witness.lang, and criterion 3's
+// adversarial corpus plus relay_escort_witness.schway, and criterion 3's
 // measured <=1.2 growth exponent across five call-graph shapes (ratified in
 // internal/compiler/session/qlt02_budget_manifest.json), were both
 // adjudicated from code-level evidence before this scope was closed. Four
@@ -1696,7 +1696,7 @@ func borrowConflictDiagnosticPostAssembly(newBorrow, blockingBorrow core.LinearO
 // 13-01 Task 1 (D-13-09.1/D-13-09a): this now builds via
 // diagnostic.ErrorWithRepairs unconditionally -- including on the
 // zero-repair fallback path below -- which is the deliberate, reviewable
-// schema lang.diagnostic/0 -> /1 switch D-13-09a records. That switch
+// schema schway.diagnostic/0 -> /1 switch D-13-09a records. That switch
 // changes the hashed identity struct's Schema string and therefore churns
 // this code's sha256 ID on EVERY fixture, whether or not a repair fires;
 // check_ordering_stability_test.go's four affected rows are re-pinned in
@@ -1718,14 +1718,14 @@ func borrowConflictDiagnosticPostAssembly(newBorrow, blockingBorrow core.LinearO
 // last use, callIsLastUse == true), nothing after the call still needs the
 // loan, so swapping the move to occur after the call genuinely ends the
 // conflict -- empirically verified: swapping testdata/phase13/derivation_
-// interprocedural_loan_defect.lang's two statements re-checks clean. In the
+// interprocedural_loan_defect.schway's two statements re-checks clean. In the
 // FORWARD direction (the loan is propagated THROUGH the call onto a place
 // read STILL LATER, callIsLastUse == false), the true last use is beyond
 // the call -- e.g. the call's own return value used as the function's own
 // result -- so swapping the move and the call does not end the conflict at
 // all; it only moves where in the program `take` sits, and the diagnostic
 // still fires (empirically verified against testdata/phase07/
-// relay_escort_witness.lang and testdata/phase08/twin_a_refuse.lang: the
+// relay_escort_witness.schway and testdata/phase08/twin_a_refuse.schway: the
 // swapped program still refuses with the identical diagnostic). No repair
 // is emitted for the forward direction -- the same fail-closed posture
 // D-13-11 and D-13-10 already establish: never a plausible-but-wrong edit.
@@ -1837,7 +1837,7 @@ const checkCallArgumentTypeMismatch = "check.call_argument_type_mismatch"
 // available_type. diagnostic.Error, no repairs. Currently UNREACHABLE
 // from any legal source program (sameType forces every function's return
 // type to equal its parameter type) -- mutation-killed through
-// callReturnTypeDerivationSeam, never through a .lang fixture; see
+// callReturnTypeDerivationSeam, never through a .schway fixture; see
 // PHASE-07-DEBT.md. Distinct from core.CallReturnTypeMismatch
 // (corevalidate.go) for the same independence reason as
 // checkCallArgumentTypeMismatch above.
@@ -1893,7 +1893,7 @@ var callArgumentConsumeAlwaysSeam = false
 // cannot be reached by corevalidate's own independence test
 // (TestCallConsumePeerIndependentOfCheck), which imports this package as
 // an ordinary dependency to prove the peer still refuses
-// call_argument_used_twice.lang's emitted core with the PRODUCER's own
+// call_argument_used_twice.schway's emitted core with the PRODUCER's own
 // gate disabled. This mirrors corevalidate.go's own
 // SetDisableCyclePeerForTest exactly (D-07-42): production-visible, but a
 // documented test-only no-op unless a test explicitly calls it, always
@@ -1953,7 +1953,7 @@ func buildCalleeContracts(program ast.Program) map[string]calleeContract {
 }
 
 // callSignatureTable is D-07-34's immutable signature table: a same-package,
-// read-only view over each declared function's lang.interface/1
+// read-only view over each declared function's schway.interface/1
 // FunctionSignature (ID, name, parameter contract, return contract, and the
 // Callable bit -- D-07-31/D-07-32's publication-safety predicate, never
 // export membership). It reuses core.FunctionSignature verbatim rather than
@@ -1982,7 +1982,7 @@ func (t callSignatureTable) lookup(calleeID string) (core.FunctionSignature, boo
 // it, originvalidate.PublishProblemsFor -- as Callable's SOLE authority
 // (D-07-31/D-07-32, landed in 07-02). This is a deliberate reuse of the
 // established single source of truth for what a "signature" is under
-// lang.interface/1, not a second, competing derivation: the two genuinely
+// schway.interface/1, not a second, competing derivation: the two genuinely
 // independent derivations of the D-04-03 predicate this phase's threat
 // register (T-07-31) requires are check's OWN admission-time consult of
 // this table versus corevalidate's own, separately-implemented peer
@@ -2213,7 +2213,7 @@ func sealedNames(types map[string]core.DataType) map[string]bool {
 // Deliberately unreachable from real source today, exactly like
 // ownership.borrow_requires_share (check_test.go's nonShareableTypeFact):
 // the parser's own maxArmsPerMatch (64) caps arm count below this bound
-// (2+64 = 66 < 128), so no real `.lang` program can ever trigger this arm
+// (2+64 = 66 < 128), so no real `.schway` program can ever trigger this arm
 // of checkBranch through syntax.Parse. It exists as defense-in-depth for a
 // future relaxation of the parser cap, and is exercised directly by a
 // synthetic ast.Program in TestArmBodyLimits (check_branch_test.go), per
@@ -2825,7 +2825,7 @@ func cfgBackEdgeDiagnostic(functionID, blockID string, span diagnostic.Span) dia
 // over a finite lattice of live-loan sets per block boundary, so it
 // provably converges within lattice-height iterations -- the bound below is
 // therefore an INTERNAL-CONSISTENCY ASSERTION, never a DoS defense: no
-// `.lang` program can force divergence, only an implementation bug can (a
+// `.schway` program can force divergence, only an implementation bug can (a
 // non-monotone transfer function, a mutated lattice, or a lost `queued`
 // flag reintroducing infinite reinsertion -- see PHASE-08-DEBT.md D-08-15).
 // A flat magic constant was rejected: it is equally unprovokable from
@@ -2888,7 +2888,7 @@ var loanLivenessBoundSeam = false
 // ID for two runs that both happen to exceed their (possibly different)
 // bound -- TestLoanLivenessBoundValueIsNotInDiagnosticIdentity asserts this
 // directly by varying block count and confirming identical diagnostic IDs.
-// Repairs is nil: this is not one of lang-repair's five defect classes
+// Repairs is nil: this is not one of schway-repair's five defect classes
 // (matching Phase 07's non-repairable disposition for a whole-program
 // call-graph cycle, the analogous whole-topology defect).
 func loanLivenessBoundExceededDiagnostic(functionID string, span diagnostic.Span) diagnostic.Diagnostic {
@@ -3712,22 +3712,22 @@ func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols m
 		return refusal("check.local_owner_shape_unsupported", "PathToken is admitted only for the checked acquire, borrow, and generated release entry shape")
 	}
 	acquireBinding, useBinding := body.Bindings[0], body.Bindings[1]
-	if acquireBinding.RHS.Kind != "try_call" || acquireBinding.RHS.Callee != "lang_file_byte_acquire" || len(acquireBinding.RHS.Arguments) != 1 || acquireBinding.RHS.Arguments[0] != function.Parameter.Name ||
-		useBinding.RHS.Kind != "try_call" || useBinding.RHS.Callee != "lang_file_byte_use" || len(useBinding.RHS.Arguments) != 1 || useBinding.RHS.Arguments[0] != acquireBinding.Name {
+	if acquireBinding.RHS.Kind != "try_call" || acquireBinding.RHS.Callee != "schway_file_byte_acquire" || len(acquireBinding.RHS.Arguments) != 1 || acquireBinding.RHS.Arguments[0] != function.Parameter.Name ||
+		useBinding.RHS.Kind != "try_call" || useBinding.RHS.Callee != "schway_file_byte_use" || len(useBinding.RHS.Arguments) != 1 || useBinding.RHS.Arguments[0] != acquireBinding.Name {
 		return refusal("check.local_owner_shape_unsupported", "PathToken is admitted only for acquire followed by borrowed use and generated consuming release")
 	}
-	acquire, hasAcquire := symbols["lang_file_byte_acquire"]
-	use, hasUse := symbols["lang_file_byte_use"]
-	release, hasRelease := symbols["lang_file_byte_release"]
+	acquire, hasAcquire := symbols["schway_file_byte_acquire"]
+	use, hasUse := symbols["schway_file_byte_use"]
+	release, hasRelease := symbols["schway_file_byte_release"]
 	if !hasAcquire || !hasUse || !hasRelease {
 		return refusal("check.local_owner_contract_missing", "local file-byte source must declare acquire, borrow, and release symbols")
 	}
 	if !foreignSignature(acquire, "PathToken", "FileByteOwner") || !foreignSignature(use, "FileByteOwner", "U64") || !foreignSignature(release, "FileByteOwner", "Unit") {
 		return refusal("check.local_owner_signature_mismatch", "local file-byte operation signatures do not match the frozen PathToken/owner/U64 contract")
 	}
-	if !localForeignPolicy(acquire, "acquire", "lang_file_byte_acquire_fn", "AcquireError") || acquire.Allocator != "libc_malloc" || acquire.Release != release.Name ||
-		!localForeignPolicy(use, "borrow", "lang_file_byte_use_fn", "UseError") ||
-		!localForeignPolicy(release, "consume", "lang_file_byte_release_fn", "") || release.Allocator != "libc_malloc" {
+	if !localForeignPolicy(acquire, "acquire", "schway_file_byte_acquire_fn", "AcquireError") || acquire.Allocator != "libc_malloc" || acquire.Release != release.Name ||
+		!localForeignPolicy(use, "borrow", "schway_file_byte_use_fn", "UseError") ||
+		!localForeignPolicy(release, "consume", "schway_file_byte_release_fn", "") || release.Allocator != "libc_malloc" {
 		return refusal("check.local_owner_contract_invalid", "local file-byte operations require explicit per-operation ABI, mode, failure, allocator, and release facts")
 	}
 	pathType := core.TypeRef{Constructor: "PathToken"}
@@ -3966,7 +3966,7 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 		//
 		// Unconditional diagnostic.ErrorWithRepairs, even on the
 		// zero-repair fallback path, mirrors 13-01's deliberate,
-		// reviewable lang.diagnostic/0 -> /1 schema switch (D-13-09a):
+		// reviewable schway.diagnostic/0 -> /1 schema switch (D-13-09a):
 		// this code's sha256 ID churns on every fixture whether or not a
 		// repair fires. check_ordering_stability_test.go's affected row
 		// is re-pinned in this plan's Task 3.
@@ -3992,7 +3992,7 @@ func resolveCallBinding(functionID string, opOrdinal int, binding ast.Binding, p
 			// immediately after the splice -- verified by applying
 			// this repair through the real driver and observing a
 			// duplicated argument list
-			// ("try lang_res_open(request)(request)"), a parse
+			// ("try schway_res_open(request)(request)"), a parse
 			// failure, never a clean re-check. binding.Span.End is
 			// the call's own closing paren (the whole "let NAME =
 			// callee(ARGS)" statement's own End, arity is fixed at 1
@@ -4212,7 +4212,7 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 // standardForeignLayout is this phase's fixed target-layout obligation
 // (D-04-12/T-04-14): every foreign symbol this phase declares acquires
 // exactly one malloc-backed record shaped like the frozen
-// native/lang_foreign_resource_private.h's own lang_foreign_resource_block
+// native/schway_foreign_resource_private.h's own schway_foreign_resource_block
 // -- a single one-byte payload field -- so every declared foreign symbol
 // shares an identical Layout. This is not an omission-tolerant default -- it
 // never varies, and there is today nothing for a symbol to declare
@@ -4222,7 +4222,7 @@ func checkForeignTracer(functionID string, function ast.FuncDecl, parameterType 
 // private header via paired sizeof/_Alignof/offsetof assertions.
 func standardForeignLayout() *core.RecordLayout {
 	return &core.RecordLayout{
-		Size: 1, Alignment: 1, ForeignTypeName: "lang_foreign_resource_block",
+		Size: 1, Alignment: 1, ForeignTypeName: "schway_foreign_resource_block",
 		Fields: []core.LayoutField{
 			{Name: "payload", Size: 1, Alignment: 1, Offset: 0, CType: "unsigned char"},
 		},
@@ -4330,7 +4330,7 @@ func dataTypeHasPayload(dataType core.DataType) bool {
 func payloadFieldShape(payloadType string) (size, alignment int, cType string) {
 	switch payloadType {
 	case "Buffer":
-		return 8, 1, "LANG_BUFFER"
+		return 8, 1, "SCHWAY_BUFFER"
 	case "Byte":
 		return 1, 1, "unsigned char"
 	default:
@@ -5365,14 +5365,14 @@ func deriveAliasFacts(function core.Function, linear *core.LinearBody, endpoints
 		return nil, work
 	}
 	// PublicOrigin != nil marks a declared borrow-return function (OWN-04's
-	// public borrowed views, e.g. testdata/phase3/public_view_mixed_access.lang):
+	// public borrowed views, e.g. testdata/phase3/public_view_mixed_access.schway):
 	// a distinct, already-shipped semantic category that can have the exact
 	// same exclusive-borrow-then-reborrow-to-terminator operation shape as
 	// this plan's own by-pointer fixture. Excluding it here mirrors
 	// selectsByPointerLowering's own identical guard (cgen.go) -- the one
 	// genuinely structural fact (not a name or file match) that tells the
 	// two apart, required for TestAliasFactAgreesWithByPointerSelection to
-	// hold on testdata/phase3/public_view_mixed_access.lang.
+	// hold on testdata/phase3/public_view_mixed_access.schway.
 	if function.PublicOrigin != nil {
 		return nil, work
 	}

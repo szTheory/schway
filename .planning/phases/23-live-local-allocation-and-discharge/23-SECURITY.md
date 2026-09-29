@@ -7,6 +7,11 @@ asvs_level: 1
 created: "2026-09-28"
 ---
 
+<!-- schway-current:start -->
+Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
+<!-- schway-current:end -->
+
+
 # Phase 23 — Security
 
 > Per-phase security contract: threat register, accepted risks, and audit trail.

@@ -1,0 +1,38 @@
+// Phase 13 Plan 03 Task 1 -- D-13-23's discriminating mutation twin of
+// explain_three_function_chain.schway: the SAME four functions (caller,
+// relay, decoy, leaf), reordered in source so every function's byte
+// offsets shift, while no function's Name (its identity) changes.
+// TestExplainFunctionIdentitySurvivesReorder asserts all resolved spans
+// differ from the unreordered fixture's while every resolved function_id
+// (keyed by Name here, since both fixtures are parsed independently and
+// carry their own semanticID-derived IDs) stays paired with the same
+// function Name -- the anti-hardcoding mutation that defeats "use the
+// root's function for every node" or any other position-keyed shortcut.
+
+module phase13.explain_three_function_chain_reordered
+
+export {
+  fn caller
+}
+
+fn caller(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let aliased = relay(borrowed)
+  let delivered = take buffer
+  aliased
+}
+
+fn relay(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let forwarded = leaf(borrowed)
+  forwarded
+}
+
+fn decoy(value: Byte) -> Byte {
+  value
+}
+
+fn leaf(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}

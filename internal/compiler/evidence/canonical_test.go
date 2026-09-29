@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // The canonical projection is what SourceDigest binds, so a formatter that
@@ -89,7 +89,7 @@ func driftingFormat() func(syntax.Tree) []byte {
 
 func readCanonicalSource(t testing.TB) []byte {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "testdata", "phase2", "owned_transfer.lang"))
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "testdata", "phase2", "owned_transfer.schway"))
 	if err != nil {
 		t.Fatalf("read owned transfer source: %v", err)
 	}
@@ -98,7 +98,7 @@ func readCanonicalSource(t testing.TB) []byte {
 
 func canonicalFacts() Facts {
 	return Facts{
-		CompilerIdentity: "codename-lang-stage0/test",
+		CompilerIdentity: "schway-stage0/test",
 		ClangIdentity:    "clang-test",
 		Target:           "test-target",
 		Flags:            append([]string(nil), DefaultFlags...),

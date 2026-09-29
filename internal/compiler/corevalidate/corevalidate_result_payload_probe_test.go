@@ -3,10 +3,10 @@ package corevalidate_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
 )
 
 // Phase 12 criterion 3 -- the `Result` payload / interprocedural-origin
@@ -39,11 +39,11 @@ import (
 // fixture. It instead drives the two shapes the payload question REDUCES to,
 // both already expressible:
 //
-//   1. testdata/phase07/call_from_both_match_arms.lang -- whose own header
+//   1. testdata/phase07/call_from_both_match_arms.schway -- whose own header
 //      names it "Phase 12's forward guard, since a future `Result` match
 //      arm's own call must be picked up the same way". This is the
 //      match-plus-call half: a payload match arm containing a call.
-//   2. testdata/phase08/relay_depth2_accept.lang -- a callee's result
+//   2. testdata/phase08/relay_depth2_accept.schway -- a callee's result
 //      forwarded out through a second hop. This is the forwarding half: a
 //      payload constructed in a callee and returned through a relay.
 //
@@ -111,7 +111,7 @@ func TestC03ResultPayloadOriginAcrossOpCall(t *testing.T) {
 	t.Run("match_arm_call_shape", func(t *testing.T) {
 		// Phase 12's own forward guard, per this fixture's header. A
 		// payload match arm's call must be enumerated the same way.
-		_, verdict := runFourPeerProbe(t, "phase07", "call_from_both_match_arms.lang")
+		_, verdict := runFourPeerProbe(t, "phase07", "call_from_both_match_arms.schway")
 		t.Logf("probe verdict: %+v", verdict)
 
 		if !verdict.coreValid {
@@ -138,7 +138,7 @@ func TestC03ResultPayloadOriginAcrossOpCall(t *testing.T) {
 		// interprocedural law -- the one under test -- correctly admits
 		// it." That header predates Phase 09's peer work, so whether the
 		// divergence SURVIVES is itself part of the probe.
-		_, verdict := runFourPeerProbe(t, "phase08", "relay_depth2_accept.lang")
+		_, verdict := runFourPeerProbe(t, "phase08", "relay_depth2_accept.schway")
 		t.Logf("probe verdict: %+v", verdict)
 
 		// Single-outcome: whichever way corevalidate answers, the answer
@@ -175,14 +175,14 @@ func TestC03ResultPayloadOriginAcrossOpCall(t *testing.T) {
 // BECAUSE the gap is open.
 //
 // So the shape is synthesized at core level instead, Q-01 style: clone
-// testdata/phase08/relay_depth2_accept.lang's checked program (where `relay`
+// testdata/phase08/relay_depth2_accept.schway's checked program (where `relay`
 // forwards `leaf`'s result and declares no origin at all) and attach a
 // borrow-returning PublicOrigin to `relay`. That is a SINGLE additive field
 // edit -- every function ID, operation ID, and operation Kind is untouched,
 // asserted below -- so the peers' verdict is attributable to the added
 // declared origin alone.
 func TestC03PeerDeriveOriginFactsOpCallGapStillOpen(t *testing.T) {
-	program := loadCheckedProgram(t, "phase08", "relay_depth2_accept.lang")
+	program := loadCheckedProgram(t, "phase08", "relay_depth2_accept.schway")
 
 	// Baseline: with no declared origin, both peers admit this program.
 	// Phase 09's D-09-03 closed the older loan-carry divergence here, so a
@@ -203,7 +203,7 @@ func TestC03PeerDeriveOriginFactsOpCallGapStillOpen(t *testing.T) {
 		}
 	}
 	if relayIndex < 0 {
-		t.Fatal("expected testdata/phase08/relay_depth2_accept.lang to declare a function named relay")
+		t.Fatal("expected testdata/phase08/relay_depth2_accept.schway to declare a function named relay")
 	}
 	if program.Functions[relayIndex].PublicOrigin != nil {
 		t.Fatal("expected relay to declare no PublicOrigin in the committed fixture -- the synthesized edit assumes it is absent")
@@ -284,8 +284,8 @@ func assertOnlyPublicOriginChanged(t *testing.T, before, after core.Program, edi
 // harness.
 func TestC03ProbeFixturesAreUnmodified(t *testing.T) {
 	for _, fixture := range []struct{ phase, name string }{
-		{"phase07", "call_from_both_match_arms.lang"},
-		{"phase08", "relay_depth2_accept.lang"},
+		{"phase07", "call_from_both_match_arms.schway"},
+		{"phase08", "relay_depth2_accept.schway"},
 	} {
 		t.Run(fixture.name, func(t *testing.T) {
 			first, _ := runFourPeerProbe(t, fixture.phase, fixture.name)

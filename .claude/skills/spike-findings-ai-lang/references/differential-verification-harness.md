@@ -100,7 +100,7 @@ identity (001), and the wrong placement of the interprocedural fact (006).
 - Go 1.24 standard library only. `go test`, `-race`, `-cover`, `go vet`, and
   seeded `testing/quick` were sufficient for all six spikes.
 - Use task-local Go cache directories in restricted environments —
-  `env GOCACHE=/private/tmp/ai-lang-spikeNNN-go-cache go test -count=1 ./...`.
+  `env GOCACHE=/private/tmp/ai-schway-spikeNNN-go-cache go test -count=1 ./...`.
   Spike 001 iteration 1 failed before compilation because the sandbox denied
   Go's default user cache.
 - Independent implementations still share the Go compiler/runtime and this

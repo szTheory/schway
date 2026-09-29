@@ -12,16 +12,16 @@ import (
 	"sort"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/measure"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/measure"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // phase6NativeDifferentialLane is the one lane this plan wires end-to-end
@@ -81,13 +81,13 @@ func classifyPhase6FixtureKind(corpus string) string {
 	if Phase6FixtureKindOverrideForTest != "" {
 		return Phase6FixtureKindOverrideForTest
 	}
-	if _, err := os.Stat(filepath.Join(corpus, "foreign_acquire_one.lang")); err == nil {
+	if _, err := os.Stat(filepath.Join(corpus, "foreign_acquire_one.schway")); err == nil {
 		return "foreign"
 	}
-	if _, err := os.Stat(filepath.Join(corpus, "borrowed_view.lang")); err == nil {
+	if _, err := os.Stat(filepath.Join(corpus, "borrowed_view.schway")); err == nil {
 		return "borrowed"
 	}
-	if _, err := os.Stat(filepath.Join(corpus, "owned_transfer.lang")); err == nil {
+	if _, err := os.Stat(filepath.Join(corpus, "owned_transfer.schway")); err == nil {
 		return "owned"
 	}
 	return "pure_match"
@@ -289,7 +289,7 @@ func verifyPhase6NativeDifferentialLane(ctx context.Context, source []byte, runn
 	checked := check.Program(parsed.Program)
 	// Phase 11 (11-GUARD-LEDGER.md): KEPT. verifyPhase6NativeDifferentialLane
 	// is Phase 6's own cache-backed differential, driven only over
-	// testdata/phase1's single-function toggle.lang (Phase6RequiredControls'
+	// testdata/phase1's single-function toggle.schway (Phase6RequiredControls'
 	// control:interpreter-o0-o3). NAT-06's own four-tier interprocedural
 	// differential is a separate, new lane
 	// (session_phase11_differential_test.go) that does not call this
@@ -436,7 +436,7 @@ func VerifyPhase6ChangedRisk(ctx context.Context, corpus string, runner native.R
 		clangPath = "clang"
 	}
 
-	fixturePath := filepath.Join(corpus, "toggle.lang")
+	fixturePath := filepath.Join(corpus, "toggle.schway")
 	source, readErr := os.ReadFile(fixturePath)
 
 	current := FixtureInputs{}

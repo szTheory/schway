@@ -5,25 +5,25 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // fallibleForeignReachProgram is 07-12's own standing witness for
-// CR-03/PVG-02 (testdata/phase07/call_fallible_foreign_reach.lang): main
+// CR-03/PVG-02 (testdata/phase07/call_fallible_foreign_reach.schway): main
 // calls tracer, which try's a foreign C symbol declared allocator
 // "libc_malloc", unwind/nonlocal_exit forbidden, fails ProbeError.
 func fallibleForeignReachProgram(t testing.TB) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_fallible_foreign_reach.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_fallible_foreign_reach.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("call_fallible_foreign_reach.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("call_fallible_foreign_reach.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	return checked.Program
 }
@@ -103,7 +103,7 @@ func TestForeignReachClosureLeafUnperturbed(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatal("expected deep_diamond_acyclic.lang to declare a function named leaf")
+		t.Fatal("expected deep_diamond_acyclic.schway to declare a function named leaf")
 	}
 	fullSummary, err := originvalidate.BuildInterface(program)
 	if err != nil {

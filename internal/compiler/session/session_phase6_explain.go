@@ -5,13 +5,13 @@ import (
 	"sort"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/debugmap"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/debugmap"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // ExplainError is this file's stable typed failure, matching the
@@ -48,7 +48,7 @@ func resolveExplainDepth(requested int) int {
 // or daemon, so the diagnostic must be re-derived from source on every cold
 // invocation), locates the diagnostic whose ID equals diagnosticID among
 // whichever diagnostics that pass actually produced, and synthesizes a
-// bounded cause DAG under lang.explain/0 (D-06-04) from that diagnostic's
+// bounded cause DAG under schway.explain/0 (D-06-04) from that diagnostic's
 // existing flat Causes list. The graph is recomputed fresh every call and
 // never persisted — two cold invocations on the same input produce
 // byte-identical output (D-06-02's testable determinism obligation).

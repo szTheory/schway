@@ -2,140 +2,140 @@
   "Schema": "phase16.file-frozen-evidence/1",
   "Records": [
     {
-      "Fixture": "testdata/phase4/acquire_three_fail_second.lang",
+      "Fixture": "testdata/phase4/acquire_three_fail_second.schway",
       "FixtureSHA256": "ce63c2a910af3ae6f45154fea2cea3af1aee1772293f372c09351113afd1d596",
       "Artifact": "testdata/phase16/historical/file/ce63c2a910af3ae6f45154fea2cea3af1aee1772293f372c09351113afd1d596.c",
       "ArtifactSHA256": "ba992be43a9aab13663508d665daeca1ff8d8a2461eddc824cf54ebd2a2ecff2",
       "ProgramSHA256": "fcfd88bc97a15bdd0c774148e8efb23b2210d3f6e40ad101d0b3cfcf33591dee"
     },
     {
-      "Fixture": "testdata/phase4/acquire_three_fail_third.lang",
+      "Fixture": "testdata/phase4/acquire_three_fail_third.schway",
       "FixtureSHA256": "f6958321765b0793ad919875c2528c21b6dfe7b5ff916b8943e478d883d319dd",
       "Artifact": "testdata/phase16/historical/file/f6958321765b0793ad919875c2528c21b6dfe7b5ff916b8943e478d883d319dd.c",
       "ArtifactSHA256": "4ebbf4228aa898242f7d1fb802c63b040a69fd13fb97b1ccee25a16c667e5841",
       "ProgramSHA256": "1a23c824283bd12341da16197690f611884c8ef3b465458e134bfacd8dc7eb06"
     },
     {
-      "Fixture": "testdata/phase4/acquire_three_success.lang",
+      "Fixture": "testdata/phase4/acquire_three_success.schway",
       "FixtureSHA256": "be62a50ecc048174f220cc3775c7abe34dcb856d835377e1059413d345ddbe75",
       "Artifact": "testdata/phase16/historical/file/be62a50ecc048174f220cc3775c7abe34dcb856d835377e1059413d345ddbe75.c",
       "ArtifactSHA256": "b86133b1b92d05ac6b95a492a59d5e60e2ff4530a86d8650827a8c3d6253c1f2",
       "ProgramSHA256": "8bbce39409d78a99c55c02053deff4ee016dfbf9d03733ad6cd8a5e0362ec88a"
     },
     {
-      "Fixture": "testdata/phase4/defect_terminal.lang",
+      "Fixture": "testdata/phase4/defect_terminal.schway",
       "FixtureSHA256": "40f0c3fd20299758eec65abc424b9248c6a715a54986bbd5a0db41e4280972cd",
       "Artifact": "testdata/phase16/historical/file/40f0c3fd20299758eec65abc424b9248c6a715a54986bbd5a0db41e4280972cd.c",
       "ArtifactSHA256": "e5981cf318c5c23752de882234a39488f87d37d12739590f7e50039f18e799ca",
       "ProgramSHA256": "4f348119f72c9d8aa1b3dc1cb91942176d74727297142ca940d44c08737bab0f"
     },
     {
-      "Fixture": "testdata/phase4/discard_because.lang",
+      "Fixture": "testdata/phase4/discard_because.schway",
       "FixtureSHA256": "82333d63e8cfb679ac2fb5c3d47d4b51ce6bc9ebfae5b230f3a29a54a9614288",
       "Artifact": "testdata/phase16/historical/file/82333d63e8cfb679ac2fb5c3d47d4b51ce6bc9ebfae5b230f3a29a54a9614288.c",
       "ArtifactSHA256": "a85d43a610616cbd722e270ff5f5e2fc8bef4c8fc824d584f87f5b65b8ab6b01",
       "ProgramSHA256": "6b1b048e4e0b2d3cc2791886d7b54f31de63788b4e2c5a8b185df51e5f652d89"
     },
     {
-      "Fixture": "testdata/phase4/foreign_acquire_one.lang",
+      "Fixture": "testdata/phase4/foreign_acquire_one.schway",
       "FixtureSHA256": "f66c55e4cf0b1dab45408c805c131848acf5f5ae1e11fa8ba2746181be409130",
       "Artifact": "testdata/phase16/historical/file/f66c55e4cf0b1dab45408c805c131848acf5f5ae1e11fa8ba2746181be409130.c",
       "ArtifactSHA256": "621f23618ad0e849ae2c3e0d483ea16ce40af11333ac1d0a8176e4b798890998",
       "ProgramSHA256": "718bed114e0754d3bfdb36a08d10649672915644d2eaca5caf266072f7e4dbf1"
     },
     {
-      "Fixture": "testdata/phase4/foreign_origin_omitted.lang",
+      "Fixture": "testdata/phase4/foreign_origin_omitted.schway",
       "FixtureSHA256": "abbc103f54ea27b285b16ce92accbf8ee757917620ad34b145d0c4b060dae3e7",
       "Artifact": "testdata/phase16/historical/file/abbc103f54ea27b285b16ce92accbf8ee757917620ad34b145d0c4b060dae3e7.c",
       "ArtifactSHA256": "9c692bf1e8656961bc527e2cbb3670d3e1f7f49243bc3e46e4c6c93dd36f410e",
       "ProgramSHA256": "948b59b27ed56072962157495c612854397eb9eb9cf5f7eef496e97f649a47d1"
     },
     {
-      "Fixture": "testdata/phase4/nonlocal_exit_probe.lang",
+      "Fixture": "testdata/phase4/nonlocal_exit_probe.schway",
       "FixtureSHA256": "92bd1a98a22fc50d5a5c07127187d0d1c4292f60508321d269ab30db595c36ae",
       "Artifact": "testdata/phase16/historical/file/92bd1a98a22fc50d5a5c07127187d0d1c4292f60508321d269ab30db595c36ae.c",
       "ArtifactSHA256": "685d4b88f67533cde6f40dbf9cb1762609fcdaa0174fd9d8a4fb2c99b17f5f14",
       "ProgramSHA256": "cde5fabf98be29972f21c4331bacde11fc135f1e3981c5ed495e23d554af0eb8"
     },
     {
-      "Fixture": "testdata/phase5/allocator_mismatch.lang",
+      "Fixture": "testdata/phase5/allocator_mismatch.schway",
       "FixtureSHA256": "526b3a791ff0870aafc64a56efdd0d98a562a1236d634eacf3251c1ae33f34ef",
       "Artifact": "testdata/phase16/historical/file/526b3a791ff0870aafc64a56efdd0d98a562a1236d634eacf3251c1ae33f34ef.c",
       "ArtifactSHA256": "323175965d2fc24de70eebeb979a638f1cd71bbefc4f64d8c4f38b377ab00185",
       "ProgramSHA256": "636097c74c3f161f532284bbaf2d6567e53413a7a9652f76c29da223dd0222c2"
     },
     {
-      "Fixture": "testdata/phase5/coordinated_lie.lang",
+      "Fixture": "testdata/phase5/coordinated_lie.schway",
       "FixtureSHA256": "b0c07e8d8503ae0a79c0256c4cb8bd10ed1d9bb30fa2d8dd52068331183f83df",
       "Artifact": "testdata/phase16/historical/file/b0c07e8d8503ae0a79c0256c4cb8bd10ed1d9bb30fa2d8dd52068331183f83df.c",
       "ArtifactSHA256": "d4de6071e25c19ddcce8660704bb88c404832c8934cd392d8c4b0cda2a27e74e",
       "ProgramSHA256": "e2ec9dcd4a2c7769cb45e35122af8bfd2f6d613ca25e081aeaa8dc8fa1194ae6"
     },
     {
-      "Fixture": "testdata/phase5/dead_store_unused_acquire.lang",
+      "Fixture": "testdata/phase5/dead_store_unused_acquire.schway",
       "FixtureSHA256": "72a15141995def39442128590b10f585b4ce22c72f0fa1e275d9ca49616801be",
       "Artifact": "testdata/phase16/historical/file/72a15141995def39442128590b10f585b4ce22c72f0fa1e275d9ca49616801be.c",
       "ArtifactSHA256": "b4b5e5c14396f47770c8c9cf0a519f6135d99b71d0e3225c326a1e97bcecf4c0",
       "ProgramSHA256": "22a734be2932d02ecc47ced7c778f05e3d56296d4bfb9f3a7f4c1e543738fd1c"
     },
     {
-      "Fixture": "testdata/phase5/defect_dies_by_signal.lang",
+      "Fixture": "testdata/phase5/defect_dies_by_signal.schway",
       "FixtureSHA256": "a35ee95850280571374383ed04d125f0cd812d8b8d54131efc9312e876a20186",
       "Artifact": "testdata/phase16/historical/file/a35ee95850280571374383ed04d125f0cd812d8b8d54131efc9312e876a20186.c",
       "ArtifactSHA256": "9553313bfc9029952613b8180bf6e6c7a57b5f0013a8596bfdb90499336cc770",
       "ProgramSHA256": "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a"
     },
     {
-      "Fixture": "testdata/phase5/false_restrict_hoist.lang",
+      "Fixture": "testdata/phase5/false_restrict_hoist.schway",
       "FixtureSHA256": "4e57fbfebf86ccdfd0586766d78d2f501f4aae393c6355f930c86a261e06c0c6",
       "Artifact": "testdata/phase16/historical/file/4e57fbfebf86ccdfd0586766d78d2f501f4aae393c6355f930c86a261e06c0c6.c",
       "ArtifactSHA256": "360f6bf9eebba44cf6b08cc5baf7a72f54716b6cbc9afbed7447f7cd93c5597d",
       "ProgramSHA256": "805e4a8f93a545c7fe480695d08dd8d14a0e5dc633705c60a2e2ae72b837237d"
     },
     {
-      "Fixture": "testdata/phase5/inline_across_foreign.lang",
+      "Fixture": "testdata/phase5/inline_across_foreign.schway",
       "FixtureSHA256": "7d2ff2d799196b1a8b28025fc8081bd0675591c38c5485a998744c1fc47d95f4",
       "Artifact": "testdata/phase16/historical/file/7d2ff2d799196b1a8b28025fc8081bd0675591c38c5485a998744c1fc47d95f4.c",
       "ArtifactSHA256": "6d5fccd190b68bd98c2f0f8bb73ee45307dec297e11ba5c26edbfb0b369abc14",
       "ProgramSHA256": "02fd41768398d0c650462790f15162f02c0eb5a0fc07bb97d15078d2a11cb53b"
     },
     {
-      "Fixture": "testdata/phase5/reorder_two_events.lang",
+      "Fixture": "testdata/phase5/reorder_two_events.schway",
       "FixtureSHA256": "95c1847b29cb6382d1cea1d791dc5496f604ac10bc4ce1ba7239645ceac80fd3",
       "Artifact": "testdata/phase16/historical/file/95c1847b29cb6382d1cea1d791dc5496f604ac10bc4ce1ba7239645ceac80fd3.c",
       "ArtifactSHA256": "4263aedb240dcc01506098d5d04a7627bce259418925577bceb9209b932ce3df",
       "ProgramSHA256": "5bc35a467aadffee60cb1ad7978ed17bf54f5f372c5f68d2ea9ebf81bf0ae56d"
     },
     {
-      "Fixture": "testdata/phase5/restrict_borrow.lang",
+      "Fixture": "testdata/phase5/restrict_borrow.schway",
       "FixtureSHA256": "7a12f2a640947cc83c34aafaea84358a1d8e4d3358e424e30ea62fdff71ee1fe",
       "Artifact": "testdata/phase16/historical/file/7a12f2a640947cc83c34aafaea84358a1d8e4d3358e424e30ea62fdff71ee1fe.c",
       "ArtifactSHA256": "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0",
       "ProgramSHA256": "07d661b8e89fc651cddbd92f56dcd8530d756168dd910e5ae44a1168592ac58b"
     },
     {
-      "Fixture": "testdata/phase5/retained_pointer.lang",
+      "Fixture": "testdata/phase5/retained_pointer.schway",
       "FixtureSHA256": "5136960f513341e8a5167bb80ee0de1228887b038e42f6befa5faf763e853957",
       "Artifact": "testdata/phase16/historical/file/5136960f513341e8a5167bb80ee0de1228887b038e42f6befa5faf763e853957.c",
       "ArtifactSHA256": "be02f1de9184b629e27deb121c260c39457bf301f25ba94e5a1915eb5598f1f7",
       "ProgramSHA256": "7bac4e9375cbb0cfe1cae1eed15ba6278589220d21095018b78ac9081fa69297"
     },
     {
-      "Fixture": "testdata/phase5/tail_collapse_release_ladder.lang",
+      "Fixture": "testdata/phase5/tail_collapse_release_ladder.schway",
       "FixtureSHA256": "5061e8a878058f29d43c7b8039deecd35062d5b69b6c96e07fd4b621e85b5525",
       "Artifact": "testdata/phase16/historical/file/5061e8a878058f29d43c7b8039deecd35062d5b69b6c96e07fd4b621e85b5525.c",
       "ArtifactSHA256": "4662178ae02f829027310b9ef095f63a508367a2a4276618323fb54c432d473e",
       "ProgramSHA256": "f280d9999f29812956e1bec639aaed801342c60ae8706446852e25180c7f2594"
     },
     {
-      "Fixture": "testdata/phase5/typed_failure_truncated_stdout.lang",
+      "Fixture": "testdata/phase5/typed_failure_truncated_stdout.schway",
       "FixtureSHA256": "21442368cd2f2a13f1094aa15aded0dfda0923b20d5b682188e4b5038f85a06e",
       "Artifact": "testdata/phase16/historical/file/21442368cd2f2a13f1094aa15aded0dfda0923b20d5b682188e4b5038f85a06e.c",
       "ArtifactSHA256": "105536d8a2d92ea6d08fee4c8dfdd7f78bf2a37911631153e23f73d4a6c2e720",
       "ProgramSHA256": "b146e3cd1f157d393fff9eecae8d5520db826ba6cbf635f4f1ef36ffd238886c"
     },
     {
-      "Fixture": "testdata/phase11/multi_function_gate_corpus.lang",
+      "Fixture": "testdata/phase11/multi_function_gate_corpus.schway",
       "FixtureSHA256": "07d4f26de0f3c6674592d4c97d6962049727a9bb9f7457c6cf21b31d68393daa",
       "Artifact": "testdata/phase16/historical/phase11_gate_corpus.c",
       "ArtifactSHA256": "fda311a1fab73a2832a6c88c3d095618b2055a6a341a9f0337d1fba247ad619c",

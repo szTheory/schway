@@ -1,5 +1,5 @@
 {
-  "schema": "lang.local-c/1",
+  "schema": "schway.local-c/1",
   "sources": ["support.c"],
   "headers": ["support.h"],
   "include_dirs": ["."],

@@ -4,32 +4,32 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // checkFallibleForeignReachFixture parses and checks 07-12's own standing
-// witness (testdata/phase07/call_fallible_foreign_reach.lang) through
+// witness (testdata/phase07/call_fallible_foreign_reach.schway) through
 // check.Program directly, mirroring mustCheckPhase07Fixture's own path
 // resolution.
 func checkFallibleForeignReachFixture(t testing.TB) check.Result {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_fallible_foreign_reach.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_fallible_foreign_reach.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	parsed := syntax.Parse(source)
 	if len(parsed.Diagnostics) != 0 {
-		t.Fatalf("call_fallible_foreign_reach.lang failed to parse: %+v", parsed.Diagnostics)
+		t.Fatalf("call_fallible_foreign_reach.schway failed to parse: %+v", parsed.Diagnostics)
 	}
 	result := check.Program(parsed.Program)
 	if len(result.Diagnostics) != 0 {
-		t.Fatalf("call_fallible_foreign_reach.lang: unexpected check diagnostics: %+v", result.Diagnostics)
+		t.Fatalf("call_fallible_foreign_reach.schway: unexpected check diagnostics: %+v", result.Diagnostics)
 	}
 	return result
 }
@@ -52,7 +52,7 @@ func TestPeerForeignReachIsClosureDerived(t *testing.T) {
 	checked := checkFallibleForeignReachFixture(t)
 	mainID := functionIDByName(checked.Program, "main")
 	if mainID == "" {
-		t.Fatal("expected call_fallible_foreign_reach.lang to declare main")
+		t.Fatal("expected call_fallible_foreign_reach.schway to declare main")
 	}
 
 	producerSummary, err := originvalidate.BuildInterface(checked.Program)
@@ -68,7 +68,7 @@ func TestPeerForeignReachIsClosureDerived(t *testing.T) {
 
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		t.Fatalf("expected call_fallible_foreign_reach.lang to corevalidate-validate, got problems: %+v", validated.Problems)
+		t.Fatalf("expected call_fallible_foreign_reach.schway to corevalidate-validate, got problems: %+v", validated.Problems)
 	}
 	peerMain, ok := validated.PeerSignatures()[mainID]
 	if !ok {
@@ -90,7 +90,7 @@ func TestPeerFailsIsClosureDerived(t *testing.T) {
 	checked := checkFallibleForeignReachFixture(t)
 	mainID := functionIDByName(checked.Program, "main")
 	if mainID == "" {
-		t.Fatal("expected call_fallible_foreign_reach.lang to declare main")
+		t.Fatal("expected call_fallible_foreign_reach.schway to declare main")
 	}
 
 	producerSummary, err := originvalidate.BuildInterface(checked.Program)
@@ -106,7 +106,7 @@ func TestPeerFailsIsClosureDerived(t *testing.T) {
 
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		t.Fatalf("expected call_fallible_foreign_reach.lang to corevalidate-validate, got problems: %+v", validated.Problems)
+		t.Fatalf("expected call_fallible_foreign_reach.schway to corevalidate-validate, got problems: %+v", validated.Problems)
 	}
 	peerMain, ok := validated.PeerSignatures()[mainID]
 	if !ok {
@@ -127,7 +127,7 @@ func TestPeerFailsIsClosureDerived(t *testing.T) {
 // fallible chain), never the genuinely disagreeing case where the fold
 // actually depends on order (D-07-53's disclosed imprecision: the
 // EXISTING accumulator wins over a later disagreeing value, never the
-// reverse). testdata/phase07/call_two_fallible_callees_disagree.lang
+// reverse). testdata/phase07/call_two_fallible_callees_disagree.schway
 // drives `main` through TWO callees (tracer_a, tracer_b) that publish
 // DIFFERENT non-empty Fails values (ErrA, ErrB) -- so this test proves
 // producer and peer agree on `main`'s published Fails even under the
@@ -141,17 +141,17 @@ func TestPeerFailsIsClosureDerived(t *testing.T) {
 // mismatch between the two sides would be silently observable as a
 // producer/peer divergence with no diagnostic.
 func TestPeerFailsAgreesOnDisagreeingMultiCalleeJoin(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_two_fallible_callees_disagree.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "call_two_fallible_callees_disagree.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("call_two_fallible_callees_disagree.lang: unexpected check diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("call_two_fallible_callees_disagree.schway: unexpected check diagnostics: %+v", checked.Diagnostics)
 	}
 	mainID := functionIDByName(checked.Program, "main")
 	if mainID == "" {
-		t.Fatal("expected call_two_fallible_callees_disagree.lang to declare main")
+		t.Fatal("expected call_two_fallible_callees_disagree.schway to declare main")
 	}
 
 	producerSummary, err := originvalidate.BuildInterface(checked.Program)
@@ -170,7 +170,7 @@ func TestPeerFailsAgreesOnDisagreeingMultiCalleeJoin(t *testing.T) {
 
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		t.Fatalf("expected call_two_fallible_callees_disagree.lang to corevalidate-validate, got problems: %+v", validated.Problems)
+		t.Fatalf("expected call_two_fallible_callees_disagree.schway to corevalidate-validate, got problems: %+v", validated.Problems)
 	}
 	peerMain, ok := validated.PeerSignatures()[mainID]
 	if !ok {

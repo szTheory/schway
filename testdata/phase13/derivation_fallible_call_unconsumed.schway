@@ -1,0 +1,35 @@
+// Phase 13 Plan 04 Task 2 -- derivation member of the fallible-consume
+// class (D-13-09 Set A class 2, repair kind wrap_call_in_try). Per
+// D-13-26.2/Pitfall 3's shallow-hop guidance, the marked `try` call is
+// made directly inside the entry function itself: root-to-detection hop
+// distance 0, function count 1, call-edge count 1 (the one foreign
+// try_call). session_phase13_injectors.go's FallibleConsumeInjector
+// strips " try" from the marked line, reproducing
+// syntax.fallible_call_not_consumed. This file is the ONLY member of its
+// class anyone may consult when hand-deriving the wrap_call_in_try
+// repair's edit (testdata/phase13/README) -- never wired to a CI-gate
+// test.
+
+module phase13.derivation_fallible_call_unconsumed
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn schway_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try schway_res_open(request) // schway:fallible-consume-target
+  handle
+}

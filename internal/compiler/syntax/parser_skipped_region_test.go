@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestSkippedRegionCauseSeparatesSpiralTrio is DX-08's RED/GREEN behavioral
@@ -21,7 +21,7 @@ import (
 //     distinct result: IDs
 //   - primary_span stays identical and one token wide across all three
 func TestSkippedRegionCauseSeparatesSpiralTrio(t *testing.T) {
-	fixtures := []string{"spiral_full.lang", "spiral_narrow.lang", "spiral_bare.lang"}
+	fixtures := []string{"spiral_full.schway", "spiral_narrow.schway", "spiral_bare.schway"}
 
 	type observed struct {
 		fixture      string
@@ -112,13 +112,13 @@ func TestSkippedRegionCauseSeparatesSpiralTrio(t *testing.T) {
 // syntax.expected_declaration diagnostic, so a clean parse is untouched by
 // construction.
 func TestValidProgramUnaffectedBySkippedRegionFix(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	parsed := syntax.Parse(source)
 	if len(parsed.Diagnostics) != 0 {
-		t.Fatalf("toggle.lang should parse clean, got diagnostics: %+v", parsed.Diagnostics)
+		t.Fatalf("toggle.schway should parse clean, got diagnostics: %+v", parsed.Diagnostics)
 	}
 }
 

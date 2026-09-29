@@ -50,7 +50,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // ValidateLocalOwnerPaths independently replays the Phase 23 straight-line
@@ -109,7 +109,7 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 			modes = append(modes, contract.Mode)
 			switch contract.Mode {
 			case "acquire":
-				if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || places[operation.SourceID] != "PathToken" || places[operation.TargetID] != "FileByteOwner" || types[operation.TypeID] != "FileByteOwner" || contract.Symbol != "lang_file_byte_acquire" || contract.ABIType != "lang_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "lang_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" || owners[operation.ID].contract != nil || ownerByPlace[operation.TargetID] != "" {
+				if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || places[operation.SourceID] != "PathToken" || places[operation.TargetID] != "FileByteOwner" || types[operation.TypeID] != "FileByteOwner" || contract.Symbol != "schway_file_byte_acquire" || contract.ABIType != "schway_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" || owners[operation.ID].contract != nil || ownerByPlace[operation.TargetID] != "" {
 					return fmt.Errorf("pathoracle.local_owner_acquire: operation %q is not a valid owner seed", operation.ID)
 				}
 				owners[operation.ID] = owner{place: operation.TargetID, contract: contract}
@@ -117,7 +117,7 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 			case "borrow":
 				acquireID := ownerByPlace[operation.SourceID]
 				acquired, exists := owners[acquireID]
-				if operation.Kind != core.OpForeignCall || !exists || acquired.released || acquired.borrowed || places[operation.SourceID] != "FileByteOwner" || places[operation.TargetID] != "U64" || types[operation.TypeID] != "U64" || contract.Symbol != "lang_file_byte_use" || contract.ABIType != "lang_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				if operation.Kind != core.OpForeignCall || !exists || acquired.released || acquired.borrowed || places[operation.SourceID] != "FileByteOwner" || places[operation.TargetID] != "U64" || types[operation.TypeID] != "U64" || contract.Symbol != "schway_file_byte_use" || contract.ABIType != "schway_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
 					return fmt.Errorf("pathoracle.local_owner_borrow: operation %q does not borrow one live acquired owner", operation.ID)
 				}
 				acquired.borrowed = true
@@ -125,7 +125,7 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 				owners[acquireID] = acquired
 			case "consume":
 				acquired, exists := owners[operation.ReleasesOperationID]
-				if operation.Kind != core.OpRelease || !exists || acquired.released || !acquired.borrowed || acquired.place != operation.SourceID || places[operation.SourceID] != "FileByteOwner" || types[operation.TypeID] != "FileByteOwner" || acquired.contract.Release != contract.Symbol || acquired.contract.Allocator != contract.Allocator || contract.Symbol != "lang_file_byte_release" || contract.ABIType != "lang_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Allocator != "libc_malloc" || contract.Release != "" || contract.Fails != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
+				if operation.Kind != core.OpRelease || !exists || acquired.released || !acquired.borrowed || acquired.place != operation.SourceID || places[operation.SourceID] != "FileByteOwner" || types[operation.TypeID] != "FileByteOwner" || acquired.contract.Release != contract.Symbol || acquired.contract.Allocator != contract.Allocator || contract.Symbol != "schway_file_byte_release" || contract.ABIType != "schway_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Allocator != "libc_malloc" || contract.Release != "" || contract.Fails != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
 					return fmt.Errorf("pathoracle.local_owner_release: operation %q does not discharge its acquired owner", operation.ID)
 				}
 				acquired.released = true

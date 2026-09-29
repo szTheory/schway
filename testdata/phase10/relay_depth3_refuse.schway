@@ -1,0 +1,85 @@
+// Phase 10 Plan 07 -- QLT-04's declared composition depth 3, REFUSING
+// member. Chain of 4 functions (leaf, f2, f1, caller): leaf declares the
+// loan's origin (`-> borrow(buffer) Buffer`); f2 and f1 are BOTH middle
+// hops, each locally re-borrowing its own parameter and forwarding that
+// borrow one level further in -- exactly mirroring
+// relay_depth2_refuse.schway's own single middle hop (`relay`), a
+// borrow-returning function cannot merely forward a bare received
+// parameter (core.origin_understated), it must locally re-borrow at every
+// hop that returns one. What is new at depth 3 and unreachable at depth 2:
+// the loan survives TWO middle hops (f2's own hop AND f1's own hop) before
+// reaching caller -- "a borrow surviving two hops", the interesting cell
+// relay_depth2_accept.schway's owned pass-through (D-10-48) cannot exercise
+// at all. This is the fixture that satisfies D-10-48's "at least one
+// fixture must carry a BORROW through a MIDDLE hop" requirement: BOTH
+// middle hops carry it here, twice as many as relay_depth2_refuse.schway's
+// single middle hop.
+//
+// Twin of relay_depth3_accept.schway: same 4-function shape, same loan
+// origin (leaf), same middle-hop re-borrow structure at f2 and f1. Where
+// the accept twin's own borrow lives and dies within one middle function
+// (crossing only 1 hop, the nearest expressible accepting shape given the
+// corevalidate defect its own header documents), THIS fixture's declared
+// borrow genuinely crosses all 3 hops in the checked core.Program -- it is
+// simply never admitted end to end, for the SAME reason
+// relay_depth2_refuse.schway is refused: caller's own `take buffer` conflicts
+// with the still-live interprocedurally-extended loan `aliased` carries.
+// That conflict is what VARIES WHICH HOP CARRIES the interesting action
+// between this pair (D-10-48): the accept twin's borrow-and-take sequence
+// lives entirely inside f2 (a middle hop); this fixture's conflicting take
+// lives in caller (the top of the chain), exactly like the depth-2
+// precedent -- generalized one level deeper, not merely restated.
+//
+// `check.Program` refuses this fixture on its own, before corevalidate is
+// ever consulted (session.CheckCommandFile's fixed check-then-peer
+// precedence) -- verified empirically: the emitted diagnostic is
+// check.interprocedural_loan_liveness, naming F1 (the hop closest to
+// caller) via loan_extended_by_call, exactly mirroring
+// relay_depth2_refuse.schway's own diagnostic naming `relay`. (Independently,
+// corevalidate.Validate would ALSO refuse this fixture, with
+// core.callee_not_callable, for the reason relay_depth3_accept.schway's own
+// header documents in full -- but check's own refusal fires first and that
+// second, independent refusal is never observed on this path, exactly as
+// it is never observed on relay_depth2_refuse.schway today.)
+//
+// Despite the refusal, the underlying checked core.Program is fully
+// formed (4 functions, every declared OpCall intact) -- pathoracle's own
+// structural analysis is check/corevalidate-verdict-agnostic by design
+// (pathoracle.go's own package doc), so
+// TestCompositionDepthCorpusReachesDeclaredBound's corpus walk uses this
+// fixture's checked core, not the CLI's own refused verdict, to observe
+// the declared depth-3 bound genuinely being reached.
+//
+// Expected, verified empirically via `go run ./cmd/schway --json check`:
+// exit non-zero, status "invalid", exactly one diagnostic with code
+// check.interprocedural_loan_liveness. QLT-04.
+
+module phase10.relay_depth3_refuse
+
+export {
+  fn caller
+}
+
+fn leaf(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}
+
+fn f2(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let forwarded = leaf(borrowed)
+  forwarded
+}
+
+fn f1(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let forwarded = f2(borrowed)
+  forwarded
+}
+
+fn caller(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let aliased = f1(borrowed)
+  let delivered = take buffer
+  aliased
+}

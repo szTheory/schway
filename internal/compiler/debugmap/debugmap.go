@@ -44,16 +44,16 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 )
 
 // Schema versions this package's artifact independently of every other
 // schema in the compiler. It is a new constant beside its peers
 // (core.Schema1, evidence.Schema1, core.InterfaceSchema, ...) — no existing
 // schema constant is edited to introduce it.
-const Schema = "lang.debug-map/0"
+const Schema = "schway.debug-map/0"
 
 // Availability is the honest three-valued report D-04 requires: a lineage
 // entry never fabricates a value it does not have.

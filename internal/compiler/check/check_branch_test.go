@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 const branchSource = `module owned.branch_view
@@ -115,8 +115,8 @@ func TestArmBodyLowersToBlocksAndEdges(t *testing.T) {
 
 // TestArmBodySchemaCrossLock proves the extended body/schema cross-lock
 // (03-PATTERNS I-7, corevalidate.go:106/109 extended): a match carrying any
-// arm body requires lang.core/1, an all-bare-arm match still requires
-// lang.core/0, and the reverse pairing is rejected fail-closed by the
+// arm body requires schway.core/1, an all-bare-arm match still requires
+// schway.core/0, and the reverse pairing is rejected fail-closed by the
 // independent validator, both directions.
 func TestArmBodySchemaCrossLock(t *testing.T) {
 	checked := session.Check([]byte(branchSource))
@@ -161,7 +161,7 @@ fn toggle(flag: Switch) -> Switch {
 	mislabeledBare := bareChecked.Program
 	mislabeledBare.Schema = core.Schema1
 	if result := corevalidate.Validate(mislabeledBare); result.Valid {
-		t.Fatalf("validator admitted a bare-arm match mislabeled lang.core/1")
+		t.Fatalf("validator admitted a bare-arm match mislabeled schway.core/1")
 	}
 
 	// Reverse pairing 2: the branch program forcibly relabeled /0 is
@@ -169,7 +169,7 @@ fn toggle(flag: Switch) -> Switch {
 	mislabeledBranch := checked.Program
 	mislabeledBranch.Schema = core.Schema
 	if result := corevalidate.Validate(mislabeledBranch); result.Valid {
-		t.Fatalf("validator admitted an arm-body match mislabeled lang.core/0")
+		t.Fatalf("validator admitted an arm-body match mislabeled schway.core/0")
 	}
 }
 
@@ -180,7 +180,7 @@ fn toggle(flag: Switch) -> Switch {
 // ordinary move_while_borrowed diagnostic naming the loan. Neither fixture
 // needs a manual scope block — the ergonomics claim the phase goal makes.
 func TestBranchEdgeLastUseAcceptAndReject(t *testing.T) {
-	accept, err := os.ReadFile("../../../testdata/phase3/branch_one_arm_shared_accept.lang")
+	accept, err := os.ReadFile("../../../testdata/phase3/branch_one_arm_shared_accept.schway")
 	if err != nil {
 		t.Fatalf("read accept fixture: %v", err)
 	}
@@ -189,7 +189,7 @@ func TestBranchEdgeLastUseAcceptAndReject(t *testing.T) {
 		t.Fatalf("accept fixture unexpectedly rejected: %+v", checkedAccept.Diagnostics)
 	}
 
-	reject, err := os.ReadFile("../../../testdata/phase3/branch_one_arm_shared_reject.lang")
+	reject, err := os.ReadFile("../../../testdata/phase3/branch_one_arm_shared_reject.schway")
 	if err != nil {
 		t.Fatalf("read reject fixture: %v", err)
 	}

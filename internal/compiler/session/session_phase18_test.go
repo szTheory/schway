@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func assertPhase18ComputedFrontier(t *testing.T, fixture string, sourceNeedles ...string) {
@@ -37,14 +37,14 @@ func assertPhase18ComputedFrontier(t *testing.T, fixture string, sourceNeedles .
 }
 
 func TestPhase18ResultFixtureFrontier(t *testing.T) {
-	assertPhase18ComputedFrontier(t, "result_computed_match.lang", "let result = produce(input)", "match result")
+	assertPhase18ComputedFrontier(t, "result_computed_match.schway", "let result = produce(input)", "match result")
 }
 
 // TestPhase18ResultComputedMatch follows the Result value from its Lang call
 // target into the caller's terminal match, admits the checked source through
 // both independent peers, and compares the four production execution routes.
 func TestPhase18ResultComputedMatch(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "result_computed_match.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "result_computed_match.schway"))
 	if err != nil {
 		t.Fatalf("read Result caller fixture: %v", err)
 	}
@@ -105,14 +105,14 @@ func TestPhase18ResultComputedMatch(t *testing.T) {
 				t.Fatalf("input %q engine %s outcome = %+v, want Accepted", input, name, got.Outcome)
 			}
 		}
-		if err := session.Phase5CompareProgramEngines("testdata/phase18/result_computed_match.lang:"+input, checked.Program, engines); err != nil {
+		if err := session.Phase5CompareProgramEngines("testdata/phase18/result_computed_match.schway:"+input, checked.Program, engines); err != nil {
 			t.Fatalf("input %q four-engine comparison: %v", input, err)
 		}
 	}
 }
 
 func TestPhase18ResultComputedMatchAdmission(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "result_computed_match.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "result_computed_match.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,11 +178,11 @@ fn main(input: Result) -> Result {
 }
 
 func TestPhase18PayloadFixtureFrontier(t *testing.T) {
-	assertPhase18ComputedFrontier(t, "payload_return.lang", "let result = take value", "Ok(payload) => Ok(payload)", "match result")
+	assertPhase18ComputedFrontier(t, "payload_return.schway", "let result = take value", "Ok(payload) => Ok(payload)", "match result")
 }
 
 func TestPhase18ComputedSourceFourTierDifferential(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "computed_match.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "computed_match.schway"))
 	if err != nil {
 		t.Fatalf("read computed-match fixture: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestPhase18ComputedSourceFourTierDifferential(t *testing.T) {
 		if len(engines) != 4 {
 			t.Fatalf("input %q produced %d execution engines, want interpreter, O0, O3, and O3-LTO", input, len(engines))
 		}
-		if err := session.Phase5CompareProgramEngines("testdata/phase18/computed_match.lang:"+input, checked.Program, engines); err != nil {
+		if err := session.Phase5CompareProgramEngines("testdata/phase18/computed_match.schway:"+input, checked.Program, engines); err != nil {
 			t.Fatalf("input %q five-axis comparison: %v", input, err)
 		}
 	}

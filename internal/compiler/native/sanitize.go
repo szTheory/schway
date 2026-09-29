@@ -174,7 +174,7 @@ func (r Runner) compileSanitized(parent context.Context, cSource string, compile
 	arguments := append(append([]string{}, compileFlags...), sourcePath)
 	arguments = append(arguments, objectPaths...)
 	// -lc++ is linked unconditionally on every sanitizer-lane build
-	// (Phase 5 plan 05-08, D-05-08): native/lang_foreign_arena.c's dynamic
+	// (Phase 5 plan 05-08, D-05-08): native/schway_foreign_arena.c's dynamic
 	// allocator-mismatch defect calls the Itanium-mangled operator-new/
 	// operator-delete entry points (_Znwm/_ZdlPv) directly from plain C to
 	// reach a genuinely ASan-distinguishable allocator identity -- verified

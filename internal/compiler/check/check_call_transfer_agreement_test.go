@@ -28,9 +28,9 @@ package check
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ability"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/ability"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
 // callTransferAgreementFixture names one admitted testdata fixture this
@@ -50,18 +50,18 @@ type callTransferAgreementFixture struct {
 
 // callTransferAgreementFixtures is the swept corpus: every already-shipped
 // admitted fixture under testdata/phase07 and testdata/phase08 containing
-// at least one Lang-to-Lang call. twin_a_accept.lang and
-// relay_depth2_accept.lang are the exact fixtures whose corevalidate
+// at least one Lang-to-Lang call. twin_a_accept.schway and
+// relay_depth2_accept.schway are the exact fixtures whose corevalidate
 // divergence Phase 09's earlier plans closed (session_peer_gate_test.go's
 // peerDivergenceExpected no longer names either) -- this test's own
 // baseline check below fails loudly if that ever regresses.
 var callTransferAgreementFixtures = []callTransferAgreementFixture{
-	{phase: "phase07", name: "call_basic.lang", wantStraightLine: true},
-	{phase: "phase07", name: "call_argument_used_once.lang", wantStraightLine: true},
-	{phase: "phase07", name: "call_from_both_match_arms.lang", wantBlocks: true},
-	{phase: "phase08", name: "twin_a_accept.lang", wantStraightLine: true},
-	{phase: "phase08", name: "relay_depth2_accept.lang", wantStraightLine: true},
-	{phase: "phase08", name: "match_arm_call.lang", wantBlocks: true},
+	{phase: "phase07", name: "call_basic.schway", wantStraightLine: true},
+	{phase: "phase07", name: "call_argument_used_once.schway", wantStraightLine: true},
+	{phase: "phase07", name: "call_from_both_match_arms.schway", wantBlocks: true},
+	{phase: "phase08", name: "twin_a_accept.schway", wantStraightLine: true},
+	{phase: "phase08", name: "relay_depth2_accept.schway", wantStraightLine: true},
+	{phase: "phase08", name: "match_arm_call.schway", wantBlocks: true},
 }
 
 func readCallTransferAgreementFixture(t *testing.T, fixture callTransferAgreementFixture) []byte {
@@ -254,7 +254,7 @@ func syntheticOwnedCaller(calleeID string) core.Function {
 
 // TestCallSiteTransferClassificationAgreesWhenModesDiffer is Task 3(c)'s
 // negative-direction case, built directly as a synthetic core.Program
-// (never through the parser) rather than as a .lang fixture: `leaf`'s
+// (never through the parser) rather than as a .schway fixture: `leaf`'s
 // declared Return.Mode ("shared") differs from its own Parameters[0].Mode
 // ("owned", D-07-01's still-hardcoded fact), so a comparison that
 // accidentally read the WRONG field on either side would diverge here even

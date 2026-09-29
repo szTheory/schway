@@ -6,15 +6,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // Phase7RequiredControls is the complete Phase 07 required-control list as
@@ -77,7 +77,7 @@ const (
 	// identifier or fixture list (T-07-23).
 	ControlKindExhaustiveDispatchPhase07InProcess = "control:kind.exhaustive_dispatch.phase07_in_process"
 	// ControlKindExhaustiveDispatchPhase07Lane names this file's own
-	// CLI-observable lane (`lang verify testdata/phase07`), the phase-07
+	// CLI-observable lane (`schway verify testdata/phase07`), the phase-07
 	// sibling of Phase 4's lane:kind-exhaustive-dispatch, with its own
 	// distinct lane ID and its own phase07DispatchFixtures list.
 	ControlKindExhaustiveDispatchPhase07Lane = "control:kind.exhaustive_dispatch.phase07_lane"
@@ -122,17 +122,17 @@ const (
 	// diamond-laden acyclic graph while still refusing a real cycle.
 	// Killed by callgraph_test.go's own TestCallGraphMutationMatrix
 	// (gray_reentry subtest), which observes
-	// testdata/phase07/deep_diamond_acyclic.lang wrongly refused the
+	// testdata/phase07/deep_diamond_acyclic.schway wrongly refused the
 	// instant the gray-versus-visited seam is engaged -- an in-process
 	// Go-test proof, same category as ControlCallAdmissionBodyBlind
 	// above. This lane's own dispatch fixtures now include
-	// deep_diamond_acyclic.lang (it accepts); cycle_self.lang is never
+	// deep_diamond_acyclic.schway (it accepts); cycle_self.schway is never
 	// added to a fixture list that expects a clean check.
 	ControlCallGraphGrayReentry = "control:callgraph.gray_reentry"
 	// ControlCallGraphSelfEdge names 07-06 Task 3's self-recursion control:
 	// excluding a callee == caller edge would silently legalize direct
 	// recursion. Killed by TestCallGraphMutationMatrix's self_edge
-	// subtest, which observes testdata/phase07/cycle_self.lang wrongly
+	// subtest, which observes testdata/phase07/cycle_self.schway wrongly
 	// accepted the instant that seam is engaged.
 	ControlCallGraphSelfEdge = "control:callgraph.self_edge"
 	// ControlCallGraphUnresolvedEdgeRefused names 07-06 Task 3's
@@ -211,8 +211,8 @@ const (
 	// no helper shared with check). Killed on the check side by
 	// check_test.go's TestCallArgumentTypeCheckMutationKilled and on the
 	// peer side by corevalidate_test.go's TestCallTypePeerMutationMatrix.
-	// This lane's own fixtures (call_basic.lang,
-	// call_from_both_match_arms.lang, deep_diamond_acyclic.lang) all
+	// This lane's own fixtures (call_basic.schway,
+	// call_from_both_match_arms.schway, deep_diamond_acyclic.schway) all
 	// ADMIT -- declared, not implied: the lane exercises the CONSULTING
 	// mechanism with a permitting verdict, never the refusing branch,
 	// exactly like ControlCallAdmissionBodyBlind and
@@ -232,7 +232,7 @@ const (
 	// (check.call_return_type_unrepresentable /
 	// core.CallReturnTypeMismatch) is mutation-killed through a seeded
 	// seam and corevalidate's synthetic input space, never through a
-	// .lang fixture; see PHASE-07-DEBT.md. This lane's own fixtures all
+	// .schway fixture; see PHASE-07-DEBT.md. This lane's own fixtures all
 	// admit, exactly as ControlCallArgumentTypeMatchesParameter above.
 	ControlCallTargetTypeFromCalleeReturn = "control:call.target_type_from_callee_return"
 	// ControlCheckPeerConsulted names 07-10 Task 1's D-07-10 union-rule
@@ -260,7 +260,7 @@ const (
 	// on the check side by check_test.go's
 	// TestCallArgumentConsumeMutationKilled and on the peer side by
 	// corevalidate_test.go's TestCallConsumePeerMutationMatrix.
-	// call_argument_used_twice.lang is this control's own standing negative
+	// call_argument_used_twice.schway is this control's own standing negative
 	// control -- declared, not implied.
 	ControlCallArgumentConsumedWhenNoncopyable = "control:call.argument_consumed_when_noncopyable"
 	// ControlCallCopyableArgumentNotConsumed names 07-11's non-refusing-
@@ -269,7 +269,7 @@ const (
 	// refused. Killed on the check side by check_test.go's
 	// TestCallArgumentConsumeOverRefusalMutationKilled and on the peer side
 	// by corevalidate_test.go's TestCallConsumePeerMutationMatrix.
-	// call_argument_used_once.lang and call_basic.lang are this control's
+	// call_argument_used_once.schway and call_basic.schway are this control's
 	// own admitting fixtures.
 	ControlCallCopyableArgumentNotConsumed = "control:call.copyable_argument_not_consumed"
 	// ControlSummaryForeignReachClosureDerived names 07-12's Foreign
@@ -285,7 +285,7 @@ const (
 	// Killed on the producer side by originvalidate's
 	// TestForeignClosureJoinMutationKilled and on the peer side by
 	// corevalidate's TestForeignClosureJoinPeerMutationMatrix.
-	// call_fallible_foreign_reach.lang is this control's own standing
+	// call_fallible_foreign_reach.schway is this control's own standing
 	// witness -- declared, not implied.
 	ControlSummaryForeignReachClosureDerived = "control:summary.foreign_reach_closure_derived"
 	// ControlSummaryFailsClosureDerived names 07-12's Fails closure-join
@@ -298,7 +298,7 @@ const (
 	// no shared helper. Killed on the producer side by originvalidate's
 	// TestFailsClosureJoinMutationKilled and on the peer side by
 	// corevalidate's TestForeignClosureJoinPeerMutationMatrix.
-	// call_fallible_foreign_reach.lang is this control's own standing
+	// call_fallible_foreign_reach.schway is this control's own standing
 	// witness too.
 	ControlSummaryFailsClosureDerived = "control:summary.fails_closure_derived"
 )
@@ -308,11 +308,11 @@ const (
 // originvalidate, interp, and cgen -- the CLI-observable sibling of
 // core_test.go's own fixtures slice. Phase 07 does not extend or reuse
 // Phase 4's dispatchFixtures (session.go); it carries its own.
-// deep_diamond_acyclic.lang (07-06 Task 3) is wired in here because it
+// deep_diamond_acyclic.schway (07-06 Task 3) is wired in here because it
 // accepts (checks clean, bounded) -- a refusing fixture like
-// cycle_self.lang or cycle_mutual.lang must never be added to a list this
+// cycle_self.schway or cycle_mutual.schway must never be added to a list this
 // lane expects a clean check from.
-var phase07DispatchFixtures = []string{"call_basic.lang", "call_from_both_match_arms.lang", "deep_diamond_acyclic.lang", "../phase19/literal_tracer.lang"}
+var phase07DispatchFixtures = []string{"call_basic.schway", "call_from_both_match_arms.schway", "deep_diamond_acyclic.schway", "../phase19/literal_tracer.schway"}
 
 // phase07LaneDispatchFixturesOverride and phase07LaneRequiredKindsOverride
 // are Task 3's D-07-41/D-07-42 fault-injection seams for the phase07 lane
@@ -362,8 +362,8 @@ func phase07LinearProbeInput(function core.Function) (string, bool) {
 }
 
 // VerifyPhase7ControlsAndWork is Phase 07's own control-and-work gate
-// (D-07-41), reachable through `lang verify testdata/phase07` via
-// cmd/lang/main.go's isPhase7Corpus dispatch (mirroring isPhase5Corpus/
+// (D-07-41), reachable through `schway verify testdata/phase07` via
+// cmd/schway/main.go's isPhase7Corpus dispatch (mirroring isPhase5Corpus/
 // isPhase6Corpus). It drives phase07DispatchFixtures through check,
 // corevalidate, pathoracle, originvalidate, interp, and cgen exactly like
 // core_test.go's in-process control, and requires core.OpCall to be
@@ -407,7 +407,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	encounteredKinds := make(map[core.OperationKind]bool)
 	phase19FixturePresent := false
 	for _, fixture := range phase07LaneDispatchFixtures() {
-		if fixture == "../phase19/literal_tracer.lang" {
+		if fixture == "../phase19/literal_tracer.schway" {
 			phase19FixturePresent = true
 		}
 	}
@@ -437,7 +437,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			if function.Linear != nil {
 				for _, operation := range function.Linear.Operations {
 					encounteredKinds[operation.Kind] = true
-					if fixtureName == "../phase19/literal_tracer.lang" && operation.Kind == core.OpConst {
+					if fixtureName == "../phase19/literal_tracer.schway" && operation.Kind == core.OpConst {
 						if operation.SourceID != "" || operation.ConstU64 != "42" || operation.TargetID == "" {
 							addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 							return fail(protocol.StatusInvalid, "verify.control_incomplete", "phase19 OpConst root facts are not canonical")
@@ -451,14 +451,14 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 						return fail(protocol.StatusOperational, "verify.control_incomplete", "pathoracle dispatch error for "+fixtureName)
 					}
-					if fixtureName == "../phase19/literal_tracer.lang" && len(endpoints) != 0 {
+					if fixtureName == "../phase19/literal_tracer.schway" && len(endpoints) != 0 {
 						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 						return fail(protocol.StatusInvalid, "verify.control_incomplete", "pathoracle treated OpConst as a loan-derived place")
 					}
 				}
 			}
 			origins := originvalidate.RecomputeOriginPerReturn(function, dispatchCalleeContracts)
-			if fixtureName == "../phase19/literal_tracer.lang" && function.Linear != nil {
+			if fixtureName == "../phase19/literal_tracer.schway" && function.Linear != nil {
 				if len(origins) != 1 || origins[0].Derived {
 					addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 					return fail(protocol.StatusInvalid, "verify.control_incomplete", "originvalidate did not preserve OpConst as an owned root")
@@ -483,7 +483,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 						return fail(protocol.StatusOperational, "verify.control_incomplete", "interp dispatch error for "+fixtureName)
 					}
-					if fixtureName == "../phase19/literal_tracer.lang" && run.Outcome.Value != "42" {
+					if fixtureName == "../phase19/literal_tracer.schway" && run.Outcome.Value != "42" {
 						addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 						return fail(protocol.StatusInvalid, "verify.control_incomplete", "interp OpConst result differs from 42")
 					}
@@ -503,7 +503,7 @@ func VerifyPhase7ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 				addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 				return fail(protocol.StatusOperational, "verify.control_incomplete", "cgen dispatch error for "+fixtureName)
 			}
-			if fixtureName == "../phase19/literal_tracer.lang" && !strings.Contains(generated, "UINT64_C(42)") {
+			if fixtureName == "../phase19/literal_tracer.schway" && !strings.Contains(generated, "UINT64_C(42)") {
 				addLane("lane:kind-exhaustive-dispatch-phase07", "fail", nil, dispatchWork+1, laneStarted)
 				return fail(protocol.StatusInvalid, "verify.control_incomplete", "cgen did not lower phase19 OpConst")
 			}

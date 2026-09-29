@@ -14,7 +14,7 @@ import (
 func ForeignNonlocalSourcePath() string {
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
-	return filepath.Join(root, "native", "lang_foreign_nonlocal.c")
+	return filepath.Join(root, "native", "schway_foreign_nonlocal.c")
 }
 
 // ForeignSourcePathForSymbol resolves a declared `foreign C {}` symbol name
@@ -26,13 +26,13 @@ func ForeignNonlocalSourcePath() string {
 // be read as emitter admission.
 func ForeignSourcePathForSymbol(symbol string) (string, bool) {
 	switch symbol {
-	case "lang_res_open":
+	case "schway_res_open":
 		return ForeignResourceSourcePath(), true
-	case "lang_nonlocal_probe":
+	case "schway_nonlocal_probe":
 		return ForeignNonlocalSourcePath(), true
-	case "lang_arena_open":
+	case "schway_arena_open":
 		return ForeignArenaSourcePath(), true
-	case "lang_retained_touch":
+	case "schway_retained_touch":
 		return ForeignRetainedSourcePath(), true
 	default:
 		return "", false

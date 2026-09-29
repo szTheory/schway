@@ -82,11 +82,11 @@ func ProjectPath(parts ...string) string {
 	return filepath.Join(append([]string{root}, parts...)...)
 }
 
-// BuildCLI builds ./cmd/lang into a temporary directory, failing the test on
+// BuildCLI builds ./cmd/schway into a temporary directory, failing the test on
 // any build, timeout, or stream-overflow error.
 func BuildCLI(t testing.TB) string {
 	t.Helper()
-	binary, err := BuildCLIErr(context.Background(), filepath.Join(t.TempDir(), "lang"))
+	binary, err := BuildCLIErr(context.Background(), filepath.Join(t.TempDir(), "schway"))
 	if err != nil {
 		t.Fatalf("build CLI: %v", err)
 	}
@@ -99,7 +99,7 @@ func BuildCLI(t testing.TB) string {
 func BuildCLIErr(parent context.Context, binary string) (string, error) {
 	ctx, cancel := context.WithTimeout(parent, BuildCLITimeout)
 	defer cancel()
-	command := exec.CommandContext(ctx, "go", "build", "-o", binary, "./cmd/lang")
+	command := exec.CommandContext(ctx, "go", "build", "-o", binary, "./cmd/schway")
 	command.Dir = ProjectPath()
 	var stdout, stderr boundedWriter
 	command.Stdout = &stdout

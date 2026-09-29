@@ -18,37 +18,37 @@ or `check`).
 
 ## Members
 
-- `spiral_full.lang`, `spiral_narrow.lang`, `spiral_bare.lang` — the spiral
+- `spiral_full.schway`, `spiral_narrow.schway`, `spiral_bare.schway` — the spiral
   trio (`if v { v } else { v }`, `if v { v }`, `if v`), sharing an identical
   `module spiral` / `export {}` preamble so `primary_span` lands at the exact
   same byte offset in all three. Before the fix these three collide on one
   diagnostic ID and one `result:` ID (see `collision_control.json`). After the
   fix they yield three distinct diagnostic-ID sets and three distinct result
   IDs.
-- `for_range.lang` — a for-style iteration form over a range; not in the
+- `for_range.schway` — a for-style iteration form over a range; not in the
   language.
-- `arithmetic.lang` — an arithmetic expression; not in the language (no
+- `arithmetic.schway` — an arithmetic expression; not in the language (no
   numeric-literal lexing exists yet).
-- `unclosed_brace.lang` — a function declaration whose body brace is never
+- `unclosed_brace.schway` — a function declaration whose body brace is never
   closed (`syntax.expected_rbrace`, not the declaration-recovery arm).
-- `stray_semicolon.lang` — a bare `;` at declaration level.
-- `lone_else.lang` — an `else` block with no leading conditional.
-- `empty_file.lang` — a zero-byte source file.
-- `one_token_hard_case.lang` — a valid leading `fn` declaration followed by
+- `stray_semicolon.schway` — a bare `;` at declaration level.
+- `lone_else.schway` — an `else` block with no leading conditional.
+- `empty_file.schway` — a zero-byte source file.
+- `one_token_hard_case.schway` — a valid leading `fn` declaration followed by
   two bare identifiers at EOF. The declaration-recovery cause discards exactly
-  one token here (the same byte-width as `spiral_bare.lang`'s one-token
+  one token here (the same byte-width as `spiral_bare.schway`'s one-token
   region), making this the adversarial near-collision case: same skipped
   region size as the third spiral member, different diagnostic content, so
   distinctness must come from more than region length alone.
-- `dangling_pipe.lang` — a `data` declaration with zero alternatives
+- `dangling_pipe.schway` — a `data` declaration with zero alternatives
   (`syntax.expected_alternative`, a different parser arm entirely).
 
 ## `collision_control.json` — frozen, never regenerated
 
 This file is a **historical artifact**. It records, byte-for-byte, the
 pre-fix three-way collision on the spiral trio: identical diagnostic ID and
-identical `result:` ID across `spiral_full.lang`, `spiral_narrow.lang`, and
-`spiral_bare.lang`, captured from the tree **before** the `skipped_region`
+identical `result:` ID across `spiral_full.schway`, `spiral_narrow.schway`, and
+`spiral_bare.schway`, captured from the tree **before** the `skipped_region`
 cause fix landed in `internal/compiler/syntax/parser.go`
 (`git rev-parse HEAD` at capture time is recorded inside the file).
 

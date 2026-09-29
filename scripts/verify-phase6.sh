@@ -1,21 +1,21 @@
 #!/bin/sh
 set -eu
 
-verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/codename-lang-phase6.XXXXXX")
+verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase6.XXXXXX")
 trap 'rm -rf "$verify_tmp"' EXIT HUP INT TERM
 export GOCACHE="$verify_tmp/go-cache"
 
 sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestVerifyPhase6ControlsAndWork TestPhase6RequiredControlsMatchScript TestPhase6BoundsMatchScript TestPhase6VerifierScriptContract TestPhase6ScriptInvokesNoPriorGate TestPhase6SamplingLoopMatchesGoStatistics TestPhase6ExpectedEscapesAreDeclared TestPhase6EscapesAreNeverPresentedAsControls TestPhase6EscapeGrepsMatchScript
-sh scripts/assert-go-tests.sh --self-test ./cmd/lang TestPhase6CorpusDispatchRequiresMarker
+sh scripts/assert-go-tests.sh --self-test ./cmd/schway TestPhase6CorpusDispatchRequiresMarker
 go test ./...
 go test -race ./...
 go vet ./...
-go build -o "$verify_tmp/lang" ./cmd/lang
-go build -o "$verify_tmp/lang-repair" ./cmd/lang-repair
-"$verify_tmp/lang" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
-"$verify_tmp/lang" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
-"$verify_tmp/lang" --json verify testdata/phase3 >"$verify_tmp/phase3.json"
-"$verify_tmp/lang" --json verify testdata/phase4 >"$verify_tmp/phase4.json"
+go build -o "$verify_tmp/schway" ./cmd/schway
+go build -o "$verify_tmp/schway-repair" ./cmd/schway-repair
+"$verify_tmp/schway" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
+"$verify_tmp/schway" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
+"$verify_tmp/schway" --json verify testdata/phase3 >"$verify_tmp/phase3.json"
+"$verify_tmp/schway" --json verify testdata/phase4 >"$verify_tmp/phase4.json"
 
 # The sanitizer lane's own ASAN_OPTIONS/UBSAN_OPTIONS are pinned explicitly
 # on this invocation (D-05-13), byte-identical to
@@ -24,8 +24,8 @@ go build -o "$verify_tmp/lang-repair" ./cmd/lang-repair
 # never a fork or an extension of.
 ASAN_OPTIONS='halt_on_error=1:abort_on_error=1:symbolize=0:detect_leaks=0:detect_odr_violation=0:alloc_dealloc_mismatch=1' \
 UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=0' \
-	"$verify_tmp/lang" --json verify testdata/phase5 >"$verify_tmp/phase5.json"
-"$verify_tmp/lang" --json verify testdata/phase6 >"$verify_tmp/phase6.json"
+	"$verify_tmp/schway" --json verify testdata/phase5 >"$verify_tmp/phase5.json"
+"$verify_tmp/schway" --json verify testdata/phase6 >"$verify_tmp/phase6.json"
 
 # Non-regression for Phase 1 through Phase 5 is proven by running THEIR OWN
 # corpora with THIS phase's freshly built binary, never by invoking an
@@ -130,7 +130,7 @@ phase6_explain_max_nodes=4096
 phase6_query_max_facts_per_page=64
 
 # D-06-19's 20-warm-sample loop over this phase's own verify gate,
-# LANG_OBSERVE_TIMING-gated exactly like the Phase 2 gate's own observe()
+# SCHWAY_OBSERVE_TIMING-gated exactly like the Phase 2 gate's own observe()
 # precedent. Unlike that shell-only precedent, the shell side here stays
 # thin: it drives the binary WarmSampleCount times and collects raw
 # elapsed_ns values, then pipes them through the shipped binary's own
@@ -142,13 +142,13 @@ observe() {
 	samples="$verify_tmp/$name.samples"; : >"$samples"
 	index=0
 	while [ "$index" -lt "$phase6_warm_sample_count" ]; do
-		last=$(LANG_OBSERVE_TIMING=1 "$verify_tmp/lang" --json "$@")
+		last=$(SCHWAY_OBSERVE_TIMING=1 "$verify_tmp/schway" --json "$@")
 		elapsed=$(printf '%s\n' "$last" | sed -n 's/.*"elapsed_ns":\([0-9][0-9]*\).*/\1/p')
 		[ -n "$elapsed" ] && [ "$elapsed" -gt 0 ] || { echo "phase6 verify: $name produced no timing" >&2; exit 1; }
 		printf '%s\n' "$elapsed" >>"$samples"
 		index=$((index + 1))
 	done
-	"$verify_tmp/lang" stats <"$samples" >"$verify_tmp/$name.stats.json"
+	"$verify_tmp/schway" stats <"$samples" >"$verify_tmp/$name.stats.json"
 }
 
 observe phase6_verify_gate verify testdata/phase6

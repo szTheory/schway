@@ -8,27 +8,27 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // deepDiamondProgram is 07-06 Task 3's own multi-level, shared-leaf corpus
-// (testdata/phase07/deep_diamond_acyclic.lang): four chained diamonds, each
+// (testdata/phase07/deep_diamond_acyclic.schway): four chained diamonds, each
 // with a node calling two distinct successors that both reach a shared
 // successor -- exactly the shape a closure-digest chain needs to exercise
 // depth and callee sharing (D-07-38's read_first note).
 func deepDiamondProgram(t testing.TB) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "deep_diamond_acyclic.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "deep_diamond_acyclic.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("deep_diamond_acyclic.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("deep_diamond_acyclic.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	return checked.Program
 }
@@ -91,7 +91,7 @@ func TestClosureDigestZeroCalleeLeafUnperturbedByContext(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatal("expected deep_diamond_acyclic.lang to declare a function named leaf")
+		t.Fatal("expected deep_diamond_acyclic.schway to declare a function named leaf")
 	}
 
 	fullSummary, err := originvalidate.BuildInterface(program)
@@ -118,7 +118,7 @@ func TestClosureDigestZeroCalleeLeafUnperturbedByContext(t *testing.T) {
 }
 
 // TestClosureDigestSharedLeafConsistentAcrossParents is Task 1 Test 3: on
-// deep_diamond_acyclic.lang, mid1a and mid1b are distinct parents that both
+// deep_diamond_acyclic.schway, mid1a and mid1b are distinct parents that both
 // call the shared leaf `leaf`. Their own digests differ from each other
 // (different IDs/Names), but BOTH must change identically in response to a
 // change in leaf's own published signature -- proving the shared leaf's
@@ -138,7 +138,7 @@ func TestClosureDigestSharedLeafConsistentAcrossParents(t *testing.T) {
 		}
 	}
 	if leafIndex == -1 || mid1aID == "" || mid1bID == "" {
-		t.Fatal("expected deep_diamond_acyclic.lang to declare leaf, mid1a, and mid1b")
+		t.Fatal("expected deep_diamond_acyclic.schway to declare leaf, mid1a, and mid1b")
 	}
 
 	baseSummary, err := originvalidate.BuildInterface(program)
@@ -248,7 +248,7 @@ func TestClosureDigestDeterministicAcrossCorpus(t *testing.T) {
 	}
 	checkedAny := false
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 			continue
 		}
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", entry.Name()))
@@ -285,7 +285,7 @@ func TestClosureDigestDeterministicAcrossCorpus(t *testing.T) {
 }
 
 // TestClosureDigestSummaryCarriesNoEdgeList is Task 1 Test 6 (D-07-11):
-// over a multi-function program, the marshalled lang.interface/1 document
+// over a multi-function program, the marshalled schway.interface/1 document
 // contains no callee_id field at all -- the closure-digest chain reads
 // call-graph edges to BUILD a preimage, but never publishes them. Edges
 // stay in callgraph; the summary carries only closure-derived scalars.
@@ -538,7 +538,7 @@ func straightLineFunction(id, calleeID string) core.Function {
 // three-function core.Program (never through the parser or check, exactly
 // like corevalidate_mutation_matrix_test.go's syntheticCallToNonCallableCalleeProgram):
 // `caller` (declared FIRST) calls `callee`; `unrelated` calls nothing and
-// is never called. Building it directly, rather than through a `.lang`
+// is never called. Building it directly, rather than through a `.schway`
 // fixture, gives full control over exactly which function's published
 // signature differs between two otherwise-identical programs.
 // calleeHasDeclaredOrigin toggles ONLY callee's PublicOrigin (a

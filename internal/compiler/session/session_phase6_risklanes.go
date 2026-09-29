@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/cache"
 
 	_ "embed"
 )

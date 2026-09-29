@@ -7,21 +7,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase17TwoTypeGeneratedC(t *testing.T) {
 	_, _, generated := phase17TwoTypeFourTiers(t)
 	for _, want := range []string{
-		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE, unsigned int);",
-		"static LANG_RESULT LANG_MAIN(LANG_RESOURCE, unsigned int);",
-		"LANG_RESULT lang_entry_output = LANG_MAIN(lang_entry_input, 0u);",
-		"LANG_RESULT_name(lang_entry_output)",
+		"static SCHWAY_RESULT SCHWAY_CLASSIFY(SCHWAY_RESOURCE, unsigned int);",
+		"static SCHWAY_RESULT SCHWAY_MAIN(SCHWAY_RESOURCE, unsigned int);",
+		"SCHWAY_RESULT schway_entry_output = SCHWAY_MAIN(schway_entry_input, 0u);",
+		"SCHWAY_RESULT_name(schway_entry_output)",
 	} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("public EmitNative C misses %q:\n%s", want, generated)
@@ -41,7 +41,7 @@ func TestPhase17TwoTypeFourTierDifferential(t *testing.T) {
 
 func TestPhase17TwoTypeEmitterGuardIsNotInert(t *testing.T) {
 	program, engines, generated := phase17TwoTypeFourTiers(t)
-	mutatedC := strings.Replace(generated, "case LANG_RESULT_LANG_CLASSIFIED: return \"Classified\";", "case LANG_RESULT_LANG_CLASSIFIED: return \"phase17-seeded-return-mutation\";", 1)
+	mutatedC := strings.Replace(generated, "case SCHWAY_RESULT_SCHWAY_CLASSIFIED: return \"Classified\";", "case SCHWAY_RESULT_SCHWAY_CLASSIFIED: return \"phase17-seeded-return-mutation\";", 1)
 	if mutatedC == generated {
 		t.Fatal("return-side C mutation did not reach the Result renderer")
 	}
@@ -62,7 +62,7 @@ func TestPhase17TwoTypeEmitterGuardIsNotInert(t *testing.T) {
 
 func phase17TwoTypeFourTiers(t *testing.T) (core.Program, map[string]execution.Execution, string) {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,23 +4,23 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // validBranchLoanProgram is validBranchProgram's counterpart for a branch
 // fixture that actually carries a loan (validBranchProgram's own
 // branchTestSource has none): 03-03's shipped
-// branch_one_arm_shared_accept.lang produces exactly one real
+// branch_one_arm_shared_accept.schway produces exactly one real
 // core.LoanEndpoint, giving TestLoanEndpointMismatchRejected something to
 // corrupt.
 func validBranchLoanProgram(t *testing.T) core.Program {
 	t.Helper()
-	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_accept.lang"))
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_accept.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestLoanEndpointsAccessorStableAcrossRepeatedCalls(t *testing.T) {
 // yields an empty (nil), non-panicking slice, with an entry still present
 // for its own function ID.
 func TestLoanEndpointsAccessorEmptyForLoanFreeFunction(t *testing.T) {
-	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase07", "call_basic.lang"))
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase07", "call_basic.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestLoanEndpointsAccessorEmptyForLoanFreeFunction(t *testing.T) {
 
 	result := corevalidate.Validate(checked.Program)
 	if !result.Valid {
-		t.Fatalf("call_basic.lang rejected: %+v", result.Problems)
+		t.Fatalf("call_basic.schway rejected: %+v", result.Problems)
 	}
 
 	endpoints := result.LoanEndpoints()
@@ -206,13 +206,13 @@ func TestLoanEndpointsAccessorEmptyForLoanFreeFunction(t *testing.T) {
 // binary -- session_peer_gate_test.go's own doc comment cross-references
 // this test rather than duplicating it for that reason.
 func TestDerivePeerSignatureModeMutantPairing(t *testing.T) {
-	fixture := testsupport.ProjectPath("testdata", "phase07", "call_basic.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase07", "call_basic.schway")
 	checked, err := session.CheckFile(fixture)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("call_basic.lang unexpectedly refused: %+v", checked.Diagnostics)
+		t.Fatalf("call_basic.schway unexpectedly refused: %+v", checked.Diagnostics)
 	}
 	var function core.Function
 	for _, candidate := range checked.Program.Functions {
@@ -221,7 +221,7 @@ func TestDerivePeerSignatureModeMutantPairing(t *testing.T) {
 		}
 	}
 	if function.ID == "" {
-		t.Fatal("call_basic.lang has no function named main")
+		t.Fatal("call_basic.schway has no function named main")
 	}
 
 	declared, err := originvalidate.BuildInterface(checked.Program)
@@ -240,7 +240,7 @@ func TestDerivePeerSignatureModeMutantPairing(t *testing.T) {
 
 	baseline := corevalidate.Validate(checked.Program)
 	if !baseline.Valid {
-		t.Fatalf("call_basic.lang unexpectedly corevalidate-rejected: %+v", baseline.Problems)
+		t.Fatalf("call_basic.schway unexpectedly corevalidate-rejected: %+v", baseline.Problems)
 	}
 	baselinePeer, ok := baseline.PeerSignatures()[function.ID]
 	if !ok {

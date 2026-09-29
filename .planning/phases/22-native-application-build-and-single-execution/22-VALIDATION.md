@@ -7,6 +7,11 @@ wave_0_complete: true
 created: "2026-09-27"
 ---
 
+<!-- schway-current:start -->
+Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
+<!-- schway-current:end -->
+
+
 # Phase 22 — Validation Strategy
 
 > Seeded from `22-RESEARCH.md` § Validation Architecture. Execution evidence is recorded as each dependent plan completes; planning itself made no acceptance claims.

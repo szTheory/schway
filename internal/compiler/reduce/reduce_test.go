@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/reduce"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/reduce"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // ---------------------------------------------------------------------
@@ -21,7 +21,7 @@ import (
 // round-trip test (reduce_project_test.go) drives the real front end.
 // ---------------------------------------------------------------------
 
-// borrowChainSeed mirrors testdata/phase5/restrict_borrow.lang's shape: a
+// borrowChainSeed mirrors testdata/phase5/restrict_borrow.schway's shape: a
 // straight-line chain of borrows over one parameter, with an UNUSED
 // trailing borrow inserted so TestReduceHasExactlyFiveMoves' sibling tests
 // have something for drop-unused-binding to remove.
@@ -54,7 +54,7 @@ func borrowChainSeed() core.Program {
 	}
 }
 
-// foreignChainSeed mirrors testdata/phase5/tail_collapse_release_ladder.lang's
+// foreignChainSeed mirrors testdata/phase5/tail_collapse_release_ladder.schway's
 // shape: three successive foreign acquisitions to the same declared symbol,
 // all released in reverse order, function returns its own parameter.
 func foreignChainSeed() core.Program {
@@ -115,7 +115,7 @@ func foreignChainSeedWithSteps(steps int) core.Program {
 				EntryPointID: fn + ":point:entry", ReturnPointID: fn + ":point:return",
 				Parameter:       core.Parameter{ID: parameterID, Name: "request", Type: "Byte"},
 				ReturnType:      "Byte",
-				ForeignContract: &core.ForeignContract{Symbol: "lang_res_open", Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden", Fails: "AcquireError"},
+				ForeignContract: &core.ForeignContract{Symbol: "schway_res_open", Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden", Fails: "AcquireError"},
 				Linear: &core.LinearBody{
 					ID: fn + ":linear", Types: []core.TypeFact{{ID: fn + ":type:0"}},
 					Places: places, Operations: ops,
@@ -518,7 +518,7 @@ func borrowChainSeedNoUnusedTail() core.Program {
 	}
 }
 
-// twoArmMatchSeed mirrors testdata/phase5/defect_dies_by_signal.lang's
+// twoArmMatchSeed mirrors testdata/phase5/defect_dies_by_signal.schway's
 // shape: a Signal-typed parameter, one arm that takes/returns, one arm
 // that defects.
 func twoArmMatchSeed() core.Program {
@@ -682,7 +682,7 @@ func stripSpans(p core.Program) core.Program {
 	return clone
 }
 
-// realStraightLineSource mirrors testdata/phase5/restrict_borrow.lang's
+// realStraightLineSource mirrors testdata/phase5/restrict_borrow.schway's
 // shape.
 const realStraightLineSource = `module phase5.reduce_roundtrip
 
@@ -697,7 +697,7 @@ fn touch(buffer: Buffer) -> Buffer {
 }
 `
 
-// realForeignChainSource mirrors testdata/phase5/tail_collapse_release_ladder.lang's
+// realForeignChainSource mirrors testdata/phase5/tail_collapse_release_ladder.schway's
 // shape (narrowed to two steps).
 const realForeignChainSource = `module phase5.reduce_roundtrip
 
@@ -707,7 +707,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -719,13 +719,13 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let a = try lang_res_open(request)
-  let b = try lang_res_open(request)
+  let a = try schway_res_open(request)
+  let b = try schway_res_open(request)
   request
 }
 `
 
-// realMatchSource mirrors testdata/phase5/defect_dies_by_signal.lang's
+// realMatchSource mirrors testdata/phase5/defect_dies_by_signal.schway's
 // shape.
 const realMatchSource = `module phase5.reduce_roundtrip
 

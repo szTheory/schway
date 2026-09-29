@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPayloadPathEnumerationTerminates is Task 3's own probe methodology
@@ -24,7 +24,7 @@ import (
 // alone) produces a DEGENERATE enumeration -- zero loans, so the
 // termination-within-MaxPaths claim would report pass without ever
 // exercising the hazard it names (the Pitfall-1 vacuous control this plan's
-// own prohibitions forbid). payload_borrow_interaction.lang's `choose`
+// own prohibitions forbid). payload_borrow_interaction.schway's `choose`
 // function is what actually meets real loan machinery; its `identity`
 // function is the same bare-value payload shape as the tracer, included for
 // completeness.
@@ -34,9 +34,9 @@ func TestPayloadPathEnumerationTerminates(t *testing.T) {
 		function          string
 		wantLoanEndpoints int
 	}{
-		{"testdata/phase12/payload_tracer.lang", "identity", 0},
-		{"testdata/phase12/payload_borrow_interaction.lang", "choose", 1},
-		{"testdata/phase12/payload_borrow_interaction.lang", "identity", 0},
+		{"testdata/phase12/payload_tracer.schway", "identity", 0},
+		{"testdata/phase12/payload_borrow_interaction.schway", "choose", 1},
+		{"testdata/phase12/payload_borrow_interaction.schway", "identity", 0},
 	}
 
 	for _, tc := range tests {

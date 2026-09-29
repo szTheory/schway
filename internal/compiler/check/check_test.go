@@ -15,14 +15,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // readTestdataFixture and mustParseProgram let internal (package check)
@@ -41,7 +41,7 @@ func readTestdataFixture(t *testing.T, name string) []byte {
 }
 
 func TestPhase17TwoTypeAdmission(t *testing.T) {
-	result := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	result := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.schway")))
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("canonical Resource -> Result tracer rejected: %+v", result.Diagnostics)
 	}
@@ -85,8 +85,8 @@ func TestPhase17CallContractCauses(t *testing.T) {
 		code    string
 		causes  []string
 	}{
-		{"call_argument_type_mismatch.lang", checkCallArgumentTypeMismatch, []string{"callee", "actual_argument_type", "declared_parameter_type"}},
-		{"call_return_type_unrepresentable.lang", checkCallReturnTypeUnrepresentable, []string{"callee", "declared_return_type", "available_type_facts"}},
+		{"call_argument_type_mismatch.schway", checkCallArgumentTypeMismatch, []string{"callee", "actual_argument_type", "declared_parameter_type"}},
+		{"call_return_type_unrepresentable.schway", checkCallReturnTypeUnrepresentable, []string{"callee", "declared_return_type", "available_type_facts"}},
 	} {
 		t.Run(tc.fixture, func(t *testing.T) {
 			result := Program(mustParseProgram(t, readPhase17Fixture(t, tc.fixture)))
@@ -105,7 +105,7 @@ func TestPhase17CallContractCauses(t *testing.T) {
 }
 
 func TestPhase17UseMatchingArgumentProtocolFields(t *testing.T) {
-	source := readPhase17Fixture(t, "derivation_call_argument_mismatch.lang")
+	source := readPhase17Fixture(t, "derivation_call_argument_mismatch.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != checkCallArgumentTypeMismatch {
 		t.Fatalf("diagnostics = %+v, want one %s", result.Diagnostics, checkCallArgumentTypeMismatch)
@@ -164,7 +164,7 @@ func TestPhase17UseMatchingArgumentFieldControlsAreNotInert(t *testing.T) {
 }
 
 func TestPhase17UseMatchingArgumentHistoricalNoOpStaysWithdrawn(t *testing.T) {
-	source, err := os.ReadFile("../../../testdata/phase13/heldout_call_argument_mismatch.lang")
+	source, err := os.ReadFile("../../../testdata/phase13/heldout_call_argument_mismatch.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func phase17MatchingArgumentProtocolError(repair diagnostic.Repair, wantSpan dia
 }
 
 func TestPhase17CheckerDirectionalAbilities(t *testing.T) {
-	baseline := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	baseline := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.schway")))
 	if len(baseline.Diagnostics) != 0 {
 		t.Fatalf("baseline rejected: %+v", baseline.Diagnostics)
 	}
@@ -219,13 +219,13 @@ func TestPhase17CheckerDirectionalAbilities(t *testing.T) {
 }
 
 func TestPhase17CheckerReturnOnlyMutation(t *testing.T) {
-	baseline := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	baseline := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.schway")))
 	if len(baseline.Diagnostics) != 0 {
 		t.Fatalf("baseline rejected: %+v", baseline.Diagnostics)
 	}
 	restore := SetPhase17ReturnLookupFaultForTest(true)
 	t.Cleanup(restore)
-	mutated := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	mutated := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.schway")))
 	if len(mutated.Diagnostics) != 0 {
 		t.Fatalf("return-only mutation changed admission: %+v", mutated.Diagnostics)
 	}
@@ -246,7 +246,7 @@ func TestPhase17CheckerReturnOnlyMutation(t *testing.T) {
 	}
 	restore()
 	restore() // idempotence is part of the cross-package control contract.
-	restored := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.lang")))
+	restored := Program(mustParseProgram(t, readPhase17Fixture(t, "return_type_tracer.schway")))
 	for _, function := range restored.Program.Functions {
 		if function.Linear == nil {
 			continue
@@ -430,7 +430,7 @@ func TestOwnershipSequenceExhaustive(t *testing.T) {
 	if refused.DiagnosticCode != "ownership.borrow_requires_share" || refused.Diagnostic == nil {
 		t.Fatalf("borrow of a type without share was admitted: %+v", refused)
 	}
-	if refused.Diagnostic.Schema != "lang.diagnostic/1" || len(refused.Diagnostic.Repairs) != 1 {
+	if refused.Diagnostic.Schema != "schway.diagnostic/1" || len(refused.Diagnostic.Repairs) != 1 {
 		t.Fatalf("borrow gate did not select the repair-bearing schema: %+v", refused.Diagnostic)
 	}
 	if got, want := refused.Diagnostic.Primary, (diagnostic.Span{Start: 10, End: 13}); got != want {
@@ -536,10 +536,10 @@ func TestLoanLivenessFixpoint(t *testing.T) {
 // genuinely covers straight-line bodies, not only checkBranch's arm blocks.
 // (The read_first note names testdata/phase2, but no ACCEPTED phase2 fixture
 // carries a borrow -- both of that phase's borrow fixtures are REJECT
-// controls -- so this uses shared_shared_accept.lang, the first accepted
+// controls -- so this uses shared_shared_accept.schway, the first accepted
 // straight-line borrow fixture testdata/phase3 ships.)
 func TestLoanLivenessFixpointCoversStraightLine(t *testing.T) {
-	source := readTestdataFixture(t, "shared_shared_accept.lang")
+	source := readTestdataFixture(t, "shared_shared_accept.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("fixture unexpectedly rejected: %+v", result.Diagnostics)
@@ -925,7 +925,7 @@ func TestLoanLivenessBoundValueIsNotInDiagnosticIdentity(t *testing.T) {
 func TestStraightLineEndpointsUnchanged(t *testing.T) {
 	// A reborrow chain that never moves the owner: both loans stay live all
 	// the way to the returned "review" name, matching the shipped
-	// reborrow-transitivity law (testdata/phase2/reborrow_while_moved.lang's
+	// reborrow-transitivity law (testdata/phase2/reborrow_while_moved.schway's
 	// ACCEPT half; that fixture itself is a reject control, so this test
 	// uses the accepted variant with the trailing move removed).
 	body := ast.LinearBody{
@@ -979,7 +979,7 @@ func TestStraightLineEndpointsUnchanged(t *testing.T) {
 // is falsified by direct mutation (flipping the variable), not by
 // reverting a production hunk.
 func TestUniformJoinPlacementFlipsBothVerdicts(t *testing.T) {
-	source := readTestdataFixture(t, "branch_one_arm_shared_accept.lang")
+	source := readTestdataFixture(t, "branch_one_arm_shared_accept.schway")
 
 	baseline := Program(mustParseProgram(t, source))
 	if len(baseline.Diagnostics) != 0 {
@@ -1013,7 +1013,7 @@ func TestUniformJoinPlacementFlipsBothVerdicts(t *testing.T) {
 // last referenced) and confirms the independently recomputed oracle answer
 // disagrees with it, naming the specific loan and edge.
 func TestOracleDisagreesWithUniformJoinFault(t *testing.T) {
-	source := readTestdataFixture(t, "branch_one_arm_shared_accept.lang")
+	source := readTestdataFixture(t, "branch_one_arm_shared_accept.schway")
 
 	honest := Program(mustParseProgram(t, source))
 	if len(honest.Diagnostics) != 0 {
@@ -1393,45 +1393,45 @@ func TestReborrowChainWorkIsLinear(t *testing.T) {
 // landed in discoverLoanLastUses. D-04-25 must change ONLY the counted
 // work, never an accept/reject decision or a diagnostic code.
 var checkerCorpusVerdicts = map[string]string{
-	"phase1/comments.lang":                                "",
-	"phase1/malformed.lang":                               "syntax.unexpected_byte",
-	"phase1/non_exhaustive.lang":                          "match.non_exhaustive",
-	"phase1/toggle.lang":                                  "",
-	"phase2/ability_shapes.lang":                          "check.unexecutable_shape",
-	"phase2/implicit_copy.lang":                           "",
-	"phase2/implicit_noncopy.lang":                        "ownership.transfer_requires_take",
-	"phase2/move_while_borrowed.lang":                     "ownership.move_while_borrowed",
-	"phase2/owned_transfer.lang":                          "",
-	"phase2/reborrow_while_moved.lang":                    "ownership.move_while_borrowed",
-	"phase2/use_after_move.lang":                          "ownership.use_after_move",
-	"phase3/borrowed_view.lang":                           "",
-	"phase3/branch_one_arm_shared_accept.lang":            "",
-	"phase3/branch_one_arm_shared_reject.lang":            "ownership.move_while_borrowed",
-	"phase3/branch_view.lang":                             "",
-	"phase3/exclusive_exclusive_reject.lang":              "ownership.borrow_conflict",
-	"phase3/exclusive_move_reject.lang":                   "ownership.move_while_borrowed",
-	"phase3/public_view.lang":                             "",
-	"phase3/public_view_impossible.lang":                  "",
-	"phase3/public_view_mixed_access.lang":                "",
-	"phase3/public_view_multi_arm_access_conflict.lang":   "",
-	"phase3/public_view_multi_arm_omitted.lang":           "",
-	"phase3/public_view_omitted.lang":                     "",
-	"phase3/public_view_understated.lang":                 "",
-	"phase3/sequential_shared_then_exclusive_accept.lang": "",
-	"phase3/shared_exclusive_reject.lang":                 "ownership.borrow_conflict",
-	"phase3/shared_shared_accept.lang":                    "",
-	"phase4/acquire_three_fail_second.lang":               "",
-	"phase4/acquire_three_fail_third.lang":                "",
-	"phase4/acquire_three_success.lang":                   "",
-	"phase4/defect_terminal.lang":                         "",
-	"phase4/discard_because.lang":                         "",
-	"phase4/fallible_call_unconsumed.lang":                "syntax.fallible_call_not_consumed",
-	"phase4/foreign_acquire_one.lang":                     "",
-	"phase4/foreign_call_target_not_foreign.lang":         "core.call_target_not_foreign",
-	"phase4/foreign_origin_omitted.lang":                  "",
-	"phase4/foreign_policy_value_injection.lang":          "check.foreign_policy_value_unsafe",
-	"phase4/foreign_unwind_undeclared.lang":               "foreign.unwind_policy_undeclared",
-	"phase4/nonlocal_exit_probe.lang":                     "",
+	"phase1/comments.schway":                                "",
+	"phase1/malformed.schway":                               "syntax.unexpected_byte",
+	"phase1/non_exhaustive.schway":                          "match.non_exhaustive",
+	"phase1/toggle.schway":                                  "",
+	"phase2/ability_shapes.schway":                          "check.unexecutable_shape",
+	"phase2/implicit_copy.schway":                           "",
+	"phase2/implicit_noncopy.schway":                        "ownership.transfer_requires_take",
+	"phase2/move_while_borrowed.schway":                     "ownership.move_while_borrowed",
+	"phase2/owned_transfer.schway":                          "",
+	"phase2/reborrow_while_moved.schway":                    "ownership.move_while_borrowed",
+	"phase2/use_after_move.schway":                          "ownership.use_after_move",
+	"phase3/borrowed_view.schway":                           "",
+	"phase3/branch_one_arm_shared_accept.schway":            "",
+	"phase3/branch_one_arm_shared_reject.schway":            "ownership.move_while_borrowed",
+	"phase3/branch_view.schway":                             "",
+	"phase3/exclusive_exclusive_reject.schway":              "ownership.borrow_conflict",
+	"phase3/exclusive_move_reject.schway":                   "ownership.move_while_borrowed",
+	"phase3/public_view.schway":                             "",
+	"phase3/public_view_impossible.schway":                  "",
+	"phase3/public_view_mixed_access.schway":                "",
+	"phase3/public_view_multi_arm_access_conflict.schway":   "",
+	"phase3/public_view_multi_arm_omitted.schway":           "",
+	"phase3/public_view_omitted.schway":                     "",
+	"phase3/public_view_understated.schway":                 "",
+	"phase3/sequential_shared_then_exclusive_accept.schway": "",
+	"phase3/shared_exclusive_reject.schway":                 "ownership.borrow_conflict",
+	"phase3/shared_shared_accept.schway":                    "",
+	"phase4/acquire_three_fail_second.schway":               "",
+	"phase4/acquire_three_fail_third.schway":                "",
+	"phase4/acquire_three_success.schway":                   "",
+	"phase4/defect_terminal.schway":                         "",
+	"phase4/discard_because.schway":                         "",
+	"phase4/fallible_call_unconsumed.schway":                "syntax.fallible_call_not_consumed",
+	"phase4/foreign_acquire_one.schway":                     "",
+	"phase4/foreign_call_target_not_foreign.schway":         "core.call_target_not_foreign",
+	"phase4/foreign_origin_omitted.schway":                  "",
+	"phase4/foreign_policy_value_injection.schway":          "check.foreign_policy_value_unsafe",
+	"phase4/foreign_unwind_undeclared.schway":               "foreign.unwind_policy_undeclared",
+	"phase4/nonlocal_exit_probe.schway":                     "",
 }
 
 // TestCheckerVerdictsUnchanged is D-04-25's verdict-pinning falsifier,
@@ -2078,7 +2078,7 @@ func assertSupportEqual(t *testing.T, name string, got, want ownershipSupport) {
 // (D-04-01/D-04-04/D-04-05). core.DataType.Alternatives must remain
 // unchanged ([]string, no payload) -- D-04-04's one-way door.
 func TestForeignCallLowersToOkAndErrEdges(t *testing.T) {
-	source := readPhase4Fixture(t, "foreign_acquire_one.lang")
+	source := readPhase4Fixture(t, "foreign_acquire_one.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	if len(result.Diagnostics) != 0 {
@@ -2089,7 +2089,7 @@ func TestForeignCallLowersToOkAndErrEdges(t *testing.T) {
 	}
 	function := result.Program.Functions[0]
 
-	if function.ForeignContract == nil || function.ForeignContract.Symbol != "lang_res_open" || function.ForeignContract.Allocator != "libc_malloc" {
+	if function.ForeignContract == nil || function.ForeignContract.Symbol != "schway_res_open" || function.ForeignContract.Allocator != "libc_malloc" {
 		t.Fatalf("ForeignContract = %+v", function.ForeignContract)
 	}
 	if function.Linear == nil || len(function.Linear.Operations) != 3 {
@@ -2138,7 +2138,7 @@ func TestForeignCallLowersToOkAndErrEdges(t *testing.T) {
 // to an OpDefect operation terminating its arm block, carrying the required
 // non-empty reason, no target, and no release anywhere in that block.
 func TestDefectLowersToTerminalOutcome(t *testing.T) {
-	source := readPhase4Fixture(t, "defect_terminal.lang")
+	source := readPhase4Fixture(t, "defect_terminal.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	if len(result.Diagnostics) != 0 {
@@ -2191,7 +2191,7 @@ func TestDefectLowersToTerminalOutcome(t *testing.T) {
 // populated Layout -- none of which has a default value that would let an
 // omission pass as a declaration.
 func TestForeignContractCarriesEveryObligation(t *testing.T) {
-	source := readPhase4Fixture(t, "foreign_acquire_one.lang")
+	source := readPhase4Fixture(t, "foreign_acquire_one.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	if len(result.Diagnostics) != 0 {
@@ -2224,9 +2224,9 @@ func TestForeignContractCarriesEveryObligation(t *testing.T) {
 // TestPreviousPhaseCoreBytesUnchanged golden hash pin already covers).
 func TestForeignFieldsAreOmittedWhenAbsent(t *testing.T) {
 	fixtures := []string{
-		"../../../testdata/phase1/toggle.lang",
-		"../../../testdata/phase2/owned_transfer.lang",
-		"../../../testdata/phase3/borrowed_view.lang",
+		"../../../testdata/phase1/toggle.schway",
+		"../../../testdata/phase2/owned_transfer.schway",
+		"../../../testdata/phase3/borrowed_view.schway",
 	}
 	newKeys := []string{`"initialized_state"`, `"capture"`, `"retention"`, `"aliasing"`, `"layout"`, `"foreign_type_name"`}
 	for _, path := range fixtures {
@@ -2271,7 +2271,7 @@ func readPhase23Fixture(t *testing.T, name string) []byte {
 }
 
 func TestPhase23DiscardRequiresOwnerBinding(t *testing.T) {
-	source := readPhase23Fixture(t, "discard_owner.lang")
+	source := readPhase23Fixture(t, "discard_owner.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) == 0 {
 		t.Fatal("discarded successful owner acquisition was admitted")
@@ -2283,7 +2283,7 @@ func TestPhase23DiscardRequiresOwnerBinding(t *testing.T) {
 		if problem.Primary.Start < 0 || problem.Primary.End <= problem.Primary.Start || problem.Primary.End > len(source) {
 			t.Fatalf("discard diagnostic has invalid source span: %+v", problem)
 		}
-		if !strings.Contains(problem.Message, "lang_file_byte_acquire") || !strings.Contains(problem.Message, "path") {
+		if !strings.Contains(problem.Message, "schway_file_byte_acquire") || !strings.Contains(problem.Message, "path") {
 			t.Fatalf("discard diagnostic does not identify the operation and source place: %+v", problem)
 		}
 		if len(problem.Message) > 200 {
@@ -2295,7 +2295,7 @@ func TestPhase23DiscardRequiresOwnerBinding(t *testing.T) {
 }
 
 func TestPhase23SourceRefusal(t *testing.T) {
-	canonical, err := os.ReadFile("../../../examples/phase23/file_byte.lang")
+	canonical, err := os.ReadFile("../../../examples/phase23/file_byte.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2303,7 +2303,7 @@ func TestPhase23SourceRefusal(t *testing.T) {
 		t.Fatalf("valid acquire/borrow/release source was refused: %+v", result.Diagnostics)
 	}
 
-	const useLine = "  let value = try lang_file_byte_use(owner)\n"
+	const useLine = "  let value = try schway_file_byte_use(owner)\n"
 	tests := []struct {
 		name   string
 		source string
@@ -2321,7 +2321,7 @@ func TestPhase23SourceRefusal(t *testing.T) {
 		{
 			name: "owner escapes as the function result",
 			source: strings.Replace(strings.Replace(string(canonical), "fn main(path: PathToken) -> U64", "fn main(path: PathToken) -> FileByteOwner", 1),
-				"  let value = try lang_file_byte_use(owner)\n  value", "  owner", 1),
+				"  let value = try schway_file_byte_use(owner)\n  value", "  owner", 1),
 		},
 		{
 			name: "owner is passed across a Lang call",
@@ -2331,7 +2331,7 @@ func TestPhase23SourceRefusal(t *testing.T) {
 		{
 			name: "unsupported early exit with a live owner",
 			source: strings.Replace(string(canonical),
-				"  let value = try lang_file_byte_use(owner)\n  value",
+				"  let value = try schway_file_byte_use(owner)\n  value",
 				"  defect \"owner remains live\"", 1),
 		},
 	}
@@ -2360,7 +2360,7 @@ func TestPhase23SourceRefusal(t *testing.T) {
 // without an unwind policy is refused, with no default value, carrying a
 // span, causal detail, and a repair.
 func TestUnwindPolicyUndeclaredRejected(t *testing.T) {
-	source := readPhase4Fixture(t, "foreign_unwind_undeclared.lang")
+	source := readPhase4Fixture(t, "foreign_unwind_undeclared.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	if len(result.Diagnostics) == 0 {
@@ -2394,7 +2394,7 @@ func TestUnwindPolicyUndeclaredRejected(t *testing.T) {
 // callee resolves to a declared Lang function is refused with
 // core.call_target_not_foreign.
 func TestCallTargetNotForeignRejected(t *testing.T) {
-	source := readPhase4Fixture(t, "foreign_call_target_not_foreign.lang")
+	source := readPhase4Fixture(t, "foreign_call_target_not_foreign.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	found := false
@@ -2512,7 +2512,7 @@ func releaseSequence(function core.Function, block core.Block) []string {
 // reverse of completed-acquisition order -- and its own OpReturn is sourced
 // from the function's own parameter (never moved by any OpForeignCall).
 func TestThreeAcquisitionReleaseOrder(t *testing.T) {
-	source := readPhase4Fixture(t, "acquire_three_success.lang")
+	source := readPhase4Fixture(t, "acquire_three_success.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	if len(result.Diagnostics) != 0 {
@@ -2546,7 +2546,7 @@ func TestThreeAcquisitionReleaseOrder(t *testing.T) {
 func TestPartialAcquisitionReleasesOnlyCompleted(t *testing.T) {
 	for _, tc := range []struct {
 		fixture string
-	}{{"acquire_three_fail_second.lang"}, {"acquire_three_fail_third.lang"}} {
+	}{{"acquire_three_fail_second.schway"}, {"acquire_three_fail_third.schway"}} {
 		source := readPhase4Fixture(t, tc.fixture)
 		program := mustParseProgram(t, source)
 		result := Program(program)
@@ -2589,14 +2589,14 @@ func TestPartialAcquisitionReleasesOnlyCompleted(t *testing.T) {
 // "<rationale>"` parses, formats to a fixed point, and carries the rationale
 // string into the core artifact as a required non-empty field.
 func TestDiscardBecauseRoundTrips(t *testing.T) {
-	source := readPhase4Fixture(t, "discard_because.lang")
+	source := readPhase4Fixture(t, "discard_because.schway")
 	parsed := syntax.Parse(source)
 	if len(parsed.Diagnostics) != 0 {
 		t.Fatalf("unexpected parse diagnostics: %+v", parsed.Diagnostics)
 	}
 	canonical := syntax.Format(parsed.Tree)
 	if string(canonical) != string(source) {
-		t.Fatalf("discard_because.lang is not at the formatter's fixed point:\n%s", canonical)
+		t.Fatalf("discard_because.schway is not at the formatter's fixed point:\n%s", canonical)
 	}
 	var found bool
 	for _, function := range parsed.Program.Funcs {
@@ -2864,7 +2864,7 @@ func TestEveryBindingIsFallibleRejectsMixedCallBinding(t *testing.T) {
 // operations for Kind == core.OpCall, never by block position, and still
 // found if the arms' own operation order is reversed.
 func TestCallFromBothMatchArmsEnumeratedByKind(t *testing.T) {
-	source, err := os.ReadFile("../../../testdata/phase07/call_from_both_match_arms.lang")
+	source, err := os.ReadFile("../../../testdata/phase07/call_from_both_match_arms.schway")
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
@@ -2934,7 +2934,7 @@ func readPhase17Fixture(t *testing.T, name string) []byte {
 // ratified core.CalleeNotCallable code, one Cause{Kind: "callee"} naming the
 // callee's own function ID, and no repairs.
 func TestCallToNonCallableCalleeRefused(t *testing.T) {
-	source := readPhase07Fixture(t, "call_uncallable_callee.lang")
+	source := readPhase07Fixture(t, "call_uncallable_callee.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 1 {
 		t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
@@ -2958,24 +2958,24 @@ func TestCallToNonCallableCalleeRefused(t *testing.T) {
 }
 
 // TestCallToDeclaredLangCalleeStillAdmitted is the accepting-path
-// counterpart: a call to a callee that IS callable (call_basic.lang, already
+// counterpart: a call to a callee that IS callable (call_basic.schway, already
 // proven by 07-03/07-04) is unaffected by this plan's new admission arm.
 func TestCallToDeclaredLangCalleeStillAdmitted(t *testing.T) {
-	source := readPhase07Fixture(t, "call_basic.lang")
+	source := readPhase07Fixture(t, "call_basic.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 0 {
-		t.Fatalf("expected call_basic.lang to still check clean, got %+v", result.Diagnostics)
+		t.Fatalf("expected call_basic.schway to still check clean, got %+v", result.Diagnostics)
 	}
 }
 
 // TestBuildCallSignatureTableCallableMatchesPublishProblemsFor is Task 1's
 // direct proof that the table's Callable bit really is
 // originvalidate.PublishProblemsFor's predicate (D-07-31/D-07-32) and
-// nothing else: over the two functions in call_uncallable_callee.lang, the
+// nothing else: over the two functions in call_uncallable_callee.schway, the
 // table entry's Callable bit matches len(PublishProblemsFor(fn))==0 exactly,
 // for both the callable and the non-callable function.
 func TestBuildCallSignatureTableCallableMatchesPublishProblemsFor(t *testing.T) {
-	source := readPhase07Fixture(t, "call_uncallable_callee.lang")
+	source := readPhase07Fixture(t, "call_uncallable_callee.schway")
 	parsed := mustParseProgram(t, source)
 	// Bypass verifyCallableRefusal (which would refuse the whole program)
 	// by lowering functions directly through checkLinear, exactly like
@@ -3072,7 +3072,7 @@ func TestCallSignatureTableBuiltBeforeCallableAdmissionRuns(t *testing.T) {
 		callSignatureTableLookupObserved = nil
 	}()
 
-	fixtures := []string{"call_basic.lang", "call_from_both_match_arms.lang", "call_uncallable_callee.lang"}
+	fixtures := []string{"call_basic.schway", "call_from_both_match_arms.schway", "call_uncallable_callee.schway"}
 	for _, fixture := range fixtures {
 		t.Run(fixture, func(t *testing.T) {
 			var events []string
@@ -3114,7 +3114,7 @@ func TestCallSignatureTableBuiltBeforeCallableAdmissionRuns(t *testing.T) {
 // A-normal-form conversion of D-04-03's decisive research witness parses
 // with zero parser diagnostics.
 func TestRelayEscortWitnessParsesCleanly(t *testing.T) {
-	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	source := readPhase07Fixture(t, "relay_escort_witness.schway")
 	parsed := syntax.Parse(source)
 	if len(parsed.Diagnostics) != 0 {
 		t.Fatalf("expected zero parser diagnostics, got %+v", parsed.Diagnostics)
@@ -3127,7 +3127,7 @@ func TestRelayEscortWitnessParsesCleanly(t *testing.T) {
 // appears at a call site (the exact shape the recorded witness's
 // `relay(borrow mut buffer)` had, and D-07-01 now forbids).
 func TestRelayEscortWitnessCallArgumentsAreANormalForm(t *testing.T) {
-	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	source := readPhase07Fixture(t, "relay_escort_witness.schway")
 	parsed := mustParseProgram(t, source)
 	callCount := 0
 	for _, function := range parsed.Funcs {
@@ -3170,7 +3170,7 @@ func TestRelayEscortWitnessCallArgumentsAreANormalForm(t *testing.T) {
 // INTERPROCEDURAL half of D-03-02 (Phase 3 closed the single-function half)
 // via check.interprocedural_loan_liveness.
 func TestRelayEscortWitnessRefusesInterproceduralLiveness(t *testing.T) {
-	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	source := readPhase07Fixture(t, "relay_escort_witness.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 1 {
 		t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
@@ -3614,7 +3614,7 @@ func TestSummaryMemoNeverPersisted(t *testing.T) {
 	}
 
 	defer func() { buildInterproceduralSummariesObserved = nil }()
-	source := readPhase07Fixture(t, "call_basic.lang")
+	source := readPhase07Fixture(t, "call_basic.schway")
 	parsed := mustParseProgram(t, source)
 
 	buildCount := 0
@@ -3633,13 +3633,13 @@ func TestSummaryMemoNeverPersisted(t *testing.T) {
 // predicate) that BOTH `relay` and `escort` are Callable -- the call this
 // witness demonstrates is genuinely ADMITTED by this plan's own SEM-06 arm,
 // not accidentally refused for the unrelated reason Task 1's own negative
-// control (call_uncallable_callee.lang) demonstrates. Phase 08's new
+// control (call_uncallable_callee.schway) demonstrates. Phase 08's new
 // interprocedural loan-liveness refusal (TestRelayEscortWitnessRefusesInterproceduralLiveness)
 // is a SEPARATE, later admission arm; it never clears result.Program (unlike
 // the call-graph-cycle gate), so Callable is still independently checkable
 // here even though the fixture now refuses.
 func TestRelayEscortWitnessBothFunctionsAreCallable(t *testing.T) {
-	source := readPhase07Fixture(t, "relay_escort_witness.lang")
+	source := readPhase07Fixture(t, "relay_escort_witness.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
 		t.Fatalf("expected exactly the interprocedural_loan_liveness diagnostic, got %+v", result.Diagnostics)
@@ -3675,7 +3675,7 @@ func TestCallAdmissionBodyBlindControl(t *testing.T) {
 		calleeBodyReadObserved = nil
 	}()
 
-	fixtures := []string{"call_basic.lang", "call_from_both_match_arms.lang", "relay_escort_witness.lang"}
+	fixtures := []string{"call_basic.schway", "call_from_both_match_arms.schway", "relay_escort_witness.schway"}
 	for _, fixture := range fixtures {
 		t.Run(fixture, func(t *testing.T) {
 			source := readPhase07Fixture(t, fixture)
@@ -3685,7 +3685,7 @@ func TestCallAdmissionBodyBlindControl(t *testing.T) {
 			calleeBodyReadObserved = func(string) { bodyReads++ }
 			result := Program(mustParseProgram(t, source))
 			calleeBodyReadObserved = nil
-			// relay_escort_witness.lang refuses under Phase 08's new
+			// relay_escort_witness.schway refuses under Phase 08's new
 			// check.interprocedural_loan_liveness law since this task
 			// (TestRelayEscortWitnessRefusesInterproceduralLiveness); that
 			// refusal is unrelated to THIS test's body-blindness claim about
@@ -3720,12 +3720,12 @@ func TestCallAdmissionBodyBlindControl(t *testing.T) {
 
 // TestVerifyCallableRefusalSeamAdmitsUncallableCallee is Task 3 Test 3
 // (QLT-08, D-07-41/D-07-42): with verifyCallableRefusalSeam engaged,
-// call_uncallable_callee.lang -- refused at the production default -- is
+// call_uncallable_callee.schway -- refused at the production default -- is
 // wrongly admitted (zero diagnostics). Restoring the seam restores the
 // refusal.
 func TestVerifyCallableRefusalSeamAdmitsUncallableCallee(t *testing.T) {
 	defer func() { verifyCallableRefusalSeam = false }()
-	source := readPhase07Fixture(t, "call_uncallable_callee.lang")
+	source := readPhase07Fixture(t, "call_uncallable_callee.schway")
 
 	verifyCallableRefusalSeam = true
 	seamResult := Program(mustParseProgram(t, source))
@@ -3770,7 +3770,7 @@ func TestVerifyCallableRefusalAcceptsPopulatedCallableEntry(t *testing.T) {
 // TestVerifyCallableRefusalSeamCheckDisabledCorevalidateStillRefuses is
 // Task 3 Test 5's "check disabled, corevalidate still refuses" half
 // (D-07-34's two-peer discipline): with check's OWN admission arm
-// disabled (verifyCallableRefusalSeam engaged), call_uncallable_callee.lang
+// disabled (verifyCallableRefusalSeam engaged), call_uncallable_callee.schway
 // is admitted by check -- but the resulting core.Program is
 // INDEPENDENTLY still refused by corevalidate's own peerCallable-based
 // admission arm (07-05 Task 3), which never consults check's table or its
@@ -3778,7 +3778,7 @@ func TestVerifyCallableRefusalAcceptsPopulatedCallableEntry(t *testing.T) {
 func TestVerifyCallableRefusalSeamCheckDisabledCorevalidateStillRefuses(t *testing.T) {
 	defer func() { verifyCallableRefusalSeam = false }()
 	verifyCallableRefusalSeam = true
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "call_uncallable_callee.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "call_uncallable_callee.schway")))
 	verifyCallableRefusalSeam = false
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("expected check's seam to admit the call, got %+v", result.Diagnostics)
@@ -3896,7 +3896,7 @@ func TestCallGraphCycleTruncatesAt33Members(t *testing.T) {
 // -- never a Span core.LinearOperation itself carries (there is no such
 // field; see TestLinearOperationHasNoSpanField).
 func TestCallGraphCycleProjectsSpansFromOperationIDs(t *testing.T) {
-	source := readPhase07Fixture(t, "cycle_mutual.lang")
+	source := readPhase07Fixture(t, "cycle_mutual.schway")
 	result := Program(mustParseProgram(t, source))
 	diag := findCallGraphCycleDiagnostic(t, result)
 	if diag.Primary.Start == 0 && diag.Primary.End == 0 {
@@ -3930,7 +3930,7 @@ func TestLinearOperationHasNoSpanField(t *testing.T) {
 // no functions at all -- a cyclic program exists only as an ephemeral
 // local, never returned.
 func TestCallGraphCycleClearsReturnedProgram(t *testing.T) {
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.schway")))
 	if len(result.Program.Functions) != 0 {
 		t.Fatalf("expected no functions in the returned core.Program on a cycle refusal, got %d", len(result.Program.Functions))
 	}
@@ -3941,7 +3941,7 @@ func TestCallGraphCycleClearsReturnedProgram(t *testing.T) {
 // (>= 3) trio, distinguished by cycle_length and membership rather than by
 // three separate codes.
 func TestCycleIndirectFixtureRefused(t *testing.T) {
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_indirect.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_indirect.schway")))
 	diag := findCallGraphCycleDiagnostic(t, result)
 	for _, cause := range diag.Causes {
 		if cause.Kind == "cycle_length" {
@@ -3960,7 +3960,7 @@ func TestCycleIndirectFixtureRefused(t *testing.T) {
 // roots are ALL declared functions, never merely functions reachable from
 // an entry point.
 func TestCycleUnreachableFixtureRefused(t *testing.T) {
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_unreachable.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_unreachable.schway")))
 	findCallGraphCycleDiagnostic(t, result)
 }
 
@@ -3976,7 +3976,7 @@ func TestCycleUnreachableSurvivesEntryPointRemoval(t *testing.T) {
 	disableCallGraphCycleRefusalForTest = true
 	defer func() { disableCallGraphCycleRefusalForTest = previous }()
 
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_unreachable.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_unreachable.schway")))
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("expected the cycle refusal to be disabled, got %+v", result.Diagnostics)
 	}
@@ -4003,9 +4003,9 @@ func TestCycleUnreachableSurvivesEntryPointRemoval(t *testing.T) {
 // item: the closing edge of this fixture's cycle originates INSIDE a match
 // arm (helper's arm A calls back into main), proving enumerate-by-kind-
 // across-all-blocks on the REFUSAL path, not only the admission path
-// call_from_both_match_arms.lang (07-04) proved.
+// call_from_both_match_arms.schway (07-04) proved.
 func TestCycleThroughMatchArmFixtureRefused(t *testing.T) {
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_through_match_arm.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_through_match_arm.schway")))
 	findCallGraphCycleDiagnostic(t, result)
 }
 
@@ -4021,7 +4021,7 @@ func TestCycleThroughMatchArmSurvivesBlockOrderReversal(t *testing.T) {
 	disableCallGraphCycleRefusalForTest = true
 	defer func() { disableCallGraphCycleRefusalForTest = previous }()
 
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_through_match_arm.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_through_match_arm.schway")))
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("expected the cycle refusal to be disabled, got %+v", result.Diagnostics)
 	}
@@ -4053,14 +4053,14 @@ func TestCycleThroughMatchArmSurvivesBlockOrderReversal(t *testing.T) {
 // CalleeID graph edge at all), the cycle silently disappears, proving the
 // edge -- and the precedence rule that preserves it -- is load-bearing.
 func TestForeignSymbolShadowingFixtureRefusedAndEdgeMutationKilled(t *testing.T) {
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "foreign_symbol_shadowing.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "foreign_symbol_shadowing.schway")))
 	findCallGraphCycleDiagnostic(t, result)
 
 	previous := disableCallGraphCycleRefusalForTest
 	disableCallGraphCycleRefusalForTest = true
 	defer func() { disableCallGraphCycleRefusalForTest = previous }()
 
-	realResult := Program(mustParseProgram(t, readPhase07Fixture(t, "foreign_symbol_shadowing.lang")))
+	realResult := Program(mustParseProgram(t, readPhase07Fixture(t, "foreign_symbol_shadowing.schway")))
 	if len(realResult.Diagnostics) != 0 {
 		t.Fatalf("expected the cycle refusal to be disabled, got %+v", realResult.Diagnostics)
 	}
@@ -4132,7 +4132,7 @@ func TestCheckCycleRefusalIndependentOfCorevalidatePeer(t *testing.T) {
 	disableCallGraphCycleRefusalForTest = true
 	defer func() { disableCallGraphCycleRefusalForTest = previous }()
 
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.schway")))
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("expected check's own cycle refusal to be disabled, got %+v", result.Diagnostics)
 	}
@@ -4166,7 +4166,7 @@ func TestCorevalidatePeerIndependentOfCheckCycleRefusal(t *testing.T) {
 	restore := corevalidate.SetDisableCyclePeerForTest(true)
 	defer restore()
 
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.schway")))
 	findCallGraphCycleDiagnostic(t, result)
 
 	// With the peer disabled, feeding check's own (cleared-on-refusal, so
@@ -4177,7 +4177,7 @@ func TestCorevalidatePeerIndependentOfCheckCycleRefusal(t *testing.T) {
 	previousCheckSeam := disableCallGraphCycleRefusalForTest
 	disableCallGraphCycleRefusalForTest = true
 	defer func() { disableCallGraphCycleRefusalForTest = previousCheckSeam }()
-	unrefused := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	unrefused := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.schway")))
 	if len(unrefused.Diagnostics) != 0 {
 		t.Fatalf("expected check's own refusal to be disabled too, got %+v", unrefused.Diagnostics)
 	}
@@ -4201,7 +4201,7 @@ func TestBilateralCallGraphFaultReportsNoDivergenceAndFailsGate(t *testing.T) {
 	restorePeer := corevalidate.SetDisableCyclePeerForTest(true)
 	defer restorePeer()
 
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "cycle_mutual.schway")))
 	checkRefused := len(result.Diagnostics) != 0
 	validated := corevalidate.Validate(result.Program)
 	corevalidateRefused := !validated.Valid
@@ -4234,7 +4234,7 @@ func bilateralCallGraphFaultReport(checkRefused, corevalidateRefused bool) (repo
 // ---------------------------------------------------------------------
 
 // TestCallArgumentTypeMismatchRefused is Task 1 Test 1: the standing
-// negative control (call_type_mismatch.lang) is refused with exactly one
+// negative control (call_type_mismatch.schway) is refused with exactly one
 // error-severity diagnostic carrying the ratified
 // check.call_argument_type_mismatch code, whose Primary span is the call
 // site and whose ordered Causes are callee / argument_type (Buffer) /
@@ -4254,7 +4254,7 @@ func bilateralCallGraphFaultReport(checkRefused, corevalidateRefused bool) (repo
 // longer emits this repair on any partition; the diagnostic is back to
 // carrying zero repairs, as it did before 13-05.
 func TestCallArgumentTypeMismatchRefused(t *testing.T) {
-	source := readPhase07Fixture(t, "call_type_mismatch.lang")
+	source := readPhase07Fixture(t, "call_type_mismatch.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 1 {
 		t.Fatalf("expected exactly one diagnostic, got %+v", result.Diagnostics)
@@ -4289,15 +4289,15 @@ func TestCallArgumentTypeMismatchRefused(t *testing.T) {
 	}
 }
 
-// TestCallTargetTypeDerivedFromCalleeReturn is Task 1 Test 2: call_basic.lang
+// TestCallTargetTypeDerivedFromCalleeReturn is Task 1 Test 2: call_basic.schway
 // still checks clean, and its OpCall's TargetID place has
 // TypeID == "<caller function ID>:type:0" -- the same value as before this
 // plan -- proving the promoted derivation is byte-identical where it must be.
 func TestCallTargetTypeDerivedFromCalleeReturn(t *testing.T) {
-	source := readPhase07Fixture(t, "call_basic.lang")
+	source := readPhase07Fixture(t, "call_basic.schway")
 	result := Program(mustParseProgram(t, source))
 	if len(result.Diagnostics) != 0 {
-		t.Fatalf("expected call_basic.lang to still check clean, got %+v", result.Diagnostics)
+		t.Fatalf("expected call_basic.schway to still check clean, got %+v", result.Diagnostics)
 	}
 	var mainFunction *core.Function
 	for i := range result.Program.Functions {
@@ -4450,8 +4450,8 @@ fn main(buffer: Buffer) -> Buffer {
 	}
 
 	for _, fixture := range []string{
-		"cycle_self.lang", "cycle_mutual.lang", "cycle_indirect.lang",
-		"cycle_unreachable.lang", "cycle_through_match_arm.lang", "foreign_symbol_shadowing.lang",
+		"cycle_self.schway", "cycle_mutual.schway", "cycle_indirect.schway",
+		"cycle_unreachable.schway", "cycle_through_match_arm.schway", "foreign_symbol_shadowing.schway",
 	} {
 		t.Run(fixture, func(t *testing.T) {
 			cycleResult := Program(mustParseProgram(t, readPhase07Fixture(t, fixture)))
@@ -4487,7 +4487,7 @@ func TestOpCallTargetTypeIDUnchangedAcrossAcceptingCorpus(t *testing.T) {
 			t.Fatalf("read %s: %v", dir, err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 				continue
 			}
 			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
@@ -4500,7 +4500,7 @@ func TestOpCallTargetTypeIDUnchangedAcrossAcceptingCorpus(t *testing.T) {
 			}
 			result := Program(parsed.Program)
 			if len(result.Diagnostics) != 0 {
-				continue // rejected fixture (including call_type_mismatch.lang itself)
+				continue // rejected fixture (including call_type_mismatch.schway itself)
 			}
 			functionByID := make(map[string]core.Function, len(result.Program.Functions))
 			for _, function := range result.Program.Functions {
@@ -4571,7 +4571,7 @@ func TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus(t *testing.T
 			t.Fatalf("read %s: %v", dir, err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 				continue
 			}
 			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
@@ -4638,7 +4638,7 @@ func TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus(t *testing.T
 
 // TestCallArgumentTypeCheckMutationKilled is 07-09 Task 3's check-side kill
 // for control:call.argument_type_matches_parameter. It first confirms the
-// standing negative control (call_type_mismatch.lang) is refused with the
+// standing negative control (call_type_mismatch.schway) is refused with the
 // ratified code in production (the seam off). It then engages ONLY
 // callArgumentTypeCheckSeam through a direct resolveCallBinding call whose
 // callee contract deliberately decouples ParameterType from ReturnType --
@@ -4653,7 +4653,7 @@ func TestSignatureParameterTypeMatchesAdmissionContractAcrossCorpus(t *testing.T
 func TestCallArgumentTypeCheckMutationKilled(t *testing.T) {
 	defer func() { callArgumentTypeCheckSeam = false }()
 
-	source := readPhase07Fixture(t, "call_type_mismatch.lang")
+	source := readPhase07Fixture(t, "call_type_mismatch.schway")
 	production := Program(mustParseProgram(t, source))
 	if len(production.Diagnostics) != 1 || production.Diagnostics[0].Code != checkCallArgumentTypeMismatch {
 		t.Fatalf("expected %s without the seam, got %+v", checkCallArgumentTypeMismatch, production.Diagnostics)
@@ -4742,7 +4742,7 @@ func TestCallReturnTypeDerivationMutationKilled(t *testing.T) {
 
 // TestCallConsumesNoncopyableArgument is 07-11 Task 1's Test 1 (the gap)
 // and Test 4 (both call paths). It first proves
-// call_argument_used_twice.lang -- 07-VERIFICATION.md PVG-01 /
+// call_argument_used_twice.schway -- 07-VERIFICATION.md PVG-01 /
 // 07-REVIEW.md CR-01's standing negative control -- is refused with
 // exactly one ownership.use_after_move diagnostic whose Primary span is
 // the SECOND call site and whose ordered causes are moved_here (the FIRST
@@ -4753,7 +4753,7 @@ func TestCallReturnTypeDerivationMutationKilled(t *testing.T) {
 // never a duplicated copy.
 func TestCallConsumesNoncopyableArgument(t *testing.T) {
 	t.Run("straight_line", func(t *testing.T) {
-		source := readPhase07Fixture(t, "call_argument_used_twice.lang")
+		source := readPhase07Fixture(t, "call_argument_used_twice.schway")
 		parsed := mustParseProgram(t, source)
 		result := Program(parsed)
 		if len(result.Diagnostics) != 1 {
@@ -4792,7 +4792,7 @@ func TestCallConsumesNoncopyableArgument(t *testing.T) {
 	})
 
 	t.Run("match_arm", func(t *testing.T) {
-		// Drives analyzeArmBody directly (rather than through a .lang
+		// Drives analyzeArmBody directly (rather than through a .schway
 		// fixture) since this language surface has no data type carrying
 		// a Buffer-typed field to route a non-copyable value into a match
 		// arm's own bindings -- the direct-call technique this file's
@@ -4823,16 +4823,16 @@ func TestCallConsumesNoncopyableArgument(t *testing.T) {
 
 // TestCallDoesNotConsumeCopyableArgument is 07-11 Task 1's Test 2: the
 // non-refusing direction, pinned as hard as the refusing one.
-// call_argument_used_once.lang (a Buffer passed to exactly one call) and a
+// call_argument_used_once.schway (a Buffer passed to exactly one call) and a
 // Byte argument passed to two separate calls both check clean --
 // copyable values are copied, never consumed, and passing a Buffer to a
 // call at all is legal so long as it is never used again afterward.
 func TestCallDoesNotConsumeCopyableArgument(t *testing.T) {
 	t.Run("buffer_used_once", func(t *testing.T) {
-		source := readPhase07Fixture(t, "call_argument_used_once.lang")
+		source := readPhase07Fixture(t, "call_argument_used_once.schway")
 		result := Program(mustParseProgram(t, source))
 		if len(result.Diagnostics) != 0 {
-			t.Fatalf("expected call_argument_used_once.lang to check clean, got %+v", result.Diagnostics)
+			t.Fatalf("expected call_argument_used_once.schway to check clean, got %+v", result.Diagnostics)
 		}
 	})
 
@@ -4899,15 +4899,15 @@ func TestCallConsumeMoveStateComplete(t *testing.T) {
 // that checked clean before this plan) this test sweeps to prove the 07-11
 // consume rule ripples nowhere: same verdict, same emitted core.Program,
 // deterministically re-derived. Deliberately NOT every testdata/phase07
-// fixture -- the corpus also carries refusing fixtures (cycle_*.lang,
-// call_uncallable_callee.lang, the two new 07-11 fixtures,
-// duplicate_function_name.lang) whose check.Program-level verdict this
+// fixture -- the corpus also carries refusing fixtures (cycle_*.schway,
+// call_uncallable_callee.schway, the two new 07-11 fixtures,
+// duplicate_function_name.schway) whose check.Program-level verdict this
 // plan does not claim is clean.
 var callConsumptionRippleFixtures = []string{
-	"call_basic.lang",
-	"call_from_both_match_arms.lang",
-	"clean_but_unpublishable.lang",
-	"deep_diamond_acyclic.lang",
+	"call_basic.schway",
+	"call_from_both_match_arms.schway",
+	"clean_but_unpublishable.schway",
+	"deep_diamond_acyclic.schway",
 }
 
 // TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus is 07-11 Task
@@ -4939,14 +4939,14 @@ func TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus(t *testing.T) {
 		// fixture now refuses deterministically rather than staying clean,
 		// but that refusal must still be exactly reproducible across
 		// re-derivations.
-		source := readPhase07Fixture(t, "relay_escort_witness.lang")
+		source := readPhase07Fixture(t, "relay_escort_witness.schway")
 		first := Program(mustParseProgram(t, source))
 		if len(first.Diagnostics) != 1 || first.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
-			t.Fatalf("expected relay_escort_witness.lang to refuse via check.interprocedural_loan_liveness, got %+v", first.Diagnostics)
+			t.Fatalf("expected relay_escort_witness.schway to refuse via check.interprocedural_loan_liveness, got %+v", first.Diagnostics)
 		}
 		second := Program(mustParseProgram(t, source))
 		if !reflect.DeepEqual(first.Diagnostics, second.Diagnostics) {
-			t.Fatalf("expected relay_escort_witness.lang's refusal to be deterministic across re-derivations, got %+v vs %+v", first.Diagnostics, second.Diagnostics)
+			t.Fatalf("expected relay_escort_witness.schway's refusal to be deterministic across re-derivations, got %+v vs %+v", first.Diagnostics, second.Diagnostics)
 		}
 	})
 }
@@ -4954,7 +4954,7 @@ func TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus(t *testing.T) {
 // TestCallArgumentConsumeMutationKilled is 07-11 Task 3's check-side kill
 // for control:call.argument_consumed_when_noncopyable. It first engages
 // callArgumentConsumeSeam and runs the REAL production path
-// (Program(mustParseProgram(...))) on call_argument_used_twice.lang,
+// (Program(mustParseProgram(...))) on call_argument_used_twice.schway,
 // asserting the seam wrongly admits the double-consume with zero
 // diagnostics -- reproducing PVG-01/CR-01's pre-plan hole exactly. It
 // then disengages the seam and asserts the real gate is restored
@@ -4962,7 +4962,7 @@ func TestCallArgumentConsumptionUnchangedAcrossAcceptingCorpus(t *testing.T) {
 func TestCallArgumentConsumeMutationKilled(t *testing.T) {
 	defer func() { callArgumentConsumeSeam = false }()
 
-	source := readPhase07Fixture(t, "call_argument_used_twice.lang")
+	source := readPhase07Fixture(t, "call_argument_used_twice.schway")
 
 	callArgumentConsumeSeam = true
 	seamed := Program(mustParseProgram(t, source))
@@ -4979,7 +4979,7 @@ func TestCallArgumentConsumeMutationKilled(t *testing.T) {
 
 // callByteArgumentTwiceSource is a Byte-argument double-call program,
 // built inline (never a testdata/phase07 fixture -- this plan adds no
-// third fixture) since call_basic.lang's own Byte argument is passed to
+// third fixture) since call_basic.schway's own Byte argument is passed to
 // only ONE call: the over-refusal fault this test seeds needs a SECOND
 // use to observe wrongly firing on.
 const callByteArgumentTwiceSource = `module phase07.call_argument_byte_used_twice
@@ -5024,7 +5024,7 @@ func TestCallArgumentConsumeOverRefusalMutationKilled(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------
-// Phase 08 Task 1 (08-03): the real .lang twin corpus and the harness that
+// Phase 08 Task 1 (08-03): the real .schway twin corpus and the harness that
 // enforces the twin discipline.
 // ---------------------------------------------------------------------
 
@@ -5108,7 +5108,7 @@ func assertIdenticalCallerBodies(t *testing.T, pairName string, a, b *ast.Linear
 }
 
 // TestInterproceduralTwinPairsDifferOnlyInTheCallee is Task 1's mechanical
-// enforcement of the twin discipline (T-08-09): for both real .lang twin
+// enforcement of the twin discipline (T-08-09): for both real .schway twin
 // pairs, the CALLER function's own ast.LinearBody is structurally identical
 // between members. A pair whose caller varies fails this test, which is
 // exactly the falsifier that stops a caller-varying (decorative) pair from
@@ -5117,8 +5117,8 @@ func TestInterproceduralTwinPairsDifferOnlyInTheCallee(t *testing.T) {
 	pairs := []struct {
 		name, refuse, accept, caller string
 	}{
-		{"pattern A", "twin_a_refuse.lang", "twin_a_accept.lang", "escort"},
-		{"pattern B", "twin_b_refuse.lang", "twin_b_accept.lang", "escort"},
+		{"pattern A", "twin_a_refuse.schway", "twin_a_accept.schway", "escort"},
+		{"pattern B", "twin_b_refuse.schway", "twin_b_accept.schway", "escort"},
 	}
 	for _, pair := range pairs {
 		t.Run(pair.name, func(t *testing.T) {
@@ -5131,30 +5131,30 @@ func TestInterproceduralTwinPairsDifferOnlyInTheCallee(t *testing.T) {
 	}
 }
 
-// TestInterproceduralLivenessTwinPatternA drives twin_a_refuse.lang and
-// twin_a_accept.lang through the real ast.Program -> check.Program
+// TestInterproceduralLivenessTwinPatternA drives twin_a_refuse.schway and
+// twin_a_accept.schway through the real ast.Program -> check.Program
 // pipeline: the refusing member produces exactly one diagnostic with code
 // check.interprocedural_loan_liveness; the accepting member produces zero
-// diagnostics (package check alone -- see twin_a_accept.lang's own header
+// diagnostics (package check alone -- see twin_a_accept.schway's own header
 // for the separate, documented corevalidate residual this test does not
 // claim to resolve).
 func TestInterproceduralLivenessTwinPatternA(t *testing.T) {
-	refuseSource := readPhase08Fixture(t, "twin_a_refuse.lang")
+	refuseSource := readPhase08Fixture(t, "twin_a_refuse.schway")
 	refuseResult := Program(mustParseProgram(t, refuseSource))
 	if len(refuseResult.Diagnostics) != 1 || refuseResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
-		t.Fatalf("expected exactly one check.interprocedural_loan_liveness diagnostic for twin_a_refuse.lang, got %+v", refuseResult.Diagnostics)
+		t.Fatalf("expected exactly one check.interprocedural_loan_liveness diagnostic for twin_a_refuse.schway, got %+v", refuseResult.Diagnostics)
 	}
 
-	acceptSource := readPhase08Fixture(t, "twin_a_accept.lang")
+	acceptSource := readPhase08Fixture(t, "twin_a_accept.schway")
 	acceptResult := Program(mustParseProgram(t, acceptSource))
 	if len(acceptResult.Diagnostics) != 0 {
-		t.Fatalf("expected zero diagnostics for twin_a_accept.lang, got %+v", acceptResult.Diagnostics)
+		t.Fatalf("expected zero diagnostics for twin_a_accept.schway, got %+v", acceptResult.Diagnostics)
 	}
 }
 
 // TestInterproceduralLivenessTwinPatternBRealFixtures extends 08-02's own
 // synthetic-core.Program twin (TestInterproceduralLivenessTwinPatternB
-// above) to also drive the real twin_b_refuse.lang/twin_b_accept.lang
+// above) to also drive the real twin_b_refuse.schway/twin_b_accept.schway
 // fixtures landed under Phase 08.
 //
 // Plan 09-09 (D-09-08's authorized deletion) removed the summary-blind
@@ -5183,8 +5183,8 @@ func TestInterproceduralLivenessTwinPatternBRealFixtures(t *testing.T) {
 		name string
 		want string
 	}{
-		{"twin_b_refuse.lang", "check.interprocedural_loan_liveness"},
-		{"twin_b_accept.lang", "check.interprocedural_loan_liveness"},
+		{"twin_b_refuse.schway", "check.interprocedural_loan_liveness"},
+		{"twin_b_accept.schway", "check.interprocedural_loan_liveness"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			source := readPhase08Fixture(t, tc.name)
@@ -5222,14 +5222,14 @@ func functionIDByName(t *testing.T, program core.Program, name string) string {
 // composition-depth-2 relay chain (caller -> relay -> leaf) refuses when
 // relay's OWN declared return contract reports a borrow of its parameter,
 // and admits when it does not -- generalizing 08-01/08-03's depth-1 twin
-// (twin_a_*.lang) to prove the derivation genuinely reads a callee's
+// (twin_a_*.schway) to prove the derivation genuinely reads a callee's
 // declared signature rather than merely working for the one-hop case. The
 // emitted causes name RELAY's own function ID and RELAY's own
 // return.mode -- never leaf's -- proving the caller's admission consulted
 // relay's OWN interprocedural summary entry, not leaf's (leaf is never
 // named anywhere in the diagnostic).
 func TestInterproceduralLivenessRelayDepth2(t *testing.T) {
-	refuseSource := readPhase08Fixture(t, "relay_depth2_refuse.lang")
+	refuseSource := readPhase08Fixture(t, "relay_depth2_refuse.schway")
 	refuseResult := Program(mustParseProgram(t, refuseSource))
 	if len(refuseResult.Diagnostics) != 1 || refuseResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
 		t.Fatalf("expected exactly one check.interprocedural_loan_liveness diagnostic, got %+v", refuseResult.Diagnostics)
@@ -5245,18 +5245,18 @@ func TestInterproceduralLivenessRelayDepth2(t *testing.T) {
 		t.Fatalf("expected cause 3 to name relay's own return.mode (not leaf's), got %+v", diag.Causes[2])
 	}
 
-	acceptSource := readPhase08Fixture(t, "relay_depth2_accept.lang")
+	acceptSource := readPhase08Fixture(t, "relay_depth2_accept.schway")
 	acceptResult := Program(mustParseProgram(t, acceptSource))
 	if len(acceptResult.Diagnostics) != 0 {
-		t.Fatalf("expected relay_depth2_accept.lang to check clean, got %+v", acceptResult.Diagnostics)
+		t.Fatalf("expected relay_depth2_accept.schway to check clean, got %+v", acceptResult.Diagnostics)
 	}
 }
 
 // TestInterproceduralLivenessNegativeControl is Task 2(b)'s D-08-28.4 pin,
 // the "which fields are NOT named" half of criterion 4: two programs whose
 // relay differs ONLY in its own transitively-inherited Fails/ForeignReach
-// (negative_control_fails.lang's relay calls a genuinely foreign-fallible
-// leaf; negative_control_infallible.lang's relay calls a wholly ordinary
+// (negative_control_fails.schway's relay calls a genuinely foreign-fallible
+// leaf; negative_control_infallible.schway's relay calls a wholly ordinary
 // one) produce (a) the identical check verdict, and (b) field-for-field
 // identical interproceduralSummary entries for relay, proving the
 // liveness law's silence on Fails/ForeignReach was demonstrated by
@@ -5291,14 +5291,14 @@ func TestInterproceduralLivenessRelayDepth2(t *testing.T) {
 // core.callee_not_callable rather than check.interprocedural_loan_liveness
 // (neither diagnostic's cause depends on Fails/ForeignReach either).
 func TestInterproceduralLivenessNegativeControl(t *testing.T) {
-	failsResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_fails.lang")))
-	infallibleResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_infallible.lang")))
+	failsResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_fails.schway")))
+	infallibleResult := Program(mustParseProgram(t, readPhase08Fixture(t, "negative_control_infallible.schway")))
 
 	if len(failsResult.Diagnostics) != 1 || failsResult.Diagnostics[0].Code != "core.callee_not_callable" {
-		t.Fatalf("expected negative_control_fails.lang to refuse with core.callee_not_callable (relay's borrow(buffer) declaration is dishonest given leaf's genuinely owned return), got %+v", failsResult.Diagnostics)
+		t.Fatalf("expected negative_control_fails.schway to refuse with core.callee_not_callable (relay's borrow(buffer) declaration is dishonest given leaf's genuinely owned return), got %+v", failsResult.Diagnostics)
 	}
 	if len(infallibleResult.Diagnostics) != 1 || infallibleResult.Diagnostics[0].Code != "core.callee_not_callable" {
-		t.Fatalf("expected negative_control_infallible.lang to refuse with core.callee_not_callable, got %+v", infallibleResult.Diagnostics)
+		t.Fatalf("expected negative_control_infallible.schway to refuse with core.callee_not_callable, got %+v", infallibleResult.Diagnostics)
 	}
 
 	failsCauses := failsResult.Diagnostics[0].Causes
@@ -5326,11 +5326,11 @@ func TestInterproceduralLivenessNegativeControl(t *testing.T) {
 
 	failsRelaySummary, ok := failsSummaries.lookup(functionIDByName(t, failsResult.Program, "relay"))
 	if !ok {
-		t.Fatal("expected a summary entry for relay in negative_control_fails.lang")
+		t.Fatal("expected a summary entry for relay in negative_control_fails.schway")
 	}
 	infallibleRelaySummary, ok := infallibleSummaries.lookup(functionIDByName(t, infallibleResult.Program, "relay"))
 	if !ok {
-		t.Fatal("expected a summary entry for relay in negative_control_infallible.lang")
+		t.Fatal("expected a summary entry for relay in negative_control_infallible.schway")
 	}
 	if failsRelaySummary != infallibleRelaySummary {
 		t.Fatalf("expected relay's interproceduralSummary to be field-for-field identical between the fails and infallible members (differing only in Fails/ForeignReach, which this table structurally never reads), got %+v vs %+v", failsRelaySummary, infallibleRelaySummary)
@@ -5339,7 +5339,7 @@ func TestInterproceduralLivenessNegativeControl(t *testing.T) {
 
 // TestInterproceduralLivenessMatchArmRegression is Task 2(c)'s D-08-28.5
 // regression coverage (recommended, explicitly NOT gate-blocking, per
-// match_arm_call.lang's own header): a match-bodied function calling the
+// match_arm_call.schway's own header): a match-bodied function calling the
 // same callee from both arms checks exactly as clean as an equivalent
 // straight-line program calling that callee once. D-07-28's own guard was
 // about call-graph EDGE DISCOVERY (is a call inside a match arm enumerated
@@ -5348,10 +5348,10 @@ func TestInterproceduralLivenessNegativeControl(t *testing.T) {
 // arms uniformly -- this test records that fact under test, it does not
 // assert a new gate this plan's success criteria require.
 func TestInterproceduralLivenessMatchArmRegression(t *testing.T) {
-	matchSource := readPhase08Fixture(t, "match_arm_call.lang")
+	matchSource := readPhase08Fixture(t, "match_arm_call.schway")
 	matchResult := Program(mustParseProgram(t, matchSource))
 	if len(matchResult.Diagnostics) != 0 {
-		t.Fatalf("expected match_arm_call.lang to check clean, got %+v", matchResult.Diagnostics)
+		t.Fatalf("expected match_arm_call.schway to check clean, got %+v", matchResult.Diagnostics)
 	}
 
 	straightLineSource := []byte(`module phase08.match_arm_call_straight_line
@@ -5402,7 +5402,7 @@ func splitCalleeFieldDetail(detail string) (calleeID, field string, ok bool) {
 
 // TestInterproceduralDisclosedFieldSet is Task 3's D-08-26 machine-assertion
 // of criterion 4's REFUSAL half: table-driven over every testdata/phase08
-// fixture plus testdata/phase07/relay_escort_witness.lang, it installs
+// fixture plus testdata/phase07/relay_escort_witness.schway, it installs
 // interproceduralConsultObserved, runs check.Program, and asserts (a) the
 // recorded per-callee field set is a subset of exactly {"return.mode",
 // "parameters[0].mode"} -- the derivation must consult no other signature
@@ -5419,17 +5419,17 @@ func splitCalleeFieldDetail(detail string) (calleeID, field string, ok bool) {
 // cause 3); the ACCEPTED-program half is met by THIS TEST ALONE, by no
 // shipped runtime artifact -- protocol.ExplainSummary needs a diagnostic to
 // expand, internal/compiler/cache is structurally incapable of holding a
-// verdict, and a sibling lang.*/1 document contradicts
+// verdict, and a sibling schway.*/1 document contradicts
 // protocol.InterfaceSummary's own recorded anti-pattern. Whether that half
 // should become a runtime artifact is on the mid-phase gate's agenda.
 func TestInterproceduralDisclosedFieldSet(t *testing.T) {
 	defer func() { interproceduralConsultObserved = nil }()
 
-	paths, err := filepath.Glob("../../../testdata/phase08/*.lang")
+	paths, err := filepath.Glob("../../../testdata/phase08/*.schway")
 	if err != nil {
 		t.Fatalf("glob testdata/phase08: %v", err)
 	}
-	paths = append(paths, "../../../testdata/phase07/relay_escort_witness.lang")
+	paths = append(paths, "../../../testdata/phase07/relay_escort_witness.schway")
 	sort.Strings(paths)
 	if len(paths) == 0 {
 		t.Fatal("expected at least one fixture")

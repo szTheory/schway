@@ -9,13 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/debugmap"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/debugmap"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // This file is deliberately `package session` (internal), unlike every
@@ -38,7 +38,7 @@ func spanPtr(start, end int) *diagnostic.Span {
 // --- Task 1: schema minting over a real fixture -----------------------
 
 func TestExplainSummarySchemaIsMinted(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.schway")
 	diagID := firstDiagnosticID(t, path)
 
 	result, err := ExplainCommandFile(path, diagID, 0)
@@ -87,7 +87,7 @@ func TestExplainSummarySchemaIsMinted(t *testing.T) {
 // operational failure carrying explain.diagnostic_not_found, never a panic
 // or fabricated graph.
 func TestExplainDiagnosticNotFoundIsOperational(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.schway")
 	result, err := ExplainCommandFile(path, "diagnostic:does-not-exist", 0)
 	if err != nil {
 		t.Fatalf("ExplainCommandFile returned Go error: %v", err)
@@ -102,10 +102,10 @@ func TestExplainDiagnosticNotFoundIsOperational(t *testing.T) {
 
 // --- Task 1: peer-re-derived function attribution (D-13-14/15/22/23) ----
 
-// explainRealFunctionTable parses and checks a real .lang fixture, returning
+// explainRealFunctionTable parses and checks a real .schway fixture, returning
 // the real explainFunctionTable buildExplainFunctionTable derives from it
 // (four real functions with real, non-overlapping spans for
-// explain_three_function_chain.lang) alongside the raw parsed ast.Program,
+// explain_three_function_chain.schway) alongside the raw parsed ast.Program,
 // which callers use to write their OWN independent test-side resolution
 // (D-13-23) rather than reusing anything production-side.
 func explainRealFunctionTable(t *testing.T, path string) (explainFunctionTable, ast.Program) {
@@ -171,7 +171,7 @@ func testResolveFunctionOverAST(program ast.Program, span *diagnostic.Span) (str
 // against testResolveFunctionOverAST's independently-written resolver, not
 // a read-back of the production node itself.
 func TestExplainFunctionAttribution(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.schway")
 	table, astProgram := explainRealFunctionTable(t, path)
 
 	names := []string{"leaf", "decoy", "relay", "caller"}
@@ -240,7 +240,7 @@ func TestExplainFunctionAttribution(t *testing.T) {
 // with Span == nil emits NO function field and availability: not_captured,
 // never a guessed function from a sibling or the root.
 func TestExplainNilSpanOmitsFunction(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.schway")
 	table, _ := explainRealFunctionTable(t, path)
 
 	root := diagnostic.Diagnostic{
@@ -273,7 +273,7 @@ func TestExplainNilSpanOmitsFunction(t *testing.T) {
 }
 
 // TestExplainFunctionIdentitySurvivesReorder is D-13-23's discriminating
-// mutation: explain_three_function_chain_reordered.lang declares the SAME
+// mutation: explain_three_function_chain_reordered.schway declares the SAME
 // four functions in a different source order, so every byte offset shifts.
 // A cause built from each fixture's own real inner span for the SAME
 // function name must resolve to that SAME function_name in both fixtures,
@@ -281,8 +281,8 @@ func TestExplainNilSpanOmitsFunction(t *testing.T) {
 // hardcodes a position (e.g. "the first function", "the root's function")
 // instead of genuinely resolving from the span.
 func TestExplainFunctionIdentitySurvivesReorder(t *testing.T) {
-	originalPath := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
-	reorderedPath := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain_reordered.lang")
+	originalPath := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.schway")
+	reorderedPath := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain_reordered.schway")
 	originalTable, _ := explainRealFunctionTable(t, originalPath)
 	reorderedTable, _ := explainRealFunctionTable(t, reorderedPath)
 
@@ -515,28 +515,28 @@ func TestExplainEdgeKindVocabularyIsClosed(t *testing.T) {
 // this literal map -- if ANY entry changes, that is a semantic change to
 // published output the D-13-20 observation, not prediction, must catch.
 var wantExplainEdgeKindsBeforeGuard = map[string][]string{
-	"phase2/ability_shapes.lang|diagnostic:7da7df4418c3945f03ab2d82":                  {"caused_by", "caused_by"},
-	"phase2/ability_shapes.lang|diagnostic:a474f48a5b33d6af23a50c7c":                  {"caused_by", "caused_by"},
-	"phase2/ability_shapes.lang|diagnostic:cacea129ffee380f1f344fb9":                  {"caused_by", "caused_by"},
-	"phase2/implicit_noncopy.lang|diagnostic:040662ef397be67eebb23003":                {"caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase2/move_while_borrowed.lang|diagnostic:3c53a97b806dac0a128d2902":             {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase2/reborrow_while_moved.lang|diagnostic:eeddc92047e60cb51c3fd65a":            {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase2/use_after_move.lang|diagnostic:26c8fdff5f83afd58fb43905":                  {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase3/branch_one_arm_shared_reject.lang|diagnostic:56f0f78afd023dba87d78a24":    {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase3/exclusive_exclusive_reject.lang|diagnostic:6a3d8582000b05e32a575ebf":      {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase3/exclusive_move_reject.lang|diagnostic:8038bd1955c8b4cbd98b445d":           {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
-	"phase3/shared_exclusive_reject.lang|diagnostic:2ac14b431c0d5a98db75e10d":         {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase2/ability_shapes.schway|diagnostic:7da7df4418c3945f03ab2d82":                  {"caused_by", "caused_by"},
+	"phase2/ability_shapes.schway|diagnostic:a474f48a5b33d6af23a50c7c":                  {"caused_by", "caused_by"},
+	"phase2/ability_shapes.schway|diagnostic:cacea129ffee380f1f344fb9":                  {"caused_by", "caused_by"},
+	"phase2/implicit_noncopy.schway|diagnostic:040662ef397be67eebb23003":                {"caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase2/move_while_borrowed.schway|diagnostic:3c53a97b806dac0a128d2902":             {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase2/reborrow_while_moved.schway|diagnostic:eeddc92047e60cb51c3fd65a":            {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase2/use_after_move.schway|diagnostic:26c8fdff5f83afd58fb43905":                  {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/branch_one_arm_shared_reject.schway|diagnostic:56f0f78afd023dba87d78a24":    {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/exclusive_exclusive_reject.schway|diagnostic:6a3d8582000b05e32a575ebf":      {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/exclusive_move_reject.schway|diagnostic:8038bd1955c8b4cbd98b445d":           {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase3/shared_exclusive_reject.schway|diagnostic:2ac14b431c0d5a98db75e10d":         {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
 	// 13-05 Task 1/3 (D-13-09a): re-pinned. syntax.fallible_call_not_consumed
 	// now builds via diagnostic.ErrorWithRepairs unconditionally (schema
-	// lang.diagnostic/0 -> /1), which churns this diagnostic's ID; edge
+	// schway.diagnostic/0 -> /1), which churns this diagnostic's ID; edge
 	// kinds are unaffected (still zero edges -- this diagnostic carries no
 	// Causes, only a wrap_call_in_try Repair, and Repairs never produce
 	// explain edges).
-	"phase4/fallible_call_unconsumed.lang|diagnostic:7bbbfdcb7eed322ff4e695ca":        {},
-	"phase4/foreign_call_target_not_foreign.lang|diagnostic:8ee0be5e21030f21f990f9f6": {"caused_by"},
-	"phase4/foreign_policy_value_injection.lang|diagnostic:204a40c7d8537f0809622fbb":  {},
-	"phase4/foreign_unwind_undeclared.lang|diagnostic:e9e51b10ac76db2d660d791b":       {"caused_by", "caused_by"},
-	"phase5/explain_use_after_move.lang|diagnostic:d8b679b47be2fa6555514f78":          {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
+	"phase4/fallible_call_unconsumed.schway|diagnostic:7bbbfdcb7eed322ff4e695ca":        {},
+	"phase4/foreign_call_target_not_foreign.schway|diagnostic:8ee0be5e21030f21f990f9f6": {"caused_by"},
+	"phase4/foreign_policy_value_injection.schway|diagnostic:204a40c7d8537f0809622fbb":  {},
+	"phase4/foreign_unwind_undeclared.schway|diagnostic:e9e51b10ac76db2d660d791b":       {"caused_by", "caused_by"},
+	"phase5/explain_use_after_move.schway|diagnostic:d8b679b47be2fa6555514f78":          {"caused_by", "caused_by", "caused_by", "caused_by", "caused_by"},
 }
 
 // TestExplainEdgeKindsAreRecordedForGuardComparison is D-13-20's decision
@@ -546,9 +546,9 @@ var wantExplainEdgeKindsBeforeGuard = map[string][]string{
 // baseline captured before Task 3's guard landed. Run again after the
 // guard lands (this same test, unchanged), its pass/fail IS the D-13-20
 // observation: if it still passes, zero edge kinds flipped on unchanged
-// single-function input and ExplainSchema stays at lang.explain/0; if it
+// single-function input and ExplainSchema stays at schway.explain/0; if it
 // fails, the SUMMARY must record exactly what changed and ExplainSchema
-// must bump to lang.explain/1 in the same commit as the guard (never
+// must bump to schway.explain/1 in the same commit as the guard (never
 // silently).
 func TestExplainEdgeKindsAreRecordedForGuardComparison(t *testing.T) {
 	got := map[string][]string{}
@@ -581,7 +581,7 @@ func TestExplainEdgeKindsAreRecordedForGuardComparison(t *testing.T) {
 			t.Fatalf("baseline entry %q missing from the current corpus run", key)
 		}
 		if fmt.Sprint(gotKinds) != fmt.Sprint(wantKinds) {
-			t.Fatalf("D-13-20 OBSERVATION: edge kinds changed for %s: got %v, want (pre-guard baseline) %v -- this is a semantic change to published output; ExplainSchema must bump to lang.explain/1 in the same commit as the guard, and the SUMMARY must name this exact change", key, gotKinds, wantKinds)
+			t.Fatalf("D-13-20 OBSERVATION: edge kinds changed for %s: got %v, want (pre-guard baseline) %v -- this is a semantic change to published output; ExplainSchema must bump to schway.explain/1 in the same commit as the guard, and the SUMMARY must name this exact change", key, gotKinds, wantKinds)
 		}
 	}
 }
@@ -740,7 +740,7 @@ func findExplainFunction(t *testing.T, table explainFunctionTable, name string) 
 //     the guard's same-function_id requirement, so cause 4 is NOT narrowed
 //     by it.
 func TestNarrowsFunctionScopeGuard(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.schway")
 	table, _ := explainRealFunctionTable(t, path)
 	relay := findExplainFunction(t, table, "relay")
 	leaf := findExplainFunction(t, table, "leaf")
@@ -794,7 +794,7 @@ func TestNarrowsFunctionScopeGuard(t *testing.T) {
 // matchInjectSkippingGuard/TestInjectorMarkerCountGuardIsNotInert's
 // established shape, session_phase6_injectors.go).
 func TestNarrowsFunctionScopeGuardIsNotInert(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.schway")
 	table, _ := explainRealFunctionTable(t, path)
 	relay := findExplainFunction(t, table, "relay")
 	leaf := findExplainFunction(t, table, "leaf")
@@ -864,7 +864,7 @@ func TestExplainTruncationCodesStable(t *testing.T) {
 		}
 	}
 
-	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.lang")
+	path := testsupport.ProjectPath("testdata", "phase13", "explain_three_function_chain.schway")
 	diagID := firstDiagnosticID(t, path)
 	result, err := ExplainCommandFile(path, diagID, 0)
 	if err != nil {
@@ -885,7 +885,7 @@ func TestExplainTruncationCodesStable(t *testing.T) {
 
 // --- shared fixture-corpus helpers --------------------------------------
 
-// rejectingFixtures returns the absolute paths of every .lang fixture under
+// rejectingFixtures returns the absolute paths of every .schway fixture under
 // testdata/<dir> that produces at least one diagnostic at parse or check
 // time, discovered dynamically rather than hand-listed -- the standing
 // project rule (adopted after three gate failures shared one shape) that a
@@ -894,7 +894,7 @@ func TestExplainTruncationCodesStable(t *testing.T) {
 func rejectingFixtures(t *testing.T, dir string) []string {
 	t.Helper()
 	root := testsupport.ProjectPath("testdata", dir)
-	matches, err := filepath.Glob(filepath.Join(root, "*.lang"))
+	matches, err := filepath.Glob(filepath.Join(root, "*.schway"))
 	if err != nil {
 		t.Fatalf("glob %s: %v", root, err)
 	}

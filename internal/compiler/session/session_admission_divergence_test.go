@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // This file mechanizes the divergence 11-MIDPHASE-GATE.md flagged "for human
-// review": `lang check` reports status:invalid with core.origin_omitted for
-// testdata/phase11/multi_function_gate_corpus.lang, while session.Check +
+// review": `schway check` reports status:invalid with core.origin_omitted for
+// testdata/phase11/multi_function_gate_corpus.schway, while session.Check +
 // corevalidate.Validate -- the admission path every Phase 5/6+ production
 // run site, every cgen/gate test, and every verify-corpus lane actually uses
 // -- accepts the identical program cleanly.
@@ -64,19 +64,19 @@ type admissionDivergence struct {
 // knownAdmissionDivergences is the committed, exhaustive table. Sorted by
 // fixture path; keep it that way.
 var knownAdmissionDivergences = []admissionDivergence{
-	{"testdata/phase07/clean_but_unpublishable.lang", "core.origin_omitted", "intended: the fixture's own name states it -- it checks clean but is unpublishable"},
-	{"testdata/phase10/compose_per_path_borrow_callee_accept.lang", "core.origin_omitted", "incidental: a positive compose-lane fixture whose callee derives a per-path borrow origin"},
-	{"testdata/phase11/multi_function_gate_corpus.lang", "core.origin_omitted", "incidental: the fixture 11-MIDPHASE-GATE.md flagged; `touch` is modeled on phase5/restrict_borrow.lang below"},
-	{"testdata/phase3/public_view_mixed_access.lang", "core.origin_access_mismatch", "intended: a declared-vs-derived access conflict fixture"},
-	{"testdata/phase3/public_view_multi_arm_access_conflict.lang", "core.origin_omitted", "intended: a multi-arm access conflict fixture"},
-	{"testdata/phase3/public_view_multi_arm_omitted.lang", "core.origin_omitted", "intended: an omitted-origin fixture"},
-	{"testdata/phase3/public_view_omitted.lang", "core.origin_omitted", "intended: an omitted-origin fixture"},
-	{"testdata/phase4/foreign_origin_omitted.lang", "core.foreign_origin_omitted", "intended: the foreign-declaration half of the same publication gate"},
-	{"testdata/phase5/false_restrict_hoist.lang", "core.origin_omitted", "incidental: a positive restrict-hoist fixture that derives a borrow origin"},
-	{"testdata/phase5/restrict_borrow.lang", "core.origin_omitted", "incidental: the already-shipped Phase 5 fixture, proving the divergence predates Phase 11 by six phases"},
+	{"testdata/phase07/clean_but_unpublishable.schway", "core.origin_omitted", "intended: the fixture's own name states it -- it checks clean but is unpublishable"},
+	{"testdata/phase10/compose_per_path_borrow_callee_accept.schway", "core.origin_omitted", "incidental: a positive compose-lane fixture whose callee derives a per-path borrow origin"},
+	{"testdata/phase11/multi_function_gate_corpus.schway", "core.origin_omitted", "incidental: the fixture 11-MIDPHASE-GATE.md flagged; `touch` is modeled on phase5/restrict_borrow.schway below"},
+	{"testdata/phase3/public_view_mixed_access.schway", "core.origin_access_mismatch", "intended: a declared-vs-derived access conflict fixture"},
+	{"testdata/phase3/public_view_multi_arm_access_conflict.schway", "core.origin_omitted", "intended: a multi-arm access conflict fixture"},
+	{"testdata/phase3/public_view_multi_arm_omitted.schway", "core.origin_omitted", "intended: an omitted-origin fixture"},
+	{"testdata/phase3/public_view_omitted.schway", "core.origin_omitted", "intended: an omitted-origin fixture"},
+	{"testdata/phase4/foreign_origin_omitted.schway", "core.foreign_origin_omitted", "intended: the foreign-declaration half of the same publication gate"},
+	{"testdata/phase5/false_restrict_hoist.schway", "core.origin_omitted", "incidental: a positive restrict-hoist fixture that derives a borrow origin"},
+	{"testdata/phase5/restrict_borrow.schway", "core.origin_omitted", "incidental: the already-shipped Phase 5 fixture, proving the divergence predates Phase 11 by six phases"},
 }
 
-// TestCLICheckAdmissionDivergenceIsExactlyKnown sweeps every committed .lang
+// TestCLICheckAdmissionDivergenceIsExactlyKnown sweeps every committed .schway
 // fixture through both admission surfaces and asserts the divergence set
 // equals knownAdmissionDivergences exactly.
 func TestCLICheckAdmissionDivergenceIsExactlyKnown(t *testing.T) {
@@ -120,7 +120,7 @@ func TestCLICheckAdmissionDivergenceIsExactlyKnown(t *testing.T) {
 	}
 }
 
-// sweepAdmissionSurfaces walks every committed .lang fixture and returns the
+// sweepAdmissionSurfaces walks every committed .schway fixture and returns the
 // fixtures accepted by session.Check+corevalidate.Validate but refused by
 // session.CheckCommandFile (the CLI `check` command's own surface), mapped to
 // the diagnostic code the CLI answered with, plus a count of fixtures both
@@ -138,7 +138,7 @@ func sweepAdmissionSurfaces(t *testing.T) (map[string]string, int) {
 		if walkErr != nil {
 			return walkErr
 		}
-		if info.IsDir() || !strings.HasSuffix(path, ".lang") {
+		if info.IsDir() || !strings.HasSuffix(path, ".schway") {
 			return nil
 		}
 		walked++
@@ -186,7 +186,7 @@ func sweepAdmissionSurfaces(t *testing.T) (map[string]string, int) {
 		t.Fatalf("walk %s: %v", root, err)
 	}
 	if walked == 0 {
-		t.Fatalf("anti-vacuity: found no .lang fixtures under %s", root)
+		t.Fatalf("anti-vacuity: found no .schway fixtures under %s", root)
 	}
 	return observed, bothAccepted
 }

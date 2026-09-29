@@ -7,19 +7,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
-// falseRestrictHoistPath is testdata/phase5/false_restrict_hoist.lang's
+// falseRestrictHoistPath is testdata/phase5/false_restrict_hoist.schway's
 // stable path, read once per test.
 func falseRestrictHoistPath() string {
-	return testsupport.ProjectPath("testdata", "phase5", "false_restrict_hoist.lang")
+	return testsupport.ProjectPath("testdata", "phase5", "false_restrict_hoist.schway")
 }
 
 func falseRestrictHoistSource(t *testing.T) []byte {
@@ -32,7 +32,7 @@ func falseRestrictHoistSource(t *testing.T) []byte {
 }
 
 // TestFalseRestrictFixtureIsCleanUnmutated is D-05-05's own Task 1
-// falsifier: testdata/phase5/false_restrict_hoist.lang must be accepted by
+// falsifier: testdata/phase5/false_restrict_hoist.schway must be accepted by
 // check/corevalidate unmutated, must derive ZERO alias facts (a proven-
 // exclusive parameter would make an injected restrict TRUE rather than
 // FALSE), must carry the by-pointer marker exactly once (the mutation
@@ -78,7 +78,7 @@ func TestFalseRestrictFixtureIsCleanUnmutated(t *testing.T) {
 	if count := strings.Count(nativeResult.CSource, "*restrict "); count != 0 {
 		t.Fatalf("want zero `*restrict` qualifiers in unmutated generated C, got %d:\n%s", count, nativeResult.CSource)
 	}
-	if count := strings.Count(nativeResult.CSource, "/* lang:by-pointer-param */"); count != 1 {
+	if count := strings.Count(nativeResult.CSource, "/* schway:by-pointer-param */"); count != 1 {
 		t.Fatalf("want exactly one by-pointer-param marker, got %d:\n%s", count, nativeResult.CSource)
 	}
 
@@ -101,7 +101,7 @@ func TestFalseRestrictFixtureIsCleanUnmutated(t *testing.T) {
 }
 
 // TestAliasFactMutationIsDetected proves control:alias.false_no_alias's
-// happy path: injecting restrict onto false_restrict_hoist.lang's unproven
+// happy path: injecting restrict onto false_restrict_hoist.schway's unproven
 // parameter produces D-05-05's exact signature, interpreter == -O0 != -O3,
 // and the runner records at least one optimization attempt plus the clang
 // identity string used to build it.
@@ -134,10 +134,10 @@ func TestAliasMutationMarkerCountGuard(t *testing.T) {
 
 	t.Run("two markers", func(t *testing.T) {
 		source := strings.Join([]string{
-			"static unsigned char touch(unsigned char *param) { /* lang:by-pointer-param */",
+			"static unsigned char touch(unsigned char *param) { /* schway:by-pointer-param */",
 			"  return *param;",
 			"}",
-			"static unsigned char touch2(unsigned char *param) { /* lang:by-pointer-param */",
+			"static unsigned char touch2(unsigned char *param) { /* schway:by-pointer-param */",
 			"  return *param;",
 			"}",
 		}, "\n")
@@ -161,13 +161,13 @@ func assertAliasControlInvalid(t *testing.T, err error, wantSubstring string) {
 }
 
 // TestAliasMutationWithoutDivergenceFailsTheLane is D-05-05's load-bearing
-// negative case: restrict_borrow.lang's parameter IS proven exclusive (a
+// negative case: restrict_borrow.schway's parameter IS proven exclusive (a
 // legitimately-justified restrict, no dormant alias-probe parameter), so
 // running it through the SAME runner produces no divergence at all —
 // VerifyAliasFalseNoAlias must FAIL the lane, naming the control as
 // unexercised, rather than silently pass.
 func TestAliasMutationWithoutDivergenceFailsTheLane(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang")
+	path := testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway")
 	runner := session.NewAliasFactMutationRunner(native.DefaultRunner(), path)
 	err := session.VerifyAliasFalseNoAlias(context.Background(), runner)
 	if err != nil {
@@ -277,7 +277,7 @@ func TestEveryMutationMovesItsClaimedAxis(t *testing.T) {
 func TestAssertMutationMovesAnAxisFailsOnAMislabeledAxis(t *testing.T) {
 	mutation := session.NAT03Mutation{
 		ControlID:     session.ControlAliasFalseNoAlias,
-		CorpusProgram: "testdata/phase5/false_restrict_hoist.lang",
+		CorpusProgram: "testdata/phase5/false_restrict_hoist.schway",
 		ExpectedAxis:  session.AxisResourceLedger, // wrong on purpose: the real axis is axis:terminal-outcome
 		Subjected:     true,
 	}
@@ -311,11 +311,11 @@ func TestNAT03TableCitesPending0508FixturePaths(t *testing.T) {
 	rows := session.NAT03Mutations()
 	found := false
 	for _, row := range rows {
-		if row.CorpusProgram == "testdata/phase5/allocator_mismatch.lang" {
+		if row.CorpusProgram == "testdata/phase5/allocator_mismatch.schway" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatal("expected a row citing testdata/phase5/allocator_mismatch.lang")
+		t.Fatal("expected a row citing testdata/phase5/allocator_mismatch.schway")
 	}
 }

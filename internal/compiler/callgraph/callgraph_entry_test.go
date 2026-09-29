@@ -10,33 +10,33 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestEntryFunctionResolvesUniqueRoot proves EntryFunction resolves the
 // single in-degree-zero function on both a real multi-function tracer
 // fixture and a real, deeper acyclic diamond corpus, with no error.
 func TestEntryFunctionResolvesUniqueRoot(t *testing.T) {
-	basic := checkedPhase11Fixture(t, "multi_function_entry_basic.lang")
+	basic := checkedPhase11Fixture(t, "multi_function_entry_basic.schway")
 	entry, err := callgraph.EntryFunction(basic)
 	if err != nil {
-		t.Fatalf("multi_function_entry_basic.lang: unexpected error: %v", err)
+		t.Fatalf("multi_function_entry_basic.schway: unexpected error: %v", err)
 	}
 	if entry.Name != "main" {
-		t.Fatalf("multi_function_entry_basic.lang: want entry %q, got %q", "main", entry.Name)
+		t.Fatalf("multi_function_entry_basic.schway: want entry %q, got %q", "main", entry.Name)
 	}
 
-	diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.lang")
+	diamond := checkedPhase07Fixture(t, "deep_diamond_acyclic.schway")
 	diamondEntry, err := callgraph.EntryFunction(diamond)
 	if err != nil {
-		t.Fatalf("deep_diamond_acyclic.lang: unexpected error: %v", err)
+		t.Fatalf("deep_diamond_acyclic.schway: unexpected error: %v", err)
 	}
 	if diamondEntry.Name != "top4" {
-		t.Fatalf("deep_diamond_acyclic.lang: want entry %q, got %q", "top4", diamondEntry.Name)
+		t.Fatalf("deep_diamond_acyclic.schway: want entry %q, got %q", "top4", diamondEntry.Name)
 	}
 }
 
@@ -129,7 +129,7 @@ func TestEntryFunctionRefusesEmptyProgram(t *testing.T) {
 
 // TestEntryFunctionEmitsUnreachableFunctions is the adopted contract for a
 // declared-but-uncalled, non-entry function (D-11-05, this phase's PLAN.md
-// must_haves): multi_function_unreachable.lang declares `main` (calls
+// must_haves): multi_function_unreachable.schway declares `main` (calls
 // `callee`), `callee`, and `orphan` (declared, never called, never
 // exported). `orphan`'s own in-degree is zero too, exactly like main's --
 // EntryFunction's contract, stated on its own doc comment, is that main's
@@ -138,7 +138,7 @@ func TestEntryFunctionRefusesEmptyProgram(t *testing.T) {
 // NOT change entry resolution or (see cgen_program_test.go's own
 // end-to-end fixtures) the execution document.
 func TestEntryFunctionEmitsUnreachableFunctions(t *testing.T) {
-	program := checkedPhase11Fixture(t, "multi_function_unreachable.lang")
+	program := checkedPhase11Fixture(t, "multi_function_unreachable.schway")
 	entry, err := callgraph.EntryFunction(program)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -158,7 +158,7 @@ func TestEntryFunctionEmitsUnreachableFunctions(t *testing.T) {
 }
 
 // TestEntryFunctionAgreesWithSingleExport (D-11-06) iterates every real
-// .lang fixture under testdata/phase1 through testdata/phase07 whose
+// .schway fixture under testdata/phase1 through testdata/phase07 whose
 // single declared export names a function, and asserts
 // EntryFunction(program).Name equals that export's own name -- the
 // independent re-derivation that lets this phase avoid adding an
@@ -173,7 +173,7 @@ func TestEntryFunctionAgreesWithSingleExport(t *testing.T) {
 			t.Fatalf("read %s: %v", dir, err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 				continue
 			}
 			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))

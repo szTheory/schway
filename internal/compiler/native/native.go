@@ -20,8 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
 const MaxStreamBytes = 64 * 1024
@@ -670,8 +670,8 @@ func (r Runner) CompileConformanceUnit(parent context.Context, source string) er
 	}
 	defer os.RemoveAll(directory)
 
-	sourcePath := filepath.Join(directory, "lang_foreign_conformance.c")
-	objectPath := filepath.Join(directory, "lang_foreign_conformance.o")
+	sourcePath := filepath.Join(directory, "schway_foreign_conformance.c")
+	objectPath := filepath.Join(directory, "schway_foreign_conformance.o")
 	if err := os.WriteFile(sourcePath, []byte(source), 0o600); err != nil {
 		return &ToolError{Code: "native.temp_failed", Err: err}
 	}

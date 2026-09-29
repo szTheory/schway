@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 func TestPhase18ResultArmValuePlace(t *testing.T) {
-	path := filepath.Join("..", "..", "..", "testdata", "phase18", "result_computed_match.lang")
+	path := filepath.Join("..", "..", "..", "testdata", "phase18", "result_computed_match.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

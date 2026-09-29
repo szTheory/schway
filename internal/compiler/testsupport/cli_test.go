@@ -12,13 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestCLIOutputContract(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	fixture := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	for _, arguments := range [][]string{
 		{"--json", "check", fixture},
 		{"check", "--json", fixture},
@@ -44,8 +44,8 @@ func TestCLIOutputContract(t *testing.T) {
 
 func TestCLIExitTaxonomy(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	valid := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
-	invalid := testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang")
+	valid := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
+	invalid := testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.schway")
 
 	cases := []struct {
 		name string
@@ -55,7 +55,7 @@ func TestCLIExitTaxonomy(t *testing.T) {
 	}{
 		{name: "success", args: []string{"check", valid}, exit: 0},
 		{name: "invalid source", args: []string{"check", invalid}, exit: 2},
-		{name: "operational read", args: []string{"check", filepath.Join(t.TempDir(), "absent.lang")}, exit: 3},
+		{name: "operational read", args: []string{"check", filepath.Join(t.TempDir(), "absent.schway")}, exit: 3},
 		{name: "operational tool", env: []string{"PATH=" + t.TempDir()}, args: []string{"run", "--engine=native", valid}, exit: 3},
 		{name: "usage", args: []string{"unknown"}, exit: 64},
 	}
@@ -85,7 +85,7 @@ func TestCLISourceByteLimitBoundary(t *testing.T) {
 		{name: "one over", size: 1<<20 + 1, exit: 2, code: "syntax.input_limit"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "input.lang")
+			path := filepath.Join(t.TempDir(), "input.schway")
 			source := append(append([]byte(nil), prefix...), bytes.Repeat([]byte{'x'}, test.size-len(prefix))...)
 			if err := os.WriteFile(path, source, 0o600); err != nil {
 				t.Fatal(err)
@@ -111,7 +111,7 @@ func TestCLICheckWorkScalesWithSource(t *testing.T) {
 			fmt.Fprintf(&source, "  let value%d = code\n", index)
 		}
 		source.WriteString("  code\n}\n")
-		path := filepath.Join(t.TempDir(), fmt.Sprintf("scale-%d.lang", count))
+		path := filepath.Join(t.TempDir(), fmt.Sprintf("scale-%d.schway", count))
 		if err := os.WriteFile(path, []byte(source.String()), 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -135,7 +135,7 @@ func TestCLICheckRejectsWorkBeyondLimit(t *testing.T) {
 		fmt.Fprintf(&source, "  let value%d = code\n", index)
 	}
 	source.WriteString("  code\n}\n")
-	path := filepath.Join(t.TempDir(), "over-work.lang")
+	path := filepath.Join(t.TempDir(), "over-work.schway")
 	if err := os.WriteFile(path, []byte(source.String()), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -151,9 +151,9 @@ func TestHumanJSONIdentityParity(t *testing.T) {
 		name string
 		args []string
 	}{
-		{name: "check success", args: []string{"check", testsupport.ProjectPath("testdata", "phase1", "toggle.lang")}},
-		{name: "check invalid", args: []string{"check", testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang")}},
-		{name: "interpreter", args: []string{"run", "--engine=interpreter", testsupport.ProjectPath("testdata", "phase1", "toggle.lang")}},
+		{name: "check success", args: []string{"check", testsupport.ProjectPath("testdata", "phase1", "toggle.schway")}},
+		{name: "check invalid", args: []string{"check", testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.schway")}},
+		{name: "interpreter", args: []string{"run", "--engine=interpreter", testsupport.ProjectPath("testdata", "phase1", "toggle.schway")}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			human := testsupport.RunCLI(t, binary, nil, test.args...)
@@ -191,7 +191,7 @@ func TestHumanJSONIdentityParity(t *testing.T) {
 		})
 	}
 
-	jsonFailure := testsupport.RunCLI(t, binary, os.Environ(), "--json", "check", testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"))
+	jsonFailure := testsupport.RunCLI(t, binary, os.Environ(), "--json", "check", testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.schway"))
 	if jsonFailure.Exit != 2 || len(jsonFailure.Stderr) != 0 || len(jsonFailure.Stdout) == 0 {
 		t.Fatalf("JSON failure stream contract: %+v", jsonFailure)
 	}
@@ -200,8 +200,8 @@ func TestHumanJSONIdentityParity(t *testing.T) {
 func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
 	for _, fixture := range []string{
-		testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"),
-		testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang"),
+		testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.schway"),
+		testsupport.ProjectPath("testdata", "phase2", "use_after_move.schway"),
 	} {
 		human := testsupport.RunCLI(t, binary, nil, "check", fixture)
 		machine := testsupport.RunCLI(t, binary, nil, "--json", "check", fixture)
@@ -212,7 +212,7 @@ func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
 		if err := json.Unmarshal(machine.Stdout, &decoded); err != nil {
 			t.Fatal(err)
 		}
-		if decoded.Schema != "lang.command/1" || len(decoded.Diagnostics) != 1 {
+		if decoded.Schema != "schway.command/1" || len(decoded.Diagnostics) != 1 {
 			t.Fatalf("command envelope or diagnostic missing: %+v", decoded)
 		}
 		if !strings.Contains(string(human.Stderr), decoded.ID) || !strings.Contains(string(human.Stderr), decoded.Diagnostics[0].ID) {
@@ -220,12 +220,12 @@ func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
 		}
 	}
 
-	// 03-02-03 (D-02-09/D-07): testdata/phase2/ability_shapes.lang now
+	// 03-02-03 (D-02-09/D-07): testdata/phase2/ability_shapes.schway now
 	// carries one check.unexecutable_shape diagnostic per function (three
 	// total, not one), so it is verified separately from the single-
 	// diagnostic loop above — but the same human/JSON identity-parity
 	// contract must hold for every one of them.
-	fixture := testsupport.ProjectPath("testdata", "phase2", "ability_shapes.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase2", "ability_shapes.schway")
 	human := testsupport.RunCLI(t, binary, nil, "check", fixture)
 	machine := testsupport.RunCLI(t, binary, nil, "--json", "check", fixture)
 	if human.Exit != 2 || machine.Exit != 2 || len(human.Stdout) != 0 || len(machine.Stderr) != 0 {
@@ -235,7 +235,7 @@ func TestHumanJSONMixedDiagnosticVersionParity(t *testing.T) {
 	if err := json.Unmarshal(machine.Stdout, &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.Schema != "lang.command/1" || len(decoded.Diagnostics) != 3 {
+	if decoded.Schema != "schway.command/1" || len(decoded.Diagnostics) != 3 {
 		t.Fatalf("command envelope or diagnostics missing: %+v", decoded)
 	}
 	if !strings.Contains(string(human.Stderr), decoded.ID) {
@@ -301,10 +301,10 @@ func TestVerifyCorpusSourceByteLimitBoundary(t *testing.T) {
 		size  int
 		exit  int
 	}{
-		{name: "base exact", phase: "phase1", file: "toggle.lang", size: 1 << 20, exit: 0},
-		{name: "base over", phase: "phase1", file: "toggle.lang", size: 1<<20 + 1, exit: 2},
-		{name: "owned exact", phase: "phase2", file: "owned_transfer.lang", size: 1 << 20, exit: 0},
-		{name: "owned over", phase: "phase2", file: "owned_transfer.lang", size: 1<<20 + 1, exit: 2},
+		{name: "base exact", phase: "phase1", file: "toggle.schway", size: 1 << 20, exit: 0},
+		{name: "base over", phase: "phase1", file: "toggle.schway", size: 1<<20 + 1, exit: 2},
+		{name: "owned exact", phase: "phase2", file: "owned_transfer.schway", size: 1 << 20, exit: 0},
+		{name: "owned over", phase: "phase2", file: "owned_transfer.schway", size: 1<<20 + 1, exit: 2},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			corpus := t.TempDir()
@@ -314,7 +314,7 @@ func TestVerifyCorpusSourceByteLimitBoundary(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, entry := range entries {
-				if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+				if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 					continue
 				}
 				data, readErr := os.ReadFile(filepath.Join(sourceCorpus, entry.Name()))
@@ -353,7 +353,7 @@ func TestVerifyCorpusSourceByteLimitBoundary(t *testing.T) {
 // other than a byte string to hash.
 func TestInterfaceCheckIsBodyBlindCLI(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view.schway")
 	dir := t.TempDir()
 	summaryPath := filepath.Join(dir, "summary.json")
 	corePath := filepath.Join(dir, "core.json")
@@ -454,7 +454,7 @@ func TestInterfaceCheckIsBodyBlindCLI(t *testing.T) {
 // observable through the real binary, not only the in-process package tests.
 func TestMixedAccessChainRejectedThroughCLI(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_mixed_access.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_mixed_access.schway")
 	summaryPath := filepath.Join(t.TempDir(), "summary.json")
 
 	result := testsupport.RunCLI(t, binary, nil, "--json", "interface", "export", fixture, summaryPath)
@@ -480,7 +480,7 @@ func TestMixedAccessChainRejectedThroughCLI(t *testing.T) {
 // must not write the output summary file at all.
 func TestOmittedOriginRejectedThroughCLI(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_omitted.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_omitted.schway")
 	summaryPath := filepath.Join(t.TempDir(), "summary.json")
 
 	result := testsupport.RunCLI(t, binary, nil, "--json", "interface", "export", fixture, summaryPath)
@@ -510,7 +510,7 @@ func TestOmittedOriginRejectedThroughCLI(t *testing.T) {
 // TestOmittedOriginRejectedThroughCLI's single-arm shape.
 func TestMultiArmOmittedOriginRejectedThroughCLI(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_multi_arm_omitted.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase3", "public_view_multi_arm_omitted.schway")
 	summaryPath := filepath.Join(t.TempDir(), "summary.json")
 
 	result := testsupport.RunCLI(t, binary, nil, "--json", "interface", "export", fixture, summaryPath)
@@ -534,12 +534,12 @@ func TestMultiArmOmittedOriginRejectedThroughCLI(t *testing.T) {
 
 // TestBranchFixturesThroughCLI is 03-03-02's D-11 shipped-binary proof: the
 // edge-specific accept/reject fixture pair is driven through the real
-// `./cmd/lang` binary's JSON projection (not only the in-process harness),
+// `./cmd/schway` binary's JSON projection (not only the in-process harness),
 // asserting the exact exit codes and diagnostic codes the CLI reports.
 func TestBranchFixturesThroughCLI(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	accept := testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_accept.lang")
-	reject := testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_reject.lang")
+	accept := testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_accept.schway")
+	reject := testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_reject.schway")
 
 	acceptResult := testsupport.RunCLI(t, binary, nil, "--json", "check", accept)
 	if acceptResult.Exit != 0 {
@@ -601,7 +601,7 @@ func TestVerifyPhase3CLI(t *testing.T) {
 // guess.
 func TestDebugMapCLIAvailability(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	fixture := testsupport.ProjectPath("testdata", "phase3", "borrowed_view.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase3", "borrowed_view.schway")
 
 	full := testsupport.RunCLI(t, binary, nil, "--json", "debug-map", fixture)
 	if full.Exit != 0 || len(full.Stderr) != 0 {

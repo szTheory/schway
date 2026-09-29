@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // TestForeignRetainedSymbolResolves is task 05-08-02's resolution proof
@@ -18,9 +18,9 @@ import (
 // resolves through the SAME ForeignSourcePathForSymbol switch every other
 // frozen TU resolves through.
 func TestForeignRetainedSymbolResolves(t *testing.T) {
-	path, ok := ForeignSourcePathForSymbol("lang_retained_touch")
+	path, ok := ForeignSourcePathForSymbol("schway_retained_touch")
 	if !ok {
-		t.Fatal("lang_retained_touch did not resolve")
+		t.Fatal("schway_retained_touch did not resolve")
 	}
 	if path != ForeignRetainedSourcePath() {
 		t.Fatalf("resolved path %q does not match ForeignRetainedSourcePath() %q", path, ForeignRetainedSourcePath())
@@ -29,7 +29,7 @@ func TestForeignRetainedSymbolResolves(t *testing.T) {
 
 func compileRetainedPointerFixture(t *testing.T) string {
 	t.Helper()
-	source, err := os.ReadFile(filepath.Join(projectRoot(), "testdata", "phase5", "retained_pointer.lang"))
+	source, err := os.ReadFile(filepath.Join(projectRoot(), "testdata", "phase5", "retained_pointer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

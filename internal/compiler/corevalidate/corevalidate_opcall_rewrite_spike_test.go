@@ -3,8 +3,8 @@ package corevalidate_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
 // findFirstOpCallForTest returns the (functionIndex, operationIndex) of the
@@ -23,7 +23,7 @@ func findFirstOpCallForTest(t *testing.T, program core.Program) (functionIndex, 
 			}
 		}
 	}
-	t.Fatal("expected testdata/phase07/deep_diamond_acyclic.lang to contain at least one core.OpCall operation")
+	t.Fatal("expected testdata/phase07/deep_diamond_acyclic.schway to contain at least one core.OpCall operation")
 	return 0, 0
 }
 
@@ -40,7 +40,7 @@ func findFirstOpCallForTest(t *testing.T, program core.Program) (functionIndex, 
 // disjunction -- an either/or assertion would be satisfied whichever way
 // corevalidate answers, which is the vacuity this spike exists to avoid.
 func TestQ01CoreLevelOpCallToOpCopyRewrite(t *testing.T) {
-	program := loadCheckedProgram(t, "phase07", "deep_diamond_acyclic.lang")
+	program := loadCheckedProgram(t, "phase07", "deep_diamond_acyclic.schway")
 
 	fi, oi := findFirstOpCallForTest(t, program)
 	original := program.Functions[fi].Linear.Operations[oi]
@@ -82,7 +82,7 @@ func TestQ01CoreLevelOpCallToOpCopyRewrite(t *testing.T) {
 // change alone, never to collateral damage from the rewrite mechanism
 // itself.
 func TestQ01RewrittenProgramStillChecks(t *testing.T) {
-	program := loadCheckedProgram(t, "phase07", "deep_diamond_acyclic.lang")
+	program := loadCheckedProgram(t, "phase07", "deep_diamond_acyclic.schway")
 	fi, oi := findFirstOpCallForTest(t, program)
 
 	rewritten := cloneCheckedProgramForTest(t, program)

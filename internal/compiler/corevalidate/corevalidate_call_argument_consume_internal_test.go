@@ -3,7 +3,7 @@ package corevalidate
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // TestConsumeCallArgumentDerivesFromOwnShapeNotRecordedAbilities is 07-11

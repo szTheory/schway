@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	compilerast "github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	compilerast "github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func fabricatedSet(mask int) abilitySet {

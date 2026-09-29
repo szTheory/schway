@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
-// readPhase12Fixture reads a testdata/phase12/*.lang fixture by name, the
+// readPhase12Fixture reads a testdata/phase12/*.schway fixture by name, the
 // package check internal-test sibling of readTestdataFixture (which is
 // hardcoded to testdata/phase3) -- Phase 12's fixtures live in their own
 // directory.
@@ -37,11 +37,11 @@ func TestPayloadPatternRefusals(t *testing.T) {
 		fixture      string
 		expectedCode string
 	}{
-		{name: "arity mismatch", fixture: "payload_arity_mismatch.lang", expectedCode: "check.payload_arity_mismatch"},
-		{name: "binder on nullary alternative", fixture: "payload_binder_on_nullary.lang", expectedCode: "check.binder_on_nullary_alternative"},
-		{name: "missing payload binder", fixture: "payload_missing_binder.lang", expectedCode: "check.missing_payload_binder"},
-		{name: "tracer fixture stays clean", fixture: "payload_tracer.lang", expectedCode: ""},
-		{name: "duplicate payload type", fixture: "payload_duplicate_payload_type.lang", expectedCode: "check.duplicate_payload_type"},
+		{name: "arity mismatch", fixture: "payload_arity_mismatch.schway", expectedCode: "check.payload_arity_mismatch"},
+		{name: "binder on nullary alternative", fixture: "payload_binder_on_nullary.schway", expectedCode: "check.binder_on_nullary_alternative"},
+		{name: "missing payload binder", fixture: "payload_missing_binder.schway", expectedCode: "check.missing_payload_binder"},
+		{name: "tracer fixture stays clean", fixture: "payload_tracer.schway", expectedCode: ""},
+		{name: "duplicate payload type", fixture: "payload_duplicate_payload_type.schway", expectedCode: "check.duplicate_payload_type"},
 	}
 
 	for _, tc := range cases {
@@ -73,7 +73,7 @@ func TestPayloadPatternRefusals(t *testing.T) {
 // what stops the refusal from reading as a blanket payload ban.
 func TestResourcePayloadRefused(t *testing.T) {
 	t.Run("resource-carrying payload refused", func(t *testing.T) {
-		source := readPhase12Fixture(t, "payload_resource_refused.lang")
+		source := readPhase12Fixture(t, "payload_resource_refused.schway")
 		program := mustParseProgram(t, source)
 		result := Program(program)
 		if len(result.Diagnostics) != 1 {
@@ -142,8 +142,8 @@ func TestDuplicatePayloadTypeRefused(t *testing.T) {
 		source       string
 		expectedCode string
 	}{
-		{name: "colliding payload types refused", fixture: "payload_duplicate_payload_type.lang", expectedCode: "check.duplicate_payload_type"},
-		{name: "tracer fixture stays clean (distinct payload types)", fixture: "payload_tracer.lang", expectedCode: ""},
+		{name: "colliding payload types refused", fixture: "payload_duplicate_payload_type.schway", expectedCode: "check.duplicate_payload_type"},
+		{name: "tracer fixture stays clean (distinct payload types)", fixture: "payload_tracer.schway", expectedCode: ""},
 		{
 			name: "three nullary alternatives on one data type stay clean",
 			source: `module result.duplicate_payload_type_nullary_companion
@@ -289,7 +289,7 @@ fn identity(result: Outcome) -> Outcome {
 // verdict, per D-12-29's "derived independently by check and
 // corevalidate."
 func TestPayloadDropObligation(t *testing.T) {
-	source := readPhase12Fixture(t, "payload_drop_obligation.lang")
+	source := readPhase12Fixture(t, "payload_drop_obligation.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	if len(result.Diagnostics) != 0 {
@@ -322,7 +322,7 @@ func TestPayloadDropObligation(t *testing.T) {
 // D-12-14's "bind MOVES": an in-test core-level mutation (per the plan's
 // own "a negative fixture OR an in-test core-level edit" allowance --
 // there is no bare-value-arm SOURCE SYNTAX that could author a second read
-// of an already-destructured place, so a .lang fixture cannot express
+// of an already-destructured place, so a .schway fixture cannot express
 // this). Starting from the tracer's own CHECKED, corevalidate-accepted
 // program, the "Ok" arm's OpConstructPayload is mutated to read the
 // SCRUTINEE ALIAS PLACE directly (the place the arm's own
@@ -331,7 +331,7 @@ func TestPayloadDropObligation(t *testing.T) {
 // than consuming it, this would still validate; corevalidate must refuse
 // it, proving the destructure genuinely moved the alias away.
 func TestPayloadBindConsumes(t *testing.T) {
-	source := readPhase12Fixture(t, "payload_tracer.lang")
+	source := readPhase12Fixture(t, "payload_tracer.schway")
 	program := mustParseProgram(t, source)
 	result := Program(program)
 	if len(result.Diagnostics) != 0 {

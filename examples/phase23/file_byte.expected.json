@@ -1,10 +1,10 @@
 {
-  "schema": "lang.phase23-file-byte-expected/1",
+  "schema": "schway.phase23-file-byte-expected/1",
   "cases": [
     {"id": "byte-41", "file_bytes_hex": "41", "exit_code": 0, "stdout": "65\n", "stderr": ""},
     {"id": "byte-42", "file_bytes_hex": "42", "exit_code": 0, "stdout": "66\n", "stderr": ""},
-    {"id": "empty-acquire-error", "file_bytes_hex": "", "exit_code": 65, "stdout": "", "stderr": "lang_file_byte_acquire: EmptyFile\n"},
-    {"id": "two-byte-acquire-error", "file_bytes_hex": "4142", "exit_code": 65, "stdout": "", "stderr": "lang_file_byte_acquire: FileTooLong\n"},
-    {"id": "unsupported-byte-use-error", "file_bytes_hex": "43", "exit_code": 65, "stdout": "", "stderr": "lang_file_byte_use: UnsupportedByte\n"}
+    {"id": "empty-acquire-error", "file_bytes_hex": "", "exit_code": 65, "stdout": "", "stderr": "schway_file_byte_acquire: EmptyFile\n"},
+    {"id": "two-byte-acquire-error", "file_bytes_hex": "4142", "exit_code": 65, "stdout": "", "stderr": "schway_file_byte_acquire: FileTooLong\n"},
+    {"id": "unsupported-byte-use-error", "file_bytes_hex": "43", "exit_code": 65, "stdout": "", "stderr": "schway_file_byte_use: UnsupportedByte\n"}
   ]
 }

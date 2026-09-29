@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/measure"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/measure"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 // deterministicBudgetFixture makes the budget audit's machine identity an

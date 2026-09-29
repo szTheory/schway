@@ -24,8 +24,8 @@
  * that is D-12-38's decisive control (TestPayloadSlotSwapMutationKilled), a
  * different artifact entirely.
  */
-#ifndef LANG_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
-#define LANG_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
+#ifndef SCHWAY_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
+#define SCHWAY_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
 
 typedef struct PayloadProbe_payload {
   unsigned char tag;
@@ -33,4 +33,4 @@ typedef struct PayloadProbe_payload {
   unsigned char field_First;
 } PayloadProbe_payload;
 
-#endif /* LANG_PAYLOAD_LAYOUT_PROBE_PRIVATE_H */
+#endif /* SCHWAY_PAYLOAD_LAYOUT_PROBE_PRIVATE_H */

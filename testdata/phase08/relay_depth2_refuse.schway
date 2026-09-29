@@ -1,0 +1,48 @@
+// Phase 08 Task 2(a) -- composition depth >= 2 (D-08-28.2), REFUSING member.
+// Twin of relay_depth2_accept.schway. Three functions, caller -> relay -> leaf:
+// leaf declares a shared-borrow return of its own parameter
+// (`-> borrow(buffer) Buffer`); relay locally borrows ITS OWN parameter
+// first, then forwards that borrow to leaf and returns leaf's result
+// (`-> borrow(buffer) Buffer` too, satisfying originvalidate's own
+// origin-recomputation walk, which is transparent through an OpCall and
+// needs a LOCAL borrow hop somewhere in the causal chain back to relay's own
+// parameter -- forwarding the bare parameter directly, without relay's own
+// local borrow, makes relay unpublishable/uncallable, core.origin_understated,
+// a wholly separate, pre-existing gate this fixture must route around, not a
+// Phase 08 concern); caller runs the exact Pattern A shape (twin_a_refuse.schway)
+// against relay, not leaf.
+//
+// A depth-1-only corpus cannot distinguish "the derivation genuinely reads a
+// callee's declared signature" from "it happens to work for the one-hop
+// case" -- this is the direct generalization of Phase 07's own finding that
+// a straight chain could not kill the highest-value cycle mutation and
+// diamonds were required (07-06-SUMMARY.md). Expected: `check` refuses with
+// check.interprocedural_loan_liveness, and the emitted cause 2
+// (loan_extended_by_call) names RELAY's own function ID -- not leaf's --
+// proving the caller's admission consulted relay's OWN interprocedural
+// summary entry (built from relay's own declared core.FunctionSignature),
+// never reaching into leaf's signature or body at all.
+
+module phase08.relay_depth2_refuse
+
+export {
+  fn caller
+}
+
+fn leaf(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}
+
+fn relay(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let forwarded = leaf(borrowed)
+  forwarded
+}
+
+fn caller(buffer: Buffer) -> borrow(buffer) Buffer {
+  let borrowed = borrow buffer
+  let aliased = relay(borrowed)
+  let delivered = take buffer
+  aliased
+}

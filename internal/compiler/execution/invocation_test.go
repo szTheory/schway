@@ -3,7 +3,7 @@ package execution_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
 func TestInvocationGrammar(t *testing.T) {

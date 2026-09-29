@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // seedEntryInvalidError is WR-01's fail-closed refusal for a multi-function

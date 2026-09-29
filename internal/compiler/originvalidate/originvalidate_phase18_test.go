@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func phase18ComputedPayloadFunction(returnInSiblingArm bool) core.Function {
@@ -86,7 +86,7 @@ func TestPhase18ComputedPayloadCannotBorrowSiblingArmOrigin(t *testing.T) {
 }
 
 func TestPhase18OriginPeerAcceptsComputedSource(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "computed_match.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "computed_match.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestPhase18OriginPeerAcceptsComputedSource(t *testing.T) {
 // first admits the source, then changes only the published contract and asks
 // the origin peer to recompute it from the core facts.
 func TestPhase18OriginPeerRejectsForgedComputedOriginAfterCheckerAdmission(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

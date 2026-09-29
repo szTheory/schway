@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
 // cloneCheckedProgramForTest deep-copies a core.Program via a JSON
@@ -37,7 +37,7 @@ func findFunctionIDByName(t *testing.T, program core.Program, name string) strin
 	return ""
 }
 
-// callBasicVariant returns testdata/phase07/call_basic.lang's checked
+// callBasicVariant returns testdata/phase07/call_basic.schway's checked
 // program, optionally with `identity` (the callee `main` calls) carrying a
 // declared ForeignContract it did not have before -- a signature-affecting
 // change to the callee's OWN published facts, which corevalidate's peer
@@ -56,7 +56,7 @@ func findFunctionIDByName(t *testing.T, program core.Program, name string) strin
 // ClosureDigest preimage) differ between variants.
 func callBasicVariant(t *testing.T, calleeHasDeclaredForeign bool) (program core.Program, mainID, identityID string) {
 	t.Helper()
-	program = loadCheckedProgram(t, "phase07", "call_basic.lang")
+	program = loadCheckedProgram(t, "phase07", "call_basic.schway")
 	mainID = findFunctionIDByName(t, program, "main")
 	identityID = findFunctionIDByName(t, program, "identity")
 	if calleeHasDeclaredForeign {
@@ -116,7 +116,7 @@ func TestPeerClosureDigestEmptyCalleesMutationKilled(t *testing.T) {
 // corevalidate.SetClosureDigestDiscoveryOrderForTest(true) engaged,
 // chainPeerClosureDigests chains in plain program.Functions declaration
 // order instead of checkCallGraphAcyclic's own proven-correct postorder.
-// call_basic.lang declares `identity` (the callee) BEFORE `main` (the
+// call_basic.schway declares `identity` (the callee) BEFORE `main` (the
 // caller), so this particular fixture cannot observe the mutation (the
 // declaration order happens to already be callee-before-caller) -- the
 // assertion instead directly compares the correctly- and
@@ -129,7 +129,7 @@ func TestPeerClosureDigestEmptyCalleesMutationKilled(t *testing.T) {
 func TestPeerClosureDigestDiscoveryOrderMutationKilled(t *testing.T) {
 	program, mainID, identityID := callBasicVariant(t, false)
 	// Reorder so main (the caller) is declared BEFORE identity (the
-	// callee) -- call_basic.lang itself already declares identity first,
+	// callee) -- call_basic.schway itself already declares identity first,
 	// so this reorder is what makes the declaration-order fault
 	// observable at all.
 	reordered := cloneCheckedProgramForTest(t, program)

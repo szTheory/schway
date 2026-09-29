@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/codename-lang-phase2.XXXXXX")
+verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase2.XXXXXX")
 trap 'rm -rf "$verify_tmp"' EXIT HUP INT TERM
 export GOCACHE="$verify_tmp/go-cache"
 
@@ -9,9 +9,9 @@ sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestToggle
 go test ./...
 go test -race ./...
 go vet ./...
-go build -o "$verify_tmp/lang" ./cmd/lang
-"$verify_tmp/lang" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
-"$verify_tmp/lang" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
+go build -o "$verify_tmp/schway" ./cmd/schway
+"$verify_tmp/schway" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
+"$verify_tmp/schway" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
 grep -q 'control:backend.runtime_causality' "$verify_tmp/phase2.json" || { echo "phase2 verify: backend runtime causality control missing" >&2; exit 1; }
 
 observe() {
@@ -22,7 +22,7 @@ observe() {
 	last=
 	index=0
 	while [ "$index" -lt 20 ]; do
-		last=$(LANG_OBSERVE_TIMING=1 "$verify_tmp/lang" --json "$@")
+		last=$(SCHWAY_OBSERVE_TIMING=1 "$verify_tmp/schway" --json "$@")
 		elapsed=$(printf '%s\n' "$last" | sed -n 's/.*"elapsed_ns":\([0-9][0-9]*\).*/\1/p')
 		[ -n "$elapsed" ] && [ "$elapsed" -gt 0 ] || { echo "phase2 verify: $name produced no timing" >&2; exit 1; }
 		printf '%s\n' "$elapsed" >>"$samples"
@@ -39,10 +39,10 @@ observe() {
 	printf '%s warm_samples=20 p50_ns=%s p95_ns=%s min_ns=%s max_ns=%s output_bytes=%s work=%s peak_rss=unavailable\n' "$name" "$p50" "$p95" "$minimum" "$maximum" "$bytes" "$work"
 }
 
-observe format format --check testdata/phase2/owned_transfer.lang
-observe check check testdata/phase2/owned_transfer.lang
-observe interpreter run --engine=interpreter testdata/phase2/owned_transfer.lang
-observe native run --engine=native testdata/phase2/owned_transfer.lang
+observe format format --check testdata/phase2/owned_transfer.schway
+observe check check testdata/phase2/owned_transfer.schway
+observe interpreter run --engine=interpreter testdata/phase2/owned_transfer.schway
+observe native run --engine=native testdata/phase2/owned_transfer.schway
 observe full_verify verify testdata/phase2
 
 cat "$verify_tmp/phase1.json"

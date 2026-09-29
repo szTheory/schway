@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // restrictReadonlyProbe is deliberately hand-written C17 rather than emitted

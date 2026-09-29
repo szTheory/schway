@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPhase5RequiredControlsMatchExportedConstants guards against literal
@@ -145,7 +145,7 @@ func phase5ExtractFunctionBody(t *testing.T, source, name string) string {
 
 // TestSanitizeLaneNotInEditOrCheck asserts D-05-17's cost-placement rule
 // at the CLI dispatch layer: the `check`/`format` commands (session.Check/
-// session.CheckCommandFile, wired from cmd/lang/main.go's runCheck/
+// session.CheckCommandFile, wired from cmd/schway/main.go's runCheck/
 // runFormat -- the project's own edit-loop pipeline) never reference the
 // sanitizer lane or the Phase 5 gate that invokes it. `runVerify` itself
 // (the `verify`/`release` cost lane) is exempt -- it is the plan's own
@@ -153,7 +153,7 @@ func phase5ExtractFunctionBody(t *testing.T, source, name string) string {
 // release" placement -- so this test scopes to the check/format function
 // bodies specifically, not the whole file.
 func TestSanitizeLaneNotInEditOrCheck(t *testing.T) {
-	mainSource, err := os.ReadFile(testsupport.ProjectPath("cmd", "lang", "main.go"))
+	mainSource, err := os.ReadFile(testsupport.ProjectPath("cmd", "schway", "main.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestSanitizeLaneNotInEditOrCheck(t *testing.T) {
 		body := phase5ExtractFunctionBody(t, string(mainSource), editFunction)
 		for _, forbidden := range []string{"VerifyPhase5SanitizeLane", "VerifyPhase5ControlsAndWork"} {
 			if strings.Contains(body, forbidden) {
-				t.Fatalf("cmd/lang/main.go's %s must not reference %s -- the sanitizer lane is verify/release-only", editFunction, forbidden)
+				t.Fatalf("cmd/schway/main.go's %s must not reference %s -- the sanitizer lane is verify/release-only", editFunction, forbidden)
 			}
 		}
 	}
@@ -208,7 +208,7 @@ func TestNAT03MutationsCiteExistingPrograms(t *testing.T) {
 // TestNAT03SanitizerRowMovesItsClaimedAxis closes D-05-22 for
 // control:native.sanitize.allocator_mismatch: the single surviving
 // axis-movement law, session.AssertMutationMovesAnAxis, succeeds against
-// testdata/phase5/allocator_mismatch.lang directly -- there is no
+// testdata/phase5/allocator_mismatch.schway directly -- there is no
 // dispatcher in front of it any more (EVD-05, plan 14-08 collapse).
 func TestNAT03SanitizerRowMovesItsClaimedAxis(t *testing.T) {
 	var target *session.NAT03Mutation

@@ -1,0 +1,29 @@
+// 07-09: the standing negative control for 07-VERIFICATION.md's single
+// FAILED must-have truth and 07-REVIEW.md's CR-01 (CRITICAL/BLOCKER).
+// Before this plan, this program was admitted with `status: pass` and
+// zero diagnostics: `check.resolveCallBinding` copied the CALLER's own
+// argument TypeID into the OpCall target and never consulted the
+// callee's declared parameter type, so a `Buffer` argument was silently
+// accepted by a callee declared to take a `Byte`.
+//
+// The refusal this fixture proves is a TYPE CONTRACT refusal, not a
+// callability refusal (`identity` is perfectly callable -- it is
+// exported-safe and carries no borrowed return) and not a cycle refusal
+// (the call graph `main -> identity` is acyclic). This fixture must
+// never be added to any list that expects a clean check, in the same
+// way `cycle_self.schway` never is.
+
+module phase07.call_type_mismatch
+
+export {
+  fn main
+}
+
+fn identity(value: Byte) -> Byte {
+  value
+}
+
+fn main(buffer: Buffer) -> Buffer {
+  let result = identity(buffer)
+  result
+}

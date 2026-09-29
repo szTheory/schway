@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/codename-lang-phase3.XXXXXX")
+verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase3.XXXXXX")
 trap 'rm -rf "$verify_tmp"' EXIT HUP INT TERM
 export GOCACHE="$verify_tmp/go-cache"
 
@@ -9,10 +9,10 @@ sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestToggle
 go test ./...
 go test -race ./...
 go vet ./...
-go build -o "$verify_tmp/lang" ./cmd/lang
-"$verify_tmp/lang" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
-"$verify_tmp/lang" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
-"$verify_tmp/lang" --json verify testdata/phase3 >"$verify_tmp/phase3.json"
+go build -o "$verify_tmp/schway" ./cmd/schway
+"$verify_tmp/schway" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
+"$verify_tmp/schway" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
+"$verify_tmp/schway" --json verify testdata/phase3 >"$verify_tmp/phase3.json"
 grep -q 'control:backend.runtime_causality' "$verify_tmp/phase2.json" || { echo "phase3 verify: phase2 backend runtime causality control missing" >&2; exit 1; }
 for control in \
 	control:ownership.exclusive_conflict \
@@ -45,7 +45,7 @@ observe() {
 	last=
 	index=0
 	while [ "$index" -lt 20 ]; do
-		last=$(LANG_OBSERVE_TIMING=1 "$verify_tmp/lang" --json "$@")
+		last=$(SCHWAY_OBSERVE_TIMING=1 "$verify_tmp/schway" --json "$@")
 		elapsed=$(printf '%s\n' "$last" | sed -n 's/.*"elapsed_ns":\([0-9][0-9]*\).*/\1/p')
 		[ -n "$elapsed" ] && [ "$elapsed" -gt 0 ] || { echo "phase3 verify: $name produced no timing" >&2; exit 1; }
 		printf '%s\n' "$elapsed" >>"$samples"
@@ -62,10 +62,10 @@ observe() {
 	printf '%s warm_samples=20 p50_ns=%s p95_ns=%s min_ns=%s max_ns=%s output_bytes=%s work=%s peak_rss=unavailable\n' "$name" "$p50" "$p95" "$minimum" "$maximum" "$bytes" "$work"
 }
 
-observe format format --check testdata/phase3/borrowed_view.lang
-observe check check testdata/phase3/borrowed_view.lang
-observe interpreter run --engine=interpreter testdata/phase3/borrowed_view.lang
-observe native run --engine=native testdata/phase3/borrowed_view.lang
+observe format format --check testdata/phase3/borrowed_view.schway
+observe check check testdata/phase3/borrowed_view.schway
+observe interpreter run --engine=interpreter testdata/phase3/borrowed_view.schway
+observe native run --engine=native testdata/phase3/borrowed_view.schway
 observe full_verify verify testdata/phase3
 
 cat "$verify_tmp/phase1.json"

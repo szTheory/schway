@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func writeExecutableFixture(t *testing.T, dir, content string) string {
 	t.Helper()
-	path := filepath.Join(dir, "fixture-clang.sh")
+	path := filepath.Join(dir, "fixture-cschway.sh")
 	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func baseArtifactSpec(t *testing.T) ArtifactSpec {
 func TestCacheKeyCoversEveryDeclaredInput(t *testing.T) {
 	names := DeclaredInputNames()
 	want := []string{
-		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
+		"fixture_source", "build_flags", "cschway_identity", "runtime_identity",
 		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
 		"cgen_source",
 	}
@@ -101,7 +101,7 @@ func TestCacheKeyCoversEveryDeclaredInput(t *testing.T) {
 		{"build_flags", func(t *testing.T, spec *ArtifactSpec) {
 			spec.BuildFlags = "-O3 target=x86_64-apple-darwin"
 		}},
-		{"clang_identity", func(t *testing.T, spec *ArtifactSpec) {
+		{"cschway_identity", func(t *testing.T, spec *ArtifactSpec) {
 			spec.ClangPath = writeExecutableFixture(t, t.TempDir(), "#!/bin/sh\necho fixture clang version 2.0\n")
 		}},
 		{"runtime_identity", func(t *testing.T, spec *ArtifactSpec) {
@@ -413,7 +413,7 @@ func cacheTransitiveImportsViolation(t *testing.T, forbidden []string) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), cacheGoListDepsTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/cache")
+	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/szTheory/schway/internal/compiler/cache")
 	cmd.Dir = testsupport.ProjectPath()
 	stdout := &cacheBoundedGoListWriter{}
 	cmd.Stdout = stdout
@@ -443,7 +443,7 @@ func cacheTransitiveImportsViolation(t *testing.T, forbidden []string) string {
 func TestDeclaredInputNamesStableAndNoInterproceduralImport(t *testing.T) {
 	names := DeclaredInputNames()
 	originalSeven := []string{
-		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
+		"fixture_source", "build_flags", "cschway_identity", "runtime_identity",
 		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
 	}
 	if len(names) < len(originalSeven) {
@@ -480,7 +480,7 @@ func TestDeclaredInputNamesStableAndNoInterproceduralImport(t *testing.T) {
 // found anything.
 func TestCacheDirectImportGuardCanFail(t *testing.T) {
 	dir := t.TempDir()
-	content := "package cache\n\nimport (\n\t\"github.com/codename-lang/lang/internal/compiler/core\"\n)\n\nvar _ = core.Program{}\n"
+	content := "package cache\n\nimport (\n\t\"github.com/szTheory/schway/internal/compiler/core\"\n)\n\nvar _ = core.Program{}\n"
 	if err := os.WriteFile(filepath.Join(dir, "synthetic.go"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -494,8 +494,8 @@ func TestCacheDirectImportGuardCanFail(t *testing.T) {
 // internal/compiler/originvalidate must be flagged.
 func TestCacheTransitiveImportGuardCanFail(t *testing.T) {
 	synthetic := []string{
-		"github.com/codename-lang/lang/internal/compiler/cache",
-		"github.com/codename-lang/lang/internal/compiler/originvalidate",
+		"github.com/szTheory/schway/internal/compiler/cache",
+		"github.com/szTheory/schway/internal/compiler/originvalidate",
 	}
 	if got := cacheTransitiveImportViolation(synthetic, cacheForbiddenImports); got == "" {
 		t.Fatal("expected the synthetic dependency list's forbidden originvalidate entry to be flagged")

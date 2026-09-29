@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // ---------------------------------------------------------------------
@@ -31,7 +31,7 @@ import (
 
 // ===== Task 2: does deferring move_while_borrowed change use_after_move? =====
 
-// moveWhileBorrowedFixtures is the ENUMERATED set of every `.lang` fixture
+// moveWhileBorrowedFixtures is the ENUMERATED set of every `.schway` fixture
 // under testdata/ where `ownership.move_while_borrowed` currently fires,
 // named by the function and parameter the diagnostic's own cause chain
 // blames. TestUseAfterMoveUnchangedByDeferredMoveWhileBorrowed both
@@ -39,8 +39,8 @@ import (
 // which independently re-derives the same set from the corpus dynamically)
 // and applies the positive per-fixture property to each entry.
 //
-// Plan 09-09 (D-09-08's authorized deletion): the phase08/twin_b_accept.lang
-// and phase08/twin_b_refuse.lang entries plan 09-07 recorded here are
+// Plan 09-09 (D-09-08's authorized deletion): the phase08/twin_b_accept.schway
+// and phase08/twin_b_refuse.schway entries plan 09-07 recorded here are
 // REMOVED. Both fixtures now report check.interprocedural_loan_liveness
 // instead of ownership.move_while_borrowed (see
 // check_ordering_stability_test.go's twin_b_accept/refuse baseline comment
@@ -53,10 +53,10 @@ var moveWhileBorrowedFixtures = []struct {
 	function  string
 	parameter string
 }{
-	{"phase2/move_while_borrowed.lang", "relay", "buffer"},
-	{"phase2/reborrow_while_moved.lang", "relay", "code"},
-	{"phase3/branch_one_arm_shared_reject.lang", "choose", "flag"},
-	{"phase3/exclusive_move_reject.lang", "relay", "buffer"},
+	{"phase2/move_while_borrowed.schway", "relay", "buffer"},
+	{"phase2/reborrow_while_moved.schway", "relay", "code"},
+	{"phase3/branch_one_arm_shared_reject.schway", "choose", "flag"},
+	{"phase3/exclusive_move_reject.schway", "relay", "buffer"},
 }
 
 // linearBodiesOf returns every straight-line body a function declares: its
@@ -126,7 +126,7 @@ func testMoveWhileBorrowedCorpusIsExhaustive(t *testing.T) map[string]bool {
 	dirs := []string{"phase1", "phase2", "phase3", "phase4", "phase5", "phase6", "phase07", "phase08"}
 	var paths []string
 	for _, dir := range dirs {
-		matches, err := filepath.Glob(filepath.Join("../../../testdata", dir, "*.lang"))
+		matches, err := filepath.Glob(filepath.Join("../../../testdata", dir, "*.schway"))
 		if err != nil {
 			t.Fatalf("glob testdata/%s: %v", dir, err)
 		}
@@ -365,7 +365,7 @@ func max(a, b int) int {
 // and mentions NEITHER `activeLoans` NOR `loanUses`).
 func TestTimingIndependentOwnershipCodesFireFromPerBindingFacts(t *testing.T) {
 	t.Run("use_after_move fires on a real fixture", func(t *testing.T) {
-		source, err := os.ReadFile("../../../testdata/phase2/use_after_move.lang")
+		source, err := os.ReadFile("../../../testdata/phase2/use_after_move.schway")
 		if err != nil {
 			t.Fatalf("read fixture: %v", err)
 		}
@@ -375,7 +375,7 @@ func TestTimingIndependentOwnershipCodesFireFromPerBindingFacts(t *testing.T) {
 		}
 	})
 	t.Run("transfer_requires_take fires on a real fixture", func(t *testing.T) {
-		source, err := os.ReadFile("../../../testdata/phase2/implicit_noncopy.lang")
+		source, err := os.ReadFile("../../../testdata/phase2/implicit_noncopy.schway")
 		if err != nil {
 			t.Fatalf("read fixture: %v", err)
 		}

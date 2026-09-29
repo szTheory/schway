@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
 const Schema = execution.Schema0
@@ -423,7 +423,7 @@ const nonlocalExitDefectReason = "foreign nonlocal exit detected at process-root
 // liveResourcePlaces projects the live-tracking map into the acquisition's
 // own TARGET PLACE id, not its operation id -- the identifier convention
 // preserved by the historical native-emitter witness for its
-// lang_resource_ids array. This is a narrower, DIFFERENT convention than
+// schway_resource_ids array. This is a narrower, DIFFERENT convention than
 // liveResourceList's operation-id shape (used by every OTHER terminator
 // this phase), scoped only to the nonlocal-exit path this plan adds.
 func liveResourcePlaces(operations map[string]core.LinearOperation, live map[string]bool, order []string) []string {

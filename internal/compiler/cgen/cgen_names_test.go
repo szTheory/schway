@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // This file enforces the two properties that make the generated-C ordinary
 // identifier namespace closed (documented above matchFixedNames in cgen.go):
 //
-//	1. PREFIX CONFINEMENT — every allocated identifier lives in the "LANG_" or
-//	   "lang_value_" namespace and nowhere else.
+//	1. PREFIX CONFINEMENT — every allocated identifier lives in the "SCHWAY_" or
+//	   "schway_value_" namespace and nowhere else.
 //	2. HONEST RESERVATION — every fixed identifier the emitters write themselves
 //	   is in the emitter's reserved set.
 //
@@ -141,7 +141,7 @@ func sortedKeys(set map[string]bool) []string {
 // TestGeneratedIdentifierNamespacesStayConfined is the load-bearing enforcement
 // of the closure argument. It fails if an emitter starts writing a fixed
 // identifier that is neither reserved nor a known external C name (for example
-// a new helper local called lang_value_scratch), and it fails if any
+// a new helper local called schway_value_scratch), and it fails if any
 // source-derived identifier escapes the two confined namespaces.
 func TestGeneratedIdentifierNamespacesStayConfined(t *testing.T) {
 	tests := []struct {
@@ -158,21 +158,21 @@ func TestGeneratedIdentifierNamespacesStayConfined(t *testing.T) {
 			reserved: cgen.MatchFixedNames,
 			left:     "module a.one\n\nexport {\n  type Switch\n  fn toggle\n}\n\ndata Switch =\n  | Off\n  | On\n\nfn toggle(state: Switch) -> Switch {\n  match state {\n    Off => On\n    On => Off\n  }\n}\n",
 			right:    "module z.two\n\nexport {\n  type Fixture\n  fn convert\n}\n\ndata Fixture =\n  | Alpha\n  | Beta\n\nfn convert(item: Fixture) -> Fixture {\n  match item {\n    Alpha => Beta\n    Beta => Alpha\n  }\n}\n",
-			leftOnly: []string{"LANG_SWITCH", "LANG_SWITCH_LANG_OFF", "LANG_TOGGLE"},
+			leftOnly: []string{"SCHWAY_SWITCH", "SCHWAY_SWITCH_SCHWAY_OFF", "SCHWAY_TOGGLE"},
 		},
 		{
 			name:     "linear Buffer",
 			reserved: cgen.LinearFixedNames,
 			left:     "module owned.transfer\n\nexport {\n  fn relay\n}\n\nfn relay(buffer: Buffer) -> Buffer {\n  let delivered = take buffer\n  delivered\n}\n",
 			right:    "module owned.shipment\n\nexport {\n  fn dispatch\n}\n\nfn dispatch(cargo: Buffer) -> Buffer {\n  let handed = take cargo\n  handed\n}\n",
-			leftOnly: []string{"lang_value_buffer", "lang_value_delivered"},
+			leftOnly: []string{"schway_value_buffer", "schway_value_delivered"},
 		},
 		{
 			name:     "linear Byte",
 			reserved: cgen.LinearFixedNames,
 			left:     "module owned.copy\n\nexport {\n  fn retain\n}\n\nfn retain(code: Byte) -> Byte {\n  let kept = code\n  kept\n}\n",
 			right:    "module owned.hold\n\nexport {\n  fn preserve\n}\n\nfn preserve(digit: Byte) -> Byte {\n  let saved = digit\n  saved\n}\n",
-			leftOnly: []string{"lang_value_code", "lang_value_kept"},
+			leftOnly: []string{"schway_value_code", "schway_value_kept"},
 		},
 	}
 
@@ -226,14 +226,14 @@ func TestGeneratedIdentifierNamespacesStayConfined(t *testing.T) {
 				if fixed[identifier] || cExternalNames[identifier] {
 					continue
 				}
-				if strings.HasPrefix(identifier, "LANG_") || strings.HasPrefix(identifier, "lang_value_") {
+				if strings.HasPrefix(identifier, "SCHWAY_") || strings.HasPrefix(identifier, "schway_value_") {
 					continue
 				}
 				escaped = append(escaped, identifier)
 			}
 			if len(escaped) != 0 {
 				sort.Strings(escaped)
-				t.Errorf("source-derived identifiers escaped the LANG_/lang_value_ namespaces: %v", escaped)
+				t.Errorf("source-derived identifiers escaped the SCHWAY_/schway_value_ namespaces: %v", escaped)
 			}
 
 			t.Logf("fixed identifiers derived from generated output: %v", sortedKeys(fixed))
@@ -249,7 +249,7 @@ func TestGeneratedIdentifierNamespacesStayConfined(t *testing.T) {
 func TestReservedSetsCoverTheirOwnNamespace(t *testing.T) {
 	for _, group := range [][]string{cgen.MatchFixedNames, cgen.LinearFixedNames} {
 		for _, name := range group {
-			if strings.HasPrefix(name, "lang_value_") {
+			if strings.HasPrefix(name, "schway_value_") {
 				t.Errorf("fixed identifier %q sits in the cLocal namespace; rename it or the closure argument becomes reservation-only", name)
 			}
 		}
@@ -259,7 +259,7 @@ func TestReservedSetsCoverTheirOwnNamespace(t *testing.T) {
 // TestNativeIdentifiersRemainCollisionFree is the direct falsifier for D-06 /
 // D-02-05. C17 section 7.1.3 reserves to the implementation every ordinary
 // identifier that contains a double underscore anywhere, not only ones that
-// begin with one. A collision suffix spelled "__LANG_" would therefore hand
+// begin with one. A collision suffix spelled "__SCHWAY_" would therefore hand
 // out a reserved identifier on every actual collision. This test forces a
 // real collision (the preferred name is pre-registered as already used, and
 // is also present in the reserved set alongside every fixed name) and
@@ -288,21 +288,21 @@ func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
 // fails if cName stops uppercasing or loses its prefix, or if cLocal loses its
 // prefix, or if the collision suffix moves an identifier out of its namespace.
 func TestIdentifierPrefixInvariance(t *testing.T) {
-	namePattern := regexp.MustCompile(`^LANG_[A-Z0-9_]*$`)
-	localPattern := regexp.MustCompile(`^lang_value_[A-Za-z0-9_]*$`)
+	namePattern := regexp.MustCompile(`^SCHWAY_[A-Z0-9_]*$`)
+	localPattern := regexp.MustCompile(`^schway_value_[A-Za-z0-9_]*$`)
 
 	sources := []string{
 		"", "a", "A", "_", "0", "z9", "Switch", "switch", "main", "value", "hex",
-		"lang_value_x", "lang_events", "LANG_EVENT", "lang_write_bytes",
-		"α", "β", "日本語", "a b", "a-b", "a.b", "x__LANG_PLACE_1",
+		"schway_value_x", "schway_events", "SCHWAY_EVENT", "schway_write_bytes",
+		"α", "β", "日本語", "a b", "a-b", "a.b", "x__SCHWAY_PLACE_1",
 		"index", "data", "length", "encoded", "type_id", "function_id",
 	}
 	for _, source := range sources {
 		if got := cgen.CName(source); !namePattern.MatchString(got) {
-			t.Errorf("cName(%q) = %q, which breaks ^LANG_[A-Z0-9_]*$", source, got)
+			t.Errorf("cName(%q) = %q, which breaks ^SCHWAY_[A-Z0-9_]*$", source, got)
 		}
 		if got := cgen.CLocal(source); !localPattern.MatchString(got) {
-			t.Errorf("cLocal(%q) = %q, which breaks ^lang_value_[A-Za-z0-9_]*$", source, got)
+			t.Errorf("cLocal(%q) = %q, which breaks ^schway_value_[A-Za-z0-9_]*$", source, got)
 		}
 	}
 
@@ -331,7 +331,7 @@ func TestIdentifierPrefixInvariance(t *testing.T) {
 
 // TestMultiFunctionNameAllocation is D-11-08's own two-tier allocation
 // pin: on a real three-function program (testdata/phase11/
-// multi_function_unreachable.lang), (1) every global (function) name is
+// multi_function_unreachable.schway), (1) every global (function) name is
 // unique across functions, (2) the second and third functions' own local
 // place names carry NO "_2"/"_3" ordinal suffix (each function's own
 // cNames is FRESH, seeded with the reserved list plus every globally
@@ -339,7 +339,7 @@ func TestIdentifierPrefixInvariance(t *testing.T) {
 // no local name collides with any global name, and (4) re-emitting the
 // same program twice produces byte-identical C (determinism).
 func TestMultiFunctionNameAllocation(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_unreachable.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_unreachable.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,7 +363,7 @@ func TestMultiFunctionNameAllocation(t *testing.T) {
 		t.Fatalf("re-emitting the same program twice moved bytes:\nfirst:\n%s\nsecond:\n%s", first, second)
 	}
 
-	globalNamePattern := regexp.MustCompile(`static unsigned char (LANG_[A-Z0-9_]*)\(unsigned char, unsigned int\);`)
+	globalNamePattern := regexp.MustCompile(`static unsigned char (SCHWAY_[A-Z0-9_]*)\(unsigned char, unsigned int\);`)
 	globalMatches := globalNamePattern.FindAllStringSubmatch(first, -1)
 	if len(globalMatches) != 3 {
 		t.Fatalf("expected three function prototypes, got %d in:\n%s", len(globalMatches), first)
@@ -379,29 +379,29 @@ func TestMultiFunctionNameAllocation(t *testing.T) {
 
 	// (2) No local place name in any function's own definition carries an
 	// ordinal collision suffix: cNames.allocate's own suffix scheme is
-	// "_LANG_<CATEGORY>_<ordinal>" (cgen.go), so its absence on every
+	// "_SCHWAY_<CATEGORY>_<ordinal>" (cgen.go), so its absence on every
 	// function's parameter local proves each function's own allocator
 	// started fresh rather than continuing a shared counter.
-	if strings.Contains(first, "_LANG_PLACE_") {
+	if strings.Contains(first, "_SCHWAY_PLACE_") {
 		t.Fatalf("expected no place-category collision suffix across functions, got:\n%s", first)
 	}
-	definitionPattern := regexp.MustCompile(`static unsigned char LANG_[A-Z0-9_]*\(unsigned char (lang_value_[A-Za-z0-9_]*), unsigned int invocation_index\) \{`)
+	definitionPattern := regexp.MustCompile(`static unsigned char SCHWAY_[A-Z0-9_]*\(unsigned char (schway_value_[A-Za-z0-9_]*), unsigned int invocation_index\) \{`)
 	definitions := definitionPattern.FindAllStringSubmatch(first, -1)
 	if len(definitions) != 3 {
 		t.Fatalf("expected three function definitions, got %d", len(definitions))
 	}
 	for _, definition := range definitions {
-		if definition[1] != "lang_value_value" {
-			t.Fatalf("expected every function's own parameter local to allocate the same unsuffixed name %q, got %q", "lang_value_value", definition[1])
+		if definition[1] != "schway_value_value" {
+			t.Fatalf("expected every function's own parameter local to allocate the same unsuffixed name %q, got %q", "schway_value_value", definition[1])
 		}
 	}
 
 	// (3) No local name collides with any global name: prefix confinement
 	// (cgen.go's own documented invariant) already makes this structurally
-	// impossible -- "LANG_" (global) and "lang_value_" (local) are disjoint
+	// impossible -- "SCHWAY_" (global) and "schway_value_" (local) are disjoint
 	// namespaces -- verified directly here rather than merely assumed.
 	for global := range seenGlobal {
-		if strings.HasPrefix(global, "lang_value_") {
+		if strings.HasPrefix(global, "schway_value_") {
 			t.Fatalf("global name %q collided with the local namespace", global)
 		}
 	}

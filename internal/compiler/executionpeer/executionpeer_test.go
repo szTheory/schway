@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/executionpeer"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/executionpeer"
 )
 
 const maxGoListBytes = 1 << 20
@@ -128,7 +128,7 @@ func TestInvocationMembershipTraversalBound(t *testing.T) {
 func TestExecutionPeerImportBoundary(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	command := exec.CommandContext(ctx, "go", "list", "-deps", "-f", "{{.ImportPath}}", "github.com/codename-lang/lang/internal/compiler/executionpeer")
+	command := exec.CommandContext(ctx, "go", "list", "-deps", "-f", "{{.ImportPath}}", "github.com/szTheory/schway/internal/compiler/executionpeer")
 	var stdout, stderr boundedGoListWriter
 	command.Stdout = &stdout
 	command.Stderr = &stderr

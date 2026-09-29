@@ -38,7 +38,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // color is the three-state DFS marker. The zero value is white

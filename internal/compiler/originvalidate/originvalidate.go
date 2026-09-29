@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // phase17ReturnLookupFaultForTest is a default-off mutation seam consulted
@@ -258,7 +258,7 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 // forces that case to no-op, reproducing the pre-fix behavior of walking
 // straight through a call boundary into the argument's own provenance, so a
 // regression test can prove the case is genuinely load-bearing by observing
-// twin_a_accept.lang regress to its old core.origin_omitted refusal --
+// twin_a_accept.schway regress to its old core.origin_omitted refusal --
 // never merely that the case is syntactically present (D-10-08). Mirrors
 // export_test.go's existing SetTypeFactExactIDMatchOverrideForTest seam
 // shape (D-09-25/D-09-26's disablePeerLoanCarryConsultForTest precedent).
@@ -622,7 +622,7 @@ func localOwnerOriginProblem(function core.Function) *Problem {
 		sourceType := places[operation.SourceID]
 		switch contract.Mode {
 		case "acquire":
-			if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || sourceType != "PathToken" || places[operation.TargetID] != "FileByteOwner" || operation.TypeID == "" || types[operation.TypeID] != "FileByteOwner" || contract.Symbol != "lang_file_byte_acquire" || contract.ABIType != "lang_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "lang_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" || owners[operation.ID].placeID != "" || ownerByPlace[operation.TargetID] != "" {
+			if operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || sourceType != "PathToken" || places[operation.TargetID] != "FileByteOwner" || operation.TypeID == "" || types[operation.TypeID] != "FileByteOwner" || contract.Symbol != "schway_file_byte_acquire" || contract.ABIType != "schway_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" || owners[operation.ID].placeID != "" || ownerByPlace[operation.TargetID] != "" {
 				return fail(operation.ID)
 			}
 			owners[operation.ID] = ownerFact{placeID: operation.TargetID, release: contract.Release, allocator: contract.Allocator}
@@ -630,7 +630,7 @@ func localOwnerOriginProblem(function core.Function) *Problem {
 		case "borrow":
 			acquireID := ownerByPlace[operation.SourceID]
 			owner, exists := owners[acquireID]
-			if operation.Kind != core.OpForeignCall || !exists || owner.borrowed || owner.released || sourceType != "FileByteOwner" || places[operation.TargetID] != "U64" || operation.TypeID == "" || types[operation.TypeID] != "U64" || contract.Symbol != "lang_file_byte_use" || contract.ABIType != "lang_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+			if operation.Kind != core.OpForeignCall || !exists || owner.borrowed || owner.released || sourceType != "FileByteOwner" || places[operation.TargetID] != "U64" || operation.TypeID == "" || types[operation.TypeID] != "U64" || contract.Symbol != "schway_file_byte_use" || contract.ABIType != "schway_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
 				return fail(operation.ID)
 			}
 			owner.borrowed = true
@@ -638,7 +638,7 @@ func localOwnerOriginProblem(function core.Function) *Problem {
 			owners[acquireID] = owner
 		case "consume":
 			owner, exists := owners[operation.ReleasesOperationID]
-			if operation.Kind != core.OpRelease || !exists || !owner.borrowed || owner.released || owner.placeID != operation.SourceID || sourceType != "FileByteOwner" || operation.TypeID == "" || types[operation.TypeID] != "FileByteOwner" || owner.release != contract.Symbol || owner.allocator != contract.Allocator || contract.Symbol != "lang_file_byte_release" || contract.ABIType != "lang_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
+			if operation.Kind != core.OpRelease || !exists || !owner.borrowed || owner.released || owner.placeID != operation.SourceID || sourceType != "FileByteOwner" || operation.TypeID == "" || types[operation.TypeID] != "FileByteOwner" || owner.release != contract.Symbol || owner.allocator != contract.Allocator || contract.Symbol != "schway_file_byte_release" || contract.ABIType != "schway_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
 				return fail(operation.ID)
 			}
 			owner.released = true
@@ -716,7 +716,7 @@ func digest(data []byte) string {
 // everywhere else the preimage is built. It is not itself a digest of
 // anything -- it exists solely so a future digest with a superficially
 // similar preimage shape can never collide with this one.
-const ClosureDigestDomainSeparator = "lang.closure_digest/1\x00"
+const ClosureDigestDomainSeparator = "schway.closure_digest/1\x00"
 
 // calleeDigestPair is one callee's (ID, ClosureDigest) pair, part of
 // D-07-37's canonical preimage. Field order is fixed by declaration (never
@@ -796,7 +796,7 @@ func computeClosureDigest(signature core.FunctionSignature, callees []calleeDige
 // ValidatePublished against program first: BuildInterface packages what the
 // producer already proved rather than re-deriving it.
 //
-// D-07-08: this emits Schema core.InterfaceSchema1 (lang.interface/1) —
+// D-07-08: this emits Schema core.InterfaceSchema1 (schway.interface/1) —
 // every function.ID+":type:0" abilities is unchanged from /0.
 // Every /1 field is populated from its R-01 authority (see the field-level
 // doc comments on core.FunctionSignature); Callable is derived per function
@@ -1320,7 +1320,7 @@ func decodeErrorCode(err error) string {
 // core.DecodeInterface per D-07-36: a document is now schema-peeked and
 // strictly validated (presence, non-emptiness, Mode's closed set, digest
 // shape, and function-ID uniqueness) before this function ever asks an
-// origin or access question of it, and a lang.interface/0 document is
+// origin or access question of it, and a schway.interface/0 document is
 // refused outright (T-07-02: never admissible for a call).
 //
 // coreBytes is the RAW, UNPARSED bytes of the core artifact the summary

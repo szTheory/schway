@@ -1,0 +1,18 @@
+// Derivation-only move-defect fixture (D-06-29): the ONLY fixture 06-13's
+// repair driver may consult when hand-deriving its kind->edit mapping for
+// the move class. Never scored by the CI gate -- see
+// heldout_move_defect.schway for the corpus the gate actually runs against.
+// Deliberately carries no "// schway:move-target" marker: no injector runner
+// is ever wired against this file.
+
+module phase6.derivation_move_defect
+
+export {
+  fn relay
+}
+
+fn relay(item: Buffer) -> Buffer {
+  let moved_once = take item
+  let moved_twice = take moved_once
+  moved_twice
+}

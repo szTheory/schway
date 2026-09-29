@@ -39,6 +39,11 @@ behavior_unverified: 0
 overrides_applied: 0
 ---
 
+<!-- schway-current:start -->
+Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
+<!-- schway-current:end -->
+
+
 # Phase 22: Native Application Build and Single Execution — Verification Report
 
 **Phase Goal:** A developer can retain and execute a native application once on bounded real input, with application streams separate from compiler evidence.

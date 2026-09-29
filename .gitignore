@@ -1,5 +1,5 @@
-/.lang/
-/lang
+/.schway/
+/schway
 /.gsd/
 
 # D-06-08: the change-risk selection state file (session.ChangeState) is

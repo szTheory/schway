@@ -1,8 +1,8 @@
-# Continuous integration for Codename Lang.
+# Continuous integration for Schway.
 #
 # This workflow is the shift-left half of the phase gates: every claim that a
 # phase SUMMARY used to record as a hand-driven, one-time act ("built
-# ./cmd/lang and ran the four subcommands") is now asserted here on every push
+# ./cmd/schway and ran the four subcommands") is now asserted here on every push
 # and pull request, on both initial host priorities (Linux and macOS).
 #
 # Two jobs, deliberately not one:

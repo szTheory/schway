@@ -14,5 +14,5 @@ import (
 func ForeignRetainedSourcePath() string {
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
-	return filepath.Join(root, "native", "lang_foreign_retained.c")
+	return filepath.Join(root, "native", "schway_foreign_retained.c")
 }

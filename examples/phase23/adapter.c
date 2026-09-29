@@ -11,137 +11,137 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifndef LANG_FILE_BYTE_OPEN
-#define LANG_FILE_BYTE_OPEN open
+#ifndef SCHWAY_FILE_BYTE_OPEN
+#define SCHWAY_FILE_BYTE_OPEN open
 #endif
-#ifndef LANG_FILE_BYTE_FSTAT
-#define LANG_FILE_BYTE_FSTAT fstat
+#ifndef SCHWAY_FILE_BYTE_FSTAT
+#define SCHWAY_FILE_BYTE_FSTAT fstat
 #endif
-#ifndef LANG_FILE_BYTE_MALLOC
-#define LANG_FILE_BYTE_MALLOC malloc
+#ifndef SCHWAY_FILE_BYTE_MALLOC
+#define SCHWAY_FILE_BYTE_MALLOC malloc
 #endif
-#ifndef LANG_FILE_BYTE_FREE
-#define LANG_FILE_BYTE_FREE free
+#ifndef SCHWAY_FILE_BYTE_FREE
+#define SCHWAY_FILE_BYTE_FREE free
 #endif
-#ifndef LANG_FILE_BYTE_LOAD_BYTE
-#define LANG_FILE_BYTE_LOAD_BYTE(pointer) (*(pointer))
+#ifndef SCHWAY_FILE_BYTE_LOAD_BYTE
+#define SCHWAY_FILE_BYTE_LOAD_BYTE(pointer) (*(pointer))
 #endif
-#ifndef LANG_FILE_BYTE_READ
-#define LANG_FILE_BYTE_READ read
+#ifndef SCHWAY_FILE_BYTE_READ
+#define SCHWAY_FILE_BYTE_READ read
 #endif
-#ifndef LANG_FILE_BYTE_CLOSE
-#define LANG_FILE_BYTE_CLOSE close
+#ifndef SCHWAY_FILE_BYTE_CLOSE
+#define SCHWAY_FILE_BYTE_CLOSE close
 #endif
 
 enum {
-  LANG_FILE_BYTE_OK = 0,
-  LANG_FILE_BYTE_EMPTY = 1,
-  LANG_FILE_BYTE_TOO_LONG = 2,
-  LANG_FILE_BYTE_OPEN_FAILED = 3,
-  LANG_FILE_BYTE_NOT_REGULAR = 4,
-  LANG_FILE_BYTE_READ_FAILED = 5,
-  LANG_FILE_BYTE_ALLOC_FAILED = 6,
-  LANG_FILE_BYTE_CLOSE_FAILED = 7,
-  LANG_FILE_BYTE_INVALID_PATH = 8
+  SCHWAY_FILE_BYTE_OK = 0,
+  SCHWAY_FILE_BYTE_EMPTY = 1,
+  SCHWAY_FILE_BYTE_TOO_LONG = 2,
+  SCHWAY_FILE_BYTE_OPEN_FAILED = 3,
+  SCHWAY_FILE_BYTE_NOT_REGULAR = 4,
+  SCHWAY_FILE_BYTE_READ_FAILED = 5,
+  SCHWAY_FILE_BYTE_ALLOC_FAILED = 6,
+  SCHWAY_FILE_BYTE_CLOSE_FAILED = 7,
+  SCHWAY_FILE_BYTE_INVALID_PATH = 8
 };
 
 static const char *acquire_status_name(int32_t status) {
   switch (status) {
-    case LANG_FILE_BYTE_EMPTY: return "EmptyFile";
-    case LANG_FILE_BYTE_TOO_LONG: return "FileTooLong";
-    case LANG_FILE_BYTE_OPEN_FAILED: return "OpenFailed";
-    case LANG_FILE_BYTE_NOT_REGULAR: return "NotRegular";
-    case LANG_FILE_BYTE_READ_FAILED: return "ReadFailed";
-    case LANG_FILE_BYTE_ALLOC_FAILED: return "AllocFailed";
-    case LANG_FILE_BYTE_CLOSE_FAILED: return "CloseFailed";
-    case LANG_FILE_BYTE_INVALID_PATH: return "InvalidPath";
+    case SCHWAY_FILE_BYTE_EMPTY: return "EmptyFile";
+    case SCHWAY_FILE_BYTE_TOO_LONG: return "FileTooLong";
+    case SCHWAY_FILE_BYTE_OPEN_FAILED: return "OpenFailed";
+    case SCHWAY_FILE_BYTE_NOT_REGULAR: return "NotRegular";
+    case SCHWAY_FILE_BYTE_READ_FAILED: return "ReadFailed";
+    case SCHWAY_FILE_BYTE_ALLOC_FAILED: return "AllocFailed";
+    case SCHWAY_FILE_BYTE_CLOSE_FAILED: return "CloseFailed";
+    case SCHWAY_FILE_BYTE_INVALID_PATH: return "InvalidPath";
     default: return "AcquireFailed";
   }
 }
 
-static lang_file_byte_acquire_result acquire_failure(int32_t status) {
-  lang_file_byte_acquire_result result = {status, {NULL, UINT64_C(0)}};
-  fputs("lang_file_byte_acquire: ", stderr);
+static schway_file_byte_acquire_result acquire_failure(int32_t status) {
+  schway_file_byte_acquire_result result = {status, {NULL, UINT64_C(0)}};
+  fputs("schway_file_byte_acquire: ", stderr);
   fputs(acquire_status_name(status), stderr);
   fputc('\n', stderr);
   return result;
 }
 
-static lang_file_byte_acquire_result acquire_cleanup_failure(
+static schway_file_byte_acquire_result acquire_cleanup_failure(
     int descriptor, unsigned char *data, int32_t primary_status) {
   int32_t status = primary_status;
-  if (data != NULL) LANG_FILE_BYTE_FREE(data);
-  if (LANG_FILE_BYTE_CLOSE(descriptor) != 0) {
-    status = LANG_FILE_BYTE_CLOSE_FAILED;
+  if (data != NULL) SCHWAY_FILE_BYTE_FREE(data);
+  if (SCHWAY_FILE_BYTE_CLOSE(descriptor) != 0) {
+    status = SCHWAY_FILE_BYTE_CLOSE_FAILED;
   }
   return acquire_failure(status);
 }
 
-lang_file_byte_acquire_result lang_file_byte_acquire(const char *path) {
+schway_file_byte_acquire_result schway_file_byte_acquire(const char *path) {
   int descriptor = -1;
   int close_error = 0;
   struct stat details;
   unsigned char *data = NULL;
   size_t received = 0u;
   unsigned char extra;
-  lang_file_byte_acquire_result result;
+  schway_file_byte_acquire_result result;
 
-  if (path == NULL || path[0] == '\0') return acquire_failure(LANG_FILE_BYTE_INVALID_PATH);
-  descriptor = LANG_FILE_BYTE_OPEN(path, O_RDONLY | O_NONBLOCK);
-  if (descriptor < 0) return acquire_failure(LANG_FILE_BYTE_OPEN_FAILED);
-  if (LANG_FILE_BYTE_FSTAT(descriptor, &details) != 0 || !S_ISREG(details.st_mode)) {
-    return acquire_cleanup_failure(descriptor, NULL, LANG_FILE_BYTE_NOT_REGULAR);
+  if (path == NULL || path[0] == '\0') return acquire_failure(SCHWAY_FILE_BYTE_INVALID_PATH);
+  descriptor = SCHWAY_FILE_BYTE_OPEN(path, O_RDONLY | O_NONBLOCK);
+  if (descriptor < 0) return acquire_failure(SCHWAY_FILE_BYTE_OPEN_FAILED);
+  if (SCHWAY_FILE_BYTE_FSTAT(descriptor, &details) != 0 || !S_ISREG(details.st_mode)) {
+    return acquire_cleanup_failure(descriptor, NULL, SCHWAY_FILE_BYTE_NOT_REGULAR);
   }
-  data = (unsigned char *)LANG_FILE_BYTE_MALLOC(1u);
+  data = (unsigned char *)SCHWAY_FILE_BYTE_MALLOC(1u);
   if (data == NULL) {
-    return acquire_cleanup_failure(descriptor, NULL, LANG_FILE_BYTE_ALLOC_FAILED);
+    return acquire_cleanup_failure(descriptor, NULL, SCHWAY_FILE_BYTE_ALLOC_FAILED);
   }
   while (received < 1u) {
-    ssize_t amount = LANG_FILE_BYTE_READ(descriptor, data + received, 1u - received);
+    ssize_t amount = SCHWAY_FILE_BYTE_READ(descriptor, data + received, 1u - received);
     if (amount > 0) {
       received += (size_t)amount;
       continue;
     }
     if (amount == 0) {
-      return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_EMPTY);
+      return acquire_cleanup_failure(descriptor, data, SCHWAY_FILE_BYTE_EMPTY);
     }
     if (errno == EINTR) continue;
-    return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_READ_FAILED);
+    return acquire_cleanup_failure(descriptor, data, SCHWAY_FILE_BYTE_READ_FAILED);
   }
   for (;;) {
-    ssize_t amount = LANG_FILE_BYTE_READ(descriptor, &extra, 1u);
+    ssize_t amount = SCHWAY_FILE_BYTE_READ(descriptor, &extra, 1u);
     if (amount == 0) break;
     if (amount > 0) {
-      return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_TOO_LONG);
+      return acquire_cleanup_failure(descriptor, data, SCHWAY_FILE_BYTE_TOO_LONG);
     }
     if (errno == EINTR) continue;
-    return acquire_cleanup_failure(descriptor, data, LANG_FILE_BYTE_READ_FAILED);
+    return acquire_cleanup_failure(descriptor, data, SCHWAY_FILE_BYTE_READ_FAILED);
   }
-  if (LANG_FILE_BYTE_CLOSE(descriptor) != 0) close_error = 1;
+  if (SCHWAY_FILE_BYTE_CLOSE(descriptor) != 0) close_error = 1;
   if (close_error) {
-    LANG_FILE_BYTE_FREE(data);
-    return acquire_failure(LANG_FILE_BYTE_CLOSE_FAILED);
+    SCHWAY_FILE_BYTE_FREE(data);
+    return acquire_failure(SCHWAY_FILE_BYTE_CLOSE_FAILED);
   }
-  result.status = LANG_FILE_BYTE_OK;
+  result.status = SCHWAY_FILE_BYTE_OK;
   result.owner.data = data;
   result.owner.length = UINT64_C(1);
   return result;
 }
 
-lang_file_byte_use_result lang_file_byte_use(lang_file_byte_owner owner) {
+schway_file_byte_use_result schway_file_byte_use(schway_file_byte_owner owner) {
   unsigned char value;
-  lang_file_byte_use_result result = {LANG_FILE_BYTE_USE_INVALID_OWNER, UINT64_C(0)};
+  schway_file_byte_use_result result = {SCHWAY_FILE_BYTE_USE_INVALID_OWNER, UINT64_C(0)};
   if (owner.data == NULL || owner.length != UINT64_C(1)) return result;
-  value = LANG_FILE_BYTE_LOAD_BYTE(owner.data);
+  value = SCHWAY_FILE_BYTE_LOAD_BYTE(owner.data);
   if (value != 0x41u && value != 0x42u) {
-    result.status = LANG_FILE_BYTE_USE_UNSUPPORTED;
+    result.status = SCHWAY_FILE_BYTE_USE_UNSUPPORTED;
     return result;
   }
-  result.status = LANG_FILE_BYTE_USE_OK;
+  result.status = SCHWAY_FILE_BYTE_USE_OK;
   result.value = (uint64_t)value;
   return result;
 }
 
-void lang_file_byte_release(lang_file_byte_owner owner) {
-  LANG_FILE_BYTE_FREE(owner.data);
+void schway_file_byte_release(schway_file_byte_owner owner) {
+  SCHWAY_FILE_BYTE_FREE(owner.data);
 }

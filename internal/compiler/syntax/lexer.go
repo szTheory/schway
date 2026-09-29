@@ -4,7 +4,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 )
 
 var keywords = map[string]Kind{

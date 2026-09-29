@@ -3,7 +3,7 @@ package corevalidate
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // TestCheckCallTypeContractEmptyParameterTypeRefuses is 07-09 Task 2 Test 4's

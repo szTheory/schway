@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestN1ConvergenceDifferential is the post-cut D-16-09 authority gate. It
@@ -20,11 +20,11 @@ func TestN1ConvergenceDifferential(t *testing.T) {
 		fixture  string
 		admitted bool
 	}{
-		{fixture: "testdata/phase1/toggle.lang", admitted: true},
-		{fixture: "testdata/phase2/owned_transfer.lang", admitted: true},
-		{fixture: "testdata/phase3/borrowed_view.lang", admitted: true},
-		{fixture: "testdata/phase4/foreign_acquire_one.lang", admitted: false},
-		{fixture: "testdata/phase4/defect_terminal.lang", admitted: true},
+		{fixture: "testdata/phase1/toggle.schway", admitted: true},
+		{fixture: "testdata/phase2/owned_transfer.schway", admitted: true},
+		{fixture: "testdata/phase3/borrowed_view.schway", admitted: true},
+		{fixture: "testdata/phase4/foreign_acquire_one.schway", admitted: false},
+		{fixture: "testdata/phase4/defect_terminal.schway", admitted: true},
 	}
 	if len(table) != 5 {
 		t.Fatalf("expected exactly 5 fixtures in the N=1 convergence table, got %d", len(table))

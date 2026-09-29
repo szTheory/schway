@@ -1,0 +1,32 @@
+// D-04-28: a foreign symbol whose declaration says it borrows its own
+// argument produces a borrow-derived return -- the foreign declaration
+// surface is itself a signature carrying origin and access facts, so
+// foreign-only does not escape origin reasoning. This function returns
+// such a value with no declared public origin, so `schway check` (D-04-27:
+// originvalidate.ValidatePublished now runs on the check/run paths, not
+// only `interface export`) must refuse it with core.foreign_origin_omitted.
+
+module phase4.foreign_origin_omitted
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn schway_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+    alias: "borrow"
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try schway_res_open(request)
+  handle
+}

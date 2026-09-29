@@ -1,5 +1,10 @@
 # Schway
 
+<!-- schway-current:start -->
+Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
+<!-- schway-current:end -->
+
+
 ## What This Is
 
 Schway is a general-purpose programming language and toolchain for
@@ -18,14 +23,9 @@ language named Schway; it did surface an unrelated content-marketing service at
 [schway.com](https://schway.com/), which is an accepted tradeoff for this
 personal open-source project.
 
-Before the first public release, complete one coordinated technical rename after
-the public repository owner/path is chosen: update the Go module/import path
-(`github.com/codename-lang/lang`), CLI names (`lang`, `lang-repair`), `.lang`
-source extension if retained, schema namespaces, install/build/CI references,
-examples, fixtures, and developer documentation. Preserve compatibility for any
-wire contract or published interface that has acquired consumers. Until that
-slice is planned and executed, these are legacy implementation identifiers, not
-alternative project names. Preserve archived milestone decisions and receipts.
+On 2026-09-28, `github.com/szTheory/schway` was recorded as the canonical public repository path. The repository is public and empty until the sanitized source history passes its final publication gate. The current source tree uses the Schway module path, commands, source suffix, protocol namespaces, and native ABI names. Preserve earlier spellings in historical records and rewritten commit trees.
+
+Before the first source push, rewrite all commits reachable from public `main` and the milestone tags while preserving commit order and parent topology. Redact local home and temporary-directory paths and unclassified co-author metadata, then audit every selected ref and the current tree for personal information and credentials. A failed or unresolved candidate blocks publication.
 
 The first three milestones were deliberately narrower than the full vision:
 prove one real source-to-native semantic spine (M001), prove it survives a

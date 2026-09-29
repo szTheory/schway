@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // phase5CompareBaseline is a hand-constructed, self-consistent execution
@@ -157,7 +157,7 @@ func TestRejectProgramDiagnosticIDsAgree(t *testing.T) {
 	// diagnostic ID must be stable across independent invocations -- the
 	// exact equivalence D-05-20 requires be asserted under its own control
 	// ID rather than silently assumed.
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_call_target_not_foreign.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_call_target_not_foreign.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestRejectProgramDiagnosticIDsAgree(t *testing.T) {
 		"check-run-1": firstChecked.Diagnostics[0],
 		"check-run-2": secondChecked.Diagnostics[0],
 	}
-	if err := session.Phase5CompareDiagnosticIDs("foreign_call_target_not_foreign.lang", diagnostics); err != nil {
+	if err := session.Phase5CompareDiagnosticIDs("foreign_call_target_not_foreign.schway", diagnostics); err != nil {
 		t.Fatalf("expected identical diagnostic IDs across independent derivations, got %v", err)
 	}
 	if firstChecked.Diagnostics[0].ID == "" {
@@ -184,11 +184,11 @@ func TestRejectProgramDiagnosticIDsAgree(t *testing.T) {
 func TestPhase4ComparatorUnchanged(t *testing.T) {
 	corpus := testsupport.ProjectPath("testdata", "phase4")
 	runner := native.DefaultRunner()
-	program, functionName, err := session.Phase4CheckedProgram(corpus, "acquire_three_success.lang")
+	program, functionName, err := session.Phase4CheckedProgram(corpus, "acquire_three_success.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "acquire_three_success.lang", program, functionName, "7", runner, native.ExpectValue); err != nil {
+	if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "acquire_three_success.schway", program, functionName, "7", runner, native.ExpectValue); err != nil {
 		requirePhase16M004Refusal(t, err, "foreign")
 		return
 	}
@@ -298,7 +298,7 @@ func TestInvocationFieldsAreCompared(t *testing.T) {
 // TestSchema2ComparisonRequiresPeerVerdict proves that pair equality cannot
 // bless matching forged /2 evidence: the peer is consulted before comparison.
 func TestSchema2ComparisonRequiresPeerVerdict(t *testing.T) {
-	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.lang")
+	program, entryName := phase11CheckedFixture(t, "multi_function_diamond_call.schway")
 	entry := phase11EntryFunction(t, program, entryName)
 	engines := phase11RunFourTiers(t, context.Background(), program, entryName, phase11EntryInput(t, entry.Parameter.Type))
 	for name, document := range engines {

@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // functionCarryDepth computes D-10-45's own definition of composition
@@ -112,12 +112,12 @@ func functionCarryDepth(functions map[string]core.Function, id string, visiting 
 // core's own operations (pathoracle.go's own package doc) -- so its
 // composition depth is a property of the CHECKED CORE STRUCTURE, not of
 // what check/corevalidate/originvalidate separately conclude about it. A
-// program that check itself refuses (like relay_depth3_refuse.lang, refused
+// program that check itself refuses (like relay_depth3_refuse.schway, refused
 // via check.interprocedural_loan_liveness) still has a fully-formed
 // core.Program with every declared core.OpCall intact, and its own
 // declared-borrow carry genuinely crosses 3 hops in that structure --
 // exactly the depth-3 evidence this gate needs, independent of the
-// separate, pre-existing corevalidate finding relay_depth3_accept.lang's
+// separate, pre-existing corevalidate finding relay_depth3_accept.schway's
 // own header documents (a program admitted end-to-end cannot exhibit a
 // literal 3-hop DECLARED-ORIGIN carry today; the checked-but-refused
 // artifact still can, and is what this gate reads).
@@ -134,7 +134,7 @@ func maxCompositionDepthAcrossCorpus(t *testing.T) (observedMax int, source stri
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() || filepath.Ext(path) != ".lang" {
+		if entry.IsDir() || filepath.Ext(path) != ".schway" {
 			return nil
 		}
 		checked, checkErr := session.CheckFile(path)

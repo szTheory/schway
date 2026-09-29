@@ -13,12 +13,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestOwnershipProjectionIdentityParity(t *testing.T) {
@@ -30,7 +30,7 @@ func TestOwnershipProjectionIdentityParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if machine.Schema != "lang.command/1" || !strings.Contains(human, machine.ID) || !strings.Contains(human, machine.Diagnostics[0].ID) || !strings.Contains(human, machine.Executions[0].Events[0].ID) {
+	if machine.Schema != "schway.command/1" || !strings.Contains(human, machine.ID) || !strings.Contains(human, machine.Diagnostics[0].ID) || !strings.Contains(human, machine.Executions[0].Events[0].ID) {
 		t.Fatalf("human/JSON ownership identities diverged: result=%+v human=%q", machine, human)
 	}
 	for _, want := range []string{"source_place=owned:p0", "target_place=owned:p1", "type_id=owned:t0"} {
@@ -99,7 +99,7 @@ func TestHumanJSONProjectionParity(t *testing.T) {
 }
 
 // TestExplainFoldsIntoResultIdentity is Task 1's own identity-fold
-// falsifier for the net-new lang.explain/0 schema (D-06-04): a nil Explain
+// falsifier for the net-new schway.explain/0 schema (D-06-04): a nil Explain
 // omits the "explain" key entirely, and a non-nil Explain both appears in
 // JSON and changes Result.Finalize().ID versus an otherwise-identical
 // Result with Explain == nil.
@@ -136,13 +136,13 @@ func TestExplainFoldsIntoResultIdentity(t *testing.T) {
 
 // TestCommandSchemaIsVersionOne pins 06-06's coordinated bump (D-06-31):
 // protocol.New() now stamps every new Result with Schema1
-// ("lang.command/1"), not the frozen Schema ("lang.command/0").
+// ("schway.command/1"), not the frozen Schema ("schway.command/0").
 func TestCommandSchemaIsVersionOne(t *testing.T) {
-	if protocol.Schema1 != "lang.command/1" {
-		t.Fatalf("protocol.Schema1 = %q, want %q", protocol.Schema1, "lang.command/1")
+	if protocol.Schema1 != "schway.command/1" {
+		t.Fatalf("protocol.Schema1 = %q, want %q", protocol.Schema1, "schway.command/1")
 	}
-	if protocol.LaneSchema1 != "lang.verify-lane/1" {
-		t.Fatalf("protocol.LaneSchema1 = %q, want %q", protocol.LaneSchema1, "lang.verify-lane/1")
+	if protocol.LaneSchema1 != "schway.verify-lane/1" {
+		t.Fatalf("protocol.LaneSchema1 = %q, want %q", protocol.LaneSchema1, "schway.verify-lane/1")
 	}
 	result := protocol.New("verify", protocol.StatusPass)
 	if result.Schema != protocol.Schema1 {
@@ -158,11 +158,11 @@ func TestCommandSchemaIsVersionOne(t *testing.T) {
 // the ability to reproduce those already-published bytes, and this test
 // exists to catch exactly that mistake.
 func TestSchemaZeroConstantsStillExist(t *testing.T) {
-	if protocol.Schema != "lang.command/0" {
-		t.Fatalf("protocol.Schema = %q, want frozen %q", protocol.Schema, "lang.command/0")
+	if protocol.Schema != "schway.command/0" {
+		t.Fatalf("protocol.Schema = %q, want frozen %q", protocol.Schema, "schway.command/0")
 	}
-	if protocol.LaneSchema != "lang.verify-lane/0" {
-		t.Fatalf("protocol.LaneSchema = %q, want frozen %q", protocol.LaneSchema, "lang.verify-lane/0")
+	if protocol.LaneSchema != "schway.verify-lane/0" {
+		t.Fatalf("protocol.LaneSchema = %q, want frozen %q", protocol.LaneSchema, "schway.verify-lane/0")
 	}
 }
 

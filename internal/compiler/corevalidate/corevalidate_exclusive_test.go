@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 const exclusiveBorrowValidateSource = `module owned.exclusive_borrow_validate
@@ -101,7 +101,7 @@ func TestCorevalidateIndependentlyRejectsBorrowConflict(t *testing.T) {
 // added: an operation kind the validator has not been explicitly taught is
 // rejected as core.unknown_operation rather than silently admitted.
 func TestUnknownOperationStillRejected(t *testing.T) {
-	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestUnknownOperationStillRejected(t *testing.T) {
 // the D-05-04 attribute-justification falsifiers below.
 func restrictBorrowCheckedProgram(t *testing.T) session.CheckResult {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +151,7 @@ func mustBeAttributeUnjustified(t *testing.T, err error) {
 
 // TestAttributeJustificationIsIndependentlyRederived is D-05-04's own
 // independence falsifier: the validator produces the correct justification
-// for restrict_borrow.lang purely from core.Program -- it is never given
+// for restrict_borrow.schway purely from core.Program -- it is never given
 // the sidecar's own JustifiedBy as input to its own re-derivation
 // (recomputeAliasJustifications takes only a core.Program). Blanking the
 // claim's JustifiedBy before validating still fails for the RIGHT reason (a

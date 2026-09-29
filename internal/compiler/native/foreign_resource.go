@@ -18,7 +18,7 @@ import (
 func ForeignResourceSourcePath() string {
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
-	return filepath.Join(root, "native", "lang_foreign_resource.c")
+	return filepath.Join(root, "native", "schway_foreign_resource.c")
 }
 
 // ForeignResourcePrivateHeaderPath resolves the repo-relative path to the
@@ -28,5 +28,5 @@ func ForeignResourceSourcePath() string {
 func ForeignResourcePrivateHeaderPath() string {
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
-	return filepath.Join(root, "native", "lang_foreign_resource_private.h")
+	return filepath.Join(root, "native", "schway_foreign_resource_private.h")
 }

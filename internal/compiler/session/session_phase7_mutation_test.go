@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 // TestPhase7DispatchControlsMutationKilledPhase07Lane is Task 3 Test 2
@@ -35,9 +35,9 @@ func TestPhase7DispatchControlsMutationKilledPhase07Lane(t *testing.T) {
 	}
 
 	// Beat 2: override the lane's fixture list to an OpCall-free fixture
-	// (testdata/phase07/clean_but_unpublishable.lang, checked-clean but
+	// (testdata/phase07/clean_but_unpublishable.schway, checked-clean but
 	// carrying no core.OpCall at all), restored via defer.
-	restoreFixtures := session.SetPhase07LaneDispatchFixturesForTest([]string{"clean_but_unpublishable.lang"})
+	restoreFixtures := session.SetPhase07LaneDispatchFixturesForTest([]string{"clean_but_unpublishable.schway"})
 	defer restoreFixtures()
 
 	// Beat 3: assert an observable effect. With the real required-kinds

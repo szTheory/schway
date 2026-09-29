@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/reduce"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/reduce"
 )
 
 // coder is the Code()-carrying shape both callgraph's entry refusal and

@@ -1,0 +1,27 @@
+// Phase 13 Plan 04 Task 2 -- derivation member of the call-argument-
+// mismatch class (D-13-09 Set A class 3, repair kind
+// use_matching_argument). Per 13-RESEARCH.md Pitfall 3, the mismatched
+// call is `main`'s own FIRST (and only) binding -- only `value` (the
+// parameter) is in scope, so exactly one initialized place matches the
+// callee's declared parameter type once CallArgumentTypeInjector flips
+// it, which is the precondition D-13-10's uniqueness gate needs to fire
+// a repair (a future plan's concern; this plan only ships the fixture).
+// Root-to-detection hop distance 0 (the call is directly in `main`,
+// this program's root), function count 2, call-edge count 1 -- see
+// heldout_call_argument_mismatch.schway for the topology-disjoint
+// held-out counterpart.
+
+module phase13.derivation_call_argument_mismatch
+
+export {
+  fn main
+}
+
+fn identity(value: Byte) -> Byte { // schway:call-argument-target
+  value
+}
+
+fn main(value: Byte) -> Byte {
+  let result = identity(value)
+  result
+}

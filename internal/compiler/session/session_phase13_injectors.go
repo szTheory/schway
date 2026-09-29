@@ -24,10 +24,10 @@ import (
 // construction, the call whose own operation is the loan's last use in
 // the clean base (D-13-09b's callIsLastUse backward gate). Reproduces
 // the exact swap-fixable shape 13-01's tracer fixture
-// (derivation_interprocedural_loan_defect.lang) established by hand,
+// (derivation_interprocedural_loan_defect.schway) established by hand,
 // now produced mechanically and reused across a shared-callee,
 // multi-caller topology (D-13-28).
-const loanTargetMarker = "// lang:interprocedural-loan-target"
+const loanTargetMarker = "// schway:interprocedural-loan-target"
 
 // InterproceduralLoanInjector swaps the marked statement with the
 // statement immediately preceding it, reproducing
@@ -70,7 +70,7 @@ func interproceduralLoanInjectSkippingGuard(source []byte) []byte {
 
 // fallibleConsumeTargetMarker marks the `try`-wrapped fallible call
 // FallibleConsumeInjector strips `try` from.
-const fallibleConsumeTargetMarker = "// lang:fallible-consume-target"
+const fallibleConsumeTargetMarker = "// schway:fallible-consume-target"
 
 // FallibleConsumeInjector removes the leading "try " from the marked
 // binding's right-hand side, turning a legally-consumed fallible call
@@ -115,7 +115,7 @@ func fallibleConsumeInjectSkippingGuard(source []byte) []byte {
 
 // callArgumentTargetMarker marks the callee's own `fn` declaration line
 // CallArgumentTypeInjector toggles between Byte and Buffer.
-const callArgumentTargetMarker = "// lang:call-argument-target"
+const callArgumentTargetMarker = "// schway:call-argument-target"
 
 // CallArgumentTypeInjector toggles every occurrence of "Byte" to
 // "Buffer" (or the reverse, if the line names no "Byte") on the marked

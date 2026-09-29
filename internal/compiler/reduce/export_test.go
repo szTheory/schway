@@ -1,6 +1,6 @@
 package reduce
 
-import "github.com/codename-lang/lang/internal/compiler/core"
+import "github.com/szTheory/schway/internal/compiler/core"
 
 // Test-only accessors for D-05-27's mutation-kill seam. These make
 // testOnlyMoves visible to the external reduce_test package without

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/native"
 )
 
 // This file implements DX-04's five defect injectors (D-06-25) and their
@@ -42,9 +42,9 @@ func (e *InjectorError) Unwrap() error { return e.Err }
 
 // Injector is the shared shape all five defect classes implement. Inject
 // takes whatever artifact bytes that class's marker convention lives in --
-// `.lang` source for match/move/borrow/stale_evidence, generated C for
-// cleanup (D-06-25: it targets the emitter's own `lang:release-site`
-// marker, which never appears in `.lang` source at all) -- and returns
+// `.schway` source for match/move/borrow/stale_evidence, generated C for
+// cleanup (D-06-25: it targets the emitter's own `schway:release-site`
+// marker, which never appears in `.schway` source at all) -- and returns
 // either a mutated artifact carrying exactly one mechanical defect, or a
 // typed InjectorTargetMissingCode refusal.
 type Injector interface {
@@ -68,7 +68,7 @@ func markerGuard(count int, want string) error {
 // primitives every source-granularity injector (match/move/borrow) below
 // uses. Where more than one line carries a class's marker, the LAST one is
 // the injector's target -- the same stable "take the last match" choice
-// ReleaseOmissionMutationRunner already makes for lang:release-site, stated
+// ReleaseOmissionMutationRunner already makes for schway:release-site, stated
 // here once rather than re-derived per injector (TestInjectorTargetChoiceIsSpecified).
 func markerCount(lines []string, marker string) int {
 	count := 0
@@ -92,12 +92,12 @@ func lastMarkerLine(source []byte, marker string) (lines []string, index int) {
 }
 
 // matchTargetMarker marks the single match arm MatchInjector deletes.
-const matchTargetMarker = "// lang:match-target"
+const matchTargetMarker = "// schway:match-target"
 
 // MatchInjector removes the marked arm from a bare-arm exhaustive match,
 // producing a match.non_exhaustive defect at source granularity --
 // exhaustiveness lives above the C layer the existing NAT-03 runners
-// mutate (D-06-25). Every heldout_match_defect.lang-shaped fixture maps
+// mutate (D-06-25). Every heldout_match_defect.schway-shaped fixture maps
 // every arm's pattern to itself, so the resulting diagnostic's
 // add_missing_arm repair (check.go's allArmsSelfMap gate) reproduces the
 // deleted arm exactly (D-06-26).
@@ -131,7 +131,7 @@ func matchInjectSkippingGuard(source []byte) []byte {
 }
 
 // moveTargetMarker marks the take-expression MoveInjector corrupts.
-const moveTargetMarker = "// lang:move-target"
+const moveTargetMarker = "// schway:move-target"
 
 // MoveInjector corrupts the marked take-expression's source identifier back
 // to the function's own parameter name -- the parameter is always the
@@ -211,12 +211,12 @@ func isIdentByte(b byte) bool {
 }
 
 // borrowTargetMarker marks the shared borrow BorrowInjector escalates.
-const borrowTargetMarker = "// lang:borrow-target"
+const borrowTargetMarker = "// schway:borrow-target"
 
 // BorrowInjector escalates the marked shared (`borrow`) binding to
 // exclusive (`borrow mut`), producing exactly the overlapping
 // exclusive+shared loan-conflict defect class D-06-25 names -- two
-// overlapping SHARED loans are legal (testdata/phase3/shared_shared_accept.lang),
+// overlapping SHARED loans are legal (testdata/phase3/shared_shared_accept.schway),
 // so the escalation, and only the escalation, is what makes the mutated
 // fixture reject.
 type BorrowInjector struct{}
@@ -243,8 +243,8 @@ func (BorrowInjector) Inject(source []byte) ([]byte, error) {
 // CleanupInjector is a thin adapter over the shipped
 // ReleaseOmissionMutationRunner (D-06-25: "reuse the existing
 // release-omission mutation runner directly", not a reimplementation).
-// Unlike its siblings, source here is generated C, not `.lang`: the
-// `lang:release-site` marker cgen emits never appears in `.lang` source at
+// Unlike its siblings, source here is generated C, not `.schway`: the
+// `schway:release-site` marker cgen emits never appears in `.schway` source at
 // all. There is exactly one release-marker scan in this whole package --
 // ReleaseOmissionMutationRunner.Mutate's own -- which
 // TestCleanupInjectorReusesReleaseOmissionRunner asserts by go/ast.
@@ -274,7 +274,7 @@ func (CleanupInjector) Inject(source []byte) ([]byte, error) {
 // means "this input was never meant to be run through this injector at
 // all", which is still the same fail-closed shape: refuse rather than
 // silently re-touch an arbitrary, unvetted file.
-const evidenceSubjectMarker = "// lang:evidence-subject"
+const evidenceSubjectMarker = "// schway:evidence-subject"
 
 // StaleEvidenceInjector re-touches source captured evidence was bound to,
 // so the manifest's recorded SHA-256 no longer matches -- D-06-25's
@@ -294,7 +294,7 @@ func (StaleEvidenceInjector) Inject(source []byte) ([]byte, error) {
 	if err := markerGuard(markerCount(lines, evidenceSubjectMarker), "evidence subject"); err != nil {
 		return nil, err
 	}
-	retouched := append(append([]byte(nil), source...), []byte("\n// lang:stale-evidence-retouch\n")...)
+	retouched := append(append([]byte(nil), source...), []byte("\n// schway:stale-evidence-retouch\n")...)
 	return retouched, nil
 }
 

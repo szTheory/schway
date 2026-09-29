@@ -9,14 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // phase11DifferentialCorpus is the directory every fixture this file drives
@@ -99,9 +99,9 @@ func phase16EntryInput(t *testing.T, fixture, parameterType string) string {
 	t.Helper()
 	if parameterType == "Switch" {
 		switch fixture {
-		case "testdata/phase1/toggle.lang":
+		case "testdata/phase1/toggle.schway":
 			return "Off"
-		case "testdata/phase3/borrowed_view.lang":
+		case "testdata/phase3/borrowed_view.schway":
 			return "On"
 		}
 	}
@@ -138,7 +138,7 @@ type phase11NativeCSupplier func(core.Program) (string, error)
 // cross-TU LTO inlining. The existing LTO lane's own non-inertness
 // (session_phase5.go's phase5RunInterpreterO0O3LTOLane) is borrowed
 // entirely from a foreign translation-unit boundary
-// (inline_across_foreign.lang), which this pure Lang-to-Lang corpus has
+// (inline_across_foreign.schway), which this pure Lang-to-Lang corpus has
 // none of. NAT-07's hand-written control (plan 11-02) is what proves the
 // TIER itself can be exploited when a real cross-TU boundary exists.
 func phase11RunFourTiers(t *testing.T, ctx context.Context, program core.Program, entryName, input string) map[string]execution.Execution {
@@ -218,7 +218,7 @@ func phase16CompareDirectProgramFourTiers(t *testing.T, ctx context.Context, fix
 	if err != nil {
 		t.Fatalf("%s: direct emitProgram(..., true): %v", fixture, err)
 	}
-	if !strings.Contains(directC, "lang.execution/2") {
+	if !strings.Contains(directC, "schway.execution/2") {
 		t.Fatalf("%s: direct emitProgram(..., true) did not supply schema-2 C", fixture)
 	}
 	engines := phase11RunFourTiersWithSupplier(t, ctx, program, entryName, input, func(core.Program) (string, error) {
@@ -245,9 +245,9 @@ func TestPhase16DirectProgramFourTierDifferential(t *testing.T) {
 	for _, test := range []struct {
 		name, fixture string
 	}{
-		{name: "Toggle", fixture: "testdata/phase1/toggle.lang"},
-		{name: "OwnedTransfer", fixture: "testdata/phase2/owned_transfer.lang"},
-		{name: "BorrowedView", fixture: "testdata/phase3/borrowed_view.lang"},
+		{name: "Toggle", fixture: "testdata/phase1/toggle.schway"},
+		{name: "OwnedTransfer", fixture: "testdata/phase2/owned_transfer.schway"},
+		{name: "BorrowedView", fixture: "testdata/phase3/borrowed_view.schway"},
 	} {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
@@ -265,7 +265,7 @@ func TestPhase16DirectProgramFourTierDifferential(t *testing.T) {
 // reject the changed terminal-outcome axis; this is why a golden hash cannot
 // serve as the semantic witness for its own update.
 func TestPhase16EmitterPortSemanticGuardIsNotInert(t *testing.T) {
-	program, engines, directC := phase16CompareDirectProgramFourTiers(t, context.Background(), "testdata/phase2/owned_transfer.lang")
+	program, engines, directC := phase16CompareDirectProgramFourTiers(t, context.Background(), "testdata/phase2/owned_transfer.schway")
 	before := sha256.Sum256([]byte(directC))
 	mutated := engines["O3"]
 	mutated.Outcome.Value = "phase16-seeded-semantic-mutation"
@@ -289,7 +289,7 @@ func TestPhase16EmitterPortSemanticGuardIsNotInert(t *testing.T) {
 // document. In particular, no native invocation or defect reason can be
 // copied back into the expected projection to conceal a broken emitter.
 func TestPhase16Schema2ProjectionRejectsNativeFactMutation(t *testing.T) {
-	program, entryName := phase16CheckedFixture(t, "testdata/phase5/defect_dies_by_signal.lang")
+	program, entryName := phase16CheckedFixture(t, "testdata/phase5/defect_dies_by_signal.schway")
 	interpreted, err := interp.Run(program, entryName, "Halt")
 	if err != nil {
 		t.Fatalf("interp.Run: %v", err)
@@ -333,20 +333,20 @@ func TestPhase16Schema2ProjectionRejectsNativeFactMutation(t *testing.T) {
 func TestPhase11InterproceduralDifferential(t *testing.T) {
 	ctx := context.Background()
 
-	// AllComparableFixtures sweeps every testdata/phase11/*.lang fixture
+	// AllComparableFixtures sweeps every testdata/phase11/*.schway fixture
 	// that resolves to a unique entry and is expected to agree across all
 	// four tiers -- every existing corpus member except the cut M004
-	// multi_function_gate_corpus.lang (refusal is covered by
-	// probe:TestPhase16M004CorpusRefusal) and multi_function_zero_call.lang,
+	// multi_function_gate_corpus.schway (refusal is covered by
+	// probe:TestPhase16M004CorpusRefusal) and multi_function_zero_call.schway,
 	// whose own genuinely ambiguous entry
 	// (ZeroCallEdges, below) means it never reaches any tier at all, by
 	// design (D-11-05's "never guess" prohibition).
 	t.Run("AllComparableFixtures", func(t *testing.T) {
 		for _, fixture := range []string{
-			"multi_function_entry_basic.lang",
-			"multi_function_forward_callee.lang",
-			"multi_function_unreachable.lang",
-			"multi_function_relay_depth2.lang",
+			"multi_function_entry_basic.schway",
+			"multi_function_forward_callee.schway",
+			"multi_function_unreachable.schway",
+			"multi_function_relay_depth2.schway",
 		} {
 			t.Run(fixture, func(t *testing.T) {
 				phase11CompareFourTiers(t, ctx, fixture)
@@ -354,7 +354,7 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 		}
 	})
 
-	// ZeroCallEdges: multi_function_zero_call.lang declares two functions
+	// ZeroCallEdges: multi_function_zero_call.schway declares two functions
 	// with ZERO core.OpCall operations anywhere in the program. Both are
 	// therefore in-degree-zero candidates with an EMPTY reachable closure
 	// each -- a genuine, unbreakable tie under callgraph.EntryFunction's
@@ -375,7 +375,7 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 	// reading is unsatisfiable for a genuinely tied, zero-call,
 	// two-function program under a non-guessing resolver.
 	t.Run("ZeroCallEdges", func(t *testing.T) {
-		const fixture = "multi_function_zero_call.lang"
+		const fixture = "multi_function_zero_call.schway"
 		source := phase11ReadFixture(t, fixture)
 
 		if _, _, err := session.RunInterpreter(source); err == nil {
@@ -395,7 +395,7 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 		}
 	})
 
-	// UnreachableFunction: multi_function_unreachable.lang's `orphan` is
+	// UnreachableFunction: multi_function_unreachable.schway's `orphan` is
 	// declared but never called and never exported. It must still agree
 	// across all four tiers (main's own resolution and execution are
 	// unaffected by orphan's presence), AND its absence from the event
@@ -403,7 +403,7 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 	// matching total event count, which could pass vacuously if two
 	// distinct functions happened to contribute the same number of events.
 	t.Run("UnreachableFunction", func(t *testing.T) {
-		const fixture = "multi_function_unreachable.lang"
+		const fixture = "multi_function_unreachable.schway"
 		program, engines := phase11CompareFourTiers(t, ctx, fixture)
 
 		var orphanID string
@@ -424,14 +424,14 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 		}
 	})
 
-	// ForwardDefinedCallee: multi_function_forward_callee.lang's `main`
+	// ForwardDefinedCallee: multi_function_forward_callee.schway's `main`
 	// calls `later`, declared AFTER it in source order -- must agree
 	// across all four tiers.
 	t.Run("ForwardDefinedCallee", func(t *testing.T) {
-		phase11CompareFourTiers(t, ctx, "multi_function_forward_callee.lang")
+		phase11CompareFourTiers(t, ctx, "multi_function_forward_callee.schway")
 	})
 
-	// DiamondSharedLeaf: multi_function_diamond_call.lang's `main` calls
+	// DiamondSharedLeaf: multi_function_diamond_call.schway's `main` calls
 	// two distinct callees (`left`, `right`) that both call a shared leaf
 	// (`leaf`) -- must agree across all four tiers.
 	//
@@ -440,7 +440,7 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 	// (Invocation, ID) identity pair unique, so this exact fixture is the
 	// permanent four-tier occurrence-identity gate.
 	t.Run("DiamondSharedLeaf", func(t *testing.T) {
-		const fixture = "multi_function_diamond_call.lang"
+		const fixture = "multi_function_diamond_call.schway"
 		program, entryName := phase11CheckedFixture(t, fixture)
 		entry := phase11EntryFunction(t, program, entryName)
 		input := phase11EntryInput(t, entry.Parameter.Type)
@@ -477,8 +477,8 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 	//
 	// NOT EXPRESSIBLE at this maturity (honest "not expressible" per this
 	// task's own escape hatch, not a silently absent case): every existing
-	// `defect` terminator in this codebase (defect_terminal.lang,
-	// defect_dies_by_signal.lang) is reached through a `core.Match` arm --
+	// `defect` terminator in this codebase (defect_terminal.schway,
+	// defect_dies_by_signal.schway) is reached through a `core.Match` arm --
 	// there is no other Lang construct capable of reaching `defect` (no
 	// arithmetic, no `if`, no loops, this milestone's own established
 	// maturity ceiling). cgen.emitProgram's own doc comment and its own

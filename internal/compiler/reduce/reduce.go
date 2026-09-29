@@ -30,7 +30,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // AttemptsPerFunction is Phase 11's derived work-budget factor (D-11-31),
@@ -992,7 +992,7 @@ func projectMultiFunctionSource(program core.Program) string {
 // operation-kind switch with core.OpCall, projected as a plain call
 // expression to the resolved callee's name (never its ID) -- the source
 // syntax this project's own multi-function corpus already uses (see e.g.
-// testdata/phase07/deep_diamond_acyclic.lang's "let result = leaf(value)").
+// testdata/phase07/deep_diamond_acyclic.schway's "let result = leaf(value)").
 func projectMultiFunctionFunctionBody(fn core.Function, nameByFunctionID map[string]string) string {
 	nameByID := map[string]string{fn.Parameter.ID: fn.Parameter.Name}
 	for _, place := range fn.Linear.Places {

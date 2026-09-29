@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestNoNoOpCompoundAssignment closes CR-01's whole class rather than its one
 // instance. `VerifyPhase6ControlsAndWork` -- the function the shipped gate
-// `lang verify testdata/phase6` actually runs -- carried
+// `schway verify testdata/phase6` actually runs -- carried
 // `result.Metrics.CacheInputsReusedCount += 0` inside a live branch, so
 // FND-04's cache-reuse counter was structurally zero on the one path that is
 // gated, while the sibling VerifyPhase6ChangedRisk reported it correctly. A

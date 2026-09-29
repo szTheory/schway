@@ -18,6 +18,11 @@ progress:
   percent: 25
 ---
 
+<!-- schway-current:start -->
+Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
+<!-- schway-current:end -->
+
+
 # Project State
 
 ## Project Reference
@@ -31,14 +36,7 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- **Name decision:** Schway is the chosen public language and project name
-  (2026-09-28). Do not reopen naming absent a material direct conflict. The
-  module path, `lang`/`lang-repair` commands, `.lang` extension, schema names,
-  and related install/build/CI references are legacy implementation identifiers
-  pending one coordinated rename after the public repository owner/path is
-  chosen and before the first public release. See the migration checklist in
-  `.planning/PROJECT.md` and decision record in
-  `.planning/quick/260928-rta-record-schway-as-the-chosen-public-langu/`.
+- **Name decision:** Schway is the chosen public language and project name (2026-09-28). Current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`. Earlier commit trees remain historical evidence. The GitHub repository is public and empty. Source publication remains gated on rewriting reachable history with the original parent topology and passing the full privacy and credential scan. See the migration checklist in `.planning/PROJECT.md` and this task's private audit artifacts.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
@@ -92,7 +90,7 @@ hiding runtime costs.
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
 Status: Phase 23 local gates pass; waiting for hosted Ubuntu CI receipt.
-Last activity: 2026-09-28 — Completed quick task 260928-rta: record Schway as the chosen public language name
+Last activity: 2026-09-28 — Completed quick task 260928-sof: record the empty public repository and pending no-PII source-push audit
 
 Progress: [███░░░░░░░] 25%
 
@@ -621,6 +619,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260927-o7y | Add recurring Phase 22 README contract evidence and close objective UAT | 2026-09-27 | c51abc7 | passed | [260927-o7y-automate-phase-22-readme-uat-and-make-ve](./quick/260927-o7y-automate-phase-22-readme-uat-and-make-ve/) |
 | 260927-j11 | Allow dotted GSD gate IDs and resume Phase 22 wave dispatch | 2026-09-27 | 961069f | — | [260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-](./quick/260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-/) |
 | 260928-rta | Record Schway as the chosen public language name in active identity and planning docs; preserve archived history and record the deferred distribution-identifier migration boundary | 2026-09-28 | 0382c16 | passed | [260928-rta-record-schway-as-the-chosen-public-langu](./quick/260928-rta-record-schway-as-the-chosen-public-langu/) |
+| 260928-sof | Record the empty public GitHub repository github.com/szTheory/schway and the no-PII, no-source-push boundary | 2026-09-28 | — | passed | [260928-sof-record-the-empty-public-github-repositor](./quick/260928-sof-record-the-empty-public-github-repositor/) |
 
 ## Deferred Items
 
@@ -634,10 +633,11 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-28T17:06:53.271Z
-Stopped at: Waiting for the hosted Ubuntu evidence-aggregate receipt; after a pass, resume GSD execute-phase 23 at verifier gates without replaying completed plans or UAT.
-Resume file: None
-Next command: $gsd-discuss-phase 23 --auto
+Last session: 2026-09-29T00:49:36Z
+Stopped at: Public empty repository `github.com/szTheory/schway` created and recorded. No source was pushed; local remote remains unset; pre-push privacy audit is pending. Phase 23 remains blocked only on the hosted Ubuntu `evidence-aggregate` receipt.
+Resume file: .planning/phases/23-live-local-allocation-and-discharge/.continue-here.md
+Next command: Complete the coordinated technical rename and the pending privacy audit before any public source push. When the hosted Ubuntu `evidence-aggregate` receipt is available, run `$gsd-execute-phase 23` at verifier gates without replaying completed plans or UAT.
+Routing note — 2026-09-29: `init.progress` reports Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reports all 7 plans complete and none incomplete. Phase 22 UAT is complete, so preserve it. The Phase 23 verification identifies only the missing hosted Ubuntu receipt; do not plan implementation fixes for that external evidence gap.
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
 the refreshed verifier is `passed` at 17/17 truths, and the old subjective
 readability gate is historical only. Phase 22 is transitioned; continue with

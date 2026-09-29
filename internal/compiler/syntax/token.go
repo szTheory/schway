@@ -1,6 +1,6 @@
 package syntax
 
-import "github.com/codename-lang/lang/internal/compiler/diagnostic"
+import "github.com/szTheory/schway/internal/compiler/diagnostic"
 
 type Kind string
 

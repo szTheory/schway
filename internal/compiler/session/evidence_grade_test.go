@@ -39,7 +39,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -718,7 +718,7 @@ func syntheticIndex(t testing.TB) *testIndex {
 	return &testIndex{
 		root: testsupport.ProjectPath(),
 		byImportPath: map[string]map[string]bool{
-			"github.com/codename-lang/lang/internal/compiler/check": {
+			"github.com/szTheory/schway/internal/compiler/check": {
 				"TestSyntheticPrimaryClaim": true,
 				"TestSyntheticTwinClaim":    true,
 			},
@@ -1568,11 +1568,11 @@ func requestedCorpusPairs(index *testIndex, byDoc map[string][]validationRawRow)
 }
 
 // TestExportValidationCorpusPairs is an intentionally narrow producer seam.
-// When AI_LANG_EVIDENCE_PAIR_OUTPUT is set it writes the exact pair list the
+// When AI_SCHWAY_EVIDENCE_PAIR_OUTPUT is set it writes the exact pair list the
 // grade consumer requests, using requestedCorpusPairs rather than a second
 // parser.  Normal test runs leave no file behind.
 func TestExportValidationCorpusPairs(t *testing.T) {
-	path := os.Getenv("AI_LANG_EVIDENCE_PAIR_OUTPUT")
+	path := os.Getenv("AI_SCHWAY_EVIDENCE_PAIR_OUTPUT")
 	if path == "" {
 		t.Skip("producer seam is invoked only by the external record command; see probe:TestValidationCorpusPairExportMatchesConsumer")
 	}
@@ -1879,7 +1879,7 @@ func TestEvidencePatternsResolveToAnchoredNames(t *testing.T) {
 		index := &testIndex{
 			root: testsupport.ProjectPath(),
 			byImportPath: map[string]map[string]bool{
-				"github.com/codename-lang/lang/internal/compiler/check": {
+				"github.com/szTheory/schway/internal/compiler/check": {
 					"TestAlpha":         true,
 					"TestAlphaExtended": true,
 					"TestOmega":         true, // unrelated: must never be swept in

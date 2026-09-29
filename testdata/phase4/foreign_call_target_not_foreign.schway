@@ -1,0 +1,34 @@
+// D-04-02: an OpForeignCall whose callee resolves to a Lang Function.ID is a
+// hard refusal (core.call_target_not_foreign), independently derived by
+// both check and corevalidate. D-04-01: OpForeignCall is the only call
+// surface -- there is no Lang-to-Lang call form -- so a `try` naming an
+// ordinary declared `fn` must be refused, not silently treated as a call.
+
+module phase4.foreign_call_target_not_foreign
+
+export {
+  fn main
+  fn helper
+}
+
+foreign C {
+
+  fn schway_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn helper(value: Byte) -> Byte {
+  value
+}
+
+fn main(request: Byte) -> Byte {
+  let handle = try helper(request)
+  handle
+}

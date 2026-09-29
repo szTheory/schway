@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/debugmap"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/debugmap"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // This file is deliberately `package session` (internal), matching
@@ -26,7 +26,7 @@ import (
 // --- Task 1: schema minting + one vocabulary end-to-end -------------------
 
 func TestQuerySummarySchemaIsMinted(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	operationID := firstDebugMapOperationID(t, path)
 
 	result, err := QueryCommandFile(path, operationID, QueryOptions{})
@@ -66,7 +66,7 @@ func TestQuerySummarySchemaIsMinted(t *testing.T) {
 // (FND-04): an operation ID the map never produced is one not_captured
 // fact, never an error and never a fabricated span.
 func TestQueryUnknownIDReportsNotCaptured(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	result, err := QueryCommandFile(path, "s1:owned.transfer:fn:relay:op:999999", QueryOptions{})
 	if err != nil {
 		t.Fatalf("QueryCommandFile: %v", err)
@@ -109,7 +109,7 @@ func TestQueryUnknownIDReportsNotCaptured(t *testing.T) {
 
 func TestQueryResolvesEveryStableIDVocabulary(t *testing.T) {
 	t.Run("diagnostic", func(t *testing.T) {
-		path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+		path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.schway")
 		diagID := firstDiagnosticID(t, path)
 		result, err := QueryCommandFile(path, diagID, QueryOptions{})
 		if err != nil {
@@ -124,7 +124,7 @@ func TestQueryResolvesEveryStableIDVocabulary(t *testing.T) {
 	})
 
 	t.Run("debugmap operation_id/core_id/point_id", func(t *testing.T) {
-		path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+		path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 		built := buildDebugMap(t, path)
 		if len(built.Entries) == 0 {
 			t.Fatalf("debugmap.Build produced no entries for %s", path)
@@ -159,7 +159,7 @@ func TestQueryResolvesEveryStableIDVocabulary(t *testing.T) {
 	})
 
 	t.Run("evidence", func(t *testing.T) {
-		path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+		path := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 		_, evidenceResult, err := EvidenceCommandFile(context.Background(), path)
 		if err != nil {
 			t.Fatalf("EvidenceCommandFile: %v", err)
@@ -257,7 +257,7 @@ func TestQueryMintsNoSixthVocabulary(t *testing.T) {
 // fact list, and an unrecognized kind is a usage error, never a silent
 // no-op.
 func TestQueryKindFilterVocabularyIsClosed(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.schway")
 	diagID := firstDiagnosticID(t, path)
 
 	unfiltered, err := QueryCommandFile(path, diagID, QueryOptions{})
@@ -380,7 +380,7 @@ func TestQueryMalformedCursorIsUsageError(t *testing.T) {
 		t.Fatalf("paginateQueryFacts accepted a garbage cursor without error")
 	}
 
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	operationID := firstDebugMapOperationID(t, path)
 	result, err := QueryCommandFile(path, operationID, QueryOptions{Cursor: "garbage-cursor-value"})
 	if err != nil {
@@ -442,7 +442,7 @@ func factIDs(facts []protocol.QueryFact) []string {
 // TestQueryDepthDoesNotPaginate covers Test 4: --depth changes join
 // traversal depth only and must never affect pagination/bounding.
 func TestQueryDepthDoesNotPaginate(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "use_after_move.schway")
 	diagID := firstDiagnosticID(t, path)
 
 	withoutDepth, err := QueryCommandFile(path, diagID, QueryOptions{})

@@ -15,22 +15,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 const (
-	Schema0           = "lang.evidence/0"
-	Schema1           = "lang.evidence/1"
+	Schema0           = "schway.evidence/0"
+	Schema1           = "schway.evidence/1"
 	Schema            = Schema0
 	IDAlgorithm       = "sha256-v1"
-	SourceSchema      = "lang.source/s1"
+	SourceSchema      = "schway.source/s1"
 	DigestClaim       = "content-identity-only"
 	MaxManifestBytes  = 1 << 20
 	MaxToolProbeBytes = 64 * 1024
@@ -55,7 +55,7 @@ type Manifest struct {
 	ExecutionSchema  string   `json:"execution_schema"`
 	DiagnosticSchema string   `json:"diagnostic_schema,omitempty"`
 	CompilerIdentity string   `json:"compiler_identity"`
-	ClangIdentity    string   `json:"clang_identity"`
+	ClangIdentity    string   `json:"cschway_identity"`
 	Target           string   `json:"target"`
 	Flags            []string `json:"flags"`
 	Policy           string   `json:"policy"`
@@ -66,7 +66,7 @@ type Manifest struct {
 	DigestClaim      string   `json:"digest_claim,omitempty"`
 	KnownEscape      string   `json:"known_escape,omitempty"`
 	// ForeignDigest is Phase 4 plan 03's additive omitempty field
-	// (D-04-12c/D-04-23): the content digest of the program's lang.foreign/0
+	// (D-04-12c/D-04-23): the content digest of the program's schway.foreign/0
 	// sidecar manifest, set only when the program declares a foreign block.
 	// It is a new trailing field on the /1 identity struct only (manifestID)
 	// -- never inserted into the /0 struct -- so a program with no foreign
@@ -118,7 +118,7 @@ func defaultFacts(ctx context.Context, clangPath string, command commandFactory)
 	}
 	version := strings.TrimSpace(strings.SplitN(string(versionOutput), "\n", 2)[0])
 	return Facts{
-		CompilerIdentity: "codename-lang-stage0/" + runtime.Version(),
+		CompilerIdentity: "schway-stage0/" + runtime.Version(),
 		ClangIdentity:    version,
 		Target:           strings.TrimSpace(string(targetOutput)),
 		Flags:            append([]string(nil), DefaultFlags...),
@@ -350,7 +350,7 @@ func Validate(manifest Manifest, source []byte, facts Facts) error {
 		{"evidence.core_schema_mismatch", manifest.CoreSchema, expected.Manifest.CoreSchema},
 		{"evidence.execution_schema_mismatch", manifest.ExecutionSchema, expected.Manifest.ExecutionSchema},
 		{"evidence.compiler_mismatch", manifest.CompilerIdentity, expected.Manifest.CompilerIdentity},
-		{"evidence.clang_mismatch", manifest.ClangIdentity, expected.Manifest.ClangIdentity},
+		{"evidence.cschway_mismatch", manifest.ClangIdentity, expected.Manifest.ClangIdentity},
 		{"evidence.target_mismatch", manifest.Target, expected.Manifest.Target},
 		{"evidence.policy_mismatch", manifest.Policy, expected.Manifest.Policy},
 	}

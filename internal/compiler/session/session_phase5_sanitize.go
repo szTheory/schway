@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 // Phase5SanitizeResult is lane:native-sanitize's own verify-lane report,
@@ -35,7 +35,7 @@ const (
 	// always-on-gate identity.
 	ControlSanitizeUseAfterFree = "control:native.sanitize.use_after_free"
 	// ControlSanitizeAllocatorMismatch is D-05-08's dynamic allocator-
-	// mismatch control: testdata/phase5/allocator_mismatch.lang must
+	// mismatch control: testdata/phase5/allocator_mismatch.schway must
 	// report ASan's own alloc-dealloc-mismatch diagnostic.
 	ControlSanitizeAllocatorMismatch = "control:native.sanitize.allocator_mismatch"
 	// ControlSanitizeUBSanNoRecover proves -fno-sanitize-recover=all
@@ -125,7 +125,7 @@ const ubsanTriggerFixtureSource = "#include <limits.h>\nint main(void){ int x = 
 // without forking VerifyPhase5SanitizeLane's control flow or widening its
 // plan-specified signature. Production callers must never set this.
 var Phase5RetainedPointerFixtureLoaderForTest = func() (string, error) {
-	return compilePhase5SanitizeFixture("testdata/phase5/retained_pointer.lang")
+	return compilePhase5SanitizeFixture("testdata/phase5/retained_pointer.schway")
 }
 
 // VerifyPhase5SanitizeLane is lane:native-sanitize's own verify-lane
@@ -194,7 +194,7 @@ func VerifyPhase5SanitizeLane(ctx context.Context, runner native.Runner) (Phase5
 	// host, the lane goes RED and the fixture is treated as broken; the
 	// assertion below is never relaxed.
 	allocatorStarted := time.Now()
-	allocatorSource, err := compilePhase5SanitizeFixture("testdata/phase5/allocator_mismatch.lang")
+	allocatorSource, err := compilePhase5SanitizeFixture("testdata/phase5/allocator_mismatch.schway")
 	if err != nil {
 		return Phase5SanitizeResult{}, err
 	}

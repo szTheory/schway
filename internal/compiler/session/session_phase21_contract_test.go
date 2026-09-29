@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 type phase21DischargeContract struct {
@@ -21,7 +21,7 @@ type phase21DischargeContract struct {
 
 type phase21ContractClaims struct {
 	StructuralValidationProvesRuntimeCleanup    bool `json:"structural_validation_proves_runtime_cleanup"`
-	IntroducesLangUnwindOrCancellationSemantics bool `json:"introduces_lang_unwind_or_cancellation_semantics"`
+	IntroducesLangUnwindOrCancellationSemantics bool `json:"introduces_schway_unwind_or_cancellation_semantics"`
 	OneTULTOComparisonProvesOptimizerInactivity bool `json:"one_tu_lto_comparison_proves_optimizer_inactivity"`
 }
 
@@ -112,12 +112,12 @@ func TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.lang", "emitted_c_sha256", "runtime.GOOS", "clang_version"} {
+	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.schway", "emitted_c_sha256", "runtime.GOOS", "cschway_version"} {
 		if !strings.Contains(string(testSource), required) {
 			t.Errorf("tagged test does not expose required Phase 21 LTO evidence field %q", required)
 		}
 	}
-	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.lang", "d096fca69195eb63b09566387690a7b40fdc9c364f55b0b4a24209a895ff6416", "darwin/arm64", "Apple clang version 21.0.0", "does not measure optimizer activity or performance", "no evidence about resource discharge", "other hosts, or other toolchains"} {
+	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.schway", "d096fca69195eb63b09566387690a7b40fdc9c364f55b0b4a24209a895ff6416", "darwin/arm64", "Apple clang version 21.0.0", "does not measure optimizer activity or performance", "no evidence about resource discharge", "other hosts, or other toolchains"} {
 		if !strings.Contains(string(receipt), required) {
 			t.Errorf("evidence receipt does not contain recorded Phase 21 LTO field %q", required)
 		}
@@ -132,7 +132,7 @@ func TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison(t *testing.T) {
 
 func phase21ContractProblems(contract phase21DischargeContract) []string {
 	var problems []string
-	if contract.Schema != "codename.lang.resource-discharge-contract.v1" {
+	if contract.Schema != "codename.schway.resource-discharge-contract.v1" {
 		problems = append(problems, "unexpected schema")
 	}
 	if !contract.ContractOnly || contract.ProductionAdmission {

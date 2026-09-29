@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -18,7 +18,7 @@ import (
 // corpus, the growth-exponent fit, and the <= 1.2 assertion. This file
 // builds core.Program/core.Function/core.LinearOperation values DIRECTLY,
 // exactly like TestSummaryDerivationTwoHopChainPropagates and its 08-02
-// siblings above -- it never generates .lang source text and never touches
+// siblings above -- it never generates .schway source text and never touches
 // internal/compiler/syntax, because at the sizes this gate needs (hundreds
 // of functions) parse time would very plausibly dominate and mask the
 // exact curve this gate exists to see (D-08-34). TestCostCorpusIsNotParsed
@@ -254,7 +254,7 @@ func TestGrowthExponentRoundingBoundary(t *testing.T) {
 // -- exactly the twin-pair discipline 08-03's fixture corpus already
 // established for the checker's own admission decisions (see that plan's
 // own, differently-named TestInterproceduralTwinPairsDifferOnlyInTheCallee
-// over real .lang fixtures), applied here to the cost corpus's own
+// over real .schway fixtures), applied here to the cost corpus's own
 // synthetic templates.
 func TestCostCorpusLeafTemplatesDifferOnlyInTheCallee(t *testing.T) {
 	// corpusLeafUse/corpusLeafPass/corpusRelay are unexported inside
@@ -312,7 +312,7 @@ func TestCostCorpusLeafTemplatesDifferOnlyInTheCallee(t *testing.T) {
 // TestCostCorpusIsNotParsed is D-08-34's own structural guard: a go/ast
 // import scan of this file asserting it imports neither
 // internal/compiler/syntax nor os. At the sizes this gate needs (hundreds
-// of functions), generating .lang source and running it through the real
+// of functions), generating .schway source and running it through the real
 // parser would very plausibly let parse time dominate and mask the exact
 // curve this gate exists to see -- this test makes that prohibition
 // mechanically enforced, not merely a doc comment.
@@ -324,7 +324,7 @@ func TestCostCorpusIsNotParsed(t *testing.T) {
 	}
 
 	forbidden := map[string]bool{
-		"github.com/codename-lang/lang/internal/compiler/syntax": true,
+		"github.com/szTheory/schway/internal/compiler/syntax": true,
 		"os": true,
 	}
 
@@ -344,6 +344,6 @@ func TestCostCorpusIsNotParsed(t *testing.T) {
 		return true
 	})
 	if len(found) != 0 {
-		t.Fatalf("costcorpus_test.go imports forbidden package(s) %v -- the cost corpus must never be generated as .lang source through the real parser (D-08-34)", found)
+		t.Fatalf("costcorpus_test.go imports forbidden package(s) %v -- the cost corpus must never be generated as .schway source through the real parser (D-08-34)", found)
 	}
 }

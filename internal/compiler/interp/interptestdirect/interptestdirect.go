@@ -20,8 +20,8 @@ package interptestdirect
 import (
 	"fmt"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
 // RunLinearBlockDirect is task 04-07-02's narrow, test-only entry point:

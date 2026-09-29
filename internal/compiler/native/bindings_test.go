@@ -160,7 +160,7 @@ func TestPhase22BindingsRejectInvalidInputs(t *testing.T) {
 func TestPhase22BindingsClosedJSON(t *testing.T) {
 	valid, _ := json.Marshal(phase22Manifest())
 	for name, data := range map[string]string{
-		"duplicate top-level": strings.Replace(string(valid), `"schema":`, `"schema":"lang.local-c/1","schema":`, 1),
+		"duplicate top-level": strings.Replace(string(valid), `"schema":`, `"schema":"schway.local-c/1","schema":`, 1),
 		"duplicate nested":    strings.Replace(string(valid), `"name":`, `"name":"other","name":`, 1),
 		"unknown":             strings.Replace(string(valid), `"schema":`, `"flags":["-w"],"schema":`, 1),
 		"unknown nested":      strings.Replace(string(valid), `"name":`, `"extra":true,"name":`, 1),
@@ -197,14 +197,14 @@ func TestPhase22RelocatedBindingsCLI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cli := filepath.Join(t.TempDir(), "lang")
-	if out, stderr, err := phase22BindingCommand(repo, "go", "build", "-o", cli, "./cmd/lang"); err != nil {
+	cli := filepath.Join(t.TempDir(), "schway")
+	if out, stderr, err := phase22BindingCommand(repo, "go", "build", "-o", cli, "./cmd/schway"); err != nil {
 		t.Fatalf("build CLI: %v\n%s\n%s", err, out, stderr)
 	}
 	var receipts []BuildReceipt
 	for _, name := range []string{"original checkout", "relocated checkout"} {
 		root := filepath.Join(t.TempDir(), name)
-		for _, file := range []string{"identity.lang", "identity.bindings.json", "support.h", "support.c"} {
+		for _, file := range []string{"identity.schway", "identity.bindings.json", "support.h", "support.c"} {
 			data, err := os.ReadFile(filepath.Join(repo, "examples", "phase22", file))
 			if err != nil {
 				t.Fatal(err)
@@ -212,7 +212,7 @@ func TestPhase22RelocatedBindingsCLI(t *testing.T) {
 			writeBindingTestFile(t, root, file, string(data))
 		}
 		artifact := filepath.Join(root, "out", "identity")
-		out, stderr, err := phase22BindingCommand(root, cli, "--json", "build", filepath.Join(root, "identity.lang"), "--manifest", filepath.Join(root, "identity.bindings.json"), "--output", artifact)
+		out, stderr, err := phase22BindingCommand(root, cli, "--json", "build", filepath.Join(root, "identity.schway"), "--manifest", filepath.Join(root, "identity.bindings.json"), "--output", artifact)
 		if err != nil {
 			t.Fatalf("CLI manifest build: %v stderr=%s stdout=%s", err, stderr, out)
 		}

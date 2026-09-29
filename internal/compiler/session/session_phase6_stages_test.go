@@ -13,17 +13,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 // TestStageBreakdownCoversEveryPipelineStage is Task 1's tracer: with
-// LANG_OBSERVE_TIMING=1 and a cold cache/change-state pair (forcing a real
+// SCHWAY_OBSERVE_TIMING=1 and a cold cache/change-state pair (forcing a real
 // compile+link, not a cache-artifact-reuse), running the native-differential
 // lane end-to-end over a real corpus produces a stage_breakdown with one
 // entry per StageNames() name, in that exact pipeline order.
 func TestStageBreakdownCoversEveryPipelineStage(t *testing.T) {
-	t.Setenv("LANG_OBSERVE_TIMING", "1")
+	t.Setenv("SCHWAY_OBSERVE_TIMING", "1")
 	corpus := nat03CorpusPath("testdata/phase1")
 	phase6TestRoots(t)
 
@@ -74,7 +74,7 @@ func TestStageRecorderRefusesUnknownStage(t *testing.T) {
 		t.Fatalf("Start(\"nonexistent\") returned %T, want *StageRecordError", err)
 	}
 
-	t.Setenv("LANG_OBSERVE_TIMING", "1")
+	t.Setenv("SCHWAY_OBSERVE_TIMING", "1")
 	if breakdown := recorder.Breakdown(); breakdown != nil {
 		t.Fatalf("Breakdown() = %+v, want nil -- no stage was ever successfully started and stopped", breakdown)
 	}
@@ -128,7 +128,7 @@ func TestStageTimingIsGatedOnObserveTiming(t *testing.T) {
 			t.Fatalf("marshal: %v", err)
 		}
 		if strings.Contains(string(encoded), "stage_breakdown") {
-			t.Fatalf("stage_breakdown key present with LANG_OBSERVE_TIMING unset: %s", encoded)
+			t.Fatalf("stage_breakdown key present with SCHWAY_OBSERVE_TIMING unset: %s", encoded)
 		}
 		lane := phase6FindLane(result, phase6NativeDifferentialLane)
 		if lane == nil {
@@ -140,7 +140,7 @@ func TestStageTimingIsGatedOnObserveTiming(t *testing.T) {
 	})
 
 	t.Run("set", func(t *testing.T) {
-		t.Setenv("LANG_OBSERVE_TIMING", "1")
+		t.Setenv("SCHWAY_OBSERVE_TIMING", "1")
 		phase6TestRoots(t)
 		result, err := VerifyPhase6ChangedRisk(context.Background(), corpus, native.DefaultRunner())
 		if err != nil {
@@ -167,7 +167,7 @@ func stageTimingNames(entries []protocol.StageTiming) []string {
 }
 
 // TestStageBreakdownAbsentWhenUnobserved is Task 2's Behavior Test 5's
-// session-level half: with LANG_OBSERVE_TIMING unset, the marshalled verify
+// session-level half: with SCHWAY_OBSERVE_TIMING unset, the marshalled verify
 // Result carries no stage-breakdown key on any lane, and the absence
 // itself -- not full-document byte identity, which lane.ElapsedNS's own
 // unconditional per-invocation wall-clock recording already precludes,
@@ -186,7 +186,7 @@ func TestStageBreakdownAbsentWhenUnobserved(t *testing.T) {
 			t.Fatalf("run %d: marshal: %v", run, err)
 		}
 		if strings.Contains(string(encoded), "stage_breakdown") {
-			t.Fatalf("run %d: stage_breakdown present with LANG_OBSERVE_TIMING unset: %s", run, encoded)
+			t.Fatalf("run %d: stage_breakdown present with SCHWAY_OBSERVE_TIMING unset: %s", run, encoded)
 		}
 		for _, lane := range result.Lanes {
 			if lane.StageBreakdown != nil {
@@ -198,12 +198,12 @@ func TestStageBreakdownAbsentWhenUnobserved(t *testing.T) {
 
 // TestTimingEnvironmentIsReadInExactlyOnePlace is Task 2's go/ast scan over
 // every non-test .go file under internal/ and cmd/, asserting exactly one
-// reference to the LANG_OBSERVE_TIMING string -- inside
+// reference to the SCHWAY_OBSERVE_TIMING string -- inside
 // TimingObservationEnabled. Two readers is how the gate drifts, and a
 // drifted gate is how a pinned JSON test becomes intermittently red
 // (D-06-21).
 func TestTimingEnvironmentIsReadInExactlyOnePlace(t *testing.T) {
-	const envVarName = "LANG_OBSERVE_TIMING"
+	const envVarName = "SCHWAY_OBSERVE_TIMING"
 	roots := []string{
 		nat03CorpusPath("internal"),
 		nat03CorpusPath("cmd"),

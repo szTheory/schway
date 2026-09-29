@@ -1,27 +1,27 @@
 # Phase 22 native application example
 
-`identity.lang` is a checked `U64 -> U64` program. The expected values in
+`identity.schway` is a checked `U64 -> U64` program. The expected values in
 `identity.cases.json` are authored literals; they are not copied from an
 interpreter or native run.
 
 ## Build and run
 
 ```sh
-lang build examples/phase22/identity.lang --output ./identity
-lang app run ./identity -- 7
-lang app run ./identity -- 42
+schway build examples/phase22/identity.schway --output ./identity
+schway app run ./identity -- 7
+schway app run ./identity -- 42
 ```
 
 For declared local C build inputs, use
-`lang build SOURCE --manifest MANIFEST --output ARTIFACT`; `--manifest` and
+`schway build SOURCE --manifest MANIFEST --output ARTIFACT`; `--manifest` and
 `--output` may appear in either order. The checked-in example can be built with:
 
 ```sh
-lang build examples/phase22/identity.lang \
+schway build examples/phase22/identity.schway \
   --manifest examples/phase22/identity.bindings.json --output ./identity
 ```
 
-The closed `lang.local-c/1` manifest requires local `.c` sources, every local
+The closed `schway.local-c/1` manifest requires local `.c` sources, every local
 header (including transitive includes), ordered manifest-relative include
 directories, per-symbol `{name, header, function_type}` declarations using C
 function typedefs, and exactly `runtime_dependencies: ["platform-c-runtime"]`.
@@ -38,7 +38,7 @@ and Linux, and builds are not cacheable. Run checks the receipt and executable
 digest before launching. See [`BINDINGS.md`](./BINDINGS.md) for the full path,
 header, ABI-probe, and identity rules.
 
-`lang app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT` passes
+`schway app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT` passes
 one opaque argument to one retained application process. The `--` separator
 ends Lang option parsing, so values that resemble flags remain input bytes.
 Canonical decimal `U64` input has at most 20 digits and is limited by the
@@ -49,7 +49,7 @@ The app's caller-owned stdout and stderr streams are passed through without a
 byte cap. Conformance runs used by `app verify` cap each execution document at
 16 MiB and compiler/process diagnostic streams at 64 KiB.
 
-`--report` by itself writes a `lang.app-evidence/1` record with
+`--report` by itself writes a `schway.app-evidence/1` record with
 `capture_status: "disabled"`. Adding `--evidence=events` asks the same child
 process to write its checked compiler events through a private file channel.
 The event/report bound is 64 KiB. A report includes build, artifact, source,
@@ -62,18 +62,18 @@ differential verdict.
 Capture the same run with a separate report and event evidence:
 
 ```sh
-lang app run ./identity --report ./identity-evidence.json --evidence=events -- 7
+schway app run ./identity --report ./identity-evidence.json --evidence=events -- 7
 ```
 
 ## Explicit replay verification
 
 ```sh
-lang app verify examples/phase22/identity.lang \
+schway app verify examples/phase22/identity.schway \
   --cases examples/phase22/identity.cases.json \
   --report ./identity-verification.json
 ```
 
-The closed `lang.replay-cases/1` file holds one to sixteen isolated cases. Each
+The closed `schway.replay-cases/1` file holds one to sixteen isolated cases. Each
 `source` case supplies a canonical decimal input, an independently authored
 expected `U64` result, and an explicit empty `foreign_outcomes` array. The
 verifier checks the source once, then compares each case's ordered execution
@@ -97,7 +97,7 @@ It never compiles Lang foreign calls or executes C. The report names this kind
 and sets `actual_host_io` and `physical_cleanup` to `false`; a scripted result
 does not establish host IO or physical resource cleanup.
 
-Application verification writes `lang.app-verification/1`. Only a report whose
+Application verification writes `schway.app-verification/1`. Only a report whose
 every case passed the engine comparisons and independent expected answer has
 `verified: true`. This is controlled local evidence, not a claim of complete
 toolchain provenance or behavior on another host.

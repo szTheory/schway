@@ -5,14 +5,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase18ComputedScrutineeProductionPathAccepted(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase18", "computed_match.lang")
+	path := testsupport.ProjectPath("testdata", "phase18", "computed_match.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
@@ -103,7 +103,7 @@ data Choice =
 }
 
 func TestPhase18ResultComputedMatchChecker(t *testing.T) {
-	fixturePath := testsupport.ProjectPath("testdata", "phase18", "result_computed_match.lang")
+	fixturePath := testsupport.ProjectPath("testdata", "phase18", "result_computed_match.schway")
 	source, err := os.ReadFile(fixturePath)
 	if err != nil {
 		t.Fatalf("read Result computed-match fixture: %v", err)
@@ -215,7 +215,7 @@ func phase18RequireDiagnostic(t *testing.T, source []byte, code string) {
 }
 
 func TestPhase18LoanAcrossBranchFixture(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.lang")
+	path := testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)

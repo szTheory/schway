@@ -7,18 +7,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // foreignReleaseCheckedProgram checks the three-acquisition historical
 // resource fixture, reused by its archival-emitter evidence checks below.
 func foreignReleaseCheckedProgram(t *testing.T) session.CheckResult {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,14 +42,14 @@ func TestStreamingEmitterWritesAtPointOfOccurrence(t *testing.T) {
 		t.Fatal(err)
 	}
 	generated := string(generatedBytes)
-	if strings.Contains(generated, "lang_write_events") {
+	if strings.Contains(generated, "schway_write_events") {
 		t.Fatalf("a foreign-acquiring function must not use the buffered event replay:\n%s", generated)
 	}
 	if !strings.Contains(generated, `\"events\":[`) {
 		t.Fatalf("expected the streamed events array literal, got:\n%s", generated)
 	}
 	openIndex := strings.Index(generated, `\"events\":[`)
-	firstRecord := strings.Index(generated, `lang_record_event("`) // a CALL site, not the definition
+	firstRecord := strings.Index(generated, `schway_record_event("`) // a CALL site, not the definition
 	if openIndex < 0 || firstRecord < 0 || openIndex > firstRecord {
 		t.Fatalf("events array must open before the first event is recorded: open=%d first=%d\n%s", openIndex, firstRecord, generated)
 	}
@@ -64,8 +64,8 @@ func TestExistingEmittersAreByteIdentical(t *testing.T) {
 		golden []string
 		native bool // Emit (false, Phase 1's plain non-JSON mode) vs EmitNative (true)
 	}{
-		{[]string{"testdata", "phase1", "toggle.lang"}, []string{"testdata", "phase1", "generated.golden.c"}, false},
-		{[]string{"testdata", "phase2", "owned_transfer.lang"}, []string{"testdata", "phase2", "owned_transfer.golden.c"}, true},
+		{[]string{"testdata", "phase1", "toggle.schway"}, []string{"testdata", "phase1", "generated.golden.c"}, false},
+		{[]string{"testdata", "phase2", "owned_transfer.schway"}, []string{"testdata", "phase2", "owned_transfer.golden.c"}, true},
 	}
 	for _, test := range tests {
 		t.Run(strings.Join(test.golden, "/"), func(t *testing.T) {
@@ -99,7 +99,7 @@ func TestExistingEmittersAreByteIdentical(t *testing.T) {
 
 func foreignAcquireCheckedProgram(t *testing.T) session.CheckResult {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,15 +113,15 @@ func foreignAcquireCheckedProgram(t *testing.T) session.CheckResult {
 // TestGeneratedForeignHeaderNamesAreAllocated proves EmitForeignHeader
 // allocates its own result-type identifier through the existing cNames
 // deterministic-suffix-on-collision machinery (D-04-12a), not a second ad
-// hoc namer: the emitted name lives in the closed "LANG_" namespace.
+// hoc namer: the emitted name lives in the closed "SCHWAY_" namespace.
 func TestGeneratedForeignHeaderNamesAreAllocated(t *testing.T) {
 	checked := foreignAcquireCheckedProgram(t)
 	header, err := cgen.EmitForeignHeader(checked.Program)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(header, "typedef struct LANG_LANG_RES_OPEN_RESULT") {
-		t.Fatalf("expected an allocated LANG_-namespaced result type, got:\n%s", header)
+	if !strings.Contains(header, "typedef struct SCHWAY_SCHWAY_RES_OPEN_RESULT") {
+		t.Fatalf("expected an allocated SCHWAY_-namespaced result type, got:\n%s", header)
 	}
 }
 
@@ -160,15 +160,15 @@ func TestObligationCommentsAreGeneratedFromJSON(t *testing.T) {
 // header's declared record.
 func TestConformanceUnitAssertsEveryField(t *testing.T) {
 	checked := foreignAcquireCheckedProgram(t)
-	unit, err := cgen.EmitForeignConformance(checked.Program, testsupport.ProjectPath("native", "lang_foreign_resource_private.h"))
+	unit, err := cgen.EmitForeignConformance(checked.Program, testsupport.ProjectPath("native", "schway_foreign_resource_private.h"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, required := range []string{
-		`_Static_assert(sizeof(lang_foreign_resource_block) == 1,`,
-		`_Static_assert(_Alignof(lang_foreign_resource_block) == 1,`,
-		`_Static_assert(offsetof(lang_foreign_resource_block, payload) == 0,`,
-		`#include "` + testsupport.ProjectPath("native", "lang_foreign_resource_private.h") + `"`,
+		`_Static_assert(sizeof(schway_foreign_resource_block) == 1,`,
+		`_Static_assert(_Alignof(schway_foreign_resource_block) == 1,`,
+		`_Static_assert(offsetof(schway_foreign_resource_block, payload) == 0,`,
+		`#include "` + testsupport.ProjectPath("native", "schway_foreign_resource_private.h") + `"`,
 	} {
 		if !strings.Contains(unit, required) {
 			t.Fatalf("conformance unit missing %q:\n%s", required, unit)
@@ -183,7 +183,7 @@ func TestConformanceUnitAssertsEveryField(t *testing.T) {
 // ever parsing the foreign side (D-04-10).
 func TestPrivateHeaderIsIncludedOnlyByConformanceUnit(t *testing.T) {
 	checked := foreignAcquireCheckedProgram(t)
-	privateHeaderPath := testsupport.ProjectPath("native", "lang_foreign_resource_private.h")
+	privateHeaderPath := testsupport.ProjectPath("native", "schway_foreign_resource_private.h")
 	includeLine := `#include "` + privateHeaderPath + `"`
 
 	if _, err := cgen.Emit(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
@@ -213,13 +213,13 @@ var hostileForeignSymbols = []struct {
 	name   string
 	symbol string
 }{
-	{"semicolon and brace closing the extern and opening a new definition", "lang_res_open;}\nint injected(void){return 0;}//"},
-	{"parenthesis-bearing fragment", "lang_res_open(int x)"},
-	{"embedded newline", "lang_res_open\ninjected"},
-	{"leading digit", "1lang_res_open"},
-	{"embedded space", "lang_res_open injected"},
-	{"comment terminator escaping the header comment", "lang_res_open*/int injected(void){return 0;}/*"},
-	{"non-ASCII rune", "lang_res_open\u00e9"},
+	{"semicolon and brace closing the extern and opening a new definition", "schway_res_open;}\nint injected(void){return 0;}//"},
+	{"parenthesis-bearing fragment", "schway_res_open(int x)"},
+	{"embedded newline", "schway_res_open\ninjected"},
+	{"leading digit", "1schway_res_open"},
+	{"embedded space", "schway_res_open injected"},
+	{"comment terminator escaping the header comment", "schway_res_open*/int injected(void){return 0;}/*"},
+	{"non-ASCII rune", "schway_res_open\u00e9"},
 }
 
 // TestForeignSymbolInjectionNeverReachesGeneratedC proves cgen.Emit and
@@ -280,7 +280,7 @@ func TestForeignSymbolInjectionNeverReachesGeneratedC(t *testing.T) {
 // hostile Symbol on their own terms via singleForeignFunction's independent
 // validForeignSymbol guard.
 func TestForeignEmittersRefuseNonIdentifierSymbolIndependently(t *testing.T) {
-	privateHeaderPath := testsupport.ProjectPath("native", "lang_foreign_resource_private.h")
+	privateHeaderPath := testsupport.ProjectPath("native", "schway_foreign_resource_private.h")
 
 	positiveControl := foreignAcquireCheckedProgram(t)
 	if _, err := cgen.EmitForeignManifest(positiveControl.Program); err != nil {
@@ -396,7 +396,7 @@ func mutateForeignContractField(contract *core.ForeignContract, field, value str
 // calls it) -- cgen's own independent unsafeForeignContractField guard in
 // singleForeignFunction is what refuses.
 func TestForeignPolicyValueInjectionNeverReachesGeneratedC(t *testing.T) {
-	privateHeaderPath := testsupport.ProjectPath("native", "lang_foreign_resource_private.h")
+	privateHeaderPath := testsupport.ProjectPath("native", "schway_foreign_resource_private.h")
 
 	positiveControl := foreignAcquireCheckedProgram(t)
 	if _, err := cgen.EmitForeignManifest(positiveControl.Program); err != nil {
@@ -478,14 +478,14 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 		{
 			name:     "Buffer move",
 			source:   "module owned.transfer\nexport { fn relay }\nfn relay(buffer: Buffer) -> Buffer {\n  let delivered = take buffer\n  delivered\n}\n",
-			outcome:  "lang_write_buffer_hex(&lang_entry_output)",
-			transfer: "lang_record_event(\"value.transferred\"",
+			outcome:  "schway_write_buffer_hex(&schway_entry_output)",
+			transfer: "schway_record_event(\"value.transferred\"",
 		},
 		{
 			name:     "Byte copy",
 			source:   "module owned.copy\nexport { fn retain }\nfn retain(code: Byte) -> Byte {\n  let kept = code\n  kept\n}\n",
-			outcome:  "lang_write_byte(lang_entry_output)",
-			transfer: "lang_record_event(\"value.copied\"",
+			outcome:  "schway_write_byte(schway_entry_output)",
+			transfer: "schway_record_event(\"value.copied\"",
 		},
 	}
 	for _, test := range tests {
@@ -502,22 +502,22 @@ func TestLinearCSerializesRuntimeState(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, required := range []string{
-				"#define LANG_OUTPUT_LIMIT 16777216u",
-				"static int lang_write_json_string(",
-				"static int lang_record_event(",
+				"#define SCHWAY_OUTPUT_LIMIT 16777216u",
+				"static int schway_write_json_string(",
+				"static int schway_record_event(",
 				test.transfer,
-				"lang_record_event(\"function.returned\"",
+				"schway_record_event(\"function.returned\"",
 				test.outcome,
 			} {
 				if !strings.Contains(generated, required) {
 					t.Fatalf("generated C omits runtime serialization %q:\n%s", required, generated)
 				}
 			}
-			if strings.Contains(generated, `puts("{\"schema\":\"lang.execution/1\"`) {
+			if strings.Contains(generated, `puts("{\"schema\":\"schway.execution/1\"`) {
 				t.Fatalf("generated C embeds a precomputed execution document:\n%s", generated)
 			}
 			operation := strings.Index(generated, test.transfer)
-			returned := strings.Index(generated, `lang_record_event("function.returned"`)
+			returned := strings.Index(generated, `schway_record_event("function.returned"`)
 			outcome := strings.Index(generated, test.outcome)
 			if operation < 0 || returned <= operation || outcome <= returned {
 				t.Fatalf("runtime event/outcome order is not operation -> return -> serialization: operation=%d return=%d outcome=%d\n%s", operation, returned, outcome, generated)
@@ -534,9 +534,9 @@ func TestForeignLandingPadEmitterRemainsRefused(t *testing.T) {
 		fixture      string
 		acquisitions int
 	}{
-		{"foreign_acquire_one.lang", 1},
-		{"nonlocal_exit_probe.lang", 2},
-		{"acquire_three_success.lang", 3},
+		{"foreign_acquire_one.schway", 1},
+		{"nonlocal_exit_probe.schway", 2},
+		{"acquire_three_success.schway", 3},
 	}
 	for _, test := range tests {
 		t.Run(test.fixture, func(t *testing.T) {
@@ -559,7 +559,7 @@ func TestForeignLandingPadEmitterRemainsRefused(t *testing.T) {
 // TestForeignResourceLedgerEmitterRemainsRefused prevents the old resource
 // ledger artifact from being mistaken for current native cleanup support.
 func TestForeignResourceLedgerEmitterRemainsRefused(t *testing.T) {
-	checked := nonlocalPadCheckedProgram(t, "nonlocal_exit_probe.lang")
+	checked := nonlocalPadCheckedProgram(t, "nonlocal_exit_probe.schway")
 	generated, err := cgen.EmitNative(checked.Program)
 	if err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
 		t.Fatalf("current public emitter must refuse the foreign body, got source=%q err=%v", generated, err)
@@ -589,7 +589,7 @@ func nonlocalPadCheckedProgram(t *testing.T, fixture string) session.CheckResult
 // generator must carry a comment stating what it reaches and what it does
 // not").
 func TestNonlocalExitReachabilityIsRecorded(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "nonlocal_exit_probe.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "nonlocal_exit_probe.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -614,9 +614,9 @@ func TestNonlocalExitReachabilityIsRecorded(t *testing.T) {
 // mention -- named, never quietly implied handled.
 func TestBlindSpotsAreNamedNotClaimed(t *testing.T) {
 	paths := [][]string{
-		{"testdata", "phase4", "nonlocal_exit_probe.lang"},
+		{"testdata", "phase4", "nonlocal_exit_probe.schway"},
 		{"internal", "compiler", "cgen", "cgen.go"},
-		{"native", "lang_foreign_nonlocal.c"},
+		{"native", "schway_foreign_nonlocal.c"},
 	}
 	blindSpots := []string{"foreign-invoked callback", "terminates the process directly"}
 	forbidden := []string{"covers all nonlocal exits", "detects every nonlocal exit", "proven to catch every"}
@@ -651,7 +651,7 @@ func TestBlindSpotsAreNamedNotClaimed(t *testing.T) {
 // useful to historical fixture controls; it is not emitted by production
 // Emit/EmitNative.
 func TestPhase5ByPointerLoweringGolden(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -674,7 +674,7 @@ func TestPhase5ByPointerLoweringGolden(t *testing.T) {
 	if generated != string(golden) {
 		t.Fatalf("archived by-pointer output moved from its committed golden:\n--- got ---\n%s\n--- want ---\n%s", generated, string(golden))
 	}
-	if count := strings.Count(generated, "/* lang:by-pointer-param */"); count != 1 {
+	if count := strings.Count(generated, "/* schway:by-pointer-param */"); count != 1 {
 		t.Fatalf("expected exactly one by-pointer-param marker, got %d in:\n%s", count, generated)
 	}
 }
@@ -686,29 +686,29 @@ func TestPhase5ByPointerLoweringGolden(t *testing.T) {
 // fixtures core_test.go's D-05-39 widening added. TestPhase5ByPointerLoweringIsAdditive
 // enumerates every one of them.
 var phase1Through4AcceptingFixtures = []string{
-	"testdata/phase1/comments.lang",
-	"testdata/phase1/toggle.lang",
-	"testdata/phase2/implicit_copy.lang",
-	"testdata/phase2/owned_transfer.lang",
-	"testdata/phase3/borrowed_view.lang",
-	"testdata/phase3/branch_one_arm_shared_accept.lang",
-	"testdata/phase3/branch_view.lang",
-	"testdata/phase3/public_view.lang",
-	"testdata/phase3/public_view_impossible.lang",
-	"testdata/phase3/public_view_mixed_access.lang",
-	"testdata/phase3/public_view_multi_arm_access_conflict.lang",
-	"testdata/phase3/public_view_multi_arm_omitted.lang",
-	"testdata/phase3/public_view_omitted.lang",
-	"testdata/phase3/public_view_understated.lang",
-	"testdata/phase3/sequential_shared_then_exclusive_accept.lang",
-	"testdata/phase3/shared_shared_accept.lang",
-	"testdata/phase4/acquire_three_fail_second.lang",
-	"testdata/phase4/acquire_three_fail_third.lang",
-	"testdata/phase4/acquire_three_success.lang",
-	"testdata/phase4/defect_terminal.lang",
-	"testdata/phase4/discard_because.lang",
-	"testdata/phase4/foreign_acquire_one.lang",
-	"testdata/phase4/nonlocal_exit_probe.lang",
+	"testdata/phase1/comments.schway",
+	"testdata/phase1/toggle.schway",
+	"testdata/phase2/implicit_copy.schway",
+	"testdata/phase2/owned_transfer.schway",
+	"testdata/phase3/borrowed_view.schway",
+	"testdata/phase3/branch_one_arm_shared_accept.schway",
+	"testdata/phase3/branch_view.schway",
+	"testdata/phase3/public_view.schway",
+	"testdata/phase3/public_view_impossible.schway",
+	"testdata/phase3/public_view_mixed_access.schway",
+	"testdata/phase3/public_view_multi_arm_access_conflict.schway",
+	"testdata/phase3/public_view_multi_arm_omitted.schway",
+	"testdata/phase3/public_view_omitted.schway",
+	"testdata/phase3/public_view_understated.schway",
+	"testdata/phase3/sequential_shared_then_exclusive_accept.schway",
+	"testdata/phase3/shared_shared_accept.schway",
+	"testdata/phase4/acquire_three_fail_second.schway",
+	"testdata/phase4/acquire_three_fail_third.schway",
+	"testdata/phase4/acquire_three_success.schway",
+	"testdata/phase4/defect_terminal.schway",
+	"testdata/phase4/discard_because.schway",
+	"testdata/phase4/foreign_acquire_one.schway",
+	"testdata/phase4/nonlocal_exit_probe.schway",
 }
 
 // TestPhase5ByPointerLoweringIsAdditive proves the retained structural
@@ -739,7 +739,7 @@ func TestPhase5ByPointerLoweringIsAdditive(t *testing.T) {
 // the historical three-engine experiment stays behind the whole-program
 // refusal until family-specific discharge evidence is admitted.
 func TestPhase5ByPointerLoweringThreeEngineAgreementRemainsDeferred(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang")
+	path := testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if len(diagnostics) != 0 {
 		t.Fatalf("fixture failed to check: %+v", diagnostics)
@@ -756,7 +756,7 @@ func TestPhase5ByPointerLoweringThreeEngineAgreementRemainsDeferred(t *testing.T
 // itself refused by unsafeForeignContractField's new Alias check -- the
 // point of this test is that the field is never spliced anywhere at all,
 // not merely that a hostile value would be caught.
-const aliasProbeSentinel = "lang_alias_probe_sentinel"
+const aliasProbeSentinel = "schway_alias_probe_sentinel"
 
 // TestEmitForeignNeverContainsAliasValue is D-05-36's regression proof: every
 // exported EmitForeign* entry point is driven with a core.ForeignContract
@@ -788,7 +788,7 @@ func TestEmitForeignNeverContainsAliasValue(t *testing.T) {
 		t.Fatalf("EmitForeignHeader output contains the Alias sentinel:\n%s", header)
 	}
 
-	conformance, err := cgen.EmitForeignConformance(mutated, testsupport.ProjectPath("native", "lang_foreign_resource_private.h"))
+	conformance, err := cgen.EmitForeignConformance(mutated, testsupport.ProjectPath("native", "schway_foreign_resource_private.h"))
 	if err != nil {
 		t.Fatalf("EmitForeignConformance: %v", err)
 	}
@@ -826,7 +826,7 @@ fn relay(buffer: Buffer) -> Buffer {
 // manifest may still describe the historical restrict fact. Ordinary
 // admitted output does not acquire that token.
 func TestByPointerAttributeMetadataRemainsSeparateFromBodyAdmission(t *testing.T) {
-	positive, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	positive, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -882,7 +882,7 @@ func TestRestrictNeverOnForeignExtern(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conformance, err := cgen.EmitForeignConformance(checked.Program, testsupport.ProjectPath("native", "lang_foreign_resource_private.h"))
+	conformance, err := cgen.EmitForeignConformance(checked.Program, testsupport.ProjectPath("native", "schway_foreign_resource_private.h"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -901,7 +901,7 @@ func TestRestrictNeverOnForeignExtern(t *testing.T) {
 // JustifiedBy binding, naming the exact core node, parameter, and loan
 // identity the attribute is justified by.
 func TestEmittedAttributesCarryJustification(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -965,7 +965,7 @@ func TestForeignManifestBytesUnchangedForPriorPhases(t *testing.T) {
 		t.Fatalf("empty-slice encodings diverge: old=%s new=%s", oldShape, newShape)
 	}
 
-	for _, fixture := range []string{"testdata/phase4/foreign_acquire_one.lang", "testdata/phase4/acquire_three_success.lang"} {
+	for _, fixture := range []string{"testdata/phase4/foreign_acquire_one.schway", "testdata/phase4/acquire_three_success.schway"} {
 		t.Run(fixture, func(t *testing.T) {
 			source, err := os.ReadFile(testsupport.ProjectPath(strings.Split(fixture, "/")...))
 			if err != nil {

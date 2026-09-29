@@ -1,0 +1,95 @@
+// Phase 10 Plan 07 -- QLT-04's declared composition depth 3, ACCEPTING
+// member. Chain of 4 functions (leaf, f2, f1, caller), the shape the
+// definition adopted from corevalidate_peer_liveness.go:64-77 calls "a
+// chain of d+1 functions" (D-10-45), and every OpCall in the chain
+// composes (f2 calls leaf, f1 calls f2, caller calls f1).
+//
+// FINDING (empirically confirmed, reported per this task's own escape
+// hatch): the IDEAL depth-3 accept shape -- a SINGLE loan declared via
+// `-> borrow(buffer) Buffer` at every hop, forwarded leaf-to-f2-to-f1-to-
+// caller exactly like relay_depth2_refuse.schway's own middle hop, but with
+// no conflicting `take` so the full CLI would admit it -- does NOT exist
+// in this compiler today. `check.Program` alone admits that shape with
+// ZERO diagnostics (verified: `go run ./cmd/dbgcheck` against the shape
+// prints `check diagnostics=[]`), but `corevalidate.Validate` -- consulted
+// next in `session.CheckCommandFile`'s fixed precedence -- independently
+// REFUSES it with `core.callee_not_callable`, because
+// `corevalidate.go`'s `peerDeriveOriginFacts` (the peer's own origin
+// re-derivation `peerCallable` consults) has NO `core.OpCall` case at all:
+// its forward walk only ever extends `derived[...]` through
+// `OpBorrowShared`/`OpBorrowExclusive`/`OpMove`/`OpCopy`, so a middle
+// function whose declared borrow return is sourced from FORWARDING A
+// CALL'S RESULT is unconditionally judged "not derived" and therefore not
+// Callable -- regardless of what the callee (leaf) actually does, and
+// regardless of whether the caller has any conflicting use at all. This
+// affects `relay_depth2_refuse.schway` too (confirmed directly: with its own
+// `take buffer` conflict removed, `corevalidate.Validate` still refuses
+// `relay` as not-callable) -- it has simply never been OBSERVABLE there,
+// because `check`'s own `check.interprocedural_loan_liveness` refusal
+// already fires first and CheckCommandFile's fixed check-then-peer
+// precedence never reaches corevalidate for that fixture. This is a
+// genuine, previously-undocumented gap in corevalidate's origin peer,
+// structurally analogous to D-10-28 (a second detector missing an OpCall
+// case) but for the ORIGIN peer rather than the usesParam peer -- named
+// here, not fixed, since `corevalidate.go` is outside this plan's
+// `files_modified` and fixing it is exactly the kind of unscoped semantic
+// change D-10-29 already declined once for a sibling peer. Also
+// structurally impossible to route AROUND within one function: passing a
+// borrow into a call consumes it (`ownership.use_after_move` fires the
+// instant a borrowed place is both passed to a callee and returned
+// afterward), so there is no expressible way to both forward a borrow
+// through a call and ALSO independently re-derive it from the parameter
+// directly.
+//
+// NEAREST EXPRESSIBLE SHAPE (this fixture): f2, a MIDDLE hop, creates a
+// genuine local borrow of its own parameter (`borrowed`), forwards it into
+// a real call to leaf (exercising pathoracle's own per-path composition
+// machinery, `hasOpCall`/`composeLinearizeCaller`/`composeCall`, on a path
+// that genuinely crosses an OpCall), and then -- once that borrow's last
+// use is the leaf call -- takes ownership of its own parameter and returns
+// it OWNED. The overall call chain still reaches the declared depth-3
+// shape (4 functions, 3 OpCall hops: caller->f1->f2->leaf), and a genuine
+// borrow (not a bare owned pass-through, unlike relay_depth2_accept.schway)
+// is created, used across a call boundary, and released -- but the LOAN
+// ITSELF crosses only 1 hop (f2->leaf), not all 3, because a 3-hop
+// DECLARED-ORIGIN carry is exactly the shape corevalidate's above defect
+// makes unrepresentable as an accepting program today. The genuine
+// 3-hop declared-borrow carry IS exercised, structurally, by this
+// fixture's twin, relay_depth3_refuse.schway: its checked core.Program
+// (produced regardless of check's own refusal) is what
+// TestCompositionDepthCorpusReachesDeclaredBound's corpus walk uses to
+// observe the declared depth actually being reached, since pathoracle's
+// own structural analysis is check/corevalidate-verdict-agnostic by
+// design (pathoracle.go's own package doc).
+//
+// Expected, verified empirically via `go run ./cmd/schway --json check`:
+// exit 0, status "valid" (previously named "pass" in this CLI's own
+// vocabulary), empty diagnostics array. QLT-04.
+
+module phase10.relay_depth3_accept
+
+export {
+  fn caller
+}
+
+fn leaf(buffer: Buffer) -> borrow(buffer) Buffer {
+  let observed = borrow buffer
+  observed
+}
+
+fn f2(buffer: Buffer) -> Buffer {
+  let borrowed = borrow buffer
+  let observed = leaf(borrowed)
+  let taken = take buffer
+  taken
+}
+
+fn f1(buffer: Buffer) -> Buffer {
+  let forwarded = f2(buffer)
+  forwarded
+}
+
+fn caller(buffer: Buffer) -> Buffer {
+  let aliased = f1(buffer)
+  aliased
+}

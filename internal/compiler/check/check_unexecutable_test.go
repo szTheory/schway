@@ -4,20 +4,20 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ability"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/ability"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestUnexecutableShapeRejectedWithSpan closes D-02-09/D-07 (03-02-03):
-// testdata/phase2/ability_shapes.lang type-checked cleanly through Phase 2
+// testdata/phase2/ability_shapes.schway type-checked cleanly through Phase 2
 // but every engine died spanless at exit 3, because Box/Pair have no native
 // C lowering (cgen.linearInput only maps Byte/Buffer). check now refuses
 // each such function with a span-bearing, repair-bearing diagnostic naming
 // the offending constructor, instead of admitting it into the checked core.
 func TestUnexecutableShapeRejectedWithSpan(t *testing.T) {
-	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "ability_shapes.lang"))
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "ability_shapes.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestUnexecutableShapeRejectedWithSpan(t *testing.T) {
 		if problem.Code != "check.unexecutable_shape" {
 			t.Fatalf("unexpected code %q: %+v", problem.Code, problem)
 		}
-		if problem.Schema != "lang.diagnostic/1" {
+		if problem.Schema != "schway.diagnostic/1" {
 			t.Fatalf("unexecutable-shape rejection must join the repair-bearing taxonomy: %+v", problem)
 		}
 		if problem.Primary.Start == 0 && problem.Primary.End == 0 {
@@ -58,7 +58,7 @@ func TestUnexecutableShapeRejectedWithSpan(t *testing.T) {
 // TestAbilityFactsSurviveExecutionRejection proves check.go's new execution-
 // admission gate (D-02-09/D-07) is about REFUSING EXECUTION, not about
 // withholding ability derivation: the exact three shapes
-// testdata/phase2/ability_shapes.lang exercises still derive their sealed
+// testdata/phase2/ability_shapes.schway exercises still derive their sealed
 // structural ability facts and negative witnesses cleanly through the
 // underlying ability package, unaffected by checkLinear's new gate — the
 // gate runs strictly after ability.Derive already succeeded (check.go's

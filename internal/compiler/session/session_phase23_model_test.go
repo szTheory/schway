@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase23ModelReportUsesModelOnlyEvidenceVocabulary(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase22", "identity.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase22", "identity.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestPhase23ModelReportUsesModelOnlyEvidenceVocabulary(t *testing.T) {
 }
 
 func TestPhase23SourceReplayRefusesLocalCAndPathIO(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,8 +3,8 @@ package corevalidate_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
 // TestValidatorVerdictsUnchanged is 03-04-02's own pin: before

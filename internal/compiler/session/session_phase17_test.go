@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPhase17ThreePeerAgreement compares the checker fact, core peer, and
@@ -75,7 +75,7 @@ type phase17Peers struct {
 
 func phase17ReturnTracerSource(t testing.TB) []byte {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func phase17RepairFixture(t testing.TB, name string) []byte {
 }
 
 func TestPhase17RepairCorpusReachable(t *testing.T) {
-	for _, name := range []string{"derivation_call_argument_mismatch.lang", "heldout_call_argument_mismatch.lang"} {
+	for _, name := range []string{"derivation_call_argument_mismatch.schway", "heldout_call_argument_mismatch.schway"} {
 		t.Run(name, func(t *testing.T) {
 			result := Check(phase17RepairFixture(t, name))
 			if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "check.call_argument_type_mismatch" {
@@ -228,8 +228,8 @@ func TestPhase17RepairCorpusReachable(t *testing.T) {
 }
 
 func TestPhase17RepairCorpusStructurallyDistinct(t *testing.T) {
-	derivation := phase17RepairFixture(t, "derivation_call_argument_mismatch.lang")
-	heldout := phase17RepairFixture(t, "heldout_call_argument_mismatch.lang")
+	derivation := phase17RepairFixture(t, "derivation_call_argument_mismatch.schway")
+	heldout := phase17RepairFixture(t, "heldout_call_argument_mismatch.schway")
 	derivationTopology := phase17RepairTopology(derivation)
 	heldoutTopology := phase17RepairTopology(heldout)
 	if derivationTopology == heldoutTopology || heldoutTopology.hops < 2 {
@@ -261,7 +261,7 @@ func phase17RepairTopology(source []byte) phase17Topology {
 }
 
 func TestPhase17RepairCorpusUniqueCandidate(t *testing.T) {
-	heldout := string(phase17RepairFixture(t, "heldout_call_argument_mismatch.lang"))
+	heldout := string(phase17RepairFixture(t, "heldout_call_argument_mismatch.schway"))
 	if strings.Count(heldout, "classify(value)") != 1 || strings.Count(heldout, "fn dispatch(resource: Resource)") != 1 {
 		t.Fatalf("held-out fixture no longer has one mismatched call and one Resource parameter candidate")
 	}
@@ -315,20 +315,20 @@ func TestPhase17HeldoutSeal(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
-		if strings.HasPrefix(entry.Name(), "heldout_") && strings.HasSuffix(entry.Name(), ".lang") && !listed["testdata/phase17/"+entry.Name()] {
+		if strings.HasPrefix(entry.Name(), "heldout_") && strings.HasSuffix(entry.Name(), ".schway") && !listed["testdata/phase17/"+entry.Name()] {
 			t.Fatalf("unlisted held-out fixture %s", entry.Name())
 		}
 	}
 }
 
 func TestPhase17HeldoutSealGuardIsNotInert(t *testing.T) {
-	data := phase17RepairFixture(t, "heldout_call_argument_mismatch.lang")
+	data := phase17RepairFixture(t, "heldout_call_argument_mismatch.schway")
 	tampered := append([]byte(nil), data...)
 	tampered[len(tampered)/2] ^= 1
 	if sha256.Sum256(tampered) == sha256.Sum256(data) {
 		t.Fatal("one-byte held-out mutation did not alter its digest")
 	}
-	if _, err := os.Stat(filepath.Join(t.TempDir(), "unlisted_heldout.lang")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(t.TempDir(), "unlisted_heldout.schway")); !os.IsNotExist(err) {
 		t.Fatal("temporary unlisted-file control is not isolated")
 	}
 }
@@ -340,9 +340,9 @@ func TestPhase17SourceFrontierMoved(t *testing.T) {
 		fixture string
 		codes   []string
 	}{
-		{"return_type_tracer.lang", nil},
-		{"call_argument_type_mismatch.lang", []string{"check.call_argument_type_mismatch"}},
-		{"call_return_type_unrepresentable.lang", []string{"check.call_return_type_unrepresentable"}},
+		{"return_type_tracer.schway", nil},
+		{"call_argument_type_mismatch.schway", []string{"check.call_argument_type_mismatch"}},
+		{"call_return_type_unrepresentable.schway", []string{"check.call_return_type_unrepresentable"}},
 	} {
 		t.Run(tc.fixture, func(t *testing.T) {
 			checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase17", tc.fixture))
@@ -363,9 +363,9 @@ func TestPhase17SourceFrontierMoved(t *testing.T) {
 
 func TestPhase17SourceFrontierFixturesAreParserValid(t *testing.T) {
 	for _, fixture := range []string{
-		"return_type_tracer.lang",
-		"call_argument_type_mismatch.lang",
-		"call_return_type_unrepresentable.lang",
+		"return_type_tracer.schway",
+		"call_argument_type_mismatch.schway",
+		"call_return_type_unrepresentable.schway",
 	} {
 		t.Run(fixture, func(t *testing.T) {
 			result, err := FormatFile(testsupport.ProjectPath("testdata", "phase17", fixture))

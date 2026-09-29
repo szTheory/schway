@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/ability"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/ability"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // 07-11 Task 2 Test 3 (independence): this test file imports
@@ -137,7 +137,7 @@ func TestOwnershipMutationMatrix(t *testing.T) {
 
 func phase23LocalOwnerProgram(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +284,7 @@ func phase23OwnerMutations() []struct {
 			if index < 0 {
 				return false
 			}
-			program.Functions[0].Linear.Operations[index].Foreign.Symbol = "lang_file_byte_acquire"
+			program.Functions[0].Linear.Operations[index].Foreign.Symbol = "schway_file_byte_acquire"
 			return true
 		}},
 		{"wrong use ABI", func(program *core.Program) bool {
@@ -500,7 +500,7 @@ func TestPhase17CorePeerIndependenceBoundary(t *testing.T) {
 
 func phase17CoreProgram(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -768,7 +768,7 @@ func cloneProgram(t *testing.T, program core.Program) core.Program {
 
 func foreignAcquireProgram(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -942,13 +942,13 @@ func TestForeignSymbolNotIdentifierRefused(t *testing.T) {
 		name   string
 		symbol string
 	}{
-		{"semicolon and brace closing the extern and opening a new definition", "lang_res_open;}\nint injected(void){return 0;}//"},
-		{"parenthesis-bearing fragment", "lang_res_open(int x)"},
-		{"embedded newline", "lang_res_open\ninjected"},
-		{"leading digit", "1lang_res_open"},
-		{"embedded space", "lang_res_open injected"},
-		{"comment terminator escaping the header comment", "lang_res_open*/int injected(void){return 0;}/*"},
-		{"non-ASCII rune", "lang_res_open\u00e9"},
+		{"semicolon and brace closing the extern and opening a new definition", "schway_res_open;}\nint injected(void){return 0;}//"},
+		{"parenthesis-bearing fragment", "schway_res_open(int x)"},
+		{"embedded newline", "schway_res_open\ninjected"},
+		{"leading digit", "1schway_res_open"},
+		{"embedded space", "schway_res_open injected"},
+		{"comment terminator escaping the header comment", "schway_res_open*/int injected(void){return 0;}/*"},
+		{"non-ASCII rune", "schway_res_open\u00e9"},
 	}
 	for _, hostileCase := range hostile {
 		t.Run(hostileCase.name, func(t *testing.T) {
@@ -963,7 +963,7 @@ func TestForeignSymbolNotIdentifierRefused(t *testing.T) {
 
 	t.Run("identifier-shaped but unknown symbol is not refused by this check", func(t *testing.T) {
 		mutated := cloneProgram(t, valid)
-		mutated.Functions[0].ForeignContract.Symbol = "lang_res_open_renamed_but_well_formed"
+		mutated.Functions[0].ForeignContract.Symbol = "schway_res_open_renamed_but_well_formed"
 		result := corevalidate.Validate(mutated)
 		if result.Valid {
 			return
@@ -975,7 +975,7 @@ func TestForeignSymbolNotIdentifierRefused(t *testing.T) {
 
 	t.Run("end-to-end: cgen.Emit refuses before generating any C", func(t *testing.T) {
 		mutated := cloneProgram(t, valid)
-		mutated.Functions[0].ForeignContract.Symbol = "lang_res_open;}\nint injected(void){return 0;}//"
+		mutated.Functions[0].ForeignContract.Symbol = "schway_res_open;}\nint injected(void){return 0;}//"
 		generated, err := cgen.Emit(mutated)
 		if err == nil {
 			t.Fatalf("expected an error from cgen.Emit, got generated C:\n%s", generated)
@@ -1156,7 +1156,7 @@ func TestForeignContractCommentSafetyRefused(t *testing.T) {
 			mutated := cloneProgram(t, valid)
 			layout := mutated.Functions[0].ForeignContract.Layout
 			if field == "ForeignTypeName" {
-				layout.ForeignTypeName = "1lang_foreign_resource_block"
+				layout.ForeignTypeName = "1schway_foreign_resource_block"
 			} else {
 				layout.Fields[0].Name = "1payload"
 			}
@@ -1227,7 +1227,7 @@ func TestCorevalidateRefusesUnsafeAliasField(t *testing.T) {
 // Allocator differs from its own acquisition's is rejected purely from the
 // core artifact, never trusting check's own bookkeeping (Task 04-03-01).
 func TestAllocatorIdentityMismatchRejected(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1250,7 +1250,7 @@ func TestAllocatorIdentityMismatchRejected(t *testing.T) {
 // shipped artifact on all four Phase 4 plan-02 fixtures.
 func TestValidatorRederivesReleaseOrder(t *testing.T) {
 	for _, fixture := range []string{
-		"acquire_three_success.lang", "acquire_three_fail_second.lang", "acquire_three_fail_third.lang", "discard_because.lang",
+		"acquire_three_success.schway", "acquire_three_fail_second.schway", "acquire_three_fail_third.schway", "discard_because.schway",
 	} {
 		program := resourceLifecycleProgram(t, fixture)
 		if result := corevalidate.Validate(program); !result.Valid {
@@ -1263,7 +1263,7 @@ func TestValidatorRederivesReleaseOrder(t *testing.T) {
 // and invented raises core.release_order_mismatch on an otherwise valid
 // artifact (T-04-11).
 func TestReleaseOrderMutationMatrix(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1406,7 +1406,7 @@ func TestReleaseOrderMutationMatrix(t *testing.T) {
 // 10-05 Task 2's own dedicated end-to-end proof (D-10-33/D-10-34), driven
 // off a REAL checked fixture (session.Check via resourceLifecycleProgram,
 // never a hand-built core.Program): all three of
-// acquire_three_success.lang's tracked acquisitions are repointed to a
+// acquire_three_success.schway's tracked acquisitions are repointed to a
 // FABRICATED, non-existent ReleasesOperationID, making each one genuinely
 // unreleased -- peerCalleeFrameDrained runs INSIDE derivePeerSignature,
 // called at recordSummaryPeer's own entry point, strictly BEFORE
@@ -1415,7 +1415,7 @@ func TestReleaseOrderMutationMatrix(t *testing.T) {
 // invariant is genuinely wired into the validator's own pipeline, not
 // merely a passing unit test of the bare predicate.
 func TestPeerCalleeFrameDrainedRefusesGenuinelyAbandonedAcquisition(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	mutated := cloneProgram(t, valid)
 	function := &mutated.Functions[0]
 	successBlockID := function.ID + ":block:success"
@@ -1448,8 +1448,8 @@ func TestPeerCalleeFrameDrainedRefusesGenuinelyAbandonedAcquisition(t *testing.T
 // invariant is wired in.
 func TestPeerCalleeFrameDrainedAdmitsFullyDrainedFixtures(t *testing.T) {
 	for _, fixture := range []string{
-		"acquire_three_success.lang", "acquire_three_fail_second.lang", "acquire_three_fail_third.lang",
-		"discard_because.lang", "foreign_acquire_one.lang", "nonlocal_exit_probe.lang",
+		"acquire_three_success.schway", "acquire_three_fail_second.schway", "acquire_three_fail_third.schway",
+		"discard_because.schway", "foreign_acquire_one.schway", "nonlocal_exit_probe.schway",
 	} {
 		program := resourceLifecycleProgram(t, fixture)
 		if result := corevalidate.Validate(program); !result.Valid {
@@ -1468,9 +1468,9 @@ func TestReleaseOrderValidationWorkSeries(t *testing.T) {
 		fixture      string
 		acquisitions int
 	}{
-		{"discard_because.lang", 0},
-		{"foreign_acquire_one.lang", 1},
-		{"acquire_three_success.lang", 3},
+		{"discard_because.schway", 0},
+		{"foreign_acquire_one.schway", 1},
+		{"acquire_three_success.schway", 3},
 	}
 	var series []int
 	for _, size := range sizes {
@@ -1503,7 +1503,7 @@ func TestReleaseOrderValidationWorkSeries(t *testing.T) {
 // test red, since the corrupted block would then be silently skipped instead
 // of refused -- see 04-08-SUMMARY.md for the recorded revert-and-fail output.
 func TestMergeTerminalBlockDivergentReleaseSetsRefused(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1535,9 +1535,9 @@ func TestMergeTerminalBlockDivergentReleaseSetsRefused(t *testing.T) {
 // already carries. Without this test, the previous test could be passing
 // merely because ANY second incoming edge is refused -- exactly the "exactly
 // one incoming edge" structural form Task 1 declined (it would also refuse
-// discard_because.lang's legitimate merge).
+// discard_because.schway's legitimate merge).
 func TestMergeTerminalBlockAgreeingChainsAccepted(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1583,7 +1583,7 @@ func TestMergeTerminalBlockAgreeingChainsAccepted(t *testing.T) {
 // new core.release_order_merge_mismatch code once the fix lands, proving the
 // interior comparison actually ran.
 func TestInteriorMergeDivergentHistoriesRefused(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1655,7 +1655,7 @@ func TestInteriorMergeDivergentHistoriesRefused(t *testing.T) {
 // language exactly the way an "exactly one incoming edge" structural form
 // already declined at the terminal-block loop.
 func TestInteriorMergeAgreeingHistoriesAccepted(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1692,7 +1692,7 @@ func TestInteriorMergeAgreeingHistoriesAccepted(t *testing.T) {
 // it is green both before and after Task 3, rather than encoding which check
 // fires first.
 func TestTerminalBlockWithNoIncomingEdgeRefused(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1731,15 +1731,15 @@ func TestTerminalBlockWithNoIncomingEdgeRefused(t *testing.T) {
 }
 
 // TestLegitimateDiscardMergeStillValidates is the regression guard for Task
-// 1's option A: discard_because.lang's core program is itself a merge
+// 1's option A: discard_because.schway's core program is itself a merge
 // terminal block (entry's ok edge and err edge both target the same success
 // block, since `discard`'s outcome is deliberately ignored on both paths) and
 // must keep validating under the per-incoming-edge rederivation.
 func TestLegitimateDiscardMergeStillValidates(t *testing.T) {
-	program := resourceLifecycleProgram(t, "discard_because.lang")
+	program := resourceLifecycleProgram(t, "discard_because.schway")
 	result := corevalidate.Validate(program)
 	if !result.Valid {
-		t.Fatalf("expected discard_because.lang to validate, got %+v", result)
+		t.Fatalf("expected discard_because.schway to validate, got %+v", result)
 	}
 }
 
@@ -1749,7 +1749,7 @@ func TestLegitimateDiscardMergeStillValidates(t *testing.T) {
 // of checkReleaseOrder (which never even runs, since blocksAndEdges executes
 // first in Validate and returns false immediately).
 func TestTerminalBlockUnreachableRefused(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1787,7 +1787,7 @@ func TestTerminalBlockUnreachableRefused(t *testing.T) {
 // 04-REVIEW.md CR-01 falsifier: checkReleaseOrder's rederive backward walk is
 // the one graph walk in this file without a visited-set guard matching
 // loanChainIndex.carriedLoans and blockReach. It hand-corrupts
-// acquire_three_success.lang's declared ok-edge chain into a two-block cycle
+// acquire_three_success.schway's declared ok-edge chain into a two-block cycle
 // (step:1 <-> step:2) reaching the success block's incoming edge, so the
 // backward walk started from that edge would loop forever without the guard.
 // The test asserts BOTH observable properties the guard exists to provide:
@@ -1795,7 +1795,7 @@ func TestTerminalBlockUnreachableRefused(t *testing.T) {
 // and the returned result carries the core.release_order_cyclic refusal
 // rather than some other code or a silently truncated comparison.
 func TestCyclicOkEdgeChainRefusedNotHung(t *testing.T) {
-	valid := resourceLifecycleProgram(t, "acquire_three_success.lang")
+	valid := resourceLifecycleProgram(t, "acquire_three_success.schway")
 	if result := corevalidate.Validate(valid); !result.Valid {
 		t.Fatalf("valid resource-lifecycle core rejected: %+v", result)
 	}
@@ -1844,12 +1844,12 @@ func TestCyclicOkEdgeChainRefusedNotHung(t *testing.T) {
 
 // TestAcyclicChainsStillValidateUnderCycleGuard is the accepting-path
 // regression guard for the cycle guard above: every acyclic Phase 4 fixture,
-// including discard_because.lang's legitimate two-incoming-edge merge, must
+// including discard_because.schway's legitimate two-incoming-edge merge, must
 // keep validating with UNCHANGED counted work -- proving the guard costs
 // nothing on the path it is not meant to refuse.
 func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	// 04-12 added one new accepting-path v.check per core.OpForeignCall (the
-	// foreign.symbol_not_identifier audit); acquire_three_success.lang
+	// foreign.symbol_not_identifier audit); acquire_three_success.schway
 	// declares three foreign calls, so the pinned count moved from 403 to
 	// 403+3=406. 04-13 Task 2 adds a second new accepting-path v.check per
 	// core.OpForeignCall (foreign.policy_value_not_identifier), moving the
@@ -1863,7 +1863,7 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	//
 	// Phase 07 (D-07-29) adds one new accepting-path v.check PER OPERATION
 	// (the CalleeID kind-exclusivity check, run unconditionally regardless
-	// of kind): acquire_three_success.lang's checked program carries 13
+	// of kind): acquire_three_success.schway's checked program carries 13
 	// operations, moving the pin to 412+13=425.
 	//
 	// 07-07 adds one FLAT new accepting-path v.check per Validate call (not
@@ -1873,24 +1873,24 @@ func TestAcyclicChainsStillValidateUnderCycleGuard(t *testing.T) {
 	//
 	// Plan 10-05 Task 2 (D-10-33/D-10-34) adds one FLAT new accepting-path
 	// v.check PER FUNCTION DECLARATION (peerCalleeFrameDrained, called once
-	// inside derivePeerSignature): acquire_three_success.lang declares
+	// inside derivePeerSignature): acquire_three_success.schway declares
 	// exactly one function, moving the pin a final time to 426+1=427.
 	//
 	// Phase 17 preserves the single TypeFact representation for same-type
 	// functions and adds one terminal return-contract check.
 	const acquireThreeSuccessChecks = 428
 
-	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.lang"))
+	result := corevalidate.Validate(resourceLifecycleProgram(t, "acquire_three_success.schway"))
 	if !result.Valid {
-		t.Fatalf("expected acquire_three_success.lang to validate, got %+v", result)
+		t.Fatalf("expected acquire_three_success.schway to validate, got %+v", result)
 	}
 	if result.Checks != acquireThreeSuccessChecks {
 		t.Fatalf("expected counted work with the terminal return contract check %d, got %d", acquireThreeSuccessChecks, result.Checks)
 	}
 
-	discardResult := corevalidate.Validate(resourceLifecycleProgram(t, "discard_because.lang"))
+	discardResult := corevalidate.Validate(resourceLifecycleProgram(t, "discard_because.schway"))
 	if !discardResult.Valid {
-		t.Fatalf("expected discard_because.lang to validate, got %+v", discardResult)
+		t.Fatalf("expected discard_because.schway to validate, got %+v", discardResult)
 	}
 }
 
@@ -2309,7 +2309,7 @@ func mustCheckPhase07Fixture(t *testing.T, name string) check.Result {
 // (independence, the coordinated-blindness assertion, mirroring
 // check_test.go's TestCorevalidatePeerIndependentOfCheckCycleRefusal in
 // reverse): with check's OWN consume seam disabled -- the producer's gate
-// off -- corevalidate still refuses call_argument_used_twice.lang's
+// off -- corevalidate still refuses call_argument_used_twice.schway's
 // REAL emitted core on its own. And with the peer's own seam disabled,
 // check's own (default, never toggled) refusal still catches the same
 // source. Each side refuses alone; neither is a second observation of
@@ -2319,7 +2319,7 @@ func TestCallConsumePeerIndependentOfCheck(t *testing.T) {
 		restore := check.SetCallArgumentConsumeSeamForTest(true)
 		defer restore()
 
-		result := mustCheckPhase07Fixture(t, "call_argument_used_twice.lang")
+		result := mustCheckPhase07Fixture(t, "call_argument_used_twice.schway")
 		if len(result.Diagnostics) != 0 {
 			t.Fatalf("expected check's own consume gate to be disabled (program admitted by check), got %+v", result.Diagnostics)
 		}
@@ -2337,7 +2337,7 @@ func TestCallConsumePeerIndependentOfCheck(t *testing.T) {
 		restore := corevalidate.SetDisableCallArgumentConsumePeerForTest(true)
 		defer restore()
 
-		result := mustCheckPhase07Fixture(t, "call_argument_used_twice.lang")
+		result := mustCheckPhase07Fixture(t, "call_argument_used_twice.schway")
 		if len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "ownership.use_after_move" {
 			t.Fatalf("expected check's own refusal (unaffected by the peer's seam) to still fire, got %+v", result.Diagnostics)
 		}

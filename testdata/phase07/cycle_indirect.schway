@@ -1,0 +1,26 @@
+// SEM-07: a call graph whose calls form a cycle is refused with a named
+// refusal code, never a hang. This is the length-3 case (A -> B -> C -> A),
+// completing SEM-07's self (1, cycle_self.schway) / mutual (2,
+// cycle_mutual.schway) / indirect (>= 3, this fixture) trio, distinguished
+// by cycle_length and membership rather than by three separate codes.
+
+module phase07.cycle_indirect
+
+export {
+  fn a
+}
+
+fn a(value: Byte) -> Byte {
+  let result = b(value)
+  result
+}
+
+fn b(value: Byte) -> Byte {
+  let result = c(value)
+  result
+}
+
+fn c(value: Byte) -> Byte {
+  let result = a(value)
+  result
+}

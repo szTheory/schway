@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/reduce"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/reduce"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -266,13 +266,13 @@ func TestQLT05ReverificationIsIdempotent(t *testing.T) {
 }
 
 // TestMismatchDocumentSchemaUnchanged asserts MismatchDocument's schema
-// identifier is still lang.mismatch/0 and its field set is unchanged
+// identifier is still schway.mismatch/0 and its field set is unchanged
 // (D-05-39/D-11-37): QLT-05 is a gate claim about the reducer's own
 // output, not a document field, so declaring control:reduce.reverified
 // must never bump this schema.
 func TestMismatchDocumentSchemaUnchanged(t *testing.T) {
-	if reduce.MismatchSchema != "lang.mismatch/0" {
-		t.Fatalf("MismatchSchema = %q, want %q", reduce.MismatchSchema, "lang.mismatch/0")
+	if reduce.MismatchSchema != "schway.mismatch/0" {
+		t.Fatalf("MismatchSchema = %q, want %q", reduce.MismatchSchema, "schway.mismatch/0")
 	}
 	want := []string{
 		"Schema", "DivergingAxis", "EnginePair", "DivergingOperationID",
@@ -297,8 +297,8 @@ func TestMismatchDocumentSchemaUnchanged(t *testing.T) {
 // this is the assertion that closes that gap.
 // ---------------------------------------------------------------------
 
-// qlt05GateFixturePath resolves testdata/phase11/multi_function_reduce_gate.lang.
-const qlt05GateFixturePath = "testdata/phase11/multi_function_reduce_gate.lang"
+// qlt05GateFixturePath resolves testdata/phase11/multi_function_reduce_gate.schway.
+const qlt05GateFixturePath = "testdata/phase11/multi_function_reduce_gate.schway"
 
 // qlt05AppliedMovesContains reports whether result.AppliedMoves contains
 // moveName -- the anti-vacuity assertion itself: a reduction that dropped

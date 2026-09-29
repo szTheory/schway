@@ -3,10 +3,10 @@ package session_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // borrowConflictDiagnostic is ownershipDiagnostic's testdata/phase3 twin: it
@@ -53,7 +53,7 @@ func acceptedBorrowFixture(t *testing.T, fixture string) session.CheckResult {
 // loans on one owner never conflict — multiple simultaneous readers observe
 // without mutation, and no gate fires.
 func TestSharedSharedOverlapAccepted(t *testing.T) {
-	checked := acceptedBorrowFixture(t, "shared_shared_accept.lang")
+	checked := acceptedBorrowFixture(t, "shared_shared_accept.schway")
 	function := checked.Program.Functions[0]
 	sharedCount := 0
 	for _, operation := range function.Linear.Operations {
@@ -75,7 +75,7 @@ func TestSharedSharedOverlapAccepted(t *testing.T) {
 // overlapping liveness rather than lexical position — the shared and
 // exclusive loans below are textually adjacent but never overlap in time.
 func TestSequentialLoansAccepted(t *testing.T) {
-	checked := acceptedBorrowFixture(t, "sequential_shared_then_exclusive_accept.lang")
+	checked := acceptedBorrowFixture(t, "sequential_shared_then_exclusive_accept.schway")
 	function := checked.Program.Functions[0]
 	sawShared, sawExclusive := false, false
 	for _, operation := range function.Linear.Operations {
@@ -101,14 +101,14 @@ func TestBorrowConflictMatrix(t *testing.T) {
 		fixture string
 		code    string
 	}{
-		{"shared_exclusive_reject.lang", "ownership.borrow_conflict"},
-		{"exclusive_exclusive_reject.lang", "ownership.borrow_conflict"},
-		{"exclusive_move_reject.lang", "ownership.move_while_borrowed"},
+		{"shared_exclusive_reject.schway", "ownership.borrow_conflict"},
+		{"exclusive_exclusive_reject.schway", "ownership.borrow_conflict"},
+		{"exclusive_move_reject.schway", "ownership.move_while_borrowed"},
 	}
 	for _, test := range tests {
 		t.Run(test.fixture, func(t *testing.T) {
 			problem := borrowConflictDiagnostic(t, test.fixture, test.code)
-			if problem.Schema != "lang.diagnostic/1" || len(problem.Repairs) == 0 {
+			if problem.Schema != "schway.diagnostic/1" || len(problem.Repairs) == 0 {
 				t.Fatalf("%s: rejection must join the repair-bearing taxonomy: %+v", test.fixture, problem)
 			}
 		})
@@ -120,9 +120,9 @@ func TestBorrowConflictMatrix(t *testing.T) {
 // span-bearing causes first (the blocking loan's creation and later-use
 // sites), then ID-bearing detail causes (loan, owner place, owner type).
 func TestBorrowConflictCauseChain(t *testing.T) {
-	problem := borrowConflictDiagnostic(t, "shared_exclusive_reject.lang", "ownership.borrow_conflict")
+	problem := borrowConflictDiagnostic(t, "shared_exclusive_reject.schway", "ownership.borrow_conflict")
 	assertCauseKinds(t, problem, "borrow_created_here", "borrow_used_later", "loan", "owner", "type")
-	// shared_exclusive_reject.lang's conflicting loan is the NEW exclusive
+	// shared_exclusive_reject.schway's conflicting loan is the NEW exclusive
 	// (borrow_mut) one, so it also carries the D-06-24/D-06-25
 	// narrow_to_shared_borrow MachineApplicable repair alongside the
 	// pre-existing classification-only repair (sorted: c < n).
@@ -134,7 +134,7 @@ func TestBorrowConflictCauseChain(t *testing.T) {
 // live is rejected as ownership.move_while_borrowed, the same code and
 // cause shape already shipped for shared loans (Q3 fixture 4).
 func TestExclusiveMoveRejected(t *testing.T) {
-	problem := borrowConflictDiagnostic(t, "exclusive_move_reject.lang", "ownership.move_while_borrowed")
+	problem := borrowConflictDiagnostic(t, "exclusive_move_reject.schway", "ownership.move_while_borrowed")
 	assertCauseKinds(t, problem, "borrow_created_here", "borrow_used_later", "loan", "owner", "type")
 	assertRepairKinds(t, problem, "move_after_last_borrow_use")
 }

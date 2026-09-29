@@ -1,6 +1,6 @@
 package corevalidate
 
-import "github.com/codename-lang/lang/internal/compiler/core"
+import "github.com/szTheory/schway/internal/compiler/core"
 
 // This file is Phase 09's own interprocedural loan-liveness derivation
 // (D-09-01, D-09-02, D-09-04): corevalidate's independent re-derivation of

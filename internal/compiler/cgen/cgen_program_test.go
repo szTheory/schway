@@ -10,16 +10,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPublicDispatchUsesOnlyEmitProgram parses the production source so the
@@ -111,17 +111,17 @@ func checkedPhase07Program(t *testing.T, fixture string) core.Program {
 // the public EmitNative dispatcher: this is the N=1 tracer for the surviving
 // emitter law, including its schema-2 event/invocation machinery.
 func TestProgramOrdinaryLinearTracer(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("owned_transfer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("owned_transfer.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		t.Fatalf("owned_transfer.lang: corevalidate rejected: %+v", validated.Problems)
+		t.Fatalf("owned_transfer.schway: corevalidate rejected: %+v", validated.Problems)
 	}
 	program := validated.Program()
 
@@ -159,7 +159,7 @@ func TestProgramOrdinaryLinearTracer(t *testing.T) {
 
 func TestPhase19U64NativeExactWidthAndOutput(t *testing.T) {
 	const maximum = "18446744073709551615"
-	fixture, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang"))
+	fixture, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +195,7 @@ func TestPhase19U64NativeExactWidthAndOutput(t *testing.T) {
 }
 
 func TestPhase19ExactWidthTargetGuardRejectsMissingMacro(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,7 +211,7 @@ func TestPhase19ExactWidthTargetGuardRejectsMissingMacro(t *testing.T) {
 	if _, cleanup, err := native.DefaultRunner().CompileOnly(context.Background(), generated, "-O0"); err == nil {
 		cleanup()
 		t.Fatal("expected deterministic missing-exact-width-macro control to fail compilation")
-	} else if !strings.Contains(err.Error(), "Codename Lang U64 requires exact-width uint64_t support") {
+	} else if !strings.Contains(err.Error(), "Schway U64 requires exact-width uint64_t support") {
 		t.Fatalf("compile error does not identify exact-width guard: %v", err)
 	}
 }
@@ -246,7 +246,7 @@ func TestProgramBranchTracer(t *testing.T) {
 		function string
 		inputs   []string
 	}{
-		{fixture: "borrowed_view.lang", function: "choose", inputs: []string{"On", "Off"}},
+		{fixture: "borrowed_view.schway", function: "choose", inputs: []string{"On", "Off"}},
 	}
 	for _, test := range tests {
 		test := test
@@ -294,13 +294,13 @@ func TestProgramBranchTracer(t *testing.T) {
 // through the surviving program emitter. Both alternatives must retain their
 // construct/destructure events and receive the schema-2 invocation identity.
 func TestProgramMatchPayloadLowering(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("payload_tracer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("payload_tracer.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	program := checked.Program
 	generated, err := cgen.EmitProgramForTest(program)
@@ -334,13 +334,13 @@ func TestProgramMatchPayloadLowering(t *testing.T) {
 // TestProgramMatchUsesCheckerLayout proves that the emitted tagged record is
 // a projection of check.PayloadRecordLayout rather than a local layout law.
 func TestProgramMatchUsesCheckerLayout(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("payload_tracer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("payload_tracer.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	generated, err := cgen.EmitProgramForTest(checked.Program)
 	if err != nil {
@@ -367,13 +367,13 @@ func TestProgramMatchUsesCheckerLayout(t *testing.T) {
 // TestProgramMatchDefectEventPrecedesAbort verifies the schema-2 terminal
 // record is visible to the native runner before the defect helper aborts.
 func TestProgramMatchDefectEventPrecedesAbort(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("defect_terminal.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("defect_terminal.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	generated, err := cgen.EmitProgramForTest(checked.Program)
 	if err != nil {
@@ -394,23 +394,23 @@ func TestProgramMatchDefectEventPrecedesAbort(t *testing.T) {
 // TestProgramNoreturnExemptionIsNarrow prevents attributes from spreading
 // beyond the generated abort-only defect helper.
 func TestProgramNoreturnExemptionIsNarrow(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("defect_terminal.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("defect_terminal.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	generated, err := cgen.EmitProgramForTest(checked.Program)
 	if err != nil {
 		t.Fatalf("direct emitProgram: %v", err)
 	}
-	if strings.Count(generated, "_Noreturn") != 1 || !strings.Contains(generated, "_Noreturn static void lang_defect") {
-		t.Fatalf("_Noreturn must appear only on lang_defect:\n%s", generated)
+	if strings.Count(generated, "_Noreturn") != 1 || !strings.Contains(generated, "_Noreturn static void schway_defect") {
+		t.Fatalf("_Noreturn must appear only on schway_defect:\n%s", generated)
 	}
-	if strings.Index(generated, "lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2") > strings.Index(generated, "lang_defect(\"halt requested\")") {
-		t.Fatalf("defect document must be emitted before lang_defect:\n%s", generated)
+	if strings.Index(generated, "schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/2") > strings.Index(generated, "schway_defect(\"halt requested\")") {
+		t.Fatalf("defect document must be emitted before schway_defect:\n%s", generated)
 	}
 }
 
@@ -419,23 +419,23 @@ func TestProgramNoreturnExemptionIsNarrow(t *testing.T) {
 // their schema-2 document must be rendered from the surviving emitter's
 // derived collection.
 func TestProgramLiveResourcesAreDerived(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("owned_transfer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("owned_transfer.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		t.Fatalf("owned_transfer.lang: corevalidate rejected: %+v", validated.Problems)
+		t.Fatalf("owned_transfer.schway: corevalidate rejected: %+v", validated.Problems)
 	}
 	generated, err := cgen.EmitProgramForTest(validated.Program())
 	if err != nil {
 		t.Fatalf("direct emitProgram: %v", err)
 	}
-	if !strings.Contains(generated, "lang_write_live_resources") {
+	if !strings.Contains(generated, "schway_write_live_resources") {
 		t.Fatalf("schema-2 resource tail bypasses a derived-value writer:\n%s", generated)
 	}
 }
@@ -444,17 +444,17 @@ func TestProgramLiveResourcesAreDerived(t *testing.T) {
 // derivation and observes the resulting native document, so a future tail
 // shortcut cannot leave the derivation present but unused.
 func TestProgramLiveResourceDerivationIsNotInert(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("owned_transfer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("owned_transfer.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		t.Fatalf("owned_transfer.lang: corevalidate rejected: %+v", validated.Problems)
+		t.Fatalf("owned_transfer.schway: corevalidate rejected: %+v", validated.Problems)
 	}
 	restore := cgen.SetProgramLiveResourcesForTest([]string{"resource:seed"})
 	defer restore()
@@ -500,13 +500,13 @@ func syntheticInvocationProgram(t *testing.T, nodes int) core.Program {
 }
 
 func TestInvocationPathTableDeepDiamondMeasures61(t *testing.T) {
-	program := checkedPhase07Program(t, "deep_diamond_acyclic.lang")
+	program := checkedPhase07Program(t, "deep_diamond_acyclic.schway")
 	got, err := cgen.InvocationPathNodeCountForTest(program)
 	if err != nil {
-		t.Fatalf("preflight deep_diamond_acyclic.lang: %v", err)
+		t.Fatalf("preflight deep_diamond_acyclic.schway: %v", err)
 	}
 	if got != 61 {
-		t.Fatalf("deep_diamond_acyclic.lang invocation nodes = %d, want 61 (T0=1, T1=5, T2=13, T3=29, T4=61)", got)
+		t.Fatalf("deep_diamond_acyclic.schway invocation nodes = %d, want 61 (T0=1, T1=5, T2=13, T3=29, T4=61)", got)
 	}
 	if _, err := cgen.EmitNative(program); err != nil {
 		t.Fatalf("EmitNative after 61-node preflight: %v", err)
@@ -518,7 +518,7 @@ func TestInvocationPathTableDeepDiamondMeasures61(t *testing.T) {
 // Its oracle is derived from the interpreter: every native tier must retain
 // the full occurrence-weighted event stream, not merely avoid crashing.
 func TestDeepDiamondExecutesAcrossNativeOptimizationTiers(t *testing.T) {
-	program := checkedPhase07Program(t, "deep_diamond_acyclic.lang")
+	program := checkedPhase07Program(t, "deep_diamond_acyclic.schway")
 	entry, err := callgraph.EntryFunction(program)
 	if err != nil {
 		t.Fatal(err)
@@ -531,7 +531,7 @@ func TestDeepDiamondExecutesAcrossNativeOptimizationTiers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	if wantCapacity := fmt.Sprintf("#define LANG_EVENT_CAPACITY %du", len(want.Events)); !strings.Contains(generated, wantCapacity) {
+	if wantCapacity := fmt.Sprintf("#define SCHWAY_EVENT_CAPACITY %du", len(want.Events)); !strings.Contains(generated, wantCapacity) {
 		t.Fatalf("generated capacity is not occurrence-weighted; want %q", wantCapacity)
 	}
 	wantBytes, err := cgen.ExecutionOutputSizeForTest(program)
@@ -558,7 +558,7 @@ func TestDeepDiamondExecutesAcrossNativeOptimizationTiers(t *testing.T) {
 // byte contract at N-1/N. The fixture is intentionally larger than the legacy
 // generic process-stream cap, so acceptance cannot silently inherit 64 KiB.
 func TestSchema2ExecutionOutputBoundIsPreflighted(t *testing.T) {
-	program := checkedPhase07Program(t, "deep_diamond_acyclic.lang")
+	program := checkedPhase07Program(t, "deep_diamond_acyclic.schway")
 	observed, err := cgen.ExecutionOutputSizeForTest(program)
 	if err != nil {
 		t.Fatal(err)
@@ -584,7 +584,7 @@ func TestSchema2ExecutionOutputBoundIsPreflighted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("exact-bound document refused: %v", err)
 	}
-	if !strings.Contains(generated, fmt.Sprintf("#define LANG_OUTPUT_LIMIT %du", observed)) {
+	if !strings.Contains(generated, fmt.Sprintf("#define SCHWAY_OUTPUT_LIMIT %du", observed)) {
 		t.Fatalf("generated writer does not carry exact tested limit %d", observed)
 	}
 }
@@ -594,13 +594,13 @@ func TestSchema2ExecutionOutputBoundIsPreflighted(t *testing.T) {
 // limit one byte below that conservative document size, emission must refuse
 // before generated-C serialization begins.
 func TestSchema2PayloadOutcomeBoundIsPreflighted(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("payload_tracer.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("payload_tracer.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	observed, err := cgen.ExecutionOutputSizeForTest(checked.Program)
 	if err != nil {
@@ -655,7 +655,7 @@ func TestInvocationPreflightOrdering(t *testing.T) {
 }
 
 func TestUnsupportedProgramShapePrecedesSchema2Preflight(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -690,7 +690,7 @@ func TestProgramBorrowedByPointerDisposition(t *testing.T) {
 		t.Fatalf("Plan 16-05 decision record does not select cut-m004: %q", decision)
 	}
 
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase5", "restrict_borrow.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -720,7 +720,7 @@ func TestProgramBorrowedByPointerDisposition(t *testing.T) {
 // stop before preflight/serialization, and an admitted branch reaches the
 // output-bound preflight when its seeded limit is too small.
 func TestProgramBranchValidationOrder(t *testing.T) {
-	branchSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "borrowed_view.lang"))
+	branchSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "borrowed_view.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -843,11 +843,11 @@ func phase11CheckedProgram(t *testing.T, fixture string) core.Program {
 }
 
 // TestEmitProgram is Task 1's own emission-shape assertion (D-11-01/D-11-03):
-// the emitted C for multi_function_entry_basic.lang contains two function
+// the emitted C for multi_function_entry_basic.schway contains two function
 // definitions, two prototypes preceding them, exactly one `int main(`, and
 // compiles under the project's existing native build flags.
 func TestEmitProgram(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.schway")
 
 	generated, err := cgen.EmitNative(program)
 	if err != nil {
@@ -857,10 +857,10 @@ func TestEmitProgram(t *testing.T) {
 	if strings.Count(generated, "int main(") != 1 {
 		t.Fatalf("expected exactly one int main(, got source:\n%s", generated)
 	}
-	prototypeIndexMain := strings.Index(generated, "static unsigned char LANG_MAIN(unsigned char, unsigned int);")
-	prototypeIndexIdentity := strings.Index(generated, "static unsigned char LANG_IDENTITY(unsigned char, unsigned int);")
-	definitionIndexMain := strings.Index(generated, "static unsigned char LANG_MAIN(unsigned char lang_value_")
-	definitionIndexIdentity := strings.Index(generated, "static unsigned char LANG_IDENTITY(unsigned char lang_value_")
+	prototypeIndexMain := strings.Index(generated, "static unsigned char SCHWAY_MAIN(unsigned char, unsigned int);")
+	prototypeIndexIdentity := strings.Index(generated, "static unsigned char SCHWAY_IDENTITY(unsigned char, unsigned int);")
+	definitionIndexMain := strings.Index(generated, "static unsigned char SCHWAY_MAIN(unsigned char schway_value_")
+	definitionIndexIdentity := strings.Index(generated, "static unsigned char SCHWAY_IDENTITY(unsigned char schway_value_")
 	if prototypeIndexMain < 0 || prototypeIndexIdentity < 0 || definitionIndexMain < 0 || definitionIndexIdentity < 0 {
 		t.Fatalf("expected both prototypes and both definitions present, got source:\n%s", generated)
 	}
@@ -878,7 +878,7 @@ func TestEmitProgram(t *testing.T) {
 }
 
 func TestPhase18ResultComputedMatchNativeReturn(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "result_computed_match.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "result_computed_match.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -901,15 +901,15 @@ func TestPhase18ResultComputedMatchNativeReturn(t *testing.T) {
 }
 
 func TestProgramInvocationIndexThreading(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.schway")
 	generated, err := cgen.EmitNative(program)
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
 	for _, want := range []string{
-		"static unsigned char LANG_MAIN(unsigned char, unsigned int);",
-		"static unsigned char LANG_IDENTITY(unsigned char, unsigned int);",
-		"LANG_MAIN(lang_entry_input, 0u)",
+		"static unsigned char SCHWAY_MAIN(unsigned char, unsigned int);",
+		"static unsigned char SCHWAY_IDENTITY(unsigned char, unsigned int);",
+		"SCHWAY_MAIN(schway_entry_input, 0u)",
 	} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("generated C is missing threaded invocation index %q:\n%s", want, generated)
@@ -925,8 +925,8 @@ func TestPhase17ProgramTwoTypePrototype(t *testing.T) {
 func TestPhase17ProgramTwoTypeDefinition(t *testing.T) {
 	generated := phase17TwoTypeGeneratedC(t)
 	for _, want := range []string{
-		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE value, unsigned int invocation_index)",
-		"static LANG_RESULT LANG_MAIN(LANG_RESOURCE lang_value_resource, unsigned int invocation_index)",
+		"static SCHWAY_RESULT SCHWAY_CLASSIFY(SCHWAY_RESOURCE value, unsigned int invocation_index)",
+		"static SCHWAY_RESULT SCHWAY_MAIN(SCHWAY_RESOURCE schway_value_resource, unsigned int invocation_index)",
 	} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("generated C misses two-type definition %q:\n%s", want, generated)
@@ -936,7 +936,7 @@ func TestPhase17ProgramTwoTypeDefinition(t *testing.T) {
 
 func TestPhase17ProgramTwoTypeCall(t *testing.T) {
 	generated := phase17TwoTypeGeneratedC(t)
-	if !strings.Contains(generated, "LANG_RESULT lang_value_result = LANG_CLASSIFY(") {
+	if !strings.Contains(generated, "SCHWAY_RESULT schway_value_result = SCHWAY_CLASSIFY(") {
 		t.Fatalf("generated C misses Result call target with Resource argument:\n%s", generated)
 	}
 }
@@ -944,9 +944,9 @@ func TestPhase17ProgramTwoTypeCall(t *testing.T) {
 func TestPhase17ProgramTwoTypeEntryIO(t *testing.T) {
 	generated := phase17TwoTypeGeneratedC(t)
 	for _, want := range []string{
-		"LANG_RESOURCE lang_entry_input;",
-		"LANG_RESULT lang_entry_output = LANG_MAIN(lang_entry_input, 0u);",
-		"LANG_RESULT_name(lang_entry_output)",
+		"SCHWAY_RESOURCE schway_entry_input;",
+		"SCHWAY_RESULT schway_entry_output = SCHWAY_MAIN(schway_entry_input, 0u);",
+		"SCHWAY_RESULT_name(schway_entry_output)",
 	} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("generated C misses two-type entry position %q:\n%s", want, generated)
@@ -960,9 +960,9 @@ func TestPhase17ProgramTypePairMutation(t *testing.T) {
 	for _, mutation := range []struct {
 		name, old, new string
 	}{
-		{"prototype", "static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE, unsigned int);", "static LANG_RESOURCE LANG_CLASSIFY(LANG_RESOURCE, unsigned int);"},
-		{"call target", "LANG_RESULT lang_value_result = LANG_CLASSIFY", "LANG_RESOURCE lang_value_result = LANG_CLASSIFY"},
-		{"entry output", "LANG_RESULT lang_entry_output = LANG_MAIN", "LANG_RESOURCE lang_entry_output = LANG_MAIN"},
+		{"prototype", "static SCHWAY_RESULT SCHWAY_CLASSIFY(SCHWAY_RESOURCE, unsigned int);", "static SCHWAY_RESOURCE SCHWAY_CLASSIFY(SCHWAY_RESOURCE, unsigned int);"},
+		{"call target", "SCHWAY_RESULT schway_value_result = SCHWAY_CLASSIFY", "SCHWAY_RESOURCE schway_value_result = SCHWAY_CLASSIFY"},
+		{"entry output", "SCHWAY_RESULT schway_entry_output = SCHWAY_MAIN", "SCHWAY_RESOURCE schway_entry_output = SCHWAY_MAIN"},
 	} {
 		t.Run(mutation.name, func(t *testing.T) {
 			mutated := strings.Replace(generated, mutation.old, mutation.new, 1)
@@ -978,7 +978,7 @@ func TestPhase17ProgramTypePairMutation(t *testing.T) {
 
 func phase17TwoTypeGeneratedC(t *testing.T) string {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1002,11 +1002,11 @@ func phase17RequireTwoTypeC(t *testing.T, generated string) {
 
 func phase17TwoTypeCProblem(generated string) string {
 	for _, want := range []string{
-		"static LANG_RESULT LANG_CLASSIFY(LANG_RESOURCE, unsigned int);",
-		"static LANG_RESULT LANG_MAIN(LANG_RESOURCE, unsigned int);",
-		"LANG_RESULT lang_value_result = LANG_CLASSIFY(",
-		"LANG_RESOURCE lang_entry_input;",
-		"LANG_RESULT lang_entry_output = LANG_MAIN(lang_entry_input, 0u);",
+		"static SCHWAY_RESULT SCHWAY_CLASSIFY(SCHWAY_RESOURCE, unsigned int);",
+		"static SCHWAY_RESULT SCHWAY_MAIN(SCHWAY_RESOURCE, unsigned int);",
+		"SCHWAY_RESULT schway_value_result = SCHWAY_CLASSIFY(",
+		"SCHWAY_RESOURCE schway_entry_input;",
+		"SCHWAY_RESULT schway_entry_output = SCHWAY_MAIN(schway_entry_input, 0u);",
 	} {
 		if !strings.Contains(generated, want) {
 			return "missing " + want
@@ -1016,25 +1016,25 @@ func phase17TwoTypeCProblem(generated string) string {
 }
 
 func TestParentIndexedChildLookup(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_diamond_call.lang")
+	program := phase11CheckedProgram(t, "multi_function_diamond_call.schway")
 	generated, err := cgen.EmitNative(program)
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	if !strings.Contains(generated, "static const char *lang_invocations[]") {
+	if !strings.Contains(generated, "static const char *schway_invocations[]") {
 		t.Fatalf("generated C has no literal invocation table:\n%s", generated)
 	}
 	if !strings.Contains(generated, ":fn:main:op:0#0/s1:phase11.multi_function_diamond_call:fn:left:op:0#0") ||
 		!strings.Contains(generated, ":fn:main:op:1#0/s1:phase11.multi_function_diamond_call:fn:right:op:0#0") {
 		t.Fatalf("generated C does not retain distinct shared-leaf occurrences:\n%s", generated)
 	}
-	if !strings.Contains(generated, "lang_child_index_") {
+	if !strings.Contains(generated, "schway_child_index_") {
 		t.Fatalf("generated C has no parent-indexed child lookup:\n%s", generated)
 	}
 }
 
 func TestInvocationTableEmissionIsDeterministic(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_diamond_call.lang")
+	program := phase11CheckedProgram(t, "multi_function_diamond_call.schway")
 	first, err := cgen.EmitNative(program)
 	if err != nil {
 		t.Fatalf("first EmitNative: %v", err)
@@ -1049,11 +1049,11 @@ func TestInvocationTableEmissionIsDeterministic(t *testing.T) {
 }
 
 func TestProgramWritesExecutionSchema2(t *testing.T) {
-	generated, err := cgen.EmitNative(phase11CheckedProgram(t, "multi_function_entry_basic.lang"))
+	generated, err := cgen.EmitNative(phase11CheckedProgram(t, "multi_function_entry_basic.schway"))
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	for _, want := range []string{"{\\\"schema\\\":\\\"lang.execution/2\\\"", ",\\\"invocation\\\":", ",\\\"callee_function_id\\\":"} {
+	for _, want := range []string{"{\\\"schema\\\":\\\"schway.execution/2\\\"", ",\\\"invocation\\\":", ",\\\"callee_function_id\\\":"} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("schema-2 generated C is missing %q:\n%s", want, generated)
 		}
@@ -1061,7 +1061,7 @@ func TestProgramWritesExecutionSchema2(t *testing.T) {
 }
 
 func TestNativeFunctionCalledPreorder(t *testing.T) {
-	source := mustRead(t, "multi_function_diamond_call.lang")
+	source := mustRead(t, "multi_function_diamond_call.schway")
 	interpreted, diags, err := session.RunInterpreter(source)
 	if err != nil || len(diags) != 0 || len(interpreted) != 1 {
 		t.Fatalf("RunInterpreter: executions=%d diagnostics=%v error=%v", len(interpreted), diags, err)
@@ -1093,7 +1093,7 @@ func TestNativeFunctionCalledPreorder(t *testing.T) {
 }
 
 func TestNativeFunctionCalledProjectionRemoval(t *testing.T) {
-	withRight := mustRead(t, "multi_function_diamond_call.lang")
+	withRight := mustRead(t, "multi_function_diamond_call.schway")
 	withoutRight := []byte(strings.Replace(string(withRight), "fn left(value: Byte) -> Byte {\n  let result = leaf(value)\n  result\n}", "fn left(value: Byte) -> Byte {\n  value\n}", 1))
 	run := func(source []byte) []execution.Event {
 		t.Helper()
@@ -1115,7 +1115,7 @@ func TestNativeFunctionCalledProjectionRemoval(t *testing.T) {
 }
 
 func TestLegacyEventWritersFrozen(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1137,12 +1137,12 @@ func TestLegacyEventWritersFrozen(t *testing.T) {
 }
 
 // TestEmitProgramEndToEndAgreesWithInterpreterAtO0 drives
-// multi_function_entry_basic.lang through session's own run path on both
-// engines and asserts the two lang.execution/1 documents are equal --
+// multi_function_entry_basic.schway through session's own run path on both
+// engines and asserts the two schway.execution/1 documents are equal --
 // end to end through session, not only through a unit test calling cgen
 // directly.
 func TestEmitProgramEndToEndAgreesWithInterpreterAtO0(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_entry_basic.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_entry_basic.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1175,7 +1175,7 @@ func TestEmitProgramEndToEndAgreesWithInterpreterAtO0(t *testing.T) {
 }
 
 // TestEmitProgramZeroCallEdges pins the empty-call-edge structural case
-// (PLAN.md Task 3): multi_function_zero_call.lang declares two functions
+// (PLAN.md Task 3): multi_function_zero_call.schway declares two functions
 // with ZERO core.OpCall operations anywhere in the program. Both are
 // therefore in-degree-zero candidates with an EMPTY reachable closure each
 // -- a genuine, unbreakable tie under callgraph.EntryFunction's own
@@ -1191,7 +1191,7 @@ func TestEmitProgramEndToEndAgreesWithInterpreterAtO0(t *testing.T) {
 // program under a non-guessing resolver, and D-11-05's fail-closed
 // invariant is prioritized.
 func TestEmitProgramZeroCallEdges(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_zero_call.lang")
+	program := phase11CheckedProgram(t, "multi_function_zero_call.schway")
 
 	_, err := cgen.EmitNative(program)
 	if err == nil {
@@ -1213,24 +1213,24 @@ func TestEmitProgramZeroCallEdges(t *testing.T) {
 	// through session's own run path (D-11-05's "one resolver" property):
 	// the interpreter and the native binary must never be given a chance
 	// to silently disagree about which function this program even is.
-	if _, _, err := session.RunInterpreter(mustRead(t, "multi_function_zero_call.lang")); err == nil {
+	if _, _, err := session.RunInterpreter(mustRead(t, "multi_function_zero_call.schway")); err == nil {
 		t.Fatal("expected RunInterpreter to refuse the ambiguous-entry program")
 	}
 }
 
 // TestEmitProgramForwardDefinedCallee proves D-11-03's ordering claim: the
 // entry calls a function declared LATER in the source
-// (multi_function_forward_callee.lang), and emitProgram writes every
+// (multi_function_forward_callee.schway), and emitProgram writes every
 // prototype before any definition, so the forward reference is legal C17.
 func TestEmitProgramForwardDefinedCallee(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_forward_callee.lang")
+	program := phase11CheckedProgram(t, "multi_function_forward_callee.schway")
 
 	generated, err := cgen.EmitNative(program)
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	if !strings.Contains(generated, "static unsigned char LANG_LATER(unsigned char, unsigned int);") {
-		t.Fatalf("expected LANG_LATER's own forward prototype, got source:\n%s", generated)
+	if !strings.Contains(generated, "static unsigned char SCHWAY_LATER(unsigned char, unsigned int);") {
+		t.Fatalf("expected SCHWAY_LATER's own forward prototype, got source:\n%s", generated)
 	}
 
 	runner := native.DefaultRunner()
@@ -1247,12 +1247,12 @@ func TestEmitProgramForwardDefinedCallee(t *testing.T) {
 // absence of emitted output.
 func TestEmitProgramRefusesRecursiveProgramsUpstream(t *testing.T) {
 	// plan 14-07: this fixture is checked into the repo
-	// (testdata/phase07/cycle_self.lang); a read failure here is repo
+	// (testdata/phase07/cycle_self.schway); a read failure here is repo
 	// corruption, not a legitimate skip condition, so it fails loudly
 	// rather than silently skipping.
-	selfRecursive, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "cycle_self.lang"))
+	selfRecursive, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "cycle_self.schway"))
 	if err != nil {
-		t.Fatalf("testdata/phase07/cycle_self.lang: %v", err)
+		t.Fatalf("testdata/phase07/cycle_self.schway: %v", err)
 	}
 	checked := session.Check(selfRecursive)
 	if len(checked.Diagnostics) == 0 {
@@ -1262,7 +1262,7 @@ func TestEmitProgramRefusesRecursiveProgramsUpstream(t *testing.T) {
 		t.Fatalf("expected %q, got %q", core.CallGraphCycle, checked.Diagnostics[0].Code)
 	}
 
-	mutual, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "cycle_unreachable.lang"))
+	mutual, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "cycle_unreachable.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1283,7 +1283,7 @@ func TestEmitProgramRefusesRecursiveProgramsUpstream(t *testing.T) {
 // output is byte-identical to the committed golden, comparing against the
 // golden itself rather than a freshly generated string.
 func TestEmitProgramSingleFunctionBytesUnchanged(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1335,7 +1335,7 @@ func attributeSetCommentLine(t *testing.T, generated string) string {
 // cgen.ScanForBannedAttributes agrees the emitted artifact carries no
 // banned token at all.
 func TestEmittedAttributeSetIsExplicitlyEmpty(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.schway")
 	generated, err := cgen.EmitNative(program)
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
@@ -1359,7 +1359,7 @@ func TestEmittedAttributeSetIsExplicitlyEmpty(t *testing.T) {
 // non-empty set through the derivation's own test seam changes the
 // rendered comment's content.
 func TestEmittedAttributeSetCommentIsDerivedNotLiteral(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.schway")
 
 	baseline, err := cgen.EmitNative(program)
 	if err != nil {
@@ -1392,7 +1392,7 @@ func TestEmittedAttributeSetOrderIsStable(t *testing.T) {
 	// helper and is now a cut-m004 refusal. This ordinary multi-function
 	// caller still exercises declaration-order stability without weakening
 	// the whole-program admission boundary.
-	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.schway")
 
 	first, err := cgen.EmitNative(program)
 	if err != nil {
@@ -1427,7 +1427,7 @@ func TestEmittedAttributeSetOrderIsStable(t *testing.T) {
 // language, so no call site in the gate corpus's emitted C may introduce
 // an arithmetic conversion.
 func TestCallSitesEmitNoArithmeticConversion(t *testing.T) {
-	program := phase11CheckedProgram(t, "multi_function_entry_basic.lang")
+	program := phase11CheckedProgram(t, "multi_function_entry_basic.schway")
 	generated, err := cgen.EmitNative(program)
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
@@ -1478,25 +1478,25 @@ func TestPhase22ApplicationEmitterSharesBodyAndSeparatesOutputShell(t *testing.T
 		t.Fatal("application entry changed the checked function-body lowering")
 	}
 	appEntry := application[appMain:]
-	parse := strings.Index(appEntry, "lang_parse_u64_decimal(argv[1]")
-	call := strings.Index(appEntry, "lang_entry_output = ")
+	parse := strings.Index(appEntry, "schway_parse_u64_decimal(argv[1]")
+	call := strings.Index(appEntry, "schway_entry_output = ")
 	if parse < 0 || call < 0 || parse >= call {
 		t.Fatalf("generated application does not validate input before the Lang body:\n%s", appEntry)
 	}
-	if !strings.Contains(appEntry, "strlen(argv[1]) > 4096u") || !strings.Contains(appEntry, "lang_write_u64_plain(lang_entry_output)") || !strings.Contains(appEntry, "lang_write_literal(\"\\n\")") {
+	if !strings.Contains(appEntry, "strlen(argv[1]) > 4096u") || !strings.Contains(appEntry, "schway_write_u64_plain(schway_entry_output)") || !strings.Contains(appEntry, "schway_write_literal(\"\\n\")") {
 		t.Fatalf("application shell is missing its transport bound or plain decimal output:\n%s", appEntry)
 	}
-	evidenceBranch := strings.Index(appEntry, "const char *lang_evidence_path = getenv(\"LANG_APP_EVIDENCE_PATH\")")
-	if evidenceBranch < 0 || strings.Contains(appEntry[:evidenceBranch], "lang.execution/2") || strings.Contains(appEntry[:evidenceBranch], "lang_write_events()") {
+	evidenceBranch := strings.Index(appEntry, "const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\")")
+	if evidenceBranch < 0 || strings.Contains(appEntry[:evidenceBranch], "schway.execution/2") || strings.Contains(appEntry[:evidenceBranch], "schway_write_events()") {
 		t.Fatalf("application shell serializes compiler evidence before the private capture branch:\n%s", appEntry)
 	}
-	if !strings.Contains(appEntry[evidenceBranch:], "lang_output_stream = lang_evidence_file") || !strings.Contains(appEntry[evidenceBranch:], "lang_write_events()") {
+	if !strings.Contains(appEntry[evidenceBranch:], "schway_output_stream = schway_evidence_file") || !strings.Contains(appEntry[evidenceBranch:], "schway_write_events()") {
 		t.Fatalf("application shell does not direct captured events to the private file:\n%s", appEntry)
 	}
-	if !strings.Contains(application, "static FILE *lang_output_stream = NULL;") || !strings.Contains(application, "lang_output_stream != NULL ? lang_output_stream : stdout") {
+	if !strings.Contains(application, "static FILE *schway_output_stream = NULL;") || !strings.Contains(application, "schway_output_stream != NULL ? schway_output_stream : stdout") {
 		t.Fatal("application evidence writer must use a portable runtime stdout fallback")
 	}
-	if !strings.Contains(conformance[conformanceMain:], "lang.execution/2") || !strings.Contains(conformance[conformanceMain:], "lang_write_events()") {
+	if !strings.Contains(conformance[conformanceMain:], "schway.execution/2") || !strings.Contains(conformance[conformanceMain:], "schway_write_events()") {
 		t.Fatal("conformance emitter lost its execution-document shell")
 	}
 }
@@ -1521,30 +1521,30 @@ func TestPhase23PhysicalDestructorControlsKeepEventsPlausible(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmitApplication: %v", err)
 	}
-	if !strings.Contains(generated, "lang.execution/2") || !strings.Contains(generated, `lang_record_event("function.returned"`) {
+	if !strings.Contains(generated, "schway.execution/2") || !strings.Contains(generated, `schway_record_event("function.returned"`) {
 		t.Fatal("compiler-side event capture lost its ordinary schema-2 returned execution record")
 	}
-	if !strings.Contains(generated, "lang_file_byte_release(") {
+	if !strings.Contains(generated, "schway_file_byte_release(") {
 		t.Fatal("generated app no longer carries the physical destructor call targeted by native mutation controls")
 	}
-	if strings.Contains(generated, `lang_record_event("resource.released"`) || strings.Contains(generated, `lang_record_event("allocation.freed"`) {
+	if strings.Contains(generated, `schway_record_event("resource.released"`) || strings.Contains(generated, `schway_record_event("allocation.freed"`) {
 		t.Fatal("compiler events claim physical destructor behavior instead of remaining semantic records")
 	}
 }
 
 func phase23ProgramForEmitter(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("file_byte.lang checker diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("file_byte.schway checker diagnostics: %+v", checked.Diagnostics)
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		t.Fatalf("file_byte.lang core validation problems: %+v", validated.Problems)
+		t.Fatalf("file_byte.schway core validation problems: %+v", validated.Problems)
 	}
 	return validated.Program()
 }
@@ -1682,26 +1682,26 @@ func TestPhase23OperationContractRefusalBeforeCSerialization(t *testing.T) {
 		mutate         func(*core.ForeignOperationContract)
 	}{
 		{"acquire status type", 0, func(contract *core.ForeignOperationContract) { contract.Fails = "WrongAcquireError" }},
-		{"acquire symbol", 0, func(contract *core.ForeignOperationContract) { contract.Symbol = "lang_other_acquire" }},
+		{"acquire symbol", 0, func(contract *core.ForeignOperationContract) { contract.Symbol = "schway_other_acquire" }},
 		{"acquire mode", 0, func(contract *core.ForeignOperationContract) { contract.Mode = "borrow" }},
 		{"acquire ABI type", 0, func(contract *core.ForeignOperationContract) { contract.ABIType = "wrong_acquire_fn" }},
 		{"acquire operand type", 0, func(contract *core.ForeignOperationContract) { contract.ParameterType = "FileByteOwner" }},
 		{"acquire result type", 0, func(contract *core.ForeignOperationContract) { contract.ResultType = "U64" }},
 		{"acquire allocator", 0, func(contract *core.ForeignOperationContract) { contract.Allocator = "another_allocator" }},
 		{"use status type", 1, func(contract *core.ForeignOperationContract) { contract.Fails = "WrongUseError" }},
-		{"use symbol", 1, func(contract *core.ForeignOperationContract) { contract.Symbol = "lang_other_use" }},
+		{"use symbol", 1, func(contract *core.ForeignOperationContract) { contract.Symbol = "schway_other_use" }},
 		{"use mode", 1, func(contract *core.ForeignOperationContract) { contract.Mode = "consume" }},
 		{"use ABI type", 1, func(contract *core.ForeignOperationContract) { contract.ABIType = "wrong_use_fn" }},
 		{"use operand type", 1, func(contract *core.ForeignOperationContract) { contract.ParameterType = "PathToken" }},
 		{"use result type", 1, func(contract *core.ForeignOperationContract) { contract.ResultType = "FileByteOwner" }},
-		{"release symbol", 2, func(contract *core.ForeignOperationContract) { contract.Symbol = "lang_other_release" }},
+		{"release symbol", 2, func(contract *core.ForeignOperationContract) { contract.Symbol = "schway_other_release" }},
 		{"release mode", 2, func(contract *core.ForeignOperationContract) { contract.Mode = "borrow" }},
 		{"release failure type", 2, func(contract *core.ForeignOperationContract) { contract.Fails = "ReleaseError" }},
 		{"release ABI type", 2, func(contract *core.ForeignOperationContract) { contract.ABIType = "wrong_release_fn" }},
 		{"release operand type", 2, func(contract *core.ForeignOperationContract) { contract.ParameterType = "PathToken" }},
 		{"release result type", 2, func(contract *core.ForeignOperationContract) { contract.ResultType = "U64" }},
 		{"allocator mismatch", 2, func(contract *core.ForeignOperationContract) { contract.Allocator = "another_allocator" }},
-		{"destructor pairing", 0, func(contract *core.ForeignOperationContract) { contract.Release = "lang_other_release" }},
+		{"destructor pairing", 0, func(contract *core.ForeignOperationContract) { contract.Release = "schway_other_release" }},
 		{"unwind policy", 1, func(contract *core.ForeignOperationContract) { contract.Unwind = "allowed" }},
 		{"nonlocal exit policy", 1, func(contract *core.ForeignOperationContract) { contract.NonlocalExit = "allowed" }},
 	} {

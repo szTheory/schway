@@ -10,15 +10,15 @@ import (
 	"testing"
 	"testing/quick"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestCSTRoundTrip(t *testing.T) {
-	for _, name := range []string{"toggle.lang", "comments.lang", "non_exhaustive.lang"} {
+	for _, name := range []string{"toggle.schway", "comments.schway", "non_exhaustive.schway"} {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", name))
 		if err != nil {
 			t.Fatal(err)
@@ -59,7 +59,7 @@ func TestPhase19NumericMalformed(t *testing.T) {
 }
 
 func TestFormatIdempotent(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "toggle.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func withoutSpans(program ast.Program) ast.Program {
 }
 
 func TestCommentPreservation(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "comments.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "comments.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestCommentPreservation(t *testing.T) {
 }
 
 func TestFormatCheck(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	path := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	result, err := session.FormatFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -153,7 +153,7 @@ func TestFormatCheck(t *testing.T) {
 }
 
 func TestRecovery(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "malformed.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", "malformed.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func TestInvalidUTF8(t *testing.T) {
 }
 
 func TestOwnershipRoundTrip(t *testing.T) {
-	for _, name := range []string{"owned_transfer.lang", "implicit_copy.lang", "ability_shapes.lang"} {
+	for _, name := range []string{"owned_transfer.schway", "implicit_copy.schway", "ability_shapes.schway"} {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", name))
 		if err != nil {
 			t.Fatal(err)
@@ -226,7 +226,7 @@ func TestOwnershipRoundTrip(t *testing.T) {
 // bare-name arm form (exercised by the Phase 1 fixtures TestOwnershipRoundTrip
 // already covers) remains legal and unchanged alongside it.
 func TestArmBodyRoundTrips(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "branch_view.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "branch_view.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +304,7 @@ func TestExclusiveBorrowRoundTrips(t *testing.T) {
 // borrow(path)/borrow mut(path) return-type annotation parses losslessly,
 // formats to a fixed point, and preserves token identity across reparse.
 func TestPublicViewRoundTrips(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -446,14 +446,14 @@ func TestTypeApplicationLimits(t *testing.T) {
 }
 
 func FuzzParseFormat(f *testing.F) {
-	for _, name := range []string{"toggle.lang", "comments.lang", "malformed.lang"} {
+	for _, name := range []string{"toggle.schway", "comments.schway", "malformed.schway"} {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase1", name))
 		if err != nil {
 			f.Fatal(err)
 		}
 		f.Add(source)
 	}
-	for _, name := range []string{"owned_transfer.lang", "implicit_copy.lang", "ability_shapes.lang"} {
+	for _, name := range []string{"owned_transfer.schway", "implicit_copy.schway", "ability_shapes.schway"} {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", name))
 		if err != nil {
 			f.Fatal(err)
@@ -461,8 +461,8 @@ func FuzzParseFormat(f *testing.F) {
 		f.Add(source)
 	}
 	// A generic type combined with a binding: the combination the shipped
-	// fixtures never reach (ability_shapes.lang is generic but has no `let`,
-	// owned_transfer.lang binds but is not generic).
+	// fixtures never reach (ability_shapes.schway is generic but has no `let`,
+	// owned_transfer.schway binds but is not generic).
 	f.Add([]byte("module generic.binding\n\nexport {\n  fn relay\n}\n\nfn relay(subject: Box<Byte>) -> Box<Byte> {\n  let held = take subject\n  held\n}\n"))
 	f.Add([]byte("module generic.pair\n\nexport {\n  fn relay\n}\n\nfn relay(subject: Pair<Byte, Buffer>) -> Pair<Byte, Buffer> {\n  let held = borrow subject\n  held\n}\n"))
 	f.Add([]byte{0xff, 0xfe, '{', '}'})
@@ -990,7 +990,7 @@ func comments(tree syntax.Tree) []string {
 // a fixed point, and reparse to the same semantic token projection
 // (D-04-01/D-04-04/D-04-05/D-04-10's surface syntax).
 func TestForeignCallRoundTrips(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1002,8 +1002,8 @@ func TestForeignCallRoundTrips(t *testing.T) {
 		t.Fatalf("foreign declaration did not parse: %+v", parsed.Program.Foreign)
 	}
 	symbol := parsed.Program.Foreign[0].Symbols[0]
-	if symbol.Name != "lang_res_open" {
-		t.Fatalf("symbol name = %q, want lang_res_open", symbol.Name)
+	if symbol.Name != "schway_res_open" {
+		t.Fatalf("symbol name = %q, want schway_res_open", symbol.Name)
 	}
 	policies := make(map[string]string, len(symbol.Policies))
 	for _, policy := range symbol.Policies {
@@ -1017,7 +1017,7 @@ func TestForeignCallRoundTrips(t *testing.T) {
 		t.Fatalf("unexpected function shape: %+v", parsed.Program.Funcs)
 	}
 	rhs := parsed.Program.Funcs[0].Body.Linear.Bindings[0].RHS
-	if rhs.Kind != "try_call" || rhs.Callee != "lang_res_open" || len(rhs.Arguments) != 1 || rhs.Arguments[0] != "request" {
+	if rhs.Kind != "try_call" || rhs.Callee != "schway_res_open" || len(rhs.Arguments) != 1 || rhs.Arguments[0] != "request" {
 		t.Fatalf("try-call RHS = %+v", rhs)
 	}
 
@@ -1050,7 +1050,7 @@ func TestForeignCallRoundTrips(t *testing.T) {
 // that the refusal appears from session.Check instead, with the identical
 // code.
 func TestFallibleCallUnconsumedRejected(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "fallible_call_unconsumed.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "fallible_call_unconsumed.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1079,7 +1079,7 @@ func TestFallibleCallUnconsumedRejected(t *testing.T) {
 // terminator parses into ast.LinearBody.DefectReason and formats to a fixed
 // point, mirroring TestForeignCallRoundTrips' shape.
 func TestDefectTerminatorRoundTrips(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "defect_terminal.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

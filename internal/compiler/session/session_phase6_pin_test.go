@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // currentLaneSchema documents the /1 lane-schema string this pin's sites now
 // carry, for readers -- it is not used for AST matching. 06-06's coordinated
-// bump (D-06-31) moved all 12 sites from the raw "lang.verify-lane/0" string
+// bump (D-06-31) moved all 12 sites from the raw "schway.verify-lane/0" string
 // literal to the protocol.LaneSchema1 constant reference (the same
 // two-constant-coexistence discipline diagnostic.go/evidence.go already use),
 // so this pin now counts protocol.LaneSchema1 *identifier references*
@@ -23,7 +23,7 @@ import (
 // string literal reintroduced at any site would NOT satisfy this pin, which
 // is intentional: the constant reference is now the required shape, not
 // merely the current one.
-const currentLaneSchema = "lang.verify-lane/1"
+const currentLaneSchema = "schway.verify-lane/1"
 
 // expectedLaneSchemaLiteralSitesByFile pins the per-file count of
 // protocol.LaneSchema1 identifier references in internal/compiler/session,
@@ -69,7 +69,7 @@ const expectedLaneSchemaLiteralSiteTotal = 17
 
 // TestLaneSchemaLiteralSiteCountIsPinned pins the exact count and per-file
 // location of every protocol.LaneSchema1 reference in
-// internal/compiler/session, so the coordinated lang.verify-lane/0 -> /1
+// internal/compiler/session, so the coordinated schway.verify-lane/0 -> /1
 // bump in 06-06 cannot half-land: a site moved between files, added, or
 // removed without updating every other site is caught here instead of
 // discovered by a runtime schema mismatch (D-06-31, T-06-03). A coordinated

@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // phase4OutOfCorpusCase is one hand-written, out-of-corpus program (task
@@ -56,7 +56,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -68,7 +68,7 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try lang_res_open(request)
+  let handle = try schway_res_open(request)
   handle
 }
 `,
@@ -89,7 +89,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -101,9 +101,9 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let first = try lang_res_open(request)
-  let second = try lang_res_open(request)
-  let third = try lang_res_open(request)
+  let first = try schway_res_open(request)
+  let second = try schway_res_open(request)
+  let third = try schway_res_open(request)
   request
 }
 `,
@@ -124,7 +124,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -136,7 +136,7 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  discard lang_res_open(request) because "out-of-corpus probe never inspects this acquisition"
+  discard schway_res_open(request) because "out-of-corpus probe never inspects this acquisition"
   request
 }
 `,
@@ -189,7 +189,7 @@ export {
 
 foreign C {
 
-  fn lang_nonlocal_probe(request: Byte) -> Byte {
+  fn schway_nonlocal_probe(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: possible
     allocator: "libc_malloc"
@@ -201,8 +201,8 @@ data ProbeError =
   | ProbeFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try lang_nonlocal_probe(request)
-  let trigger = try lang_nonlocal_probe(request)
+  let handle = try schway_nonlocal_probe(request)
+  let trigger = try schway_nonlocal_probe(request)
   request
 }
 `,
@@ -223,7 +223,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -236,7 +236,7 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try lang_res_open(request)
+  let handle = try schway_res_open(request)
   handle
 }
 `,
@@ -254,7 +254,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     allocator: "libc_malloc"
     fails: AcquireError
   }
@@ -264,7 +264,7 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try lang_res_open(request)
+  let handle = try schway_res_open(request)
   handle
 }
 `,
@@ -283,7 +283,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -312,7 +312,7 @@ fn main(request: Byte) -> Byte {
 
 // TestShippedBinaryExercisesEveryPhase4Behavior is task 04-07-03's own
 // shipped-binary register closure (D-04-21): every Phase 4 behavior named
-// in the plan's behavior list is driven against a freshly built ./cmd/lang
+// in the plan's behavior list is driven against a freshly built ./cmd/schway
 // on a hand-written program that is in NO corpus, with subcommands, exit
 // codes, and diagnostic codes recorded so the exercise is repeatable
 // rather than a one-time manual act.
@@ -330,7 +330,7 @@ func TestShippedBinaryExercisesEveryPhase4Behavior(t *testing.T) {
 				"discard ... because consumer":                       true,
 				"Nonlocal-exit probe":                                true,
 			}[testCase.behavior]
-			path := filepath.Join(t.TempDir(), "probe.lang")
+			path := filepath.Join(t.TempDir(), "probe.schway")
 			if err := os.WriteFile(path, []byte(testCase.source), 0o600); err != nil {
 				t.Fatal(err)
 			}
@@ -794,7 +794,7 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		code string
 	}{
 		{name: "missing document fields", data: []byte(`{}`), code: "native.invalid_execution"},
-		{name: "unknown field", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[],"unknown":true}`), code: "native.invalid_execution"},
+		{name: "unknown field", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[],"unknown":true}`), code: "native.invalid_execution"},
 		{name: "duplicate document", data: append(append([]byte{}, valid...), valid...), code: "native.trailing_execution"},
 		{name: "trailing value", data: append(append([]byte{}, valid...), []byte(` true`)...), code: "native.trailing_execution"},
 		// D-04-20: an input that ends before a value finishes decoding (both
@@ -805,13 +805,13 @@ func TestExecutionDecoderRejectsMalformedOutput(t *testing.T) {
 		{name: "malformed", data: []byte(`{"schema":`), code: "native.terminal_record_absent"},
 		{name: "truncated", data: append([]byte{}, valid[:len(valid)-1]...), code: "native.terminal_record_absent"},
 		{name: "oversized", data: append(append([]byte{}, valid...), []byte(strings.Repeat(" ", execution.MaxDocumentBytes))...), code: "native.run_stdout_truncated"},
-		{name: "duplicate key", data: []byte(`{"schema":"lang.execution/1","schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "unknown schema", data: []byte(`{"schema":"lang.execution/9","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "unknown outcome", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"mystery","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "empty outcome", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":""},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "unknown event", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"e","kind":"mystery","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "missing transition fields", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"e","kind":"value.copied","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
-		{name: "return before transition", data: []byte(`{"schema":"lang.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"lang.execution/1","id":"r","kind":"function.returned","function_id":"f","source_place":"p","type_id":"t"},{"schema":"lang.execution/1","id":"e","kind":"value.copied","function_id":"f","source_place":"p","target_place":"q","type_id":"t"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "duplicate key", data: []byte(`{"schema":"schway.execution/1","schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown schema", data: []byte(`{"schema":"schway.execution/9","outcome":{"kind":"returned","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown outcome", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"mystery","value":"x"},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "empty outcome", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":""},"events":[],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "unknown event", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"schway.execution/1","id":"e","kind":"mystery","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "missing transition fields", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"schway.execution/1","id":"e","kind":"value.copied","function_id":"f"}],"live_resources":[]}`), code: "native.invalid_execution"},
+		{name: "return before transition", data: []byte(`{"schema":"schway.execution/1","outcome":{"kind":"returned","value":"x"},"events":[{"schema":"schway.execution/1","id":"r","kind":"function.returned","function_id":"f","source_place":"p","type_id":"t"},{"schema":"schway.execution/1","id":"e","kind":"value.copied","function_id":"f","source_place":"p","target_place":"q","type_id":"t"}],"live_resources":[]}`), code: "native.invalid_execution"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -842,7 +842,7 @@ func TestPhase20NativeCacheReusesArtifactButRunsFreshInputs(t *testing.T) {
 	const source = `#include <stdio.h>
 int main(int argc, char **argv) {
   (void)argc;
-  printf("{\"schema\":\"lang.execution/1\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%s\"},\"events\":[{\"schema\":\"lang.execution/1\",\"id\":\"return\",\"kind\":\"function.returned\",\"function_id\":\"fn\",\"source_place\":\"place\",\"type_id\":\"type\"}],\"live_resources\":[]}\n", argv[1]);
+  printf("{\"schema\":\"schway.execution/1\",\"outcome\":{\"kind\":\"returned\",\"value\":\"%s\"},\"events\":[{\"schema\":\"schway.execution/1\",\"id\":\"return\",\"kind\":\"function.returned\",\"function_id\":\"fn\",\"source_place\":\"place\",\"type_id\":\"type\"}],\"live_resources\":[]}\n", argv[1]);
   return 0;
 }`
 	runner := Runner{BuildCache: store, Timeout: 10 * time.Second}
@@ -1013,7 +1013,7 @@ func TestPhase20IncompleteNativeManifestBypassesReuse(t *testing.T) {
 	if err := os.WriteFile(header, []byte("#define VALUE 1\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	source := `#include "` + header + `"` + "\n#include <stdio.h>\nint main(int argc,char **argv){(void)argc;printf(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"%s\\\"},\\\"events\\\":[{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\\\"return\\\",\\\"kind\\\":\\\"function.returned\\\",\\\"function_id\\\":\\\"fn\\\",\\\"source_place\\\":\\\"place\\\",\\\"type_id\\\":\\\"type\\\"}],\\\"live_resources\\\":[]}\\n\",argv[1]);return VALUE-1;}\n"
+	source := `#include "` + header + `"` + "\n#include <stdio.h>\nint main(int argc,char **argv){(void)argc;printf(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\\\"%s\\\"},\\\"events\\\":[{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"id\\\":\\\"return\\\",\\\"kind\\\":\\\"function.returned\\\",\\\"function_id\\\":\\\"fn\\\",\\\"source_place\\\":\\\"place\\\",\\\"type_id\\\":\\\"type\\\"}],\\\"live_resources\\\":[]}\\n\",argv[1]);return VALUE-1;}\n"
 	runner := Runner{BuildCache: &cache.Store{Root: filepath.Join(dir, "cache")}}
 	result, err := runner.Run(context.Background(), source, "-O0", []string{"fresh"})
 	if err != nil {
@@ -1074,10 +1074,10 @@ func TestNativeHelperProcess(t *testing.T) {
 	case "abort-mid-stream":
 		// D-04-20's abort falsifier: write a syntactically-open (never
 		// closed) JSON document containing one streamed event, flush it,
-		// then die by SIGABRT -- exactly the shape a real lang_defect()
+		// then die by SIGABRT -- exactly the shape a real schway_defect()
 		// call leaves behind if fired mid-stream. Proves the parent's own
 		// stdout capture retains every byte written before the signal.
-		_, _ = os.Stdout.WriteString(`{"schema":"lang.execution/1","events":[{"schema":"lang.execution/1","id":"op:0:event","kind":"value.copied","function_id":"fn:probe","source_place":"place:0","target_place":"place:1","type_id":"type:0"}`)
+		_, _ = os.Stdout.WriteString(`{"schema":"schway.execution/1","events":[{"schema":"schway.execution/1","id":"op:0:event","kind":"value.copied","function_id":"fn:probe","source_place":"place:0","target_place":"place:1","type_id":"type:0"}`)
 		_ = os.Stdout.Sync()
 		_ = syscall.Kill(os.Getpid(), syscall.SIGABRT)
 		time.Sleep(5 * time.Second) // should never be reached
@@ -1169,7 +1169,7 @@ func TestValidateExecutionSchema2(t *testing.T) {
 		{"extra callee", func(v execution.Execution) execution.Execution { v.Events[1].CalleeFunctionID = "fn:other"; return v }},
 		{"duplicate pair", func(v execution.Execution) execution.Execution { v.Events[2].ID = v.Events[0].ID; return v }},
 		{"unknown kind", func(v execution.Execution) execution.Execution { v.Events[1].Kind = "future.event"; return v }},
-		{"unknown schema", func(v execution.Execution) execution.Execution { v.Schema = "lang.execution/3"; return v }},
+		{"unknown schema", func(v execution.Execution) execution.Execution { v.Schema = "schway.execution/3"; return v }},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := validateExecution(test.mutate(clone(valid)), ExpectValue); err == nil {
@@ -1317,7 +1317,7 @@ func TestDefectExpectationRejectsReturnedDocument(t *testing.T) {
 // with its own distinct code, never an ordinary "invalid_execution" parse
 // error and never tolerated as a passing run.
 func TestTerminalRecordAbsenceIsHardFailure(t *testing.T) {
-	_, err := decodeExecution([]byte(`{"schema":"lang.execution/1","events":[`), ExpectValue)
+	_, err := decodeExecution([]byte(`{"schema":"schway.execution/1","events":[`), ExpectValue)
 	var toolError *ToolError
 	if !errors.As(err, &toolError) || toolError.Code != "native.terminal_record_absent" {
 		t.Fatalf("code=%v want=native.terminal_record_absent err=%v", toolError, err)
@@ -1335,7 +1335,7 @@ func TestTruncationAndAbsenceReportDistinctCodes(t *testing.T) {
 	if !errors.As(truncErr, &truncToolError) || truncToolError.Code != "native.run_stdout_truncated" {
 		t.Fatalf("truncation code=%v want=native.run_stdout_truncated err=%v", truncToolError, truncErr)
 	}
-	_, absentErr := decodeExecution([]byte(`{"schema":"lang.execution/1"`), ExpectValue)
+	_, absentErr := decodeExecution([]byte(`{"schema":"schway.execution/1"`), ExpectValue)
 	var absentToolError *ToolError
 	if !errors.As(absentErr, &absentToolError) || absentToolError.Code != "native.terminal_record_absent" {
 		t.Fatalf("absence code=%v want=native.terminal_record_absent err=%v", absentToolError, absentErr)
@@ -1461,7 +1461,7 @@ func TestNonzeroExitIsDistinctFromSignal(t *testing.T) {
 }
 
 // phase4CorpusMatrix is the recorded, exhaustive four-subcommand outcome of
-// the SHIPPED ./cmd/lang binary against every Phase 4 corpus fixture. It is
+// the SHIPPED ./cmd/schway binary against every Phase 4 corpus fixture. It is
 // the in-repo, re-runnable replacement for the hand-driven shipped-binary
 // tables that 04-01-SUMMARY.md and 04-02-SUMMARY.md recorded verbatim as a
 // one-time manual act (D-04-21): the same claim, asserted by CI on every
@@ -1535,13 +1535,13 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		}
 	}
 	return []phase4OutOfCorpusCase{
-		cut("acquire_three_fail_second.lang"),
-		cut("acquire_three_fail_third.lang"),
-		cut("acquire_three_success.lang"),
-		clean("defect_terminal.lang"),
-		cut("discard_because.lang"),
-		cut("foreign_acquire_one.lang"),
-		cutNativeFailure("nonlocal_exit_probe.lang"),
+		cut("acquire_three_fail_second.schway"),
+		cut("acquire_three_fail_third.schway"),
+		cut("acquire_three_success.schway"),
+		clean("defect_terminal.schway"),
+		cut("discard_because.schway"),
+		cut("foreign_acquire_one.schway"),
+		cutNativeFailure("nonlocal_exit_probe.schway"),
 		// D-07-40 (deliberate edit): this fixture's refusal moved from a
 		// syntax-level refusal to a check-level one (D-07-01) -- the parser
 		// now accepts a bare call's shape unconditionally, and check refuses
@@ -1553,11 +1553,11 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		// non-canonical (format.non_canonical) -- a pre-existing formatting
 		// fact this plan surfaces but does not alter (the fixture's bytes
 		// are unchanged; only what layer refuses the SEMANTIC shape moved).
-		refused("fallible_call_unconsumed.lang", 2, "format.non_canonical", "syntax.fallible_call_not_consumed"),
-		refused("foreign_call_target_not_foreign.lang", 0, "", "core.call_target_not_foreign"),
-		cutAfterCheckRefusal("foreign_origin_omitted.lang", "core.foreign_origin_omitted"),
-		refused("foreign_policy_value_injection.lang", 0, "", "check.foreign_policy_value_unsafe"),
-		refused("foreign_unwind_undeclared.lang", 0, "", "foreign.unwind_policy_undeclared"),
+		refused("fallible_call_unconsumed.schway", 2, "format.non_canonical", "syntax.fallible_call_not_consumed"),
+		refused("foreign_call_target_not_foreign.schway", 0, "", "core.call_target_not_foreign"),
+		cutAfterCheckRefusal("foreign_origin_omitted.schway", "core.foreign_origin_omitted"),
+		refused("foreign_policy_value_injection.schway", 0, "", "check.foreign_policy_value_unsafe"),
+		refused("foreign_unwind_undeclared.schway", 0, "", "foreign.unwind_policy_undeclared"),
 	}
 }
 
@@ -1570,12 +1570,12 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 func TestShippedBinaryFourSubcommandCorpusMatrix(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
 	corpus := testsupport.ProjectPath("testdata", "phase4")
-	entries, err := filepath.Glob(filepath.Join(corpus, "*.lang"))
+	entries, err := filepath.Glob(filepath.Join(corpus, "*.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(entries) == 0 {
-		t.Fatal("testdata/phase4 holds no .lang fixture")
+		t.Fatal("testdata/phase4 holds no .schway fixture")
 	}
 	matrix := phase4CorpusMatrix()
 	expected := make(map[string]phase4OutOfCorpusCase, len(matrix))
@@ -1608,7 +1608,7 @@ func TestShippedBinaryFourSubcommandCorpusMatrix(t *testing.T) {
 
 // TestFallibleCallUnconsumedRefusedAtCheckNotFormat is Task 3's native-level
 // pin (D-07-40, 07-03-PLAN.md): drives the shipped binary through the
-// recorded four-subcommand matrix for fallible_call_unconsumed.lang
+// recorded four-subcommand matrix for fallible_call_unconsumed.schway
 // specifically -- `check`, `run --engine=interpreter`, and
 // `run --engine=native` all refuse it with the SAME preserved diagnostic
 // code phase4CorpusMatrix declares, and `format --check` now reports
@@ -1616,15 +1616,15 @@ func TestShippedBinaryFourSubcommandCorpusMatrix(t *testing.T) {
 // moved to check; the published code did not).
 func TestFallibleCallUnconsumedRefusedAtCheckNotFormat(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	path := testsupport.ProjectPath("testdata", "phase4", "fallible_call_unconsumed.lang")
+	path := testsupport.ProjectPath("testdata", "phase4", "fallible_call_unconsumed.schway")
 	var testCase phase4OutOfCorpusCase
 	for _, candidate := range phase4CorpusMatrix() {
-		if candidate.behavior == "fallible_call_unconsumed.lang" {
+		if candidate.behavior == "fallible_call_unconsumed.schway" {
 			testCase = candidate
 		}
 	}
 	if len(testCase.steps) == 0 {
-		t.Fatal("phase4CorpusMatrix has no entry for fallible_call_unconsumed.lang")
+		t.Fatal("phase4CorpusMatrix has no entry for fallible_call_unconsumed.schway")
 	}
 	runShippedBinarySteps(t, binary, path, testCase.steps)
 }
@@ -1673,7 +1673,7 @@ func TestOutOfCorpusSourcesAreGenuinelyNovel(t *testing.T) {
 		if walkErr != nil {
 			return walkErr
 		}
-		if info.IsDir() || !strings.HasSuffix(path, ".lang") {
+		if info.IsDir() || !strings.HasSuffix(path, ".schway") {
 			return nil
 		}
 		data, readErr := os.ReadFile(path)
@@ -1687,7 +1687,7 @@ func TestOutOfCorpusSourcesAreGenuinelyNovel(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(corpus) == 0 {
-		t.Fatal("testdata holds no .lang fixture to compare against")
+		t.Fatal("testdata holds no .schway fixture to compare against")
 	}
 	for _, testCase := range phase4OutOfCorpusCases() {
 		if match, identical := corpus[strings.TrimSpace(testCase.source)]; identical {

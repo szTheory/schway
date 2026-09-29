@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase16ProductionBypassMutationIsKilled(t *testing.T) {
@@ -21,8 +21,8 @@ func TestPhase16ProductionBypassMutationIsKilled(t *testing.T) {
 
 func TestPhase16ProductionPathsPreserveM004Refusal(t *testing.T) {
 	for _, fixture := range []string{
-		"testdata/phase4/nonlocal_exit_probe.lang",
-		"testdata/phase5/restrict_borrow.lang",
+		"testdata/phase4/nonlocal_exit_probe.schway",
+		"testdata/phase5/restrict_borrow.schway",
 	} {
 		t.Run(fixture, func(t *testing.T) {
 			result, err := session.RunNativeCommandFile(context.Background(), testsupport.ProjectPath(fixture), native.DefaultRunner())

@@ -1,10 +1,10 @@
 ---
 name: spike-findings-ai-lang
-description: Implementation blueprint from spike experiments. Requirements, proven patterns, measured costs, and verified limits for building Codename Lang's ownership kernel, loan-liveness dataflow, public origin summaries, certificate evidence, and native FFI contract. Auto-loaded during implementation work.
+description: Implementation blueprint from spike experiments. Requirements, proven patterns, measured costs, and verified limits for building Schway's ownership kernel, loan-liveness dataflow, public origin summaries, certificate evidence, and native FFI contract. Auto-loaded during implementation work.
 ---
 
 <context>
-## Project: ai-lang (Codename Lang)
+## Project: ai-lang (Schway)
 
 **Idea: `ownership-kernel`** — turn the leading ownership semantics into a small
 executable oracle before building a parser, compiler backend, runtime, or

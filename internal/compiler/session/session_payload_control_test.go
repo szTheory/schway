@@ -8,14 +8,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPayloadLayoutMutationRefused proves control:payload.layout_mismatch
@@ -57,9 +57,9 @@ func TestPayloadLayoutMutationRefused(t *testing.T) {
 // input. The runner type itself carries no field of a generated-source
 // shape (Runner, DataType, FixturePath only).
 func TestPayloadLayoutMutationAttacksFrozenFixtureOnly(t *testing.T) {
-	correctPath := filepath.Join(t.TempDir(), "lang_payload_layout_probe_correct.h")
-	correctHeader := []byte(`#ifndef LANG_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
-#define LANG_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
+	correctPath := filepath.Join(t.TempDir(), "schway_payload_layout_probe_correct.h")
+	correctHeader := []byte(`#ifndef SCHWAY_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
+#define SCHWAY_PAYLOAD_LAYOUT_PROBE_PRIVATE_H
 typedef struct PayloadProbe_payload {
   unsigned char tag;
   unsigned char field_First;
@@ -85,7 +85,7 @@ typedef struct PayloadProbe_payload {
 // and by any AlternativeDetail's PayloadType naming a sibling data type)
 // out of a checked, multi-function core.Program, and re-validates the
 // result. Native emission does not support multi-function branch bodies
-// this phase (D-11-52/D-12-32); payload_borrow_interaction.lang's own
+// this phase (D-11-52/D-12-32); payload_borrow_interaction.schway's own
 // design deliberately combines payload and borrow machinery as TWO
 // functions in ONE checked program specifically because they cannot
 // combine in one function yet (12-03-SUMMARY.md), so driving either
@@ -216,10 +216,10 @@ func checkedProgram(t *testing.T, relativeParts ...string) core.Program {
 // names. Two beats, per D-12-38:
 //
 //  1. Mutated: with cgen.SetPayloadSlotSwapForTest(true) engaged, drive
-//     plan 02's tracer fixture (payload_tracer.lang, "Ok" input) through
+//     plan 02's tracer fixture (payload_tracer.schway, "Ok" input) through
 //     interpreter/-O0/-O3 and compare via session.Phase5CompareEngines,
 //     asserting on session.AxisTerminalOutcome specifically.
-//  2. Companion (unmutated): drive plan 03's payload_borrow_interaction.lang
+//  2. Companion (unmutated): drive plan 03's payload_borrow_interaction.schway
 //     and assert the comparator reports AGREEMENT -- discriminating real
 //     value-identity checking from a harness that screams on any diff.
 //
@@ -237,35 +237,35 @@ func TestPayloadSlotSwapMutationKilled(t *testing.T) {
 		restore := cgen.SetPayloadSlotSwapForTest(true)
 		defer restore()
 
-		program := checkedProgram(t, "testdata", "phase12", "payload_tracer.lang")
+		program := checkedProgram(t, "testdata", "phase12", "payload_tracer.schway")
 		engines := runFunctionOkExecutions(t, ctx, program, "identity", runner)
 		injected := cgen.PayloadSlotSwapInjectedWriteCount()
 		if injected < 1 {
-			t.Fatalf("WR-02: the D-12-38 fault-injection seam found no alternative-mismatch target and therefore injected nothing (injected write count = %d), so this beat proved nothing about the mutation -- check whether payload_tracer.lang's data type still declares two payload-carrying alternatives", injected)
+			t.Fatalf("WR-02: the D-12-38 fault-injection seam found no alternative-mismatch target and therefore injected nothing (injected write count = %d), so this beat proved nothing about the mutation -- check whether payload_tracer.schway's data type still declares two payload-carrying alternatives", injected)
 		}
 		t.Logf("WR-02: fault-injection seam injected %d wrong-slot write(s)", injected)
-		compareErr := session.Phase5CompareEngines("payload_tracer.lang(mutated)", engines)
+		compareErr := session.Phase5CompareEngines("payload_tracer.schway(mutated)", engines)
 		var disagreement *session.Phase5EngineDisagreement
 		if !errors.As(compareErr, &disagreement) || disagreement.Axis != session.AxisTerminalOutcome {
-			t.Fatalf("payload_tracer.lang(mutated): comparison error = %v, want exact %s disagreement", compareErr, session.AxisTerminalOutcome)
+			t.Fatalf("payload_tracer.schway(mutated): comparison error = %v, want exact %s disagreement", compareErr, session.AxisTerminalOutcome)
 		}
 		t.Logf("mutation KILLED on %s: %v", session.AxisTerminalOutcome, disagreement)
 	})
 
 	t.Run("companion_unmutated_agreement", func(t *testing.T) {
 		// D-12-32/D-11-52: native emission does not support multi-function
-		// branch bodies this phase, and payload_borrow_interaction.lang
+		// branch bodies this phase, and payload_borrow_interaction.schway
 		// deliberately declares TWO functions (choose, identity) in one
 		// checked program (12-03-SUMMARY.md). isolateNativeFunction extracts
 		// just "identity" (plus the Outcome/Fault data types it needs) so
 		// this companion beat can still drive a genuinely DIFFERENT fixture
 		// file than the mutated beat above, unmutated, through the same
 		// native/interpreter comparison.
-		multiFunction := checkedProgram(t, "testdata", "phase12", "payload_borrow_interaction.lang")
+		multiFunction := checkedProgram(t, "testdata", "phase12", "payload_borrow_interaction.schway")
 		program := isolateNativeFunction(t, multiFunction, "identity")
 		engines := runFunctionOkExecutions(t, ctx, program, "identity", runner)
-		if compareErr := session.Phase5CompareEngines("payload_borrow_interaction.lang(unmutated)", engines); compareErr != nil {
-			t.Fatalf("payload_borrow_interaction.lang: expected agreement absent the mutation, got: %v", compareErr)
+		if compareErr := session.Phase5CompareEngines("payload_borrow_interaction.schway(unmutated)", engines); compareErr != nil {
+			t.Fatalf("payload_borrow_interaction.schway: expected agreement absent the mutation, got: %v", compareErr)
 		}
 	})
 }

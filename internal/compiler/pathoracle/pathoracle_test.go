@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // maxGoListDepsOutputBytes bounds transitiveImportsViolation's captured
@@ -83,7 +83,7 @@ func checkedFunction(t *testing.T, fixture string) core.Function {
 
 func phase23LocalOwnerProgram(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func phase23OwnerMutations() []struct {
 			if index < 0 {
 				return false
 			}
-			program.Functions[0].Linear.Operations[index].Foreign.Symbol = "lang_file_byte_acquire"
+			program.Functions[0].Linear.Operations[index].Foreign.Symbol = "schway_file_byte_acquire"
 			return true
 		}},
 		{"wrong use ABI", func(program *core.Program) bool {
@@ -406,7 +406,7 @@ func transitiveImportsViolation(t *testing.T, forbidden []string) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/pathoracle")
+	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/szTheory/schway/internal/compiler/pathoracle")
 	cmd.Dir = testsupport.ProjectPath()
 	var stdout boundedGoListWriter
 	cmd.Stdout = &stdout
@@ -461,9 +461,9 @@ func TestOracleImportsStayIndependent(t *testing.T) {
 // TestTransitiveImportsGuardCanFail).
 func TestTransitiveImportsGuardCanFail(t *testing.T) {
 	synthetic := []string{
-		"github.com/codename-lang/lang/internal/compiler/pathoracle",
-		"github.com/codename-lang/lang/internal/compiler/core",
-		"github.com/codename-lang/lang/internal/compiler/corevalidate",
+		"github.com/szTheory/schway/internal/compiler/pathoracle",
+		"github.com/szTheory/schway/internal/compiler/core",
+		"github.com/szTheory/schway/internal/compiler/corevalidate",
 	}
 	if got := transitiveImportViolation(synthetic, pathOracleForbiddenImports); got == "" {
 		t.Fatal("expected the synthetic dependency list's forbidden corevalidate entry to be flagged")
@@ -476,7 +476,7 @@ func TestTransitiveImportsGuardCanFail(t *testing.T) {
 // order — asserted directly against the checked core.Function's own
 // declared Blocks/Edges, not against any production liveness answer.
 func TestOracleEnumeratesAllAcyclicPaths(t *testing.T) {
-	function := checkedFunction(t, "branch_one_arm_shared_accept.lang")
+	function := checkedFunction(t, "branch_one_arm_shared_accept.schway")
 	endpoints, _, err := pathoracle.RecomputeEndpoints(function, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -500,7 +500,7 @@ func TestOracleEnumeratesAllAcyclicPaths(t *testing.T) {
 // primary differential is the accept fixture, whose "On" arm carries a real
 // loan and a real endpoint).
 func TestOracleAgreesWithProduction(t *testing.T) {
-	for _, fixture := range []string{"branch_one_arm_shared_accept.lang"} {
+	for _, fixture := range []string{"branch_one_arm_shared_accept.schway"} {
 		function := checkedFunction(t, fixture)
 		want := append([]core.LoanEndpoint(nil), function.Linear.LoanEndpoints...)
 		sort.Slice(want, func(i, j int) bool { return want[i].ID < want[j].ID })
@@ -518,7 +518,7 @@ func TestOracleAgreesWithProduction(t *testing.T) {
 }
 
 func TestOracleAgreesWithComputedMatchLoan(t *testing.T) {
-	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.lang"))
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.schway"))
 	if err != nil {
 		t.Fatalf("session.CheckFile: %v", err)
 	}
@@ -717,14 +717,14 @@ func TestPathOracleClosesOnEveryTerminator(t *testing.T) {
 
 // TestFailureOnlyPathIsChecked is the fixture-based sibling of
 // TestPathOracleClosesOnEveryTerminator: it exercises RecomputeEndpoints
-// directly on the shipped foreign_acquire_one.lang tracer, whose err block
+// directly on the shipped foreign_acquire_one.schway tracer, whose err block
 // exits ONLY through core.OpFail, confirming the oracle processes that path
 // without error at all (the tracer's err block itself carries no loan, so
 // this is the "the path is checked, not silently skipped" half of the
 // claim -- TestPathOracleClosesOnEveryTerminator above is the "and a live
 // loan crossing it is correctly endpointed" half).
 func TestFailureOnlyPathIsChecked(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -791,7 +791,7 @@ func TestTerminatorWalkMutationKilled(t *testing.T) {
 // TestCompositionCycleGuardFailsClosed to build a synthetic call chain
 // directly against core.Function values (mirroring
 // TestOraclePathCountCapRejects' own synthetic-construction style) rather
-// than through a real .lang program neither test needs.
+// than through a real .schway program neither test needs.
 func chainCallFunction(id, calleeID string) core.Function {
 	return core.Function{
 		ID: id, EntryPointID: id + ":point:entry",
@@ -924,8 +924,8 @@ func functionNamed(t *testing.T, program core.Program, name string) core.Functio
 // withCalleeIDRewritten returns a COPY of caller whose one core.OpCall
 // operation's CalleeID is rewritten to newCalleeID, leaving every other
 // operation, block, and edge byte-identical. Used to stitch
-// compose_per_path_borrow_caller_accept.lang's own genuinely-Callable call
-// (to `passthrough`) onto compose_per_path_borrow_callee_accept.lang's
+// compose_per_path_borrow_caller_accept.schway's own genuinely-Callable call
+// (to `passthrough`) onto compose_per_path_borrow_callee_accept.schway's
 // separately-checked, deliberately-un-Callable `callee` -- see both
 // fixtures' own header comments for why they cannot be checked as one
 // joint program (D-10-14's own grammar/checker limit, anticipated by the
@@ -970,8 +970,8 @@ func endpointKinds(endpoints []core.LoanEndpoint) map[string]bool {
 // fixtures never move, since the fault seam is unreachable from outside
 // package pathoracle.
 func TestCompositionDiscriminatesPerPathBorrow(t *testing.T) {
-	callerProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_caller_accept.lang")
-	calleeProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_callee_accept.lang")
+	callerProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_caller_accept.schway")
+	calleeProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_callee_accept.schway")
 	caller := functionNamed(t, callerProgram, "caller")
 	callee := functionNamed(t, calleeProgram, "callee")
 
@@ -1025,7 +1025,7 @@ func TestCompositionDiscriminatesPerPathBorrow(t *testing.T) {
 	// agreement with it, are byte-for-byte unchanged -- only pathoracle
 	// disagrees, because the seam is unreachable from outside this
 	// package.
-	callerAfterProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_caller_accept.lang")
+	callerAfterProgram := checkedProgram(t, "phase10", "compose_per_path_borrow_caller_accept.schway")
 	callerAfter := functionNamed(t, callerAfterProgram, "caller")
 	if !reflect.DeepEqual(callerBefore, callerAfter.Linear.LoanEndpoints) {
 		t.Fatalf("check's own stored endpoints for the caller fixture changed while the seam was engaged:\n before: %+v\n after:  %+v", callerBefore, callerAfter.Linear.LoanEndpoints)

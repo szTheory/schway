@@ -170,7 +170,7 @@
     "control_id": "spike-005-iter3-release-omitted",
     "control_mechanism": "a partial-initialization/cleanup path releases fewer resources than it acquired when an intermediate acquisition stage fails, or on the success path",
     "live_descendant": {
-      "fixture": "testdata/phase4/acquire_three_success.lang",
+      "fixture": "testdata/phase4/acquire_three_success.schway",
       "control_id": "control:resource.release_omitted"
     },
     "waived": null
@@ -180,7 +180,7 @@
     "control_id": "spike-005-iter3-release-order-transposed",
     "control_mechanism": "a cleanup path releases the same set of acquired resources it should, but not in the required reverse-of-acquisition order",
     "live_descendant": {
-      "fixture": "testdata/phase4/acquire_three_success.lang",
+      "fixture": "testdata/phase4/acquire_three_success.schway",
       "control_id": "control:resource.release_order_transposed"
     },
     "waived": null
@@ -190,7 +190,7 @@
     "control_id": "spike-005-iter3-allocator-identity-mismatch",
     "control_mechanism": "a release is routed through an allocator identity different from the one that performed the matching allocation, and the mismatch is accepted instead of rejected",
     "live_descendant": {
-      "fixture": "testdata/phase5/allocator_mismatch.lang",
+      "fixture": "testdata/phase5/allocator_mismatch.schway",
       "control_id": "control:native.sanitize.allocator_mismatch"
     },
     "waived": null
@@ -200,7 +200,7 @@
     "control_id": "spike-005-iter3-stale-callback-retention",
     "control_mechanism": "a foreign boundary retains a raw pointer to a borrowed buffer past its owner's release and dereferences it after the owner generation has ended",
     "live_descendant": {
-      "fixture": "testdata/phase5/retained_pointer.lang",
+      "fixture": "testdata/phase5/retained_pointer.schway",
       "control_id": "control:native.sanitize.retained_pointer"
     },
     "waived": null
@@ -210,7 +210,7 @@
     "control_id": "spike-005-iter4-false-restrict-alias",
     "control_mechanism": "a false `restrict`/no-alias promise on a parameter that is actually aliased diverges between -O0 and -O3 under optimization",
     "live_descendant": {
-      "fixture": "testdata/phase5/false_restrict_hoist.lang",
+      "fixture": "testdata/phase5/false_restrict_hoist.schway",
       "control_id": "control:alias.false_no_alias"
     },
     "waived": null
@@ -220,7 +220,7 @@
     "control_id": "spike-005-iter5-heap-use-after-free",
     "control_mechanism": "a concrete heap use-after-free is silent undefined behavior under a plain -O0/-O3 execution -- not a guaranteed crash, since the freed block is often re-served intact -- and requires a sanitizer's deterministic redzone/quarantine trap to become observable at all",
     "live_descendant": {
-      "fixture": "testdata/phase5/retained_pointer.lang",
+      "fixture": "testdata/phase5/retained_pointer.schway",
       "control_id": "control:native.sanitize.use_after_free"
     },
     "waived": null
@@ -240,7 +240,7 @@
     "control_id": "spike-005-iter5-nonlocal-exit-no-sanitizer-report",
     "control_mechanism": "a foreign nonlocal exit (a `longjmp` past an acquiring frame) bypasses ordinary lexical cleanup and produces NO sanitizer report at all -- zero ASan/UBSan diagnostics -- which is the load-bearing caution distinguishing this hazard from every other Phase 5 sanitizer-detected defect: the sanitizer lane cannot see it by construction, so its live descendant is Phase 4's own nonlocal-exit control, not the Phase 5 sanitizer lane",
     "live_descendant": {
-      "fixture": "testdata/phase4/nonlocal_exit_probe.lang",
+      "fixture": "testdata/phase4/nonlocal_exit_probe.schway",
       "control_id": "control:foreign.nonlocal_exit_undetected"
     },
     "waived": null

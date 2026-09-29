@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/executionpeer"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/executionpeer"
 )
 
 // Axis identifiers (D-05-20): every axis Phase5CompareEngines and its
@@ -103,7 +103,7 @@ func SetPhase5Schema2PeerValidatorForTest(validate func(core.Program, execution.
 	return func() { phase5Schema2PeerValidate = previous }
 }
 
-// Phase5CompareProgramEngines validates every lang.execution/2 document with
+// Phase5CompareProgramEngines validates every schway.execution/2 document with
 // the independent peer before comparing engine pairs. Legacy /0 and /1
 // documents deliberately retain Phase5CompareEngines' historical behavior:
 // there is no invocation grammar for the peer to validate in those schemas.

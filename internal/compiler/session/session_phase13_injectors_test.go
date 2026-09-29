@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // phase13Fixture reads a fixture from testdata/phase13 by name, mirroring
@@ -48,7 +48,7 @@ fn sink(buffer: Buffer) -> Buffer {
 fn relay(buffer: Buffer) -> Buffer {
   let borrowed = borrow buffer
   let routed = sink(borrowed)
-  let delivered = take buffer // lang:interprocedural-loan-target
+  let delivered = take buffer // schway:interprocedural-loan-target
   routed
 }`)
 
@@ -60,7 +60,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -72,7 +72,7 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let handle = try lang_res_open(request) // lang:fallible-consume-target
+  let handle = try schway_res_open(request) // schway:fallible-consume-target
   handle
 }`)
 
@@ -82,7 +82,7 @@ export {
   fn main
 }
 
-fn identity(value: Byte) -> Byte { // lang:call-argument-target
+fn identity(value: Byte) -> Byte { // schway:call-argument-target
   value
 }
 
@@ -285,13 +285,13 @@ func TestCorpusTopologyDisjoint(t *testing.T) {
 	}{
 		{
 			name: "fallible_call_unconsumed",
-			heldoutFile: "heldout_fallible_call_unconsumed.lang", heldoutRoot: "main", heldoutDetection: "acquire",
-			derivationFile: "derivation_fallible_call_unconsumed.lang", derivationRoot: "main", derivationDetect: "main",
+			heldoutFile: "heldout_fallible_call_unconsumed.schway", heldoutRoot: "main", heldoutDetection: "acquire",
+			derivationFile: "derivation_fallible_call_unconsumed.schway", derivationRoot: "main", derivationDetect: "main",
 		},
 		{
 			name: "call_argument_type_mismatch",
-			heldoutFile: "heldout_call_argument_mismatch.lang", heldoutRoot: "main", heldoutDetection: "dispatch",
-			derivationFile: "derivation_call_argument_mismatch.lang", derivationRoot: "main", derivationDetect: "main",
+			heldoutFile: "heldout_call_argument_mismatch.schway", heldoutRoot: "main", heldoutDetection: "dispatch",
+			derivationFile: "derivation_call_argument_mismatch.schway", derivationRoot: "main", derivationDetect: "main",
 		},
 	}
 	for _, tc := range cases {
@@ -313,7 +313,7 @@ func TestCorpusTopologyDisjoint(t *testing.T) {
 }
 
 // alphaRenameDerivationCallArgumentMismatch returns a byte-for-byte
-// structural copy of derivation_call_argument_mismatch.lang with every
+// structural copy of derivation_call_argument_mismatch.schway with every
 // identifier (module suffix, function names, parameter/binding names)
 // renamed -- exactly M001's documented weakness shape (item -> buffer,
 // moved_once -> delivered): a rename that changes no call-graph shape at
@@ -346,10 +346,10 @@ func alphaRenameDerivationCallArgumentMismatch(t *testing.T, source []byte) []by
 // A control that a pure rename can slip past is exactly the M001
 // weakness this phase exists to close.
 func TestCorpusTopologyGuardIsNotInert(t *testing.T) {
-	original := phase13Fixture(t, "derivation_call_argument_mismatch.lang")
+	original := phase13Fixture(t, "derivation_call_argument_mismatch.schway")
 	dir := t.TempDir()
 	renamed := alphaRenameDerivationCallArgumentMismatch(t, original)
-	path := filepath.Join(dir, "alpha_renamed_derivation_call_argument_mismatch.lang")
+	path := filepath.Join(dir, "alpha_renamed_derivation_call_argument_mismatch.schway")
 	if err := os.WriteFile(path, renamed, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -387,11 +387,11 @@ func TestHeldoutBaselinesAreFailClosed(t *testing.T) {
 		injector Injector
 		wantCode string
 	}{
-		{"fallible_call_unconsumed", "heldout_fallible_call_unconsumed.lang", FallibleConsumeInjector{}, "syntax.fallible_call_not_consumed"},
-		{"call_argument_mismatch", "heldout_call_argument_mismatch.lang", CallArgumentTypeInjector{}, "check.call_argument_type_mismatch"},
-		{"call_argument_ambiguous", "heldout_call_argument_ambiguous.lang", CallArgumentTypeInjector{}, "check.call_argument_type_mismatch"},
-		{"shared_callee_twin_alpha", "heldout_shared_callee_twin_alpha.lang", InterproceduralLoanInjector{}, "check.interprocedural_loan_liveness"},
-		{"shared_callee_twin_mirror", "heldout_shared_callee_twin_mirror.lang", InterproceduralLoanInjector{}, "check.interprocedural_loan_liveness"},
+		{"fallible_call_unconsumed", "heldout_fallible_call_unconsumed.schway", FallibleConsumeInjector{}, "syntax.fallible_call_not_consumed"},
+		{"call_argument_mismatch", "heldout_call_argument_mismatch.schway", CallArgumentTypeInjector{}, "check.call_argument_type_mismatch"},
+		{"call_argument_ambiguous", "heldout_call_argument_ambiguous.schway", CallArgumentTypeInjector{}, "check.call_argument_type_mismatch"},
+		{"shared_callee_twin_alpha", "heldout_shared_callee_twin_alpha.schway", InterproceduralLoanInjector{}, "check.interprocedural_loan_liveness"},
+		{"shared_callee_twin_mirror", "heldout_shared_callee_twin_mirror.schway", InterproceduralLoanInjector{}, "check.interprocedural_loan_liveness"},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -449,7 +449,7 @@ func parseHeldoutManifest(t *testing.T, path string) []struct{ digest, relPath s
 }
 
 // TestHeldoutCorpusSealed is D-13-27's central assertion: the manifest
-// lists exactly the heldout_*.lang files present under testdata/phase13,
+// lists exactly the heldout_*.schway files present under testdata/phase13,
 // and every listed digest matches the file's current bytes. No
 // regenerate helper, bless flag, or environment-variable escape exists
 // anywhere in this path -- editing a held-out fixture after this test is
@@ -481,7 +481,7 @@ func TestHeldoutCorpusSealed(t *testing.T) {
 	}
 	for _, dirEntry := range dirEntries {
 		name := dirEntry.Name()
-		if !strings.HasPrefix(name, "heldout_") || !strings.HasSuffix(name, ".lang") {
+		if !strings.HasPrefix(name, "heldout_") || !strings.HasSuffix(name, ".schway") {
 			continue
 		}
 		relPath := "testdata/phase13/" + name
@@ -536,23 +536,23 @@ func TestHeldoutCorpusSealGuardIsNotInert(t *testing.T) {
 	}
 }
 
-// phase13CorpusDispatchMarkers are the marker filenames cmd/lang/main.go's
+// phase13CorpusDispatchMarkers are the marker filenames cmd/schway/main.go's
 // existing isPhase5Corpus/isPhase6Corpus/isPhase7Corpus dispatch functions
 // key on -- a testdata/phase13 file sharing any of these names would cause
 // the directory to be misrouted as an earlier phase's corpus by any tool
 // that walks testdata/ looking for these markers (testdata/phase13/README).
 var phase13CorpusDispatchMarkers = []string{
-	"heldout_match_defect.lang", // isPhase6Corpus
-	"call_basic.lang",           // isPhase7Corpus
-	"restrict_borrow.lang",      // isPhase5Corpus
+	"heldout_match_defect.schway", // isPhase6Corpus
+	"call_basic.schway",           // isPhase7Corpus
+	"restrict_borrow.schway",      // isPhase5Corpus
 }
 
 // TestPhase13CorpusIsNotMisroutedByCorpusDispatch asserts that no file
-// under testdata/phase13 carries a name cmd/lang/main.go's existing
+// under testdata/phase13 carries a name cmd/schway/main.go's existing
 // marker-file corpus dispatch keys on -- the planner's chosen alternative
 // to adding a fourth isPhaseNCorpus sibling (13-04-PLAN.md's objective):
 // this corpus is consumed by Go tests and by per-file `lang --json check`,
-// never by a corpus-level `lang verify`.
+// never by a corpus-level `schway verify`.
 func TestPhase13CorpusIsNotMisroutedByCorpusDispatch(t *testing.T) {
 	corpusDir := testsupport.ProjectPath("testdata", "phase13")
 	dirEntries, err := os.ReadDir(corpusDir)
@@ -565,7 +565,7 @@ func TestPhase13CorpusIsNotMisroutedByCorpusDispatch(t *testing.T) {
 	}
 	for _, marker := range phase13CorpusDispatchMarkers {
 		if present[marker] {
-			t.Fatalf("testdata/phase13 contains %q, which cmd/lang/main.go's existing corpus dispatch would use to misroute this directory", marker)
+			t.Fatalf("testdata/phase13 contains %q, which cmd/schway/main.go's existing corpus dispatch would use to misroute this directory", marker)
 		}
 	}
 }

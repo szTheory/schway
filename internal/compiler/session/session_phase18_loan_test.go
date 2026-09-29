@@ -5,19 +5,19 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPhase18LoanAcrossBranchProduction reruns S-010 through source parsing,
 // production endpoint materialization, independent peers, interpreter, and
 // every available native tier.
 func TestPhase18LoanAcrossBranchProduction(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase18", "loan_across_branch.schway"))
 	if err != nil {
 		t.Fatalf("read S-010 source: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestPhase18LoanAcrossBranchProduction(t *testing.T) {
 				t.Fatalf("input %s engine %s outcome = %+v", input, name, result.Outcome)
 			}
 		}
-		if err := session.Phase5CompareProgramEngines("testdata/phase18/loan_across_branch.lang:"+input, checked.Program, engines); err != nil {
+		if err := session.Phase5CompareProgramEngines("testdata/phase18/loan_across_branch.schway:"+input, checked.Program, engines); err != nil {
 			t.Fatalf("input %s four-engine comparison: %v", input, err)
 		}
 	}

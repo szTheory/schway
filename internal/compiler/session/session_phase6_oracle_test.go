@@ -3,7 +3,7 @@
 // internal/compiler/session, in-process, re-running the shipped
 // reduce/mismatch machinery's own -O0-vs--O3 comparison over a file the
 // repair driver has ALREADY produced and exited from -- never inside
-// cmd/lang-repair, which may not import internal/compiler/reduce
+// cmd/schway-repair, which may not import internal/compiler/reduce
 // (D-06-28). This file is package session (an internal test, like
 // session_phase6_injectors_test.go), so it can reach the unexported
 // interpreterInputs/phase5DefaultRunner helpers the same way
@@ -22,48 +22,48 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // buildLangRepairBinaryTimeout mirrors testsupport.BuildCLITimeout: cmd/
-// lang-repair is package main and can never be imported (Go forbids
+// schway-repair is package main and can never be imported (Go forbids
 // importing package main), so exercising it from any test anywhere in
 // the tree -- including this one -- means building and spawning it as a
-// real subprocess, exactly like testsupport.BuildCLI does for ./cmd/lang.
+// real subprocess, exactly like testsupport.BuildCLI does for ./cmd/schway.
 const buildLangRepairBinaryTimeout = 5 * time.Minute
 
 // buildLangRepairBinary is a small local copy of testsupport.BuildCLIErr's
 // shape, parametrized on package path since testsupport.BuildCLI hardcodes
-// ./cmd/lang.
+// ./cmd/schway.
 func buildLangRepairBinary(t testing.TB) string {
 	t.Helper()
-	binary := filepath.Join(t.TempDir(), "lang-repair")
+	binary := filepath.Join(t.TempDir(), "schway-repair")
 	ctx, cancel := context.WithTimeout(context.Background(), buildLangRepairBinaryTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "go", "build", "-o", binary, "./cmd/lang-repair")
+	cmd := exec.CommandContext(ctx, "go", "build", "-o", binary, "./cmd/schway-repair")
 	cmd.Dir = testsupport.ProjectPath()
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("building cmd/lang-repair: %v\n%s%s", err, stdout.String(), stderr.String())
+		t.Fatalf("building cmd/schway-repair: %v\n%s%s", err, stdout.String(), stderr.String())
 	}
 	return binary
 }
 
 // assertRepairDriverNeverReferencesReducer is a direct, live go/ast
 // falsifier for D-06-26/D-06-28's split: the differential-behaviour
-// fallback oracle must never live inside cmd/lang-repair. It is narrower
+// fallback oracle must never live inside cmd/schway-repair. It is narrower
 // than (and independent of) import_boundary_test.go's own broad
 // "/internal/" scan -- this one names the specific package the fallback
 // oracle depends on, so a future refactor of the boundary lint cannot
 // accidentally stop covering this specific forbidden dependency.
 func assertRepairDriverNeverReferencesReducer(t testing.TB) {
 	t.Helper()
-	dir := testsupport.ProjectPath("cmd", "lang-repair")
+	dir := testsupport.ProjectPath("cmd", "schway-repair")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -80,14 +80,14 @@ func assertRepairDriverNeverReferencesReducer(t testing.TB) {
 		for _, imported := range file.Imports {
 			path := strings.Trim(imported.Path.Value, `"`)
 			if strings.Contains(path, "/compiler/reduce") {
-				t.Fatalf("%s imports %s -- the differential-behaviour fallback oracle must never live inside cmd/lang-repair (D-06-26, D-06-28)", entry.Name(), path)
+				t.Fatalf("%s imports %s -- the differential-behaviour fallback oracle must never live inside cmd/schway-repair (D-06-26, D-06-28)", entry.Name(), path)
 			}
 		}
 	}
 }
 
 // TestDifferentialFallbackOracleRunsInProcess drives the REAL
-// cmd/lang-repair BINARY as an external subprocess (never an import --
+// cmd/schway-repair BINARY as an external subprocess (never an import --
 // package main cannot be imported) to repair a real injected move
 // defect, then, entirely independently and only AFTER that process has
 // exited, asks the fallback oracle's own differential machinery (an
@@ -104,7 +104,7 @@ func TestDifferentialFallbackOracleRunsInProcess(t *testing.T) {
 	langBinary := testsupport.BuildCLI(t)
 	repairBinary := buildLangRepairBinary(t)
 
-	original, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase6", "heldout_move_defect.lang"))
+	original, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase6", "heldout_move_defect.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestDifferentialFallbackOracleRunsInProcess(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	sourcePath := filepath.Join(dir, "heldout_move_defect.lang")
+	sourcePath := filepath.Join(dir, "heldout_move_defect.schway")
 	if err := os.WriteFile(sourcePath, mutated, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +124,7 @@ func TestDifferentialFallbackOracleRunsInProcess(t *testing.T) {
 	// space, a subprocess, or a code path with the driver.
 	result := testsupport.RunCLI(t, repairBinary, nil, "--lang="+langBinary, "--source="+sourcePath, "--json")
 	if result.Exit != 0 {
-		t.Fatalf("lang-repair failed: exit=%d stderr=%s stdout=%s", result.Exit, result.Stderr, result.Stdout)
+		t.Fatalf("schway-repair failed: exit=%d stderr=%s stdout=%s", result.Exit, result.Stderr, result.Stdout)
 	}
 
 	repaired, err := os.ReadFile(sourcePath)

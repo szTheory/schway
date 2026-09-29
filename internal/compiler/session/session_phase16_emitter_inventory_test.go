@@ -12,11 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 const (
-	cgenImportPath           = "github.com/codename-lang/lang/internal/compiler/cgen"
+	cgenImportPath           = "github.com/szTheory/schway/internal/compiler/cgen"
 	phase16AdmittedDynamic   = "admitted-dynamic-schema2"
 	phase16RefusalWithFrozen = "refusal-frozen-witness"
 	phase16TypedRefusal      = "typed-refusal"

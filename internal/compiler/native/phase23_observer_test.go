@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
-const phase23UseErrorDiagnostic = "fputs(\"lang_file_byte_use: UnsupportedByte\\n\", stderr);"
+const phase23UseErrorDiagnostic = "fputs(\"schway_file_byte_use: UnsupportedByte\\n\", stderr);"
 
 type phase23ObserverFixture struct {
 	root     string
@@ -50,7 +50,7 @@ func TestPhase23ObserverPublicLifecycleAndUseFailure(t *testing.T) {
 		},
 		{
 			name: "0x43 typed use failure", value: 0x43, wantCode: 65,
-			wantStderr:  "lang_file_byte_use: UnsupportedByte\n",
+			wantStderr:  "schway_file_byte_use: UnsupportedByte\n",
 			wantReceipt: "malloc\tp1\nuse\tp1\nfree\tp1\nreport_boundary\tpost-release\nfinal\toutstanding=0\nverdict\tpass\n",
 		},
 	} {
@@ -181,9 +181,9 @@ func newPhase23ObserverFixture(t *testing.T) *phase23ObserverFixture {
 		"void *phase23_observer_malloc(size_t);\n" +
 		"void phase23_observer_free(void *);\n" +
 		"unsigned char phase23_observer_load_byte(const unsigned char *);\n\n" +
-		"#define LANG_FILE_BYTE_MALLOC phase23_observer_malloc\n" +
-		"#define LANG_FILE_BYTE_FREE phase23_observer_free\n" +
-		"#define LANG_FILE_BYTE_LOAD_BYTE(pointer) phase23_observer_load_byte(pointer)\n"
+		"#define SCHWAY_FILE_BYTE_MALLOC phase23_observer_malloc\n" +
+		"#define SCHWAY_FILE_BYTE_FREE phase23_observer_free\n" +
+		"#define SCHWAY_FILE_BYTE_LOAD_BYTE(pointer) phase23_observer_load_byte(pointer)\n"
 	adapterText := strings.Replace(string(adapter), include, observerHooks, 1)
 	if adapterText == string(adapter) {
 		t.Fatal("adapter observer hooks were not inserted at the adapter include boundary")
@@ -216,7 +216,7 @@ func newPhase23ObserverFixture(t *testing.T) *phase23ObserverFixture {
 		t.Fatal(err)
 	}
 
-	source, err := os.ReadFile(filepath.Join(project, "examples", "phase23", "file_byte.lang"))
+	source, err := os.ReadFile(filepath.Join(project, "examples", "phase23", "file_byte.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,19 +262,19 @@ func runPhase23ObserverApp(t *testing.T, cli, artifact, input, observerPath stri
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, cli, arguments...)
-	command.Env = append(os.Environ(), "LANG_PHASE23_OBSERVER_PATH="+observerPath)
+	command.Env = append(os.Environ(), "SCHWAY_PHASE23_OBSERVER_PATH="+observerPath)
 	var stdout, stderr strings.Builder
 	command.Stdout, command.Stderr = &stdout, &stderr
 	err := command.Run()
 	if ctx.Err() != nil {
-		t.Fatalf("lang app run timed out: %v", ctx.Err())
+		t.Fatalf("schway app run timed out: %v", ctx.Err())
 	}
 	if err == nil {
 		return 0, stdout.String(), stderr.String()
 	}
 	var exitError *exec.ExitError
 	if !errors.As(err, &exitError) {
-		t.Fatalf("lang app run could not launch: %v", err)
+		t.Fatalf("schway app run could not launch: %v", err)
 	}
 	return exitError.ExitCode(), stdout.String(), stderr.String()
 }
@@ -284,7 +284,7 @@ func runPhase23ObserverArtifact(t *testing.T, artifact, input, observerPath, cap
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, artifact, input)
-	command.Env = append(os.Environ(), "LANG_PHASE23_OBSERVER_PATH="+observerPath, "LANG_APP_EVIDENCE_PATH="+capturePath)
+	command.Env = append(os.Environ(), "SCHWAY_PHASE23_OBSERVER_PATH="+observerPath, "SCHWAY_APP_EVIDENCE_PATH="+capturePath)
 	var stdout, stderr strings.Builder
 	command.Stdout, command.Stderr = &stdout, &stderr
 	err := command.Run()
@@ -303,7 +303,7 @@ func runPhase23ObserverArtifact(t *testing.T, artifact, input, observerPath, cap
 
 func phase23MutateDestructor(t *testing.T, cSource, mutation string) string {
 	t.Helper()
-	useCall := "lang_file_byte_use("
+	useCall := "schway_file_byte_use("
 	useAt := strings.Index(cSource, useCall)
 	if useAt < 0 {
 		t.Fatal("generated C has no Phase 23 borrowed use call")
@@ -319,7 +319,7 @@ func phase23MutateDestructor(t *testing.T, cSource, mutation string) string {
 		t.Fatal("generated borrowed-use call has no closing delimiter")
 	}
 	owner := strings.TrimSpace(cSource[useAt+len(useCall) : useAt+len(useCall)+closeParen])
-	releaseCall := "lang_file_byte_release(" + owner + ");"
+	releaseCall := "schway_file_byte_release(" + owner + ");"
 	releaseAt := strings.Index(cSource[useLineEnd:], releaseCall)
 	if releaseAt < 0 {
 		t.Fatal("generated C has no matching release after borrowed use")
@@ -343,7 +343,7 @@ func phase23MutateDestructor(t *testing.T, cSource, mutation string) string {
 	case "duplicate":
 		return cSource[:releaseLineStart] + releaseLine + "\n" + releaseLine + cSource[releaseLineEnd:]
 	case "wrong-resource":
-		wrong := "  lang_file_byte_release((lang_file_byte_owner){(unsigned char *)\"phase23-decoy\", UINT64_C(1)});"
+		wrong := "  schway_file_byte_release((schway_file_byte_owner){(unsigned char *)\"phase23-decoy\", UINT64_C(1)});"
 		return cSource[:releaseLineStart] + releaseLine + "\n" + wrong + cSource[releaseLineEnd:]
 	default:
 		t.Fatalf("unknown Phase 23 release mutation %q", mutation)

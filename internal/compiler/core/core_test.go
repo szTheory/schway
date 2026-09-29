@@ -12,17 +12,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/evidence"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // pinnedFacts is a fixed, machine-independent evidence.Facts value used only
@@ -39,7 +39,7 @@ var pinnedFacts = evidence.Facts{
 // uses: the caller source matches the callee parameter type while the target
 // uses the caller's separately minted return-side fact.
 func TestPhase17TwoTypeCoreFacts(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,58 +141,58 @@ type pinnedFixture struct {
 }
 
 var pinnedFixtures = []pinnedFixture{
-	{"testdata/phase1/comments.lang", "1a90f92b261dbc825c3e480bd53465c10706e36a357f2491b0e0c88894166818", "evidence:f4570dd58a26d7c7582901a3"},
-	{"testdata/phase1/toggle.lang", "5fc207e1a572c3a9e6ef04aa85010e1b842782e92635ae3f09949a3fb1353658", "evidence:142a7ab526b8f0cbd2cf4f26"},
-	{"testdata/phase2/implicit_copy.lang", "5e2010f1331206d4610ca6a1b10ce686092a6884a8d4fc014cac3b44e4c36b2a", "evidence:6f46d2e225598990faccbd0b"},
-	{"testdata/phase2/owned_transfer.lang", "e17fe549a50beb20c99e0172856d5df5c1736e97dce76d79c2d693c17d22fd20", "evidence:fb5bfdc8790a8f9c175ea872"},
-	{"testdata/phase3/borrowed_view.lang", "696bf2e1c2ec73411ed8b091d753bef6e6504026cc43dc3b248ae62febba438f", "evidence:dddd4a0b3097658e6398e1cf"},
-	{"testdata/phase3/branch_one_arm_shared_accept.lang", "c7ebef76cd22b510aec1a8509bcc89c78883f13dac4f1b94d0e217238a094118", "evidence:da42f3641c66baf35e645c66"},
-	{"testdata/phase3/branch_view.lang", "3ec55ec5717e6760e5d3d006c2a5020f953a21fbf41e0adf406132e202365d9c", "evidence:214eeb3db43ca09b07561834"},
-	{"testdata/phase3/public_view.lang", "b2b6ba18f5fc89ccbf983e15767ed71d27a9c9cfae907edf2e6cf09dac15452f", "evidence:9e8559ebc60ee839634e5294"},
-	{"testdata/phase3/public_view_impossible.lang", "331a5b2d81849cfbfc31ba9430ff988d060874386bc93ad574f9429a516c493b", "evidence:1c0473336df43d779c6df70e"},
-	{"testdata/phase3/public_view_mixed_access.lang", "b2665aa3d0cc9ed49d542a923878b4936e378c870c229638d0549b4feefa9e52", "evidence:0c125c8dc25ffe83c6a50de4"},
-	{"testdata/phase3/public_view_multi_arm_access_conflict.lang", "e35c719e6b1ef7c246cb9635c1a8f656dbde3c6df3ed19d8211ea70be3758a6f", "evidence:6b624856c3bc19fa6f197172"},
-	{"testdata/phase3/public_view_multi_arm_omitted.lang", "5c323c009c0d06132167fbe1c72be37cf3e6710a465159c6980544915a5a8ebd", "evidence:dee7242791bb8aa48524f84b"},
-	{"testdata/phase3/public_view_omitted.lang", "f09350cfab25d9e527c6feee9f8c2fc89b22e8eaf530d016cf8421151c0c2cfc", "evidence:a038be9d5fa9c1d3dba6ba01"},
-	{"testdata/phase3/public_view_understated.lang", "b45496eb4292454be7a919c1f63a7768060f383a1dc61f3f0a77f7aba65d8574", "evidence:40f4a643baf24f1a75d0422c"},
-	{"testdata/phase3/sequential_shared_then_exclusive_accept.lang", "56d20794f8a43822f4483d2da39e870b4cb036c262f5e9289d32f5859bed20bd", "evidence:11dff9f506141504f46b90e0"},
-	{"testdata/phase3/shared_shared_accept.lang", "ecc14ac0c851b90546fb41502b8915ac325ba322d3a3a7d4887b86961ed231b4", "evidence:b12a60b311e5cbad4e0274bf"},
+	{"testdata/phase1/comments.schway", "1a90f92b261dbc825c3e480bd53465c10706e36a357f2491b0e0c88894166818", "evidence:f4570dd58a26d7c7582901a3"},
+	{"testdata/phase1/toggle.schway", "5fc207e1a572c3a9e6ef04aa85010e1b842782e92635ae3f09949a3fb1353658", "evidence:142a7ab526b8f0cbd2cf4f26"},
+	{"testdata/phase2/implicit_copy.schway", "5e2010f1331206d4610ca6a1b10ce686092a6884a8d4fc014cac3b44e4c36b2a", "evidence:6f46d2e225598990faccbd0b"},
+	{"testdata/phase2/owned_transfer.schway", "e17fe549a50beb20c99e0172856d5df5c1736e97dce76d79c2d693c17d22fd20", "evidence:fb5bfdc8790a8f9c175ea872"},
+	{"testdata/phase3/borrowed_view.schway", "696bf2e1c2ec73411ed8b091d753bef6e6504026cc43dc3b248ae62febba438f", "evidence:dddd4a0b3097658e6398e1cf"},
+	{"testdata/phase3/branch_one_arm_shared_accept.schway", "c7ebef76cd22b510aec1a8509bcc89c78883f13dac4f1b94d0e217238a094118", "evidence:da42f3641c66baf35e645c66"},
+	{"testdata/phase3/branch_view.schway", "3ec55ec5717e6760e5d3d006c2a5020f953a21fbf41e0adf406132e202365d9c", "evidence:214eeb3db43ca09b07561834"},
+	{"testdata/phase3/public_view.schway", "b2b6ba18f5fc89ccbf983e15767ed71d27a9c9cfae907edf2e6cf09dac15452f", "evidence:9e8559ebc60ee839634e5294"},
+	{"testdata/phase3/public_view_impossible.schway", "331a5b2d81849cfbfc31ba9430ff988d060874386bc93ad574f9429a516c493b", "evidence:1c0473336df43d779c6df70e"},
+	{"testdata/phase3/public_view_mixed_access.schway", "b2665aa3d0cc9ed49d542a923878b4936e378c870c229638d0549b4feefa9e52", "evidence:0c125c8dc25ffe83c6a50de4"},
+	{"testdata/phase3/public_view_multi_arm_access_conflict.schway", "e35c719e6b1ef7c246cb9635c1a8f656dbde3c6df3ed19d8211ea70be3758a6f", "evidence:6b624856c3bc19fa6f197172"},
+	{"testdata/phase3/public_view_multi_arm_omitted.schway", "5c323c009c0d06132167fbe1c72be37cf3e6710a465159c6980544915a5a8ebd", "evidence:dee7242791bb8aa48524f84b"},
+	{"testdata/phase3/public_view_omitted.schway", "f09350cfab25d9e527c6feee9f8c2fc89b22e8eaf530d016cf8421151c0c2cfc", "evidence:a038be9d5fa9c1d3dba6ba01"},
+	{"testdata/phase3/public_view_understated.schway", "b45496eb4292454be7a919c1f63a7768060f383a1dc61f3f0a77f7aba65d8574", "evidence:40f4a643baf24f1a75d0422c"},
+	{"testdata/phase3/sequential_shared_then_exclusive_accept.schway", "56d20794f8a43822f4483d2da39e870b4cb036c262f5e9289d32f5859bed20bd", "evidence:11dff9f506141504f46b90e0"},
+	{"testdata/phase3/shared_shared_accept.schway", "ecc14ac0c851b90546fb41502b8915ac325ba322d3a3a7d4887b86961ed231b4", "evidence:b12a60b311e5cbad4e0274bf"},
 	// Phase 4 accepting fixtures (D-05-39): widened from Phase 1-3 so this
 	// pin also catches a Phase 5 emitter change that silently perturbs
 	// Phase 4. Only the accepting testdata/phase4 fixtures are pinned here,
 	// matching the Phase 3 precedent above (reject fixtures produce
 	// diagnostics and are out of scope for this byte-identity pin); the set
 	// mirrors native_test.go's phase4CorpusMatrix() "clean(...)" entries.
-	{"testdata/phase4/acquire_three_fail_second.lang", "fcfd88bc97a15bdd0c774148e8efb23b2210d3f6e40ad101d0b3cfcf33591dee", "evidence:db391e8cbf6a999c40fbdaf4"},
-	{"testdata/phase4/acquire_three_fail_third.lang", "1a23c824283bd12341da16197690f611884c8ef3b465458e134bfacd8dc7eb06", "evidence:1fb10eea4a10a005462dfaf6"},
-	{"testdata/phase4/acquire_three_success.lang", "8bbce39409d78a99c55c02053deff4ee016dfbf9d03733ad6cd8a5e0362ec88a", "evidence:d68787f08a68a17f486d1783"},
-	{"testdata/phase4/defect_terminal.lang", "4f348119f72c9d8aa1b3dc1cb91942176d74727297142ca940d44c08737bab0f", "evidence:12e9d68073ab86eb9eb463c9"},
-	{"testdata/phase4/discard_because.lang", "6b1b048e4e0b2d3cc2791886d7b54f31de63788b4e2c5a8b185df51e5f652d89", "evidence:ac3003a93f4568b404aa319a"},
-	{"testdata/phase4/foreign_acquire_one.lang", "718bed114e0754d3bfdb36a08d10649672915644d2eaca5caf266072f7e4dbf1", "evidence:dbfea02f20d97aff459e458b"},
-	{"testdata/phase4/nonlocal_exit_probe.lang", "cde5fabf98be29972f21c4331bacde11fc135f1e3981c5ed495e23d554af0eb8", "evidence:0c768d94aeee2d03625e613b"},
+	{"testdata/phase4/acquire_three_fail_second.schway", "fcfd88bc97a15bdd0c774148e8efb23b2210d3f6e40ad101d0b3cfcf33591dee", "evidence:db391e8cbf6a999c40fbdaf4"},
+	{"testdata/phase4/acquire_three_fail_third.schway", "1a23c824283bd12341da16197690f611884c8ef3b465458e134bfacd8dc7eb06", "evidence:1fb10eea4a10a005462dfaf6"},
+	{"testdata/phase4/acquire_three_success.schway", "8bbce39409d78a99c55c02053deff4ee016dfbf9d03733ad6cd8a5e0362ec88a", "evidence:d68787f08a68a17f486d1783"},
+	{"testdata/phase4/defect_terminal.schway", "4f348119f72c9d8aa1b3dc1cb91942176d74727297142ca940d44c08737bab0f", "evidence:12e9d68073ab86eb9eb463c9"},
+	{"testdata/phase4/discard_because.schway", "6b1b048e4e0b2d3cc2791886d7b54f31de63788b4e2c5a8b185df51e5f652d89", "evidence:ac3003a93f4568b404aa319a"},
+	{"testdata/phase4/foreign_acquire_one.schway", "718bed114e0754d3bfdb36a08d10649672915644d2eaca5caf266072f7e4dbf1", "evidence:dbfea02f20d97aff459e458b"},
+	{"testdata/phase4/nonlocal_exit_probe.schway", "cde5fabf98be29972f21c4331bacde11fc135f1e3981c5ed495e23d554af0eb8", "evidence:0c768d94aeee2d03625e613b"},
 	// Phase 5 accepting fixtures (D-06-31/D-06-32): widened from Phase 1-4 so
-	// this pin also catches a Phase 6 lang.command/lang.verify-lane bump that
+	// this pin also catches a Phase 6 schway.command/schway.verify-lane bump that
 	// silently perturbs a Phase 5 program. Only the accepting testdata/phase5
 	// fixtures are pinned here, matching the Phase 3/4 precedent above.
-	// coordinated_lie.lang (and its coordinated_lie.core.json) is the
+	// coordinated_lie.schway (and its coordinated_lie.core.json) is the
 	// declared expected-escape pair (escape:coordinated-source-to-core-false-claim)
 	// and is deliberately excluded from this table.
-	{"testdata/phase5/allocator_mismatch.lang", "636097c74c3f161f532284bbaf2d6567e53413a7a9652f76c29da223dd0222c2", "evidence:1cdac22aba40cacc0f5e0001"},
-	{"testdata/phase5/dead_store_unused_acquire.lang", "22a734be2932d02ecc47ced7c778f05e3d56296d4bfb9f3a7f4c1e543738fd1c", "evidence:f454a99f26276fb1545ce790"},
-	{"testdata/phase5/defect_dies_by_signal.lang", "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a", "evidence:c9eea4002b7177106948da43"},
-	{"testdata/phase5/false_restrict_hoist.lang", "2e2deae3e230984bf1430bb2d4c347d172444e22ad68f71c4d1197e34766f791", "evidence:ca3e057326af5276f18f5393"},
-	{"testdata/phase5/inline_across_foreign.lang", "02fd41768398d0c650462790f15162f02c0eb5a0fc07bb97d15078d2a11cb53b", "evidence:2a9644fce2f925ca50841428"},
-	{"testdata/phase5/reorder_two_events.lang", "5bc35a467aadffee60cb1ad7978ed17bf54f5f372c5f68d2ea9ebf81bf0ae56d", "evidence:1d7d61d8028a9472ee203b54"},
-	{"testdata/phase5/restrict_borrow.lang", "15398f69e1d647b768f361cb0bedfc6064fee3f5fd5a00e03e88d573b8d96710", "evidence:65b0b4195299987d10f0ac80"},
-	{"testdata/phase5/retained_pointer.lang", "7bac4e9375cbb0cfe1cae1eed15ba6278589220d21095018b78ac9081fa69297", "evidence:4d70b9513ffa2ed821dc26ad"},
-	{"testdata/phase5/tail_collapse_release_ladder.lang", "f280d9999f29812956e1bec639aaed801342c60ae8706446852e25180c7f2594", "evidence:23a9ce0dc643fb05498e1963"},
-	{"testdata/phase5/typed_failure_truncated_stdout.lang", "b146e3cd1f157d393fff9eecae8d5520db826ba6cbf635f4f1ef36ffd238886c", "evidence:598f270123ab0a123a99d351"},
+	{"testdata/phase5/allocator_mismatch.schway", "636097c74c3f161f532284bbaf2d6567e53413a7a9652f76c29da223dd0222c2", "evidence:1cdac22aba40cacc0f5e0001"},
+	{"testdata/phase5/dead_store_unused_acquire.schway", "22a734be2932d02ecc47ced7c778f05e3d56296d4bfb9f3a7f4c1e543738fd1c", "evidence:f454a99f26276fb1545ce790"},
+	{"testdata/phase5/defect_dies_by_signal.schway", "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a", "evidence:c9eea4002b7177106948da43"},
+	{"testdata/phase5/false_restrict_hoist.schway", "2e2deae3e230984bf1430bb2d4c347d172444e22ad68f71c4d1197e34766f791", "evidence:ca3e057326af5276f18f5393"},
+	{"testdata/phase5/inline_across_foreign.schway", "02fd41768398d0c650462790f15162f02c0eb5a0fc07bb97d15078d2a11cb53b", "evidence:2a9644fce2f925ca50841428"},
+	{"testdata/phase5/reorder_two_events.schway", "5bc35a467aadffee60cb1ad7978ed17bf54f5f372c5f68d2ea9ebf81bf0ae56d", "evidence:1d7d61d8028a9472ee203b54"},
+	{"testdata/phase5/restrict_borrow.schway", "15398f69e1d647b768f361cb0bedfc6064fee3f5fd5a00e03e88d573b8d96710", "evidence:65b0b4195299987d10f0ac80"},
+	{"testdata/phase5/retained_pointer.schway", "7bac4e9375cbb0cfe1cae1eed15ba6278589220d21095018b78ac9081fa69297", "evidence:4d70b9513ffa2ed821dc26ad"},
+	{"testdata/phase5/tail_collapse_release_ladder.schway", "f280d9999f29812956e1bec639aaed801342c60ae8706446852e25180c7f2594", "evidence:23a9ce0dc643fb05498e1963"},
+	{"testdata/phase5/typed_failure_truncated_stdout.schway", "b146e3cd1f157d393fff9eecae8d5520db826ba6cbf635f4f1ef36ffd238886c", "evidence:598f270123ab0a123a99d351"},
 }
 
 // TestPreviousPhaseCoreBytesUnchanged pins every Phase 1-5 fixture's
 // serialized core JSON to its exact byte value from before Phase 6
 // (D-06-31/D-06-32, widened from the Phase 5 pin which stopped at Phase 4).
-// It must be green before the coordinated lang.command and lang.verify-lane
+// It must be green before the coordinated schway.command and schway.verify-lane
 // bump lands.
 func TestPreviousPhaseCoreBytesUnchanged(t *testing.T) {
 	for _, fixture := range pinnedFixtures {
@@ -240,8 +240,8 @@ func phase16CoreBytes(t *testing.T, source []byte) []byte {
 
 // TestPreviousPhaseManifestIDsUnchanged is TestPreviousPhaseCoreBytesUnchanged's
 // evidence-manifest-identity sibling (D-04-23), widened to Phase 5 by
-// D-06-31/D-06-32. It must be green before the coordinated lang.command and
-// lang.verify-lane bump lands.
+// D-06-31/D-06-32. It must be green before the coordinated schway.command and
+// schway.verify-lane bump lands.
 func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 	for _, fixture := range pinnedFixtures {
 		t.Run(fixture.Path, func(t *testing.T) {
@@ -325,10 +325,10 @@ type phase16GoldenChange struct {
 // executable semantic witness records the independent evidence for the
 // emitter responsibility change.
 var phase16GoldenChangeLedger = []phase16GoldenChange{
-	{Path: "testdata/phase1/generated.golden.c", State: phase16GoldenPostCut, OldSHA256: "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74", NewSHA256: "1fd8aff8ee28de7ec39e559a7ca9ce50e480ecfffede617c36b2282c60cc122a", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public match dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase1/toggle.lang", N1Fixture: "testdata/phase1/toggle.lang", ReviewDisposition: "post-cut public/direct byte identity"},
-	{Path: "testdata/phase2/owned_transfer.golden.c", State: phase16GoldenPostCut, OldSHA256: "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8", NewSHA256: "f324f24db3ca0dfa8006b5c7fbec4263a6daf2dcbe220d49ea19167920799686", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public linear dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase2/owned_transfer.lang", N1Fixture: "testdata/phase2/owned_transfer.lang", ReviewDisposition: "post-cut public/direct byte identity"},
-	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", State: phase16GoldenPostCut, OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", NewSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", MovedResponsibility: "foreign lowering remains outside emitProgram", StructuralReason: "foreign lowering is explicit cut-M004 debt and not an admitted program shape", SemanticWitness: "TestProgramBranchValidationOrder/foreign_shape_precedes_preflight", N1Fixture: "testdata/phase4/foreign_layout_mismatch.lang", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
-	{Path: "testdata/phase5/restrict_borrow.golden.c", State: phase16GoldenPostCut, OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", NewSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", MovedResponsibility: "by-pointer lowering remains outside emitProgram", StructuralReason: "cut-M004 excludes every by-pointer family from program admission", SemanticWitness: "TestProgramBorrowedByPointerDisposition", N1Fixture: "testdata/phase5/restrict_borrow.lang", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
+	{Path: "testdata/phase1/generated.golden.c", State: phase16GoldenPostCut, OldSHA256: "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74", NewSHA256: "1fd8aff8ee28de7ec39e559a7ca9ce50e480ecfffede617c36b2282c60cc122a", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public match dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase1/toggle.schway", N1Fixture: "testdata/phase1/toggle.schway", ReviewDisposition: "post-cut public/direct byte identity"},
+	{Path: "testdata/phase2/owned_transfer.golden.c", State: phase16GoldenPostCut, OldSHA256: "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8", NewSHA256: "f324f24db3ca0dfa8006b5c7fbec4263a6daf2dcbe220d49ea19167920799686", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public linear dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase2/owned_transfer.schway", N1Fixture: "testdata/phase2/owned_transfer.schway", ReviewDisposition: "post-cut public/direct byte identity"},
+	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", State: phase16GoldenPostCut, OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", NewSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", MovedResponsibility: "foreign lowering remains outside emitProgram", StructuralReason: "foreign lowering is explicit cut-M004 debt and not an admitted program shape", SemanticWitness: "TestProgramBranchValidationOrder/foreign_shape_precedes_preflight", N1Fixture: "testdata/phase4/foreign_layout_mismatch.schway", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
+	{Path: "testdata/phase5/restrict_borrow.golden.c", State: phase16GoldenPostCut, OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", NewSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", MovedResponsibility: "by-pointer lowering remains outside emitProgram", StructuralReason: "cut-M004 excludes every by-pointer family from program admission", SemanticWitness: "TestProgramBorrowedByPointerDisposition", N1Fixture: "testdata/phase5/restrict_borrow.schway", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
 }
 
 func phase16GoldenLedgerProblems(digests map[string]string, ledger []phase16GoldenChange, current map[string]string) []string {
@@ -481,7 +481,7 @@ func TestPhase16GoldenChangeLedgerRejectsFaults(t *testing.T) {
 // golden.c file relative to the pinned table -- so a Phase 6 change that
 // accidentally perturbs a prior golden (or silently deletes one) is caught
 // here rather than in review (D-06-31/D-06-32). It must be green before the
-// coordinated lang.command and lang.verify-lane bump lands.
+// coordinated schway.command and schway.verify-lane bump lands.
 func TestPreviousPhaseGoldenCUnchanged(t *testing.T) {
 	var found []string
 	for _, phaseDir := range []string{"phase1", "phase2", "phase3", "phase4", "phase5"} {
@@ -600,24 +600,24 @@ func linearProbeInput(function core.Function) (string, bool) {
 // runExhaustiveDispatchControl against a DIFFERENT, OpCall-free subset
 // without duplicating this list.
 var exhaustiveDispatchFixtures = []string{
-	"testdata/phase1/toggle.lang",
-	"testdata/phase1/comments.lang",
-	"testdata/phase2/implicit_copy.lang",
-	"testdata/phase2/owned_transfer.lang",
-	"testdata/phase3/borrowed_view.lang",
-	"testdata/phase3/branch_view.lang",
-	"testdata/phase3/branch_one_arm_shared_accept.lang",
-	"testdata/phase3/sequential_shared_then_exclusive_accept.lang",
-	"testdata/phase3/shared_shared_accept.lang",
-	"testdata/phase4/foreign_acquire_one.lang",
-	"testdata/phase4/acquire_three_success.lang",
-	"testdata/phase4/defect_terminal.lang",
-	"testdata/phase07/call_basic.lang",
-	"testdata/phase07/call_from_both_match_arms.lang",
-	"testdata/phase12/payload_tracer.lang",
-	"testdata/phase12/payload_drop_obligation.lang",
-	"testdata/phase12/payload_borrow_interaction.lang",
-	"testdata/phase19/literal_tracer.lang",
+	"testdata/phase1/toggle.schway",
+	"testdata/phase1/comments.schway",
+	"testdata/phase2/implicit_copy.schway",
+	"testdata/phase2/owned_transfer.schway",
+	"testdata/phase3/borrowed_view.schway",
+	"testdata/phase3/branch_view.schway",
+	"testdata/phase3/branch_one_arm_shared_accept.schway",
+	"testdata/phase3/sequential_shared_then_exclusive_accept.schway",
+	"testdata/phase3/shared_shared_accept.schway",
+	"testdata/phase4/foreign_acquire_one.schway",
+	"testdata/phase4/acquire_three_success.schway",
+	"testdata/phase4/defect_terminal.schway",
+	"testdata/phase07/call_basic.schway",
+	"testdata/phase07/call_from_both_match_arms.schway",
+	"testdata/phase12/payload_tracer.schway",
+	"testdata/phase12/payload_drop_obligation.schway",
+	"testdata/phase12/payload_borrow_interaction.schway",
+	"testdata/phase19/literal_tracer.schway",
 }
 
 // runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's
@@ -662,7 +662,7 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 			if function.Linear != nil {
 				for _, operation := range function.Linear.Operations {
 					encountered[operation.Kind] = true
-					if path == "testdata/phase19/literal_tracer.lang" && operation.Kind == core.OpConst {
+					if path == "testdata/phase19/literal_tracer.schway" && operation.Kind == core.OpConst {
 						if operation.SourceID != "" || operation.ConstU64 != "42" || operation.TargetID == "" {
 							return fmt.Errorf("%s: OpConst root facts are not canonical: %+v", path, operation)
 						}
@@ -675,17 +675,17 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 					if err != nil {
 						return fmt.Errorf("%s/%s: pathoracle error: %w", path, function.Name, err)
 					}
-					if path == "testdata/phase19/literal_tracer.lang" && len(endpoints) != 0 {
+					if path == "testdata/phase19/literal_tracer.schway" && len(endpoints) != 0 {
 						return fmt.Errorf("%s/%s: constant root unexpectedly produced loan endpoints: %+v", path, function.Name, endpoints)
 					}
 				}
 			}
 			// originvalidate site: must not crash while walking.
 			origins := originvalidate.RecomputeOriginPerReturn(function, calleeContracts)
-			if path == "testdata/phase19/literal_tracer.lang" && function.Linear != nil && len(origins) != 1 {
+			if path == "testdata/phase19/literal_tracer.schway" && function.Linear != nil && len(origins) != 1 {
 				return fmt.Errorf("%s/%s: originvalidate returned %d origins for the constant return, want one", path, function.Name, len(origins))
 			}
-			if path == "testdata/phase19/literal_tracer.lang" && len(origins) == 1 && origins[0].Derived {
+			if path == "testdata/phase19/literal_tracer.schway" && len(origins) == 1 && origins[0].Derived {
 				return fmt.Errorf("%s/%s: originvalidate derived constant return from parameter: %+v", path, function.Name, origins[0])
 			}
 
@@ -696,7 +696,7 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 					// Phase 10 (D-10-21/D-10-39) made core.OpCall a real,
 					// executed operation, including from inside a match
 					// arm's own block (e.g.
-					// testdata/phase07/call_from_both_match_arms.lang) --
+					// testdata/phase07/call_from_both_match_arms.schway) --
 					// any interp error, including one from a call, fails
 					// this control.
 					if _, err := interp.Run(program, function.Name, arm.Pattern); err != nil {
@@ -710,7 +710,7 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 					if err != nil {
 						return fmt.Errorf("%s/%s: interp error: %w", path, function.Name, err)
 					}
-					if path == "testdata/phase19/literal_tracer.lang" && run.Outcome.Value != "42" {
+					if path == "testdata/phase19/literal_tracer.schway" && run.Outcome.Value != "42" {
 						return fmt.Errorf("%s/%s: interpreter returned %q, want 42", path, function.Name, run.Outcome.Value)
 					}
 				}
@@ -726,13 +726,13 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 				}
 				return fmt.Errorf("%s: cgen error: %w", path, err)
 			}
-			if path == "testdata/phase19/literal_tracer.lang" && !strings.Contains(generated, "UINT64_C(42)") {
+			if path == "testdata/phase19/literal_tracer.schway" && !strings.Contains(generated, "UINT64_C(42)") {
 				return fmt.Errorf("%s: cgen output did not lower the encountered OpConst", path)
 			}
 		}
 	}
-	if containsFixture(fixtures, "testdata/phase19/literal_tracer.lang") && !phase19ConstObserved {
-		return fmt.Errorf("testdata/phase19/literal_tracer.lang: no canonical OpConst was observed")
+	if containsFixture(fixtures, "testdata/phase19/literal_tracer.schway") && !phase19ConstObserved {
+		return fmt.Errorf("testdata/phase19/literal_tracer.schway: no canonical OpConst was observed")
 	}
 	for _, kind := range requiredKinds {
 		if !encountered[kind] {
@@ -777,12 +777,12 @@ func TestAllOperationKindsHandledAtEverySite(t *testing.T) {
 // returning ok == false) is indistinguishable from a covered one in
 // TestAllOperationKindsHandledAtEverySite's bookkeeping, which is exactly
 // the way that control could go green while proving nothing. Both of
-// call_basic.lang's functions -- the caller (main) and the callee
+// call_basic.schway's functions -- the caller (main) and the callee
 // (identity) -- declare a Byte parameter, so linearProbeInput must return
 // ok == true for both, driving interp.Run for each rather than skipping
 // it.
 func TestLinearProbeInputExercisesCallBasicFixture(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath(splitPath("testdata/phase07/call_basic.lang")...))
+	source, err := os.ReadFile(testsupport.ProjectPath(splitPath("testdata/phase07/call_basic.schway")...))
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
@@ -796,7 +796,7 @@ func TestLinearProbeInputExercisesCallBasicFixture(t *testing.T) {
 	}
 	program := validated.Program()
 	if len(program.Functions) != 2 {
-		t.Fatalf("call_basic.lang: expected exactly 2 functions, got %d", len(program.Functions))
+		t.Fatalf("call_basic.schway: expected exactly 2 functions, got %d", len(program.Functions))
 	}
 	exercised := 0
 	for _, function := range program.Functions {
@@ -816,7 +816,7 @@ func TestLinearProbeInputExercisesCallBasicFixture(t *testing.T) {
 		exercised++
 	}
 	if exercised != 2 {
-		t.Fatalf("expected the interp site exercised for both of call_basic.lang's functions, got %d", exercised)
+		t.Fatalf("expected the interp site exercised for both of call_basic.schway's functions, got %d", exercised)
 	}
 }
 
@@ -860,7 +860,7 @@ func TestCancelledOutcomeIsUnconstructible(t *testing.T) {
 // OpFail reached from any predecessor other than a real err edge must never
 // be admitted, even by a producer other than check.go itself.
 func TestNoErrorValueConstructorExists(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
@@ -920,29 +920,29 @@ func cloneCoreProgram(t *testing.T, program core.Program) core.Program {
 	return clone
 }
 
-// pinnedInterfaceV0JSON is a hand-written lang.interface/0 document, pinned
+// pinnedInterfaceV0JSON is a hand-written schway.interface/0 document, pinned
 // at the exact bytes a pre-Stage-0 producer would have emitted (D-07-08).
 // Following protocol_test.go:169-192's frozen-literal discipline: this
 // string must never be regenerated to make a later test pass — a failure
 // here means already-published /0 document bytes would have been
 // perturbed.
-const pinnedInterfaceV0JSON = `{"schema":"lang.interface/0","module_id":"m1","core_digest":"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","public_origin":{"paths":["buffer"],"access":"shared"},"abilities":["share"]}]}`
+const pinnedInterfaceV0JSON = `{"schema":"schway.interface/0","module_id":"m1","core_digest":"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","public_origin":{"paths":["buffer"],"access":"shared"},"abilities":["share"]}]}`
 
 // TestFrozenInterfaceV0BytesUnchanged is 07-01 Task 2's Test 1 (D-07-08): a
 // pinned /0 JSON literal decodes into core.InterfaceV0 field-for-field
 // against a hand-written expected value, then re-encodes to those identical
 // pinned bytes. core.InterfaceSchema itself must still be the exported
-// "lang.interface/0" constant after the /1 bump.
+// "schway.interface/0" constant after the /1 bump.
 func TestFrozenInterfaceV0BytesUnchanged(t *testing.T) {
-	if core.InterfaceSchema != "lang.interface/0" {
-		t.Fatalf("core.InterfaceSchema = %q, want frozen %q", core.InterfaceSchema, "lang.interface/0")
+	if core.InterfaceSchema != "schway.interface/0" {
+		t.Fatalf("core.InterfaceSchema = %q, want frozen %q", core.InterfaceSchema, "schway.interface/0")
 	}
 	var v0 core.InterfaceV0
 	if err := json.Unmarshal([]byte(pinnedInterfaceV0JSON), &v0); err != nil {
 		t.Fatalf("decode pinned /0 literal: %v", err)
 	}
 	want := core.InterfaceV0{
-		Schema: "lang.interface/0", ModuleID: "m1",
+		Schema: "schway.interface/0", ModuleID: "m1",
 		CoreDigest: "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd",
 		Functions: []core.FunctionSignatureV0{{
 			ID: "f1", Name: "identity",
@@ -979,10 +979,10 @@ func TestDecodeInterfaceV0NeverAdmissible(t *testing.T) {
 		t.Fatalf("expected a /0 document to decode cleanly, got %v", err)
 	}
 	if decoded.V0 == nil {
-		t.Fatal("expected V0 to be populated for a lang.interface/0 document")
+		t.Fatal("expected V0 to be populated for a schway.interface/0 document")
 	}
 	if decoded.V1 != nil {
-		t.Fatal("expected V1 to stay nil for a lang.interface/0 document")
+		t.Fatal("expected V1 to stay nil for a schway.interface/0 document")
 	}
 	if decoded.Admissible {
 		t.Fatal("expected a /0 document to never be Admissible")
@@ -995,13 +995,13 @@ func TestDecodeInterfaceV0NeverAdmissible(t *testing.T) {
 const validHexDigest = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd" + "ef"
 
 // validInterfaceV1Document returns a fresh, independent map[string]any
-// representation of a minimal but fully valid lang.interface/1 document, so
+// representation of a minimal but fully valid schway.interface/1 document, so
 // each subtest below can safely mutate its own copy without cross-test
 // interference.
 func validInterfaceV1Document(t *testing.T) map[string]any {
 	t.Helper()
 	return map[string]any{
-		"schema":      "lang.interface/1",
+		"schema":      "schway.interface/1",
 		"module_id":   "m1",
 		"core_digest": validHexDigest,
 		"functions": []any{
@@ -1178,7 +1178,7 @@ func TestDecodeInterfaceV1ValueDomainRefused(t *testing.T) {
 	})
 	t.Run("unknown schema", func(t *testing.T) {
 		document := deepCopyJSON(t, validInterfaceV1Document(t))
-		document["schema"] = "lang.interface/2"
+		document["schema"] = "schway.interface/2"
 		data, _ := json.Marshal(document)
 		_, err := core.DecodeInterface(data)
 		if code := decodeErrorCode(err); code != "core.interface_unknown_schema" {
@@ -1209,8 +1209,8 @@ func TestPhase7DispatchControlsMutationKilled(t *testing.T) {
 	// legitimate Phase 1/2 sub-corpus that produces no core.OpCall at all.
 	t.Run("in_process_required_kinds_seam", func(t *testing.T) {
 		opCallFreeFixtures := []string{
-			"testdata/phase1/toggle.lang",
-			"testdata/phase2/implicit_copy.lang",
+			"testdata/phase1/toggle.schway",
+			"testdata/phase2/implicit_copy.schway",
 		}
 		// Clean: core.OpCall IS required, but this corpus never produces
 		// it -- the control MUST fail.
@@ -1230,13 +1230,13 @@ func TestPhase7DispatchControlsMutationKilled(t *testing.T) {
 	// Test 5: with linearProbeInput's Byte/Buffer recognition unavailable
 	// (stood in here by a probe that always returns ok == false, exactly
 	// what an unrecognized parameter type produces), the interp site would
-	// be SILENTLY SKIPPED for call_basic.lang's functions -- and this test
+	// be SILENTLY SKIPPED for call_basic.schway's functions -- and this test
 	// asserts the skip is DETECTED (both functions counted as skipped),
 	// never silently tolerated, and that the REAL linearProbeInput
 	// exercises exactly those same functions instead of skipping them.
 	t.Run("linear_probe_input_arm_removed_is_detected", func(t *testing.T) {
 		probeInputArmRemoved := func(core.Function) (string, bool) { return "", false }
-		source, err := os.ReadFile(testsupport.ProjectPath(splitPath("testdata/phase07/call_basic.lang")...))
+		source, err := os.ReadFile(testsupport.ProjectPath(splitPath("testdata/phase07/call_basic.schway")...))
 		if err != nil {
 			t.Fatalf("read: %v", err)
 		}
@@ -1250,7 +1250,7 @@ func TestPhase7DispatchControlsMutationKilled(t *testing.T) {
 		}
 		program := validated.Program()
 		if len(program.Functions) != 2 {
-			t.Fatalf("call_basic.lang: expected exactly 2 functions, got %d", len(program.Functions))
+			t.Fatalf("call_basic.schway: expected exactly 2 functions, got %d", len(program.Functions))
 		}
 
 		skipped := 0

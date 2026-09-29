@@ -37,9 +37,9 @@ type AllowedUndefinedSymbol struct {
 // silent append, and a newly linked undefined symbol fails until a human
 // adds one.
 var AllowedUndefinedSymbols = []AllowedUndefinedSymbol{
-	{Symbol: "malloc", Rationale: "lang_foreign_resource.c's and lang_foreign_nonlocal.c's own acquisition paths allocate via libc malloc (D-04-10)."},
-	{Symbol: "free", Rationale: "lang_foreign_resource.c's and lang_foreign_nonlocal.c's own release paths free via libc free (D-04-10)."},
-	{Symbol: "longjmp", Rationale: "lang_foreign_nonlocal.c's witness performs a genuine foreign nonlocal exit back into the process-root landing pad (D-04-17)."},
+	{Symbol: "malloc", Rationale: "schway_foreign_resource.c's and schway_foreign_nonlocal.c's own acquisition paths allocate via libc malloc (D-04-10)."},
+	{Symbol: "free", Rationale: "schway_foreign_resource.c's and schway_foreign_nonlocal.c's own release paths free via libc free (D-04-10)."},
+	{Symbol: "longjmp", Rationale: "schway_foreign_nonlocal.c's witness performs a genuine foreign nonlocal exit back into the process-root landing pad (D-04-17)."},
 	{Symbol: "abort", Rationale: "the generated defect path and the nonlocal-exit landing pad both terminate via libc abort -- never a caught or contained signal (D-04-15/D-04-18)."},
 	{Symbol: "fwrite", Rationale: "the generated streaming and buffered event writers flush JSON output through libc fwrite."},
 	{Symbol: "snprintf", Rationale: "the generated scalar byte writer formats its decimal encoding through libc snprintf."},

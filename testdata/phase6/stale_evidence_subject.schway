@@ -1,0 +1,18 @@
+// Stale-evidence subject fixture (D-06-25): neither heldout_ nor
+// derivation_ -- the stale-evidence class is not a source defect at all,
+// so there is no kind->edit mapping to overfit here and nothing for
+// D-06-29's held-out discipline to protect. This is simply a small,
+// legitimate program to capture an evidence manifest over before the
+// injector re-touches it, breaking the manifest's SHA-256 binding.
+//
+// schway:evidence-subject
+
+module phase6.stale_evidence_subject
+
+export {
+  fn identity
+}
+
+fn identity(value: Byte) -> Byte {
+  value
+}

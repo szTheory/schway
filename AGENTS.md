@@ -19,9 +19,7 @@ sound, reproducible evidence without wasting iteration time or hiding runtime
 costs.
 
 **Name:** Schway was chosen as the public language and project name on
-2026-09-28. Treat it as settled. Existing `lang` identifiers are legacy
-implementation names pending one coordinated rename before the first public
-release; see `.planning/PROJECT.md` for the migration boundary.
+2026-09-28. Treat it as settled. The coordinated rename has moved public-facing module, CLI, source, protocol, and native ABI identifiers to Schway. Earlier commit snapshots retain historical names for auditability; see `.planning/PROJECT.md` for the publication boundary.
 
 ### Constraints
 

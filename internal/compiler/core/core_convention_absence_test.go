@@ -30,7 +30,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // linearOperationExpectedFields is core.LinearOperation's complete,
@@ -116,7 +116,7 @@ var parameterModeHostileTable = []string{
 var parameterModeLegalTable = []string{"owned", "shared", "exclusive"}
 
 // buildInterfaceV1Document returns a minimal, otherwise-valid
-// lang.interface/1 document as a mutable map, so each subtest can set
+// schway.interface/1 document as a mutable map, so each subtest can set
 // exactly one parameter Mode value and observe DecodeInterface's response
 // to it in isolation. Mirrors this package's own
 // validInterfaceV1Document/deepCopyJSON precedent (core_test.go) without
@@ -125,7 +125,7 @@ var parameterModeLegalTable = []string{"owned", "shared", "exclusive"}
 // cross-file coupling on a helper's exact shape).
 func buildInterfaceV1Document(mode string) map[string]any {
 	return map[string]any{
-		"schema":      "lang.interface/1",
+		"schema":      "schway.interface/1",
 		"module_id":   "m1",
 		"core_digest": validHexDigestForConventionAbsence,
 		"functions": []any{

@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
 )
 
 // nat03ProjectRoot mirrors testsupport.ProjectPath's own technique (a
@@ -40,13 +40,13 @@ func nat03CorpusPath(relative string) string {
 // private emitter bodies no longer produce it, and current whole-program
 // emission refuses these shapes. AliasFactMutationRunner remains fail-closed
 // when the marker is absent or ambiguous.
-const byPointerParamMarker = "/* lang:by-pointer-param */"
+const byPointerParamMarker = "/* schway:by-pointer-param */"
 
 // aliasProbeParameterName is the marker used by the historical D-05-05
 // by-pointer artifact. The current emitter does not produce that body;
 // archived fixture controls still use the identifier to classify their
 // input and remain fail-closed when it is absent.
-const aliasProbeParameterName = "lang_alias_probe"
+const aliasProbeParameterName = "schway_alias_probe"
 
 // ControlAliasFalseNoAlias is D-05-05's control identifier: the mutation
 // injects `restrict` onto a by-pointer parameter the checker did NOT prove
@@ -66,7 +66,7 @@ const ControlAliasFalseNoAlias = "control:alias.false_no_alias"
 // mutation has two parts: (1) inject `restrict` onto the marked parameter
 // (a no-op, per injectRestrictIntoSignature's idempotence, when the
 // parameter already carries it — e.g. a legitimately-justified by-pointer
-// function like restrict_borrow.lang), and (2), ONLY when the marked
+// function like restrict_borrow.schway), and (2), ONLY when the marked
 // function also exposes cgen's dormant aliasProbeParameterName, rewrite its
 // body into the write/reread-through-a-second-pointer demonstration
 // VerifyAliasFalseNoAlias asserts against (D-05-05). A marked function with
@@ -82,7 +82,7 @@ type AliasFactMutationRunner struct {
 	clangVersion  string
 }
 
-// NewAliasFactMutationRunner wraps runner, attacking the .lang source at
+// NewAliasFactMutationRunner wraps runner, attacking the .schway source at
 // fixturePath. Unlike this file's other mutation runners (which attack
 // whatever cSource their caller supplies), this one also needs to know
 // which fixture it is attacking, since VerifyAliasFalseNoAlias must derive
@@ -138,7 +138,7 @@ type byPointerSignature struct {
 // C17 6.7.3.1 treats as "based on" the restrict pointer and is therefore
 // safe regardless — is sufficient to make the false claim observable.
 // Idempotent: a line that already carries `restrict` (a legitimately-
-// justified by-pointer function, e.g. restrict_borrow.lang) is returned
+// justified by-pointer function, e.g. restrict_borrow.schway) is returned
 // unchanged, since there is nothing false to inject onto an
 // already-true claim.
 func injectRestrictIntoSignature(line string) (string, error) {
@@ -154,8 +154,8 @@ func injectRestrictIntoSignature(line string) (string, error) {
 }
 
 // splitPointerDecl parses one parameter declaration of the marked line's
-// parameter list, e.g. "unsigned char *restrict LANG_VALUE" or
-// "unsigned char *lang_alias_probe", into its type and name.
+// parameter list, e.g. "unsigned char *restrict SCHWAY_VALUE" or
+// "unsigned char *schway_alias_probe", into its type and name.
 func splitPointerDecl(decl string) (typeName, paramName string, err error) {
 	starIndex := strings.Index(decl, "*")
 	if starIndex == -1 {
@@ -246,7 +246,7 @@ func (r *AliasFactMutationRunner) Run(ctx context.Context, cSource, optimization
 			return native.Result{}, &native.ToolError{Code: "native.alias_control_invalid", Err: fmt.Errorf("marked function body has no terminal return")}
 		}
 		// Everything between the marker and the original `return` — the
-		// emitter's own lang_record_event calls, carrying real, valid
+		// emitter's own schway_record_event calls, carrying real, valid
 		// place/type IDs — is PRESERVED, not discarded: native.Runner's own
 		// execution-document validator requires at least one well-formed
 		// transition event followed by a well-formed return event, and a
@@ -254,11 +254,11 @@ func (r *AliasFactMutationRunner) Run(ctx context.Context, cSource, optimization
 		// Only the terminal `return` is replaced with the write/reread
 		// demonstration itself.
 		demonstration := []string{
-			fmt.Sprintf("  %s lang_alias_control_first = *%s;", signature.paramType, signature.paramName),
+			fmt.Sprintf("  %s schway_alias_control_first = *%s;", signature.paramType, signature.paramName),
 			fmt.Sprintf("  *%s = (%s)2;", signature.aliasName, signature.paramType),
-			fmt.Sprintf("  %s lang_alias_control_second = *%s;", signature.paramType, signature.paramName),
-			"  (void)lang_alias_control_first;",
-			"  return lang_alias_control_second;",
+			fmt.Sprintf("  %s schway_alias_control_second = *%s;", signature.paramType, signature.paramName),
+			"  (void)schway_alias_control_first;",
+			"  return schway_alias_control_second;",
 		}
 		rewritten := make([]string, 0, matched+1+(returnIndex-matched-1)+len(demonstration)+(len(lines)-endIndex))
 		rewritten = append(rewritten, lines[:matched+1]...)
@@ -354,7 +354,7 @@ func VerifyAliasFalseNoAlias(ctx context.Context, runner *AliasFactMutationRunne
 	program := validated.Program()
 	// Phase 11 (11-GUARD-LEDGER.md): KEPT. VerifyAliasFalseNoAlias attacks
 	// a specific by-pointer parameter marker (byPointerParamMarker) on a
-	// fixed Phase 5 fixture (false_restrict_hoist.lang), genuinely
+	// fixed Phase 5 fixture (false_restrict_hoist.schway), genuinely
 	// single-function by construction -- unrelated to the multi-function
 	// corpus this phase widens.
 	if len(program.Functions) != 1 {
@@ -430,8 +430,8 @@ type NAT03Mutation struct {
 // mutations this milestone subjects directly, plus one (stale callback
 // retention) subsumed under a named escape rather than silently claimed
 // 7/7. Rows 6 and 7 cite plan 05-08's fixtures at their FINAL declared
-// paths (testdata/phase5/allocator_mismatch.lang,
-// testdata/phase5/retained_pointer.lang) — plan 05-08 runs concurrently in
+// paths (testdata/phase5/allocator_mismatch.schway,
+// testdata/phase5/retained_pointer.schway) — plan 05-08 runs concurrently in
 // wave 3 with no dependency on this plan, so neither path's existence nor
 // row 6's axis-movement is asserted here; both are closed at plan 05-09's
 // gate, which depends on both this plan and 05-08 and therefore has a
@@ -446,37 +446,37 @@ func NAT03Mutations() []NAT03Mutation {
 		},
 		{
 			ControlID:     "control:resource.release_omitted",
-			CorpusProgram: "testdata/phase4/acquire_three_success.lang",
+			CorpusProgram: "testdata/phase4/acquire_three_success.schway",
 			ExpectedAxis:  AxisResourceLedger,
 			Subjected:     true,
 		},
 		{
 			ControlID:     "control:resource.release_order_transposed",
-			CorpusProgram: "testdata/phase4/acquire_three_success.lang",
+			CorpusProgram: "testdata/phase4/acquire_three_success.schway",
 			ExpectedAxis:  AxisEventOrder,
 			Subjected:     true,
 		},
 		{
 			ControlID:     "control:foreign.nonlocal_exit_undetected",
-			CorpusProgram: "testdata/phase4/nonlocal_exit_probe.lang",
+			CorpusProgram: "testdata/phase4/nonlocal_exit_probe.schway",
 			ExpectedAxis:  AxisEventOrder,
 			Subjected:     true,
 		},
 		{
 			ControlID:     ControlAliasFalseNoAlias,
-			CorpusProgram: "testdata/phase5/false_restrict_hoist.lang",
+			CorpusProgram: "testdata/phase5/false_restrict_hoist.schway",
 			ExpectedAxis:  AxisTerminalOutcome,
 			Subjected:     true,
 		},
 		{
 			ControlID:     "control:native.sanitize.allocator_mismatch",
-			CorpusProgram: "testdata/phase5/allocator_mismatch.lang",
+			CorpusProgram: "testdata/phase5/allocator_mismatch.schway",
 			ExpectedAxis:  AxisTerminalOutcome,
 			Subjected:     true,
 		},
 		{
 			ControlID:     "control:native.sanitize.retained_pointer",
-			CorpusProgram: "testdata/phase5/retained_pointer.lang",
+			CorpusProgram: "testdata/phase5/retained_pointer.schway",
 			ExpectedAxis:  AxisTerminalOutcome,
 			Subjected:     false,
 			EscapeID:      "escape:callback-invocation-unsubjected",
@@ -549,7 +549,7 @@ func assertLayoutMismatchMovesAxis(ctx context.Context, mutation NAT03Mutation) 
 }
 
 // assertReleaseOmissionMovesAxis proves control:resource.release_omitted
-// against acquire_three_success.lang: deleting the emitter's own final
+// against acquire_three_success.schway: deleting the emitter's own final
 // release site leaves a resource observably live at termination, refused
 // by native.Runner's own "a returned outcome requires empty live_resources"
 // contract (native.invalid_execution) before an execution document can
@@ -572,7 +572,7 @@ func assertReleaseOmissionMovesAxis(ctx context.Context, mutation NAT03Mutation)
 
 // assertReleaseTranspositionMovesAxis proves
 // control:resource.release_order_transposed against
-// acquire_three_success.lang: exchanging two emitted OpRelease operations
+// acquire_three_success.schway: exchanging two emitted OpRelease operations
 // in the checked core artifact is refused by corevalidate's own
 // independent re-derivation (core.release_order_mismatch) before any
 // execution is ever attempted — mapped onto axis:event-order, the ordered-
@@ -601,7 +601,7 @@ func assertReleaseTranspositionMovesAxis(mutation NAT03Mutation) error {
 }
 
 // assertNonlocalExitMovesAxis proves control:foreign.nonlocal_exit_undetected
-// against nonlocal_exit_probe.lang via NonlocalLedgerOmissionMutationRunner
+// against nonlocal_exit_probe.schway via NonlocalLedgerOmissionMutationRunner
 // (D-09/D-10's SECOND, distinct mutation-kill demonstration for this
 // control): dropping one ledger-population site changes the mutated run's
 // own resource.leaked event count relative to the golden run's — a genuine

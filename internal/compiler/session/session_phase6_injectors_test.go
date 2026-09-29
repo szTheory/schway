@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	langast "github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/evidence"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	langast "github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func phase6Fixture(t *testing.T, name string) []byte {
@@ -59,11 +59,11 @@ func injectorError(err error) *InjectorError {
 // injector, checked by the real checker, produces a real repair-bearing
 // diagnostic.
 func TestMatchDefectInjectorProducesExactlyOneDefect(t *testing.T) {
-	source := phase6Fixture(t, "heldout_match_defect.lang")
+	source := phase6Fixture(t, "heldout_match_defect.schway")
 
 	clean := Check(source)
 	if len(clean.Diagnostics) != 0 {
-		t.Fatalf("heldout_match_defect.lang must check clean unmutated: %+v", clean.Diagnostics)
+		t.Fatalf("heldout_match_defect.schway must check clean unmutated: %+v", clean.Diagnostics)
 	}
 
 	mutated, err := MatchInjector{}.Inject(source)
@@ -102,7 +102,7 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 	}
 	var heldout, derivation []string
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 			continue
 		}
 		switch {
@@ -113,10 +113,10 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 		}
 	}
 	if len(heldout) == 0 {
-		t.Fatal("no heldout_*.lang fixtures found in testdata/phase6")
+		t.Fatal("no heldout_*.schway fixtures found in testdata/phase6")
 	}
 	if len(derivation) == 0 {
-		t.Fatal("no derivation_*.lang fixtures found in testdata/phase6")
+		t.Fatal("no derivation_*.schway fixtures found in testdata/phase6")
 	}
 	seen := make(map[string]bool, len(heldout))
 	for _, name := range heldout {
@@ -139,8 +139,8 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 	// Genuine distinctness, not just naming: each class's heldout and
 	// derivation fixture must differ in content.
 	for _, class := range []string{"match", "move", "borrow"} {
-		heldoutBytes := phase6Fixture(t, "heldout_"+class+"_defect.lang")
-		derivationBytes := phase6Fixture(t, "derivation_"+class+"_defect.lang")
+		heldoutBytes := phase6Fixture(t, "heldout_"+class+"_defect.schway")
+		derivationBytes := phase6Fixture(t, "derivation_"+class+"_defect.schway")
 		if bytes.Equal(heldoutBytes, derivationBytes) {
 			t.Fatalf("%s class: heldout and derivation fixtures are byte-identical", class)
 		}
@@ -152,8 +152,8 @@ func TestPhase6DefectCorpusIsHeldOut(t *testing.T) {
 	for _, class := range []string{"match", "move", "borrow"} {
 		class := class
 		t.Run(class+"_structural_distinctness", func(t *testing.T) {
-			heldoutSource := phase6Fixture(t, "heldout_"+class+"_defect.lang")
-			derivationSource := phase6Fixture(t, "derivation_"+class+"_defect.lang")
+			heldoutSource := phase6Fixture(t, "heldout_"+class+"_defect.schway")
+			derivationSource := phase6Fixture(t, "derivation_"+class+"_defect.schway")
 			heldoutSummary := computePhase6StructuralSummary(t, heldoutSource)
 			derivationSummary := computePhase6StructuralSummary(t, derivationSource)
 			t.Logf("%s class structural summary: heldout=%+v derivation=%+v", class, heldoutSummary, derivationSummary)
@@ -171,8 +171,8 @@ func TestPhase6HeldoutPairsAreStructurallyDistinct(t *testing.T) {
 	for _, class := range []string{"match", "move", "borrow"} {
 		class := class
 		t.Run(class, func(t *testing.T) {
-			heldoutSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "heldout_"+class+"_defect.lang"))
-			derivationSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "derivation_"+class+"_defect.lang"))
+			heldoutSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "heldout_"+class+"_defect.schway"))
+			derivationSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "derivation_"+class+"_defect.schway"))
 			if heldoutSummary == derivationSummary {
 				t.Fatalf("D-13-34: %s class heldout/derivation fixtures are structurally identical: %+v", class, heldoutSummary)
 			}
@@ -261,7 +261,7 @@ func computePhase6StructuralSummary(t *testing.T, source []byte) phase6Structura
 }
 
 // alphaRenamePhase6MatchDefect returns a byte-for-byte structural copy of
-// derivation_match_defect.lang with every identifier renamed (module suffix,
+// derivation_match_defect.schway with every identifier renamed (module suffix,
 // data type name, alternative names, function name, parameter name) --
 // exactly M001's documented weakness shape (item -> buffer,
 // moved_once -> delivered): a rename that changes no structural component at
@@ -290,16 +290,16 @@ func alphaRenamePhase6MatchDefect(source []byte) []byte {
 // proving that had the renamed copy been submitted as the held-out member in
 // its place, TestPhase6DefectCorpusIsHeldOut's structural-equality check
 // above would have caught it -- exactly the discrimination byte-inequality
-// alone could never make. derivation_match_defect.lang is the vehicle
+// alone could never make. derivation_match_defect.schway is the vehicle
 // because the match class's real heldout/derivation pair is the one class
 // whose structural summaries genuinely differ today (2 arms vs 3), so this
 // test also proves the predicate discriminates the real pair, not merely
 // that it fails to reject a rename.
 func TestPhase6DefectCorpusDistinctnessGuardIsNotInert(t *testing.T) {
-	original := phase6Fixture(t, "derivation_match_defect.lang")
+	original := phase6Fixture(t, "derivation_match_defect.schway")
 	renamed := alphaRenamePhase6MatchDefect(original)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "alpha_renamed_derivation_match_defect.lang")
+	path := filepath.Join(dir, "alpha_renamed_derivation_match_defect.schway")
 	if err := os.WriteFile(path, renamed, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -317,24 +317,24 @@ func TestPhase6DefectCorpusDistinctnessGuardIsNotInert(t *testing.T) {
 	}
 	// This IS the not-inert proof: had this renamed copy been submitted as
 	// the held-out member of the match class in place of the real
-	// heldout_match_defect.lang, TestPhase6DefectCorpusIsHeldOut's
+	// heldout_match_defect.schway, TestPhase6DefectCorpusIsHeldOut's
 	// `heldoutSummary == derivationSummary` check above would have fired on
 	// exactly this pair -- demonstrated here by showing the renamed copy's
 	// summary is identical to the original derivation fixture's summary.
-	heldoutSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "heldout_match_defect.lang"))
+	heldoutSummary := computePhase6StructuralSummary(t, phase6Fixture(t, "heldout_match_defect.schway"))
 	if heldoutSummary == originalSummary {
-		t.Fatalf("predicate is not discriminating: the real heldout_match_defect.lang pair is already structurally equal to derivation (%+v) -- this test cannot demonstrate a violation on a pair the predicate cannot tell apart in the first place", heldoutSummary)
+		t.Fatalf("predicate is not discriminating: the real heldout_match_defect.schway pair is already structurally equal to derivation (%+v) -- this test cannot demonstrate a violation on a pair the predicate cannot tell apart in the first place", heldoutSummary)
 	}
 }
 
 // TestMoveDefectInjectorProducesExactlyOneDefect mirrors
 // TestMatchDefectInjectorProducesExactlyOneDefect for the move class.
 func TestMoveDefectInjectorProducesExactlyOneDefect(t *testing.T) {
-	source := phase6Fixture(t, "heldout_move_defect.lang")
+	source := phase6Fixture(t, "heldout_move_defect.schway")
 
 	clean := Check(source)
 	if len(clean.Diagnostics) != 0 {
-		t.Fatalf("heldout_move_defect.lang must check clean unmutated: %+v", clean.Diagnostics)
+		t.Fatalf("heldout_move_defect.schway must check clean unmutated: %+v", clean.Diagnostics)
 	}
 
 	mutated, err := MoveInjector{}.Inject(source)
@@ -364,11 +364,11 @@ func TestMoveDefectInjectorProducesExactlyOneDefect(t *testing.T) {
 // TestBorrowDefectInjectorProducesExactlyOneDefect mirrors
 // TestMatchDefectInjectorProducesExactlyOneDefect for the borrow class.
 func TestBorrowDefectInjectorProducesExactlyOneDefect(t *testing.T) {
-	source := phase6Fixture(t, "heldout_borrow_defect.lang")
+	source := phase6Fixture(t, "heldout_borrow_defect.schway")
 
 	clean := Check(source)
 	if len(clean.Diagnostics) != 0 {
-		t.Fatalf("heldout_borrow_defect.lang must check clean unmutated: %+v", clean.Diagnostics)
+		t.Fatalf("heldout_borrow_defect.schway must check clean unmutated: %+v", clean.Diagnostics)
 	}
 
 	mutated, err := BorrowInjector{}.Inject(source)
@@ -452,14 +452,14 @@ func TestCleanupInjectorReusesReleaseOmissionRunner(t *testing.T) {
 		t.Fatalf("session_phase6_injectors.go contains its own %q literal -- a second release-marker scan", releaseMarker)
 	}
 
-	checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := cgen.EmitNative(checked.Program); err == nil || !strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") {
 		t.Fatalf("EmitNative must retain the named M004 refusal, got %v", err)
 	}
-	cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.lang")
+	cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.schway")
 	if err != nil {
 		t.Fatalf("refusal-first frozen control C: %v", err)
 	}
@@ -501,7 +501,7 @@ func TestStaleEvidenceInjectorBreaksManifestBinding(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	source := phase6Fixture(t, "stale_evidence_subject.lang")
+	source := phase6Fixture(t, "stale_evidence_subject.schway")
 
 	facts, err := evidence.DefaultFacts(ctx, "clang")
 	if err != nil {
@@ -512,7 +512,7 @@ func TestStaleEvidenceInjectorBreaksManifestBinding(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(diagnostics) != 0 {
-		t.Fatalf("stale_evidence_subject.lang did not build cleanly: %+v", diagnostics)
+		t.Fatalf("stale_evidence_subject.schway did not build cleanly: %+v", diagnostics)
 	}
 	if err := evidence.Validate(product.Manifest, source, facts); err != nil {
 		t.Fatalf("captured manifest did not validate against its own source before injection: %v", err)
@@ -575,7 +575,7 @@ func lineDiffCount(t *testing.T, name string, original, mutated []byte) int {
 // this): match deletes exactly one arm line, move/borrow each rewrite
 // exactly one line, cleanup deletes exactly one generated C line.
 func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
-	matchSource := phase6Fixture(t, "heldout_match_defect.lang")
+	matchSource := phase6Fixture(t, "heldout_match_defect.schway")
 	matchMutated, err := MatchInjector{}.Inject(matchSource)
 	if err != nil {
 		t.Fatal(err)
@@ -584,7 +584,7 @@ func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
 		t.Fatalf("match: got %d differing lines, want 1", got)
 	}
 
-	moveSource := phase6Fixture(t, "heldout_move_defect.lang")
+	moveSource := phase6Fixture(t, "heldout_move_defect.schway")
 	moveMutated, err := MoveInjector{}.Inject(moveSource)
 	if err != nil {
 		t.Fatal(err)
@@ -593,7 +593,7 @@ func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
 		t.Fatalf("move: got %d differing lines, want 1", got)
 	}
 
-	borrowSource := phase6Fixture(t, "heldout_borrow_defect.lang")
+	borrowSource := phase6Fixture(t, "heldout_borrow_defect.schway")
 	borrowMutated, err := BorrowInjector{}.Inject(borrowSource)
 	if err != nil {
 		t.Fatal(err)
@@ -602,11 +602,11 @@ func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
 		t.Fatalf("borrow: got %d differing lines, want 1", got)
 	}
 
-	checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.lang")
+	cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -622,10 +622,10 @@ func TestEveryInjectorProducesExactlyOneMechanicalChange(t *testing.T) {
 // TestInjectorTargetChoiceIsSpecified asserts, for each source-granularity
 // injector, that an ambiguous (two-marker) input resolves to the LAST
 // marked line, deterministically across repeated invocations -- the same
-// choice ReleaseOmissionMutationRunner already makes for lang:release-site.
+// choice ReleaseOmissionMutationRunner already makes for schway:release-site.
 func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 	// match: two marked arms, both otherwise-eligible; the LAST one is removed.
-	matchSource := []byte("data Signal =\n  | Red\n  | Green\n\nfn relay(state: Signal) -> Signal {\n  match state {\n    Red => Red // lang:match-target\n    Green => Green // lang:match-target\n  }\n}")
+	matchSource := []byte("data Signal =\n  | Red\n  | Green\n\nfn relay(state: Signal) -> Signal {\n  match state {\n    Red => Red // schway:match-target\n    Green => Green // schway:match-target\n  }\n}")
 	first, err := MatchInjector{}.Inject(matchSource)
 	if err != nil {
 		t.Fatal(err)
@@ -642,7 +642,7 @@ func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 	}
 
 	// move: two marked take-expressions; the LAST is corrupted.
-	moveSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = take buffer // lang:move-target\n  let b = take a // lang:move-target\n  b\n}")
+	moveSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = take buffer // schway:move-target\n  let b = take a // schway:move-target\n  b\n}")
 	moveFirst, err := MoveInjector{}.Inject(moveSource)
 	if err != nil {
 		t.Fatal(err)
@@ -659,7 +659,7 @@ func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 	}
 
 	// borrow: two marked shared borrows; the LAST is escalated.
-	borrowSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = borrow buffer // lang:borrow-target\n  let b = borrow buffer // lang:borrow-target\n  b\n}")
+	borrowSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = borrow buffer // schway:borrow-target\n  let b = borrow buffer // schway:borrow-target\n  b\n}")
 	borrowFirst, err := BorrowInjector{}.Inject(borrowSource)
 	if err != nil {
 		t.Fatal(err)
@@ -679,7 +679,7 @@ func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 	// take-statements, each immediately preceded by a call; the LAST
 	// marked statement is swapped with its own predecessor, the FIRST
 	// marked pair is left untouched.
-	loanSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = sink(buffer)\n  let b = take buffer // lang:interprocedural-loan-target\n  let c = sink(buffer)\n  let d = take buffer // lang:interprocedural-loan-target\n  d\n}")
+	loanSource := []byte("fn relay(buffer: Buffer) -> Buffer {\n  let a = sink(buffer)\n  let b = take buffer // schway:interprocedural-loan-target\n  let c = sink(buffer)\n  let d = take buffer // schway:interprocedural-loan-target\n  d\n}")
 	loanFirst, err := InterproceduralLoanInjector{}.Inject(loanSource)
 	if err != nil {
 		t.Fatal(err)
@@ -701,7 +701,7 @@ func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 
 	// fallible_consume (Phase 13, D-13-30a extension): two marked `= try`
 	// bindings; the LAST is stripped of `try`, the FIRST is untouched.
-	consumeSource := []byte("fn main(request: Byte) -> Byte {\n  let a = try open(request) // lang:fallible-consume-target\n  let b = try open(request) // lang:fallible-consume-target\n  b\n}")
+	consumeSource := []byte("fn main(request: Byte) -> Byte {\n  let a = try open(request) // schway:fallible-consume-target\n  let b = try open(request) // schway:fallible-consume-target\n  b\n}")
 	consumeFirst, err := FallibleConsumeInjector{}.Inject(consumeSource)
 	if err != nil {
 		t.Fatal(err)
@@ -723,7 +723,7 @@ func TestInjectorTargetChoiceIsSpecified(t *testing.T) {
 	// call_argument_type (Phase 13, D-13-30a extension): two marked `fn`
 	// declaration lines; the LAST has Byte/Buffer toggled, the FIRST is
 	// untouched.
-	typeSource := []byte("fn first(value: Byte) -> Byte { // lang:call-argument-target\n  value\n}\n\nfn second(value: Byte) -> Byte { // lang:call-argument-target\n  value\n}")
+	typeSource := []byte("fn first(value: Byte) -> Byte { // schway:call-argument-target\n  value\n}\n\nfn second(value: Byte) -> Byte { // schway:call-argument-target\n  value\n}")
 	typeFirst, err := CallArgumentTypeInjector{}.Inject(typeSource)
 	if err != nil {
 		t.Fatal(err)
@@ -752,23 +752,23 @@ func markerAbsentInput(t *testing.T, name string) []byte {
 	t.Helper()
 	switch name {
 	case "match":
-		return bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.lang"), []byte(matchTargetMarker), []byte(""))
+		return bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.schway"), []byte(matchTargetMarker), []byte(""))
 	case "move":
-		return bytes.ReplaceAll(phase6Fixture(t, "heldout_move_defect.lang"), []byte(moveTargetMarker), []byte(""))
+		return bytes.ReplaceAll(phase6Fixture(t, "heldout_move_defect.schway"), []byte(moveTargetMarker), []byte(""))
 	case "borrow":
-		return bytes.ReplaceAll(phase6Fixture(t, "heldout_borrow_defect.lang"), []byte(borrowTargetMarker), []byte(""))
+		return bytes.ReplaceAll(phase6Fixture(t, "heldout_borrow_defect.schway"), []byte(borrowTargetMarker), []byte(""))
 	case "cleanup":
-		checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+		checked, err := CheckFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.lang")
+		cSource, err := phase16InternalFrozenEvidenceC(checked.Program, "testdata/phase4/acquire_three_success.schway")
 		if err != nil {
 			t.Fatal(err)
 		}
 		return []byte(strings.ReplaceAll(cSource, releaseMarker, ""))
 	case "stale_evidence":
-		return bytes.ReplaceAll(phase6Fixture(t, "stale_evidence_subject.lang"), []byte(evidenceSubjectMarker), []byte(""))
+		return bytes.ReplaceAll(phase6Fixture(t, "stale_evidence_subject.schway"), []byte(evidenceSubjectMarker), []byte(""))
 	case "interprocedural_loan":
 		return bytes.ReplaceAll(phase13InjectorLoanBase, []byte(loanTargetMarker), []byte(""))
 	case "fallible_consume":
@@ -812,7 +812,7 @@ func TestEveryInjectorRefusesWhenMarkerDisappears(t *testing.T) {
 // clean when the marker is absent -- exactly the theatre the guard exists
 // to prevent -- while the guarded path refuses.
 func TestInjectorMarkerCountGuardIsNotInert(t *testing.T) {
-	source := bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.lang"), []byte(matchTargetMarker), []byte(""))
+	source := bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.schway"), []byte(matchTargetMarker), []byte(""))
 
 	unguarded := matchInjectSkippingGuard(source)
 	if !bytes.Equal(unguarded, source) {
@@ -836,7 +836,7 @@ func TestInjectorMarkerCountGuardIsNotInert(t *testing.T) {
 // -- the refusal must propagate all the way to the exercise's own result,
 // not stop at the injector boundary.
 func TestInjectorRefusalPropagatesToExerciseFailure(t *testing.T) {
-	source := bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.lang"), []byte(matchTargetMarker), []byte(""))
+	source := bytes.ReplaceAll(phase6Fixture(t, "heldout_match_defect.schway"), []byte(matchTargetMarker), []byte(""))
 	result := RunDefectInjectionExercise(MatchInjector{}, source)
 	if result.Status != "fail" {
 		t.Fatalf("RunDefectInjectionExercise on a vanished target reported status %q, want \"fail\"", result.Status)
@@ -846,7 +846,7 @@ func TestInjectorRefusalPropagatesToExerciseFailure(t *testing.T) {
 	}
 
 	// The eligible, correctly-marked fixture is the control: it must pass.
-	eligible := phase6Fixture(t, "heldout_match_defect.lang")
+	eligible := phase6Fixture(t, "heldout_match_defect.schway")
 	passResult := RunDefectInjectionExercise(MatchInjector{}, eligible)
 	if passResult.Status != "pass" {
 		t.Fatalf("RunDefectInjectionExercise on an eligible fixture reported status %q, want \"pass\": err=%v", passResult.Status, passResult.Err)

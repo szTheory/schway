@@ -20,7 +20,7 @@ import (
 // generator to its new home and guard against it drifting back into a
 // second copy. Both freely import os/path/filepath -- unlike
 // costcorpus_test.go's own TestCostCorpusIsNotParsed, which forbids "os" in
-// ITS OWN file specifically because that file must never itself read .lang
+// ITS OWN file specifically because that file must never itself read .schway
 // source from disk; this file's job is scanning OTHER files' text, which is
 // a different concern entirely.
 // ---------------------------------------------------------------------
@@ -33,7 +33,7 @@ const relocatedCallGraphCorpusPath = "../testsupport/callgraphcorpus.go"
 // guard to the generator's new home: internal/compiler/testsupport's own
 // callgraphcorpus.go must never import internal/compiler/syntax or os,
 // exactly like costcorpus_test.go's own TestCostCorpusIsNotParsed asserted
-// before the relocation -- the "never generated as .lang source through the
+// before the relocation -- the "never generated as .schway source through the
 // real parser" guarantee must follow the generator wherever it lives.
 func TestRelocatedCallGraphCorpusIsNotParsed(t *testing.T) {
 	fileSet := token.NewFileSet()
@@ -43,7 +43,7 @@ func TestRelocatedCallGraphCorpusIsNotParsed(t *testing.T) {
 	}
 
 	forbidden := map[string]bool{
-		"github.com/codename-lang/lang/internal/compiler/syntax": true,
+		"github.com/szTheory/schway/internal/compiler/syntax": true,
 		"os": true,
 	}
 
@@ -63,7 +63,7 @@ func TestRelocatedCallGraphCorpusIsNotParsed(t *testing.T) {
 		return true
 	})
 	if len(found) != 0 {
-		t.Fatalf("%s imports forbidden package(s) %v -- the relocated cost corpus must never be generated as .lang source through the real parser (D-08-34)", relocatedCallGraphCorpusPath, found)
+		t.Fatalf("%s imports forbidden package(s) %v -- the relocated cost corpus must never be generated as .schway source through the real parser (D-08-34)", relocatedCallGraphCorpusPath, found)
 	}
 }
 

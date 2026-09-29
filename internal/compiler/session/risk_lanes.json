@@ -26,7 +26,7 @@
   {
     "fixture_kind": "pure_match",
     "lane_id": "lane:native-differential",
-    "declared_inputs": ["fixture_source", "build_flags", "clang_identity", "go_toolchain"],
+    "declared_inputs": ["fixture_source", "build_flags", "cschway_identity", "go_toolchain"],
     "rationale": "The interpreter-vs--O0-vs--O3 differential compiles native binaries, so it depends on build flags and the probed Clang identity in addition to source and the Go toolchain."
   },
   {
@@ -44,7 +44,7 @@
   {
     "fixture_kind": "owned",
     "lane_id": "lane:owned-native-differential",
-    "declared_inputs": ["fixture_source", "build_flags", "clang_identity", "go_toolchain"],
+    "declared_inputs": ["fixture_source", "build_flags", "cschway_identity", "go_toolchain"],
     "rationale": "The owned-corpus native differential compiles native binaries, same dependency shape as lane:native-differential."
   },
   {
@@ -116,7 +116,7 @@
   {
     "fixture_kind": "foreign",
     "lane_id": "lane:foreign-layout-mismatch",
-    "declared_inputs": ["fixture_source", "foreign_translation_unit", "clang_identity"],
+    "declared_inputs": ["fixture_source", "foreign_translation_unit", "cschway_identity"],
     "rationale": "Cross-TU layout-mismatch detection depends on the Clang identity that compiled the separately-declared translation units."
   },
   {
@@ -140,7 +140,7 @@
   {
     "fixture_kind": "phase5_adversarial",
     "lane_id": "lane:alias-false-no-alias",
-    "declared_inputs": ["fixture_source", "build_flags", "clang_identity"],
+    "declared_inputs": ["fixture_source", "build_flags", "cschway_identity"],
     "rationale": "The -O0/-O3 false-restrict-alias divergence depends on build flags and the Clang identity that compiled both optimization levels."
   },
   {
@@ -176,7 +176,7 @@
   {
     "fixture_kind": "phase5_adversarial",
     "lane_id": "lane:interpreter-o0-o3-lto",
-    "declared_inputs": ["fixture_source", "build_flags", "clang_identity", "go_toolchain"],
+    "declared_inputs": ["fixture_source", "build_flags", "cschway_identity", "go_toolchain"],
     "rationale": "The LTO-widened interpreter/-O0/-O3 differential compiles native binaries, same dependency shape as lane:native-differential."
   },
   {
@@ -194,7 +194,7 @@
   {
     "fixture_kind": "phase5_adversarial",
     "lane_id": "lane:native-sanitize",
-    "declared_inputs": ["fixture_source", "runtime_identity", "clang_identity"],
+    "declared_inputs": ["fixture_source", "runtime_identity", "cschway_identity"],
     "rationale": "ASan/UBSan sanitizer runs depend on the linked sanitizer runtime identity and the Clang identity that compiled the instrumented binary."
   },
   {

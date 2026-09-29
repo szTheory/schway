@@ -3,7 +3,7 @@ package reduce_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/reduce"
+	"github.com/szTheory/schway/internal/compiler/reduce"
 )
 
 func baseSignature() reduce.Signature {
@@ -12,7 +12,7 @@ func baseSignature() reduce.Signature {
 		OperationID:         "s1:m:function:main:op:3",
 		CausalRole:          "",
 		EnginePair:          "interpreter-vs-O0",
-		ForeignCallSequence: []string{"lang_res_open(request)", "lang_res_open(request)"},
+		ForeignCallSequence: []string{"schway_res_open(request)", "schway_res_open(request)"},
 	}
 }
 
@@ -66,11 +66,11 @@ func TestPredicateAcceptsShiftedPositionSameCausalRole(t *testing.T) {
 }
 
 func TestPredicateRejectsForeignCallSequenceDrift(t *testing.T) {
-	seedSequence := []string{"lang_res_open(request)", "lang_arena_open(request)"}
+	seedSequence := []string{"schway_res_open(request)", "schway_arena_open(request)"}
 	cases := map[string][]string{
-		"reordered":              {"lang_arena_open(request)", "lang_res_open(request)"},
-		"changed_symbol":         {"lang_res_open(request)", "lang_retained_touch(request)"},
-		"changed_argument_shape": {"lang_res_open(other)", "lang_arena_open(request)"},
+		"reordered":              {"schway_arena_open(request)", "schway_res_open(request)"},
+		"changed_symbol":         {"schway_res_open(request)", "schway_retained_touch(request)"},
+		"changed_argument_shape": {"schway_res_open(other)", "schway_arena_open(request)"},
 	}
 	for name, sequence := range cases {
 		t.Run(name, func(t *testing.T) {

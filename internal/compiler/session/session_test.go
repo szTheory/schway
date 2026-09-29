@@ -24,33 +24,33 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/interp/interptestdirect"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/interp/interptestdirect"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestTransferRequiresTake(t *testing.T) {
-	problem := ownershipDiagnostic(t, "implicit_noncopy.lang", "ownership.transfer_requires_take")
+	problem := ownershipDiagnostic(t, "implicit_noncopy.schway", "ownership.transfer_requires_take")
 	assertCauseKinds(t, problem, "declared_here", "missing_ability", "place", "type")
 	assertRepairKinds(t, problem, "insert_take")
 }
 
 func TestUseAfterMoveDiagnostic(t *testing.T) {
-	problem := ownershipDiagnostic(t, "use_after_move.lang", "ownership.use_after_move")
+	problem := ownershipDiagnostic(t, "use_after_move.schway", "ownership.use_after_move")
 	assertCauseKinds(t, problem, "declared_here", "moved_here", "place", "transfer_target", "type")
 	assertRepairKinds(t, problem, "move_use_before_transfer", "use_transfer_target")
 }
 
 func TestMoveWhileBorrowedDiagnostic(t *testing.T) {
-	problem := ownershipDiagnostic(t, "move_while_borrowed.lang", "ownership.move_while_borrowed")
+	problem := ownershipDiagnostic(t, "move_while_borrowed.schway", "ownership.move_while_borrowed")
 	assertCauseKinds(t, problem, "borrow_created_here", "borrow_used_later", "loan", "owner", "type")
 	assertRepairKinds(t, problem, "move_after_last_borrow_use")
 
@@ -66,7 +66,7 @@ func TestMoveWhileBorrowedDiagnostic(t *testing.T) {
 // ran to completion, so the shipped move_while_borrowed control was weaker
 // than the gate implied.
 func TestLoanLivenessIsTransitive(t *testing.T) {
-	problem := ownershipDiagnostic(t, "reborrow_while_moved.lang", "ownership.move_while_borrowed")
+	problem := ownershipDiagnostic(t, "reborrow_while_moved.schway", "ownership.move_while_borrowed")
 	assertCauseKinds(t, problem, "borrow_created_here", "borrow_used_later", "loan", "owner", "type")
 	assertRepairKinds(t, problem, "move_after_last_borrow_use")
 
@@ -86,19 +86,19 @@ func TestLoanLivenessIsTransitive(t *testing.T) {
 
 func TestDiagnosticSchemaCompatibility(t *testing.T) {
 	legacy := diagnostic.Error("syntax.example", diagnostic.Span{Start: 2, End: 3}, "legacy prose")
-	if legacy.Schema != "lang.diagnostic/0" || len(legacy.Repairs) != 0 {
+	if legacy.Schema != "schway.diagnostic/0" || len(legacy.Repairs) != 0 {
 		t.Fatalf("legacy diagnostic changed schema: %+v", legacy)
 	}
-	for _, name := range []string{"implicit_noncopy.lang", "use_after_move.lang", "move_while_borrowed.lang"} {
+	for _, name := range []string{"implicit_noncopy.schway", "use_after_move.schway", "move_while_borrowed.schway"} {
 		problem := ownershipDiagnostic(t, name, "")
-		if problem.Schema != "lang.diagnostic/1" || len(problem.Repairs) == 0 {
+		if problem.Schema != "schway.diagnostic/1" || len(problem.Repairs) == 0 {
 			t.Fatalf("ownership diagnostic did not select /1 with repairs: %+v", problem)
 		}
 	}
 }
 
 func TestPhase1DiagnosticGoldenUnchanged(t *testing.T) {
-	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"))
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.schway"))
 	if err != nil || len(checked.Diagnostics) != 1 {
 		t.Fatalf("phase 1 diagnostic setup failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
 	}
@@ -106,7 +106,7 @@ func TestPhase1DiagnosticGoldenUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"schema":"lang.diagnostic/0","id":"diagnostic:f9582fb8c4ad9f90fbe75fa8","code":"match.non_exhaustive","severity":"error","primary_span":{"start":131,"end":158},"message":"match does not cover every alternative","causes":[{"kind":"missing_alternative","detail":"On"}]}`
+	want := `{"schema":"schway.diagnostic/0","id":"diagnostic:f9582fb8c4ad9f90fbe75fa8","code":"match.non_exhaustive","severity":"error","primary_span":{"start":131,"end":158},"message":"match does not cover every alternative","causes":[{"kind":"missing_alternative","detail":"On"}]}`
 	if string(encoded) != want {
 		t.Fatalf("Phase 1 diagnostic golden changed:\ngot  %s\nwant %s", encoded, want)
 	}
@@ -155,14 +155,14 @@ func assertRepairKinds(t *testing.T, problem diagnostic.Diagnostic, want ...stri
 }
 
 func TestTogglePipeline(t *testing.T) {
-	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", result.Diagnostics)
 	}
-	if result.Program.Schema != "lang.core/0" || len(result.Program.Functions) != 1 {
+	if result.Program.Schema != "schway.core/0" || len(result.Program.Functions) != 1 {
 		t.Fatalf("unexpected core: %+v", result.Program)
 	}
 	function := result.Program.Functions[0]
@@ -172,12 +172,12 @@ func TestTogglePipeline(t *testing.T) {
 }
 
 func TestOwnedTransferInterpreter(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	checked, err := session.CheckFile(path)
 	if err != nil || len(checked.Diagnostics) != 0 {
 		t.Fatalf("owned check failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
 	}
-	if checked.Program.Schema != "lang.core/1" || len(checked.Program.Functions) != 1 {
+	if checked.Program.Schema != "schway.core/1" || len(checked.Program.Functions) != 1 {
 		t.Fatalf("unexpected owned core: %+v", checked.Program)
 	}
 	linear := checked.Program.Functions[0].Linear
@@ -197,13 +197,13 @@ func TestOwnedTransferInterpreter(t *testing.T) {
 	if err != nil || len(diagnostics) != 0 || len(executions) != 1 {
 		t.Fatalf("owned interpreter failed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, executions)
 	}
-	if executions[0].Schema != "lang.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.transferred" || executions[0].Events[1].Kind != "function.returned" {
+	if executions[0].Schema != "schway.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.transferred" || executions[0].Events[1].Kind != "function.returned" {
 		t.Fatalf("unexpected owned execution: %+v", executions[0])
 	}
 }
 
 func TestImplicitByteCopy(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "implicit_copy.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "implicit_copy.schway")
 	checked, err := session.CheckFile(path)
 	if err != nil || len(checked.Diagnostics) != 0 {
 		t.Fatalf("copy check failed: err=%v diagnostics=%+v", err, checked.Diagnostics)
@@ -219,7 +219,7 @@ func TestImplicitByteCopy(t *testing.T) {
 	if err != nil || len(diagnostics) != 0 || len(executions) != 1 {
 		t.Fatalf("copy interpreter failed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, executions)
 	}
-	if executions[0].Schema != "lang.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.copied" {
+	if executions[0].Schema != "schway.execution/1" || len(executions[0].Events) != 2 || executions[0].Events[0].Kind != "value.copied" {
 		t.Fatalf("unexpected copy execution: %+v", executions[0])
 	}
 }
@@ -236,7 +236,7 @@ func TestImplicitByteCopy(t *testing.T) {
 // ability derivation these functions exercise is unaffected by the new
 // execution-admission gate.
 func TestSourceBoxPairAbilityFacts(t *testing.T) {
-	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "ability_shapes.lang"))
+	checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase2", "ability_shapes.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestSourceCannotGrantAbilityRoots(t *testing.T) {
 }
 
 func TestClosedBodyUnion(t *testing.T) {
-	phase1, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	phase1, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.schway"))
 	if err != nil || len(phase1.Diagnostics) != 0 {
 		t.Fatalf("phase 1 setup failed: err=%v diagnostics=%+v", err, phase1.Diagnostics)
 	}
@@ -308,7 +308,7 @@ func TestClosedBodyUnion(t *testing.T) {
 }
 
 func TestLinearIdentityStability(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -340,22 +340,22 @@ func TestLinearIdentityStability(t *testing.T) {
 }
 
 func TestFeatureSpecificCoreExecutionSchemas(t *testing.T) {
-	phase1Path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
-	phase2Path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	phase1Path := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
+	phase2Path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	phase1, err := session.CheckFile(phase1Path)
-	if err != nil || len(phase1.Diagnostics) != 0 || phase1.Program.Schema != "lang.core/0" {
+	if err != nil || len(phase1.Diagnostics) != 0 || phase1.Program.Schema != "schway.core/0" {
 		t.Fatalf("phase 1 core schema changed: err=%v result=%+v", err, phase1)
 	}
 	phase2, err := session.CheckFile(phase2Path)
-	if err != nil || len(phase2.Diagnostics) != 0 || phase2.Program.Schema != "lang.core/1" {
+	if err != nil || len(phase2.Diagnostics) != 0 || phase2.Program.Schema != "schway.core/1" {
 		t.Fatalf("phase 2 core schema missing: err=%v result=%+v", err, phase2)
 	}
 	oldExecution, diagnostics, err := session.RunInterpreterFile(phase1Path)
-	if err != nil || len(diagnostics) != 0 || len(oldExecution) == 0 || oldExecution[0].Schema != "lang.execution/0" {
+	if err != nil || len(diagnostics) != 0 || len(oldExecution) == 0 || oldExecution[0].Schema != "schway.execution/0" {
 		t.Fatalf("phase 1 execution schema changed: err=%v diagnostics=%+v executions=%+v", err, diagnostics, oldExecution)
 	}
 	ownedExecution, diagnostics, err := session.RunInterpreterFile(phase2Path)
-	if err != nil || len(diagnostics) != 0 || len(ownedExecution) != 1 || ownedExecution[0].Schema != "lang.execution/1" {
+	if err != nil || len(diagnostics) != 0 || len(ownedExecution) != 1 || ownedExecution[0].Schema != "schway.execution/1" {
 		t.Fatalf("phase 2 execution schema missing: err=%v diagnostics=%+v executions=%+v", err, diagnostics, ownedExecution)
 	}
 }
@@ -376,7 +376,7 @@ func TestMixedBodyVersionsFailAtCheckInEitherOrder(t *testing.T) {
 }
 
 func TestNativeToggleO0O3(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	path := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("native run failed: err=%v diagnostics=%+v", err, diagnostics)
@@ -384,7 +384,7 @@ func TestNativeToggleO0O3(t *testing.T) {
 	if len(result.O0.Pairs) != 2 || len(result.O3.Pairs) != 2 {
 		t.Fatalf("unexpected native results: O0=%+v O3=%+v", result.O0, result.O3)
 	}
-	if !strings.Contains(result.CSource, "typedef enum LANG_SWITCH") || !strings.Contains(result.CSource, "switch (value)") {
+	if !strings.Contains(result.CSource, "typedef enum SCHWAY_SWITCH") || !strings.Contains(result.CSource, "switch (value)") {
 		t.Fatalf("generated C is not reviewable S1 lowering:\n%s", result.CSource)
 	}
 }
@@ -397,7 +397,7 @@ func TestNativeToggleO0O3(t *testing.T) {
 // additionally inspects the shape directly so a future regression that
 // weakens RunNative's own comparison is still caught here.
 func TestForeignCallInterpreterNative(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang")
+	path := testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway")
 	result, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if err != nil {
 		requirePhase16M004Refusal(t, err, "foreign")
@@ -425,23 +425,23 @@ func TestForeignCallInterpreterNative(t *testing.T) {
 			t.Fatalf("%s execution disagrees with interpreter:\ninterpreter: %+v\nnative:      %+v", engineResult.name, interpreted, engineResult.execution)
 		}
 	}
-	if !strings.Contains(result.CSource, "extern _LANG_lang_res_open_result _LANG_lang_res_open") {
+	if !strings.Contains(result.CSource, "extern _SCHWAY_schway_res_open_result _SCHWAY_schway_res_open") {
 		t.Fatalf("generated C does not declare the frozen foreign symbol:\n%s", result.CSource)
 	}
-	if strings.Contains(result.CSource, "lang_foreign_resource_private") {
+	if strings.Contains(result.CSource, "schway_foreign_resource_private") {
 		t.Fatalf("generated C must never reference the frozen TU's private header:\n%s", result.CSource)
 	}
 }
 
 // TestForeignPolicyValueInjectionRefusedFromSource is 04-13's end-to-end
-// tracer (04-VERIFICATION.md gap 2b, FFI-01): an ordinary, honest .lang
+// tracer (04-VERIFICATION.md gap 2b, FFI-01): an ordinary, honest .schway
 // source file whose sole `allocator:` policy value carries a
 // comment-terminator payload is refused at SOURCE ADMISSION by
 // session.Check, before any core artifact is ever produced -- so the
 // downstream emitters (cgen.EmitForeignHeader/EmitForeignConformance) are
 // unreachable for this source, not merely guarded once reached.
 func TestForeignPolicyValueInjectionRefusedFromSource(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_policy_value_injection.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_policy_value_injection.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -470,7 +470,7 @@ func TestForeignPolicyValueInjectionRefusedFromSource(t *testing.T) {
 // three reverse-order resource.released events), and live-resource state
 // (empty -- every acquired resource was released).
 func TestReleaseInterpreterNative(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway")
 	result, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if err != nil {
 		requirePhase16M004Refusal(t, err, "foreign")
@@ -507,7 +507,7 @@ func TestReleaseInterpreterNative(t *testing.T) {
 }
 
 // TestReleaseOmissionMutationIsMismatch proves control:resource.release_omitted
-// (D-04-07/Pitfall 2): deleting one generated line bearing lang:release-site
+// (D-04-07/Pitfall 2): deleting one generated line bearing schway:release-site
 // (the event AND the runtime ledger decrement together, since both are
 // emitted on the same line) leaves a resource observably live at
 // termination, surfaced through the same pre-existing "returned outcome
@@ -515,7 +515,7 @@ func TestReleaseInterpreterNative(t *testing.T) {
 // (native.invalid_execution) -- attacking the EMITTER's own generated C, a
 // different artifact than the transposition mutation below attacks.
 func TestReleaseOmissionMutationIsMismatch(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway")
 	// RunNative's special ForeignSources wiring only fires for a bare
 	// native.Runner value (a mutation-runner wrapper opts out of it by
 	// design, per its own doc comment), so the frozen foreign TU must be
@@ -548,7 +548,7 @@ func TestReleaseOmissionMutationIsMismatch(t *testing.T) {
 // the release_order_mismatch code -- attacking the CHECKER's materialized
 // order, a different artifact than the omission mutation above attacks.
 func TestReleaseTranspositionMutationIsMismatch(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -609,7 +609,7 @@ export {
 
 foreign C {
 
-  fn lang_res_open(request: Byte) -> Byte {
+  fn schway_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -621,8 +621,8 @@ data AcquireError =
   | OpenFailed
 
 fn main(request: Byte) -> Byte {
-  let a = try lang_res_open(request)
-  let b = try lang_res_open(request)
+  let a = try schway_res_open(request)
+  let b = try schway_res_open(request)
   request
 }
 `
@@ -647,17 +647,17 @@ fn main(request: Byte) -> Byte {
 // input is generated C (never the frozen foreign translation unit) and that
 // no release mutation runner ever opens a path under native/.
 func TestReleaseMutationsAttackDifferentArtifacts(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway")
 	result, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if err != nil {
 		requirePhase16M004Refusal(t, err, "foreign")
 		return
 	}
 	t.Fatal("expected terminal Phase 16 M004 foreign refusal")
-	if !strings.Contains(result.CSource, "lang:release-site") {
+	if !strings.Contains(result.CSource, "schway:release-site") {
 		t.Fatal("generated C carries no release-site marker for the omission runner to locate")
 	}
-	if strings.Contains(result.CSource, "lang_foreign_resource_private") {
+	if strings.Contains(result.CSource, "schway_foreign_resource_private") {
 		t.Fatal("generated C must never reference the frozen TU's private header")
 	}
 	// The omission runner's Run signature takes a cSource string (generated
@@ -702,7 +702,7 @@ func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
 		"module collision.locals\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let α = code\n  let β = code\n  let __1 = code\n  __1\n}\n",
 		"module collision.shadow\nexport { fn keep }\nfn keep(code: Byte) -> Byte {\n  let value = code\n  let value = code\n  value\n}\n",
 		"module collision.variants\nexport { type Thing fn thing }\ndata Thing = | a | A | A_1\nfn thing(value: Thing) -> Thing {\n  match value {\n    a => A\n    A => A_1\n    A_1 => a\n  }\n}\n",
-		"module collision.cross_category\nexport { type Thing fn thing_LANG_THING }\ndata Thing = | thing | other\nfn thing_LANG_THING(value: Thing) -> Thing {\n  match value {\n    thing => other\n    other => thing\n  }\n}\n",
+		"module collision.cross_category\nexport { type Thing fn thing_SCHWAY_THING }\ndata Thing = | thing | other\nfn thing_SCHWAY_THING(value: Thing) -> Thing {\n  match value {\n    thing => other\n    other => thing\n  }\n}\n",
 	}
 	for _, source := range tests {
 		result, diagnostics, err := session.RunNative(context.Background(), []byte(source), native.DefaultRunner())
@@ -713,7 +713,7 @@ func TestNativeIdentifiersRemainCollisionFree(t *testing.T) {
 }
 
 func TestOwnedTransferInterpreterNative(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("owned native run failed: err=%v diagnostics=%+v", err, diagnostics)
@@ -734,12 +734,12 @@ func TestOwnedTransferInterpreterNative(t *testing.T) {
 	if !bytes.Equal([]byte(result.CSource), golden) {
 		t.Fatalf("owned C golden changed:\n%s", result.CSource)
 	}
-	for _, required := range []string{"lang_record_event(\"value.transferred\"", "lang_record_event(\"function.returned\"", "lang_write_buffer_hex(&lang_entry_output)"} {
+	for _, required := range []string{"schway_record_event(\"value.transferred\"", "schway_record_event(\"function.returned\"", "schway_write_buffer_hex(&schway_entry_output)"} {
 		if !strings.Contains(result.CSource, required) {
 			t.Fatalf("owned C does not derive execution from runtime state at %q:\n%s", required, result.CSource)
 		}
 	}
-	if strings.Contains(result.CSource, `puts("{\"schema\":\"lang.execution/1\"`) {
+	if strings.Contains(result.CSource, `puts("{\"schema\":\"schway.execution/1\"`) {
 		t.Fatalf("owned C still embeds a precomputed execution document:\n%s", result.CSource)
 	}
 	for _, forbidden := range []string{"restrict", "noalias", "malloc", "free("} {
@@ -774,7 +774,7 @@ func TestOwnedEventReorderIsMismatch(t *testing.T) {
 func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
 	expected := ownedInterpreterExecution(t)
 	operationalRunner := &fakeNativeRunner{err: &native.ToolError{Code: "native.invalid_execution", Err: errors.New("malformed child stdout")}}
-	operational, err := session.RunNativeCommandFile(context.Background(), testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"), operationalRunner)
+	operational, err := session.RunNativeCommandFile(context.Background(), testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"), operationalRunner)
 	if err != nil || operational.Status != protocol.StatusOperational || protocol.ExitCode(operational.Status) != 3 || operational.Diagnostics[0].Code != "native.invalid_execution" {
 		t.Fatalf("malformed native output classification changed: result=%+v err=%v", operational, err)
 	}
@@ -802,7 +802,7 @@ func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
 			mutated := cloneExecution(t, expected)
 			test.mutate(&mutated)
 			if test.normalized {
-				source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+				source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -826,7 +826,7 @@ func TestOwnedExecutionFieldMutationMatrix(t *testing.T) {
 }
 
 func TestOwnedBackendMutationIsMismatch(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	runner := session.NewOwnedBackendMutationRunner(native.DefaultRunner())
 	result, err := session.RunNativeCommandFile(context.Background(), path, runner)
 	if err != nil {
@@ -844,7 +844,7 @@ func TestOwnedBackendMutationIsMismatch(t *testing.T) {
 }
 
 func TestOwnedBackendMutationRunnerConcurrentUse(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -871,7 +871,7 @@ func TestOwnedBackendMutationRunnerConcurrentUse(t *testing.T) {
 
 func ownedInterpreterExecution(t *testing.T) execution.Execution {
 	t.Helper()
-	values, diagnostics, err := session.RunInterpreterFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang"))
+	values, diagnostics, err := session.RunInterpreterFile(testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway"))
 	if err != nil || len(diagnostics) != 0 || len(values) != 1 {
 		t.Fatalf("owned interpreter setup failed: values=%+v diagnostics=%+v err=%v", values, diagnostics, err)
 	}
@@ -897,7 +897,7 @@ func assertOwnedSemanticDriftRejected(t *testing.T, expected, mutated execution.
 		{Optimization: "-O0", Pairs: []native.Pair{{Input: "01020304", Execution: expected}}},
 		{Optimization: "-O3", Pairs: []native.Pair{{Input: "01020304", Execution: mutated}}},
 	}}
-	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.lang")
+	path := testsupport.ProjectPath("testdata", "phase2", "owned_transfer.schway")
 	_, diagnostics, err := session.RunNativeFile(context.Background(), path, runner)
 	if len(diagnostics) != 0 {
 		t.Fatalf("semantic drift became source diagnostics: %+v", diagnostics)
@@ -916,7 +916,7 @@ func assertOwnedSemanticDriftRejected(t *testing.T, expected, mutated execution.
 }
 
 func TestNativeToolFailureIsOperational(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	path := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	_, diagnostics, err := session.RunNativeFile(context.Background(), path, native.Runner{ClangPath: testsupport.ProjectPath("missing-clang")})
 	if len(diagnostics) != 0 {
 		t.Fatalf("tool absence became source diagnostics: %+v", diagnostics)
@@ -928,7 +928,7 @@ func TestNativeToolFailureIsOperational(t *testing.T) {
 }
 
 func TestNonExhaustiveMatch(t *testing.T) {
-	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang"))
+	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -941,14 +941,14 @@ func TestNonExhaustiveMatch(t *testing.T) {
 }
 
 func TestCLIToggleTracer(t *testing.T) {
-	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.lang"))
+	result, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase1", "toggle.schway"))
 	if err != nil || len(result.Diagnostics) != 0 {
 		t.Fatalf("check tracer failed: err=%v diagnostics=%+v", err, result.Diagnostics)
 	}
 }
 
 func TestInterpreterDeterministic(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	path := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	first, diagnostics, err := session.RunInterpreterFile(path)
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("first run failed: err=%v diagnostics=%+v", err, diagnostics)
@@ -968,7 +968,7 @@ func TestInterpreterDeterministic(t *testing.T) {
 }
 
 func TestConcurrentReadOnlyCommands(t *testing.T) {
-	fixture := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	before, err := os.ReadFile(fixture)
 	if err != nil {
 		t.Fatal(err)
@@ -1283,7 +1283,7 @@ func TestPathOracleLaneRecordsControl(t *testing.T) {
 }
 
 // TestVerifyPhase3ControlsAndWork is Task 03-07-02's falsifier for the Phase
-// 3 verify path: dispatching on borrowed_view.lang, verifyBorrowedCorpus
+// 3 verify path: dispatching on borrowed_view.schway, verifyBorrowedCorpus
 // requires every named Phase 3 control fail-closed, with nonzero work on
 // every lane and both expected escapes (corevalidate's and originvalidate's)
 // surfaced, never reported as detected controls.
@@ -1361,13 +1361,13 @@ func TestLayoutMutationIsCompileTimeRefusal(t *testing.T) {
 // opens a generated source" is a structural property, not merely a runtime
 // behavior demonstrated here.
 func TestLayoutMutationAttacksFrozenFixtureOnly(t *testing.T) {
-	correctPath := filepath.Join(t.TempDir(), "lang_foreign_layout_probe_correct.h")
-	correctHeader := []byte(`#ifndef LANG_FOREIGN_LAYOUT_PROBE_PRIVATE_H
-#define LANG_FOREIGN_LAYOUT_PROBE_PRIVATE_H
-typedef struct lang_foreign_layout_probe_block {
+	correctPath := filepath.Join(t.TempDir(), "schway_foreign_layout_probe_correct.h")
+	correctHeader := []byte(`#ifndef SCHWAY_FOREIGN_LAYOUT_PROBE_PRIVATE_H
+#define SCHWAY_FOREIGN_LAYOUT_PROBE_PRIVATE_H
+typedef struct schway_foreign_layout_probe_block {
   unsigned char first;
   unsigned char second;
-} lang_foreign_layout_probe_block;
+} schway_foreign_layout_probe_block;
 #endif
 `)
 	if err := os.WriteFile(correctPath, correctHeader, 0o600); err != nil {
@@ -1387,14 +1387,14 @@ typedef struct lang_foreign_layout_probe_block {
 // (D-04-13): every emitted C artifact for the tracer and release-lifecycle
 // fixtures -- the compiled program, the generated header, and the generated
 // conformance unit (D-04-12's three named inspectable layers) -- plus their
-// lang.foreign/0 sidecar manifests, carries no banned optimizer-visible
+// schway.foreign/0 sidecar manifests, carries no banned optimizer-visible
 // attribute token, and each manifest's emitted_attributes field is present
 // and empty (not omitted). EmitForeignHeader/EmitForeignConformance are
 // scanned here too (WR-01): the header is the artifact a human reviewer is
 // most likely to actually read, and skipping it would let a banned token
 // injected there go completely undetected.
 func TestNoUnprovenAttributesEmitted(t *testing.T) {
-	for _, fixture := range []string{"foreign_acquire_one.lang", "acquire_three_success.lang"} {
+	for _, fixture := range []string{"foreign_acquire_one.schway", "acquire_three_success.schway"} {
 		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", fixture))
 		if err != nil {
 			t.Fatal(err)
@@ -1434,7 +1434,7 @@ func TestNoUnprovenAttributesEmitted(t *testing.T) {
 // untouched. This proves the header artifact is independently scanned; the
 // archived program artifact is not emitted by today's public emitter.
 func TestAttributeInjectionIntoHeaderOnlyMakesControlFail(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1442,7 +1442,7 @@ func TestAttributeInjectionIntoHeaderOnlyMakesControlFail(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.lang")
+	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1481,7 +1481,7 @@ func TestAttributeInjectionIntoHeaderOnlyMakesControlFail(t *testing.T) {
 // the header's coverage. This is the same coincidental-overlap trap
 // 04-VERIFICATION.md gap 2 named, one layer further in.
 func TestAttributeInjectionIntoConformanceOnlyMakesControlFail(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1489,7 +1489,7 @@ func TestAttributeInjectionIntoConformanceOnlyMakesControlFail(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.lang")
+	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1548,7 +1548,7 @@ func TestAttributeInjectionIntoConformanceOnlyMakesControlFail(t *testing.T) {
 // historical C artifact. It proves the scanner is not vacuously green; it is
 // not evidence that the current emitter accepts foreign bodies.
 func TestAttributeInjectionMakesControlFail(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1556,7 +1556,7 @@ func TestAttributeInjectionMakesControlFail(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.lang")
+	cSource, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/foreign_acquire_one.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1591,7 +1591,7 @@ func TestNoreturnExemptionIsNamed(t *testing.T) {
 // both new task-03 required controls with nonzero recomputed work.
 func requirePhase4VerifierTerminalM004(t testing.TB) {
 	t.Helper()
-	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.lang")
+	path := testsupport.ProjectPath("testdata", "phase4", "acquire_three_success.schway")
 	_, _, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	requirePhase16M004Refusal(t, err, "foreign")
 }
@@ -1790,28 +1790,28 @@ func TestVerifyPhase4ForeignOriginControl(t *testing.T) {
 // TestPublishedOriginValidatedOnCheckAndRun is D-04-27/WR-01's falsifier:
 // originvalidate.ValidatePublished now runs on the `check` and `run`
 // command-file paths, not only `interface export`. testdata/phase3's
-// public_view_omitted.lang (the exclusive_borrow_clean/relay shape D-04-03
+// public_view_omitted.schway (the exclusive_borrow_clean/relay shape D-04-03
 // keeps checking clean on purpose) previously PASSED session.CheckCommandFile
 // unchanged; it must now be refused with core.origin_omitted there too. The
-// new foreign_origin_omitted.lang fixture demonstrates the same wiring
+// new foreign_origin_omitted.schway fixture demonstrates the same wiring
 // through session.RunInterpreterCommandFile/RunNativeCommandFile.
 func TestPublishedOriginValidatedOnCheckAndRun(t *testing.T) {
-	omittedPath := testsupport.ProjectPath("testdata", "phase3", "public_view_omitted.lang")
+	omittedPath := testsupport.ProjectPath("testdata", "phase3", "public_view_omitted.schway")
 	checkResult, err := session.CheckCommandFile(omittedPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if checkResult.Status != protocol.StatusInvalid || len(checkResult.Diagnostics) != 1 || checkResult.Diagnostics[0].Code != "core.origin_omitted" {
-		t.Fatalf("expected lang check to refuse public_view_omitted.lang with core.origin_omitted, got %+v", checkResult)
+		t.Fatalf("expected schway check to refuse public_view_omitted.schway with core.origin_omitted, got %+v", checkResult)
 	}
 
-	foreignOmittedPath := testsupport.ProjectPath("testdata", "phase4", "foreign_origin_omitted.lang")
+	foreignOmittedPath := testsupport.ProjectPath("testdata", "phase4", "foreign_origin_omitted.schway")
 	interpResult, err := session.RunInterpreterCommandFile(foreignOmittedPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if interpResult.Status != protocol.StatusInvalid || len(interpResult.Diagnostics) != 1 || interpResult.Diagnostics[0].Code != "core.foreign_origin_omitted" {
-		t.Fatalf("expected lang run --engine=interpreter to refuse foreign_origin_omitted.lang with core.foreign_origin_omitted, got %+v", interpResult)
+		t.Fatalf("expected schway run --engine=interpreter to refuse foreign_origin_omitted.schway with core.foreign_origin_omitted, got %+v", interpResult)
 	}
 
 	nativeResult, err := session.RunNativeCommandFile(context.Background(), foreignOmittedPath, native.DefaultRunner())
@@ -1819,7 +1819,7 @@ func TestPublishedOriginValidatedOnCheckAndRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	if nativeResult.Status != protocol.StatusOperational || len(nativeResult.Diagnostics) != 1 || nativeResult.Diagnostics[0].Code != "native.tool_failure" {
-		t.Fatalf("expected lang run --engine=native to stop at the terminal Phase 16 foreign M004 refusal, got %+v", nativeResult)
+		t.Fatalf("expected schway run --engine=native to stop at the terminal Phase 16 foreign M004 refusal, got %+v", nativeResult)
 	}
 }
 
@@ -1860,7 +1860,7 @@ func TestNoReleaseAfterDefect(t *testing.T) {
 // by every Task 04-05-01 test below.
 func nonlocalProbeChecked(t *testing.T) session.CheckResult {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "nonlocal_exit_probe.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "nonlocal_exit_probe.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1877,7 +1877,7 @@ func nonlocalProbeChecked(t *testing.T) session.CheckResult {
 // emitter is available through current Emit/EmitNative.
 func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1914,12 +1914,12 @@ func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 // foreign lowering, not a current native-cleanup witness.
 func TestPadRunsNoRelease(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
-	start := strings.Index(generated, "/* lang:nonlocal-pad-site */")
-	end := strings.Index(generated, "/* lang:nonlocal-pad-end */")
+	start := strings.Index(generated, "/* schway:nonlocal-pad-site */")
+	end := strings.Index(generated, "/* schway:nonlocal-pad-end */")
 	if start < 0 || end < 0 || end < start {
 		t.Fatalf("expected a well-formed pad span in generated C:\n%s", generated)
 	}
@@ -1942,7 +1942,7 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1969,7 +1969,7 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 // current production emitter path.
 func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1992,7 +1992,7 @@ func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 // current emitter cleanup behavior.
 func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
 	checked := nonlocalProbeChecked(t)
-	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	generated, err := phase16FileFrozenEvidenceC(t, checked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2280,14 +2280,14 @@ func TestExpectedEscapesAreVisibleNotSolved(t *testing.T) {
 
 // writeFailingForeignDouble writes a TEST-ONLY, throwaway foreign
 // translation unit implementing the SAME symbol and ABI shape as the
-// frozen native/lang_foreign_resource.c (_LANG_lang_res_open_result
-// _LANG_lang_res_open(unsigned char)) but that genuinely returns ok=0 on
+// frozen native/schway_foreign_resource.c (_SCHWAY_schway_res_open_result
+// _SCHWAY_schway_res_open(unsigned char)) but that genuinely returns ok=0 on
 // its failOnCall'th invocation within one process, using a static call
-// counter -- the exact "Nth call" convention native/lang_foreign_nonlocal.c
+// counter -- the exact "Nth call" convention native/schway_foreign_nonlocal.c
 // already establishes for the nonlocal-exit probe (D-04-17). This is NOT a
 // change to any frozen, byte-committed file: it is written fresh to
 // t.TempDir() for this test alone, never touching
-// native/lang_foreign_resource.c, so D-04-10's freeze is untouched. It
+// native/schway_foreign_resource.c, so D-04-10's freeze is untouched. It
 // exists because the shipped foreign TU always succeeds at real runtime (a
 // genuine allocation failure is unreachable in practice), so proving the
 // interpreter and BOTH native optimization levels genuinely agree on a
@@ -2300,17 +2300,17 @@ func writeFailingForeignDouble(t *testing.T, failOnCall int) string {
 	t.Helper()
 	source := fmt.Sprintf(`#include <stdint.h>
 
-typedef struct _LANG_lang_res_open_result {
+typedef struct _SCHWAY_schway_res_open_result {
   unsigned char ok;
   unsigned char value;
-} _LANG_lang_res_open_result;
+} _SCHWAY_schway_res_open_result;
 
-static int lang_test_double_call_count = 0;
+static int schway_test_double_call_count = 0;
 
-_LANG_lang_res_open_result _LANG_lang_res_open(unsigned char argument) {
-  _LANG_lang_res_open_result result;
-  lang_test_double_call_count++;
-  if (lang_test_double_call_count == %d) {
+_SCHWAY_schway_res_open_result _SCHWAY_schway_res_open(unsigned char argument) {
+  _SCHWAY_schway_res_open_result result;
+  schway_test_double_call_count++;
+  if (schway_test_double_call_count == %d) {
     result.ok = 0;
     result.value = 0;
     return result;
@@ -2320,7 +2320,7 @@ _LANG_lang_res_open_result _LANG_lang_res_open(unsigned char argument) {
   return result;
 }
 `, failOnCall)
-	path := filepath.Join(t.TempDir(), "lang_test_double_resource.c")
+	path := filepath.Join(t.TempDir(), "schway_test_double_resource.c")
 	if err := os.WriteFile(path, []byte(source), 0o600); err != nil {
 		t.Fatalf("write test-double foreign TU: %v", err)
 	}
@@ -2396,11 +2396,11 @@ func TestPhase4CorpusThreeEngineAgreement(t *testing.T) {
 	runner := native.DefaultRunner()
 
 	t.Run("success", func(t *testing.T) {
-		program, functionName, err := session.Phase4CheckedProgram(corpus, "acquire_three_success.lang")
+		program, functionName, err := session.Phase4CheckedProgram(corpus, "acquire_three_success.schway")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "acquire_three_success.lang", program, functionName, "7", runner, native.ExpectValue); err != nil {
+		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "acquire_three_success.schway", program, functionName, "7", runner, native.ExpectValue); err != nil {
 			requirePhase16M004Refusal(t, err, "foreign")
 			return
 		}
@@ -2410,31 +2410,31 @@ func TestPhase4CorpusThreeEngineAgreement(t *testing.T) {
 	t.Run("second-stage-typed-failure", func(t *testing.T) {
 		// Second call (index 1, B) fails; only A (op:0) is live on entry to
 		// block:err:1, which releases A and never B (B never completed).
-		assertTypedFailurePathAgrees(t, "acquire_three_fail_second.lang", 2, []int{0}, ":block:err:1")
+		assertTypedFailurePathAgrees(t, "acquire_three_fail_second.schway", 2, []int{0}, ":block:err:1")
 	})
 
 	t.Run("third-stage-typed-failure", func(t *testing.T) {
 		// Third call (index 2, C) fails; A and B (op:0, op:1) are live on
 		// entry to block:err:2, which releases B then A in reverse order.
-		assertTypedFailurePathAgrees(t, "acquire_three_fail_third.lang", 3, []int{0, 1}, ":block:err:2")
+		assertTypedFailurePathAgrees(t, "acquire_three_fail_third.schway", 3, []int{0, 1}, ":block:err:2")
 	})
 
 	t.Run("defect", func(t *testing.T) {
-		program, functionName, err := session.Phase4CheckedProgram(corpus, "defect_terminal.lang")
+		program, functionName, err := session.Phase4CheckedProgram(corpus, "defect_terminal.schway")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "defect_terminal.lang", program, functionName, "Halt", runner, native.ExpectDefect); err != nil {
+		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "defect_terminal.schway", program, functionName, "Halt", runner, native.ExpectDefect); err != nil {
 			t.Fatalf("defect path disagreement: %v", err)
 		}
 	})
 
 	t.Run("nonlocal-exit", func(t *testing.T) {
-		program, functionName, err := session.Phase4CheckedProgram(corpus, "nonlocal_exit_probe.lang")
+		program, functionName, err := session.Phase4CheckedProgram(corpus, "nonlocal_exit_probe.schway")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "nonlocal_exit_probe.lang", program, functionName, "7", runner, native.ExpectDefect); err != nil {
+		if _, err := session.Phase4ThreeEngineDifferential(context.Background(), "nonlocal_exit_probe.schway", program, functionName, "7", runner, native.ExpectDefect); err != nil {
 			requirePhase16M004Refusal(t, err, "foreign")
 			return
 		}
@@ -2465,7 +2465,7 @@ func TestPhase4DifferentialNamesFirstDisagreement(t *testing.T) {
 	disagreeing := honest
 	disagreeing.Outcome = execution.Outcome{Kind: "typed_failure", Value: "OpenFailed"}
 
-	diffErr := session.Phase4CompareThreeEngines("acquire_three_success.lang", honest, disagreeing, honest)
+	diffErr := session.Phase4CompareThreeEngines("acquire_three_success.schway", honest, disagreeing, honest)
 	if diffErr == nil {
 		t.Fatal("expected a disagreement between the interpreter and -O0 documents, got none")
 	}
@@ -2473,7 +2473,7 @@ func TestPhase4DifferentialNamesFirstDisagreement(t *testing.T) {
 	if !errors.As(diffErr, &disagreement) {
 		t.Fatalf("expected a *session.Phase4EngineDisagreement, got %v (%T)", diffErr, diffErr)
 	}
-	if disagreement.Fixture != "acquire_three_success.lang" {
+	if disagreement.Fixture != "acquire_three_success.schway" {
 		t.Fatalf("disagreement did not name the fixture: %+v", disagreement)
 	}
 	if disagreement.EnginePair != "interpreter-vs-O0" {
@@ -2484,7 +2484,7 @@ func TestPhase4DifferentialNamesFirstDisagreement(t *testing.T) {
 	}
 
 	// The honest triple (no mutation) must be reported as agreement.
-	if err := session.Phase4CompareThreeEngines("acquire_three_success.lang", honest, honest, honest); err != nil {
+	if err := session.Phase4CompareThreeEngines("acquire_three_success.schway", honest, honest, honest); err != nil {
 		t.Fatalf("an honest, identical triple must not be reported as a disagreement: %v", err)
 	}
 }
@@ -2493,7 +2493,7 @@ func TestPhase4DifferentialNamesFirstDisagreement(t *testing.T) {
 // (D-04-31): none of Phase 4's declared expected escapes may be presented,
 // anywhere in a Go comment or a fixture's own comment, as covered, closed,
 // resolved, or otherwise no longer a limitation. It scans every .go and
-// .lang file under internal/compiler and testdata/phase4 for a line naming
+// .schway file under internal/compiler and testdata/phase4 for a line naming
 // one of the three declared Phase 4 escapes, and fails if that same line
 // also contains a claim-of-coverage phrase.
 func TestNoCoverageClaimedForNamedResiduals(t *testing.T) {
@@ -2519,7 +2519,7 @@ func TestNoCoverageClaimedForNamedResiduals(t *testing.T) {
 			if info.IsDir() {
 				return nil
 			}
-			if !strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, ".lang") {
+			if !strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, ".schway") {
 				return nil
 			}
 			data, readErr := os.ReadFile(path)

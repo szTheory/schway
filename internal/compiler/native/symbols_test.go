@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // projectRoot resolves the repository root the same way
@@ -28,7 +28,7 @@ func projectRoot() string {
 
 func compiledForeignAcquireOneBinary(t *testing.T) (string, func()) {
 	t.Helper()
-	source, err := os.ReadFile(filepath.Join(projectRoot(), "testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(filepath.Join(projectRoot(), "testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

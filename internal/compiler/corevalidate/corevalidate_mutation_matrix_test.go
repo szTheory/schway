@@ -4,11 +4,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ability"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/ability"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // stage0MutationMatrix records, for TestStage0SummaryMutationMatrix, every
@@ -55,7 +55,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		// disabling that one site's wiring makes the peer signature
 		// disappear for this function entirely, and restoring it brings
 		// the refusal signal (Callable == false) back.
-		program := loadCheckedProgram(t, "phase3", "public_view_multi_arm_omitted.lang")
+		program := loadCheckedProgram(t, "phase3", "public_view_multi_arm_omitted.schway")
 		function := program.Functions[0]
 
 		restore := corevalidate.SetDisableSummaryPeerAtReplayBlocksForTest(true)
@@ -98,7 +98,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		restorePeer := corevalidate.SetPeerCallableForceOverrideForTest(true)
 		defer restorePeer()
 
-		program := loadCheckedProgram(t, "phase07", "clean_but_unpublishable.lang")
+		program := loadCheckedProgram(t, "phase07", "clean_but_unpublishable.schway")
 		function := program.Functions[0]
 		result := corevalidate.Validate(program)
 		peerSignature, ok := result.PeerSignatures()[function.ID]
@@ -124,7 +124,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		// The reverse of fault 4: forcing ONLY the peer's Callable
 		// derivation to true must leave the (unforced) producer refusing,
 		// a real divergence in the opposite direction.
-		program := loadCheckedProgram(t, "phase07", "clean_but_unpublishable.lang")
+		program := loadCheckedProgram(t, "phase07", "clean_but_unpublishable.schway")
 		function := program.Functions[0]
 
 		// Unforced baseline: confirm the peer itself would refuse absent
@@ -132,7 +132,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		// no-op.
 		baseline := corevalidate.Validate(program)
 		if baselineSignature := baseline.PeerSignatures()[function.ID]; baselineSignature.Callable {
-			t.Fatal("expected the unforced peer to refuse (Callable == false) on clean_but_unpublishable.lang")
+			t.Fatal("expected the unforced peer to refuse (Callable == false) on clean_but_unpublishable.schway")
 		}
 
 		restore := corevalidate.SetPeerCallableForceOverrideForTest(true)
@@ -178,7 +178,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 			t.Fatalf("expected the forced peer override to admit the call (corevalidate's OWN refusal disabled independently), got problems: %+v", forced.Problems)
 		}
 		// check's own, SEPARATE refusal on the identical shape
-		// (call_uncallable_callee.lang) is independently proven by
+		// (call_uncallable_callee.schway) is independently proven by
 		// check_test.go's TestCallToNonCallableCalleeRefused -- this
 		// subtest disables ONLY corevalidate's own half, never check's.
 	})
@@ -204,7 +204,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		// checkAdmitsUnderSeam is the literal fact
 		// check_test.go's TestVerifyCallableRefusalSeamAdmitsUncallableCallee
 		// independently proves: with verifyCallableRefusalSeam engaged,
-		// check wrongly admits the identical call_uncallable_callee.lang
+		// check wrongly admits the identical call_uncallable_callee.schway
 		// shape (zero diagnostics) -- check.verifyCallableRefusalSeam is
 		// unexported and unreachable from this package's test binary,
 		// exactly like fault3's producer-side literal above.

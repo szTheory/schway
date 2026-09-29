@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestConformanceUnitCompilesSeparately proves the generated conformance
@@ -18,11 +18,11 @@ import (
 // and is never passed to the link step (native.Runner.CompileConformanceUnit
 // never links at all: it always passes "-c"). It also proves the real
 // production foreign contract's declared Layout genuinely conforms to the
-// frozen native/lang_foreign_resource_private.h, since this is the same
+// frozen native/schway_foreign_resource_private.h, since this is the same
 // mechanism control:foreign.layout_mismatch exercises against a
 // deliberately WRONG fixture.
 func TestConformanceUnitCompilesSeparately(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}

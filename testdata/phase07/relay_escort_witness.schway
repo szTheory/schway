@@ -1,0 +1,77 @@
+// D-04-03's decisive research witness (04-CONTEXT.md), converted to
+// A-normal form per D-07-44: the recorded witness's `escort` passes a
+// NESTED expression as a call argument --
+//
+//   let aliased = relay(borrow mut buffer)
+//
+// -- which D-07-01 has just made ungrammatical: a call's single argument
+// must be the name of an in-scope binding, never a `borrow`/`borrow mut`/
+// `take`/literal/nested-call expression. The conversion binds the
+// exclusive borrow first, THEN passes that binding to the callee, then
+// moves the owner -- exactly the "bind first, pass the binding, then move"
+// rewrite D-07-44 prescribes:
+//
+//   let borrowed = borrow mut buffer   // was the inline `borrow mut buffer`
+//   let aliased = relay(borrowed)      // was `relay(borrow mut buffer)`
+//   let delivered = take buffer        // unchanged
+//   aliased                            // unchanged
+//
+// Equivalence argument: `borrowed` names exactly the same exclusive-borrow
+// operation the original inline expression denoted, evaluated at exactly
+// the same program point (immediately before the call, with no
+// intervening operation that could observe or invalidate it). Naming an
+// expression before using it once, with nothing else scheduled in
+// between, cannot change what is aliased, when the alias is created, or
+// when `buffer`'s ownership is later moved -- the two programs describe
+// the identical sequence of operations under different surface syntax.
+// `relay` itself is unchanged: byte-for-byte the `exclusive_borrow_clean`
+// shape 04-CONTEXT.md names (also `testdata/phase07/
+// clean_but_unpublishable.schway`'s own `relay`, restated here in the
+// `phase07.relay_escort_witness` module namespace since calls resolve only
+// within a single parsed program, D-07-01).
+//
+// D-07-44 (finding, historical): this witness USED TO check CLEAN under
+// Phase 07's rules alone. `check`'s intraprocedural loan-liveness law
+// (computeLoanLastUses) builds its shadow use-chain from each binding's
+// RHS.Source; a "call" binding carries RHS.Arguments, not RHS.Source, so
+// the call at `let aliased = relay(borrowed)` was invisible to that chain
+// as a use of `borrowed` -- the exclusive loan on `buffer` was treated as
+// ending at its own creation point, with no visible use surviving into or
+// past the call, and `take buffer` on the next line was admitted even
+// though `aliased` (the call's own return, standing in for the borrowed
+// view `relay` actually returns) remained live afterward. This was the
+// INTERPROCEDURAL half of D-03-02.
+//
+// CLOSED in Phase 08: `derivePlaceLoans`'s forward canonicalization pass
+// (D-08-07) now consults `relay`'s declared return contract
+// (`-> borrow mut(buffer) Buffer`, Mode == "exclusive") via the in-memory
+// interprocedural summary table, and propagates `buffer`'s loan across the
+// OpCall boundary onto `aliased`. `take buffer` is now refused with
+// `check.interprocedural_loan_liveness`, asserted explicitly by
+// `TestRelayEscortWitnessRefusesInterproceduralLiveness` (check_test.go),
+// which replaces the retired
+// `TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness`.
+//
+// The pre-existing `fn relay` in testdata/phase3/shared_shared_accept.schway
+// (module owned.shared_shared_accept) is a DIFFERENT fixture: an owned
+// take/return with two overlapping SHARED loans, no exclusive borrow, no
+// dangling-alias shape, and it publishes with no problems at all. Do not
+// confuse the two.
+
+module phase07.relay_escort_witness
+
+export {
+  fn escort
+}
+
+fn relay(buffer: Buffer) -> borrow mut(buffer) Buffer {
+  let view = borrow mut buffer
+  view
+}
+
+fn escort(buffer: Buffer) -> borrow mut(buffer) Buffer {
+  let borrowed = borrow mut buffer
+  let aliased = relay(borrowed)
+  let delivered = take buffer
+  aliased
+}

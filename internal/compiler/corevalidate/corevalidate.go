@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 const maxTypeDepth = 64
@@ -152,7 +152,7 @@ func (r Result) LoanEndpoints() map[string][]core.LoanEndpoint {
 }
 
 // PeerSignatures returns corevalidate's own independent (D-07-20/D-07-22)
-// structural re-derivation of every function's lang.interface/1 signature
+// structural re-derivation of every function's schway.interface/1 signature
 // summary, keyed by function ID. This is NOT originvalidate.BuildInterface's
 // output -- it is a materially different, separately-written computation
 // over the SAME checked core.Program, read from the validator's own
@@ -343,7 +343,7 @@ func (v *validator) run() {
 	}
 	if v.program.Schema == core.Schema1 && !requiresSchema1 {
 		if len(v.problems) == 0 {
-			v.problems = append(v.problems, Problem{Code: "core.schema", Detail: "lang.core/1 requires a linear body"})
+			v.problems = append(v.problems, Problem{Code: "core.schema", Detail: "schway.core/1 requires a linear body"})
 		}
 		return
 	}
@@ -358,13 +358,13 @@ func (v *validator) run() {
 		switch {
 		case function.Match != nil && function.Linear != nil:
 			// A match function whose arms carry linear bodies (Phase 3): the
-			// arm-body facts are additive on lang.core/1, exactly like a
+			// arm-body facts are additive on schway.core/1, exactly like a
 			// straight-line linear body, so the same schema requirement
 			// applies. This is the third branch of the body/schema
 			// cross-lock (03-PATTERNS I-7): linear-only requires /1,
 			// match-only requires /0, match-with-arm-bodies also requires
 			// /1.
-			if !v.check(v.program.Schema == core.Schema1, "core.schema", "a match with an arm body requires lang.core/1") {
+			if !v.check(v.program.Schema == core.Schema1, "core.schema", "a match with an arm body requires schway.core/1") {
 				return
 			}
 			types, places, ok := v.matchBranchStructural(function, dataNames)
@@ -373,7 +373,7 @@ func (v *validator) run() {
 			}
 			pending = append(pending, pendingReplayEntry{function: function, types: types, places: places})
 		case function.Linear != nil:
-			if !v.check(v.program.Schema == core.Schema1, "core.schema", "linear body requires lang.core/1") {
+			if !v.check(v.program.Schema == core.Schema1, "core.schema", "linear body requires schway.core/1") {
 				return
 			}
 			types, places, ok := v.linearStructural(function)
@@ -382,7 +382,7 @@ func (v *validator) run() {
 			}
 			pending = append(pending, pendingReplayEntry{function: function, types: types, places: places})
 		default:
-			if !v.check(v.program.Schema == core.Schema || v.program.Schema == core.Schema1, "core.schema", "match body requires lang.core/0 or lang.core/1") || !v.match(function, dataNames) {
+			if !v.check(v.program.Schema == core.Schema || v.program.Schema == core.Schema1, "core.schema", "match body requires schway.core/0 or schway.core/1") || !v.match(function, dataNames) {
 				return
 			}
 		}
@@ -823,7 +823,7 @@ var (
 // "shared verbatim as an inert string constant, never a shared
 // derivation" posture core.CallGraphCycle already holds across these two
 // packages' cycle refusals.
-const closureDigestDomainSeparator = "lang.closure_digest/1\x00"
+const closureDigestDomainSeparator = "schway.closure_digest/1\x00"
 
 // peerCalleeDigestPair mirrors originvalidate's calleeDigestPair
 // field-for-field (same JSON tags, same declaration order) so
@@ -1043,7 +1043,7 @@ func (v *validator) computedScrutineeDefinedInEntry(function *core.Function, pla
 }
 
 func (v *validator) match(function *core.Function, dataNames map[string]core.DataType) bool {
-	// D-07-25: a pure lang.core/0 match function (no Linear body at all)
+	// D-07-25: a pure schway.core/0 match function (no Linear body at all)
 	// never reaches replayStraightLine/replayBlocks, but
 	// originvalidate.BuildInterface still emits a FunctionSignature for it
 	// (Callable trivially true: RecomputeOrigin reports not-ok when
@@ -1363,16 +1363,16 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 	switch contract.Mode {
 	case "acquire":
 		target, targetOK := places[operation.TargetID]
-		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "lang_file_byte_acquire" || contract.ABIType != "lang_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "lang_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_acquire" || contract.ABIType != "schway_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	case "borrow":
 		target, targetOK := places[operation.TargetID]
-		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "lang_file_byte_use" || contract.ABIType != "lang_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_use" || contract.ABIType != "schway_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	case "consume":
-		if operation.Kind != core.OpRelease || contract.Symbol != "lang_file_byte_release" || contract.ABIType != "lang_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
+		if operation.Kind != core.OpRelease || contract.Symbol != "schway_file_byte_release" || contract.ABIType != "schway_file_byte_release_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "Unit" || contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator || operation.TargetID != "" {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	default:
@@ -2561,7 +2561,7 @@ var SummaryPeerControls = []string{
 }
 
 // derivePeerSignature is corevalidate's independent (D-07-20/D-07-22)
-// structural re-derivation of one function's lang.interface/1 signature
+// structural re-derivation of one function's schway.interface/1 signature
 // summary. It names what originvalidate.BuildInterface does (strips every
 // function body and packages the producer's own already-proven facts into a
 // summary) and the materially different mechanism this one uses instead: it
@@ -3262,7 +3262,7 @@ func (v *validator) checkCallTypeContract(callee core.Function, source core.Plac
 // SEPARATE signal this peer invented). Every other (tracked) acquisition
 // must be either (a) released by SOME OpRelease anywhere in the function,
 // or (b) ownership-transferred OUT via a terminating OpReturn --
-// foreign_acquire_one.lang's own `handle` shape, where the acquired value
+// foreign_acquire_one.schway's own `handle` shape, where the acquired value
 // is returned directly and needs no release at all, since the resource
 // becomes the CALLER's obligation the instant it crosses the return
 // boundary. (b) is traced forward through a pure Move/Copy chain, seeded
@@ -3273,7 +3273,7 @@ func (v *validator) checkCallTypeContract(callee core.Function, source core.Plac
 // (a) nor (b) is reported false: it is genuinely abandoned, live in this
 // frame at every one of its own terminating returns.
 //
-// A function with no Linear body at all (a pure lang.core/0 match function)
+// A function with no Linear body at all (a pure schway.core/0 match function)
 // trivially drains (it acquires nothing), and a straight-line body with no
 // OpForeignCall at all is likewise trivially true, matching every
 // pre-Phase-4 function's own admitted shape (D-04-23: this invariant
@@ -3941,7 +3941,7 @@ func cloneProgram(program core.Program) core.Program {
 // three independent derivations.
 // ---------------------------------------------------------------------
 
-// AttributeClaim is corevalidate's OWN local decoding of one lang.foreign/0
+// AttributeClaim is corevalidate's OWN local decoding of one schway.foreign/0
 // sidecar emitted_attributes entry (D-05-04/D-12): declared here, never
 // imported from cgen.EmittedAttribute, so this validator's refusal logic
 // never shares a type -- let alone a helper -- with the producer it audits.
@@ -3956,7 +3956,7 @@ type AttributeClaim struct {
 // entry's attribute name is not one D-05-01 proves justifiable, or its
 // claimed justification does not match the independently re-derived one.
 // Code is always "core.attribute_unjustified" (D-05-03b) -- joining the
-// lang.diagnostic/1 taxonomy without moving any existing ID (D-05-39).
+// schway.diagnostic/1 taxonomy without moving any existing ID (D-05-39).
 type AttributeUnjustifiedError struct {
 	Code   string
 	Detail string

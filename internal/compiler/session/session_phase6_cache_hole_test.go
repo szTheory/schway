@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // TestQ02StaleCgenServesReusedArtifact is Phase 11's Q-02 pre-planning
@@ -21,7 +21,7 @@ import (
 // source is not among cache.DeclaredInputNames()'s seven declared inputs --
 // actually let a stale artifact, compiled from OLD cgen output, get served
 // as the artifact for a run whose cgen output has since changed, for an
-// UNCHANGED .lang fixture? This decides whether plan 11-07 ships a real
+// UNCHANGED .schway fixture? This decides whether plan 11-07 ships a real
 // eighth declared input or withdraws the claim.
 //
 // This test asserts exactly ONE of the two possible outcomes, never a
@@ -48,7 +48,7 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 
 	runner := native.DefaultRunner()
 
-	source, err := os.ReadFile(filepath.Join(corpus, "toggle.lang"))
+	source, err := os.ReadFile(filepath.Join(corpus, "toggle.schway"))
 	if err != nil {
 		t.Fatalf("reading fixture source: %v", err)
 	}
@@ -80,13 +80,13 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 		clangPath = "clang"
 	}
 
-	// Step 2: simulate cgen CHANGING for the same unchanged .lang source --
+	// Step 2: simulate cgen CHANGING for the same unchanged .schway source --
 	// without editing cgen's own source files -- by injecting a
 	// distinguishable comment into the C string a hypothetical new cgen
 	// build would emit, then compiling THAT string directly via
 	// phase6CompileBinary (the same compile step the production lane
 	// uses). This produces a genuinely different binary from the same
-	// .lang fixture, standing in for "cgen was rewritten."
+	// .schway fixture, standing in for "cgen was rewritten."
 	checked := checkedProgramForQ02(t, source)
 	realCSource, err := cgen.EmitNative(checked)
 	if err != nil {
@@ -110,7 +110,7 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 	}
 
 	// Step 3: re-derive phase6ArtifactSpec's Key for the SAME unchanged
-	// .lang source and the SAME clangPath -- exactly the inputs Consult
+	// .schway source and the SAME clangPath -- exactly the inputs Consult
 	// would see on a second real invocation after "cgen changed" -- and
 	// consult the cache again.
 	secondSpec := phase6ArtifactSpec(source, clangPath)
@@ -121,7 +121,7 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 
 	// Q-02 BRANCH A (hole reproduces): the key stayed unchanged and the
 	// cache reported the artifact reused, even though the C source cgen
-	// would now emit for this exact unchanged .lang fixture has since
+	// would now emit for this exact unchanged .schway fixture has since
 	// changed. This is a single-outcome assertion, not a disjunction: if a
 	// future run ever observes the key moving or the status flipping away
 	// from reused, this assertion goes red -- naming the input that moved
@@ -129,7 +129,7 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 	// PHASE-11-DEBT.md's recorded verdict and plan 11-07's scope must be
 	// revisited.
 	if secondOutcome.Key.ID != firstOutcome.Key.ID {
-		t.Fatalf("Q-02 verdict changed: the cache key moved (input %q changed) even though the .lang fixture and clangPath were unchanged -- this test asserted BRANCH A (hole reproduces) at authoring time; update PHASE-11-DEBT.md and re-evaluate plan 11-07's scope", diffInputsForQ02(firstOutcome.Key.Inputs, secondOutcome.Key.Inputs))
+		t.Fatalf("Q-02 verdict changed: the cache key moved (input %q changed) even though the .schway fixture and clangPath were unchanged -- this test asserted BRANCH A (hole reproduces) at authoring time; update PHASE-11-DEBT.md and re-evaluate plan 11-07's scope", diffInputsForQ02(firstOutcome.Key.Inputs, secondOutcome.Key.Inputs))
 	}
 	if secondOutcome.Status != cache.StatusArtifactReused {
 		t.Fatalf("Q-02 verdict changed: cache status was %q, not reused, for an unchanged declared-input key -- this test asserted BRANCH A (hole reproduces) at authoring time; update PHASE-11-DEBT.md and re-evaluate plan 11-07's scope", secondOutcome.Status)
@@ -153,7 +153,7 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 func TestQ02DeclaredInputNamesStillSevenNoCgen(t *testing.T) {
 	names := cache.DeclaredInputNames()
 	want := []string{
-		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
+		"fixture_source", "build_flags", "cschway_identity", "runtime_identity",
 		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
 	}
 	if len(names) != 8 {

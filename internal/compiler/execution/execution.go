@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	Schema0 = "lang.execution/0"
-	Schema1 = "lang.execution/1"
-	Schema2 = "lang.execution/2"
+	Schema0 = "schway.execution/0"
+	Schema1 = "schway.execution/1"
+	Schema2 = "schway.execution/2"
 
 	// MaxApplicationEvidenceBytes bounds a same-run application capture and
 	// its published report independently from conformance execution documents.

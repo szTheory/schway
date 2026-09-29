@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // coordinatedLieSourcePath/coordinatedLieCorePath name D-05-30's adversarial
@@ -20,7 +20,7 @@ import (
 // outcome. Neither file is derived from the other -- that absence of a real
 // translation step is the whole point of the demonstration.
 func coordinatedLieSourcePath() string {
-	return testsupport.ProjectPath("testdata", "phase5", "coordinated_lie.lang")
+	return testsupport.ProjectPath("testdata", "phase5", "coordinated_lie.schway")
 }
 
 func coordinatedLieCorePath() string {
@@ -52,20 +52,20 @@ func checkCoordinatedLieSource(t *testing.T) core.Program {
 	t.Helper()
 	source, err := os.ReadFile(coordinatedLieSourcePath())
 	if err != nil {
-		t.Fatalf("reading coordinated_lie.lang: %v", err)
+		t.Fatalf("reading coordinated_lie.schway: %v", err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("coordinated_lie.lang: unexpected diagnostics: %+v", checked.Diagnostics)
+		t.Fatalf("coordinated_lie.schway: unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) != 0 {
-		t.Fatalf("coordinated_lie.lang: originvalidate.ValidatePublished rejected the source-derived program: %+v", problems)
+		t.Fatalf("coordinated_lie.schway: originvalidate.ValidatePublished rejected the source-derived program: %+v", problems)
 	}
 	return checked.Program
 }
 
 // TestCoordinatedLieArtifactsBothValidate is D-05-30's reachability
-// demonstration: coordinated_lie.lang independently passes check and
+// demonstration: coordinated_lie.schway independently passes check and
 // originvalidate.ValidatePublished on its own terms, coordinated_lie.core.json
 // independently passes corevalidate.Validate on ITS own terms, and the two
 // artifacts -- which name the identical module/function identity -- assert
@@ -85,7 +85,7 @@ func TestCoordinatedLieArtifactsBothValidate(t *testing.T) {
 	}
 
 	if len(sourceProgram.Functions) != 1 || sourceProgram.Functions[0].Linear == nil || len(sourceProgram.Functions[0].Linear.Operations) == 0 {
-		t.Fatalf("coordinated_lie.lang: expected exactly one straight-line function with at least one operation, got %+v", sourceProgram.Functions)
+		t.Fatalf("coordinated_lie.schway: expected exactly one straight-line function with at least one operation, got %+v", sourceProgram.Functions)
 	}
 	if len(coreProgram.Functions) != 1 || coreProgram.Functions[0].Linear == nil || len(coreProgram.Functions[0].Linear.Operations) == 0 {
 		t.Fatalf("coordinated_lie.core.json: expected exactly one straight-line function with at least one operation, got %+v", coreProgram.Functions)
@@ -100,7 +100,7 @@ func TestCoordinatedLieArtifactsBothValidate(t *testing.T) {
 	sourceClaim := sourceProgram.Functions[0].Linear.Operations[0].Kind
 	coreClaim := coreProgram.Functions[0].Linear.Operations[0].Kind
 	if sourceClaim != core.OpMove {
-		t.Fatalf("expected coordinated_lie.lang's own checker-derived claim to be a move (full ownership transfer), got %q", sourceClaim)
+		t.Fatalf("expected coordinated_lie.schway's own checker-derived claim to be a move (full ownership transfer), got %q", sourceClaim)
 	}
 	if coreClaim != core.OpBorrowShared {
 		t.Fatalf("expected coordinated_lie.core.json's hand-authored claim to be a shared borrow (never a move), got %q", coreClaim)

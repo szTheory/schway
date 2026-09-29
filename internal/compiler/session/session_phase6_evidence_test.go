@@ -8,17 +8,17 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/evidence"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 // phase6EvidenceFixture builds a real, clean evidence manifest+source pair
-// from the pure_match corpus's own toggle.lang, and writes both to files
+// from the pure_match corpus's own toggle.schway, and writes both to files
 // under t.TempDir(), returning their paths.
 func phase6EvidenceFixture(t *testing.T) (manifestPath, sourcePath string, manifest evidence.Manifest, source []byte) {
 	t.Helper()
-	source, err := os.ReadFile(nat03CorpusPath("testdata/phase1/toggle.lang"))
+	source, err := os.ReadFile(nat03CorpusPath("testdata/phase1/toggle.schway"))
 	if err != nil {
 		t.Fatalf("reading fixture source: %v", err)
 	}
@@ -39,7 +39,7 @@ func phase6EvidenceFixture(t *testing.T) (manifestPath, sourcePath string, manif
 
 	dir := t.TempDir()
 	manifestPath = filepath.Join(dir, "manifest.json")
-	sourcePath = filepath.Join(dir, "toggle.lang")
+	sourcePath = filepath.Join(dir, "toggle.schway")
 	if err := os.WriteFile(manifestPath, product.ManifestBytes, 0o644); err != nil {
 		t.Fatalf("WriteFile manifest: %v", err)
 	}

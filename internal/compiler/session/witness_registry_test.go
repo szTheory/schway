@@ -26,11 +26,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 const phase16M004Witness = "probe:TestPhase16M004CorpusRefusal"
@@ -147,16 +147,16 @@ func TestPhase16M004ProvenanceRegistryRejectsFaults(t *testing.T) {
 			r.Entries[firstPhase16RefusalRow(r)].Classification = phase16AdmittedDynamic
 		}},
 		{"Phase 11 fixture substitution", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
-			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].Fixture = "testdata/phase11/substituted.lang"
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.schway")].Fixture = "testdata/phase11/substituted.schway"
 		}},
 		{"Phase 11 canonical program digest", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
-			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].ProgramSHA256 = strings.Repeat("0", 64)
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.schway")].ProgramSHA256 = strings.Repeat("0", 64)
 		}},
 		{"Phase 11 artifact digest", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
-			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].ArtifactSHA256 = strings.Repeat("0", 64)
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.schway")].ArtifactSHA256 = strings.Repeat("0", 64)
 		}},
 		{"Phase 11 exact refusal", func(_ *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, f *phase16FileFrozenEvidenceLedger) {
-			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.lang")].Refusal = "different emitter error"
+			f.Records[phase11FileRecordIndex(f, "testdata/phase11/multi_function_gate_corpus.schway")].Refusal = "different emitter error"
 		}},
 		{"Phase 11 row classification", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
 			r.Entries[firstPhase11RefusalRow(r)].Classification = phase16AdmittedDynamic
@@ -165,7 +165,7 @@ func TestPhase16M004ProvenanceRegistryRejectsFaults(t *testing.T) {
 			r.Entries[firstPhase11RefusalRow(r)].Witness = "probe:TestNoLongerCurrent"
 		}},
 		{"Phase 11 fixture mapping", func(r *phase16ConsumerRegistry, _ *phase16LegacyEvidenceLedger, _ *phase16FileFrozenEvidenceLedger) {
-			r.Entries[firstPhase11RefusalRow(r)].EvidenceFixtures = []string{"testdata/phase11/multi_function_gate_corpus.lang"}
+			r.Entries[firstPhase11RefusalRow(r)].EvidenceFixtures = []string{"testdata/phase11/multi_function_gate_corpus.schway"}
 		}},
 	} {
 		t.Run(mutate.name, func(t *testing.T) {
@@ -265,7 +265,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 		if row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
 			ambiguousEntryRowFound = row.Classification == phase16TypedRefusal && row.Witness == "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" && len(row.EvidenceFixtures) == 0
 		}
-		if strings.HasPrefix(row.Call, "internal/compiler/session/session_phase11_gate_test.go:EmitNative:") && row.Classification == phase16RefusalWithFrozen && row.Witness == "probe:TestPhase11ByPointerRefusalFirstEvidence" && reflect.DeepEqual(row.EvidenceFixtures, []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase16/historical/phase11_gate_n_two.fixture"}) {
+		if strings.HasPrefix(row.Call, "internal/compiler/session/session_phase11_gate_test.go:EmitNative:") && row.Classification == phase16RefusalWithFrozen && row.Witness == "probe:TestPhase11ByPointerRefusalFirstEvidence" && reflect.DeepEqual(row.EvidenceFixtures, []string{"testdata/phase11/multi_function_gate_corpus.schway", "testdata/phase16/historical/phase11_gate_n_two.fixture"}) {
 			phase11GateRowFound = true
 		}
 		if row.Classification == phase16TypedRefusal && row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
@@ -361,7 +361,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 			problems = append(problems, "Phase 11 refusal row maps missing frozen evidence "+fixture)
 		}
 	}
-	wantPhase11Fixtures := []string{"testdata/phase11/multi_function_gate_corpus.lang", "testdata/phase16/historical/phase11_gate_n_two.fixture"}
+	wantPhase11Fixtures := []string{"testdata/phase11/multi_function_gate_corpus.schway", "testdata/phase16/historical/phase11_gate_n_two.fixture"}
 	for _, fixture := range wantPhase11Fixtures {
 		if !phase11MappedFixtures[fixture] {
 			problems = append(problems, "Phase 11 frozen evidence record is not consumed "+fixture)
@@ -386,7 +386,7 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 // the first setting that can introduce a declaration its declarer cannot
 // prove locally.
 func TestPhase17B1RequiresUnverifiableDeclaredContract(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -466,13 +466,13 @@ func TestD1243ControlIsUnconstructible(t *testing.T) {
 	restore := cgen.SetPayloadSlotSwapForTest(true)
 	defer restore()
 
-	program := checkedProgram(t, "testdata", "phase12", "payload_tracer.lang")
+	program := checkedProgram(t, "testdata", "phase12", "payload_tracer.schway")
 	engines := runFunctionOkExecutions(t, ctx, program, "identity", runner)
 	injected := cgen.PayloadSlotSwapInjectedWriteCount()
 	if injected < 1 {
-		t.Fatalf("D-12-43 probe: the fault-injection seam injected no wrong-slot write (count=%d), so this run proves nothing about the control -- check whether payload_tracer.lang's data type still declares two payload-carrying alternatives", injected)
+		t.Fatalf("D-12-43 probe: the fault-injection seam injected no wrong-slot write (count=%d), so this run proves nothing about the control -- check whether payload_tracer.schway's data type still declares two payload-carrying alternatives", injected)
 	}
-	compareErr := session.Phase5CompareEngines("payload_tracer.lang(D-12-43 probe)", engines)
+	compareErr := session.Phase5CompareEngines("payload_tracer.schway(D-12-43 probe)", engines)
 	disagreement, ok := compareErr.(*session.Phase5EngineDisagreement)
 	if !ok || disagreement.Axis != session.AxisTerminalOutcome {
 		t.Fatalf("D-12-43 wrong-slot control error = %v, want exact %s disagreement", compareErr, session.AxisTerminalOutcome)
@@ -485,7 +485,7 @@ func TestD1243ControlIsUnconstructible(t *testing.T) {
 // not prove any LTO axis movement, because the direct C still has no
 // cross-translation-unit boundary for -flto to exploit.
 func TestLTOInertnessOnMultiFunctionEmission(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "multi_function_match_refusal.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "multi_function_match_refusal.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -500,7 +500,7 @@ func TestLTOInertnessOnMultiFunctionEmission(t *testing.T) {
 	if emitErr != nil {
 		t.Fatalf("Phase 16 match admission regressed: %v", emitErr)
 	}
-	if !strings.Contains(generated, "lang.execution/2") {
+	if !strings.Contains(generated, "schway.execution/2") {
 		t.Fatal("Phase 16 match admission did not emit the schema-2 one-TU program")
 	}
 }
@@ -1108,7 +1108,7 @@ func TestSuppressionWitnessGuardIsNotInert(t *testing.T) {
 	})
 
 	t.Run("neutralized probe produces an unexpected pass", func(t *testing.T) {
-		unmodifiedSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "blame_unreachable_admission_refusal.lang"))
+		unmodifiedSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase14", "blame_unreachable_admission_refusal.schway"))
 		if err != nil {
 			t.Fatal(err)
 		}

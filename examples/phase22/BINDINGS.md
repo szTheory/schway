@@ -3,15 +3,15 @@
 From the repository root, build the CLI and retained identity application:
 
 ```sh
-go build -o /tmp/lang ./cmd/lang
-/tmp/lang build examples/phase22/identity.lang \
+go build -o /tmp/schway ./cmd/schway
+/tmp/schway build examples/phase22/identity.schway \
   --manifest examples/phase22/identity.bindings.json --output /tmp/identity
-/tmp/lang app run /tmp/identity -- 7
-/tmp/lang app run /tmp/identity -- 42
+/tmp/schway app run /tmp/identity -- 7
+/tmp/schway app run /tmp/identity -- 42
 ```
 
 The two runs print `7` and `42`, each followed by a newline. Build launches
-Clang only. Run validates the adjacent `/tmp/identity.lang-build.json` receipt
+Clang only. Run validates the adjacent `/tmp/identity.schway-build.json` receipt
 and starts the selected application once. Both retained files may be moved
 together; C intermediates and the original checkout are unnecessary at run time.
 `--json` on build prints the receipt. `--manifest` and `--output` may occur in
@@ -23,7 +23,7 @@ emitter refusals remain in force. Successful compilation/linking proves that
 the declared header types agree and the symbol resolves; it does not prove
 arbitrary C behavior, physical cleanup, ownership, or implementation ABI safety.
 
-## Manifest contract: `lang.local-c/1`
+## Manifest contract: `schway.local-c/1`
 
 Every field shown in `identity.bindings.json` is required. Unknown fields,
 case aliases, duplicate JSON keys (including nested objects), duplicate paths
@@ -63,7 +63,7 @@ resolution. After resolution the exact captured bytes are compiled and hashed.
 
 ## Build and evidence identity
 
-The adjacent `lang.app-build/1` receipt now contains `input_id`, `build_id`,
+The adjacent `schway.app-build/1` receipt now contains `input_id`, `build_id`,
 `identity`, the canonical `bindings`, the artifact digest and closure status.
 SHA-256 hashes a length-framed schema domain and canonical JSON fields:
 
@@ -105,7 +105,7 @@ link is an execution-verification result.
 ## Executable controls
 
 ```sh
-GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native \
+GOCACHE=/tmp/ai-schway-verification-gocache go test ./internal/compiler/native \
   -run '^TestPhase22(Bindings|BuildIdentity|Relocated)' -count=1 -v
 ```
 

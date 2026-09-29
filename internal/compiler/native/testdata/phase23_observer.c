@@ -24,7 +24,7 @@ static void ensure_finalizer(void) {
 static FILE *receipt_file(void) {
   const char *path;
   if (receipt != NULL) return receipt;
-  path = getenv("LANG_PHASE23_OBSERVER_PATH");
+  path = getenv("SCHWAY_PHASE23_OBSERVER_PATH");
   if (path == NULL || path[0] == '\0') {
     observer_rejected = 1;
     return NULL;

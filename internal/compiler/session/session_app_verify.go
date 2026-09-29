@@ -15,18 +15,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 const (
-	ReplayCasesSchema        = "lang.replay-cases/1"
-	ApplicationVerifySchema  = "lang.app-verification/1"
+	ReplayCasesSchema        = "schway.replay-cases/1"
+	ApplicationVerifySchema  = "schway.app-verification/1"
 	MaxReplayCasesBytes      = 64 * 1024
 	MaxReplayCaseCount       = 16
 	ReplayCaseSource         = "source"
@@ -474,7 +474,7 @@ func writeApplicationVerificationReport(path string, report ReplayReport) error 
 		return fmt.Errorf("application verification report exceeds %d bytes", MaxReplayCasesBytes)
 	}
 	directory := filepath.Dir(path)
-	temporary, err := os.CreateTemp(directory, ".lang-app-verification-*")
+	temporary, err := os.CreateTemp(directory, ".schway-app-verification-*")
 	if err != nil {
 		return fmt.Errorf("create verification report: %w", err)
 	}

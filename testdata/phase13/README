@@ -1,21 +1,21 @@
 Phase 13 interprocedural-defect corpus
 =======================================
 
-This directory holds Phase 13's own `.lang` fixtures for the agent-repair
+This directory holds Phase 13's own `.schway` fixtures for the agent-repair
 loop over interprocedural defect classes (DX-07). It carries forward the
 `heldout_`/`derivation_` prefix contract `testdata/phase6/README` established
 for Phase 6's defect-injection corpus:
 
-- `derivation_*.lang` -- the ONLY fixtures anyone may consult when hand-
+- `derivation_*.schway` -- the ONLY fixtures anyone may consult when hand-
   deriving a repair's kind->edit mapping, or when tuning a repair emission
   site against a real program. This plan's own end-to-end verification runs
-  directly against `derivation_interprocedural_loan_defect.lang`.
-- `heldout_*.lang` -- reserved for a future plan's CI-gate corpus, scored
+  directly against `derivation_interprocedural_loan_defect.schway`.
+- `heldout_*.schway` -- reserved for a future plan's CI-gate corpus, scored
   only by the repair driver, never consulted by hand when deriving a
   repair's edit.
 
-No file in this directory may be named `heldout_match_defect.lang` -- that
-exact name is `cmd/lang/main.go`'s `isPhase6Corpus` dispatch marker
-(`os.Stat(filepath.Join(corpus, "heldout_match_defect.lang"))`), and creating
+No file in this directory may be named `heldout_match_defect.schway` -- that
+exact name is `cmd/schway/main.go`'s `isPhase6Corpus` dispatch marker
+(`os.Stat(filepath.Join(corpus, "heldout_match_defect.schway"))`), and creating
 it here would cause `testdata/phase13` to be misrouted as a Phase 6 corpus by
 any tool that walks `testdata/` looking for that marker.

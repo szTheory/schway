@@ -17,14 +17,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // originValidateForbiddenImports is D-10-16's closed forbidden set for
@@ -123,7 +123,7 @@ const goListDepsTimeout = 2 * time.Minute
 
 func phase23LocalOwnerProgram(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +270,7 @@ func phase23OwnerMutations() []struct {
 			if index < 0 {
 				return false
 			}
-			program.Functions[0].Linear.Operations[index].Foreign.Symbol = "lang_file_byte_acquire"
+			program.Functions[0].Linear.Operations[index].Foreign.Symbol = "schway_file_byte_acquire"
 			return true
 		}},
 		{"wrong use ABI", func(program *core.Program) bool {
@@ -340,7 +340,7 @@ func transitiveImportsViolation(t *testing.T, forbidden []string) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), goListDepsTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/codename-lang/lang/internal/compiler/originvalidate")
+	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "github.com/szTheory/schway/internal/compiler/originvalidate")
 	cmd.Dir = testsupport.ProjectPath()
 	stdout := &boundedGoListWriter{}
 	cmd.Stdout = stdout
@@ -405,9 +405,9 @@ func TestOriginValidateImportsNeitherCheckNorAst(t *testing.T) {
 // anything.
 func TestTransitiveImportsGuardCanFail(t *testing.T) {
 	synthetic := []string{
-		"github.com/codename-lang/lang/internal/compiler/originvalidate",
-		"github.com/codename-lang/lang/internal/compiler/core",
-		"github.com/codename-lang/lang/internal/compiler/corevalidate",
+		"github.com/szTheory/schway/internal/compiler/originvalidate",
+		"github.com/szTheory/schway/internal/compiler/core",
+		"github.com/szTheory/schway/internal/compiler/corevalidate",
 	}
 	if got := transitiveImportViolation(synthetic, originValidateForbiddenImports); got == "" {
 		t.Fatal("expected the synthetic dependency list's forbidden corevalidate entry to be flagged")
@@ -565,7 +565,7 @@ func TestPhase17OriginPeerIndependenceBoundary(t *testing.T) {
 	}
 
 	seeded, err := parser.ParseFile(token.NewFileSet(), "seed.go", `package originvalidate
-import _ "github.com/codename-lang/lang/internal/compiler/corevalidate"
+import _ "github.com/szTheory/schway/internal/compiler/corevalidate"
 `, parser.ImportsOnly)
 	if err != nil {
 		t.Fatal(err)
@@ -587,7 +587,7 @@ func phase17OriginForbiddenImport(file *ast.File) string {
 
 func phase17OriginProgram(t testing.TB) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase17", "return_type_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -636,7 +636,7 @@ func honestProgram(t testing.TB, fixture string) core.Program {
 // construct this shape itself, exactly as OV-02-01's mutation-kill precedent
 // establishes for a different fact.
 func TestOriginUnderstatedRejected(t *testing.T) {
-	program := honestProgram(t, "public_view_understated.lang")
+	program := honestProgram(t, "public_view_understated.schway")
 	program.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{}, Access: "shared"}
 	problems := originvalidate.ValidatePublished(program)
 	if len(problems) != 1 || problems[0].Code != "core.origin_understated" {
@@ -648,7 +648,7 @@ func TestOriginUnderstatedRejected(t *testing.T) {
 // "impossible" defect: a declared access mode the body cannot produce is
 // rejected as core.origin_access_mismatch by the same recomputation.
 func TestOriginAccessMismatchRejected(t *testing.T) {
-	program := honestProgram(t, "public_view_impossible.lang")
+	program := honestProgram(t, "public_view_impossible.schway")
 	program.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"buffer"}, Access: "exclusive"}
 	problems := originvalidate.ValidatePublished(program)
 	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
@@ -665,7 +665,7 @@ func TestOriginAccessMismatchRejected(t *testing.T) {
 // RecomputeOrigin's own body-derived answer must still be correct in
 // isolation.
 func TestMixedAccessChainDerivesShared(t *testing.T) {
-	program := honestProgram(t, "public_view_mixed_access.lang")
+	program := honestProgram(t, "public_view_mixed_access.schway")
 	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0], nil)
 	if !ok {
 		t.Fatalf("expected RecomputeOrigin to succeed")
@@ -691,7 +691,7 @@ func TestMixedAccessChainDerivesShared(t *testing.T) {
 // once overridden by a closer exclusive hop) or rejected with a named code —
 // never silently accepted as matching a declaration it does not support.
 func TestMixedAccessChainRejectedAsAccessMismatch(t *testing.T) {
-	program := honestProgram(t, "public_view_mixed_access.lang")
+	program := honestProgram(t, "public_view_mixed_access.schway")
 	problems := originvalidate.ValidatePublished(program)
 	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
 		t.Fatalf("expected exactly core.origin_access_mismatch, got %+v", problems)
@@ -735,7 +735,7 @@ fn view(buffer: Buffer) -> borrow mut(buffer) Buffer {
 // core.origin_omitted — the category ValidatePublished's old
 // PublicOrigin == nil short-circuit made definitionally unreachable.
 func TestOmittedOriginRejected(t *testing.T) {
-	program := honestOmittedProgram(t, "public_view_omitted.lang")
+	program := honestOmittedProgram(t, "public_view_omitted.schway")
 	problems := originvalidate.ValidatePublished(program)
 	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
 		t.Fatalf("expected exactly core.origin_omitted, got %+v", problems)
@@ -749,11 +749,11 @@ func TestOmittedOriginRejected(t *testing.T) {
 // non-over-firing half of the same behavior: a function with no declared
 // origin whose return is NOT borrow-derived (RecomputeOrigin reports
 // not-ok) must still publish with no problems, whether the function is
-// straight-line (shared_shared_accept.lang, an owned take/return) or
-// match-bodied (borrowed_view.lang, a branch function whose every arm
+// straight-line (shared_shared_accept.schway, an owned take/return) or
+// match-bodied (borrowed_view.schway, a branch function whose every arm
 // returns an owned take).
 func TestOwnedReturnWithNoOriginStillPublishes(t *testing.T) {
-	for _, fixture := range []string{"shared_shared_accept.lang", "borrowed_view.lang"} {
+	for _, fixture := range []string{"shared_shared_accept.schway", "borrowed_view.schway"} {
 		program := honestOmittedProgram(t, fixture)
 		if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
 			t.Fatalf("%s: expected no problems for an owned return with no declared origin, got %+v", fixture, problems)
@@ -766,11 +766,11 @@ func TestOwnedReturnWithNoOriginStillPublishes(t *testing.T) {
 // exclusive_borrow_clean / relay source still returns zero diagnostics,
 // while ValidatePublished on that same checked program now returns
 // core.origin_omitted — the gate lives on the publication path only. 07-02
-// D-07-44: the source now lives at testdata/phase07/clean_but_unpublishable.lang,
+// D-07-44: the source now lives at testdata/phase07/clean_but_unpublishable.schway,
 // the single extracted source of truth check_exclusive_test.go also reads,
 // rather than a third embedded copy here.
 func TestExclusiveBorrowCleanShapeChecksButCannotPublish(t *testing.T) {
-	cleanSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+	cleanSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -786,8 +786,8 @@ func TestExclusiveBorrowCleanShapeChecksButCannotPublish(t *testing.T) {
 
 // honestOmittedProgram is like honestProgram but does NOT assert a non-nil
 // PublicOrigin — it is used for fixtures that deliberately declare none
-// (public_view_omitted.lang) or whose shape never carries one
-// (match-bodied borrowed_view.lang).
+// (public_view_omitted.schway) or whose shape never carries one
+// (match-bodied borrowed_view.schway).
 func honestOmittedProgram(t testing.TB, fixture string) core.Program {
 	t.Helper()
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", fixture))
@@ -807,7 +807,7 @@ func honestOmittedProgram(t testing.TB, fixture string) core.Program {
 // exactly one element; the multi-arm fixture collapses to exactly two, one
 // per arm, and only the second (the borrow-returning arm) is borrow-derived.
 func TestPerReturnOriginsCoverEveryArm(t *testing.T) {
-	straightLine := honestProgram(t, "public_view.lang")
+	straightLine := honestProgram(t, "public_view.schway")
 	straightOrigins := originvalidate.RecomputeOriginPerReturn(straightLine.Functions[0], nil)
 	if len(straightOrigins) != 1 {
 		t.Fatalf("expected exactly 1 per-return origin for a straight-line function, got %+v", straightOrigins)
@@ -816,7 +816,7 @@ func TestPerReturnOriginsCoverEveryArm(t *testing.T) {
 		t.Fatalf("expected the straight-line origin to be shared-derived, got %+v", straightOrigins[0])
 	}
 
-	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.lang")
+	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.schway")
 	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 	if len(origins) != 2 {
 		t.Fatalf("expected exactly 2 per-return origins (one per arm), got %+v", origins)
@@ -874,7 +874,7 @@ func TestPhase19ConstantOriginStopsAtRoot(t *testing.T) {
 // declare one), must be refused publication with core.origin_omitted — not
 // silently accepted because RecomputeOrigin only looked at the first arm.
 func TestMultiArmOmittedOriginRejected(t *testing.T) {
-	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.lang")
+	program := honestOmittedProgram(t, "public_view_multi_arm_omitted.schway")
 	paths, access, ok := originvalidate.RecomputeOrigin(program.Functions[0], nil)
 	if !ok {
 		t.Fatalf("expected RecomputeOrigin to succeed on the multi-arm leak")
@@ -895,7 +895,7 @@ func TestMultiArmOmittedOriginRejected(t *testing.T) {
 // the widened, every-OpReturn walk must not newly refuse a match-bodied
 // function whose every arm returns an owned value.
 func TestOwnedArmsStillPublish(t *testing.T) {
-	for _, fixture := range []string{"branch_view.lang", "borrowed_view.lang"} {
+	for _, fixture := range []string{"branch_view.schway", "borrowed_view.schway"} {
 		program := honestOmittedProgram(t, fixture)
 		if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
 			t.Fatalf("%s: expected no problems for every-arm-owned, got %+v", fixture, problems)
@@ -908,7 +908,7 @@ func TestOwnedArmsStillPublish(t *testing.T) {
 // modes must combine to the AccessConflicting sentinel, with paths unioned
 // (not duplicated) — neither arm's own answer wins.
 func TestMultiArmAccessConflictDerivesNeitherArm(t *testing.T) {
-	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.schway")
 	origins := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 	if len(origins) != 2 {
 		t.Fatalf("expected exactly 2 per-return origins, got %+v", origins)
@@ -940,7 +940,7 @@ func TestMultiArmAccessConflictDerivesNeitherArm(t *testing.T) {
 // TestUnionPathsAreNotDuplicated pins the same non-duplication requirement
 // directly, independent of the access-mode assertions above.
 func TestUnionPathsAreNotDuplicated(t *testing.T) {
-	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	program := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.schway")
 	paths, _, ok := originvalidate.RecomputeOrigin(program.Functions[0], nil)
 	if !ok {
 		t.Fatalf("expected RecomputeOrigin to succeed")
@@ -962,13 +962,13 @@ func TestUnionPathsAreNotDuplicated(t *testing.T) {
 // conflicting-arms function DECLARING "shared" is refused with
 // core.origin_access_mismatch, whose Detail names the sentinel.
 func TestMultiArmAccessConflictRejectedWhenDeclaredShared(t *testing.T) {
-	undeclared := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	undeclared := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.schway")
 	problems := originvalidate.ValidatePublished(undeclared)
 	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
 		t.Fatalf("expected exactly core.origin_omitted for the undeclared conflicting-arms function, got %+v", problems)
 	}
 
-	declaredShared := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	declaredShared := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.schway")
 	declaredShared.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"flag"}, Access: "shared"}
 	problems = originvalidate.ValidatePublished(declaredShared)
 	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
@@ -982,7 +982,7 @@ func TestMultiArmAccessConflictRejectedWhenDeclaredShared(t *testing.T) {
 // TestMultiArmAccessConflictRejectedWhenDeclaredExclusive mirrors the shared
 // case with the other declarable access mode.
 func TestMultiArmAccessConflictRejectedWhenDeclaredExclusive(t *testing.T) {
-	declaredExclusive := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	declaredExclusive := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.schway")
 	declaredExclusive.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"flag"}, Access: "exclusive"}
 	problems := originvalidate.ValidatePublished(declaredExclusive)
 	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
@@ -1000,22 +1000,22 @@ func TestMultiArmAccessConflictRejectedWhenDeclaredExclusive(t *testing.T) {
 // a declarable mode, so a mutated summary cannot declare it and match a
 // conflicting recomputation.
 func TestDeclaredConflictingAccessIsRefused(t *testing.T) {
-	// public_view.lang's recomputed access is "shared", not the sentinel, so
+	// public_view.schway's recomputed access is "shared", not the sentinel, so
 	// declaring the sentinel there is caught by the ordinary
 	// declared-vs-recomputed mismatch comparison regardless of whether a
 	// dedicated domain check exists. To actually falsify the domain check,
 	// declare the sentinel on the ONE fixture whose own recomputed answer IS
-	// the sentinel (public_view_multi_arm_access_conflict.lang) — without a
+	// the sentinel (public_view_multi_arm_access_conflict.schway) — without a
 	// domain check running BEFORE the comparison, declared == recomputed and
 	// this would incorrectly report no problems at all.
-	conflicting := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.lang")
+	conflicting := honestOmittedProgram(t, "public_view_multi_arm_access_conflict.schway")
 	conflicting.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"flag"}, Access: originvalidate.AccessConflicting}
 	problems := originvalidate.ValidatePublished(conflicting)
 	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
 		t.Fatalf("expected exactly core.origin_access_mismatch for a declared sentinel access, got %+v", problems)
 	}
 
-	program := honestProgram(t, "public_view.lang")
+	program := honestProgram(t, "public_view.schway")
 	program.Functions[0].PublicOrigin = &core.PublicOrigin{Paths: []string{"buffer"}, Access: originvalidate.AccessConflicting}
 	problems = originvalidate.ValidatePublished(program)
 	if len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
@@ -1037,7 +1037,7 @@ func TestPublishedOriginConsistentWithEveryReturn(t *testing.T) {
 	}
 	checkedAny := false
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 			continue
 		}
 		source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
@@ -1111,7 +1111,7 @@ func TestPublishedOriginConsistentWithEveryReturn(t *testing.T) {
 // even asked — CheckSummary never unmarshals coreBytes into a struct that
 // could carry a body, so the ordering is structural, not merely sequenced.
 func TestStaleSummaryRejectedBeforeOtherChecks(t *testing.T) {
-	program := honestProgram(t, "public_view.lang")
+	program := honestProgram(t, "public_view.schway")
 	summary, err := originvalidate.BuildInterface(program)
 	if err != nil {
 		t.Fatal(err)
@@ -1157,7 +1157,7 @@ func TestStaleSummaryRejectedBeforeOtherChecks(t *testing.T) {
 // JSON validity and CoreDigest").
 func TestCheckSummaryRoutesThroughDecodeInterface(t *testing.T) {
 	missingModeDoc := []byte(`{
-		"schema": "lang.interface/1",
+		"schema": "schway.interface/1",
 		"module_id": "m",
 		"core_digest": "` + validClosureDigestPlaceholder + `",
 		"functions": [{
@@ -1177,19 +1177,19 @@ func TestCheckSummaryRoutesThroughDecodeInterface(t *testing.T) {
 }
 
 // TestCheckSummaryRefusesV0Document is D-07-36/T-07-02's CheckSummary-level
-// falsifier: a lang.interface/0 document is decodable but never admissible
+// falsifier: a schway.interface/0 document is decodable but never admissible
 // for a call, so CheckSummary must refuse it rather than silently answering
 // origin questions from a frozen legacy shape it was never validated
 // against.
 func TestCheckSummaryRefusesV0Document(t *testing.T) {
 	if _, err := originvalidate.CheckSummary([]byte(pinnedV0DocumentForCheckSummary), []byte(`{}`)); err == nil {
-		t.Fatal("expected CheckSummary to refuse a lang.interface/0 document")
+		t.Fatal("expected CheckSummary to refuse a schway.interface/0 document")
 	} else if code := errorCode(err); code != "origin.summary_not_admissible" {
 		t.Fatalf("expected origin.summary_not_admissible, got %q (%v)", code, err)
 	}
 }
 
-const pinnedV0DocumentForCheckSummary = `{"schema":"lang.interface/0","module_id":"m1","core_digest":"` + validClosureDigestPlaceholder + `","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","abilities":[]}]}`
+const pinnedV0DocumentForCheckSummary = `{"schema":"schway.interface/0","module_id":"m1","core_digest":"` + validClosureDigestPlaceholder + `","functions":[{"id":"f1","name":"identity","parameter":{"id":"p1","name":"buffer","type":"Buffer"},"return_type":"Buffer","abilities":[]}]}`
 
 // residual: a coordinated frontend-and-summary lie is declared as a named
 // expected escape, never solved and never silently absent.
@@ -1214,7 +1214,7 @@ func TestOriginEscapeIsNamed(t *testing.T) {
 // field, but a shape (core.FunctionSignature) that structurally has no such
 // field to omit.
 func TestInterfaceSummaryOmitsBodies(t *testing.T) {
-	program := honestProgram(t, "public_view.lang")
+	program := honestProgram(t, "public_view.schway")
 	summary, err := originvalidate.BuildInterface(program)
 	if err != nil {
 		t.Fatal(err)
@@ -1277,9 +1277,9 @@ func phase4Program(t testing.TB, fixture string) core.Program {
 // fixture is attached directly onto the checked core.Function -- exercising
 // exactly the same originvalidate entry points a real declaration would.
 func TestForeignBorrowDerivedReturnRecognised(t *testing.T) {
-	program := phase4Program(t, "foreign_acquire_one.lang")
+	program := phase4Program(t, "foreign_acquire_one.schway")
 	if program.Functions[0].ForeignContract == nil {
-		t.Fatal("expected foreign_acquire_one.lang to carry a ForeignContract")
+		t.Fatal("expected foreign_acquire_one.schway to carry a ForeignContract")
 	}
 	program.Functions[0].ForeignContract.Alias = "borrow"
 
@@ -1308,7 +1308,7 @@ func TestForeignBorrowDerivedReturnRecognised(t *testing.T) {
 // core.foreign_origin_omitted, naming the offending function and the
 // argument the origin derives from.
 func TestForeignOriginOmittedRejected(t *testing.T) {
-	program := phase4Program(t, "foreign_origin_omitted.lang")
+	program := phase4Program(t, "foreign_origin_omitted.schway")
 	problems := originvalidate.ValidatePublished(program)
 	if len(problems) != 1 || problems[0].Code != "core.foreign_origin_omitted" {
 		t.Fatalf("expected exactly one core.foreign_origin_omitted problem, got %+v", problems)
@@ -1322,18 +1322,18 @@ func TestForeignOriginOmittedRejected(t *testing.T) {
 // before this widening, RecomputeOriginPerReturn's backward-walk collection
 // loop recognised only core.OpReturn, so a function with a fail-only or
 // defect-only path contributed nothing to the per-terminator origin
-// picture. defect_terminal.lang's "Halt" arm exits ONLY through core.OpDefect
-// (no OpReturn in that arm at all) and foreign_acquire_one.lang's err block
+// picture. defect_terminal.schway's "Halt" arm exits ONLY through core.OpDefect
+// (no OpReturn in that arm at all) and foreign_acquire_one.schway's err block
 // exits ONLY through core.OpFail -- both are reachable inputs the old
 // single-terminator condition would have missed entirely.
 func TestOriginWalksEveryTerminator(t *testing.T) {
-	defectProgram := phase4Program(t, "defect_terminal.lang")
+	defectProgram := phase4Program(t, "defect_terminal.schway")
 	defectOrigins := originvalidate.RecomputeOriginPerReturn(defectProgram.Functions[0], nil)
 	if len(defectOrigins) != 2 {
 		t.Fatalf("expected one origin entry per terminator (return + defect), got %d: %+v", len(defectOrigins), defectOrigins)
 	}
 
-	foreignProgram := phase4Program(t, "foreign_acquire_one.lang")
+	foreignProgram := phase4Program(t, "foreign_acquire_one.schway")
 	foreignOrigins := originvalidate.RecomputeOriginPerReturn(foreignProgram.Functions[0], nil)
 	if len(foreignOrigins) != 2 {
 		t.Fatalf("expected one origin entry per terminator (return + fail), got %d: %+v", len(foreignOrigins), foreignOrigins)
@@ -1362,7 +1362,7 @@ func TestTerminatorSetReadFromRegistry(t *testing.T) {
 // fail-only fixture's origin fact -- proving the widening actually bites,
 // not merely that a differential stays green.
 func TestTerminatorWalkMutationKilled(t *testing.T) {
-	program := phase4Program(t, "foreign_acquire_one.lang")
+	program := phase4Program(t, "foreign_acquire_one.schway")
 	full := originvalidate.RecomputeOriginPerReturn(program.Functions[0], nil)
 
 	original := originvalidate.TerminatorKindsOverride
@@ -1393,7 +1393,7 @@ func TestInterfaceV1FieldInvariantsAcrossCorpus(t *testing.T) {
 			t.Fatalf("read %s: %v", dir, err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 				continue
 			}
 			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
@@ -1470,7 +1470,7 @@ func TestPublishProblemsForMatchesValidatePublishedAcrossCorpus(t *testing.T) {
 			t.Fatalf("read %s: %v", dir, err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 				continue
 			}
 			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
@@ -1515,19 +1515,19 @@ func problemsEqual(a, b []originvalidate.Problem) bool {
 
 // TestCallableIsPublicationSafetyNotExportMembership is 07-02 Task 1's
 // D-07-31 falsifier: Callable must be false for a function that checks
-// clean but fails publication (the extracted clean_but_unpublishable.lang
+// clean but fails publication (the extracted clean_but_unpublishable.schway
 // negative control, which trips core.origin_omitted -- not an unexported-
 // callee shape, which would be the wrong negative control for this
 // predicate), and true for every clean, publishable function in
 // testdata/phase1..phase4.
 func TestCallableIsPublicationSafetyNotExportMembership(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("expected clean_but_unpublishable.lang to check cleanly, got %+v", checked.Diagnostics)
+		t.Fatalf("expected clean_but_unpublishable.schway to check cleanly, got %+v", checked.Diagnostics)
 	}
 	problems := originvalidate.ValidatePublished(checked.Program)
 	if len(problems) != 1 || problems[0].Code != "core.origin_omitted" {
@@ -1552,7 +1552,7 @@ func TestCallableIsPublicationSafetyNotExportMembership(t *testing.T) {
 			t.Fatalf("read %s: %v", dir, err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 				continue
 			}
 			fixtureSource, err := os.ReadFile(filepath.Join(dir, entry.Name()))
@@ -1565,7 +1565,7 @@ func TestCallableIsPublicationSafetyNotExportMembership(t *testing.T) {
 			}
 			if len(originvalidate.ValidatePublished(fixtureChecked.Program)) > 0 {
 				// This fixture is checked-clean but publication-unsafe by
-				// design (e.g. public_view_omitted.lang) -- not part of
+				// design (e.g. public_view_omitted.schway) -- not part of
 				// this assertion's "clean, publishable" set.
 				continue
 			}
@@ -1620,7 +1620,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		// The independent corevalidate peer, whose own lookup this seam
 		// never touches, must still report the real abilities -- a
 		// SPECIFIC abilities-field divergence, not a generic error.
-		program := honestProgram(t, "public_view.lang")
+		program := honestProgram(t, "public_view.schway")
 		function := program.Functions[0]
 
 		restore := originvalidate.SetTypeFactExactIDMatchOverrideForTest(func(factID, wantID string) bool { return false })
@@ -1636,7 +1636,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 
 		result := corevalidate.Validate(program)
 		if !result.Valid {
-			t.Fatalf("expected public_view.lang to corevalidate-validate, got problems: %+v", result.Problems)
+			t.Fatalf("expected public_view.schway to corevalidate-validate, got problems: %+v", result.Problems)
 		}
 		peerSignature, ok := result.PeerSignatures()[function.ID]
 		if !ok {
@@ -1652,10 +1652,10 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 
 	t.Run("fault4_callable_producer", func(t *testing.T) {
 		// Forcing ONLY the producer's Callable derivation to true must
-		// still leave the peer refusing on clean_but_unpublishable.lang --
+		// still leave the peer refusing on clean_but_unpublishable.schway --
 		// a real divergence, not a bilateral false agreement (see fault 3
 		// in corevalidate_mutation_matrix_test.go).
-		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.schway"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1678,7 +1678,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 		}
 		result := corevalidate.Validate(program)
 		if !result.Valid {
-			t.Fatalf("expected clean_but_unpublishable.lang to corevalidate-validate, got problems: %+v", result.Problems)
+			t.Fatalf("expected clean_but_unpublishable.schway to corevalidate-validate, got problems: %+v", result.Problems)
 		}
 		peerSignature, ok := result.PeerSignatures()[function.ID]
 		if !ok {
@@ -1693,7 +1693,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 // TestOpCallOriginWalkGateIsLoadBearing is D-10-08's mutation-kill gate for
 // Task 2's core.OpCall case: engaging the nil-default seam
 // (disableOpCallOriginConsultForTest, exposed via
-// SetDisableOpCallOriginConsultForTest) must regress twin_a_accept.lang to
+// SetDisableOpCallOriginConsultForTest) must regress twin_a_accept.schway to
 // its pre-fix core.origin_omitted refusal -- proving the case decides
 // something, not merely that it is syntactically present (D-10-08). Runs
 // through the FULL session.CheckCommandFile pipeline (check ->
@@ -1701,7 +1701,7 @@ func TestStage0SummaryMutationMatrix(t *testing.T) {
 // never a direct package-level call: that precedence chain is exactly what
 // masked D-09-51 for two phases.
 func TestOpCallOriginWalkGateIsLoadBearing(t *testing.T) {
-	fixture := testsupport.ProjectPath("testdata", "phase08", "twin_a_accept.lang")
+	fixture := testsupport.ProjectPath("testdata", "phase08", "twin_a_accept.schway")
 
 	// Beat 1: the fixture now admits cleanly through the full CLI.
 	result, err := session.CheckCommandFile(fixture)
@@ -1709,7 +1709,7 @@ func TestOpCallOriginWalkGateIsLoadBearing(t *testing.T) {
 		t.Fatalf("CheckCommandFile: %v", err)
 	}
 	if result.Status != protocol.StatusPass || len(result.Diagnostics) != 0 {
-		t.Fatalf("expected twin_a_accept.lang to admit cleanly, got status=%q diagnostics=%+v", result.Status, result.Diagnostics)
+		t.Fatalf("expected twin_a_accept.schway to admit cleanly, got status=%q diagnostics=%+v", result.Status, result.Diagnostics)
 	}
 
 	// Beat 2: engage the seam, restored via defer.
@@ -1724,7 +1724,7 @@ func TestOpCallOriginWalkGateIsLoadBearing(t *testing.T) {
 		t.Fatalf("CheckCommandFile (seam engaged): %v", err)
 	}
 	if regressed.Status != protocol.StatusInvalid || len(regressed.Diagnostics) != 1 || regressed.Diagnostics[0].Code != "core.origin_omitted" {
-		t.Fatalf("expected the seam to regress twin_a_accept.lang to exactly core.origin_omitted, got status=%q diagnostics=%+v", regressed.Status, regressed.Diagnostics)
+		t.Fatalf("expected the seam to regress twin_a_accept.schway to exactly core.origin_omitted, got status=%q diagnostics=%+v", regressed.Status, regressed.Diagnostics)
 	}
 }
 
@@ -1823,7 +1823,7 @@ func TestWalkReturnOriginSignatureStaysBodyBlind(t *testing.T) {
 	// not a vacuous one that always reports clean.
 	syntheticSource := `package originvalidate
 
-import "github.com/codename-lang/lang/internal/compiler/core"
+import "github.com/szTheory/schway/internal/compiler/core"
 
 func walkReturnOrigin(function core.Function, calleeContracts map[string]calleeOriginFact, leaked core.Program) ReturnOrigin {
 	return ReturnOrigin{}

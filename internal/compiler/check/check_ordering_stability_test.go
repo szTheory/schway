@@ -7,8 +7,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // ---------------------------------------------------------------------
@@ -164,7 +164,7 @@ var interproceduralOrderingBaselineDirs = []string{
 
 // interproceduralOrderingBaseline is THE PRE-RESTRUCTURE BASELINE captured
 // under plan 09-07, before `computeLoanLastUses` (check.go:3743) and its two
-// summary-blind call sites are deleted. For every `.lang` fixture under
+// summary-blind call sites are deleted. For every `.schway` fixture under
 // testdata/ that check.Program currently REFUSES, this table records the
 // exact tuple (fixture path relative to testdata/, first diagnostic Code,
 // first diagnostic ID). Generated from the tree at authoring time via a
@@ -181,8 +181,8 @@ var interproceduralOrderingBaselineDirs = []string{
 // mode a golden-file replay would have permitted and this literal table is
 // built to prevent.
 var interproceduralOrderingBaseline = map[string][2]string{
-	"phase07/call_argument_used_twice.lang": {"ownership.use_after_move", "diagnostic:8e3116d77bcb23bd6b84396b"},
-	// 13-05 Task 3 (D-13-09a): re-pinned once (schema lang.diagnostic/0 ->
+	"phase07/call_argument_used_twice.schway": {"ownership.use_after_move", "diagnostic:8e3116d77bcb23bd6b84396b"},
+	// 13-05 Task 3 (D-13-09a): re-pinned once (schema schway.diagnostic/0 ->
 	// /1, plus a use_matching_argument repair on the one-match partition).
 	// 13-06 (D-13-10a) re-pins it a SECOND time: the use_matching_argument
 	// repair was adjudicated empirically to be a byte-identical no-op on
@@ -191,18 +191,18 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// carrying zero repairs. Neither the source bytes nor the code
 	// changed; only the repair-emission decision, deliberate and
 	// documented in 13-06-SUMMARY.md.
-	"phase07/call_type_mismatch.lang":       {"check.call_argument_type_mismatch", "diagnostic:ba4d0e27cd0eb33c08abbde9"},
-	"phase07/call_uncallable_callee.lang":   {"core.callee_not_callable", "diagnostic:5735171812e7ad4920c3bb72"},
-	"phase07/cycle_indirect.lang":           {"core.call_graph_cycle", "diagnostic:1e6c260432c9010ac6a196a9"},
-	"phase07/cycle_mutual.lang":             {"core.call_graph_cycle", "diagnostic:39bb0a1a48d08fc9674307a4"},
-	"phase07/cycle_self.lang":               {"core.call_graph_cycle", "diagnostic:6e836fd6f98202bf58f1dfdb"},
-	"phase07/cycle_through_match_arm.lang":  {"core.call_graph_cycle", "diagnostic:0fe333002fca961ebee8f00a"},
-	"phase07/cycle_unreachable.lang":        {"core.call_graph_cycle", "diagnostic:03edcf9d691da106106c2fc0"},
-	"phase07/foreign_symbol_shadowing.lang": {"core.call_graph_cycle", "diagnostic:3fa66ee8773176867ffb9b4e"},
+	"phase07/call_type_mismatch.schway":       {"check.call_argument_type_mismatch", "diagnostic:ba4d0e27cd0eb33c08abbde9"},
+	"phase07/call_uncallable_callee.schway":   {"core.callee_not_callable", "diagnostic:5735171812e7ad4920c3bb72"},
+	"phase07/cycle_indirect.schway":           {"core.call_graph_cycle", "diagnostic:1e6c260432c9010ac6a196a9"},
+	"phase07/cycle_mutual.schway":             {"core.call_graph_cycle", "diagnostic:39bb0a1a48d08fc9674307a4"},
+	"phase07/cycle_self.schway":               {"core.call_graph_cycle", "diagnostic:6e836fd6f98202bf58f1dfdb"},
+	"phase07/cycle_through_match_arm.schway":  {"core.call_graph_cycle", "diagnostic:0fe333002fca961ebee8f00a"},
+	"phase07/cycle_unreachable.schway":        {"core.call_graph_cycle", "diagnostic:03edcf9d691da106106c2fc0"},
+	"phase07/foreign_symbol_shadowing.schway": {"core.call_graph_cycle", "diagnostic:3fa66ee8773176867ffb9b4e"},
 	// Updated 13-01 (D-13-09a): re-pinned, not an ordering change. Attaching
 	// a repair to check.interprocedural_loan_liveness forces the emission
-	// site to switch from diagnostic.Error (schema lang.diagnostic/0) to
-	// diagnostic.ErrorWithRepairs (schema lang.diagnostic/1) UNCONDITIONALLY
+	// site to switch from diagnostic.Error (schema schway.diagnostic/0) to
+	// diagnostic.ErrorWithRepairs (schema schway.diagnostic/1) UNCONDITIONALLY
 	// -- the Schema string itself is inside the hashed identity struct, so
 	// every fixture of this code churns its ID whether or not a repair
 	// actually fires here. This fixture is the FORWARD direction (the loan
@@ -211,8 +211,8 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// NOT end the conflict (empirically verified: the swapped program still
 	// refuses with this same code), so interproceduralLoanLivenessDiagnostic
 	// emits zero repairs here; only the schema switch changed this ID.
-	"phase07/relay_escort_witness.lang": {"check.interprocedural_loan_liveness", "diagnostic:d2cf7924b65040bc45087f56"},
-	// phase08/negative_control_fails.lang and phase08/negative_control_infallible.lang,
+	"phase07/relay_escort_witness.schway": {"check.interprocedural_loan_liveness", "diagnostic:d2cf7924b65040bc45087f56"},
+	// phase08/negative_control_fails.schway and phase08/negative_control_infallible.schway,
 	// plan 10-02 (D-09-51 closure): IDENTITY change, code changed. Both
 	// fixtures' `relay` declares `-> borrow(buffer) Buffer`, but in EITHER
 	// member `leaf` returns a genuinely OWNED value (an ordinary Lang
@@ -235,17 +235,17 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// regression: relay's declared origin was never honestly derivable in
 	// either fixture. See TestInterproceduralLivenessNegativeControl's own
 	// updated doc comment and 10-02-SUMMARY.md for the full account.
-	"phase08/negative_control_fails.lang":      {"core.callee_not_callable", "diagnostic:79999a6354e9192f2578c976"},
-	"phase08/negative_control_infallible.lang": {"core.callee_not_callable", "diagnostic:d5d34a1946a3587c54c6177f"},
+	"phase08/negative_control_fails.schway":      {"core.callee_not_callable", "diagnostic:79999a6354e9192f2578c976"},
+	"phase08/negative_control_infallible.schway": {"core.callee_not_callable", "diagnostic:d5d34a1946a3587c54c6177f"},
 	// Updated 13-01 (D-13-09a): same schema-switch re-pin as
-	// relay_escort_witness.lang above. FORWARD direction (loan_extended_by_
+	// relay_escort_witness.schway above. FORWARD direction (loan_extended_by_
 	// call named via the returnsBorrowOfParam propagation), zero repairs.
-	"phase08/relay_depth2_refuse.lang": {"check.interprocedural_loan_liveness", "diagnostic:fe60f351f59fde945c197f06"},
+	"phase08/relay_depth2_refuse.schway": {"check.interprocedural_loan_liveness", "diagnostic:fe60f351f59fde945c197f06"},
 	// Updated 13-01 (D-13-09a): same schema-switch re-pin. FORWARD
-	// direction, zero repairs -- see relay_escort_witness.lang's comment
+	// direction, zero repairs -- see relay_escort_witness.schway's comment
 	// above for why the swap does not end the conflict here.
-	"phase08/twin_a_refuse.lang": {"check.interprocedural_loan_liveness", "diagnostic:be6861698bff25a7076dca8f"},
-	// phase08/twin_b_accept.lang and phase08/twin_b_refuse.lang, plan 09-09:
+	"phase08/twin_a_refuse.schway": {"check.interprocedural_loan_liveness", "diagnostic:be6861698bff25a7076dca8f"},
+	// phase08/twin_b_accept.schway and phase08/twin_b_refuse.schway, plan 09-09:
 	// BOTH now report check.interprocedural_loan_liveness instead of
 	// ownership.move_while_borrowed -- an IDENTITY change compounded with a
 	// found-but-not-fixed pre-existing defect, not merely an ordering change.
@@ -271,16 +271,16 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	//
 	// Updated 2026-09-11 (Phase 10 plan 10-06, D-10-27/D-10-29): the
 	// diagnostic ID here is content-derived and shifted when
-	// twin_b_accept.lang's header comment was corrected to state the
+	// twin_b_accept.schway's header comment was corrected to state the
 	// observed (not intended-split) verdict. The CODE is byte-identical
 	// (check.interprocedural_loan_liveness) -- only the source file's bytes
 	// changed, never check.go's derivation logic or this fixture's observed
 	// verdict.
 	// Updated 13-01 (D-13-09a, plus a plan-scope correction): re-pinned.
-	// twin_b_accept.lang and twin_b_refuse.lang are the BACKWARD direction
+	// twin_b_accept.schway and twin_b_refuse.schway are the BACKWARD direction
 	// (the call IS lastUseIndexByLoan's recorded last use) -- 13-01 Task 1's
-	// own plan text named only four rows (relay_escort_witness.lang,
-	// relay_depth2_refuse.lang, twin_a_refuse.lang, twin_b_refuse.lang) as
+	// own plan text named only four rows (relay_escort_witness.schway,
+	// relay_depth2_refuse.schway, twin_a_refuse.schway, twin_b_refuse.schway) as
 	// expected to churn, omitting this fixture; empirically this row is
 	// ALSO code check.interprocedural_loan_liveness and churns identically
 	// from the same unconditional schema switch, so it is re-pinned here
@@ -289,13 +289,13 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// real move_after_interprocedural_loan repair (RepairKinds itself
 	// participates in ErrorWithRepairs' identity) -- verified empirically:
 	// splicing each repair's Replacement over its Span re-checks clean.
-	"phase08/twin_b_accept.lang":   {"check.interprocedural_loan_liveness", "diagnostic:a1c11e453dc440600ad21235"},
-	"phase08/twin_b_refuse.lang":   {"check.interprocedural_loan_liveness", "diagnostic:caa9d8014d5c4260aad15254"},
-	"phase1/malformed.lang":        {"syntax.unexpected_byte", "diagnostic:ccb9bcd29f3e8d96fa0368b6"},
-	"phase1/non_exhaustive.lang":   {"match.non_exhaustive", "diagnostic:f9582fb8c4ad9f90fbe75fa8"},
-	"phase2/ability_shapes.lang":   {"check.unexecutable_shape", "diagnostic:7da7df4418c3945f03ab2d82"},
-	"phase2/implicit_noncopy.lang": {"ownership.transfer_requires_take", "diagnostic:040662ef397be67eebb23003"},
-	// phase2/move_while_borrowed.lang, plan 09-09: SPAN-only identity change.
+	"phase08/twin_b_accept.schway":   {"check.interprocedural_loan_liveness", "diagnostic:a1c11e453dc440600ad21235"},
+	"phase08/twin_b_refuse.schway":   {"check.interprocedural_loan_liveness", "diagnostic:caa9d8014d5c4260aad15254"},
+	"phase1/malformed.schway":        {"syntax.unexpected_byte", "diagnostic:ccb9bcd29f3e8d96fa0368b6"},
+	"phase1/non_exhaustive.schway":   {"match.non_exhaustive", "diagnostic:f9582fb8c4ad9f90fbe75fa8"},
+	"phase2/ability_shapes.schway":   {"check.unexecutable_shape", "diagnostic:7da7df4418c3945f03ab2d82"},
+	"phase2/implicit_noncopy.schway": {"ownership.transfer_requires_take", "diagnostic:040662ef397be67eebb23003"},
+	// phase2/move_while_borrowed.schway, plan 09-09: SPAN-only identity change.
 	// `let observed = view` (an implicit copy of the borrowed view, Buffer's
 	// only source-level way to keep the loan referenced past the move) was
 	// rewritten to `let observed = take view`: once lowering stops deciding
@@ -308,10 +308,10 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// unintended one. `take view` preserves the loan's later reference
 	// without requiring Copy, so the SAME code fires; only the source bytes
 	// (and therefore the span-derived ID) moved.
-	"phase2/move_while_borrowed.lang":  {"ownership.move_while_borrowed", "diagnostic:3c53a97b806dac0a128d2902"},
-	"phase2/reborrow_while_moved.lang": {"ownership.move_while_borrowed", "diagnostic:eeddc92047e60cb51c3fd65a"},
-	"phase2/use_after_move.lang":       {"ownership.use_after_move", "diagnostic:26c8fdff5f83afd58fb43905"},
-	// phase3/branch_one_arm_shared_reject.lang, plan 09-09: IDENTITY change,
+	"phase2/move_while_borrowed.schway":  {"ownership.move_while_borrowed", "diagnostic:3c53a97b806dac0a128d2902"},
+	"phase2/reborrow_while_moved.schway": {"ownership.move_while_borrowed", "diagnostic:eeddc92047e60cb51c3fd65a"},
+	"phase2/use_after_move.schway":       {"ownership.use_after_move", "diagnostic:26c8fdff5f83afd58fb43905"},
+	// phase3/branch_one_arm_shared_reject.schway, plan 09-09: IDENTITY change,
 	// source untouched. Code stays ownership.move_while_borrowed, but the ID
 	// moved because the diagnostic is now built by
 	// moveWhileBorrowedDiagnosticPostAssembly (check.go) at the post-assembly
@@ -320,10 +320,10 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// but a byte-level difference in a reconstructed span or cause Detail
 	// string is plausible and is exactly what a hash-based identity is
 	// designed to catch rather than let pass silently.
-	"phase3/branch_one_arm_shared_reject.lang": {"ownership.move_while_borrowed", "diagnostic:56f0f78afd023dba87d78a24"},
-	// phase3/exclusive_exclusive_reject.lang and phase3/shared_exclusive_reject.lang
-	// and phase3/exclusive_move_reject.lang, plan 09-09: SPAN-only identity
-	// change, same masking-avoidance rewrite as phase2/move_while_borrowed.lang
+	"phase3/branch_one_arm_shared_reject.schway": {"ownership.move_while_borrowed", "diagnostic:56f0f78afd023dba87d78a24"},
+	// phase3/exclusive_exclusive_reject.schway and phase3/shared_exclusive_reject.schway
+	// and phase3/exclusive_move_reject.schway, plan 09-09: SPAN-only identity
+	// change, same masking-avoidance rewrite as phase2/move_while_borrowed.schway
 	// above (`let observed = first`/`let observed = view` -> `let observed =
 	// take first`/`let observed = take view`) -- Buffer withholds Copy, and
 	// these three fixtures are ALSO consumed directly by
@@ -331,19 +331,19 @@ var interproceduralOrderingBaseline = map[string][2]string{
 	// TestBorrowConflictCauseChain/TestExclusiveMoveRejected (out of this
 	// plan's file scope), which independently confirm the intended CODE
 	// still fires after the rewrite.
-	"phase3/exclusive_exclusive_reject.lang": {"ownership.borrow_conflict", "diagnostic:6a3d8582000b05e32a575ebf"},
-	"phase3/exclusive_move_reject.lang":      {"ownership.move_while_borrowed", "diagnostic:8038bd1955c8b4cbd98b445d"},
-	"phase3/shared_exclusive_reject.lang":    {"ownership.borrow_conflict", "diagnostic:2ac14b431c0d5a98db75e10d"},
+	"phase3/exclusive_exclusive_reject.schway": {"ownership.borrow_conflict", "diagnostic:6a3d8582000b05e32a575ebf"},
+	"phase3/exclusive_move_reject.schway":      {"ownership.move_while_borrowed", "diagnostic:8038bd1955c8b4cbd98b445d"},
+	"phase3/shared_exclusive_reject.schway":    {"ownership.borrow_conflict", "diagnostic:2ac14b431c0d5a98db75e10d"},
 	// 13-05 Task 1/3 (D-13-09a): re-pinned. This code now builds via
-	// diagnostic.ErrorWithRepairs unconditionally (schema lang.diagnostic/0
+	// diagnostic.ErrorWithRepairs unconditionally (schema schway.diagnostic/0
 	// -> /1) and carries a wrap_call_in_try repair when the callee name and
 	// its single argument name are both non-empty (true here). Source bytes
 	// unchanged; only the schema switch and the new repair, both deliberate.
-	"phase4/fallible_call_unconsumed.lang":        {"syntax.fallible_call_not_consumed", "diagnostic:7bbbfdcb7eed322ff4e695ca"},
-	"phase4/foreign_call_target_not_foreign.lang": {"core.call_target_not_foreign", "diagnostic:8ee0be5e21030f21f990f9f6"},
-	"phase4/foreign_policy_value_injection.lang":  {"check.foreign_policy_value_unsafe", "diagnostic:204a40c7d8537f0809622fbb"},
-	"phase4/foreign_unwind_undeclared.lang":       {"foreign.unwind_policy_undeclared", "diagnostic:e9e51b10ac76db2d660d791b"},
-	"phase5/explain_use_after_move.lang":          {"ownership.use_after_move", "diagnostic:d8b679b47be2fa6555514f78"},
+	"phase4/fallible_call_unconsumed.schway":        {"syntax.fallible_call_not_consumed", "diagnostic:7bbbfdcb7eed322ff4e695ca"},
+	"phase4/foreign_call_target_not_foreign.schway": {"core.call_target_not_foreign", "diagnostic:8ee0be5e21030f21f990f9f6"},
+	"phase4/foreign_policy_value_injection.schway":  {"check.foreign_policy_value_unsafe", "diagnostic:204a40c7d8537f0809622fbb"},
+	"phase4/foreign_unwind_undeclared.schway":       {"foreign.unwind_policy_undeclared", "diagnostic:e9e51b10ac76db2d660d791b"},
+	"phase5/explain_use_after_move.schway":          {"ownership.use_after_move", "diagnostic:d8b679b47be2fa6555514f78"},
 }
 
 // TestInterproceduralDiagnosticOrderingStability re-walks the SAME corpus
@@ -359,7 +359,7 @@ var interproceduralOrderingBaseline = map[string][2]string{
 func TestInterproceduralDiagnosticOrderingStability(t *testing.T) {
 	var paths []string
 	for _, dir := range interproceduralOrderingBaselineDirs {
-		matches, err := filepath.Glob(filepath.Join("../../../testdata", dir, "*.lang"))
+		matches, err := filepath.Glob(filepath.Join("../../../testdata", dir, "*.schway"))
 		if err != nil {
 			t.Fatalf("glob testdata/%s: %v", dir, err)
 		}

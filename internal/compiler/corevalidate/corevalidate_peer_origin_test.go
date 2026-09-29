@@ -5,7 +5,7 @@ package corevalidate_test
 // needs to import originvalidate and session as ORDINARY test dependencies
 // to drive TestPeerFirstHopWinsMatchesRecomputeOriginPerReturn's
 // equivalence proof against the producer's own RecomputeOrigin, and to
-// parse/check real .lang fixtures directly. This is NOT the independence
+// parse/check real .schway fixtures directly. This is NOT the independence
 // property under test -- that property is corevalidate.go's OWN production
 // source never importing originvalidate, check, or callgraph
 // (TestArbitraryMaskCannotEnterCoreValidation and its siblings in
@@ -17,11 +17,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // functionByName returns the first function in program named name, failing
@@ -39,7 +39,7 @@ func functionByName(t *testing.T, program core.Program, name string) core.Functi
 
 // singleFunctionOriginProgram wraps one already-checked core.Function in a
 // fresh, minimal core.Program -- used to isolate ONE function from a
-// multi-function fixture (relay_escort_witness.lang) whose OWN program-wide
+// multi-function fixture (relay_escort_witness.schway) whose OWN program-wide
 // check verdict is refused for reasons unrelated to the isolated function
 // under test.
 func singleFunctionOriginProgram(module string, function core.Function) core.Program {
@@ -81,7 +81,7 @@ func functionHasOpCall(function *core.Function) bool {
 // false, matching PublishProblemsFor's own refusal).
 func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 	t.Run("single shared hop: honest declaration agrees Callable true", func(t *testing.T) {
-		program := loadCheckedProgram(t, "phase3", "public_view.lang")
+		program := loadCheckedProgram(t, "phase3", "public_view.schway")
 		function := functionByName(t, program, "view")
 		if function.PublicOrigin == nil || function.PublicOrigin.Access != "shared" {
 			t.Fatalf("expected an honest shared PublicOrigin, got %+v", function.PublicOrigin)
@@ -95,7 +95,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 	})
 
 	t.Run("single exclusive hop: honest declaration agrees Callable true", func(t *testing.T) {
-		// relay_escort_witness.lang's own `escort` function refuses via
+		// relay_escort_witness.schway's own `escort` function refuses via
 		// check.interprocedural_loan_liveness (D-03-02's interprocedural
 		// half, closed at the check layer in Phase 08); check never clears
 		// result.Program on that refusal, so `relay` -- the single-hop,
@@ -103,7 +103,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 		// a genuine, fully-formed core.Function this test can isolate to
 		// exercise an honest single-hop EXCLUSIVE declaration (no such
 		// fixture exists as a standalone, checked-clean program).
-		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.lang"))
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.schway"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -131,7 +131,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 	// LAST hop in forward/chronological order -- here, the shared
 	// reborrow) is "first seen" in that walk and wins; the farther
 	// exclusive hop must NOT overwrite it.
-	// testdata/phase3/public_view_mixed_access.lang is this EXACT real,
+	// testdata/phase3/public_view_mixed_access.schway is this EXACT real,
 	// committed, checked-clean fixture (03-REVIEW.md CR-01's own
 	// regression witness), and its own doc comment confirms the required
 	// answer is "shared," not "exclusive." This test asserts the
@@ -143,7 +143,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 	// rather than silently forcing the peer to match invented prose is
 	// exactly what Test 3's own escape hatch instructs.
 	t.Run("two-hop reborrow chain: closest-to-return hop wins, matching RecomputeOrigin", func(t *testing.T) {
-		program := loadCheckedProgram(t, "phase3", "public_view_mixed_access.lang")
+		program := loadCheckedProgram(t, "phase3", "public_view_mixed_access.schway")
 		function := functionByName(t, program, "view")
 		calleeContracts := originvalidate.BuildCalleeOriginFacts(program)
 		recomputedPaths, recomputedAccess, ok := originvalidate.RecomputeOrigin(function, calleeContracts)
@@ -177,7 +177,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 	})
 
 	t.Run("core.origin_understated: peer now independently refuses", func(t *testing.T) {
-		program := loadCheckedProgram(t, "phase3", "public_view_understated.lang")
+		program := loadCheckedProgram(t, "phase3", "public_view_understated.schway")
 		program.Functions[0].PublicOrigin.Paths = []string{}
 		function := program.Functions[0]
 		if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 1 || problems[0].Code != "core.origin_understated" {
@@ -189,7 +189,7 @@ func TestPeerCallableContainmentMatchesPublishProblemsFor(t *testing.T) {
 	})
 
 	t.Run("core.origin_access_mismatch: peer now independently refuses", func(t *testing.T) {
-		program := loadCheckedProgram(t, "phase3", "public_view_impossible.lang")
+		program := loadCheckedProgram(t, "phase3", "public_view_impossible.schway")
 		program.Functions[0].PublicOrigin.Access = "exclusive"
 		function := program.Functions[0]
 		if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 1 || problems[0].Code != "core.origin_access_mismatch" {
@@ -253,12 +253,12 @@ func TestPeerFirstHopWinsMatchesRecomputeOriginPerReturn(t *testing.T) {
 }
 
 // TestPeerForeignOriginOmittedIsRederived is Task 2 Test 1 (D-09-20):
-// testdata/phase4/foreign_origin_omitted.lang's own honest ForeignContract
+// testdata/phase4/foreign_origin_omitted.schway's own honest ForeignContract
 // (Alias == "borrow", no declared PublicOrigin) is independently refused
 // by the peer, matching the producer's core.foreign_origin_omitted
 // verdict.
 func TestPeerForeignOriginOmittedIsRederived(t *testing.T) {
-	program := loadCheckedProgram(t, "phase4", "foreign_origin_omitted.lang")
+	program := loadCheckedProgram(t, "phase4", "foreign_origin_omitted.schway")
 	function := program.Functions[0]
 	if function.ForeignContract == nil || function.ForeignContract.Alias != "borrow" {
 		t.Fatalf("expected the fixture's own foreign contract to declare alias \"borrow\", got %+v", function.ForeignContract)
@@ -276,7 +276,7 @@ func TestPeerForeignOriginOmittedIsRederived(t *testing.T) {
 // {"borrow", "retain"} makes the peer agree Callable == true -- the class
 // must not over-refuse a foreign call with no borrow/retain obligation.
 func TestPeerForeignOriginOmittedDoesNotOverRefuse(t *testing.T) {
-	program := loadCheckedProgram(t, "phase4", "foreign_origin_omitted.lang")
+	program := loadCheckedProgram(t, "phase4", "foreign_origin_omitted.schway")
 	program.Functions[0].ForeignContract.Alias = ""
 	function := program.Functions[0]
 	if problems := originvalidate.PublishProblemsFor(function, originvalidate.BuildCalleeOriginFacts(program)); len(problems) != 0 {
@@ -296,7 +296,7 @@ func TestPeerForeignOriginOmittedDoesNotOverRefuse(t *testing.T) {
 // rather than an unfalsified assertion.
 func TestPeerOriginContainmentDisabledFalselyAgreesAgain(t *testing.T) {
 	t.Run("origin containment: disabling the seam reintroduces the understated false agreement", func(t *testing.T) {
-		program := loadCheckedProgram(t, "phase3", "public_view_understated.lang")
+		program := loadCheckedProgram(t, "phase3", "public_view_understated.schway")
 		program.Functions[0].PublicOrigin.Paths = []string{}
 		function := program.Functions[0]
 
@@ -312,7 +312,7 @@ func TestPeerOriginContainmentDisabledFalselyAgreesAgain(t *testing.T) {
 	})
 
 	t.Run("origin containment: disabling the seam reintroduces the access-mismatch false agreement", func(t *testing.T) {
-		program := loadCheckedProgram(t, "phase3", "public_view_impossible.lang")
+		program := loadCheckedProgram(t, "phase3", "public_view_impossible.schway")
 		program.Functions[0].PublicOrigin.Access = "exclusive"
 		function := program.Functions[0]
 
@@ -328,7 +328,7 @@ func TestPeerOriginContainmentDisabledFalselyAgreesAgain(t *testing.T) {
 	})
 
 	t.Run("foreign-origin-omitted: disabling the seam reintroduces the false agreement", func(t *testing.T) {
-		program := loadCheckedProgram(t, "phase4", "foreign_origin_omitted.lang")
+		program := loadCheckedProgram(t, "phase4", "foreign_origin_omitted.schway")
 		function := program.Functions[0]
 
 		restore := corevalidate.SetDisableForeignOriginPeerForTest(true)

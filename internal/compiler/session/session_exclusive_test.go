@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 const exclusiveBorrowNativeSource = `module owned.exclusive_borrow_native

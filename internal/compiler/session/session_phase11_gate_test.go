@@ -8,14 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 const (
@@ -107,7 +107,7 @@ func phase11WouldCarryRestrict(function core.Function) bool {
 // continues through admitted live emission.
 func phase11ExpectedRefusal(fixture string) string {
 	switch fixture {
-	case "testdata/phase11/multi_function_gate_corpus.lang":
+	case "testdata/phase11/multi_function_gate_corpus.schway":
 		return `function "s1:phase11.multi_function_gate_corpus:fn:touch": by-pointer bodies are not supported by whole-program native emission this phase`
 	case "testdata/phase16/historical/phase11_gate_n_two.fixture":
 		return `function "s1:phase11.gate_n_two:fn:touchTwo": by-pointer bodies are not supported by whole-program native emission this phase`
@@ -261,7 +261,7 @@ func verifyPhase11ZeroAttributeGate(t *testing.T, ctx context.Context, source []
 // phase11GateCorpusSource reads the committed mid-phase gate corpus.
 func phase11GateCorpusSource(t *testing.T) []byte {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_gate_corpus.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase11", "multi_function_gate_corpus.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +303,7 @@ func phase11TwoWouldCarryCorpusSource(t *testing.T) []byte {
 // the committed gate corpus, every one of the gate's four conjuncts holds,
 // asserted individually (not merely the final boolean).
 func TestPhase11ZeroAttributeGate(t *testing.T) {
-	report, err := verifyPhase11ZeroAttributeGate(t, context.Background(), phase11GateCorpusSource(t), "testdata/phase11/multi_function_gate_corpus.lang", native.DefaultRunner())
+	report, err := verifyPhase11ZeroAttributeGate(t, context.Background(), phase11GateCorpusSource(t), "testdata/phase11/multi_function_gate_corpus.schway", native.DefaultRunner())
 	if err != nil {
 		t.Fatalf("VerifyPhase11ZeroAttributeGate: %v", err)
 	}
@@ -336,7 +336,7 @@ func TestPhase11ZeroAttributeGate(t *testing.T) {
 // TestPhase11GateIsNonVacuous asserts the corpus's own non-vacuity floors
 // explicitly, each with a failure message naming which floor was not met.
 func TestPhase11GateIsNonVacuous(t *testing.T) {
-	report, err := verifyPhase11ZeroAttributeGate(t, context.Background(), phase11GateCorpusSource(t), "testdata/phase11/multi_function_gate_corpus.lang", native.DefaultRunner())
+	report, err := verifyPhase11ZeroAttributeGate(t, context.Background(), phase11GateCorpusSource(t), "testdata/phase11/multi_function_gate_corpus.schway", native.DefaultRunner())
 	if err != nil {
 		t.Fatalf("VerifyPhase11ZeroAttributeGate: %v", err)
 	}
@@ -394,11 +394,11 @@ func TestPhase11GateCountsAdjacentWouldCarryFunctions(t *testing.T) {
 // restrict mutation in frozen evidence must turn the exact same scanner red.
 func TestPhase11GateMutationKill(t *testing.T) {
 	program := session.Check(phase11GateCorpusSource(t)).Program
-	frozen, err := phase11RefusalFirstFrozen(t, program, "testdata/phase11/multi_function_gate_corpus.lang")
+	frozen, err := phase11RefusalFirstFrozen(t, program, "testdata/phase11/multi_function_gate_corpus.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
-	mutated := phase11ReplaceOnce(t, frozen, "static LANG_BUFFER LANG_TOUCH(LANG_BUFFER lang_value_buffer, unsigned int invocation_index) {", "static LANG_BUFFER LANG_TOUCH(LANG_BUFFER restrict lang_value_buffer, unsigned int invocation_index) {")
+	mutated := phase11ReplaceOnce(t, frozen, "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER schway_value_buffer, unsigned int invocation_index) {", "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER restrict schway_value_buffer, unsigned int invocation_index) {")
 	if found := cgen.ScanForBannedAttributes(mutated); len(found) == 0 {
 		t.Fatal("expected seeded restrict mutation to be detected by banned-attribute scan")
 	}
@@ -417,7 +417,7 @@ func phase11ReplaceOnce(t *testing.T, source, old, replacement string) string {
 
 func TestPhase11ByPointerRefusalFirstEvidence(t *testing.T) {
 	for _, fixture := range []string{
-		"testdata/phase11/multi_function_gate_corpus.lang",
+		"testdata/phase11/multi_function_gate_corpus.schway",
 		"testdata/phase16/historical/phase11_gate_n_two.fixture",
 	} {
 		source, err := os.ReadFile(testsupport.ProjectPath(fixture))
@@ -446,11 +446,11 @@ func TestPhase11SuppressionIsDiffLocal(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
-	suppressed, err := phase11RefusalFirstFrozen(t, checked.Program, "testdata/phase11/multi_function_gate_corpus.lang")
+	suppressed, err := phase11RefusalFirstFrozen(t, checked.Program, "testdata/phase11/multi_function_gate_corpus.schway")
 	if err != nil {
 		t.Fatal(err)
 	}
-	justified := phase11ReplaceOnce(t, suppressed, "static LANG_BUFFER LANG_TOUCH(LANG_BUFFER lang_value_buffer, unsigned int invocation_index) {", "static LANG_BUFFER LANG_TOUCH(LANG_BUFFER restrict lang_value_buffer, unsigned int invocation_index) {")
+	justified := phase11ReplaceOnce(t, suppressed, "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER schway_value_buffer, unsigned int invocation_index) {", "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER restrict schway_value_buffer, unsigned int invocation_index) {")
 
 	if suppressed == justified {
 		t.Fatal("expected the seeded restrict mutation to change the frozen bytes")

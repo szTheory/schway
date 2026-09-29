@@ -15,21 +15,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/debugmap"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/evidence"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/debugmap"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 type CheckResult struct {
@@ -82,13 +82,13 @@ func NewOwnedBackendMutationRunner(runner native.Runner) *OwnedBackendMutationRu
 // mutationMarker is the stable generated seam cgen emits at the single
 // owned-transfer value site (D-02-07). Locating the mutation by this marker,
 // rather than the previous exact source-derived line
-// ("LANG_BUFFER lang_value_delivered = ... op:0"), means renaming a fixture
+// ("SCHWAY_BUFFER schway_value_delivered = ... op:0"), means renaming a fixture
 // binding or reindenting the emitter cannot silently turn this control into
 // an opaque operational failure — the seam survives both. The fail-closed
 // exact-one requirement is unchanged: the marker must appear on exactly one
 // line, or the control refuses to run rather than mutating an ambiguous or
 // absent site.
-const mutationMarker = "/* lang:mutation-site */"
+const mutationMarker = "/* schway:mutation-site */"
 
 func (r *OwnedBackendMutationRunner) Run(ctx context.Context, cSource, optimization string, inputs []string) (native.Result, error) {
 	lines := strings.Split(cSource, "\n")
@@ -104,7 +104,7 @@ func (r *OwnedBackendMutationRunner) Run(ctx context.Context, cSource, optimizat
 	if matched == -1 {
 		return native.Result{}, &native.ToolError{Code: "native.backend_control_invalid", Err: fmt.Errorf("owned transfer mutation marker count is 0, want 1")}
 	}
-	mutatedLine := lines[matched] + "\n  lang_value_delivered.bytes[0] ^= 0xffu; /* control: backend runtime causality */"
+	mutatedLine := lines[matched] + "\n  schway_value_delivered.bytes[0] ^= 0xffu; /* control: backend runtime causality */"
 	lines[matched] = mutatedLine
 	mutated := strings.Join(lines, "\n")
 	r.mu.Lock()
@@ -126,7 +126,7 @@ func (r *OwnedBackendMutationRunner) Optimizations() []string {
 // wrote, while ReleaseOmissionMutationRunner below DELETES a whole generated
 // line -- an entire release (its event AND its runtime ledger decrement,
 // emitted on the same line so deleting one line removes both effects).
-const releaseMarker = "/* lang:release-site */"
+const releaseMarker = "/* schway:release-site */"
 
 // ReleaseOmissionMutationRunner is a fail-closed verification seam,
 // structurally a sibling of OwnedBackendMutationRunner (its own mutex and
@@ -193,22 +193,22 @@ func (r *ReleaseOmissionMutationRunner) Optimizations() []string {
 
 // padInstallMarker/padEndMarker are duplicated, verbatim, from cgen.go's own
 // constants of the same name (the same duplication pattern releaseMarker
-// above already establishes for lang:release-site): they bracket the
+// above already establishes for schway:release-site): they bracket the
 // process-root nonlocal-exit landing pad's ENTIRE emitted span (D-04-17).
-const padInstallMarker = "/* lang:nonlocal-pad-site */"
-const padEndMarker = "/* lang:nonlocal-pad-end */"
+const padInstallMarker = "/* schway:nonlocal-pad-site */"
+const padEndMarker = "/* schway:nonlocal-pad-end */"
 
 // ledgerPopulateMarker is duplicated, verbatim, from cgen.go's own constant
 // of the same name: it marks the single generated line that flips one
 // acquisition's ledger slot live (D-04-07/D-04-17).
-const ledgerPopulateMarker = "/* lang:ledger-populate-site */"
+const ledgerPopulateMarker = "/* schway:ledger-populate-site */"
 
 // NonlocalPadOmissionMutationRunner is control:foreign.nonlocal_exit_undetected's
 // FIRST mutation-kill demonstration (D-04-21/D-10): it deletes the ENTIRE
 // generated span from padInstallMarker through padEndMarker inclusive --
 // not just the installation line, since a line-only deletion would leave an
 // unmatched brace and fail to compile -- so the resulting program still
-// declares lang_nonlocal_landing and still links against a foreign symbol
+// declares schway_nonlocal_landing and still links against a foreign symbol
 // that may longjmp into it, but the setjmp call that would have established
 // the landing point never runs. A refusal to construct the mutation (the
 // markers are absent) is itself a control-invalid tool error, matching the
@@ -616,16 +616,16 @@ func DefectHasNoReleaseAfter(value execution.Execution) bool {
 // transposes them, so compiling the generated conformance unit against that
 // fixture must be refused under the project's existing -Werror flag set.
 // This is a purpose-built probe record, independent of the production
-// lang_res_open symbol's own (single-field) Layout, specifically so the
+// schway_res_open symbol's own (single-field) Layout, specifically so the
 // mutation-kill demonstration exercises a genuine field TRANSPOSITION (which
 // a one-field record cannot express) without touching the byte-frozen
 // production fixture at all.
 func LayoutProbeContract() *core.ForeignContract {
 	return &core.ForeignContract{
-		Symbol: "lang_layout_probe", Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden", Fails: "AcquireError",
+		Symbol: "schway_layout_probe", Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden", Fails: "AcquireError",
 		InitializedState: "fully", Capture: "none", Retention: "none", Aliasing: "none",
 		Layout: &core.RecordLayout{
-			Size: 2, Alignment: 1, ForeignTypeName: "lang_foreign_layout_probe_block",
+			Size: 2, Alignment: 1, ForeignTypeName: "schway_foreign_layout_probe_block",
 			Fields: []core.LayoutField{
 				{Name: "first", Size: 1, Alignment: 1, Offset: 0, CType: "unsigned char"},
 				{Name: "second", Size: 1, Alignment: 1, Offset: 1, CType: "unsigned char"},
@@ -673,11 +673,11 @@ func (r LayoutMutationRunner) Run(ctx context.Context) error {
 }
 
 // PayloadProbeDataType is control:payload.layout_mismatch's own purpose-built
-// core.DataType (D-12-37), independent of testdata/phase12/payload_tracer.lang's
+// core.DataType (D-12-37), independent of testdata/phase12/payload_tracer.schway's
 // production Outcome/Fault shape, specifically so the mutation-kill
 // demonstration exercises a genuine field TRANSPOSITION with plain
 // single-byte fields (mirroring LayoutProbeContract's own two-one-byte-field
-// design) rather than pulling in LANG_BUFFER's own real (padded, platform-
+// design) rather than pulling in SCHWAY_BUFFER's own real (padded, platform-
 // dependent) struct layout, which check.PayloadRecordLayout's own
 // payloadFieldShape declares as size 8/alignment 1 -- a deliberately
 // informational approximation this control has no need to depend on.
@@ -887,7 +887,7 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		// D-04-27/WR-01: originvalidate.ValidatePublished no longer runs only
 		// on the `interface export` path -- the foreign declaration surface
 		// is a second place an alias fact can be silently absent (D-04-28),
-		// so `lang check` must independently recompute every published
+		// so `schway check` must independently recompute every published
 		// origin too, not merely trust what the checker declared.
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(problems[0].Code, diagnostic.Span{}, problems[0].Detail)}
@@ -982,7 +982,7 @@ func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnosti
 	return RunInterpreter(source)
 }
 
-// publishedOriginProblemFile is D-04-27/WR-01's `lang check`/`lang run`
+// publishedOriginProblemFile is D-04-27/WR-01's `schway check`/`schway run`
 // wiring point: it independently recomputes every function's published
 // origin from the typed core alone (originvalidate.ValidatePublished),
 // exactly as `interface export` already does, returning the first problem
@@ -1237,14 +1237,14 @@ func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, ru
 }
 
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
-// shipped binary on out-of-corpus programs per D-04-21: `lang run
+// shipped binary on out-of-corpus programs per D-04-21: `schway run
 // --engine=native` previously ran every input through ONE shared,
 // zero-value native.Runner.Expect (silently defaulting to ExpectValue), so
 // ANY program whose real terminal outcome is a typed failure or a defect --
 // whether a single-input resource/nonlocal-exit probe or one arm of a
-// Match-shaped multi-arm function like defect_terminal.lang -- was
+// Match-shaped multi-arm function like defect_terminal.schway -- was
 // rejected as an operational `native.run_signaled` failure. This affected
-// EXISTING, already-committed Phase 4 corpus fixtures (nonlocal_exit_probe.lang),
+// EXISTING, already-committed Phase 4 corpus fixtures (nonlocal_exit_probe.schway),
 // not only new out-of-corpus programs -- exactly the class of gap this
 // closing plan exists to catch (Rule 1: a bug affecting a real, reachable
 // shipped-binary command). Every input is now run SEPARATELY against a
@@ -1449,7 +1449,7 @@ func InterfaceExportCommandFile(sourcePath, outPath string) (protocol.Result, er
 // InterfaceCoreCommandFile writes the exact checked-and-validated core.Program
 // bytes for sourcePath to outPath — the same bytes InterfaceExportCommandFile
 // digests into a summary's CoreDigest. A real build pipeline already retains
-// this artifact from `lang check`; this command exists so the two-invocation
+// this artifact from `schway check`; this command exists so the two-invocation
 // separate-compilation demonstration (export, then check) has a standalone
 // way to obtain the core artifact a summary is bound to, without requiring
 // `interface check` itself to reconstruct or re-derive it.
@@ -1598,7 +1598,7 @@ func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 }
 
 // interfaceProjection builds the R-02 deliberately-lossy CLI projection of a
-// lang.interface/1 summary (protocol.InterfaceSummary is the artifact of
+// schway.interface/1 summary (protocol.InterfaceSummary is the artifact of
 // record's lossy peer, never a second copy of it — see
 // protocol.InterfaceFunctionAnswer's doc comment). Function.Return replaces
 // the pre-/1 optional PublicOrigin field: Mode == "owned" carries no
@@ -1631,7 +1631,7 @@ func commandProblem(command, status, code, message string) protocol.Result {
 	return result.Finalize()
 }
 
-// TimingObservationEnabled reports whether LANG_OBSERVE_TIMING is set to
+// TimingObservationEnabled reports whether SCHWAY_OBSERVE_TIMING is set to
 // "1" -- the ONE place in the tree that reads this environment variable
 // (TestTimingEnvironmentIsReadInExactlyOnePlace proves this by AST scan).
 // completeCommand and StageRecorder.Breakdown both route through this
@@ -1639,7 +1639,7 @@ func commandProblem(command, status, code, message string) protocol.Result {
 // so a golden/pinned-JSON test run with the switch unset can never
 // intermittently fail from an unconditional time.Since (D-06-21).
 func TimingObservationEnabled() bool {
-	return os.Getenv("LANG_OBSERVE_TIMING") == "1"
+	return os.Getenv("SCHWAY_OBSERVE_TIMING") == "1"
 }
 
 func completeCommand(result protocol.Result, started time.Time, work int) protocol.Result {
@@ -1659,13 +1659,13 @@ type VerifyOptions struct {
 }
 
 func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, options VerifyOptions) protocol.Result {
-	if _, err := os.Stat(filepath.Join(corpus, "foreign_acquire_one.lang")); err == nil {
+	if _, err := os.Stat(filepath.Join(corpus, "foreign_acquire_one.schway")); err == nil {
 		return verifyForeignCorpus(ctx, corpus, runner)
 	}
-	if _, err := os.Stat(filepath.Join(corpus, "borrowed_view.lang")); err == nil {
+	if _, err := os.Stat(filepath.Join(corpus, "borrowed_view.schway")); err == nil {
 		return verifyBorrowedCorpus(ctx, corpus, runner)
 	}
-	if _, err := os.Stat(filepath.Join(corpus, "owned_transfer.lang")); err == nil {
+	if _, err := os.Stat(filepath.Join(corpus, "owned_transfer.schway")); err == nil {
 		return verifyOwnedCorpus(ctx, corpus, runner)
 	}
 	started := time.Now()
@@ -1686,7 +1686,7 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 		return result.Finalize()
 	}
 
-	validPath := filepath.Join(corpus, "toggle.lang")
+	validPath := filepath.Join(corpus, "toggle.schway")
 	validSource, err := readBoundedFile(validPath, syntax.MaxSourceBytes)
 	if err != nil {
 		return fail(protocol.StatusOperational, "verify.fixture_missing", "required positive fixture is unavailable")
@@ -1709,7 +1709,7 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 	laneStarted = time.Now()
 	syntaxWork := 0
 	syntaxBytes := 0
-	for _, name := range []string{"toggle.lang", "comments.lang", "malformed.lang"} {
+	for _, name := range []string{"toggle.schway", "comments.schway", "malformed.schway"} {
 		source, readErr := readBoundedFile(filepath.Join(corpus, name), syntax.MaxSourceBytes)
 		if readErr != nil {
 			addLane("lane:syntax-properties", "fail", nil, syntaxWork, syntaxBytes, laneStarted)
@@ -1739,13 +1739,13 @@ func VerifyCorpus(ctx context.Context, corpus string, runner native.Runner, opti
 	addLane("lane:syntax-properties", "pass", nil, syntaxWork, syntaxBytes, laneStarted)
 
 	laneStarted = time.Now()
-	negativeSource, err := readBoundedFile(filepath.Join(corpus, "non_exhaustive.lang"), syntax.MaxSourceBytes)
+	negativeSource, err := readBoundedFile(filepath.Join(corpus, "non_exhaustive.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:negative-controls", "fail", nil, 0, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.fixture_missing", "required negative fixture is unavailable")
 	}
 	if len(negativeSource) > syntax.MaxSourceBytes {
-		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "non_exhaustive.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "non_exhaustive.schway")
 	}
 	negative := Check(negativeSource)
 	if !hasDiagnostic(negative.Diagnostics, "match.non_exhaustive") {
@@ -1836,10 +1836,10 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 
 	laneStarted := time.Now()
 	ownershipControls := []struct{ file, code, control string }{
-		{"use_after_move.lang", "ownership.use_after_move", "control:ownership.use_after_move"},
-		{"move_while_borrowed.lang", "ownership.move_while_borrowed", "control:ownership.move_while_borrowed"},
-		{"implicit_noncopy.lang", "ownership.transfer_requires_take", "control:ownership.transfer_requires_take"},
-		{"reborrow_while_moved.lang", "ownership.move_while_borrowed", "control:ownership.move_while_reborrowed"},
+		{"use_after_move.schway", "ownership.use_after_move", "control:ownership.use_after_move"},
+		{"move_while_borrowed.schway", "ownership.move_while_borrowed", "control:ownership.move_while_borrowed"},
+		{"implicit_noncopy.schway", "ownership.transfer_requires_take", "control:ownership.transfer_requires_take"},
+		{"reborrow_while_moved.schway", "ownership.move_while_borrowed", "control:ownership.move_while_reborrowed"},
 	}
 	ownershipControlNames := make([]string, 0, len(ownershipControls))
 	for _, control := range ownershipControls {
@@ -1862,16 +1862,16 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 	}
 	addLane("lane:owned-negative-controls", ownershipControlNames, len(ownershipControls), ownershipBytes, laneStarted)
 
-	validSource, err := readBoundedFile(filepath.Join(corpus, "owned_transfer.lang"), syntax.MaxSourceBytes)
+	validSource, err := readBoundedFile(filepath.Join(corpus, "owned_transfer.schway"), syntax.MaxSourceBytes)
 	if err != nil {
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "owned_transfer.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "owned_transfer.schway")
 	}
 	if len(validSource) > syntax.MaxSourceBytes {
-		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "owned_transfer.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "owned_transfer.schway")
 	}
 	checked := Check(validSource)
 	// Phase 11 (11-GUARD-LEDGER.md): KEPT. verifyOwnedCorpus is bound to
-	// the fixed Phase 2 fixture owned_transfer.lang, genuinely
+	// the fixed Phase 2 fixture owned_transfer.schway, genuinely
 	// single-function by construction; it is unrelated to the
 	// multi-function corpus this phase widens.
 	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 1 {
@@ -1959,7 +1959,7 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 }
 
 // verifyBorrowedCorpus is the Phase 3 verify path (Task 03-07-02): it
-// dispatches when borrowed_view.lang is present, before the Phase 2 probe is
+// dispatches when borrowed_view.schway is present, before the Phase 2 probe is
 // considered (VerifyCorpus checks this corpus's own dispatch file first).
 // Every lane uses the Phase 1 addLane shape (an explicit status on every
 // path, PATTERNS I-1), so a failing lane is still returned rather than
@@ -1967,7 +1967,7 @@ func verifyOwnedCorpus(ctx context.Context, corpus string, runner native.Runner)
 //
 // Phase 11 (11-GUARD-LEDGER.md): every single-function guard in this
 // function is KEPT. Each is bound to a fixed, named Phase 3 fixture
-// (borrowed_view.lang, public_view*.lang) that is genuinely
+// (borrowed_view.schway, public_view*.schway) that is genuinely
 // single-function by construction -- these fixtures are unrelated to the
 // multi-function corpus this phase widens, and narrowing what any of them
 // check would be exactly the "weaker proof reported as a wider one"
@@ -1995,8 +1995,8 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 	// Lane 1: exclusive-conflict, exclusive-move negative controls.
 	laneStarted := time.Now()
 	exclusiveControls := []struct{ file, code, control string }{
-		{"exclusive_exclusive_reject.lang", "ownership.borrow_conflict", "control:ownership.exclusive_conflict"},
-		{"exclusive_move_reject.lang", "ownership.move_while_borrowed", "control:ownership.exclusive_move"},
+		{"exclusive_exclusive_reject.schway", "ownership.borrow_conflict", "control:ownership.exclusive_conflict"},
+		{"exclusive_move_reject.schway", "ownership.move_while_borrowed", "control:ownership.exclusive_move"},
 	}
 	exclusiveControlNames := make([]string, 0, len(exclusiveControls))
 	for _, control := range exclusiveControls {
@@ -2024,12 +2024,12 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 	// Lane 2 + 3: CFG-liveness controls, reusing the already-proven,
 	// independently-tested lane constructors (03-04, 03-05) rather than
 	// duplicating their mutation logic here.
-	branchSource, err := readBoundedFile(filepath.Join(corpus, "borrowed_view.lang"), syntax.MaxSourceBytes)
+	branchSource, err := readBoundedFile(filepath.Join(corpus, "borrowed_view.schway"), syntax.MaxSourceBytes)
 	if err != nil {
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "borrowed_view.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "borrowed_view.schway")
 	}
 	if len(branchSource) > syntax.MaxSourceBytes {
-		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "borrowed_view.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_input_limit", "borrowed_view.schway")
 	}
 	branchChecked := Check(branchSource)
 	if len(branchChecked.Diagnostics) != 0 || len(branchChecked.Program.Functions) != 1 {
@@ -2066,10 +2066,10 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 	originWork := 0
 	originBytes := 0
 
-	understated, err := readBoundedFile(filepath.Join(corpus, "public_view_understated.lang"), syntax.MaxSourceBytes)
+	understated, err := readBoundedFile(filepath.Join(corpus, "public_view_understated.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_understated.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_understated.schway")
 	}
 	originBytes += len(understated)
 	understatedChecked := Check(understated)
@@ -2085,10 +2085,10 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.understated_summary")
 	}
 
-	impossible, err := readBoundedFile(filepath.Join(corpus, "public_view_impossible.lang"), syntax.MaxSourceBytes)
+	impossible, err := readBoundedFile(filepath.Join(corpus, "public_view_impossible.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_impossible.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_impossible.schway")
 	}
 	originBytes += len(impossible)
 	impossibleChecked := Check(impossible)
@@ -2104,10 +2104,10 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:origin.impossible_summary")
 	}
 
-	honestView, err := readBoundedFile(filepath.Join(corpus, "public_view.lang"), syntax.MaxSourceBytes)
+	honestView, err := readBoundedFile(filepath.Join(corpus, "public_view.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view.schway")
 	}
 	originBytes += len(honestView)
 	honestViewChecked := Check(honestView)
@@ -2140,10 +2140,10 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 		}
 	}
 
-	omitted, err := readBoundedFile(filepath.Join(corpus, "public_view_omitted.lang"), syntax.MaxSourceBytes)
+	omitted, err := readBoundedFile(filepath.Join(corpus, "public_view_omitted.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_omitted.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_omitted.schway")
 	}
 	originBytes += len(omitted)
 	omittedChecked := Check(omitted)
@@ -2163,10 +2163,10 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 	// shared/exclusive reborrow chain whose declared access the body cannot
 	// support), which is precisely why the defect reached the shipped
 	// binary (03-REVIEW.md CR-01, closed by 03-08).
-	mixedAccess, err := readBoundedFile(filepath.Join(corpus, "public_view_mixed_access.lang"), syntax.MaxSourceBytes)
+	mixedAccess, err := readBoundedFile(filepath.Join(corpus, "public_view_mixed_access.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_mixed_access.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_mixed_access.schway")
 	}
 	originBytes += len(mixedAccess)
 	mixedAccessChecked := Check(mixedAccess)
@@ -2187,10 +2187,10 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 	// function whose first arm returns owned and whose second arm returns a
 	// live shared borrow, with no declared origin (match functions cannot
 	// declare one), must be refused publication with core.origin_omitted.
-	multiArmOmitted, err := readBoundedFile(filepath.Join(corpus, "public_view_multi_arm_omitted.lang"), syntax.MaxSourceBytes)
+	multiArmOmitted, err := readBoundedFile(filepath.Join(corpus, "public_view_multi_arm_omitted.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_multi_arm_omitted.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_multi_arm_omitted.schway")
 	}
 	originBytes += len(multiArmOmitted)
 	multiArmOmittedChecked := Check(multiArmOmitted)
@@ -2213,10 +2213,10 @@ func verifyBorrowedCorpus(ctx context.Context, corpus string, runner native.Runn
 	// undeclared form of the same fixture is already covered by
 	// TestMultiArmAccessConflictRejectedWhenDeclaredShared/... in
 	// originvalidate_test.go (unit tests, not this gate).
-	multiArmConflict, err := readBoundedFile(filepath.Join(corpus, "public_view_multi_arm_access_conflict.lang"), syntax.MaxSourceBytes)
+	multiArmConflict, err := readBoundedFile(filepath.Join(corpus, "public_view_multi_arm_access_conflict.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:borrowed-origin-controls", "fail", nil, originWork+1, originBytes, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_multi_arm_access_conflict.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "public_view_multi_arm_access_conflict.schway")
 	}
 	originBytes += len(multiArmConflict)
 	multiArmConflictChecked := Check(multiArmConflict)
@@ -2451,7 +2451,7 @@ func Phase4RequiredControls() []string {
 }
 
 // verifyForeignCorpus is Phase 4's foreign-call gate dispatch, selected by
-// VerifyCorpus on the presence of foreign_acquire_one.lang, mirroring
+// VerifyCorpus on the presence of foreign_acquire_one.schway, mirroring
 // verifyBorrowedCorpus's own dispatch precedent. It asserts the two
 // admission refusals D-04-16/D-04-02 require are visible to the gate as
 // required negative controls with honest, nonzero recomputed work, using
@@ -2461,7 +2461,7 @@ func Phase4RequiredControls() []string {
 //
 // Phase 11 (11-GUARD-LEDGER.md): this function's own single-function
 // guard is KEPT -- it is bound to the fixed Phase 4 fixture
-// defect_terminal.lang, genuinely single-function by construction and
+// defect_terminal.schway, genuinely single-function by construction and
 // unrelated to the multi-function corpus this phase widens.
 func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runner) protocol.Result {
 	started := time.Now()
@@ -2489,8 +2489,8 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		control string
 		lane    string
 	}{
-		{"foreign_unwind_undeclared.lang", "foreign.unwind_policy_undeclared", "control:foreign.unwind_policy_undeclared", "lane:foreign-unwind-policy-undeclared"},
-		{"foreign_call_target_not_foreign.lang", "core.call_target_not_foreign", "control:foreign.call_target_not_foreign", "lane:foreign-call-target-not-foreign"},
+		{"foreign_unwind_undeclared.schway", "foreign.unwind_policy_undeclared", "control:foreign.unwind_policy_undeclared", "lane:foreign-unwind-policy-undeclared"},
+		{"foreign_call_target_not_foreign.schway", "core.call_target_not_foreign", "control:foreign.call_target_not_foreign", "lane:foreign-call-target-not-foreign"},
 	}
 	for _, negative := range negativeControls {
 		laneStarted := time.Now()
@@ -2511,15 +2511,15 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// required-control corpus that only ever exercises refusals would not
 	// prove the admission gate lets a genuinely well-formed program through.
 	laneStarted := time.Now()
-	positiveSource, err := readBoundedFile(filepath.Join(corpus, "foreign_acquire_one.lang"), syntax.MaxSourceBytes)
+	positiveSource, err := readBoundedFile(filepath.Join(corpus, "foreign_acquire_one.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:foreign-acquire-admitted", "fail", nil, 1, 0, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "foreign_acquire_one.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "foreign_acquire_one.schway")
 	}
 	positiveChecked := Check(positiveSource)
 	if len(positiveChecked.Diagnostics) != 0 {
 		addLane("lane:foreign-acquire-admitted", "fail", nil, positiveChecked.Work+1, len(positiveSource), laneStarted)
-		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "foreign_acquire_one.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "foreign_acquire_one.schway")
 	}
 	validated := corevalidate.Validate(positiveChecked.Program)
 	if !validated.Valid {
@@ -2536,15 +2536,15 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// itself is not what is being tested here -- the independent
 	// rederivation is), and require the mismatch.
 	laneStarted = time.Now()
-	releaseSource, err := readBoundedFile(filepath.Join(corpus, "acquire_three_success.lang"), syntax.MaxSourceBytes)
+	releaseSource, err := readBoundedFile(filepath.Join(corpus, "acquire_three_success.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:release-order-transposed", "fail", nil, 1, 0, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "acquire_three_success.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "acquire_three_success.schway")
 	}
 	releaseChecked := Check(releaseSource)
 	if len(releaseChecked.Diagnostics) != 0 {
 		addLane("lane:release-order-transposed", "fail", nil, releaseChecked.Work+1, len(releaseSource), laneStarted)
-		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "acquire_three_success.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "acquire_three_success.schway")
 	}
 	transposed, err := TransposeReleaseOrder(releaseChecked.Program)
 	if err != nil {
@@ -2561,7 +2561,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// Lane: control:resource.release_omitted (D-04-07/Pitfall 2). Attacks
 	// the EMITTER's own generated C, a different artifact than the
 	// transposition lane above: delete one generated line bearing
-	// lang:release-site (event plus runtime ledger decrement, on the same
+	// schway:release-site (event plus runtime ledger decrement, on the same
 	// line) and require the mutated program's own native run to be
 	// detectably wrong -- a live resource the emitter's own runtime ledger
 	// never cleared, surfaced as an invalid execution document (nonzero
@@ -2571,7 +2571,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	releaseValidated := corevalidate.Validate(releaseChecked.Program)
 	if !releaseValidated.Valid {
 		addLane("lane:release-omitted", "fail", nil, releaseChecked.Work+releaseValidated.Checks, len(releaseSource), laneStarted)
-		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "acquire_three_success.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "acquire_three_success.schway")
 	}
 	// RunNative's special ForeignSources wiring only fires for a bare
 	// native.Runner value; this lane's fixture is foreign-shaped, so the
@@ -2579,7 +2579,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	foreignRunner := runner
 	foreignRunner.ForeignSources = append(append([]string(nil), foreignRunner.ForeignSources...), native.ForeignResourceSourcePath())
 	omissionRunner := NewReleaseOmissionMutationRunner(foreignRunner)
-	_, _, omissionErr := runNative(ctx, releaseSource, omissionRunner, "testdata/phase4/acquire_three_success.lang")
+	_, _, omissionErr := runNative(ctx, releaseSource, omissionRunner, "testdata/phase4/acquire_three_success.schway")
 	if omissionErr == nil {
 		addLane("lane:release-omitted", "fail", nil, releaseChecked.Work+len(omissionRunner.Optimizations()), len(releaseSource), laneStarted)
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:resource.release_omitted")
@@ -2616,7 +2616,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// Scans every emitted C artifact for the tracer and release fixtures --
 	// the compiled program, the generated header, and the generated
 	// conformance unit (D-04-12's three named inspectable layers) -- plus
-	// their lang.foreign/0 sidecar manifests, for a banned optimizer-visible
+	// their schway.foreign/0 sidecar manifests, for a banned optimizer-visible
 	// attribute token, and requires the manifest's emitted_attributes field
 	// to be present and empty. EmitForeignHeader/EmitForeignConformance are
 	// scanned here too (not just cgen.Emit's compiled-program output): a
@@ -2624,7 +2624,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// human reviewer is most likely to actually read -- would otherwise go
 	// completely undetected (WR-01).
 	laneStarted = time.Now()
-	tracerCSource, tracerErr := Phase16ControlNativeC(positiveChecked.Program, "testdata/phase4/foreign_acquire_one.lang")
+	tracerCSource, tracerErr := Phase16ControlNativeC(positiveChecked.Program, "testdata/phase4/foreign_acquire_one.schway")
 	if tracerErr != nil {
 		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 1, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer C for attribute scan")
@@ -2644,7 +2644,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 4, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit tracer conformance unit for attribute scan")
 	}
-	releaseCSource, releaseCSourceErr := Phase16ControlNativeC(releaseChecked.Program, "testdata/phase4/acquire_three_success.lang")
+	releaseCSource, releaseCSourceErr := Phase16ControlNativeC(releaseChecked.Program, "testdata/phase4/acquire_three_success.schway")
 	if releaseCSourceErr != nil {
 		addLane("lane:foreign-no-unproven-attributes", "fail", nil, 5, 0, laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit release C for attribute scan")
@@ -2708,15 +2708,15 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// mutation in the same family as LayoutMutationRunner (attacking the
 	// artifact this control inspects), never the interpreter's own source.
 	laneStarted = time.Now()
-	defectSource, err := readBoundedFile(filepath.Join(corpus, "defect_terminal.lang"), syntax.MaxSourceBytes)
+	defectSource, err := readBoundedFile(filepath.Join(corpus, "defect_terminal.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:defect-no-release", "fail", nil, 1, 0, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "defect_terminal.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "defect_terminal.schway")
 	}
 	defectChecked := Check(defectSource)
 	if len(defectChecked.Diagnostics) != 0 {
 		addLane("lane:defect-no-release", "fail", nil, defectChecked.Work+1, len(defectSource), laneStarted)
-		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "defect_terminal.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "defect_terminal.schway")
 	}
 	if len(defectChecked.Program.Functions) != 1 || defectChecked.Program.Functions[0].Match == nil {
 		addLane("lane:defect-no-release", "fail", nil, defectChecked.Work+1, len(defectSource), laneStarted)
@@ -2808,17 +2808,17 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// SPECIFICALLY for a leak-count disagreement, not merely "some
 	// difference," per D-09/D-04-21.
 	laneStarted = time.Now()
-	nonlocalSource, err := readBoundedFile(filepath.Join(corpus, "nonlocal_exit_probe.lang"), syntax.MaxSourceBytes)
+	nonlocalSource, err := readBoundedFile(filepath.Join(corpus, "nonlocal_exit_probe.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:nonlocal-exit-undetected", "fail", nil, 1, 0, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "nonlocal_exit_probe.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "nonlocal_exit_probe.schway")
 	}
 	nonlocalChecked := Check(nonlocalSource)
 	if len(nonlocalChecked.Diagnostics) != 0 {
 		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+1, len(nonlocalSource), laneStarted)
-		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "nonlocal_exit_probe.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "nonlocal_exit_probe.schway")
 	}
-	nonlocalCSource, nonlocalCSourceErr := Phase16ControlNativeC(nonlocalChecked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	nonlocalCSource, nonlocalCSourceErr := Phase16ControlNativeC(nonlocalChecked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if nonlocalCSourceErr != nil {
 		addLane("lane:nonlocal-exit-undetected", "fail", nil, nonlocalChecked.Work+2, len(nonlocalSource), laneStarted)
 		return fail(protocol.StatusOperational, "verify.control_incomplete", "unable to emit nonlocal-exit probe C")
@@ -2890,20 +2890,20 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	addLane("lane:terminator-walk-complete", "pass", []string{"control:terminator.walk_incomplete"}, terminatorWork, 0, laneStarted)
 
 	// Lane: control:origin.foreign_origin_omitted (D-04-28, task 04-06-02).
-	// The shipped foreign_origin_omitted.lang fixture -- a foreign call
+	// The shipped foreign_origin_omitted.schway fixture -- a foreign call
 	// declared to borrow its argument, returned with no declared public
 	// origin -- must be refused by originvalidate.ValidatePublished with
 	// exactly that code, derived from the core artifact alone.
 	laneStarted = time.Now()
-	foreignOriginSource, err := readBoundedFile(filepath.Join(corpus, "foreign_origin_omitted.lang"), syntax.MaxSourceBytes)
+	foreignOriginSource, err := readBoundedFile(filepath.Join(corpus, "foreign_origin_omitted.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		addLane("lane:foreign-origin-omitted", "fail", nil, 1, 0, laneStarted)
-		return fail(protocol.StatusOperational, "verify.fixture_missing", "foreign_origin_omitted.lang")
+		return fail(protocol.StatusOperational, "verify.fixture_missing", "foreign_origin_omitted.schway")
 	}
 	foreignOriginChecked := Check(foreignOriginSource)
 	if len(foreignOriginChecked.Diagnostics) != 0 {
 		addLane("lane:foreign-origin-omitted", "fail", nil, foreignOriginChecked.Work+1, len(foreignOriginSource), laneStarted)
-		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "foreign_origin_omitted.lang")
+		return fail(protocol.StatusInvalid, "verify.fixture_rejected", "foreign_origin_omitted.schway")
 	}
 	foreignOriginProblems := originvalidate.ValidatePublished(foreignOriginChecked.Program)
 	if len(foreignOriginProblems) != 1 || foreignOriginProblems[0].Code != "core.foreign_origin_omitted" {
@@ -2916,7 +2916,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// the session-layer, CLI-observable sibling of core_test.go's
 	// TestAllOperationKindsHandledAtEverySite, which proves dispatch
 	// completeness in-process across all four phases' corpora combined; this
-	// lane proves the same claim is visible through `lang verify
+	// lane proves the same claim is visible through `schway verify
 	// testdata/phase4` itself, scoped to the four operation kinds THIS phase
 	// introduced (OpForeignCall, OpRelease, OpFail, OpDefect) -- the kinds
 	// Phase 1-3's own corpora cannot exercise, so this corpus is the only
@@ -2925,7 +2925,7 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 	// through corevalidate, pathoracle, originvalidate, interp, and cgen, and
 	// requires all four kinds to be encountered by at least one operation.
 	laneStarted = time.Now()
-	dispatchFixtures := []string{"foreign_acquire_one.lang", "acquire_three_success.lang", "defect_terminal.lang", "nonlocal_exit_probe.lang"}
+	dispatchFixtures := []string{"foreign_acquire_one.schway", "acquire_three_success.schway", "defect_terminal.schway", "nonlocal_exit_probe.schway"}
 	encounteredKinds := make(map[core.OperationKind]bool)
 	dispatchWork := 0
 	for _, fixtureName := range dispatchFixtures {

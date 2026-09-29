@@ -8,14 +8,14 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 // Phase16ControlNativeC is the production session boundary for native C.
@@ -135,11 +135,11 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	// Lanes: control:foreign.no_unproven_attributes (positive, narrowed by
 	// plan 05-04) and control:core.attribute_unjustified (negative,
 	// D-05-03b's own falsifier), both driven off the same checked
-	// restrict_borrow.lang fixture so the negative lane's corrupted claim
+	// restrict_borrow.schway fixture so the negative lane's corrupted claim
 	// is compared against the identical program the positive lane proved
 	// justified.
 	attributesStarted := time.Now()
-	restrictSource, err := os.ReadFile(nat03CorpusPath("testdata/phase5/restrict_borrow.lang"))
+	restrictSource, err := os.ReadFile(nat03CorpusPath("testdata/phase5/restrict_borrow.schway"))
 	switch {
 	case err != nil:
 		addLane("lane:foreign-no-unproven-attributes", protocol.StatusOperational, nil, 1, attributesStarted)
@@ -148,7 +148,7 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	default:
 		restrictChecked := Check(restrictSource)
 		// Phase 11 (11-GUARD-LEDGER.md): KEPT. Bound to the fixed Phase 5
-		// fixture restrict_borrow.lang, genuinely single-function by
+		// fixture restrict_borrow.schway, genuinely single-function by
 		// construction; unrelated to the multi-function corpus this
 		// phase widens.
 		if len(restrictChecked.Diagnostics) != 0 || len(restrictChecked.Program.Functions) != 1 {
@@ -185,7 +185,7 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	// Lane: control:alias.false_no_alias (D-05-05), reusing the exact
 	// mutation runner and assertion NAT03Mutations' own row 5 cites.
 	aliasStarted := time.Now()
-	aliasRunner := NewAliasFactMutationRunner(runner, nat03CorpusPath("testdata/phase5/false_restrict_hoist.lang"))
+	aliasRunner := NewAliasFactMutationRunner(runner, nat03CorpusPath("testdata/phase5/false_restrict_hoist.schway"))
 	if aliasErr := VerifyAliasFalseNoAlias(ctx, aliasRunner); aliasErr != nil {
 		addLane("lane:alias-false-no-alias", protocol.StatusMismatch, nil, aliasRunner.RecomputedWork()+1, aliasStarted)
 		markFail(protocol.StatusMismatch)
@@ -197,7 +197,7 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	// two independent Check() runs over the same reject-program must agree
 	// on the exact same diagnostic ID.
 	diagnosticStarted := time.Now()
-	rejectSource, rejectErr := os.ReadFile(nat03CorpusPath("testdata/phase4/foreign_call_target_not_foreign.lang"))
+	rejectSource, rejectErr := os.ReadFile(nat03CorpusPath("testdata/phase4/foreign_call_target_not_foreign.schway"))
 	if rejectErr != nil {
 		addLane("lane:diagnostic-reject-program-id-equivalence", protocol.StatusOperational, nil, 1, diagnosticStarted)
 		markFail(protocol.StatusOperational)
@@ -209,7 +209,7 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 			markFail(protocol.StatusInvalid)
 		} else {
 			diagnostics := map[string]diagnostic.Diagnostic{"check-run-1": firstChecked.Diagnostics[0], "check-run-2": secondChecked.Diagnostics[0]}
-			if compareErr := Phase5CompareDiagnosticIDs("foreign_call_target_not_foreign.lang", diagnostics); compareErr != nil {
+			if compareErr := Phase5CompareDiagnosticIDs("foreign_call_target_not_foreign.schway", diagnostics); compareErr != nil {
 				addLane("lane:diagnostic-reject-program-id-equivalence", protocol.StatusMismatch, nil, 2, diagnosticStarted)
 				markFail(protocol.StatusMismatch)
 			} else {
@@ -236,7 +236,7 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 
 	// Lane: control:interpreter-o0-o3-lto (D-05-19): a real
 	// interpreter/-O0/-O3/-O3-LTO differential over one of the Phase 5
-	// adversarial fixtures -- inline_across_foreign.lang, the fixture
+	// adversarial fixtures -- inline_across_foreign.schway, the fixture
 	// D-05-18a specifically engineered to give `-flto` a real cross-TU
 	// inlining opportunity the non-LTO tiers cannot take.
 	ltoStarted := time.Now()
@@ -338,14 +338,14 @@ func VerifyPhase5ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	return result.Finalize(), nil
 }
 
-// phase5RunInterpreterO0O3LTOLane drives inline_across_foreign.lang
+// phase5RunInterpreterO0O3LTOLane drives inline_across_foreign.schway
 // through the interpreter and three native builds -- -O0, -O3, and
 // -O3 with LTO -- and compares all four via Phase5CompareEngines. Split
 // out of VerifyPhase5ControlsAndWork as its own function so a failure at
 // any step degrades to a single reported lane status rather than aborting
 // the whole gate.
 func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) (status string, controls []string, work int) {
-	const fixture = "inline_across_foreign.lang"
+	const fixture = "inline_across_foreign.schway"
 	source, err := os.ReadFile(nat03CorpusPath("testdata/phase5/" + fixture))
 	if err != nil {
 		return protocol.StatusOperational, nil, 1
@@ -360,7 +360,7 @@ func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) 
 	}
 	program := validated.Program()
 	// Phase 11 (11-GUARD-LEDGER.md): KEPT. Bound to the fixed Phase 5
-	// fixture inline_across_foreign.lang, genuinely single-function by
+	// fixture inline_across_foreign.schway, genuinely single-function by
 	// construction -- its own cross-TU LTO opportunity is the foreign
 	// boundary, not the multi-function corpus this phase widens. The
 	// comparator this lane calls (Phase5CompareEngines) is unaffected;
@@ -374,7 +374,7 @@ func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) 
 	if err != nil {
 		return protocol.StatusOperational, nil, 1
 	}
-	cSource, err := Phase16ControlNativeC(program, "testdata/phase5/inline_across_foreign.lang")
+	cSource, err := Phase16ControlNativeC(program, "testdata/phase5/inline_across_foreign.schway")
 	if err != nil {
 		return protocol.StatusOperational, nil, 1
 	}
@@ -418,14 +418,14 @@ func phase5RunInterpreterO0O3LTOLane(ctx context.Context, runner native.Runner) 
 }
 
 // assertAllocatorMismatchMovesAxis proves control:native.sanitize.allocator_mismatch
-// against its cited fixture (testdata/phase5/allocator_mismatch.lang):
+// against its cited fixture (testdata/phase5/allocator_mismatch.schway):
 // ASan's own alloc-dealloc-mismatch report is a genuine divergence from a
 // clean terminal outcome so extreme no comparable execution.Execution
 // document is ever produced at all -- mapped onto axis:terminal-outcome,
 // the same mapping assertLayoutMismatchMovesAxis uses for an equally
 // total refusal (a normal return vs. an ASan-terminated process).
 func assertAllocatorMismatchMovesAxis(ctx context.Context, mutation NAT03Mutation) error {
-	cSource, err := compilePhase5SanitizeFixture("testdata/phase5/allocator_mismatch.lang")
+	cSource, err := compilePhase5SanitizeFixture("testdata/phase5/allocator_mismatch.schway")
 	if err != nil {
 		return err
 	}

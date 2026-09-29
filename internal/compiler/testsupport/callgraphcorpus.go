@@ -3,7 +3,7 @@ package testsupport
 import (
 	"fmt"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 // ---------------------------------------------------------------------
@@ -11,7 +11,7 @@ import (
 // corpus, the growth-exponent fit, and the <= 1.2 assertion. This file
 // builds core.Program/core.Function/core.LinearOperation values DIRECTLY,
 // exactly like TestSummaryDerivationTwoHopChainPropagates and its 08-02
-// siblings above -- it never generates .lang source text and never touches
+// siblings above -- it never generates .schway source text and never touches
 // internal/compiler/syntax, because at the sizes this gate needs (hundreds
 // of functions) parse time would very plausibly dominate and mask the
 // exact curve this gate exists to see (D-08-34). TestCostCorpusIsNotParsed

@@ -1,8 +1,8 @@
 package session
 
 import (
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
 // Phase 11 plan 11-09 (D-11-33) test wrappers: expose foreignCallSequenceFor

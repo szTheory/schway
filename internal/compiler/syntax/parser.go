@@ -3,8 +3,8 @@ package syntax
 import (
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 )
 
 const (

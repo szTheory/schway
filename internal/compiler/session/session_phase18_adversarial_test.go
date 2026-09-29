@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 var phase18RequiredEngines = []string{"interpreter", "O0", "O3", "O3-LTO"}
@@ -27,7 +27,7 @@ func phase18CompareAcceptance(program core.Program, engines map[string]execution
 }
 
 func TestPhase18ComparatorControlRejectsMissingExecutionTierAndRequiresPeer(t *testing.T) {
-	program := checkedProgram(t, "testdata", "phase18", "payload_return.lang")
+	program := checkedProgram(t, "testdata", "phase18", "payload_return.schway")
 	engines := phase11RunFourTiersWithSupplier(t, context.Background(), program, "return_payload", "Ok", cgen.EmitProgramNativeForTest, "emitProgram")
 	engines["interpreter"] = phase16ProjectInterpreterSchema2(t, program, engines["interpreter"])
 	if err := phase18CompareAcceptance(program, engines); err != nil {

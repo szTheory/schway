@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // TestPayloadTracerThreeEngineAgreement is Phase 12 Plan 02's own tracer
@@ -21,7 +21,7 @@ import (
 // emission path, rather than passing vacuously on a program that never
 // exercised it.
 func TestPayloadTracerThreeEngineAgreement(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase12", "payload_tracer.lang")
+	path := testsupport.ProjectPath("testdata", "phase12", "payload_tracer.schway")
 	result, diagnostics, err := session.RunNativeFile(context.Background(), path, native.DefaultRunner())
 	if len(diagnostics) != 0 {
 		t.Fatalf("fixture failed to check: %+v", diagnostics)

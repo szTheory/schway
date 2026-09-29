@@ -6,10 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // Phase5CorpusBoundVersion, Phase5EnumerationMaxDepth, and
@@ -47,12 +47,12 @@ var Phase5AdversarialTargets = []string{
 // N's header must carry Phase5AdversarialTargets[N] verbatim
 // (TestPhase5AdversarialSubsetIsComplete asserts this pairing).
 var Phase5AdversarialFixtureFiles = []string{
-	"inline_across_foreign.lang",
-	"dead_store_unused_acquire.lang",
-	"reorder_two_events.lang",
-	"tail_collapse_release_ladder.lang",
-	"typed_failure_truncated_stdout.lang",
-	"defect_dies_by_signal.lang",
+	"inline_across_foreign.schway",
+	"dead_store_unused_acquire.schway",
+	"reorder_two_events.schway",
+	"tail_collapse_release_ladder.schway",
+	"typed_failure_truncated_stdout.schway",
+	"defect_dies_by_signal.schway",
 }
 
 // phase5AdversarialTargetHeader is the exact header comment form every
@@ -62,7 +62,7 @@ func phase5AdversarialTargetHeader(target string) string {
 }
 
 // Phase5MilestoneCorpus returns the union corpus D-05-18 defines: every
-// `.lang` fixture under testdata/phase1, testdata/phase2, testdata/phase3,
+// `.schway` fixture under testdata/phase1, testdata/phase2, testdata/phase3,
 // testdata/phase4, and testdata/phase5, named by path relative to corpusRoot.
 // Prior-phase members are included BY PATH, never copied or rewritten
 // (D-05-18's own "the union grows, it never rewrites" must-have).
@@ -70,7 +70,7 @@ func Phase5MilestoneCorpus(corpusRoot string) ([]string, error) {
 	var paths []string
 	for _, phase := range []string{"phase1", "phase2", "phase3", "phase4", "phase5"} {
 		dir := filepath.Join(corpusRoot, phase)
-		matches, err := filepath.Glob(filepath.Join(dir, "*.lang"))
+		matches, err := filepath.Glob(filepath.Join(dir, "*.schway"))
 		if err != nil {
 			return nil, fmt.Errorf("glob %s: %w", dir, err)
 		}
@@ -118,7 +118,7 @@ func admitPhase5Candidate(source string) (core.Program, bool) {
 // (the other two, try/discard, are exercised separately by
 // phase5ForeignChainSource). `borrow mut` is included as the exclusive
 // counterpart to `borrow`'s shared loan, matching the same alphabet
-// restrict_borrow.lang's own chain uses (05-01-SUMMARY.md).
+// restrict_borrow.schway's own chain uses (05-01-SUMMARY.md).
 var phase5ChainKinds = []string{"borrow", "borrow mut", "take"}
 
 // phase5OwnershipChainSource generates one straight-line candidate source
@@ -163,13 +163,13 @@ func phase5OwnershipChainSource(paramType string, length, encoded int, touchPara
 // phase5ForeignChainShapes and phase5ForeignAlternativeCounts are the two
 // enumeration axes phase5ForeignChainSource combines: a fixed set of
 // try/discard chain shapes (peering testdata/phase4's own acquire_three_*
-// and discard_because.lang shapes) crossed with a declared failure ADT of
+// and discard_because.schway shapes) crossed with a declared failure ADT of
 // either 1 or 2 alternatives (D-05-18b's "at most 2 ADT alternatives").
 // Only single-call shapes are enumerated here: D-05-18b's own grammar
 // bounds a candidate to "0 or 1 foreign call" per function, and try2/try3/
 // mixed multi-stage chains (each with 2+ OpForeignCall operations) belong
-// to the hand-written adversarial subset's tail_collapse_release_ladder.lang
-// and reorder_two_events.lang instead (Task 1), not this bounded closure.
+// to the hand-written adversarial subset's tail_collapse_release_ladder.schway
+// and reorder_two_events.schway instead (Task 1), not this bounded closure.
 var phase5ForeignChainShapes = []string{"try1", "discard1"}
 var phase5ForeignAlternativeCounts = []int{1, 2}
 
@@ -177,7 +177,7 @@ var phase5ForeignAlternativeCounts = []int{1, 2}
 // single declared foreign symbol called through the named shape's
 // try/discard sequence, with the function returning its own parameter --
 // checkFallibleLinear's resource-lifecycle shape (D-05-18b's "0 or 1
-// foreign call" axis). The declared symbol is `lang_res_open` -- the SAME
+// foreign call" axis). The declared symbol is `schway_res_open` -- the SAME
 // real, frozen, byte-identical production symbol every Phase 4 foreign
 // fixture declares -- rather than a made-up name, because
 // native.ForeignSourcePathForSymbol only resolves a fixed, closed set of
@@ -189,7 +189,7 @@ func phase5ForeignChainSource(shape string, alternativeCount int) string {
 	var body strings.Builder
 	fmt.Fprintf(&body, "module phase5.enum_foreign_%s_alt%d\n\n", shape, alternativeCount)
 	body.WriteString("export {\n  fn main\n}\n\n")
-	body.WriteString("foreign C {\n\n  fn lang_res_open(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: AcquireError\n  }\n}\n\n")
+	body.WriteString("foreign C {\n\n  fn schway_res_open(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: AcquireError\n  }\n}\n\n")
 	body.WriteString("data AcquireError =\n  | OpenFailed\n")
 	if alternativeCount >= 2 {
 		body.WriteString("  | OpenFailedAgain\n")
@@ -197,9 +197,9 @@ func phase5ForeignChainSource(shape string, alternativeCount int) string {
 	body.WriteString("\nfn main(request: Byte) -> Byte {\n")
 	switch shape {
 	case "try1":
-		body.WriteString("  let a = try lang_res_open(request)\n")
+		body.WriteString("  let a = try schway_res_open(request)\n")
 	case "discard1":
-		body.WriteString("  discard lang_res_open(request) because \"advisory\"\n")
+		body.WriteString("  discard schway_res_open(request) because \"advisory\"\n")
 	}
 	body.WriteString("  request\n}\n")
 	return body.String()

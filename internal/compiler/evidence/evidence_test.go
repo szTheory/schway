@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/evidence"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestOwnedEvidenceBindings(t *testing.T) {
@@ -22,7 +22,7 @@ func TestOwnedEvidenceBindings(t *testing.T) {
 		t.Fatalf("owned evidence golden differs:\n--- got ---\n%s\n--- want ---\n%s", product.ManifestBytes, golden)
 	}
 	manifest := product.Manifest
-	if manifest.Schema != "lang.evidence/1" || manifest.CoreSchema != "lang.core/1" || manifest.ExecutionSchema != "lang.execution/1" || manifest.DiagnosticSchema != "lang.diagnostic/1" {
+	if manifest.Schema != "schway.evidence/1" || manifest.CoreSchema != "schway.core/1" || manifest.ExecutionSchema != "schway.execution/1" || manifest.DiagnosticSchema != "schway.diagnostic/1" {
 		t.Fatalf("owned evidence omitted concrete schemas: %+v", manifest)
 	}
 	if manifest.DigestClaim != "content-identity-only" || manifest.KnownEscape != corevalidate.KnownEscape {
@@ -35,7 +35,7 @@ func TestOwnedEvidenceBindings(t *testing.T) {
 	if err != nil || manifest.ExecutionDigests[0] != evidence.ContentDigest(encoded) {
 		t.Fatalf("execution digest mismatch: err=%v manifest=%+v execution=%s", err, manifest, encoded)
 	}
-	if err := evidence.Validate(manifest, readPhase2(t, "owned_transfer.lang"), ownedFacts()); err != nil {
+	if err := evidence.Validate(manifest, readPhase2(t, "owned_transfer.schway"), ownedFacts()); err != nil {
 		t.Fatalf("owned evidence did not validate: %v", err)
 	}
 
@@ -55,13 +55,13 @@ func TestOwnedEvidenceBindings(t *testing.T) {
 
 func TestOwnedEvidenceMutationMatrix(t *testing.T) {
 	product := ownedProduct(t)
-	source := readPhase2(t, "owned_transfer.lang")
+	source := readPhase2(t, "owned_transfer.schway")
 	tests := []struct {
 		name string
 		code string
 		edit func(*evidence.Manifest)
 	}{
-		{"diagnostic schema", "evidence.diagnostic_schema_mismatch", func(v *evidence.Manifest) { v.DiagnosticSchema = "lang.diagnostic/0" }},
+		{"diagnostic schema", "evidence.diagnostic_schema_mismatch", func(v *evidence.Manifest) { v.DiagnosticSchema = "schway.diagnostic/0" }},
 		{"execution digest", "evidence.execution_mismatch", func(v *evidence.Manifest) { v.ExecutionDigests[0] = staleDigest() }},
 		{"escape", "evidence.escape_mismatch", func(v *evidence.Manifest) { v.KnownEscape = "detected:coordinated-source-core-lie" }},
 		{"digest claim", "evidence.digest_claim_mismatch", func(v *evidence.Manifest) { v.DigestClaim = "translation-proof" }},
@@ -114,7 +114,7 @@ func TestPhase3FieldsAreOmittedWhenAbsent(t *testing.T) {
 	phase1 := goldenProduct(t)
 	assertKeysAbsent(t, "Phase 1", phase1.CoreBytes, forbidden)
 
-	phase2Source := readPhase2(t, "owned_transfer.lang")
+	phase2Source := readPhase2(t, "owned_transfer.schway")
 	phase2Product, diagnostics, err := evidence.Build(phase2Source, ownedFacts())
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("build phase 2 evidence: err=%v diagnostics=%+v", err, diagnostics)
@@ -166,16 +166,16 @@ func walkKeys(value any, visit func(string)) {
 // previously received unconditionally. evidence.canonical_unstable itself is
 // only reachable by injecting a broken formatter into build()'s internal
 // seam (evidence.go's own unit tests exercise that seam directly) — no real
-// `.lang` file reaches it through the CLI — so this asserts the actual fix at
-// the boundary that changed: cmd/lang/main.go's evidence command must route
+// `.schway` file reaches it through the CLI — so this asserts the actual fix at
+// the boundary that changed: cmd/schway/main.go's evidence command must route
 // through evidence.ErrorCode(err) rather than a hardcoded fallback string, so
 // whatever code Build ever returns is preserved end to end.
 // TestForeignSidecarManifestDigestBinds proves Task 04-03-01: a program
 // declaring a foreign block produces a non-empty ForeignDigest that is
-// exactly the content digest of its own lang.foreign/0 sidecar manifest
+// exactly the content digest of its own schway.foreign/0 sidecar manifest
 // (D-04-12c), and a program with no foreign block leaves it empty.
 func TestForeignEvidenceIsRefusedAfterM004Cut(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,23 +186,23 @@ func TestForeignEvidenceIsRefusedAfterM004Cut(t *testing.T) {
 }
 
 func TestEvidenceErrorCodeReachesCLI(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("cmd", "lang", "main.go"))
+	source, err := os.ReadFile(testsupport.ProjectPath("cmd", "schway", "main.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(source)
 	if !strings.Contains(text, `evidence.ErrorCode(err)`) {
-		t.Fatal("cmd/lang/main.go's evidence command must route through evidence.ErrorCode(err), not a hardcoded fallback")
+		t.Fatal("cmd/schway/main.go's evidence command must route through evidence.ErrorCode(err), not a hardcoded fallback")
 	}
 	if strings.Contains(text, `problemResult("evidence", protocol.StatusOperational, "evidence.operation_failed"`) {
-		t.Fatal("cmd/lang/main.go still hardcodes evidence.operation_failed instead of the recomputed error code")
+		t.Fatal("cmd/schway/main.go still hardcodes evidence.operation_failed instead of the recomputed error code")
 	}
 
 	// The CLI-observable half of the same fix: a genuinely invalid source
 	// still yields a real diagnostic (not silently empty) through the exact
 	// command path that used to collapse every failure into one code.
 	binary := testsupport.BuildCLI(t)
-	invalid := testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.lang")
+	invalid := testsupport.ProjectPath("testdata", "phase1", "non_exhaustive.schway")
 	result := testsupport.RunCLI(t, binary, nil, "--json", "evidence", invalid)
 	if result.Exit != 2 {
 		t.Fatalf("expected an invalid-source exit, got %+v", result)
@@ -218,7 +218,7 @@ func TestEvidenceErrorCodeReachesCLI(t *testing.T) {
 
 func ownedProduct(t testing.TB) evidence.Product {
 	t.Helper()
-	product, diagnostics, err := evidence.Build(readPhase2(t, "owned_transfer.lang"), ownedFacts())
+	product, diagnostics, err := evidence.Build(readPhase2(t, "owned_transfer.schway"), ownedFacts())
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("build owned evidence: err=%v diagnostics=%+v", err, diagnostics)
 	}
@@ -226,7 +226,7 @@ func ownedProduct(t testing.TB) evidence.Product {
 }
 
 func ownedFacts() evidence.Facts {
-	return evidence.Facts{CompilerIdentity: "codename-lang-stage0/go1.24-fixture", ClangIdentity: "clang-fixture 21.0.0", Target: "arm64-apple-darwin-fixture", Flags: append([]string(nil), evidence.DefaultFlags...), Policy: "phase2-owned-c17-v1"}
+	return evidence.Facts{CompilerIdentity: "schway-stage0/go1.24-fixture", ClangIdentity: "clang-fixture 21.0.0", Target: "arm64-apple-darwin-fixture", Flags: append([]string(nil), evidence.DefaultFlags...), Policy: "phase2-owned-c17-v1"}
 }
 
 // TestForeignDigestMismatchRefused is task 04-07-02's own control
@@ -236,7 +236,7 @@ func ownedFacts() evidence.Facts {
 // TestEvidenceMutationMatrix's established per-field mutation-and-refuse
 // shape for this new Phase 4 field specifically.
 func TestForeignDigestMismatchIsUnreachableAfterM004Cut(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_acquire_one.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestCanonicalEvidence(t *testing.T) {
 
 func TestStaleManifest(t *testing.T) {
 	product := goldenProduct(t)
-	source := readGolden(t, "toggle.lang")
+	source := readGolden(t, "toggle.schway")
 	staleSource := append([]byte("// changed review context\n"), source...)
 	if err := evidence.Validate(product.Manifest, staleSource, goldenFacts()); evidence.ErrorCode(err) != "evidence.source_mismatch" {
 		t.Fatalf("stale source code=%s want=evidence.source_mismatch", evidence.ErrorCode(err))
@@ -321,19 +321,19 @@ func TestStaleManifest(t *testing.T) {
 
 func TestEvidenceMutationMatrix(t *testing.T) {
 	product := goldenProduct(t)
-	source := readGolden(t, "toggle.lang")
+	source := readGolden(t, "toggle.schway")
 	tests := []struct {
 		name string
 		code string
 		edit func(*evidence.Manifest)
 	}{
-		{"schema", "evidence.schema_mismatch", func(value *evidence.Manifest) { value.Schema = "lang.evidence/9" }},
+		{"schema", "evidence.schema_mismatch", func(value *evidence.Manifest) { value.Schema = "schway.evidence/9" }},
 		{"id algorithm", "evidence.id_algorithm_mismatch", func(value *evidence.Manifest) { value.IDAlgorithm = "other" }},
 		{"source schema", "evidence.source_schema_mismatch", func(value *evidence.Manifest) { value.SourceSchema = "other" }},
 		{"core schema", "evidence.core_schema_mismatch", func(value *evidence.Manifest) { value.CoreSchema = "other" }},
 		{"execution schema", "evidence.execution_schema_mismatch", func(value *evidence.Manifest) { value.ExecutionSchema = "other" }},
 		{"compiler", "evidence.compiler_mismatch", func(value *evidence.Manifest) { value.CompilerIdentity = "other" }},
-		{"clang", "evidence.clang_mismatch", func(value *evidence.Manifest) { value.ClangIdentity = "other" }},
+		{"clang", "evidence.cschway_mismatch", func(value *evidence.Manifest) { value.ClangIdentity = "other" }},
 		{"target", "evidence.target_mismatch", func(value *evidence.Manifest) { value.Target = "other" }},
 		{"flags changed", "evidence.flags_mismatch", func(value *evidence.Manifest) { value.Flags[0] = "-std=c99" }},
 		{"flags reordered", "evidence.flags_mismatch", func(value *evidence.Manifest) { value.Flags[0], value.Flags[1] = value.Flags[1], value.Flags[0] }},
@@ -365,10 +365,10 @@ func TestEvidenceMutationMatrix(t *testing.T) {
 }
 
 func TestEvidenceRelocation(t *testing.T) {
-	source := readGolden(t, "toggle.lang")
+	source := readGolden(t, "toggle.schway")
 	var products []evidence.Product
 	for index := 0; index < 2; index++ {
-		path := filepath.Join(t.TempDir(), "relocated.lang")
+		path := filepath.Join(t.TempDir(), "relocated.schway")
 		if err := os.WriteFile(path, source, 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -389,7 +389,7 @@ func TestEvidenceRelocation(t *testing.T) {
 
 func TestEvidenceCLI(t *testing.T) {
 	binary := testsupport.BuildCLI(t)
-	source := testsupport.ProjectPath("testdata", "phase1", "toggle.lang")
+	source := testsupport.ProjectPath("testdata", "phase1", "toggle.schway")
 	emitted := testsupport.RunCLI(t, binary, nil, "evidence", source)
 	if emitted.Exit != 0 || len(emitted.Stderr) != 0 {
 		t.Fatalf("emit evidence: %+v", emitted)
@@ -403,8 +403,8 @@ func TestEvidenceCLI(t *testing.T) {
 		t.Fatalf("validate evidence: %+v", validated)
 	}
 
-	staleSource := filepath.Join(t.TempDir(), "stale.lang")
-	if err := os.WriteFile(staleSource, append([]byte("// stale\n"), readGolden(t, "toggle.lang")...), 0o600); err != nil {
+	staleSource := filepath.Join(t.TempDir(), "stale.schway")
+	if err := os.WriteFile(staleSource, append([]byte("// stale\n"), readGolden(t, "toggle.schway")...), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	rejected := testsupport.RunCLI(t, binary, nil, "--json", "evidence", "--validate", manifestPath, staleSource)
@@ -416,7 +416,7 @@ func TestEvidenceCLI(t *testing.T) {
 func FuzzEvidenceDecode(f *testing.F) {
 	product := goldenProduct(f)
 	f.Add(product.ManifestBytes)
-	f.Add([]byte(`{"schema":"lang.evidence/0"}`))
+	f.Add([]byte(`{"schema":"schway.evidence/0"}`))
 	f.Add([]byte("not json"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		manifest, err := evidence.DecodeStrict(data)
@@ -435,7 +435,7 @@ func FuzzEvidenceDecode(f *testing.F) {
 
 func goldenProduct(t testing.TB) evidence.Product {
 	t.Helper()
-	product, diagnostics, err := evidence.Build(readGolden(t, "toggle.lang"), goldenFacts())
+	product, diagnostics, err := evidence.Build(readGolden(t, "toggle.schway"), goldenFacts())
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("build golden: err=%v diagnostics=%+v", err, diagnostics)
 	}
@@ -444,7 +444,7 @@ func goldenProduct(t testing.TB) evidence.Product {
 
 func goldenFacts() evidence.Facts {
 	return evidence.Facts{
-		CompilerIdentity: "codename-lang-stage0/go1.24-fixture",
+		CompilerIdentity: "schway-stage0/go1.24-fixture",
 		ClangIdentity:    "clang-fixture 21.0.0",
 		Target:           "arm64-apple-darwin-fixture",
 		Flags:            append([]string(nil), evidence.DefaultFlags...),

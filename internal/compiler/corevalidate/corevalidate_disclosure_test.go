@@ -6,11 +6,11 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -55,7 +55,7 @@ func assertPeerConsultedFieldsClosed(t *testing.T, label string, fields []string
 
 // TestPeerDisclosedFieldSet is Task 3(b)'s own machine-assertion of the
 // peer's half of D-08-26's criterion 4: over the real testdata/phase08
-// `.lang` corpus (plus testdata/phase07/relay_escort_witness.lang, the
+// `.schway` corpus (plus testdata/phase07/relay_escort_witness.schway, the
 // same fixture set check_test.go's own sibling test sweeps) AND the
 // synthetic call-graph shapes, corevalidate.Result.PeerConsultedFields()
 // is a non-empty subset of exactly {"return.mode", "parameters[0].mode"}
@@ -66,11 +66,11 @@ func TestPeerDisclosedFieldSet(t *testing.T) {
 	unionFields := map[string]bool{}
 
 	t.Run("lang corpus", func(t *testing.T) {
-		paths, err := filepath.Glob(testsupport.ProjectPath("testdata", "phase08", "*.lang"))
+		paths, err := filepath.Glob(testsupport.ProjectPath("testdata", "phase08", "*.schway"))
 		if err != nil {
 			t.Fatalf("glob testdata/phase08: %v", err)
 		}
-		paths = append(paths, testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.lang"))
+		paths = append(paths, testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.schway"))
 		sort.Strings(paths)
 		if len(paths) == 0 {
 			t.Fatal("expected at least one fixture")

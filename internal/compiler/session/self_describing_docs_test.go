@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // This file machine-checks two of the project's self-describing artefacts
@@ -148,7 +148,7 @@ func scanFunctionsGuards(root string) (functionsGuardScan, error) {
 }
 
 // corpusStats walks the whole tree rooted at root (skipping .git) counting
-// *.lang files and their total newline count — reimplementing, in Go, what
+// *.schway files and their total newline count — reimplementing, in Go, what
 // the document's own "re-verify cheaply" shell block computes with `find`
 // and `wc -l`, rather than running that block.
 func corpusStats(root string) (programs int, lines int, err error) {
@@ -162,7 +162,7 @@ func corpusStats(root string) (programs int, lines int, err error) {
 			}
 			return nil
 		}
-		if !strings.HasSuffix(path, ".lang") {
+		if !strings.HasSuffix(path, ".schway") {
 			return nil
 		}
 		content, readErr := os.ReadFile(path)
@@ -182,7 +182,7 @@ func corpusStats(root string) (programs int, lines int, err error) {
 var (
 	guardTotalSentenceRe = regexp.MustCompile("\\*\\*(\\d+) `len\\(Functions\\) != 1` guards across (\\d+) files in (\\d+) packages\\*\\* \\((\\d+) including tests\\)")
 	guardTableRowRe      = regexp.MustCompile("^\\| `([A-Za-z0-9_]+)` \\| (\\d+) \\|")
-	corpusSentenceRe     = regexp.MustCompile("\\*\\*(\\d+) `\\.lang` programs, ([\\d,]+) lines total\\*\\*")
+	corpusSentenceRe     = regexp.MustCompile("\\*\\*(\\d+) `\\.schway` programs, ([\\d,]+) lines total\\*\\*")
 )
 
 // normalizeWhitespace collapses runs of whitespace (including newlines) to a
@@ -288,7 +288,7 @@ func checkLanguageMaturityDoc(docPath, root string) ([]string, error) {
 	// --- corpus program count + line count ---
 	cm := corpusSentenceRe.FindStringSubmatch(normalizeWhitespace(content))
 	if cm == nil {
-		findings = append(findings, fmt.Sprintf("%s: could not locate the corpus-count sentence in the expected '**N `.lang` programs, N lines total**' shape", docPath))
+		findings = append(findings, fmt.Sprintf("%s: could not locate the corpus-count sentence in the expected '**N `.schway` programs, N lines total**' shape", docPath))
 	} else {
 		statedPrograms, _ := strconv.Atoi(cm[1])
 		statedLines, _ := strconv.Atoi(strings.ReplaceAll(cm[2], ",", ""))

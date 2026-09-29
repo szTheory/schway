@@ -3,8 +3,8 @@ package originvalidate_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
 )
 
 // payloadDestructureThroughBorrowFunction builds, by hand -- directly at

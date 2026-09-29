@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
-const Schema = "lang.c17/0"
+const Schema = "schway.c17/0"
 
 // opCallGroupedArmForTest is Task 3's D-07-41/D-07-42 fault-injection seam
 // (QLT-08, plan 07-04's Test 4): when true, emitLinear's core.OpCall case
@@ -143,15 +143,15 @@ func EmitApplication(program core.Program) (string, error) {
 //
 //  1. PREFIX CONFINEMENT. Every identifier the allocator can ever hand out is
 //     confined to one of exactly two namespaces: cName always returns
-//     "LANG_" + <[A-Z0-9_]* tail> and cLocal always returns
-//     "lang_value_" + <[A-Za-z0-9_]* tail>. The derived preferred names built
+//     "SCHWAY_" + <[A-Z0-9_]* tail> and cLocal always returns
+//     "schway_value_" + <[A-Za-z0-9_]* tail>. The derived preferred names built
 //     on top of them (alternative names, the "<Type>_name" helper) keep the
-//     "LANG_" prefix, and cNames.allocate only ever appends to a preferred
+//     "SCHWAY_" prefix, and cNames.allocate only ever appends to a preferred
 //     name, so every allocated identifier stays inside those two namespaces.
 //
 //  2. HONEST RESERVATION. matchFixedNames and linearFixedNames are supersets of
 //     every ordinary identifier the emitters write out themselves. A fixed
-//     identifier that falls inside the "LANG_"/"lang_value_" namespaces is
+//     identifier that falls inside the "SCHWAY_"/"schway_value_" namespaces is
 //     therefore also reserved, so the allocator can never re-issue it.
 //
 // Property 1 alone would make most of the reservations unreachable, and
@@ -162,20 +162,20 @@ func EmitApplication(program core.Program) (string, error) {
 // The lists are deliberately supersets: a name is kept even when no current
 // program-emission path writes it. Over-reservation is inert, because
 // property 1 guarantees no preferred name can equal a lowercase or
-// non-"LANG_"-prefixed reserved entry; under-reservation is the dangerous
+// non-"SCHWAY_"-prefixed reserved entry; under-reservation is the dangerous
 // direction, so the tests only forbid that one.
 
 // matchFixedNames is every ordinary identifier emitMatch writes itself,
 // excluding C keywords and the libc names it calls.
 var matchFixedNames = []string{
 	"main", "argc", "argv", "input", "output", "name", "value",
-	"LANG_EVENT", "LANG_EVENT_CAPACITY", "LANG_OUTPUT_LIMIT", "lang_events",
-	"lang_event_count", "lang_output_count", "lang_write_bytes", "lang_write_literal",
-	"lang_write_json_string", "lang_write_json_string_content", "lang_record_event", "lang_write_events",
-	"lang_write_live_resources", "lang_invocations", "lang_entry_input", "lang_entry_output",
+	"SCHWAY_EVENT", "SCHWAY_EVENT_CAPACITY", "SCHWAY_OUTPUT_LIMIT", "schway_events",
+	"schway_event_count", "schway_output_count", "schway_write_bytes", "schway_write_literal",
+	"schway_write_json_string", "schway_write_json_string_content", "schway_record_event", "schway_write_events",
+	"schway_write_live_resources", "schway_invocations", "schway_entry_input", "schway_entry_output",
 	"invocation", "invocation_index", "callee_function_id",
 	"abort", "byte", "data", "encoded", "escape", "event", "function_id", "hex", "id",
-	"index", "kind", "lang_entry_name", "length", "source_place", "target_place", "type_id",
+	"index", "kind", "schway_entry_name", "length", "source_place", "target_place", "type_id",
 }
 
 // linearFixedNames is the reserved ordinary-identifier vocabulary for
@@ -183,26 +183,26 @@ var matchFixedNames = []string{
 // macros, typedefs, struct members, globals, helper functions, and locals.
 var linearFixedNames = []string{
 	// macros and typedefs
-	"LANG_BUFFER", "LANG_EVENT", "LANG_OUTPUT_LIMIT", "LANG_EVENT_CAPACITY",
-	// LANG_BUFFER and LANG_EVENT struct members
+	"SCHWAY_BUFFER", "SCHWAY_EVENT", "SCHWAY_OUTPUT_LIMIT", "SCHWAY_EVENT_CAPACITY",
+	// SCHWAY_BUFFER and SCHWAY_EVENT struct members
 	"bytes", "length",
 	"kind", "id", "function_id", "source_place", "target_place", "type_id",
 	// file-scope globals
-	"lang_events", "lang_event_count", "lang_output_count",
+	"schway_events", "schway_event_count", "schway_output_count",
 	// helper functions
-	"lang_write_bytes", "lang_write_literal", "lang_write_json_string", "lang_write_json_string_content",
-	"lang_record_event", "lang_write_events", "lang_write_buffer_hex", "lang_write_byte",
-	"lang_write_u64", "lang_parse_u64_decimal",
+	"schway_write_bytes", "schway_write_literal", "schway_write_json_string", "schway_write_json_string_content",
+	"schway_record_event", "schway_write_events", "schway_write_buffer_hex", "schway_write_byte",
+	"schway_write_u64", "schway_parse_u64_decimal",
 	// Historical foreign resource-ledger output names remain reserved.
-	"lang_resource_ids", "lang_resource_live", "lang_write_live_resources", "first",
+	"schway_resource_ids", "schway_resource_live", "schway_write_live_resources", "first",
 	// Historical foreign nonlocal-exit output name.
-	"lang_nonlocal_landing",
+	"schway_nonlocal_landing",
 	// helper parameters and locals
 	"data", "value", "hex", "byte", "escape", "encoded", "event", "index",
 	// main
 	"main", "argc", "argv", "input",
-	"abort", "callee_function_id", "invocation", "invocation_index", "lang_entry_input",
-	"lang_entry_output", "lang_invocations",
+	"abort", "callee_function_id", "invocation", "invocation_index", "schway_entry_input",
+	"schway_entry_output", "schway_invocations",
 }
 
 // selectsByPointerLowering is D-05-02's structural shape classifier. It
@@ -223,7 +223,7 @@ var linearFixedNames = []string{
 // PublicOrigin == nil is also required: a function whose return type
 // carries a declared `borrow(path)` annotation is already a distinct,
 // previously-shipped semantic category (OWN-04's public borrowed views,
-// e.g. testdata/phase3/public_view_mixed_access.lang) that can have the
+// e.g. testdata/phase3/public_view_mixed_access.schway) that can have the
 // exact same exclusive-borrow-then-reborrow-to-terminator operation shape
 // as the historical by-pointer fixture -- PublicOrigin is the one genuinely
 // structural fact (not a name or file match) that tells the two apart, and
@@ -341,7 +341,7 @@ func SetAttributeSuppressionProfileForTest(profile AttributeSuppressionProfile) 
 // two predicates differ only in first.Kind, which can never be both
 // OpBorrowExclusive and OpBorrowShared), so no function selectsByPointerLowering
 // already selects is ever affected by this addition, and no existing
-// Phase 1-4 (or restrict_borrow.lang) golden changes.
+// Phase 1-4 (or restrict_borrow.schway) golden changes.
 func selectsByPointerLoweringSharedOnly(function core.Function, linear *core.LinearBody) bool {
 	if function.Match != nil || function.PublicOrigin != nil || linear == nil || len(linear.Blocks) > 0 {
 		return false
@@ -544,25 +544,25 @@ func unsafeForeignContractField(contract *core.ForeignContract) string {
 // ordinary-identifier allocator (cgen.go's namespace-closure invariant,
 // TestGeneratedIdentifierNamespacesStayConfined) because it must match a
 // REAL exported symbol in the byte-frozen foreign translation unit
-// (native/lang_foreign_resource.c) verbatim, by convention, not by
+// (native/schway_foreign_resource.c) verbatim, by convention, not by
 // collision-avoidance allocation.
-func foreignExternName(symbol string) string { return "_LANG_" + symbol }
+func foreignExternName(symbol string) string { return "_SCHWAY_" + symbol }
 
 func emitEventSupport(out *strings.Builder, capacity int) {
-	fmt.Fprintf(out, "#define LANG_OUTPUT_LIMIT 65536u\n#define LANG_EVENT_CAPACITY %du\n\n", capacity)
-	out.WriteString("typedef struct LANG_EVENT {\n")
+	fmt.Fprintf(out, "#define SCHWAY_OUTPUT_LIMIT 65536u\n#define SCHWAY_EVENT_CAPACITY %du\n\n", capacity)
+	out.WriteString("typedef struct SCHWAY_EVENT {\n")
 	out.WriteString("  const char *kind;\n  const char *id;\n  const char *function_id;\n")
-	out.WriteString("  const char *source_place;\n  const char *target_place;\n  const char *type_id;\n} LANG_EVENT;\n\n")
-	out.WriteString("static LANG_EVENT lang_events[LANG_EVENT_CAPACITY];\n")
-	out.WriteString("static size_t lang_event_count = 0u;\nstatic size_t lang_output_count = 0u;\n\n")
-	out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n")
-	out.WriteString("  if (length > LANG_OUTPUT_LIMIT - lang_output_count) return 0;\n")
+	out.WriteString("  const char *source_place;\n  const char *target_place;\n  const char *type_id;\n} SCHWAY_EVENT;\n\n")
+	out.WriteString("static SCHWAY_EVENT schway_events[SCHWAY_EVENT_CAPACITY];\n")
+	out.WriteString("static size_t schway_event_count = 0u;\nstatic size_t schway_output_count = 0u;\n\n")
+	out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n")
+	out.WriteString("  if (length > SCHWAY_OUTPUT_LIMIT - schway_output_count) return 0;\n")
 	out.WriteString("  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n")
-	out.WriteString("  lang_output_count += length;\n  return 1;\n}\n\n")
-	out.WriteString("static int lang_write_literal(const char *value) {\n  return lang_write_bytes(value, strlen(value));\n}\n\n")
-	out.WriteString("static int lang_write_json_string(const char *value) {\n")
+	out.WriteString("  schway_output_count += length;\n  return 1;\n}\n\n")
+	out.WriteString("static int schway_write_literal(const char *value) {\n  return schway_write_bytes(value, strlen(value));\n}\n\n")
+	out.WriteString("static int schway_write_json_string(const char *value) {\n")
 	out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n")
-	out.WriteString("  if (!lang_write_bytes(\"\\\"\", 1u)) return 0;\n")
+	out.WriteString("  if (!schway_write_bytes(\"\\\"\", 1u)) return 0;\n")
 	out.WriteString("  for (; *value != '\\0'; value++) {\n")
 	out.WriteString("    unsigned char byte = (unsigned char)*value;\n")
 	out.WriteString("    const char *escape = NULL;\n")
@@ -573,75 +573,75 @@ func emitEventSupport(out *strings.Builder, capacity int) {
 	out.WriteString("    else if (byte == '\\n') escape = \"\\\\n\";\n")
 	out.WriteString("    else if (byte == '\\r') escape = \"\\\\r\";\n")
 	out.WriteString("    else if (byte == '\\t') escape = \"\\\\t\";\n")
-	out.WriteString("    if (escape != NULL) { if (!lang_write_literal(escape)) return 0; }\n")
+	out.WriteString("    if (escape != NULL) { if (!schway_write_literal(escape)) return 0; }\n")
 	out.WriteString("    else if (byte < 0x20u) {\n")
 	out.WriteString("      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n")
-	out.WriteString("      if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n")
-	out.WriteString("    } else if (!lang_write_bytes(value, 1u)) return 0;\n")
-	out.WriteString("  }\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
-	out.WriteString("static int lang_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id) {\n")
-	out.WriteString("  if (lang_event_count >= LANG_EVENT_CAPACITY) return 0;\n")
-	out.WriteString("  lang_events[lang_event_count++] = (LANG_EVENT){kind, id, function_id, source_place, target_place, type_id};\n")
+	out.WriteString("      if (!schway_write_bytes(encoded, sizeof encoded)) return 0;\n")
+	out.WriteString("    } else if (!schway_write_bytes(value, 1u)) return 0;\n")
+	out.WriteString("  }\n  return schway_write_bytes(\"\\\"\", 1u);\n}\n\n")
+	out.WriteString("static int schway_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id) {\n")
+	out.WriteString("  if (schway_event_count >= SCHWAY_EVENT_CAPACITY) return 0;\n")
+	out.WriteString("  schway_events[schway_event_count++] = (SCHWAY_EVENT){kind, id, function_id, source_place, target_place, type_id};\n")
 	out.WriteString("  return 1;\n}\n\n")
-	out.WriteString("static int lang_write_events(void) {\n")
-	out.WriteString("  size_t index;\n  for (index = 0u; index < lang_event_count; index++) {\n")
-	out.WriteString("    const LANG_EVENT *event = &lang_events[index];\n")
-	out.WriteString("    if (index != 0u && !lang_write_bytes(\",\", 1u)) return 0;\n")
-	out.WriteString("    if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\") || !lang_write_json_string(event->id)) return 0;\n")
-	out.WriteString("    if (!lang_write_literal(\",\\\"kind\\\":\") || !lang_write_json_string(event->kind)) return 0;\n")
-	out.WriteString("    if (!lang_write_literal(\",\\\"function_id\\\":\") || !lang_write_json_string(event->function_id)) return 0;\n")
-	out.WriteString("    if (event->source_place != NULL && (!lang_write_literal(\",\\\"source_place\\\":\") || !lang_write_json_string(event->source_place))) return 0;\n")
-	out.WriteString("    if (event->target_place != NULL && (!lang_write_literal(\",\\\"target_place\\\":\") || !lang_write_json_string(event->target_place))) return 0;\n")
-	out.WriteString("    if (event->type_id != NULL && (!lang_write_literal(\",\\\"type_id\\\":\") || !lang_write_json_string(event->type_id))) return 0;\n")
-	out.WriteString("    if (!lang_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
+	out.WriteString("static int schway_write_events(void) {\n")
+	out.WriteString("  size_t index;\n  for (index = 0u; index < schway_event_count; index++) {\n")
+	out.WriteString("    const SCHWAY_EVENT *event = &schway_events[index];\n")
+	out.WriteString("    if (index != 0u && !schway_write_bytes(\",\", 1u)) return 0;\n")
+	out.WriteString("    if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"id\\\":\") || !schway_write_json_string(event->id)) return 0;\n")
+	out.WriteString("    if (!schway_write_literal(\",\\\"kind\\\":\") || !schway_write_json_string(event->kind)) return 0;\n")
+	out.WriteString("    if (!schway_write_literal(\",\\\"function_id\\\":\") || !schway_write_json_string(event->function_id)) return 0;\n")
+	out.WriteString("    if (event->source_place != NULL && (!schway_write_literal(\",\\\"source_place\\\":\") || !schway_write_json_string(event->source_place))) return 0;\n")
+	out.WriteString("    if (event->target_place != NULL && (!schway_write_literal(\",\\\"target_place\\\":\") || !schway_write_json_string(event->target_place))) return 0;\n")
+	out.WriteString("    if (event->type_id != NULL && (!schway_write_literal(\",\\\"type_id\\\":\") || !schway_write_json_string(event->type_id))) return 0;\n")
+	out.WriteString("    if (!schway_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
 }
 
 // emitEventSupportSchema2 is the multi-function-only /2 writer. It stays a
 // sibling of the frozen /0-/1 support above so legacy generated bytes and
 // their writer ABI cannot move as a side effect of native call evidence.
 func emitEventSupportSchema2(out *strings.Builder, capacity, outputLimit int, needsJSONContent, applicationEvidence bool, evidenceLimit int) {
-	fmt.Fprintf(out, "#define LANG_OUTPUT_LIMIT %du\n#define LANG_EVENT_CAPACITY %du\n\n", outputLimit, capacity)
+	fmt.Fprintf(out, "#define SCHWAY_OUTPUT_LIMIT %du\n#define SCHWAY_EVENT_CAPACITY %du\n\n", outputLimit, capacity)
 	if applicationEvidence {
-		fmt.Fprintf(out, "#define LANG_EVIDENCE_OUTPUT_LIMIT %du\n\n", evidenceLimit)
+		fmt.Fprintf(out, "#define SCHWAY_EVIDENCE_OUTPUT_LIMIT %du\n\n", evidenceLimit)
 	}
-	out.WriteString("typedef struct LANG_EVENT {\n")
+	out.WriteString("typedef struct SCHWAY_EVENT {\n")
 	out.WriteString("  const char *kind;\n  const char *id;\n  const char *function_id;\n")
-	out.WriteString("  const char *source_place;\n  const char *target_place;\n  const char *type_id;\n  const char *invocation;\n  const char *callee_function_id;\n} LANG_EVENT;\n\n")
-	out.WriteString("static LANG_EVENT lang_events[LANG_EVENT_CAPACITY];\n")
-	out.WriteString("static size_t lang_event_count = 0u;\nstatic size_t lang_output_count = 0u;\n\n")
+	out.WriteString("  const char *source_place;\n  const char *target_place;\n  const char *type_id;\n  const char *invocation;\n  const char *callee_function_id;\n} SCHWAY_EVENT;\n\n")
+	out.WriteString("static SCHWAY_EVENT schway_events[SCHWAY_EVENT_CAPACITY];\n")
+	out.WriteString("static size_t schway_event_count = 0u;\nstatic size_t schway_output_count = 0u;\n\n")
 	if applicationEvidence {
-		out.WriteString("static FILE *lang_output_stream = NULL;\nstatic size_t lang_output_limit = LANG_OUTPUT_LIMIT;\nstatic int lang_event_overflow = 0;\n\n")
-		out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n  FILE *stream = lang_output_stream != NULL ? lang_output_stream : stdout;\n  if (lang_output_count > lang_output_limit || length > lang_output_limit - lang_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stream) != length) return 0;\n  lang_output_count += length;\n  return 1;\n}\n\n")
+		out.WriteString("static FILE *schway_output_stream = NULL;\nstatic size_t schway_output_limit = SCHWAY_OUTPUT_LIMIT;\nstatic int schway_event_overflow = 0;\n\n")
+		out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n  FILE *stream = schway_output_stream != NULL ? schway_output_stream : stdout;\n  if (schway_output_count > schway_output_limit || length > schway_output_limit - schway_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stream) != length) return 0;\n  schway_output_count += length;\n  return 1;\n}\n\n")
 	} else {
-		out.WriteString("static int lang_write_bytes(const char *data, size_t length) {\n  if (length > LANG_OUTPUT_LIMIT - lang_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n  lang_output_count += length;\n  return 1;\n}\n\n")
+		out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n  if (length > SCHWAY_OUTPUT_LIMIT - schway_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n  schway_output_count += length;\n  return 1;\n}\n\n")
 	}
-	out.WriteString("static int lang_write_literal(const char *value) {\n  return lang_write_bytes(value, strlen(value));\n}\n\n")
+	out.WriteString("static int schway_write_literal(const char *value) {\n  return schway_write_bytes(value, strlen(value));\n}\n\n")
 	if needsJSONContent {
-		out.WriteString("static int lang_write_json_string_content(const char *value) {\n")
+		out.WriteString("static int schway_write_json_string_content(const char *value) {\n")
 		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  for (; *value != '\\0'; value++) {\n    unsigned char byte = (unsigned char)*value;\n    const char *escape = NULL;\n")
 		out.WriteString("    if (byte == '\"') escape = \"\\\\\\\"\";\n    else if (byte == '\\\\') escape = \"\\\\\\\\\";\n    else if (byte == '\\b') escape = \"\\\\b\";\n    else if (byte == '\\f') escape = \"\\\\f\";\n    else if (byte == '\\n') escape = \"\\\\n\";\n    else if (byte == '\\r') escape = \"\\\\r\";\n    else if (byte == '\\t') escape = \"\\\\t\";\n")
-		out.WriteString("    if (escape != NULL) { if (!lang_write_literal(escape)) return 0; }\n    else if (byte < 0x20u) {\n      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n      if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n    } else if (!lang_write_bytes(value, 1u)) return 0;\n  }\n  return 1;\n}\n\n")
-		out.WriteString("static int lang_write_json_string(const char *value) {\n  return lang_write_bytes(\"\\\"\", 1u) && lang_write_json_string_content(value) && lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
+		out.WriteString("    if (escape != NULL) { if (!schway_write_literal(escape)) return 0; }\n    else if (byte < 0x20u) {\n      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n      if (!schway_write_bytes(encoded, sizeof encoded)) return 0;\n    } else if (!schway_write_bytes(value, 1u)) return 0;\n  }\n  return 1;\n}\n\n")
+		out.WriteString("static int schway_write_json_string(const char *value) {\n  return schway_write_bytes(\"\\\"\", 1u) && schway_write_json_string_content(value) && schway_write_bytes(\"\\\"\", 1u);\n}\n\n")
 	} else {
-		out.WriteString("static int lang_write_json_string(const char *value) {\n")
-		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  if (!lang_write_bytes(\"\\\"\", 1u)) return 0;\n  for (; *value != '\\0'; value++) {\n    unsigned char byte = (unsigned char)*value;\n    const char *escape = NULL;\n")
+		out.WriteString("static int schway_write_json_string(const char *value) {\n")
+		out.WriteString("  static const char hex[] = \"0123456789abcdef\";\n  if (!schway_write_bytes(\"\\\"\", 1u)) return 0;\n  for (; *value != '\\0'; value++) {\n    unsigned char byte = (unsigned char)*value;\n    const char *escape = NULL;\n")
 		out.WriteString("    if (byte == '\"') escape = \"\\\\\\\"\";\n    else if (byte == '\\\\') escape = \"\\\\\\\\\";\n    else if (byte == '\\b') escape = \"\\\\b\";\n    else if (byte == '\\f') escape = \"\\\\f\";\n    else if (byte == '\\n') escape = \"\\\\n\";\n    else if (byte == '\\r') escape = \"\\\\r\";\n    else if (byte == '\\t') escape = \"\\\\t\";\n")
-		out.WriteString("    if (escape != NULL) { if (!lang_write_literal(escape)) return 0; }\n    else if (byte < 0x20u) {\n      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n      if (!lang_write_bytes(encoded, sizeof encoded)) return 0;\n    } else if (!lang_write_bytes(value, 1u)) return 0;\n  }\n  return lang_write_bytes(\"\\\"\", 1u);\n}\n\n")
+		out.WriteString("    if (escape != NULL) { if (!schway_write_literal(escape)) return 0; }\n    else if (byte < 0x20u) {\n      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n      if (!schway_write_bytes(encoded, sizeof encoded)) return 0;\n    } else if (!schway_write_bytes(value, 1u)) return 0;\n  }\n  return schway_write_bytes(\"\\\"\", 1u);\n}\n\n")
 	}
 	if applicationEvidence {
-		out.WriteString("static int lang_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id, const char *invocation, const char *callee_function_id) {\n  if (lang_event_count >= LANG_EVENT_CAPACITY) { lang_event_overflow = 1; return 1; }\n  lang_events[lang_event_count++] = (LANG_EVENT){kind, id, function_id, source_place, target_place, type_id, invocation, callee_function_id};\n  return 1;\n}\n\n")
+		out.WriteString("static int schway_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id, const char *invocation, const char *callee_function_id) {\n  if (schway_event_count >= SCHWAY_EVENT_CAPACITY) { schway_event_overflow = 1; return 1; }\n  schway_events[schway_event_count++] = (SCHWAY_EVENT){kind, id, function_id, source_place, target_place, type_id, invocation, callee_function_id};\n  return 1;\n}\n\n")
 	} else {
-		out.WriteString("static int lang_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id, const char *invocation, const char *callee_function_id) {\n  if (lang_event_count >= LANG_EVENT_CAPACITY) return 0;\n  lang_events[lang_event_count++] = (LANG_EVENT){kind, id, function_id, source_place, target_place, type_id, invocation, callee_function_id};\n  return 1;\n}\n\n")
+		out.WriteString("static int schway_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id, const char *invocation, const char *callee_function_id) {\n  if (schway_event_count >= SCHWAY_EVENT_CAPACITY) return 0;\n  schway_events[schway_event_count++] = (SCHWAY_EVENT){kind, id, function_id, source_place, target_place, type_id, invocation, callee_function_id};\n  return 1;\n}\n\n")
 	}
-	out.WriteString("static int lang_write_events(void) {\n  size_t index;\n  for (index = 0u; index < lang_event_count; index++) {\n    const LANG_EVENT *event = &lang_events[index];\n    if (index != 0u && !lang_write_bytes(\",\", 1u)) return 0;\n")
-	out.WriteString("    if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"id\\\":\") || !lang_write_json_string(event->id)) return 0;\n    if (!lang_write_literal(\",\\\"kind\\\":\") || !lang_write_json_string(event->kind)) return 0;\n    if (!lang_write_literal(\",\\\"function_id\\\":\") || !lang_write_json_string(event->function_id)) return 0;\n")
-	out.WriteString("    if (event->source_place != NULL && (!lang_write_literal(\",\\\"source_place\\\":\") || !lang_write_json_string(event->source_place))) return 0;\n    if (event->target_place != NULL && (!lang_write_literal(\",\\\"target_place\\\":\") || !lang_write_json_string(event->target_place))) return 0;\n    if (event->type_id != NULL && (!lang_write_literal(\",\\\"type_id\\\":\") || !lang_write_json_string(event->type_id))) return 0;\n")
-	out.WriteString("    if (!lang_write_literal(\",\\\"invocation\\\":\") || !lang_write_json_string(event->invocation)) return 0;\n    if (event->callee_function_id != NULL && (!lang_write_literal(\",\\\"callee_function_id\\\":\") || !lang_write_json_string(event->callee_function_id))) return 0;\n    if (!lang_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
+	out.WriteString("static int schway_write_events(void) {\n  size_t index;\n  for (index = 0u; index < schway_event_count; index++) {\n    const SCHWAY_EVENT *event = &schway_events[index];\n    if (index != 0u && !schway_write_bytes(\",\", 1u)) return 0;\n")
+	out.WriteString("    if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/2\\\",\\\"id\\\":\") || !schway_write_json_string(event->id)) return 0;\n    if (!schway_write_literal(\",\\\"kind\\\":\") || !schway_write_json_string(event->kind)) return 0;\n    if (!schway_write_literal(\",\\\"function_id\\\":\") || !schway_write_json_string(event->function_id)) return 0;\n")
+	out.WriteString("    if (event->source_place != NULL && (!schway_write_literal(\",\\\"source_place\\\":\") || !schway_write_json_string(event->source_place))) return 0;\n    if (event->target_place != NULL && (!schway_write_literal(\",\\\"target_place\\\":\") || !schway_write_json_string(event->target_place))) return 0;\n    if (event->type_id != NULL && (!schway_write_literal(\",\\\"type_id\\\":\") || !schway_write_json_string(event->type_id))) return 0;\n")
+	out.WriteString("    if (!schway_write_literal(\",\\\"invocation\\\":\") || !schway_write_json_string(event->invocation)) return 0;\n    if (event->callee_function_id != NULL && (!schway_write_literal(\",\\\"callee_function_id\\\":\") || !schway_write_json_string(event->callee_function_id))) return 0;\n    if (!schway_write_bytes(\"}\", 1u)) return 0;\n  }\n  return 1;\n}\n\n")
 }
 
 // functionHasDefect reports whether any operation in function's Linear body
 // is an OpDefect -- the selection gate deciding whether emitBranch also
-// emits the generated lang_defect support function (D-04-15). Every
+// emits the generated schway_defect support function (D-04-15). Every
 // defect-free program's generated C is completely unaffected.
 func functionHasDefect(function core.Function) bool {
 	if function.Linear == nil {
@@ -655,7 +655,7 @@ func functionHasDefect(function core.Function) bool {
 	return false
 }
 
-// emitDefectSupport writes the generated _Noreturn lang_defect function
+// emitDefectSupport writes the generated _Noreturn schway_defect function
 // (D-04-14/D-04-15): the one generated-code exemption from the zero-
 // attribute control (D-04-13), because _Noreturn here is a property of a
 // function cgen itself emits and every path of which provably ends in
@@ -665,7 +665,7 @@ func functionHasDefect(function core.Function) bool {
 // (D-04-23).
 func emitDefectSupport(out *strings.Builder) {
 	out.WriteString("#include <stdlib.h>\n\n")
-	out.WriteString("_Noreturn static void lang_defect(const char *reason) {\n")
+	out.WriteString("_Noreturn static void schway_defect(const char *reason) {\n")
 	out.WriteString("  (void)reason; /* D-04-15: no catch, no containment, no unwinding, no cleanup -- abort-only at the process root */\n")
 	out.WriteString("  abort();\n")
 	out.WriteString("}\n\n")
@@ -694,7 +694,7 @@ func payloadCannedInitializer(payloadType string) string {
 		// initializer is used on the right-hand side of a plain assignment
 		// (`field = <initializer>;`), where a brace-enclosed list alone is
 		// a syntax error outside a declaration.
-		return "(LANG_BUFFER){{1u, 2u, 3u, 4u}, 4u}"
+		return "(SCHWAY_BUFFER){{1u, 2u, 3u, 4u}, 4u}"
 	case "Byte":
 		return "7u"
 	default:
@@ -711,7 +711,7 @@ func payloadCannedInitializer(payloadType string) string {
 type payloadFieldInfoT struct{ name, cType string }
 
 // payloadFieldInfoHasCType reports whether any declared payload field uses
-// the given C type name -- used to gate emitting LANG_BUFFER's own typedef
+// the given C type name -- used to gate emitting SCHWAY_BUFFER's own typedef
 // exactly once, and only when a Buffer payload is actually declared.
 func payloadFieldInfoHasCType(fields map[string]payloadFieldInfoT, cType string) bool {
 	for _, field := range fields {
@@ -739,14 +739,14 @@ func payloadFieldNames(fields map[string]payloadFieldInfoT) map[string]string {
 func payloadCTypeName(payloadType string) string {
 	switch payloadType {
 	case "Buffer":
-		return "LANG_BUFFER"
+		return "SCHWAY_BUFFER"
 	default:
 		return "unsigned char"
 	}
 }
 
 // emitBranchOperations writes one arm block's straight-line C, in core
-// order, ending with the lang.execution/1 JSON document for that arm's
+// order, ending with the schway.execution/1 JSON document for that arm's
 // return. returnLiteral is the compile-time-known alternative name this
 // block always returns (see emitBranch's doc comment).
 func emitBranchOperations(out *strings.Builder, function core.Function, dataType core.DataType, alternativeBySource, payloadFieldBySource map[string]string, places map[string]core.Place, locals map[string]string, operationsByID map[string]core.LinearOperation, operationIDs []string, typeName, returnLiteral string) error {
@@ -783,54 +783,54 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 			} else if operation.Kind == core.OpBorrowExclusive {
 				eventKind = "value.borrowed_exclusive"
 			}
-			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
+			fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
 				strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 		case core.OpReturn:
-			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, NULL, %s)) return 74; /* returned place: %s */\n",
+			fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, NULL, %s)) return 74; /* returned place: %s */\n",
 				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
-			out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
-			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(returnLiteral))
-			out.WriteString("      if (!lang_write_literal(\"},\\\"events\\\":[\")) return 74;\n")
-			out.WriteString("      if (!lang_write_events()) return 74;\n")
-			out.WriteString("      if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
+			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(returnLiteral))
+			out.WriteString("      if (!schway_write_literal(\"},\\\"events\\\":[\")) return 74;\n")
+			out.WriteString("      if (!schway_write_events()) return 74;\n")
+			out.WriteString("      if (!schway_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
 			out.WriteString("      return 0;\n")
 		case core.OpDefect:
-			// D-04-15: lower to a call to the generated _Noreturn lang_defect
+			// D-04-15: lower to a call to the generated _Noreturn schway_defect
 			// function, every path of which ends in abort(). The terminal
 			// record (outcome kind "defect", no value, its own
 			// function.defected event carrying the required reason string in
 			// "output", empty live_resources -- no arm can carry a foreign
 			// acquisition this phase) is written FIRST, so it is captured
-			// even though the process then aborts; lang_defect's own
+			// even though the process then aborts; schway_defect's own
 			// _Noreturn marker is the one and only exemption from the
 			// zero-attribute control (D-04-13/D-04-14), because it is a
 			// property of a function cgen itself emits, not an unproven
 			// claim about a foreign callee.
 			//
 			// This event is assembled directly rather than through
-			// lang_record_event/lang_write_events: the shared LANG_EVENT
+			// schway_record_event/schway_write_events: the shared SCHWAY_EVENT
 			// struct those helpers use (emitEventSupport, frozen for every
 			// other emitter, D-04-23) has no "output" field, and adding one
 			// there would move every existing committed generated-C golden.
-			out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"defect\\\",\\\"value\\\":\\\"\\\"},\\\"events\\\":[\")) return 74;\n")
-			out.WriteString("      if (!lang_write_events()) return 74;\n")
-			out.WriteString("      if (lang_event_count != 0u && !lang_write_bytes(\",\", 1u)) return 74;\n")
-			out.WriteString("      if (!lang_write_literal(\"{\\\"schema\\\":\\\"lang.execution/1\\\",\\\"id\\\":\")) return 74;\n")
-			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.ID+":event:defected"))
-			out.WriteString("      if (!lang_write_literal(\",\\\"kind\\\":\\\"function.defected\\\",\\\"function_id\\\":\")) return 74;\n")
-			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(function.ID))
-			out.WriteString("      if (!lang_write_literal(\",\\\"source_place\\\":\")) return 74;\n")
-			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.SourceID))
-			out.WriteString("      if (!lang_write_literal(\",\\\"type_id\\\":\")) return 74;\n")
-			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.TypeID))
-			out.WriteString("      if (!lang_write_literal(\",\\\"output\\\":\")) return 74;\n")
-			fmt.Fprintf(out, "      if (!lang_write_json_string(%s)) return 74;\n", strconv.Quote(operation.Reason))
-			out.WriteString("      if (!lang_write_literal(\"}\")) return 74;\n")
-			out.WriteString("      if (!lang_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
-			fmt.Fprintf(out, "      lang_defect(%s);\n", strconv.Quote(operation.Reason))
-			out.WriteString("      return 71; /* unreachable: lang_defect never returns */\n")
+			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"defect\\\",\\\"value\\\":\\\"\\\"},\\\"events\\\":[\")) return 74;\n")
+			out.WriteString("      if (!schway_write_events()) return 74;\n")
+			out.WriteString("      if (schway_event_count != 0u && !schway_write_bytes(\",\", 1u)) return 74;\n")
+			out.WriteString("      if (!schway_write_literal(\"{\\\"schema\\\":\\\"schway.execution/1\\\",\\\"id\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(operation.ID+":event:defected"))
+			out.WriteString("      if (!schway_write_literal(\",\\\"kind\\\":\\\"function.defected\\\",\\\"function_id\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(function.ID))
+			out.WriteString("      if (!schway_write_literal(\",\\\"source_place\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(operation.SourceID))
+			out.WriteString("      if (!schway_write_literal(\",\\\"type_id\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(operation.TypeID))
+			out.WriteString("      if (!schway_write_literal(\",\\\"output\\\":\")) return 74;\n")
+			fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) return 74;\n", strconv.Quote(operation.Reason))
+			out.WriteString("      if (!schway_write_literal(\"}\")) return 74;\n")
+			out.WriteString("      if (!schway_write_literal(\"],\\\"live_resources\\\":[]}\\n\")) return 74;\n")
+			fmt.Fprintf(out, "      schway_defect(%s);\n", strconv.Quote(operation.Reason))
+			out.WriteString("      return 71; /* unreachable: schway_defect never returns */\n")
 		case core.OpForeignCall, core.OpFail:
 			// checkBranch never emits either kind inside a match arm body
 			// this phase (no `try` support inside an arm) -- named here,
@@ -878,7 +878,7 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 			cType := payloadCTypeName(operation.PayloadType)
 			fmt.Fprintf(out, "      %s %s = %s.%s; /* payload destructure: %s */\n", cType, locals[target.ID], locals[source.ID], field, operation.ID)
 			fmt.Fprintf(out, "      (void)%s;\n", locals[target.ID])
-			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
+			fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
 				strconv.Quote("value.payload_destructured"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.PayloadTargetID), strconv.Quote(operation.TypeID))
 		case core.OpConstructPayload:
@@ -921,8 +921,8 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 					switch {
 					case wrongCType == srcCType:
 						fmt.Fprintf(out, "      %s.%s = %s; /* D-12-38 mutation: wrong-slot write */\n", locals[target.ID], wrongField, locals[source.ID])
-					case wrongCType == "LANG_BUFFER":
-						fmt.Fprintf(out, "      %s.%s = (LANG_BUFFER){{%s}, 1u}; /* D-12-38 mutation: wrong-slot write, widened */\n", locals[target.ID], wrongField, locals[source.ID])
+					case wrongCType == "SCHWAY_BUFFER":
+						fmt.Fprintf(out, "      %s.%s = (SCHWAY_BUFFER){{%s}, 1u}; /* D-12-38 mutation: wrong-slot write, widened */\n", locals[target.ID], wrongField, locals[source.ID])
 					default:
 						fmt.Fprintf(out, "      %s.%s = %s.bytes[0]; /* D-12-38 mutation: wrong-slot write, truncated */\n", locals[target.ID], wrongField, locals[source.ID])
 					}
@@ -933,7 +933,7 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 				fmt.Fprintf(out, "      %s.%s = %s;\n", locals[target.ID], field, locals[source.ID])
 			}
 			fmt.Fprintf(out, "      (void)%s;\n", locals[target.ID])
-			fmt.Fprintf(out, "      if (!lang_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
+			fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, %s, %s)) return 74;\n",
 				strconv.Quote("value.payload_constructed"), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 		default:
@@ -951,13 +951,13 @@ func emitBranchOperations(out *strings.Builder, function core.Function, dataType
 // ordinary Emit/EmitNative output is completely unaffected by this section.
 // ---------------------------------------------------------------------
 
-// ForeignManifestSchema identifies the lang.foreign/0 sidecar manifest
-// (D-04-12c): a separate schema/artifact from lang.core/*, digest-bound into
+// ForeignManifestSchema identifies the schway.foreign/0 sidecar manifest
+// (D-04-12c): a separate schema/artifact from schway.core/*, digest-bound into
 // evidence.Manifest.ForeignDigest but never merged into the core artifact
 // itself.
-const ForeignManifestSchema = "lang.foreign/0"
+const ForeignManifestSchema = "schway.foreign/0"
 
-// foreignManifestDocument is the lang.foreign/0 sidecar's exact field
+// foreignManifestDocument is the schway.foreign/0 sidecar's exact field
 // layout: the complete core.ForeignContract plus two fields no
 // ForeignContract itself carries. EmittedAttributes has no omitempty tag
 // (D-04-13): it is deliberately a present, empty JSON array this phase when
@@ -985,7 +985,7 @@ type foreignManifestDocument struct {
 	UncheckedObligations []string           `json:"unchecked_obligations"`
 }
 
-// EmittedAttribute is one lang.foreign/0 sidecar emitted_attributes entry
+// EmittedAttribute is one schway.foreign/0 sidecar emitted_attributes entry
 // (D-05-04): the optimizer-visible attribute cgen emitted, which core node
 // and parameter it was emitted on, and the borrow-fact identity that
 // justifies it. corevalidate independently re-derives JustifiedBy from
@@ -1014,7 +1014,7 @@ func uncheckedForeignObligations() []string {
 		// (D-04-17) has two accepted residual blind spots, named here rather
 		// than silently implied covered -- neither is observable by a single
 		// process-root pad. See emitNonlocalPad's own doc comment and
-		// testdata/phase4/nonlocal_exit_probe.lang's REACHABILITY comment.
+		// testdata/phase4/nonlocal_exit_probe.schway's REACHABILITY comment.
 		"nonlocal_exit_below_pad", "nonlocal_exit_process_termination",
 	}
 }
@@ -1054,7 +1054,7 @@ func singleForeignFunction(program core.Program) (core.Function, error) {
 }
 
 // singleManifestFunction returns the one function in program that
-// EmitForeignManifest has a lang.foreign/0 sidecar to say something about:
+// EmitForeignManifest has a schway.foreign/0 sidecar to say something about:
 // either a declared foreign contract (singleForeignFunction's existing
 // Phase 4 scope, delegated to verbatim so its validation/error behavior is
 // completely unchanged for every foreign-shaped program) or, when no
@@ -1078,7 +1078,7 @@ func singleManifestFunction(program core.Program) (core.Function, error) {
 }
 
 // EmitForeignManifest serializes program's single foreign contract (or, as
-// of D-05-01, its single by-pointer-lowered function) as a lang.foreign/0
+// of D-05-01, its single by-pointer-lowered function) as a schway.foreign/0
 // sidecar manifest document (D-04-12c): the JSON is authoritative, and
 // EmitForeignHeader's obligation comment block is generated FROM the same
 // contract value, so the two can never drift (D-04-12).
@@ -1113,7 +1113,7 @@ func foreignHeaderResultType(names *cNames, symbol string) string {
 	return names.allocate(cName(symbol)+"_RESULT", "foreign_result_type", 0)
 }
 
-// EmitForeignHeader generates the `_LANG_`-namespaced header for program's
+// EmitForeignHeader generates the `_SCHWAY_`-namespaced header for program's
 // single declared foreign symbol (D-04-12a): the extern declaration, a
 // generated obligation comment block reproducing every contract field, and
 // self-layout _Static_assert()s over Lang's own generated record. Every line
@@ -1133,13 +1133,13 @@ func EmitForeignHeader(program core.Program) (string, error) {
 	names := newCNames(linearFixedNames...)
 	resultType := foreignHeaderResultType(names, contract.Symbol)
 	symbolC := foreignExternName(contract.Symbol)
-	guard := "LANG_FOREIGN_" + strings.ToUpper(cName(contract.Symbol)) + "_H"
+	guard := "SCHWAY_FOREIGN_" + strings.ToUpper(cName(contract.Symbol)) + "_H"
 
 	var out strings.Builder
-	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 (foreign header, D-04-12a) */\n")
+	out.WriteString("/* generated by Schway; schema schway.c17/0 (foreign header, D-04-12a) */\n")
 	fmt.Fprintf(&out, "#ifndef %s\n#define %s\n\n", guard, guard)
 	out.WriteString("#include <stddef.h>\n\n")
-	out.WriteString("/* lang.foreign/0 obligations -- generated from the sidecar manifest;\n")
+	out.WriteString("/* schway.foreign/0 obligations -- generated from the sidecar manifest;\n")
 	out.WriteString(" * see EmitForeignManifest. Never hand-edit this block: a hand-written\n")
 	out.WriteString(" * comment beside a generated JSON is a second source of truth that will\n")
 	out.WriteString(" * drift, which is exactly what D-04-12 forbids. */\n")
@@ -1171,7 +1171,7 @@ func EmitForeignHeader(program core.Program) (string, error) {
 	return out.String(), nil
 }
 
-// EmitForeignConformance generates lang_foreign_conformance.c (D-04-11): the
+// EmitForeignConformance generates schway_foreign_conformance.c (D-04-11): the
 // single, explicit, auditable translation unit where Lang's own generated
 // declaration (EmitForeignHeader) and the foreign translation unit's private
 // header at privateHeaderPath are permitted to meet. It defines no symbol --
@@ -1197,7 +1197,7 @@ func EmitForeignConformance(program core.Program, privateHeaderPath string) (str
 	layout := contract.Layout
 
 	var out strings.Builder
-	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 (conformance TU, D-04-11).\n")
+	out.WriteString("/* generated by Schway; schema schway.c17/0 (conformance TU, D-04-11).\n")
 	out.WriteString(" * This is the single explicit, auditable place Lang's own declaration and\n")
 	out.WriteString(" * the foreign translation unit's private header are permitted to meet. It\n")
 	out.WriteString(" * defines no symbol and is compiled but never linked. */\n")
@@ -1236,13 +1236,13 @@ func EmitPayloadConformance(dataType core.DataType, privateHeaderPath string) (s
 	}
 
 	var out strings.Builder
-	out.WriteString("/* generated by Codename Lang; schema lang.c17/0 (payload conformance TU, D-12-37).\n")
+	out.WriteString("/* generated by Schway; schema schway.c17/0 (payload conformance TU, D-12-37).\n")
 	out.WriteString(" * This is the single explicit, auditable place the checker-derived payload\n")
 	out.WriteString(" * struct layout (check.PayloadRecordLayout) and a private struct declaration\n")
 	out.WriteString(" * are permitted to meet. It defines no symbol and is compiled but never\n")
 	out.WriteString(" * linked. */\n")
-	if payloadRecordHasCType(layout, "LANG_BUFFER") {
-		out.WriteString("typedef struct LANG_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} LANG_BUFFER;\n\n")
+	if payloadRecordHasCType(layout, "SCHWAY_BUFFER") {
+		out.WriteString("typedef struct SCHWAY_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} SCHWAY_BUFFER;\n\n")
 	}
 	out.WriteString("#include <stddef.h>\n")
 	fmt.Fprintf(&out, "#include %q\n\n", privateHeaderPath)
@@ -1261,7 +1261,7 @@ func EmitPayloadConformance(dataType core.DataType, privateHeaderPath string) (s
 }
 
 // payloadRecordHasCType reports whether any field of layout uses the given C
-// type name -- used to gate emitting LANG_BUFFER's own typedef exactly once,
+// type name -- used to gate emitting SCHWAY_BUFFER's own typedef exactly once,
 // and only when a Buffer payload field is actually declared, mirroring
 // payloadFieldInfoHasCType's own emitBranch-side gate.
 func payloadRecordHasCType(layout *core.RecordLayout, cType string) bool {
@@ -1311,7 +1311,7 @@ func ScanForBannedAttributes(sources ...string) []string {
 // the zero-attribute control (NoreturnExemption above is the first). Unlike
 // NoreturnExemption -- a property of a function cgen itself emits, requiring
 // no justification at all -- a JustifiableAttributes token is legal ONLY
-// inside a lang.foreign/0 manifest's emitted_attributes entry, ONLY when
+// inside a schway.foreign/0 manifest's emitted_attributes entry, ONLY when
 // that entry carries a non-empty JustifiedBy binding corevalidate
 // independently re-derives (ScanForUnjustifiedAttributes below,
 // ValidateEmittedAttributes in corevalidate.go), and NEVER inside a foreign
@@ -1343,7 +1343,7 @@ func ScanForUnjustifiedAttributes(attributes []EmittedAttribute) []string {
 func linearInput(function core.Function) (input, initializer, typeName string, err error) {
 	switch function.Parameter.Type {
 	case "Buffer":
-		return "01020304", "{{1u, 2u, 3u, 4u}, 4u}", "LANG_BUFFER", nil
+		return "01020304", "{{1u, 2u, 3u, 4u}, 4u}", "SCHWAY_BUFFER", nil
 	case "Byte":
 		return "7", "7u", "unsigned char", nil
 	case "U64":
@@ -1377,10 +1377,10 @@ func newCNames(reserved ...string) *cNames {
 // result. C17 section 7.1.3 reserves to the implementation every identifier
 // that contains a double underscore, in any position, in the ordinary
 // identifier namespace — not only identifiers that begin with one. A suffix
-// built as "__LANG_" would therefore hand out reserved names on every actual
+// built as "__SCHWAY_" would therefore hand out reserved names on every actual
 // collision, in generated code a conforming implementation is permitted to
-// treat specially. "_LANG_" (a single leading underscore) has no double
-// underscore and stays inside the confined "LANG_"/"lang_value_" namespaces
+// treat specially. "_SCHWAY_" (a single leading underscore) has no double
+// underscore and stays inside the confined "SCHWAY_"/"schway_value_" namespaces
 // documented above, so it is never reserved and never re-issues a reserved
 // name.
 func (n *cNames) allocate(preferred, category string, ordinal int) string {
@@ -1388,7 +1388,7 @@ func (n *cNames) allocate(preferred, category string, ordinal int) string {
 		n.used[preferred] = struct{}{}
 		return preferred
 	}
-	base := preferred + "_LANG_" + strings.ToUpper(category) + "_" + strconv.Itoa(ordinal)
+	base := preferred + "_SCHWAY_" + strings.ToUpper(category) + "_" + strconv.Itoa(ordinal)
 	for attempt, candidate := 0, base; ; attempt, candidate = attempt+1, base+"_"+strconv.Itoa(attempt) {
 		if _, exists := n.used[candidate]; !exists {
 			n.used[candidate] = struct{}{}
@@ -1398,11 +1398,11 @@ func (n *cNames) allocate(preferred, category string, ordinal int) string {
 }
 
 // cName maps a source type, alternative, function, or parameter name into the
-// uppercase "LANG_" namespace. INVARIANT (enforced by
+// uppercase "SCHWAY_" namespace. INVARIANT (enforced by
 // TestGeneratedIdentifierNamespacesStayConfined): the result always matches
-// ^LANG_[A-Z0-9_]*$. Do not relax the uppercasing or the prefix — the closure
+// ^SCHWAY_[A-Z0-9_]*$. Do not relax the uppercasing or the prefix — the closure
 // argument for the generated-C namespace depends on every allocated identifier
-// living in the "LANG_" or "lang_value_" namespace and nowhere else.
+// living in the "SCHWAY_" or "schway_value_" namespace and nowhere else.
 func cName(name string) string {
 	var out strings.Builder
 	for _, r := range name {
@@ -1414,16 +1414,16 @@ func cName(name string) string {
 			out.WriteByte('_')
 		}
 	}
-	return "LANG_" + out.String()
+	return "SCHWAY_" + out.String()
 }
 
-// cLocal maps a source place name into the "lang_value_" namespace. INVARIANT
+// cLocal maps a source place name into the "schway_value_" namespace. INVARIANT
 // (enforced by TestGeneratedIdentifierNamespacesStayConfined): the result
-// always matches ^lang_value_[A-Za-z0-9_]*$. No fixed identifier emitted by any
+// always matches ^schway_value_[A-Za-z0-9_]*$. No fixed identifier emitted by any
 // emitter may be placed in this namespace unless it is also reserved.
 func cLocal(name string) string {
 	var out strings.Builder
-	out.WriteString("lang_value_")
+	out.WriteString("schway_value_")
 	for _, r := range name {
 		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' {
 			out.WriteRune(r)

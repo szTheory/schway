@@ -3,8 +3,8 @@ package interp_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 func TestPhase19OpConstInterpreter(t *testing.T) {

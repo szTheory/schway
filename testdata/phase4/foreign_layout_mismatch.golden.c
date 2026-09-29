@@ -1,7 +1,7 @@
 /* foreign_layout_mismatch.golden.c
  *
  * This file exists only to be refused (D-04-11/D-11). It declares
- * lang_foreign_layout_probe_block with its two fields transposed relative
+ * schway_foreign_layout_probe_block with its two fields transposed relative
  * to what the layout mutation control's own Lang-side contract declares
  * (`first` at offset 0, `second` at offset 1) -- so compiling the generated
  * conformance unit against this header, under the project's existing
@@ -12,12 +12,12 @@
  * than reverting a production hunk (D-10, "the two mutation directions
  * attack different artifacts").
  */
-#ifndef LANG_FOREIGN_LAYOUT_PROBE_PRIVATE_H
-#define LANG_FOREIGN_LAYOUT_PROBE_PRIVATE_H
+#ifndef SCHWAY_FOREIGN_LAYOUT_PROBE_PRIVATE_H
+#define SCHWAY_FOREIGN_LAYOUT_PROBE_PRIVATE_H
 
-typedef struct lang_foreign_layout_probe_block {
+typedef struct schway_foreign_layout_probe_block {
   unsigned char second;
   unsigned char first;
-} lang_foreign_layout_probe_block;
+} schway_foreign_layout_probe_block;
 
-#endif /* LANG_FOREIGN_LAYOUT_PROBE_PRIVATE_H */
+#endif /* SCHWAY_FOREIGN_LAYOUT_PROBE_PRIVATE_H */

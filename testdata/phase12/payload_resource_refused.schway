@@ -1,0 +1,42 @@
+// Phase 12 Plan 03, Task 2 (D-12-27's fail-closed resource-payload
+// refusal): `Handle`'s only alternative, `Held(Byte)`, names the exact
+// type (`Byte`) the declared foreign symbol `schway_res_open` returns --
+// this project's only channel for a Phase-4 tracked, release-obligated
+// value (checkResourceLifecycle/checkForeignTracer track a foreign
+// acquisition by VALUE PROVENANCE, never by a distinguishing type shape,
+// so a payload type NAMING a declared foreign return type is the
+// structurally-derivable signal this refusal is built on -- deliberately
+// over-inclusive, fail-closed and conservative, per D-12-28's own
+// precedent for the sibling D-10-C01 refusal).
+//
+// Refused at DECLARATION time, before any function body is even checked:
+// `check.resource_payload_refused`. The full resource-in-payload rule
+// lands only when all three of D-10-C01, D-10-C02, and D-10-C04 are
+// resolved (PHASE-12-DEBT.md's D-12-30 landing condition) -- none of
+// which is Phase 12's to close.
+
+module result.payload_resource_refused
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn schway_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+data Handle =
+  | Held(Byte)
+
+fn main(request: Byte) -> Byte {
+  request
+}

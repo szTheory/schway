@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
 )
 
 // EscapeCoordinatedSourceToCoreFalseClaim names D-05-30's decisive addition
 // over D-04-31 item 1's prose-only record: a real adversarial artifact pair
-// (testdata/phase5/coordinated_lie.lang + coordinated_lie.core.json) that
+// (testdata/phase5/coordinated_lie.schway + coordinated_lie.core.json) that
 // ACTUALLY constructs matching-but-false source/core artifacts and is
 // asserted to pass the gate under this named escape. It reuses
 // corevalidate.KnownEscape's own wording for the exact boundary being
@@ -40,12 +40,12 @@ const LaneCoordinatedLieEscape = "lane:coordinated-lie-escape"
 // nat03CorpusPath (session_phase5_alias.go) exactly as this file's sibling
 // Phase 5 lanes resolve their own fixtures.
 const (
-	coordinatedLieSourceCorpusFile = "testdata/phase5/coordinated_lie.lang"
+	coordinatedLieSourceCorpusFile = "testdata/phase5/coordinated_lie.schway"
 	coordinatedLieCoreCorpusFile   = "testdata/phase5/coordinated_lie.core.json"
 )
 
 // VerifyCoordinatedLieEscape runs the full gate over the D-05-30
-// adversarial artifact pair: coordinated_lie.lang independently through
+// adversarial artifact pair: coordinated_lie.schway independently through
 // check + originvalidate.ValidatePublished (exactly the admission path any
 // other Lang source takes), and the HAND-AUTHORED coordinated_lie.core.json
 // independently through corevalidate.Validate on its own terms. Neither

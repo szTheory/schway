@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase20ChecksumFrontier(t *testing.T) {
-	path := testsupport.ProjectPath("examples", "checksum.lang")
+	path := testsupport.ProjectPath("examples", "checksum.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/originvalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // corpusFixtures walks testdata/phase1..phase4 plus testdata/phase07 and
@@ -30,7 +30,7 @@ func corpusFixtures(t *testing.T) []core.Program {
 			t.Fatalf("read %s: %v", dir, err)
 		}
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".lang") {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schway") {
 				continue
 			}
 			source, err := os.ReadFile(filepath.Join(dir, entry.Name()))
@@ -60,7 +60,7 @@ func signatureByID(summary core.Interface) map[string]core.FunctionSignature {
 	return out
 }
 
-// structuralFieldsEqual compares every field of a lang.interface/1
+// structuralFieldsEqual compares every field of a schway.interface/1
 // FunctionSignature EXCEPT Callable and ClosureDigest: ClosureDigest is a
 // digest over the signature itself (comparing it is circular, not
 // independent evidence), and Callable's narrowed peer agreement is this
@@ -86,7 +86,7 @@ func structuralFieldsEqual(a, b core.FunctionSignature) bool {
 // deliberately narrows it.
 // relayEscortWitnessModule is 07-05 Task 2's D-03-02/D-07-44 named
 // exception to this test's own "checked-clean implies corevalidate-valid"
-// invariant: testdata/phase07/relay_escort_witness.lang is DELIBERATELY a
+// invariant: testdata/phase07/relay_escort_witness.schway is DELIBERATELY a
 // fixture that checks clean under `check`'s current (intraprocedural) loan
 // liveness but is independently refused by `corevalidate`'s own replay with
 // core.move_while_borrowed -- the INTERPROCEDURAL half of D-03-02, left
@@ -100,7 +100,7 @@ const relayEscortWitnessModule = "phase07.relay_escort_witness"
 
 // duplicateFunctionNameModule is 07-10 Task 1's second named exception to
 // this test's "checked-clean implies corevalidate-valid" invariant (WR-01,
-// 07-REVIEW.md): testdata/phase07/duplicate_function_name.lang declares two
+// 07-REVIEW.md): testdata/phase07/duplicate_function_name.schway declares two
 // `fn helper` with the same name, so both share one semanticID; `check`'s
 // buildCalleeContracts silently resolves the call to the LAST declaration
 // and never diagnoses the collision (checks clean), but corevalidate's
@@ -232,7 +232,7 @@ func TestSummaryPeerClosureDigestMatchesProducerAcrossCorpus(t *testing.T) {
 // TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed is
 // 07-05 Task 2's decisive, named assertion of the
 // relayEscortWitnessModule exception above: `check` admits
-// testdata/phase07/relay_escort_witness.lang (asserted by
+// testdata/phase07/relay_escort_witness.schway (asserted by
 // check_test.go's TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness),
 // but corevalidate's own, independently-implemented replay refuses it with
 // core.move_while_borrowed on escort's `take buffer` operation --
@@ -244,7 +244,7 @@ func TestSummaryPeerClosureDigestMatchesProducerAcrossCorpus(t *testing.T) {
 // until Phase 08/09's interprocedural loan-liveness work makes both sides
 // agree (by refusing, never by both silently accepting).
 func TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "relay_escort_witness.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +287,7 @@ func TestRelayEscortWitnessCorevalidateIndependentlyRefusesMoveWhileBorrowed(t *
 // straight-line/branch pair).
 func straightLineProgram(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,7 +300,7 @@ func straightLineProgram(t *testing.T) core.Program {
 
 func branchProgram(t *testing.T) core.Program {
 	t.Helper()
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_accept.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "branch_one_arm_shared_accept.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,7 +379,7 @@ func classifyPublicationProblem(t *testing.T, program core.Program, functionID s
 // (D-07-33): the peer's narrowed Callable re-derivation agrees with the
 // producer's for every function whose only publication problem class is
 // core.origin_omitted, or which has no publication problem at all --
-// including testdata/phase07/clean_but_unpublishable.lang.
+// including testdata/phase07/clean_but_unpublishable.schway.
 func TestSummaryPeerCallableAgreesOnOriginOmittedClass(t *testing.T) {
 	comparedOmitted := false
 	for _, program := range corpusFixtures(t) {
@@ -417,7 +417,7 @@ func TestSummaryPeerCallableAgreesOnOriginOmittedClass(t *testing.T) {
 		}
 	}
 	if !comparedOmitted {
-		t.Fatal("expected at least one core.origin_omitted function to be compared (the corpus should include testdata/phase07/clean_but_unpublishable.lang and testdata/phase3's omitted fixtures)")
+		t.Fatal("expected at least one core.origin_omitted function to be compared (the corpus should include testdata/phase07/clean_but_unpublishable.schway and testdata/phase3's omitted fixtures)")
 	}
 }
 
@@ -439,7 +439,7 @@ func TestSummaryPeerCallableAgreesOnOriginOmittedClass(t *testing.T) {
 // only the expected Callable verdict changed, from true to false.
 func TestPeerRederivesFormerlyNarrowedClasses(t *testing.T) {
 	t.Run("core.origin_understated: peer now independently refuses (Callable false)", func(t *testing.T) {
-		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view_understated.lang"))
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view_understated.schway"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -471,7 +471,7 @@ func TestPeerRederivesFormerlyNarrowedClasses(t *testing.T) {
 	})
 
 	t.Run("core.origin_access_mismatch: peer now independently refuses (Callable false)", func(t *testing.T) {
-		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view_impossible.lang"))
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase3", "public_view_impossible.schway"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -500,7 +500,7 @@ func TestPeerRederivesFormerlyNarrowedClasses(t *testing.T) {
 	})
 
 	t.Run("foreign-origin-omitted: peer now independently refuses (Callable false)", func(t *testing.T) {
-		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_origin_omitted.lang"))
+		source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase4", "foreign_origin_omitted.schway"))
 		if err != nil {
 			t.Fatal(err)
 		}

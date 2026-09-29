@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // oracleGoldenDir is where every corpus program's committed golden lives,
@@ -103,7 +103,7 @@ func interpOracleCorpus(t *testing.T) []oracleCorpusProgram {
 		{
 			name: "single_frame_return",
 			run: func(t *testing.T) (Execution, error) {
-				program := checkedProgramFromFixture(t, "phase4", "defect_terminal.lang")
+				program := checkedProgramFromFixture(t, "phase4", "defect_terminal.schway")
 				return Run(program, "triage", "Go")
 			},
 		},
@@ -125,7 +125,7 @@ func interpOracleCorpus(t *testing.T) []oracleCorpusProgram {
 		{
 			name: "defect_terminal",
 			run: func(t *testing.T) (Execution, error) {
-				program := checkedProgramFromFixture(t, "phase4", "defect_terminal.lang")
+				program := checkedProgramFromFixture(t, "phase4", "defect_terminal.schway")
 				return Run(program, "triage", "Halt")
 			},
 		},

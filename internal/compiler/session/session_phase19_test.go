@@ -7,15 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase19FourTierLiteral(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang")
+	path := testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -43,7 +43,7 @@ func TestPhase19FourTierLiteral(t *testing.T) {
 }
 
 func TestPhase19WrongResultControl(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func phase19CheckExpectedAndCompare(fixture string, program core.Program, engine
 }
 
 func TestPhase19LiteralRun(t *testing.T) {
-	path := testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang")
+	path := testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway")
 	interpreted, err := session.RunInterpreterCommandFile(path)
 	if err != nil || interpreted.Status != "pass" || len(interpreted.Executions) != 1 {
 		t.Fatalf("public interpreter run: status=%q executions=%d err=%v diagnostics=%+v", interpreted.Status, len(interpreted.Executions), err, interpreted.Diagnostics)
@@ -118,19 +118,19 @@ func TestPhase19Dispatch(t *testing.T) {
 }
 
 func TestPhase19LiteralFrontier(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", "literal_tracer.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(source), "let count = 42") {
-		t.Fatal("literal_tracer.lang lost its direct numeric let")
+		t.Fatal("literal_tracer.schway lost its direct numeric let")
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
-		t.Fatalf("literal_tracer.lang remains refused: %+v", checked.Diagnostics)
+		t.Fatalf("literal_tracer.schway remains refused: %+v", checked.Diagnostics)
 	}
 	if len(checked.Program.Functions) != 1 || checked.Program.Functions[0].Linear == nil || checked.Program.Functions[0].Linear.Operations[0].Kind != "const" {
-		t.Fatalf("literal_tracer.lang did not reach typed constant core: %+v", checked.Program.Functions)
+		t.Fatalf("literal_tracer.schway did not reach typed constant core: %+v", checked.Program.Functions)
 	}
 }
 
@@ -141,8 +141,8 @@ func TestPhase19NumericRefusalFrontiers(t *testing.T) {
 		code    string
 		start   int
 	}{
-		{fixture: "literal_overflow.lang", literal: "18446744073709551616", code: "check.literal_out_of_range", start: 99},
-		{fixture: "literal_malformed.lang", literal: "0x_FF", code: "syntax.malformed_numeric_literal", start: 100},
+		{fixture: "literal_overflow.schway", literal: "18446744073709551616", code: "check.literal_out_of_range", start: 99},
+		{fixture: "literal_malformed.schway", literal: "0x_FF", code: "syntax.malformed_numeric_literal", start: 100},
 	} {
 		t.Run(tc.fixture, func(t *testing.T) {
 			source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase19", tc.fixture))

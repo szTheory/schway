@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -42,17 +42,17 @@ import (
 // grows -- recorded as debt (see 14-02-SUMMARY.md "Debt rows to register").
 // ---------------------------------------------------------------------
 
-// distinctnessCorpusFixtures returns the sorted list of .lang fixtures under
+// distinctnessCorpusFixtures returns the sorted list of .schway fixtures under
 // testdata/distinctness/, excluding the frozen collision_control.json and
 // README.md (neither is a corpus member).
 func distinctnessCorpusFixtures(t *testing.T) []string {
 	t.Helper()
-	matches, err := filepath.Glob(testsupport.ProjectPath("testdata", "distinctness", "*.lang"))
+	matches, err := filepath.Glob(testsupport.ProjectPath("testdata", "distinctness", "*.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(matches) < 10 {
-		t.Fatalf("testdata/distinctness/ corpus has %d .lang fixtures, want >= 10", len(matches))
+		t.Fatalf("testdata/distinctness/ corpus has %d .schway fixtures, want >= 10", len(matches))
 	}
 	sort.Strings(matches)
 	return matches

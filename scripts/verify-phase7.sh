@@ -1,22 +1,22 @@
 #!/bin/sh
 set -eu
 
-verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/codename-lang-phase07.XXXXXX")
+verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase07.XXXXXX")
 trap 'rm -rf "$verify_tmp"' EXIT HUP INT TERM
 export GOCACHE="$verify_tmp/go-cache"
 
 sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestVerifyPhase7ControlsAndWork TestPhase7RequiredControlsMatchScript
 sh scripts/assert-go-tests.sh --self-test ./internal/compiler/core TestAllOperationKindsHandledAtEverySite TestLinearProbeInputExercisesCallBasicFixture
-sh scripts/assert-go-tests.sh --self-test ./cmd/lang TestPhase7CorpusDispatchRequiresMarker
+sh scripts/assert-go-tests.sh --self-test ./cmd/schway TestPhase7CorpusDispatchRequiresMarker
 go test ./...
 go test -race ./...
 go vet ./...
-go build -o "$verify_tmp/lang" ./cmd/lang
-go build -o "$verify_tmp/lang-repair" ./cmd/lang-repair
-"$verify_tmp/lang" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
-"$verify_tmp/lang" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
-"$verify_tmp/lang" --json verify testdata/phase3 >"$verify_tmp/phase3.json"
-"$verify_tmp/lang" --json verify testdata/phase4 >"$verify_tmp/phase4.json"
+go build -o "$verify_tmp/schway" ./cmd/schway
+go build -o "$verify_tmp/schway-repair" ./cmd/schway-repair
+"$verify_tmp/schway" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
+"$verify_tmp/schway" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
+"$verify_tmp/schway" --json verify testdata/phase3 >"$verify_tmp/phase3.json"
+"$verify_tmp/schway" --json verify testdata/phase4 >"$verify_tmp/phase4.json"
 
 # The sanitizer lane's own ASAN_OPTIONS/UBSAN_OPTIONS are pinned explicitly
 # on this invocation (D-05-13), byte-identical to
@@ -25,9 +25,9 @@ go build -o "$verify_tmp/lang-repair" ./cmd/lang-repair
 # never a fork or an extension of.
 ASAN_OPTIONS='halt_on_error=1:abort_on_error=1:symbolize=0:detect_leaks=0:detect_odr_violation=0:alloc_dealloc_mismatch=1' \
 UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=0' \
-	"$verify_tmp/lang" --json verify testdata/phase5 >"$verify_tmp/phase5.json"
-"$verify_tmp/lang" --json verify testdata/phase6 >"$verify_tmp/phase6.json"
-"$verify_tmp/lang" --json verify testdata/phase07 >"$verify_tmp/phase07.json"
+	"$verify_tmp/schway" --json verify testdata/phase5 >"$verify_tmp/phase5.json"
+"$verify_tmp/schway" --json verify testdata/phase6 >"$verify_tmp/phase6.json"
+"$verify_tmp/schway" --json verify testdata/phase07 >"$verify_tmp/phase07.json"
 
 # Non-regression for Phase 1 through Phase 6 is proven by running THEIR OWN
 # corpora with THIS phase's freshly built binary, never by invoking an

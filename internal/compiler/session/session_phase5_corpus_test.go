@@ -12,15 +12,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/interp/interptestdirect"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/interp/interptestdirect"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 var phase5AdversarialTargetHeaderPattern = regexp.MustCompile(`^// adversarial-target: (\S+)`)
@@ -106,10 +106,10 @@ func TestPhase5AdversarialSubsetIsComplete(t *testing.T) {
 	})
 
 	t.Run("terminal-outcomes", func(t *testing.T) {
-		assertOrdinaryTerminalOutcome(t, corpus, "inline_across_foreign.lang", "returned")
-		assertOrdinaryTerminalOutcome(t, corpus, "dead_store_unused_acquire.lang", "returned")
-		assertOrdinaryTerminalOutcome(t, corpus, "reorder_two_events.lang", "returned")
-		assertOrdinaryTerminalOutcome(t, corpus, "tail_collapse_release_ladder.lang", "returned")
+		assertOrdinaryTerminalOutcome(t, corpus, "inline_across_foreign.schway", "returned")
+		assertOrdinaryTerminalOutcome(t, corpus, "dead_store_unused_acquire.schway", "returned")
+		assertOrdinaryTerminalOutcome(t, corpus, "reorder_two_events.schway", "returned")
+		assertOrdinaryTerminalOutcome(t, corpus, "tail_collapse_release_ladder.schway", "returned")
 		assertDefectDiesBySignal(t, corpus)
 		assertTypedFailureTruncatedStdout(t, corpus)
 	})
@@ -133,27 +133,27 @@ func assertOrdinaryTerminalOutcome(t *testing.T, corpus, fixture, wantKind strin
 	}
 }
 
-// assertDefectDiesBySignal drives defect_dies_by_signal.lang's Halt arm
+// assertDefectDiesBySignal drives defect_dies_by_signal.schway's Halt arm
 // through the ordinary interpreter (a match-arm defect terminator is
 // genuinely reachable via interp.Run, unlike a foreign call's err edge --
-// see defect_terminal.lang's own established Phase 4 precedent) and
+// see defect_terminal.schway's own established Phase 4 precedent) and
 // asserts a real defect outcome.
 func assertDefectDiesBySignal(t *testing.T, corpus string) {
 	t.Helper()
-	program, functionName, err := session.Phase4CheckedProgram(corpus, "defect_dies_by_signal.lang")
+	program, functionName, err := session.Phase4CheckedProgram(corpus, "defect_dies_by_signal.schway")
 	if err != nil {
-		t.Fatalf("defect_dies_by_signal.lang: %v", err)
+		t.Fatalf("defect_dies_by_signal.schway: %v", err)
 	}
 	execution, err := interp.Run(program, functionName, "Halt")
 	if err != nil {
-		t.Fatalf("defect_dies_by_signal.lang: interp.Run: %v", err)
+		t.Fatalf("defect_dies_by_signal.schway: interp.Run: %v", err)
 	}
 	if execution.Outcome.Kind != "defect" {
-		t.Fatalf("defect_dies_by_signal.lang: outcome.kind = %q, want %q", execution.Outcome.Kind, "defect")
+		t.Fatalf("defect_dies_by_signal.schway: outcome.kind = %q, want %q", execution.Outcome.Kind, "defect")
 	}
 }
 
-// assertTypedFailureTruncatedStdout proves typed_failure_truncated_stdout.lang
+// assertTypedFailureTruncatedStdout proves typed_failure_truncated_stdout.schway
 // genuinely reaches a typed_failure outcome under the interpreter. The
 // interpreter's own documented discretionary stub always simulates success
 // for every OpForeignCall (interp.Run cannot actually call C), so the
@@ -163,9 +163,9 @@ func assertDefectDiesBySignal(t *testing.T, corpus string) {
 // duplicated as a private mechanism.
 func assertTypedFailureTruncatedStdout(t *testing.T, corpus string) {
 	t.Helper()
-	program, functionName, err := session.Phase4CheckedProgram(corpus, "typed_failure_truncated_stdout.lang")
+	program, functionName, err := session.Phase4CheckedProgram(corpus, "typed_failure_truncated_stdout.schway")
 	if err != nil {
-		t.Fatalf("typed_failure_truncated_stdout.lang: %v", err)
+		t.Fatalf("typed_failure_truncated_stdout.schway: %v", err)
 	}
 	functionID := program.Functions[0].ID
 	const stages = 150
@@ -178,13 +178,13 @@ func assertTypedFailureTruncatedStdout(t *testing.T, corpus string) {
 
 	execution, err := interptestdirect.RunLinearBlockDirect(program, functionName, blockID, precedingCallIDs, failingCallID)
 	if err != nil {
-		t.Fatalf("typed_failure_truncated_stdout.lang: interptestdirect.RunLinearBlockDirect: %v", err)
+		t.Fatalf("typed_failure_truncated_stdout.schway: interptestdirect.RunLinearBlockDirect: %v", err)
 	}
 	if execution.Outcome.Kind != "typed_failure" {
-		t.Fatalf("typed_failure_truncated_stdout.lang: outcome.kind = %q, want %q", execution.Outcome.Kind, "typed_failure")
+		t.Fatalf("typed_failure_truncated_stdout.schway: outcome.kind = %q, want %q", execution.Outcome.Kind, "typed_failure")
 	}
 	if len(execution.Events) < stages {
-		t.Fatalf("typed_failure_truncated_stdout.lang: only %d events, want at least %d (one per acquired stage, release, and the final failure)", len(execution.Events), stages)
+		t.Fatalf("typed_failure_truncated_stdout.schway: only %d events, want at least %d (one per acquired stage, release, and the final failure)", len(execution.Events), stages)
 	}
 }
 
@@ -478,15 +478,15 @@ func TestPhase16M004CorpusRefusal(t *testing.T) {
 	// legacy-emitter-evidence.json.  The immutable C artifacts remain
 	// evidence only; this probe is the live public-API half of the contract.
 	tests := []struct{ fixture, refusal string }{
-		{"testdata/phase4/acquire_three_success.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase4/acquire_three_fail_second.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase4/acquire_three_fail_third.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase4/nonlocal_exit_probe.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase4/foreign_acquire_one.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase5/retained_pointer.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase5/allocator_mismatch.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase5/inline_across_foreign.lang", "multi-function foreign-call bodies are not supported"},
-		{"testdata/phase5/restrict_borrow.lang", "by-pointer bodies are not supported"},
+		{"testdata/phase4/acquire_three_success.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/acquire_three_fail_second.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/acquire_three_fail_third.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/nonlocal_exit_probe.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase4/foreign_acquire_one.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/retained_pointer.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/allocator_mismatch.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/inline_across_foreign.schway", "multi-function foreign-call bodies are not supported"},
+		{"testdata/phase5/restrict_borrow.schway", "by-pointer bodies are not supported"},
 	}
 	for _, test := range tests {
 		t.Run(filepath.Base(test.fixture), func(t *testing.T) {
@@ -528,7 +528,7 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 		path := path
 		fixture := filepath.Base(path)
 		t.Run(fixture, func(t *testing.T) {
-			if fixture == "typed_failure_truncated_stdout.lang" {
+			if fixture == "typed_failure_truncated_stdout.schway" {
 				// D-05-18a: this fixture's whole adversarial point is that its
 				// real, unbuffered native event volume crosses the project's
 				// own 64 KiB-plus-one stdout bound -- the generated C's own
@@ -543,14 +543,14 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 				// TestPhase5AdversarialSubsetIsComplete. Skipping it here
 				// avoids asserting the one thing this fixture exists to
 				// disprove.
-				t.Skip("typed_failure_truncated_stdout.lang intentionally exceeds the native stdout bound; see probe:TestPhase5AdversarialSubsetIsComplete for its own interpreter-level verification")
+				t.Skip("typed_failure_truncated_stdout.schway intentionally exceeds the native stdout bound; see probe:TestPhase5AdversarialSubsetIsComplete for its own interpreter-level verification")
 			}
-			if fixture == "allocator_mismatch.lang" || fixture == "retained_pointer.lang" {
+			if fixture == "allocator_mismatch.schway" || fixture == "retained_pointer.schway" {
 				// D-05-10 (plan 05-08): detection for both of these fixtures
 				// is ASan ONLY, never a bare native run -- a plain -O0/-O3
 				// run is undefined behavior, not a guaranteed crash, and this
 				// generic differential's own comparator has no ASan-aware
-				// notion of "the defect fired." allocator_mismatch.lang's
+				// notion of "the defect fired." allocator_mismatch.schway's
 				// frozen TU additionally calls the Itanium-mangled operator-
 				// new/operator-delete entry points directly (D-05-08's
 				// verified allocator-identity mismatch mechanism), which
@@ -588,7 +588,7 @@ func TestPhase5CorpusThreeEngineAgreement(t *testing.T) {
 		if len(programs) == 0 {
 			t.Fatal("EnumeratePhase5Closure returned no programs")
 		}
-		root := os.Getenv("LANG_PHASE5_CLOSURE_CACHE")
+		root := os.Getenv("SCHWAY_PHASE5_CLOSURE_CACHE")
 		if root == "" {
 			root = filepath.Join(os.Getenv("GOCACHE"), "phase5-closure-artifacts")
 		}
@@ -628,12 +628,12 @@ func TestPhase5CorpusIncludesEveryPriorPhase(t *testing.T) {
 	}
 	for _, phase := range []string{"phase1", "phase2", "phase3", "phase4"} {
 		dir := testsupport.ProjectPath("testdata", phase)
-		matches, err := filepath.Glob(filepath.Join(dir, "*.lang"))
+		matches, err := filepath.Glob(filepath.Join(dir, "*.schway"))
 		if err != nil {
 			t.Fatalf("glob %s: %v", dir, err)
 		}
 		if len(matches) == 0 {
-			t.Fatalf("%s has no .lang fixtures on disk -- test setup is broken", dir)
+			t.Fatalf("%s has no .schway fixtures on disk -- test setup is broken", dir)
 		}
 		for _, match := range matches {
 			if !included[match] {

@@ -3,7 +3,7 @@ package ability
 import (
 	"fmt"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/core"
 )
 
 var order = [...]core.Ability{

@@ -3,7 +3,7 @@ package session
 import (
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 // StageNames returns D-06-21's five fixed, sequential pipeline stages, in
@@ -84,7 +84,7 @@ func (r *StageRecorder) Stop(stage string) error {
 // actually completed a Start/Stop pair for, in StageNames() pipeline
 // order. It returns nil -- no breakdown at all, never an array of zeros --
 // unless TimingObservationEnabled() reports true, so a run with
-// LANG_OBSERVE_TIMING unset emits no stage_breakdown at all (FND-04's
+// SCHWAY_OBSERVE_TIMING unset emits no stage_breakdown at all (FND-04's
 // empty-input edge). A stage this recorder never started (for example
 // native_compile/link on a cache-artifact-reused run, where no fresh
 // compile happened this invocation) is simply omitted, not reported as a

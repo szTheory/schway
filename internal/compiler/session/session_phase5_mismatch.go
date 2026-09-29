@@ -1,6 +1,6 @@
 // session_phase5_mismatch.go wires plan 05-10's dependency-free
 // internal/compiler/reduce package into a real, seeded interpreter
-// mismatch, producing a reduce.MismatchDocument (lang.mismatch/0, D-05-26).
+// mismatch, producing a reduce.MismatchDocument (schway.mismatch/0, D-05-26).
 // SignatureFromDisagreement lives HERE, not in reduce, because reduce must
 // stay a leaf package (05-10-SUMMARY.md): this plan is the session -> reduce
 // wiring direction, and a reduce -> session dependency in the other
@@ -17,15 +17,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/callgraph"
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/reduce"
+	"github.com/szTheory/schway/internal/compiler/callgraph"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/reduce"
 )
 
 // LaneMismatchReduce and its three control identifiers are D-05-27's own
@@ -50,17 +50,17 @@ const (
 	// "declared, not yet gate-wired" precedent (see the comment above)
 	// rather than double-encoding pass/fail into the control set itself.
 	// Declaring this control never bumps MismatchDocument's own schema
-	// (lang.mismatch/0 stays pinned, D-05-39): QLT-05 is a gate claim
+	// (schway.mismatch/0 stays pinned, D-05-39): QLT-05 is a gate claim
 	// about the reducer's own output, not a document field.
 	ControlReduceReverified = "control:reduce.reverified"
 )
 
 // mismatchReduceFixture is the seeded, reproducible mismatch source this
 // wiring reduces: plan 05-07's AliasFactMutationRunner over
-// false_restrict_hoist.lang, engineered specifically to produce a real
+// false_restrict_hoist.schway, engineered specifically to produce a real
 // interpreter-optimizer-observable divergence (D-05-05) -- a ready source
 // of a genuine mismatch, per this plan's own <read_first> note.
-const mismatchReduceFixture = "testdata/phase5/false_restrict_hoist.lang"
+const mismatchReduceFixture = "testdata/phase5/false_restrict_hoist.schway"
 
 // SignatureFromDisagreement maps a real *Phase5EngineDisagreement into a
 // reduce.Signature (D-05-24) -- the wiring plan 05-10 deferred to this
@@ -329,8 +329,8 @@ func mismatchPredicate(baseRunner native.Runner, fixturePath, fallbackInput stri
 }
 
 // ReduceSeededAliasMismatch drives plan 05-07's AliasFactMutationRunner
-// over false_restrict_hoist.lang to a REAL -O0-vs--O3 divergence, then
-// reduces it via reduce.Reduce, emitting a lang.mismatch/0 document that is
+// over false_restrict_hoist.schway to a REAL -O0-vs--O3 divergence, then
+// reduces it via reduce.Reduce, emitting a schway.mismatch/0 document that is
 // self-sufficient for an AI repair agent (D-05-26): its causal_chain and
 // event_window are populated from the SAME seeded run that produced the
 // divergence, never fabricated.
@@ -378,7 +378,7 @@ func ReduceSeededAliasMismatch(ctx context.Context) (reduce.MismatchDocument, er
 	}
 
 	engines := map[string]execution.Execution{"O0": o0.Pairs[0].Execution, "O3": o3.Pairs[0].Execution}
-	compareErr := Phase5CompareEngines("false_restrict_hoist.lang", engines)
+	compareErr := Phase5CompareEngines("false_restrict_hoist.schway", engines)
 	disagreement, ok := compareErr.(*Phase5EngineDisagreement)
 	if compareErr == nil || !ok {
 		return reduce.MismatchDocument{}, fmt.Errorf("mismatch-reduce: %s produced no real divergence to reduce -- the seed mutation was not exercised", ControlAliasFalseNoAlias)

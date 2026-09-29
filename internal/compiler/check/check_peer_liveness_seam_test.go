@@ -3,7 +3,7 @@ package check
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 )
 
 // TestPeerLoanCarrySeamDisabledCheckStillRefuses is Phase 09's own D-09-24/
@@ -23,10 +23,10 @@ import (
 // unreachable from this package by construction, D-09-25's own "the seam's
 // very scoping is the proof the code paths are separate" argument), and
 // assert THREE things: (1) check's own independently-derived answer for
-// relay_escort_witness.lang -- a wholly unrelated program from a wholly
+// relay_escort_witness.schway -- a wholly unrelated program from a wholly
 // unrelated code path -- is completely UNCHANGED by a fault seeded entirely
 // inside the OTHER peer; (2) with the seam ON, check and corevalidate now
-// DISAGREE on testdata/phase08/twin_a_accept.lang (check still admits it;
+// DISAGREE on testdata/phase08/twin_a_accept.schway (check still admits it;
 // corevalidate, its own consult disabled, reverts to its pre-Phase-09
 // unconditional-propagation shape and wrongly refuses it again); (3) with
 // the seam OFF, the two agree on that same program. Only the combination of
@@ -37,13 +37,13 @@ func TestPeerLoanCarrySeamDisabledCheckStillRefuses(t *testing.T) {
 	// (1) check's own independent answer, unrelated program, unaffected by
 	// a fault seeded entirely inside corevalidate's own package.
 	restore := corevalidate.SetDisablePeerLoanCarryConsultForTest(true)
-	witnessResult := Program(mustParseProgram(t, readPhase07Fixture(t, "relay_escort_witness.lang")))
+	witnessResult := Program(mustParseProgram(t, readPhase07Fixture(t, "relay_escort_witness.schway")))
 	restore()
 	if len(witnessResult.Diagnostics) != 1 || witnessResult.Diagnostics[0].Code != "check.interprocedural_loan_liveness" {
-		t.Fatalf("expected check to still refuse relay_escort_witness.lang with check.interprocedural_loan_liveness regardless of corevalidate's own seam, got %+v", witnessResult.Diagnostics)
+		t.Fatalf("expected check to still refuse relay_escort_witness.schway with check.interprocedural_loan_liveness regardless of corevalidate's own seam, got %+v", witnessResult.Diagnostics)
 	}
 
-	twinSource := readPhase08Fixture(t, "twin_a_accept.lang")
+	twinSource := readPhase08Fixture(t, "twin_a_accept.schway")
 
 	// (2) seam ON: check admits, corevalidate now wrongly refuses again --
 	// the two DISAGREE.
@@ -51,12 +51,12 @@ func TestPeerLoanCarrySeamDisabledCheckStillRefuses(t *testing.T) {
 	twinResult := Program(mustParseProgram(t, twinSource))
 	if len(twinResult.Diagnostics) != 0 {
 		restore()
-		t.Fatalf("expected check to admit twin_a_accept.lang, got %+v", twinResult.Diagnostics)
+		t.Fatalf("expected check to admit twin_a_accept.schway, got %+v", twinResult.Diagnostics)
 	}
 	seamOnCoreResult := corevalidate.Validate(twinResult.Program)
 	restore()
 	if seamOnCoreResult.Valid {
-		t.Fatal("expected corevalidate to wrongly refuse twin_a_accept.lang again with its own consult seam disabled, got Valid == true")
+		t.Fatal("expected corevalidate to wrongly refuse twin_a_accept.schway again with its own consult seam disabled, got Valid == true")
 	}
 	found := false
 	for _, problem := range seamOnCoreResult.Problems {
@@ -71,7 +71,7 @@ func TestPeerLoanCarrySeamDisabledCheckStillRefuses(t *testing.T) {
 	// (3) seam OFF: check admits, corevalidate independently agrees.
 	twinResultAgain := Program(mustParseProgram(t, twinSource))
 	if len(twinResultAgain.Diagnostics) != 0 {
-		t.Fatalf("expected check to admit twin_a_accept.lang, got %+v", twinResultAgain.Diagnostics)
+		t.Fatalf("expected check to admit twin_a_accept.schway, got %+v", twinResultAgain.Diagnostics)
 	}
 	seamOffCoreResult := corevalidate.Validate(twinResultAgain.Program)
 	if !seamOffCoreResult.Valid {
@@ -84,17 +84,17 @@ func TestPeerLoanCarrySeamDisabledCheckStillRefuses(t *testing.T) {
 // (TestVerifyCallableRefusalSeamCheckDisabledCorevalidateStillRefuses,
 // check_test.go) to the interprocedural liveness fact: with check's OWN
 // admission disabled (disableInterproceduralLoanLivenessForTest engaged),
-// relay_escort_witness.lang is admitted by check -- but the resulting
+// relay_escort_witness.schway is admitted by check -- but the resulting
 // core.Program is INDEPENDENTLY still refused by corevalidate's own
 // peer-derived loan-carry consult (corevalidate_peer_liveness.go), which
 // never consults check's summaries, its seam, or its diagnostics at all.
 func TestInterproceduralLivenessSeamCheckDisabledCorevalidateStillRefuses(t *testing.T) {
 	defer func() { disableInterproceduralLoanLivenessForTest = false }()
 	disableInterproceduralLoanLivenessForTest = true
-	result := Program(mustParseProgram(t, readPhase07Fixture(t, "relay_escort_witness.lang")))
+	result := Program(mustParseProgram(t, readPhase07Fixture(t, "relay_escort_witness.schway")))
 	disableInterproceduralLoanLivenessForTest = false
 	if len(result.Diagnostics) != 0 {
-		t.Fatalf("expected check's seam to admit relay_escort_witness.lang, got %+v", result.Diagnostics)
+		t.Fatalf("expected check's seam to admit relay_escort_witness.schway, got %+v", result.Diagnostics)
 	}
 	coreResult := corevalidate.Validate(result.Program)
 	if coreResult.Valid {

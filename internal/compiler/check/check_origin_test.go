@@ -3,7 +3,7 @@ package check_test
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/session"
 )
 
 const publicOriginSource = `module owned.public_origin_lowering

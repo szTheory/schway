@@ -16,11 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // interpProjectRoot mirrors nat03ProjectRoot's own technique
@@ -33,13 +33,13 @@ func interpProjectRoot() string {
 	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
 }
 
-// checkedCallBasicProgram checks and corevalidates testdata/phase07/call_basic.lang
+// checkedCallBasicProgram checks and corevalidates testdata/phase07/call_basic.schway
 // directly (syntax.Parse + check.Program + corevalidate.Validate), never
 // through package session -- session imports interp, so an interp test
 // importing session would be a cycle.
 func checkedCallBasicProgram(t *testing.T) core.Program {
 	t.Helper()
-	path := filepath.Join(interpProjectRoot(), "testdata", "phase07", "call_basic.lang")
+	path := filepath.Join(interpProjectRoot(), "testdata", "phase07", "call_basic.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
@@ -67,7 +67,7 @@ type phase23ModelOutcome struct {
 
 func checkedPhase23FileByteProgram(t *testing.T) core.Program {
 	t.Helper()
-	path := filepath.Join(interpProjectRoot(), "examples", "phase23", "file_byte.lang")
+	path := filepath.Join(interpProjectRoot(), "examples", "phase23", "file_byte.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
@@ -342,14 +342,14 @@ func TestMoveAsCopyMutationKilled(t *testing.T) {
 	}
 
 	// check and corevalidate execute nothing (D-10-36): re-running BOTH on
-	// a real, independently checked program (call_basic.lang) while
+	// a real, independently checked program (call_basic.schway) while
 	// moveAsCopyForTest is still engaged from Beat 2 produces the
 	// IDENTICAL verdict either way, because neither ever consults an
 	// interp-internal, unexported runtime seam. This is the pairing the
 	// mutant's whole point rests on -- check and corevalidate are
 	// structurally blind to interp's own runtime behavior, never merely
 	// coincidentally in agreement with it.
-	realParsed := syntax.Parse(mustReadFixture(t, "call_basic.lang"))
+	realParsed := syntax.Parse(mustReadFixture(t, "call_basic.schway"))
 	realChecked := check.Program(realParsed.Program)
 	if len(realChecked.Diagnostics) != 0 {
 		t.Fatalf("expected check.Program's diagnostics to be unaffected by moveAsCopyForTest, got: %v", realChecked.Diagnostics)
@@ -372,7 +372,7 @@ func mustReadFixture(t *testing.T, name string) []byte {
 }
 
 func TestPhase18CallComputedMatchPrefix(t *testing.T) {
-	path := filepath.Join(interpProjectRoot(), "testdata", "phase18", "result_computed_match.lang")
+	path := filepath.Join(interpProjectRoot(), "testdata", "phase18", "result_computed_match.schway")
 	source, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -398,7 +398,7 @@ func TestPhase18CallComputedMatchPrefix(t *testing.T) {
 }
 
 // TestCallExecutesAcrossOneFrame is Task 1's tracer test (SEM-08, OWN-05b,
-// D-10-21/D-10-26): call_basic.lang's main calls identity across a real
+// D-10-21/D-10-26): call_basic.schway's main calls identity across a real
 // heap frame boundary and gets back identity's own returned value, with at
 // least one emitted event attributed to the callee's own function ID
 // (D-10-32) -- proof the callee frame genuinely ran rather than being
@@ -415,7 +415,7 @@ func TestCallExecutesAcrossOneFrame(t *testing.T) {
 		}
 	}
 	if calleeID == "" {
-		t.Fatalf("call_basic.lang's checked program has no function named %q", "identity")
+		t.Fatalf("call_basic.schway's checked program has no function named %q", "identity")
 	}
 
 	execution, err := Run(program, "main", "7")
@@ -484,7 +484,7 @@ func TestInvocationThreadsThroughAllEventPaths(t *testing.T) {
 		})
 	}
 
-	program := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.lang")
+	program := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.schway")
 	result, err := Run(program, "main", "7")
 	if err != nil {
 		t.Fatal(err)
@@ -516,7 +516,7 @@ func TestInvocationThreadsThroughAllEventPaths(t *testing.T) {
 // boundaries: adding /2 must not alter a bare-match /0 document or a
 // frame-based /1 document.
 func TestExecutionSchemaSelectionPreservesLegacy(t *testing.T) {
-	bareProgram := checkedProgramFromFixture(t, "phase1", "toggle.lang")
+	bareProgram := checkedProgramFromFixture(t, "phase1", "toggle.schway")
 	bare, err := Run(bareProgram, bareProgram.Functions[0].Name, "Off")
 	if err != nil {
 		t.Fatal(err)
@@ -525,7 +525,7 @@ func TestExecutionSchemaSelectionPreservesLegacy(t *testing.T) {
 		t.Fatalf("single-function bare-match execution moved from legacy /0: %+v", bare)
 	}
 
-	program := checkedProgramFromFixture(t, "phase4", "defect_terminal.lang")
+	program := checkedProgramFromFixture(t, "phase4", "defect_terminal.schway")
 	result, err := Run(program, "triage", "Go")
 	if err != nil {
 		t.Fatal(err)
@@ -560,7 +560,7 @@ func functionCalledEvents(events []Event) []Event {
 // first-class /2 observation. The diamond also proves that a caller resumes
 // only after the complete child subsequence.
 func TestFunctionCalledPreorderAndOwnership(t *testing.T) {
-	program := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.lang")
+	program := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.schway")
 	result, err := Run(program, "main", "7")
 	if err != nil {
 		t.Fatal(err)
@@ -608,14 +608,14 @@ func indexOfInvocationEvent(events []Event, id, invocation string) int {
 // left's reachable leaf call leaves left itself reachable, so the projection
 // must lose exactly that one caller-owned function.called record.
 func TestFunctionCalledProjectionRemoval(t *testing.T) {
-	full := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.lang")
+	full := checkedProgramFromFixture(t, "phase11", "multi_function_diamond_call.schway")
 	fullResult, err := Run(full, "main", "7")
 	if err != nil {
 		t.Fatal(err)
 	}
 	fullCalled := functionCalledEvents(fullResult.Events)
 
-	sourcePath := filepath.Join(interpProjectRoot(), "testdata", "phase11", "multi_function_diamond_call.lang")
+	sourcePath := filepath.Join(interpProjectRoot(), "testdata", "phase11", "multi_function_diamond_call.schway")
 	source, err := os.ReadFile(sourcePath)
 	if err != nil {
 		t.Fatal(err)
@@ -786,14 +786,14 @@ func probe(r result) int {
 	})
 }
 
-// generateCallDepthChainSource emits a genuine `.lang` module of n chained
-// single-call functions, generalizing testdata/phase07/call_basic.lang's
+// generateCallDepthChainSource emits a genuine `.schway` module of n chained
+// single-call functions, generalizing testdata/phase07/call_basic.schway's
 // two-function template to n links (Task 2): link0 calls link1 calls
 // link2 ... calls link(n-1), which is the base case with no call and simply
 // returns its own parameter. link0 is the sole exported entry point. The
 // full contract (module shape, per-link template, entry point name, and
 // why the chain is generated rather than committed as a 129-function
-// `.lang` file) is recorded in
+// `.schway` file) is recorded in
 // testdata/phase10/call_depth_chain_generator.md so a future reader can
 // reconstruct the fixture without reading this function.
 func generateCallDepthChainSource(n int) []byte {
@@ -957,8 +957,8 @@ const (
 	probeChainDepth           = probeReducedCallDepthCap * probeCallDepthMultiplier // 800, held well under maxFunctions=1024
 	probeMaxStackBytes        = 1 << 20                                             // 1 MiB: a deliberately small, pinned host ceiling
 	probeSubprocessTimeout    = 30 * time.Second
-	probeChildEnv             = "LANG_INTERP_CALL_DEPTH_PROBE_CHILD"
-	probeArmEnv               = "LANG_INTERP_CALL_DEPTH_PROBE_ARM"
+	probeChildEnv             = "SCHWAY_INTERP_CALL_DEPTH_PROBE_CHILD"
+	probeArmEnv               = "SCHWAY_INTERP_CALL_DEPTH_PROBE_ARM"
 	probeArmCapDisabled       = "cap_disabled"
 	probeArmCapEnabled        = "cap_enabled"
 	probeMaxCapturedOutputLen = 1 << 16
@@ -1330,7 +1330,7 @@ func frameDrainNonlocalMultiFrameProgram() (program core.Program, entry core.Fun
 	okEdge := calleeID + ":edge:ok"
 	callee := core.Function{
 		ID: calleeID, Name: "callee", Parameter: core.Parameter{ID: calleeParam, Name: "value", Type: "Byte"}, ReturnType: "Byte",
-		ForeignContract: &core.ForeignContract{Symbol: "lang_nonlocal_probe", Allocator: "libc_malloc", NonlocalExit: "possible", Fails: "ProbeError"},
+		ForeignContract: &core.ForeignContract{Symbol: "schway_nonlocal_probe", Allocator: "libc_malloc", NonlocalExit: "possible", Fails: "ProbeError"},
 		Linear: &core.LinearBody{
 			ID:    calleeID + ":linear",
 			Types: []core.TypeFact{drainByteType},
@@ -1344,7 +1344,7 @@ func frameDrainNonlocalMultiFrameProgram() (program core.Program, entry core.Fun
 				// OkEdgeID/ErrTargetID are never consulted -- the
 				// nonlocalExitCalls==2 branch returns before reaching that
 				// logic (interp.go's runFrameStack), exactly like
-				// nonlocal_exit_probe.lang's own second `try` call.
+				// nonlocal_exit_probe.schway's own second `try` call.
 				{ID: calleeTrigger, Kind: core.OpForeignCall, SourceID: calleeParam, TargetID: calleeID + ":place:trigger_unused", TypeID: drainByteType.ID},
 				// Tracking release for callee's own acquisition, unreached
 				// on this path exactly like newDrainAcquireReleaseBlocks'
@@ -1766,7 +1766,7 @@ var oracleBorrowSequenceType = core.TypeFact{ID: "oracle:coverage:type:value"}
 // Operation-kind coverage matrix's real gaps (D-10-58): before this test,
 // core.OpBorrowShared and core.OpBorrowExclusive were never exercised by
 // ANY interp test at ANY path, and core.OpCopy/core.OpMove were each
-// exercised at only one of the three paths (defect_terminal.lang's "Go" arm,
+// exercised at only one of the three paths (defect_terminal.schway's "Go" arm,
 // runBranchArm only; TestMoveAsCopyMutationKilled's mutated run, runLinear
 // only) rather than at every path a structural floor requires.
 func oracleBorrowSequenceProgram(shape string) (program core.Program, entry core.Function, blockID string) {
@@ -1931,7 +1931,7 @@ func TestRunRefusesInvalidBodyUnion(t *testing.T) {
 // "unknown operation kind" row: runFrameStack's own switch default case
 // refuses an operation whose Kind is not a member of
 // core.AllOperationKinds() -- a synthetic, hand-built core.LinearOperation
-// with a bogus Kind string, since no real .lang source or check.go emission
+// with a bogus Kind string, since no real .schway source or check.go emission
 // path can produce one (check.go only ever emits from the closed
 // core.OperationKind set).
 func TestRunFrameStackRefusesUnknownOperationKind(t *testing.T) {
@@ -1960,9 +1960,9 @@ func TestRunFrameStackRefusesUnknownOperationKind(t *testing.T) {
 
 // TestCallFromBothMatchArmsAcrossFrames closes the Operation-kind coverage
 // matrix's remaining core.OpCall gap (D-10-58): testdata/phase07/
-// call_from_both_match_arms.lang (D-07-28) was checked/corevalidated by
+// call_from_both_match_arms.schway (D-07-28) was checked/corevalidated by
 // earlier phases but never previously driven through interp.Run at all --
-// core.OpCall was exercised at runLinear (call_basic.lang) and at a
+// core.OpCall was exercised at runLinear (call_basic.schway) and at a
 // synthetic runLinear-shaped probe (moveAsCopyProbeProgram), but never at
 // runBranchArm, where a match arm's own block itself contains the
 // core.OpCall to another match-arm-bodied function. Both real arms are
@@ -1970,7 +1970,7 @@ func TestRunFrameStackRefusesUnknownOperationKind(t *testing.T) {
 // match-bodied, D-10-26/partitionFrameForCall) executes identically to
 // Run's own top-level match dispatch.
 func TestCallFromBothMatchArmsAcrossFrames(t *testing.T) {
-	program := checkedProgramFromFixture(t, "phase07", "call_from_both_match_arms.lang")
+	program := checkedProgramFromFixture(t, "phase07", "call_from_both_match_arms.schway")
 	for _, input := range []string{"A", "B"} {
 		input := input
 		t.Run(input, func(t *testing.T) {

@@ -17,16 +17,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/execution"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
-	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.lang"))
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase23", "file_byte.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,25 +46,25 @@ func TestPhase23GeneratedReleaseFollowsBorrowedUse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	useAt := strings.Index(cSource, "lang_file_byte_use(")
-	useErrorDiagnosticAt := strings.Index(cSource, `fputs("lang_file_byte_use: UnsupportedByte\n", stderr);`)
+	useAt := strings.Index(cSource, "schway_file_byte_use(")
+	useErrorDiagnosticAt := strings.Index(cSource, `fputs("schway_file_byte_use: UnsupportedByte\n", stderr);`)
 	var releasePositions []int
 	for offset := 0; offset < len(cSource); {
-		next := strings.Index(cSource[offset:], "lang_file_byte_release(")
+		next := strings.Index(cSource[offset:], "schway_file_byte_release(")
 		if next < 0 {
 			break
 		}
 		releasePositions = append(releasePositions, offset+next)
-		offset += next + len("lang_file_byte_release(")
+		offset += next + len("schway_file_byte_release(")
 	}
 	if useAt < 0 || len(releasePositions) != 2 || releasePositions[1] <= useAt || useErrorDiagnosticAt <= releasePositions[1] {
 		t.Fatalf("generated app does not call borrowed use then the successful-path destructor: use=%d release=%v", useAt, releasePositions)
 	}
-	useArgStart := useAt + len("lang_file_byte_use(")
+	useArgStart := useAt + len("schway_file_byte_use(")
 	useArgEnd := strings.Index(cSource[useArgStart:], ");")
-	releaseArgStart := releasePositions[1] + len("lang_file_byte_release(")
+	releaseArgStart := releasePositions[1] + len("schway_file_byte_release(")
 	releaseArgEnd := strings.Index(cSource[releaseArgStart:], ");")
-	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], `status != 0) { fputs("lang_file_byte_use: UnsupportedByte\n", stderr); exit(65); }`) {
+	if useArgEnd < 0 || releaseArgEnd < 0 || strings.TrimSpace(cSource[useArgStart:useArgStart+useArgEnd]) != strings.TrimSpace(cSource[releaseArgStart:releaseArgStart+releaseArgEnd]) || !strings.Contains(cSource[releasePositions[1]:], `status != 0) { fputs("schway_file_byte_use: UnsupportedByte\n", stderr); exit(65); }`) {
 		t.Fatal("generated cleanup does not retain the acquired owner through use and release it before a use failure exits")
 	}
 }
@@ -78,9 +78,9 @@ func TestPhase23OperationABI(t *testing.T) {
 	manifest := BindingManifest{
 		Schema: BindingSchema, Headers: []string{"adapter.h"}, IncludeDirs: []string{"."},
 		Symbols: []BindingSymbol{
-			{Name: "lang_file_byte_acquire", Header: "adapter.h", FunctionType: "lang_file_byte_acquire_fn"},
-			{Name: "lang_file_byte_use", Header: "adapter.h", FunctionType: "lang_file_byte_use_fn"},
-			{Name: "lang_file_byte_release", Header: "adapter.h", FunctionType: "lang_file_byte_release_fn"},
+			{Name: "schway_file_byte_acquire", Header: "adapter.h", FunctionType: "schway_file_byte_acquire_fn"},
+			{Name: "schway_file_byte_use", Header: "adapter.h", FunctionType: "schway_file_byte_use_fn"},
+			{Name: "schway_file_byte_release", Header: "adapter.h", FunctionType: "schway_file_byte_release_fn"},
 		},
 	}
 	runner := DefaultRunner()
@@ -111,9 +111,9 @@ func TestPhase23OperationABI(t *testing.T) {
 		from string
 		to   string
 	}{
-		{"acquire", "lang_file_byte_acquire_result lang_file_byte_acquire(const char *path);", "lang_file_byte_acquire_result lang_file_byte_acquire(uint64_t path);"},
-		{"use", "lang_file_byte_use_result lang_file_byte_use(lang_file_byte_owner owner);", "lang_file_byte_use_result lang_file_byte_use(const lang_file_byte_owner *owner);"},
-		{"release", "void lang_file_byte_release(lang_file_byte_owner owner);", "void lang_file_byte_release(const lang_file_byte_owner *owner);"},
+		{"acquire", "schway_file_byte_acquire_result schway_file_byte_acquire(const char *path);", "schway_file_byte_acquire_result schway_file_byte_acquire(uint64_t path);"},
+		{"use", "schway_file_byte_use_result schway_file_byte_use(schway_file_byte_owner owner);", "schway_file_byte_use_result schway_file_byte_use(const schway_file_byte_owner *owner);"},
+		{"release", "void schway_file_byte_release(schway_file_byte_owner owner);", "void schway_file_byte_release(const schway_file_byte_owner *owner);"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			mutated := strings.Replace(header, test.from, test.to, 1)
@@ -267,13 +267,13 @@ struct test_case {
 };
 
 static int run_case(const struct test_case *test) {
-  lang_file_byte_acquire_result result;
+  schway_file_byte_acquire_result result;
   scenario = test->scenario;
   open_calls = fstat_calls = allocation_calls = free_calls = 0;
   read_calls = close_calls = 0;
   expected_path = test->path;
   path_unchanged = 0;
-  result = lang_file_byte_acquire(test->path);
+  result = schway_file_byte_acquire(test->path);
   if (result.status != test->status || open_calls != test->opens ||
       fstat_calls != test->fstats || allocation_calls != test->allocations ||
       free_calls != test->frees || read_calls != test->reads ||
@@ -290,7 +290,7 @@ static int run_case(const struct test_case *test) {
       fprintf(stderr, "%s: success owner not initialized with byte 0x41\n", test->name);
       return 1;
     }
-    lang_file_byte_release(result.owner);
+    schway_file_byte_release(result.owner);
     if (free_calls != test->frees + 1) {
       fprintf(stderr, "%s: release did not free the successful allocation exactly once\n", test->name);
       return 1;
@@ -307,7 +307,7 @@ static int run_case(const struct test_case *test) {
 static int run_unchanged_path_case(const char *path) {
   char expected[4097];
   size_t path_length = strlen(path);
-  lang_file_byte_acquire_result result;
+  schway_file_byte_acquire_result result;
   if (path_length > sizeof expected - 1u) return 2;
   memcpy(expected, path, path_length + 1u);
   scenario = SC_OPEN_FAILED;
@@ -315,7 +315,7 @@ static int run_unchanged_path_case(const char *path) {
   read_calls = close_calls = 0;
   expected_path = expected;
   path_unchanged = 0;
-  result = lang_file_byte_acquire(path);
+  result = schway_file_byte_acquire(path);
   if (result.status != 3 || result.owner.data != NULL || result.owner.length != 0u ||
       open_calls != 1 || fstat_calls != 0 || allocation_calls != 0 ||
       free_calls != 0 || read_calls != 0 || close_calls != 0 || !path_unchanged) {
@@ -359,12 +359,12 @@ int main(int argc, char **argv) {
 	defer cancelCompile()
 	compile := exec.CommandContext(compileCtx, clang,
 		"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic",
-		"-DLANG_FILE_BYTE_OPEN=phase23_test_open",
-		"-DLANG_FILE_BYTE_FSTAT=phase23_test_fstat",
-		"-DLANG_FILE_BYTE_MALLOC=phase23_test_malloc",
-		"-DLANG_FILE_BYTE_FREE=phase23_test_free",
-		"-DLANG_FILE_BYTE_READ=phase23_test_read",
-		"-DLANG_FILE_BYTE_CLOSE=phase23_test_close",
+		"-DSCHWAY_FILE_BYTE_OPEN=phase23_test_open",
+		"-DSCHWAY_FILE_BYTE_FSTAT=phase23_test_fstat",
+		"-DSCHWAY_FILE_BYTE_MALLOC=phase23_test_malloc",
+		"-DSCHWAY_FILE_BYTE_FREE=phase23_test_free",
+		"-DSCHWAY_FILE_BYTE_READ=phase23_test_read",
+		"-DSCHWAY_FILE_BYTE_CLOSE=phase23_test_close",
 		"-I", root, harnessPath, "-o", binaryPath)
 	var compileStdout, compileStderr boundedWriter
 	compile.Stdout, compile.Stderr = &compileStdout, &compileStderr
@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
 		pathRun.Stdout, pathRun.Stderr = &pathStdout, &pathStderr
 		pathErr := pathRun.Run()
 		cancelPathRun()
-		if pathErr != nil || pathStdout.overflowed() || pathStderr.overflowed() || len(pathStdout.bytes()) != 0 || string(pathStderr.bytes()) != "lang_file_byte_acquire: OpenFailed\n" {
+		if pathErr != nil || pathStdout.overflowed() || pathStderr.overflowed() || len(pathStdout.bytes()) != 0 || string(pathStderr.bytes()) != "schway_file_byte_acquire: OpenFailed\n" {
 			t.Fatalf("unchanged path length=%d: err=%v stdout=%q stderr=%q", len(path), pathErr, pathStdout.bytes(), pathStderr.bytes())
 		}
 	}
@@ -419,7 +419,7 @@ func TestPhase22EvidenceDisabledCompleteAndStreamIsolation(t *testing.T) {
 		root := t.TempDir()
 		marker := filepath.Join(root, "launches.txt")
 		capture := phase22CompleteCapture(t)
-		artifact := writePhase22EvidenceScript(t, fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout {ordinary}\\n'\nprintf 'app stderr\\n' >&2\nprintf %%s %s > \"$LANG_APP_EVIDENCE_PATH\"\n", shellQuote(marker), shellQuote(capture)))
+		artifact := writePhase22EvidenceScript(t, fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout {ordinary}\\n'\nprintf 'app stderr\\n' >&2\nprintf %%s %s > \"$SCHWAY_APP_EVIDENCE_PATH\"\n", shellQuote(marker), shellQuote(capture)))
 		reportPath := filepath.Join(root, "complete.json")
 		var stdout, stderr bytes.Buffer
 		outcome, report, err := DefaultRunner().RunApplicationWithEvidence(context.Background(), artifact, "7", reportPath, EvidenceEvents, &stdout, &stderr)
@@ -443,8 +443,8 @@ func TestPhase22OrdinaryRunIgnoresAmbientEvidencePath(t *testing.T) {
 	if err := os.WriteFile(target, []byte("original"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("LANG_APP_EVIDENCE_PATH", target)
-	artifact := writePhase22EvidenceScript(t, "if [ -n \"${LANG_APP_EVIDENCE_PATH:-}\" ]; then printf 'overwritten' > \"$LANG_APP_EVIDENCE_PATH\"; fi\nprintf 'app\\n'\n")
+	t.Setenv("SCHWAY_APP_EVIDENCE_PATH", target)
+	artifact := writePhase22EvidenceScript(t, "if [ -n \"${SCHWAY_APP_EVIDENCE_PATH:-}\" ]; then printf 'overwritten' > \"$SCHWAY_APP_EVIDENCE_PATH\"; fi\nprintf 'app\\n'\n")
 	var stdout, stderr bytes.Buffer
 	outcome, err := DefaultRunner().RunApplication(context.Background(), artifact, "7", &stdout, &stderr)
 	if err != nil || outcome.Kind != RunExited || outcome.ExitCode != 0 {
@@ -461,11 +461,11 @@ func TestPhase22EvidenceMissingPartialAndCapacityControls(t *testing.T) {
 		phase22AssertIncompleteEvidence(t, "printf 'app\\n'\n", nil)
 	})
 	t.Run("partial capture", func(t *testing.T) {
-		phase22AssertIncompleteEvidence(t, "printf 'app\\n'\nprintf '{\\\"schema\\\":' > \"$LANG_APP_EVIDENCE_PATH\"\n", nil)
+		phase22AssertIncompleteEvidence(t, "printf 'app\\n'\nprintf '{\\\"schema\\\":' > \"$SCHWAY_APP_EVIDENCE_PATH\"\n", nil)
 	})
 	t.Run("capacity exhausted", func(t *testing.T) {
 		capture := phase22CompleteCapture(t)
-		body := fmt.Sprintf("printf 'app\\n'\nprintf %%s %s > \"$LANG_APP_EVIDENCE_PATH\"\n", shellQuote(capture))
+		body := fmt.Sprintf("printf 'app\\n'\nprintf %%s %s > \"$SCHWAY_APP_EVIDENCE_PATH\"\n", shellQuote(capture))
 		phase22AssertIncompleteEvidence(t, body, func(runner *Runner) { runner.evidenceLimit = 8 })
 	})
 }
@@ -493,7 +493,7 @@ func TestPhase22CompleteEvidenceReportWriteFailureIsNotVerified(t *testing.T) {
 	root := t.TempDir()
 	marker := filepath.Join(root, "launches.txt")
 	capture := phase22CompleteCapture(t)
-	body := fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout\\n'\nprintf 'app stderr\\n' >&2\nprintf %%s %s > \"$LANG_APP_EVIDENCE_PATH\"\n", shellQuote(marker), shellQuote(capture))
+	body := fmt.Sprintf("printf 'launch\\n' >> %s\nprintf 'app stdout\\n'\nprintf 'app stderr\\n' >&2\nprintf %%s %s > \"$SCHWAY_APP_EVIDENCE_PATH\"\n", shellQuote(marker), shellQuote(capture))
 	artifact := writePhase22EvidenceScript(t, body)
 	var stdout, stderr bytes.Buffer
 	outcome, report, err := DefaultRunner().RunApplicationWithEvidence(context.Background(), artifact, "7", filepath.Join(root, "missing", "report.json"), EvidenceEvents, &stdout, &stderr)

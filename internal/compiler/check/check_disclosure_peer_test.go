@@ -6,9 +6,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -91,13 +91,13 @@ func assertIdenticalFieldSets(t *testing.T, label string, checkFields, peerField
 }
 
 // TestPeerAndCheckDisclosedFieldSetsAreIdentical drives more than one
-// program shape (a real testdata/phase08 `.lang` fixture AND a synthetic
+// program shape (a real testdata/phase08 `.schway` fixture AND a synthetic
 // call-graph shape, so identity is never an artifact of a single fixture)
 // through BOTH peers and asserts their consulted-field sets are identical
 // sorted sets.
 func TestPeerAndCheckDisclosedFieldSetsAreIdentical(t *testing.T) {
-	t.Run("real .lang fixture", func(t *testing.T) {
-		source, err := os.ReadFile(filepath.Join("..", "..", "..", "testdata", "phase08", "relay_depth2_accept.lang"))
+	t.Run("real .schway fixture", func(t *testing.T) {
+		source, err := os.ReadFile(filepath.Join("..", "..", "..", "testdata", "phase08", "relay_depth2_accept.schway"))
 		if err != nil {
 			t.Fatalf("read fixture: %v", err)
 		}
@@ -115,7 +115,7 @@ func TestPeerAndCheckDisclosedFieldSetsAreIdentical(t *testing.T) {
 		validated := corevalidate.Validate(checkedProgram)
 		peerFields := validated.PeerConsultedFields()
 
-		assertIdenticalFieldSets(t, "relay_depth2_accept.lang", checkFields, peerFields)
+		assertIdenticalFieldSets(t, "relay_depth2_accept.schway", checkFields, peerFields)
 	})
 
 	t.Run("synthetic diamond call-graph shape", func(t *testing.T) {

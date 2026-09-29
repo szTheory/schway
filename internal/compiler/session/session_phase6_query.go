@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/debugmap"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/native"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/debugmap"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // The five stable ID vocabularies D-06-01 joins, plus the "unrecognized"
@@ -129,7 +129,7 @@ type QueryOptions struct {
 // fact from SRC on this cold invocation alone (D-06-02's no-persisted-store
 // discipline extends to query, matching explain/debug-map), routes address
 // through the closed five-vocabulary dispatcher, optionally filters by
-// --kind, and returns a bounded, cursor-paginated page under lang.query/0.
+// --kind, and returns a bounded, cursor-paginated page under schway.query/0.
 func QueryCommandFile(path, address string, options QueryOptions) (protocol.Result, error) {
 	started := time.Now()
 	result := protocol.New("query", protocol.StatusPass)
@@ -328,7 +328,7 @@ func resolveQueryControlFacts(address string) ([]protocol.QueryFact, int) {
 // resolveQueryLaneFacts answers against the live lane-ID set a real `verify`
 // run over path produces (D-06-01) -- never a hand-copied literal. path is
 // therefore expected to be a corpus directory in this vocabulary, exactly
-// like `lang verify CORPUS`'s own SRC operand.
+// like `schway verify CORPUS`'s own SRC operand.
 func resolveQueryLaneFacts(path, address string) ([]protocol.QueryFact, int) {
 	result := VerifyCorpusFile(context.Background(), path, native.DefaultRunner())
 	work := result.Metrics.RecomputedWork + 1

@@ -64,6 +64,11 @@ gaps:
       - "A passing hosted Ubuntu evidence-aggregate receipt for scripts/verify-phase23.sh."
 ---
 
+<!-- schway-current:start -->
+Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
+<!-- schway-current:end -->
+
+
 # Phase 23: Live Local Allocation and Discharge — Verification Report
 
 **Phase Goal:** A developer can read a caller-selected file byte through a real allocation returned live to Lang and observe its generated local cleanup.

@@ -1,0 +1,40 @@
+// Phase 11 Plan 5 (NAT-06, PLAN.md Task 2): the diamond-shared-leaf shape
+// for the four-tier interprocedural differential. `main` calls two
+// DISTINCT callees (`left`, `right`), each of which calls the SAME shared
+// leaf (`leaf`) -- a diamond, mirroring testdata/phase07/deep_diamond_acyclic.schway's
+// own top1 pattern (main -> {left, right} -> leaf), the shape Phase 07
+// established is required to kill the gray-versus-visited cycle mutation
+// (a straight chain can never revisit a node the way a diamond's shared
+// leaf legitimately does). `value` is Byte (Copy, D-07's own established
+// ability for a nullary/scalar parameter), so passing the SAME `value` to
+// both `left` and `right` is a legal double read, not a move conflict.
+//
+// `main`'s own reachable closure ({left, right, leaf}, size 3) is the
+// unique non-empty in-degree-zero root (callgraph.EntryFunction, D-11-05),
+// so entry resolution is unambiguous.
+
+module phase11.multi_function_diamond_call
+
+export {
+  fn main
+}
+
+fn leaf(value: Byte) -> Byte {
+  value
+}
+
+fn left(value: Byte) -> Byte {
+  let result = leaf(value)
+  result
+}
+
+fn right(value: Byte) -> Byte {
+  let result = leaf(value)
+  result
+}
+
+fn main(value: Byte) -> Byte {
+  let r1 = left(value)
+  let r2 = right(value)
+  r2
+}

@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 // ---------------------------------------------------------------------
@@ -21,7 +21,7 @@ import (
 
 // synthLinearFunction builds a minimal core.Function carrying exactly the
 // operations named, for callgraph/functionOwnerIndex tests that need a
-// synthetic core.Program rather than a parsed .lang fixture. Each entry in
+// synthetic core.Program rather than a parsed .schway fixture. Each entry in
 // calls becomes one core.OpCall operation whose CalleeID is the given
 // callee function ID.
 func synthLinearFunction(id string, calls ...string) core.Function {
@@ -239,11 +239,11 @@ func TestBlameClassifiesEveryInterproceduralCode(t *testing.T) {
 		isCycle        bool
 	}
 	cases := []caseSpec{
-		{code: "check.interprocedural_loan_liveness", fixtureDir: "phase07", fixtureName: "relay_escort_witness.lang", callerFuncName: "escort"},
-		{code: "core.call_graph_cycle", fixtureDir: "phase07", fixtureName: "cycle_indirect.lang", isCycle: true},
-		{code: "check.call_argument_type_mismatch", fixtureDir: "phase07", fixtureName: "call_type_mismatch.lang", callerFuncName: "main"},
-		{code: "core.callee_not_callable", fixtureDir: "phase07", fixtureName: "call_uncallable_callee.lang", callerFuncName: "main"},
-		{code: "syntax.fallible_call_not_consumed", fixtureDir: "phase4", fixtureName: "fallible_call_unconsumed.lang", callerFuncName: "main"},
+		{code: "check.interprocedural_loan_liveness", fixtureDir: "phase07", fixtureName: "relay_escort_witness.schway", callerFuncName: "escort"},
+		{code: "core.call_graph_cycle", fixtureDir: "phase07", fixtureName: "cycle_indirect.schway", isCycle: true},
+		{code: "check.call_argument_type_mismatch", fixtureDir: "phase07", fixtureName: "call_type_mismatch.schway", callerFuncName: "main"},
+		{code: "core.callee_not_callable", fixtureDir: "phase07", fixtureName: "call_uncallable_callee.schway", callerFuncName: "main"},
+		{code: "syntax.fallible_call_not_consumed", fixtureDir: "phase4", fixtureName: "fallible_call_unconsumed.schway", callerFuncName: "main"},
 	}
 
 	readFixture := func(t *testing.T, dir, name string) []byte {
@@ -413,7 +413,7 @@ func TestBlameUndeterminedPublishesBothSitesUnapplied(t *testing.T) {
 // operation's span) is untouched, and resolveCycleBlame publishes every
 // cycle member -- never routed through resolveBlame's B1/B2/B3 machinery.
 func TestBlameCycleIsExemptFromB3(t *testing.T) {
-	source := readPhase07Fixture(t, "cycle_indirect.lang")
+	source := readPhase07Fixture(t, "cycle_indirect.schway")
 	result := Program(mustParseProgram(t, source))
 	var diag diagnostic.Diagnostic
 	found := false
@@ -592,7 +592,7 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 
 	// 1. check.interprocedural_loan_liveness: Primary is the offending
 	// move's own span. Independently: escort's own "take buffer" binding.
-	assertPrimary(t, readPhase07Fixture(t, "relay_escort_witness.lang"), "check.interprocedural_loan_liveness",
+	assertPrimary(t, readPhase07Fixture(t, "relay_escort_witness.schway"), "check.interprocedural_loan_liveness",
 		func(parsed ast.Program) (diagnostic.Span, bool) {
 			return findBindingSpan(parsed, "escort", func(b ast.Binding) bool {
 				return b.RHS.Kind == "take" && b.RHS.Source == "buffer"
@@ -608,7 +608,7 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 	// exempts this code from B3 blame reasoning; this test only confirms
 	// the Primary MOVEMENT claim, not the tie-break).
 	func() {
-		source := readPhase07Fixture(t, "cycle_indirect.lang")
+		source := readPhase07Fixture(t, "cycle_indirect.schway")
 		parsed := mustParseProgram(t, source)
 		result := Program(parsed)
 		var diag diagnostic.Diagnostic
@@ -644,7 +644,7 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 
 	// 3. check.call_argument_type_mismatch: Primary is the call site
 	// token. Independently: main's own "identity(buffer)" call binding.
-	assertPrimary(t, readPhase07Fixture(t, "call_type_mismatch.lang"), "check.call_argument_type_mismatch",
+	assertPrimary(t, readPhase07Fixture(t, "call_type_mismatch.schway"), "check.call_argument_type_mismatch",
 		func(parsed ast.Program) (diagnostic.Span, bool) {
 			return findBindingSpan(parsed, "main", func(b ast.Binding) bool {
 				return b.RHS.Kind == "call" && b.RHS.Callee == "identity"
@@ -665,7 +665,7 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 
 	// 5. core.callee_not_callable: Primary is the WHOLE calling function's
 	// own declaration span. Independently: main's own function.Span.
-	assertPrimary(t, readPhase07Fixture(t, "call_uncallable_callee.lang"), "core.callee_not_callable",
+	assertPrimary(t, readPhase07Fixture(t, "call_uncallable_callee.schway"), "core.callee_not_callable",
 		func(parsed ast.Program) (diagnostic.Span, bool) {
 			return findFuncSpan(parsed, "main")
 		})
@@ -675,7 +675,7 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 	// return type to equal its parameter type -- see checkCallReturnTypeUnrepresentable's
 	// own doc comment) -- mutation-killed through callReturnTypeDerivationSeam
 	// in the package's own established convention
-	// (TestCallReturnTypeDerivationMutationKilled), never through a .lang
+	// (TestCallReturnTypeDerivationMutationKilled), never through a .schway
 	// fixture. Exercised directly against resolveCallBinding, mirroring
 	// that existing test's own shape; "independently computed" here means
 	// the SAME binding.RHS.Span the test itself constructs and passes in --
@@ -713,11 +713,11 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 		})
 
 	// 8. syntax.fallible_call_not_consumed: Primary is the call site
-	// token. Independently: main's own "lang_res_open(request)" binding.
-	assertPrimary(t, readPhase4Fixture(t, "fallible_call_unconsumed.lang"), "syntax.fallible_call_not_consumed",
+	// token. Independently: main's own "schway_res_open(request)" binding.
+	assertPrimary(t, readPhase4Fixture(t, "fallible_call_unconsumed.schway"), "syntax.fallible_call_not_consumed",
 		func(parsed ast.Program) (diagnostic.Span, bool) {
 			return findBindingSpan(parsed, "main", func(b ast.Binding) bool {
-				return b.RHS.Kind == "call" && b.RHS.Callee == "lang_res_open"
+				return b.RHS.Kind == "call" && b.RHS.Callee == "schway_res_open"
 			})
 		})
 
@@ -757,7 +757,7 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 
 	seenInterproceduralCode := map[string]bool{}
 	for _, dir := range interproceduralOrderingBaselineDirs {
-		matches, err := filepath.Glob(filepath.Join("../../../testdata", dir, "*.lang"))
+		matches, err := filepath.Glob(filepath.Join("../../../testdata", dir, "*.schway"))
 		if err != nil {
 			t.Fatalf("glob testdata/%s: %v", dir, err)
 		}

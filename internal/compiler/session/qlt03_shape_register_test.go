@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // osStatModTime returns path's own on-disk modification time, used to prove
@@ -91,7 +91,7 @@ func TestQLT03StructuralGeneratorLimits(t *testing.T) {
 }
 
 // TestQLT03BorrowOfCalleeResultIsRefused is the headline negative's own
-// falsifier (D-11-49, D-10-C01): testdata/phase10/relay_depth3_refuse.lang's
+// falsifier (D-11-49, D-10-C01): testdata/phase10/relay_depth3_refuse.schway's
 // own `f2` declares a borrow-typed return sourced from forwarding leaf's
 // own call result. corevalidate.peerDeriveOriginFacts has no core.OpCall
 // case, so `f2` is judged not-Callable independently of check, and f1's
@@ -99,14 +99,14 @@ func TestQLT03StructuralGeneratorLimits(t *testing.T) {
 // RED the moment that gap closes -- exactly the falsifier this register's
 // `refused` rows require.
 func TestQLT03BorrowOfCalleeResultIsRefused(t *testing.T) {
-	source, err := readBoundedFile(nat03CorpusPath("testdata/phase10/relay_depth3_refuse.lang"), syntax.MaxSourceBytes)
+	source, err := readBoundedFile(nat03CorpusPath("testdata/phase10/relay_depth3_refuse.schway"), syntax.MaxSourceBytes)
 	if err != nil {
 		t.Fatalf("reading fixture: %v", err)
 	}
 	checked := Check(source)
 	result := corevalidate.Validate(checked.Program)
 	if result.Valid {
-		t.Fatal("QLT-03 headline gap closed: corevalidate now ACCEPTS relay_depth3_refuse.lang -- " +
+		t.Fatal("QLT-03 headline gap closed: corevalidate now ACCEPTS relay_depth3_refuse.schway -- " +
 			"update this register's borrow_of_callee_result rows (D-10-C01, PHASE-11-DEBT.md) " +
 			"before treating this as a pass")
 	}

@@ -1,0 +1,37 @@
+// adversarial-target: reordering-of-two-independent-event-emissions
+//
+// D-05-18a: two successive foreign acquisitions, A then B, with no data
+// dependence between them -- neither's acquired value feeds the other, and
+// both are dropped unread, the function returning its own untouched
+// parameter. Because A and B are mutually independent, a reordering
+// optimizer is legally free to swap their emitted events (and, under
+// `-flto`, their real call order) while producing the identical terminal
+// value -- exactly the shape D-05-20's compared "semantic-event order with
+// causal identity" axis exists to catch, since a real reorder would produce
+// a different ordered event sequence even though the terminal outcome is
+// unchanged.
+
+module phase5.reorder_two_events
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn schway_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let a = try schway_res_open(request)
+  let b = try schway_res_open(request)
+  request
+}

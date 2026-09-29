@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // syntheticProgram builds a fully structurally-valid core.Program directly
@@ -285,7 +285,7 @@ func TestCyclePeerAcceptsAcyclicDiamond(t *testing.T) {
 // diamond whose shared leaf is legitimately visited twice via two
 // independent callers, never a cycle. This is the ONLY fixture shape that
 // can kill the gray-versus-visited mutation (mirrors callgraph's own
-// deep_diamond_acyclic.lang rationale): a straight chain never revisits a
+// deep_diamond_acyclic.schway rationale): a straight chain never revisits a
 // node, so the black-vs-gray distinction is decorative on a chain.
 func diamondSyntheticProgram() core.Program {
 	return syntheticProgram(map[string][]string{

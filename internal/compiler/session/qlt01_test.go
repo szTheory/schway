@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // spikeDirNamePattern matches a spike directory's numeric prefix, e.g.
@@ -144,7 +144,7 @@ func TestQLT01AuditGoesRedOnStaleControl(t *testing.T) {
 			ControlID:        "synthetic-stale-row",
 			ControlMechanism: "a synthetic hazard used only to prove the audit can go red",
 			LiveDescendant: &session.QLT01LiveDescendant{
-				Fixture:   "testdata/phase5/false_restrict_hoist.lang",
+				Fixture:   "testdata/phase5/false_restrict_hoist.schway",
 				ControlID: "control:does.not.exist",
 			},
 		},
@@ -173,7 +173,7 @@ func TestQLT01AuditGoesRedOnDualDisposition(t *testing.T) {
 			ControlID:        "synthetic-dual-row",
 			ControlMechanism: "a synthetic hazard used only to prove the audit rejects dual dispositions",
 			LiveDescendant: &session.QLT01LiveDescendant{
-				Fixture:   "testdata/phase5/false_restrict_hoist.lang",
+				Fixture:   "testdata/phase5/false_restrict_hoist.schway",
 				ControlID: "control:alias.false_no_alias",
 			},
 			Waived: &session.QLT01Waiver{Reason: "r", Citation: "a specific citation", Owner: "o", Phase: "05"},

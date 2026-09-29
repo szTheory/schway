@@ -1,4 +1,4 @@
-// Package executionpeer independently validates lang.execution/2 causal
+// Package executionpeer independently validates schway.execution/2 causal
 // documents. It deliberately knows only core facts and the public invocation
 // grammar; it does not consult an execution producer.
 package executionpeer
@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
 // MaxInvocations is the fixed, fail-closed bound on statically unfolded
@@ -69,7 +69,7 @@ type index struct {
 // require every statically admissible invocation to appear.
 func Validate(program core.Program, document execution.Execution) error {
 	if document.Schema != execution.Schema2 {
-		return refusal("schema", -1, "", "", "", "expected lang.execution/2")
+		return refusal("schema", -1, "", "", "", "expected schway.execution/2")
 	}
 	indexed, err := buildIndex(program)
 	if err != nil {
@@ -252,7 +252,7 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("entry", n, event.Invocation, "", i.entry, "wrong entry")
 		}
 		if event.Schema != execution.Schema2 {
-			return refusal("schema", n, event.Invocation, "", occ.functionID, "event schema is not lang.execution/2")
+			return refusal("schema", n, event.Invocation, "", occ.functionID, "event schema is not schway.execution/2")
 		}
 		if event.ID == "" || event.FunctionID == "" || event.Kind == "" {
 			return refusal("missing_field", n, event.Invocation, "", occ.functionID, "event identity field is missing")

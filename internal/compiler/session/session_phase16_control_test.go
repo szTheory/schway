@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func checkedPhase16Fixture(t *testing.T, relative string) session.CheckResult {
@@ -26,12 +26,12 @@ func checkedPhase16Fixture(t *testing.T, relative string) session.CheckResult {
 }
 
 func TestPhase16ControlNativeCAdmittedUsesPublicEmitter(t *testing.T) {
-	checked := checkedPhase16Fixture(t, "testdata/phase1/toggle.lang")
+	checked := checkedPhase16Fixture(t, "testdata/phase1/toggle.schway")
 	want, err := cgen.EmitNative(checked.Program)
 	if err != nil {
 		t.Fatalf("public emitter: %v", err)
 	}
-	got, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	got, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if err != nil {
 		t.Fatalf("session boundary: %v", err)
 	}
@@ -41,9 +41,9 @@ func TestPhase16ControlNativeCAdmittedUsesPublicEmitter(t *testing.T) {
 }
 
 func TestPhase16ControlNativeCPreservesM004Refusal(t *testing.T) {
-	checked := checkedPhase16Fixture(t, "testdata/phase4/nonlocal_exit_probe.lang")
+	checked := checkedPhase16Fixture(t, "testdata/phase4/nonlocal_exit_probe.schway")
 	_, want := cgen.EmitNative(checked.Program)
-	got, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.lang")
+	got, err := session.Phase16ControlNativeC(checked.Program, "testdata/phase4/nonlocal_exit_probe.schway")
 	if err == nil {
 		t.Fatalf("session boundary returned historical C after public refusal: %q", got)
 	}

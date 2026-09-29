@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cache"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cache"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // ---------------------------------------------------------------------
@@ -269,7 +269,7 @@ func TestCacheImportsStayIndependent(t *testing.T) {
 func newArtifactSpecFixture(t *testing.T, seed string) cache.ArtifactSpec {
 	t.Helper()
 	dir := t.TempDir()
-	clangPath := filepath.Join(dir, "fixture-clang.sh")
+	clangPath := filepath.Join(dir, "fixture-cschway.sh")
 	if err := os.WriteFile(clangPath, []byte("#!/bin/sh\necho fixture clang version 1.0\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}

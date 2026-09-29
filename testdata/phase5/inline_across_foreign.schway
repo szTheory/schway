@@ -1,0 +1,34 @@
+// adversarial-target: inline-across-foreign-call
+//
+// D-05-18a: a single foreign acquisition whose result FEEDS the function's
+// own return value (an observable), the shape under which `-flto` legally
+// lets Clang inline schway_foreign_resource.c's tiny `_SCHWAY_schway_res_open`
+// body directly at this call site -- the separately-compiled TU is opaque
+// to the optimizer without LTO, so this is exactly the case D-05-24 names
+// as necessary for a real (not green-by-construction) `-O3`/LTO
+// differential. Structurally identical to testdata/phase4/foreign_acquire_one.schway
+// (this phase's peer, not a fork of it -- a new file per D-05-18).
+
+module phase5.inline_across_foreign
+
+export {
+  fn main
+}
+
+foreign C {
+
+  fn schway_res_open(request: Byte) -> Byte {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    allocator: "libc_malloc"
+    fails: AcquireError
+  }
+}
+
+data AcquireError =
+  | OpenFailed
+
+fn main(request: Byte) -> Byte {
+  let handle = try schway_res_open(request)
+  handle
+}

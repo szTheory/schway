@@ -1,6 +1,6 @@
 # Call-depth chain generator contract
 
-Phase 10 Plan 04 (SEM-08) needs a genuine `.lang` program with a call chain
+Phase 10 Plan 04 (SEM-08) needs a genuine `.schway` program with a call chain
 deeper than `interp.MaxCallDepth` (128) -- specifically 129 chained
 functions -- to prove the depth-exceeded refusal fires on a program the
 compiler genuinely admits, never a hand-built `core.Program` (D-10-24).
@@ -8,7 +8,7 @@ compiler genuinely admits, never a hand-built `core.Program` (D-10-24).
 That fixture is **generated in-test**, by
 `generateCallDepthChainSource(n int) []byte` in
 `internal/compiler/interp/interp_test.go`, rather than committed as a static
-129-function `.lang` file in this directory. This document records the
+129-function `.schway` file in this directory. This document records the
 generator's contract so a future reader can reconstruct the fixture without
 reading the test.
 
@@ -62,7 +62,7 @@ fn link0(value: Byte) -> Byte {
 - Functions are named `link0` through `link(n-1)` for a chain of `n`
   functions. The generator emits them in REVERSE declaration order
   (`link(n-1)` first, `link0` last), mirroring `testdata/phase07/
-  call_from_both_match_arms.lang`'s callee-before-caller convention,
+  call_from_both_match_arms.schway`'s callee-before-caller convention,
   though declaration order is not load-bearing for either `syntax.Parse`
   or `check.Program`, both of which resolve calls by a two-pass name
   table rather than lexical position.
@@ -70,7 +70,7 @@ fn link0(value: Byte) -> Byte {
 ## Per-link template
 
 Every link except the last (`linkI` for `0 <= I < n-1`) follows this exact
-shape, generalizing `testdata/phase07/call_basic.lang`'s two-function
+shape, generalizing `testdata/phase07/call_basic.schway`'s two-function
 `main`/`identity` template to an arbitrary chain position:
 
 ```
@@ -81,7 +81,7 @@ fn linkI(value: Byte) -> Byte {
 ```
 
 The LAST link (`link(n-1)`) is the base case: no call, a bare parameter
-return, following `identity`'s own shape in `call_basic.lang`:
+return, following `identity`'s own shape in `call_basic.schway`:
 
 ```
 fn link(n-1)(value: Byte) -> Byte {
@@ -89,7 +89,7 @@ fn link(n-1)(value: Byte) -> Byte {
 }
 ```
 
-Every parameter and return type is `Byte`, matching `call_basic.lang`'s own
+Every parameter and return type is `Byte`, matching `call_basic.schway`'s own
 type choice -- the chain's SHAPE (call depth), not its data type, is what
 this fixture exercises.
 
@@ -112,7 +112,7 @@ one more pushed frame than the ceiling permits and refuses.
 ## Reconstructing the fixture
 
 Given only this document, `n`, and `MaxCallDepth`'s declared value, any
-reader can regenerate the exact `.lang` source
+reader can regenerate the exact `.schway` source
 `generateCallDepthChainSource(n)` produces by:
 
 1. Writing the module header (`module phase10.call_depth_chain`) and export

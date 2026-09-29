@@ -1,0 +1,76 @@
+// Phase 12 Plan 03, Task 3 -- the anti-Pitfall-1 fixture (12-RESEARCH.md's
+// Common Pitfalls, Pitfall 1: vacuous exhaustive-dispatch coverage).
+//
+// Architectural finding, recorded rather than silently worked around
+// (D-09-45's stale-reference/finding discipline, applied here to a
+// GRAMMAR limit rather than a stale doc): a payload destructure/
+// construct pair is ONLY emitted for a BARE-VALUE match arm
+// (analyzePayloadArm, D-12-05) -- a bare arm has no braces, so there is
+// no linear body inside it in which a `let x = borrow ...` statement
+// could ever appear. A BODY arm (`Pattern => { ... }`) CAN contain a
+// real borrow sequence (analyzeArmBody, exactly `choose` below), but
+// analyzeArmBody does not consult a payload binder at all -- and
+// `core.mixed_arm_forms` forbids mixing bare-value and body arms in one
+// match regardless. So a payload destructure and an explicit borrow
+// statement CANNOT be combined inside the SAME match function this
+// phase without extending analyzeArmBody itself (out of this plan's
+// declared file scope -- check.go is not in Task 3's file list).
+//
+// The achievable, still-genuine combination: two functions, ONE program,
+// checked and validated together in a single check.Program /
+// corevalidate.Validate pass. `choose` is `testdata/phase3/
+// branch_one_arm_shared_accept.schway`'s own function, UNCHANGED --  a real
+// shared borrow whose last use precedes a sibling arm's plain move,
+// driven through checkBranch's loanLivenessFixpoint. `identity` is the
+// payload tracer's own function, UNCHANGED -- both new operation kinds,
+// driven through the SAME six-site control. Per D-12-32/mixed_body_
+// versions, a program may not mix Match-bodied and Linear-bodied
+// FUNCTIONS, but both of these are Match-bodied (checkBranch handles
+// bare-value and body arms alike), so they coexist in one module without
+// tripping that guard -- this is what stops the exhaustive-dispatch
+// control from reporting coverage of "payload operations meeting borrow
+// machinery" that a construct-then-match-only corpus would not actually
+// have earned.
+
+module result.payload_borrow_interaction
+
+export {
+  type Switch
+  type Fault
+  type Outcome
+  fn choose
+  fn identity
+}
+
+data Switch =
+  | On
+  | Off
+
+data Fault =
+  | Broken
+
+data Outcome =
+  | Ok(Buffer)
+  | Err(Fault)
+
+fn choose(flag: Switch) -> Switch {
+  match flag {
+    On => {
+      let view = borrow flag
+      let noted = view
+      let moved = take flag
+      moved
+    }
+    Off => {
+      let held = take flag
+      held
+    }
+  }
+}
+
+fn identity(result: Outcome) -> Outcome {
+  match result {
+    Ok(v) => Ok(v)
+    Err(e) => Err(e)
+  }
+}

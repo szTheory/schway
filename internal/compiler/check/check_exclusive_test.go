@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/cgen"
-	"github.com/codename-lang/lang/internal/compiler/check"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/syntax"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 const exclusiveBorrowSource = `module owned.exclusive_borrow_lowering
@@ -57,10 +57,10 @@ func TestExclusiveBorrowLowersToCore(t *testing.T) {
 	// A variant that never moves the owner while the exclusive loan is live
 	// proves the exclusive operation itself lowers and validates cleanly.
 	// 07-02 D-07-44: this exact shape is also the extracted
-	// testdata/phase07/clean_but_unpublishable.lang negative control (module
+	// testdata/phase07/clean_but_unpublishable.schway negative control (module
 	// name changed only), read here from that single source of truth rather
 	// than embedded a second time.
-	clean, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.lang"))
+	clean, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase07", "clean_but_unpublishable.schway"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,29 +122,29 @@ func readFixtureSource(t *testing.T, path string) string {
 // duplication rationale for the identical list borrowed from
 // core_test.go's pinnedFixtures).
 var phase1Through4AliasFactFixtures = []string{
-	"testdata/phase1/comments.lang",
-	"testdata/phase1/toggle.lang",
-	"testdata/phase2/implicit_copy.lang",
-	"testdata/phase2/owned_transfer.lang",
-	"testdata/phase3/borrowed_view.lang",
-	"testdata/phase3/branch_one_arm_shared_accept.lang",
-	"testdata/phase3/branch_view.lang",
-	"testdata/phase3/public_view.lang",
-	"testdata/phase3/public_view_impossible.lang",
-	"testdata/phase3/public_view_mixed_access.lang",
-	"testdata/phase3/public_view_multi_arm_access_conflict.lang",
-	"testdata/phase3/public_view_multi_arm_omitted.lang",
-	"testdata/phase3/public_view_omitted.lang",
-	"testdata/phase3/public_view_understated.lang",
-	"testdata/phase3/sequential_shared_then_exclusive_accept.lang",
-	"testdata/phase3/shared_shared_accept.lang",
-	"testdata/phase4/acquire_three_fail_second.lang",
-	"testdata/phase4/acquire_three_fail_third.lang",
-	"testdata/phase4/acquire_three_success.lang",
-	"testdata/phase4/defect_terminal.lang",
-	"testdata/phase4/discard_because.lang",
-	"testdata/phase4/foreign_acquire_one.lang",
-	"testdata/phase4/nonlocal_exit_probe.lang",
+	"testdata/phase1/comments.schway",
+	"testdata/phase1/toggle.schway",
+	"testdata/phase2/implicit_copy.schway",
+	"testdata/phase2/owned_transfer.schway",
+	"testdata/phase3/borrowed_view.schway",
+	"testdata/phase3/branch_one_arm_shared_accept.schway",
+	"testdata/phase3/branch_view.schway",
+	"testdata/phase3/public_view.schway",
+	"testdata/phase3/public_view_impossible.schway",
+	"testdata/phase3/public_view_mixed_access.schway",
+	"testdata/phase3/public_view_multi_arm_access_conflict.schway",
+	"testdata/phase3/public_view_multi_arm_omitted.schway",
+	"testdata/phase3/public_view_omitted.schway",
+	"testdata/phase3/public_view_understated.schway",
+	"testdata/phase3/sequential_shared_then_exclusive_accept.schway",
+	"testdata/phase3/shared_shared_accept.schway",
+	"testdata/phase4/acquire_three_fail_second.schway",
+	"testdata/phase4/acquire_three_fail_third.schway",
+	"testdata/phase4/acquire_three_success.schway",
+	"testdata/phase4/defect_terminal.schway",
+	"testdata/phase4/discard_because.schway",
+	"testdata/phase4/foreign_acquire_one.schway",
+	"testdata/phase4/nonlocal_exit_probe.schway",
 }
 
 // partialCoverageExclusiveSource is D-05-01's own load-bearing negative
@@ -188,7 +188,7 @@ fn relay(buffer: Buffer) -> Buffer {
 // merely "at some point".
 func TestAliasFactRequiresWholeCallExclusivity(t *testing.T) {
 	t.Run("restrict_borrow fixture yields exactly one exclusive_borrow fact", func(t *testing.T) {
-		source := readFixtureSource(t, "testdata/phase5/restrict_borrow.lang")
+		source := readFixtureSource(t, "testdata/phase5/restrict_borrow.schway")
 		result := mustCheckSource(t, source)
 		if len(result.AliasFacts) != 1 {
 			t.Fatalf("want exactly one alias fact, got %d: %+v", len(result.AliasFacts), result.AliasFacts)
@@ -236,7 +236,7 @@ func TestAliasFactRequiresWholeCallExclusivity(t *testing.T) {
 // fact can never exist for a function cgen would not also select for
 // by-pointer lowering.
 func TestAliasFactAgreesWithByPointerSelection(t *testing.T) {
-	fixtures := append([]string{"testdata/phase5/restrict_borrow.lang"}, phase1Through4AliasFactFixtures...)
+	fixtures := append([]string{"testdata/phase5/restrict_borrow.schway"}, phase1Through4AliasFactFixtures...)
 	for _, path := range fixtures {
 		t.Run(path, func(t *testing.T) {
 			source := readFixtureSource(t, path)

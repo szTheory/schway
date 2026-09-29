@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/codename-lang/lang/internal/compiler/diagnostic"
+import "github.com/szTheory/schway/internal/compiler/diagnostic"
 
 type Program struct {
 	Module  string

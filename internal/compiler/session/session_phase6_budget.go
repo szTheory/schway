@@ -9,8 +9,8 @@ import (
 	"go/token"
 	"os"
 
-	"github.com/codename-lang/lang/internal/compiler/measure"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/measure"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 
 	_ "embed"
 )

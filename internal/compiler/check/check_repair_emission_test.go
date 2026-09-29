@@ -3,9 +3,9 @@ package check
 import (
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/ast"
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/ast"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 )
 
 func phase17ArgumentMismatch(t *testing.T, places map[string]*placeState, facts []core.TypeFact) *diagnostic.Diagnostic {
@@ -117,7 +117,7 @@ func TestWrapCallInTryRepairIsDriverEligible(t *testing.T) {
 	binding := ast.Binding{
 		Name: "handle",
 		RHS: ast.RHS{
-			Kind: "call", Callee: "lang_res_open", Arguments: []string{"request"}, Span: rhsSpan,
+			Kind: "call", Callee: "schway_res_open", Arguments: []string{"request"}, Span: rhsSpan,
 		},
 		Span: diagnostic.Span{Start: 30, End: 68},
 	}
@@ -126,7 +126,7 @@ func TestWrapCallInTryRepairIsDriverEligible(t *testing.T) {
 		"request": {place: core.Place{ID: "s1:m:fn:main:place:0", Name: "request", TypeID: typeFact.ID}, initialized: true},
 	}
 	foreignSymbols := map[string]foreignSymbolInfo{
-		"lang_res_open": {Name: "lang_res_open"},
+		"schway_res_open": {Name: "schway_res_open"},
 	}
 
 	_, _, diag := resolveCallBinding("s1:m:fn:main", 0, binding, places, map[string]calleeContract{}, typeFact, foreignSymbols)
@@ -146,7 +146,7 @@ func TestWrapCallInTryRepairIsDriverEligible(t *testing.T) {
 	if repair.Span == nil || *repair.Span != rhsSpan {
 		t.Fatalf("expected repair span to equal binding.RHS.Span (%+v), got %+v", rhsSpan, repair.Span)
 	}
-	wantReplacement := "try lang_res_open(request)"
+	wantReplacement := "try schway_res_open(request)"
 	if repair.Replacement != wantReplacement {
 		t.Fatalf("expected replacement %q, got %q", wantReplacement, repair.Replacement)
 	}

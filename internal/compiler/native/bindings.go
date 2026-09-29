@@ -18,7 +18,7 @@ import (
 	"strings"
 )
 
-const BindingSchema = "lang.local-c/1"
+const BindingSchema = "schway.local-c/1"
 
 const (
 	maxBindingManifestBytes = 64 * 1024
@@ -313,7 +313,7 @@ func bindingProbeSource(s BindingSymbol, index int) string {
 	// makes every manifest entry an independent exact-prototype ABI check,
 	// rather than relying on assignment diagnostics to reject a mismatch.
 	fmt.Fprintf(&out, "_Static_assert(_Generic(&%s, %s *: 1, default: 0), \"%s prototype does not match %s\");\n", s.Name, s.FunctionType, s.Name, s.FunctionType)
-	fmt.Fprintf(&out, "%s *volatile lang_binding_probe_%d = &%s;\n", s.FunctionType, index, s.Name)
+	fmt.Fprintf(&out, "%s *volatile schway_binding_probe_%d = &%s;\n", s.FunctionType, index, s.Name)
 	return out.String()
 }
 
@@ -342,7 +342,7 @@ type BuildIdentityInputs struct {
 func (in BuildIdentityInputs) ID() string {
 	h := sha256.New()
 	encoded, _ := json.Marshal(in)
-	for _, field := range [][]byte{[]byte("lang.build-identity/1"), encoded} {
+	for _, field := range [][]byte{[]byte("schway.build-identity/1"), encoded} {
 		var size [8]byte
 		binary.BigEndian.PutUint64(size[:], uint64(len(field)))
 		h.Write(size[:])

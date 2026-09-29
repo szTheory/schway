@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/core"
-	"github.com/codename-lang/lang/internal/compiler/corevalidate"
-	"github.com/codename-lang/lang/internal/compiler/interp"
-	"github.com/codename-lang/lang/internal/compiler/pathoracle"
-	"github.com/codename-lang/lang/internal/compiler/protocol"
-	"github.com/codename-lang/lang/internal/compiler/session"
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/pathoracle"
+	"github.com/szTheory/schway/internal/compiler/protocol"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // peerDivergenceEntry is plan 10-08 Task 3's own D-10-54 upgrade: an
@@ -60,7 +60,7 @@ var peerDivergenceExpected = map[string]peerDivergenceEntry{
 	// one semanticID; check's buildCalleeContracts silently resolves the
 	// call to the LAST declaration, so check itself stays clean, but
 	// corevalidate's function-ID uniqueness check refuses independently.
-	"testdata/phase07/duplicate_function_name.lang": {
+	"testdata/phase07/duplicate_function_name.schway": {
 		code:         "core.duplicate_function_id",
 		debtID:       "D-07-50",
 		landingPhase: "Not scheduled -- needs its own ratified diagnostic code",
@@ -77,14 +77,14 @@ var peerDivergenceExpected = map[string]peerDivergenceEntry{
 	// operation kind, including OpCall, so it unconditionally treats the
 	// call's own result as still carrying the argument's loan, regardless
 	// of what the callee's declared contract says, and refuses. See
-	// twin_a_accept.lang's own header for the full argument.
+	// twin_a_accept.schway's own header for the full argument.
 	//
 	// RETIRED (Phase 09, D-09-03): corevalidate's own interprocedural
 	// loan-carry peer (corevalidate_peer_liveness.go) now consults the
 	// callee's declared return contract before propagating a loan across
 	// an OpCall boundary, exactly like check's own interprocedural law
-	// does -- so both "testdata/phase08/twin_a_accept.lang" and
-	// "testdata/phase08/relay_depth2_accept.lang" no longer diverge here.
+	// does -- so both "testdata/phase08/twin_a_accept.schway" and
+	// "testdata/phase08/relay_depth2_accept.schway" no longer diverge here.
 	// See PHASE-09-DEBT.md D-09-51 for a SEPARATE, pre-existing
 	// originvalidate finding this retirement unmasked -- one this test is
 	// structurally blind to (it never calls originvalidate.ValidatePublished).
@@ -93,25 +93,25 @@ var peerDivergenceExpected = map[string]peerDivergenceEntry{
 // phase07SpotCheckRegression is 07-VERIFICATION.md's own pre-07-10
 // Behavioral Spot-Checks table, restated here as a mechanical assertion
 // (must_haves backstop truth): every fixture below is NOT a declared
-// divergence entry, and its `lang check` status/code must be byte-for-byte
+// divergence entry, and its `schway check` status/code must be byte-for-byte
 // unchanged by this plan.
 var phase07SpotCheckRegression = []struct {
 	fixture string
 	status  string
 	code    string // empty when status is pass (no diagnostics expected)
 }{
-	{"call_basic.lang", protocol.StatusPass, ""},
-	{"call_from_both_match_arms.lang", protocol.StatusPass, ""},
-	{"deep_diamond_acyclic.lang", protocol.StatusPass, ""},
-	{"call_type_mismatch.lang", protocol.StatusInvalid, "check.call_argument_type_mismatch"},
-	{"call_uncallable_callee.lang", protocol.StatusInvalid, "core.callee_not_callable"},
-	{"clean_but_unpublishable.lang", protocol.StatusInvalid, "core.origin_omitted"},
-	{"cycle_indirect.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
-	{"cycle_mutual.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
-	{"cycle_self.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
-	{"cycle_through_match_arm.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
-	{"cycle_unreachable.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
-	{"foreign_symbol_shadowing.lang", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"call_basic.schway", protocol.StatusPass, ""},
+	{"call_from_both_match_arms.schway", protocol.StatusPass, ""},
+	{"deep_diamond_acyclic.schway", protocol.StatusPass, ""},
+	{"call_type_mismatch.schway", protocol.StatusInvalid, "check.call_argument_type_mismatch"},
+	{"call_uncallable_callee.schway", protocol.StatusInvalid, "core.callee_not_callable"},
+	{"clean_but_unpublishable.schway", protocol.StatusInvalid, "core.origin_omitted"},
+	{"cycle_indirect.schway", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_mutual.schway", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_self.schway", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_through_match_arm.schway", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"cycle_unreachable.schway", protocol.StatusInvalid, "core.call_graph_cycle"},
+	{"foreign_symbol_shadowing.schway", protocol.StatusInvalid, "core.call_graph_cycle"},
 }
 
 // TestCheckCommandSurfacesPeerRefusal is Task 1's core proof: CheckCommandFile
@@ -119,7 +119,7 @@ var phase07SpotCheckRegression = []struct {
 // corevalidate.Validate's independent verdict, in fixed precedence order
 // (07-10 checkpoint, SEM-04), closing 07-REVIEW.md CR-04 / PVG-03.
 func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
-	// Test 1: relay_escort_witness.lang reported the PEER's own
+	// Test 1: relay_escort_witness.schway reported the PEER's own
 	// core.move_while_borrowed refusal at the CLI from 07-10 through Phase
 	// 07 (before 07-10 it reported status: pass, exit-0-equivalent
 	// StatusPass). Phase 08 closes the interprocedural half of D-03-02:
@@ -132,7 +132,7 @@ func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
 	// corevalidate package) still independently exists, it is simply no
 	// longer the code surfaced at the CLI for this fixture.
 	t.Run("relay_escort_witness flips to the peer's refusal", func(t *testing.T) {
-		result, err := session.CheckCommandFile(phase07Fixture(t, "relay_escort_witness.lang"))
+		result, err := session.CheckCommandFile(phase07Fixture(t, "relay_escort_witness.schway"))
 		if err != nil {
 			t.Fatalf("CheckCommandFile returned an error: %v", err)
 		}
@@ -144,10 +144,10 @@ func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
 		}
 	})
 
-	// Test 2: duplicate_function_name.lang (WR-01's user-visible half)
+	// Test 2: duplicate_function_name.schway (WR-01's user-visible half)
 	// refuses with the peer's own core.duplicate_function_id.
 	t.Run("duplicate_function_name refuses with the peer's code", func(t *testing.T) {
-		result, err := session.CheckCommandFile(phase07Fixture(t, "duplicate_function_name.lang"))
+		result, err := session.CheckCommandFile(phase07Fixture(t, "duplicate_function_name.schway"))
 		if err != nil {
 			t.Fatalf("CheckCommandFile returned an error: %v", err)
 		}
@@ -189,13 +189,13 @@ func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
 		}
 	})
 
-	// Test 4 (edge 3, ordering): call_type_mismatch.lang has BOTH a check
+	// Test 4 (edge 3, ordering): call_type_mismatch.schway has BOTH a check
 	// diagnostic (check.call_argument_type_mismatch) and would separately
 	// be refused by the peer's own OpCall replay -- the reported code is
 	// check's, because check's diagnostics are reported before the peer
 	// ever runs (precedence is asserted, not assumed).
 	t.Run("edge 3: check diagnostics take precedence over the peer", func(t *testing.T) {
-		result, err := session.CheckCommandFile(phase07Fixture(t, "call_type_mismatch.lang"))
+		result, err := session.CheckCommandFile(phase07Fixture(t, "call_type_mismatch.schway"))
 		if err != nil {
 			t.Fatalf("CheckCommandFile returned an error: %v", err)
 		}
@@ -227,7 +227,7 @@ func TestCheckCommandSurfacesPeerRefusal(t *testing.T) {
 // assertion above so a future regression on this specific fixture names
 // itself unambiguously in test output.
 func TestDuplicateFunctionDeclarationRefusedAtCLI(t *testing.T) {
-	result, err := session.CheckCommandFile(phase07Fixture(t, "duplicate_function_name.lang"))
+	result, err := session.CheckCommandFile(phase07Fixture(t, "duplicate_function_name.schway"))
 	if err != nil {
 		t.Fatalf("CheckCommandFile returned an error: %v", err)
 	}
@@ -272,7 +272,7 @@ func peerGateLinearProbeInput(function core.Function) (string, bool) {
 // pathoracle's own composition-depth definition is check/corevalidate-
 // verdict-agnostic by design (session_composition_depth_test.go's own
 // precedent): a fixture check itself refuses, like
-// testdata/phase10/relay_depth3_refuse.lang, still has a fully-formed
+// testdata/phase10/relay_depth3_refuse.schway, still has a fully-formed
 // core.Program whose declared core.OpCall chain genuinely reaches the
 // declared composition depth, and all three static peers must still agree
 // on its structure. This is the "three-way" half of "three-way on refuse,
@@ -296,7 +296,7 @@ func peerGateLinearProbeInput(function core.Function) (string, bool) {
 // property of corevalidate's own fail-fast architecture, not an endpoint
 // bug, so the comparison is skipped for a function with CFG Blocks whose
 // program corevalidate itself did not fully validate (!validated.Valid);
-// see testdata/phase3/branch_one_arm_shared_reject.lang for the fixture
+// see testdata/phase3/branch_one_arm_shared_reject.schway for the fixture
 // that surfaced this while building the gate. It is NEVER skipped for a
 // function with no Blocks at all (every peer trivially reports empty
 // there, corevalidate included, regardless of fail-fast completion) or for
@@ -395,7 +395,7 @@ func assertInterpFrameModelAgreesWithStaticVerdict(t *testing.T, fixture string,
 // (T-07-10-05)'s original verdict-divergence walk, extended by plan 10-08
 // Task 2 (D-10-51: EXTENDED, never a second harness -- D-09-23 already
 // ratified this tradeoff) into the phase's own criterion-4 gate. It walks
-// every .lang file under testdata/ and, for every fixture, runs THREE
+// every .schway file under testdata/ and, for every fixture, runs THREE
 // independent comparisons:
 //
 //  1. The ORIGINAL verdict-divergence walk (T-07-10-05, unchanged): when
@@ -409,8 +409,8 @@ func assertInterpFrameModelAgreesWithStaticVerdict(t *testing.T, fixture string,
 //     assertThreeWayEndpointAgreement) -- rebuilding M001 Phase 3's
 //     exhaustive endpoint enumeration (03-VALIDATION.md's own five-row
 //     conflict matrix) at the declared, bounded composition depth of 3
-//     (QLT-04; testdata/phase10/relay_depth3_accept.lang and
-//     relay_depth3_refuse.lang, plan 10-07, are both walked here and
+//     (QLT-04; testdata/phase10/relay_depth3_accept.schway and
+//     relay_depth3_refuse.schway, plan 10-07, are both walked here and
 //     agree).
 //  3. FOUR-WAY, on the ACCEPT side only (both check and corevalidate
 //     admit): `interp`'s ordered Execution additionally participates,
@@ -472,7 +472,7 @@ func TestNoUndeclaredCheckPeerDivergenceAcrossCorpus(t *testing.T) {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() || filepath.Ext(path) != ".lang" {
+		if entry.IsDir() || filepath.Ext(path) != ".schway" {
 			return nil
 		}
 		checked, checkErr := session.CheckFile(path)
@@ -538,7 +538,7 @@ func TestNoUndeclaredCheckPeerDivergenceAcrossCorpus(t *testing.T) {
 // that reached the CLI as tool.operation_failed / exit 3 with the code
 // discarded (07-REVIEW.md CR-04's `interface` half).
 func TestInterfaceCommandsReportPeerRefusalAsInvalid(t *testing.T) {
-	fixture := phase07Fixture(t, "duplicate_function_name.lang")
+	fixture := phase07Fixture(t, "duplicate_function_name.schway")
 
 	// Test 1: InterfaceCoreCommandFile.
 	t.Run("InterfaceCoreCommandFile reports StatusInvalid with a nil error", func(t *testing.T) {
@@ -581,7 +581,7 @@ func TestInterfaceCommandsReportPeerRefusalAsInvalid(t *testing.T) {
 	// StatusPass, artifact written, and a working round-trip through
 	// InterfaceCheckCommandFile (the existing CoreDigest-bound contract).
 	t.Run("accepting program: unchanged StatusPass, written artifacts, and a working round-trip", func(t *testing.T) {
-		accepting := phase07Fixture(t, "call_basic.lang")
+		accepting := phase07Fixture(t, "call_basic.schway")
 		dir := t.TempDir()
 		summaryPath := filepath.Join(dir, "call_basic.summary.json")
 		corePath := filepath.Join(dir, "call_basic.core.json")
@@ -630,12 +630,12 @@ func TestInterfaceCommandsReportPeerRefusalAsInvalid(t *testing.T) {
 // that control:check.peer_consulted fails under its seeded fault (QLT-08):
 // a control never seen to fail is not evidence. With checkCommandPeerSeam
 // enabled, CheckCommandFile skips the peer entirely and WRONGLY reports
-// StatusPass on relay_escort_witness.lang; with the seam restored, it
+// StatusPass on relay_escort_witness.schway; with the seam restored, it
 // correctly refuses with core.move_while_borrowed. Both directions are
 // asserted in one test, so a control that is green for the wrong reason
 // (e.g. a no-op seam) fails here.
 func TestCheckCommandPeerConsultMutationKilled(t *testing.T) {
-	// relay_escort_witness.lang was this test's fixture through Phase 07:
+	// relay_escort_witness.schway was this test's fixture through Phase 07:
 	// check itself admitted it, so a peer-consult seam that wrongly skips
 	// the peer entirely made CheckCommandFile wrongly report StatusPass,
 	// proving the peer consult load-bearing. Phase 08 closes the
@@ -644,11 +644,11 @@ func TestCheckCommandPeerConsultMutationKilled(t *testing.T) {
 	// check.interprocedural_loan_liveness law, BEFORE CheckCommandFile ever
 	// reaches the peer-consult seam -- so this fixture can no longer
 	// demonstrate the seam is load-bearing (it would report StatusInvalid
-	// regardless of the seam). duplicate_function_name.lang is the
+	// regardless of the seam). duplicate_function_name.schway is the
 	// remaining declared divergence (peerDivergenceExpected): check admits
 	// it cleanly and only the peer's independent function-ID uniqueness
 	// check refuses it, which is exactly the shape this mutation-kill needs.
-	fixture := phase07Fixture(t, "duplicate_function_name.lang")
+	fixture := phase07Fixture(t, "duplicate_function_name.schway")
 
 	restore := session.SetCheckCommandPeerSeamForTest(true)
 	wronglyPermissive, err := session.CheckCommandFile(fixture)
@@ -677,7 +677,7 @@ func TestCheckCommandPeerConsultMutationKilled(t *testing.T) {
 // StatusInvalid carrying the peer's own code. One seam kills the control
 // on both paths, asserted here on both.
 func TestInterfacePeerRefusalMutationKilled(t *testing.T) {
-	fixture := phase07Fixture(t, "duplicate_function_name.lang")
+	fixture := phase07Fixture(t, "duplicate_function_name.schway")
 
 	t.Run("InterfaceCoreCommandFile", func(t *testing.T) {
 		restore := session.SetInterfacePeerRefusalSeamForTest(true)

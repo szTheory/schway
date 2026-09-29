@@ -40,12 +40,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 // groundednessModulePath is this module's own import path, read from
 // go.mod's module directive rather than hardcoded twice.
-const groundednessModulePath = "github.com/codename-lang/lang"
+const groundednessModulePath = "github.com/szTheory/schway"
 
 // ---------------------------------------------------------------------
 // (a) Static test index (D-14-10) -- go/parser over every *_test.go file,
@@ -1349,13 +1349,13 @@ var pinnedFrontier = []violationRecord{
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 59, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b},
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 60, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b},
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 61, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b},
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 36, Command: "go test ./cmd/lang ./internal/compiler/native -run '^TestPhase23(PublicFileByte|OperationABI)' -count=1", Classification: classR2b},
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 36, Command: "go test ./cmd/schway ./internal/compiler/native -run '^TestPhase23(PublicFileByte|OperationABI)' -count=1", Classification: classR2b},
 	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 39, Command: "go test ./internal/compiler/check -run '^TestPhase23(SourceRefusal|Discard)' -count=1", Classification: classR2b},
 	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 40, Command: "go test ./internal/compiler/cgen -run '^TestPhase23(SourceRefusal|Discard|OperationContract)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 42, Command: "go test ./internal/compiler/native ./cmd/lang -run '^TestPhase23(Acquire|PublicFileByte)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 45, Command: "go test ./internal/compiler/native ./cmd/lang -run '^TestPhase23(Observer|PublicFileByte|PublicUseError)' -count=1", Classification: classR2b},
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 42, Command: "go test ./internal/compiler/native ./cmd/schway -run '^TestPhase23(Acquire|PublicFileByte)' -count=1", Classification: classR2b},
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 45, Command: "go test ./internal/compiler/native ./cmd/schway -run '^TestPhase23(Observer|PublicFileByte|PublicUseError)' -count=1", Classification: classR2b},
 	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 46, Command: "go test ./internal/compiler/native ./internal/compiler/cgen -run '^TestPhase23(ObserverMutation|PhysicalDestructorControl)' -count=1", Classification: classR2b},
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 47, Command: "go test ./cmd/lang ./internal/compiler/session -run '^TestPhase23(Readme|Public|Contract)' -count=1", Classification: classR2b},
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 47, Command: "go test ./cmd/schway ./internal/compiler/session -run '^TestPhase23(Readme|Public|Contract)' -count=1", Classification: classR2b},
 }
 
 // measuredViolations runs the classifier once over the whole Tier-A
@@ -2245,13 +2245,13 @@ var r2bLandingPhases = map[violationRecord]string{
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 59, Command: "go test ./internal/compiler/cgen -run 'TestPhase19(U64Native|OpConst|ExactWidth)' -count=1", Classification: classR2b}:                                                                                                                                                            "P20",
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 60, Command: "go test ./internal/compiler/core ./internal/compiler/session -run 'Test(AllOperationKinds|Phase7DispatchControlsMutationKilled|Phase19Dispatch)' -count=1", Classification: classR2b}:                                                                                             "P20",
 	{File: ".planning/milestones/M003-phases/19-numeric-literals-and-opconst/19-VALIDATION.md", Line: 61, Command: "go test ./internal/compiler/session ./internal/compiler/core -run 'TestPhase19(FourTier|LiteralRun|WrongResult|Dispatch)|TestPayloadCorpusCharacterizationReplay|TestAllOperationKindsHandledAtEverySite' -count=1", Classification: classR2b}:                                    "P20",
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 36, Command: "go test ./cmd/lang ./internal/compiler/native -run '^TestPhase23(PublicFileByte|OperationABI)' -count=1", Classification: classR2b}: "P23",
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 36, Command: "go test ./cmd/schway ./internal/compiler/native -run '^TestPhase23(PublicFileByte|OperationABI)' -count=1", Classification: classR2b}: "P23",
 	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 39, Command: "go test ./internal/compiler/check -run '^TestPhase23(SourceRefusal|Discard)' -count=1", Classification: classR2b}: "P23",
 	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 40, Command: "go test ./internal/compiler/cgen -run '^TestPhase23(SourceRefusal|Discard|OperationContract)' -count=1", Classification: classR2b}: "P23",
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 42, Command: "go test ./internal/compiler/native ./cmd/lang -run '^TestPhase23(Acquire|PublicFileByte)' -count=1", Classification: classR2b}: "P23",
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 45, Command: "go test ./internal/compiler/native ./cmd/lang -run '^TestPhase23(Observer|PublicFileByte|PublicUseError)' -count=1", Classification: classR2b}: "P23",
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 42, Command: "go test ./internal/compiler/native ./cmd/schway -run '^TestPhase23(Acquire|PublicFileByte)' -count=1", Classification: classR2b}: "P23",
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 45, Command: "go test ./internal/compiler/native ./cmd/schway -run '^TestPhase23(Observer|PublicFileByte|PublicUseError)' -count=1", Classification: classR2b}: "P23",
 	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 46, Command: "go test ./internal/compiler/native ./internal/compiler/cgen -run '^TestPhase23(ObserverMutation|PhysicalDestructorControl)' -count=1", Classification: classR2b}: "P23",
-	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 47, Command: "go test ./cmd/lang ./internal/compiler/session -run '^TestPhase23(Readme|Public|Contract)' -count=1", Classification: classR2b}: "P23",
+	{File: ".planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md", Line: 47, Command: "go test ./cmd/schway ./internal/compiler/session -run '^TestPhase23(Readme|Public|Contract)' -count=1", Classification: classR2b}: "P23",
 }
 
 // TestVerificationGroundednessThreeClassesAreEmpty is plan 14-10 Task 3's

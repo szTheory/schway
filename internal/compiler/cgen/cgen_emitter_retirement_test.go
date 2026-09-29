@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codename-lang/lang/internal/compiler/testsupport"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestSupersededEmitterDefinitionsRemoved(t *testing.T) {
