@@ -463,7 +463,7 @@ func TestCleanupInjectorReusesReleaseOmissionRunner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("refusal-first frozen control C: %v", err)
 	}
-	originalCount := strings.Count(cSource, releaseMarker)
+	originalCount := releaseSiteMarkerCount(cSource)
 	if originalCount == 0 {
 		t.Fatal("fixture's generated C carries no release-site marker; test setup is broken")
 	}
@@ -472,17 +472,21 @@ func TestCleanupInjectorReusesReleaseOmissionRunner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CleanupInjector.Inject failed on an eligible C source: %v", err)
 	}
-	if strings.Count(string(mutated), releaseMarker) != originalCount-1 {
+	if releaseSiteMarkerCount(string(mutated)) != originalCount-1 {
 		t.Fatalf("CleanupInjector.Inject did not remove exactly one release-site marker: got %d, want %d",
-			strings.Count(string(mutated), releaseMarker), originalCount-1)
+			releaseSiteMarkerCount(string(mutated)), originalCount-1)
 	}
 
-	noTarget := strings.ReplaceAll(cSource, releaseMarker, "")
+	noTarget := strings.ReplaceAll(strings.ReplaceAll(cSource, releaseMarker, ""), legacyReleaseMarker, "")
 	_, err = CleanupInjector{}.Inject([]byte(noTarget))
 	typed := injectorError(err)
 	if typed == nil || typed.Code != InjectorTargetMissingCode {
 		t.Fatalf("CleanupInjector.Inject on C source with no release-site marker did not refuse with %s: %v", InjectorTargetMissingCode, err)
 	}
+}
+
+func releaseSiteMarkerCount(source string) int {
+	return strings.Count(source, releaseMarker) + strings.Count(source, legacyReleaseMarker)
 }
 
 // TestStaleEvidenceInjectorBreaksManifestBinding proves the stale-evidence
@@ -766,7 +770,7 @@ func markerAbsentInput(t *testing.T, name string) []byte {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return []byte(strings.ReplaceAll(cSource, releaseMarker, ""))
+		return []byte(strings.ReplaceAll(strings.ReplaceAll(cSource, releaseMarker, ""), legacyReleaseMarker, ""))
 	case "stale_evidence":
 		return bytes.ReplaceAll(phase6Fixture(t, "stale_evidence_subject.schway"), []byte(evidenceSubjectMarker), []byte(""))
 	case "interprocedural_loan":

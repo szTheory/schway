@@ -2,6 +2,7 @@ package session_test
 
 import (
 	"context"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -48,6 +49,12 @@ func TestPhase20EnumeratedClosureCacheControls(t *testing.T) {
 	first, err := runner.Run(context.Background(), source, "-O0", []string{inputs[0]})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if runtime.GOOS != "darwin" {
+		if first.CacheStatus != cache.StatusNotCacheable {
+			t.Fatalf("host-specific dependency discovery must refuse caching on %s, got status=%q", runtime.GOOS, first.CacheStatus)
+		}
+		return
 	}
 	if first.CacheStatus != cache.StatusArtifactRecomputed {
 		t.Fatalf("first closure build status=%q", first.CacheStatus)

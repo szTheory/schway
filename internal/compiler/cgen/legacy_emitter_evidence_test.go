@@ -158,6 +158,9 @@ func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
 		if contract != nil && contract.Layout != nil && contract.Layout.ForeignTypeName == "schway_foreign_resource_block" {
 			contract.Layout.ForeignTypeName = "lang" + "_foreign_resource_block"
 		}
+		if contract != nil && contract.Symbol == "schway_res_open" {
+			contract.Symbol = "lang" + "_res_open"
+		}
 	}
 	return json.Marshal(program)
 }

@@ -235,8 +235,8 @@ var phase16SchwayIdentityManifestIDs = map[string]string{
 	"testdata/phase3/public_view_understated.schway":                 "evidence:737d5a21c90859b7f71a22c1",
 	"testdata/phase3/sequential_shared_then_exclusive_accept.schway": "evidence:2371764fac483a4eee472595",
 	"testdata/phase3/shared_shared_accept.schway":                    "evidence:ee4aa09030f857f5f93dc9c5",
-	"testdata/phase4/defect_terminal.schway":                         "evidence:30f1d096439abe47c42191dd",
-	"testdata/phase5/defect_dies_by_signal.schway":                   "evidence:f485b07599721f79e070606a",
+	"testdata/phase4/defect_terminal.schway":                         "evidence:7ba48922b4cc04a392125649",
+	"testdata/phase5/defect_dies_by_signal.schway":                   "evidence:f63c628eabe74b0f9d361ef1",
 }
 
 // TestPreviousPhaseCoreBytesUnchanged pins every Phase 1-5 fixture's
@@ -403,14 +403,14 @@ func phase16HistoricalManifestID(product evidence.Product) (string, error) {
 	}
 	historicalC := normalizeSchwayIdentityForHistoricalComparison(string(product.CSource))
 	manifest := product.Manifest
-	manifest.CoreDigest = phase16SHA256(normalizedCore)
-	manifest.CDigest = phase16SHA256([]byte(historicalC))
+	manifest.CoreDigest = "sha256:" + phase16SHA256(normalizedCore)
+	manifest.CDigest = "sha256:" + phase16SHA256([]byte(historicalC))
 	if manifest.ForeignDigest != "" {
 		foreignManifest, err := cgen.EmitForeignManifest(historicalProgram)
 		if err != nil {
 			return "", err
 		}
-		manifest.ForeignDigest = phase16SHA256([]byte(normalizeSchwayIdentityForHistoricalComparison(foreignManifest)))
+		manifest.ForeignDigest = "sha256:" + phase16SHA256([]byte(normalizeSchwayIdentityForHistoricalComparison(foreignManifest)))
 	}
 	encoded, err := evidence.CanonicalBytes(manifest)
 	if err != nil {

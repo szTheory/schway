@@ -260,9 +260,13 @@ func compositionOnlyWrapperSource(restrictQualifier bool) string {
 	if restrictQualifier {
 		qualifier = "restrict "
 	}
+	// flatten asks Clang to compose every body visible to this wrapper. With
+	// ordinary separate compilation, the callee and writer bodies are absent;
+	// only LTO makes them available to this translation unit, so the control
+	// measures the composition boundary rather than an inliner cost heuristic.
 	return fmt.Sprintf(`extern unsigned char schway_composition_probe_read(unsigned char *%[1]sprimary);
 extern void schway_composition_probe_write(unsigned char *probe);
-unsigned char schway_composition_probe_wrapper(unsigned char *%[1]sprimary, unsigned char *probe) {
+__attribute__((flatten)) unsigned char schway_composition_probe_wrapper(unsigned char *%[1]sprimary, unsigned char *probe) {
   unsigned char before = schway_composition_probe_read(primary);
   schway_composition_probe_write(probe);
   unsigned char after = schway_composition_probe_read(primary);

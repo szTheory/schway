@@ -118,6 +118,8 @@ func TestUndefinedSymbolNormalizationHandlesBothFormats(t *testing.T) {
 		{"malloc", "malloc"},
 		{"_longjmp", "longjmp"},
 		{"__someDoubleUnderscorePrefixed", "_someDoubleUnderscorePrefixed"},
+		{"printf@GLIBC_2.2.5", "printf"},
+		{"__cxa_finalize@GLIBC_2.2.5", "_cxa_finalize"},
 	}
 	for _, test := range tests {
 		if got := normalizeSymbol(test.in); got != test.want {

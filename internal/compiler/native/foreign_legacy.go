@@ -14,6 +14,15 @@ func ForeignLegacyAdapterSourcePath() string {
 	return filepath.Join(root, "testdata", "phase16", "historical", "foreign_phase1_5_legacy_adapter.c")
 }
 
+// ForeignLegacyNonlocalAdapterSourcePath resolves the test-only wrapper that
+// compiles the current nonlocal implementation against the old landing-pad
+// symbol defined by byte-frozen Phase 4/5 C artifacts.
+func ForeignLegacyNonlocalAdapterSourcePath() string {
+	_, file, _, _ := runtime.Caller(0)
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
+	return filepath.Join(root, "testdata", "phase16", "historical", "foreign_phase1_5_legacy_nonlocal_adapter.c")
+}
+
 // ForeignSourcePathsForSymbol returns every translation unit required to
 // link a declared foreign symbol. Historical Phase 1-5 fixtures retain their
 // original call names and use the adapter only at the native test boundary.
@@ -49,7 +58,7 @@ func ForeignLegacyResourceSourcePaths() []string {
 // ForeignLegacyNonlocalSourcePaths returns the implementation and test alias
 // units used by the frozen Phase 4 nonlocal-exit fixture.
 func ForeignLegacyNonlocalSourcePaths() []string {
-	return []string{ForeignNonlocalSourcePath(), ForeignLegacyAdapterSourcePath()}
+	return []string{ForeignLegacyNonlocalAdapterSourcePath(), ForeignLegacyAdapterSourcePath()}
 }
 
 // ForeignLegacyArenaSourcePaths returns the implementation and test alias

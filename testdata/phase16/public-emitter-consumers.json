@@ -172,6 +172,11 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
+      "call": "internal/compiler/cgen/cgen_test.go:Emit:265",
+      "classification": "typed-refusal",
+      "witness": "probe:TestForeignSymbolInjectionNeverReachesGeneratedC"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_test.go:Emit:662",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"

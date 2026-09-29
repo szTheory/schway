@@ -52,16 +52,16 @@ finding).
 
 | ID | Source | Threat/Req | Severity | Landing phase | Grade | Witness | Item |
 |---|---|---|---|---|---|---|---|
-| D-14-45 | PROJECT.md `## Current State` (verified already correct, commit `d21db90`); 14-RESEARCH.md Open Question 1 | EVD-07 | warning | P21 | EXERCISED | probe:TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison | `emitProgram` emits one translation unit without `restrict` and continues to refuse foreign/by-pointer program shapes; these structural facts define scope, not optimizer behavior. The opt-in `TestPhase21EmittedMultiFunctionLTOComparison` and `21-LTO-EVIDENCE.md` record semantic equality across interpreter, `-O0`, `-O3`, and `-O3 -flto` for `testdata/phase14/multi_function_match_refusal.lang` only, using Apple Clang 21.0.0 on Darwin arm64 and the recorded fixture/generated-C digests. D-11-25's structural rationale is distinct from this measured observation. The recurring structural probe binds that tagged test to its receipt without rerunning the compiler matrix. This does not measure optimizer activity or performance, prove resource cleanup, or establish any other host/toolchain result. The existing independent comparator negative control remains `TestPhase16EmitterPortSemanticGuardIsNotInert`. |
+| D-14-45 | PROJECT.md `## Current State` (verified already correct, commit `532ed0b`); 14-RESEARCH.md Open Question 1 | EVD-07 | warning | P21 | EXERCISED | probe:TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison | `emitProgram` emits one translation unit without `restrict` and continues to refuse foreign/by-pointer program shapes; these structural facts define scope, not optimizer behavior. The opt-in `TestPhase21EmittedMultiFunctionLTOComparison` and `21-LTO-EVIDENCE.md` record semantic equality across interpreter, `-O0`, `-O3`, and `-O3 -flto` for `testdata/phase14/multi_function_match_refusal.lang` only, using Apple Clang 21.0.0 on Darwin arm64 and the recorded fixture/generated-C digests. D-11-25's structural rationale is distinct from this measured observation. The recurring structural probe binds that tagged test to its receipt without rerunning the compiler matrix. This does not measure optimizer activity or performance, prove resource cleanup, or establish any other host/toolchain result. The existing independent comparator negative control remains `TestPhase16EmitterPortSemanticGuardIsNotInert`. |
 | D-14-46 | 14-02-SUMMARY.md "Debt rows to register" item 1 | DX-08 | info | UNOWNED(conditional-surface-lands-in-language) | DEFINED | n/a | NOTHING FORCES THE DISTINCTNESS CORPUS TO GROW AS THE LANGUAGE GROWS. When the conditional form (`if`) enters the language, the spiral trio (`spiral_full.lang`, `spiral_narrow.lang`, `spiral_bare.lang`) becomes a VALID program and must be replaced in `testdata/distinctness/` by the then-current not-in-language surface, or the corpus predicate would need to be re-derived against a program that no longer refuses to parse |
 | D-14-47 | 14-02-SUMMARY.md "Debt rows to register" item 2 | DX-08 | info | UNOWNED(identity-bearing-cause-span-on-parse-success-path) | DEFINED | n/a | PUTTING MORE CONTENT ON `Cause.Span` DEEPENS THE ALREADY-RECORDED, HALF-ENFORCED RULE THAT A COORDINATE SHIFT MUST NEVER MOVE A DIAGNOSTIC'S ID. This is now bounded-widened for broken programs only -- a whitespace edit inside a broken program's tail (past the point where declaration recovery starts) can now move that program's diagnostic ID, where before plan 14-02's fix the swallowed region was never in the identity basis. This is an acceptable, deliberately bounded widening of an already-recorded hole (Phase 13's coordinate-shift discipline), not a new defect, but it should be reconciled explicitly rather than rediscovered |
 | D-14-48 | plan 14-09's grade derivation over 09-VALIDATION.md:85 | EVD-02 | warning | P14 | WIRED | probe:TestVerificationGroundednessFrontierIsPinned | 09-VALIDATION.MD ROW 09-01-01's SECOND EVIDENCE CELL (A `LoanChainIndex`-PATTERN GO TEST INVOCATION) CITES A PATTERN THAT MATCHES ZERO TEST NAMES -- IT WAS SHIPPED `✅ GREEN` BUT DERIVES ONLY WIRED. This is the same row plan 14-01's groundedness lint independently pinned as an R2 dead pattern in its own 125-entry frontier; the two instruments agree from two different mechanisms. Plan 14-10's Nyquist reconciliation is the scheduled closer for the groundedness frontier's R1/R2 class, which this row is a member of |
 | D-14-49 | plan 14-09's grade derivation over 09-VALIDATION.md:93 | EVD-02 | warning | P14 | WIRED | probe:TestVerificationGroundednessFrontierIsPinned | 09-VALIDATION.MD ROW 09-05-02's `Mode.*Invalid`-ALTERNATION EVIDENCE CELL ALSO MATCHES ZERO TEST NAMES -- SHIPPED `✅ GREEN`, DERIVES ONLY WIRED. Same cross-instrument agreement as D-14-48: also a member of plan 14-01's pinned R2 frontier, closure scheduled at plan 14-10 |
-| D-14-50 | plan 14-09's grade derivation over 12-VALIDATION.md:52 (row 12-04-01) | EVD-02 | info | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapBarePackageRowHasNoNamedTest | 12-VALIDATION.MD ROW 12-04-01's EVIDENCE CELL NAMES TWO PACKAGES BUT NO `-run`/`-list`/`-fuzz`/`-bench` PATTERN, SO IT NAMES NO EXACT TEST IDENTIFIER THE CAP CAN CONFIRM EXECUTED -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapBarePackageRowHasNoNamedTest. |
-| D-14-51 | plan 14-09's grade derivation over 04-VALIDATION.md:74 (row 04-06-03) | EVD-02 | warning | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 04-VALIDATION.MD ROW 04-06-03's EVIDENCE CELL NAMES `TestLastUseDiscoveryWorkIsCounted` AND `TestLastUseDiscoveryWorkSeries`, NEITHER OF WHICH EXISTS IN THE CURRENT MODULE -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
-| D-14-52 | plan 14-09's grade derivation over 06-VALIDATION.md:69 (row 06-08-T3) | EVD-02 | warning | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-08-T3's EVIDENCE CELL NAMES `TestOnlyRecomputedWorkIsGateEligible`, WHICH DOES NOT EXIST -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
-| D-14-53 | plan 14-09's own satisfying-bar exemption for 14-VALIDATION.md | EVD-02 | info | CLOSED(128ecec) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | 14-VALIDATION.MD'S OWN PER-TASK VERIFICATION MAP, ORIGINALLY EXACTLY ONE UNFILLED PLACEHOLDER ROW, IS NOW POPULATED FOR REAL: 31 rows plan 14-10 filled plus 8 this plan (14-12) added (14-11-T1..T3, 14-13-T1..T2, 14-12-T1..T3), all executed and confirmed to resolve, all judged by the now-unexempted `>=EXERCISED` satisfying bar via `TestValidationRowGradesAreEarnedOverArchivedCorpus`. The premise this row recorded (the table was never filled in beyond its plan-time placeholder) no longer holds |
-| D-14-54 | plan 14-09's grade derivation over 06-VALIDATION.md:71 (row 06-09-T3) | EVD-02 | warning | CLOSED(7dc8f64) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-09-T3's EVIDENCE CELL NAMES `TestRecomputedWorkIsTheOnlyHardGate`, WHICH DOES NOT EXIST -- repaired and directly exercised by commit 7dc8f64; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
+| D-14-50 | plan 14-09's grade derivation over 12-VALIDATION.md:52 (row 12-04-01) | EVD-02 | info | CLOSED(b8cf216) | EXERCISED | probe:TestValidationGradeCapBarePackageRowHasNoNamedTest | 12-VALIDATION.MD ROW 12-04-01's EVIDENCE CELL NAMES TWO PACKAGES BUT NO `-run`/`-list`/`-fuzz`/`-bench` PATTERN, SO IT NAMES NO EXACT TEST IDENTIFIER THE CAP CAN CONFIRM EXECUTED -- repaired and directly exercised by commit b8cf216; probe:TestValidationGradeCapBarePackageRowHasNoNamedTest. |
+| D-14-51 | plan 14-09's grade derivation over 04-VALIDATION.md:74 (row 04-06-03) | EVD-02 | warning | CLOSED(b8cf216) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 04-VALIDATION.MD ROW 04-06-03's EVIDENCE CELL NAMES `TestLastUseDiscoveryWorkIsCounted` AND `TestLastUseDiscoveryWorkSeries`, NEITHER OF WHICH EXISTS IN THE CURRENT MODULE -- repaired and directly exercised by commit b8cf216; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
+| D-14-52 | plan 14-09's grade derivation over 06-VALIDATION.md:69 (row 06-08-T3) | EVD-02 | warning | CLOSED(b8cf216) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-08-T3's EVIDENCE CELL NAMES `TestOnlyRecomputedWorkIsGateEligible`, WHICH DOES NOT EXIST -- repaired and directly exercised by commit b8cf216; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
+| D-14-53 | plan 14-09's own satisfying-bar exemption for 14-VALIDATION.md | EVD-02 | info | CLOSED(172a893) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | 14-VALIDATION.MD'S OWN PER-TASK VERIFICATION MAP, ORIGINALLY EXACTLY ONE UNFILLED PLACEHOLDER ROW, IS NOW POPULATED FOR REAL: 31 rows plan 14-10 filled plus 8 this plan (14-12) added (14-11-T1..T3, 14-13-T1..T2, 14-12-T1..T3), all executed and confirmed to resolve, all judged by the now-unexempted `>=EXERCISED` satisfying bar via `TestValidationRowGradesAreEarnedOverArchivedCorpus`. The premise this row recorded (the table was never filled in beyond its plan-time placeholder) no longer holds |
+| D-14-54 | plan 14-09's grade derivation over 06-VALIDATION.md:71 (row 06-09-T3) | EVD-02 | warning | CLOSED(b8cf216) | EXERCISED | probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent | 06-VALIDATION.MD ROW 06-09-T3's EVIDENCE CELL NAMES `TestRecomputedWorkIsTheOnlyHardGate`, WHICH DOES NOT EXIST -- repaired and directly exercised by commit b8cf216; probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent. |
 | D-14-55 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:849` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-56 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:850` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-57 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `03-RESEARCH.md:852` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
@@ -77,8 +77,8 @@ finding).
 | D-14-67 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `04-RESEARCH.md:570` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-68 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `08-RESEARCH.md:507` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
 | D-14-69 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `08-RESEARCH.md:514` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
-| D-14-70 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-71 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-70 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-71 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
 | D-14-72 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `09-RESEARCH.md:706` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-73 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `09-RESEARCH.md:708` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
 | D-14-74 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `09-VALIDATION.md:87` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
@@ -88,16 +88,16 @@ finding).
 | D-14-78 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `10-RESEARCH.md:684` cites a dead/elided verification command, corrected outside the archive as a RENAMED verdict (see Detail section for the full command text and its replacement, which resolves). |
 | D-14-79 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-RESEARCH.md:1041` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-80 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `11-VALIDATION.md:28` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
-| D-14-81 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-82 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-83 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-84 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-85 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-86 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-87 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-88 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-89 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
-| D-14-90 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(c4278ea) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit c4278ea; this finding no longer appears in the live scan. |
+| D-14-81 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-82 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-83 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-84 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-85 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-86 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-87 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-88 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-89 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
+| D-14-90 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | CLOSED(5c210a5) | DEFINED | n/a | CLOSED: Phase 02 corrected the archived command in commit 5c210a5; this finding no longer appears in the live scan. |
 | D-14-91 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `12-RESEARCH.md:869` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-92 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `12-VALIDATION.md:26` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-93 | plan 14-10's reconciliation of the pinned groundedness frontier's R1 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R1) — `07-VERIFICATION.md:87` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
@@ -128,8 +128,8 @@ finding).
 | D-14-118 | plan 14-10's reconciliation of the pinned groundedness frontier's R3 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R3) — `ADVERSARIAL-SYNTHESIS.md:213` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
 | D-14-119 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command over a symbol deliberately deleted from the tree, corrected outside the archive as an OBSOLETE-BY-DESIGN verdict naming the deleting phase, commit and the deleted symbol, confirmed absent (see Detail section). |
 | D-14-120 | plan 14-10's reconciliation of the pinned groundedness frontier's R2 class | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `ADVERSARIAL-SYNTHESIS.md:214` cites a verification command whose target has moved, corrected outside the archive as a SUPERSEDED verdict naming the superseding phase, commit and a live covering command (see Detail section). |
-| D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | CLOSED(128ecec) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | RESOLVED. `14-VALIDATION.MD` IS REMOVED FROM `validationGradeBarExemptions` (plan 14-12), AND `TestValidationRowGradesAreEarnedOverArchivedCorpus` PASSES FOR IT with a run record that reported complete and a measured elapsed of ~90-92s against the 480s budget (roughly 19%, comfortably inside the 75% margin) -- see Detail section for the full root-cause fix and measured numbers |
-| D-14-122 | plan 14-11's fail-closed run-record margin check, which surfaced this while measuring the corpus-wide batch's real cost | EVD-01 | info | P14 | DEFINED | n/a | RETIRED — the text this row reconciled (`14-VERIFICATION.md:133`'s seeded-fault placeholder `TestThisNameDoesNotExistAnywhereZZQQ`) was deleted outright, not merely moved, when commit 511399f's verification-artifact rewrite replaced the whole Non-Inertness Spot-Check narrative; the reconciliation entry is removed as moot rather than repointed at a new anchor (see Detail section). |
+| D-14-121 | plan 14-10's attempt to remove 14-VALIDATION.md's satisfying-bar exemption | EVD-02 | warning | CLOSED(172a893) | WIRED | probe:TestValidationGradeBarAppliesToPhase14 | RESOLVED. `14-VALIDATION.MD` IS REMOVED FROM `validationGradeBarExemptions` (plan 14-12), AND `TestValidationRowGradesAreEarnedOverArchivedCorpus` PASSES FOR IT with a run record that reported complete and a measured elapsed of ~90-92s against the 480s budget (roughly 19%, comfortably inside the 75% margin) -- see Detail section for the full root-cause fix and measured numbers |
+| D-14-122 | plan 14-11's fail-closed run-record margin check, which surfaced this while measuring the corpus-wide batch's real cost | EVD-01 | info | P14 | DEFINED | n/a | RETIRED — the text this row reconciled (`14-VERIFICATION.md:133`'s seeded-fault placeholder `TestThisNameDoesNotExistAnywhereZZQQ`) was deleted outright, not merely moved, when commit 5adcd32's verification-artifact rewrite replaced the whole Non-Inertness Spot-Check narrative; the reconciliation entry is removed as moot rather than repointed at a new anchor (see Detail section). |
 | D-14-123 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-01-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-01-T2` DECLARES `WIRED`, BELOW THE NOW-ENFORCED `>=EXERCISED` SATISFYING BAR. Re-deriving its evidence cell against plan 14-11's completion-witnessed, margin-checked run record shows the cited test (`TestVerificationGroundednessFrontierIsPinned`) genuinely passed and is matched -- the row's TRUE ceiling is `EXERCISED`, not `WIRED`. The declared cell is kept byte-unchanged (this plan's own prohibition on rewriting a row belonging to plans 14-01..14-10 to force the bar to pass) and is instead narrowed here via `validationGradeBarRowExemptions`, mechanically checked by `TestValidationGradeBarRowExemptionsAreOwned`. |
 | D-14-124 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T1` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T1`'S EVIDENCE CELL IS A go-run invocation (`./cmd/lang --json check testdata/distinctness/spiral_full.lang`), not a go-test command -- IT IS STRUCTURALLY CAPPED AT `REACHABLE` BY `deriveCeiling`'s OWN LADDER AND CAN NEVER DERIVE `EXERCISED` WITHOUT REWRITING THE EVIDENCE CELL TO a go-test invocation with a -run pattern naming a specific test. The declared `REACHABLE` cell is kept byte-unchanged (row belongs to plan 14-02, covered by this plan's never-rewrite prohibition) and is narrowed here via `validationGradeBarRowExemptions`. |
 | D-14-125 | plan 14-12's re-derivation of `14-VALIDATION.md` row `14-02-T2` under a complete run record | EVD-02 | info | P14 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `14-VALIDATION.MD` ROW `14-02-T2`'S EVIDENCE CELL NAMES THREE PACKAGES BUT NO `-run` PATTERN, SO `deriveCeiling` DERIVES `WIRED` STRUCTURALLY (THE SAME BARE-PACKAGE SHAPE GAP D-14-50 ALREADY RECORDED FOR `12-VALIDATION.md:52`) -- IT CAN NEVER REACH `EXERCISED` WITHOUT REWRITING THE CELL TO NAME A SPECIFIC TEST. Kept byte-unchanged (row belongs to plan 14-02) and narrowed here. |
@@ -160,7 +160,7 @@ or performance evidence. The original recorded text was:
 > the ten unowned items — while this document's NAT-07 bullet previously read
 > as though the proof covered the interprocedural corpus. It does not."
 
-This correction landed in commit `d21db90` (2026-09-17, "docs: start
+This correction landed in commit `532ed0b` (2026-09-17, "docs: start
 milestone M003"), before Phase 14 opened. EVD-07 therefore had exactly **one**
 remaining task for this plan: add the missing debt row PROJECT.md's own text
 already names as absent. No PROJECT.md rewrite was needed or performed.
@@ -260,7 +260,7 @@ currently owns rephrasing the row with a specific `-run` pattern.
 
 **Landing phase:** `UNOWNED(probe:TestValidationGradeCapBarePackageRowHasNoNamedTest)`.
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
+Closed by commit `b8cf216`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `0d58aac` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-51 — `04-VALIDATION.md:74` cites two tests retired in a later phase
 
@@ -286,7 +286,7 @@ regression to suppress.
 current equivalent (if one still exists in the surviving law's own test
 suite) or retracting the claim.
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
+Closed by commit `b8cf216`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `0d58aac` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-52 — `06-VALIDATION.md:69` cites a test renamed in plan 08-05
 
@@ -307,7 +307,7 @@ citation behind in a document already marked satisfied.
 assert the same property (a named set of historically-real identifiers
 remains absent today).
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
+Closed by commit `b8cf216`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `0d58aac` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-53 — `14-VALIDATION.md`'s own verification map was never filled in
 
@@ -344,7 +344,7 @@ was reverted; see D-14-121 below.
 cause (raised `evidenceRunRecordTimeout` to `480s`, added the 0.75 margin
 fraction, anchored the producer/consumer name contract), and plan 14-12
 removed the `14-VALIDATION.md` exemption entry for real (commit
-`128ecec`), adding 8 more real rows on top of plan 14-10's 31
+`172a893`), adding 8 more real rows on top of plan 14-10's 31
 (`14-11-T1..T3`, `14-13-T1..T2`, `14-12-T1..T3` — 39 total,
 `graded_rows: 39`). `TestValidationRowGradesAreEarnedOverArchivedCorpus`
 now passes for this file with a complete run record. The premise this
@@ -354,7 +354,7 @@ is filled, the exemption is gone, and a permanent guard
 (`TestValidationGradeBarAppliesToPhase14`) makes both facts checkable
 rather than merely asserted.
 
-**Landing phase:** `CLOSED(128ecec)` — plan 14-12's commit.
+**Landing phase:** `CLOSED(172a893)` — plan 14-12's commit.
 
 ### D-14-54 — `06-VALIDATION.md:71` cites a test renamed per its own reviewer's warning
 
@@ -381,7 +381,7 @@ is exactly what nothing currently re-checks.
 **Landing phase:** `UNOWNED(probe:TestValidationGradeCapArchivedDeadCitationsRemainAbsent)`
 — the same shared probe now witnesses all three (D-14-51, D-14-52, D-14-54).
 
-Closed by commit `7dc8f64`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `e359f17` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
+Closed by commit `b8cf216`: the archived row now names its exact live tests, the retired citation control remains red on the old names, and the replacement command passed during Plan 20 execution. The complete 33-pair corpus run record at revision `0d58aac` corroborates this closure; its SHA-256 is `3c57e0937d0da9379578b0707c2a40428f36d336adc61549e07478c7a1ab1940` (manifest: `testdata/phase16/validation-corpus-run-record.manifest.json`).
 
 ### D-14-55 — `03-RESEARCH.md:849` cites a superseded target
 
@@ -394,11 +394,11 @@ command: go test ./internal/compiler/check/... -run TestLoanConflict
 classification: R2
 verdict: superseded
 superseding-phase: P03
-superseding-commit: a428280
+superseding-commit: 64ce0a0
 covering-command: go test ./internal/compiler/check/... -run TestLoanLivenessFixpoint
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `a428280` (phase P03) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `64ce0a0` (phase P03) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-56 — `03-RESEARCH.md:850` cites a superseded target
 
@@ -411,11 +411,11 @@ command: go test ./internal/compiler/check/... -run TestCFGLastUse
 classification: R2
 verdict: superseded
 superseding-phase: P08
-superseding-commit: 63246d9
+superseding-commit: 5917616
 covering-command: go test ./internal/compiler/check/... -run TestCFGBackEdgeWalkIsIterative
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `63246d9` (phase P08) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5917616` (phase P08) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-57 — `03-RESEARCH.md:852` cites a superseded target
 
@@ -428,11 +428,11 @@ command: go test ./internal/compiler/corevalidate/... -run TestPublicOrigin
 classification: R2
 verdict: superseded
 superseding-phase: P03
-superseding-commit: 2b2649e
+superseding-commit: 8e2133c
 covering-command: go test ./internal/compiler/check/... -run TestPublicOriginFactLowered
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2b2649e` (phase P03) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `8e2133c` (phase P03) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-58 — `04-RESEARCH.md:560` cites a superseded target
 
@@ -445,11 +445,11 @@ command: go test ./internal/compiler/session/... -run TestResourceReleaseOrder
 classification: R2
 verdict: superseded
 superseding-phase: P04
-superseding-commit: 300ab6b
+superseding-commit: 17e9cb3
 covering-command: go test ./internal/compiler/session/... -run TestReleaseTranspositionMutationIsMismatch
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `300ab6b` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `17e9cb3` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-59 — `04-RESEARCH.md:561` cites a superseded target
 
@@ -462,11 +462,11 @@ command: go test ./internal/compiler/cgen/... -run TestForeignLayoutConformance
 classification: R2
 verdict: superseded
 superseding-phase: P05
-superseding-commit: 8a3d34b
+superseding-commit: de7f810
 covering-command: go test ./internal/compiler/cgen/... -run TestForeignManifestBytesUnchangedForPriorPhases
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `8a3d34b` (phase P05) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `de7f810` (phase P05) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-60 — `04-RESEARCH.md:563` cites a superseded target
 
@@ -479,11 +479,11 @@ command: go test ./internal/compiler/syntax/... -run TestFallibleOperationConsum
 classification: R2
 verdict: superseded
 superseding-phase: P04
-superseding-commit: 62a443d
+superseding-commit: 46b8832
 covering-command: go test ./internal/compiler/syntax/... -run TestFallibleCallUnconsumedRejected
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `62a443d` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `46b8832` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-61 — `04-RESEARCH.md:565` cites a superseded target
 
@@ -496,11 +496,11 @@ command: go test ./internal/compiler/interp/... -run TestNoCancelledOutcomeEmitt
 classification: R2
 verdict: superseded
 superseding-phase: P10
-superseding-commit: 2f236ef
+superseding-commit: 38aa24a
 covering-command: go test ./internal/compiler/interp/... -run TestRunRefusesInvalidBodyUnion
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2f236ef` (phase P10) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `38aa24a` (phase P10) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-62 — `04-RESEARCH.md:566` cites a superseded target
 
@@ -513,11 +513,11 @@ command: go test ./internal/compiler/native/... -run TestNoUnauditedUndefinedSym
 classification: R2
 verdict: superseded
 superseding-phase: P04
-superseding-commit: ae83e3b
+superseding-commit: 326e311
 covering-command: go test ./internal/compiler/native/... -run TestUndefinedSymbolAllowlistRejectsNewSymbol
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `ae83e3b` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `326e311` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-63 — `04-RESEARCH.md:567` cites a superseded target
 
@@ -530,11 +530,11 @@ command: go test ./internal/compiler/native/... -run TestNonlocalExitDetected
 classification: R2
 verdict: superseded
 superseding-phase: P04
-superseding-commit: 8743bfe
+superseding-commit: f1b3bad
 covering-command: go test ./internal/compiler/native/... -run TestAbortSignalAdjudicatedByWaitStatus
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `8743bfe` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `f1b3bad` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-64 — `04-RESEARCH.md:568` cites a superseded target
 
@@ -547,11 +547,11 @@ command: go test ./internal/compiler/evidence/... -run TestInterpNativeAgreement
 classification: R2
 verdict: superseded
 superseding-phase: P11
-superseding-commit: 9448de6
+superseding-commit: fe01d93
 covering-command: go test ./internal/compiler/session/... -run TestPhase11InterproceduralDifferential
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `9448de6` (phase P11) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `fe01d93` (phase P11) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-65 — `04-RESEARCH.md:569` cites a superseded target
 
@@ -564,11 +564,11 @@ command: go test ./internal/compiler/originvalidate/... -run TestWalksAllTermina
 classification: R2
 verdict: superseded
 superseding-phase: P04
-superseding-commit: 1103fc1
+superseding-commit: 77b3ef2
 covering-command: go test ./internal/compiler/originvalidate/... -run TestOriginWalksEveryTerminator
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `1103fc1` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `77b3ef2` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-66 — `04-RESEARCH.md:569` cites a superseded target
 
@@ -581,11 +581,11 @@ command: go test ./internal/compiler/pathoracle/... -run TestWalksAllTerminators
 classification: R2
 verdict: superseded
 superseding-phase: P04
-superseding-commit: c9677e2
+superseding-commit: 1ecdf87
 covering-command: go test ./internal/compiler/pathoracle/... -run TestPathOracleClosesOnEveryTerminator
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `c9677e2` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `1ecdf87` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-67 — `04-RESEARCH.md:570` cites a superseded target
 
@@ -598,11 +598,11 @@ command: go test ./internal/compiler/native/... -run TestAbortSignalHandling
 classification: R2
 verdict: superseded
 superseding-phase: P04
-superseding-commit: 8743bfe
+superseding-commit: f1b3bad
 covering-command: go test ./internal/compiler/native/... -run TestAbortSignalAdjudicatedByWaitStatus
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `8743bfe` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `f1b3bad` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-68 — `08-RESEARCH.md:507` cites a symbol deleted by design
 
@@ -617,10 +617,10 @@ verdict: obsolete-by-design
 deleted-package: internal/compiler/check
 deleted-symbol: computeLoanLastUses
 deleting-phase: P09-09
-deleting-commit: b8fe3df
+deleting-commit: 9b54f95
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `b8fe3df` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `9b54f95` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-69 — `08-RESEARCH.md:514` cites a dead pattern, corrected as a rename
 
@@ -642,9 +642,9 @@ Plan 14-10's groundedness-lint reconciliation. The archived command above no lon
 first-recorded: M003
 
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `b8fe3df` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `9b54f95` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-71 — `08-VALIDATION.md:65` cites a dead pattern, corrected as a rename
 
@@ -653,7 +653,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-72 — `09-RESEARCH.md:706` cites a superseded target
 
@@ -666,11 +666,11 @@ command: go test ./internal/compiler/corevalidate -run TestBuildLoanChainIndex
 classification: R2
 verdict: superseded
 superseding-phase: P09
-superseding-commit: 703fedc
+superseding-commit: f093310
 covering-command: go test ./internal/compiler/corevalidate -run TestPeerLoanCarryDerivesForwardFromOperations
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `703fedc` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `f093310` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-73 — `09-RESEARCH.md:708` cites a dead pattern, corrected as a rename
 
@@ -698,11 +698,11 @@ command: go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -v
 classification: R2
 verdict: superseded
 superseding-phase: P09
-superseding-commit: 703fedc
+superseding-commit: f093310
 covering-command: go test ./internal/compiler/corevalidate -run TestPeerLoanCarryDerivesForwardFromOperations
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `703fedc` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `f093310` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-75 — `09-VALIDATION.md:95` cites a superseded target
 
@@ -715,11 +715,11 @@ command: go test ./internal/compiler/corevalidate -run 'Mode.*Invalid|DecodeMode
 classification: R2
 verdict: superseded
 superseding-phase: P07
-superseding-commit: b85d518
+superseding-commit: 09f98cc
 covering-command: go test ./internal/compiler/corevalidate -run TestDerivePeerSignatureModeMutantPairing
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `b85d518` (phase P07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `09f98cc` (phase P07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-76 — `09-VALIDATION.md:114` cites a superseded target
 
@@ -732,11 +732,11 @@ command: grep -c "OWN-05a" .planning/REQUIREMENTS.md
 classification: R3
 verdict: superseded
 superseding-phase: P09
-superseding-commit: 2e085a4
+superseding-commit: c738976
 covering-command: grep -c "OWN-05a" .planning/MILESTONES.md
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2e085a4` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `c738976` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-77 — `09-VALIDATION.md:115` cites a superseded target
 
@@ -749,11 +749,11 @@ command: grep -c "S-008" .planning/ROADMAP.md
 classification: R3
 verdict: superseded
 superseding-phase: P09
-superseding-commit: 2598ef5
+superseding-commit: 92cb8a0
 covering-command: grep -c "S-008" .planning/MILESTONES.md
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2598ef5` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `92cb8a0` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-78 — `10-RESEARCH.md:684` cites a dead pattern, corrected as a rename
 
@@ -781,11 +781,11 @@ command: go test ./internal/compiler/<package>/...
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-80 — `11-VALIDATION.md:28` cites a superseded target
 
@@ -798,11 +798,11 @@ command: go test ./internal/compiler/<touched-package>/...
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-81 — `11-VALIDATION.md:53` cites a dead pattern, corrected as a rename
 
@@ -811,7 +811,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-82 — `11-VALIDATION.md:58` cites a dead pattern, corrected as a rename
 
@@ -820,7 +820,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-83 — `11-VALIDATION.md:60` cites a dead pattern, corrected as a rename
 
@@ -829,7 +829,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-84 — `11-VALIDATION.md:62` cites a dead pattern, corrected as a rename
 
@@ -838,7 +838,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-85 — `11-VALIDATION.md:63` cites a dead pattern, corrected as a rename
 
@@ -847,7 +847,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-86 — `11-VALIDATION.md:65` cites a dead pattern, corrected as a rename
 
@@ -856,7 +856,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-87 — `11-VALIDATION.md:66` cites a dead pattern, corrected as a rename
 
@@ -865,7 +865,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-88 — `11-VALIDATION.md:70` cites a dead pattern, corrected as a rename
 
@@ -874,7 +874,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-89 — `11-VALIDATION.md:71` cites a dead pattern, corrected as a rename
 
@@ -883,7 +883,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-90 — `11-VALIDATION.md:73` cites a dead pattern, corrected as a rename
 
@@ -892,7 +892,7 @@ first-recorded: M003
 
 Plan 14-10's groundedness-lint reconciliation. The archived command above no longer resolves to any test the static index can find. The replacement command above does resolve (verified via `classifyCommand` over the static test index, the same primitive the lint itself uses) -- the archived row is left byte-unmodified; only this register records the correction.
 
-Closed after the archived validation command was corrected in Plan 02, commit `c4278ea`; this identity is no longer present in the live reconciliation scan.
+Closed after the archived validation command was corrected in Plan 02, commit `5c210a5`; this identity is no longer present in the live reconciliation scan.
 
 ### D-14-91 — `12-RESEARCH.md:869` cites a superseded target
 
@@ -905,11 +905,11 @@ command: go test ./internal/compiler/<package>/... -run <TestName>
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-92 — `12-VALIDATION.md:26` cites a superseded target
 
@@ -922,11 +922,11 @@ command: go test ./internal/compiler/<package>/... -run <TestName> -count=1
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-93 — `07-VERIFICATION.md:87` cites a superseded target
 
@@ -939,11 +939,11 @@ command: grep -nE 'TBD|FIXME|XXX'
 classification: R1
 verdict: superseded
 superseding-phase: P14
-superseding-commit: 93613cc
+superseding-commit: 0a78834
 covering-command: go test ./internal/compiler/session/... -run TestVerificationGroundedness
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `93613cc` (phase P14) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `0a78834` (phase P14) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-94 — `03-RESEARCH.md:853` cites a superseded target
 
@@ -956,11 +956,11 @@ command: go run ./cmd/lang -- <interface-export/import flow>
 classification: R1
 verdict: superseded
 superseding-phase: P07
-superseding-commit: 9b62c1a
+superseding-commit: dd051bc
 covering-command: go test ./internal/compiler/corevalidate -run TestSummaryPeerCallableAgreesOnOriginOmittedClass
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `9b62c1a` (phase P07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `dd051bc` (phase P07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-95 — `04-RESEARCH.md:554` cites a superseded target
 
@@ -973,11 +973,11 @@ command: go test ./internal/compiler/... -run <Test...>
 classification: R1
 verdict: superseded
 superseding-phase: P04
-superseding-commit: 300ab6b
+superseding-commit: 17e9cb3
 covering-command: go test ./internal/compiler/session/... -run TestReleaseTranspositionMutationIsMismatch
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `300ab6b` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `17e9cb3` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-96 — `05-RESEARCH.md:420` cites a superseded target
 
@@ -990,11 +990,11 @@ command: go test ./internal/compiler/... -run <TestName>
 classification: R1
 verdict: superseded
 superseding-phase: P04
-superseding-commit: 8743bfe
+superseding-commit: f1b3bad
 covering-command: go test ./internal/compiler/native/... -run TestAbortSignalAdjudicatedByWaitStatus
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `8743bfe` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `f1b3bad` (phase P04) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-97 — `14-01-SUMMARY.md:160` cites a superseded target
 
@@ -1007,11 +1007,11 @@ command: grep -nE 'TBD|FIXME|XXX'
 classification: R1
 verdict: superseded
 superseding-phase: P14
-superseding-commit: 93613cc
+superseding-commit: 0a78834
 covering-command: go test ./internal/compiler/session/... -run TestVerificationGroundedness
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `93613cc` (phase P14) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `0a78834` (phase P14) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-98 — `14-01-SUMMARY.md:162` cites a symbol deleted by design
 
@@ -1026,10 +1026,10 @@ verdict: obsolete-by-design
 deleted-package: internal/compiler/check
 deleted-symbol: computeLoanLastUses
 deleting-phase: P09-09
-deleting-commit: b8fe3df
+deleting-commit: 9b54f95
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `b8fe3df` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `9b54f95` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-99 — `14-01-SUMMARY.md:163` cites a dead pattern, corrected as a rename
 
@@ -1057,11 +1057,11 @@ command: go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -v
 classification: R2
 verdict: superseded
 superseding-phase: P09
-superseding-commit: 703fedc
+superseding-commit: f093310
 covering-command: go test ./internal/compiler/corevalidate -run TestPeerLoanCarryDerivesForwardFromOperations
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `703fedc` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `f093310` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-101 — `14-01-SUMMARY.md:166` cites a superseded target
 
@@ -1074,11 +1074,11 @@ command: go test ./internal/compiler/corevalidate -run 'Mode.*Invalid|DecodeMode
 classification: R2
 verdict: superseded
 superseding-phase: P07
-superseding-commit: b85d518
+superseding-commit: 09f98cc
 covering-command: go test ./internal/compiler/corevalidate -run TestDerivePeerSignatureModeMutantPairing
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `b85d518` (phase P07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `09f98cc` (phase P07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-102 — `14-01-SUMMARY.md:169` cites a superseded target
 
@@ -1091,11 +1091,11 @@ command: go test ./internal/compiler/<touched-package>/...
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-103 — `14-01-SUMMARY.md:170` cites a dead pattern, corrected as a rename
 
@@ -1258,11 +1258,11 @@ command: go test ./internal/compiler/<package>/... -run <TestName> -count=1
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-114 — `14-01-SUMMARY.md:183` cites a superseded target
 
@@ -1275,11 +1275,11 @@ command: go test ./<changed-package>/...
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-115 — `14-RESEARCH.md:448` cites a superseded target
 
@@ -1292,11 +1292,11 @@ command: go test ./internal/compiler/<package>/... -run <TestName> -count=1
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-116 — `14-RESEARCH.md:459` cites a dead pattern, corrected as a rename
 
@@ -1324,11 +1324,11 @@ command: go test ./<changed-package>/...
 classification: R1
 verdict: superseded
 superseding-phase: P14-09
-superseding-commit: 5050f57
+superseding-commit: 2a48e27
 covering-command: go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `5050f57` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2a48e27` (phase P14-09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-118 — `ADVERSARIAL-SYNTHESIS.md:213` cites a superseded target
 
@@ -1341,11 +1341,11 @@ command: grep 'D-11-25' PHASE-11-DEBT.md
 classification: R3
 verdict: superseded
 superseding-phase: P14-07
-superseding-commit: b8242d1
+superseding-commit: 2b942d4
 covering-command: grep -c "D-11-25" .planning/UNREACHABLE-CLAIMS.md
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `b8242d1` (phase P14-07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `2b942d4` (phase P14-07) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-119 — `ADVERSARIAL-SYNTHESIS.md:214` cites a symbol deleted by design
 
@@ -1360,10 +1360,10 @@ verdict: obsolete-by-design
 deleted-package: internal/compiler/check
 deleted-symbol: computeLoanLastUses
 deleting-phase: P09-09
-deleting-commit: b8fe3df
+deleting-commit: 9b54f95
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `b8fe3df` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above exercises `computeLoanLastUses`, deleted from `internal/compiler/check` at commit `9b54f95` (phase P09-09). The lint confirms `computeLoanLastUses` is absent from `internal/compiler/check`'s production declarations via the same AST scan the callsite: witness grammar uses (D-14-23) -- a falsifiable positive claim, never a textual grep returning zero matches. The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-120 — `ADVERSARIAL-SYNTHESIS.md:214` cites a superseded target
 
@@ -1376,11 +1376,11 @@ command: go test ./internal/compiler/corevalidate -run 'LoanChainIndex' -count=1
 classification: R2
 verdict: superseded
 superseding-phase: P09
-superseding-commit: 703fedc
+superseding-commit: f093310
 covering-command: go test ./internal/compiler/corevalidate -run TestPeerLoanCarryDerivesForwardFromOperations
 ```
 
-Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `703fedc` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
+Plan 14-10's groundedness-lint reconciliation. The archived command above names a test, path, or artifact that no longer serves as evidence for the claim it once made. Commit `f093310` (phase P09) is where the surviving, equivalent coverage landed; the covering command above resolves today (verified via `classifyCommand`/a real subprocess check, the same mechanism the lint's own R2/R3 classification uses). The archived row is left byte-unmodified; only this register records the correction.
 
 ### D-14-121 — the corpus-wide grade-cap satisfying bar was not re-verified for `14-VALIDATION.md`
 
@@ -1433,7 +1433,7 @@ own measured corpus-wide elapsed dropped to ~90.30s (recorded in
 `qlt02_budget_manifest.json`'s `evidence_run_record_wall_clock_ns`).
 
 Plan 14-12 then removed the `14-VALIDATION.md` entry from
-`validationGradeBarExemptions` for real (commit `128ecec`) and re-ran
+`validationGradeBarExemptions` for real (commit `172a893`) and re-ran
 `TestValidationRowGradesAreEarnedOverArchivedCorpus`: the run record
 reported complete, with a measured elapsed of `1m32.646s` (92.6s) against
 the `480s` budget — 19.3% of budget, comfortably inside the 75% margin,
@@ -1449,7 +1449,7 @@ None of the nine other archived files' rows regressed — the original
 spurious cross-file failures were exactly the incomplete-run-record
 symptom plan 14-11 fixed, not a real defect in any of those nine files.
 
-**Landing phase:** `CLOSED(128ecec)` — plan 14-12's commit removing the
+**Landing phase:** `CLOSED(172a893)` — plan 14-12's commit removing the
 `14-VALIDATION.md` exemption entry and landing the permanent guard.
 
 ### D-14-122 — `14-VERIFICATION.md:133` cited a seeded-fault placeholder name; row retired, reconciliation removed
@@ -1468,7 +1468,7 @@ and therefore never reconciled at the time. Plan 14-11 recorded a
 `reconciliation` block here classifying that cell as R1 with a `renamed`
 verdict pointing at `TestVerificationGroundednessFrontierIsPinned`.
 
-Commit `511399f` ("docs(phase-14): complete phase execution") then
+Commit `5adcd32` ("docs(phase-14): complete phase execution") then
 rewrote `14-VERIFICATION.md` wholesale as part of the phase's final
 verification pass. That rewrite replaced the entire Non-Inertness
 Spot-Check narrative -- the seeded-fault placeholder text
@@ -1497,7 +1497,7 @@ without fixing anything real. No future phase needs to act on this row.
 
 **Landing phase:** `P14` -- closed by plan 14-11 recording the original
 correction; this entry (the fix you are reading) removes the now-stale
-reconciliation block after commit `511399f` deleted its target. No
+reconciliation block after commit `5adcd32` deleted its target. No
 further work is scheduled.
 
 ### D-14-123 — `14-VALIDATION.md:14-01-T2` under-declares its now-measurable ceiling
@@ -1657,5 +1657,141 @@ left unchanged.
 
 ---
 
+### D-14-131 — `13-RESEARCH.md:581` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-RESEARCH.md
+line: 581
+command: go test ./cmd/lang-repair/... -run TestTwinPairBlame
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestTwinPairBlame
+```
+
+The Phase 13 research command remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived record.
+
+### D-14-132 — `13-RESEARCH.md:582` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-RESEARCH.md
+line: 582
+command: go test ./cmd/lang-repair/... -run TestRepairDriverFixesEveryDefectClassSinglePass
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestRepairDriverFixesEveryDefectClassSinglePass
+```
+
+The Phase 13 research command remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived record.
+
+### D-14-133 — `13-VALIDATION.md:62` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 62
+command: go test ./cmd/lang-repair/... -run TestTwinPairBlame -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestTwinPairBlame -v -count=1
+```
+
+The Phase 13 validation row remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived row.
+
+### D-14-134 — `13-VALIDATION.md:63` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 63
+command: go test ./cmd/lang-repair/... -run TestTwinPairBlameGuard -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestTwinPairBlameGuard -v -count=1
+```
+
+The Phase 13 validation row remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived row.
+
+### D-14-135 — `13-VALIDATION.md:64` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 64
+command: go test ./cmd/lang-repair/... -run TestRepairDriverFixesEveryDefectClassSinglePass -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestRepairDriverFixesEveryDefectClassSinglePass -v -count=1
+```
+
+The Phase 13 validation row remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived row.
+
+### D-14-136 — `13-VALIDATION.md:66` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 66
+command: go test ./cmd/lang-repair/... -run TestUnrepairableDefectFailsTheGate -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestUnrepairableDefectFailsTheGate -v -count=1
+```
+
+The Phase 13 validation row remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived row.
+
+### D-14-137 — `13-VALIDATION.md:67` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 67
+command: go test ./cmd/lang-repair/... -run TestWrapCallInTryReverifyFailed -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestWrapCallInTryReverifyFailed -v -count=1
+```
+
+The Phase 13 validation row remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived row.
+
+### D-14-138 — `13-VALIDATION.md:68` records the pre-public repair command path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 68
+command: go test ./cmd/lang-repair/... -run 'TestRepairDriverSourceNeverReferencesHeldoutFixtures|TestRepairDriverSourceHeldoutScanIsNotInert' -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run 'TestRepairDriverSourceNeverReferencesHeldoutFixtures|TestRepairDriverSourceHeldoutScanIsNotInert' -v -count=1
+```
+
+The Phase 13 validation row remains an accurate historical receipt. The
+publication migration renamed the current command directory; this entry maps
+the old path to its current equivalent without changing the archived row.
+
+*Dated amendment: 2026-09-29, Schway public repository preparation.*
 *Register: PHASE-14-DEBT.md*
-*Opened: 2026-09-18 (plan 14-04)*

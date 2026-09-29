@@ -202,11 +202,14 @@ func (r *ReleaseOmissionMutationRunner) Optimizations() []string {
 // process-root nonlocal-exit landing pad's ENTIRE emitted span (D-04-17).
 const padInstallMarker = "/* schway:nonlocal-pad-site */"
 const padEndMarker = "/* schway:nonlocal-pad-end */"
+const legacyPadInstallMarker = "/* lang:nonlocal-pad-site */"
+const legacyPadEndMarker = "/* lang:nonlocal-pad-end */"
 
 // ledgerPopulateMarker is duplicated, verbatim, from cgen.go's own constant
 // of the same name: it marks the single generated line that flips one
 // acquisition's ledger slot live (D-04-07/D-04-17).
 const ledgerPopulateMarker = "/* schway:ledger-populate-site */"
+const legacyLedgerPopulateMarker = "/* lang:ledger-populate-site */"
 
 // NonlocalPadOmissionMutationRunner is control:foreign.nonlocal_exit_undetected's
 // FIRST mutation-kill demonstration (D-04-21/D-10): it deletes the ENTIRE
@@ -232,10 +235,10 @@ func (r *NonlocalPadOmissionMutationRunner) Run(ctx context.Context, cSource, op
 	lines := strings.Split(cSource, "\n")
 	start, end := -1, -1
 	for index, line := range lines {
-		if strings.Contains(line, padInstallMarker) {
+		if strings.Contains(line, padInstallMarker) || strings.Contains(line, legacyPadInstallMarker) {
 			start = index
 		}
-		if strings.Contains(line, padEndMarker) {
+		if strings.Contains(line, padEndMarker) || strings.Contains(line, legacyPadEndMarker) {
 			end = index
 		}
 	}
@@ -277,7 +280,7 @@ func (r *NonlocalLedgerOmissionMutationRunner) Run(ctx context.Context, cSource,
 	lines := strings.Split(cSource, "\n")
 	matched := -1
 	for index, line := range lines {
-		if strings.Contains(line, ledgerPopulateMarker) {
+		if strings.Contains(line, ledgerPopulateMarker) || strings.Contains(line, legacyLedgerPopulateMarker) {
 			matched = index
 			break
 		}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -52,21 +53,39 @@ var AllowedUndefinedSymbols = []AllowedUndefinedSymbol{
 	{Symbol: "setjmp", Rationale: "the process-root landing pad installs its own return point via libc setjmp (D-04-17); its paired longjmp is named separately below since only the frozen foreign TU ever calls it."},
 }
 
-func allowedSymbolSet() map[string]struct{} {
-	set := make(map[string]struct{}, len(AllowedUndefinedSymbols))
+var platformAllowedUndefinedSymbols = map[string][]AllowedUndefinedSymbol{
+	"linux": {
+		{Symbol: "stdout", Rationale: "on GNU ELF hosts, the generated event writer's stdout reference remains an undefined libc data symbol instead of resolving through Apple's __stdoutp alias."},
+		{Symbol: "ITM_deregisterTMCloneTable", Rationale: "GNU ELF startup objects may leave this transactional-memory registration hook undefined when linking a program that does not use transactional memory."},
+		{Symbol: "ITM_registerTMCloneTable", Rationale: "GNU ELF startup objects may leave this transactional-memory registration hook undefined when linking a program that does not use transactional memory."},
+		{Symbol: "_cxa_finalize", Rationale: "GNU ELF startup code references the C++ finalization hook even for the project's C-only native program; the linker versions it by the host glibc ABI."},
+		{Symbol: "_gmon_start__", Rationale: "GNU ELF startup code may retain its optional profiling hook as an undefined symbol on an otherwise unprofiled C program."},
+		{Symbol: "_libc_start_main", Rationale: "GNU ELF startup objects reference glibc's process entry wrapper; the linker versions it by the host glibc ABI."},
+	},
+}
+
+func allowedSymbolSet(goos string) map[string]struct{} {
+	set := make(map[string]struct{}, len(AllowedUndefinedSymbols)+len(platformAllowedUndefinedSymbols[goos]))
 	for _, allowed := range AllowedUndefinedSymbols {
+		set[allowed.Symbol] = struct{}{}
+	}
+	for _, allowed := range platformAllowedUndefinedSymbols[goos] {
 		set[allowed.Symbol] = struct{}{}
 	}
 	return set
 }
 
-// normalizeSymbol strips exactly one leading underscore -- the Mach-O/ELF
+// normalizeSymbol drops an optional ELF symbol version and strips exactly
+// one leading underscore -- the Mach-O/ELF
 // object-format difference this control must not be confused by: Apple's
 // linker and nm prefix every C symbol with a leading underscore (Mach-O),
 // while ELF (Linux) hosts do not. Stripping at most one leading underscore
 // (never every one) keeps a genuinely double-underscore-prefixed reserved
 // libc identifier's own leading underscore intact.
 func normalizeSymbol(name string) string {
+	if version := strings.IndexByte(name, '@'); version >= 0 {
+		name = name[:version]
+	}
 	return strings.TrimPrefix(name, "_")
 }
 
@@ -130,7 +149,7 @@ func CheckUndefinedSymbolAllowlist(parent context.Context, nmPath, binaryPath st
 	if toolErr != nil {
 		return SymbolsOperational, nil, toolErr
 	}
-	allowed := allowedSymbolSet()
+	allowed := allowedSymbolSet(runtime.GOOS)
 	var rejected []string
 	for _, symbol := range symbols {
 		if _, ok := allowed[symbol]; !ok {

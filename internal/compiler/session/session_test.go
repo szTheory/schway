@@ -1918,8 +1918,14 @@ func TestPadRunsNoRelease(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	start := strings.Index(generated, "/* schway:nonlocal-pad-site */")
-	end := strings.Index(generated, "/* schway:nonlocal-pad-end */")
+	start := strings.Index(generated, padInstallMarker)
+	if start < 0 {
+		start = strings.Index(generated, legacyPadInstallMarker)
+	}
+	end := strings.Index(generated, padEndMarker)
+	if end < 0 {
+		end = strings.Index(generated, legacyPadEndMarker)
+	}
 	if start < 0 || end < 0 || end < start {
 		t.Fatalf("expected a well-formed pad span in generated C:\n%s", generated)
 	}
@@ -4426,7 +4432,7 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 	t.Run("superseded", func(t *testing.T) {
 		t.Run("real commit and resolving covering command passes", func(t *testing.T) {
 			e := reconciliationEntry{ID: "D-00-03", File: "x", Line: 1, Command: "y", Verdict: reconciliationSuperseded,
-				SupersedingPhase: "P09", SupersedingCommit: "b8fe3df",
+				SupersedingPhase: "P09", SupersedingCommit: "9b54f95",
 				CoveringCommand: "go test ./internal/compiler/session/... -run TestValidationRowGradesAreEarned"}
 			if problem := reconciliationEntryProblem(index, e); problem != "" {
 				t.Fatalf("expected pass, got: %s", problem)
@@ -4442,7 +4448,7 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 		})
 		t.Run("covering command resolving to nothing fails", func(t *testing.T) {
 			e := reconciliationEntry{ID: "D-00-05", File: "x", Line: 1, Command: "y", Verdict: reconciliationSuperseded,
-				SupersedingPhase: "P09", SupersedingCommit: "b8fe3df",
+				SupersedingPhase: "P09", SupersedingCommit: "9b54f95",
 				CoveringCommand: "go test ./internal/compiler/session/... -run TestThisNameDoesNotExistAnywhereInTheModule"}
 			if problem := reconciliationEntryProblem(index, e); problem == "" {
 				t.Fatal("a covering command resolving to nothing should fail, but nothing was reported")
@@ -4454,7 +4460,7 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 		t.Run("real deleting commit and genuinely absent symbol passes", func(t *testing.T) {
 			e := reconciliationEntry{ID: "D-00-06", File: "x", Line: 1, Command: "y", Verdict: reconciliationObsoleteByDesign,
 				DeletedPackage: "internal/compiler/check", DeletedSymbol: "computeLoanLastUses",
-				DeletingPhase: "P09-09", DeletingCommit: "b8fe3df"}
+				DeletingPhase: "P09-09", DeletingCommit: "9b54f95"}
 			if problem := reconciliationEntryProblem(index, e); problem != "" {
 				t.Fatalf("expected pass, got: %s", problem)
 			}
@@ -4462,7 +4468,7 @@ func TestReconciliationVerdictsCarryTheirObligations(t *testing.T) {
 		t.Run("symbol that still exists fails -- absence is never a pass", func(t *testing.T) {
 			e := reconciliationEntry{ID: "D-00-07", File: "x", Line: 1, Command: "y", Verdict: reconciliationObsoleteByDesign,
 				DeletedPackage: "internal/compiler/check", DeletedSymbol: "resolveBlame",
-				DeletingPhase: "P09-09", DeletingCommit: "b8fe3df"}
+				DeletingPhase: "P09-09", DeletingCommit: "9b54f95"}
 			problem := reconciliationEntryProblem(index, e)
 			if problem == "" {
 				t.Fatal("a symbol that still exists should fail, but nothing was reported")

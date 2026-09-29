@@ -82,8 +82,16 @@ func TestPhase16EmitterInventoryRefusalWitnessesResolve(t *testing.T) {
 	refusals := 0
 	for _, row := range registry.Entries {
 		if row.Classification == phase16TypedRefusal {
-			if row.Witness != "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" || strings.Contains(strings.Join(row.EvidenceFixtures, " "), "phase11") {
+			validWitness := row.Witness == "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges"
+			if row.Witness == "probe:TestForeignSymbolInjectionNeverReachesGeneratedC" {
+				cgenSource, readErr := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "cgen", "cgen_test.go"))
+				validWitness = readErr == nil && strings.Contains(string(cgenSource), "func TestForeignSymbolInjectionNeverReachesGeneratedC")
+			}
+			if !validWitness || strings.Contains(strings.Join(row.EvidenceFixtures, " "), "phase11") {
 				t.Fatalf("%s: ambiguous-entry refusal was treated as frozen evidence: witness=%q fixtures=%v", row.Call, row.Witness, row.EvidenceFixtures)
+			}
+			if len(row.EvidenceFixtures) != 0 {
+				t.Fatalf("%s: typed refusal unexpectedly maps frozen evidence fixtures=%v", row.Call, row.EvidenceFixtures)
 			}
 			continue
 		}

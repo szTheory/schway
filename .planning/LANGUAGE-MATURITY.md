@@ -26,11 +26,11 @@ recommendations and Phase 23/24/25 ordering below remain unchanged.
 
 | Capability | Observed boundary | Source / evidence anchor |
 |---|---|---|
-| Source → checked core → interpreter/native C17 | A working compiler exists; Go 1.24/Clang remain the development path | `cmd/lang/main.go`, `internal/compiler/session/session.go` |
-| Retained native application build/run | `lang app build` creates a retained artifact from an admitted source and closed local-C manifest; `lang app run` accepts bounded U64 input, launches once, and preserves ordinary streams/outcomes | `cmd/lang/main.go`, `session.go`, `internal/compiler/native/native_app.go`; Phase 22 `TestPhase22IdentityApplicationBuildAndRunCLI`, `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes` |
+| Source → checked core → interpreter/native C17 | A working compiler exists; Go 1.24/Clang remain the development path | `cmd/schway/main.go`, `internal/compiler/session/session.go` |
+| Retained native application build/run | `schway app build` creates a retained artifact from an admitted source and closed local-C manifest; `schway app run` accepts bounded U64 input, launches once, and preserves ordinary streams/outcomes | `cmd/schway/main.go`, `session.go`, `internal/compiler/native/native_app.go`; Phase 22 `TestPhase22IdentityApplicationBuildAndRunCLI`, `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes` |
 | Separate application evidence | Capture is a distinct report with disabled/incomplete/complete/capacity states and never claims verification; explicit `app verify` replays isolated inputs against independent expected answers | `native_app.go`, `main.go`; `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22AppVerifyIndependentIdentityCases`, `TestPhase22AppVerifyModelOnlyOutcomes` |
-| Live local foreign allocation | A public file-byte path admits only exact acquire/use/release contracts; Schway holds the acquired byte until the local release, and a physical observer plus negative controls prove malloc → use → matching free → exit | `examples/phase23/file_byte.lang`, `examples/phase23/adapter.c`, `internal/compiler/cgen/cgen_program.go`, `internal/compiler/native/phase23_observer_test.go`, `scripts/verify-phase23.sh`; focused script passes on macOS and a local Linux ARM64 container after `c50430d` |
-| Calls between Schway functions | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.lang`; `session.RunInterpreter` / native path |
+| Live local foreign allocation | A public file-byte path admits only exact acquire/use/release contracts; Schway holds the acquired byte until the local release, and a physical observer plus negative controls prove malloc → use → matching free → exit | `examples/phase23/file_byte.schway`, `examples/phase23/adapter.c`, `internal/compiler/cgen/cgen_program.go`, `internal/compiler/native/phase23_observer_test.go`, `scripts/verify-phase23.sh`; focused script passes on macOS and a local Linux ARM64 container after `c50430d` |
+| Calls between Schway functions | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.schway`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
 | U64 constants | Literals and `OpConst` run; arithmetic does not exist | `session_phase19_test.go`, `testdata/phase19/` |
@@ -46,8 +46,8 @@ The available compiler is not a general application runtime yet.
 
 | Missing or constrained | Practical consequence | Current evidence |
 |---|---|---|
-| General caller input and IO | The app route currently accepts one bounded U64 token; it does not provide general file, byte-string, or network IO | `cmd/lang/main.go:runApplicationRun`, Phase 22 CLI tests |
-| Legacy differential run route | `lang run --engine=native` remains a conformance harness with synthesized inputs and O0/O3 comparison; effectful application code must use `lang app run` | `session.go:runNative`, `cmd/lang/main.go` |
+| General caller input and IO | The app route currently accepts one bounded U64 token; it does not provide general file, byte-string, or network IO | `cmd/schway/main.go:runApplicationRun`, Phase 22 CLI tests |
+| Legacy differential run route | `schway run --engine=native` remains a conformance harness with synthesized inputs and O0/O3 comparison; effectful application code must use `schway app run` | `session.go:runNative`, `cmd/schway/main.go` |
 | Schway foreign operations and pointer parameters | Phase 23 admits only its exact acquire/use/release operation contracts; other foreign-call shapes and both shared/exclusive by-pointer families remain structurally refused | `cgen_program.go:emitProgram`, `TestPhase23OperationContract`, Phase 23 source/emitter refusal tests |
 | Host build closure | Known source/header/compiler/target inputs are identity-bound, but the SDK/linker/runtime closure is incomplete; app artifacts are not cacheable | `native/bindings.go`, `examples/phase22/BINDINGS.md`, Phase 22 build receipts |
 | Schway-owned physical cleanup | A local owner now stays live through use and is physically released before function exit; ownership transfer across calls, typed errors, and general cleanup remain unadmitted. The C adapter owns file descriptors and frees partial buffers on acquisition failures | `examples/phase23/adapter.c`, `internal/compiler/native/native_app_test.go`, `native/phase23_observer_test.go`; Phase 24 owns transfer and error cleanup |
@@ -66,14 +66,14 @@ container receipts passed after the close-failure fix; the configured hosted
 Ubuntu CI receipt is still pending. Transfer through calls, typed errors, and
 shared/exclusive pointer families remain separate successors.
 
-`examples/checksum.lang` is a refused integration target with provisional syntax.
+`examples/checksum.schway` is a refused integration target with provisional syntax.
 Its Phase 20 test pins the `loop` refusal; moving that diagnostic does not by
 itself demonstrate a checksum, file IO, or output. `wiki/example-tour.md` remains
 design exploration, not a supported language specification.
 
 ## Corpus and guard census
 
-Corpus: **145 `.lang` programs, 4,759 lines total** (~33 lines average,
+Corpus: **145 `.schway` programs, 4,759 lines total** (~33 lines average,
 193-line maximum). These counts match the current machine-checked tree; the
 corpus predominantly contains focused semantic fixtures, not applications.
 
@@ -93,7 +93,7 @@ multi-function seeds; its `<= 1` and `== 1` shortcuts are outside this census.
 Re-verify (approximate only — Go AST evidence is authoritative):
 `rg 'len\([^)]*Functions\) != 1' internal cmd`.
 
-Machine check: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestLanguageMaturityCountsAreCurrent|TestSelfDescribingDocsGuardIsNotInert)$' -count=1`.
+Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/compiler/session -run '^(TestLanguageMaturityCountsAreCurrent|TestSelfDescribingDocsGuardIsNotInert)$' -count=1`.
 
 ## Next useful thresholds
 
