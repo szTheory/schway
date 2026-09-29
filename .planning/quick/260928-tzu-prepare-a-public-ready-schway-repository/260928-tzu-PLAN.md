@@ -116,8 +116,8 @@ be zero; every required positive check and the exact source count must pass.
     old_extension=$(count_text '[.]lang([^[:alnum:]_]|$)')
     # Already-versioned lang.* schema names are frozen wire identifiers.
     # Reject old lang: annotation labels; current namespaces stay schway.*.
-    # The Phase 13 injector alone retains these markers for byte-frozen held-out inputs.
-    protocol_exclusions=("${exclusions[@]}" ':(exclude)internal/compiler/session/session_phase13_injectors.go')
+    # The Phase 13 injector and cleanup adapter retain markers for byte-frozen inputs.
+    protocol_exclusions=("${exclusions[@]}" ':(exclude)internal/compiler/session/session_phase13_injectors.go' ':(exclude)internal/compiler/session/session.go')
     old_protocol=$(git grep --cached -I -l -E '(^|[^[:alnum:]_])lang:' -- "${scope[@]}" "${protocol_exclusions[@]}" | wc -l | tr -d '[:space:]')
     old_abi=$(git grep --cached -I -l -E '(^|[^[:alnum:]_])(lang_|LANG_)' -- "${scope[@]}" "${exclusions[@]}" ':(exclude)internal/compiler/check/check_blame_test.go' ':(exclude)internal/compiler/syntax/syntax_test.go' | wc -l | tr -d '[:space:]')
     old_paths=$(git ls-files | rg '(^cmd/lang(-repair)?/|^native/lang_|[.]lang$)' | wc -l | tr -d '[:space:]')
@@ -421,3 +421,34 @@ Continue in these bounded slices:
    Phase 23 evidence to pass on the hosted Ubuntu/macOS matrix. Before each
    additive push, rescan all reachable refs and require zero confirmed and
    zero unclassified candidates.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36628391253)
+
+Commit `28cb4358` fixes the Phase 11 and Phase 13 frozen-input mutation seams,
+derives the C header assertion from the preserved Phase 4 source symbol, and
+passes those targeted compatibility controls on both Ubuntu and macOS. The
+full workflow remains red: both hosts pass vet, build, and Phase 23; full Go
+tests and Phase 6 evidence fail, so race jobs are skipped. CI reports 46
+failing top-level tests on Ubuntu and 39 on macOS. The remaining work groups
+are current core/C/evidence identity migration, frozen cleanup and event
+assertions, Phase 4/5 native and LTO controls, and stale current-document and
+history references. The reachable-ref privacy scan for `28cb4358` passed
+with zero confirmed and zero unclassified candidates.
+
+Proceed in these reviewable slices:
+
+1. **Frozen C compatibility** — teach the cleanup mutation adapter to match
+   the historical marker in byte-frozen Phase 4/5 generated C. Keep that
+   one marker exception scoped to `internal/compiler/session/session.go` in
+   the protocol identity gate. Make the archived event and by-pointer checks
+   assert their historical identifiers; compare current generated C to its
+   historical peer after reversing only the public Schway identity strings.
+2. **Current identity migration** — record the `ForeignTypeName` core field
+   change and current Schway C/evidence identities in explicit old/new
+   ledgers, preserving old pins and requiring a field-normalization or
+   executable semantic witness before updating a current expectation.
+3. **Executable controls** — investigate Phase 4/5 runtime, cleanup, linker,
+   unwind, and LTO failures independently of digest changes.
+4. **Current references** — refresh active maturity counts and groundedness
+   pins, map commit IDs through the private commit map, and preserve archived
+   receipts as historical facts.

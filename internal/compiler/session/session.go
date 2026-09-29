@@ -128,6 +128,11 @@ func (r *OwnedBackendMutationRunner) Optimizations() []string {
 // emitted on the same line so deleting one line removes both effects).
 const releaseMarker = "/* schway:release-site */"
 
+// legacyReleaseMarker names the seam in byte-frozen Phase 4/5 C artifacts.
+// Those inputs remain part of hosted controls, so the mutation adapter accepts
+// their historical label without changing their committed bytes.
+const legacyReleaseMarker = "/* lang:release-site */"
+
 // ReleaseOmissionMutationRunner is a fail-closed verification seam,
 // structurally a sibling of OwnedBackendMutationRunner (its own mutex and
 // optimization list, never shared) but attacking a DIFFERENT artifact: the
@@ -156,7 +161,7 @@ func (r *ReleaseOmissionMutationRunner) Mutate(cSource string) (string, error) {
 	lines := strings.Split(cSource, "\n")
 	matched := -1
 	for index, line := range lines {
-		if strings.Contains(line, releaseMarker) {
+		if strings.Contains(line, releaseMarker) || strings.Contains(line, legacyReleaseMarker) {
 			// The LAST marked line is always the success block's own final
 			// release (this walker emits every err block inline, before the
 			// success block it eventually falls through to), so it is the

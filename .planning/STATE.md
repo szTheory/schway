@@ -4,9 +4,9 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Phase 23 local gates pass; waiting for hosted Ubuntu CI receipt.
-stopped_at: Waiting for the hosted Ubuntu evidence-aggregate receipt; after a pass, resume GSD execute-phase 23 at verifier gates without replaying completed plans or UAT.
-last_updated: "2026-09-29T00:11:59Z"
+status: Public Schway migration active; hosted CI run 36628391253 is red after Phase 23, build, and vet pass on both hosts.
+stopped_at: Continue quick task 260928-tzu from the frozen C compatibility and explicit current-identity migration slices; do not replay completed Phase 23 plans or UAT.
+last_updated: "2026-09-29T21:10:54Z"
 last_activity: 2026-09-28
 last_activity_desc: Completed quick task 260928-rta: record Schway as the chosen public language name
 state_head: c50430d9fa1490b393c5d22805f094787ee99186
@@ -21,6 +21,13 @@ progress:
 <!-- schway-current:start -->
 Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
 <!-- schway-current:end -->
+
+Public repository follow-up (2026-09-29): `szTheory/schway` `main` is at
+`28cb4358`. Hosted run `36628391253` confirms the Phase 11/13 frozen-input
+compatibility controls pass on Ubuntu and macOS; the full tests and Phase 6
+evidence remain red, so race tests are skipped. Both hosts pass build, vet,
+and Phase 23. Resume from the active quick task and use hosted CI as the
+project-test lane.
 
 
 # Project State
