@@ -23,9 +23,9 @@ language named Schway; it did surface an unrelated content-marketing service at
 [schway.com](https://schway.com/), which is an accepted tradeoff for this
 personal open-source project.
 
-On 2026-09-28, `github.com/szTheory/schway` was recorded as the canonical public repository path. The repository is public and empty until the sanitized source history passes its final publication gate. The current source tree uses the Schway module path, commands, source suffix, protocol namespaces, and native ABI names. Preserve earlier spellings in historical records and rewritten commit trees.
+On 2026-09-28, `github.com/szTheory/schway` was recorded as the canonical public repository path. The repository was confirmed public and empty before the initial source publication. The isolated publication copy now uses the Schway module path, commands, `.schway` source suffix, protocol identifiers, and native ABI names.
 
-Before the first source push, rewrite all commits reachable from public `main` and the milestone tags while preserving commit order and parent topology. Redact local home and temporary-directory paths and unclassified co-author metadata, then audit every selected ref and the current tree for personal information and credentials. A failed or unresolved candidate blocks publication.
+The history rewrite and privacy audit passed before publication. The sanitized `main` preserves all 1,538 original commits, their ordered parent lists and 18 merge commits, plus the three milestone tags. The current tree and every selected ref were scanned for personal paths, contact tokens, owner-name tokens, phone-shaped strings, credentials, and secrets. Confirmed and unclassified candidates were both zero. The initial push is limited to sanitized `main` and the three milestone tags; the hosted Ubuntu evidence receipt is pending that push.
 
 The first three milestones were deliberately narrower than the full vision:
 prove one real source-to-native semantic spine (M001), prove it survives a

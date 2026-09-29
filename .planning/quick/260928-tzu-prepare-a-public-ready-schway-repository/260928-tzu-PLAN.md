@@ -1,6 +1,6 @@
 ---
 quick_task: 260928-tzu
-status: planned
+status: executing
 depends_on: []
 files_modified:
   - go.mod

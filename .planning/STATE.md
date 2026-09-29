@@ -36,7 +36,7 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- **Name decision:** Schway is the chosen public language and project name (2026-09-28). Current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`. Earlier commit trees remain historical evidence. The GitHub repository is public and empty. Source publication remains gated on rewriting reachable history with the original parent topology and passing the full privacy and credential scan. See the migration checklist in `.planning/PROJECT.md` and this task's private audit artifacts.
+- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The isolated publication copy passed the history-topology and privacy audit, preserving 1,538 original commits, 18 merges, and three milestone tags. Confirmed and unclassified privacy/secret candidates are zero. Push sanitized `main` and the three tags to start the hosted Ubuntu receipt, then resume Phase 23 at verifier gates. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
