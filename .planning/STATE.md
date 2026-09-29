@@ -6,9 +6,9 @@ current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
 status: Phase 23 local gates pass; waiting for hosted Ubuntu CI receipt.
 stopped_at: Waiting for the hosted Ubuntu evidence-aggregate receipt; after a pass, resume GSD execute-phase 23 at verifier gates without replaying completed plans or UAT.
-last_updated: "2026-09-28T17:06:53.318Z"
-last_activity: 2026-09-27
-last_activity_desc: Phase 23 execution started
+last_updated: "2026-09-29T00:11:59Z"
+last_activity: 2026-09-28
+last_activity_desc: Completed quick task 260928-rta: record Schway as the chosen public language name
 state_head: c50430d9fa1490b393c5d22805f094787ee99186
 progress:
   total_phases: 4
@@ -22,7 +22,7 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-27)
+See: .planning/PROJECT.md (updated 2026-09-28)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
@@ -31,14 +31,22 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
+- **Name decision:** Schway is the chosen public language and project name
+  (2026-09-28). Do not reopen naming absent a material direct conflict. The
+  module path, `lang`/`lang-repair` commands, `.lang` extension, schema names,
+  and related install/build/CI references are legacy implementation identifiers
+  pending one coordinated rename after the public repository owner/path is
+  chosen and before the first public release. See the migration checklist in
+  `.planning/PROJECT.md` and decision record in
+  `.planning/quick/260928-rta-record-schway-as-the-chosen-public-langu/`.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
-  evidence capture is not verification. General IO and all Lang foreign/by-pointer
+  evidence capture is not verification. General IO and all Schway foreign/by-pointer
   families remain refused. The macOS receipt has incomplete dependency closure
   and is non-cacheable; no Linux run is claimed.
 - `.planning/PRODUCT-ROADMAP.md` — living capability order and current three
   recommendations. Phase 22 delivered the application boundary; Phase 23 is the
-  live Lang-owned allocation and physical cleanup witness; FizzBuzz follows M004.
+  live Schway-owned allocation and physical cleanup witness; FizzBuzz follows M004.
 
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
@@ -84,7 +92,7 @@ hiding runtime costs.
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
 Status: Phase 23 local gates pass; waiting for hosted Ubuntu CI receipt.
-Last activity: 2026-09-27 — Phase 23 execution started
+Last activity: 2026-09-28 — Completed quick task 260928-rta: record Schway as the chosen public language name
 
 Progress: [███░░░░░░░] 25%
 
@@ -112,7 +120,7 @@ New phases start at 22. Phase 21 remains completed, archived prework with six
 plans and seven preserved UAT cases; do not replay it.
 
 The accepted scope is a single-run native application boundary, a real live
-foreign allocation owned through Lang, acquisition-based obligations and
+foreign allocation owned through Schway, acquisition-based obligations and
 per-operation contracts, transfer/error cleanup, and bounded shared/exclusive
 read-copy pointers with no additional alias attributes. Arithmetic/loops and
 FizzBuzz move to the following milestone. See PROJECT and PRODUCT-ROADMAP.
@@ -612,6 +620,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260927-ha3 | Refresh Phase 22 execution handoff in STATE.md after planning completion | 2026-09-27 | — | passed | [260927-ha3-refresh-phase-22-execution-handoff-in-st](./quick/260927-ha3-refresh-phase-22-execution-handoff-in-st/) |
 | 260927-o7y | Add recurring Phase 22 README contract evidence and close objective UAT | 2026-09-27 | c51abc7 | passed | [260927-o7y-automate-phase-22-readme-uat-and-make-ve](./quick/260927-o7y-automate-phase-22-readme-uat-and-make-ve/) |
 | 260927-j11 | Allow dotted GSD gate IDs and resume Phase 22 wave dispatch | 2026-09-27 | 961069f | — | [260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-](./quick/260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-/) |
+| 260928-rta | Record Schway as the chosen public language name in active identity and planning docs; preserve archived history and record the deferred distribution-identifier migration boundary | 2026-09-28 | 0382c16 | passed | [260928-rta-record-schway-as-the-chosen-public-langu](./quick/260928-rta-record-schway-as-the-chosen-public-langu/) |
 
 ## Deferred Items
 
