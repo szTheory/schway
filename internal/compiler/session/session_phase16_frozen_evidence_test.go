@@ -53,7 +53,11 @@ func phase16InternalFrozenEvidenceC(program core.Program, fixture string) (strin
 		return "", fmt.Errorf("%s: expected current public M004 refusal", fixture)
 	}
 	fixtureSum := sha256.Sum256(source)
-	programSum := sha256.Sum256(canonical)
+	historicalCanonical, err := phase16HistoricalProgramCanonical(canonical)
+	if err != nil {
+		return "", err
+	}
+	programSum := sha256.Sum256(historicalCanonical)
 	for _, record := range manifest.Records {
 		if record.Fixture != fixture {
 			continue
@@ -72,4 +76,22 @@ func phase16InternalFrozenEvidenceC(program core.Program, fixture string) (strin
 		return string(artifact), nil
 	}
 	return "", fmt.Errorf("%s: no file frozen evidence record", fixture)
+}
+
+// phase16HistoricalProgramCanonical reverses only the public C type rename
+// in the current Phase 4/5 program before comparing it with the immutable
+// pre-Schway evidence digest. All other canonical program fields remain in
+// the hash.
+func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
+	var program core.Program
+	if err := json.Unmarshal(canonical, &program); err != nil {
+		return nil, err
+	}
+	for index := range program.Functions {
+		contract := program.Functions[index].ForeignContract
+		if contract != nil && contract.Layout != nil && contract.Layout.ForeignTypeName == "schway_foreign_resource_block" {
+			contract.Layout.ForeignTypeName = "lang" + "_foreign_resource_block"
+		}
+	}
+	return json.Marshal(program)
 }

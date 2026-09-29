@@ -31,7 +31,11 @@ func validatePhase16FileFrozenEvidence(record phase16FileFrozenEvidenceRecord, f
 		return fmt.Errorf("fixture identity changed: record %q, requested %q", record.Fixture, fixture)
 	}
 	fixtureSum := sha256.Sum256(source)
-	programSum := sha256.Sum256(canonical)
+	historicalCanonical, err := phase16HistoricalProgramCanonical(canonical)
+	if err != nil {
+		return fmt.Errorf("normalize historical program identity: %w", err)
+	}
+	programSum := sha256.Sum256(historicalCanonical)
 	artifactSum := sha256.Sum256(artifact)
 	if record.FixtureSHA256 != hex.EncodeToString(fixtureSum[:]) {
 		return fmt.Errorf("fixture digest changed")
@@ -48,6 +52,23 @@ func validatePhase16FileFrozenEvidence(record phase16FileFrozenEvidenceRecord, f
 		}
 	}
 	return nil
+}
+
+// phase16HistoricalProgramCanonical reverses only the public C type rename
+// in current Phase 4/5 programs before checking their pre-Schway evidence
+// digest. Any other program-byte change remains visible to the digest.
+func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
+	var program core.Program
+	if err := json.Unmarshal(canonical, &program); err != nil {
+		return nil, err
+	}
+	for index := range program.Functions {
+		contract := program.Functions[index].ForeignContract
+		if contract != nil && contract.Layout != nil && contract.Layout.ForeignTypeName == "schway_foreign_resource_block" {
+			contract.Layout.ForeignTypeName = "lang" + "_foreign_resource_block"
+		}
+	}
+	return json.Marshal(program)
 }
 
 // phase16FileFrozenEvidenceC validates the fixture and its current public

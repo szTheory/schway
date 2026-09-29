@@ -470,3 +470,22 @@ Run `36631949966` still fails both full Go test jobs and both evidence
 aggregates. The cleanup adapter and defect-output fixes are pending their own
 hosted receipt; the other remaining identity, native/LTO, and current-reference
 groups remain separate work.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36633475605)
+
+Commit `6da5ab3b` fixes the abort-output control; `TestProgramMatchDefectEventPrecedesAbort`
+no longer appears among the hosted failures. The overall workflow remains red
+on both hosts. Run `36633475605` exposed the exact `_LANG_` adapter mismatch in
+cleanup/LTO probes, Phase 4/5 foreign-type identity drift in core and frozen
+program digests, current Phase 1/2 manifest IDs and C digests, one missing
+emitter-consumer registry row, and the renamed Phase 21 receipt fixture path.
+Phase 6 also reports Linux undefined-symbol allowlist and LTO divergence
+controls; current groundedness and commit-reference checks remain open.
+
+The next additive repair batch uses the exact historical resource adapter at
+the cleanup and LTO test boundaries, compares frozen core/program digests only
+after reversing the single recorded foreign-type identity field, updates the
+two current evidence goldens through the identity ledger, and repairs the
+receipt and emitter-consumer inventory. Historical C artifacts and their
+artifact hashes remain unchanged. Continue to use hosted CI as the acceptance
+gate; local project tests remain excluded.

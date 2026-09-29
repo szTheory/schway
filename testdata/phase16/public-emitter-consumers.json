@@ -163,6 +163,11 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
+      "call": "internal/compiler/cgen/cgen_test.go:Emit:202",
+      "classification": "refusal-frozen-witness",
+      "witness": "probe:TestPhase16M004CorpusRefusal"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_test.go:Emit:252",
       "classification": "admitted-dynamic-schema2"
     },

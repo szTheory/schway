@@ -8,7 +8,7 @@
 
 | Field | Observed value |
 |---|---|
-| Fixture | `testdata/phase14/multi_function_match_refusal.lang` |
+| Fixture | `testdata/phase14/multi_function_match_refusal.schway` |
 | Fixture SHA-256 | `a86d9e90be4866cb20626961fc3757604bea7ac68ffff27f4eab64cc51f3e556` |
 | Route | Direct `cgen.EmitProgramNativeForTest` (`emitProgram(..., true)`) |
 | Emitted C SHA-256 | `d096fca69195eb63b09566387690a7b40fdc9c364f55b0b4a24209a895ff6416` |
@@ -18,6 +18,10 @@
 | Common flags | `-std=c17 -Wall -Wextra -Werror -pedantic` |
 | Lanes | Interpreter; Clang `-O0`; Clang `-O3`; Clang `-O3 -flto` |
 | Comparator | Existing `session.Phase5CompareEngines`, all engine pairs |
+
+The table uses the current repository path. The recorded run consumed the
+same fixture bytes before the public source rename, when the file used the
+`.lang` suffix.
 
 The opt-in test obtains the checked program, directly emits the multi-function fixture, and reuses the established four-tier runner and semantic comparator. The existing independent negative control also passed:
 

@@ -189,6 +189,56 @@ var pinnedFixtures = []pinnedFixture{
 	{"testdata/phase5/typed_failure_truncated_stdout.schway", "b146e3cd1f157d393fff9eecae8d5520db826ba6cbf635f4f1ef36ffd238886c", "evidence:598f270123ab0a123a99d351"},
 }
 
+// Phase 4/5's foreign layout core value names the C type the frozen private
+// header declares. The public rename changed this one field from the old
+// Lang spelling to the Schway spelling; keep the original source/core pins
+// above and admit only these witnessed current hashes.
+const (
+	phase16OldForeignTypeName = "lang" + "_foreign_resource_block"
+	phase16NewForeignTypeName = "schway_foreign_resource_block"
+)
+
+var phase16SchwayForeignTypeCoreSHA256 = map[string]string{
+	"testdata/phase4/acquire_three_fail_second.schway":      "a4b13c10d60b35ff60251cb95b92a0064b783983d68e766969430876893da8fe",
+	"testdata/phase4/acquire_three_fail_third.schway":       "34313217e6de96c72506cb4c286fa96568493b19bf96a4a5efafb926cb23e0b4",
+	"testdata/phase4/acquire_three_success.schway":          "9c7d6282fb5364ac79538c3da4fbe6a966b2280a0c2cade09de393eb707b8ab2",
+	"testdata/phase4/discard_because.schway":                "fb206a1c820a26d8bc5628e9d2b902afb4df0170744cd63f41869d2d25a49599",
+	"testdata/phase4/foreign_acquire_one.schway":            "011e1d90e47628c6473cde1fdcde7e3948ce6170b7bb54f2e98f54f5464e5a84",
+	"testdata/phase4/nonlocal_exit_probe.schway":            "448e34fe028ec35218b3207d57091d285badf659a77c73fb73e372df20ce871e",
+	"testdata/phase5/allocator_mismatch.schway":             "d983488512ef2b9b399fb525bc2d8343d18f89799aa91143beaf6fe79bc9b533",
+	"testdata/phase5/dead_store_unused_acquire.schway":      "31440397a59feb2a706434de33842c7aefa240a3d04499a31e9bed4a9a18d200",
+	"testdata/phase5/inline_across_foreign.schway":          "72fef86428dade289e837fd51dc9294bc9294c99d11f4c7f7b5f2ddf64943229",
+	"testdata/phase5/reorder_two_events.schway":             "2be6e33c8685cb2f86c87e81427ef5da94d2fb528de0dae33ac10cc60e21532d",
+	"testdata/phase5/retained_pointer.schway":               "7fc95194fce966b97d59f21bcbf15668cffe33f9c307e21fe6d2b5e8225920d6",
+	"testdata/phase5/tail_collapse_release_ladder.schway":   "9be0c6179ffe348772a54802281a4988d343dc000e728455582a28b04fe45f33",
+	"testdata/phase5/typed_failure_truncated_stdout.schway": "0d608061478bf8773433b0011a3522b0eb2e8b7b3c2eaa1730d8ebe6c6495319",
+}
+
+// These are the current Schway-identity manifest IDs for every pinned fixture
+// that remains admitted through evidence.Build. The corresponding original
+// IDs stay in pinnedFixtures and must be reproduced by normalizing only the
+// renamed core/C/foreign-manifest identity inputs.
+var phase16SchwayIdentityManifestIDs = map[string]string{
+	"testdata/phase1/comments.schway":                                "evidence:09e9b18d9d45df83f0fec99c",
+	"testdata/phase1/toggle.schway":                                  "evidence:9714adb24624f30bad81c68f",
+	"testdata/phase2/implicit_copy.schway":                           "evidence:43eb81e7793a1f0321196bc8",
+	"testdata/phase2/owned_transfer.schway":                          "evidence:2f50b1e83911ed4dd24edac5",
+	"testdata/phase3/borrowed_view.schway":                           "evidence:4d79eadfe1c5ed40d2b83833",
+	"testdata/phase3/branch_one_arm_shared_accept.schway":            "evidence:9a943143d07d26e35bdb23b3",
+	"testdata/phase3/branch_view.schway":                             "evidence:7a406e8822507dcd0aff95fe",
+	"testdata/phase3/public_view.schway":                             "evidence:3e82c1d1a217ac6f185cfd32",
+	"testdata/phase3/public_view_impossible.schway":                  "evidence:c73e2c6e4cfb1d27e4868168",
+	"testdata/phase3/public_view_mixed_access.schway":                "evidence:95ac555949a6fcd682b75fa1",
+	"testdata/phase3/public_view_multi_arm_access_conflict.schway":   "evidence:6796f981de49c6beb4f83de7",
+	"testdata/phase3/public_view_multi_arm_omitted.schway":           "evidence:84b9d61990cf24fe3b43acbd",
+	"testdata/phase3/public_view_omitted.schway":                     "evidence:4990a98f096ec4609b0f2d86",
+	"testdata/phase3/public_view_understated.schway":                 "evidence:737d5a21c90859b7f71a22c1",
+	"testdata/phase3/sequential_shared_then_exclusive_accept.schway": "evidence:2371764fac483a4eee472595",
+	"testdata/phase3/shared_shared_accept.schway":                    "evidence:ee4aa09030f857f5f93dc9c5",
+	"testdata/phase4/defect_terminal.schway":                         "evidence:30f1d096439abe47c42191dd",
+	"testdata/phase5/defect_dies_by_signal.schway":                   "evidence:f485b07599721f79e070606a",
+}
+
 // TestPreviousPhaseCoreBytesUnchanged pins every Phase 1-5 fixture's
 // serialized core JSON to its exact byte value from before Phase 6
 // (D-06-31/D-06-32, widened from the Phase 5 pin which stopped at Phase 4).
@@ -204,11 +254,71 @@ func TestPreviousPhaseCoreBytesUnchanged(t *testing.T) {
 			coreBytes := phase16CoreBytes(t, source)
 			sum := sha256.Sum256(coreBytes)
 			got := hex.EncodeToString(sum[:])
-			if got != fixture.CoreSHA256 {
-				t.Fatalf("core bytes moved for %s: got sha256 %s, want %s", fixture.Path, got, fixture.CoreSHA256)
+			wantCurrent, migrated := phase16SchwayForeignTypeCoreSHA256[fixture.Path]
+			if !migrated {
+				if got != fixture.CoreSHA256 {
+					t.Fatalf("core bytes moved for %s: got sha256 %s, want %s", fixture.Path, got, fixture.CoreSHA256)
+				}
+				return
+			}
+			if got != wantCurrent {
+				t.Fatalf("core bytes moved outside the recorded foreign-type identity migration for %s: got sha256 %s, want old %s or current %s", fixture.Path, got, fixture.CoreSHA256, wantCurrent)
+			}
+			normalized, replacements, err := phase16NormalizeForeignTypeName(coreBytes)
+			if err != nil {
+				t.Fatalf("normalize foreign type identity: %v", err)
+			}
+			if replacements != 1 || phase16SHA256(normalized) != fixture.CoreSHA256 {
+				t.Fatalf("only the recorded foreign_type_name field may differ for %s: replacements=%d normalized_sha256=%s want=%s", fixture.Path, replacements, phase16SHA256(normalized), fixture.CoreSHA256)
 			}
 		})
 	}
+	for path := range phase16SchwayForeignTypeCoreSHA256 {
+		if !containsPinnedFixture(path) {
+			t.Fatalf("current core identity migration is not tied to a historical pin: %s", path)
+		}
+	}
+}
+
+func containsPinnedFixture(path string) bool {
+	for _, fixture := range pinnedFixtures {
+		if fixture.Path == path {
+			return true
+		}
+	}
+	return false
+}
+
+func phase16NormalizeForeignTypeName(coreBytes []byte) ([]byte, int, error) {
+	var program core.Program
+	if err := json.Unmarshal(coreBytes, &program); err != nil {
+		return nil, 0, err
+	}
+	replacements := 0
+	for index := range program.Functions {
+		contract := program.Functions[index].ForeignContract
+		if contract == nil || contract.Layout == nil || contract.Layout.ForeignTypeName != phase16NewForeignTypeName {
+			continue
+		}
+		contract.Layout.ForeignTypeName = phase16OldForeignTypeName
+		replacements++
+	}
+	normalized, err := json.Marshal(program)
+	return normalized, replacements, err
+}
+
+func phase16SHA256(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func normalizeSchwayIdentityForHistoricalComparison(cSource string) string {
+	return strings.NewReplacer(
+		"generated by Schway;", "generated by Codename Lang;",
+		"SCHWAY", "LANG",
+		"schway", "lang",
+		"Schway", "Lang",
+	).Replace(cSource)
 }
 
 // phase16CoreBytes deliberately stops at the checked core boundary.  The
@@ -259,11 +369,58 @@ func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 			if len(diagnostics) > 0 {
 				t.Fatalf("unexpected diagnostics: %v", diagnostics)
 			}
+			currentID, migrated := phase16SchwayIdentityManifestIDs[fixture.Path]
+			if migrated {
+				if product.Manifest.ID != currentID {
+					t.Fatalf("current Schway manifest ID moved for %s: got %s, want %s", fixture.Path, product.Manifest.ID, currentID)
+				}
+				historicalID, normalizeErr := phase16HistoricalManifestID(product)
+				if normalizeErr != nil || historicalID != fixture.ManifestID {
+					t.Fatalf("identity-only normalization must reproduce the old manifest ID for %s: got %s err=%v want %s", fixture.Path, historicalID, normalizeErr, fixture.ManifestID)
+				}
+				return
+			}
 			if product.Manifest.ID != fixture.ManifestID {
 				t.Fatalf("manifest ID moved for %s: got %s, want %s", fixture.Path, product.Manifest.ID, fixture.ManifestID)
 			}
 		})
 	}
+	for path := range phase16SchwayIdentityManifestIDs {
+		if !containsPinnedFixture(path) {
+			t.Fatalf("current manifest identity migration is not tied to a historical pin: %s", path)
+		}
+	}
+}
+
+func phase16HistoricalManifestID(product evidence.Product) (string, error) {
+	normalizedCore, _, err := phase16NormalizeForeignTypeName(product.CoreBytes)
+	if err != nil {
+		return "", err
+	}
+	var historicalProgram core.Program
+	if err := json.Unmarshal(normalizedCore, &historicalProgram); err != nil {
+		return "", err
+	}
+	historicalC := normalizeSchwayIdentityForHistoricalComparison(string(product.CSource))
+	manifest := product.Manifest
+	manifest.CoreDigest = phase16SHA256(normalizedCore)
+	manifest.CDigest = phase16SHA256([]byte(historicalC))
+	if manifest.ForeignDigest != "" {
+		foreignManifest, err := cgen.EmitForeignManifest(historicalProgram)
+		if err != nil {
+			return "", err
+		}
+		manifest.ForeignDigest = phase16SHA256([]byte(normalizeSchwayIdentityForHistoricalComparison(foreignManifest)))
+	}
+	encoded, err := evidence.CanonicalBytes(manifest)
+	if err != nil {
+		return "", err
+	}
+	historical, err := evidence.DecodeStrict(encoded)
+	if err != nil {
+		return "", err
+	}
+	return historical.ID, nil
 }
 
 func phase16M004Refusal(t *testing.T, source []byte, buildErr error) bool {
@@ -282,18 +439,15 @@ func phase16M004Refusal(t *testing.T, source []byte, buildErr error) bool {
 	return true
 }
 
-// previousPhaseGoldenCDigests pins the SHA-256 digest of every committed
-// *.golden.c file under testdata/phase1 through testdata/phase4 to its exact
-// value before any Phase 5 emitter change (D-05-39). This is Task 1's
-// tripwire: the by-pointer lowering emitter Task 2 adds must be additive, and
-// this test is the only mechanical proof that it did not perturb a prior
-// phase's committed generated-C golden. Digests were computed from the tree
-// as it stood immediately before this plan's Task 2 change.
+// previousPhaseGoldenCDigests pins the four committed Phase 1/2/4/5 C
+// goldens at their current public Schway identity. Earlier emitter and
+// pre-Schway digests stay in the separate ledgers below, where identity-only
+// normalization must reproduce the prior bytes exactly.
 var previousPhaseGoldenCDigests = map[string]string{
-	"testdata/phase1/generated.golden.c":               "1fd8aff8ee28de7ec39e559a7ca9ce50e480ecfffede617c36b2282c60cc122a",
-	"testdata/phase2/owned_transfer.golden.c":          "f324f24db3ca0dfa8006b5c7fbec4263a6daf2dcbe220d49ea19167920799686",
-	"testdata/phase4/foreign_layout_mismatch.golden.c": "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031",
-	"testdata/phase5/restrict_borrow.golden.c":         "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0",
+	"testdata/phase1/generated.golden.c":               "303a48995217b96495505d2bf90d3ed26d0ce723f42a794748dc64b1ac9412df",
+	"testdata/phase2/owned_transfer.golden.c":          "332d7f6336c78feec2d8912a8b88c768351df201162864a3a89c6227dd847740",
+	"testdata/phase4/foreign_layout_mismatch.golden.c": "0df9b654b20dee616ec77f09d23fee33e7a76ff89249cdbc648b9eb4ab261be8",
+	"testdata/phase5/restrict_borrow.golden.c":         "d7d24696ad378fc9432a95095e52f21fe685120b7b4fecd2c271f89a93bd5418",
 }
 
 // phase16GoldenCutState makes the four pinned generated-C files an explicit
@@ -325,10 +479,28 @@ type phase16GoldenChange struct {
 // executable semantic witness records the independent evidence for the
 // emitter responsibility change.
 var phase16GoldenChangeLedger = []phase16GoldenChange{
-	{Path: "testdata/phase1/generated.golden.c", State: phase16GoldenPostCut, OldSHA256: "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74", NewSHA256: "1fd8aff8ee28de7ec39e559a7ca9ce50e480ecfffede617c36b2282c60cc122a", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public match dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase1/toggle.schway", N1Fixture: "testdata/phase1/toggle.schway", ReviewDisposition: "post-cut public/direct byte identity"},
-	{Path: "testdata/phase2/owned_transfer.golden.c", State: phase16GoldenPostCut, OldSHA256: "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8", NewSHA256: "f324f24db3ca0dfa8006b5c7fbec4263a6daf2dcbe220d49ea19167920799686", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public linear dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase2/owned_transfer.schway", N1Fixture: "testdata/phase2/owned_transfer.schway", ReviewDisposition: "post-cut public/direct byte identity"},
-	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", State: phase16GoldenPostCut, OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", NewSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", MovedResponsibility: "foreign lowering remains outside emitProgram", StructuralReason: "foreign lowering is explicit cut-M004 debt and not an admitted program shape", SemanticWitness: "TestProgramBranchValidationOrder/foreign_shape_precedes_preflight", N1Fixture: "testdata/phase4/foreign_layout_mismatch.schway", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
-	{Path: "testdata/phase5/restrict_borrow.golden.c", State: phase16GoldenPostCut, OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", NewSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", MovedResponsibility: "by-pointer lowering remains outside emitProgram", StructuralReason: "cut-M004 excludes every by-pointer family from program admission", SemanticWitness: "TestProgramBorrowedByPointerDisposition", N1Fixture: "testdata/phase5/restrict_borrow.schway", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
+	{Path: "testdata/phase1/generated.golden.c", State: phase16GoldenPostCut, OldSHA256: "f3e4fa6b641112fc8d213d04a38fce83dcfe0cd37ffbd79bc833ee787f11dc74", NewSHA256: "303a48995217b96495505d2bf90d3ed26d0ce723f42a794748dc64b1ac9412df", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public match dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase1/toggle.schway", N1Fixture: "testdata/phase1/toggle.schway", ReviewDisposition: "post-cut public/direct byte identity"},
+	{Path: "testdata/phase2/owned_transfer.golden.c", State: phase16GoldenPostCut, OldSHA256: "91177543f89174fba680c70e79147d5ffc69714adefc8404f8de8dbdcdac65b8", NewSHA256: "332d7f6336c78feec2d8912a8b88c768351df201162864a3a89c6227dd847740", MovedResponsibility: "legacy N=1 emitter to emitProgram", StructuralReason: "public linear dispatch now emits the schema-2 program document", SemanticWitness: "TestN1ConvergenceDifferential/phase2/owned_transfer.schway", N1Fixture: "testdata/phase2/owned_transfer.schway", ReviewDisposition: "post-cut public/direct byte identity"},
+	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", State: phase16GoldenPostCut, OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", NewSHA256: "0df9b654b20dee616ec77f09d23fee33e7a76ff89249cdbc648b9eb4ab261be8", MovedResponsibility: "foreign lowering remains outside emitProgram", StructuralReason: "foreign lowering is explicit cut-M004 debt and not an admitted program shape", SemanticWitness: "TestProgramBranchValidationOrder/foreign_shape_precedes_preflight", N1Fixture: "testdata/phase4/foreign_layout_mismatch.schway", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
+	{Path: "testdata/phase5/restrict_borrow.golden.c", State: phase16GoldenPostCut, OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", NewSHA256: "d7d24696ad378fc9432a95095e52f21fe685120b7b4fecd2c271f89a93bd5418", MovedResponsibility: "by-pointer lowering remains outside emitProgram", StructuralReason: "cut-M004 excludes every by-pointer family from program admission", SemanticWitness: "TestProgramBorrowedByPointerDisposition", N1Fixture: "testdata/phase5/restrict_borrow.schway", ReviewDisposition: "frozen cut-family baseline; refusal was not regenerated"},
+}
+
+type phase16GoldenIdentityMigration struct {
+	Path            string
+	OldSHA256       string
+	NewSHA256       string
+	ChangedInput    string
+	SemanticWitness string
+}
+
+// This second ledger records only the current public identity transformation
+// applied after the emitter responsibility cut. Its witness reverses those
+// identity strings and requires the exact pre-Schway post-cut bytes.
+var phase16SchwayGoldenIdentityLedger = []phase16GoldenIdentityMigration{
+	{Path: "testdata/phase1/generated.golden.c", OldSHA256: "1fd8aff8ee28de7ec39e559a7ca9ce50e480ecfffede617c36b2282c60cc122a", NewSHA256: "303a48995217b96495505d2bf90d3ed26d0ce723f42a794748dc64b1ac9412df", ChangedInput: "current C ABI namespace and generated-by brand", SemanticWitness: "TestExistingEmittersAreByteIdentical"},
+	{Path: "testdata/phase2/owned_transfer.golden.c", OldSHA256: "f324f24db3ca0dfa8006b5c7fbec4263a6daf2dcbe220d49ea19167920799686", NewSHA256: "332d7f6336c78feec2d8912a8b88c768351df201162864a3a89c6227dd847740", ChangedInput: "current C ABI namespace and generated-by brand", SemanticWitness: "TestExistingEmittersAreByteIdentical"},
+	{Path: "testdata/phase4/foreign_layout_mismatch.golden.c", OldSHA256: "3be6ebc36032ac9cc29bb916c1cdb8a8a996c0028ddf6982546f4c3dd5ffd031", NewSHA256: "0df9b654b20dee616ec77f09d23fee33e7a76ff89249cdbc648b9eb4ab261be8", ChangedInput: "current C ABI namespace and generated-by brand", SemanticWitness: "TestPhase4CorpusThreeEngineAgreement"},
+	{Path: "testdata/phase5/restrict_borrow.golden.c", OldSHA256: "05a16af7e57c3a1a1e2b9af1eb4bed689d89fa53ff91e51328d51dd6f64e38f0", NewSHA256: "d7d24696ad378fc9432a95095e52f21fe685120b7b4fecd2c271f89a93bd5418", ChangedInput: "current C ABI namespace and generated-by brand", SemanticWitness: "TestPhase5ByPointerLoweringGolden"},
 }
 
 func phase16GoldenLedgerProblems(digests map[string]string, ledger []phase16GoldenChange, current map[string]string) []string {
@@ -424,6 +596,47 @@ func TestPhase16GoldenChangeLedger(t *testing.T) {
 	if problems := phase16GoldenLedgerProblems(previousPhaseGoldenCDigests, phase16GoldenChangeLedger, phase16CurrentGoldenDigests(t)); len(problems) != 0 {
 		t.Fatalf("Phase 16 golden-C ledger invalid:\n%s", strings.Join(problems, "\n"))
 	}
+	if problems := phase16GoldenIdentityMigrationProblems(previousPhaseGoldenCDigests, phase16SchwayGoldenIdentityLedger, phase16CurrentGoldenDigests(t)); len(problems) != 0 {
+		t.Fatalf("Schway golden-C identity migration invalid:\n%s", strings.Join(problems, "\n"))
+	}
+}
+
+func phase16GoldenIdentityMigrationProblems(digests map[string]string, ledger []phase16GoldenIdentityMigration, current map[string]string) []string {
+	var problems []string
+	if len(ledger) != 4 {
+		problems = append(problems, fmt.Sprintf("identity migration count=%d, want 4", len(ledger)))
+	}
+	seen := make(map[string]bool, len(ledger))
+	for _, entry := range ledger {
+		if seen[entry.Path] {
+			problems = append(problems, "duplicate identity migration path "+entry.Path)
+		}
+		seen[entry.Path] = true
+		if !isPhase16SHA256(entry.OldSHA256) || !isPhase16SHA256(entry.NewSHA256) {
+			problems = append(problems, entry.Path+": malformed identity migration digest")
+		}
+		if entry.ChangedInput == "" || !strings.Contains(entry.SemanticWitness, "Test") {
+			problems = append(problems, entry.Path+": missing changed input or semantic witness")
+		}
+		if digests[entry.Path] != entry.NewSHA256 || current[entry.Path] != entry.NewSHA256 {
+			problems = append(problems, entry.Path+": current identity digest, map, and file disagree")
+		}
+		data, err := os.ReadFile(testsupport.ProjectPath(splitPath(entry.Path)...))
+		if err != nil {
+			problems = append(problems, entry.Path+": cannot read current file")
+			continue
+		}
+		normalized := normalizeSchwayIdentityForHistoricalComparison(string(data))
+		if phase16SHA256([]byte(normalized)) != entry.OldSHA256 {
+			problems = append(problems, entry.Path+": identity normalization does not reproduce old bytes")
+		}
+	}
+	for path := range digests {
+		if !seen[path] {
+			problems = append(problems, "digest map path absent from identity ledger "+path)
+		}
+	}
+	return problems
 }
 
 func TestPhase16GoldenChangeLedgerRejectsFaults(t *testing.T) {
@@ -475,13 +688,11 @@ func TestPhase16GoldenChangeLedgerRejectsFaults(t *testing.T) {
 }
 
 // TestPreviousPhaseGoldenCUnchanged hashes every committed *.golden.c under
-// testdata/phase1 through testdata/phase5 and compares each against
-// previousPhaseGoldenCDigests. It fails on any drift, naming the exact file
-// path and both digests, and also fails if the corpus gains or loses a
-// golden.c file relative to the pinned table -- so a Phase 6 change that
-// accidentally perturbs a prior golden (or silently deletes one) is caught
-// here rather than in review (D-06-31/D-06-32). It must be green before the
-// coordinated schway.command and schway.verify-lane bump lands.
+// testdata/phase1 through testdata/phase5 and compares each against the
+// current public-identity digest table. It fails on any drift and if the
+// corpus gains or loses a golden.c file; TestPhase16GoldenChangeLedger also
+// proves that reversing only the public identity strings recovers the prior
+// pinned output bytes.
 func TestPreviousPhaseGoldenCUnchanged(t *testing.T) {
 	var found []string
 	for _, phaseDir := range []string{"phase1", "phase2", "phase3", "phase4", "phase5"} {

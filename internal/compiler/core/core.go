@@ -226,7 +226,7 @@ type RecordLayout struct {
 	Size      int           `json:"size"`
 	Alignment int           `json:"alignment"`
 	Fields    []LayoutField `json:"fields"`
-	// ForeignTypeName is the C struct name Lang's declaration expects to find
+	// ForeignTypeName is the C struct name Schway's declaration expects to find
 	// on the foreign side (e.g. in the frozen translation unit's private
 	// header): the generated conformance TU asserts sizeof/_Alignof/offsetof
 	// pairs between this name and Lang's own generated declaration.

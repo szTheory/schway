@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/session"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
@@ -113,7 +114,11 @@ func validateGeneratedFrozenEvidence(ledger generatedFrozenEvidenceLedger, readF
 		if err != nil {
 			return fmt.Errorf("canonical generated program %q: %w", program.Module, err)
 		}
-		sum := sha256.Sum256(canonical)
+		historicalCanonical, err := phase16HistoricalProgramCanonical(canonical)
+		if err != nil {
+			return fmt.Errorf("normalize historical generated program %q: %w", program.Module, err)
+		}
+		sum := sha256.Sum256(historicalCanonical)
 		programs[program.Module] = hex.EncodeToString(sum[:])
 	}
 	seen := map[string]bool{}
@@ -138,6 +143,23 @@ func validateGeneratedFrozenEvidence(ledger generatedFrozenEvidenceLedger, readF
 		return fmt.Errorf("generated frozen evidence does not cover every enumerated program")
 	}
 	return nil
+}
+
+// phase16HistoricalProgramCanonical reverses only the public foreign C type
+// rename before comparing generated programs with their immutable historical
+// digests. Every other serialized core field remains part of the digest.
+func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
+	var program core.Program
+	if err := json.Unmarshal(canonical, &program); err != nil {
+		return nil, err
+	}
+	for index := range program.Functions {
+		contract := program.Functions[index].ForeignContract
+		if contract != nil && contract.Layout != nil && contract.Layout.ForeignTypeName == "schway_foreign_resource_block" {
+			contract.Layout.ForeignTypeName = "lang" + "_foreign_resource_block"
+		}
+	}
+	return json.Marshal(program)
 }
 
 func validateFileFrozenEvidence(ledger fileFrozenEvidenceLedger, readFile func(string) ([]byte, error)) error {
