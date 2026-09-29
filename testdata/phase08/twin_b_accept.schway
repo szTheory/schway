@@ -1,7 +1,7 @@
 // Phase 08 Task 1 -- Pattern B (UsesParam), "ACCEPTING" member in name only.
 //
 // OBSERVED VERDICT (as of Phase 10 plan 10-06, PHASE-10-DEBT.md D-10-27/
-// D-10-28/D-10-29): this fixture is refused, IDENTICALLY to twin_b_refuse.schway,
+// D-10-28/D-10-29): this fixture is refused, IDENTICALLY to twin_b_refuse.lang,
 // with `check.interprocedural_loan_liveness`. The intended split (this member
 // admitted, the refusing member refused) does NOT materialize, and per D-10-27
 // that is NOT a `deriveFunctionUsesParam` defect to fix in Phase 10 -- six
@@ -27,7 +27,7 @@
 // of what `check` derives -- a missing second detector, not a broken existing
 // one. D-10-28's landing phase is open (Phase 11 or M003 are candidate homes).
 //
-// See twin_b_refuse.schway's header for the full, load-bearing explanation of
+// See twin_b_refuse.lang's header for the full, load-bearing explanation of
 // why the real ast.Program -> check.Program pipeline cannot observe a
 // contract-driven difference end to end for either member of this pair: the
 // caller's own `borrow; move; call` shape is refused INTRAPROCEDURALLY

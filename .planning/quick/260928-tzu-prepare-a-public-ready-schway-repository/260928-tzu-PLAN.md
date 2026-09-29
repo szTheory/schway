@@ -109,7 +109,7 @@ be zero; every required positive check and the exact source count must pass.
 
     set -eu
     scope=(go.mod .gitignore .github/workflows/ci.yml README.md AGENTS.md cmd native internal/compiler scripts examples testdata .claude/skills)
-    exclusions=(':(exclude)testdata/phase1/**' ':(exclude)testdata/phase2/**' ':(exclude)testdata/phase3/**' ':(exclude)testdata/phase4/**' ':(exclude)testdata/phase5/**' ':(exclude)testdata/phase16/historical/**' ':(exclude)testdata/phase16/validation-corpus-run-record.jsonl' ':(exclude)internal/compiler/native/foreign_legacy.go' ':(exclude)internal/compiler/check/frozen_foreign_expectation_test.go' ':(exclude).claude/skills/*/sources/**' ':(exclude)testdata/phase07/call_argument_used_once.schway' ':(exclude)testdata/phase07/call_argument_used_twice.schway' ':(exclude)testdata/phase07/call_fallible_foreign_reach.schway' ':(exclude)testdata/phase07/call_two_fallible_callees_disagree.schway' ':(exclude)testdata/phase07/call_type_mismatch.schway' ':(exclude)testdata/phase07/call_uncallable_callee.schway' ':(exclude)testdata/phase07/clean_but_unpublishable.schway' ':(exclude)testdata/phase07/cycle_indirect.schway' ':(exclude)testdata/phase07/cycle_mutual.schway' ':(exclude)testdata/phase07/cycle_self.schway' ':(exclude)testdata/phase07/cycle_through_match_arm.schway' ':(exclude)testdata/phase07/duplicate_function_name.schway' ':(exclude)testdata/phase07/relay_escort_witness.schway')
+    exclusions=(':(exclude)testdata/phase1/**' ':(exclude)testdata/phase2/**' ':(exclude)testdata/phase3/**' ':(exclude)testdata/phase4/**' ':(exclude)testdata/phase5/**' ':(exclude)testdata/phase16/historical/**' ':(exclude)testdata/phase16/validation-corpus-run-record.jsonl' ':(exclude)internal/compiler/native/foreign_legacy.go' ':(exclude)internal/compiler/check/frozen_foreign_expectation_test.go' ':(exclude).claude/skills/*/sources/**' ':(exclude)testdata/phase07/call_argument_used_once.schway' ':(exclude)testdata/phase07/call_argument_used_twice.schway' ':(exclude)testdata/phase07/call_fallible_foreign_reach.schway' ':(exclude)testdata/phase07/call_two_fallible_callees_disagree.schway' ':(exclude)testdata/phase07/call_type_mismatch.schway' ':(exclude)testdata/phase07/call_uncallable_callee.schway' ':(exclude)testdata/phase07/clean_but_unpublishable.schway' ':(exclude)testdata/phase07/cycle_indirect.schway' ':(exclude)testdata/phase07/cycle_mutual.schway' ':(exclude)testdata/phase07/cycle_self.schway' ':(exclude)testdata/phase07/cycle_through_match_arm.schway' ':(exclude)testdata/phase07/duplicate_function_name.schway' ':(exclude)testdata/phase07/relay_escort_witness.schway' ':(exclude)testdata/phase08/match_arm_call.schway' ':(exclude)testdata/phase08/negative_control_fails.schway' ':(exclude)testdata/phase08/negative_control_infallible.schway' ':(exclude)testdata/phase08/relay_depth2_accept.schway' ':(exclude)testdata/phase08/relay_depth2_refuse.schway' ':(exclude)testdata/phase08/twin_a_accept.schway' ':(exclude)testdata/phase08/twin_a_refuse.schway' ':(exclude)testdata/phase08/twin_b_accept.schway' ':(exclude)testdata/phase08/twin_b_refuse.schway' ':(exclude)testdata/phase11/multi_function_gate_corpus.schway' ':(exclude)testdata/phase13/heldout_call_argument_ambiguous.schway' ':(exclude)testdata/phase13/heldout_call_argument_mismatch.schway' ':(exclude)testdata/phase13/heldout_fallible_call_unconsumed.schway' ':(exclude)testdata/phase13/heldout_shared_callee_twin_alpha.schway' ':(exclude)testdata/phase13/heldout_shared_callee_twin_mirror.schway')
     count_text() { git grep --cached -I -l -E "$1" -- "${scope[@]}" "${exclusions[@]}" | wc -l | tr -d '[:space:]'; }
     old_module=$(count_text 'github[.]com/codename-lang/lang')
     old_cli=$(count_text 'cmd/lang(-repair)?(/|[^[:alnum:]_-])|/lang(-repair)?([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang-repair([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang[[:space:]]+(app|build|check|run|verify)([^[:alnum:]_]|$)')
@@ -368,3 +368,18 @@ checks both files, and the full privacy scan includes them. The same run shows t
 `lang_res_open`; update those named expectations to the fixture's actual legacy
 symbol. Do not update diagnostic, payload, or golden IDs unless the next hosted
 run proves the underlying semantic witness changed.
+
+## Dated Phase 8/11/13 input-preservation amendment (2026-09-29)
+
+Hosted run `36621640310` confirms the Phase 7 diagnostic fixture and Phase 4
+frozen-symbol expectation repairs: those failures no longer appear. It exposes
+the next `phase08/negative_control_fails.schway` diagnostic baseline mismatch,
+sealed Phase 13 held-out fixture digest mismatches, and Phase 11 gate-corpus
+fixture/canonical-program digest drift. Restore the nine byte-pinned Phase 8
+fixtures, the Phase 11 `multi_function_gate_corpus.schway`, and the five sealed
+Phase 13 `heldout_*.schway` fixtures to exact pre-rename bytes under their
+`.schway` paths. The rename gate excludes only these listed files' historical
+contents; every file stays in the all-ref privacy scan. Keep active Phase 6 and
+Phase 13 derivation fixtures on current Schway markers. This does not resolve
+the separate Phase 4/5 serialized core and evidence identities, current C
+goldens, native controls, or rewritten planning references.

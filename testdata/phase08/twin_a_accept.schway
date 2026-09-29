@@ -1,5 +1,5 @@
 // Phase 08 Task 1 -- Pattern A (ReturnsBorrowOfParam), ACCEPTING member.
-// Twin of twin_a_refuse.schway: escort's own body is byte-identical to the
+// Twin of twin_a_refuse.lang: escort's own body is byte-identical to the
 // refusing member (verified by TestInterproceduralTwinPairsDifferOnlyInTheCallee).
 // The ONE thing that differs is escortee's DECLARED return type: here,
 // `-> Buffer` (an ordinary owned return, body `let taken = take buffer;

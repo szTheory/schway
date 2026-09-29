@@ -1,6 +1,6 @@
 // Phase 08 Task 2(c) -- match-arm regression (D-08-28.5, recommended, NOT
 // gate-blocking). A match-bodied function calling the SAME callee from BOTH
-// arms -- the exact shape testdata/phase07/call_from_both_match_arms.schway
+// arms -- the exact shape testdata/phase07/call_from_both_match_arms.lang
 // already proves for D-07-28's own concern (call-graph EDGE DISCOVERY: is a
 // call inside a match arm enumerated at all). This fixture restates that
 // same shape under the phase08 module namespace so

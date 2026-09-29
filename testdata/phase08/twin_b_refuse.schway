@@ -1,5 +1,5 @@
 // Phase 08 Task 1 -- Pattern B (UsesParam), REFUSING member.
-// Twin of twin_b_accept.schway: the two members' CALLER body (escort) is
+// Twin of twin_b_accept.lang: the two members' CALLER body (escort) is
 // byte-identical apart from this module header/name (verified by
 // TestInterproceduralTwinPairsDifferOnlyInTheCallee). Both members declare
 // `fn probe(buffer: Buffer) -> Buffer` IDENTICALLY -- every function this
@@ -35,7 +35,7 @@
 // as "absent", which counts as usesParam == true (the refusing direction,
 // unconditionally) regardless of what the REAL callee actually does. 08-02's
 // own SUMMARY flagged this exact residual as an open item for whichever plan
-// landed the real .schway fixture pair for this pattern (08-02-SUMMARY.md,
+// landed the real .lang fixture pair for this pattern (08-02-SUMMARY.md,
 // "Next Phase Readiness"). This fixture pair therefore demonstrates the twin
 // discipline (byte-identical caller, callee bodies differing only in
 // UsesParam-relevant behavior) and parses/admits identically to its twin at

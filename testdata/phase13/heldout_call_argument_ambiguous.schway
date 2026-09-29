@@ -1,9 +1,9 @@
 // Phase 13 Plan 04 Task 2 -- held-out AMBIGUOUS member of the
 // call-argument-mismatch class (D-13-09 Set A class 3, D-13-10's
-// required positive test). Unlike heldout_call_argument_mismatch.schway
-// and derivation_call_argument_mismatch.schway, this fixture is not part
+// required positive test). Unlike heldout_call_argument_mismatch.lang
+// and derivation_call_argument_mismatch.lang, this fixture is not part
 // of TestCorpusTopologyDisjoint's paired comparison (no
-// derivation_call_argument_ambiguous.schway exists -- this fixture has no
+// derivation_call_argument_ambiguous.lang exists -- this fixture has no
 // "easy" counterpart, it demonstrates a THIRD sub-case of the same
 // class). It has its own required properties instead: a prior `let`
 // (`spare = value`, a plain copy -- Byte carries AbilityCopy) sits in
@@ -13,10 +13,10 @@
 // once CallArgumentTypeInjector flips `identity`'s declared type,
 // exactly the "2+ matches" shape D-13-10's future uniqueness gate must
 // REFUSE to repair (`unrepairable`), not the "exactly 1 match" shape
-// derivation/heldout_call_argument_mismatch.schway give it.
+// derivation/heldout_call_argument_mismatch.lang give it.
 //
 // Root-to-detection hop distance 2 (`main` -> `relay` -> `dispatch`,
-// matching heldout_call_argument_mismatch.schway's own depth so this
+// matching heldout_call_argument_mismatch.lang's own depth so this
 // fixture is equally "hard", D-13-26.2). This plan does not yet assert
 // the future repair's unrepairable outcome (that lands with the repair
 // itself in 13-05/13-06) -- TestHeldoutBaselinesAreFailClosed only
@@ -29,7 +29,7 @@ export {
   fn main
 }
 
-fn identity(value: Byte) -> Byte { // schway:call-argument-target
+fn identity(value: Byte) -> Byte { // lang:call-argument-target
   value
 }
 

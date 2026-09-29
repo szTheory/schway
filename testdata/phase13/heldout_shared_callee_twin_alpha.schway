@@ -9,7 +9,7 @@
 // InterproceduralLoanInjector's marker sits on ALPHA's own take
 // statement; Inject swaps it with its immediately preceding statement
 // (the call), reproducing 13-01's own empirically-verified swap-fixable
-// defect (derivation_interprocedural_loan_defect.schway) -- but now
+// defect (derivation_interprocedural_loan_defect.lang) -- but now
 // inside a shared-callee, two-caller topology, reached from `main`
 // through a depth-2 relay chain (root-to-detection hop distance 2,
 // D-13-26.2). `beta` carries no marker and is never mutated by this
@@ -24,7 +24,7 @@
 // is narrower and fully met here: the base checks clean unmutated, and
 // the injector run against EITHER caller alone produces exactly one
 // check.interprocedural_loan_liveness diagnostic (D-13-26.3). See
-// heldout_shared_callee_twin_mirror.schway for the mirror half, where the
+// heldout_shared_callee_twin_mirror.lang for the mirror half, where the
 // marked (and therefore reachable, depth-2) caller is `beta` instead --
 // the control against a rule that always blames a fixed caller
 // position regardless of which function the defect is actually in.
@@ -43,7 +43,7 @@ fn sink(buffer: Buffer) -> Buffer {
 fn alpha(buffer: Buffer) -> Buffer {
   let borrowed = borrow buffer
   let routed = sink(borrowed)
-  let delivered = take buffer // schway:interprocedural-loan-target
+  let delivered = take buffer // lang:interprocedural-loan-target
   routed
 }
 

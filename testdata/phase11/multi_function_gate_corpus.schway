@@ -5,7 +5,7 @@
 //   - One call edge, `main` -> `identity` (>= 1, the second structural
 //     floor).
 //   - `touch` is the WOULD-HAVE-CARRIED-RESTRICT function: its body is the
-//     exact structural shape testdata/phase5/restrict_borrow.schway uses --
+//     exact structural shape testdata/phase5/restrict_borrow.lang uses --
 //     an exclusive borrow of the sole Buffer parameter as the FIRST
 //     operation, never referenced again directly, with every remaining
 //     operation forming one unbroken reborrow chain to the function's own

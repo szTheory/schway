@@ -2,7 +2,7 @@
 // class (D-13-09 Set A class 2). Scored ONLY by a future CI-gate driver
 // (testdata/phase13/README); NEVER read by hand when deriving the
 // wrap_call_in_try repair's edit -- see derivation_fallible_call_
-// unconsumed.schway for that.
+// unconsumed.lang for that.
 //
 // Topology varies by CALL-GRAPH DEPTH, not by identifier (D-13-25): the
 // marked `try` call lives inside `acquire`, reached from `main` through
@@ -25,7 +25,7 @@ export {
 
 foreign C {
 
-  fn schway_res_open(request: Byte) -> Byte {
+  fn lang_res_open(request: Byte) -> Byte {
     unwind: forbidden
     nonlocal_exit: forbidden
     allocator: "libc_malloc"
@@ -37,7 +37,7 @@ data AcquireError =
   | OpenFailed
 
 fn acquire(request: Byte) -> Byte {
-  let handle = try schway_res_open(request) // schway:fallible-consume-target
+  let handle = try lang_res_open(request) // lang:fallible-consume-target
   handle
 }
 

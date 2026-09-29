@@ -1,5 +1,5 @@
 // Phase 08 Task 2(a) -- composition depth >= 2 (D-08-28.2), REFUSING member.
-// Twin of relay_depth2_accept.schway. Three functions, caller -> relay -> leaf:
+// Twin of relay_depth2_accept.lang. Three functions, caller -> relay -> leaf:
 // leaf declares a shared-borrow return of its own parameter
 // (`-> borrow(buffer) Buffer`); relay locally borrows ITS OWN parameter
 // first, then forwards that borrow to leaf and returns leaf's result
@@ -9,7 +9,7 @@
 // parameter -- forwarding the bare parameter directly, without relay's own
 // local borrow, makes relay unpublishable/uncallable, core.origin_understated,
 // a wholly separate, pre-existing gate this fixture must route around, not a
-// Phase 08 concern); caller runs the exact Pattern A shape (twin_a_refuse.schway)
+// Phase 08 concern); caller runs the exact Pattern A shape (twin_a_refuse.lang)
 // against relay, not leaf.
 //
 // A depth-1-only corpus cannot distinguish "the derivation genuinely reads a

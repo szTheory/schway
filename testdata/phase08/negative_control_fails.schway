@@ -1,12 +1,12 @@
 // Phase 08 Task 2(b) -- negative control (D-08-28.4), "fails" member.
-// Twin of negative_control_infallible.schway: relay and caller are
-// byte-identical to relay_depth2_refuse.schway's own relay/caller pair
+// Twin of negative_control_infallible.lang: relay and caller are
+// byte-identical to relay_depth2_refuse.lang's own relay/caller pair
 // (same declared `-> borrow(buffer) Buffer` signature, same body). The ONLY
 // difference between this program and its twin is leaf's OWN Fails/Foreign
 // vocabulary: here, leaf wraps a declared, genuinely fallible foreign symbol
 // (`fails: ProbeError`, a real allocator/unwind/nonlocal_exit contract);
 // relay calls leaf with an ordinary (non-try) "call" binding, exactly as
-// 07-12's own call_fallible_foreign_reach.schway shows a caller inheriting a
+// 07-12's own call_fallible_foreign_reach.lang shows a caller inheriting a
 // callee's published Fails/Foreign transitively without itself needing `try`
 // syntax -- so RELAY's own published Fails/ForeignReach differ between this
 // program and its twin (relay inherits ProbeError transitively here; leaf's
