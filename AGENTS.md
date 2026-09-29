@@ -2,21 +2,26 @@
 
 ## Project
 
-**Codename Lang**
+**Schway**
 
-Codename Lang is a general-purpose programming language and toolchain for
+Schway is a general-purpose programming language and toolchain for
 AI-authored, human-audited production software. It aims to combine fast,
 structured feedback with a small coherent semantic core, usable low-level
 ownership and resource control, deterministic evidence, and a calm canonical
 source form that remains readable when humans mostly review rather than type it.
 
-The first milestone is deliberately narrower than the full vision: prove one
-real source-to-native semantic spine before expanding into effects, services,
-agents, databases, GUIs, or an ecosystem.
+The first milestone proved one real source-to-native semantic spine. M004 is
+proving ownership and resource discharge before the project expands into
+effects, services, agents, databases, GUIs, or an ecosystem.
 
 **Core Value:** Give an AI agent and a human reviewer the shortest reliable path from intent to
 sound, reproducible evidence without wasting iteration time or hiding runtime
 costs.
+
+**Name:** Schway was chosen as the public language and project name on
+2026-09-28. Treat it as settled. Existing `lang` identifiers are legacy
+implementation names pending one coordinated rename before the first public
+release; see `.planning/PROJECT.md` for the migration boundary.
 
 ### Constraints
 

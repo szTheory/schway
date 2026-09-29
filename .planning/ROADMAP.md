@@ -1,4 +1,4 @@
-# Roadmap: Codename Lang
+# Roadmap: Schway
 
 ## Milestones
 
@@ -10,7 +10,7 @@
 ## M004 Goal
 
 A developer can build a retained native executable, run it once on caller input,
-and observe a bounded file byte through an allocation that remains owned by Lang
+and observe a bounded file byte through an allocation that remains owned by Schway
 across use, calls, errors, and exactly-once destruction or ownership transfer.
 Shared and exclusive read-copy pointers have separate bounded admissions.
 
@@ -43,7 +43,7 @@ Sequential IDs continue after archived Phase 21. Every new phase delivers a
 runnable source/input/output witness; no implementation plans exist yet.
 
 - [x] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; objective README contract passed; subjective readability not claimed) (completed 2026-09-27)
-- [ ] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Lang-owned allocation.
+- [ ] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation.
 - [ ] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors.
 - [ ] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible.
 
@@ -87,14 +87,14 @@ to later foreign outcomes; extend its fixtures without reassigning ownership.
 
 ### Phase 23: Live Local Allocation and Discharge
 
-**Goal**: A developer can read a caller-selected file byte through a real allocation returned live to Lang and observe its generated local cleanup.
+**Goal**: A developer can read a caller-selected file byte through a real allocation returned live to Schway and observe its generated local cleanup.
 **Depends on**: Phase 22
 **Requirements**: FFI-03, RES-04, RES-07, RES-08, RES-09
 **Success Criteria** (what must be TRUE):
 
-1. A source-constructible opaque noncopyable resource receives a bounded malloc-backed allocation from the explicitly linked adapter, stays live after acquisition returns, supplies the independently expected byte through Lang-directed use, and is physically destroyed before application exit.
+1. A source-constructible opaque noncopyable resource receives a bounded malloc-backed allocation from the explicitly linked adapter, stays live after acquisition returns, supplies the independently expected byte through Schway-directed use, and is physically destroyed before application exit.
 2. Distinct acquire, use, and infallible consuming release calls operate on admitted local values using their own checked signature, operand modes, acquisition/failure facts, and release pairing; none inherits an unrelated first-symbol contract.
-3. Empty, maximum-size, oversized, malformed, and failed inputs obey the published buffer/initialization/error contract; failed acquisition creates no Lang owner, and the adapter cleans its own partial acquisition.
+3. Empty, maximum-size, oversized, malformed, and failed inputs obey the published buffer/initialization/error contract; failed acquisition creates no Schway owner, and the adapter cleans its own partial acquisition.
 4. Discarded owning success is rejected or immediately destroyed. Independent acquisition-derived validation rejects missing, duplicate, wrong-resource, or fabricated cleanup even when every release operation is removed from candidate core.
 5. Native runs exercise normal completion and a real later operation/output failure after successful acquisition. Generated local cleanup consumes each remaining obligation exactly once; independent physical observation rejects reached omitted or premature destruction despite plausible compiler events.
 
@@ -132,18 +132,18 @@ before implementation; reuse Phase 22's public route.
 Local release/error cleanup and physical controls are mandatory here although
 RES-05/06 and EVD-09 finish in Phase 24. Require foreign-family native macOS/Linux
 receipts and replayable modeled outcomes now (EVD-10/11). The adapter owns its
-file descriptor; Lang owns the returned allocation. Contracted adapter use does
+file descriptor; Schway owns the returned allocation. Contracted adapter use does
 not reopen either pointer-helper family. Any necessary narrow owning return
 form covers all affected consumers; owning aggregates remain refused.
 
 ### Phase 24: Ownership Transfer Through Calls and Errors
 
-**Goal**: A developer can transfer a live resource through Lang calls and returns, use it under its new owner, and rely on exactly-once cleanup on admitted normal and typed-error paths.
+**Goal**: A developer can transfer a live resource through Schway calls and returns, use it under its new owner, and rely on exactly-once cleanup on admitted normal and typed-error paths.
 **Depends on**: Phase 23
 **Requirements**: RES-05, RES-06, OWN-10, OWN-11, OWN-12, EVD-09
 **Success Criteria** (what must be TRUE):
 
-1. An allocation acquired in one frame remains usable after ownership transfer through a Lang call and return; transfer invokes no destructor, borrow preserves ownership, and the final owner invokes the declared consuming destructor exactly once.
+1. An allocation acquired in one frame remains usable after ownership transfer through a Schway call and return; transfer invokes no destructor, borrow preserves ownership, and the final owner invokes the declared consuming destructor exactly once.
 2. Two activations of the same static acquisition site produce distinct semantic resource identities that survive transfer and are independently checked without using raw host addresses as portable IDs.
 3. Actual entry-to-success and entry-to-typed-error executions release every non-transferred caller/callee resource in reverse successful-acquisition completion order, including multiple acquisitions followed by a real later operation/output failure; failed acquisitions contribute no obligation.
 4. Copying ownership, using a moved-from owner, or returning an owning process-entry result without an external receiver is rejected before execution with source-attributed diagnostics.

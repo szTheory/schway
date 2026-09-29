@@ -1,4 +1,4 @@
-# Codename Lang — Living Product Roadmap
+# Schway — Living Product Roadmap
 
 Updated 2026-09-28. This document carries current direction; ROADMAP.md owns
 committed milestone phases, REQUIREMENTS.md owns acceptance, and
@@ -13,7 +13,7 @@ ownership, deterministic cleanup, and reproducible evidence. A native compiler
 already exists (Go 1.24 → readable C17 → Clang), alongside an interpreter. A new
 VM or LLVM backend is not a prerequisite for useful programs.
 
-M001 established source-to-native behavior; M002 added executable Lang calls;
+M001 established source-to-native behavior; M002 added executable Schway calls;
 M003 added independent returns, computed matches/payloads, and U64 constants.
 Phase 21 completed contract/retirement prework. Phase 22 delivered its
 application/build/evidence implementation and passed objective README contract
@@ -25,14 +25,14 @@ and explicit differential replay remain separate. The older `lang run` path is
 still the synthetic-input O0/O3 conformance harness.
 
 Phase 23 now admits a bounded file-byte allocation that remains live through
-Lang-directed use and generated local cleanup. Its independent physical
+Schway-directed use and generated local cleanup. Its independent physical
 observer and close-failure control pass in the focused aggregate on macOS and a
 local Linux ARM64 container; the full Go suite passes on macOS, the security
 audit closes 18/18 declared threats, and the standard-depth code review is
 clean. The hosted Ubuntu `evidence-aggregate` CI receipt has not run, so Phase
 23 validation remains `in-progress` and Nyquist remains false as required by
 23-07. The local Linux receipt is not described as hosted CI. Phase 23 does not
-yet admit ownership transfer through Lang calls or typed errors. App build
+yet admit ownership transfer through Schway calls or typed errors. App build
 receipts remain incomplete/non-cacheable when runtime closure is unknown.
 
 The user explicitly requested another deep fan-out and automatic adoption of
@@ -67,7 +67,7 @@ a provisional integration target; no unsupported syntax is treated as settled.
 |---|---|---|---|
 | Native backend | Keep Go/standard library, C17/Clang, interpreter oracle | C ABI and defined-semantics lowering require care; a VM/LLVM rewrite adds another backend before user value | A measured consumer/latency/target limit cannot be resolved within this path |
 | M004 versus arithmetic first | Honor resource commitments, establish real application IO and lifetime first; deliver an early scalar application witness | Delays arithmetic by this bounded milestone; computation-first retains synthetic execution and leaves NAT-09 unresolved | Resource scope grows beyond the specified witness; reduce shapes before adding phases |
-| First owned resource | Audited C adapter returns a live bounded allocation; Lang uses/transfers/releases it | Adapter still owns file open/close; this does not demonstrate Lang-owned file handles | A consumer needs direct file/socket ownership with specified close-error semantics |
+| First owned resource | Audited C adapter returns a live bounded allocation; Schway uses/transfers/releases it | Adapter still owns file open/close; this does not demonstrate Schway-owned file handles | A consumer needs direct file/socket ownership with specified close-error semantics |
 | Pointer families | Separate bounded shared/exclusive read-copy support, no added `restrict`/`noalias` | More work than ordinary foreign alone; no generic mutation/escape/retention | A concrete consumer requires a broader access contract and independent evidence |
 | Cleanup | Successful acquisition creates an obligation; release consumes it, transfer moves it, borrow preserves it | Requires real dynamic identities and per-operation contracts; release-op-seeded tracking can miss deleted cleanup | Aggregates, loops, cancellation or fallible destructors change the model |
 | Iteration | Start with scalar loop-carried state; retain resource/loan-across-back-edge refusal initially if needed | Needs CFG fixed-point analysis, event occurrence identity and bounded oracle policy | FizzBuzz/sum witness exposes a necessary broader construct |
@@ -97,7 +97,7 @@ engine agreement alone cannot prove correctness.
 
 Security and low-level control remain explicit: local C inputs are build
 authority, foreign declarations are trusted assertions, external inputs have
-limits, and ordinary pointers do not authorize unchecked Lang aliasing. This
+limits, and ordinary pointers do not authorize unchecked Schway aliasing. This
 roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations

@@ -1,6 +1,6 @@
-# ai-lang
+# Schway
 
-An exploration of a general-purpose programming language for AI-authored,
+Schway is a general-purpose programming language for AI-authored,
 human-audited software.
 
 The current thesis is not that an AI-native language should use the fewest
@@ -11,9 +11,9 @@ evidence:
 generate -> verify -> run -> observe -> repair -> audit
 ```
 
-The project is still in design exploration, with bounded semantic experiments
-under `.planning/spikes`. Syntax and mechanisms shown here are candidate
-designs, not settled specifications.
+The compiler and native toolchain now have a working source-to-native semantic
+spine. The design wiki and bounded experiments under `.planning/spikes` record
+candidate syntax and mechanisms, not settled specifications.
 
 ## Start here
 

@@ -1,19 +1,38 @@
-# Codename Lang
+# Schway
 
 ## What This Is
 
-Codename Lang is a general-purpose programming language and toolchain for
+Schway is a general-purpose programming language and toolchain for
 AI-authored, human-audited production software. It aims to combine fast,
 structured feedback with a small coherent semantic core, usable low-level
 ownership and resource control, deterministic evidence, and a calm canonical
 source form that remains readable when humans mostly review rather than type it.
 
+## Name and Migration Decision
+
+**Schway** is the chosen public name for both the language and project, decided
+2026-09-28. Treat this decision as settled; do not reopen naming or generate new
+shortlists unless later clearance finds a material direct conflict. An
+exact-name web search on the decision date did not surface a programming
+language named Schway; it did surface an unrelated content-marketing service at
+[schway.com](https://schway.com/), which is an accepted tradeoff for this
+personal open-source project.
+
+Before the first public release, complete one coordinated technical rename after
+the public repository owner/path is chosen: update the Go module/import path
+(`github.com/codename-lang/lang`), CLI names (`lang`, `lang-repair`), `.lang`
+source extension if retained, schema namespaces, install/build/CI references,
+examples, fixtures, and developer documentation. Preserve compatibility for any
+wire contract or published interface that has acquired consumers. Until that
+slice is planned and executed, these are legacy implementation identifiers, not
+alternative project names. Preserve archived milestone decisions and receipts.
+
 The first three milestones were deliberately narrower than the full vision:
 prove one real source-to-native semantic spine (M001), prove it survives a
 function boundary (M002), then prove it survives computation (M003), before
 expanding into effects, services, agents, databases, GUIs, or an ecosystem.
-Lang-to-Lang calls, computed-value matches, and U64 constants now exist end to
-end; loops, arithmetic, and generic user code still do not.
+Calls between Schway functions, computed-value matches, and U64 constants now
+exist end to end; loops, arithmetic, and generic user code still do not.
 
 The development destination is a usable general-purpose language: small native
 programs, FizzBuzz and file utilities, reusable byte-oriented libraries, JSON,
@@ -57,7 +76,7 @@ declared local build inputs, while `lang app run` accepts bounded U64 input,
 starts the selected app once, and preserves ordinary output and process
 outcomes. Evidence capture and explicit replay use separate routes. The older
 `lang run` remains a synthetic-input conformance harness with optimization-tier
-replay. Phase 22 linked local C but did not admit Lang foreign calls or live
+replay. Phase 22 linked local C but did not admit Schway foreign calls or live
 foreign ownership; all three foreign/by-pointer families remain refused. Its
 macOS receipt reports incomplete dependency closure and `cacheable: false`.
 The refreshed 2026-09-28 verifier confirms 5/5 roadmap truths and the completed
@@ -65,7 +84,7 @@ objective README contract UAT remains unchanged. Subjective readability is not
 claimed.
 
 Phase 23 now admits a bounded file-byte allocation that stays live through
-Lang-directed use and generated local cleanup. Its focused script passes on
+Schway-directed use and generated local cleanup. Its focused script passes on
 macOS and in a local Linux ARM64 container; the full Go suite passes on macOS.
 Security review covers 18/18 declared threats, and code review is clean. The
 configured hosted Ubuntu CI receipt remains pending, and Phase 23 stays in
@@ -81,7 +100,7 @@ The following shipped records describe evidence at their recorded revisions.
 
 `OpCall` is a real `core.OperationKind` wired at all six dispatch sites
 (`check`, `corevalidate`, `interp`, `cgen`, `pathoracle`, `originvalidate`).
-A multi-function Lang program parses, checks, is independently re-validated by
+A multi-function Schway program parses, checks, is independently re-validated by
 three non-importing peers, interprets, lowers to multi-function C17, and agrees
 across interpreter / `-O0` / `-O3` / `-O3 -flto` on the five-axis comparator.
 `Result` values carry payloads. `lang-repair` fixes interprocedural loan-liveness
@@ -185,7 +204,7 @@ Completed 2026-09-26: 7 phases, 85 plans, 114 tasks, 33/33 requirements, and
 7/7 passing phase verifications. The audit records non-blocking technical debt
 and no requirement, integration, or flow gaps.
 
-**Goal:** Prove a meaning survives *computation* — the first value Lang creates
+**Goal:** Prove a meaning survives *computation* — the first value Schway creates
 rather than moves — on instruments that cannot report green for work that is
 merely wired.
 
@@ -211,7 +230,7 @@ instruments honest enough that the claim means what it says.
 - A branch that can discriminate a **computed** value — today `match` is a
   whole-function-body form; Phase 18 admitted computed scrutinees and exposed
   payload results after spike S-010. This is not general statement branching.
-- Literals and `OpConst` — Lang can name a value it was not given.
+- Literals and `OpConst` — Schway can name a value it was not given.
 - A moved refusal frontier, pinned by a test.
 
 **Explicitly out of this milestone:** `if` as surface syntax, comparison
@@ -236,22 +255,22 @@ debt item names an owning phase when it is recorded.
 ## Current Milestone: M004 Native Emission Ownership and Resource Discharge
 
 **Goal:** A developer can build and run a native program once on real input,
-with a resource acquired in C, owned and used through Lang, and released or
+with a resource acquired in C, owned and used through Schway, and released or
 transferred exactly once according to checked obligations.
 
 **Target features:**
 - An application build/run path with caller-selected bounded input, explicit
   C build inputs, ordinary output/exit behavior, and separate compiler evidence.
 - One opaque, noncopyable allocation returned live by an audited C adapter;
-  Lang performs its use, ownership transfer, and generated infallible cleanup.
+  Schway performs its use, ownership transfer, and generated infallible cleanup.
 - Acquisition-derived resource identities and per-operation foreign contracts,
   with independent checking across calls, normal returns, and typed errors.
 - Bounded shared/exclusive read-copy pointer families through `emitProgram`,
   no additional alias promises, and family-specific macOS/Linux evidence.
 
 The first resource consumer reads a bounded byte from a caller-selected file.
-The C adapter owns its internal file descriptor; Lang owns the returned
-allocation. This proves buffer ownership, not Lang-managed file close.
+The C adapter owns its internal file descriptor; Schway owns the returned
+allocation. This proves buffer ownership, not Schway-managed file close.
 Release consumes a live obligation; transfer preserves it under a new owner.
 The successor corrects Phase 21's contract-only wording without rewriting its
 historical evidence. The user authorized adopting the second review's
@@ -260,7 +279,7 @@ recommendations automatically on 2026-09-27.
 Phase 22 delivered the application/build/evidence boundary (17/17 truths
 verified and objective README contract UAT passed). Subjective README
 readability is not claimed. Resource acquisition,
-Lang-directed use and physical cleanup, interprocedural transfer/error behavior,
+Schway-directed use and physical cleanup, interprocedural transfer/error behavior,
 and the bounded pointer families remain the active M004 work.
 
 ## Milestone Arc
@@ -287,7 +306,7 @@ milestone number.
 ### Validated
 
 - ✓ A clean checkout can format, check, interpret, and natively run a small
-  canonical Lang program through one production command — M001 (Phase 1;
+  canonical Schway program through one production command — M001 (Phase 1;
   `lang format` / `lang check` / `lang run --engine={interp,native}`).
 - ✓ One portable typed core gives ownership, borrowing, cleanup, and foreign
   boundaries the same meaning in the checker, interpreter, and native path —
@@ -297,7 +316,7 @@ milestone number.
   semantic outcomes and events for the milestone corpus — M001 (Phase 5;
   five-axis comparator, `-flto`-proven-non-inert `-O3` tier, ASan/UBSan lane,
   adversarial + bounded-enumeration corpora). Scope note: M001 ships without
-  Lang-to-Lang calls, so this holds intraprocedurally by construction.
+  calls between Schway functions, so this holds intraprocedurally by construction.
 - ✓ Invalid programs fail early with stable, bounded, machine-readable cause
   graphs and calm human projections — M001 (Phases 1-3, 6; `lang.diagnostic`,
   `lang explain` cause DAG, rustfix-style `diagnostic.Repair` applicability).
@@ -318,7 +337,7 @@ milestone number.
   `data` declaration whose alternatives collide on payload type is refused
   (`check.duplicate_payload_type`) rather than resolved — see D-12-44.
 
-- ✓ Lang-to-Lang calls: `OpCall` is a real `OperationKind` at all six dispatch
+- ✓ Calls between Schway functions: `OpCall` is a real `OperationKind` at all six dispatch
   sites, gated on callable ⊆ publishable (D-04-03) — M002 (Phase 07;
   SEM-04/05/06/07, both exhaustive-dispatch controls green, digest-bound
   signature summaries, no caller admission ever reads a callee body).
@@ -362,7 +381,7 @@ milestone number.
 - ✓ A branch can discriminate a computed value — M003 Phase 18; computed
   terminal matches and payload values execute through checked core, interpreter,
   and native emission.
-- ✓ Lang can name a U64 value through a source literal — M003 Phase 19; canonical
+- ✓ Schway can name a U64 value through a source literal — M003 Phase 19; canonical
   `OpConst` facts are independently validated and agree across interpreter and
   native optimization tiers.
 - ✓ The post-M003 evidence corpus and refused checksum frontier are reconciled —
@@ -372,11 +391,11 @@ milestone number.
   differential replay; local build inputs use a closed manifest and content-bound
   identity — M004 Phase 22 (APP-02–06, FFI-02, EVD-11). The current evidence is
   macOS-only; host dependency closure remains incomplete/non-cacheable, and local
-  C behavior is still trusted input rather than a Lang foreign call.
+  C behavior is still trusted input rather than a Schway foreign call.
 
 ### Active
 
-- [ ] Keep a real foreign allocation live across Lang acquisition, use, transfer,
+- [ ] Keep a real foreign allocation live across Schway acquisition, use, transfer,
   and generated cleanup on normal and typed-error exits.
 - [ ] Admit bounded shared/exclusive pointer shapes only with their own proof;
   reconcile D-16-11, D-16-12, and D-16-13 against exact successor requirements.
@@ -548,7 +567,7 @@ Canonical planning inputs:
 | Route branch and match lowering through the public `emitProgram` authority | A single emitter law prevents admitted source shapes from depending on a legacy backend | ✓ Good — M003 Phase 16 passed all 4 verification truths; foreign and by-pointer families retain explicit M004 ownership |
 | Require a fixture-first constructibility gate for every admitted language requirement | It catches built-but-unreachable behavior before production implementation begins | ✓ Good — M003's phases used refused frontier fixtures and pinned diagnostics to make each new surface constructible |
 | Separate application execution from differential replay | Real IO cannot safely run once per optimization tier on the user's input | Adopted for M004; explicit verification uses isolated/replayable inputs |
-| Lower bounded pointer borrows without `restrict` | Lang exclusivity and an optimizer alias promise are distinct obligations | Prospective D-16-07 amendment; retain per-family proofs and broad-shape refusals |
+| Lower bounded pointer borrows without `restrict` | Schway exclusivity and an optimizer alias promise are distinct obligations | Prospective D-16-07 amendment; retain per-family proofs and broad-shape refusals |
 | Maintain a program-driven living roadmap | The user wants automatic planning suggestions and steady progress toward usable software | Agent-executed planning reviews in AGENTS.md; no background service or new planning framework |
 
 ## Evolution

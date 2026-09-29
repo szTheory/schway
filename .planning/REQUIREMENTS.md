@@ -1,4 +1,4 @@
-# Requirements: Codename Lang M004
+# Requirements: Schway M004
 
 **Milestone:** Native Emission Ownership and Resource Discharge
 **Defined:** 2026-09-27
@@ -15,7 +15,7 @@ IDs continue existing categories, including reserved historical future IDs.
 
 ### Native application execution
 
-- [x] **APP-02**: A developer can build a retained native executable from an admitted Lang source using a documented public command; building does not execute application effects, and the artifact runs outside the compiler's temporary build directory with its runtime dependencies declared.
+- [x] **APP-02**: A developer can build a retained native executable from an admitted Schway source using a documented public command; building does not execute application effects, and the artifact runs outside the compiler's temporary build directory with its runtime dependencies declared.
 - [x] **APP-03**: A developer can supply bounded input through the public application route; two caller-selected scalar inputs produce independently specified results, and malformed or oversized input is rejected with a defined outcome.
 - [x] **APP-04**: One application-run request launches the selected native artifact exactly once, without prior interpretation or hidden optimization-tier replay of application effects.
 - [x] **APP-05**: An application has defined stdout, stderr, and process-exit behavior; ordinary output and successful stderr are not parsed as or rejected for violating compiler execution JSON.
@@ -28,18 +28,18 @@ IDs continue existing categories, including reserved historical future IDs.
 
 ### Live local resource ownership
 
-- [x] **RES-04**: A source-constructible opaque noncopyable resource can receive a real bounded malloc-backed buffer from an explicitly linked C adapter, remain live after the adapter returns, and supply a byte determined by a caller-selected file through Lang-directed use.
+- [x] **RES-04**: A source-constructible opaque noncopyable resource can receive a real bounded malloc-backed buffer from an explicitly linked C adapter, remain live after the adapter returns, and supply a byte determined by a caller-selected file through Schway-directed use.
 - [ ] **RES-05**: Generated release invokes the resource's declared infallible consuming destructor exactly once; a borrow preserves the owner's obligation, and transfer preserves the live resource under its new owner without calling the destructor.
 - [ ] **RES-06**: On admitted normal and typed-error exits, every successfully acquired locally owned resource that is not transferred is released in reverse successful-acquisition completion order, including an actual operation/output failure after acquisition.
-- [x] **RES-07**: A failed foreign acquisition creates no Lang-owned resource; the bounded adapter contract specifies maximum size, empty input, initialization/length, failure representation, and cleanup of its own partial acquisition before exposing a result.
+- [x] **RES-07**: A failed foreign acquisition creates no Schway-owned resource; the bounded adapter contract specifies maximum size, empty input, initialization/length, failure representation, and cleanup of its own partial acquisition before exposing a result.
 - [x] **RES-08**: Discarding an owning acquisition cannot erase its obligation: the admitted form either performs immediate consuming cleanup or is rejected before C serialization.
 - [x] **RES-09**: Independent validation derives obligations from successful acquisitions and follows each admitted path; missing, duplicate, wrong-resource, or fabricated cleanup is rejected without relying on the presence of an existing release operation to discover the obligation.
 
-### Ownership across Lang calls
+### Ownership across Schway calls
 
-- [ ] **OWN-10**: A live resource can move through an admitted Lang call and return, remain usable by its new owner, and be released there exactly once; copying or using the moved-from owner is rejected, and an owning process-entry result is refused without an external receiver.
+- [ ] **OWN-10**: A live resource can move through an admitted Schway call and return, remain usable by its new owner, and be released there exactly once; copying or using the moved-from owner is rejected, and an owning process-entry result is refused without an external receiver.
 - [ ] **OWN-11**: Acquisitions from the same static site in distinct callee activations have distinct semantic identities, preserved across transfers and independently checked without treating raw host addresses as portable identities.
-- [ ] **OWN-12**: Typed error propagation across Lang calls discharges remaining caller/callee obligations according to the declared cleanup order, including multiple successful acquisitions followed by a real later failure; an actual entry-to-error path exercises the cleanup.
+- [ ] **OWN-12**: Typed error propagation across Schway calls discharges remaining caller/callee obligations according to the declared cleanup order, including multiple successful acquisitions followed by a real later failure; an actual entry-to-error path exercises the cleanup.
 
 ### Bounded pointer successors
 
@@ -61,7 +61,7 @@ IDs continue existing categories, including reserved historical future IDs.
 ## Scope and acceptance rules
 
 - The C adapter owns its internal file descriptor and returns the allocation
-  live. The claim is Lang-owned buffer cleanup, not Lang-owned file close. Do
+  live. The claim is Schway-owned buffer cleanup, not Schway-owned file close. Do
   not hide acquire/use/release of the claimed allocation inside one C call.
 - Publish a successor to Phase 21's contract-only artifact: **release consumes,
   transfer preserves, borrow leaves ownership unchanged**. Preserve the archive;
