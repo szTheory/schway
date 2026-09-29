@@ -153,7 +153,7 @@ func TestQ02StaleCgenServesReusedArtifact(t *testing.T) {
 func TestQ02DeclaredInputNamesStillSevenNoCgen(t *testing.T) {
 	names := cache.DeclaredInputNames()
 	want := []string{
-		"fixture_source", "build_flags", "cschway_identity", "runtime_identity",
+		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
 		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
 	}
 	if len(names) != 8 {

@@ -328,3 +328,16 @@ Continue in these bounded slices:
    Before every additive push, scan all reachable refs and require zero
    confirmed and zero unclassified PII/secret findings. Do not run the project
    suite locally.
+
+## Dated compiler-identity correction amendment (2026-09-29)
+
+Run `36613290969` confirmed the frozen Phase 4 symbol expectation is corrected
+(failed test/subtest names decreased from 125 to 124 on Ubuntu and 113 to 111
+on macOS), while the larger identity and provenance groups remain red. Static
+comparison found the global branding replacement had also changed `clang` to
+`cschway` in current compiler-evidence JSON tags, cache-input names, machine
+fact names, and CI receipt labels. That accidental compiler-tool identity
+change is separate from the intended Schway project identity. Restore those
+names to `clang` in current code and fixture manifests. Leave the archived
+Phase 16 run receipt unchanged. Hosted CI must confirm this correction before
+revising the remaining evidence IDs.

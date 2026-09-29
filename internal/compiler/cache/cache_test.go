@@ -269,7 +269,7 @@ func TestCacheImportsStayIndependent(t *testing.T) {
 func newArtifactSpecFixture(t *testing.T, seed string) cache.ArtifactSpec {
 	t.Helper()
 	dir := t.TempDir()
-	clangPath := filepath.Join(dir, "fixture-cschway.sh")
+	clangPath := filepath.Join(dir, "fixture-clang.sh")
 	if err := os.WriteFile(clangPath, []byte("#!/bin/sh\necho fixture clang version 1.0\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}

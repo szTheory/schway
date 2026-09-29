@@ -333,7 +333,7 @@ func TestEvidenceMutationMatrix(t *testing.T) {
 		{"core schema", "evidence.core_schema_mismatch", func(value *evidence.Manifest) { value.CoreSchema = "other" }},
 		{"execution schema", "evidence.execution_schema_mismatch", func(value *evidence.Manifest) { value.ExecutionSchema = "other" }},
 		{"compiler", "evidence.compiler_mismatch", func(value *evidence.Manifest) { value.CompilerIdentity = "other" }},
-		{"clang", "evidence.cschway_mismatch", func(value *evidence.Manifest) { value.ClangIdentity = "other" }},
+		{"clang", "evidence.clang_mismatch", func(value *evidence.Manifest) { value.ClangIdentity = "other" }},
 		{"target", "evidence.target_mismatch", func(value *evidence.Manifest) { value.Target = "other" }},
 		{"flags changed", "evidence.flags_mismatch", func(value *evidence.Manifest) { value.Flags[0] = "-std=c99" }},
 		{"flags reordered", "evidence.flags_mismatch", func(value *evidence.Manifest) { value.Flags[0], value.Flags[1] = value.Flags[1], value.Flags[0] }},

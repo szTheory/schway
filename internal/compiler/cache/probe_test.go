@@ -18,7 +18,7 @@ import (
 
 func writeExecutableFixture(t *testing.T, dir, content string) string {
 	t.Helper()
-	path := filepath.Join(dir, "fixture-cschway.sh")
+	path := filepath.Join(dir, "fixture-clang.sh")
 	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func baseArtifactSpec(t *testing.T) ArtifactSpec {
 func TestCacheKeyCoversEveryDeclaredInput(t *testing.T) {
 	names := DeclaredInputNames()
 	want := []string{
-		"fixture_source", "build_flags", "cschway_identity", "runtime_identity",
+		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
 		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
 		"cgen_source",
 	}
@@ -101,7 +101,7 @@ func TestCacheKeyCoversEveryDeclaredInput(t *testing.T) {
 		{"build_flags", func(t *testing.T, spec *ArtifactSpec) {
 			spec.BuildFlags = "-O3 target=x86_64-apple-darwin"
 		}},
-		{"cschway_identity", func(t *testing.T, spec *ArtifactSpec) {
+		{"clang_identity", func(t *testing.T, spec *ArtifactSpec) {
 			spec.ClangPath = writeExecutableFixture(t, t.TempDir(), "#!/bin/sh\necho fixture clang version 2.0\n")
 		}},
 		{"runtime_identity", func(t *testing.T, spec *ArtifactSpec) {
@@ -443,7 +443,7 @@ func cacheTransitiveImportsViolation(t *testing.T, forbidden []string) string {
 func TestDeclaredInputNamesStableAndNoInterproceduralImport(t *testing.T) {
 	names := DeclaredInputNames()
 	originalSeven := []string{
-		"fixture_source", "build_flags", "cschway_identity", "runtime_identity",
+		"fixture_source", "build_flags", "clang_identity", "runtime_identity",
 		"foreign_translation_unit", "mutation_runner_source", "go_toolchain",
 	}
 	if len(names) < len(originalSeven) {

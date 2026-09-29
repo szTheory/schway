@@ -38,7 +38,7 @@ type MachineFacts struct {
 	CPUModel     string `json:"cpu_model"`
 	LogicalCores int    `json:"logical_cores"`
 	GoVersion    string `json:"go_version"`
-	ClangVersion string `json:"cschway_version"`
+	ClangVersion string `json:"clang_version"`
 }
 
 // FactFieldNames returns the closed six-name set MachineFacts declares, in
@@ -46,7 +46,7 @@ type MachineFacts struct {
 // also updating this list -- TestMachineFactFieldsAreClosed pins the two
 // together via reflection.
 func FactFieldNames() []string {
-	return []string{"os", "arch", "cpu_model", "logical_cores", "go_version", "cschway_version"}
+	return []string{"os", "arch", "cpu_model", "logical_cores", "go_version", "clang_version"}
 }
 
 // Error is this package's stable typed failure, matching the {Code}-only
@@ -165,7 +165,7 @@ func cpuModelProbeCommand() (string, []string) {
 
 // ProbeMachine produces a real MachineFacts for the running host, end to
 // end: os/arch/logical_cores/go_version come from the Go runtime directly
-// (no probe needed), cpu_model and cschway_version come from bounded
+// (no probe needed), cpu_model and clang_version come from bounded
 // subprocess probes sharing the same 64 KiB-plus-one / finite 30-second
 // per-process deadline discipline.
 func ProbeMachine(ctx context.Context) (MachineFacts, error) {

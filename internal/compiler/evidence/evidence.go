@@ -55,7 +55,7 @@ type Manifest struct {
 	ExecutionSchema  string   `json:"execution_schema"`
 	DiagnosticSchema string   `json:"diagnostic_schema,omitempty"`
 	CompilerIdentity string   `json:"compiler_identity"`
-	ClangIdentity    string   `json:"cschway_identity"`
+	ClangIdentity    string   `json:"clang_identity"`
 	Target           string   `json:"target"`
 	Flags            []string `json:"flags"`
 	Policy           string   `json:"policy"`
@@ -350,7 +350,7 @@ func Validate(manifest Manifest, source []byte, facts Facts) error {
 		{"evidence.core_schema_mismatch", manifest.CoreSchema, expected.Manifest.CoreSchema},
 		{"evidence.execution_schema_mismatch", manifest.ExecutionSchema, expected.Manifest.ExecutionSchema},
 		{"evidence.compiler_mismatch", manifest.CompilerIdentity, expected.Manifest.CompilerIdentity},
-		{"evidence.cschway_mismatch", manifest.ClangIdentity, expected.Manifest.ClangIdentity},
+		{"evidence.clang_mismatch", manifest.ClangIdentity, expected.Manifest.ClangIdentity},
 		{"evidence.target_mismatch", manifest.Target, expected.Manifest.Target},
 		{"evidence.policy_mismatch", manifest.Policy, expected.Manifest.Policy},
 	}

@@ -112,7 +112,7 @@ func TestPhase21LTOEvidenceReceiptIsBoundToTaggedComparison(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.schway", "emitted_c_sha256", "runtime.GOOS", "cschway_version"} {
+	for _, required := range []string{"TestPhase21EmittedMultiFunctionLTOComparison", "multi_function_match_refusal.schway", "emitted_c_sha256", "runtime.GOOS", "clang_version"} {
 		if !strings.Contains(string(testSource), required) {
 			t.Errorf("tagged test does not expose required Phase 21 LTO evidence field %q", required)
 		}

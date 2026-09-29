@@ -34,7 +34,7 @@ const MaxProbeBytes = 64 * 1024
 //  1. undeclared environment -- locale, ulimit, filesystem case-sensitivity;
 //  2. a Clang change that does not alter its reported version string (the
 //     ccache __TIME__-class footgun) -- mitigated but not closed by
-//     cschway_identity below being a probed digest of the binary's own bytes,
+//     clang_identity below being a probed digest of the binary's own bytes,
 //     not merely its --version string;
 //  3. any future nondeterministic codegen silently breaking the "same
 //     inputs implies same artifact" premise;
@@ -54,7 +54,7 @@ func DeclaredInputNames() []string {
 	return []string{
 		"fixture_source",
 		"build_flags",
-		"cschway_identity",
+		"clang_identity",
 		"runtime_identity",
 		"foreign_translation_unit",
 		"mutation_runner_source",
@@ -150,7 +150,7 @@ type ArtifactSpec struct {
 
 // InputsFor assembles the seven declared inputs for spec, in
 // DeclaredInputNames() order. It accepts a context because computing
-// cschway_identity requires spawning a bounded probe subprocess
+// clang_identity requires spawning a bounded probe subprocess
 // (ProbeClangIdentity). Any input that cannot be computed -- including a
 // failed Clang probe -- returns Error{Code: "cache.input_undeclared"}
 // naming the failure by refusing outright: ambiguity and silence always
@@ -172,7 +172,7 @@ func InputsFor(ctx context.Context, spec ArtifactSpec) ([]Input, error) {
 	if err != nil {
 		return nil, &Error{Code: "cache.input_undeclared", Cause: err}
 	}
-	byName["cschway_identity"] = clangDigest
+	byName["clang_identity"] = clangDigest
 
 	if spec.RuntimeIdentity == "" {
 		return nil, &Error{Code: "cache.input_undeclared"}

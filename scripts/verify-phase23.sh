@@ -20,14 +20,14 @@ host_arch=$(uname -m)
 go_os=$(go env GOOS)
 go_arch=$(go env GOARCH)
 go_version=$(go version)
-cschway_version=$(clang --version | sed -n '1p')
-cschway_target=$(clang -dumpmachine)
+clang_version=$(clang --version | sed -n '1p')
+clang_target=$(clang -dumpmachine)
 revision=$(git rev-parse HEAD)
 if [ -z "$host_os" ] || [ -z "$host_arch" ] || [ -z "$go_os" ] || [ -z "$go_arch" ]; then
 	echo "phase23 verify: host identity is incomplete" >&2
 	exit 1
 fi
-if [ -z "$cschway_version" ] || [ -z "$cschway_target" ]; then
+if [ -z "$clang_version" ] || [ -z "$clang_target" ]; then
 	echo "phase23 verify: Clang version or target identity is unavailable" >&2
 	exit 1
 fi
@@ -38,9 +38,9 @@ else
 fi
 
 printf 'phase23 host receipt: host=%s/%s go=%s/%s target=%s revision=%s tree=%s status=incomplete\n' \
-	"$host_os" "$host_arch" "$go_os" "$go_arch" "$cschway_target" "$revision" "$source_tree"
+	"$host_os" "$host_arch" "$go_os" "$go_arch" "$clang_target" "$revision" "$source_tree"
 printf 'compiler: %s\n' "$go_version"
-printf 'cschway: %s\n' "$cschway_version"
+printf 'clang: %s\n' "$clang_version"
 
 run_phase23_tests() {
 	name=$1
@@ -83,4 +83,4 @@ focused_end=$(date +%s)
 focused_elapsed=$((focused_end - focused_start))
 
 printf '\nphase23 host receipt: host=%s/%s go=%s/%s target=%s revision=%s tree=%s elapsed_seconds=%s status=pass\n' \
-	"$host_os" "$host_arch" "$go_os" "$go_arch" "$cschway_target" "$revision" "$source_tree" "$focused_elapsed"
+	"$host_os" "$host_arch" "$go_os" "$go_arch" "$clang_target" "$revision" "$source_tree" "$focused_elapsed"

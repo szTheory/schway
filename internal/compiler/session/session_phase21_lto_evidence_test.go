@@ -24,7 +24,7 @@ func TestPhase21EmittedMultiFunctionLTOComparison(t *testing.T) {
 	const fixture = "testdata/phase14/multi_function_match_refusal.schway"
 	clangPath, err := exec.LookPath("clang")
 	if err != nil {
-		t.Fatalf("find cschway: %v", err)
+		t.Fatalf("find clang: %v", err)
 	}
 	versionContext, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -63,7 +63,7 @@ func TestPhase21EmittedMultiFunctionLTOComparison(t *testing.T) {
 		t.Fatalf("fixture %s produced %d execution lanes, want interpreter, -O0, -O3, and -O3 -flto", fixture, len(engines))
 	}
 	digest := sha256.Sum256([]byte(emittedC))
-	fmt.Printf("Phase 21 emitted multi-function semantic comparison: fixture=%s fixture_sha256=%x emitted_c_sha256=%x host=%s/%s cschway_path=%s cschway_version=%q common_flags=[-std=c17,-Wall,-Wextra,-Werror,-pedantic] lanes=[interpreter,-O0,-O3,-O3 -flto] comparator=all-pairs-semantic-equality\n",
+	fmt.Printf("Phase 21 emitted multi-function semantic comparison: fixture=%s fixture_sha256=%x emitted_c_sha256=%x host=%s/%s clang_path=%s clang_version=%q common_flags=[-std=c17,-Wall,-Wextra,-Werror,-pedantic] lanes=[interpreter,-O0,-O3,-O3 -flto] comparator=all-pairs-semantic-equality\n",
 		fixture, sha256.Sum256(fixtureBytes), digest, runtime.GOOS, runtime.GOARCH, clangPath, version)
 }
 

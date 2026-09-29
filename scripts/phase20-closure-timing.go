@@ -34,7 +34,7 @@ type machineFacts struct {
 	CPUModel     string `json:"cpu_model"`
 	LogicalCores int    `json:"logical_cores"`
 	GoVersion    string `json:"go_version"`
-	ClangVersion string `json:"cschway_version"`
+	ClangVersion string `json:"clang_version"`
 }
 
 type sample struct {
@@ -417,7 +417,7 @@ func writeReport(samples []sample, facts machineFacts, machineID, head, fingerpr
 	completed := time.Now()
 	var b strings.Builder
 	b.WriteString("# Phase 20 closure timing evidence\n\n")
-	fmt.Fprintf(&b, "- **Status:** %s\n- **Started:** %s\n- **Completed:** %s\n- **Elapsed:** %.3f s\n- **Machine:** `%s` (`%s`, `%s`, %d cores)\n- **Go:** `%s`\n- **Cschway:** `%s`\n- **Input HEAD at start:** `%s`\n- **Source fingerprint:** `%s`\n- **Go build cache:** `%s` (stable across samples)\n- **Protocol cap:** 30 minutes; monotonic `time.Since` measurements\n", map[bool]string{true: "PASS", false: "BLOCKED"}[blocker == ""], started.UTC().Format(time.RFC3339), completed.UTC().Format(time.RFC3339), completed.Sub(started).Seconds(), machineID, facts.OS, facts.Arch, facts.LogicalCores, facts.GoVersion, facts.ClangVersion, head, fingerprint, os.Getenv("GOCACHE"))
+	fmt.Fprintf(&b, "- **Status:** %s\n- **Started:** %s\n- **Completed:** %s\n- **Elapsed:** %.3f s\n- **Machine:** `%s` (`%s`, `%s`, %d cores)\n- **Go:** `%s`\n- **Clang:** `%s`\n- **Input HEAD at start:** `%s`\n- **Source fingerprint:** `%s`\n- **Go build cache:** `%s` (stable across samples)\n- **Protocol cap:** 30 minutes; monotonic `time.Since` measurements\n", map[bool]string{true: "PASS", false: "BLOCKED"}[blocker == ""], started.UTC().Format(time.RFC3339), completed.UTC().Format(time.RFC3339), completed.Sub(started).Seconds(), machineID, facts.OS, facts.Arch, facts.LogicalCores, facts.GoVersion, facts.ClangVersion, head, fingerprint, os.Getenv("GOCACHE"))
 	b.WriteString("\nThree paired samples expose spread; they do not establish a high-confidence percentile. Full-suite commands use `go test ./... -count=1`; each pair has an empty cold closure cache and reuses that exact populated cache for warm. The Go build cache is prewarmed once and remains stable.\n\n")
 	b.WriteString("| Sample | Command | Cache | Raw monotonic nanoseconds (seconds) | Exit | Timeout |\n|---|---|---|---:|---:|---|\n")
 	for _, s := range samples {
