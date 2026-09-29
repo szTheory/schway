@@ -2089,7 +2089,7 @@ func TestForeignCallLowersToOkAndErrEdges(t *testing.T) {
 	}
 	function := result.Program.Functions[0]
 
-	if function.ForeignContract == nil || function.ForeignContract.Symbol != "schway_res_open" || function.ForeignContract.Allocator != "libc_malloc" {
+	if function.ForeignContract == nil || function.ForeignContract.Symbol != frozenPhase4ResourceSymbol || function.ForeignContract.Allocator != "libc_malloc" {
 		t.Fatalf("ForeignContract = %+v", function.ForeignContract)
 	}
 	if function.Linear == nil || len(function.Linear.Operations) != 3 {

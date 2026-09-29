@@ -109,7 +109,7 @@ be zero; every required positive check and the exact source count must pass.
 
     set -eu
     scope=(go.mod .gitignore .github/workflows/ci.yml README.md AGENTS.md cmd native internal/compiler scripts examples testdata .claude/skills)
-    exclusions=(':(exclude)testdata/phase1/**' ':(exclude)testdata/phase2/**' ':(exclude)testdata/phase3/**' ':(exclude)testdata/phase4/**' ':(exclude)testdata/phase5/**' ':(exclude)testdata/phase16/historical/**' ':(exclude)testdata/phase16/validation-corpus-run-record.jsonl' ':(exclude)internal/compiler/native/foreign_legacy.go' ':(exclude).claude/skills/*/sources/**')
+    exclusions=(':(exclude)testdata/phase1/**' ':(exclude)testdata/phase2/**' ':(exclude)testdata/phase3/**' ':(exclude)testdata/phase4/**' ':(exclude)testdata/phase5/**' ':(exclude)testdata/phase16/historical/**' ':(exclude)testdata/phase16/validation-corpus-run-record.jsonl' ':(exclude)internal/compiler/native/foreign_legacy.go' ':(exclude)internal/compiler/check/frozen_foreign_expectation_test.go' ':(exclude).claude/skills/*/sources/**')
     count_text() { git grep --cached -I -l -E "$1" -- "${scope[@]}" "${exclusions[@]}" | wc -l | tr -d '[:space:]'; }
     old_module=$(count_text 'github[.]com/codename-lang/lang')
     old_cli=$(count_text 'cmd/lang(-repair)?(/|[^[:alnum:]_-])|/lang(-repair)?([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang-repair([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang[[:space:]]+(app|build|check|run|verify)([^[:alnum:]_]|$)')
@@ -265,8 +265,10 @@ remaining work:
 4. Preserve Phase 1-5 fixture contents byte-for-byte under the selected
    `.schway` filenames; isolate legacy source-level foreign symbols in
    `internal/compiler/native/foreign_legacy.go` and
-   `testdata/phase16/historical/foreign_phase1_5_legacy_adapter.c`. These are
-   the only current shim exceptions to the old-ABI rename scan. Reconcile
+   `testdata/phase16/historical/foreign_phase1_5_legacy_adapter.c`; pin its
+   original symbol in `internal/compiler/check/frozen_foreign_expectation_test.go`.
+   These three paths are the only current shim/expectation exceptions to the
+   old-ABI rename scan. Reconcile
    remaining source/diagnostic IDs and rewritten commit/line references with
    explicit provenance. Do not bulk-regenerate expected hashes or edit
    archived receipts to claim fresh verification.
@@ -283,3 +285,46 @@ commit references, groundedness line pins, and corpus docs; (D) full hosted CI
 green on both operating systems and both evidence aggregates. A batch is
 accepted only when its hosted checks pass or its remaining red checks are
 clearly isolated to the next batch.
+
+## Dated hosted-CI outcome amendment (2026-09-29)
+
+Commit `3b7919be` published the fixture/adapter batch after the full reachable
+history scan passed. GitHub Actions run `36610374870` then completed red on
+both operating systems. Both hosts passed `go vet ./...`, `go build ./...`,
+and `scripts/verify-phase23.sh`; both failed `go test ./...` and
+`scripts/verify-phase6.sh`, so race jobs were skipped. The logs contain 125
+failed test/subtest names on Ubuntu and 113 on macOS. The failure inventory is
+not a reason to refresh expected values in bulk.
+
+The rename gate passes with 145 tracked `.schway` sources. Phase 1-5 `.schway`
+fixture contents now byte-match their original pre-rename sources, and the
+legacy resource, arena, nonlocal, and retained foreign calls route through the
+test-only alias adapter. This fixes the Phase 1-3 core-byte subtests; Phase 4-5
+core hashes and Phase 1-5 manifest IDs still fail. The Phase 4 checker test
+also had a stale Schway symbol expectation for the frozen legacy fixture; pin
+the fixture name in the named test helper, which is an explicit rename-gate
+exception.
+
+Continue in these bounded slices:
+
+1. **Historical source identity** — inspect Phase 4-5 serialized core fields
+   and Phase 1-5 evidence-manifest IDs. Preserve source bytes and issued
+   schema IDs. Add only field-level migration records supported by the
+   hosted diff and an independent semantic witness.
+2. **Current artifact identity** — reconcile current C outputs, C golden
+   ledgers, Phase 1 evidence, canonical program digests, and diagnostic IDs.
+   Keep the old digest and new digest with a reason, changed responsibility,
+   and executable witness; preserve frozen golden artifacts.
+3. **Executable controls** — fix remaining runtime failures independently of
+   identity pins, including the Phase 5 defect terminal-record control; verify
+   the four subcommands, interpreter/native refusal boundary, and sanitizer
+   positives through hosted CI.
+4. **Rewritten history and docs** — map each stale commit reference through
+   the private original-to-public commit map, verify its cited change, refresh
+   current corpus counts, and move identity guidance to document tails so
+   archived line pins retain their cited text.
+5. **Acceptance** — run the existing GitHub Actions workflow on Ubuntu and
+   macOS; require both full test/race jobs and both evidence aggregates green.
+   Before every additive push, scan all reachable refs and require zero
+   confirmed and zero unclassified PII/secret findings. Do not run the project
+   suite locally.
