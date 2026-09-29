@@ -42,6 +42,7 @@ var AllowedUndefinedSymbols = []AllowedUndefinedSymbol{
 	{Symbol: "longjmp", Rationale: "schway_foreign_nonlocal.c's witness performs a genuine foreign nonlocal exit back into the process-root landing pad (D-04-17)."},
 	{Symbol: "abort", Rationale: "the generated defect path and the nonlocal-exit landing pad both terminate via libc abort -- never a caught or contained signal (D-04-15/D-04-18)."},
 	{Symbol: "fwrite", Rationale: "the generated streaming and buffered event writers flush JSON output through libc fwrite."},
+	{Symbol: "fflush", Rationale: "the generated terminal-defect path flushes its final JSON record before abort so captured stdout is not lost."},
 	{Symbol: "snprintf", Rationale: "the generated scalar byte writer formats its decimal encoding through libc snprintf."},
 	{Symbol: "__snprintf_chk", Rationale: "on the recorded Apple Clang/libSystem host, an ordinary snprintf call under the platform's default _FORTIFY_SOURCE hardening resolves to this fortified variant even at -O0 -- the same generated call site as snprintf above, not a second one."},
 	{Symbol: "strcmp", Rationale: "generated main() dispatches on argv[1] via libc strcmp."},

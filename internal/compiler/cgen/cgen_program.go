@@ -1690,6 +1690,10 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 	out.WriteString("      if (!schway_write_literal(\"}],\\\"live_resources\\\":\")) abort();\n")
 	out.WriteString("      if (!schway_write_live_resources()) abort();\n")
 	out.WriteString("      if (!schway_write_literal(\"}\\n\")) abort();\n")
+	// stdout is fully buffered when the native runner captures a pipe, and the
+	// next operation aborts the process. Flush the complete terminal record now
+	// so defect evidence cannot be lost in libc's buffer.
+	out.WriteString("      if (fflush(stdout) != 0) abort();\n")
 }
 
 // emitProgramFunction writes ONE function's own C definition: its own

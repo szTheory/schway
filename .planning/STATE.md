@@ -4,9 +4,9 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration active; hosted CI run 36628391253 is red after Phase 23, build, and vet pass on both hosts.
-stopped_at: Continue quick task 260928-tzu from the frozen C compatibility and explicit current-identity migration slices; do not replay completed Phase 23 plans or UAT.
-last_updated: "2026-09-29T21:10:54Z"
+status: Public Schway migration active; hosted CI run 36631949966 is red after Phase 23, build, and vet pass on both hosts.
+stopped_at: Continue quick task 260928-tzu from the legacy native-control fixes and explicit current-identity migration slices; do not replay completed Phase 23 plans or UAT.
+last_updated: "2026-09-29T21:27:01Z"
 last_activity: 2026-09-28
 last_activity_desc: Completed quick task 260928-rta: record Schway as the chosen public language name
 state_head: c50430d9fa1490b393c5d22805f094787ee99186
@@ -23,11 +23,13 @@ Current publication identity (2026-09-28): Schway uses the Go module `github.com
 <!-- schway-current:end -->
 
 Public repository follow-up (2026-09-29): `szTheory/schway` `main` is at
-`28cb4358`. Hosted run `36628391253` confirms the Phase 11/13 frozen-input
-compatibility controls pass on Ubuntu and macOS; the full tests and Phase 6
+`9edd722d`. Hosted run `36631949966` confirms the frozen emitter and
+by-pointer identity controls pass on Ubuntu and macOS. Full tests and Phase 6
 evidence remain red, so race tests are skipped. Both hosts pass build, vet,
-and Phase 23. Resume from the active quick task and use hosted CI as the
-project-test lane.
+and Phase 23. The cleanup native probe still needs the historical resource
+adapter, and the terminal defect record needs an explicit stdout flush before
+abort. Resume from the active quick task and use hosted CI as the project-test
+lane.
 
 
 # Project State

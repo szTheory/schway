@@ -456,7 +456,7 @@ func testCleanupClassRepair(t *testing.T) {
 	}
 
 	runner := native.DefaultRunner()
-	runner.ForeignSources = []string{native.ForeignResourceSourcePath()}
+	runner.ForeignSources = native.ForeignLegacyResourceSourcePaths()
 
 	// A release omission leaves a resource live at return. native.Runner's
 	// own ExpectValue contract (validateExecution) requires LiveResources

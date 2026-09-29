@@ -452,3 +452,21 @@ Proceed in these reviewable slices:
 4. **Current references** — refresh active maturity counts and groundedness
    pins, map commit IDs through the private commit map, and preserve archived
    receipts as historical facts.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36631949966)
+
+Commit `9edd722d` confirms `TestStreamingEmitterWritesAtPointOfOccurrence`
+and `TestPhase5ByPointerLoweringGolden` now pass with the historical labels
+and identity-only normalization. The cleanup probe now reaches native linking
+and fails because its frozen C calls `_LANG_lang_res_open` while the test
+runner supplies only the current Schway implementation; use the existing
+legacy resource adapter at that test boundary. `TestProgramMatchDefectEventPrecedesAbort`
+shows zero captured bytes: libc leaves the terminal JSON buffered on the pipe,
+then `abort()` discards it. Flush the completed terminal record before
+aborting. `TestLegacyEmitterEvidence` remains red on generated program
+digests; reconcile it in the broader artifact-identity slice.
+
+Run `36631949966` still fails both full Go test jobs and both evidence
+aggregates. The cleanup adapter and defect-output fixes are pending their own
+hosted receipt; the other remaining identity, native/LTO, and current-reference
+groups remain separate work.
