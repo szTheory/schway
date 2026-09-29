@@ -49,7 +49,8 @@ func compiledForeignAcquireOneBinary(t *testing.T) (string, func()) {
 	}
 	cSource := string(cSourceBytes)
 	runner := DefaultRunner()
-	runner.ForeignSources = []string{ForeignResourceSourcePath()}
+	legacyAdapter := filepath.Join(projectRoot(), "testdata", "phase16", "historical", "foreign_resource_legacy_adapter.c")
+	runner.ForeignSources = []string{legacyAdapter}
 	binaryPath, cleanup, err := runner.CompileOnly(context.Background(), cSource, "-O0")
 	if err != nil {
 		t.Fatal(err)

@@ -1,5 +1,5 @@
 {
-  "schema": "codename.lang.resource-discharge-contract.v2",
+  "schema": "codename.schway.resource-discharge-contract.v2",
   "contract_only": true,
   "production_admission": false,
   "claims": {
@@ -79,7 +79,7 @@
     {
       "id": "supported_unwind",
       "disposition": "refused",
-      "reason": "No Lang unwind semantics or ABI-specific cleanup proof is admitted by this contract."
+      "reason": "No Schway unwind semantics or ABI-specific cleanup proof is admitted by this contract."
     },
     {
       "id": "nonlocal_transfer",

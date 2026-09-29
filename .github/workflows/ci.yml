@@ -51,6 +51,11 @@ jobs:
       # verdict, so fail loudly here instead.
       - name: Require clang
         run: clang --version
+      - name: Install libc++ for sanitizer evidence
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libc++-dev libc++abi-dev
       - run: go vet ./...
       - run: go build ./...
       - run: go test ./...
@@ -71,6 +76,11 @@ jobs:
           cache: true
       - name: Require clang
         run: clang --version
+      - name: Install libc++ for sanitizer evidence
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libc++-dev libc++abi-dev
       - name: scripts/verify-phase23.sh
         run: sh scripts/verify-phase23.sh
       - name: scripts/verify-phase6.sh

@@ -1,10 +1,10 @@
 {
-  "schema": "codename.lang.resource-discharge-contract.v1",
+  "schema": "codename.schway.resource-discharge-contract.v1",
   "contract_only": true,
   "production_admission": false,
   "claims": {
     "structural_validation_proves_runtime_cleanup": false,
-    "introduces_lang_unwind_or_cancellation_semantics": false,
+    "introduces_schway_unwind_or_cancellation_semantics": false,
     "one_tu_lto_comparison_proves_optimizer_inactivity": false
   },
   "exits": [
@@ -23,7 +23,7 @@
     {
       "id": "supported_unwind",
       "disposition": "refused",
-      "reason": "No Lang unwind semantics or ABI-specific cleanup proof is admitted by this contract."
+      "reason": "No Schway unwind semantics or ABI-specific cleanup proof is admitted by this contract."
     },
     {
       "id": "nonlocal_transfer",
