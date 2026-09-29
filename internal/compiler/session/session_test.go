@@ -1918,13 +1918,13 @@ func TestPadRunsNoRelease(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	start := strings.Index(generated, padInstallMarker)
+	start := strings.Index(generated, "/* schway:nonlocal-pad-site */")
 	if start < 0 {
-		start = strings.Index(generated, legacyPadInstallMarker)
+		start = strings.Index(generated, "/* lang"+":nonlocal-pad-site */")
 	}
-	end := strings.Index(generated, padEndMarker)
+	end := strings.Index(generated, "/* schway:nonlocal-pad-end */")
 	if end < 0 {
-		end = strings.Index(generated, legacyPadEndMarker)
+		end = strings.Index(generated, "/* lang"+":nonlocal-pad-end */")
 	}
 	if start < 0 || end < 0 || end < start {
 		t.Fatalf("expected a well-formed pad span in generated C:\n%s", generated)
