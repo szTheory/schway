@@ -116,7 +116,9 @@ be zero; every required positive check and the exact source count must pass.
     old_extension=$(count_text '[.]lang([^[:alnum:]_]|$)')
     # Already-versioned lang.* schema names are frozen wire identifiers.
     # Reject old lang: annotation labels; current namespaces stay schway.*.
-    old_protocol=$(count_text '(^|[^[:alnum:]_])lang:')
+    # The Phase 13 injector alone retains these markers for byte-frozen held-out inputs.
+    protocol_exclusions=("${exclusions[@]}" ':(exclude)internal/compiler/session/session_phase13_injectors.go')
+    old_protocol=$(git grep --cached -I -l -E '(^|[^[:alnum:]_])lang:' -- "${scope[@]}" "${protocol_exclusions[@]}" | wc -l | tr -d '[:space:]')
     old_abi=$(git grep --cached -I -l -E '(^|[^[:alnum:]_])(lang_|LANG_)' -- "${scope[@]}" "${exclusions[@]}" ':(exclude)internal/compiler/check/check_blame_test.go' ':(exclude)internal/compiler/syntax/syntax_test.go' | wc -l | tr -d '[:space:]')
     old_paths=$(git ls-files | rg '(^cmd/lang(-repair)?/|^native/lang_|[.]lang$)' | wc -l | tr -d '[:space:]')
     printf 'old_module=%s old_cli=%s old_extension=%s old_protocol=%s old_abi=%s old_paths=%s\n' "$old_module" "$old_cli" "$old_extension" "$old_protocol" "$old_abi" "$old_paths"
@@ -383,3 +385,39 @@ contents; every file stays in the all-ref privacy scan. Keep active Phase 6 and
 Phase 13 derivation fixtures on current Schway markers. This does not resolve
 the separate Phase 4/5 serialized core and evidence identities, current C
 goldens, native controls, or rewritten planning references.
+
+## Dated hosted-CI outcome amendment (2026-09-29)
+
+Commit `2e282d21` restores the nine Phase 8 fixtures, Phase 11 gate corpus,
+and five sealed Phase 13 held-out fixtures to exact pre-rename bytes under
+`.schway` paths. Its full reachable-ref privacy scan passed across 1,548
+commits, 3 tags, and 4,898 blobs with zero confirmed or unclassified privacy
+candidates. Hosted run `36624111624` confirms the Phase 7 diagnostic ordering
+and the Phase 8/11/13 source pins advance. Both hosts pass vet, build, and Phase
+23; full tests and Phase 6 evidence remain red, so race tests are skipped.
+
+Continue in these bounded slices:
+
+1. **Frozen-input compatibility** — update only Phase 11/13 test mutation
+   helpers to recognize the actual labels and C identifiers present in their
+   byte-frozen inputs. Derive C result names from the frozen Phase 4 source
+   symbol instead of assuming the source symbol itself was renamed. Keep all
+   historical fixture bytes unchanged. The protocol text gate excludes only
+   `internal/compiler/session/session_phase13_injectors.go` for its three
+   legacy marker strings; all module, command, suffix, ABI, and path checks
+   still scan that file.
+2. **Current compiler/evidence identities** — Phase 1-3 core bytes remain
+   unchanged, while Phase 4/5 core serialization changes at the current
+   `ForeignTypeName` and current C/evidence fingerprints change with Schway ABI
+   names. Add field-level old/new records with semantic witnesses; update only
+   the related core, C, manifest, and canonical-program pins. Do not regenerate
+   frozen artifacts wholesale.
+3. **Executable controls** — reconcile Phase 4/5 native runtime, LTO, linker,
+   and cleanup-injector controls independently from the digest migration.
+4. **History and planning references** — map stale commit IDs through the
+   private commit map, refresh groundedness line pins and live corpus counts,
+   and preserve archived receipts as historical evidence.
+5. **Acceptance** — require full Go tests, race tests, Phase 6 evidence, and
+   Phase 23 evidence to pass on the hosted Ubuntu/macOS matrix. Before each
+   additive push, rescan all reachable refs and require zero confirmed and
+   zero unclassified candidates.

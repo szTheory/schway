@@ -28,6 +28,7 @@ import (
 // now produced mechanically and reused across a shared-callee,
 // multi-caller topology (D-13-28).
 const loanTargetMarker = "// schway:interprocedural-loan-target"
+const legacyLoanTargetMarker = "// lang:interprocedural-loan-target"
 
 // InterproceduralLoanInjector swaps the marked statement with the
 // statement immediately preceding it, reproducing
@@ -38,8 +39,8 @@ type InterproceduralLoanInjector struct{}
 func (InterproceduralLoanInjector) Name() string { return "interprocedural_loan" }
 
 func (InterproceduralLoanInjector) Inject(source []byte) ([]byte, error) {
-	lines, index := lastMarkerLine(source, loanTargetMarker)
-	if err := markerGuard(markerCount(lines, loanTargetMarker), "interprocedural loan target"); err != nil {
+	lines, index, count := lastPhase13MarkerLine(source, loanTargetMarker, legacyLoanTargetMarker)
+	if err := markerGuard(count, "interprocedural loan target"); err != nil {
 		return nil, err
 	}
 	if index == 0 {
@@ -57,7 +58,7 @@ func (InterproceduralLoanInjector) Inject(source []byte) ([]byte, error) {
 // completely unmutated. Deliberately never called by
 // InterproceduralLoanInjector.Inject itself.
 func interproceduralLoanInjectSkippingGuard(source []byte) []byte {
-	lines, index := lastMarkerLine(source, loanTargetMarker)
+	lines, index, _ := lastPhase13MarkerLine(source, loanTargetMarker, legacyLoanTargetMarker)
 	if index == -1 {
 		return append([]byte(nil), source...)
 	}
@@ -71,6 +72,7 @@ func interproceduralLoanInjectSkippingGuard(source []byte) []byte {
 // fallibleConsumeTargetMarker marks the `try`-wrapped fallible call
 // FallibleConsumeInjector strips `try` from.
 const fallibleConsumeTargetMarker = "// schway:fallible-consume-target"
+const legacyFallibleConsumeTargetMarker = "// lang:fallible-consume-target"
 
 // FallibleConsumeInjector removes the leading "try " from the marked
 // binding's right-hand side, turning a legally-consumed fallible call
@@ -81,8 +83,8 @@ type FallibleConsumeInjector struct{}
 func (FallibleConsumeInjector) Name() string { return "fallible_consume" }
 
 func (FallibleConsumeInjector) Inject(source []byte) ([]byte, error) {
-	lines, index := lastMarkerLine(source, fallibleConsumeTargetMarker)
-	if err := markerGuard(markerCount(lines, fallibleConsumeTargetMarker), "fallible consume target"); err != nil {
+	lines, index, count := lastPhase13MarkerLine(source, fallibleConsumeTargetMarker, legacyFallibleConsumeTargetMarker)
+	if err := markerGuard(count, "fallible consume target"); err != nil {
 		return nil, err
 	}
 	const tryAssign = "= try "
@@ -99,7 +101,7 @@ func (FallibleConsumeInjector) Inject(source []byte) ([]byte, error) {
 // marker-free source, it returns the input completely unchanged. Never
 // called by FallibleConsumeInjector.Inject itself.
 func fallibleConsumeInjectSkippingGuard(source []byte) []byte {
-	lines, index := lastMarkerLine(source, fallibleConsumeTargetMarker)
+	lines, index, _ := lastPhase13MarkerLine(source, fallibleConsumeTargetMarker, legacyFallibleConsumeTargetMarker)
 	if index == -1 {
 		return append([]byte(nil), source...)
 	}
@@ -116,6 +118,7 @@ func fallibleConsumeInjectSkippingGuard(source []byte) []byte {
 // callArgumentTargetMarker marks the callee's own `fn` declaration line
 // CallArgumentTypeInjector toggles between Byte and Buffer.
 const callArgumentTargetMarker = "// schway:call-argument-target"
+const legacyCallArgumentTargetMarker = "// lang:call-argument-target"
 
 // CallArgumentTypeInjector toggles every occurrence of "Byte" to
 // "Buffer" (or the reverse, if the line names no "Byte") on the marked
@@ -130,8 +133,8 @@ type CallArgumentTypeInjector struct{}
 func (CallArgumentTypeInjector) Name() string { return "call_argument_type" }
 
 func (CallArgumentTypeInjector) Inject(source []byte) ([]byte, error) {
-	lines, index := lastMarkerLine(source, callArgumentTargetMarker)
-	if err := markerGuard(markerCount(lines, callArgumentTargetMarker), "call argument type target"); err != nil {
+	lines, index, count := lastPhase13MarkerLine(source, callArgumentTargetMarker, legacyCallArgumentTargetMarker)
+	if err := markerGuard(count, "call argument type target"); err != nil {
 		return nil, err
 	}
 	mutatedLine, ok := toggleByteBuffer(lines[index])
@@ -147,7 +150,7 @@ func (CallArgumentTypeInjector) Inject(source []byte) ([]byte, error) {
 // marker-free source, it returns the input completely unchanged. Never
 // called by CallArgumentTypeInjector.Inject itself.
 func callArgumentTypeInjectSkippingGuard(source []byte) []byte {
-	lines, index := lastMarkerLine(source, callArgumentTargetMarker)
+	lines, index, _ := lastPhase13MarkerLine(source, callArgumentTargetMarker, legacyCallArgumentTargetMarker)
 	if index == -1 {
 		return append([]byte(nil), source...)
 	}
@@ -158,6 +161,25 @@ func callArgumentTypeInjectSkippingGuard(source []byte) []byte {
 	mutated := append([]string(nil), lines...)
 	mutated[index] = mutatedLine
 	return []byte(strings.Join(mutated, "\n"))
+}
+
+// lastPhase13MarkerLine accepts the current marker and its exact legacy form
+// so the injectors can operate on sealed pre-rename held-out fixtures without
+// changing their bytes. As with lastMarkerLine, the final matching line is the
+// target; the count follows markerGuard's zero-versus-present contract.
+func lastPhase13MarkerLine(source []byte, markers ...string) (lines []string, index, count int) {
+	lines = strings.Split(string(source), "\n")
+	index = -1
+	for lineIndex, line := range lines {
+		for _, marker := range markers {
+			if strings.Contains(line, marker) {
+				index = lineIndex
+				count++
+				break
+			}
+		}
+	}
+	return lines, index, count
 }
 
 // toggleByteBuffer swaps every "Byte" on line for "Buffer", or every

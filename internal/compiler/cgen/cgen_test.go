@@ -120,7 +120,18 @@ func TestGeneratedForeignHeaderNamesAreAllocated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(header, "typedef struct SCHWAY_SCHWAY_RES_OPEN_RESULT") {
+	var symbol string
+	for _, function := range checked.Program.Functions {
+		if function.ForeignContract != nil {
+			symbol = function.ForeignContract.Symbol
+			break
+		}
+	}
+	if symbol == "" {
+		t.Fatal("checked fixture has no foreign symbol")
+	}
+	want := "typedef struct SCHWAY_" + strings.ToUpper(symbol) + "_RESULT"
+	if !strings.Contains(header, want) {
 		t.Fatalf("expected an allocated SCHWAY_-namespaced result type, got:\n%s", header)
 	}
 }

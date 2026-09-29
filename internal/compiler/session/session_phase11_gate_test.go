@@ -398,7 +398,7 @@ func TestPhase11GateMutationKill(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mutated := phase11ReplaceOnce(t, frozen, "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER schway_value_buffer, unsigned int invocation_index) {", "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER restrict schway_value_buffer, unsigned int invocation_index) {")
+	mutated := phase11SeedRestrict(t, frozen)
 	if found := cgen.ScanForBannedAttributes(mutated); len(found) == 0 {
 		t.Fatal("expected seeded restrict mutation to be detected by banned-attribute scan")
 	}
@@ -407,12 +407,33 @@ func TestPhase11GateMutationKill(t *testing.T) {
 	}
 }
 
-func phase11ReplaceOnce(t *testing.T, source, old, replacement string) string {
+func phase11SeedRestrict(t *testing.T, source string) string {
 	t.Helper()
-	if strings.Count(source, old) != 1 {
-		t.Fatalf("expected exact mutation seam once, found %d", strings.Count(source, old))
+	lines := strings.Split(source, "\n")
+	matched := 0
+	for index, line := range lines {
+		if !strings.HasPrefix(strings.TrimSpace(line), "static ") || !strings.Contains(line, "invocation_index") || !strings.HasSuffix(strings.TrimSpace(line), "{") {
+			continue
+		}
+		open := strings.IndexByte(line, '(')
+		close := strings.IndexByte(line, ')')
+		if open < 0 || close <= open {
+			continue
+		}
+		firstArgument := strings.TrimSpace(strings.SplitN(line[open+1:close], ",", 2)[0])
+		parts := strings.Fields(firstArgument)
+		if len(parts) != 2 {
+			continue
+		}
+		old := parts[0] + " " + parts[1]
+		replacement := parts[0] + " restrict " + parts[1]
+		lines[index] = strings.Replace(line, old, replacement, 1)
+		matched++
 	}
-	return strings.Replace(source, old, replacement, 1)
+	if matched != 1 {
+		t.Fatalf("expected one frozen C function parameter seam, found %d", matched)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func TestPhase11ByPointerRefusalFirstEvidence(t *testing.T) {
@@ -450,7 +471,7 @@ func TestPhase11SuppressionIsDiffLocal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	justified := phase11ReplaceOnce(t, suppressed, "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER schway_value_buffer, unsigned int invocation_index) {", "static SCHWAY_BUFFER SCHWAY_TOUCH(SCHWAY_BUFFER restrict schway_value_buffer, unsigned int invocation_index) {")
+	justified := phase11SeedRestrict(t, suppressed)
 
 	if suppressed == justified {
 		t.Fatal("expected the seeded restrict mutation to change the frozen bytes")
