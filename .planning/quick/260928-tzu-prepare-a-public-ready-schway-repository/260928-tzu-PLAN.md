@@ -341,3 +341,11 @@ change is separate from the intended Schway project identity. Restore those
 names to `clang` in current code and fixture manifests. Leave the archived
 Phase 16 run receipt unchanged. Hosted CI must confirm this correction before
 revising the remaining evidence IDs.
+
+Run `36616432386` confirms the compiler-identity correction is applied, but
+the full test failure counts remain 124 names on Ubuntu and 111 on macOS.
+Both hosts still pass `go vet`, `go build`, and Phase 23; both fail full tests
+and Phase 6 evidence, so race jobs are skipped. Do not expect this cleanup to
+clear unrelated failures. Next inspect Phase 4-5 core serialization fields
+and Phase 1-5 evidence IDs separately, then reconcile the current C output,
+diagnostic identities, executable controls, and rewritten history/doc refs.
