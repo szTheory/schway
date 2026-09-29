@@ -15,7 +15,7 @@
 // ownership.use_after_move gate.
 //
 // This fixture must NEVER be added to any list that expects a clean
-// check, in the same way cycle_self.schway never is.
+// check, in the same way cycle_self.lang never is.
 
 module phase07.call_argument_used_twice
 

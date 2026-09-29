@@ -26,7 +26,7 @@
 // the identical sequence of operations under different surface syntax.
 // `relay` itself is unchanged: byte-for-byte the `exclusive_borrow_clean`
 // shape 04-CONTEXT.md names (also `testdata/phase07/
-// clean_but_unpublishable.schway`'s own `relay`, restated here in the
+// clean_but_unpublishable.lang`'s own `relay`, restated here in the
 // `phase07.relay_escort_witness` module namespace since calls resolve only
 // within a single parsed program, D-07-01).
 //
@@ -52,7 +52,7 @@
 // which replaces the retired
 // `TestRelayEscortWitnessChecksCleanPendingInterproceduralLiveness`.
 //
-// The pre-existing `fn relay` in testdata/phase3/shared_shared_accept.schway
+// The pre-existing `fn relay` in testdata/phase3/shared_shared_accept.lang
 // (module owned.shared_shared_accept) is a DIFFERENT fixture: an owned
 // take/return with two overlapping SHARED loans, no exclusive borrow, no
 // dangling-alias shape, and it publishes with no problems at all. Do not

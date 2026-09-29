@@ -16,7 +16,7 @@
 // claimed this witness did not exist; A-03 checked testdata/ for a file and
 // reported the wrong conclusion -- D-07-44 corrects it.
 //
-// The pre-existing `fn relay` in testdata/phase3/shared_shared_accept.schway
+// The pre-existing `fn relay` in testdata/phase3/shared_shared_accept.lang
 // (module owned.shared_shared_accept) is a DIFFERENT fixture: an owned
 // take/return that publishes with no problems at all. Do not confuse the
 // two.

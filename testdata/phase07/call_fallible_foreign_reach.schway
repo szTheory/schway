@@ -27,7 +27,7 @@
 //
 // This fixture checks CLEAN -- it is a witness about a PUBLISHED FIELD's
 // value, not a refusal fixture, so it belongs in any accepting-corpus
-// list, unlike cycle_self.schway or call_argument_used_twice.schway.
+// list, unlike cycle_self.lang or call_argument_used_twice.lang.
 
 module phase07.call_fallible_foreign_reach
 

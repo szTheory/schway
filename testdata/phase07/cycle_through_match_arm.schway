@@ -1,5 +1,5 @@
 // D-07-28: a cycle whose CLOSING edge originates INSIDE a match arm.
-// call_from_both_match_arms.schway (07-04) proved enumerate-by-kind-across-
+// call_from_both_match_arms.lang (07-04) proved enumerate-by-kind-across-
 // all-blocks on the ADMISSION path; this fixture proves the same property
 // on the REFUSAL path -- the Phase-12 blindness guard made real without
 // `Result` payloads. `main` and `helper` are both arm-bodied match

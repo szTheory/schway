@@ -713,11 +713,11 @@ func TestBlameMovesNoPrimarySpanToday(t *testing.T) {
 		})
 
 	// 8. syntax.fallible_call_not_consumed: Primary is the call site
-	// token. Independently: main's own "schway_res_open(request)" binding.
+	// token. Independently: main's own "lang_res_open(request)" binding.
 	assertPrimary(t, readPhase4Fixture(t, "fallible_call_unconsumed.schway"), "syntax.fallible_call_not_consumed",
 		func(parsed ast.Program) (diagnostic.Span, bool) {
 			return findBindingSpan(parsed, "main", func(b ast.Binding) bool {
-				return b.RHS.Kind == "call" && b.RHS.Callee == "schway_res_open"
+				return b.RHS.Kind == "call" && b.RHS.Callee == "lang_res_open"
 			})
 		})
 

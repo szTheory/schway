@@ -1002,8 +1002,8 @@ func TestForeignCallRoundTrips(t *testing.T) {
 		t.Fatalf("foreign declaration did not parse: %+v", parsed.Program.Foreign)
 	}
 	symbol := parsed.Program.Foreign[0].Symbols[0]
-	if symbol.Name != "schway_res_open" {
-		t.Fatalf("symbol name = %q, want schway_res_open", symbol.Name)
+	if symbol.Name != "lang_res_open" {
+		t.Fatalf("symbol name = %q, want lang_res_open", symbol.Name)
 	}
 	policies := make(map[string]string, len(symbol.Policies))
 	for _, policy := range symbol.Policies {
@@ -1017,7 +1017,7 @@ func TestForeignCallRoundTrips(t *testing.T) {
 		t.Fatalf("unexpected function shape: %+v", parsed.Program.Funcs)
 	}
 	rhs := parsed.Program.Funcs[0].Body.Linear.Bindings[0].RHS
-	if rhs.Kind != "try_call" || rhs.Callee != "schway_res_open" || len(rhs.Arguments) != 1 || rhs.Arguments[0] != "request" {
+	if rhs.Kind != "try_call" || rhs.Callee != "lang_res_open" || len(rhs.Arguments) != 1 || rhs.Arguments[0] != "request" {
 		t.Fatalf("try-call RHS = %+v", rhs)
 	}
 

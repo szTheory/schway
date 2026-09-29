@@ -6,7 +6,7 @@
 // own seeded mutation (Task 3, control:callgraph.self_edge). Fixtures are
 // named by cycle length: cycle_mutual (length 2, 07-06 Task 1) and
 // cycle_indirect (length >= 3, landing in 07-07) are the only other
-// names; there is no cycle_direct.schway.
+// names; there is no cycle_direct.lang.
 
 module phase07.cycle_self
 

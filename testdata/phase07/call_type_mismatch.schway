@@ -11,7 +11,7 @@
 // exported-safe and carries no borrowed return) and not a cycle refusal
 // (the call graph `main -> identity` is acyclic). This fixture must
 // never be added to any list that expects a clean check, in the same
-// way `cycle_self.schway` never is.
+// way `cycle_self.lang` never is.
 
 module phase07.call_type_mismatch
 

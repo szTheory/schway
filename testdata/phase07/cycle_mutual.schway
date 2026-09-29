@@ -3,7 +3,7 @@
 // recursion stack overflow. Fixtures are named by cycle length: this one
 // is length 2 (mutual recursion). cycle_self (length 1) and cycle_indirect
 // (length >= 3, landing in 07-07) are the only other names; there is no
-// cycle_direct.schway, the superseded name.
+// cycle_direct.lang, the superseded name.
 
 module phase07.cycle_mutual
 

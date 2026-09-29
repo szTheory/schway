@@ -8,7 +8,7 @@
 // or `corevalidate.Validate`'s independently-derived peer signature --
 // producer/peer parity for `Fails` under a genuinely disagreeing,
 // order-sensitive join, not just the identity/equal-merge cases
-// call_fallible_foreign_reach.schway already covers.
+// call_fallible_foreign_reach.lang already covers.
 //
 // This fixture checks and corevalidates clean; it is a witness about a
 // published FIELD's value, not a refusal fixture.

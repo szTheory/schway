@@ -1,5 +1,5 @@
 // SEM-06's negative control (D-07-34): `main` calls `relay`, whose body is
-// the identical shape to testdata/phase07/clean_but_unpublishable.schway's own
+// the identical shape to testdata/phase07/clean_but_unpublishable.lang's own
 // `relay` -- it checks clean on its own (zero diagnostics from
 // session.Check), but fails publication with core.origin_omitted, so
 // originvalidate.PublishProblemsFor reports Callable == false for it. The
@@ -11,7 +11,7 @@
 // refusal fires with export membership held constant.
 //
 // A cross-module copy of this callee already exists as
-// testdata/phase07/clean_but_unpublishable.schway; it is repeated here (module
+// testdata/phase07/clean_but_unpublishable.lang; it is repeated here (module
 // line and caller aside) because calls in this phase resolve only within a
 // single parsed program (D-07-01) -- there is no cross-module call channel
 // yet for `main` to reach that file's `relay` directly.

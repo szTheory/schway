@@ -26,7 +26,7 @@
 // "core.duplicate_function_id")`) and refuses this program with
 // `core.duplicate_function_id`. Before 07-10, that refusal reached only
 // `lang interface core` / `lang interface export`, and there only as
-// `tool.operation_failed` / exit 3 with the code discarded -- `schway check`
+// `tool.operation_failed` / exit 3 with the code discarded -- `lang check`
 // reported `status: pass`, exit 0, on this exact program. As of 07-10,
 // `CheckCommandFile` consults the peer and this program is refused at the
 // gate users actually run (07-REVIEW.md CR-04 / PVG-03).
@@ -38,7 +38,7 @@
 // mutation kill; see PHASE-07-DEBT.md D-07-50.
 //
 // This fixture must never be added to `phase07DispatchFixtures` or to any
-// list that expects a clean check, in the same way `cycle_self.schway` never
+// list that expects a clean check, in the same way `cycle_self.lang` never
 // is: it is a standing negative control for the peer-consult channel, not
 // an accepting fixture.
 

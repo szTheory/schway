@@ -109,7 +109,7 @@ be zero; every required positive check and the exact source count must pass.
 
     set -eu
     scope=(go.mod .gitignore .github/workflows/ci.yml README.md AGENTS.md cmd native internal/compiler scripts examples testdata .claude/skills)
-    exclusions=(':(exclude)testdata/phase1/**' ':(exclude)testdata/phase2/**' ':(exclude)testdata/phase3/**' ':(exclude)testdata/phase4/**' ':(exclude)testdata/phase5/**' ':(exclude)testdata/phase16/historical/**' ':(exclude)testdata/phase16/validation-corpus-run-record.jsonl' ':(exclude)internal/compiler/native/foreign_legacy.go' ':(exclude)internal/compiler/check/frozen_foreign_expectation_test.go' ':(exclude).claude/skills/*/sources/**')
+    exclusions=(':(exclude)testdata/phase1/**' ':(exclude)testdata/phase2/**' ':(exclude)testdata/phase3/**' ':(exclude)testdata/phase4/**' ':(exclude)testdata/phase5/**' ':(exclude)testdata/phase16/historical/**' ':(exclude)testdata/phase16/validation-corpus-run-record.jsonl' ':(exclude)internal/compiler/native/foreign_legacy.go' ':(exclude)internal/compiler/check/frozen_foreign_expectation_test.go' ':(exclude).claude/skills/*/sources/**' ':(exclude)testdata/phase07/call_argument_used_once.schway' ':(exclude)testdata/phase07/call_argument_used_twice.schway' ':(exclude)testdata/phase07/call_fallible_foreign_reach.schway' ':(exclude)testdata/phase07/call_two_fallible_callees_disagree.schway' ':(exclude)testdata/phase07/call_type_mismatch.schway' ':(exclude)testdata/phase07/call_uncallable_callee.schway' ':(exclude)testdata/phase07/clean_but_unpublishable.schway' ':(exclude)testdata/phase07/cycle_indirect.schway' ':(exclude)testdata/phase07/cycle_mutual.schway' ':(exclude)testdata/phase07/cycle_self.schway' ':(exclude)testdata/phase07/cycle_through_match_arm.schway' ':(exclude)testdata/phase07/duplicate_function_name.schway' ':(exclude)testdata/phase07/relay_escort_witness.schway')
     count_text() { git grep --cached -I -l -E "$1" -- "${scope[@]}" "${exclusions[@]}" | wc -l | tr -d '[:space:]'; }
     old_module=$(count_text 'github[.]com/codename-lang/lang')
     old_cli=$(count_text 'cmd/lang(-repair)?(/|[^[:alnum:]_-])|/lang(-repair)?([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang-repair([^[:alnum:]_-]|$)|(^|[^[:alnum:]_])lang[[:space:]]+(app|build|check|run|verify)([^[:alnum:]_]|$)')
@@ -117,7 +117,7 @@ be zero; every required positive check and the exact source count must pass.
     # Already-versioned lang.* schema names are frozen wire identifiers.
     # Reject old lang: annotation labels; current namespaces stay schway.*.
     old_protocol=$(count_text '(^|[^[:alnum:]_])lang:')
-    old_abi=$(count_text '(^|[^[:alnum:]_])(lang_|LANG_)')
+    old_abi=$(git grep --cached -I -l -E '(^|[^[:alnum:]_])(lang_|LANG_)' -- "${scope[@]}" "${exclusions[@]}" ':(exclude)internal/compiler/check/check_blame_test.go' ':(exclude)internal/compiler/syntax/syntax_test.go' | wc -l | tr -d '[:space:]')
     old_paths=$(git ls-files | rg '(^cmd/lang(-repair)?/|^native/lang_|[.]lang$)' | wc -l | tr -d '[:space:]')
     printf 'old_module=%s old_cli=%s old_extension=%s old_protocol=%s old_abi=%s old_paths=%s\n' "$old_module" "$old_cli" "$old_extension" "$old_protocol" "$old_abi" "$old_paths"
     if [ "$old_module" -ne 0 ] || [ "$old_cli" -ne 0 ] || [ "$old_extension" -ne 0 ] || [ "$old_protocol" -ne 0 ] || [ "$old_abi" -ne 0 ] || [ "$old_paths" -ne 0 ]; then
@@ -349,3 +349,22 @@ and Phase 6 evidence, so race jobs are skipped. Do not expect this cleanup to
 clear unrelated failures. Next inspect Phase 4-5 core serialization fields
 and Phase 1-5 evidence IDs separately, then reconcile the current C output,
 diagnostic identities, executable controls, and rewritten history/doc refs.
+
+## Dated Phase 7 diagnostic-input amendment (2026-09-29)
+
+Hosted run `36617635572` on `2e39e2f9` passes vet, build, Phase 23, and Linux
+libc++ setup, but full checks and Phase 6 evidence remain red; race jobs are
+skipped. It identifies a Phase 7 diagnostic ID drift: the `.schway` path rename
+left 13 fixtures with comment-only `.lang`→`.schway` text changes, which moved
+source spans and also changed pinned payload inputs. Restore those files to the
+exact pre-rename bytes while keeping their `.schway` paths, and exclude only
+those 13 named paths from the public-identity text count. Their historical
+comment references are explicit exceptions; all remain in the all-ref privacy
+scan. Its old-ABI text count also
+excludes only `internal/compiler/check/check_blame_test.go` and
+`internal/compiler/syntax/syntax_test.go` for these fixture-specific
+`lang_res_open` expectations; every other identity-family count still
+checks both files, and the full privacy scan includes them. The same run shows the Phase 4 test helpers expecting `schway_res_open` from a byte-frozen fixture that declares
+`lang_res_open`; update those named expectations to the fixture's actual legacy
+symbol. Do not update diagnostic, payload, or golden IDs unless the next hosted
+run proves the underlying semantic witness changed.
