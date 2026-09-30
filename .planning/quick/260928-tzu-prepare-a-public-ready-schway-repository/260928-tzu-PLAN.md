@@ -661,3 +661,16 @@ phone-shaped substrings wholly inside a generated Go test temp-source path,
 and requires all other candidates to be classified. The corrected scanner
 passed against the private artifact; generate and audit a new hosted receipt
 before updating the checked-in record.
+
+## Dated hosted receipt amendment (2026-09-30, run 36670954303)
+
+The corrected opt-in Ubuntu receipt ran against source revision `dc730fff` and
+passed its field-aware pre-upload privacy scan. The private download contains
+34 exported pairs, 34 exact pair-completion witnesses, one matching batch
+witness, matching manifest digests, zero test-fail/build-fail events, and 82
+skips. The second privacy scan found no personal home/contact/secret
+candidates; five phone-shaped matches were contained in generated Go test
+`/tmp/Test.../001/...` paths, with zero unclassified matches. Gitleaks found
+zero findings. The record and manifest are copied from that private artifact;
+run normal hosted CI again after committing them to confirm the corpus-grade
+check now passes.
