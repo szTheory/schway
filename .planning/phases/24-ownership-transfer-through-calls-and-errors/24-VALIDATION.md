@@ -20,7 +20,7 @@ created: "2026-09-30"
 | **Framework** | Go standard-library `testing`; native cases compile with installed Clang. |
 | **Config file** | `go.mod`; no external test framework is required. |
 | **Quick run command** | `sh scripts/verify-phase24.sh` on the designated hosted CI lane after that phase runner is added. No project tests may run in this checkout. |
-| **Full suite command** | Existing GitHub Actions evidence aggregate, full `go test ./...`, and `go test -race ./...` on Linux and macOS. Run only through the approved hosted CI workflow. |
+| **Full suite command** | Existing GitHub Actions evidence aggregate, full `go test ./...`, and `go test -race -timeout=20m ./...` on Linux and macOS. Run only through the approved hosted CI workflow. The explicit race timeout accommodates the session package's hosted macOS race runtime while retaining a finite limit. |
 | **Estimated runtime** | Not measured for Phase 24. Capture elapsed time in the first hosted receipt; preserve the existing lane and avoid a duplicate full-suite job. |
 
 ## Sampling Rate
