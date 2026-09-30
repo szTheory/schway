@@ -1,6 +1,6 @@
 ---
 phase: 23-live-local-allocation-and-discharge
-verified: 2026-09-30T16:12:12Z
+verified: 2026-09-30T18:54:15Z
 status: passed
 score: 5/5 roadmap success criteria verified
 covered_files:
@@ -47,7 +47,7 @@ covered_files:
   - internal/compiler/session/session.go
   - internal/compiler/session/session_app_verify.go
   - testdata/phase23/discard_owner.schway
-covered_digest: "v1:sha256:69dc112f421040659f5e5e4e5f62d1707e3c9f807d3f109d6f9cc4d60295e90b"
+covered_digest: "v1:sha256:1e74781b5776af7aee6c85cc861821b8111e7ebaa87d0483c8eeb1ca0e055a39"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -62,9 +62,9 @@ re_verification:
 # Phase 23: Live Local Allocation and Discharge — Verification Report
 
 **Phase Goal:** A developer can read a caller-selected file byte through a real allocation returned live to Schway and observe its generated local cleanup.
-**Verified:** 2026-09-30T16:12:12Z
+**Verified:** 2026-09-30T18:54:15Z
 **Status:** passed
-**Re-verification:** Yes — the prior report's sole gap was the absent hosted Ubuntu receipt.
+**Re-verification:** Yes — freshness refresh against the hosted-tested source revision; no tests or hosted workflows were rerun.
 
 ## Goal Achievement
 
@@ -172,7 +172,7 @@ None. The phase defines observable behavior through the public command, native o
 
 ### Gaps Summary
 
-The prior report's only gap is closed. GitHub Actions run [36707529870](https://github.com/szTheory/schway/actions/runs/36707529870) is successful at source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`. The Ubuntu `checks` and `current evidence aggregate` jobs both passed, including the Phase 23 script step; the macOS `checks` and evidence aggregate also passed. Current HEAD is `3713a10180ca21be0833a761dbc8e50b8f27a4b0`; the diff from the tested SHA contains only `.planning/` documents, so implementation files match the tested source. The validation-corpus receipt was skipped by workflow configuration and is not required by the Phase 23 hosted Ubuntu criterion.
+The prior report's only gap is closed. Read-only inspection of GitHub Actions run [36707529870](https://github.com/szTheory/schway/actions/runs/36707529870) confirms successful completion at source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`. The Ubuntu `checks` and `current evidence aggregate` jobs passed, including the Phase 23 script step; the macOS `checks` and evidence aggregate also passed. The current checkout is `a33b4979bd1b8d5dccc66a7a828de6271a572306`. Since the hosted-tested SHA, changed paths are planning artifacts only; of this report's existing `covered_files`, only `.planning/ROADMAP.md` changed, while all covered implementation and CI evidence paths remain unchanged. The covered digest was regenerated with `gsd_run query verification.fingerprint` over the exact existing list. This freshness refresh did not execute tests, probes, or hosted workflows. The validation-corpus receipt was skipped by workflow configuration and is not required by the Phase 23 hosted Ubuntu criterion.
 
 Evidence classes are kept distinct: source inspection establishes wiring and implementation shape; the 2026-09-30 hosted run is the current behavioral/CI receipt; earlier local macOS/Linux-container and full-suite receipts remain historical and were not rerun. The Phase 23 goal and its five roadmap success criteria are achieved.
 
@@ -182,5 +182,5 @@ The decision-coverage query reports all 6 trackable CONTEXT.md decisions honored
 
 ---
 
-_Verified: 2026-09-30T16:12:12Z_
+_Verified: 2026-09-30T18:54:15Z_
 _Verifier: the agent (gsd-verifier)_
