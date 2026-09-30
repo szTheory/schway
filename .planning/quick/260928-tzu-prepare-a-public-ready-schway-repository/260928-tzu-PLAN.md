@@ -626,3 +626,23 @@ all-variant span normalizer calls `strings.HasPrefix` in
 `session_phase16_frozen_evidence_test.go`, but that file did not import
 `strings`. Add the missing import and run local static analysis only; the
 hosted test results remain the acceptance evidence for this repair chain.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36661109534)
+
+The missing `strings` imports are fixed. Both hosts now pass vet, build, Phase
+23, the full test suite except for the corpus-grade receipt check, and both
+Phase 6 aggregates except for `TestValidationRowGradesAreEarnedOverArchivedCorpus`.
+That remaining check still compares 35 live pairs with a 34-pair historical
+record. A separate opt-in receipt run is required after fixing the live pair
+resolver; do not reuse the old record.
+
+## Dated receipt audit amendment (2026-09-29, run 36661507880)
+
+The opt-in Ubuntu receipt completed and passed its pre-upload privacy gate. A
+second private scan found no PII or secret candidates, and the artifact records
+all 35 pair completions with matching manifest digests. One archived
+`assert-go-tests.sh` operand still names `./cmd/lang-repair/...`, so its live
+subprocess fails after the current-tree rename. Keep this receipt private and
+out of the checked-in evidence record. Map archived command operands to the
+current package identity at the shared grading and pair-export boundaries,
+then regenerate and re-audit the receipt from a new hosted run.

@@ -621,7 +621,7 @@ func deriveAssertGoTestsCeiling(index *testIndex, record *runRecord, evidence st
 	if len(rest) < 2 {
 		return "DEFINED", nil
 	}
-	packageNames, resolvedPkg := index.resolvePackageNames(rest[0])
+	packageNames, resolvedPkg := index.resolvePackageNames(currentIdentityPackageOperand(rest[0]))
 	names := rest[1:]
 	if !resolvedPkg {
 		return "WIRED", nil
@@ -1022,7 +1022,7 @@ func pkgPatternsFor(evidence string) []pkgPattern {
 		}
 		var pairs []pkgPattern
 		for _, pkg := range parsed.Packages {
-			pairs = append(pairs, pkgPattern{Package: pkg, Pattern: parsed.Pattern})
+			pairs = append(pairs, pkgPattern{Package: currentIdentityPackageOperand(pkg), Pattern: parsed.Pattern})
 		}
 		return pairs
 	}
@@ -1049,7 +1049,7 @@ func pkgPatternsFor(evidence string) []pkgPattern {
 			return nil
 		}
 		pattern := "^(" + strings.Join(rest[1:], "|") + ")$"
-		return []pkgPattern{{Package: rest[0], Pattern: pattern}}
+		return []pkgPattern{{Package: currentIdentityPackageOperand(rest[0]), Pattern: pattern}}
 	}
 	return nil
 }
@@ -1106,9 +1106,9 @@ func selfCitationError(doc, taskID string, pairs []pkgPattern) error {
 // consumer will consult, anchored, and a cell that resolves to zero names
 // contributes no pair (the existing WIRED-ceiling path, unchanged). The
 // assert-go-tests.sh shape already names exact top-level identifiers and is
-// already anchored (pkgPatternsFor's own "^(...)$" construction, built from
-// the SAME index.resolvePackageNames primitive), so it is routed through
-// pkgPatternsFor unchanged rather than re-derived a second way.
+// already anchored (pkgPatternsFor's own "^(...)$" construction). Its package
+// operand passes through the same current-identity adapter used for the
+// go-test shape, preserving archived evidence while executing current paths.
 func resolvedPkgPatterns(index *testIndex, evidence string) []pkgPattern {
 	evidence = strings.TrimSpace(evidence)
 	if assertGoTestsInvocationPattern.MatchString(evidence) {
@@ -1163,6 +1163,43 @@ func currentIdentityPackageOperand(operand string) string {
 		return "./cmd/schway-repair/" + strings.TrimPrefix(operand, legacyRepairPackage+"/")
 	}
 	return operand
+}
+
+func TestArchivedCommandPackageOperandsUseCurrentIdentityAtLiveBoundaries(t *testing.T) {
+	index := &testIndex{byImportPath: map[string]map[string]bool{
+		groundednessModulePath + "/cmd/schway-repair": {"TestLiveRepairEvidence": true},
+	}}
+	legacyRepairOperand := "./cmd/" + "lang" + "-repair/..."
+	cases := []struct {
+		name     string
+		evidence string
+	}{
+		{
+			name:     "go test pair export",
+			evidence: "go test -run TestLiveRepairEvidence " + legacyRepairOperand,
+		},
+		{
+			name:     "assert-go-tests pair export",
+			evidence: "sh scripts/assert-go-tests.sh " + legacyRepairOperand + " TestLiveRepairEvidence",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			pairs := resolvedPkgPatterns(index, tc.evidence)
+			if len(pairs) != 1 {
+				t.Fatalf("resolvedPkgPatterns(%q) returned %d pairs, want 1", tc.evidence, len(pairs))
+			}
+			if got, want := pairs[0].Package, "./cmd/schway-repair/..."; got != want {
+				t.Fatalf("pair package = %q, want %q", got, want)
+			}
+			if tc.name == "assert-go-tests pair export" {
+				ceiling, names := deriveAssertGoTestsCeiling(index, &runRecord{}, tc.evidence)
+				if ceiling != "WIRED" || len(names) != 1 || names[0] != "TestLiveRepairEvidence" {
+					t.Fatalf("deriveAssertGoTestsCeiling = (%q, %v), want (WIRED, [TestLiveRepairEvidence])", ceiling, names)
+				}
+			}
+		})
+	}
 }
 
 // validationTableEligibleForGrading keeps unfinished draft/planned contracts
