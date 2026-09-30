@@ -618,3 +618,11 @@ export's lowercase keys. Finish the all-variant span and manifest-ledger
 edits, let push-triggered CI complete, then dispatch the receipt workflow on
 its own, audit the artifact privately, and update the record only from its
 actual test results.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36660820987)
+
+Both Ubuntu and macOS vet steps failed before running the test suites. The
+all-variant span normalizer calls `strings.HasPrefix` in
+`session_phase16_frozen_evidence_test.go`, but that file did not import
+`strings`. Add the missing import and run local static analysis only; the
+hosted test results remain the acceptance evidence for this repair chain.
