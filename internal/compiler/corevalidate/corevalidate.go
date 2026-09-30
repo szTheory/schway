@@ -1422,10 +1422,10 @@ func (v *validator) validateTransferredOwner() bool {
 			}
 		}
 	}
-	if helper == nil {
+	if helper == nil || helper.ReturnType != "FileByteOwner" {
 		return true
 	}
-	if helper.ReturnType != "FileByteOwner" || helper.Linear == nil || acquire.op.Kind != core.OpForeignCall || acquire.op.Foreign == nil || acquire.op.Foreign.Allocator == "" || acquire.op.Foreign.Release == "" {
+	if helper.Linear == nil || acquire.op.Kind != core.OpForeignCall || acquire.op.Foreign == nil || acquire.op.Foreign.Allocator == "" || acquire.op.Foreign.Release == "" {
 		return v.check(false, "core.owner_transfer_helper", helper.ID)
 	}
 	var helperReturn *core.LinearOperation

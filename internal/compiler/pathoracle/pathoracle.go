@@ -189,10 +189,10 @@ func validateTransferredOwner(program core.Program) error {
 			}
 		}
 	}
-	if helper == nil {
+	if helper == nil || helper.ReturnType != "FileByteOwner" {
 		return nil
 	}
-	if helper.ReturnType != "FileByteOwner" || helper.Parameter.Type != "PathToken" || a.op.Kind != core.OpForeignCall || a.op.Foreign == nil || a.op.Foreign.Symbol != "schway_file_byte_acquire" || a.op.Foreign.ABIType != "schway_file_byte_acquire_fn" || a.op.Foreign.ParameterType != "PathToken" || a.op.Foreign.ResultType != "FileByteOwner" || a.op.Foreign.Fails != "AcquireError" || a.op.Foreign.Allocator != "libc_malloc" || a.op.Foreign.Release != "schway_file_byte_release" || a.op.ErrTargetID == "" || a.op.OkEdgeID == "" || a.op.ErrEdgeID == "" {
+	if helper.Parameter.Type != "PathToken" || a.op.Kind != core.OpForeignCall || a.op.Foreign == nil || a.op.Foreign.Symbol != "schway_file_byte_acquire" || a.op.Foreign.ABIType != "schway_file_byte_acquire_fn" || a.op.Foreign.ParameterType != "PathToken" || a.op.Foreign.ResultType != "FileByteOwner" || a.op.Foreign.Fails != "AcquireError" || a.op.Foreign.Allocator != "libc_malloc" || a.op.Foreign.Release != "schway_file_byte_release" || a.op.ErrTargetID == "" || a.op.OkEdgeID == "" || a.op.ErrEdgeID == "" {
 		return fail("owner_transfer_helper", helper.ID)
 	}
 	var retHelper *core.LinearOperation
