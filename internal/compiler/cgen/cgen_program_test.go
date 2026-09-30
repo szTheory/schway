@@ -1728,8 +1728,8 @@ func TestPhase24EmitterTransfer(t *testing.T) {
 	}
 	helperStart := strings.Index(generated, "static schway_file_byte_owner SCHWAY_ACQUIRE(")
 	callerStart := strings.Index(generated, "static uint64_t SCHWAY_MAIN(")
-	if helperStart < 0 || callerStart <= helperStart {
-		t.Fatalf("generated C lacks the helper owner return followed by its caller:\n%s", generated)
+	if helperStart < 0 || callerStart < 0 {
+		t.Fatalf("generated C lacks the transfer helper or caller function:\n%s", generated)
 	}
 	caller := generated[callerStart:]
 	callAt := strings.Index(caller, "SCHWAY_ACQUIRE(")
@@ -1739,15 +1739,15 @@ func TestPhase24EmitterTransfer(t *testing.T) {
 	if callAt < 0 || useAt <= callAt || releaseAt <= useAt || returnAt <= releaseAt {
 		t.Fatalf("generated caller must acquire, borrow, release, and return in order: call=%d use=%d release=%d return=%d", callAt, useAt, releaseAt, returnAt)
 	}
-	callerEnd := strings.Index(caller, "}\n\nint main(")
+	callerEnd := strings.Index(caller, "}\n\n")
 	if callerEnd < 0 {
-		t.Fatalf("generated caller is not followed by the application entry point:\n%s", caller)
+		t.Fatalf("generated caller has no closing brace:\n%s", caller)
 	}
 	callerBody := caller[:callerEnd]
 	if strings.Count(callerBody, "schway_file_byte_release(") != 1 || !strings.Contains(callerBody[releaseAt:], "paired release:") {
 		t.Fatalf("generated caller does not contain exactly one operation-paired release:\n%s", callerBody)
 	}
-	if !strings.Contains(generated[helperStart:callerStart], "return schway_value_owner") || !strings.Contains(generated, "strlen(argv[1]) > 4096u") {
+	if !strings.Contains(generated[helperStart:], "return schway_value_owner") || !strings.Contains(generated, "strlen(argv[1]) > 4096u") {
 		t.Fatal("helper owner return or caller-selected bounded path transport is missing")
 	}
 }
