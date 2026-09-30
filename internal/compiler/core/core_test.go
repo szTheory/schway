@@ -17,7 +17,6 @@ import (
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/evidence"
-	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/pathoracle"
@@ -217,8 +216,9 @@ var phase16SchwayForeignTypeCoreSHA256 = map[string]string{
 
 // These are the current Schway-identity manifest IDs for every pinned fixture
 // that remains admitted through evidence.Build. The corresponding original
-// IDs stay in pinnedFixtures and must be reproduced by normalizing only the
-// renamed core/C/foreign-manifest identity inputs.
+// IDs stay in pinnedFixtures; identity normalization must reproduce those
+// pins except where a separate behavior-migration ledger records an additional
+// witnessed change to terminal output before abort.
 var phase16SchwayIdentityManifestIDs = map[string]string{
 	"testdata/phase1/comments.schway":                                "evidence:09e9b18d9d45df83f0fec99c",
 	"testdata/phase1/toggle.schway":                                  "evidence:9714adb24624f30bad81c68f",
@@ -238,6 +238,31 @@ var phase16SchwayIdentityManifestIDs = map[string]string{
 	"testdata/phase3/shared_shared_accept.schway":                    "evidence:ee4aa09030f857f5f93dc9c5",
 	"testdata/phase4/defect_terminal.schway":                         "evidence:7ba48922b4cc04a392125649",
 	"testdata/phase5/defect_dies_by_signal.schway":                   "evidence:f63c628eabe74b0f9d361ef1",
+}
+
+type phase16ManifestBehaviorMigration struct {
+	OriginalManifestID           string
+	IdentityNormalizedManifestID string
+	CurrentSchwayManifestID      string
+	ChangedBehavior              string
+	Witness                      string
+}
+
+var phase16ManifestBehaviorMigrations = map[string]phase16ManifestBehaviorMigration{
+	"testdata/phase4/defect_terminal.schway": {
+		OriginalManifestID:           "evidence:12e9d68073ab86eb9eb463c9",
+		IdentityNormalizedManifestID: "evidence:7649e234461dab67e77861c7",
+		CurrentSchwayManifestID:      "evidence:7ba48922b4cc04a392125649",
+		ChangedBehavior:              "flush the terminal JSON record before abort",
+		Witness:                      "probe:TestProgramMatchDefectEventPrecedesAbort",
+	},
+	"testdata/phase5/defect_dies_by_signal.schway": {
+		OriginalManifestID:           "evidence:c9eea4002b7177106948da43",
+		IdentityNormalizedManifestID: "evidence:b563764272b40d6770f41273",
+		CurrentSchwayManifestID:      "evidence:f63c628eabe74b0f9d361ef1",
+		ChangedBehavior:              "flush the terminal JSON record before abort",
+		Witness:                      "probe:TestProgramMatchDefectEventPrecedesAbort",
+	},
 }
 
 // TestPreviousPhaseCoreBytesUnchanged pins every Phase 1-5 fixture's
@@ -376,8 +401,20 @@ func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 					t.Fatalf("current Schway manifest ID moved for %s: got %s, want %s", fixture.Path, product.Manifest.ID, currentID)
 				}
 				historicalID, normalizeErr := phase16HistoricalManifestID(product)
-				if normalizeErr != nil || historicalID != fixture.ManifestID {
-					t.Fatalf("identity-only normalization must reproduce the old manifest ID for %s: got %s err=%v want %s", fixture.Path, historicalID, normalizeErr, fixture.ManifestID)
+				wantHistoricalID := fixture.ManifestID
+				if migration, behaviorChanged := phase16ManifestBehaviorMigrations[fixture.Path]; behaviorChanged {
+					if migration.OriginalManifestID != fixture.ManifestID || migration.CurrentSchwayManifestID != currentID || migration.ChangedBehavior != "flush the terminal JSON record before abort" || migration.Witness != "probe:TestProgramMatchDefectEventPrecedesAbort" {
+						t.Fatalf("terminal-output manifest migration is not tied to the original/current pins for %s", fixture.Path)
+					}
+					witness, witnessErr := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "cgen", "cgen_program_test.go"))
+					generator, generatorErr := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "cgen", "cgen_program.go"))
+					if witnessErr != nil || generatorErr != nil || !strings.Contains(string(witness), "func TestProgramMatchDefectEventPrecedesAbort") || !strings.Contains(string(generator), "fflush(stdout)") {
+						t.Fatalf("terminal-output behavior witness is not live for %s", fixture.Path)
+					}
+					wantHistoricalID = migration.IdentityNormalizedManifestID
+				}
+				if normalizeErr != nil || historicalID != wantHistoricalID {
+					t.Fatalf("identity-normalized manifest ID for %s: got %s err=%v want %s", fixture.Path, historicalID, normalizeErr, wantHistoricalID)
 				}
 				return
 			}
@@ -389,6 +426,14 @@ func TestPreviousPhaseManifestIDsUnchanged(t *testing.T) {
 	for path := range phase16SchwayIdentityManifestIDs {
 		if !containsPinnedFixture(path) {
 			t.Fatalf("current manifest identity migration is not tied to a historical pin: %s", path)
+		}
+	}
+	for path := range phase16ManifestBehaviorMigrations {
+		if !containsPinnedFixture(path) {
+			t.Fatalf("manifest behavior migration is not tied to a historical pin: %s", path)
+		}
+		if _, currentIdentity := phase16SchwayIdentityManifestIDs[path]; !currentIdentity {
+			t.Fatalf("manifest behavior migration has no current Schway identity pin: %s", path)
 		}
 	}
 }
@@ -404,17 +449,6 @@ func phase16HistoricalManifestID(product evidence.Product) (string, error) {
 	}
 	historicalC := normalizeSchwayIdentityForHistoricalComparison(string(product.CSource))
 	manifest := product.Manifest
-	if len(manifest.ExecutionDigests) != len(product.Executions) {
-		return "", fmt.Errorf("execution digest count=%d, canonical outputs=%d", len(manifest.ExecutionDigests), len(product.Executions))
-	}
-	for index, result := range product.Executions {
-		canonical, canonicalErr := execution.CanonicalBytes(result)
-		if canonicalErr != nil {
-			return "", canonicalErr
-		}
-		historicalExecution := normalizeSchwayIdentityForHistoricalComparison(string(canonical))
-		manifest.ExecutionDigests[index] = "sha256:" + phase16SHA256([]byte(historicalExecution))
-	}
 	manifest.CoreDigest = "sha256:" + phase16SHA256(normalizedCore)
 	manifest.CDigest = "sha256:" + phase16SHA256([]byte(historicalC))
 	if manifest.ForeignDigest != "" {

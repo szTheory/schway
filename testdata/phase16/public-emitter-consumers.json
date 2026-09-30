@@ -222,11 +222,11 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:448",
+      "call": "internal/compiler/core/core_test.go:Emit:482",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:945",
+      "call": "internal/compiler/core/core_test.go:Emit:979",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -288,7 +288,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:126",
+      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:125",
       "classification": "frozen-evidence-validator",
       "witness": "probe:TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram",
       "evidence_fixtures": [
@@ -297,7 +297,7 @@
       ]
     },
     {
-      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:175",
+      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:174",
       "classification": "frozen-evidence-validator",
       "witness": "probe:TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults",
       "evidence_fixtures": [

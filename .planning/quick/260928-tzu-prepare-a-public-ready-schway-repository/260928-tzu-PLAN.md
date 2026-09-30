@@ -594,3 +594,27 @@ artifact upload. The pair exporter uses lowercase JSON keys (`package` and
 receipt artifact was created or uploaded. Correct the consumer keys, let the
 normal push CI finish, then dispatch the receipt job separately so the
 workflow's same-branch concurrency cancellation cannot interrupt CI.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36659880866)
+
+The operation-specific legacy links, Linux output capture, M004 provenance
+sentinels, rename gate, and public emitter inventory no longer appear among
+the failures. Both full test jobs and both Phase 6 aggregates still fail in
+three areas. The generated-program digest reaches `phase5.enum_foreign_try1_alt2`
+after the earlier `alt1` fixes, so apply the same span reversal to all four
+bounded `phase5.enum_foreign_*` variants. The two terminal-defect manifests
+normalize to `evidence:7649e234461dab67e77861c7` and
+`evidence:b563764272b40d6770f41273`; source inspection identifies the
+additional C change as flushing the terminal record before abort. Keep the
+original pins `evidence:12e9d68073ab86eb9eb463c9` and
+`evidence:c9eea4002b7177106948da43`, and bind those two paths to a separate
+behavior-migration ledger with the existing
+`TestProgramMatchDefectEventPrecedesAbort` witness and current Schway IDs. The
+validation corpus remains at 35 requested pairs versus 34 recorded.
+
+The first manual receipt attempt failed before upload because the workflow
+read uppercase pair keys; no artifact was uploaded. The workflow now reads the
+export's lowercase keys. Finish the all-variant span and manifest-ledger
+edits, let push-triggered CI complete, then dispatch the receipt workflow on
+its own, audit the artifact privately, and update the record only from its
+actual test results.
