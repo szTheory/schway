@@ -126,6 +126,15 @@ func VerifyPhase6ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 		if budgetLane.Status != protocol.StatusPass {
 			markFail(budgetLane.Status)
 		}
+		if budgetLane.Fired[ControlQLT02UnknownMachine] &&
+			!budgetLane.Fired[ControlQLT02ManifestEmpty] &&
+			!budgetLane.Fired[ControlQLT02DuplicateRow] &&
+			!budgetLane.Fired[ControlQLT02IneligibleHardGate] {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
+				"verify.machine_not_ratified", diagnostic.Span{},
+				"current machine is not ratified for QLT-02 budgets; budget results remain observation-only",
+			))
+		}
 	}
 
 	// Lane: control:interpreter-o0-o3 (D-06-06), the cache-backed native
@@ -197,11 +206,14 @@ func VerifyPhase6ControlsAndWork(ctx context.Context) (protocol.Result, error) {
 	}
 
 	cleanupStarted := time.Now()
-	if status, control, work := phase6RunCleanupInjectionLane(); status == protocol.StatusPass {
+	if status, control, refusal, work := phase6RunCleanupInjectionLane(); status == protocol.StatusPass {
 		addLane("lane:defect-cleanup-injection", protocol.StatusPass, []string{control}, work, cleanupStarted)
 	} else {
 		addLane("lane:defect-cleanup-injection", status, nil, work, cleanupStarted)
 		markFail(status)
+		if refusal != "" {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("verify.m004_refusal", diagnostic.Span{}, refusal))
+		}
 	}
 
 	staleStarted := time.Now()
@@ -278,31 +290,31 @@ func phase6RunBorrowInjectionLane() (status, control string, work int) {
 // requires a real mutation -- distinct bytes from the unmutated source --
 // proving the shared release-omission mutation runner (D-06-25's "reuse
 // verbatim" instruction) still finds and removes a real release site.
-func phase6RunCleanupInjectionLane() (status, control string, work int) {
+func phase6RunCleanupInjectionLane() (status, control, refusal string, work int) {
 	source, err := os.ReadFile(nat03CorpusPath(phase6CleanupFixture))
 	if err != nil {
-		return protocol.StatusOperational, "", 1
+		return protocol.StatusOperational, "", "", 1
 	}
 	checked := Check(source)
 	if len(checked.Diagnostics) != 0 {
-		return protocol.StatusInvalid, "", 1
+		return protocol.StatusInvalid, "", "", 1
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		return protocol.StatusInvalid, "", 1
+		return protocol.StatusInvalid, "", "", 1
 	}
 	cSource, emitErr := Phase16ControlNativeC(validated.Program(), phase6CleanupFixture)
 	if emitErr != nil {
-		return protocol.StatusOperational, "", 1
+		return protocol.StatusOperational, "", Phase16M004RefusalFamily(emitErr), 1
 	}
 	mutated, injectErr := CleanupInjector{}.Inject([]byte(cSource))
 	if injectErr != nil {
-		return protocol.StatusInvalid, "", 1
+		return protocol.StatusInvalid, "", "", 1
 	}
 	if string(mutated) == cSource {
-		return protocol.StatusInvalid, "", 1
+		return protocol.StatusInvalid, "", "", 1
 	}
-	return protocol.StatusPass, ControlDefectCleanupInjection, 1
+	return protocol.StatusPass, ControlDefectCleanupInjection, "", 1
 }
 
 // phase6RunStaleEvidenceInjectionLane builds a real evidence manifest for

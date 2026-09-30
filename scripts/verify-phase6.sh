@@ -65,7 +65,7 @@ verify_corpus() {
 		return 0
 	else
 		verify_status=$?
-		if [ "$corpus" = phase4 ] || [ "$corpus" = phase5 ]; then
+		if [ "$corpus" = phase4 ] || [ "$corpus" = phase5 ] || [ "$corpus" = phase6 ]; then
 			if refusal_family=$(python3 - "$corpus" "$result_path" "$verify_status" <<'PY'
 import json, sys
 
@@ -74,26 +74,72 @@ try:
     result = json.load(open(result_path, encoding="utf-8"))
 except (OSError, json.JSONDecodeError):
     raise SystemExit(1)
-if verify_status != "3" or result.get("status") != "operational_failure":
-    raise SystemExit(1)
-diagnostics = result.get("diagnostics", [])
-if len(diagnostics) != 1 or diagnostics[0].get("code") != "verify.m004_refusal":
-    raise SystemExit(1)
-family = diagnostics[0].get("message", "")
 if corpus == "phase4":
+    if verify_status != "3" or result.get("status") != "operational_failure":
+        raise SystemExit(1)
+    diagnostics = result.get("diagnostics", [])
+    if len(diagnostics) != 1 or diagnostics[0].get("code") != "verify.m004_refusal":
+        raise SystemExit(1)
+    family = diagnostics[0].get("message", "")
     refused_lane = any(lane.get("id") == "lane:release-omitted" and lane.get("status") == "refused" for lane in result.get("lanes", []))
     if family != "foreign" or not refused_lane:
         raise SystemExit(1)
-elif family not in {"foreign", "by-pointer"}:
-    raise SystemExit(1)
+elif corpus == "phase5":
+    if verify_status != "3" or result.get("status") != "operational_failure":
+        raise SystemExit(1)
+    diagnostics = result.get("diagnostics", [])
+    if len(diagnostics) != 1 or diagnostics[0].get("code") != "verify.m004_refusal":
+        raise SystemExit(1)
+    family = diagnostics[0].get("message", "")
+    if family not in {"foreign", "by-pointer"}:
+        raise SystemExit(1)
+else:
+    if verify_status != "2" or result.get("status") != "invalid":
+        raise SystemExit(1)
+    diagnostics = result.get("diagnostics", [])
+    missing = {
+        "control:qlt02.manifest_empty",
+        "control:qlt02.unknown_machine",
+        "control:qlt02.duplicate_row",
+        "control:qlt02.ineligible_hard_gate",
+        "control:defect.cleanup_injection",
+    }
+    machine_not_ratified = [d for d in diagnostics if d.get("code") == "verify.machine_not_ratified"]
+    refusals = [d for d in diagnostics if d.get("code") == "verify.m004_refusal"]
+    family = refusals[0].get("message", "") if len(refusals) == 1 else ""
+    missing_diagnostics = [d for d in diagnostics if d.get("code") == "verify.control_missing"]
+    missing_controls = {d.get("message") for d in missing_diagnostics}
+    other = [d for d in diagnostics if d.get("code") not in {"verify.machine_not_ratified", "verify.m004_refusal", "verify.control_missing"}]
+    lanes = result.get("lanes", [])
+    failed_lanes = {(lane.get("id"), lane.get("status")) for lane in lanes if lane.get("status") != "pass"}
+    qlt02_lanes = [lane for lane in lanes if lane.get("id") == "lane:qlt02-budget-audit"]
+    cleanup_lanes = [lane for lane in lanes if lane.get("id") == "lane:defect-cleanup-injection"]
+    if len(machine_not_ratified) != 1 or machine_not_ratified[0].get("message") != "current machine is not ratified for QLT-02 budgets; budget results remain observation-only":
+        raise SystemExit(1)
+    if len(refusals) != 1 or refusals[0].get("message") != "foreign":
+        raise SystemExit(1)
+    if len(diagnostics) != 7 or len(missing_diagnostics) != 5 or missing_controls != missing or other:
+        raise SystemExit(1)
+    if failed_lanes != {("lane:qlt02-budget-audit", "invalid"), ("lane:defect-cleanup-injection", "operational_failure")}:
+        raise SystemExit(1)
+    if len(qlt02_lanes) != 1 or len(cleanup_lanes) != 1:
+        raise SystemExit(1)
 print(family)
 PY
 			); then
 				case "$corpus" in
 					phase4) phase4_m004_refusal=1 ;;
 					phase5) phase5_m004_refusal=1 ;;
+					phase6)
+						phase6_m004_refusal=1
+						phase6_machine_unratified=1
+						;;
 				esac
-				printf 'phase6 prior corpus %s: current M004 refusal accepted (%s); frozen-evidence checks run in Go suite\n' "$corpus" "$refusal_family"
+				if [ "$corpus" = phase6 ]; then
+					printf 'phase6 current corpus: M004 cleanup refusal=%s; QLT-02 remains not_ratified and observation-only; Go suite validates audit controls and frozen-evidence bindings\n' "$refusal_family"
+				else
+					printf 'phase6 prior corpus %s: current M004 refusal accepted (%s); frozen-evidence checks run in Go suite\n' "$corpus" "$refusal_family"
+				fi
 				return 0
 			fi
 		fi
@@ -104,6 +150,8 @@ PY
 
 phase4_m004_refusal=0
 phase5_m004_refusal=0
+phase6_m004_refusal=0
+phase6_machine_unratified=0
 verify_corpus phase1 "$verify_tmp/schway" --json verify testdata/phase1
 verify_corpus phase2 "$verify_tmp/schway" --json verify testdata/phase2
 verify_corpus phase3 "$verify_tmp/schway" --json verify testdata/phase3
@@ -207,6 +255,14 @@ for control in \
 	control:defect.cleanup_injection \
 	control:defect.stale_evidence_injection
 do
+	case "$control" in
+		control:qlt02.*)
+			if [ "$phase6_machine_unratified" -eq 1 ]; then continue; fi
+			;;
+		control:defect.cleanup_injection)
+			if [ "$phase6_m004_refusal" -eq 1 ]; then continue; fi
+			;;
+	esac
 	grep -q "$control" "$verify_tmp/phase6.json" || { echo "phase6 verify: required Phase 6 control missing: $control" >&2; exit 1; }
 done
 
@@ -244,7 +300,15 @@ observe() {
 	samples="$verify_tmp/$name.samples"; : >"$samples"
 	index=0
 	while [ "$index" -lt "$phase6_warm_sample_count" ]; do
-		last=$(SCHWAY_OBSERVE_TIMING=1 "$verify_tmp/schway" --json "$@")
+		if last=$(SCHWAY_OBSERVE_TIMING=1 "$verify_tmp/schway" --json "$@"); then
+			:
+		else
+			observe_status=$?
+			if [ "$name" != phase6_verify_gate ] || [ "$phase6_machine_unratified" -ne 1 ] || [ "$phase6_m004_refusal" -ne 1 ] || [ "$observe_status" -ne 2 ]; then
+				echo "phase6 verify: $name failed with exit=$observe_status" >&2
+				exit "$observe_status"
+			fi
+		fi
 		elapsed=$(printf '%s\n' "$last" | sed -n 's/.*"elapsed_ns":\([0-9][0-9]*\).*/\1/p')
 		[ -n "$elapsed" ] && [ "$elapsed" -gt 0 ] || { echo "phase6 verify: $name produced no timing" >&2; exit 1; }
 		printf '%s\n' "$elapsed" >>"$samples"
@@ -264,5 +328,7 @@ fi
 if [ "$phase5_m004_refusal" -eq 0 ]; then
 	cat "$verify_tmp/phase5.json"
 fi
-cat "$verify_tmp/phase6.json"
+if [ "$phase6_machine_unratified" -eq 0 ] || [ "$phase6_m004_refusal" -eq 0 ]; then
+	cat "$verify_tmp/phase6.json"
+fi
 cat "$verify_tmp/phase6_verify_gate.stats.json"

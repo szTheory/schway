@@ -772,3 +772,21 @@ records line 25. Update that registry row and rerun static/privacy checks. The
 aggregate jobs stop at the same prerequisite Go test failure, so this run still
 does not verify the refusal-aware aggregate result. Do not run project suites
 locally.
+
+## Dated Phase6 host-boundary amendment (2026-09-30, run 36698133810)
+
+Both Ubuntu and macOS full check suites passed. Their Phase 6 aggregates then
+reported the same two non-pass lanes: `lane:qlt02-budget-audit` is invalid
+because the hosted machine is not the one human-ratified in the manifest, and
+`lane:defect-cleanup-injection` is operational because its Phase 4 fixture is
+on Phase16's current foreign-call refusal cut. The result also reports the
+four QLT-02 control identifiers and cleanup-injection control as missing.
+Neither lane produced a live pass. D-06-18 leaves an unratified machine's
+measurements observational, and Phase16's named test binds the
+supported historical output. Do not edit the ratified budget manifest or
+re-enable native emission. The active fix adds explicit result diagnostics for
+the unknown-machine-only audit and exact M004 refusal, then lets the aggregate
+accept only that combined state. It skips only those five unavailable live
+control greps, preserves all remaining Phase 6 checks, and continues collecting
+20 warm timing observations from the nonzero verifier result. Hosted CI remains
+the acceptance lane; do not run local project suites.
