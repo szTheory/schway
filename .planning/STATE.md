@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
-current_phase: 23
-current_phase_name: Live Local Allocation and Discharge
-status: Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both host check suites and evidence aggregates. Refresh Phase 23 verification before planning Phase 24.
-stopped_at: Phase 22 is complete. Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both hosts. Resume at the Phase 23 verifier-only gate.
-last_updated: "2026-09-30T15:46:40.562Z"
+current_phase: 24
+current_phase_name: Ownership Transfer Through Calls and Errors
+status: planning
+stopped_at: Phase 23 complete; Phase 24 needs discussion before planning.
+last_updated: "2026-09-30T16:23:53.148Z"
 last_activity: 2026-09-30
-last_activity_desc: "Phase 22 verification passed 5/5 and phase completed; hosted run 36707529870 passes Phase 23 gates. Next: verifier-only refresh."
-state_head: 2d425bebc74ba93bc6d658359f0bf8c46f1330ea
+last_activity_desc: Phase 23 complete, transitioned to Phase 24
+state_head: 3713a10180ca21be0833a761dbc8e50b8f27a4b0
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
   completed_plans: 10
-  percent: 25
+  percent: 50
 ---
 
 <!-- schway-current:start -->
@@ -56,19 +56,20 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 23 — Live Local Allocation and Discharge
+**Current focus:** Phase 24 — Ownership Transfer Through Calls and Errors
 
 **Durable context (survives context clears — read before re-deriving):**
 
-  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Phase 23 plans and UAT are complete; its older verification report must be refreshed before advancing. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
-- `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
+  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; the refreshed Phase 23 verifier passes 5/5 and the phase is complete. No local suite or UAT was rerun for closeout. Phase 24 is next and needs discussion before planning. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
+- `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 23. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
   families remain refused. The macOS receipt has incomplete dependency closure
   and is non-cacheable; no Linux run is claimed.
 - `.planning/PRODUCT-ROADMAP.md` — living capability order and current three
-  recommendations. Phase 22 delivered the application boundary; Phase 23 is the
-  live Schway-owned allocation and physical cleanup witness; FizzBuzz follows M004.
+  recommendations. Phase 22 delivered the application boundary; Phase 23 proved
+  live allocation and physical cleanup; Phase 24 owns transfer/error cleanup,
+  with FizzBuzz following M004.
 
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
@@ -111,12 +112,12 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 23 — Live Local Allocation and Discharge
-Plan: 7 of 7
-Status: Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both host check suites and evidence aggregates. Refresh Phase 23 verification before planning Phase 24.
-Last activity: 2026-09-30 — Phase 22 verification passed 5/5 and phase completed; hosted run 36707529870 passes Phase 23 gates. Next: verifier-only refresh.
+Phase: 24 — Ownership Transfer Through Calls and Errors
+Plan: Not started
+Status: Ready to discuss Phase 24; its CONTEXT.md is missing.
+Last activity: 2026-09-30 — Phase 23 complete, transitioned to Phase 24
 
-Progress: [███░░░░░░░] 25%
+Progress: [█████░░░░░] 50%
 
 ## M003 Closeout (archived)
 
@@ -221,8 +222,14 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
+| 01–20 (archived aggregate) | 181 | - | - |
 | 21 | 6 | - | - |
 | 22 | 3 | - | - |
+| 23 | 7 | - | - |
+
+The archived aggregate preserves the cumulative project total. The detailed
+rows above are the M004 subset; do not recompute the project total from that
+subset alone.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -474,6 +481,12 @@ Standing architectural commitments carried into M002:
 - [Phase 23]: Shift-left and stale-verifier route: keep passed UAT; refresh stale reports from current automated evidence. If a roadmap-complete phase makes execute-phase no-op, run gsd-verifier directly, then re-query progress. Keep local container and hosted CI receipts distinct; do not route objective checks back to human UAT. — Phase 22 UAT was already complete and objective. Its verification fingerprint went stale after Phase 23 source changes, while the roadmap still marked Phase 22 complete. The canonical progress resolver exposed the mismatch; direct GSD verification refreshed the report to passed 5/5 without repeating UAT.
 - [Phase 23]: External CI receipt gap: when source truths and local Linux-container tests pass but a required hosted Ubuntu receipt is missing, do not plan implementation fixes or ask for UAT. Keep Phase 23 open, run the existing evidence-aggregate job when a remote is available, then resume execute-phase at verifier gates. — The Phase 23 verifier found 5/5 roadmap truths and one hosted Ubuntu receipt gap; the current checkout has no Git remote. The canonical gaps_found router suggests plan-phase --gaps, but that would add no code or test value for this external evidence blocker.
 
+**2026-09-30 Phase 23 closeout amendment:** Hosted run 36707529870 supplied
+the required Ubuntu receipt (and passed the macOS checks and evidence
+aggregate). The refreshed verifier passes 5/5 and Phase 23 is complete. The
+earlier “in progress” and missing-receipt statements above preserve the
+decision history; they no longer describe current status.
+
 ### Pending Todos
 
 Cleared at the M002 close. All three M002 pre-phase spikes (S-006 interprocedural
@@ -657,12 +670,13 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-30T15:46:40.513Z
-Stopped at: Phase 22 is complete. Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both hosts. Resume at the Phase 23 verifier-only gate.
-Resume file: .planning/phases/23-live-local-allocation-and-discharge/23-VERIFICATION.md
-Next command: `$gsd-execute-phase 23` (verifier-only; preserve all seven completed plan summaries and UAT).
+Last session: 2026-09-30T16:23:42Z
+Stopped at: Phase 23 complete; Phase 24 needs discussion before planning.
+Resume file: .planning/STATE.md; Phase 23 verification is the completed evidence record.
+Next command: `$gsd-discuss-phase 24`
 Routing note — 2026-09-29 (historical; superseded 2026-09-30): `init.progress` reported Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reported all 7 plans complete and none incomplete. The then-current Phase 23 report identified the missing hosted Ubuntu receipt.
-Routing note — 2026-09-30: Phase 22 verification now passes 5/5 and Phase 22 is complete. Phase 23 still has all seven plans and UAT complete. Hosted run 36707529870 passed Ubuntu/macOS check suites and both evidence aggregates at public source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`; its validation-corpus receipt was skipped by configuration. `init.progress` still sees the 2026-09-28 Phase 23 report, whose sole gap was the hosted Ubuntu receipt. That receipt now exists, so do not run the stale `$gsd-plan-phase 23 --gaps` suggestion. Run `$gsd-execute-phase 23` in `/private/tmp/schway-public.dUMlcV`; `init.execute-phase 23` confirms 7/7 summaries and zero incomplete plans, so it resumes at verifier gates without replaying plans or UAT. No local project suites were run.
+Routing note — 2026-09-30 (pre-closeout; superseded below): Phase 22 verification passed 5/5 and Phase 22 is complete. Phase 23's seven plans were complete. Hosted run 36707529870 passed Ubuntu/macOS check suites and both evidence aggregates at public source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`; its optional validation-corpus receipt was skipped by configuration. At that point the 2026-09-28 Phase 23 report still needed a verifier-only refresh; do not repeat its plans or UAT.
+Routing resolution — 2026-09-30 (current): Phase 23's refreshed verification passes 5/5 and binds hosted run 36707529870; Phase 23 is complete. No local project suites or human UAT were rerun/required. Phase 24 is next, but its directory has no CONTEXT.md or PLAN.md, so discuss its scope before planning. Exact next command: `$gsd-discuss-phase 24`.
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
 the refreshed verifier is `passed` at 17/17 truths, and the old subjective
 readability gate is historical only. Phase 22 is transitioned; continue with

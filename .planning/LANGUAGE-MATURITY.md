@@ -5,11 +5,11 @@ artifacts. Phase 22's refreshed report passes 5/5 truths and its completed
 objective README UAT remains preserved. Hosted run 36707529870 passed Ubuntu
 and macOS check suites plus both current evidence aggregates, including the
 Phase 23 script, at source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`.
-Phase 23's 2026-09-28 verification report still needs a verifier-only refresh
-to bind that receipt; its seven plans and UAT remain complete. The report's
-validation status is therefore still in progress. Phase 23 security review
-covers 18/18 threats. Objective checks cover acceptance; subjective
-readability is not claimed. Future direction lives
+Phase 23's refreshed 2026-09-30 verifier passes 5/5 truths, binds that hosted
+receipt, and marks the phase complete. Its seven plans are complete; the phase
+context requires no human UAT. No local project suites were run during the
+refresh. The Phase 23 security review covers 18/18 threats. Objective checks
+cover acceptance; subjective readability is not claimed. Future direction lives
 in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ### Documentation-gate amendment — 2026-09-27
@@ -21,8 +21,9 @@ named CLI checks passed on this macOS host after adding that example; no CI run
 or Linux execution is claimed here. These are newly executed documentation and
 CLI checks, distinct from the earlier Phase 22 verifier receipt. The regenerated
 report at `2026-09-27T23:05:37Z` passes with 17/17 truths and the objective README
-contract UAT. The contract test does not establish subjective readability. The three capability
-recommendations and Phase 23/24/25 ordering below remain unchanged.
+contract UAT. The contract test does not establish subjective readability.
+This dated note records the earlier Phase 22 documentation gate; the current
+thresholds below reflect the later Phase 23 closeout.
 
 ## What exists
 
@@ -31,7 +32,7 @@ recommendations and Phase 23/24/25 ordering below remain unchanged.
 | Source → checked core → interpreter/native C17 | A working compiler exists; Go 1.24/Clang remain the development path | `cmd/schway/main.go`, `internal/compiler/session/session.go` |
 | Retained native application build/run | `schway app build` creates a retained artifact from an admitted source and closed local-C manifest; `schway app run` accepts bounded U64 input, launches once, and preserves ordinary streams/outcomes | `cmd/schway/main.go`, `session.go`, `internal/compiler/native/native_app.go`; Phase 22 `TestPhase22IdentityApplicationBuildAndRunCLI`, `TestPhase22RunApplicationPreservesStreamsAndProcessOutcomes` |
 | Separate application evidence | Capture is a distinct report with disabled/incomplete/complete/capacity states and never claims verification; explicit `app verify` replays isolated inputs against independent expected answers | `native_app.go`, `main.go`; `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22AppVerifyIndependentIdentityCases`, `TestPhase22AppVerifyModelOnlyOutcomes` |
-| Live local foreign allocation | A public file-byte path admits only exact acquire/use/release contracts; Schway holds the acquired byte until the local release, and a physical observer plus negative controls prove malloc → use → matching free → exit | `examples/phase23/file_byte.schway`, `examples/phase23/adapter.c`, `internal/compiler/cgen/cgen_program.go`, `internal/compiler/native/phase23_observer_test.go`, `scripts/verify-phase23.sh`; focused script passes on macOS and a local Linux ARM64 container after `c50430d` |
+| Live local foreign allocation | A public file-byte path admits only exact acquire/use/release contracts; Schway holds the acquired byte until local release, and an independent physical observer plus negative controls prove malloc → use → matching free → exit | `examples/phase23/file_byte.schway`, `examples/phase23/adapter.c`, `internal/compiler/cgen/cgen_program.go`, `internal/compiler/native/phase23_observer_test.go`, `scripts/verify-phase23.sh`; the focused script passed in hosted Ubuntu/macOS evidence aggregates at `f991298b`; local macOS/Linux-container receipts at `c50430d` are historical |
 | Calls between Schway functions | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.schway`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
@@ -63,9 +64,11 @@ owner live through use, and discharge it before returning. An independent
 observer witnesses physical allocation, use, the matching free, and no
 outstanding pointer; reached negative controls reject omitted, premature,
 duplicate, and wrong-resource destruction. Acquisition tests include partial
-allocation and injected close failures. The focused macOS and local Linux
-container receipts passed after the close-failure fix; the configured hosted
-Ubuntu CI receipt is still pending. Transfer through calls, typed errors, and
+allocation and injected close failures. The refreshed verification report
+passes 5/5 truths; hosted run 36707529870 supplied passing Ubuntu and macOS
+focused aggregates at `f991298b`. Earlier focused macOS and Linux-container
+receipts after the close-failure fix remain historical evidence. No local
+suite was rerun for the refresh. Transfer through calls, typed errors, and
 shared/exclusive pointer families remain separate successors.
 
 `examples/checksum.schway` is a refused integration target with provisional syntax.
@@ -99,28 +102,47 @@ Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/comp
 
 ## Next useful thresholds
 
-1. **Phase 23 verification refresh after hosted receipt:** the implementation and focused
-   script already passes on macOS and a local Linux ARM64 container; hosted run
-   36707529870 also passed both Ubuntu/macOS check suites and evidence aggregates.
-   The remaining blocker is the stale verification report. No checker changes
-   or human UAT are needed. The
-   evidence covers FFI-03, RES-04/07/08/09 and EVD-09, including physical cleanup
-   and negative controls. Owner/action: run `$gsd-execute-phase 23` in the
-   published clone to refresh verification from the hosted receipt; its seven
-   summaries and UAT are already complete. Reprioritize only if the verifier
-   identifies another unmet criterion or a later hosted run fails.
-2. **Phase 24 — transfer and typed errors:** pass that live owner through a
-   helper, then prove exactly-once cleanup on normal and actual post-acquisition
-   error paths. Blockers are activation-specific resource identity and
-   cross-frame cleanup. Trigger the same independent checker peers and emitted
-   cleanup; evidence covers RES-05/06, OWN-10/11/12 and EVD-09. Owner: Phase 24
-   after Phase 23 establishes the local owner contract.
-3. **Phase 25 — bounded pointer families and utility:** admit distinct shared
-   and exclusive read-copy helpers, each with positive, conflict/escape
-   controls and macOS/Linux evidence, then document the complete byte utility.
-   The emitter currently refuses these shapes. Trigger family-specific borrow
-   checks and conservative C lowering with no unproved alias attributes;
-   evidence covers NAT-11/12/13, EVD-10 and DX-14/15. Owner: Phase 25.
+1. **Phase 24 — transfer and typed errors.** User-visible program: the
+   file-byte reader passes its live owner to a helper, consumes its result, and
+   releases exactly once after normal return and a real post-acquisition typed
+   error. Current evidence: Phase 23 is complete at 5/5 with passing hosted
+   Ubuntu/macOS aggregates, an independent physical observer, and reached
+   cleanup controls. Blocker: resource identity is still local to a
+   straight-line activation; transfer and typed-error cleanup across frames
+   remain refused. Smallest complete slice: one caller/callee transfer, a
+   distinct dynamic activation, reverse-order generated cleanup, and one real
+   typed error after acquisition with independent observer and refusal
+   controls. Checker/guarantee changes: independently derive transferred
+   owner facts at admission, peer validation, interpretation, and emission;
+   reject double/wrong release and unsupported exits. Evidence/debt:
+   RES-05/06, OWN-10/11/12, EVD-09, extending EVD-11. Owner/next action: Phase
+   24; its context is absent, so run `$gsd-discuss-phase 24` before planning.
+   Reprioritize if the Phase 23 contract cannot witness the call boundary or a
+   concrete consumer proves pointer access is a prerequisite.
+2. **Phase 25 — bounded pointer families and utility.** User-visible program:
+   a documented byte utility with distinct shared and exclusive read-copy
+   helpers. Blocker: both families remain refused by emission and lack
+   family-specific pointer contracts. Smallest complete slice: one bounded
+   helper per family, independent borrow/access checks, positive and
+   conflict/escape controls, and a reproducible utility command. Checker and
+   guarantee changes: family-specific admission and peer checks plus
+   conservative interpreter/C behavior, without unsupported alias attributes.
+   Evidence/debt: NAT-11/12/13, EVD-10 and DX-14/15. Owner: Phase 25 after
+   Phase 24. Reprioritize if a Phase 24 witness requires one pointer family to
+   prove ownership transfer or cleanup.
+3. **Next milestone — ordinary scalar computation.** User-visible program:
+   `sum_to_n`, then FizzBuzz from ordinary Schway source with exact output and
+   boundary behavior. Blocker: defined U64 arithmetic/remainder and overflow,
+   comparison/Bool, scalar-loop fixed points, and bounded text/decimal output
+   do not exist. Smallest complete slice: one bounded-input `sum_to_n` command
+   with exact expected output, arithmetic boundaries, and a loop-carried-state
+   mutation control, then use that core for FizzBuzz. Checker/guarantee
+   changes: typed operators with defined C behavior, overflow/error semantics,
+   CFG fixed-point state/loan analysis, and bounded output effects.
+   Evidence/debt: NAT-09 and current arithmetic/CFG refusal witnesses; assign
+   the milestone's remaining requirement IDs at kickoff. Owner: post-M004
+   milestone. Reprioritize only if a selected consumer demonstrates that
+   computation is more valuable than completing the committed resource scope.
 
 After M004, practical computation can target `sum_to_n` and FizzBuzz. Its
 blockers remain defined arithmetic/remainder, comparison/Bool, scalar-loop

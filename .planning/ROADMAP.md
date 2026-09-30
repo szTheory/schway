@@ -43,7 +43,7 @@ Sequential IDs continue after archived Phase 21. Every new phase delivers a
 runnable source/input/output witness; no implementation plans exist yet.
 
 - [x] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; objective README contract passed; subjective readability not claimed) (completed 2026-09-27)
-- [ ] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation.
+- [x] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation. (completed 2026-09-30)
 - [ ] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors.
 - [ ] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible.
 
@@ -231,7 +231,7 @@ by roadmap creation. Plan counts remain TBD until phase planning.
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
-| 23. Live Local Allocation and Discharge | 7/7 | In Progress|  |
+| 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
 | 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
 
