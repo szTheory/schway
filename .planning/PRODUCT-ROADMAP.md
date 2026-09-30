@@ -1,6 +1,6 @@
 # Schway — Living Product Roadmap
 
-Updated 2026-09-28. This document carries current direction; ROADMAP.md owns
+Updated 2026-09-30. This document carries current direction; ROADMAP.md owns
 committed milestone phases, REQUIREMENTS.md owns acceptance, and
 LANGUAGE-MATURITY.md records demonstrated capability. Historical milestone
 forecasts and evidence remain in their archives.
@@ -17,23 +17,24 @@ M001 established source-to-native behavior; M002 added executable Schway calls;
 M003 added independent returns, computed matches/payloads, and U64 constants.
 Phase 21 completed contract/retirement prework. Phase 22 delivered its
 application/build/evidence implementation and passed objective README contract
-UAT; its refreshed 2026-09-28 verifier report passes 5/5 truths. No subjective
-readability claim or human UAT remains. The separate `lang app build` /
-`lang app run` route retains a native app, accepts a bounded U64 input, starts
+UAT; its refreshed 2026-09-30 verifier report passes 5/5 truths. No subjective
+readability claim or human UAT remains. The separate `schway app build` /
+`schway app run` route retains a native app, accepts a bounded U64 input, starts
 it once, and preserves ordinary streams and process outcomes. Evidence capture
-and explicit differential replay remain separate. The older `lang run` path is
-still the synthetic-input O0/O3 conformance harness.
+and explicit differential replay remain separate. The older `schway run` path
+is still the synthetic-input O0/O3 conformance harness.
 
 Phase 23 now admits a bounded file-byte allocation that remains live through
 Schway-directed use and generated local cleanup. Its independent physical
-observer and close-failure control pass in the focused aggregate on macOS and a
-local Linux ARM64 container; the full Go suite passes on macOS, the security
-audit closes 18/18 declared threats, and the standard-depth code review is
-clean. The hosted Ubuntu `evidence-aggregate` CI receipt has not run, so Phase
-23 validation remains `in-progress` and Nyquist remains false as required by
-23-07. The local Linux receipt is not described as hosted CI. Phase 23 does not
-yet admit ownership transfer through Schway calls or typed errors. App build
-receipts remain incomplete/non-cacheable when runtime closure is unknown.
+observer and close-failure control passed in focused local runs on macOS and a
+Linux ARM64 container. Hosted run [36707529870](https://github.com/szTheory/schway/actions/runs/36707529870)
+then passed the Ubuntu/macOS check suites and both evidence aggregates,
+including `scripts/verify-phase23.sh`. The Phase 23 verifier report still
+records its earlier missing hosted receipt, so the immediate action is a
+verifier-only refresh; preserve its seven completed plans and UAT. Phase 23
+does not yet admit ownership transfer through Schway calls or typed errors. App
+build receipts remain incomplete/non-cacheable when runtime closure is
+unknown.
 
 The user explicitly requested another deep fan-out and automatic adoption of
 recommendations. The 2026-09-27 decision integrates product/DX, compiler and
@@ -44,7 +45,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Close the hosted Ubuntu Phase 23 evidence receipt, then transfer the live file-byte owner through calls and typed errors | Phase 23 source behavior, physical cleanup, refusal controls, and local macOS/Linux focused gates pass; its existing Ubuntu CI matrix job has not run from this checkout. Remaining feature work: transfer/error cleanup and bounded shared/exclusive read-copy pointers | Hosted Ubuntu gate passes on the current code; then the owner survives transfer/error paths and is freed once, unsupported shapes fail closed, and pointer-family receipts cover macOS/Linux |
+| **Now: M004** | Refresh Phase 23 verification against the passing hosted receipts, then transfer the live file-byte owner through calls and typed errors | Phase 23 source behavior, physical cleanup, refusal controls, and hosted Ubuntu/macOS evidence aggregates pass; the verifier report still predates hosted run 36707529870. Remaining feature work: transfer/error cleanup and bounded shared/exclusive read-copy pointers | Phase 23 verifier passes on the hosted receipt; then the owner survives transfer/error paths and is freed once, unsupported shapes fail closed, and pointer-family receipts cover macOS/Linux |
 | **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
@@ -58,7 +59,7 @@ need not introduce separately verified binary contracts.
 
 The former M003-era forecast (M004 loops, M005 aggregates, M006 modules) is
 superseded prospectively. The next milestone now targets FizzBuzz; further
-milestone numbers are assigned at kickoff. `examples/checksum.lang` remains
+milestone numbers are assigned at kickoff. `examples/checksum.schway` remains
 a provisional integration target; no unsupported syntax is treated as settled.
 
 ## Decisions and alternatives
@@ -102,25 +103,22 @@ roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations
 
-1. **Close Phase 23 host verification for the live file-byte program.**
+1. **Refresh Phase 23 verification for the live file-byte program.**
    User-visible program: read files containing `0x41` and `0x42` through a
    returned allocation and report the matching byte, with acquisition and
    post-acquisition failure cases. Current witness: the implementation, public
-   README, independent physical observer, reached destructor controls, and
-   focused macOS plus local Linux ARM64 receipts all pass; 18/18 declared
-   threats are closed and the code review is clean. Blocker: the existing
-   hosted Ubuntu `evidence-aggregate` job has not run, and this checkout has no
-   Git remote configured. Smallest complete slice: run the already-wired
-   `sh scripts/verify-phase23.sh` step on Ubuntu at the current source commit
-   or a successor commit; do not add another implementation plan or duplicate
-   the full/race/sanitizer suites. No checker or guarantee changes remain for
-   this slice. Evidence/debt: FFI-03, RES-04/07/08/09, EVD-09, and the new
-   `23-VALIDATION.md` local Linux receipt; Phase 22's EVD-11 replay boundary
-   and FFI-02 manifest limits remain intact. Owner/next action: hosted CI after
-   the branch is available to its runner; then resume `$gsd-execute-phase 23`
-   directly at verifier gates. No human UAT is required. Reprioritize only if
-   the hosted runner is unavailable or its result exposes a reproducible
-   platform-specific failure.
+   README, independent physical observer, reached destructor controls, focused
+   local macOS/Linux ARM64 receipts, and hosted run 36707529870 all pass; the
+   hosted run passed both host check suites and evidence aggregates. The blocker
+   is the stale verifier report, not missing CI evidence. Smallest complete
+   slice: run `$gsd-execute-phase 23` so GSD refreshes verification from the
+   existing receipt; all seven plan summaries and UAT are complete, so do not
+   plan implementation fixes or replay plans/UAT. No checker or guarantee
+   changes remain for this slice. Evidence/debt: FFI-03, RES-04/07/08/09,
+   EVD-09, and the local plus hosted receipts; Phase 22's EVD-11 replay boundary
+   and FFI-02 manifest limits remain intact. Owner/next action: verifier refresh
+   in the published clone. No human UAT is required. Reprioritize only if the
+   verifier identifies a new unmet criterion or a later hosted run fails.
 2. **Carry that owner through a call and a typed error (Phase 24).** User-visible
    program: the byte reader delegates use to a helper and still releases once
    on both a normal result and a real later error. Blocker: static resource
@@ -180,14 +178,14 @@ more valuable complete program.
 
 ## Provenance
 
-**2026-09-28 current-state amendment.** Phase 22's verification fingerprint
-was refreshed against the merged tree and passes 5/5 roadmap truths; its
-completed objective UAT is preserved. Phase 23's implementation is now
-source-inspected and its focused gate passes on macOS and a local Linux ARM64
-container after the close-failure fix; a current full Go suite passes on macOS.
-The hosted Linux CI result is still pending. These are distinct receipts, and
-the historical 2026-09-27 observations below remain true of their recorded
-revision.
+**2026-09-30 current-state amendment.** Phase 22's verifier was refreshed and
+passes 5/5 roadmap truths; its completed objective UAT is preserved. Hosted run
+36707529870 passed the Ubuntu/macOS check suites and both current evidence
+aggregates, including the Phase 23 script, at source SHA
+`f991298b29779838a2b1a5c3cd5ac90aafcb84fc`. Phase 23's report still needs a
+verifier-only refresh to bind that receipt; do not repeat its plans or UAT. The
+historical 2026-09-27 and 2026-09-28 observations below remain true of their
+recorded revisions.
 
 Repository research baseline: `d9bde05`; research date 2026-09-27. Current
 observations are refreshed after Phase 22 from source inspection, its named

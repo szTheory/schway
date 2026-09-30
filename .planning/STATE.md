@@ -4,12 +4,12 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration complete; Phase 23 hosted gates pass; refresh the stale Phase 23 verification report next.
-stopped_at: Quick task 260928-tzu is complete after hosted run 36705094434 passed both host check suites and evidence aggregates. Resume $gsd-execute-phase 23 at the verifier-only gate; do not replay completed plans or UAT.
-last_updated: "2026-09-30T11:12:08Z"
+status: Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both host check suites and evidence aggregates. Refresh Phase 23 verification before planning Phase 24.
+stopped_at: Phase 22 is complete. Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both hosts. Resume at the Phase 23 verifier-only gate.
+last_updated: "2026-09-30T15:46:40.562Z"
 last_activity: 2026-09-30
-last_activity_desc: Hosted run 36705094434 passed Ubuntu/macOS checks and both evidence aggregates; the public repository task is complete and Phase 23's stale verifier report is the next gate.
-state_head: 15b3a518b7525d35d303669ddee31901fc812d20
+last_activity_desc: "Phase 22 verification passed 5/5 and phase completed; hosted run 36707529870 passes Phase 23 gates. Next: verifier-only refresh."
+state_head: 2d425bebc74ba93bc6d658359f0bf8c46f1330ea
 progress:
   total_phases: 4
   completed_phases: 1
@@ -46,7 +46,6 @@ evidence. Hosted run `36704285082` then failed the same
 case patterns beginning with `control:` as identifiers. The runtime branch is
 unchanged; its shell globs now begin with `*` so only the actual declared
 control list is parsed. Do not run project suites locally.
-
 
 # Project State
 
@@ -112,10 +111,10 @@ hiding runtime costs.
 
 ## Current Position
 
-Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
+Phase: 23 — Live Local Allocation and Discharge
 Plan: 7 of 7
-Status: Phase 23 has all seven plans and UAT complete; the hosted evidence gate now passes, while its verifier report still records the earlier missing receipt.
-Last activity: 2026-09-30 — Hosted run 36705094434 passed both full check suites and both evidence aggregates; the next action is the verifier-only refresh.
+Status: Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both host check suites and evidence aggregates. Refresh Phase 23 verification before planning Phase 24.
+Last activity: 2026-09-30 — Phase 22 verification passed 5/5 and phase completed; hosted run 36707529870 passes Phase 23 gates. Next: verifier-only refresh.
 
 Progress: [███░░░░░░░] 25%
 
@@ -658,11 +657,12 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-30T08:12:39Z
-Stopped at: Repairing hosted Phase 6 evidence aggregates under quick task 260928-tzu. Run 36687496041 showed that the diagnostic wrapper hid literal verifier command text required by `TestPhase6VerifierScriptContract`; the explicit command strings are restored. Run static and privacy gates, push additively, and use hosted CI for acceptance. Phase 23 plans and UAT are complete; do not replay them.
-Resume file: .planning/quick/260928-tzu-prepare-a-public-ready-schway-repository/260928-tzu-PLAN.md
-Next command: Run the full-history and worktree privacy gates, then additively push the explicit-invocation correction. After hosted CI reports a passing aggregate, resume `$gsd-execute-phase 23` at verifier gates without replaying completed plans or UAT.
-Routing note — 2026-09-29: `init.progress` reports Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reports all 7 plans complete and none incomplete. Phase 22 UAT is complete, so preserve it. The Phase 23 verification identifies only the missing hosted Ubuntu receipt; do not plan implementation fixes for that external evidence gap.
+Last session: 2026-09-30T15:46:40.513Z
+Stopped at: Phase 22 is complete. Phase 23 has all seven plans and UAT complete; hosted run 36707529870 passes both hosts. Resume at the Phase 23 verifier-only gate.
+Resume file: .planning/phases/23-live-local-allocation-and-discharge/23-VERIFICATION.md
+Next command: `$gsd-execute-phase 23` (verifier-only; preserve all seven completed plan summaries and UAT).
+Routing note — 2026-09-29 (historical; superseded 2026-09-30): `init.progress` reported Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reported all 7 plans complete and none incomplete. The then-current Phase 23 report identified the missing hosted Ubuntu receipt.
+Routing note — 2026-09-30: Phase 22 verification now passes 5/5 and Phase 22 is complete. Phase 23 still has all seven plans and UAT complete. Hosted run 36707529870 passed Ubuntu/macOS check suites and both evidence aggregates at public source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`; its validation-corpus receipt was skipped by configuration. `init.progress` still sees the 2026-09-28 Phase 23 report, whose sole gap was the hosted Ubuntu receipt. That receipt now exists, so do not run the stale `$gsd-plan-phase 23 --gaps` suggestion. Run `$gsd-execute-phase 23` in `/private/tmp/schway-public.dUMlcV`; `init.execute-phase 23` confirms 7/7 summaries and zero incomplete plans, so it resumes at verifier gates without replaying plans or UAT. No local project suites were run.
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
 the refreshed verifier is `passed` at 17/17 truths, and the old subjective
 readability gate is historical only. Phase 22 is transitioned; continue with

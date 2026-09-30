@@ -1,13 +1,15 @@
 # Schway Language Maturity — Current Evidence
 
-**Re-assessed:** 2026-09-28, against the current source and Phases 22–23
+**Re-assessed:** 2026-09-30, against the current source and Phases 22–23
 artifacts. Phase 22's refreshed report passes 5/5 truths and its completed
-objective README UAT remains preserved. Focused Phase 23 checks passed on
-macOS and a local Linux ARM64 container, and the full Go suite passed on macOS.
-The Linux container is not a hosted CI receipt; the configured Ubuntu job
-remains pending. Phase 23 security review covers 18/18 threats and source code
-review is clean. Objective checks cover acceptance; subjective readability is
-not claimed. Future direction lives
+objective README UAT remains preserved. Hosted run 36707529870 passed Ubuntu
+and macOS check suites plus both current evidence aggregates, including the
+Phase 23 script, at source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`.
+Phase 23's 2026-09-28 verification report still needs a verifier-only refresh
+to bind that receipt; its seven plans and UAT remain complete. The report's
+validation status is therefore still in progress. Phase 23 security review
+covers 18/18 threats. Objective checks cover acceptance; subjective
+readability is not claimed. Future direction lives
 in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
 
 ### Documentation-gate amendment — 2026-09-27
@@ -97,14 +99,16 @@ Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/comp
 
 ## Next useful thresholds
 
-1. **Phase 23 closeout — hosted Linux receipt:** the implementation and focused
-   script already pass on macOS and a local Linux ARM64 container; the configured
-   Ubuntu `evidence-aggregate` job has not produced a hosted receipt because this
-   checkout has no Git remote. No checker changes or human UAT are needed. The
+1. **Phase 23 verification refresh after hosted receipt:** the implementation and focused
+   script already passes on macOS and a local Linux ARM64 container; hosted run
+   36707529870 also passed both Ubuntu/macOS check suites and evidence aggregates.
+   The remaining blocker is the stale verification report. No checker changes
+   or human UAT are needed. The
    evidence covers FFI-03, RES-04/07/08/09 and EVD-09, including physical cleanup
-   and negative controls. Owner/action: once the repository remote is available,
-   run the existing CI job at `c50430d` or later and refresh the verifier report.
-   Reprioritize only if hosted Linux exposes a failure not reproduced locally.
+   and negative controls. Owner/action: run `$gsd-execute-phase 23` in the
+   published clone to refresh verification from the hosted receipt; its seven
+   summaries and UAT are already complete. Reprioritize only if the verifier
+   identifies another unmet criterion or a later hosted run fails.
 2. **Phase 24 — transfer and typed errors:** pass that live owner through a
    helper, then prove exactly-once cleanup on normal and actual post-acquisition
    error paths. Blockers are activation-specific resource identity and
