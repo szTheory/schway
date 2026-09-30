@@ -674,3 +674,17 @@ candidates; five phone-shaped matches were contained in generated Go test
 zero findings. The record and manifest are copied from that private artifact;
 run normal hosted CI again after committing them to confirm the corpus-grade
 check now passes.
+
+## Dated receipt-host correction (2026-09-30, run 36675117930)
+
+The refreshed Ubuntu record is not sufficient to grade the full corpus: the
+NAT-07 `TestCompositionOnlyLTODivergence` control explicitly skips outside
+Darwin, while its archived validation row requires an executed pass. The prior
+checked-in receipt contains a Darwin pass for this control. The same CI run
+also showed that evidence grading, as well as pair export, must normalize
+archived command package operands before resolving live test names. Apply that
+mapping in `deriveCeiling` and its focused regression test. Move the opt-in
+receipt lane to `macos-latest`, with `TMPDIR=/tmp` so `testing.T.TempDir`
+outputs do not record a per-user macOS temporary path. Keep the ordinary
+Ubuntu/macOS CI matrix unchanged and produce a new macOS receipt before
+replacing the checked-in one.

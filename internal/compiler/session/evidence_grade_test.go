@@ -542,7 +542,7 @@ func deriveCeiling(index *testIndex, record *runRecord, evidence string) (ceilin
 	if parsed, ok := parseGoTestCommand(evidence); ok {
 		names := make(map[string]bool)
 		for _, operand := range parsed.Packages {
-			set, _ := index.resolvePackageNames(operand)
+			set, _ := index.resolvePackageNames(currentIdentityPackageOperand(operand))
 			for name := range set {
 				names[name] = true
 			}
@@ -1191,6 +1191,13 @@ func TestArchivedCommandPackageOperandsUseCurrentIdentityAtLiveBoundaries(t *tes
 			}
 			if got, want := pairs[0].Package, "./cmd/schway-repair/..."; got != want {
 				t.Fatalf("pair package = %q, want %q", got, want)
+			}
+			if tc.name == "go test pair export" {
+				record := &runRecord{passed: map[string]bool{"TestLiveRepairEvidence": true}}
+				ceiling, _ := deriveCeiling(index, record, tc.evidence)
+				if ceiling != "EXERCISED" {
+					t.Fatalf("deriveCeiling(%q) = %q, want EXERCISED for the current package's recorded pass", tc.evidence, ceiling)
+				}
 			}
 			if tc.name == "assert-go-tests pair export" {
 				ceiling, names := deriveAssertGoTestsCeiling(index, &runRecord{}, tc.evidence)
