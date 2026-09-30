@@ -646,3 +646,18 @@ subprocess fails after the current-tree rename. Keep this receipt private and
 out of the checked-in evidence record. Map archived command operands to the
 current package identity at the shared grading and pair-export boundaries,
 then regenerate and re-audit the receipt from a new hosted run.
+
+## Dated receipt privacy-scan correction (2026-09-30, run 36663107274)
+
+The first fresh receipt produced after the package-path fix passed the hosted
+privacy step, but the independent scan found two phone-shaped matches in
+`Output` values. Both matches were fully contained in Go-generated temporary
+source paths from `t.TempDir()`; the artifact had no personal home paths,
+contacts, secret candidates, or unclassified findings. The temporary GitHub
+artifact was deleted after download. The scanner had treated any line with a
+`Time` field as timestamp context, even when the candidate was in another
+field. It now parses JSON fields, accepts only strict timestamp values and
+phone-shaped substrings wholly inside a generated Go test temp-source path,
+and requires all other candidates to be classified. The corrected scanner
+passed against the private artifact; generate and audit a new hosted receipt
+before updating the checked-in record.
