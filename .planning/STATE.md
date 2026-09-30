@@ -4,12 +4,12 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration active; hosted run 36688618461 passed full checks but exposed an M004 refusal-boundary mismatch in both Phase 6 aggregates.
-stopped_at: Continue quick task 260928-tzu by recording expected Phase16 M004 refusals in Phase 4/5 verification and skipping only the superseded live-control checks; run static and privacy checks, then use hosted CI. Do not replay completed Phase 23 plans or UAT.
-last_updated: "2026-09-30T09:20:04Z"
+status: Public Schway migration active; hosted run 36696297255 found the same Phase16 emitter-inventory line drift on Ubuntu and macOS.
+stopped_at: Continue quick task 260928-tzu by updating the source-derived emitter consumer registry for the shifted session.go call, then run static and privacy checks and use hosted CI. Do not replay completed Phase 23 plans or UAT.
+last_updated: "2026-09-30T09:33:59Z"
 last_activity: 2026-09-30
-last_activity_desc: Diagnosed hosted Phase 6 aggregate failures as Phase16 refusal-only fixtures; current patch recognizes only the explicit refusal result and leaves frozen-evidence checks to the already-passing hosted Go suites.
-state_head: 2140f700f40e6257f9204a1c47947e6e9f906ca2
+last_activity_desc: Hosted run 36696297255 confirms the refusal-boundary patch reached test execution, then fails because its added lines moved a registered EmitNative consumer from line 2780 to 2784; updating that generated-source registry row is the next action.
+state_head: ff3b3052a675ae62dfe735ca04f56c58de157621
 progress:
   total_phases: 4
   completed_phases: 1
@@ -23,15 +23,17 @@ Current publication identity (2026-09-28): Schway uses the Go module `github.com
 <!-- schway-current:end -->
 
 Public repository follow-up (2026-09-30): `szTheory/schway` `main` is at
-`2140f700`. Hosted run `36688618461` passed full Ubuntu/macOS checks, including
+`ff3b3052`. Hosted run `36688618461` passed full Ubuntu/macOS checks, including
 both race suites, but both Phase 6 aggregates failed because Phase16 makes the
-Phase 4 release fixture refusal-only. The earlier generalized-wrapper
-regression is fixed: all six verifier commands remain explicit. The current
-unpushed patch reports the exact current M004 refusal as an operational
-boundary, skips only the superseded Phase 4/5 live-control greps for that
-corpus, and keeps frozen-artifact verification in the Go suites. Shell syntax
-and diff checks pass; project suites remain hosted-CI-only. Run full
-reachable-history and worktree privacy scans before the next additive push.
+Phase 4 release fixture refusal-only. Commit `ff3b3052` records that exact
+refusal operationally and skips only the superseded Phase 4/5 live-control
+greps, while the Go suites validate frozen evidence. Its committed privacy
+audit passed with 1,569 public commits, three tags, zero personal home/contact
+candidates, and zero unclassified phone/secret candidates. Hosted run
+`36696297255` then failed on both hosts because the new lines shifted the
+registered `session.go:EmitNative` call from line 2780 to 2784; update the
+source-derived registry row before another additive push. Do not run project
+suites locally.
 
 
 # Project State
@@ -47,7 +49,7 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest pre-push audit at `2140f700` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
+- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `ff3b3052` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
@@ -101,7 +103,7 @@ hiding runtime costs.
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
 Status: Phase 23 has all seven plans and UAT complete; its hosted verification receipt remains open while the public-repository quick task repairs the Phase 6 aggregate script.
-Last activity: 2026-09-30 — Diagnosed Phase16 refusal-only corpus inputs after hosted run 36688618461; aggregate now distinguishes refusal from a live-control pass.
+Last activity: 2026-09-30 — Updated the Phase6 aggregate for Phase16 refusal-only inputs; hosted run 36696297255 exposed a shifted emitter consumer registry line.
 
 Progress: [███░░░░░░░] 25%
 

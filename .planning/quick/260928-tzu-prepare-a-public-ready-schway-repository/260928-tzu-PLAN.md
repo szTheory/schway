@@ -749,3 +749,15 @@ run on hosted CI. The worktree gitleaks scan passes with only three known
 synthetic `generic-api-key` test-value matches, all classified. The reachable
 history scan at base `2140f700` also passes; repeat it after committing so the
 new tree and commit message are included. Project suites remain hosted-CI-only.
+
+## Dated emitter-inventory correction amendment (2026-09-30, run 36696297255)
+
+The Phase 6 refusal-boundary handling reached the full hosted suites, but both
+Ubuntu and macOS `go test ./...` failed the same structural check:
+`TestPhase16PublicEmitterConsumerInventory` found the existing
+`session.go:EmitNative` consumer at line 2784 while its source-derived registry
+still recorded line 2780. The added refusal branch shifted this later source
+location by four lines; update the single registry row, rerun static/privacy
+checks, then start another hosted run. The Phase 6 aggregates also failed at
+their prerequisite test step, so run 36696297255 does not yet establish the
+refusal-aware aggregate result. Do not run project suites locally.
