@@ -1040,6 +1040,9 @@ func currentOperationIDs(f *frame) []string {
 func terminalOutcome(f *frame, operation core.LinearOperation, value string) (Outcome, Event) {
 	switch operation.Kind {
 	case core.OpFail:
+		if f.modeledFailure != nil {
+			value = f.modeledFailure.Value
+		}
 		return Outcome{Kind: "typed_failure", Value: value}, Event{
 			Schema: f.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
 			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
@@ -1268,7 +1271,20 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 					}
 				}
 				events = append(events, event)
-				top.idx++
+				if top.blocks != nil && operation.OkEdgeID != "" {
+					edgeID := operation.OkEdgeID
+					if !succeeded {
+						edgeID = operation.ErrEdgeID
+					}
+					edge, ok := top.edges[edgeID]
+					if !ok {
+						return Execution{}, fmt.Errorf("foreign call %q references unknown modeled result edge %q", operation.ID, edgeID)
+					}
+					top.currentBlockID = edge.ToBlockID
+					top.idx = 0
+				} else {
+					top.idx++
+				}
 				continue
 			}
 			top.nonlocalExitCalls++

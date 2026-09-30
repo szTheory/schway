@@ -3780,7 +3780,7 @@ func checkLocalFileByteAcquireHelper(functionID string, function ast.FuncDecl, s
 	refuse := func() (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("check.local_owner_shape_unsupported", body.Span, "PathToken owner helpers may only acquire and return FileByteOwner")}, 1
 	}
-	if body == nil || len(body.Bindings) != 1 || body.Result != body.Bindings[0].Name || body.Bindings[0].RHS.Kind != "try_call" ||
+	if function.Name == "main" || body == nil || len(body.Bindings) != 1 || body.Result != body.Bindings[0].Name || body.Bindings[0].RHS.Kind != "try_call" ||
 		body.Bindings[0].RHS.Callee != "schway_file_byte_acquire" || len(body.Bindings[0].RHS.Arguments) != 1 || body.Bindings[0].RHS.Arguments[0] != function.Parameter.Name {
 		return refuse()
 	}

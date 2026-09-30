@@ -1104,9 +1104,9 @@ func validateLocalFileByteTransferProgram(program core.Program, entry, helper co
 	if !validTransferHelperForeignSummary(helper.ForeignContract, wantAcquire) || !validTransferHelperCFG(helper, acquire, returned, failed) {
 		return fmt.Errorf("function %q: helper foreign summary or failure control flow does not match its acquisition", helper.ID)
 	}
-	if call.Kind != core.OpCall || call.Foreign != nil || call.ID == "" || call.CalleeID != helper.ID || call.SourceID != entry.Parameter.ID || call.TargetID == "" || call.TypeID != acquire.TypeID ||
+	if call.Kind != core.OpCall || call.Foreign != nil || call.ID == "" || call.CalleeID != helper.ID || call.SourceID != entry.Parameter.ID || call.TargetID == "" ||
 		use.Kind != core.OpForeignCall || use.Foreign == nil || *use.Foreign != wantUse || use.SourceID != call.TargetID || use.TargetID == "" ||
-		release.Kind != core.OpRelease || release.Foreign == nil || *release.Foreign != wantRelease || release.SourceID != call.TargetID || release.ReleasesOperationID != acquire.ID || release.TypeID != acquire.TypeID || release.Allocator != wantRelease.Allocator ||
+		release.Kind != core.OpRelease || release.Foreign == nil || *release.Foreign != wantRelease || release.SourceID != call.TargetID || release.ReleasesOperationID != acquire.ID || release.Allocator != wantRelease.Allocator ||
 		entryReturn.Kind != core.OpReturn || entryReturn.SourceID != use.TargetID || entryReturn.TypeID != use.TypeID {
 		return fmt.Errorf("function %q: caller use and release facts do not discharge the transferred acquisition", entry.ID)
 	}
