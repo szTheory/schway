@@ -3,7 +3,7 @@ phase: 14-evidence-instrument-and-honest-scoping
 recorded: 2026-09-18
 status: accepted
 disposition: phase-in-progress
-items: 86
+items: 100
 blocking: 0
 ---
 
@@ -138,6 +138,20 @@ finding).
 | D-14-128 | Phase 20 planned validation map row 20-08-01 exact-test ceiling | EVD-02 | info | P20 | WIRED | probe:TestValidationGradeBarRowExemptionsAreOwned | `20-VALIDATION.md` row `20-08-01` requires the unfiltered `go test ./... -count=1` preflight; the grader deliberately caps a bare package command with no `-run` at WIRED. Preserve the actual full-suite gate and narrow only this plan-time row until Plan 08 records its result. |
 | D-14-129 | Phase 20 planned validation map row 20-08-02 script ceiling | EVD-02 | info | P20 | REACHABLE | probe:TestValidationGradeBarRowExemptionsAreOwned | `20-VALIDATION.md` row `20-08-02` invokes the bounded full-suite timing script, which the grade ladder classifies as REACHABLE rather than an exact named Go test. Preserve the actual measurement command and narrow only this plan-time row; Plan 08 owns its recorded timing outcome. |
 | D-14-130 | plan 14-10's reconciliation of an archived Phase 11 groundedness finding | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R3) — `11-VALIDATION.md:56` cites a verification command whose roadmap target moved into the M002 archive; the historical command remains unchanged and the replacement is recorded in the reconciliation block (see Detail section). |
+| D-14-131 | public identity migration: 13-RESEARCH.md:581 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-RESEARCH.md:581` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-132 | public identity migration: 13-RESEARCH.md:582 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-RESEARCH.md:582` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-133 | public identity migration: 13-VALIDATION.md:62 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:62` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-134 | public identity migration: 13-VALIDATION.md:63 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:63` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-135 | public identity migration: 13-VALIDATION.md:64 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:64` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-136 | public identity migration: 13-VALIDATION.md:66 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:66` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-137 | public identity migration: 13-VALIDATION.md:67 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:67` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-138 | public identity migration: 13-VALIDATION.md:68 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:68` preserves the recorded pre-public repair command and maps its package path to the current `schway-repair` command (see Detail section). |
+| D-14-139 | public identity migration: 13-VALIDATION.md:84 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:84` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
+| D-14-140 | public identity migration: 13-VALIDATION.md:103 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `13-VALIDATION.md:103` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
+| D-14-141 | public identity migration: 14-RESEARCH.md:463 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `14-RESEARCH.md:463` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
+| D-14-142 | public identity migration: 14-VALIDATION.md:62 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `14-VALIDATION.md:62` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
+| D-14-143 | public identity migration: 14-VALIDATION.md:63 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `14-VALIDATION.md:63` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
+| D-14-144 | public identity migration: 23-VALIDATION.md:40 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `23-VALIDATION.md:40` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
 
 ## Detail
 
@@ -1792,6 +1806,108 @@ replacement: go test ./cmd/schway-repair/... -run 'TestRepairDriverSourceNeverRe
 The Phase 13 validation row remains an accurate historical receipt. The
 publication migration renamed the current command directory; this entry maps
 the old path to its current equivalent without changing the archived row.
+
+### D-14-139 — `13-VALIDATION.md:84` records a pre-public command package path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 84
+command: go test ./cmd/lang-repair/... -run 'TestRepairDriverImportsStayOutsideInternal|TestImportBoundaryTestIsNotInert' -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run 'TestRepairDriverImportsStayOutsideInternal|TestImportBoundaryTestIsNotInert' -v -count=1
+```
+
+The recorded command remains historical evidence. The public Schway migration
+renamed the current command package; this entry maps the old package path to
+its current equivalent without rewriting the validation or research record.
+
+### D-14-140 — `13-VALIDATION.md:103` records a pre-public command package path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md
+line: 103
+command: go test ./cmd/lang-repair/... -run TestTwinPairBlameGuard -v -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestTwinPairBlameGuard -v -count=1
+```
+
+The recorded command remains historical evidence. The public Schway migration
+renamed the current command package; this entry maps the old package path to
+its current equivalent without rewriting the validation or research record.
+
+### D-14-141 — `14-RESEARCH.md:463` records a pre-public command package path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md
+line: 463
+command: go test ./cmd/lang-repair/... -run TestUnrepairableAlwaysCarriesDiagnosis -v
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run TestUnrepairableAlwaysCarriesDiagnosis -v
+```
+
+The recorded command remains historical evidence. The public Schway migration
+renamed the current command package; this entry maps the old package path to
+its current equivalent without rewriting the validation or research record.
+
+### D-14-142 — `14-VALIDATION.md:62` records a pre-public command package path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md
+line: 62
+command: go test ./cmd/lang-repair/... -run 'TestUnrepairableAlwaysCarriesDiagnosis' -count=1 -v
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run 'TestUnrepairableAlwaysCarriesDiagnosis' -count=1 -v
+```
+
+The recorded command remains historical evidence. The public Schway migration
+renamed the current command package; this entry maps the old package path to
+its current equivalent without rewriting the validation or research record.
+
+### D-14-143 — `14-VALIDATION.md:63` records a pre-public command package path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md
+line: 63
+command: go test ./cmd/lang-repair/... -run 'TestUnrepairableDiagnosisGuardIsNotInert' -count=1 -v
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway-repair/... -run 'TestUnrepairableDiagnosisGuardIsNotInert' -count=1 -v
+```
+
+The recorded command remains historical evidence. The public Schway migration
+renamed the current command package; this entry maps the old package path to
+its current equivalent without rewriting the validation or research record.
+
+### D-14-144 — `23-VALIDATION.md:40` records a pre-public command package path
+
+first-recorded: M004
+
+```reconciliation
+file: .planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md
+line: 40
+command: go test ./cmd/lang ./internal/compiler/native -run '^TestPhase23PublicFileByte' -count=1
+classification: R2
+verdict: renamed
+replacement: go test ./cmd/schway ./internal/compiler/native -run '^TestPhase23PublicFileByte' -count=1
+```
+
+The recorded command remains historical evidence. The public Schway migration
+renamed the current command package; this entry maps the old package path to
+its current equivalent without rewriting the validation or research record.
 
 *Dated amendment: 2026-09-29, Schway public repository preparation.*
 *Register: PHASE-14-DEBT.md*

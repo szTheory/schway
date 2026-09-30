@@ -61,6 +61,12 @@ func ForeignLegacyNonlocalSourcePaths() []string {
 	return []string{ForeignLegacyNonlocalAdapterSourcePath(), ForeignLegacyAdapterSourcePath()}
 }
 
+// ForeignLegacyPhase4SourcePaths returns the deduplicated legacy adapters
+// needed by frozen Phase 4 fixtures that combine resource and nonlocal calls.
+func ForeignLegacyPhase4SourcePaths() []string {
+	return []string{ForeignLegacyNonlocalAdapterSourcePath(), ForeignResourceSourcePath(), ForeignLegacyAdapterSourcePath()}
+}
+
 // ForeignLegacyArenaSourcePaths returns the implementation and test alias
 // units used by the frozen Phase 5 allocator fixture.
 func ForeignLegacyArenaSourcePaths() []string {

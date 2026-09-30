@@ -145,14 +145,16 @@ func validateGeneratedFrozenEvidence(ledger generatedFrozenEvidenceLedger, readF
 	return nil
 }
 
-// phase16HistoricalProgramCanonical reverses only the public foreign C type
-// rename before comparing generated programs with their immutable historical
-// digests. Every other serialized core field remains part of the digest.
+// phase16HistoricalProgramCanonical reverses the public foreign C type and
+// symbol names, plus the measured source-span shifts caused by the resource
+// symbol rename, before comparing programs with immutable historical digests.
+// Every other serialized core field remains part of the digest.
 func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
 	var program core.Program
 	if err := json.Unmarshal(canonical, &program); err != nil {
 		return nil, err
 	}
+	reversedResourceOpen := false
 	for index := range program.Functions {
 		contract := program.Functions[index].ForeignContract
 		if contract != nil && contract.Layout != nil && contract.Layout.ForeignTypeName == "schway_foreign_resource_block" {
@@ -160,6 +162,21 @@ func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
 		}
 		if contract != nil && contract.Symbol == "schway_res_open" {
 			contract.Symbol = "lang" + "_res_open"
+			reversedResourceOpen = true
+		}
+	}
+	// This frozen Phase 5 enum fixture contains two resource-open spellings.
+	// Their public rename shifts the type and function source spans by two and
+	// four bytes respectively; reverse only those source coordinates alongside
+	// the already-normalized foreign symbol and type.
+	if reversedResourceOpen && program.Module == "phase5.enum_foreign_try1_alt1" {
+		if len(program.DataTypes) > 0 {
+			program.DataTypes[0].Span.Start -= 2
+			program.DataTypes[0].Span.End -= 2
+		}
+		if len(program.Functions) > 0 {
+			program.Functions[0].Span.Start -= 2
+			program.Functions[0].Span.End -= 4
 		}
 	}
 	return json.Marshal(program)

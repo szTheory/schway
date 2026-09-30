@@ -87,6 +87,10 @@ func TestPhase16EmitterInventoryRefusalWitnessesResolve(t *testing.T) {
 				cgenSource, readErr := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "cgen", "cgen_test.go"))
 				validWitness = readErr == nil && strings.Contains(string(cgenSource), "func TestForeignSymbolInjectionNeverReachesGeneratedC")
 			}
+			if row.Witness == "probe:TestPhase5ByPointerLoweringGolden" {
+				cgenSource, readErr := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "cgen", "cgen_test.go"))
+				validWitness = readErr == nil && strings.Contains(string(cgenSource), "func TestPhase5ByPointerLoweringGolden")
+			}
 			if !validWitness || strings.Contains(strings.Join(row.EvidenceFixtures, " "), "phase11") {
 				t.Fatalf("%s: ambiguous-entry refusal was treated as frozen evidence: witness=%q fixtures=%v", row.Call, row.Witness, row.EvidenceFixtures)
 			}

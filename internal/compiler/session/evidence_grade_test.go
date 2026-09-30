@@ -1125,7 +1125,8 @@ func resolvedPkgPatterns(index *testIndex, evidence string) []pkgPattern {
 	}
 	var pairs []pkgPattern
 	for _, operand := range parsed.Packages {
-		names, resolved := index.resolvePackageNames(operand)
+		currentOperand := currentIdentityPackageOperand(operand)
+		names, resolved := index.resolvePackageNames(currentOperand)
 		if !resolved {
 			continue
 		}
@@ -1139,9 +1140,29 @@ func resolvedPkgPatterns(index *testIndex, evidence string) []pkgPattern {
 			continue // zero resolved names: the WIRED-ceiling path, unchanged
 		}
 		sortStrings(matched)
-		pairs = append(pairs, pkgPattern{Package: operand, Pattern: "^(" + strings.Join(matched, "|") + ")$"})
+		pairs = append(pairs, pkgPattern{Package: currentOperand, Pattern: "^(" + strings.Join(matched, "|") + ")$"})
 	}
 	return pairs
+}
+
+// currentIdentityPackageOperand preserves archived validation commands while
+// resolving their pre-public command paths against the current package tree.
+func currentIdentityPackageOperand(operand string) string {
+	legacyCommandPackage := "./cmd/" + "lang"
+	legacyRepairPackage := legacyCommandPackage + "-" + "repair"
+	switch operand {
+	case legacyCommandPackage:
+		return "./cmd/schway"
+	case legacyRepairPackage:
+		return "./cmd/schway-repair"
+	}
+	if strings.HasPrefix(operand, legacyCommandPackage+"/") {
+		return "./cmd/schway/" + strings.TrimPrefix(operand, legacyCommandPackage+"/")
+	}
+	if strings.HasPrefix(operand, legacyRepairPackage+"/") {
+		return "./cmd/schway-repair/" + strings.TrimPrefix(operand, legacyRepairPackage+"/")
+	}
+	return operand
 }
 
 // validationTableEligibleForGrading keeps unfinished draft/planned contracts
@@ -2072,12 +2093,12 @@ func TestValidationGradeCapBarePackageRowHasNoNamedTest(t *testing.T) {
 			t.Fatalf("12-VALIDATION.md row 12-04-01 evidence derives %s with %v; without a corpus record want WIRED over six exact tests (evidence %q)", ceiling, matched, evidence)
 		}
 		want := map[string]bool{
-			"TestOriginWalksThroughPayloadDestructureToBorrow": true,
-			"TestOriginUnderstatedAcrossPayloadDestructure": true,
-			"TestAlternativeDetailsDesynchronizedNameAbsent": true,
+			"TestOriginWalksThroughPayloadDestructureToBorrow":  true,
+			"TestOriginUnderstatedAcrossPayloadDestructure":     true,
+			"TestAlternativeDetailsDesynchronizedNameAbsent":    true,
 			"TestAlternativeDetailsDesynchronizedDuplicateName": true,
-			"TestAlternativeDetailsSynchronizedAccepted": true,
-			"TestAlternativeDetailsEmptyStillAccepted": true,
+			"TestAlternativeDetailsSynchronizedAccepted":        true,
+			"TestAlternativeDetailsEmptyStillAccepted":          true,
 		}
 		for _, name := range matched {
 			if !want[name] {

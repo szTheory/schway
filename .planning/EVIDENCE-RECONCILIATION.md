@@ -1,5 +1,5 @@
 ---
-entries: 63
+entries: 69
 ---
 
 # Evidence Reconciliation
@@ -85,3 +85,9 @@ obligation on every run (D-14-12).
 | D-14-136 | .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md | 66 | `cmd: go test ./cmd/lang-repair/... -run TestUnrepairableDefectFailsTheGate -v -count=1` | renamed | replacement: go test ./cmd/schway-repair/... -run TestUnrepairableDefectFailsTheGate -v -count=1 |
 | D-14-137 | .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md | 67 | `cmd: go test ./cmd/lang-repair/... -run TestWrapCallInTryReverifyFailed -v -count=1` | renamed | replacement: go test ./cmd/schway-repair/... -run TestWrapCallInTryReverifyFailed -v -count=1 |
 | D-14-138 | .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md | 68 | `cmd: go test ./cmd/lang-repair/... -run 'TestRepairDriverSourceNeverReferencesHeldoutFixtures\|TestRepairDriverSourceHeldoutScanIsNotInert' -v -count=1` | renamed | replacement: go test ./cmd/schway-repair/... -run 'TestRepairDriverSourceNeverReferencesHeldoutFixtures\|TestRepairDriverSourceHeldoutScanIsNotInert' -v -count=1 |
+| D-14-139 | .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md | 84 | `cmd: go test ./cmd/lang-repair/... -run 'TestRepairDriverImportsStayOutsideInternal\|TestImportBoundaryTestIsNotInert' -v -count=1` | renamed | replacement: go test ./cmd/schway-repair/... -run 'TestRepairDriverImportsStayOutsideInternal\|TestImportBoundaryTestIsNotInert' -v -count=1 |
+| D-14-140 | .planning/milestones/M002-phases/13-agent-loop-for-interprocedural-defects/13-VALIDATION.md | 103 | `cmd: go test ./cmd/lang-repair/... -run TestTwinPairBlameGuard -v -count=1` | renamed | replacement: go test ./cmd/schway-repair/... -run TestTwinPairBlameGuard -v -count=1 |
+| D-14-141 | .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-RESEARCH.md | 463 | `cmd: go test ./cmd/lang-repair/... -run TestUnrepairableAlwaysCarriesDiagnosis -v` | renamed | replacement: go test ./cmd/schway-repair/... -run TestUnrepairableAlwaysCarriesDiagnosis -v |
+| D-14-142 | .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md | 62 | `cmd: go test ./cmd/lang-repair/... -run 'TestUnrepairableAlwaysCarriesDiagnosis' -count=1 -v` | renamed | replacement: go test ./cmd/schway-repair/... -run 'TestUnrepairableAlwaysCarriesDiagnosis' -count=1 -v |
+| D-14-143 | .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md | 63 | `cmd: go test ./cmd/lang-repair/... -run 'TestUnrepairableDiagnosisGuardIsNotInert' -count=1 -v` | renamed | replacement: go test ./cmd/schway-repair/... -run 'TestUnrepairableDiagnosisGuardIsNotInert' -count=1 -v |
+| D-14-144 | .planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md | 40 | `cmd: go test ./cmd/lang ./internal/compiler/native -run '^TestPhase23PublicFileByte' -count=1` | renamed | replacement: go test ./cmd/schway ./internal/compiler/native -run '^TestPhase23PublicFileByte' -count=1 |

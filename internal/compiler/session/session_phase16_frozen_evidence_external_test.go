@@ -54,14 +54,16 @@ func validatePhase16FileFrozenEvidence(record phase16FileFrozenEvidenceRecord, f
 	return nil
 }
 
-// phase16HistoricalProgramCanonical reverses only the public C type rename
-// in current Phase 4/5 programs before checking their pre-Schway evidence
-// digest. Any other program-byte change remains visible to the digest.
+// phase16HistoricalProgramCanonical reverses the public foreign C type and
+// symbol names, plus the measured source-span shifts caused by the resource
+// symbol rename, before comparing a current program with its immutable
+// pre-Schway digest. Any other program-byte change remains visible.
 func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
 	var program core.Program
 	if err := json.Unmarshal(canonical, &program); err != nil {
 		return nil, err
 	}
+	reversedResourceOpen := false
 	for index := range program.Functions {
 		contract := program.Functions[index].ForeignContract
 		if contract != nil && contract.Layout != nil && contract.Layout.ForeignTypeName == "schway_foreign_resource_block" {
@@ -69,6 +71,17 @@ func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
 		}
 		if contract != nil && contract.Symbol == "schway_res_open" {
 			contract.Symbol = "lang" + "_res_open"
+			reversedResourceOpen = true
+		}
+	}
+	if reversedResourceOpen && program.Module == "phase5.enum_foreign_try1_alt1" {
+		if len(program.DataTypes) > 0 {
+			program.DataTypes[0].Span.Start -= 2
+			program.DataTypes[0].Span.End -= 2
+		}
+		if len(program.Functions) > 0 {
+			program.Functions[0].Span.Start -= 2
+			program.Functions[0].Span.End -= 4
 		}
 	}
 	return json.Marshal(program)

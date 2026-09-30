@@ -388,6 +388,7 @@ func phase5RunThreeEngineAgreementWithCache(t *testing.T, fixture string, progra
 	if len(fixturePath) > 0 {
 		path = filepath.ToSlash(fixturePath[0])
 	}
+	historicalC := false
 	cSource, err := session.Phase16ControlNativeC(program, path)
 	if err != nil {
 		if path == "" {
@@ -404,14 +405,33 @@ func phase5RunThreeEngineAgreementWithCache(t *testing.T, fixture string, progra
 		if err != nil {
 			t.Fatalf("%s: frozen native evidence: %v", fixture, err)
 		}
+		historicalC = true
 	}
 	baseRunner := native.DefaultRunner()
+	seenForeignSources := make(map[string]bool)
 	for _, function := range program.Functions {
-		if function.Name != functionName || function.ForeignContract == nil {
+		if function.ForeignContract == nil {
 			continue
 		}
-		if sourcePaths := native.ForeignSourcePathsForSymbol(function.ForeignContract.Symbol); len(sourcePaths) != 0 {
-			baseRunner.ForeignSources = append(append([]string(nil), baseRunner.ForeignSources...), sourcePaths...)
+		symbol := function.ForeignContract.Symbol
+		if historicalC {
+			switch symbol {
+			case "schway_res_open":
+				symbol = "lang" + "_res_open"
+			case "schway_nonlocal_probe":
+				symbol = "lang" + "_nonlocal_probe"
+			case "schway_arena_open":
+				symbol = "lang" + "_arena_open"
+			case "schway_retained_touch":
+				symbol = "lang" + "_retained_touch"
+			}
+		}
+		for _, sourcePath := range native.ForeignSourcePathsForSymbol(symbol) {
+			if seenForeignSources[sourcePath] {
+				continue
+			}
+			seenForeignSources[sourcePath] = true
+			baseRunner.ForeignSources = append(baseRunner.ForeignSources, sourcePath)
 		}
 	}
 	for _, input := range inputs {

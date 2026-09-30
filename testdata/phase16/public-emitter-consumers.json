@@ -182,6 +182,11 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
+      "call": "internal/compiler/cgen/cgen_test.go:Emit:675",
+      "classification": "typed-refusal",
+      "witness": "probe:TestPhase5ByPointerLoweringGolden"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_test.go:Emit:837",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"

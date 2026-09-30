@@ -1883,7 +1883,7 @@ func TestNonlocalExitEmitsLeakPerLiveAcquisition(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
+	runner.ForeignSources = native.ForeignLegacyPhase4SourcePaths()
 	result, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if err != nil {
 		t.Fatalf("native run failed: %v", err)
@@ -1954,7 +1954,7 @@ func TestNonlocalExitProbeInterpreterNative(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
+	runner.ForeignSources = native.ForeignLegacyPhase4SourcePaths()
 	result, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if err != nil {
 		t.Fatalf("native run failed: %v", err)
@@ -1981,7 +1981,7 @@ func TestNonlocalExitDetectionIsMutationKilled(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
+	runner.ForeignSources = native.ForeignLegacyPhase4SourcePaths()
 	mutationRunner := session.NewNonlocalPadOmissionMutationRunner(runner)
 	result, runErr := mutationRunner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if runErr == nil && len(result.Pairs) == 1 && result.Pairs[0].Execution.Outcome.Kind == "defect" {
@@ -2004,7 +2004,7 @@ func TestLeakCountMatchesLiveAcquisitions(t *testing.T) {
 	}
 	runner := native.DefaultRunner()
 	runner.Expect = native.ExpectDefect
-	runner.ForeignSources = native.ForeignLegacyNonlocalSourcePaths()
+	runner.ForeignSources = native.ForeignLegacyPhase4SourcePaths()
 	goldenResult, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
 	if err != nil || len(goldenResult.Pairs) != 1 {
 		t.Fatalf("golden run failed: err=%v result=%+v", err, goldenResult)

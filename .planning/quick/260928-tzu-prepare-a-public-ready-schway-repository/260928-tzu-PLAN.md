@@ -489,3 +489,26 @@ two current evidence goldens through the identity ledger, and repairs the
 receipt and emitter-consumer inventory. Historical C artifacts and their
 artifact hashes remain unchanged. Continue to use hosted CI as the acceptance
 gate; local project tests remain excluded.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36643785834)
+
+Run `36643785834` confirms the public Schway tree builds and passes vet and the
+Phase 23 gate on both hosts, but the full Go suite and Phase 6 evidence remain
+red. Its failures group into frozen Phase 4/5 foreign-source links and one
+historical program-span digest, current manifest IDs, the Phase 16 emitter
+consumer inventory, legacy command operands in derived corpus grading,
+Linux-only composition-control behavior, and stale planning indexes. The
+groundedness report measured six new R2 command-path findings and eight R2b
+findings; seven prior Phase 23 R2b pins no longer match the source documents.
+
+The next additive repair batch fetches full Git history in both checkout jobs;
+maps every frozen Phase 4/5 foreign contract to its historical adapter;
+normalizes only the evidenced Phase 5 span shifts and current identity IDs;
+resolves archived command operands against current package names; and records
+the missing emitter refusal witness. It adds the six R2 reconciliation rows,
+updates the exact pinned frontier and R2b ownership set, and regenerates both
+derived planning views from their registers. The NAT-07 composition-only
+control is explicitly scoped to Darwin, where the current hosted receipt
+demonstrates divergence. No archived fixture bytes, run records, or commit
+history are rewritten. Hosted CI remains the project-test lane; do not run the
+project test suite locally.

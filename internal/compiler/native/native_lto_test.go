@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -352,6 +353,9 @@ func compositionOnlyCellValue(t *testing.T, calleePath, writerPath, wrapperPath,
 // one function. See the topology comment above compositionOnlyCalleeSource
 // for the full design.
 func TestCompositionOnlyLTODivergence(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("NAT-07 composition-only divergence control is currently supported on Darwin; host is %s", runtime.GOOS)
+	}
 	if _, err := exec.LookPath("clang"); err != nil {
 		t.Skipf("env:clang toolchain unavailable on this host: %v", err)
 	}

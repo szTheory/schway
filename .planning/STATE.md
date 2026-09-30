@@ -4,12 +4,12 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration active; hosted CI run 36631949966 is red after Phase 23, build, and vet pass on both hosts.
-stopped_at: Continue quick task 260928-tzu from the legacy native-control fixes and explicit current-identity migration slices; do not replay completed Phase 23 plans or UAT.
-last_updated: "2026-09-29T21:27:01Z"
-last_activity: 2026-09-28
-last_activity_desc: Completed quick task 260928-rta: record Schway as the chosen public language name
-state_head: c50430d9fa1490b393c5d22805f094787ee99186
+status: Public Schway migration active; hosted CI run 36643785834 is red after Phase 23, build, and vet pass on both hosts.
+stopped_at: Continue quick task 260928-tzu from the staged hosted-CI repair batch; run final privacy gates and push additively, then use hosted CI. Do not replay completed Phase 23 plans or UAT.
+last_updated: "2026-09-30T00:45:08Z"
+last_activity: 2026-09-29
+last_activity_desc: Prepared additive repairs for hosted CI run 36643785834; final privacy gates and hosted verification remain.
+state_head: f92b2f0c44bb93b726315b190fd851635d9ada5d
 progress:
   total_phases: 4
   completed_phases: 1
@@ -23,13 +23,12 @@ Current publication identity (2026-09-28): Schway uses the Go module `github.com
 <!-- schway-current:end -->
 
 Public repository follow-up (2026-09-29): `szTheory/schway` `main` is at
-`9edd722d`. Hosted run `36631949966` confirms the frozen emitter and
-by-pointer identity controls pass on Ubuntu and macOS. Full tests and Phase 6
-evidence remain red, so race tests are skipped. Both hosts pass build, vet,
-and Phase 23. The cleanup native probe still needs the historical resource
-adapter, and the terminal defect record needs an explicit stdout flush before
-abort. Resume from the active quick task and use hosted CI as the project-test
-lane.
+`f92b2f0c`. Hosted run `36643785834` confirms build, vet, and Phase 23 pass on
+Ubuntu and macOS, while full tests and Phase 6 evidence remain red. The staged
+repair batch addresses frozen Phase 4/5 foreign links, historical span and
+manifest identities, emitter inventory, archived package operands, Linux LTO
+control scope, and groundedness/reconciliation views. Final redacted privacy
+gates precede the additive push; hosted CI remains the project-test lane.
 
 
 # Project State
@@ -642,9 +641,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-29T00:49:36Z
-Stopped at: Public empty repository `github.com/szTheory/schway` created and recorded. No source was pushed; local remote remains unset; pre-push privacy audit is pending. Phase 23 remains blocked only on the hosted Ubuntu `evidence-aggregate` receipt.
-Resume file: .planning/phases/23-live-local-allocation-and-discharge/.continue-here.md
+Last session: 2026-09-30T00:45:08Z
+Stopped at: Repairing hosted CI run 36643785834 under quick task 260928-tzu. The current Schway identity, staged source repairs, and derived planning indexes are ready for final privacy gates; use the additive main push and hosted CI next. Phase 23 plans and UAT are already complete; do not replay them.
+Resume file: .planning/quick/260928-tzu-prepare-a-public-ready-schway-repository/260928-tzu-PLAN.md
 Next command: Complete the coordinated technical rename and the pending privacy audit before any public source push. When the hosted Ubuntu `evidence-aggregate` receipt is available, run `$gsd-execute-phase 23` at verifier gates without replaying completed plans or UAT.
 Routing note — 2026-09-29: `init.progress` reports Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reports all 7 plans complete and none incomplete. Phase 22 UAT is complete, so preserve it. The Phase 23 verification identifies only the missing hosted Ubuntu receipt; do not plan implementation fixes for that external evidence gap.
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
