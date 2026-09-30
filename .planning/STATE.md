@@ -5,11 +5,11 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 24
 current_phase_name: Ownership Transfer Through Calls and Errors
 status: planning
-stopped_at: Phase 23 complete; Phase 24 needs discussion before planning.
-last_updated: "2026-09-30T16:23:53.148Z"
+stopped_at: Phase 24 context gathered
+last_updated: "2026-09-30T17:40:42.788Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 23 complete, transitioned to Phase 24
-state_head: 3713a10180ca21be0833a761dbc8e50b8f27a4b0
+state_head: f1ae212aceaf6e2c7b18093c91bd1af8a1936a1b
 progress:
   total_phases: 4
   completed_phases: 2
@@ -670,9 +670,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-30T16:23:42Z
-Stopped at: Phase 23 complete; Phase 24 needs discussion before planning.
-Resume file: .planning/STATE.md; Phase 23 verification is the completed evidence record.
+Last session: 2026-09-30T17:40:42.667Z
+Stopped at: Phase 24 context gathered
+Resume file: .planning/phases/24-ownership-transfer-through-calls-and-errors/24-CONTEXT.md
 Next command: `$gsd-discuss-phase 24`
 Routing note — 2026-09-29 (historical; superseded 2026-09-30): `init.progress` reported Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reported all 7 plans complete and none incomplete. The then-current Phase 23 report identified the missing hosted Ubuntu receipt.
 Routing note — 2026-09-30 (pre-closeout; superseded below): Phase 22 verification passed 5/5 and Phase 22 is complete. Phase 23's seven plans were complete. Hosted run 36707529870 passed Ubuntu/macOS check suites and both evidence aggregates at public source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`; its optional validation-corpus receipt was skipped by configuration. At that point the 2026-09-28 Phase 23 report still needed a verifier-only refresh; do not repeat its plans or UAT.
