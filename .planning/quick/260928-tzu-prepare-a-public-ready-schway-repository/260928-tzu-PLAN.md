@@ -699,3 +699,14 @@ events, and a pass (not skip) for
 private scan found zero personal home/contact/secret candidates, zero phone
 candidates, and zero gitleaks findings. Replace the interim Ubuntu record with
 this Mac artifact so the Darwin-only validation row remains supported.
+
+## Dated Phase 6 aggregate diagnostic amendment (2026-09-30, run 36680850688)
+
+The full Ubuntu/macOS checks, including both race suites, passed. Both Phase 6
+aggregate jobs returned exit 3. Redacted job logs contain no ordinary Go test
+failure; source inspection shows `schway verify testdata/phase6` returns an
+operational status while `verify-phase6.sh` redirects its JSON to a temporary
+file that the exit trap deletes. Add a failure-only summary of phase status,
+non-pass lane IDs, and redacted diagnostic messages so the next hosted run can
+identify the failing gate. Preserve the failing exit code and keep acceptance
+open until Phase 6 passes.

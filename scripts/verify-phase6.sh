@@ -24,8 +24,38 @@ go build -o "$verify_tmp/schway-repair" ./cmd/schway-repair
 # never a fork or an extension of.
 ASAN_OPTIONS='halt_on_error=1:abort_on_error=1:symbolize=0:detect_leaks=0:detect_odr_violation=0:alloc_dealloc_mismatch=1' \
 UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=0' \
-	"$verify_tmp/schway" --json verify testdata/phase5 >"$verify_tmp/phase5.json"
-"$verify_tmp/schway" --json verify testdata/phase6 >"$verify_tmp/phase6.json"
+"$verify_tmp/schway" --json verify testdata/phase5 >"$verify_tmp/phase5.json"
+if "$verify_tmp/schway" --json verify testdata/phase6 >"$verify_tmp/phase6.json"; then
+	:
+else
+	verify_status=$?
+	python3 - "$verify_tmp/phase6.json" "$verify_status" <<'PY' >&2
+import json, re, sys
+
+try:
+    result = json.load(open(sys.argv[1], encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    print(f"phase6 verify: nonzero exit={sys.argv[2]}, result JSON unavailable")
+    raise SystemExit(0)
+
+print(f"phase6 verify: exit={sys.argv[2]} status={result.get('status', 'unknown')}")
+for lane in result.get("lanes", []):
+    if lane.get("status") != "pass":
+        print(f"phase6 lane: id={lane.get('id', 'unknown')} status={lane.get('status', 'unknown')} work={lane.get('recomputed_work', 0)}")
+for diagnostic in result.get("diagnostics", []):
+    message = str(diagnostic.get("message", ""))
+    message = re.sub(r'/(?:Users|home)/[^/\s"\\]+', "[home]", message)
+    message = re.sub(r'/(?:private/)?var/folders/[^/\s"\\]+/[^/\s"\\]+', "[temp]", message)
+    message = re.sub(r'/tmp/[^/\s"\\]+', "[temp]", message)
+    message = re.sub(r'(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', "[email]", message)
+    message = re.sub(r'(?<![A-Fa-f0-9])(?:\+?1[\s.-]?)?(?:\([2-9][0-9]{2}\)|[2-9][0-9]{2})[\s.-]?[2-9][0-9]{2}[\s.-]?[0-9]{4}(?![A-Fa-f0-9])', "[phone]", message)
+    message = re.sub(r'(?<![0-9])[0-9]{3}-[0-9]{2}-[0-9]{4}(?![0-9])', "[ssn]", message)
+    message = re.sub(r'\b(?:AKIA|ASIA)[0-9A-Z]{16}\b', "[aws-key]", message)
+    message = re.sub(r'\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b', "[token]", message)
+    print(f"phase6 diagnostic: code={diagnostic.get('code', 'unknown')} message={message[:500]}")
+PY
+	exit "$verify_status"
+fi
 
 # Non-regression for Phase 1 through Phase 5 is proven by running THEIR OWN
 # corpora with THIS phase's freshly built binary, never by invoking an
