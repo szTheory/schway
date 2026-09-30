@@ -1,54 +1,49 @@
 ---
 phase: 22-native-application-build-and-single-execution
-reviewed: 2026-09-27T20:25:16Z
+reviewed: 2026-09-30T14:58:32Z
 depth: standard
-files_reviewed: 20
+files_reviewed: 5
 files_reviewed_list:
-  - cmd/lang/main.go
-  - cmd/lang/main_test.go
-  - examples/phase22/identity.bindings.json
-  - examples/phase22/identity.cases.json
-  - examples/phase22/identity.expected.json
-  - examples/phase22/identity.lang
-  - examples/phase22/support.c
-  - examples/phase22/support.h
-  - internal/compiler/cgen/cgen.go
-  - internal/compiler/cgen/cgen_program.go
-  - internal/compiler/cgen/cgen_program_test.go
-  - internal/compiler/execution/execution.go
-  - internal/compiler/native/bindings.go
-  - internal/compiler/native/bindings_test.go
-  - internal/compiler/native/native.go
+  - cmd/schway/main.go
   - internal/compiler/native/native_app.go
-  - internal/compiler/native/native_app_test.go
-  - internal/compiler/session/session.go
-  - internal/compiler/session/session_app_verify.go
-  - testdata/phase16/public-emitter-consumers.json
+  - examples/phase23/adapter.c
+  - examples/phase23/adapter.h
+  - scripts/verify-phase23.sh
 findings:
   critical: 0
-  warning: 0
+  warning: 2
   info: 0
-  total: 0
-status: clean
+  total: 2
+status: issues_found
 ---
 
 # Phase 22: Code Review Report
 
-**Reviewed:** 2026-09-27T20:25:16Z  
+**Reviewed:** 2026-09-30T14:58:32Z  
 **Depth:** standard  
-**Files Reviewed:** 20  
-**Status:** clean
+**Files Reviewed:** 5 of 443 manifest paths  
+**Status:** issues_found
 
 ## Summary
 
-Reviewed the exact 20-file Phase 22 scope at standard depth, including the final replay-case duplicate-key fix. Confirmed ordinary application execution strips inherited `LANG_APP_EVIDENCE_PATH`, evidence-enabled execution sets only its private capture path, and duplicate JSON keys are rejected recursively before replay-case decoding. Traced publication failures while backing up, publishing, and rolling back the artifact/receipt pair; rollback failures retain the private staging directory containing recovery files and report its path. No remaining correctness, security, or maintainability defects were found. No tests were run as part of this review.
+The manifest contains 443 changed paths. I inspected the five files listed in the frontmatter, focusing on the renamed CLI's public usage message, retained application execution, Phase 23's C adapter, and the Phase 23 verification receipt. This is a partial review of the manifest scope; the other changed paths were not reviewed, so no clean-scope conclusion is made. No tests were run.
 
-## Narrative Findings (AI reviewer)
+## Warnings
 
-All reviewed files meet quality standards. No issues found.
+### WR-01: Usage errors advertise the obsolete executable name
+
+**File:** `cmd/schway/main.go:664`  
+**Issue:** The public executable is now `schway`, but the usage diagnostic begins `usage: lang`. Users who invoke `schway` incorrectly receive instructions for an obsolete binary name, making the public command contract misleading.
+**Fix:** Change the usage string prefix to `usage: schway` and update any contract assertion that pins the old public executable name.
+
+### WR-02: Phase 23 receipt can report a clean tree with untracked source
+
+**File:** `scripts/verify-phase23.sh:34-38`  
+**Issue:** `git diff --quiet` and `git diff --cached --quiet` do not detect untracked files. If an untracked Go source or test file affects the verification run, the script records `tree=clean` even though the checked source tree differs from the committed revision. That makes the host receipt's cleanliness claim inaccurate.
+**Fix:** Include untracked files in the check, for example by testing `git ls-files --others --exclude-standard` is empty along with both diff checks before assigning `source_tree=clean`.
 
 ---
 
-_Reviewed: 2026-09-27T20:25:16Z_  
+_Reviewed: 2026-09-30T14:58:32Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
