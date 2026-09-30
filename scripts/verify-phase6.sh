@@ -5,43 +5,44 @@ verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase6.XXXXXX")
 trap 'rm -rf "$verify_tmp"' EXIT HUP INT TERM
 export GOCACHE="$verify_tmp/go-cache"
 
-sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestVerifyPhase6ControlsAndWork TestPhase6RequiredControlsMatchScript TestPhase6BoundsMatchScript TestPhase6VerifierScriptContract TestPhase6ScriptInvokesNoPriorGate TestPhase6SamplingLoopMatchesGoStatistics TestPhase6ExpectedEscapesAreDeclared TestPhase6EscapesAreNeverPresentedAsControls TestPhase6EscapeGrepsMatchScript
-sh scripts/assert-go-tests.sh --self-test ./cmd/schway TestPhase6CorpusDispatchRequiresMarker
-go test ./...
-go test -race ./...
-go vet ./...
-go build -o "$verify_tmp/schway" ./cmd/schway
-go build -o "$verify_tmp/schway-repair" ./cmd/schway-repair
-"$verify_tmp/schway" --json verify testdata/phase1 >"$verify_tmp/phase1.json"
-"$verify_tmp/schway" --json verify testdata/phase2 >"$verify_tmp/phase2.json"
-"$verify_tmp/schway" --json verify testdata/phase3 >"$verify_tmp/phase3.json"
-"$verify_tmp/schway" --json verify testdata/phase4 >"$verify_tmp/phase4.json"
+run_step() {
+	step_name=$1
+	shift
+	if "$@"; then
+		return 0
+	else
+		step_status=$?
+		printf 'phase6 script step: %s exit=%s\n' "$step_name" "$step_status" >&2
+		return "$step_status"
+	fi
+}
 
-# The sanitizer lane's own ASAN_OPTIONS/UBSAN_OPTIONS are pinned explicitly
-# on this invocation (D-05-13), byte-identical to
-# native.ASanOptions/native.UBSanOptions -- carried forward unchanged from
-# the prior phase's own sanitizer lane, which this script is a PEER of,
-# never a fork or an extension of.
-ASAN_OPTIONS='halt_on_error=1:abort_on_error=1:symbolize=0:detect_leaks=0:detect_odr_violation=0:alloc_dealloc_mismatch=1' \
-UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=0' \
-"$verify_tmp/schway" --json verify testdata/phase5 >"$verify_tmp/phase5.json"
-if "$verify_tmp/schway" --json verify testdata/phase6 >"$verify_tmp/phase6.json"; then
-	:
-else
-	verify_status=$?
-	python3 - "$verify_tmp/phase6.json" "$verify_status" <<'PY' >&2
+run_step 'session assertion tests' sh scripts/assert-go-tests.sh --self-test ./internal/compiler/session TestVerifyPhase6ControlsAndWork TestPhase6RequiredControlsMatchScript TestPhase6BoundsMatchScript TestPhase6VerifierScriptContract TestPhase6ScriptInvokesNoPriorGate TestPhase6SamplingLoopMatchesGoStatistics TestPhase6ExpectedEscapesAreDeclared TestPhase6EscapesAreNeverPresentedAsControls TestPhase6EscapeGrepsMatchScript
+run_step 'command assertion tests' sh scripts/assert-go-tests.sh --self-test ./cmd/schway TestPhase6CorpusDispatchRequiresMarker
+run_step 'go test ./...' go test ./...
+run_step 'go test -race ./...' go test -race ./...
+run_step 'go vet ./...' go vet ./...
+run_step 'build schway' go build -o "$verify_tmp/schway" ./cmd/schway
+run_step 'build schway-repair' go build -o "$verify_tmp/schway-repair" ./cmd/schway-repair
+
+report_verify_failure() {
+	corpus=$1
+	result_path=$2
+	verify_status=$3
+	python3 - "$corpus" "$result_path" "$verify_status" <<'PY' >&2
 import json, re, sys
 
+corpus, result_path, verify_status = sys.argv[1:]
 try:
-    result = json.load(open(sys.argv[1], encoding="utf-8"))
+    result = json.load(open(result_path, encoding="utf-8"))
 except (OSError, json.JSONDecodeError):
-    print(f"phase6 verify: nonzero exit={sys.argv[2]}, result JSON unavailable")
+    print(f"verify corpus: {corpus} exit={verify_status}, result JSON unavailable")
     raise SystemExit(0)
 
-print(f"phase6 verify: exit={sys.argv[2]} status={result.get('status', 'unknown')}")
+print(f"verify corpus: {corpus} exit={verify_status} status={result.get('status', 'unknown')}")
 for lane in result.get("lanes", []):
     if lane.get("status") != "pass":
-        print(f"phase6 lane: id={lane.get('id', 'unknown')} status={lane.get('status', 'unknown')} work={lane.get('recomputed_work', 0)}")
+        print(f"verify lane: corpus={corpus} id={lane.get('id', 'unknown')} status={lane.get('status', 'unknown')} work={lane.get('recomputed_work', 0)}")
 for diagnostic in result.get("diagnostics", []):
     message = str(diagnostic.get("message", ""))
     message = re.sub(r'/(?:Users|home)/[^/\s"\\]+', "[home]", message)
@@ -52,10 +53,38 @@ for diagnostic in result.get("diagnostics", []):
     message = re.sub(r'(?<![0-9])[0-9]{3}-[0-9]{2}-[0-9]{4}(?![0-9])', "[ssn]", message)
     message = re.sub(r'\b(?:AKIA|ASIA)[0-9A-Z]{16}\b', "[aws-key]", message)
     message = re.sub(r'\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b', "[token]", message)
-    print(f"phase6 diagnostic: code={diagnostic.get('code', 'unknown')} message={message[:500]}")
+    print(f"verify diagnostic: corpus={corpus} code={diagnostic.get('code', 'unknown')} message={message[:500]}")
 PY
-	exit "$verify_status"
-fi
+}
+
+verify_corpus() {
+	corpus=$1
+	shift
+	result_path="$verify_tmp/$corpus.json"
+	if "$@" --json verify "testdata/$corpus" >"$result_path"; then
+		return 0
+	else
+		verify_status=$?
+		report_verify_failure "$corpus" "$result_path" "$verify_status"
+		return "$verify_status"
+	fi
+}
+
+verify_corpus phase1 "$verify_tmp/schway"
+verify_corpus phase2 "$verify_tmp/schway"
+verify_corpus phase3 "$verify_tmp/schway"
+verify_corpus phase4 "$verify_tmp/schway"
+
+# The sanitizer lane's own ASAN_OPTIONS/UBSAN_OPTIONS are pinned explicitly
+# on this invocation (D-05-13), byte-identical to
+# native.ASanOptions/native.UBSanOptions -- carried forward unchanged from
+# the prior phase's own sanitizer lane, which this script is a PEER of,
+# never a fork or an extension of.
+verify_corpus phase5 env \
+	ASAN_OPTIONS='halt_on_error=1:abort_on_error=1:symbolize=0:detect_leaks=0:detect_odr_violation=0:alloc_dealloc_mismatch=1' \
+	UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=0' \
+	"$verify_tmp/schway"
+verify_corpus phase6 "$verify_tmp/schway"
 
 # Non-regression for Phase 1 through Phase 5 is proven by running THEIR OWN
 # corpora with THIS phase's freshly built binary, never by invoking an

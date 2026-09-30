@@ -4,11 +4,11 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration active; hosted CI run 36643785834 is red after Phase 23, build, and vet pass on both hosts.
-stopped_at: Continue quick task 260928-tzu from the staged hosted-CI repair batch; run final privacy gates and push additively, then use hosted CI. Do not replay completed Phase 23 plans or UAT.
-last_updated: "2026-09-30T00:45:08Z"
-last_activity: 2026-09-29
-last_activity_desc: Prepared additive repairs for hosted CI run 36643785834; final privacy gates and hosted verification remain.
+status: Public Schway migration active; hosted run 36684969719 passed full checks on both hosts, while both Phase 6 aggregate jobs exited 3 without exposing a lane diagnostic.
+stopped_at: Continue quick task 260928-tzu by pushing the expanded failure-only Phase 6 diagnostics after privacy gates, then use hosted CI to identify the exact failing step or corpus. Do not replay completed Phase 23 plans or UAT.
+last_updated: "2026-09-30T07:59:32Z"
+last_activity: 2026-09-30
+last_activity_desc: Expanded hosted Phase 6 failure diagnostics after run 36684969719 exited 3 on both aggregate hosts.
 state_head: f92b2f0c44bb93b726315b190fd851635d9ada5d
 progress:
   total_phases: 4
@@ -22,13 +22,15 @@ progress:
 Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
 <!-- schway-current:end -->
 
-Public repository follow-up (2026-09-29): `szTheory/schway` `main` is at
-`f92b2f0c`. Hosted run `36643785834` confirms build, vet, and Phase 23 pass on
-Ubuntu and macOS, while full tests and Phase 6 evidence remain red. The staged
-repair batch addresses frozen Phase 4/5 foreign links, historical span and
-manifest identities, emitter inventory, archived package operands, Linux LTO
-control scope, and groundedness/reconciliation views. Final redacted privacy
-gates precede the additive push; hosted CI remains the project-test lane.
+Public repository follow-up (2026-09-30): `szTheory/schway` `main` is at
+`07c56958`. Hosted run `36684969719` passes the full check jobs on Ubuntu and
+macOS, including both race suites, but both current evidence aggregate jobs
+exit 3 in `scripts/verify-phase6.sh`. The failure-only Phase 6 verifier summary
+did not appear, so the exact failing command or corpus is not yet known. The
+script now labels failures from its assertion, test, vet, and build commands,
+and reports redacted lane diagnostics for each Phase 1–6 corpus. Static shell
+and diff checks pass; project suites remain hosted-CI-only. Run the full
+reachable-history privacy gates before each additive push.
 
 
 # Project State
@@ -44,7 +46,7 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The isolated publication copy passed the history-topology and privacy audit, preserving 1,538 original commits, 18 merges, and three milestone tags. Confirmed and unclassified privacy/secret candidates are zero. Push sanitized `main` and the three tags to start the hosted Ubuntu receipt, then resume Phase 23 at verifier gates. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
+- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest pre-push audit at `07c56958` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
@@ -97,8 +99,8 @@ hiding runtime costs.
 
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
-Status: Phase 23 local gates pass; waiting for hosted Ubuntu CI receipt.
-Last activity: 2026-09-28 — Completed quick task 260928-sof: record the empty public repository and pending no-PII source-push audit
+Status: Phase 23 has all seven plans and UAT complete; its hosted verification receipt remains open while the public-repository quick task repairs the Phase 6 aggregate.
+Last activity: 2026-09-30 — Expanded failure-only diagnostics after hosted run 36684969719 passed full checks but both evidence aggregates exited 3.
 
 Progress: [███░░░░░░░] 25%
 
@@ -641,10 +643,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-30T00:45:08Z
-Stopped at: Repairing hosted CI run 36643785834 under quick task 260928-tzu. The current Schway identity, staged source repairs, and derived planning indexes are ready for final privacy gates; use the additive main push and hosted CI next. Phase 23 plans and UAT are already complete; do not replay them.
+Last session: 2026-09-30T07:59:32Z
+Stopped at: Repairing hosted Phase 6 evidence aggregates under quick task 260928-tzu. Run 36684969719 passed full checks on both hosts but both aggregate jobs exited 3 without exposing the failing step. Failure-only command labels and Phase 1–6 corpus diagnostics are staged; run full-history privacy gates, push additively, and use the next hosted run to identify the exact failure. Phase 23 plans and UAT are complete; do not replay them.
 Resume file: .planning/quick/260928-tzu-prepare-a-public-ready-schway-repository/260928-tzu-PLAN.md
-Next command: Complete the coordinated technical rename and the pending privacy audit before any public source push. When the hosted Ubuntu `evidence-aggregate` receipt is available, run `$gsd-execute-phase 23` at verifier gates without replaying completed plans or UAT.
+Next command: Run the full-history privacy gates and additively push the expanded `verify-phase6.sh` diagnostics. After hosted CI reports a passing aggregate, resume `$gsd-execute-phase 23` at verifier gates without replaying completed plans or UAT.
 Routing note — 2026-09-29: `init.progress` reports Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reports all 7 plans complete and none incomplete. Phase 22 UAT is complete, so preserve it. The Phase 23 verification identifies only the missing hosted Ubuntu receipt; do not plan implementation fixes for that external evidence gap.
 Routing note — 2026-09-27: Phase 22's objective README contract UAT passed,
 the refreshed verifier is `passed` at 17/17 truths, and the old subjective

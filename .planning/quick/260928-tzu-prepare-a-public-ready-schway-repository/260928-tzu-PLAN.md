@@ -710,3 +710,15 @@ file that the exit trap deletes. Add a failure-only summary of phase status,
 non-pass lane IDs, and redacted diagnostic messages so the next hosted run can
 identify the failing gate. Preserve the failing exit code and keep acceptance
 open until Phase 6 passes.
+
+## Dated Phase 6 diagnostic coverage amendment (2026-09-30, run 36684969719)
+
+The full Ubuntu/macOS check jobs passed, including both race suites, but both
+evidence aggregates again exited 3 in `scripts/verify-phase6.sh`. The
+failure-only Phase 6 JSON summary did not appear in either hosted log. The
+available redacted logs contain only successful package summaries followed by
+the final exit code, so they do not identify whether an assertion/test/vet/
+build command or an earlier Phase 1–5 corpus stopped the script. Extend
+failure-only diagnostics to name each prerequisite command and to report the
+redacted lane/diagnostic summary for every Phase 1–6 corpus. Keep the acceptance
+gate open and use hosted CI for the next project-suite run.
