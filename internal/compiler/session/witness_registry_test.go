@@ -308,9 +308,9 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 		problems = append(problems, "ambiguous-entry refusal is not independently typed")
 	}
 	for _, call := range []string{
-		"internal/compiler/cgen/cgen_test.go:Emit:189",
+		"internal/compiler/cgen/cgen_test.go:Emit:202",
 		"internal/compiler/native/foreign_retained_test.go:EmitNative:48",
-		"internal/compiler/session/session_phase5_corpus_test.go:EmitNative:501",
+		"internal/compiler/session/session_phase5_corpus_test.go:EmitNative:521",
 	} {
 		if !refusalCalls[call] {
 			problems = append(problems, "M004 control was reclassified without provenance: "+call)

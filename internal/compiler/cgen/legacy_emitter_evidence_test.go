@@ -169,7 +169,7 @@ func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
 	// Their public rename shifts the type and function source spans by two and
 	// four bytes respectively; reverse only those source coordinates alongside
 	// the already-normalized foreign symbol and type.
-	if reversedResourceOpen && program.Module == "phase5.enum_foreign_try1_alt1" {
+	if reversedResourceOpen && (program.Module == "phase5.enum_foreign_try1_alt1" || program.Module == "phase5.enum_foreign_discard1_alt1") {
 		if len(program.DataTypes) > 0 {
 			program.DataTypes[0].Span.Start -= 2
 			program.DataTypes[0].Span.End -= 2

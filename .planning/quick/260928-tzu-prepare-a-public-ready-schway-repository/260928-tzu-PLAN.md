@@ -563,3 +563,25 @@ redacted privacy gates, then push additively to `main`. The next GitHub run
 must decide whether the validation-corpus pair digest needs a narrowly
 evidenced current expectation update or whether a source pairing is missing.
 Do not run project tests locally; no hosted receipt exists yet for this batch.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36656246047)
+
+The new adapter batch reached its next boundary: both `go test ./...` jobs and
+both Phase 6 aggregates failed. The second generated Phase 5 enum's cgen copy
+still needed the measured span normalization; the historical manifest check
+also hashes execution outputs, whose Schway schema identity must be reversed
+along with C and foreign-manifest identity. Two M004 provenance sentinels still
+named call sites before the source-line shifts (`cgen_test.go:Emit:189` and
+`session_phase5_corpus_test.go:EmitNative:501`). Ubuntu exposed that the frozen
+nonlocal C fixture writes its terminal record and then aborts without flushing
+stdout; keep the artifact bytes fixed and make the test-only adapter select
+unbuffered stdout before `main`. The corpus consumer now requests 35 pairs,
+while its checked-in receipt covers 34, so the new digest diagnostic worked.
+
+The next batch applies these identity/provenance corrections and adds an
+opt-in GitHub Actions receipt job: export the consumer's exact pairs, run the
+existing sequential producer on Ubuntu, privacy-scan the receipt before its
+brief artifact upload, audit it again privately, and only then refresh the
+checked-in manifest/record.
+Do not infer a successful receipt from the pair digest or rewrite old results.
+Keep project tests on GitHub-hosted runners.

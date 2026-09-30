@@ -17,6 +17,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/pathoracle"
@@ -403,6 +404,17 @@ func phase16HistoricalManifestID(product evidence.Product) (string, error) {
 	}
 	historicalC := normalizeSchwayIdentityForHistoricalComparison(string(product.CSource))
 	manifest := product.Manifest
+	if len(manifest.ExecutionDigests) != len(product.Executions) {
+		return "", fmt.Errorf("execution digest count=%d, canonical outputs=%d", len(manifest.ExecutionDigests), len(product.Executions))
+	}
+	for index, result := range product.Executions {
+		canonical, canonicalErr := execution.CanonicalBytes(result)
+		if canonicalErr != nil {
+			return "", canonicalErr
+		}
+		historicalExecution := normalizeSchwayIdentityForHistoricalComparison(string(canonical))
+		manifest.ExecutionDigests[index] = "sha256:" + phase16SHA256([]byte(historicalExecution))
+	}
 	manifest.CoreDigest = "sha256:" + phase16SHA256(normalizedCore)
 	manifest.CDigest = "sha256:" + phase16SHA256([]byte(historicalC))
 	if manifest.ForeignDigest != "" {

@@ -51,6 +51,7 @@ var AllowedUndefinedSymbols = []AllowedUndefinedSymbol{
 	{Symbol: "puts", Rationale: "the Phase 1 match emitter's non-JSON and JSON output paths both write their single line via libc puts."},
 	{Symbol: "__stdoutp", Rationale: "on the recorded Apple libSystem host, fwrite's stdout argument resolves through this exported FILE* symbol rather than a plain 'stdout' undefined reference -- a platform C-library detail, not project code."},
 	{Symbol: "setjmp", Rationale: "the process-root landing pad installs its own return point via libc setjmp (D-04-17); its paired longjmp is named separately below since only the frozen foreign TU ever calls it."},
+	{Symbol: "setvbuf", Rationale: "the test-only legacy nonlocal adapter makes byte-frozen terminal output observable across libc abort-buffering behavior before the archived program enters main."},
 }
 
 var platformAllowedUndefinedSymbols = map[string][]AllowedUndefinedSymbol{

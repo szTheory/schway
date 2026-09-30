@@ -6,6 +6,16 @@
 #define schway_nonlocal_landing lang_nonlocal_landing
 #include "../../../native/schway_foreign_nonlocal.c"
 
+/* The frozen program terminates with abort() after writing its final JSON
+ * record. Make stdout unbuffered before main so pipe capture sees the same
+ * complete event stream on libc implementations whose abort does not flush. */
+#include <stdio.h>
+
+__attribute__((constructor))
+static void schway_legacy_nonlocal_unbuffer_stdout(void) {
+  (void)setvbuf(stdout, NULL, _IONBF, 0);
+}
+
 typedef struct _LANG_lang_nonlocal_probe_result {
   unsigned char ok;
   unsigned char value;

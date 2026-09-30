@@ -24,6 +24,12 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      record_validation_corpus:
+        description: Generate and upload the current validation-corpus run receipt
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -35,6 +41,7 @@ concurrency:
 jobs:
   checks:
     name: checks (${{ matrix.os }})
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.record_validation_corpus }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -65,6 +72,7 @@ jobs:
 
   evidence-aggregate:
     name: current evidence aggregate (${{ matrix.os }})
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.record_validation_corpus }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -93,3 +101,112 @@ jobs:
         run: go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v
       - name: Phase 15 session evidence seams
         run: go test ./internal/compiler/session -run 'TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v
+
+  validation-corpus-receipt:
+    name: validation corpus receipt (ubuntu-latest)
+    if: github.event_name == 'workflow_dispatch' && inputs.record_validation_corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Require clang
+        run: clang --version
+      - name: Install libc++ for sanitizer evidence
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libc++-dev libc++abi-dev
+      - name: Export the consumer's exact pair set
+        env:
+          AI_SCHWAY_EVIDENCE_PAIR_OUTPUT: ${{ runner.temp }}/validation-pairs.json
+        run: go test ./internal/compiler/session -run '^TestExportValidationCorpusPairs$' -count=1
+      - name: Produce the sequential run receipt
+        env:
+          EVIDENCE_PAIRS: ${{ runner.temp }}/validation-pairs.json
+          EVIDENCE_RECORD: ${{ runner.temp }}/validation-record.jsonl
+          EVIDENCE_MANIFEST: ${{ runner.temp }}/validation-manifest.json
+        run: |
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib, subprocess, time
+
+          pairs_path = pathlib.Path(os.environ["EVIDENCE_PAIRS"])
+          record_path = pathlib.Path(os.environ["EVIDENCE_RECORD"])
+          manifest_path = pathlib.Path(os.environ["EVIDENCE_MANIFEST"])
+          pair_bytes = pairs_path.read_bytes()
+          pairs = json.loads(pair_bytes)
+          arguments = []
+          for pair in pairs:
+              arguments.extend((pair["Package"], pair["Pattern"]))
+          started = time.monotonic()
+          subprocess.run(
+              ["bash", "scripts/evidence-run-record.sh", str(record_path), *arguments],
+              check=True,
+          )
+          elapsed = time.monotonic() - started
+          record_bytes = record_path.read_bytes()
+          completion = json.loads(record_bytes.splitlines()[-1])
+          if completion != {"Action": "record_batch_complete", "Pairs": len(pairs)}:
+              raise SystemExit("producer completion witness does not match exported pairs")
+          manifest = {
+              "schema": "phase16-validation-corpus-run-record/v1",
+              "revision": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "pair_digest_sha256": hashlib.sha256(pair_bytes).hexdigest(),
+              "record_digest_sha256": hashlib.sha256(record_bytes).hexdigest(),
+              "completed": True,
+              "produced_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+              "elapsed": f"{elapsed:.3f}s",
+          }
+          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+          print(f"recorded_pairs={len(pairs)} elapsed={elapsed:.3f}s")
+          PY
+      - name: Privacy scan the receipt before upload
+        env:
+          EVIDENCE_PAIRS: ${{ runner.temp }}/validation-pairs.json
+          EVIDENCE_RECORD: ${{ runner.temp }}/validation-record.jsonl
+          EVIDENCE_MANIFEST: ${{ runner.temp }}/validation-manifest.json
+        run: |
+          python3 - <<'PY'
+          import collections, os, pathlib, re
+
+          paths = [os.environ["EVIDENCE_PAIRS"], os.environ["EVIDENCE_RECORD"], os.environ["EVIDENCE_MANIFEST"]]
+          payload = b"\n".join(pathlib.Path(path).read_bytes() for path in paths)
+          home_users = re.findall(rb'/(?:Users|home)/([^/\s]+)', payload)
+          personal_homes = [value for value in home_users if value != b"runner"]
+          emails = re.findall(rb'(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', payload)
+          phones = re.compile(rb'(?<![A-Fa-f0-9])(?:\+?1[\s.-]?)?(?:\([2-9][0-9]{2}\)|[2-9][0-9]{2})[\s.-]?[2-9][0-9]{2}[\s.-]?[0-9]{4}(?![A-Fa-f0-9])')
+          phone_counts = collections.Counter()
+          for line in payload.splitlines():
+              for _ in phones.finditer(line):
+                  low = line.lower()
+                  if b'"time"' in low or any(token in low for token in (b'timing', b'duration', b'milliseconds', b'microseconds', b'ns/op')):
+                      phone_counts["classified_timing_or_timestamp"] += 1
+                  elif b'posix' in low:
+                      phone_counts["classified_posix_reference"] += 1
+                  else:
+                      phone_counts["unclassified"] += 1
+          sensitive = {
+              "ssn": len(re.findall(rb'(?<![0-9])[0-9]{3}-[0-9]{2}-[0-9]{4}(?![0-9])', payload)),
+              "private_key": len(re.findall(rb'-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----', payload)),
+              "aws_key": len(re.findall(rb'\b(?:AKIA|ASIA)[0-9A-Z]{16}\b', payload)),
+              "github_token": len(re.findall(rb'\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})\b', payload)),
+          }
+          rejected = bool(personal_homes or emails or phone_counts["unclassified"] or any(sensitive.values()))
+          print(f"receipt_privacy_scan={'failed' if rejected else 'pass'} home_candidates={len(personal_homes)} email_candidates={len(emails)} phone_candidates={sum(phone_counts.values())} phone_unclassified={phone_counts['unclassified']} sensitive_candidates={sum(sensitive.values())}")
+          if rejected:
+              raise SystemExit("receipt privacy scan rejected upload; candidate values are withheld")
+          PY
+      - name: Upload the temporary run receipt for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-corpus-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/validation-pairs.json
+            ${{ runner.temp }}/validation-record.jsonl
+            ${{ runner.temp }}/validation-manifest.json
+          if-no-files-found: error
+          retention-days: 1
