@@ -5,10 +5,9 @@ import (
 	"runtime"
 )
 
-// ForeignLegacyAdapterSourcePath resolves the Phase 1-5 corpus adapter that
-// maps frozen Lang-era foreign names onto current Schway foreign functions.
-// It is test-only compatibility glue and is not a public ABI promise.
-func ForeignLegacyAdapterSourcePath() string {
+// ForeignLegacyResourceAdapterSourcePath resolves the test-only resource
+// alias used by frozen Phase 1-5 fixtures.
+func ForeignLegacyResourceAdapterSourcePath() string {
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
 	return filepath.Join(root, "testdata", "phase16", "historical", "foreign_phase1_5_legacy_adapter.c")
@@ -21,6 +20,22 @@ func ForeignLegacyNonlocalAdapterSourcePath() string {
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
 	return filepath.Join(root, "testdata", "phase16", "historical", "foreign_phase1_5_legacy_nonlocal_adapter.c")
+}
+
+// ForeignLegacyArenaAdapterSourcePath resolves the test-only allocator alias
+// used by the frozen Phase 5 allocator fixture.
+func ForeignLegacyArenaAdapterSourcePath() string {
+	_, file, _, _ := runtime.Caller(0)
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
+	return filepath.Join(root, "testdata", "phase16", "historical", "foreign_phase1_5_legacy_arena_adapter.c")
+}
+
+// ForeignLegacyRetainedAdapterSourcePath resolves the test-only retained
+// pointer alias used by frozen Phase 5 fixture inputs.
+func ForeignLegacyRetainedAdapterSourcePath() string {
+	_, file, _, _ := runtime.Caller(0)
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
+	return filepath.Join(root, "testdata", "phase16", "historical", "foreign_phase1_5_legacy_retained_adapter.c")
 }
 
 // ForeignSourcePathsForSymbol returns every translation unit required to
@@ -52,29 +67,29 @@ func ForeignSourcePathsForSymbol(symbol string) []string {
 // ForeignLegacyResourceSourcePaths returns the implementation and test alias
 // units used by the frozen Phase 1-5 resource fixtures.
 func ForeignLegacyResourceSourcePaths() []string {
-	return []string{ForeignResourceSourcePath(), ForeignLegacyAdapterSourcePath()}
+	return []string{ForeignResourceSourcePath(), ForeignLegacyResourceAdapterSourcePath()}
 }
 
 // ForeignLegacyNonlocalSourcePaths returns the implementation and test alias
 // units used by the frozen Phase 4 nonlocal-exit fixture.
 func ForeignLegacyNonlocalSourcePaths() []string {
-	return []string{ForeignLegacyNonlocalAdapterSourcePath(), ForeignLegacyAdapterSourcePath()}
+	return []string{ForeignLegacyNonlocalAdapterSourcePath()}
 }
 
 // ForeignLegacyPhase4SourcePaths returns the deduplicated legacy adapters
 // needed by frozen Phase 4 fixtures that combine resource and nonlocal calls.
 func ForeignLegacyPhase4SourcePaths() []string {
-	return []string{ForeignLegacyNonlocalAdapterSourcePath(), ForeignResourceSourcePath(), ForeignLegacyAdapterSourcePath()}
+	return []string{ForeignLegacyNonlocalAdapterSourcePath(), ForeignResourceSourcePath(), ForeignLegacyResourceAdapterSourcePath()}
 }
 
 // ForeignLegacyArenaSourcePaths returns the implementation and test alias
 // units used by the frozen Phase 5 allocator fixture.
 func ForeignLegacyArenaSourcePaths() []string {
-	return []string{ForeignArenaSourcePath(), ForeignLegacyAdapterSourcePath()}
+	return []string{ForeignArenaSourcePath(), ForeignLegacyArenaAdapterSourcePath()}
 }
 
 // ForeignLegacyRetainedSourcePaths returns the implementation and test alias
 // units used by frozen retained-pointer fixture inputs.
 func ForeignLegacyRetainedSourcePaths() []string {
-	return []string{ForeignRetainedSourcePath(), ForeignLegacyAdapterSourcePath()}
+	return []string{ForeignRetainedSourcePath(), ForeignLegacyRetainedAdapterSourcePath()}
 }

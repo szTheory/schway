@@ -98,7 +98,11 @@ func phase16HistoricalProgramCanonical(canonical []byte) ([]byte, error) {
 			reversedResourceOpen = true
 		}
 	}
-	if reversedResourceOpen && program.Module == "phase5.enum_foreign_try1_alt1" {
+	// Both generated enum variants contain the resource symbol in the foreign
+	// declaration and a second time in the function body. Reversing the rename
+	// therefore shifts data/function starts by two bytes and the function end
+	// by four; all remaining fields stay identity-bound.
+	if reversedResourceOpen && (program.Module == "phase5.enum_foreign_try1_alt1" || program.Module == "phase5.enum_foreign_discard1_alt1") {
 		if len(program.DataTypes) > 0 {
 			program.DataTypes[0].Span.Start -= 2
 			program.DataTypes[0].Span.End -= 2

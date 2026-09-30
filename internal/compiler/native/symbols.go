@@ -99,7 +99,7 @@ func UndefinedSymbols(parent context.Context, nmPath, binaryPath string, timeout
 		nmPath = "nm"
 	}
 	if timeout <= 0 {
-		timeout = 5 * time.Second
+		timeout = defaultSubprocessTimeout
 	}
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()

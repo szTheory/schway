@@ -354,7 +354,7 @@ func compositionOnlyCellValue(t *testing.T, calleePath, writerPath, wrapperPath,
 // for the full design.
 func TestCompositionOnlyLTODivergence(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skipf("NAT-07 composition-only divergence control is currently supported on Darwin; host is %s", runtime.GOOS)
+		t.Skipf("NAT-07 composition-only divergence control is currently supported on Darwin; host is %s; see probe:TestCompositionOnlyLTODivergence", runtime.GOOS)
 	}
 	if _, err := exec.LookPath("clang"); err != nil {
 		t.Skipf("env:clang toolchain unavailable on this host: %v", err)

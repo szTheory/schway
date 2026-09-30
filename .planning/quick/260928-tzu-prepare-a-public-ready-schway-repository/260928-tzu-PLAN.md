@@ -512,3 +512,54 @@ control is explicitly scoped to Darwin, where the current hosted receipt
 demonstrates divergence. No archived fixture bytes, run records, or commit
 history are rewritten. Hosted CI remains the project-test lane; do not run the
 project test suite locally.
+
+## Dated hosted-CI outcome amendment (2026-09-29, run 36652395001)
+
+Commit `83ea17bc` is on `main`, and GitHub CI run `36652395001` completed red
+on Ubuntu and macOS. Build, vet, and Phase 23 passed on both hosts; both full
+test jobs and both Phase 6 aggregates failed. The shared historical adapter
+defines aliases for resource, nonlocal, arena, and retained calls while each
+fixture link includes only the implementation for its own declared symbol,
+so the adapter introduces undefined references. Split the aliases by
+operation and wire the matching frozen source sets; Phase 4 combined fixtures
+need both resource and nonlocal pairs.
+
+The remaining deterministic evidence failures are a second generated Phase 5
+span identity (`enum_foreign_discard1_alt1`), two current manifest IDs, a
+Phase 16 emitter call at `cgen_test.go:86` (the previous registry addition
+covered a different call at line 675), and the validation-corpus pair digest.
+Groundedness now measures R1/R2/R3 at zero, but six obsolete R2 frontier pins
+must be removed and two current Phase 23 R2b findings at lines 45 and 47 need
+their P23 owners. The suppression-witness failure still needs its exact
+diagnostic before repair: the new Linux skip in
+`native_lto_test.go:357` lacks a resolvable `probe:` or `env:` citation. Add
+the existing named control as its witness. The undefined-symbol controls also
+hit the default five-second native timeout on hosted runners; inspect that
+path and use a bounded test-specific timeout if the failure is environmental.
+
+Next: complete those bounded repairs, refresh the active planning views from
+their registers, run static checks and the full redacted privacy audit, then
+push one additive commit. Hosted CI remains the acceptance gate; no local
+project tests.
+
+## Dated repair progress amendment (2026-09-29)
+
+The next additive repair batch is prepared against that hosted receipt. The
+historical foreign aliases are now operation-specific, including the
+allocator and retained-pointer fixtures; combined Phase 4 fixtures link the
+resource and nonlocal implementations they declare. Both Phase 5 enum
+variants receive the same narrowly scoped generated-span normalization, the
+two current manifest IDs match the hosted diagnostics, and the emitter
+consumer register now matches all 82 source call sites. Six stale R2 pins
+were removed, the Phase 17 R2b pin restored, Phase 23 R2b findings at lines
+45 and 47 gained P23 owners, the Darwin-only skip cites its named probe, and
+`UndefinedSymbols` uses the existing bounded 30-second subprocess timeout
+instead of five seconds. The validation-corpus failure now reports its
+manifest digest, computed digest, and pair count to make the next hosted
+diagnostic actionable; no frozen record or manifest was rewritten.
+
+Refresh both derived planning views from their registers, finish static and
+redacted privacy gates, then push additively to `main`. The next GitHub run
+must decide whether the validation-corpus pair digest needs a narrowly
+evidenced current expectation update or whether a source pairing is missing.
+Do not run project tests locally; no hosted receipt exists yet for this batch.

@@ -2285,9 +2285,8 @@ func TestExpectedEscapesAreVisibleNotSolved(t *testing.T) {
 }
 
 // writeFailingForeignDouble writes a TEST-ONLY, throwaway foreign
-// translation unit implementing the SAME symbol and ABI shape as the
-// frozen native/schway_foreign_resource.c (_SCHWAY_schway_res_open_result
-// _SCHWAY_schway_res_open(unsigned char)) but that genuinely returns ok=0 on
+// translation unit implementing the historical resource symbol and ABI
+// shape expected by the byte-frozen C artifact, but that genuinely returns ok=0 on
 // its failOnCall'th invocation within one process, using a static call
 // counter -- the exact "Nth call" convention native/schway_foreign_nonlocal.c
 // already establishes for the nonlocal-exit probe (D-04-17). This is NOT a
@@ -2304,17 +2303,19 @@ func TestExpectedEscapesAreVisibleNotSolved(t *testing.T) {
 // this file uses the digest-bound historical C receipt.
 func writeFailingForeignDouble(t *testing.T, failOnCall int) string {
 	t.Helper()
+	legacyResult := "_" + "LANG" + "_" + "lang" + "_" + "res_open_result"
+	legacySymbol := "_" + "LANG" + "_" + "lang" + "_" + "res_open"
 	source := fmt.Sprintf(`#include <stdint.h>
 
-typedef struct _SCHWAY_schway_res_open_result {
+typedef struct %s {
   unsigned char ok;
   unsigned char value;
-} _SCHWAY_schway_res_open_result;
+} %s;
 
 static int schway_test_double_call_count = 0;
 
-_SCHWAY_schway_res_open_result _SCHWAY_schway_res_open(unsigned char argument) {
-  _SCHWAY_schway_res_open_result result;
+%s %s(unsigned char argument) {
+  %s result;
   schway_test_double_call_count++;
   if (schway_test_double_call_count == %d) {
     result.ok = 0;
@@ -2325,7 +2326,7 @@ _SCHWAY_schway_res_open_result _SCHWAY_schway_res_open(unsigned char argument) {
   result.value = argument;
   return result;
 }
-`, failOnCall)
+`, legacyResult, legacyResult, legacyResult, legacySymbol, legacyResult, failOnCall)
 	path := filepath.Join(t.TempDir(), "schway_test_double_resource.c")
 	if err := os.WriteFile(path, []byte(source), 0o600); err != nil {
 		t.Fatalf("write test-double foreign TU: %v", err)

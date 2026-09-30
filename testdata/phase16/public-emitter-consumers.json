@@ -158,18 +158,9 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:Emit:189",
-      "classification": "refusal-frozen-witness",
-      "witness": "probe:TestPhase16M004CorpusRefusal"
-    },
-    {
       "call": "internal/compiler/cgen/cgen_test.go:Emit:202",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
-    },
-    {
-      "call": "internal/compiler/cgen/cgen_test.go:Emit:252",
-      "classification": "admitted-dynamic-schema2"
     },
     {
       "call": "internal/compiler/cgen/cgen_test.go:Emit:265",
@@ -177,36 +168,31 @@
       "witness": "probe:TestForeignSymbolInjectionNeverReachesGeneratedC"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:Emit:662",
-      "classification": "refusal-frozen-witness",
-      "witness": "probe:TestPhase16M004CorpusRefusal"
-    },
-    {
       "call": "internal/compiler/cgen/cgen_test.go:Emit:675",
       "classification": "typed-refusal",
       "witness": "probe:TestPhase5ByPointerLoweringGolden"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:Emit:837",
-      "classification": "refusal-frozen-witness",
-      "witness": "probe:TestPhase16M004CorpusRefusal"
-    },
-    {
-      "call": "internal/compiler/cgen/cgen_test.go:Emit:84",
+      "call": "internal/compiler/cgen/cgen_test.go:Emit:86",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:Emit:852",
+      "call": "internal/compiler/cgen/cgen_test.go:Emit:864",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:Emit:873",
+      "call": "internal/compiler/cgen/cgen_test.go:Emit:879",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:263",
+      "call": "internal/compiler/cgen/cgen_test.go:Emit:900",
+      "classification": "refusal-frozen-witness",
+      "witness": "probe:TestPhase16M004CorpusRefusal"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:276",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -215,32 +201,32 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:497",
+      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:510",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:551",
+      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:564",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:563",
+      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:576",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:82",
+      "call": "internal/compiler/cgen/cgen_test.go:EmitNative:84",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/legacy_emitter_evidence_test.go:EmitNative:100",
+      "call": "internal/compiler/cgen/legacy_emitter_evidence_test.go:EmitNative:101",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:279",
+      "call": "internal/compiler/core/core_test.go:Emit:436",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:722",
+      "call": "internal/compiler/core/core_test.go:Emit:933",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -257,7 +243,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/native/native_lto_test.go:EmitNative:42",
+      "call": "internal/compiler/native/native_lto_test.go:EmitNative:43",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
@@ -267,7 +253,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session.go:EmitNative:2774",
+      "call": "internal/compiler/session/session.go:EmitNative:2780",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -302,20 +288,20 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:134",
-      "classification": "frozen-evidence-validator",
-      "witness": "probe:TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults",
-      "evidence_fixtures": [
-        "testdata/phase11/multi_function_gate_corpus.schway"
-      ]
-    },
-    {
-      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:85",
+      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:126",
       "classification": "frozen-evidence-validator",
       "witness": "probe:TestPhase16Phase11FrozenEvidenceBindsCanonicalProgram",
       "evidence_fixtures": [
         "testdata/phase11/multi_function_gate_corpus.schway",
         "testdata/phase16/historical/phase11_gate_n_two.fixture"
+      ]
+    },
+    {
+      "call": "internal/compiler/session/session_phase16_frozen_evidence_external_test.go:EmitNative:175",
+      "classification": "frozen-evidence-validator",
+      "witness": "probe:TestPhase16Phase11FrozenEvidenceRejectsProvenanceFaults",
+      "evidence_fixtures": [
+        "testdata/phase11/multi_function_gate_corpus.schway"
       ]
     },
     {
@@ -327,7 +313,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase5_corpus_test.go:EmitNative:501",
+      "call": "internal/compiler/session/session_phase5_corpus_test.go:EmitNative:521",
       "classification": "refusal-frozen-witness",
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
@@ -365,7 +351,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:353",
+      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:365",
       "classification": "frozen-evidence-validator",
       "witness": "probe:TestPhase16M004ProvenanceRegistryRejectsFaults",
       "evidence_fixtures": [
@@ -374,7 +360,7 @@
       ]
     },
     {
-      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:499",
+      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:511",
       "classification": "admitted-dynamic-schema2"
     }
   ]

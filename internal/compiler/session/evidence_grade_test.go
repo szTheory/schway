@@ -344,7 +344,7 @@ func checkedInCorpusRunRecord(requested []pkgPattern, recordData, manifestData [
 		return nil, err
 	}
 	if manifest.PairDigest != sha256Hex(pairData) {
-		return nil, fmt.Errorf("checked-in validation corpus pair digest does not match the current requested corpus")
+		return nil, fmt.Errorf("checked-in validation corpus pair digest does not match the current requested corpus (manifest=%s current=%s pairs=%d)", manifest.PairDigest, sha256Hex(pairData), len(requested))
 	}
 	if manifest.RecordDigest != sha256Hex(recordData) {
 		return nil, fmt.Errorf("checked-in validation corpus record digest does not match its JSONL body")
